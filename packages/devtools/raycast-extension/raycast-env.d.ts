@@ -8,7 +8,7 @@
 /* eslint-disable @typescript-eslint/ban-types */
 
 type ExtensionPreferences = {
-  /** API Key - Your AI Stats API key from api.phaseo.app */
+  /** API Key - Your Phaseo API key from api.phaseo.app */
   "apiKey": string,
   /** API URL - Custom API URL (optional) */
   "apiUrl": string

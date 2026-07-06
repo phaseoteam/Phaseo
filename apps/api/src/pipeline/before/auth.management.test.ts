@@ -1,5 +1,5 @@
 import { createHmac } from "node:crypto";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 type ManagementKeyRow = {
 	id: string;
@@ -153,6 +153,10 @@ describe("authenticateManagement", () => {
 		vi.resetModules();
 	});
 
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
 	it("accepts active management keys", async () => {
 		const kid = "MGMTKEY12345";
 		const secret = "secret_management_key";
@@ -166,7 +170,7 @@ describe("authenticateManagement", () => {
 
 		const { authenticateManagement } = await import("./auth");
 		const result = await authenticateManagement(
-			buildRequest(`aistats_v1_sk_${kid}_${secret}`),
+			buildRequest(`phaseo_v1_sk_${kid}_${secret}`),
 		);
 		await flushBackground();
 
@@ -184,6 +188,57 @@ describe("authenticateManagement", () => {
 		);
 	});
 
+	it("accepts legacy AI Stats-prefixed management keys", async () => {
+		const kid = "MGMTLEGACY1";
+		const secret = "secret_legacy_management_key";
+		runtime.dbRow.value = {
+			id: "mgmt_legacy_prefix",
+			workspace_id: "team_legacy",
+			status: "active",
+			hash: hashSecret(secret),
+			scopes: "[\"workspaces:read\"]",
+		};
+
+		const { authenticateManagement } = await import("./auth");
+		const result = await authenticateManagement(
+			buildRequest(`aistats_v1_sk_${kid}_${secret}`),
+		);
+
+		expect(result).toMatchObject({
+			ok: true,
+			workspaceId: "team_legacy",
+			apiKeyId: "mgmt_legacy_prefix",
+			apiKeyKid: kid,
+			scopes: ["workspaces:read"],
+		});
+	});
+
+	it("rejects legacy AI Stats-prefixed management keys after the cutoff", async () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date("2027-01-01T00:00:00.000Z"));
+
+		const kid = "MGMTLEGACY2";
+		const secret = "secret_legacy_management_key";
+		runtime.dbRow.value = {
+			id: "mgmt_legacy_prefix",
+			workspace_id: "team_legacy",
+			status: "active",
+			hash: hashSecret(secret),
+			scopes: "[\"workspaces:read\"]",
+		};
+
+		const { authenticateManagement } = await import("./auth");
+		const result = await authenticateManagement(
+			buildRequest(`aistats_v1_sk_${kid}_${secret}`),
+		);
+
+		expect(result).toEqual({
+			ok: false,
+			reason: "legacy_key_prefix_retired",
+		});
+		expect(runtime.maybeSingle).not.toHaveBeenCalled();
+	});
+
 	it("rejects soft-blocked management keys", async () => {
 		const kid = "MGMTSOFT1234";
 		const secret = "secret_soft_blocked";
@@ -197,7 +252,7 @@ describe("authenticateManagement", () => {
 
 		const { authenticateManagement } = await import("./auth");
 		const result = await authenticateManagement(
-			buildRequest(`aistats_v1_sk_${kid}_${secret}`),
+			buildRequest(`phaseo_v1_sk_${kid}_${secret}`),
 		);
 
 		expect(result).toEqual({ ok: false, reason: "key_soft_blocked" });
@@ -216,7 +271,7 @@ describe("authenticateManagement", () => {
 
 		const { authenticateManagement } = await import("./auth");
 		const result = await authenticateManagement(
-			buildRequest(`aistats_v1_sk_${kid}_${secret}`),
+			buildRequest(`phaseo_v1_sk_${kid}_${secret}`),
 		);
 
 		expect(result).toEqual({ ok: false, reason: "management_key_scopes_required" });
@@ -235,7 +290,7 @@ describe("authenticateManagement", () => {
 
 		const { authenticateManagement } = await import("./auth");
 		const result = await authenticateManagement(
-			buildRequest(`aistats_v1_sk_${kid}_${secret}`),
+			buildRequest(`phaseo_v1_sk_${kid}_${secret}`),
 		);
 
 		expect(result).toEqual({ ok: false, reason: "key_expired" });

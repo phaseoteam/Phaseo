@@ -1,8 +1,8 @@
-# AI Stats Raycast Extension - Implementation Summary
+# Phaseo Raycast Extension - Implementation Summary
 
 ## Overview
 
-This Raycast extension allows users to browse AI models, organisations, and API providers directly from Raycast, providing quick access to AI Stats data without leaving their workflow.
+This Raycast extension allows users to browse AI models, organisations, and API providers directly from Raycast, providing quick access to Phaseo data without leaving their workflow.
 
 ## What Was Implemented
 
@@ -83,7 +83,7 @@ packages/devtools/raycast-extension/
 
 **3. Utilities (`src/utils.ts`)**
 - Date formatting functions
-- URL builders for AI Stats website
+- URL builders for Phaseo website
 - Country code to flag emoji converter
 - Status badge helpers
 - Search/filter helpers
@@ -102,7 +102,7 @@ packages/devtools/raycast-extension/
   - Endpoint count
 - Actions:
   - View detailed model information
-  - Open in AI Stats
+  - Open in Phaseo
   - Copy model ID
   - View organisation
 - Detail view with:
@@ -120,7 +120,7 @@ packages/devtools/raycast-extension/
   - Organisation color (icon tint)
 - Actions:
   - View organisation details
-  - Open in AI Stats
+  - Open in Phaseo
   - Copy organisation ID
 - Detail view with full description
 
@@ -133,7 +133,7 @@ packages/devtools/raycast-extension/
 - Actions:
   - View provider details
   - Open provider documentation
-  - Open in AI Stats
+  - Open in Phaseo
   - Copy provider ID
 - Detail view with documentation links
 
@@ -165,7 +165,7 @@ packages/devtools/raycast-extension/
 ### User Experience
 - Keyboard shortcuts for common actions
 - Copy-to-clipboard functionality
-- Direct links to AI Stats website
+- Direct links to Phaseo website
 - Detailed information views
 - Loading states and error handling
 

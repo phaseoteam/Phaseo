@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Activity, Route, Timer, Lock, Globe, Layers, ArrowRight } from "lucide-react";
 
-const DOCS_HREF = "https://docs.ai-stats.phaseo.app/v1/quickstart";
+const DOCS_HREF = "https://docs.phaseo.app/v1/quickstart";
 
 const FEATURE_CARDS = [
 	{

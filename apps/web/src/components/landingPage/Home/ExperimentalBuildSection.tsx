@@ -15,13 +15,13 @@ const ACTIONS = [
 	{
 		title: "Read the quickstart",
 		body: "Understand the unified request shape and drop-in migration path.",
-		href: "https://docs.ai-stats.phaseo.app/v1/quickstart",
+		href: "https://docs.phaseo.app/v1/quickstart",
 		icon: BookOpen,
 	},
 	{
 		title: "View the repository",
 		body: "Inspect the open-source gateway, SDKs, and roadmap directly.",
-		href: "https://github.com/AI-Stats/AI-Stats",
+		href: "https://github.com/phaseoteam/Phaseo",
 		icon: GitHubBrandIcon,
 	},
 	{

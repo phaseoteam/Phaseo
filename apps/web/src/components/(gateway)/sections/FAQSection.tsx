@@ -63,16 +63,16 @@ function FAQItem({ question, answer, isOpen, onToggle }: FAQItemProps) {
 
 export const FAQ_ITEMS = [
 	{
-		question: "Why should I use AI Stats Gateway?",
-		answer: "AI Stats gives you one OpenAI-compatible surface for model routing, provider failover, pricing context, and observability. The point is not just access to more models. It is being able to swap providers, compare real costs, and keep production traffic stable without rebuilding your integration every time the market moves.",
+		question: "Why should I use Phaseo Gateway?",
+		answer: "Phaseo gives you one OpenAI-compatible surface for model routing, provider failover, pricing context, and observability. The point is not just access to more models. It is being able to swap providers, compare real costs, and keep production traffic stable without rebuilding your integration every time the market moves.",
 	},
 	{
 		question: "How do I get started?",
-		answer: "Create an account, add credits if you want managed billing, generate an API key, and point your existing OpenAI-compatible client at AI Stats Gateway. If you already have provider keys, you can also bring your own keys and keep your provider billing directly under your control.",
+		answer: "Create an account, add credits if you want managed billing, generate an API key, and point your existing OpenAI-compatible client at Phaseo Gateway. If you already have provider keys, you can also bring your own keys and keep your provider billing directly under your control.",
 	},
 	{
 		question: "How do billing and fees work?",
-		answer: "Managed usage is billed from your AI Stats credits using the model and provider pricing shown in the catalog. If you bring your own provider keys, the upstream inference cost stays with that provider and AI Stats only applies the documented gateway fee where relevant. The goal is that pricing stays inspectable rather than hidden behind blended markups.",
+		answer: "Managed usage is billed from your Phaseo credits using the model and provider pricing shown in the catalog. If you bring your own provider keys, the upstream inference cost stays with that provider and Phaseo only applies the documented gateway fee where relevant. The goal is that pricing stays inspectable rather than hidden behind blended markups.",
 	},
 	{
 		question: "Can I use my own provider API keys?",
@@ -88,11 +88,11 @@ export const FAQ_ITEMS = [
 	},
 	{
 		question: "How does provider fallback work?",
-		answer: "Routing decisions are made request by request using provider health, latency, cost, capability, and your policies. If a provider degrades or errors, AI Stats can fall through to the next eligible provider without requiring a new client integration or a manual operational response.",
+		answer: "Routing decisions are made request by request using provider health, latency, cost, capability, and your policies. If a provider degrades or errors, Phaseo can fall through to the next eligible provider without requiring a new client integration or a manual operational response.",
 	},
 	{
 		question: "What SDK and API formats are supported?",
-		answer: "AI Stats is designed around an OpenAI-compatible request shape, so existing OpenAI-style SDKs and tools can usually be moved across with minimal changes. On top of that, we publish our own SDKs and provider adapters where teams want stronger typing or more direct gateway features.",
+		answer: "Phaseo is designed around an OpenAI-compatible request shape, so existing OpenAI-style SDKs and tools can usually be moved across with minimal changes. On top of that, we publish our own SDKs and provider adapters where teams want stronger typing or more direct gateway features.",
 	},
 	{
 		question: "What data is logged during API use?",
@@ -123,10 +123,10 @@ export function FAQSection() {
 						Frequently asked questions
 					</h2>
 					<p className="mt-4 text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">
-						Common questions about AI Stats Gateway.
+						Common questions about Phaseo Gateway.
 						Cannot find an answer?{" "}
 						<a
-							href="mailto:support@ai-stats.phaseo.app"
+							href="mailto:support@phaseo.app"
 							className="font-medium text-zinc-900 underline underline-offset-4 hover:text-zinc-700 dark:text-zinc-100 dark:hover:text-zinc-300"
 						>
 							Reach out to our team

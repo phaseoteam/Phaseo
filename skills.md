@@ -1,6 +1,6 @@
 # Agentic Gateway Skill (External Integrators, Build-Complete)
 
-This skill is the external-integration blueprint for building complete products on AI Stats Gateway.
+This skill is the external-integration blueprint for building complete products on Phaseo Gateway.
 It is intentionally API-consumer focused and excludes internal repo maintenance workflows.
 
 ## Scope
@@ -24,13 +24,13 @@ An agent following this file should have enough information to implement:
 ## Canonical Gateway Contract
 
 - Base URL: `https://api.phaseo.app/v1`
-- Auth header: `Authorization: Bearer <AI_STATS_API_KEY or OAuth access token>`
+- Auth header: `Authorization: Bearer <PHASEO_API_KEY or OAuth access token>`
 - Optional attribution:
   - `x-title: <app-name>`
   - `http-referer: <origin-url>`
 - OpenAPI source of truth:
   - Repo copy: `apps/docs/openapi/v1/openapi.yaml`
-  - Docs: `https://docs.ai-stats.phaseo.app`
+  - Docs: `https://phaseo.app`
 
 ## SDK Coverage + Fallback Rule
 
@@ -47,7 +47,7 @@ All of these SDKs exist and should be considered valid integration targets:
   - package: `ai-stats-py-sdk`
   - local path: `packages/sdk/sdk-py`
 - Go:
-  - module: `github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go`
+  - module: `github.com/phaseoteam/Phaseo/packages/sdk/sdk-go`
   - local path: `packages/sdk/sdk-go`
 - C#:
   - package: `AI.Stats.Sdk`

@@ -1,22 +1,22 @@
 <div align="center">
-  <img src="./apps/web/public/logo_dark.svg" alt="AI Stats logo" width="96" />
-  <h1>AI Stats</h1>
-  <p><strong>Unified AI gateway and model intelligence platform.</strong></p>
+  <img src="./apps/web/public/logo_dark.svg" alt="Phaseo logo" width="96" />
+  <h1>Phaseo</h1>
+  <p><strong>Unified AI gateway and model intelligence for teams building with AI APIs.</strong></p>
 
   <p>
-    <a href="https://ai-stats.phaseo.app">Website</a>
+    <a href="https://phaseo.app">Website</a>
     &middot;
-    <a href="https://docs.ai-stats.phaseo.app">Docs</a>
+    <a href="https://docs.phaseo.app/v1">Docs</a>
     &middot;
-    <a href="https://github.com/AI-Stats/AI-Stats/issues">Issues</a>
+    <a href="https://github.com/phaseoteam/Phaseo/issues">Issues</a>
     &middot;
     <a href="https://discord.gg/aQyywCvgZ5">Discord</a>
   </p>
 
   <p>
-    <a href="https://github.com/AI-Stats/AI-Stats/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/AI-Stats/AI-Stats/actions/workflows/ci.yml/badge.svg" /></a>
+    <a href="https://github.com/phaseoteam/Phaseo/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/phaseoteam/Phaseo/actions/workflows/ci.yml/badge.svg" /></a>
     <a href="./LICENSE"><img alt="License" src="https://img.shields.io/badge/license-AGPL--3.0%20(core)%20%7C%20MIT%20(SDKs)-2563eb" /></a>
-    <a href="https://securityscorecards.dev/viewer/?uri=github.com/AI-Stats/AI-Stats"><img alt="OpenSSF Scorecard" src="https://api.securityscorecards.dev/projects/github.com/AI-Stats/AI-Stats/badge" /></a>
+    <a href="https://securityscorecards.dev/viewer/?uri=github.com/phaseoteam/Phaseo"><img alt="OpenSSF Scorecard" src="https://api.securityscorecards.dev/projects/github.com/phaseoteam/Phaseo/badge" /></a>
   </p>
 </div>
 
@@ -26,183 +26,122 @@
   <code>pip install ai-stats-py-sdk</code>
 </p>
 
-<p align="center">
-  300+ models across 30+ providers on the API today.
-</p>
+Phaseo combines a production AI gateway with the model, provider, pricing, benchmark, and reliability data teams need when choosing what to run in production.
 
-<p align="center">
-  Use AI Stats as both a unified gateway API and a model intelligence database to compare real-world model performance.
-</p>
+Use it to:
 
-<p align="center">
-  <img src="./apps/web/public/og.png" alt="AI Stats dashboard preview" width="85%" />
-</p>
+- route requests through one OpenAI-compatible API;
+- compare model quality, price, latency, throughput, and provider coverage;
+- observe spend and reliability across teams and apps;
+- build against SDKs, management APIs, and routing controls from one repo.
 
----
+## Why Phaseo
 
-## Why AI Stats
+Choosing an AI model is no longer just a leaderboard decision. Production teams need to know which model is available, which provider can serve it, what it costs, how it behaves under load, and how to switch when requirements change.
 
-- Route requests with policy-aware failover and provider selection.
-- Use OpenAI-compatible endpoints plus gateway-specific controls.
-- Track telemetry, spend, and reliability in one place.
-- Compare model and provider performance across a broad database of benchmark and usage data.
-- Build on a transparent OSS stack with security-first defaults.
-
-## Platform coverage
-
-| Surface                                       | Status      | Notes                                                                   |
-| --------------------------------------------- | ----------- | ----------------------------------------------------------------------- |
-| REST API                                      | Available   | Unified gateway endpoints with OpenAI-compatible request patterns.      |
-| TypeScript SDK (`@ai-stats/sdk`)              | Available   | First-party SDK for TS/JS apps and services.                            |
-| Python SDK (`ai-stats-py-sdk`)                | Available   | First-party Python SDK for backend and data workflows.                  |
-| Model database + comparisons                  | Available   | Explore benchmark, usage, and provider-level performance across models. |
-| Other SDK languages (Go, C#, PHP, Ruby, more) | In progress | Generated SDKs and language support are actively expanding.             |
-| Web dashboard + docs                          | Available   | Routing controls, usage visibility, and integration documentation.      |
-
-## Endpoint coverage
-
-| Endpoint               | Status         | Notes                                                        |
-| ---------------------- | -------------- | ------------------------------------------------------------ |
-| `/v1/responses`        | Available      | Primary unified endpoint for most generation workflows.      |
-| `/v1/chat/completions` | Available      | OpenAI-compatible chat completions support.                  |
-| `/v1/messages`         | Available      | Anthropic Messages-compatible support.                       |
-| `/v1/embeddings`       | Available      | Vector embedding generation.                                 |
-| `/v1/moderations`      | Available      | Safety and moderation scoring.                               |
-| Image generation       | Roadmap (ASAP) | Priority rollout with unified input/output behavior.         |
-| Audio generation       | Roadmap (ASAP) | Priority rollout for speech and related audio outputs.       |
-| Video generation       | Roadmap (ASAP) | Priority rollout for async and long-running generation jobs. |
-| Music generation       | Roadmap (ASAP) | Priority rollout as part of multimodal expansion.            |
+Phaseo keeps those decisions in one place: the gateway handles requests, while the catalog and dashboard make the tradeoffs visible.
 
 ## Quickstart
 
-### 1. Create a free account
+Create an API key at `https://phaseo.app`, then call the gateway:
 
-Sign up at `https://ai-stats.phaseo.app` and create your first API key from the dashboard.
-
-### 2. Add credits or start with free models
-
-Top up credits in the dashboard, or start immediately with one of the free-supported models.
-
-### 3. Make your first request
-
-Use the Playground in the web app, or call the API from your app with `@ai-stats/sdk`, `ai-stats-py-sdk`, or direct HTTP.
-
-### 4. Build anywhere
-
-Integrate AI Stats in any stack where you can make HTTP requests.  
-Our goal is to make AI as easy as possible to get running across many models and providers.
-
-## Repository layout
-
-- `apps/web`: Next.js web app.
-- `apps/api`: Hono + Cloudflare Workers gateway.
-- `apps/docs`: Mintlify docs.
-- `packages/sdk/*`: All SDK implementations for the platform (TypeScript, Python, and other language SDKs).
-- `packages/sdk/sdk-ts`: TypeScript SDK package (`@ai-stats/sdk`).
-- `packages/sdk/sdk-py`: Python SDK package (`ai-stats-py-sdk`).
-
-## How it works
-
-```mermaid
-flowchart LR
-    Client["Your apps and SDKs"] --> Gateway["AI Stats Gateway API"]
-    Gateway --> Router["Routing and policy engine"]
-    Router --> Providers["Provider adapters"]
-    Gateway --> DB["Usage and metadata database"]
-    Gateway --> Cache["Caching and performance layer"]
-    Web["AI Stats web app"] --> DB
-    Docs["Documentation"] --> Spec["OpenAPI specification"]
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-5-nano-2025-08-07",
+    "messages": [{"role": "user", "content": "Say hello from Phaseo."}]
+  }'
 ```
 
-## Usage examples
-
-### Next.js / Node (OpenAI-compatible)
+Or use the OpenAI-compatible TypeScript client:
 
 ```ts
 import OpenAI from "openai";
 
 const client = new OpenAI({
-	apiKey: process.env.AI_STATS_API_KEY,
-	baseURL: "https://api.phaseo.app/v1",
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
 });
 
-const result = await client.chat.completions.create({
-	model: "gpt-5-nano-2025-08-07",
-	messages: [
-		{ role: "user", content: "Summarize AI Stats in one sentence." },
-	],
+const response = await client.chat.completions.create({
+  model: "gpt-5-nano-2025-08-07",
+  messages: [{ role: "user", content: "Summarize Phaseo in one sentence." }],
 });
 
-console.log(result.choices[0]?.message?.content);
+console.log(response.choices[0]?.message?.content);
 ```
 
-### Python
+## What Is In This Repo
 
-```python
-import requests
+| Path | Purpose |
+| --- | --- |
+| `apps/web` | Next.js product, dashboard, model catalog, gateway UI, blog, and public site. |
+| `apps/api` | Cloudflare Workers + Hono gateway API. |
+| `apps/docs` | Mintlify documentation and OpenAPI reference. |
+| `packages/sdk/*` | TypeScript, Python, Go, C#, PHP, Ruby, Java, C++, Rust, and Agent SDK packages. |
+| `packages/data/catalog` | Canonical model, provider, pricing, benchmark, and catalog data. |
+| `examples/*` | Small apps and smoke projects for gateway and OAuth flows. |
+| `scripts/*` | Catalog, OpenAPI, release, validation, and maintenance tooling. |
 
-response = requests.post(
-    "https://api.phaseo.app/v1/responses",
-    headers={
-        "Authorization": "Bearer YOUR_API_KEY",
-        "Content-Type": "application/json",
-    },
-    json={
-        "model": "gpt-5-nano-2025-08-07",
-        "messages": [{"role": "user", "content": "Hello from Python."}],
-    },
-    timeout=60,
-)
-print(response.json())
-```
+## Platform Surface
 
-### curl
+| Surface | Status | Notes |
+| --- | --- | --- |
+| Gateway API | Available | OpenAI-compatible endpoints plus Phaseo routing controls. |
+| Model and provider catalog | Available | Model metadata, pricing, providers, capabilities, and benchmark context. |
+| Web dashboard | Available | Usage, keys, routing, apps, settings, model pages, and internal tools. |
+| Docs | Available | Guides, API reference, SDK examples, cookbook, and changelog. |
+| SDKs | In progress | Current package names remain `@ai-stats/*` / `ai-stats-*` until the Phaseo package migration is completed. |
+
+## Local Development
 
 ```bash
-curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer $AI_STATS_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "gpt-5-nano-2025-08-07",
-    "messages": [{"role":"user","content":"Hello from curl."}]
-  }'
+pnpm install
+pnpm --filter @ai-stats/web dev
+pnpm --filter @ai-stats/gateway-api dev
+pnpm --filter @ai-stats/docs dev
+```
+
+Common checks:
+
+```bash
+pnpm lint
+pnpm typecheck
+pnpm validate:data
+pnpm validate:pricing
+pnpm validate:gateway
+pnpm docs:build
 ```
 
 ## Resources
 
-- API and developer docs: `https://docs.ai-stats.phaseo.app`
-- Contribution guide: `./CONTRIBUTING.md`
-- Code of Conduct: `./CODE_OF_CONDUCT.md`
-- Security policy: `./SECURITY.md`
-- [Good First Issues](https://github.com/AI-Stats/AI-Stats/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+- Website: https://phaseo.app
+- Docs: https://docs.phaseo.app/v1
+- API reference: https://docs.phaseo.app/v1/api-reference/introduction
+- Issues: https://github.com/phaseoteam/Phaseo/issues
+- Good first issues: https://github.com/phaseoteam/Phaseo/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22
+- Discord: https://discord.gg/aQyywCvgZ5
+
+## Package Migration Note
+
+The product is now Phaseo, but package names are being migrated separately. Until the Phaseo package names are reserved and published, install commands may still use `@ai-stats/*`, `ai-stats-*`, and related legacy package identifiers. Existing API keys and current package names are expected to keep working during the migration.
 
 ## Contributing
 
-We actively welcome contributions across web, API, docs, data quality, SDKs, and tooling.
-
-Every contribution is reviewed before merge, and we encourage both first-time and experienced contributors to get involved.
-
-Please review `./CONTRIBUTING.md` and `./CODE_OF_CONDUCT.md` before opening a PR.
+Contributions are welcome across the gateway, web app, docs, SDKs, examples, and catalog data. Read `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md` before opening a PR.
 
 ## Security
 
-Please report vulnerabilities privately via GitHub Security Advisories (preferred) or `security@phaseo.app`.
-
-## Roadmap
-
-- **Multimodal coverage (ASAP):** ship unified image, audio, video, and music generation support with consistent request/response behavior.
-- **Provider expansion:** continue growing provider coverage and compatibility depth while improving failover quality.
-- **Routing intelligence:** improve latency/throughput/cost-aware routing controls and observability for production workloads.
-- **SDK and docs parity:** keep SDKs and documentation tightly aligned with gateway capabilities and release cadence.
-- **Developer workflow:** keep making API onboarding, playground testing, and migration from other platforms simpler.
-- **Community-built roadmap:** prioritize features with community input and contributor PRs.
+Report vulnerabilities privately through GitHub Security Advisories or `security@phaseo.app`.
 
 ## License
 
 - Core apps (`apps/web`, `apps/api`, `apps/docs`) are AGPL-3.0.
 - SDKs under `packages/sdk/*` are MIT.
-- Full terms: `./LICENSE`.
+- Full terms: `LICENSE`.
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=AI-Stats/AI-Stats&type=Date)](https://star-history.com/#AI-Stats/AI-Stats&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=phaseoteam/Phaseo&type=Date)](https://star-history.com/#phaseoteam/Phaseo&Date)

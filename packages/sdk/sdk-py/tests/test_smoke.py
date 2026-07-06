@@ -5,14 +5,14 @@ from pathlib import Path
 import httpx
 import pytest
 
-from ai_stats import AIStats
+from phaseo import Phaseo
 
 
 _MANIFEST_PATH = Path(__file__).resolve().parents[2] / "smoke-manifest.json"
 _MANIFEST = json.loads(_MANIFEST_PATH.read_text())
 
-API_KEY_ENV = _MANIFEST.get("apiKeyEnv", "AI_STATS_API_KEY")
-BASE_URL_ENV = _MANIFEST.get("baseUrlEnv", "AI_STATS_BASE_URL")
+API_KEY_ENV = _MANIFEST.get("apiKeyEnv", "PHASEO_API_KEY")
+BASE_URL_ENV = _MANIFEST.get("baseUrlEnv", "PHASEO_BASE_URL")
 API_KEY = os.getenv(API_KEY_ENV)
 BASE_URL = (os.getenv(BASE_URL_ENV) or _MANIFEST["defaultBaseUrl"]).rstrip("/")
 
@@ -20,7 +20,7 @@ pytestmark = pytest.mark.skipif(not API_KEY, reason=f"Set {API_KEY_ENV} to run s
 
 
 def test_smoke_suite():
-    client = AIStats(api_key=API_KEY, base_url=BASE_URL)
+    client = Phaseo(api_key=API_KEY, base_url=BASE_URL)
 
     health = client.get_health()
     if isinstance(health, dict):

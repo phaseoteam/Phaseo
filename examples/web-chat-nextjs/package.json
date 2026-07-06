@@ -2,7 +2,7 @@
   "name": "aistats-web-chat-example",
   "version": "1.0.0",
   "private": true,
-  "description": "API-key based web chat app example for AI Stats Gateway",
+  "description": "API-key based web chat app example for Phaseo Gateway",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

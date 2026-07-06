@@ -1,6 +1,6 @@
 ---
 title: "Anthropic SDK"
-description: "Use Anthropic-compatible clients with AI Stats."
+description: "Use Anthropic-compatible clients with Phaseo."
 ---
 
 Use the Anthropic-compatible API when your app, agent, or coding tool expects Claude-style `/v1/messages` requests.
@@ -15,7 +15,7 @@ npm install @anthropic-ai/sdk
 import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
-	apiKey: process.env.AI_STATS_API_KEY,
+	apiKey: process.env.PHASEO_API_KEY,
 	baseURL: "https://api.phaseo.app",
 });
 
@@ -39,7 +39,7 @@ import os
 from anthropic import Anthropic
 
 client = Anthropic(
-    api_key=os.environ["AI_STATS_API_KEY"],
+    api_key=os.environ["PHASEO_API_KEY"],
     base_url="https://api.phaseo.app",
 )
 
@@ -56,7 +56,7 @@ print(message.content)
 
 - Use the root host `https://api.phaseo.app`; Anthropic clients append `/v1/messages`.
 - Use [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx) for endpoint details.
-- Native Anthropic tool shapes can work where AI Stats supports them, but cross-provider server tools should use AI Stats tool names.
+- Native Anthropic tool shapes can work where Phaseo supports them, but cross-provider server tools should use Phaseo tool names.
 - If a workflow depends on streamed tool loops, test it before production rollout because Anthropic-compatible clients are stricter about tool event ordering.
 
 ## Related

@@ -11,7 +11,7 @@ export function SignUp({ returnUrl }: { returnUrl?: string }) {
 	return (
 		<div className={`flex flex-col transition-[gap] duration-500 ease-out ${emailFlowActive ? "gap-3" : "gap-6"}`}>
 			<div className="flex flex-col items-center gap-2 text-center">
-				<h1 className="text-2xl font-bold">Welcome to AI Stats</h1>
+				<h1 className="text-2xl font-bold">Welcome to Phaseo</h1>
 			</div>
 
 			<div

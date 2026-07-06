@@ -1,13 +1,13 @@
 ---
 title: "TypeScript SDK Overview"
-description: "Official TypeScript client for the AI Stats Gateway API"
+description: "Official TypeScript client for the Phaseo Gateway API"
 ---
 
 <Note type="warning">
   **SDKs are in very early alpha**: We're working as hard as we can to get them into a stable state. Please bear with us as we iterate rapidly.
 </Note>
 
-The AI Stats TypeScript SDK provides a type-safe, convenient way to interact with the AI Stats Gateway API. Built on top of the OpenAPI specification, it offers full TypeScript support with generated types and a simple client interface.
+The Phaseo TypeScript SDK provides a type-safe, convenient way to interact with the Phaseo Gateway API. Built on top of the OpenAPI specification, it offers full TypeScript support with generated types and a simple client interface.
 
 ## Features
 
@@ -19,9 +19,9 @@ The AI Stats TypeScript SDK provides a type-safe, convenient way to interact wit
 ## Quick Example
 
 ```typescript
-import AIStats from "@ai-stats/sdk";
+import Phaseo from "@phaseo/sdk";
 
-const client = new AIStats({ apiKey: process.env.AI_STATS_API_KEY! });
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateText({
 	model: "openai/gpt-4o-mini",
@@ -33,7 +33,7 @@ console.log(response.choices[0].message.content);
 
 ## What's Included
 
--   `AIStats` client class for all API interactions
+-   `Phaseo` client class for all API interactions
 -   Resource-style helpers such as `client.models`, `client.batches`, `client.videos`, and `client.asyncJobs`
 -   Discovery and pricing helpers such as `client.getModels()`, `client.listProviders()`, `client.getCredits()`, `client.getActivity()`, `client.getAnalytics()`, `client.listEndpoints()`, `client.listOrganisations()`, `client.listPricingModels()`, `client.calculatePricing()`, `client.listApiKeys()`, `client.createApiKey()`, `client.getApiKey(id)`, `client.updateApiKey(id, ...)`, `client.deleteApiKey(id)`, `client.listWorkspaces()`, `client.getWorkspace(id)`, `client.createWorkspace(...)`, `client.updateWorkspace(id, ...)`, `client.deleteWorkspace(id)`, and `client.getCurrentApiKey()`
 -   Async-job websocket URL helpers for batch and video lifecycle streams

@@ -8,7 +8,7 @@ import { fetchSettingsAuthorizedAppsInitialData } from "@/lib/fetchers/internal/
 export const metadata = {
 	title: "OAuth Integrations - Settings",
 	description:
-		"Manage third-party applications you have authorized to access your AI Stats account, review granted scopes, and revoke access when it is no longer needed.",
+		"Manage third-party applications you have authorized to access your Phaseo account, review granted scopes, and revoke access when it is no longer needed.",
 };
 
 export default function AuthorizedAppsPage() {
@@ -21,7 +21,7 @@ export default function AuthorizedAppsPage() {
 						ALPHA
 					</span>
 				}
-				description="Manage third-party applications that have access to your AI Stats account. You can revoke access at any time."
+				description="Manage third-party applications that have access to your Phaseo account. You can revoke access at any time."
 			/>
 			<Suspense fallback={<SettingsSectionFallback />}>
 				<AuthorizedAppsContent />

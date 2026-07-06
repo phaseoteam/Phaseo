@@ -1,5 +1,5 @@
 export const ALL_PARAMETERS_DOCS_HREF =
-	"https://docs.ai-stats.phaseo.app/v1/api-reference/parameters";
+	"https://docs.phaseo.app/v1/api-reference/parameters";
 
 export type ParameterReference = {
 	type: string;

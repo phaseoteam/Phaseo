@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * Supported endpoint types across all AI Stats API endpoints
+ * Supported endpoint types across all Phaseo API endpoints
  */
 export const EndpointTypeSchema = z.enum([
   "chat.completions",

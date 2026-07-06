@@ -1,11 +1,11 @@
 {
-  "name": "@ai-stats/java-sdk",
+  "name": "@phaseo/java-sdk",
   "version": "2.0.4",
   "private": true,
-  "description": "AI Stats Java SDK (preview) - generated client with models wrapper",
+  "description": "Phaseo Java SDK (preview) - generated client with models wrapper",
   "license": "MIT",
   "scripts": {
-    "postinstall": "node ../scripts/postinstall-viewer-prompt.cjs @ai-stats/java-sdk",
+    "postinstall": "node ../scripts/postinstall-viewer-prompt.cjs @phaseo/java-sdk",
     "build": "mvn -f pom.xml -DskipTests package",
     "test": "mvn -f pom.xml test",
     "publish:prepare": "mvn -f pom.xml -DskipTests verify",

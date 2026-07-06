@@ -1,6 +1,6 @@
 ---
 title: "Roll out presets and debug routing"
-description: "Use presets to standardize prompt and routing defaults, then inspect request details to understand why AI Stats routed a request the way it did."
+description: "Use presets to standardize prompt and routing defaults, then inspect request details to understand why Phaseo routed a request the way it did."
 ---
 
 Use this recipe when you want one reusable preset for multiple services instead of copying the same prompt, model, and routing defaults everywhere.
@@ -40,9 +40,9 @@ curl https://api.phaseo.app/v1/responses \
 ```
 
 ```typescript TypeScript SDK
-import AIStats from "@ai-stats/sdk";
+import Phaseo from "@phaseo/sdk";
 
-const client = new AIStats({ apiKey: process.env.AI_STATS_API_KEY! });
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
   model: "anthropic/claude-sonnet-4-5",
@@ -54,9 +54,9 @@ console.log(response.output_text);
 ```
 
 ```python Python SDK
-from ai_stats import AIStats
+from phaseo import Phaseo
 
-client = AIStats(api_key="YOUR_API_KEY")
+client = Phaseo(api_key="YOUR_API_KEY")
 
 response = client.generate_response(
     {

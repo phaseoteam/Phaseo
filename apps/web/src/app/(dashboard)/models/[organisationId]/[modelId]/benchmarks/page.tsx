@@ -28,7 +28,7 @@ export async function generateMetadata(props: {
 			modelDescription,
 			suffix:
 				"Explore detailed benchmark scores, category breakdowns, and historical result updates across industry-standard evaluations.",
-			fallback: `Explore detailed benchmark scores for ${modelName} on AI Stats and compare performance across industry-standard evaluations, category breakdowns, and historical result updates.`,
+			fallback: `Explore detailed benchmark scores for ${modelName} on Phaseo and compare performance across industry-standard evaluations, category breakdowns, and historical result updates.`,
 		}),
 		path,
 		keywords: [
@@ -37,7 +37,7 @@ export async function generateMetadata(props: {
 			organisationName ? `${organisationName} AI` : null,
 			"AI model performance",
 			"AI model comparisons",
-			"AI Stats",
+			"Phaseo",
 		].filter(Boolean) as string[],
 		imagePath,
 	});

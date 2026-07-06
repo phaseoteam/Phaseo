@@ -114,13 +114,18 @@ function getRoutedModelId(row: RequestRow): string | null {
 	return normalizeNonEmpty(row.routed_model_id) ?? normalizeNonEmpty(row.model_id);
 }
 
-function isAiStatsChatApp(row: RequestRow): boolean {
+const PHASEO_CHAT_APP_KEYS = new Set([
+	"phaseo-chat@phaseo.app",
+	"https://phaseo.app/chat",
+	"phaseo-chat@phaseo.app",
+	"phaseo-chat@phaseo.app",
+	"https://phaseo.app/chat",
+]);
+
+function isPhaseoChatApp(row: RequestRow): boolean {
 	const key = normalizeNonEmpty(row.app_key)?.toLowerCase();
 	if (!key) return false;
-	return (
-		key === "ai-stats-chat@ai-stats.phaseo.app" ||
-		key === "https://ai-stats.phaseo.app/chat"
-	);
+	return PHASEO_CHAT_APP_KEYS.has(key);
 }
 
 function stopRowClick(event: React.MouseEvent<HTMLElement>) {
@@ -817,7 +822,7 @@ export default function UnifiedRequestsTable({
 											title={appLabel}
 											href={appHref}
 											visual={
-												isAiStatsChatApp(row) ? (
+												isPhaseoChatApp(row) ? (
 													<Logo id="ai-stats" width={16} height={16} />
 												) : (
 													<Avatar className="h-4 w-4 rounded-[4px] border border-border/60">
@@ -845,7 +850,7 @@ export default function UnifiedRequestsTable({
 												},
 												{
 													label: "Type",
-													value: isAiStatsChatApp(row) ? "AI Stats Chat" : "Workspace app",
+													value: isPhaseoChatApp(row) ? "Phaseo Chat" : "Workspace app",
 												},
 											]}
 										>
@@ -858,7 +863,7 @@ export default function UnifiedRequestsTable({
 													variant="outline"
 													className="hover:bg-muted cursor-pointer inline-flex items-center gap-2"
 												>
-													{isAiStatsChatApp(row) ? (
+													{isPhaseoChatApp(row) ? (
 														<Logo
 															id="ai-stats"
 															width={14}
@@ -1424,7 +1429,7 @@ export default function UnifiedRequestsTable({
 														title={appLabel ?? "Unknown app"}
 														href={appHref}
 														visual={
-															isAiStatsChatApp(row) ? (
+															isPhaseoChatApp(row) ? (
 																<Logo id="ai-stats" width={16} height={16} />
 															) : (
 																<Avatar className="h-4 w-4 rounded-[4px] border border-border/60">
@@ -1452,7 +1457,7 @@ export default function UnifiedRequestsTable({
 															},
 															{
 																label: "Type",
-																value: isAiStatsChatApp(row) ? "AI Stats Chat" : "Workspace app",
+																value: isPhaseoChatApp(row) ? "Phaseo Chat" : "Workspace app",
 															},
 														]}
 													>
@@ -1465,7 +1470,7 @@ export default function UnifiedRequestsTable({
 																variant="outline"
 																className="hover:bg-muted cursor-pointer inline-flex items-center gap-2"
 															>
-																{isAiStatsChatApp(row) ? (
+																{isPhaseoChatApp(row) ? (
 																	<Logo
 																		id="ai-stats"
 																		width={14}

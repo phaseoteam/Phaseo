@@ -32,13 +32,13 @@ export async function generateMetadata(props: {
 		return buildMetadata({
 			title: "AI Subscription Plan Features",
 			description:
-				"Compare features included in AI subscription plans on AI Stats, including request limits, tool availability, support tiers, and other plan-level capabilities.",
+				"Compare features included in AI subscription plans on Phaseo, including request limits, tool availability, support tiers, and other plan-level capabilities.",
 			path,
 			keywords: [
 				"AI subscription features",
 				"AI plan limits",
 				"AI tools access",
-				"AI Stats",
+				"Phaseo",
 			],
 			imagePath,
 		});
@@ -61,7 +61,7 @@ export async function generateMetadata(props: {
 			`${plan.name} limits`,
 			providerName,
 			"AI subscription features",
-			"AI Stats",
+			"Phaseo",
 		],
 		imagePath,
 	});

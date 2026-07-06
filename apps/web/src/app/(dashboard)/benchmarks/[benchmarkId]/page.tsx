@@ -43,14 +43,14 @@ export async function generateMetadata(props: {
 		return buildMetadata({
 			title: "AI Benchmark Leaderboard",
 			description:
-				"Explore AI benchmark leaderboards on AI Stats to compare model performance across tasks, datasets, methodology details, and historical score movement.",
+				"Explore AI benchmark leaderboards on Phaseo to compare model performance across tasks, datasets, methodology details, and historical score movement.",
 			path,
 			keywords: [
 				"AI benchmark",
 				"AI benchmark leaderboard",
 				"model evaluation",
 				"AI model performance",
-				"AI Stats",
+				"Phaseo",
 			],
 			imagePath,
 		});
@@ -92,7 +92,7 @@ export async function generateMetadata(props: {
 	const modelCount = benchmark.results?.length ?? 0;
 
 	const descriptionParts: (string | undefined)[] = [
-		`${cleanName} benchmark leaderboard on AI Stats.`,
+		`${cleanName} benchmark leaderboard on Phaseo.`,
 		modelCount
 			? `See ${modelCount} scored models, track historical performance, and inspect the underlying methodology.`
 			: undefined,
@@ -110,7 +110,7 @@ export async function generateMetadata(props: {
 			"AI benchmark",
 			"model evaluation",
 			"AI model performance",
-			"AI Stats",
+			"Phaseo",
 		],
 		imagePath,
 	});
@@ -161,7 +161,7 @@ export default async function Page({
 			"@context": "https://schema.org",
 			"@type": "Dataset",
 			"name": benchmarkName,
-			"description": `${benchmarkName} is an AI benchmark leaderboard tracked on AI Stats. Compare model performance, view historical results, and understand evaluation methodology.`,
+			"description": `${benchmarkName} is an AI benchmark leaderboard tracked on Phaseo. Compare model performance, view historical results, and understand evaluation methodology.`,
 			"keywords": `${benchmarkName}, AI benchmark, model evaluation, leaderboard, AI performance`,
 		};
 
@@ -175,7 +175,7 @@ export default async function Page({
 					"name": `What is ${benchmarkName}?`,
 					"acceptedAnswer": {
 						"@type": "Answer",
-						"text": `${benchmarkName} is an AI benchmark used to evaluate model performance. On AI Stats, you can view ${modelCount} scored models, compare results, track historical performance trends, and understand the evaluation methodology.`,
+						"text": `${benchmarkName} is an AI benchmark used to evaluate model performance. On Phaseo, you can view ${modelCount} scored models, compare results, track historical performance trends, and understand the evaluation methodology.`,
 					},
 				},
 				{
@@ -184,8 +184,8 @@ export default async function Page({
 					"acceptedAnswer": {
 						"@type": "Answer",
 						"text": topModel
-							? `Currently, ${topModel} leads the ${benchmarkName} leaderboard with a score of ${bestScore}. Check AI Stats for the full leaderboard, historical performance, and detailed model comparisons.`
-							: `View the ${benchmarkName} leaderboard on AI Stats to see which models perform best. We track ${modelCount} models with detailed scores and historical data.`,
+							? `Currently, ${topModel} leads the ${benchmarkName} leaderboard with a score of ${bestScore}. Check Phaseo for the full leaderboard, historical performance, and detailed model comparisons.`
+							: `View the ${benchmarkName} leaderboard on Phaseo to see which models perform best. We track ${modelCount} models with detailed scores and historical data.`,
 					},
 				},
 				{
@@ -193,7 +193,7 @@ export default async function Page({
 					"name": `How is ${benchmarkName} scored?`,
 					"acceptedAnswer": {
 						"@type": "Answer",
-						"text": `${benchmarkName} uses ${isLowerBetter ? "lower-is-better" : "higher-is-better"} scoring. View the methodology section on AI Stats to understand how models are evaluated, what tasks are tested, and how scores are calculated.`,
+						"text": `${benchmarkName} uses ${isLowerBetter ? "lower-is-better" : "higher-is-better"} scoring. View the methodology section on Phaseo to understand how models are evaluated, what tasks are tested, and how scores are calculated.`,
 					},
 				},
 				{
@@ -201,7 +201,7 @@ export default async function Page({
 					"name": `How often is ${benchmarkName} updated?`,
 					"acceptedAnswer": {
 						"@type": "Answer",
-						"text": `${benchmarkName} results on AI Stats are updated as new model evaluations are published. Check the timeline view to see when models were added and how performance has evolved over time.`,
+						"text": `${benchmarkName} results on Phaseo are updated as new model evaluations are published. Check the timeline view to see when models were added and how performance has evolved over time.`,
 					},
 				},
 				{
@@ -209,7 +209,7 @@ export default async function Page({
 					"name": `Can I compare models on ${benchmarkName}?`,
 					"acceptedAnswer": {
 						"@type": "Answer",
-						"text": `Yes! AI Stats lets you compare model performance on ${benchmarkName}. View side-by-side scores, filter by organization or model family, and analyze performance trends across ${modelCount} evaluated models.`,
+						"text": `Yes! Phaseo lets you compare model performance on ${benchmarkName}. View side-by-side scores, filter by organization or model family, and analyze performance trends across ${modelCount} evaluated models.`,
 					},
 				},
 			],

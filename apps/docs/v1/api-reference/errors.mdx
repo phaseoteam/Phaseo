@@ -1,10 +1,10 @@
 ---
 title: "Errors and Debugging"
-description: "Understand AI Stats error responses and fix common request, provider, and routing issues faster."
+description: "Understand Phaseo error responses and fix common request, provider, and routing issues faster."
 icon: "bug"
 ---
 
-Use this page to understand what an AI Stats error means and what to do next.
+Use this page to understand what A Phaseo error means and what to do next.
 
 Every error response follows the same JSON format, so your app can handle failures consistently across models and providers.
 
@@ -55,7 +55,7 @@ Every error response follows the same JSON format, so your app can handle failur
 - `status_code`: mirrors the HTTP status code.
 - `error`: a machine-readable error code, such as `validation_error`.
 - `error_type`: a high-level class, usually `user` or `system`.
-- `error_origin`: whether the problem was mainly caused by the caller, AI Stats, or an upstream provider.
+- `error_origin`: whether the problem was mainly caused by the caller, Phaseo, or an upstream provider.
 - `description`: a plain-language explanation of what happened.
 - `details` (optional): structured validation details when the error is a request-validation problem.
 
@@ -76,7 +76,7 @@ Some errors include more detail to help you fix the issue faster:
 | --- | --- | --- |
 | `400-499` | Request, auth, or permission problem | Fix the request or credentials before retrying. |
 | `429` | Provider or route-level throttling | Retry with backoff and respect `Retry-After`. |
-| `500-599` | AI Stats or upstream provider failure | Retry with jittered backoff and log the request ID. |
+| `500-599` | Phaseo or upstream provider failure | Retry with jittered backoff and log the request ID. |
 
 ## Common error codes
 
@@ -88,11 +88,11 @@ Some errors include more detail to help you fix the issue faster:
 | `rate_limit_error` | `429` | Too many requests. Retry after the specified delay. |
 | `validation_error` | `400` | Invalid parameters or request body. |
 | `provider_error` | `502` | The upstream model provider failed to respond correctly. |
-| `server_error` | `500` | An unexpected issue happened inside AI Stats. |
+| `server_error` | `500` | An unexpected issue happened inside Phaseo. |
 
 ## When a provider fails
 
-If AI Stats reached a provider but the request still failed, you may see:
+If Phaseo reached a provider but the request still failed, you may see:
 
 - `provider_failure_diagnostics.category`
 - `provider_failure_diagnostics.hint`
@@ -112,7 +112,7 @@ These fields are meant to help you fix the problem without turning on full debug
 
 ## When a model or endpoint is not available
 
-For `unsupported_model_or_endpoint` responses, AI Stats may include:
+For `unsupported_model_or_endpoint` responses, Phaseo may include:
 
 - `provider_candidate_diagnostics`
 - `provider_enablement`
@@ -238,7 +238,7 @@ if (error.error === "rate_limit_error") {
 
 ## Troubleshooting tips
 
-- Check the [Gateway status page](https://ai-stats.phaseo.app/status) for ongoing incidents.
+- Check the [Gateway status page](https://phaseo.app/status) for ongoing incidents.
 - Review your request payload against the endpoint docs.
 - Share `generation_id` when contacting support.
 

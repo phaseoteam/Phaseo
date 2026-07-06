@@ -1,0 +1,4 @@
+interface:
+  display_name: "Phaseo Release Spotlight"
+  short_description: "Write Phaseo monthly release spotlights"
+  default_prompt: "Use $phaseo-release-spotlight to draft a monthly Phaseo release spotlight from merged work and changelogs."

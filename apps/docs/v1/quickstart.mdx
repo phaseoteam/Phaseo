@@ -1,28 +1,28 @@
 ---
-title: "Quickstart (5 minutes)"
-description: "From signup to first successful request in under 5 minutes, starting on a free model."
+title: "Quickstart"
+description: "Create an API key and make your first Phaseo request with a free model."
 ---
 
-Use this guide to make your first successful AI Stats request in a few minutes.
+Use this tutorial to make one successful Phaseo request and confirm where the response text appears.
 
 You will:
 - create an API key
 - send one free text request
-- confirm where to read the model output
-- know what to check if the request fails
+- read the assistant output
+- know what to check first if the request fails
 
 ---
 
 ## 1. Create an API key
 
-1. Open the [AI Stats Dashboard](https://ai-stats.phaseo.app/gateway/keys).
+1. Open the [Phaseo Dashboard](https://phaseo.app/gateway/keys).
 2. Create a key under **Gateway -> Keys**.
 3. Copy it once and store it securely.
 
 Use this format:
 
 ```http
-Authorization: Bearer aistats_v1_sk_<kid>_<secret>
+Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
 ```
 
 <Danger>
@@ -31,15 +31,15 @@ Treat your API key like a password. Do not expose it in client-side code.
 
 ---
 
-## 2. Send your first free request
+## 2. Send a free text request
 
-Use `POST /v1/responses` for the fastest first success.
+Use `POST /v1/responses` for the first request. It is the recommended endpoint for new text-generation work.
 
 <Note>
 Requests to `:free` models do not require deposited credits. Paid models still require available wallet balance.
 </Note>
 
-### Example request
+### Request
 
 <CodeGroup>
 ```bash cURL
@@ -77,9 +77,9 @@ console.log(assistantText);
 ```
 
 ```typescript TypeScript SDK
-import AIStats from "@ai-stats/sdk";
+import Phaseo from "@phaseo/sdk";
 
-const client = new AIStats({ apiKey: process.env.AI_STATS_API_KEY! });
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
   model: "google/gemma-3-27b:free",
@@ -96,9 +96,9 @@ console.log(assistantText);
 ```
 
 ```python Python SDK
-from ai_stats import AIStats
+from phaseo import Phaseo
 
-client = AIStats(api_key="YOUR_API_KEY")
+client = Phaseo(api_key="YOUR_API_KEY")
 
 response = client.generate_response(
     {
@@ -129,11 +129,11 @@ import (
   "context"
   "fmt"
 
-  aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
 )
 
 func main() {
-  client := aistats.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
+  client := phaseo.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
   input := map[string]interface{}{
     "role": "user",
     "content": []map[string]interface{}{
@@ -144,7 +144,7 @@ func main() {
     },
   }
 
-  response, err := client.GenerateResponse(context.Background(), aistats.ResponsesRequest{
+  response, err := client.GenerateResponse(context.Background(), phaseo.ResponsesRequest{
     Model: "google/gemma-3-27b:free",
     Input: &input,
   })
@@ -157,10 +157,10 @@ func main() {
 ```
 
 ```csharp C# SDK
-using AiStatsSdk;
+using PhaseoSdk;
 using System.Collections.Generic;
 
-var client = new AIStats("YOUR_API_KEY");
+var client = new Phaseo("YOUR_API_KEY");
 
 var response = await client.GenerateResponse(new Dictionary<string, object>
 {
@@ -176,9 +176,9 @@ Console.WriteLine(response);
 <?php
 require 'vendor/autoload.php';
 
-use AIStats\Sdk\AIStats;
+use Phaseo\Sdk\Phaseo;
 
-$client = new AIStats(getenv('AI_STATS_API_KEY') ?: 'YOUR_API_KEY');
+$client = new Phaseo(getenv('PHASEO_API_KEY') ?: 'YOUR_API_KEY');
 
 $response = $client->generateResponse([
     'model' => 'google/gemma-3-27b:free',
@@ -190,9 +190,9 @@ print_r($response);
 ```
 
 ```ruby Ruby SDK
-require 'ai_stats_sdk'
+require 'phaseo_sdk'
 
-client = AIStatsSdk::AIStats.new(api_key: ENV.fetch('AI_STATS_API_KEY', 'YOUR_API_KEY'))
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY', 'YOUR_API_KEY'))
 
 response = client.generate_response(
   model: 'google/gemma-3-27b:free',
@@ -204,9 +204,9 @@ puts response
 ```
 
 ```java Java SDK
-import ai.stats.sdk.AIStats;
+import app.phaseo.sdk.Phaseo;
 
-AIStats client = new AIStats(System.getenv("AI_STATS_API_KEY"));
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
 
 String body = """
 {
@@ -228,11 +228,11 @@ System.out.println(String.valueOf(response));
 ```
 
 ```typescript Vercel AI SDK
-import { aiStats } from "@ai-stats/ai-sdk-provider";
+import { phaseo } from "@phaseo/ai-sdk-provider";
 import { generateText } from "ai";
 
 const result = await generateText({
-  model: aiStats("google/gemma-3-27b:free"),
+  model: phaseo("google/gemma-3-27b:free"),
   prompt: "Reply with: quickstart works",
 });
 
@@ -240,7 +240,7 @@ console.log(result.text);
 ```
 </CodeGroup>
 
-### Example response
+### Response
 
 ```json
 {
@@ -269,26 +269,26 @@ console.log(result.text);
 }
 ```
 
-If you use the Responses API directly, read the assistant reply from `output[].content[]` where `type` is `output_text`.
+For direct Responses API calls, read the assistant reply from `output[].content[]` where `type` is `output_text`.
 
 If you use the Vercel AI SDK, read the reply from `result.text`.
 
 ---
 
-## 3. If it does not work, check these first
+## 3. Troubleshoot the first request
 
-- `401`: the API key or auth header is wrong.
-- `400`: the request body is invalid or includes an unsupported field.
-- `402`: paid model without sufficient balance. Use a `:free` model or top up credits.
-- `429/5xx`: retry with backoff.
+- `401`: check the API key and `Authorization` header.
+- `400`: check the request body and model ID.
+- `402`: switch to a `:free` model or add credits before using a paid model.
+- `429` or `5xx`: retry with exponential backoff.
 
 Use the [Error Handling reference](./api-reference/errors) to debug quickly.
 
 ---
 
-## 4. Video requests work differently
+## 4. If you are building video
 
-Video generation is async by design, so you create a job first and then check for the result.
+Video generation is async. Create a job first, then poll or subscribe for the result.
 
 1. Create a job with `POST /v1/videos`.
 2. Poll status with `GET /v1/videos/{video_id}` until completed.
@@ -311,7 +311,7 @@ curl https://api.phaseo.app/v1/videos/VIDEO_ID \
 
 ---
 
-## 5. Next steps
+## 5. Keep building
 
 <Columns cols={2}>
 	<Card title="Integrating with the Gateway" icon="plug" href="./developers/integrating-with-the-gateway">
@@ -323,7 +323,7 @@ curl https://api.phaseo.app/v1/videos/VIDEO_ID \
 	<Card title="Examples" icon="code" href="./guides/examples">
 		More complete request samples for common workflows.
 	</Card>
-	<Card title="Support" icon="message-circle" href="./community/contact-and-support">
+	<Card title="Support" icon="message-circle" href="https://phaseo.app/help">
 		Get help with debugging, routing, and model behavior.
 	</Card>
 </Columns>

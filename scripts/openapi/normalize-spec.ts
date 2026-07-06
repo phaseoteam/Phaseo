@@ -45,8 +45,8 @@ function ensureInfoContact() {
 		insertAt,
 		0,
 		`${childPad}contact:`,
-		`${nestedPad}name: AI Stats`,
-		`${nestedPad}url: https://docs.ai-stats.phaseo.app`,
+		`${nestedPad}name: Phaseo`,
+		`${nestedPad}url: https://phaseo.app`,
 		`${nestedPad}email: danielbutler500@gmail.com`,
 	);
 }
@@ -86,7 +86,7 @@ function ensureGlobalTag() {
 				0,
 				`${" ".repeat(tagItemIndent)}-`,
 				`${" ".repeat(tagNameIndent)}name: Gateway`,
-				`${" ".repeat(tagNameIndent)}description: Core AI Stats Gateway operations.`,
+				`${" ".repeat(tagNameIndent)}description: Core Phaseo Gateway operations.`,
 			);
 		}
 		return;
@@ -109,7 +109,7 @@ function ensureGlobalTag() {
 		"tags:",
 		`${" ".repeat(tagItemIndent)}-`,
 		`${" ".repeat(tagNameIndent)}name: Gateway`,
-		`${" ".repeat(tagNameIndent)}description: Core AI Stats Gateway operations.`,
+		`${" ".repeat(tagNameIndent)}description: Core Phaseo Gateway operations.`,
 	);
 }
 

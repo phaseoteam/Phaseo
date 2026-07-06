@@ -583,7 +583,7 @@ export default function Search({ className, initialData = null }: Props) {
 							<InputGroupInput
 								key={open ? "global-search-open" : "global-search-closed"}
 								onChange={(event) => handleQueryChange(event.currentTarget.value)}
-								placeholder="Search AI Stats..."
+								placeholder="Search Phaseo..."
 								aria-label="Search catalogue"
 								autoFocus
 								className="text-sm"

@@ -21,13 +21,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - GETTING_STARTED guide with step-by-step instructions
   - CROSS_LANGUAGE guide showing patterns for all languages
 - Built on `@ai-stats/devtools-core` for data capture
-- Compatible with `@ai-stats/devtools-viewer` for visualization
+- Compatible with `@phaseo/devtools-viewer` for visualization
 
 ### Features
 
 - **Simple Integration**: Enable with one line: `devtools: createAIStatsDevtools()`
 - **Flexible Configuration**: Customize directory, flush interval, headers, assets
-- **Environment Control**: Use `AI_STATS_DEVTOOLS` and `AI_STATS_DEVTOOLS_DIR` env vars
+- **Environment Control**: Use `PHASEO_DEVTOOLS` and `PHASEO_DEVTOOLS_DIR` env vars
 - **Zero Performance Impact**: Async capture, < 5ms overhead per request
 - **Local Storage**: All data stays on your machine (privacy-first)
 - **Universal Viewer**: Use same viewer across all language implementations
@@ -47,10 +47,10 @@ None - this is a new package. The old pattern (`devtools: { enabled: true }`) st
 **Before:**
 
 ```typescript
-import { AIStats } from "@ai-stats/sdk";
+import { AIStats } from "@phaseo/sdk";
 
 const client = new AIStats({
-  apiKey: process.env.AI_STATS_API_KEY,
+  apiKey: process.env.PHASEO_API_KEY,
   devtools: {
     enabled: true,
     directory: ".ai-stats-devtools",
@@ -62,10 +62,10 @@ const client = new AIStats({
 **After:**
 
 ```typescript
-import { AIStats, createAIStatsDevtools } from "@ai-stats/sdk";
+import { AIStats, createAIStatsDevtools } from "@phaseo/sdk";
 
 const client = new AIStats({
-  apiKey: process.env.AI_STATS_API_KEY,
+  apiKey: process.env.PHASEO_API_KEY,
   devtools: createAIStatsDevtools({
     directory: ".ai-stats-devtools",
     flushIntervalMs: 1000,
@@ -76,11 +76,11 @@ const client = new AIStats({
 Or using the standalone package:
 
 ```typescript
-import { AIStats } from "@ai-stats/sdk";
+import { AIStats } from "@phaseo/sdk";
 import { createAIStatsDevtools } from "@ai-stats/devtools";
 
 const client = new AIStats({
-  apiKey: process.env.AI_STATS_API_KEY,
+  apiKey: process.env.PHASEO_API_KEY,
   devtools: createAIStatsDevtools(),
 });
 ```

@@ -559,7 +559,7 @@ async function handleNonStreamResponse(
 
     const headers = makeHeaders(timingHeader);
     if (ctx.responseCache?.status === "miss") {
-        headers.set("X-AI-Stats-Response-Cache", "miss");
+        headers.set("X-Phaseo-Response-Cache", "miss");
     }
     const responseStatus = ctx.endpoint === "video.generation" ? 202 : result.upstream.status;
     return ctx.timer.span("after_create_response", () => createResponse(responseBody, responseStatus, headers));

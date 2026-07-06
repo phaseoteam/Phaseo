@@ -68,7 +68,7 @@ describe("google audio.speech executor", () => {
 
 		const result = await execute(buildArgs({
 			model: "gemini-2.5-flash-preview-tts",
-			input: "Hello from AI Stats",
+			input: "Hello from Phaseo",
 			voice: "Kore",
 			instructions: "Use a calm and concise tone.",
 		}));
@@ -80,7 +80,7 @@ describe("google audio.speech executor", () => {
 		expect(capturedBody?.generationConfig?.responseModalities).toEqual(["AUDIO"]);
 		expect(capturedBody?.generationConfig?.speechConfig?.voiceConfig?.prebuiltVoiceConfig?.voiceName).toBe("Kore");
 		expect(capturedBody?.contents?.[0]?.parts?.[0]?.text).toContain("Use a calm and concise tone.");
-		expect(capturedBody?.contents?.[0]?.parts?.[0]?.text).toContain("Hello from AI Stats");
+		expect(capturedBody?.contents?.[0]?.parts?.[0]?.text).toContain("Hello from Phaseo");
 
 		expect(result.kind).toBe("completed");
 		expect((result as any).ir?.audio?.data).toBe("QUJDREVGRw==");

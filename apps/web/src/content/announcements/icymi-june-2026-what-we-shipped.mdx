@@ -1,0 +1,118 @@
+---
+title: "ICYMI: What We Shipped in June 2026"
+description: A plain-English recap of June improvements across model discovery, monitor pages, onboarding, gateway tooling, provider coverage, and catalog releases.
+publishedAt: 2026-06-30
+author: Phaseo Team
+category: data
+pinned: false
+coverImage: /blog-images/recap-june-2026.svg
+tags:
+  - ICYMI
+  - Monthly Recap
+  - Product
+  - Models
+draft: false
+---
+
+June was about keeping Phaseo useful while the model market moved quickly. The month had a lot of catalog work, but the bigger story was reliability: better discovery, clearer lifecycle signals, stronger monitor pages, and more provider coverage.
+
+This recap covers the work that shipped from **1 June 2026** through **30 June 2026**, based on the release history, commit history, and catalog data for the month.
+
+## What Shipped
+
+### Model discovery became more reliable
+
+June included a lot of work on model discovery, provider checks, and catalog imports. Discovery moved to scheduled Cloudflare jobs, recovery improved, issue sync was re-enabled, and stale model notices started being cleaned up during import.
+
+That made the catalog less dependent on manual checks and helped provider updates move through the system more consistently.
+
+This is not just internal housekeeping. If a provider adds a model, changes pricing, retires an alias, or changes availability, users need Phaseo to notice. June reduced the chance that those changes would sit unseen until someone manually checked them.
+
+### Model pages got clearer lifecycle information
+
+We added model page notices, relative-time cards for model lifecycle dates, cleaner date ordering, and fixes for model-detail scroll behaviour. We also improved quickstart model selection and condensed model quickstart flows.
+
+The goal was to make each model page easier to trust at a glance: what is available, what changed, what is retired, and what to use next.
+
+This matters because model pages are not static landing pages. They are living records. A model can move from rumoured to preview, from preview to active, from active to deprecated, or from one provider to several. June made those transitions easier to explain in the product.
+
+### Monitor and usage views improved
+
+The monitor history feed moved to Supabase, monitor cards were polished, and status dates and links became more visible. Settings observability was also upgraded, and the gateway gained more API routes and usage metrics.
+
+That gives teams a clearer way to understand current behaviour without digging through raw logs first.
+
+June also improved playground routing observability and preserved early error visibility in Axiom. Those changes help close the gap between "a request failed" and "we know why this request failed."
+
+### Onboarding and CLI foundations moved forward
+
+June added an interactive onboarding flow and the foundation for OAuth beta CLI work. We also fixed homepage quickstart responsiveness and continued tightening account and billing edge cases.
+
+These changes were about making the first run smoother and making future local developer flows easier to build.
+
+The OAuth CLI work is a good example of why this matters. A gateway is easier to adopt when developers can connect local tools, authenticate cleanly, and move from first test to repeatable workflow without copying scattered setup steps.
+
+### Provider coverage kept expanding
+
+Provider coverage changed quickly in June. The catalog added or refreshed coverage for Alibaba Cloud, Cloudflare Workers AI, DigitalOcean, Fireworks, Together, Bedrock, xAI, Moonshot, Z.AI, CrofAI, ByteDance, Venice, AtlasCloud, AkashML, GMICloud, and others.
+
+We also added pricing, routing, and benchmark follow-ups for several large releases, including Kimi K2.7 Code, GLM 5.2, Claude Fable 5, Claude Sonnet 5, and LongCat 2.0.
+
+This is where Phaseo needs to be useful as infrastructure, not just as a list. Users need to see which providers support a model, what each route costs, whether a model is active, and how the release fits into nearby alternatives.
+
+## Also Shipped
+
+- The changelog moved into a single timeline.
+- Model discovery issues moved to Cloudflare cron.
+- Subscription plan catalog data was refreshed.
+- The footer gained a monitor link.
+- Model watcher scheduling and recovery were fixed.
+- Model page notices were imported from catalog data.
+- The homepage beta quickstart became more responsive.
+- Coming-soon model pricing became visible where available.
+- Dependency updates landed across UI packages, Actions setup tools, and runtime libraries.
+
+## Model Highlights
+
+June had several headline model releases. Kimi K2.7 Code received catalog support, Hugging Face links, provider pricing, and generated SDK updates. GLM 5.2 gained provider availability, pricing, reasoning-effort support, routing fixes, and rollout preparation. Claude Fable 5 and Claude Mythos 5 moved through release entries, notices, pricing, provider rollout, and benchmark cleanup.
+
+The month closed with a dense 30 June release set: Claude Sonnet 5, Gemini Omni Flash Preview, Leanstral 1.5, and OCR 4. LongCat 2.0 also landed late in the month, with watcher support added before the release.
+
+Browse the latest release data here:
+
+- [Explore recent updates here](/updates)
+
+## Shipping Snapshot
+
+The local git history shows **163 commits** during June. The month centred on model discovery reliability, provider coverage, monitor and usage views, onboarding, gateway tooling, and a dense run of model launches.
+
+## Models Released In June 2026
+
+The catalog includes these models with June 2026 release dates:
+
+- 1 June: MiniMax M3 (`minimax/minimax-m3`)
+- 1 June: Nemotron 3 Ultra (`nvidia/nemotron-3-ultra-550b-a55b`)
+- 1 June: Qwen 3.7 Plus (`qwen/qwen3.7-plus`)
+- 3 June: Gemma 4 12B (`google/gemma-4-12b`)
+- 5 June: Nex N2 Mini (`nex-agi/nex-n2-mini`)
+- 5 June: Nex N2 Pro (`nex-agi/nex-n2-pro`)
+- 9 June: Claude Fable 5 (`anthropic/claude-fable-5`)
+- 9 June: Claude Mythos 5 (`anthropic/claude-mythos-5`)
+- 9 June: Gemini 3.5 Live Translate Preview (`google/gemini-3.5-live-translate-preview`)
+- 10 June: DiffusionGemma 26B A4B IT (`google/diffusiongemma-26b-a4b-it`)
+- 12 June: Kimi K2.7 Code (`moonshotai/kimi-k2.7-code`)
+- 14 June: Greg 2 Super (`crofai/greg-2-super`)
+- 14 June: Greg 2 Ultra (`crofai/greg-2-ultra`)
+- 15 June: Seedance 2.0 Mini (2026-06-15) (`bytedance/seedance-2.0-mini-260615`)
+- 16 June: GLM 5.2 (`z-ai/glm-5.2`)
+- 17 June: Grok Imagine Video 1.5 (`x-ai/grok-imagine-video-1.5`)
+- 23 June: Gemini 3.1 Flash Lite image (Nano Banana 2 Lite) (`google/gemini-3.1-flash-lite-image`)
+- 29 June: LongCat 2.0 (`meituan/longcat-2.0`)
+- 30 June: Claude Sonnet 5 (`anthropic/claude-sonnet-5`)
+- 30 June: Gemini Omni Flash Preview (`google/gemini-omni-flash-preview`)
+- 30 June: Leanstral 1.5 (`mistral/leanstral-1.5`)
+- 30 June: OCR 4 (`mistral/ocr-4`)
+
+## Next Up
+
+June leads directly into the Phaseo migration work: a clearer brand, a stronger blog surface, and a site structure that can support product updates, model release notes, guides, and data posts in one place.

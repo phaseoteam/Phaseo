@@ -1,13 +1,13 @@
-# AI Stats Ruby SDK
+# Phaseo Ruby SDK
 
-Official Ruby SDK for AI Stats Gateway.
+Official Ruby SDK for Phaseo Gateway.
 
-RubyGems package name: `ai_stats_sdk`
+RubyGems package name: `phaseo_sdk`
 
 ## Installation
 
 ```ruby
-gem "ai_stats_sdk"
+gem "phaseo_sdk"
 ```
 
 Then run:
@@ -19,11 +19,11 @@ bundle install
 ## Quick start
 
 ```ruby
-require "ai_stats_sdk"
+require "phaseo_sdk"
 
-client = AIStatsSdk::AIStats.new(
-  api_key: ENV.fetch("AI_STATS_API_KEY"),
-  base_path: ENV.fetch("AI_STATS_BASE_URL", "https://api.phaseo.app/v1")
+client = PhaseoSdk::Phaseo.new(
+  api_key: ENV.fetch("PHASEO_API_KEY"),
+  base_path: ENV.fetch("PHASEO_BASE_URL", "https://api.phaseo.app/v1")
 )
 
 response = client.create_response(
@@ -89,11 +89,11 @@ puts resource_socket_url
 
 ## Environment variables
 
-- `AI_STATS_API_KEY` (required unless passed in code)
-- `AI_STATS_BASE_URL` (optional, defaults to `https://api.phaseo.app/v1`)
+- `PHASEO_API_KEY` (required unless passed in code)
+- `PHASEO_BASE_URL` (optional, defaults to `https://api.phaseo.app/v1`)
 
 ## Regeneration and local checks
 
 - Regenerate generated client: `pnpm openapi:gen:ruby`
-- Build gem: `pnpm --filter @ai-stats/ruby-sdk run build`
-- Test: `pnpm --filter @ai-stats/ruby-sdk run test`
+- Build gem: `pnpm --filter @phaseo/ruby-sdk run build`
+- Test: `pnpm --filter @phaseo/ruby-sdk run test`

@@ -970,17 +970,17 @@ async function sendAsyncWebhookRequest(args: {
 }): Promise<AsyncWebhookRequestResult> {
 	const headers: Record<string, string> = {
 		"Content-Type": "application/json",
-		"User-Agent": "AI-Stats-Async-Webhook/1.0",
-		"x-ai-stats-event-id": args.eventId,
-		"x-ai-stats-event-type": args.eventType,
-		"x-ai-stats-delivery-key": args.deliveryKey,
-		"x-ai-stats-attempt": String(args.attemptNumber),
-		"x-ai-stats-max-attempts": String(args.maxAttempts),
+		"User-Agent": "Phaseo-Async-Webhook/1.0",
+		"x-phaseo-event-id": args.eventId,
+		"x-phaseo-event-type": args.eventType,
+		"x-phaseo-delivery-key": args.deliveryKey,
+		"x-phaseo-attempt": String(args.attemptNumber),
+		"x-phaseo-max-attempts": String(args.maxAttempts),
 	};
 	if (args.secret) {
 		const timestamp = String(Math.floor(Date.now() / 1000));
-		headers["x-ai-stats-timestamp"] = timestamp;
-		headers["x-ai-stats-signature"] = await signWebhook(args.secret, timestamp, args.body);
+		headers["x-phaseo-timestamp"] = timestamp;
+		headers["x-phaseo-signature"] = await signWebhook(args.secret, timestamp, args.body);
 	}
 	const timeoutMs = resolveWebhookDeliveryTimeoutMs();
 	const controller = new AbortController();

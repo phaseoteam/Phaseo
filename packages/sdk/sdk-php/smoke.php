@@ -7,8 +7,8 @@ require __DIR__ . '/vendor/autoload.php';
 $manifestPath = realpath(__DIR__ . '/../../smoke-manifest.json');
 $manifest = json_decode((string) file_get_contents($manifestPath), true);
 
-$apiKeyEnv = $manifest['apiKeyEnv'] ?? 'AI_STATS_API_KEY';
-$baseUrlEnv = $manifest['baseUrlEnv'] ?? 'AI_STATS_BASE_URL';
+$apiKeyEnv = $manifest['apiKeyEnv'] ?? 'PHASEO_API_KEY';
+$baseUrlEnv = $manifest['baseUrlEnv'] ?? 'PHASEO_BASE_URL';
 $apiKey = getenv($apiKeyEnv);
 
 if (!$apiKey) {
@@ -18,10 +18,10 @@ if (!$apiKey) {
 
 $baseUrl = rtrim(getenv($baseUrlEnv) ?: $manifest['defaultBaseUrl'], '/');
 
-$config = AIStats\Sdk\Configuration::getDefaultConfiguration()
+$config = Phaseo\Sdk\Configuration::getDefaultConfiguration()
     ->setHost($baseUrl)
     ->setApiKey('GatewayAuth', 'Bearer ' . $apiKey);
-$api = new AIStats\Sdk\Api\DefaultApi(null, $config);
+$api = new Phaseo\Sdk\Api\DefaultApi(null, $config);
 
 $health = $api->health();
 if (!$health->getStatus()) {

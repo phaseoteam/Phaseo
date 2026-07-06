@@ -7,9 +7,9 @@ description: "Call /chat/completions with the C# SDK."
 
 ### Example
 ```csharp
-using AiStatsSdk;
+using PhaseoSdk;
 
-var client = new AIStats(apiKey);
+var client = new Phaseo(apiKey);
 var response = await client.GenerateText(new Dictionary<string, object>
 {
     ["model"] = "openai/gpt-5-nano",

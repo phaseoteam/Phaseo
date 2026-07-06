@@ -47,7 +47,7 @@ export async function generateMetadata(): Promise<Metadata> {
 	return buildMetadata({
 		title: "AI App Rankings: Usage Trends & Top Apps",
 		description:
-			"See the most popular and fastest-growing AI apps on AI Stats Gateway, with leaderboard and token-usage trends.",
+			"See the most popular and fastest-growing AI apps on Phaseo Gateway, with leaderboard and token-usage trends.",
 		path: "/apps",
 		keywords: [
 			"AI apps",
@@ -222,7 +222,7 @@ export default async function AppsPage() {
 			<header className="space-y-2">
 				<h1 className="text-3xl font-bold tracking-tight">App & Agent Rankings</h1>
 				<p className="text-sm text-muted-foreground">
-					Live app usage insights from AI Stats Gateway.
+					Live app usage insights from Phaseo Gateway.
 				</p>
 			</header>
 

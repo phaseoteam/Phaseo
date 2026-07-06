@@ -154,7 +154,7 @@ const ENDPOINT_CONFIGS: EndpointConfig[] = [
 		body: (model) => ({
 			model,
 			voice: resolveSpeechVoiceForModel(model),
-			input: "Welcome to the AI Stats Gateway where latency, uptime, and pricing are always in your control.",
+			input: "Welcome to the Phaseo Gateway where latency, uptime, and pricing are always in your control.",
 			response_format: "mp3",
 		}),
 	},
@@ -168,7 +168,7 @@ const ENDPOINT_CONFIGS: EndpointConfig[] = [
 		body: (model) => ({
 			model,
 			input: [
-				"Route requests across providers with AI Stats.",
+				"Route requests across providers with Phaseo.",
 				"Monitor latency, throughput, and spend in real time.",
 			],
 		}),
@@ -367,13 +367,13 @@ function buildSnippets(
 	return {
 		curl: `curl -s -X POST "${BASE_URL}${config.path}" \\
   -H "Content-Type: application/json" \\
-  -H "Authorization: Bearer $AI_STATS_API_KEY" \\
+  -H "Authorization: Bearer $PHASEO_API_KEY" \\
   -d '${escapedJson}'`,
 		typescript: `const response = await fetch("${BASE_URL}${config.path}", {
     method: "POST",
     headers: {
         "Content-Type": "application/json",
-        "Authorization": \`Bearer \${process.env.AI_STATS_API_KEY!}\`,
+        "Authorization": \`Bearer \${process.env.PHASEO_API_KEY!}\`,
     },
     body: JSON.stringify(
 ${tsJson}
@@ -399,10 +399,10 @@ response = requests.post(
 
 response.raise_for_status()
 print(response.json())`,
-		"typescript-sdk": `import AIStats from "@ai-stats/sdk";
+		"typescript-sdk": `import Phaseo from "@phaseo/sdk";
 
-const client = new AIStats({
-    apiKey: process.env.AI_STATS_API_KEY ?? "YOUR_API_KEY",
+const client = new Phaseo({
+    apiKey: process.env.PHASEO_API_KEY ?? "YOUR_API_KEY",
 });
 
 const response = await client.${jsMethod}(
@@ -410,10 +410,10 @@ ${tsLiteral}
 );
 
 console.log(response);`,
-		"python-sdk": `from ai_stats import AIStats
+		"python-sdk": `from phaseo import Phaseo
 
 async def main():
-    async with AIStats(api_key="YOUR_API_KEY") as client:
+    async with Phaseo(api_key="YOUR_API_KEY") as client:
         response = await client.${pyMethod}(
 ${pythonLiteral}
         )
@@ -608,7 +608,7 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 										Use a server-side workspace key, then expose it to your
 										runtime as{" "}
 										<code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs dark:bg-slate-900">
-											AI_STATS_API_KEY
+											PHASEO_API_KEY
 										</code>
 										.
 									</p>

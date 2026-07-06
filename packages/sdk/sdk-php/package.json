@@ -1,11 +1,11 @@
 {
-  "name": "@ai-stats/php-sdk",
+  "name": "@phaseo/php-sdk",
   "version": "2.0.4",
   "private": true,
-  "description": "AI Stats PHP SDK (preview) - generated client with models wrapper",
+  "description": "Phaseo PHP SDK (preview) - generated client with models wrapper",
   "license": "MIT",
   "scripts": {
-    "postinstall": "node ../scripts/postinstall-viewer-prompt.cjs @ai-stats/php-sdk",
+    "postinstall": "node ../scripts/postinstall-viewer-prompt.cjs @phaseo/php-sdk",
     "validate": "php -r \"json_decode(file_get_contents('composer.json')); if (json_last_error()) { fwrite(STDERR, 'Invalid composer.json'.PHP_EOL); exit(1);} \"",
     "test": "php tests/lifecycle_test.php && php tests/devtools_test.php && php tests/chat_test.php && php tests/files_test.php && php tests/generation_test.php && php tests/models_test.php && php tests/endpoints_test.php && php tests/organisations_test.php && php tests/pricing_models_test.php && php tests/pricing_calculate_test.php && php tests/provider_ops_test.php && php tests/api_keys_test.php && php tests/api_key_test.php && php tests/api_key_mutations_test.php && php tests/workspaces_test.php && php tests/workspace_mutations_test.php && php tests/current_key_test.php && php tests/health_test.php && php tests/async_jobs_test.php && php tests/video_test.php && php tests/batches_test.php && php tests/tls_config_test.php",
     "smoke:chat": "dotenv -e .env.local -- php tests/smoke_chat.php",

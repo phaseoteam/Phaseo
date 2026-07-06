@@ -111,14 +111,14 @@ function normalizeEnvValue(value: string | undefined): string {
 
 function looksLikeGatewayAuthToken(token: string): boolean {
     if (!token) return false;
-    if (token.startsWith("aistats_v1_sk_")) return true;
+    if (token.startsWith("phaseo_v1_sk_")) return true;
     // OAuth JWT path is also accepted by gateway auth.
     return token.split(".").length === 3;
 }
 
 function redactSensitiveText(input: string): string {
     return input
-        .replace(/aistats_v1_sk_[A-Za-z0-9_-]+_[A-Za-z0-9._~-]+/g, "aistats_v1_sk_[REDACTED]")
+        .replace(/phaseo_v1_sk_[A-Za-z0-9_-]+_[A-Za-z0-9._~-]+/g, "phaseo_v1_sk_[REDACTED]")
         .replace(/Bearer\s+[A-Za-z0-9._~+\-/=]+/gi, "Bearer [REDACTED]")
         .replace(/\bsk-[A-Za-z0-9._~-]+\b/g, "sk-[REDACTED]");
 }
@@ -163,7 +163,7 @@ function resolveGatewayApiKey(argsKey?: string): {
 
     if (playgroundKid) {
         return {
-            key: `aistats_v1_sk_${playgroundKid}_${playgroundSecret}`,
+            key: `phaseo_v1_sk_${playgroundKid}_${playgroundSecret}`,
             source: "PLAYGROUND_KEY+PLAYGROUND_GATEWAY_KEY_KID",
             derivedFromPlayground: true,
         };
@@ -635,7 +635,7 @@ async function main() {
     if (!looksLikeGatewayAuthToken(apiKey)) {
         throw new Error(
             `Resolved API key source (${apiKeyResolved.source || "unknown"}) is not in a supported gateway auth format. ` +
-            "Expected aistats_v1_sk_* key or OAuth JWT."
+            "Expected phaseo_v1_sk_* key or OAuth JWT."
         );
     }
 

@@ -126,7 +126,7 @@ describe("authenticate warm-cache latency", () => {
 		const kid = "KIDPERFAUTH123";
 		const secret = "secret_perf_auth";
 		const hash = hashSecret(secret);
-		const token = `aistats_v1_sk_${kid}_${secret}`;
+		const token = `phaseo_v1_sk_${kid}_${secret}`;
 		const row: KeyRow = {
 			id: "key_perf_auth",
 			workspace_id: "team_perf_auth",

@@ -123,7 +123,7 @@ export default async function ModelPricing({
 							data.
 							<a
 								className="ml-1 text-primary underline"
-								href="https://github.com/AI-Stats/AI-Stats/issues"
+								href="https://github.com/phaseoteam/Phaseo/issues"
 								target="_blank"
 								rel="noopener noreferrer"
 							>

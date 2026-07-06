@@ -7,7 +7,7 @@ interface ModelStatusBannerProps {
 	className?: string;
 }
 
-const RUMOURED_DISCORD_LINK = "https://discord.gg/zDw73wamdX";
+const RUMOURED_DISCORD_LINK = "https://discord.gg/aQyywCvgZ5";
 
 export default function ModelStatusBanner({
 	status,

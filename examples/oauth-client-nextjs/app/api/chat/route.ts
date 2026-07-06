@@ -1,7 +1,7 @@
 /**
  * Chat Completion API Proxy
  *
- * Proxies chat requests to AI Stats gateway with OAuth token
+ * Proxies chat requests to Phaseo gateway with OAuth token
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     // Parse request body
     const body = await request.json();
 
-    // Forward request to AI Stats gateway
+    // Forward request to Phaseo gateway
     const response = await fetch(`${GATEWAY_BASE}/chat/completions`, {
       method: 'POST',
       headers: {

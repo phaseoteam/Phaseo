@@ -15,11 +15,11 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata: Metadata = buildMetadata({
 	title: "Help Center",
 	description:
-		"Browse AI Stats help articles for account access, MFA, billing, privacy, onboarding, and developer API troubleshooting across common workflows.",
+		"Browse Phaseo help articles for account access, MFA, billing, privacy, onboarding, and developer API troubleshooting across common workflows.",
 	path: "/help",
 	keywords: [
-		"AI Stats help center",
-		"AI Stats support",
+		"Phaseo help center",
+		"Phaseo support",
 		"gateway troubleshooting",
 	],
 });

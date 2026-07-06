@@ -4,9 +4,9 @@ import RequestBuilder from "@/components/(tools)/RequestBuilder";
 import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
 
 export const metadata: Metadata = buildMetadata({
-    title: "Request builder - Generate AI API Requests & Code for AI Stats Gateway",
+    title: "Request builder - Generate AI API Requests & Code for Phaseo Gateway",
     description:
-        "Interactively build AI API requests for the AI Stats Gateway and providers. Configure models and parameters, then export ready-to-run code snippets in your favourite language.",
+        "Interactively build AI API requests for the Phaseo Gateway and providers. Configure models and parameters, then export ready-to-run code snippets in your favourite language.",
     path: "/tools/request-builder",
     keywords: [
         "API request builder",
@@ -14,7 +14,7 @@ export const metadata: Metadata = buildMetadata({
         "code snippets",
         "curl generator",
         "AI gateway",
-        "AI Stats tools",
+        "Phaseo tools",
     ],
 });
 

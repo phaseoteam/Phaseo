@@ -3,23 +3,23 @@ declare(strict_types=1);
 
 require_once __DIR__ . "/../src/index.php";
 
-use AIStats\Sdk\AIStats;
-use AIStats\Sdk\Devtools;
+use Phaseo\Sdk\Phaseo;
+use Phaseo\Sdk\Devtools;
 
-$apiKey = getenv("AI_STATS_API_KEY");
+$apiKey = getenv("PHASEO_API_KEY");
 if (!$apiKey) {
-    throw new RuntimeException("AI_STATS_API_KEY is required");
+    throw new RuntimeException("PHASEO_API_KEY is required");
 }
 
-$baseUrl = getenv("AI_STATS_BASE_URL") ?: "https://api.phaseo.app/v1";
-$model = getenv("AI_STATS_SMOKE_MODEL") ?: "openai/gpt-5-nano";
-$input = getenv("AI_STATS_SMOKE_INPUT") ?: "Hi";
-$maxOutputTokensRaw = getenv("AI_STATS_SMOKE_MAX_OUTPUT_TOKENS");
+$baseUrl = getenv("PHASEO_BASE_URL") ?: "https://api.phaseo.app/v1";
+$model = getenv("PHASEO_SMOKE_MODEL") ?: "openai/gpt-5.4-nano";
+$input = getenv("PHASEO_SMOKE_INPUT") ?: "Hi";
+$maxOutputTokensRaw = getenv("PHASEO_SMOKE_MAX_OUTPUT_TOKENS");
 $maxOutputTokens = is_string($maxOutputTokensRaw) && ctype_digit($maxOutputTokensRaw)
     ? (int) $maxOutputTokensRaw
     : 32;
 
-$client = new AIStats(
+$client = new Phaseo(
     apiKey: $apiKey,
     basePath: $baseUrl,
     enableDeprecationWarnings: false,

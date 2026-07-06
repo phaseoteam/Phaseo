@@ -85,7 +85,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 		return buildMetadata({
 			title: "AI App Usage Overview",
 			description:
-				"Usage analytics for applications powered by AI Stats Gateway, including request volume, token usage, and top models over the last four weeks.",
+				"Usage analytics for applications powered by Phaseo Gateway, including request volume, token usage, and top models over the last four weeks.",
 			path,
 		});
 	}
@@ -102,7 +102,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 			app.title,
 			`${app.title} AI app`,
 			"AI app analytics",
-			"AI Stats app profile",
+			"Phaseo app profile",
 		],
 	});
 }

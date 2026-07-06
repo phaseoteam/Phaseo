@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-namespace ai_stats::gen {
+namespace phaseo::gen {
 struct ActivityEntry {
 	double byok_usage_inference;
 	int completion_tokens;
@@ -1390,4 +1390,11 @@ struct WorkspaceUpdateRequest {
 	std::string slug;
 };
 
-} // namespace ai_stats::gen
+} // namespace phaseo::gen
+
+#ifndef PHASEO_CPP_NAMESPACE_ALIAS
+#define PHASEO_CPP_NAMESPACE_ALIAS
+namespace phaseo {
+namespace gen = ::phaseo::gen;
+}
+#endif

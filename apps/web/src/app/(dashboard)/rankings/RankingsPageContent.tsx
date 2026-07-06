@@ -82,7 +82,7 @@ export async function generateRankingsMetadata(): Promise<Metadata> {
 			"AI usage statistics",
 		],
 		openGraph: {
-			title: "AI Model Leaderboards on AI Stats",
+			title: "AI Model Leaderboards on Phaseo",
 			description:
 				"Compare AI models by usage, price, caching value, benchmark scores, latency, throughput and provider breakdowns.",
 		},
@@ -160,7 +160,7 @@ export default async function RankingsPageContent({
                         <OpenRouterMetricSectionServer
                             id="images"
                             title="Images"
-                            description="Total images processed across AI Stats gateway traffic."
+                            description="Total images processed across Phaseo gateway traffic."
                             metricKey="image_inputs"
                             leaderboardTitle="Images Leaderboard"
                             leaderboardDescription="Compare models by image inputs processed across the selected usage period."
@@ -172,7 +172,7 @@ export default async function RankingsPageContent({
                         <OpenRouterMetricSectionServer
                             id="image-output"
                             title="Image Output"
-                            description="Total images generated across AI Stats gateway traffic."
+                            description="Total images generated across Phaseo gateway traffic."
                             metricKey="image_outputs"
                             leaderboardTitle="Image Output Leaderboard"
                             leaderboardDescription="Compare models by generated images across the selected usage period."
@@ -456,9 +456,9 @@ async function ModalityLeaderboardsServer({
 			label: "Text",
 			title: "AI Model Rankings",
 			description:
-				"Based on real usage data from AI Stats gateway traffic.",
+				"Based on real usage data from Phaseo gateway traffic.",
 			chartTitle: "Top Models",
-			chartDescription: "Weekly usage of models across AI Stats.",
+			chartDescription: "Weekly usage of models across Phaseo.",
 			primaryTimeseries: textTimeseries.data,
 			primaryEntries: textEntries,
 			metrics: [
@@ -749,7 +749,7 @@ function ToolCallsSection() {
 			<div className="space-y-0.5">
 				<h2 className="text-2xl font-semibold leading-8">Tool Calls</h2>
 				<p className="text-sm text-muted-foreground">
-					Tool usage across models on AI Stats.
+					Tool usage across models on Phaseo.
 				</p>
 			</div>
 			<EmptyChartPreview

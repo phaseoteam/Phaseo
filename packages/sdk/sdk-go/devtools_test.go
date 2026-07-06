@@ -1,4 +1,4 @@
-package aistats
+package phaseo
 
 import (
 	"context"
@@ -10,13 +10,13 @@ import (
 	"strings"
 	"testing"
 
-	gen "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go/src/gen"
+	gen "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/src/gen"
 )
 
 func TestDevtoolsCapturesResponsesRequests(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/gateway/models":
+		case "/models":
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"models": []map[string]any{
 					{
@@ -64,7 +64,7 @@ func TestDevtoolsCapturesResponsesRequests(t *testing.T) {
 		"test",
 		server.URL,
 		WithDeprecationWarnings(false),
-		WithDevtools(CreateAIStatsDevtools(
+		WithDevtools(CreatePhaseoDevtools(
 			WithDevtoolsDirectory(directory),
 			WithDevtoolsEnabled(true),
 		)),
@@ -165,7 +165,7 @@ func TestDevtoolsCapturesBatchEntries(t *testing.T) {
 		"test",
 		server.URL,
 		WithDeprecationWarnings(false),
-		WithDevtools(CreateAIStatsDevtools(
+		WithDevtools(CreatePhaseoDevtools(
 			WithDevtoolsDirectory(directory),
 			WithDevtoolsEnabled(true),
 		)),
@@ -239,7 +239,7 @@ func TestDevtoolsCapturesHealthEntries(t *testing.T) {
 		"test",
 		server.URL,
 		WithDeprecationWarnings(false),
-		WithDevtools(CreateAIStatsDevtools(
+		WithDevtools(CreatePhaseoDevtools(
 			WithDevtoolsDirectory(directory),
 			WithDevtoolsEnabled(true),
 		)),
@@ -269,7 +269,7 @@ func TestDevtoolsCapturesHealthEntries(t *testing.T) {
 func TestDevtoolsCapturesControlPlaneEntries(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/gateway/models":
+		case r.Method == http.MethodGet && r.URL.Path == "/models":
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"models": []map[string]any{
 					{"model_id": "openai/gpt-5-mini"},
@@ -357,7 +357,7 @@ func TestDevtoolsCapturesControlPlaneEntries(t *testing.T) {
 		"test",
 		server.URL,
 		WithDeprecationWarnings(false),
-		WithDevtools(CreateAIStatsDevtools(
+		WithDevtools(CreatePhaseoDevtools(
 			WithDevtoolsDirectory(directory),
 			WithDevtoolsEnabled(true),
 		)),
@@ -458,7 +458,7 @@ func TestDevtoolsCapturesControlPlaneEntries(t *testing.T) {
 func TestDevtoolsCapturesRoutingMetadataFromHTTPErrors(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/gateway/models":
+		case "/models":
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"models": []map[string]any{
 					{
@@ -494,7 +494,7 @@ func TestDevtoolsCapturesRoutingMetadataFromHTTPErrors(t *testing.T) {
 		"test",
 		server.URL,
 		WithDeprecationWarnings(false),
-		WithDevtools(CreateAIStatsDevtools(
+		WithDevtools(CreatePhaseoDevtools(
 			WithDevtoolsDirectory(directory),
 			WithDevtoolsEnabled(true),
 		)),
@@ -553,7 +553,7 @@ func TestDevtoolsCapturesGenerationLookupEntries(t *testing.T) {
 		"test",
 		server.URL,
 		WithDeprecationWarnings(false),
-		WithDevtools(CreateAIStatsDevtools(
+		WithDevtools(CreatePhaseoDevtools(
 			WithDevtoolsDirectory(directory),
 			WithDevtoolsEnabled(true),
 		)),
@@ -597,7 +597,7 @@ func TestDevtoolsCapturesGenerationLookupEntries(t *testing.T) {
 func TestDevtoolsCapturesVideoLifecycleEntries(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/gateway/models":
+		case r.Method == http.MethodGet && r.URL.Path == "/models":
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"models": []map[string]any{
 					{
@@ -647,7 +647,7 @@ func TestDevtoolsCapturesVideoLifecycleEntries(t *testing.T) {
 		"test",
 		server.URL,
 		WithDeprecationWarnings(false),
-		WithDevtools(CreateAIStatsDevtools(
+		WithDevtools(CreatePhaseoDevtools(
 			WithDevtoolsDirectory(directory),
 			WithDevtoolsEnabled(true),
 		)),

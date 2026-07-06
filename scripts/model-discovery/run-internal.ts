@@ -16,6 +16,7 @@ type CliOptions = {
     discordUserId: string | null;
     discordRoleId: string | null;
     discordAvatarUrl: string | null;
+    hfDiscordAvatarUrl: string | null;
     hfOrgs: string[];
     hfToken: string | null;
     skipInternal: boolean;
@@ -74,6 +75,10 @@ const LEGACY_MODELS_ROOT_PREFIX = "apps/web/src/data/models/";
 const CANONICAL_MODELS_ROOT_PREFIX = "packages/data/catalog/src/data/models/";
 const HUGGING_FACE_API_ORIGIN = "https://huggingface.co";
 const HUGGING_FACE_MODELS_API_PATH = "/api/models";
+const PUBLIC_MODEL_DISCOVERY_USERNAME = "Phaseo Public Model Discovery";
+const PRIVATE_MODEL_DISCOVERY_USERNAME = "Phaseo Private Model Discovery";
+const PUBLIC_MODEL_DISCOVERY_AVATAR_URL = "https://phaseo.app/png_logo_light.png";
+const PRIVATE_MODEL_DISCOVERY_AVATAR_URL = "https://phaseo.app/png_logo_dark.png";
 
 function nowIso(): string {
     return new Date().toISOString();
@@ -120,6 +125,7 @@ function parseArgs(argv: string[]): CliOptions {
     let discordUserId: string | null = null;
     let discordRoleId: string | null = null;
     let discordAvatarUrl: string | null = null;
+    let hfDiscordAvatarUrl: string | null = null;
     let hfToken: string | null = null;
     let skipInternal = false;
     let skipHf = false;
@@ -178,6 +184,12 @@ function parseArgs(argv: string[]): CliOptions {
             continue;
         }
 
+        if (key === "--hf-discord-avatar-url") {
+            hfDiscordAvatarUrl = value.trim() || null;
+            index += 1;
+            continue;
+        }
+
         if (key === "--hf-orgs") {
             for (const item of value.split(/[,\s]+/)) {
                 const org = item.trim().toLowerCase();
@@ -201,6 +213,7 @@ function parseArgs(argv: string[]): CliOptions {
         discordUserId,
         discordRoleId,
         discordAvatarUrl,
+        hfDiscordAvatarUrl,
         hfOrgs,
         hfToken,
         skipInternal,
@@ -663,7 +676,7 @@ function displayModelName(snapshot: ModelFileSnapshot): string {
     return parts.length >= 2 ? parts[parts.length - 2] : snapshot.filePath;
 }
 
-const MODEL_DETAILS_BASE_URL = "https://ai-stats.phaseo.app";
+const MODEL_DETAILS_BASE_URL = "https://phaseo.app";
 const HUGGING_FACE_BASE_URL = "https://huggingface.co";
 
 function appendBoundedLines(lines: string[], values: string[], maxItems = 40): void {
@@ -803,12 +816,26 @@ function buildHfDiscordMessage(hfAdditionsByOrg: HuggingFaceOrgAdditions[]): str
     return message.length <= 1900 ? message : `${message.slice(0, 1890)}\n...[truncated]`;
 }
 
+function resolveDiscordAvatarUrl(rawAvatarUrl: string | null | undefined, defaultAvatarUrl: string): string {
+    const value = toNullableString(rawAvatarUrl);
+    if (!value) return defaultAvatarUrl;
+    try {
+        const parsed = new URL(value);
+        if (parsed.protocol !== "https:") return defaultAvatarUrl;
+        return parsed.toString();
+    } catch {
+        return defaultAvatarUrl;
+    }
+}
+
 async function sendDiscordWebhook(
     message: string,
     options: {
         webhookUrl: string;
         discordUserId: string | null;
         discordRoleId: string | null;
+        username?: string;
+        avatarUrl?: string | null;
         includeMentions?: boolean;
     }
 ): Promise<void> {
@@ -831,7 +858,11 @@ async function sendDiscordWebhook(
         if (options.discordUserId) mentions.push(`<@${options.discordUserId}>`);
     }
     const content = mentions.length > 0 ? `${mentions.join(" ")}\n${message}` : message;
-    const payload: Record<string, unknown> = { content };
+    const payload: Record<string, unknown> = {
+        content,
+        username: options.username ?? PRIVATE_MODEL_DISCOVERY_USERNAME,
+        avatar_url: resolveDiscordAvatarUrl(options.avatarUrl, PRIVATE_MODEL_DISCOVERY_AVATAR_URL),
+    };
     if (options.includeMentions !== false && (options.discordUserId || options.discordRoleId)) {
         payload.allowed_mentions = {
             parse: [],
@@ -862,6 +893,17 @@ export async function runInternalModelDiscovery(argv: string[], hooks: InternalM
         options.hfWebhookUrl ??
         options.webhookUrl ??
         envValue("DISCORD_WEBHOOK_URL");
+    const internalDiscordAvatarUrl =
+        options.discordAvatarUrl ??
+        envValue("DISCORD_PUBLIC_MODEL_DISCOVERY_AVATAR_URL") ??
+        envValue("DISCORD_MODEL_DISCOVERY_AVATAR_URL") ??
+        PUBLIC_MODEL_DISCOVERY_AVATAR_URL;
+    const hfDiscordAvatarUrl =
+        options.hfDiscordAvatarUrl ??
+        options.discordAvatarUrl ??
+        envValue("DISCORD_PRIVATE_MODEL_DISCOVERY_AVATAR_URL") ??
+        envValue("DISCORD_MODEL_DISCOVERY_AVATAR_URL") ??
+        PRIVATE_MODEL_DISCOVERY_AVATAR_URL;
     const shouldCheckInternal = !options.skipInternal;
     const shouldCheckHf = !options.skipHf && options.hfOrgs.length > 0;
     const repoRoot = process.cwd();
@@ -1040,11 +1082,11 @@ export async function runInternalModelDiscovery(argv: string[], hooks: InternalM
     const shouldRunHfNotificationHook = shouldCheckHf && hfAdditionsTotal > 0 && Boolean(hooks.afterHfNotifications);
 
     if (shouldSendInternal && internalWebhookUrl) {
-        const avatarUrl = options.discordAvatarUrl ?? null;
         const payload = buildWebhookPayload(internalNotificationModels, options.discordRoleId, {
             discordUserId: options.discordUserId,
             includeMentions: true,
-            avatarUrl,
+            username: PUBLIC_MODEL_DISCOVERY_USERNAME,
+            avatarUrl: internalDiscordAvatarUrl,
             maxModelEmbeds: 10,
         });
 
@@ -1087,6 +1129,8 @@ export async function runInternalModelDiscovery(argv: string[], hooks: InternalM
                 webhookUrl: hfWebhookUrl,
                 discordUserId: options.discordUserId,
                 discordRoleId: options.discordRoleId,
+                username: PRIVATE_MODEL_DISCOVERY_USERNAME,
+                avatarUrl: hfDiscordAvatarUrl,
                 includeMentions: !mentionsSent,
             });
         } catch (error) {

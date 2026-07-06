@@ -164,11 +164,11 @@ export function buildCompareHeaders(target: CompareTarget, apiKey: string): Head
 	const headers: Record<string, string> = {
 		Authorization: `Bearer ${apiKey}`,
 		"Content-Type": "application/json",
-		"User-Agent": "ai-stats-internal-gateway-compare/1.0",
+		"User-Agent": "phaseo-internal-gateway-compare/1.0",
 	};
 	if (target === "openrouter") {
 		headers["HTTP-Referer"] = "https://ai-stats.com";
-		headers["X-Title"] = "AI Stats Internal Gateway Compare";
+		headers["X-Title"] = "Phaseo Internal Gateway Compare";
 	}
 	return headers;
 }
@@ -686,7 +686,7 @@ function summarize(results: CompareTraceResult[], target: CompareTarget): Compar
 }
 
 export async function runGatewayCompare(args: CompareArgs) {
-	const gatewayApiKey = process.env.AI_STATS_PERFORMANCE_TEST_KEY ?? "";
+	const gatewayApiKey = process.env.PHASEO_PERFORMANCE_TEST_KEY ?? "";
 	const openRouterApiKey =
 		process.env.PERFORMANCE_KEY_OPENROUTER ??
 		process.env.OPENROUTER_API_KEY ??
@@ -703,7 +703,7 @@ export async function runGatewayCompare(args: CompareArgs) {
 		"";
 	if (!gatewayApiKey || !openRouterApiKey) {
 		throw new Error(
-			"Missing AI_STATS_PERFORMANCE_TEST_KEY or PERFORMANCE_KEY_OPENROUTER in server environment.",
+			"Missing PHASEO_PERFORMANCE_TEST_KEY or PERFORMANCE_KEY_OPENROUTER in server environment.",
 		);
 	}
 	const enabledTargets: CompareTarget[] = ["ai-stats", "openrouter"];

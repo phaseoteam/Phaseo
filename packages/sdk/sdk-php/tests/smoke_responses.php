@@ -4,17 +4,27 @@ declare(strict_types=1);
 require_once __DIR__ . "/../src/gen/Client.php";
 require_once __DIR__ . "/../src/gen/Operations.php";
 
-$apiKey = getenv("AI_STATS_API_KEY");
+$apiKey = getenv("PHASEO_API_KEY");
 if (!$apiKey) {
-    throw new RuntimeException("AI_STATS_API_KEY is required");
+    throw new RuntimeException("PHASEO_API_KEY is required");
 }
 
-$baseUrl = getenv("AI_STATS_BASE_URL") ?: "https://api.phaseo.app/v1";
-$client = new \AIStats\Gen\Client($baseUrl, ["Authorization" => "Bearer " . $apiKey]);
+$baseUrl = getenv("PHASEO_BASE_URL") ?: "https://api.phaseo.app/v1";
+$client = new \Phaseo\Gen\Client($baseUrl, ["Authorization" => "Bearer " . $apiKey]);
+$model = getenv("PHASEO_SMOKE_MODEL") ?: "openai/gpt-5.4-nano";
+$input = getenv("PHASEO_SMOKE_INPUT") ?: "Hi";
+$maxOutputTokensRaw = getenv("PHASEO_SMOKE_MAX_OUTPUT_TOKENS");
+$maxOutputTokens = is_string($maxOutputTokensRaw) && ctype_digit($maxOutputTokensRaw)
+    ? (int) $maxOutputTokensRaw
+    : 32;
+if ($maxOutputTokens <= 0) {
+    $maxOutputTokens = 32;
+}
 
-$response = \AIStats\Gen\createResponse($client, null, null, null, [
-    "model" => "openai/gpt-5-nano",
-    "input" => "Hi"
+$response = \Phaseo\Gen\createResponse($client, null, null, null, [
+    "model" => $model,
+    "input" => $input,
+    "max_output_tokens" => $maxOutputTokens,
 ]);
 
 if (is_string($response)) {

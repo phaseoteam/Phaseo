@@ -5,9 +5,9 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata = buildMetadata({
 	title: "Terms of Service",
 	description:
-		"Review the AI Stats Terms of Service governing access to the model directory, dashboard features, billing behavior, and unified API Gateway usage requirements.",
+		"Review the Phaseo Terms of Service governing access to the model directory, dashboard features, billing behavior, and unified API Gateway usage requirements.",
 	path: "/terms",
-	keywords: ["AI Stats terms", "terms of service", "API usage terms", "gateway terms"],
+	keywords: ["Phaseo terms", "terms of service", "API usage terms", "gateway terms"],
 });
 
 export default async function TermsPage() {
@@ -22,14 +22,14 @@ export default async function TermsPage() {
 				</h1>
 				<p className="text-sm text-foreground/80">
 					These Terms of Service (&quot;Terms&quot;) govern your use
-					of the AI Stats website, data directory and unified API
+					of the Phaseo website, data directory and unified API
 					gateway (collectively, the &quot;Service&quot;).
 				</p>
 				<p className="text-sm text-foreground/80">
 					The Service is operated by{" "}
 					<span className="font-medium">Daniel Butler</span> operating
-					under the name <span className="font-medium">AI Stats</span>{" "}
-					( &quot;AI Stats&quot;, &quot;we&quot;, &quot;us&quot; or
+					under the name <span className="font-medium">Phaseo</span>{" "}
+					( &quot;Phaseo&quot;, &quot;we&quot;, &quot;us&quot; or
 					&quot;our&quot;).
 				</p>
 				<p className="text-sm text-foreground/80">
@@ -49,7 +49,7 @@ export default async function TermsPage() {
 				>
 					1. Service overview
 				</h2>
-				<p className="mt-2 text-foreground/80">AI Stats provides:</p>
+				<p className="mt-2 text-foreground/80">Phaseo provides:</p>
 				<ul className="mt-2 list-disc space-y-1 pl-5 text-foreground/80">
 					<li>
 						a public directory of AI models, providers, benchmarks,
@@ -151,7 +151,7 @@ export default async function TermsPage() {
 				</h3>
 				<p className="mt-1 text-foreground/80">
 					Some parts of the Service (such as routing requests through
-					the AI Stats gateway) may require payment via a pre-paid,
+					the Phaseo gateway) may require payment via a pre-paid,
 					deposit-based wallet or credit balance
 					(&quot;Credits&quot;). The applicable pricing will be shown
 					in advance and is currently denominated in{" "}
@@ -487,7 +487,7 @@ export default async function TermsPage() {
 					8. Changes to the Service and to these Terms
 				</h2>
 				<p className="mt-2 text-foreground/80">
-					We are constantly improving AI Stats and may change, add or
+					We are constantly improving Phaseo and may change, add or
 					remove features from time to time.
 				</p>
 				<p className="mt-2 text-foreground/80">

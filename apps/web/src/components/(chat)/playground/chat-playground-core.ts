@@ -215,10 +215,10 @@ export const generateId = () => {
 };
 
 export const APP_HEADERS = {
-	"x-app-id": "ai-stats-chat",
-	"x-app-name": "AI Stats Chat",
-	"x-title": "AI Stats Chat",
-	"http-referer": "https://ai-stats.phaseo.app/chat",
+	"x-app-id": "phaseo-chat",
+	"x-app-name": "Phaseo Chat",
+	"x-title": "Phaseo Chat",
+	"http-referer": "https://phaseo.app/chat",
 };
 
 export const TEMP_CHAT_ID = "temp-chat";

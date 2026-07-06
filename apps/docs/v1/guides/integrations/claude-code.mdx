@@ -1,28 +1,28 @@
 ---
 title: "Claude Code"
-description: "Connect Claude Code to the AI Stats Gateway via the Anthropic-compatible API."
+description: "Connect Claude Code to the Phaseo Gateway via the Anthropic-compatible API."
 ---
 
-Claude Code supports third-party LLM gateways via environment variables. AI Stats exposes an Anthropic-compatible surface at `/v1/messages`, so you can point Claude Code at AI Stats without changing your prompts.
+Claude Code supports third-party LLM gateways via environment variables. Phaseo exposes an Anthropic-compatible surface at `/v1/messages`, so you can point Claude Code at Phaseo without changing your prompts.
 
-If you want Claude Code to read the live AI Stats documentation during a session, add the [Docs MCP](./docs-mcp.mdx) server too.
+If you want Claude Code to read the live Phaseo documentation during a session, add the [Docs MCP](./docs-mcp.mdx) server too.
 
 ## Prerequisites
 
-- An AI Stats API key.
+- A Phaseo API key.
 - Claude Code installed locally.
 
 ## 1) Set gateway environment variables
 
 ```bash
 export ANTHROPIC_BASE_URL="https://api.phaseo.app"
-export ANTHROPIC_AUTH_TOKEN="your_ai_stats_api_key"
+export ANTHROPIC_AUTH_TOKEN="your_phaseo_api_key"
 export ANTHROPIC_API_KEY=""
 ```
 
 ```powershell
 $env:ANTHROPIC_BASE_URL = "https://api.phaseo.app"
-$env:ANTHROPIC_AUTH_TOKEN = "your_ai_stats_api_key"
+$env:ANTHROPIC_AUTH_TOKEN = "your_phaseo_api_key"
 $env:ANTHROPIC_API_KEY = ""
 ```
 
@@ -39,10 +39,10 @@ claude
 ## Endpoint mapping
 
 - Claude Code calls Anthropic-style endpoints (`/v1/messages`).
-- AI Stats handles those requests through [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx).
+- Phaseo handles those requests through [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx).
 
 ## Compatibility notes
 
-- `ANTHROPIC_AUTH_TOKEN` is sent as an `Authorization` header, which AI Stats accepts.
-- You can also set `ANTHROPIC_MODEL` to an AI Stats model id when you want Claude Code to use one default model.
+- `ANTHROPIC_AUTH_TOKEN` is sent as an `Authorization` header, which Phaseo accepts.
+- You can also set `ANTHROPIC_MODEL` to A Phaseo model id when you want Claude Code to use one default model.
 - Current limitation: streaming + tools on Anthropic Messages can return `400 invalid_request`. If your workflow depends on streamed tool loops, test this path before broad rollout.

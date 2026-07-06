@@ -1,8 +1,11 @@
 ---
-title: "Introducing the AI Stats CLI"
+title: "Introducing the Phaseo CLI"
 description: "Browser OAuth, device code, key management, guardrails, and workspaces now have a first-party terminal workflow."
 publishedAt: 2026-06-07
-author: AI Stats Team
+author: Phaseo Team
+category: guides
+pinned: true
+coverImage: /blog-images/blog-cli-oauth.svg
 tags:
   - Release
   - CLI
@@ -11,19 +14,19 @@ tags:
 draft: false
 ---
 
-We now have a first-party `aistats` CLI for AI Stats.
+We now have a first-party `phaseo` CLI for Phaseo.
 
-This release gives both humans and agents a direct terminal path into the AI Stats control plane, instead of forcing everything through the dashboard.
+This release gives both humans and agents a direct terminal path into the Phaseo control plane, instead of forcing everything through the dashboard.
 
 ## Install
 
-<CliInstallTabs packageName="@ai-stats/cli" />
+<CliInstallTabs packageName="@phaseo/cli" />
 
 ## What it does
 
 The CLI is built for the real workflows we already use internally:
 
-- sign in with **AI Stats browser OAuth**
+- sign in with **Phaseo browser OAuth**
 - fall back to **device code** for SSH, remote shells, and headless agents
 - inspect your current grant with `whoami`
 - create and manage regular API keys and management keys
@@ -47,9 +50,9 @@ That matters because it keeps first-party CLI login and future third-party app a
 
 ## Two login paths
 
-`aistats login` now offers:
+`phaseo login` now offers:
 
-- **Sign in with AI Stats** as the default interactive path
+- **Sign in with Phaseo** as the default interactive path
 - **Sign in with Device Code** as the fallback for remote and non-interactive environments
 
 The CLI will automatically prefer device code in SSH and CI-style environments so you do not get stuck on a localhost callback flow in the wrong place.
@@ -57,9 +60,9 @@ The CLI will automatically prefer device code in SSH and CI-style environments s
 ## Get started
 
 ```bash
-aistats login
-aistats whoami --json
-aistats keys create --name "My CLI Key" --json
+phaseo login
+phaseo whoami --json
+phaseo keys create --name "My CLI Key" --json
 ```
 
 User-created OAuth apps are coming soon. This release keeps OAuth client creation in private testing while we validate the first-party CLI OAuth path.
@@ -68,13 +71,13 @@ User-created OAuth apps are coming soon. This release keeps OAuth client creatio
 
 The CLI now supports:
 
-- `aistats --version`
-- `aistats version`
+- `phaseo --version`
+- `phaseo version`
 - automatic update notices when a newer published CLI version is available
 
 When you want to update manually:
 
-<CliInstallTabs packageName="@ai-stats/cli" mode="update" title="Update the CLI" />
+<CliInstallTabs packageName="@phaseo/cli" mode="update" title="Update the CLI" />
 
 ## Security and release shape
 

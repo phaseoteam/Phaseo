@@ -86,7 +86,7 @@ describe("handleSuccessAudit search observability", () => {
 									annotations: [
 										{
 											type: "url_citation",
-											title: "AI Stats Docs",
+											title: "Phaseo Docs",
 											url: "https://example.com/docs",
 											quoted_text: "Useful source text",
 										},
@@ -94,7 +94,7 @@ describe("handleSuccessAudit search observability", () => {
 								},
 								{
 									type: "web_search_result",
-									title: "AI Stats Docs",
+									title: "Phaseo Docs",
 									url: "https://example.com/docs",
 									text: "Docs summary",
 								},
@@ -124,7 +124,7 @@ describe("handleSuccessAudit search observability", () => {
 			results: [
 				{
 					type: "web_search_result",
-					title: "AI Stats Docs",
+					title: "Phaseo Docs",
 					url: "https://example.com/docs",
 					snippet: "Docs summary",
 				},
@@ -132,7 +132,7 @@ describe("handleSuccessAudit search observability", () => {
 			citations: [
 				{
 					type: "url_citation",
-					title: "AI Stats Docs",
+					title: "Phaseo Docs",
 					url: "https://example.com/docs",
 					text: "Useful source text",
 				},
@@ -189,7 +189,7 @@ describe("handleSuccessAudit search observability", () => {
 					results: [
 						{
 							type: null,
-							title: "AI Stats Docs",
+							title: "Phaseo Docs",
 							url: "https://example.com/docs",
 							snippet: "Managed summary",
 						},
@@ -197,7 +197,7 @@ describe("handleSuccessAudit search observability", () => {
 					citations: [
 						{
 							type: "managed_web_search_result",
-							title: "AI Stats Docs",
+							title: "Phaseo Docs",
 							url: "https://example.com/docs",
 							text: "Managed highlight",
 						},
@@ -274,7 +274,7 @@ describe("handleSuccessAudit search observability", () => {
 			results: [
 				{
 					type: null,
-					title: "AI Stats Docs",
+					title: "Phaseo Docs",
 					url: "https://example.com/docs",
 					snippet: "Managed summary",
 				},
@@ -282,7 +282,7 @@ describe("handleSuccessAudit search observability", () => {
 			citations: [
 				{
 					type: "managed_web_search_result",
-					title: "AI Stats Docs",
+					title: "Phaseo Docs",
 					url: "https://example.com/docs",
 					text: "Managed highlight",
 				},
@@ -360,7 +360,7 @@ describe("handleSuccessAudit search observability", () => {
 									{
 										web: {
 											uri: "https://example.com/docs",
-											title: "AI Stats Docs",
+											title: "Phaseo Docs",
 										},
 									},
 								],
@@ -398,7 +398,7 @@ describe("handleSuccessAudit search observability", () => {
 			results: [
 				{
 					type: "grounding_chunk",
-					title: "AI Stats Docs",
+					title: "Phaseo Docs",
 					url: "https://example.com/docs",
 					snippet: null,
 				},
@@ -406,7 +406,7 @@ describe("handleSuccessAudit search observability", () => {
 			citations: [
 				{
 					type: "grounding_support",
-					title: "AI Stats Docs",
+					title: "Phaseo Docs",
 					url: "https://example.com/docs",
 					text: "Grounded answer segment",
 				},

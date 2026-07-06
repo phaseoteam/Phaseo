@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace AIStats\Gen;
+namespace Phaseo\Gen;
 
 class ActivityEntry
 {

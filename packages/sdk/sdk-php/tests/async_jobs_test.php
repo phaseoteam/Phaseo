@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . "/../src/index.php";
 
-use AIStats\Sdk\AIStats;
+use Phaseo\Sdk\Phaseo;
 
 function assert_true(bool $condition, string $message): void
 {
@@ -12,7 +12,7 @@ function assert_true(bool $condition, string $message): void
     }
 }
 
-$client = new AIStats(apiKey: "test", enableDeprecationWarnings: false);
+$client = new Phaseo(apiKey: "test", enableDeprecationWarnings: false);
 
 assert_true(
     $client->asyncJobs()->websocketUrl("video", "video 123", 1500, false) ===

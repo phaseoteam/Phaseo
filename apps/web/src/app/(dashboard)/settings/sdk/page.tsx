@@ -13,21 +13,21 @@ type Sdk = {
 	stage?: "alpha";
 };
 
-const DOCS_BASE = "https://docs.ai-stats.phaseo.app/v1";
+const DOCS_BASE = "https://docs.phaseo.app/v1";
 
 const SDKS: Sdk[] = [
 	{
 		name: "Vercel AI SDK",
-		packageName: "@ai-stats/ai-sdk-provider",
-		installCommand: "npm install @ai-stats/ai-sdk-provider ai@^6",
+		packageName: "@phaseo/ai-sdk-provider",
+		installCommand: "npm install @phaseo/ai-sdk-provider ai@^6",
 		logoId: "vercel",
 		docsLink: `${DOCS_BASE}/sdk-reference/sdk/ai-sdk`,
-		managerLink: "https://www.npmjs.com/package/@ai-stats/ai-sdk-provider",
+		managerLink: "https://www.npmjs.com/package/@phaseo/ai-sdk-provider",
 		supported: true,
 	},
 	{
 		name: "C# SDK",
-		packageName: "@ai-stats/csharp-sdk",
+		packageName: "Phaseo.Sdk",
 		installCommand: "Coming soon",
 		logoId: "csharp",
 		docsLink: `${DOCS_BASE}/sdk-reference/csharp/overview`,
@@ -37,7 +37,7 @@ const SDKS: Sdk[] = [
 	},
 	{
 		name: "C++ SDK",
-		packageName: "@ai-stats/cpp-sdk",
+		packageName: "@phaseo/cpp-sdk",
 		installCommand: "Coming soon",
 		logoId: "cpp",
 		docsLink: `${DOCS_BASE}/sdk-reference/cpp/overview`,
@@ -46,7 +46,7 @@ const SDKS: Sdk[] = [
 	},
 	{
 		name: "Go SDK",
-		packageName: "@ai-stats/go-sdk",
+		packageName: "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go",
 		installCommand: "Coming soon",
 		logoId: "go",
 		docsLink: `${DOCS_BASE}/sdk-reference/go/overview`,
@@ -56,7 +56,7 @@ const SDKS: Sdk[] = [
 	},
 	{
 		name: "Java SDK",
-		packageName: "@ai-stats/java-sdk",
+		packageName: "app.phaseo:sdk",
 		installCommand: "Coming soon",
 		logoId: "java",
 		docsLink: `${DOCS_BASE}/sdk-reference/java/overview`,
@@ -66,7 +66,7 @@ const SDKS: Sdk[] = [
 	},
 	{
 		name: "PHP SDK",
-		packageName: "@ai-stats/php-sdk",
+		packageName: "phaseo/sdk",
 		installCommand: "Coming soon",
 		logoId: "php",
 		docsLink: `${DOCS_BASE}/sdk-reference/php/overview`,
@@ -76,16 +76,16 @@ const SDKS: Sdk[] = [
 	},
 	{
 		name: "Python SDK",
-		packageName: "ai-stats-py-sdk",
-		installCommand: "pip install ai-stats-py-sdk",
+		packageName: "phaseo",
+		installCommand: "pip install phaseo",
 		logoId: "python",
 		docsLink: `${DOCS_BASE}/sdk-reference/python/overview`,
-		managerLink: "https://pypi.org/project/ai-stats-py-sdk/",
+		managerLink: "https://pypi.org/project/phaseo/",
 		supported: true,
 	},
 	{
 		name: "Ruby SDK",
-		packageName: "@ai-stats/ruby-sdk",
+		packageName: "phaseo_sdk",
 		installCommand: "Coming soon",
 		logoId: "ruby",
 		docsLink: `${DOCS_BASE}/sdk-reference/ruby/overview`,
@@ -95,7 +95,7 @@ const SDKS: Sdk[] = [
 	},
 	{
 		name: "Rust SDK",
-		packageName: "@ai-stats/rust-sdk",
+		packageName: "phaseo-rust-sdk",
 		installCommand: "Coming soon",
 		logoId: "rust",
 		docsLink: `${DOCS_BASE}/sdk-reference/rust/overview`,
@@ -104,11 +104,11 @@ const SDKS: Sdk[] = [
 	},
 	{
 		name: "TypeScript SDK",
-		packageName: "@ai-stats/sdk",
-		installCommand: "npm install @ai-stats/sdk",
+		packageName: "@phaseo/sdk",
+		installCommand: "npm install @phaseo/sdk",
 		logoId: "typescript",
 		docsLink: `${DOCS_BASE}/sdk-reference/typescript/overview`,
-		managerLink: "https://www.npmjs.com/package/@ai-stats/sdk",
+		managerLink: "https://www.npmjs.com/package/@phaseo/sdk",
 		supported: true,
 	},
 ];
@@ -116,7 +116,7 @@ const SDKS: Sdk[] = [
 export const metadata: Metadata = {
 	title: "SDKs - Settings",
 	description:
-		"SDKs and integrations for the AI Stats Gateway, including TypeScript, Python, and Vercel AI SDK setup details with quick-start guidance for production use.",
+		"SDKs and integrations for the Phaseo Gateway, including TypeScript, Python, and Vercel AI SDK setup details with quick-start guidance for production use.",
 };
 
 export default function SettingsSdkPage() {
@@ -131,7 +131,7 @@ export default function SettingsSdkPage() {
 					<div className="flex items-center gap-2">
 						<Boxes className="h-5 w-5 text-muted-foreground" />
 						<h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-							SDKs for the AI Stats gateway
+							SDKs for the Phaseo gateway
 						</h1>
 					</div>
 					<p className="text-sm text-zinc-600 dark:text-zinc-300">

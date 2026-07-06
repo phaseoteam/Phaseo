@@ -6,42 +6,42 @@ import (
 	"strconv"
 	"testing"
 
-	aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
-	gen "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go/src/gen"
+	phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
+	gen "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/src/gen"
 )
 
 func TestSmokeResponsesSDK(t *testing.T) {
-	apiKey := os.Getenv("AI_STATS_API_KEY")
+	apiKey := os.Getenv("PHASEO_API_KEY")
 	if apiKey == "" {
-		t.Skip("AI_STATS_API_KEY is required")
+		t.Skip("PHASEO_API_KEY is required")
 	}
 
-	baseURL := os.Getenv("AI_STATS_BASE_URL")
+	baseURL := os.Getenv("PHASEO_BASE_URL")
 	if baseURL == "" {
 		baseURL = "https://api.phaseo.app/v1"
 	}
 
-	model := os.Getenv("AI_STATS_SMOKE_MODEL")
+	model := os.Getenv("PHASEO_SMOKE_MODEL")
 	if model == "" {
-		model = "openai/gpt-5-nano"
+		model = "openai/gpt-5.4-nano"
 	}
 
-	input := os.Getenv("AI_STATS_SMOKE_INPUT")
+	input := os.Getenv("PHASEO_SMOKE_INPUT")
 	if input == "" {
 		input = "Hi"
 	}
 
 	maxOutputTokens := 32
-	if raw := os.Getenv("AI_STATS_SMOKE_MAX_OUTPUT_TOKENS"); raw != "" {
+	if raw := os.Getenv("PHASEO_SMOKE_MAX_OUTPUT_TOKENS"); raw != "" {
 		if parsed, err := strconv.Atoi(raw); err == nil && parsed > 0 {
 			maxOutputTokens = parsed
 		}
 	}
 
-	client := aistats.New(
+	client := phaseo.New(
 		apiKey,
 		baseURL,
-		aistats.WithDeprecationWarnings(false),
+		phaseo.WithDeprecationWarnings(false),
 	)
 
 	response, err := client.CreateResponse(context.Background(), gen.ResponsesRequest{

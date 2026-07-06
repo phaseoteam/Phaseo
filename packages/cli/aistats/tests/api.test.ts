@@ -113,13 +113,14 @@ test("prefers device code in SSH and CI environments", () => {
 
 test("renders a branded login banner", () => {
 	const banner = renderLoginBanner();
-	assert.match(banner, /AI Stats CLI/);
+	assert.match(banner, /_____  _/);
+	assert.match(banner, /Phaseo CLI/);
 	assert.match(banner, /Workspace control, keys, and routing tools/);
 });
 
 test("renders login menu with the selected default option", () => {
 	const menu = renderLoginMenu(0, "browser");
-	assert.match(menu, /> Sign in with AI Stats \[default\]/);
+	assert.match(menu, /> Sign in with Phaseo \[default\]/);
 	assert.match(menu, /Sign in with Device Code/);
 });
 
@@ -148,8 +149,8 @@ test("ignores callback hits until an authorization code is present", () => {
 test("resolves help text for command groups and leaf commands", () => {
 	assert.equal(helpKeyForCommand(["keys"]), "keys");
 	assert.equal(helpKeyForCommand(["keys", "create"]), "keys create");
-	assert.match(renderHelp(["keys", "create"]), /aistats keys create --name <name>/);
-	assert.match(renderHelp(["pricing"]), /aistats pricing calculate --provider <provider>/);
+	assert.match(renderHelp(["keys", "create"]), /phaseo keys create --name <name>/);
+	assert.match(renderHelp(["pricing"]), /phaseo pricing calculate --provider <provider>/);
 	assert.match(renderHelp(["login"]), /--scopes <csv>/);
 });
 
@@ -173,8 +174,8 @@ test("detects preferred package managers and emits install/update commands", () 
 	assert.equal(detectPackageManager({ npm_config_user_agent: "yarn/1.22.22 npm/? node/v24" } as NodeJS.ProcessEnv), "yarn");
 	assert.equal(detectPackageManager({ npm_config_user_agent: "bun/1.2.0 npm/? node/v24" } as NodeJS.ProcessEnv), "bun");
 	assert.equal(detectPackageManager({} as NodeJS.ProcessEnv), "npm");
-	assert.equal(installCommandFor("pnpm"), "pnpm add -g @ai-stats/cli");
-	assert.equal(updateCommandFor("npm"), "npm install -g @ai-stats/cli@latest");
+	assert.equal(installCommandFor("pnpm"), "pnpm add -g @phaseo/cli");
+	assert.equal(updateCommandFor("npm"), "npm install -g @phaseo/cli@latest");
 });
 
 test("compares semantic versions and renders version details", () => {
@@ -184,12 +185,12 @@ test("compares semantic versions and renders version details", () => {
 	const text = renderVersionText({
 		version: "0.1.0",
 		packageManager: "pnpm",
-		installCommand: "pnpm add -g @ai-stats/cli",
-		updateCommand: "pnpm add -g @ai-stats/cli@latest",
+		installCommand: "pnpm add -g @phaseo/cli",
+		updateCommand: "pnpm add -g @phaseo/cli@latest",
 		latestVersion: "0.2.0",
 		updateAvailable: true,
 	});
-	assert.match(text, /AI Stats CLI 0.1.0/);
-	assert.match(text, /pnpm add -g @ai-stats\/cli@latest/);
+	assert.match(text, /Phaseo CLI 0.1.0/);
+	assert.match(text, /pnpm add -g @phaseo\/cli@latest/);
 	assert.match(text, /update available/);
 });

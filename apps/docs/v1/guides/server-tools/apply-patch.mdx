@@ -3,7 +3,7 @@ title: "Apply Patch"
 description: "Let Responses models return validated patch operations."
 ---
 
-Use `ai-stats:apply_patch` when a Responses workflow should return file changes as structured patch operations. AI Stats validates the operation and returns it to your client; it does not mutate your filesystem or repository.
+Use `ai-stats:apply_patch` when a Responses workflow should return file changes as structured patch operations. Phaseo validates the operation and returns it to your client; it does not mutate your filesystem or repository.
 
 <Note>
 `ai-stats:apply_patch` is available on `/v1/responses`.
@@ -48,7 +48,7 @@ Supported operation types:
 
 ## Tool Result
 
-AI Stats returns the validated operation to the model loop:
+Phaseo returns the validated operation to the model loop:
 
 ```json
 {
@@ -66,7 +66,7 @@ Your application remains responsible for applying the patch, showing it to a use
 
 ## Usage And Pricing
 
-AI Stats records:
+Phaseo records:
 
 ```json
 {

@@ -9,10 +9,10 @@ description: "Use the Go SDK for file metadata and file-content retrieval."
 import (
   "fmt"
   "context"
-  aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
 )
 
-client := aistats.New(apiKey, "https://api.phaseo.app/v1")
+client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
 
 file, err := client.RetrieveFile(context.Background(), "file_123")
 if err != nil {

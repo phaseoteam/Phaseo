@@ -530,7 +530,7 @@ export function makeMeta(input: {
     const testId = nodeEnv === "test"
         ? normalizeBoundedString(input.req.headers.get("x-test-id"), 128)
         : null;
-    const debugHeader = input.req.headers.get("x-gateway-debug") ?? input.req.headers.get("x-ai-stats-debug");
+    const debugHeader = input.req.headers.get("x-gateway-debug") ?? input.req.headers.get("x-phaseo-debug");
     const debugEnabled = (normalizeReturnFlag(debugHeader) || Boolean(input.debug?.enabled)) && isDebugAllowed();
     const userAgent = input.req.headers.get("user-agent");
     const accept = input.req.headers.get("accept");

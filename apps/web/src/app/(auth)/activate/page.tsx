@@ -10,8 +10,8 @@ import { AuthSuspenseFallback } from "../AuthSuspenseFallback";
 import { WorkspaceSelectField } from "./WorkspaceSelectField";
 
 export const metadata = {
-	title: "Activate AI Stats CLI",
-	description: "Approve a device login request for the AI Stats CLI.",
+	title: "Activate Phaseo CLI",
+	description: "Approve a device login request for the Phaseo CLI.",
 };
 
 type ActivatePageProps = {
@@ -75,7 +75,7 @@ async function ActivatePageContent({ searchParams }: ActivatePageProps) {
 						<Terminal className="size-7 text-primary" />
 					</div>
 					<div>
-						<CardTitle className="text-2xl">Activate AI Stats CLI</CardTitle>
+						<CardTitle className="text-2xl">Activate Phaseo CLI</CardTitle>
 						<CardDescription>
 							Approve this request only if the code matches the one shown in your terminal.
 						</CardDescription>
@@ -103,7 +103,7 @@ async function ActivatePageContent({ searchParams }: ActivatePageProps) {
 								<div className="flex items-center gap-3">
 									<ShieldCheck className="size-5 text-emerald-600" />
 									<div>
-										<div className="font-medium">{request?.client?.name ?? "AI Stats CLI"}</div>
+										<div className="font-medium">{request?.client?.name ?? "Phaseo CLI"}</div>
 										<div className="text-sm text-muted-foreground">
 											Requested scopes: {(request?.scopes ?? []).join(", ")}
 										</div>

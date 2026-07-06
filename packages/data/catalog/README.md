@@ -1,6 +1,6 @@
 # @ai-stats/data-catalog
 
-Canonical AI Stats data lives in `src/data`.
+Canonical Phaseo data lives in `src/data`.
 
 - Models
 - Providers

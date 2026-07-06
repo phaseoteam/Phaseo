@@ -1,19 +1,23 @@
 ---
 title: "Examples"
-description: "Copy-paste requests plus full sample projects and cookbook walkthroughs for common AI Stats integrations."
+description: "Copy-paste Phaseo requests, runnable sample projects, and cookbook walkthroughs."
 ---
 
-Use this page when you want one of three things:
+Use this page when you already understand the basics and want working examples to copy into your app.
 
-- a small copy-paste request example
-- a full sample project you can run locally
-- a walkthrough that shows how the sample is put together
+You can use it for:
+
+- small request examples
+- runnable sample projects
+- cookbook walkthroughs that explain the project structure
 
 <Note>
 Examples marked with `:free` do not require deposited credits.
 </Note>
 
-## 1. Free-model text generation with `/responses`
+## Free text generation
+
+Use this example for the fastest zero-credit smoke test with the Responses API.
 
 <CodeGroup>
 ```bash cURL
@@ -27,9 +31,9 @@ curl https://api.phaseo.app/v1/responses \
 ```
 
 ```typescript TypeScript SDK
-import AIStats from "@ai-stats/sdk";
+import Phaseo from "@phaseo/sdk";
 
-const client = new AIStats({ apiKey: process.env.AI_STATS_API_KEY! });
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
   model: "google/gemma-3-27b:free",
@@ -40,9 +44,9 @@ console.log(response.output_text);
 ```
 
 ```python Python SDK
-from ai_stats import AIStats
+from phaseo import Phaseo
 
-client = AIStats(api_key="YOUR_API_KEY")
+client = Phaseo(api_key="YOUR_API_KEY")
 
 response = client.generate_response(
     {
@@ -61,7 +65,7 @@ import (
   "context"
   "fmt"
 
-  aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
+  aistats "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
 )
 
 func main() {
@@ -92,7 +96,7 @@ func main() {
 using AiStatsSdk;
 using System.Collections.Generic;
 
-var client = new AIStats("YOUR_API_KEY");
+var client = new Phaseo("YOUR_API_KEY");
 
 var response = await client.GenerateResponse(new Dictionary<string, object>
 {
@@ -107,9 +111,9 @@ Console.WriteLine(response);
 <?php
 require 'vendor/autoload.php';
 
-use AIStats\Sdk\AIStats;
+use AIStats\Sdk\Phaseo;
 
-$client = new AIStats(getenv('AI_STATS_API_KEY') ?: 'YOUR_API_KEY');
+$client = new Phaseo(getenv('PHASEO_API_KEY') ?: 'YOUR_API_KEY');
 
 $response = $client->generateResponse([
     'model' => 'google/gemma-3-27b:free',
@@ -120,9 +124,9 @@ print_r($response);
 ```
 
 ```ruby Ruby SDK
-require 'ai_stats_sdk'
+require 'phaseo_sdk'
 
-client = AIStatsSdk::AIStats.new(api_key: ENV.fetch('AI_STATS_API_KEY', 'YOUR_API_KEY'))
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY', 'YOUR_API_KEY'))
 
 response = client.generate_response(
   model: 'google/gemma-3-27b:free',
@@ -133,9 +137,9 @@ puts response
 ```
 
 ```java Java SDK
-import ai.stats.sdk.AIStats;
+import ai.stats.sdk.Phaseo;
 
-AIStats client = new AIStats(System.getenv("AI_STATS_API_KEY"));
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
 
 String body = """
 {
@@ -156,11 +160,13 @@ System.out.println(String.valueOf(response));
 ```
 </CodeGroup>
 
-## 2. Paid-model chat completion
+## Paid chat completion
+
+Use this when you want an OpenAI-compatible chat request against a paid model.
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer $AI_STATS_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "openai/gpt-5.4",
@@ -168,11 +174,13 @@ curl https://api.phaseo.app/v1/chat/completions \
   }'
 ```
 
-## 3. Image generation
+## Image generation
+
+Use this when your app needs a generated image from a prompt.
 
 ```bash
 curl https://api.phaseo.app/v1/images/generations \
-  -H "Authorization: Bearer $AI_STATS_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gpt-image-1",
@@ -180,25 +188,25 @@ curl https://api.phaseo.app/v1/images/generations \
   }'
 ```
 
-## Full sample projects
+## Runnable sample projects
 
-These projects live in this repository under `examples/`. Each one also has a matching cookbook walkthrough.
+Each sample project has a matching cookbook walkthrough.
 
 ### Browser apps
 
 - [Next.js web chat app](../cookbook/build-a-nextjs-web-chat-app)
-  Repo: [examples/web-chat-nextjs](https://github.com/AI-Stats/AI-Stats/tree/main/examples/web-chat-nextjs)
+  Repo: [examples/web-chat-nextjs](https://github.com/phaseoteam/Phaseo/tree/main/examples/web-chat-nextjs)
 - [OAuth Next.js workbench](../cookbook/build-an-oauth-nextjs-workbench)
-  Repo: [examples/oauth-client-nextjs](https://github.com/AI-Stats/AI-Stats/tree/main/examples/oauth-client-nextjs)
+  Repo: [examples/oauth-client-nextjs](https://github.com/phaseoteam/Phaseo/tree/main/examples/oauth-client-nextjs)
 
 ### Script and backend starters
 
 - [Node REST smoke app](../cookbook/build-a-node-rest-smoke-app)
-  Repo: [examples/gateway-node-quickstart](https://github.com/AI-Stats/AI-Stats/tree/main/examples/gateway-node-quickstart)
+  Repo: [examples/gateway-node-quickstart](https://github.com/phaseoteam/Phaseo/tree/main/examples/gateway-node-quickstart)
 - [Python gateway CLI](../cookbook/build-a-python-gateway-cli)
-  Repo: [examples/gateway-python-quickstart](https://github.com/AI-Stats/AI-Stats/tree/main/examples/gateway-python-quickstart)
+  Repo: [examples/gateway-python-quickstart](https://github.com/phaseoteam/Phaseo/tree/main/examples/gateway-python-quickstart)
 
-## Prompt-first project starters
+## Prompt-first starters
 
 If you want a coding agent to generate the first version for you, start here:
 

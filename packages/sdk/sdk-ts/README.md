@@ -1,20 +1,20 @@
-# @ai-stats/sdk
+# @phaseo/sdk
 
-Official TypeScript and JavaScript SDK for AI Stats Gateway.
+Official TypeScript and JavaScript SDK for Phaseo Gateway.
 
 ## Installation
 
 ```bash
-npm install @ai-stats/sdk
+npm install @phaseo/sdk
 ```
 
 ## Quick start
 
 ```ts
-import AIStats from "@ai-stats/sdk";
+import Phaseo from "@phaseo/sdk";
 
-const client = new AIStats({
-  apiKey: process.env.AI_STATS_API_KEY,
+const client = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY,
   // baseUrl: "https://api.phaseo.app/v1",
 });
 
@@ -29,10 +29,10 @@ console.log(response.output_text);
 ## Streaming example
 
 ```ts
-import AIStats from "@ai-stats/sdk";
+import Phaseo from "@phaseo/sdk";
 
-const client = new AIStats({
-  apiKey: process.env.AI_STATS_API_KEY,
+const client = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY,
 });
 
 let response = "";
@@ -56,11 +56,11 @@ for await (const chunk of client.streamChat({
 The SDK includes compatibility layers for OpenAI and Anthropic-style clients.
 
 ```ts
-import { OpenAI } from "@ai-stats/sdk/compat/openai";
-import { Anthropic } from "@ai-stats/sdk/compat/anthropic";
+import { OpenAI } from "@phaseo/sdk/compat/openai";
+import { Anthropic } from "@phaseo/sdk/compat/anthropic";
 
-const openai = new OpenAI({ apiKey: process.env.AI_STATS_API_KEY });
-const anthropic = new Anthropic({ apiKey: process.env.AI_STATS_API_KEY });
+const openai = new OpenAI({ apiKey: process.env.PHASEO_API_KEY });
+const anthropic = new Anthropic({ apiKey: process.env.PHASEO_API_KEY });
 ```
 
 Compatibility guide: [COMPAT_GUIDE.md](./COMPAT_GUIDE.md)
@@ -113,8 +113,8 @@ const batch = await client.batches.create({
   input_file_id: "file_123",
   completion_window: "24h",
   webhook: {
-    url: "https://example.com/ai-stats/webhooks",
-    secret: process.env.AI_STATS_WEBHOOK_SECRET,
+    url: "https://example.com/phaseo/webhooks",
+    secret: process.env.PHASEO_WEBHOOK_SECRET,
     events: ["batch.progress", "batch.completed", "batch.failed"],
   },
 });
@@ -123,8 +123,8 @@ const video = await client.videos.create({
   model: "google/veo-3",
   prompt: "orbital reveal",
   webhook: {
-    url: "https://example.com/ai-stats/webhooks",
-    secret: process.env.AI_STATS_WEBHOOK_SECRET,
+    url: "https://example.com/phaseo/webhooks",
+    secret: process.env.PHASEO_WEBHOOK_SECRET,
     events: ["video.progress", "video.completed", "video.failed"],
   },
 });
@@ -152,8 +152,8 @@ const genericSocketUrl = client.getAsyncJobWebSocketUrl("video", "video_123");
 Deprecation warnings are enabled by default.
 
 ```ts
-const client = new AIStats({
-  apiKey: process.env.AI_STATS_API_KEY,
+const client = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY,
   enableDeprecationWarnings: true,
   warningsAsErrors: false,
   logger: (level, message, meta) => {
@@ -164,18 +164,18 @@ const client = new AIStats({
 
 ## Environment variables
 
-- `AI_STATS_API_KEY` (required unless passed in code)
-- `AI_STATS_BASE_URL` (optional, defaults to `https://api.phaseo.app/v1`)
+- `PHASEO_API_KEY` (required unless passed in code)
+- `PHASEO_BASE_URL` (optional, defaults to `https://api.phaseo.app/v1`)
 
 ## Devtools
 
 ```ts
-import { AIStats, createAIStatsDevtools } from "@ai-stats/sdk";
+import { Phaseo, createPhaseoDevtools } from "@phaseo/sdk";
 
-const client = new AIStats({
-  apiKey: process.env.AI_STATS_API_KEY,
-  devtools: createAIStatsDevtools({
-    directory: ".ai-stats-devtools",
+const client = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY,
+  devtools: createPhaseoDevtools({
+    directory: ".phaseo-devtools",
     captureHeaders: true,
   }),
 });
@@ -184,12 +184,12 @@ const client = new AIStats({
 Viewer:
 
 ```bash
-npx @ai-stats/devtools-viewer
+npx @phaseo/devtools-viewer
 ```
 
 ## Regeneration and local checks
 
 - Regenerate generated client: `pnpm openapi:gen:ts`
-- Run local compatibility tests: `pnpm --filter @ai-stats/sdk test`
-- Build package: `pnpm --filter @ai-stats/sdk build`
-- Run live smoke tests explicitly: `pnpm --filter @ai-stats/sdk test:smoke`
+- Run local compatibility tests: `pnpm --filter @phaseo/sdk test`
+- Build package: `pnpm --filter @phaseo/sdk build`
+- Run live smoke tests explicitly: `pnpm --filter @phaseo/sdk test:smoke`

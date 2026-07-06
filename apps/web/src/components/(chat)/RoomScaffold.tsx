@@ -170,7 +170,7 @@ export function RoomScaffold({ children }: RoomScaffoldProps) {
 			<Sidebar collapsible="icon" className="border-r border-border bg-background">
 				<SidebarHeader className="h-[57px] gap-0 border-b border-border px-0 py-0">
 					<div className="flex h-full w-full items-center gap-2 px-4 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2">
-						<Link href="/" aria-label="AI Stats">
+						<Link href="/" aria-label="Phaseo">
 							<RoomSidebarBrand />
 						</Link>
 					</div>

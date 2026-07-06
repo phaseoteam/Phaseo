@@ -58,8 +58,8 @@ const options = parseArgs(process.argv.slice(2));
 const repoRoot = process.cwd();
 const outputDir = path.resolve(repoRoot, options.dir);
 
-if (!process.env.AI_STATS_API_KEY) {
-	console.log("AI_STATS_API_KEY not set in shell; relying on per-SDK .env.local files.");
+if (!process.env.PHASEO_API_KEY) {
+	console.log("PHASEO_API_KEY not set in shell; relying on per-SDK .env.local files.");
 }
 
 if (options.clean && existsSync(outputDir)) {
@@ -69,15 +69,15 @@ mkdirSync(outputDir, { recursive: true });
 
 const sharedEnv = {
 	...process.env,
-	AI_STATS_DEVTOOLS: "true",
-	AI_STATS_DEVTOOLS_DIR: outputDir,
-	AI_STATS_SMOKE_MODEL: options.model,
-	AI_STATS_SMOKE_INPUT: options.input,
-	AI_STATS_SMOKE_MAX_OUTPUT_TOKENS: options.maxOutputTokens,
+	PHASEO_DEVTOOLS: "true",
+	PHASEO_DEVTOOLS_DIR: outputDir,
+	PHASEO_SMOKE_MODEL: options.model,
+	PHASEO_SMOKE_INPUT: options.input,
+	PHASEO_SMOKE_MAX_OUTPUT_TOKENS: options.maxOutputTokens,
 };
 
 const runs = [
-	{ name: "TypeScript SDK", command: "pnpm --filter @ai-stats/sdk smoke:responses" },
+	{ name: "TypeScript SDK", command: "pnpm --filter @phaseo/sdk smoke:responses" },
 	{ name: "Python SDK", command: "pnpm --filter @ai-stats/py-sdk smoke:responses" },
 	{ name: "Go SDK", command: "pnpm --filter @ai-stats/go-sdk smoke:responses:sdk" },
 	{ name: "C# SDK", command: "pnpm --filter @ai-stats/csharp-sdk smoke:responses:sdk" },
@@ -125,5 +125,5 @@ console.log("Open viewer with:");
 if (path.resolve(repoRoot, ".ai-stats-devtools") === outputDir) {
 	console.log("pnpm ai-stats-devtools");
 } else {
-	console.log(`pnpm --filter @ai-stats/devtools-viewer start -- --dir \"${outputDir}\"`);
+	console.log(`pnpm --filter @phaseo/devtools-viewer start -- --dir \"${outputDir}\"`);
 }

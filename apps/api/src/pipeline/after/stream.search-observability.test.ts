@@ -180,7 +180,7 @@ describe("handleStreamResponse search observability", () => {
 										annotations: [
 											{
 												type: "url_citation",
-												title: "AI Stats Docs",
+												title: "Phaseo Docs",
 												url: "https://example.com/docs",
 												quoted_text: "Useful streamed source text",
 											},
@@ -188,7 +188,7 @@ describe("handleStreamResponse search observability", () => {
 									},
 									{
 										type: "web_search_result",
-										title: "AI Stats Docs",
+										title: "Phaseo Docs",
 										url: "https://example.com/docs",
 										text: "Docs summary",
 									},
@@ -233,7 +233,7 @@ describe("handleStreamResponse search observability", () => {
 			results: [
 				{
 					type: "web_search_result",
-					title: "AI Stats Docs",
+					title: "Phaseo Docs",
 					url: "https://example.com/docs",
 					snippet: "Docs summary",
 				},
@@ -241,7 +241,7 @@ describe("handleStreamResponse search observability", () => {
 			citations: [
 				{
 					type: "url_citation",
-					title: "AI Stats Docs",
+					title: "Phaseo Docs",
 					url: "https://example.com/docs",
 					text: "Useful streamed source text",
 				},
@@ -324,7 +324,7 @@ describe("handleStreamResponse search observability", () => {
 					results: [
 						{
 							type: null,
-							title: "AI Stats Docs",
+							title: "Phaseo Docs",
 							url: "https://example.com/docs",
 							snippet: "Managed summary",
 						},
@@ -332,7 +332,7 @@ describe("handleStreamResponse search observability", () => {
 					citations: [
 						{
 							type: "managed_web_search_result",
-							title: "AI Stats Docs",
+							title: "Phaseo Docs",
 							url: "https://example.com/docs",
 							text: "Managed highlight",
 						},
@@ -387,7 +387,7 @@ describe("handleStreamResponse search observability", () => {
 			results: [
 				{
 					type: null,
-					title: "AI Stats Docs",
+					title: "Phaseo Docs",
 					url: "https://example.com/docs",
 					snippet: "Managed summary",
 				},
@@ -395,7 +395,7 @@ describe("handleStreamResponse search observability", () => {
 			citations: [
 				{
 					type: "managed_web_search_result",
-					title: "AI Stats Docs",
+					title: "Phaseo Docs",
 					url: "https://example.com/docs",
 					text: "Managed highlight",
 				},

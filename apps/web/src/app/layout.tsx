@@ -19,6 +19,7 @@ import { CookieConsentManager } from "@/components/analytics/CookieConsentManage
 import { DeferredVercelAnalytics } from "@/components/analytics/DeferredVercelAnalytics";
 import { ConsoleEasterEgg } from "@/components/ConsoleEasterEgg";
 import SiteNoticeSlot from "@/components/site-notice/SiteNoticeSlot";
+import ThemeAwareFavicon from "@/components/ThemeAwareFavicon";
 import { Suspense } from "react";
 
 const montserrat = Montserrat({ subsets: ["latin"] });
@@ -33,6 +34,10 @@ export const metadata: Metadata = {
 	applicationName: PREFERRED_SITE_NAME,
 	authors: [{ name: SITE_NAME }],
 	metadataBase: METADATA_BASE,
+	icons: {
+		icon: [{ url: "/api/favicon", type: "image/svg+xml", sizes: "any" }],
+		shortcut: [{ url: "/api/favicon", type: "image/svg+xml" }],
+	},
 	openGraph: {
 		type: "website",
 		locale: "en_GB",
@@ -46,13 +51,13 @@ export const metadata: Metadata = {
 				url: absoluteUrl("/og.png"),
 				width: 1200,
 				height: 630,
-				alt: "AI Stats - Browse and compare AI models",
+				alt: "Phaseo - Browse and compare AI models",
 			},
 		],
 	},
 	twitter: {
 		card: "summary_large_image",
-		site: "@phaseoapp",
+		site: "@phaseoteam",
 		creator: "@DanielButler001",
 		title: PREFERRED_SITE_NAME,
 		description:
@@ -88,6 +93,7 @@ export default function RootLayout({
 					disableTransitionOnChange
 				>
 					<TooltipProvider>
+						<ThemeAwareFavicon />
 						<Suspense fallback={null}>
 							<SiteNoticeSlot />
 						</Suspense>

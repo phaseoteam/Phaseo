@@ -19,10 +19,10 @@ Use this recipe when a TypeScript or JavaScript service should combine:
 ## 1. Start with one shared client
 
 ```ts
-import AIStats from "@ai-stats/sdk";
+import Phaseo from "@phaseo/sdk";
 
-export const gateway = new AIStats({
-  apiKey: process.env.AI_STATS_API_KEY!,
+export const gateway = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY!,
 });
 ```
 

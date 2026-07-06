@@ -39,13 +39,27 @@ const nextConfig = {
           {
             key: "Link",
             value:
-              '</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json", <https://docs.ai-stats.phaseo.app/v1/api-reference/introduction>; rel="service-doc"; type="text/html", </.well-known/agent-skills/index.json>; rel="describedby"; type="application/json"',
+              '</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json", <https://docs.phaseo.app/v1/api-reference/introduction>; rel="service-doc"; type="text/html", </.well-known/agent-skills/index.json>; rel="describedby"; type="application/json"',
           },
           {
             key: "Vary",
             value: "Accept",
           },
         ],
+      },
+    ];
+  },
+  async redirects() {
+    return [
+      {
+        source: "/announcements",
+        destination: "/blog",
+        permanent: true,
+      },
+      {
+        source: "/announcements/:slug*",
+        destination: "/blog/:slug*",
+        permanent: true,
       },
     ];
   },

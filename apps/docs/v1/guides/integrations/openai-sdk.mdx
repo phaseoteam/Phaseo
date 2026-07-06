@@ -1,6 +1,6 @@
 ---
 title: "OpenAI SDK"
-description: "Use official OpenAI SDKs with AI Stats."
+description: "Use official OpenAI SDKs with Phaseo."
 ---
 
 Use this guide when your app already calls OpenAI from TypeScript, JavaScript, or Python. Change only the API key, base URL, and model id.
@@ -15,7 +15,7 @@ npm install openai
 import OpenAI from "openai";
 
 const client = new OpenAI({
-	apiKey: process.env.AI_STATS_API_KEY,
+	apiKey: process.env.PHASEO_API_KEY,
 	baseURL: "https://api.phaseo.app/v1",
 });
 
@@ -38,7 +38,7 @@ import os
 from openai import OpenAI
 
 client = OpenAI(
-    api_key=os.environ["AI_STATS_API_KEY"],
+    api_key=os.environ["PHASEO_API_KEY"],
     base_url="https://api.phaseo.app/v1",
 )
 
@@ -63,8 +63,8 @@ const completion = await client.chat.completions.create({
 
 ## Notes
 
-- Use AI Stats model ids, including provider prefixes such as `openai/`, `anthropic/`, or `google/`.
-- Server tools use AI Stats tool names such as `ai-stats:web_search`.
+- Use Phaseo model ids, including provider prefixes such as `openai/`, `anthropic/`, or `google/`.
+- Server tools use Phaseo tool names such as `phaseo:web_search`.
 - For Anthropic-native clients, use the [Anthropic SDK](./anthropic-sdk.mdx) guide instead.
 
 ## Related

@@ -23,7 +23,7 @@ describe("extractSearchObservability", () => {
 								annotations: [
 									{
 										type: "url_citation",
-										title: "AI Stats Blog",
+										title: "Phaseo Blog",
 										url: "https://example.com/blog",
 										quoted_text: "Quoted source text",
 									},
@@ -31,7 +31,7 @@ describe("extractSearchObservability", () => {
 							},
 							{
 								type: "web_search_result",
-								title: "AI Stats Blog",
+								title: "Phaseo Blog",
 								url: "https://example.com/blog",
 								text: "Helpful summary",
 							},
@@ -49,7 +49,7 @@ describe("extractSearchObservability", () => {
 			results: [
 				{
 					type: "web_search_result",
-					title: "AI Stats Blog",
+					title: "Phaseo Blog",
 					url: "https://example.com/blog",
 					snippet: "Helpful summary",
 				},
@@ -57,7 +57,7 @@ describe("extractSearchObservability", () => {
 			citations: [
 				{
 					type: "url_citation",
-					title: "AI Stats Blog",
+					title: "Phaseo Blog",
 					url: "https://example.com/blog",
 					text: "Quoted source text",
 				},
@@ -153,13 +153,13 @@ describe("extractSearchObservability", () => {
 								{
 									web: {
 										uri: "https://example.com/docs",
-										title: "AI Stats Docs",
+										title: "Phaseo Docs",
 									},
 								},
 								{
 									web: {
 										uri: "https://example.com/blog",
-										title: "AI Stats Blog",
+										title: "Phaseo Blog",
 									},
 								},
 							],
@@ -185,13 +185,13 @@ describe("extractSearchObservability", () => {
 			results: [
 				{
 					type: "grounding_chunk",
-					title: "AI Stats Docs",
+					title: "Phaseo Docs",
 					url: "https://example.com/docs",
 					snippet: null,
 				},
 				{
 					type: "grounding_chunk",
-					title: "AI Stats Blog",
+					title: "Phaseo Blog",
 					url: "https://example.com/blog",
 					snippet: null,
 				},
@@ -199,13 +199,13 @@ describe("extractSearchObservability", () => {
 			citations: [
 				{
 					type: "grounding_support",
-					title: "AI Stats Docs",
+					title: "Phaseo Docs",
 					url: "https://example.com/docs",
 					text: "Docs-backed answer segment",
 				},
 				{
 					type: "grounding_support",
-					title: "AI Stats Blog",
+					title: "Phaseo Blog",
 					url: "https://example.com/blog",
 					text: "Docs-backed answer segment",
 				},
@@ -241,7 +241,7 @@ describe("extractSearchObservability", () => {
 					query: "ai stats gateway docs",
 					results: [
 						{
-							title: "AI Stats Docs",
+							title: "Phaseo Docs",
 							url: "https://example.com/docs",
 							highlights: ["Helpful snippet"],
 							text: "Longer page text",
@@ -259,7 +259,7 @@ describe("extractSearchObservability", () => {
 			results: [
 				{
 					type: null,
-					title: "AI Stats Docs",
+					title: "Phaseo Docs",
 					url: "https://example.com/docs",
 					snippet: "Longer page text",
 				},
@@ -267,7 +267,7 @@ describe("extractSearchObservability", () => {
 			citations: [
 				{
 					type: "managed_web_search_result",
-					title: "AI Stats Docs",
+					title: "Phaseo Docs",
 					url: "https://example.com/docs",
 					text: "Helpful snippet",
 				},

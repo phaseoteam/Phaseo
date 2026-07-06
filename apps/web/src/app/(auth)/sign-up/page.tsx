@@ -12,7 +12,7 @@ type SignUpPageProps = {
 export const metadata: Metadata = {
 	title: "Sign Up",
 	description:
-		"Create an AI Stats account to access the Gateway, configure model routing, review performance analytics, and manage billing across personal and team workspaces.",
+		"Create A Phaseo account to access the Gateway, configure model routing, review performance analytics, and manage billing across personal and team workspaces.",
 };
 
 export default function Page({ searchParams }: SignUpPageProps) {

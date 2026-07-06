@@ -1,7 +1,7 @@
-# AI Stats Devtools - Development Script (Windows)
+# Phaseo Devtools - Development Script (Windows)
 # Quick start script for local development
 
-Write-Host "🚀 Starting AI Stats Devtools Development Environment" -ForegroundColor Cyan
+Write-Host "🚀 Starting Phaseo Devtools Development Environment" -ForegroundColor Cyan
 Write-Host ""
 
 # Check if node_modules exists

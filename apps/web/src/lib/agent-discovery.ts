@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { absoluteUrl, SITE_URL } from "@/lib/seo";
 
-const DEFAULT_DOCS_BASE_URL = "https://docs.ai-stats.phaseo.app";
+const DEFAULT_DOCS_BASE_URL = "https://phaseo.app";
 const DEFAULT_GATEWAY_API_BASE_URL = "https://api.phaseo.app/v1";
 const DEFAULT_SUPABASE_BASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co";
 
@@ -78,14 +78,14 @@ const PUBLISHED_SKILLS: PublishedSkill[] = [
 		name: "discover-api-surface",
 		type: "tool",
 		description:
-			"Locate the AI Stats Gateway API base URL, OpenAPI description, docs, health endpoint, and authentication metadata.",
+			"Locate the Phaseo Gateway API base URL, OpenAPI description, docs, health endpoint, and authentication metadata.",
 	},
 	{
 		slug: "browse-model-catalog",
 		name: "browse-model-catalog",
 		type: "tool",
 		description:
-			"Open the public AI Stats model database and provider comparison pages for model research.",
+			"Open the public Phaseo model database and provider comparison pages for model research.",
 	},
 	{
 		slug: "open-gateway-quickstart",
@@ -103,13 +103,13 @@ export function estimateMarkdownTokens(markdown: string): string {
 
 export function buildHomeMarkdown(): string {
 	return `---
-title: AI Stats
+title: Phaseo
 url: ${SITE_URL}
 ---
 
-# AI Stats
+# Phaseo
 
-AI Stats is an open model database and OpenAI-compatible gateway for comparing models, pricing, benchmarks, and provider coverage.
+Phaseo is an open model database and OpenAI-compatible gateway for comparing models, pricing, benchmarks, and provider coverage.
 
 ## Primary resources
 
@@ -295,7 +295,7 @@ export function getAgentSkillsIndex() {
 export function buildMcpServerCard() {
 	return {
 		serverInfo: {
-			name: "AI Stats WebMCP",
+			name: "Phaseo WebMCP",
 			version: "1.0.0",
 		},
 		transports: [

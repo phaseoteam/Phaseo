@@ -1,0 +1,38 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "phaseo"
+version = "2.0.5"
+description = "Phaseo Python SDK transition package."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Phaseo", email = "support@phaseo.app" }]
+keywords = ["ai", "sdk", "llm", "gateway", "phaseo"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Typing :: Typed",
+]
+dependencies = [
+  "ai-stats-py-sdk==2.0.5",
+]
+
+[project.urls]
+Homepage = "https://phaseo.app"
+Documentation = "https://docs.phaseo.app"
+Repository = "https://github.com/phaseoteam/Phaseo"
+Issues = "https://github.com/phaseoteam/Phaseo/issues"
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "src/phaseo",
+  "README.md",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/phaseo"]

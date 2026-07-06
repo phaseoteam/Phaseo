@@ -44,7 +44,7 @@ info() {
 # Check prerequisites
 if [ -z "$API_KEY" ]; then
   error "API_KEY environment variable not set"
-  echo "  export API_KEY=aistats_v1_sk_YOUR_KEY"
+  echo "  export API_KEY=phaseo_v1_sk_YOUR_KEY"
   exit 1
 fi
 

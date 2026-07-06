@@ -59,7 +59,7 @@ jobs:
               run: |
                   pnpm exec tsx scripts/model-discovery/run-internal-public.ts \
                     --discord-role-id "1377690778478055584" \
-                    --discord-avatar-url "https://ai-stats.phaseo.app/png_logo_light.png" \
+                    --discord-avatar-url "https://phaseo.app/png_logo_light.png" \
                     --skip-hf
 
             - name: Save internal model state cache

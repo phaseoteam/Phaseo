@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "../..");
 const specPath = path.join(repoRoot, "apps/docs/openapi/v1/openapi.yaml");
-const websiteBase = "https://ai-stats.phaseo.app";
+const websiteBase = "https://phaseo.app";
 
 const specRaw = await fs.readFile(specPath, "utf8");
 const spec = yaml.load(specRaw);
@@ -236,7 +236,7 @@ function renderPy(items, aliases) {
 }
 
 function renderGo(items, aliases) {
-	const lines = [renderHeader("//").trimEnd(), "", "package aistats", "", "import gen \"github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go/src/gen\"", "", "// ModelIds contains known model IDs for editor autocomplete and hover docs.", "const (",];
+	const lines = [renderHeader("//").trimEnd(), "", "package aistats", "", "import gen \"github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/src/gen\"", "", "// ModelIds contains known model IDs for editor autocomplete and hover docs.", "const (",];
 	for (const item of items) {
 		lines.push(
 			`	// Model ID: ${item.id}`,

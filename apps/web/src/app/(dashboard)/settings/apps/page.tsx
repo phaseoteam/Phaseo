@@ -8,7 +8,7 @@ import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHead
 import { fetchSettingsAppsInitialData } from "@/lib/fetchers/internal/fetchSettingsAppsInitialData";
 
 const ATTRIBUTION_DOCS_HREF =
-	"https://docs.ai-stats.phaseo.app/v1/guides/app-attribution";
+	"https://docs.phaseo.app/v1/guides/app-attribution";
 
 export const metadata = {
 	title: "Apps - Settings",

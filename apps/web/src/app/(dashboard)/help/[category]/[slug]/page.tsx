@@ -87,18 +87,18 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
 		return buildMetadata({
 			title: "Help Article",
 			description:
-				"Read this AI Stats help article for step-by-step guidance, troubleshooting details, related support resources, and implementation notes for common dashboard and gateway tasks.",
+				"Read this Phaseo help article for step-by-step guidance, troubleshooting details, related support resources, and implementation notes for common dashboard and gateway tasks.",
 			path,
 		});
 	}
 
 	return buildMetadata({
 		title: article.title,
-		description: `${article.description} Includes practical steps, troubleshooting notes, and links to related AI Stats support docs so teams can resolve setup and usage issues faster.`,
+		description: `${article.description} Includes practical steps, troubleshooting notes, and links to related Phaseo support docs so teams can resolve setup and usage issues faster.`,
 		path,
 		keywords: [
 			`${article.title} help`,
-			"AI Stats help center",
+			"Phaseo help center",
 			"AI gateway support article",
 		],
 	});

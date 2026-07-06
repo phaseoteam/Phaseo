@@ -65,6 +65,7 @@ jobs:
                   pnpm exec tsx scripts/model-discovery/run-hf-private.ts
                   --discord-role-id "${DISCORD_ROLE_ID}"
                   --discord-user-id "${DISCORD_USER_ID}"
+                  --hf-discord-avatar-url "https://phaseo.app/png_logo_dark.png"
                   --hf-token "${HF_TOKEN}"
                   --hf-orgs "primeintellect,voyageai,arcee-ai,apple,baidu,suno,perplexity-ai,moonshotai,elevenlabs,cohere,anthropic,amazon,ai21labs,ai-stats,ibm-granite,nousresearch,bytedance-seed,minimaxai,microsoft,xai-org,zai-org,lgai-exaone,mistralai,meta-llama,nvidia,google,openai,deepseek-ai,qwen"
 

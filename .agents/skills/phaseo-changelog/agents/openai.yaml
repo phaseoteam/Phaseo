@@ -1,0 +1,4 @@
+interface:
+  display_name: "Phaseo Changelog"
+  short_description: "Write Phaseo changelog entries and combined timelines"
+  default_prompt: "Use $phaseo-changelog to update Phaseo changelog pages with concise date-grouped Product and New Models entries."

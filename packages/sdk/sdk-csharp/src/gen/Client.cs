@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace AiStats.Gen;
+namespace Phaseo.Gen;
 
 public sealed class ApiErrorException : Exception
 {

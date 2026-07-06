@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
-import { AIStats } from "../src/index.js";
+import { Phaseo } from "../src/index.js";
 
 // Load smoke test manifest
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -14,7 +14,7 @@ if (!apiKey) {
 }
 
 const baseUrl = process.env[manifest.baseUrlEnv] || manifest.defaultBaseUrl;
-const client = new AIStats({ apiKey, baseUrl });
+const client = new Phaseo({ apiKey, baseUrl });
 
 console.log(`\nðŸ§ª Running smoke test with ${manifest.testModel}...`);
 console.log(`ðŸ“ Base URL: ${baseUrl}\n`);
@@ -30,9 +30,9 @@ if (!operation) {
 }
 
 const payload = JSON.parse(JSON.stringify(operation.body));
-const smokeModel = process.env.AI_STATS_SMOKE_MODEL;
-const smokeInput = process.env.AI_STATS_SMOKE_INPUT;
-const smokeMaxOutputTokens = process.env.AI_STATS_SMOKE_MAX_OUTPUT_TOKENS;
+const smokeModel = process.env.PHASEO_SMOKE_MODEL;
+const smokeInput = process.env.PHASEO_SMOKE_INPUT;
+const smokeMaxOutputTokens = process.env.PHASEO_SMOKE_MAX_OUTPUT_TOKENS;
 if (smokeModel) {
 	payload.model = smokeModel;
 }

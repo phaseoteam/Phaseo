@@ -80,7 +80,7 @@ export default function EmailPassword({
 						id="email"
 						name="email"
 						type="email"
-						placeholder="ai-stats@example.com"
+						placeholder="phaseo@example.com"
 						required
 					/>
 				</div>

@@ -3,8 +3,8 @@
   "name": "ai-stats",
   "version": "0.1.1",
   "private": true,
-  "title": "AI Stats",
-  "description": "Browse AI models, organisations, and providers from AI Stats",
+  "title": "Phaseo",
+  "description": "Browse AI models, organisations, and providers from Phaseo",
   "icon": "icon.png",
   "author": "danielbutler1",
   "license": "MIT",
@@ -38,7 +38,7 @@
       "type": "password",
       "required": true,
       "title": "API Key",
-      "description": "Your AI Stats API key from api.phaseo.app",
+      "description": "Your Phaseo API key from api.phaseo.app",
       "placeholder": "aistats_..."
     },
     {

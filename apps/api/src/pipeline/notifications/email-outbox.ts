@@ -28,15 +28,15 @@ function escapeHtml(value: string): string {
 
 function renderWelcomeEmail(): { subject: string; html: string; text: string } {
 	return {
-		subject: "Welcome to AI Stats",
+		subject: "Welcome to Phaseo",
 		html: [
 			"<div style=\"font-family: ui-sans-serif, system-ui; line-height: 1.5;\">",
-			"<h2 style=\"margin: 0 0 12px;\">Welcome to AI Stats</h2>",
+			"<h2 style=\"margin: 0 0 12px;\">Welcome to Phaseo</h2>",
 			"<p style=\"margin: 0 0 12px;\">Your account is ready. You can now explore models, generate text, and manage billing from Settings.</p>",
 			"<p style=\"margin: 0;\">If you run into issues, reply to this email and we’ll help.</p>",
 			"</div>",
 		].join(""),
-		text: "Welcome to AI Stats\n\nYour account is ready. You can now explore models, generate text, and manage billing from Settings.\n\nIf you run into issues, reply to this email and we’ll help.",
+		text: "Welcome to Phaseo\n\nYour account is ready. You can now explore models, generate text, and manage billing from Settings.\n\nIf you run into issues, reply to this email and we’ll help.",
 	};
 }
 
@@ -54,8 +54,8 @@ function renderLowBalanceEmail(payload: Record<string, unknown> | null): {
 	const subject = "Low balance alert";
 	const bodyLine =
 		balanceUsd != null && thresholdUsd != null
-			? `Your AI Stats balance for ${teamName} is $${balanceUsd.toFixed(2)} (threshold: $${thresholdUsd.toFixed(2)}).`
-			: `Your AI Stats balance for ${teamName} is below your configured threshold.`;
+			? `Your Phaseo balance for ${teamName} is $${balanceUsd.toFixed(2)} (threshold: $${thresholdUsd.toFixed(2)}).`
+			: `Your Phaseo balance for ${teamName} is below your configured threshold.`;
 
 	return {
 		subject,
@@ -96,8 +96,8 @@ function renderSecurityLeakedKeyEmail(payload: Record<string, unknown> | null): 
 		? "Security alert: exposed API key revoked"
 		: "Security alert: exposed API key reported";
 	const lead = autoRevoked
-		? `An AI Stats API key for ${workspaceName} was reported as publicly exposed and has been revoked.`
-		: `An AI Stats API key for ${workspaceName} was reported as publicly exposed.`;
+		? `A Phaseo API key for ${workspaceName} was reported as publicly exposed and has been revoked.`
+		: `A Phaseo API key for ${workspaceName} was reported as publicly exposed.`;
 	const actionLine = autoRevoked
 		? "Create a replacement key and update any environments that were using the exposed key."
 		: "Review the key immediately and rotate or revoke it if the exposure is legitimate.";
@@ -151,7 +151,7 @@ function renderEmailForRow(row: OutboxRow): {
 
 		const payload = row.payload ?? {};
 		return {
-			subject: row.subject ?? "Welcome to AI Stats",
+			subject: row.subject ?? "Welcome to Phaseo",
 			templateId,
 			variables: {
 				USER_FIRST_NAME:

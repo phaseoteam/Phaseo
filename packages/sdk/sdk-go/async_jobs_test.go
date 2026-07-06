@@ -1,4 +1,4 @@
-package aistats
+package phaseo
 
 import "testing"
 

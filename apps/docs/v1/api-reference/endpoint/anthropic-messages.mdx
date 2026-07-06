@@ -13,7 +13,7 @@ Set `stream: true` to receive server-sent events in Anthropic format (`message_s
 ## Notes
 
 - Anthropic tool-use fields are supported.
-- `stream: true` also works with tool loops. For gateway-managed server tools, AI Stats may materialize the upstream tool-call turn, continue the loop, and re-emit a synthetic stream.
+- `stream: true` also works with tool loops. For gateway-managed server tools, Phaseo may materialize the upstream tool-call turn, continue the loop, and re-emit a synthetic stream.
 - The Anthropic-native web search tool shape is also accepted directly in `tools`, for example `type: "web_search_20250305"`.
 - The `X-AIStats-Strictness` header controls how unsupported parameters are handled.
 
@@ -27,7 +27,7 @@ Set `stream: true` to receive server-sent events in Anthropic format (`message_s
 - `ai-stats:advisor`
 - `ai-stats:image_generation`
 
-AI Stats rewrites these tools to Anthropic-compatible format upstream, executes them server-side, and continues the tool loop.
+Phaseo rewrites these tools to Anthropic-compatible format upstream, executes them server-side, and continues the tool loop.
 
 ## Native provider web search
 

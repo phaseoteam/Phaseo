@@ -1,6 +1,6 @@
-# AI Stats Documentation
+# Phaseo Documentation
 
-This is the **Mintlify** documentation site for the AI Stats Gateway.
+This is the **Mintlify** documentation site for the Phaseo Gateway.
 
 It’s the living guide for everything — from API references and contributor guides to the philosophy behind the project.
 
@@ -9,7 +9,7 @@ It’s the living guide for everything — from API references and contributor g
 ### ✨ Purpose
 
 The docs are more than technical help — they’re part of the mission.  
-They explain **why** AI Stats exists and how anyone can shape it.
+They explain **why** Phaseo exists and how anyone can shape it.
 
 -   **Guides** for using the Gateway and contributing
 -   **References** for all endpoints and data structures
@@ -30,4 +30,4 @@ To improve it, just edit or add a page and submit a pull request.
 
 -   [Mintlify](https://mintlify.com) — for modern docs
 -   [Supabase](https://supabase.com) — for live data
--   The **AI Stats Community** — for ideas, words, and effort
+-   The **Phaseo Community** — for ideas, words, and effort

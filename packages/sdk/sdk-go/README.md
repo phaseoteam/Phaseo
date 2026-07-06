@@ -1,15 +1,15 @@
-# AI Stats Go SDK
+# Phaseo Go SDK
 
-Official Go SDK for AI Stats Gateway.
+Official Go SDK for Phaseo Gateway.
 
 Module path:
 
-`github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go`
+`github.com/phaseoteam/Phaseo/packages/sdk/sdk-go`
 
 ## Installation
 
 ```bash
-go get github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go@latest
+go get github.com/phaseoteam/Phaseo/packages/sdk/sdk-go@latest
 ```
 
 ## Quick start
@@ -21,16 +21,16 @@ import (
 	"context"
 	"fmt"
 
-	aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
+	phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
 )
 
 func main() {
-	client, err := aistats.NewAIStatsFromEnv()
+	client, err := phaseo.NewPhaseoFromEnv()
 	if err != nil {
 		panic(err)
 	}
 
-	resp, err := client.CreateResponse(context.Background(), aistats.ResponsesRequest{
+	resp, err := client.CreateResponse(context.Background(), phaseo.ResponsesRequest{
 		Model: "google/gemma-3-27b:free",
 		Input: "Reply with: Go SDK works",
 	})
@@ -86,14 +86,14 @@ Batch and video operations can expose a websocket lifecycle stream at `/v1/async
 intervalMs := 1500
 closeOnTerminal := true
 
-batchSocketURL, err := client.GetBatchWebSocketURL("batch_123", &aistats.AsyncJobWebSocketOptions{
+batchSocketURL, err := client.GetBatchWebSocketURL("batch_123", &phaseo.AsyncJobWebSocketOptions{
 	IntervalMS: intervalMs,
 })
 if err != nil {
 	panic(err)
 }
 
-videoSocketURL, err := client.GetVideoWebSocketURL("video_123", &aistats.AsyncJobWebSocketOptions{
+videoSocketURL, err := client.GetVideoWebSocketURL("video_123", &phaseo.AsyncJobWebSocketOptions{
 	CloseOnTerminal: &closeOnTerminal,
 })
 if err != nil {
@@ -120,11 +120,11 @@ fmt.Println(batchSocketURL, videoSocketURL, genericSocketURL, resourceSocketURL)
 
 ## Environment variables
 
-- `AI_STATS_API_KEY` (required unless passed in code)
-- `AI_STATS_BASE_URL` (optional, defaults to `https://api.phaseo.app/v1`)
+- `PHASEO_API_KEY` (required unless passed in code)
+- `PHASEO_BASE_URL` (optional, defaults to `https://api.phaseo.app/v1`)
 
 ## Regeneration and local checks
 
 - Regenerate generated client: `pnpm openapi:gen:go`
 - Run tests: `pnpm test:sdk-go`
-- Smoke tests: `pnpm --filter @ai-stats/go-sdk run smoke:responses:sdk`
+- Smoke tests: `pnpm --filter @phaseo/go-sdk run smoke:responses:sdk`

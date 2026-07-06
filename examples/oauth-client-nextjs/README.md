@@ -1,6 +1,6 @@
-# AI Stats Gateway OAuth + Full Surface Integration (Next.js)
+# Phaseo Gateway OAuth + Full Surface Integration (Next.js)
 
-This example is a complete external integration reference for AI Stats Gateway:
+This example is a complete external integration reference for Phaseo Gateway:
 
 - OAuth 2.1 + PKCE login
 - Session-backed token storage and refresh
@@ -105,7 +105,7 @@ If a language SDK is unavailable or behind the latest API behavior:
 - Keep OAuth/session logic the same
 - Call gateway REST endpoints directly through the same contract:
   - Base: `https://api.phaseo.app/v1`
-  - Auth: `Authorization: Bearer <AI_STATS_API_KEY or OAuth token>`
+  - Auth: `Authorization: Bearer <PHASEO_API_KEY or OAuth token>`
 - Preserve response shapes used by your app
 
 ## Files

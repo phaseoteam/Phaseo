@@ -737,6 +737,6 @@ jobs:
               if: steps.changesets.outputs.published == 'true'
               env:
                   GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
-                  AI_STATS_GH_RELEASE_MODE: all
+                  PHASEO_GH_RELEASE_MODE: all
               run: |
                   pnpm run release-from-changelogs

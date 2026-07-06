@@ -200,7 +200,7 @@ function AppShell() {
             <div className="flex items-center gap-3">
               <img
                 src={darkMode ? "/wordmark_dark.svg" : "/wordmark_light.svg"}
-                alt="AI Stats"
+                alt="Phaseo"
                 className="h-7"
               />
               <div className="text-lg font-semibold">Devtools</div>

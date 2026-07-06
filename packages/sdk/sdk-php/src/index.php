@@ -4,19 +4,19 @@ declare(strict_types=1);
 // Thin wrapper around the in-house generated PHP SDK.
 // Regenerate with: `pnpm openapi:gen:php`
 
-namespace AIStats\Sdk;
+namespace Phaseo\Sdk;
 
 require_once __DIR__ . "/gen/Client.php";
 require_once __DIR__ . "/gen/Models.php";
 require_once __DIR__ . "/gen/Operations.php";
 require_once __DIR__ . "/ModelIds.php";
 
-use AIStats\Gen\Client as GenClient;
+use Phaseo\Gen\Client as GenClient;
 use RuntimeException;
 
 class AsyncJobsResource
 {
-    public function __construct(private AIStats $parent)
+    public function __construct(private Phaseo $parent)
     {
     }
 
@@ -30,7 +30,7 @@ class AsyncJobsResource
     }
 }
 
-class AIStats
+class Phaseo
 {
     private const ACTIVE_MODEL_SOURCE_STATUSES = ["active", "available"];
     private const INACTIVE_MODEL_SOURCE_STATUSES = [
@@ -75,9 +75,9 @@ class AIStats
         bool $verifyTls = true,
         ?array $devtools = null
     ) {
-        $apiKey = $apiKey ?? getenv("AI_STATS_API_KEY") ?: null;
+        $apiKey = $apiKey ?? getenv("PHASEO_API_KEY") ?: null;
         if (!$apiKey) {
-            throw new \InvalidArgumentException("Missing API key. Pass apiKey or set AI_STATS_API_KEY.");
+            throw new \InvalidArgumentException("Missing API key. Pass apiKey or set PHASEO_API_KEY.");
         }
         $this->basePath = rtrim($basePath, "/");
         $this->client = new GenClient(
@@ -143,7 +143,7 @@ class AIStats
             "chat.completions",
             $payload,
             true,
-            fn () => \AIStats\Gen\createChatCompletion($this->client, null, null, null, $payload)
+            fn () => \Phaseo\Gen\createChatCompletion($this->client, null, null, null, $payload)
         );
     }
 
@@ -158,7 +158,7 @@ class AIStats
             "responses",
             $payload,
             true,
-            fn () => \AIStats\Gen\createResponse($this->client, null, null, null, $payload)
+            fn () => \Phaseo\Gen\createResponse($this->client, null, null, null, $payload)
         );
     }
 
@@ -173,7 +173,7 @@ class AIStats
             "messages",
             $payload,
             true,
-            fn () => \AIStats\Gen\createAnthropicMessage($this->client, null, null, null, $payload)
+            fn () => \Phaseo\Gen\createAnthropicMessage($this->client, null, null, null, $payload)
         );
     }
 
@@ -183,7 +183,7 @@ class AIStats
             "images.generations",
             $payload,
             true,
-            fn () => \AIStats\Gen\createImage($this->client, null, null, null, $payload)
+            fn () => \Phaseo\Gen\createImage($this->client, null, null, null, $payload)
         );
     }
 
@@ -198,7 +198,7 @@ class AIStats
             "images.edits",
             $payload,
             true,
-            fn () => \AIStats\Gen\createImageEdit($this->client, null, null, null, $payload)
+            fn () => \Phaseo\Gen\createImageEdit($this->client, null, null, null, $payload)
         );
     }
 
@@ -213,7 +213,7 @@ class AIStats
             "video.generations",
             $payload,
             true,
-            fn () => \AIStats\Gen\createVideo($this->client, null, null, null, $payload)
+            fn () => \Phaseo\Gen\createVideo($this->client, null, null, null, $payload)
         );
     }
 
@@ -228,7 +228,7 @@ class AIStats
             "video.retrieve",
             ["video_id" => $videoId],
             false,
-            fn () => \AIStats\Gen\getVideo($this->client, ["video_id" => $videoId])
+            fn () => \Phaseo\Gen\getVideo($this->client, ["video_id" => $videoId])
         );
     }
 
@@ -238,7 +238,7 @@ class AIStats
             "video.cancel",
             ["video_id" => $videoId],
             false,
-            fn () => \AIStats\Gen\cancelVideo($this->client, ["video_id" => $videoId])
+            fn () => \Phaseo\Gen\cancelVideo($this->client, ["video_id" => $videoId])
         );
     }
 
@@ -248,7 +248,7 @@ class AIStats
             "video.delete",
             ["video_id" => $videoId],
             false,
-            fn () => \AIStats\Gen\deleteVideo($this->client, ["video_id" => $videoId])
+            fn () => \Phaseo\Gen\deleteVideo($this->client, ["video_id" => $videoId])
         );
     }
 
@@ -258,7 +258,7 @@ class AIStats
             "video.models",
             null,
             false,
-            fn () => \AIStats\Gen\listVideoModels($this->client)
+            fn () => \Phaseo\Gen\listVideoModels($this->client)
         );
     }
 
@@ -268,7 +268,7 @@ class AIStats
             "video.list",
             $query,
             false,
-            fn () => \AIStats\Gen\listVideos($this->client, null, $query)
+            fn () => \Phaseo\Gen\listVideos($this->client, null, $query)
         );
     }
 
@@ -278,7 +278,7 @@ class AIStats
             "embeddings",
             $payload,
             true,
-            fn () => \AIStats\Gen\createEmbedding($this->client, null, null, null, $payload)
+            fn () => \Phaseo\Gen\createEmbedding($this->client, null, null, null, $payload)
         );
     }
 
@@ -293,7 +293,7 @@ class AIStats
             "moderations",
             $payload,
             true,
-            fn () => \AIStats\Gen\createModeration($this->client, null, null, null, $payload)
+            fn () => \Phaseo\Gen\createModeration($this->client, null, null, null, $payload)
         );
     }
 
@@ -308,7 +308,7 @@ class AIStats
             "audio.speech",
             $payload,
             true,
-            fn () => \AIStats\Gen\createSpeech($this->client, null, null, null, $payload)
+            fn () => \Phaseo\Gen\createSpeech($this->client, null, null, null, $payload)
         );
     }
 
@@ -318,7 +318,7 @@ class AIStats
             "audio.transcriptions",
             $payload,
             true,
-            fn () => \AIStats\Gen\createTranscription($this->client, null, null, null, $payload)
+            fn () => \Phaseo\Gen\createTranscription($this->client, null, null, null, $payload)
         );
     }
 
@@ -333,7 +333,7 @@ class AIStats
             "audio.translations",
             $payload,
             true,
-            fn () => \AIStats\Gen\createTranslation($this->client, null, null, null, $payload)
+            fn () => \Phaseo\Gen\createTranslation($this->client, null, null, null, $payload)
         );
     }
 
@@ -348,7 +348,7 @@ class AIStats
             "batches.create",
             $payload,
             true,
-            fn () => \AIStats\Gen\createBatch($this->client, null, null, null, $payload)
+            fn () => \Phaseo\Gen\createBatch($this->client, null, null, null, $payload)
         );
     }
 
@@ -358,7 +358,7 @@ class AIStats
             "batches.retrieve",
             ["batch_id" => $batchId],
             false,
-            fn () => \AIStats\Gen\retrieveBatch($this->client, ["batch_id" => $batchId])
+            fn () => \Phaseo\Gen\retrieveBatch($this->client, ["batch_id" => $batchId])
         );
     }
 
@@ -368,7 +368,7 @@ class AIStats
             "batches.cancel",
             ["batch_id" => $batchId],
             false,
-            fn () => \AIStats\Gen\cancelBatch($this->client, ["batch_id" => $batchId])
+            fn () => \Phaseo\Gen\cancelBatch($this->client, ["batch_id" => $batchId])
         );
     }
 
@@ -430,7 +430,7 @@ class AIStats
             "files.list",
             $params,
             false,
-            fn () => \AIStats\Gen\listFiles($this->client, null, $params, null, null)
+            fn () => \Phaseo\Gen\listFiles($this->client, null, $params, null, null)
         );
     }
 
@@ -440,7 +440,7 @@ class AIStats
             "files.retrieve",
             ["file_id" => $fileId],
             false,
-            fn () => \AIStats\Gen\retrieveFile($this->client, ["file_id" => $fileId])
+            fn () => \Phaseo\Gen\retrieveFile($this->client, ["file_id" => $fileId])
         );
     }
 
@@ -480,7 +480,7 @@ class AIStats
             "files.upload",
             $payload,
             false,
-            fn () => \AIStats\Gen\uploadFile($this->client, null, null, null, $payload)
+            fn () => \Phaseo\Gen\uploadFile($this->client, null, null, null, $payload)
         );
     }
 
@@ -490,7 +490,7 @@ class AIStats
             "models.list",
             $params,
             false,
-            fn () => \AIStats\Gen\listModels($this->client, null, $params, null, null)
+            fn () => \Phaseo\Gen\listModels($this->client, null, $params, null, null)
         );
     }
 
@@ -500,7 +500,7 @@ class AIStats
             "providers",
             $params,
             false,
-            fn () => \AIStats\Gen\listProviders($this->client, null, $params, null, null)
+            fn () => \Phaseo\Gen\listProviders($this->client, null, $params, null, null)
         );
     }
 
@@ -510,7 +510,7 @@ class AIStats
             "analytics",
             $params,
             false,
-            fn () => \AIStats\Gen\getActivityAlias($this->client, null, $params, null, null)
+            fn () => \Phaseo\Gen\getActivityAlias($this->client, null, $params, null, null)
         );
     }
 
@@ -520,7 +520,7 @@ class AIStats
             "credits",
             $params,
             false,
-            fn () => \AIStats\Gen\getCredits($this->client, null, $params, null, null)
+            fn () => \Phaseo\Gen\getCredits($this->client, null, $params, null, null)
         );
     }
 
@@ -530,7 +530,7 @@ class AIStats
             "activity",
             $params,
             false,
-            fn () => \AIStats\Gen\getActivity($this->client, null, $params, null, null)
+            fn () => \Phaseo\Gen\getActivity($this->client, null, $params, null, null)
         );
     }
 
@@ -540,7 +540,7 @@ class AIStats
             "generations.retrieve",
             ["id" => $generationId],
             false,
-            fn () => \AIStats\Gen\getGeneration($this->client, null, ["id" => $generationId], null, null)
+            fn () => \Phaseo\Gen\getGeneration($this->client, null, ["id" => $generationId], null, null)
         );
     }
 
@@ -550,7 +550,7 @@ class AIStats
             "endpoints.list",
             [],
             false,
-            fn () => \AIStats\Gen\listEndpoints($this->client, null, null, null, null)
+            fn () => \Phaseo\Gen\listEndpoints($this->client, null, null, null, null)
         );
     }
 
@@ -560,7 +560,7 @@ class AIStats
             "organisations.list",
             $params,
             false,
-            fn () => \AIStats\Gen\listOrganisations($this->client, null, $params, null, null)
+            fn () => \Phaseo\Gen\listOrganisations($this->client, null, $params, null, null)
         );
     }
 
@@ -570,7 +570,7 @@ class AIStats
             "pricing.models",
             $params,
             false,
-            fn () => \AIStats\Gen\listPricingModels($this->client, null, $params, null, null)
+            fn () => \Phaseo\Gen\listPricingModels($this->client, null, $params, null, null)
         );
     }
 
@@ -580,7 +580,7 @@ class AIStats
             "pricing.calculate",
             $payload,
             false,
-            fn () => \AIStats\Gen\calculatePricing($this->client, null, null, null, $payload)
+            fn () => \Phaseo\Gen\calculatePricing($this->client, null, null, null, $payload)
         );
     }
 
@@ -590,7 +590,7 @@ class AIStats
             "provisioning.keys.list",
             $params,
             false,
-            fn () => \AIStats\Gen\listApiKeys($this->client, null, $params, null, null)
+            fn () => \Phaseo\Gen\listApiKeys($this->client, null, $params, null, null)
         );
     }
 
@@ -600,7 +600,7 @@ class AIStats
             "provisioning.keys.create",
             $payload,
             false,
-            fn () => \AIStats\Gen\createApiKey($this->client, null, null, null, $payload)
+            fn () => \Phaseo\Gen\createApiKey($this->client, null, null, null, $payload)
         );
     }
 
@@ -610,7 +610,7 @@ class AIStats
             "provisioning.keys.get",
             ["id" => $id],
             false,
-            fn () => \AIStats\Gen\getApiKey($this->client, ["id" => $id], null, null, null)
+            fn () => \Phaseo\Gen\getApiKey($this->client, ["id" => $id], null, null, null)
         );
     }
 
@@ -620,7 +620,7 @@ class AIStats
             "provisioning.keys.update",
             ["id" => $id, "body" => $payload],
             false,
-            fn () => \AIStats\Gen\updateApiKey($this->client, ["id" => $id], null, null, $payload)
+            fn () => \Phaseo\Gen\updateApiKey($this->client, ["id" => $id], null, null, $payload)
         );
     }
 
@@ -630,7 +630,7 @@ class AIStats
             "provisioning.keys.delete",
             ["id" => $id],
             false,
-            fn () => \AIStats\Gen\deleteApiKey($this->client, ["id" => $id], null, null, null)
+            fn () => \Phaseo\Gen\deleteApiKey($this->client, ["id" => $id], null, null, null)
         );
     }
 
@@ -640,7 +640,7 @@ class AIStats
             "provisioning.workspaces.list",
             $params,
             false,
-            fn () => \AIStats\Gen\listWorkspaces($this->client, null, $params, null, null)
+            fn () => \Phaseo\Gen\listWorkspaces($this->client, null, $params, null, null)
         );
     }
 
@@ -650,7 +650,7 @@ class AIStats
             "provisioning.workspaces.get",
             ["id" => $id],
             false,
-            fn () => \AIStats\Gen\getWorkspace($this->client, ["id" => $id], null, null, null)
+            fn () => \Phaseo\Gen\getWorkspace($this->client, ["id" => $id], null, null, null)
         );
     }
 
@@ -660,7 +660,7 @@ class AIStats
             "provisioning.workspaces.create",
             $body,
             false,
-            fn () => \AIStats\Gen\createWorkspace($this->client, null, null, null, $body)
+            fn () => \Phaseo\Gen\createWorkspace($this->client, null, null, null, $body)
         );
     }
 
@@ -670,7 +670,7 @@ class AIStats
             "provisioning.workspaces.update",
             array_merge(["id" => $id], $body),
             false,
-            fn () => \AIStats\Gen\updateWorkspace($this->client, ["id" => $id], null, null, $body)
+            fn () => \Phaseo\Gen\updateWorkspace($this->client, ["id" => $id], null, null, $body)
         );
     }
 
@@ -680,7 +680,7 @@ class AIStats
             "provisioning.workspaces.delete",
             ["id" => $id],
             false,
-            fn () => \AIStats\Gen\deleteWorkspace($this->client, ["id" => $id], null, null, null)
+            fn () => \Phaseo\Gen\deleteWorkspace($this->client, ["id" => $id], null, null, null)
         );
     }
 
@@ -690,7 +690,7 @@ class AIStats
             "key.current",
             [],
             false,
-            fn () => \AIStats\Gen\getCurrentApiKey($this->client, null, null, null, null)
+            fn () => \Phaseo\Gen\getCurrentApiKey($this->client, null, null, null, null)
         );
     }
 
@@ -817,7 +817,7 @@ class AIStats
     private function fetchModelLifecycle(string $modelId): ?array
     {
         try {
-            $response = \AIStats\Gen\listModels(
+            $response = \Phaseo\Gen\listModels(
                 $this->client,
                 null,
                 ["model_id" => $modelId, "limit" => "1"],
@@ -942,23 +942,23 @@ class AIStats
         $replacement = $replacementModelId ? sprintf(' Use "%s" instead.', $replacementModelId) : "";
         if ($status === "retired") {
             if ($retirementDate !== null) {
-                return sprintf('[ai-stats] Model "%s" is retired as of %s.%s', $modelId, $retirementDate, $replacement);
+                return sprintf('[phaseo] Model "%s" is retired as of %s.%s', $modelId, $retirementDate, $replacement);
             }
-            return sprintf('[ai-stats] Model "%s" is retired.%s', $modelId, $replacement);
+            return sprintf('[phaseo] Model "%s" is retired.%s', $modelId, $replacement);
         }
         if ($status === "deprecated") {
             if ($retirementDate !== null) {
                 return sprintf(
-                    '[ai-stats] Model "%s" is deprecated and scheduled for retirement on %s.%s',
+                    '[phaseo] Model "%s" is deprecated and scheduled for retirement on %s.%s',
                     $modelId,
                     $retirementDate,
                     $replacement
                 );
             }
             if ($deprecationDate !== null) {
-                return sprintf('[ai-stats] Model "%s" has been deprecated since %s.%s', $modelId, $deprecationDate, $replacement);
+                return sprintf('[phaseo] Model "%s" has been deprecated since %s.%s', $modelId, $deprecationDate, $replacement);
             }
-            return sprintf('[ai-stats] Model "%s" is deprecated.%s', $modelId, $replacement);
+            return sprintf('[phaseo] Model "%s" is deprecated.%s', $modelId, $replacement);
         }
         return "";
     }
@@ -1003,14 +1003,14 @@ class AIStats
                 isset($info["replacement_model_id"]) ? (string) $info["replacement_model_id"] : null
             );
             $message = $this->asTrimmedString(isset($info["message"]) ? (string) $info["message"] : null);
-            return $message ?? $fallback ?? sprintf('[ai-stats] Model "%s" is not active for inference.', $modelId);
+            return $message ?? $fallback ?? sprintf('[phaseo] Model "%s" is not active for inference.', $modelId);
         }
 
         $sourceStatus = $this->normalizeSourceStatus(isset($info["source_status"]) ? (string) $info["source_status"] : null) ?? "unknown";
         $replacementModelId = $this->asTrimmedString(isset($info["replacement_model_id"]) ? (string) $info["replacement_model_id"] : null);
         $replacement = $replacementModelId !== null ? sprintf(' Use "%s" instead.', $replacementModelId) : "";
         return sprintf(
-            '[ai-stats] Model "%s" is not active for inference (status: %s).%s',
+            '[phaseo] Model "%s" is not active for inference (status: %s).%s',
             $modelId,
             $sourceStatus,
             $replacement
@@ -1098,16 +1098,16 @@ final class TelemetryRecorder
     public function __construct(?array $config, string $sdkVersion)
     {
         $enabled = (bool) ($config["enabled"] ?? false);
-        $directory = trim((string) ($config["directory"] ?? ".ai-stats-devtools"));
+        $directory = trim((string) ($config["directory"] ?? ".phaseo-devtools"));
         if ($directory === "") {
-            $directory = ".ai-stats-devtools";
+            $directory = ".phaseo-devtools";
         }
 
-        $envEnabled = getenv("AI_STATS_DEVTOOLS");
+        $envEnabled = getenv("PHASEO_DEVTOOLS");
         if ($envEnabled !== false && trim($envEnabled) !== "") {
             $enabled = in_array(strtolower(trim($envEnabled)), ["1", "true", "yes", "on"], true);
         }
-        $envDirectory = getenv("AI_STATS_DEVTOOLS_DIR");
+        $envDirectory = getenv("PHASEO_DEVTOOLS_DIR");
         if ($envDirectory !== false && trim($envDirectory) !== "") {
             $directory = trim($envDirectory);
         }
@@ -1316,7 +1316,7 @@ final class TelemetryRecorder
     /** @return array<string,mixed>|null */
     private function extractErrorResponse(\Throwable $error): ?array
     {
-        if ($error instanceof \AIStats\Gen\RequestException) {
+        if ($error instanceof \Phaseo\Gen\RequestException) {
             $parsed = $this->normalizeToArray($error->getResponseBody());
             if (is_array($parsed)) {
                 return $parsed;
@@ -1355,7 +1355,7 @@ final class TelemetryRecorder
 
     private function extractErrorStatusCode(\Throwable $error): ?int
     {
-        if ($error instanceof \AIStats\Gen\RequestException) {
+        if ($error instanceof \Phaseo\Gen\RequestException) {
             return $error->getStatusCode();
         }
         if (property_exists($error, "statusCode") && is_int($error->statusCode)) {

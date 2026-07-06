@@ -22,7 +22,7 @@ import { fetchSettingsOAuthAppsInitialData } from "@/lib/fetchers/internal/fetch
 export const metadata = {
 	title: "OAuth Apps - Settings",
 	description:
-		"OAuth applications for third-party integrations are coming soon while the first-party AI Stats CLI OAuth beta is tested.",
+		"OAuth applications for third-party integrations are coming soon while the first-party Phaseo CLI OAuth beta is tested.",
 };
 
 export default function OAuthAppsPage() {
@@ -72,7 +72,7 @@ export default function OAuthAppsPage() {
 							This feature is in alpha testing. Please report any issues or
 							feedback{" "}
 							<a
-								href="https://github.com/AI-Stats/AI-Stats/issues/new/choose"
+								href="https://github.com/phaseoteam/Phaseo/issues/new/choose"
 								target="_blank"
 								rel="noopener noreferrer"
 								className="underline hover:no-underline"
@@ -125,11 +125,11 @@ async function OAuthAppsContent() {
 						ALPHA
 					</span>
 				}
-				description="Create OAuth applications to enable third-party integrations with your AI Stats account."
+				description="Create OAuth applications to enable third-party integrations with your Phaseo account."
 				actions={
 					<>
 						<Link
-							href="https://docs.ai-stats.phaseo.app/v1/guides/oauth-quickstart"
+							href="https://docs.phaseo.app/v1/guides/oauth-quickstart"
 							target="_blank"
 							rel="noopener noreferrer"
 						>

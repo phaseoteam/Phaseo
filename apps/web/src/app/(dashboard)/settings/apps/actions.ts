@@ -8,10 +8,14 @@ import { normalizeAppCategoryCsv } from "@/lib/appCategories";
 import { requireWorkspaceMembership } from "@/utils/serverActionAuth";
 
 const PROTECTED_APP_TITLES = new Set([
+	"phaseo chat",
+	"phaseo playground",
 	"ai stats chat",
 	"ai stats playground",
 ]);
 const PROTECTED_APP_KEY_PREFIXES = [
+	"phaseo-chat",
+	"phaseo-playground",
 	"ai-stats-chat",
 	"aistats-chat",
 	"ai-stats-playground",
@@ -96,7 +100,7 @@ export async function updateAppAction(appId: string, updates: UpdateAppInput) {
 	await requireWorkspaceMembership(supabase, user.id, existingApp.workspace_id);
 
 	if (isProtectedApp(existingApp.title, existingApp.app_key)) {
-		throw new Error("This app is managed by AI Stats and cannot be edited");
+		throw new Error("This app is managed by Phaseo and cannot be edited");
 	}
 
 	const updateObj: Record<string, unknown> = {};
@@ -212,7 +216,7 @@ export async function mergeAppsAction(
 	await requireWorkspaceMembership(supabase, user.id, workspaceId);
 
 	if (apps.some((app) => isProtectedApp(app.title, app.app_key))) {
-		throw new Error("AI Stats managed apps cannot be merged");
+		throw new Error("Phaseo managed apps cannot be merged");
 	}
 
 	const admin = createAdminClient();

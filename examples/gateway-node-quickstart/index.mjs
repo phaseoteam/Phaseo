@@ -21,15 +21,15 @@ function loadLocalEnv() {
 
 loadLocalEnv();
 
-const BASE_URL = (process.env.AI_STATS_BASE_URL || 'https://api.phaseo.app/v1').replace(/\/+$/, '');
-const API_KEY = process.env.AI_STATS_API_KEY;
-const MODEL = process.env.AI_STATS_MODEL || 'openai/gpt-5-nano-2025-08-07';
-const APP_TITLE = process.env.AI_STATS_APP_TITLE || 'AI Stats Node Quickstart';
-const REFERER = process.env.AI_STATS_HTTP_REFERER || 'http://localhost';
+const BASE_URL = (process.env.PHASEO_BASE_URL || 'https://api.phaseo.app/v1').replace(/\/+$/, '');
+const API_KEY = process.env.PHASEO_API_KEY;
+const MODEL = process.env.PHASEO_MODEL || process.env.PHASEO_MODEL || 'openai/gpt-5-nano-2025-08-07';
+const APP_TITLE = process.env.PHASEO_APP_TITLE || process.env.PHASEO_APP_TITLE || 'Phaseo Node Quickstart';
+const REFERER = process.env.PHASEO_HTTP_REFERER || process.env.PHASEO_HTTP_REFERER || 'http://localhost';
 const IS_SMOKE = process.argv.includes('--smoke');
 
 if (!API_KEY) {
-  console.error('Missing AI_STATS_API_KEY. Copy .env.example to .env.local and set credentials.');
+  console.error('Missing PHASEO_API_KEY. Copy .env.example to .env.local and set credentials.');
   process.exit(1);
 }
 

@@ -130,7 +130,7 @@ function getProviderFromModelId(id: string): string {
 function formatProviderName(provider: string): string {
 	const normalized = provider.trim().toLowerCase()
 	const known: Record<string, string> = {
-		"ai-stats": "AI Stats",
+		"ai-stats": "Phaseo",
 		anthropic: "Anthropic",
 		deepseek: "DeepSeek",
 		google: "Google",

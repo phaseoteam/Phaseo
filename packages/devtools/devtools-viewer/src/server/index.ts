@@ -24,7 +24,7 @@ const PUBLIC_DIR = path.resolve(SERVER_DIR, "../../public");
 
 const resolveDevtoolsDir = () =>
   dirArg ||
-  process.env.AI_STATS_DEVTOOLS_DIR ||
+  process.env.PHASEO_DEVTOOLS_DIR ||
   DEFAULT_DEVTOOLS_DIR;
 let devtoolsDir = resolveDevtoolsDir();
 let writer = new DevToolsWriter(devtoolsDir);
@@ -280,13 +280,13 @@ export function startServer(port: number = resolvedPort) {
   console.log("");
   devtoolsDir = resolveDevtoolsDir();
   writer = new DevToolsWriter(devtoolsDir);
-  console.log("AI Stats Devtools Viewer starting...");
+  console.log("Phaseo Devtools Viewer starting...");
   console.log(`Watching directory: ${path.resolve(devtoolsDir)}`);
   console.log(`Server running at http://localhost:${port}`);
   console.log(`View Devtools at http://localhost:${port}`);
   console.log("Monitor requests, responses, costs, and usage in real time.");
   if (!fs.existsSync(path.join(PUBLIC_DIR, "index.html"))) {
-    console.warn("UI build not found. Run `pnpm --filter @ai-stats/devtools-viewer build` or use `pnpm --filter @ai-stats/devtools-viewer dev` for the UI dev server.");
+    console.warn("UI build not found. Run `pnpm --filter @phaseo/devtools-viewer build` or use `pnpm --filter @phaseo/devtools-viewer dev` for the UI dev server.");
   }
 
   serve({

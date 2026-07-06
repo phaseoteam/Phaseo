@@ -29,7 +29,7 @@ function normalizeGatewayBaseUrl(value: string | undefined): string | undefined 
 }
 
 const configuredGatewayBaseUrl = normalizeGatewayBaseUrl(
-	process.env.AI_STATS_GATEWAY_URL,
+	process.env.PHASEO_GATEWAY_URL,
 );
 export const GATEWAY_BASE_URL = configuredGatewayBaseUrl ?? "";
 const ALLOWED_APP_HEADERS = new Set([
@@ -39,10 +39,10 @@ const ALLOWED_APP_HEADERS = new Set([
 	"x-app-name",
 ]);
 const CANONICAL_CHAT_APP_HEADERS: Record<string, string> = {
-	"x-app-id": "ai-stats-chat",
-	"x-app-name": "AI Stats Chat",
-	"x-title": "AI Stats Chat",
-	"http-referer": "https://ai-stats.phaseo.app/chat",
+	"x-app-id": "phaseo-chat",
+	"x-app-name": "Phaseo Chat",
+	"x-title": "Phaseo Chat",
+	"http-referer": "https://phaseo.app/chat",
 };
 
 function sanitizeAppHeaders(input: unknown): Record<string, string> {
@@ -209,7 +209,7 @@ function buildGatewayMissingConfigResponse(): Response {
 	return new Response(
 		JSON.stringify({
 			error: "gateway_not_configured",
-			message: "Missing AI_STATS_GATEWAY_URL for chat gateway proxy.",
+			message: "Missing PHASEO_GATEWAY_URL for chat gateway proxy.",
 		}),
 		{
 			status: 500,

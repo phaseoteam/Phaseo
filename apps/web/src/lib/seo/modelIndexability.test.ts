@@ -7,7 +7,7 @@ describe("modelIndexability", () => {
 			name: "GPT-5.5",
 			organisationName: "OpenAI",
 			description:
-				"GPT-5.5 is a flagship reasoning model with provider coverage, pricing, and benchmark tracking on AI Stats.",
+				"GPT-5.5 is a flagship reasoning model with provider coverage, pricing, and benchmark tracking on Phaseo.",
 			apiModelIds: ["gpt-5.5"],
 			providerCount: 3,
 			pricingRuleCount: 4,
@@ -40,7 +40,7 @@ describe("modelIndexability", () => {
 		const analysis = analyseModelIndexability({
 			modelId: "orphan-slug",
 			name: "Orphan Slug",
-			organisationName: "AI Stats",
+			organisationName: "Phaseo",
 			releaseDate: "2026-06-01",
 			inputTypes: ["text"],
 		});

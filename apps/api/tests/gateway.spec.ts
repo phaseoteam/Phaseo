@@ -1,10 +1,10 @@
 import { describe, it, expect } from "vitest";
 
-const BASE_URL = process.env.AI_STATS_BASE_URL
+const BASE_URL = process.env.PHASEO_BASE_URL
     || process.env.GATEWAY_TEST_BASE_URL
     || "http://localhost:8787";
 
-const API_KEY = process.env.AI_STATS_API_KEY
+const API_KEY = process.env.PHASEO_API_KEY
     || process.env.GATEWAY_TEST_API_KEY
     || "";
 

@@ -54,7 +54,7 @@ vi.mock("@/runtime/env", () => ({
 								maybeSingle: async () => ({
 									data: {
 										id: "aistats_cli",
-										name: "AI Stats CLI",
+										name: "Phaseo CLI",
 										client_type: "public",
 										redirect_uris: [],
 										allowed_scopes: ["openid"],

@@ -1,0 +1,68 @@
+{
+  "name": "@phaseo/ai-sdk-provider",
+  "version": "1.0.1",
+  "description": "Phaseo Gateway provider for Vercel AI SDK",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "postinstall": "node ../../sdk/scripts/postinstall-viewer-prompt.cjs @phaseo/ai-sdk-provider",
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rimraf dist",
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "test": "dotenv -e ../../../.env.local -- vitest run",
+    "test:gateway": "dotenv -e ../../../.env.local -- node ./scripts/run-gateway-tests.mjs",
+    "test:watch": "vitest",
+    "prepublishOnly": "pnpm build"
+  },
+  "keywords": [
+    "ai",
+    "ai-sdk",
+    "vercel",
+    "phaseo",
+    "gateway",
+    "llm",
+    "openai",
+    "anthropic",
+    "language-model"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@ai-sdk/provider": "^3.0.10",
+    "@ai-sdk/provider-utils": "^4.0.23"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "@vitest/coverage-v8": "^4.1.7",
+    "ai": "^6.0.168",
+    "rimraf": "^6.0.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.7",
+    "zod": "^4.4.3"
+  },
+  "peerDependencies": {
+    "ai": "^6.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/phaseoteam/Phaseo",
+    "directory": "packages/integrations/ai-sdk-phaseo"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -121,7 +121,7 @@ export default function EmailPassword({
 						id="email"
 						name="email"
 						type="email"
-						placeholder="ai-stats@example.com"
+						placeholder="phaseo@example.com"
 						value={email}
 						onChange={(event) => setEmail(event.target.value)}
 						required

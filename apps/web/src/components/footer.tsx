@@ -41,25 +41,25 @@ const productLinks = [
 
 const developerLinks = [
 	{
-		href: "https://docs.ai-stats.phaseo.app/v1",
+		href: "https://docs.phaseo.app/v1",
 		label: "Documentation",
 		icon: BookOpenText,
 		external: true,
 	},
 	{
-		href: "https://docs.ai-stats.phaseo.app/v1/api-reference/introduction",
+		href: "https://docs.phaseo.app/v1/api-reference/introduction",
 		label: "API Reference",
 		icon: Code2,
 		external: true,
 	},
 	{
-		href: "https://docs.ai-stats.phaseo.app/v1/quickstart",
+		href: "https://docs.phaseo.app/v1/quickstart",
 		label: "Quickstart",
 		icon: Sparkles,
 		external: true,
 	},
 	{
-		href: "https://docs.ai-stats.phaseo.app/v1/sdk-reference/typescript/overview",
+		href: "https://docs.phaseo.app/v1/sdk-reference/typescript/overview",
 		label: "SDKs",
 		icon: GitBranch,
 		external: true,
@@ -72,7 +72,7 @@ const developerLinks = [
 ];
 
 const companyLinks = [
-	{ href: "/announcements", label: "Announcements", icon: Megaphone },
+	{ href: "/blog", label: "Blog", icon: Megaphone },
 	{ href: "/pricing", label: "Pricing", icon: Sparkles },
 	{ href: "/works-with", label: "Works With", icon: AppWindow },
 	{ href: "/contact", label: "Support", icon: LifeBuoy },
@@ -81,28 +81,53 @@ const companyLinks = [
 ];
 
 const connectLinks = [
-	{ href: "https://discord.gg/zDw73wamdX", label: "Discord", logoId: "discord", external: true },
-	{ href: "https://github.com/AI-Stats/AI-Stats", label: "GitHub", logoId: "github", external: true },
-	{ href: "https://reddit.com/r/AIStats/", label: "Reddit", logoId: "reddit", external: true },
-	{ href: "https://www.linkedin.com/company/phaseoapp/", label: "LinkedIn", logoId: "linkedin", external: true },
-	{ href: "https://x.com/ai_stats_team", label: "X", logoId: "x", external: true },
+	{
+		href: "https://discord.gg/aQyywCvgZ5",
+		label: "Discord",
+		logoId: "discord",
+		external: true,
+	},
+	{
+		href: "https://github.com/phaseoteam/Phaseo",
+		label: "GitHub",
+		logoId: "github",
+		external: true,
+	},
+	{
+		href: "https://www.linkedin.com/company/phaseoapp/",
+		label: "LinkedIn",
+		logoId: "linkedin",
+		external: true,
+	},
+	{
+		href: "https://www.reddit.com/r/Phaseo/",
+		label: "Reddit",
+		logoId: "reddit",
+		external: true,
+	},
+	{
+		href: "https://x.com/phaseoteam",
+		label: "X",
+		logoId: "x",
+		external: true,
+	},
 ];
 
 const featuredLinks = [
 	{
-		href: "https://docs.ai-stats.phaseo.app/v1",
+		href: "https://docs.phaseo.app/v1",
 		label: "Read the docs",
 		icon: BookOpenText,
 		external: true,
 	},
 	{
-		href: "https://ai-stats.instatus.com/",
+		href: "https://status.phaseo.app/",
 		label: "Check status",
 		icon: Activity,
 		external: true,
 	},
 	{
-		href: "https://github.com/AI-Stats/AI-Stats",
+		href: "https://github.com/phaseoteam/Phaseo",
 		label: "View GitHub",
 		logoId: "github",
 		external: true,
@@ -226,23 +251,21 @@ export default function Footer() {
 						<Link href="/" className="inline-flex w-fit items-center">
 							<Image
 								src="/wordmark_light.svg"
-								alt="AI Stats"
+								alt="Phaseo"
 								width={154}
 								height={40}
 								className="h-8 w-auto dark:hidden"
+								style={{ width: "auto" }}
 							/>
 							<Image
 								src="/wordmark_dark.svg"
-								alt="AI Stats"
+								alt="Phaseo"
 								width={154}
 								height={40}
 								className="hidden h-8 w-auto dark:block"
+								style={{ width: "auto" }}
 							/>
 						</Link>
-						<p className="max-w-xs text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-							AI Stats by Phaseo brings together model, provider, and gateway
-							data for teams building with AI APIs.
-						</p>
 						<div className="grid gap-2 sm:max-w-none sm:grid-cols-3 xl:max-w-sm xl:grid-cols-1">
 							{featuredLinks.map((link) => (
 								<motion.div
@@ -362,12 +385,12 @@ export default function Footer() {
 
 				<div className="flex flex-col gap-2 border-t border-zinc-200/80 pt-5 text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 sm:flex-row sm:items-center sm:justify-between">
 					<p className="inline-flex items-center px-2 py-1 font-medium tracking-[0.01em] text-zinc-500 dark:text-zinc-400">
-                        &copy; <FooterYearRange startYear={startYear} /> {"\u2022"} AI Stats
+                        &copy; <FooterYearRange startYear={startYear} /> {"\u2022"} Phaseo
 					</p>
 					<p className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-1">
 						<span>Spotted a data issue or broken page?</span>
 						<Link
-							href="https://github.com/AI-Stats/AI-Stats/issues"
+							href="https://github.com/phaseoteam/Phaseo/issues"
 							target="_blank"
 							rel="noopener noreferrer"
 							className="group inline-flex items-center gap-1 text-zinc-700 transition-colors hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-zinc-50"

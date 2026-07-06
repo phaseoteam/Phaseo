@@ -1,4 +1,4 @@
-from ai_stats_agent import (
+from phaseo_agent import (
     AgentMessage,
     AgentModelResponse,
     AgentTool,

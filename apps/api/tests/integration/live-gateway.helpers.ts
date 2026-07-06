@@ -75,7 +75,7 @@ export function getHeaders(contentType = "application/json"): Record<string, str
         Authorization: `Bearer ${GATEWAY_API_KEY}`,
     };
     if (contentType) headers["Content-Type"] = contentType;
-    if (INTERNAL_TEST_TOKEN) headers["x-ai-stats-internal-token"] = INTERNAL_TEST_TOKEN;
+    if (INTERNAL_TEST_TOKEN) headers["x-phaseo-internal-token"] = INTERNAL_TEST_TOKEN;
     return headers;
 }
 
@@ -133,7 +133,7 @@ export async function getGateway(pathname: string): Promise<GatewayResult> {
         method: "GET",
         headers: {
             Authorization: `Bearer ${GATEWAY_API_KEY}`,
-            ...(INTERNAL_TEST_TOKEN ? { "x-ai-stats-internal-token": INTERNAL_TEST_TOKEN } : {}),
+            ...(INTERNAL_TEST_TOKEN ? { "x-phaseo-internal-token": INTERNAL_TEST_TOKEN } : {}),
         },
     });
     return parseGatewayResult(response);
@@ -145,7 +145,7 @@ export async function postMultipart(pathname: string, buildForm: (form: FormData
     const headers: Record<string, string> = {
         Authorization: `Bearer ${GATEWAY_API_KEY}`,
     };
-    if (INTERNAL_TEST_TOKEN) headers["x-ai-stats-internal-token"] = INTERNAL_TEST_TOKEN;
+    if (INTERNAL_TEST_TOKEN) headers["x-phaseo-internal-token"] = INTERNAL_TEST_TOKEN;
     const response = await fetch(resolveGatewayUrl(pathname), {
         method: "POST",
         headers,
@@ -347,7 +347,7 @@ export async function fetchModelsCatalog(): Promise<GatewayModel[]> {
                     method: "GET",
                     headers: {
                         Authorization: `Bearer ${GATEWAY_API_KEY}`,
-                        ...(INTERNAL_TEST_TOKEN ? { "x-ai-stats-internal-token": INTERNAL_TEST_TOKEN } : {}),
+                        ...(INTERNAL_TEST_TOKEN ? { "x-phaseo-internal-token": INTERNAL_TEST_TOKEN } : {}),
                     },
                 });
                 const payload = (await response.json()) as ModelsResponse;

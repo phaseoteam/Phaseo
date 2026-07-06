@@ -1,16 +1,16 @@
 ---
 title: "Set up coding agents with SKILL.md"
-description: "Pair the SDK with a SKILL.md file so local coding agents can use your AI Stats integration consistently."
+description: "Pair the SDK with a SKILL.md file so local coding agents can use your Phaseo integration consistently."
 ---
 
 This recipe is for teams building internal tools, CLIs, or coding-agent workflows on top of the gateway SDKs.
 
 <Visibility for="humans">
 <Note>
-If you want a reusable starting point instead of writing every skill from scratch, install the public AI Stats skills from [`AI-Stats/skills`](https://github.com/AI-Stats/skills):
+If you want a reusable starting point instead of writing every skill from scratch, install the public Phaseo skills from [`phaseoteam/skills`](https://github.com/phaseoteam/skills):
 
 ```bash
-npx skills add AI-Stats/skills --agent codex --skill '*'
+npx skills add phaseoteam/skills --agent codex --skill '*'
 ```
 
 Then keep project-specific instructions in your local `SKILL.md`.
@@ -19,10 +19,10 @@ Then keep project-specific instructions in your local `SKILL.md`.
 
 <Visibility for="agents">
 <Note>
-Reusable AI Stats skills live in [`AI-Stats/skills`](https://github.com/AI-Stats/skills). Install them first with:
+Reusable Phaseo skills live in [`phaseoteam/skills`](https://github.com/phaseoteam/skills). Install them first with:
 
 ```bash
-npx skills add AI-Stats/skills --agent codex --skill '*'
+npx skills add phaseoteam/skills --agent codex --skill '*'
 ```
 
 Then layer project-local instructions into the repository `SKILL.md`.
@@ -41,26 +41,26 @@ If you're using TypeScript or JavaScript:
 
 <CodeGroup>
 ```bash npm
-npm install @ai-stats/sdk
+npm install @phaseo/sdk
 ```
 
 ```bash pnpm
-pnpm add @ai-stats/sdk
+pnpm add @phaseo/sdk
 ```
 
 ```bash yarn
-yarn add @ai-stats/sdk
+yarn add @phaseo/sdk
 ```
 
 ```bash bun
-bun add @ai-stats/sdk
+bun add @phaseo/sdk
 ```
 </CodeGroup>
 
 If you're using Python:
 
 ```bash
-pip install ai-stats
+pip install phaseo
 ```
 
 ## 2. Add a project-local skill file
@@ -68,10 +68,10 @@ pip install ai-stats
 Create `SKILL.md` in the repository root or the agent skill location your team uses.
 
 ```md
-# AI Stats Gateway
+# Phaseo Gateway
 
 - Use `https://api.phaseo.app/v1` as the gateway base URL.
-- Read the API key from `AI_STATS_API_KEY`.
+- Read the API key from `PHASEO_API_KEY`.
 - Prefer the Responses API for new text integrations.
 - Use preset slugs when the repository defines shared request defaults.
 - Log request ids and model ids for debugging.
@@ -83,10 +83,10 @@ Create `SKILL.md` in the repository root or the agent skill location your team u
 For coding agents, smaller request helpers are easier to reuse than large wrappers.
 
 ```ts
-import AIStats from "@ai-stats/sdk";
+import Phaseo from "@phaseo/sdk";
 
-export const gateway = new AIStats({
-  apiKey: process.env.AI_STATS_API_KEY!,
+export const gateway = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY!,
 });
 ```
 

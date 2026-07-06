@@ -1,5 +1,5 @@
 /**
- * OAuth 2.1 Utilities for AI Stats Integration
+ * OAuth 2.1 Utilities for Phaseo Integration
  */
 
 import { cookies } from 'next/headers';

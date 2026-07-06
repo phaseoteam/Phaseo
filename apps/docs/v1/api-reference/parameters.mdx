@@ -1,10 +1,10 @@
 ---
 title: "Parameters"
-description: "Field-by-field request parameter reference for AI Stats text, routing, and debug controls."
+description: "Field-by-field request parameter reference for Phaseo text, routing, and debug controls."
 icon: "sliders-horizontal"
 ---
 
-This page is the field-by-field reference for request parameters exposed by AI Stats.
+This page is the field-by-field reference for request parameters exposed by Phaseo.
 
 Use it when you want to know:
 
@@ -65,9 +65,9 @@ Use `priority` or `flex` only when the selected model and provider combination s
 
 `Batch` is not a `service_tier` value. Batch requests use the separate Batch API.
 
-For Anthropic-compatible Messages requests, Anthropic's native upstream values are `auto` and `standard_only`. AI Stats may normalize or map these values across providers while preserving Anthropic-compatible behavior on `/v1/messages`.
+For Anthropic-compatible Messages requests, Anthropic's native upstream values are `auto` and `standard_only`. Phaseo may normalize or map these values across providers while preserving Anthropic-compatible behavior on `/v1/messages`.
 
-If you are using an official Anthropic SDK with a custom base URL pointed at AI Stats, prefer Anthropic-native values on `/v1/messages`. For normalized cross-provider tier controls such as `priority` and `flex`, prefer raw HTTP requests or the gateway-native / OpenAI-style text APIs.
+If you are using an official Anthropic SDK with a custom base URL pointed at Phaseo, prefer Anthropic-native values on `/v1/messages`. For normalized cross-provider tier controls such as `priority` and `flex`, prefer raw HTTP requests or the gateway-native / OpenAI-style text APIs.
 
 ## Parameter reference
 
@@ -429,7 +429,7 @@ Selects a supported routing or pricing tier on compatible text APIs.
 
 Use `priority` or `flex` only when the chosen model and provider combination supports them. Omit the field to stay on the default standard tier.
 
-AI Stats maps these gateway-normalized tier values to provider-native controls internally, so callers can use the same `service_tier` values across supported text surfaces.
+Phaseo maps these gateway-normalized tier values to provider-native controls internally, so callers can use the same `service_tier` values across supported text surfaces.
 
 Notes:
 
@@ -446,7 +446,7 @@ Provides a stable cache affinity key for prompt-cache-aware routing.
 | Type | `string` |
 | Use for | Sticky routing for related cached prompts |
 
-Use this when a series of requests share stable prompt prefixes and should prefer the same upstream provider or region when possible. AI Stats can also derive cache affinity from request context, but an explicit key is better for long-running conversations, agent sessions, and repeated workflows.
+Use this when a series of requests share stable prompt prefixes and should prefer the same upstream provider or region when possible. Phaseo can also derive cache affinity from request context, but an explicit key is better for long-running conversations, agent sessions, and repeated workflows.
 
 <span id="cache_control"></span>
 <h3 id="parameter-cache_control"><code>cache_control</code></h3>

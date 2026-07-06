@@ -1,6 +1,6 @@
 ---
 title: "TypeScript SDK Installation"
-description: "How to install and set up the AI Stats TypeScript SDK"
+description: "How to install and set up the Phaseo TypeScript SDK"
 ---
 
 <Note type="warning">
@@ -14,15 +14,15 @@ Install the SDK using your preferred package manager:
 <CodeGroup>
 
     ```bash title="npm"
-    npm install @ai-stats/sdk
+    npm install @phaseo/sdk
     ```
 
     ```bash title="pnpm"
-    pnpm add @ai-stats/sdk
+    pnpm add @phaseo/sdk
     ```
 
     ```bash title="yarn"
-    yarn add @ai-stats/sdk
+    yarn add @phaseo/sdk
     ```
 
     </CodeGroup>
@@ -36,24 +36,24 @@ Install the SDK using your preferred package manager:
 
 ### API Key
 
-You'll need an AI Stats API key to use the SDK. Get one from [Gateway Keys](https://ai-stats.phaseo.app/gateway/keys).
+You'll need A Phaseo API key to use the SDK. Get one from [Gateway Keys](https://phaseo.app/gateway/keys).
 
 ### Environment Variables
 
 Set your API key as an environment variable:
 
 ```bash
-export AI_STATS_API_KEY="aistats_v1_sk_<kid>_<secret>"
+export PHASEO_API_KEY="phaseo_v1_sk_<kid>_<secret>"
 ```
 
 ### Basic Usage
 
 ```typescript
-import AIStats from "@ai-stats/sdk";
+import Phaseo from "@phaseo/sdk";
 
 // Initialize the client
-const client = new AIStats({
-	apiKey: process.env.AI_STATS_API_KEY!,
+const client = new Phaseo({
+	apiKey: process.env.PHASEO_API_KEY!,
 });
 
 // Make your first request

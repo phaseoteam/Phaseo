@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export const metadata: Metadata = {
 	title: "AI Model Benchmarks - Compare Scores & Evaluations",
 	description:
-		"Explore a comprehensive directory of AI model benchmarks. Compare benchmark scores, see usage statistics, and discover which benchmarks are most popular across state-of-the-art AI models. Make informed decisions with AI Stats.",
+		"Explore a comprehensive directory of AI model benchmarks. Compare benchmark scores, see usage statistics, and discover which benchmarks are most popular across state-of-the-art AI models. Make informed decisions with Phaseo.",
 	keywords: [
 		"AI benchmarks",
 		"AI model benchmarks",
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 		"compare AI models",
 		"AI model evaluation",
 		"machine learning benchmarks",
-		"AI Stats",
+		"Phaseo",
 	],
 	alternates: {
 		canonical: "/benchmarks",

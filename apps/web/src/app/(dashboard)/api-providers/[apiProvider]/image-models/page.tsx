@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 export const metadata: Metadata = {
 	title: "Image models redirect",
 	description:
-		"Redirect route to the API provider models view for AI Stats image model listings.",
+		"Redirect route to the API provider models view for Phaseo image model listings.",
 	robots: {
 		index: false,
 		follow: false,

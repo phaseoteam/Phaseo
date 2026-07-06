@@ -22,7 +22,7 @@ export async function sendEmail(args: SendEmailArgs): Promise<void> {
 	const from =
 		(args.from && args.from.trim()) ||
 		(bindings.RESEND_FROM_EMAIL && bindings.RESEND_FROM_EMAIL.trim()) ||
-		"AI Stats <noreply@phaseo.app>";
+		"Phaseo <noreply@phaseo.app>";
 
 	if (args.template?.id) {
 		const res = await fetch("https://api.resend.com/emails", {

@@ -1,19 +1,19 @@
-# AI Stats SDK - Installation Guide
+# Phaseo SDK - Installation Guide
 
 ## Interactive Installation
 
-When you install `@ai-stats/sdk`, you'll be prompted to optionally install the devtools viewer.
+When you install `@phaseo/sdk`, you'll be prompted to optionally install the devtools viewer.
 
 ### What Happens
 
 ```bash
-npm install @ai-stats/sdk
+npm install @phaseo/sdk
 ```
 
 **You'll see:**
 
 ```
-🎯 AI Stats SDK
+🎯 Phaseo SDK
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 The SDK includes built-in telemetry capture for debugging.
@@ -27,7 +27,7 @@ Features:
   • Export data as JSON or CSV
 
 ⚠️  You can always install it later with:
-   npx @ai-stats/devtools-viewer
+   npx @phaseo/devtools-viewer
 
 ? Install devtools viewer? (Y/n)
 ```
@@ -37,44 +37,44 @@ Features:
 #### If you choose **Yes** (default):
 
 ```
-📦 Installing @ai-stats/devtools-viewer...
+📦 Installing @phaseo/devtools-viewer...
 
 ✅ Devtools viewer installed successfully!
 
 Next steps:
 
 1. Enable devtools in your code:
-   const client = new AIStats({
-     devtools: createAIStatsDevtools()
+   const client = new Phaseo({
+     devtools: createPhaseoDevtools()
    });
 
 2. Make some API calls
 
 3. View your data:
-   npx @ai-stats/devtools-viewer
+   npx @phaseo/devtools-viewer
 
-📖 Read more: https://docs.ai-stats.org/devtools
+📖 Read more: https://docs.phaseo.org/devtools
 ```
 
 #### If you choose **No**:
 
 ```
 ⏭️  Skipped. You can install it anytime with:
-   npm install -D @ai-stats/devtools-viewer
+   npm install -D @phaseo/devtools-viewer
 ```
 
 ## What Gets Installed
 
 ### Always Installed (with SDK)
 
-- **Built-in telemetry capture** (bundled with `@ai-stats/sdk`)
+- **Built-in telemetry capture** (bundled with `@phaseo/sdk`)
   - Captures API requests to local files
-  - Required for `createAIStatsDevtools()` to work
+  - Required for `createPhaseoDevtools()` to work
   - No separate devtools-core package required
 
 ### Optionally Installed (via prompt)
 
-- **@ai-stats/devtools-viewer** (~5MB)
+- **@phaseo/devtools-viewer** (~5MB)
   - Beautiful web UI for viewing captured data
   - React + Vite + Express server
   - Only needed when you want to view data
@@ -87,7 +87,7 @@ Control the installation behavior without interactive prompts:
 ### Skip the Prompt Entirely
 
 ```bash
-AI_STATS_SKIP_POSTINSTALL=true npm install @ai-stats/sdk
+PHASEO_SKIP_POSTINSTALL=true npm install @phaseo/sdk
 ```
 
 Use this in CI/CD pipelines or automated builds.
@@ -95,7 +95,7 @@ Use this in CI/CD pipelines or automated builds.
 ### Auto-Install Viewer (No Prompt)
 
 ```bash
-AI_STATS_INSTALL_VIEWER=true npm install @ai-stats/sdk
+PHASEO_INSTALL_VIEWER=true npm install @phaseo/sdk
 ```
 
 Automatically installs the viewer without asking.
@@ -103,7 +103,7 @@ Automatically installs the viewer without asking.
 ### Auto-Skip Viewer (No Prompt)
 
 ```bash
-AI_STATS_INSTALL_VIEWER=false npm install @ai-stats/sdk
+PHASEO_INSTALL_VIEWER=false npm install @phaseo/sdk
 ```
 
 Automatically skips viewer installation without asking.
@@ -130,10 +130,10 @@ If you skipped the prompt, you can install the viewer anytime:
 
 ```bash
 # Install as dev dependency
-npm install -D @ai-stats/devtools-viewer
+npm install -D @phaseo/devtools-viewer
 
 # Or run directly with npx (no install needed)
-npx @ai-stats/devtools-viewer
+npx @phaseo/devtools-viewer
 ```
 
 ### Uninstall Viewer
@@ -141,18 +141,18 @@ npx @ai-stats/devtools-viewer
 If you no longer need the viewer:
 
 ```bash
-npm uninstall @ai-stats/devtools-viewer
+npm uninstall @phaseo/devtools-viewer
 ```
 
-The SDK and telemetry capture will continue to work. You can still view your data with `npx @ai-stats/devtools-viewer` without having it installed.
+The SDK and telemetry capture will continue to work. You can still view your data with `npx @phaseo/devtools-viewer` without having it installed.
 
 ## Package Manager Support
 
 The post-install script automatically detects your package manager:
 
-- **npm**: `npm install --save-dev @ai-stats/devtools-viewer`
-- **pnpm**: `pnpm add -D @ai-stats/devtools-viewer`
-- **yarn**: `yarn add -D @ai-stats/devtools-viewer`
+- **npm**: `npm install --save-dev @phaseo/devtools-viewer`
+- **pnpm**: `pnpm add -D @phaseo/devtools-viewer`
+- **yarn**: `yarn add -D @phaseo/devtools-viewer`
 
 ## Troubleshooting
 
@@ -160,14 +160,14 @@ The post-install script automatically detects your package manager:
 
 **Possible reasons:**
 - You're in a CI environment (prompt auto-skipped)
-- `AI_STATS_SKIP_POSTINSTALL=true` is set
+- `PHASEO_SKIP_POSTINSTALL=true` is set
 - You're publishing the package
 - The viewer is already installed
 
 **Solution:**
 Install the viewer manually:
 ```bash
-npm install -D @ai-stats/devtools-viewer
+npm install -D @phaseo/devtools-viewer
 ```
 
 ### Want to Disable Prompt Permanently
@@ -175,14 +175,14 @@ npm install -D @ai-stats/devtools-viewer
 Add to your `.npmrc` or `.yarnrc`:
 
 ```
-AI_STATS_SKIP_POSTINSTALL=true
+PHASEO_SKIP_POSTINSTALL=true
 ```
 
 Or set in your shell profile:
 
 ```bash
 # .bashrc / .zshrc
-export AI_STATS_SKIP_POSTINSTALL=true
+export PHASEO_SKIP_POSTINSTALL=true
 ```
 
 ### Post-Install Script Errors
@@ -194,7 +194,7 @@ If the post-install script fails, it **won't block** your installation. The SDK 
 ### Before This Change
 
 ```bash
-npm install @ai-stats/sdk
+npm install @phaseo/sdk
 # ❌ Installs viewer automatically (5MB+ added)
 # ❌ No choice given
 # ❌ Viewer installed even if never used
@@ -203,7 +203,7 @@ npm install @ai-stats/sdk
 ### After This Change
 
 ```bash
-npm install @ai-stats/sdk
+npm install @phaseo/sdk
 # ✅ Prompts you to install viewer
 # ✅ You choose what to install
 # ✅ Core capture always available

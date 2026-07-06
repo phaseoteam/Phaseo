@@ -1,6 +1,6 @@
 # SDK Compatibility Tests
 
-These tests verify that the AI Stats Gateway is fully compatible with official SDKs from OpenAI and Anthropic by simply changing the base URL.
+These tests verify that the Phaseo Gateway is fully compatible with official SDKs from OpenAI and Anthropic by simply changing the base URL.
 
 ## Overview
 

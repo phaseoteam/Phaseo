@@ -34,7 +34,7 @@ import type {
   VideoGenerationResponse
 } from "./oapi-gen/models/index.js";
 import * as ops from "./oapi-gen/client/index.js";
-import { AIStatsHttpError, Client } from "./runtime/client.js";
+import { PhaseoHttpError, Client } from "./runtime/client.js";
 import {
   TelemetryCapture,
   extractBatchMetadata,
@@ -52,7 +52,7 @@ export type ModelIdLiteral = KnownModelId;
  * Model identifier in `provider/model` format (for example: `openai/gpt-5.4`).
  *
  * Model page URL pattern:
- * `https://ai-stats.phaseo.app/models/{provider/model}`
+ * `https://phaseo.app/models/{provider/model}`
  */
 // Allow new server-side models before a package release while preserving known-ID autocomplete.
 export type ModelId = KnownModelId | (string & {});
@@ -66,11 +66,11 @@ type Options = {
   devtools?: Partial<DevToolsConfig>;
   enableDeprecationWarnings?: boolean;
   warningsAsErrors?: boolean;
-  logger?: AIStatsLogger;
+  logger?: PhaseoLogger;
 };
 
-export type AIStatsLogLevel = "info" | "warn" | "error";
-export type AIStatsLogger = (level: AIStatsLogLevel, message: string, meta?: Record<string, unknown>) => void;
+export type PhaseoLogLevel = "info" | "warn" | "error";
+export type PhaseoLogger = (level: PhaseoLogLevel, message: string, meta?: Record<string, unknown>) => void;
 export type QueryParamValue = string | number | boolean | readonly (string | number | boolean)[];
 
 export type ModelLifecycleInfo = {
@@ -306,9 +306,9 @@ export {
   type AsyncWebhookHeaders,
   type VerifyAsyncWebhookSignatureOptions
 } from "./webhooks.js";
-export type AIStatsOptions = Options;
+export type PhaseoOptions = Options;
 
-export class AIStats {
+export class Phaseo {
   private readonly client: Client;
   private readonly basePath: string;
   private readonly headers: Record<string, string>;
@@ -316,7 +316,7 @@ export class AIStats {
   private readonly fetchImpl: typeof fetch;
   private readonly enableDeprecationWarnings: boolean;
   private readonly warningsAsErrors: boolean;
-  private readonly logger?: AIStatsLogger;
+  private readonly logger?: PhaseoLogger;
   private readonly warnedModels = new Set<string>();
   private readonly modelLifecycleCache = new Map<string, ModelLifecycleInfo | null>();
 
@@ -598,7 +598,7 @@ export class AIStats {
     await this.maybeWarnForPayload(payload);
     const body = JSON.stringify(payload);
 
-    const generator = async function* (this: AIStats) {
+    const generator = async function* (this: Phaseo) {
       const res = await this.fetchImpl(`${this.basePath}/chat/completions`, {
         method: "POST",
         headers: { ...this.headers, "Content-Type": "application/json" },
@@ -645,7 +645,7 @@ export class AIStats {
     const payload = { ...req, stream: true };
     await this.maybeWarnForPayload(payload);
 
-    const generator = async function* (this: AIStats) {
+    const generator = async function* (this: Phaseo) {
       const res = await this.fetchImpl(`${this.basePath}/messages`, {
         method: "POST",
         headers: { ...this.headers, "Content-Type": "application/json" },
@@ -852,7 +852,7 @@ export class AIStats {
     const payload = { ...req, stream: true };
     await this.maybeWarnForPayload(payload);
 
-    const generator = async function* (this: AIStats) {
+    const generator = async function* (this: Phaseo) {
       const res = await this.fetchImpl(`${this.basePath}/responses`, {
         method: "POST",
         headers: { ...this.headers, "Content-Type": "application/json" },
@@ -1385,8 +1385,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * Compatibility layers - Drop-in replacements for OpenAI and Anthropic SDKs
  *
  * Usage:
- *   import { OpenAI } from '@ai-stats/sdk/compat/openai';
- *   import { Anthropic } from '@ai-stats/sdk/compat/anthropic';
+ *   import { OpenAI } from '@phaseo/sdk/compat/openai';
+ *   import { Anthropic } from '@phaseo/sdk/compat/anthropic';
  */
 export { OpenAI } from "./compat/openai.js";
 export { Anthropic } from "./compat/anthropic.js";
@@ -1413,13 +1413,13 @@ export type {
   MessageRole
 } from "./compat/anthropic.js";
 
-export default AIStats;
+export default Phaseo;
 
 function resolveApiKey(explicit?: string): string {
-  const key = explicit ?? readEnv("AI_STATS_API_KEY");
+  const key = explicit ?? readEnv("PHASEO_API_KEY");
   if (!key) {
     throw new Error(
-      "Missing API key. Pass `{ apiKey }` to `new AIStats(...)` or set `AI_STATS_API_KEY`.",
+      "Missing API key. Pass `{ apiKey }` to `new Phaseo(...)` or set `PHASEO_API_KEY`. ",
     );
   }
   return key;
@@ -1432,8 +1432,8 @@ function readEnv(name: string): string | undefined {
   return undefined;
 }
 
-function createHttpError(response: Response, text: string): AIStatsHttpError {
-  return new AIStatsHttpError({
+function createHttpError(response: Response, text: string): PhaseoHttpError {
+  return new PhaseoHttpError({
     status: response.status,
     statusText: response.statusText,
     body: parseResponseBody(text),
@@ -1441,8 +1441,8 @@ function createHttpError(response: Response, text: string): AIStatsHttpError {
   });
 }
 
-function createStreamHttpError(response: Response, text: string): AIStatsHttpError {
-  return new AIStatsHttpError({
+function createStreamHttpError(response: Response, text: string): PhaseoHttpError {
+  return new PhaseoHttpError({
     status: response.status,
     statusText: response.statusText,
     body: parseResponseBody(text),
@@ -1573,18 +1573,18 @@ function buildLifecycleMessage(
   const replacement = replacementModelId ? ` Use "${replacementModelId}" instead.` : "";
   if (status === "retired") {
     if (retirementDate) {
-      return `[ai-stats] Model "${modelId}" is retired as of ${retirementDate}.${replacement}`;
+      return `[phaseo] Model "${modelId}" is retired as of ${retirementDate}.${replacement}`;
     }
-    return `[ai-stats] Model "${modelId}" is retired.${replacement}`;
+    return `[phaseo] Model "${modelId}" is retired.${replacement}`;
   }
   if (status === "deprecated") {
     if (retirementDate) {
-      return `[ai-stats] Model "${modelId}" is deprecated and scheduled for retirement on ${retirementDate}.${replacement}`;
+      return `[phaseo] Model "${modelId}" is deprecated and scheduled for retirement on ${retirementDate}.${replacement}`;
     }
     if (deprecationDate) {
-      return `[ai-stats] Model "${modelId}" has been deprecated since ${deprecationDate}.${replacement}`;
+      return `[phaseo] Model "${modelId}" has been deprecated since ${deprecationDate}.${replacement}`;
     }
-    return `[ai-stats] Model "${modelId}" is deprecated.${replacement}`;
+    return `[phaseo] Model "${modelId}" is deprecated.${replacement}`;
   }
   return null;
 }
@@ -1634,13 +1634,13 @@ function buildInactiveModelRequestMessage(info: ModelLifecycleInfo): string {
         info.retirementDate,
         info.replacementModelId
       ) ??
-      `[ai-stats] Model "${info.modelId}" is not active for inference.`
+      `[phaseo] Model "${info.modelId}" is not active for inference.`
     );
   }
 
   const sourceStatus = normalizeSourceStatus(info.sourceStatus) ?? "unknown";
   const replacement = info.replacementModelId ? ` Use "${info.replacementModelId}" instead.` : "";
-  return `[ai-stats] Model "${info.modelId}" is not active for inference (status: ${sourceStatus}).${replacement}`;
+  return `[phaseo] Model "${info.modelId}" is not active for inference (status: ${sourceStatus}).${replacement}`;
 }
 
 function asTrimmedString(value: unknown): string | null {

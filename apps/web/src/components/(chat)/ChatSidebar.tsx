@@ -270,7 +270,7 @@ export function ChatSidebar({
 						collapsed ? "justify-center" : "ml-2",
 					)}
 				>
-					<Link href="/" aria-label="AI Stats">
+					<Link href="/" aria-label="Phaseo">
 						<img
 							src={brandLightSrc}
 							alt=""

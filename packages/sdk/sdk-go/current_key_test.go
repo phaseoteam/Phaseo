@@ -1,4 +1,4 @@
-package aistats
+package phaseo
 
 import (
 	"context"
@@ -14,7 +14,7 @@ func TestGetCurrentApiKeyReturnsPayload(t *testing.T) {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"data":{"id":"key_123","prefix":"aistats_v1_sk_test","status":"active"}}`))
+		_, _ = w.Write([]byte(`{"data":{"id":"key_123","prefix":"phaseo_v1_sk_test","status":"active"}}`))
 	}))
 	defer server.Close()
 

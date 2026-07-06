@@ -6,6 +6,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AIStats.Sdk.csproj" />
+    <ProjectReference Include="..\Phaseo.Sdk.csproj" />
   </ItemGroup>
 </Project>

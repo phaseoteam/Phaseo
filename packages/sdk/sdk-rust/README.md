@@ -1,6 +1,6 @@
-# AI Stats Rust SDK
+# Phaseo Rust SDK
 
-Rust SDK preview for AI Stats Gateway.
+Rust SDK preview for Phaseo Gateway.
 
 This package currently exposes the generated client and operation modules.
 
@@ -16,7 +16,7 @@ Use a git dependency until a crates.io release is available:
 
 ```toml
 [dependencies]
-ai-stats-rust-sdk = { git = "https://github.com/AI-Stats/AI-Stats.git", package = "ai-stats-rust-sdk" }
+phaseo-rust-sdk = { git = "https://github.com/phaseoteam/Phaseo.git", package = "phaseo-rust-sdk" }
 serde_json = "1"
 ureq = "2"
 ```
@@ -25,8 +25,8 @@ ureq = "2"
 
 ```rust
 use std::collections::HashMap;
-use ai_stats_rust_sdk::gen::client::{Client, Response, Transport};
-use ai_stats_rust_sdk::gen::operations;
+use phaseo_rust_sdk::gen::client::{Client, Response, Transport};
+use phaseo_rust_sdk::gen::operations;
 
 struct HttpTransport;
 
@@ -58,8 +58,8 @@ impl Transport for HttpTransport {
 }
 
 fn main() {
-    let api_key = std::env::var("AI_STATS_API_KEY").expect("AI_STATS_API_KEY is required");
-    let base_url = std::env::var("AI_STATS_BASE_URL")
+    let api_key = std::env::var("PHASEO_API_KEY").expect("PHASEO_API_KEY is required");
+    let base_url = std::env::var("PHASEO_BASE_URL")
         .unwrap_or_else(|_| "https://api.phaseo.app/v1".to_string());
 
     let transport = HttpTransport;
@@ -80,12 +80,12 @@ fn main() {
 
 ## Environment variables
 
-- `AI_STATS_API_KEY` (required)
-- `AI_STATS_BASE_URL` (optional, defaults to `https://api.phaseo.app/v1`)
+- `PHASEO_API_KEY` (required)
+- `PHASEO_BASE_URL` (optional, defaults to `https://api.phaseo.app/v1`)
 
 ## Regeneration and local checks
 
 - Regenerate generated client: `pnpm openapi:gen:rust`
 - Smoke tests:
-  - `pnpm --filter @ai-stats/rust-sdk run smoke:chat`
-  - `pnpm --filter @ai-stats/rust-sdk run smoke:responses`
+  - `pnpm --filter @phaseo/rust-sdk run smoke:chat`
+  - `pnpm --filter @phaseo/rust-sdk run smoke:responses`

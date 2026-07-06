@@ -1,10 +1,10 @@
-import AIStats, { type AIStatsOptions, type ResponsesRequest, type ResponsesResponse } from "@ai-stats/sdk";
+import Phaseo, { type PhaseoOptions, type ResponsesRequest, type ResponsesResponse } from "@phaseo/sdk";
 import { AgentGatewayError } from "../errors.js";
 import type { AgentMessage, AgentModelClient, AgentModelRequest, AgentToolCall } from "../types.js";
 
 export type GatewayAgentClientOptions = {
-	client?: AIStats;
-	clientOptions?: AIStatsOptions;
+	client?: Phaseo;
+	clientOptions?: PhaseoOptions;
 	model?: string;
 	preset?: string;
 	provider?: ResponsesRequest["provider"];
@@ -171,7 +171,7 @@ function extractResponseMeta(response: ResponsesResponse): Record<string, unknow
 export function createGatewayAgentClient(
 	options: GatewayAgentClientOptions = {},
 ): AgentModelClient {
-	const client = options.client ?? new AIStats(options.clientOptions ?? {});
+	const client = options.client ?? new Phaseo(options.clientOptions ?? {});
 
 	return {
 		async generate(request) {
@@ -182,7 +182,7 @@ export function createGatewayAgentClient(
 						request.model ??
 						options.model ??
 						toPresetModelAlias(options.preset) ??
-						"ai-stats/free",
+						"phaseo/free",
 					input: toResponsesInput(request.messages),
 					instructions: toInstructions(request.messages, request.instructions),
 					tools: buildRequestTools(request, options.gatewayTools),

@@ -25,10 +25,10 @@ export const metadata: Metadata = buildMetadata({
 		"machine learning models",
 		"AI providers",
 		"AI gateway performance",
-		"AI Stats",
+		"Phaseo",
 	],
 	imagePath: "/compare/opengraph-image",
-	imageAlt: "AI Stats model comparison preview",
+	imageAlt: "Phaseo model comparison preview",
 	openGraph: {
 		type: "website",
 	},

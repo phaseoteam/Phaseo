@@ -107,7 +107,7 @@ Use this checklist when adding a new long-running route such as video, batch, tr
 - `pnpm --filter @ai-stats/gateway-api typecheck`
 - relevant SDK package tests if helper methods changed
 - `pnpm run openapi:gen` if public contract changed
-- `pnpm --filter @ai-stats/sdk run build` if generated SDKs changed
+- `pnpm --filter @phaseo/sdk run build` if generated SDKs changed
 - `pnpm exec mintlify validate` in `apps/docs`
 
 ## 3) Expose new metadata in logs, jobs, and devtools
@@ -185,7 +185,7 @@ Pick the smallest bundle that still covers the actual change.
 
 - targeted Jest or Vitest coverage where available
 - `pnpm --filter @ai-stats/web typecheck`
-- `pnpm --filter @ai-stats/devtools-viewer run build` if viewer assets changed
+- `pnpm --filter @phaseo/devtools-viewer run build` if viewer assets changed
 
 ## 6) Changelog discipline
 

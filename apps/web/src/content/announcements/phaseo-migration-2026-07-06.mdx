@@ -1,0 +1,167 @@
+---
+title: "AI Stats is becoming Phaseo"
+description: "Phaseo helps teams compare models, route requests, track pricing, and keep production AI systems portable."
+publishedAt: 2026-07-06
+author: Phaseo Team
+category: announcements
+pinned: true
+tags:
+  - Announcement
+  - Migration
+  - Product
+  - Docs
+coverImage: /blog-images/migration.png
+draft: false
+---
+
+AI Stats is becoming **Phaseo** because teams need more than a model directory.
+
+They need to decide which model to use, which provider to call, what a route costs, and how to change course when the market moves.
+
+**Phaseo brings that work into one place:** model discovery, provider coverage, gateway routing, cost visibility, SDKs, and observability for production AI systems.
+
+The name is changing because the product has changed. Phaseo is built to help teams understand, compare, switch, and use AI models without rebuilding their stack every time the market moves.
+
+## Why the name is changing now
+
+AI is moving from experiments and point integrations into core product infrastructure.
+
+Static model information is useful, but it is not enough once a model is part of a product. Production teams need to know which providers support a model, how each route is priced, whether an endpoint is available to call, what changed recently, and how hard it will be to move if a better model appears next month.
+
+The market is also becoming larger and more fragmented. [Gartner forecasts worldwide AI spending at $2.52 trillion in 2026](https://www.gartner.com/en/newsroom/press-releases/2026-1-15-gartner-says-worldwide-ai-spending-will-total-2-point-5-trillion-dollars-in-2026), up 44% year over year.
+
+Stanford's [2026 AI Index](https://hai.stanford.edu/ai-index/2026-ai-index-report) reports that organizational adoption reached 88% in 2025, while U.S. private AI investment reached $285.9 billion.
+
+Those numbers matter because AI spend is no longer just a research budget or a few API calls in a prototype. It is becoming a recurring operating cost. Teams need better controls around routing, pricing, observability, and model choice before that cost becomes difficult to reason about.
+
+**Phaseo gives teams a way to keep those decisions visible.** It connects model metadata, provider availability, route pricing, and gateway behavior so the model layer can be inspected before it becomes an expensive black box.
+
+## AI subscriptions are changing expectations
+
+AI is also becoming a consumer and workplace subscription category.
+
+[OpenAI said ChatGPT reached 900 million weekly active users and 50 million paying subscribers in February 2026](https://techcrunch.com/2026/02/27/chatgpt-reaches-900m-weekly-active-users/). Sensor Tower's [2026 State of AI report](https://sensortower.com/blog/state-of-ai-2026) later put ChatGPT at 1 billion monthly active users in May 2026.
+
+That reach changes how people experience AI. More users are meeting models through subscriptions, usage limits, product tiers, and rapidly changing defaults. SemiAnalysis has been tracking the same pressure from the cost side, from the economics of [$20 and $200 AI subscriptions](https://newsletter.semianalysis.com/p/claude-code-is-the-inflection-point) to [enterprise conversations](https://newsletter.semianalysis.com/p/tokenbudgeting-our-conversations) where token budgets, premium model access, and per-employee AI spend are becoming active operating questions.
+
+The model quality curve is moving just as quickly. Releases tracked in Phaseo, including [Claude Fable 5](https://phaseo.app/models/anthropic/claude-fable-5) and [Claude Mythos 5](https://phaseo.app/models/anthropic/claude-mythos-5), show how often teams need to re-evaluate quality, availability, pricing, and provider support.
+
+For builders, the takeaway is direct: AI is no longer a single vendor decision made once. It is a moving subscription, usage, cost, and capability problem.
+
+**Phaseo is built for that loop.** Teams can compare models, understand provider coverage, route traffic deliberately, and switch when the economics or quality curve changes.
+
+## Model choice is becoming infrastructure
+
+The model layer changes faster than most application layers.
+
+A team may start with one closed model because it is the best fit for reasoning. A month later, a lower-cost model may be good enough for classification or extraction. Another workload may need an open-weight model for data sovereignty, fine-tuning, latency, or deployment inside a controlled environment.
+
+A real-time voice feature may care more about latency and minute pricing than benchmark scores. A coding assistant may need a different model from a customer-support triage flow.
+
+Picking one model forever is usually the wrong abstraction.
+
+**Phaseo supports the more durable pattern:** keep the application portable enough that the team can move deliberately.
+
+**With Phaseo, teams can:**
+
+- use the best model for the job
+- compare providers before moving traffic
+- keep pricing visible before usage scales
+- route around outages or provider restrictions
+- test open, closed, hosted, and self-hosted options
+- preserve observability when switching models
+
+Phaseo connects model discovery to the production workflow around it. The catalog helps teams compare options. The gateway and SDKs help them use those models in production. Pricing and provider coverage explain the tradeoffs. Gateway observability shows what happened after a request was routed.
+
+## Open technologies matter more as AI spend rises
+
+Open-source and open-weight AI are becoming strategically important, even when closed frontier models still lead in some areas.
+
+Stanford's 2026 AI Index highlights how open-source development is widening participation in AI, with contributions from the rest of the world now outpacing Europe and approaching the United States on GitHub.
+
+At the same time, open-weight models continue to improve quickly, and services such as [Artificial Analysis](https://artificialanalysis.ai/models/open-source) track open models across quality, speed, context window, parameter count, and licensing.
+
+This matters in production.
+
+Open technologies give teams more ways to control where work runs, how data is handled, and what the long-term cost structure looks like. They also reduce the risk that a product becomes tightly coupled to one vendor's model, pricing, policy, or availability.
+
+In some settings, a closed hosted model will still be the right choice. In others, open-weight models, self-hosting, or a mixed routing strategy will be better.
+
+**Phaseo is designed for that mixed environment.** It treats open, closed, hosted, and self-hosted models as options teams may need to combine, not separate worlds with separate tooling.
+
+Teams should not have to choose between "use the latest hosted frontier model" and "own every layer yourself." Most production systems will sit between those extremes. They will use several providers, several model families, and several deployment patterns over time.
+
+**Phaseo helps manage that middle ground** by keeping the comparison, routing, pricing, and observability layers in one workflow.
+
+## How Phaseo supports model choice
+
+**Phaseo brings model information and runtime tooling into one product.**
+
+**With Phaseo, teams can:**
+
+- search models, providers, releases, statuses, and metadata
+- inspect model and provider pages for availability, pricing, lifecycle state, and routing options
+- route requests through OpenAI-compatible and provider-specific workflows
+- build against the gateway with SDKs and examples
+- compare provider and route pricing before traffic scales
+- track model releases, provider changes, SDK releases, and product improvements
+- understand gateway behavior in production
+
+Switching models should be an operational decision, not a rewrite.
+
+If a provider changes pricing, a model is retired, a better open-weight model appears, or a workload needs to move to a lower-latency route, teams should be able to inspect the options, make a choice, and keep the surrounding application stable.
+
+## What changes for the Phaseo migration
+
+The public product, documentation, SDK examples, and product copy are moving to the Phaseo brand.
+
+That means:
+
+- the main site moves to `phaseo.app`
+- docs, SDK guidance, changelog entries, and product copy use Phaseo naming
+- new developer-facing examples use `PHASEO_*`
+- newly generated API keys use the `phaseo_v1_sk_` key prefix
+- local, preview, and production builds get distinct favicons so developers can quickly tell which environment they are testing
+
+The change is intentionally direct. New projects should use the Phaseo names. Existing deployments should not need a disruptive environment-variable rename; they can keep their current variable names and update the values behind them when ready.
+
+## What developers need to know about API keys
+
+Existing API keys continue to work during the migration. You do not need to rotate a working key immediately just because the brand is changing.
+
+New API keys generated after the migration use the Phaseo prefix:
+
+```bash
+PHASEO_API_KEY=phaseo_v1_sk_...
+PHASEO_BASE_URL=https://api.phaseo.app/v1
+```
+
+Older `aistats`-style API keys will remain valid for a six-month transition window and are scheduled to stop working on **January 1, 2027**. Before then, create a new Phaseo-prefixed key and swap it into your deployment on your own schedule.
+
+SDK examples, webhook verification snippets, CLI configuration, and management-key examples have been updated to the Phaseo names. Existing environment variable names can continue to be used in your own application if that is less disruptive; new examples use `PHASEO_*` so new projects start with the current naming.
+
+If you run local or preview builds, the favicon now changes by environment:
+
+- local development uses the development favicon
+- Vercel preview deployments use the preview favicon
+- production uses the production favicon
+
+That helps prevent local builds, preview deployments, and the live site from being confused during testing.
+
+## The main site is moving to phaseo.app
+
+That is the canonical home for the product, docs, blog, and model discovery going forward. Older AI Stats links will be handled as part of the migration, but new links should point at Phaseo.
+
+## The product goal stays the same
+
+Phaseo remains focused on clear model information, practical gateway tooling, provider visibility, pricing clarity, SDKs, and workflows that make AI product decisions more explicit.
+
+The name is changing because the product has grown.
+
+The need behind it has become clearer too: AI teams need portability, cost visibility, open technology options, and a clean way to move between models as the market changes.
+
+The rename is the point where the brand catches up with the product.
+
+<SocialLinks />
+
+<GetStartedCta />

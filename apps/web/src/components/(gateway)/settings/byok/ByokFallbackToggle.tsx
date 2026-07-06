@@ -35,7 +35,7 @@ export default function ByokFallbackToggle({
 				onCheckedChange={handleChange}
 			/>
 			<span>
-				Fallback to AI Stats credits if a BYOK request fails
+				Fallback to Phaseo credits if a BYOK request fails
 			</span>
 		</label>
 	);

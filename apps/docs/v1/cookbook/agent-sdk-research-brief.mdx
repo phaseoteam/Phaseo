@@ -14,19 +14,19 @@ Use this recipe when one agent workflow should:
 
 <CodeGroup>
 ```bash npm
-npm install @ai-stats/sdk @ai-stats/agent-sdk
+npm install @phaseo/sdk @phaseo/agent-sdk
 ```
 
 ```bash pnpm
-pnpm add @ai-stats/sdk @ai-stats/agent-sdk
+pnpm add @phaseo/sdk @phaseo/agent-sdk
 ```
 
 ```bash yarn
-yarn add @ai-stats/sdk @ai-stats/agent-sdk
+yarn add @phaseo/sdk @phaseo/agent-sdk
 ```
 
 ```bash bun
-bun add @ai-stats/sdk @ai-stats/agent-sdk
+bun add @phaseo/sdk @phaseo/agent-sdk
 ```
 </CodeGroup>
 
@@ -50,11 +50,11 @@ type ResearchBrief = {
 Use `parseOutput` so the runtime returns typed data instead of raw text.
 
 ```ts
-import { createAgent } from "@ai-stats/agent-sdk";
+import { createAgent } from "@phaseo/agent-sdk";
 
 export const researchBriefAgent = createAgent<string, ResearchBrief>({
   id: "research-brief-agent",
-  model: "ai-stats/free",
+  model: "phaseo/free",
   instructions:
     "Research the user's topic with web search when needed and return a concise JSON brief with cited sources.",
   parseOutput(text) {
@@ -75,11 +75,11 @@ This is the important part:
 ```ts
 import {
   createGatewayAgentClient,
-} from "@ai-stats/agent-sdk";
+} from "@phaseo/agent-sdk";
 
 const client = createGatewayAgentClient({
   clientOptions: {
-    apiKey: process.env.AI_STATS_API_KEY!,
+    apiKey: process.env.PHASEO_API_KEY!,
   },
   responseFormat: {
     type: "json_schema",

@@ -72,13 +72,13 @@ describe("tool usage helpers", () => {
 								{
 									web: {
 										uri: "https://example.com/docs",
-										title: "AI Stats Docs",
+										title: "Phaseo Docs",
 									},
 								},
 								{
 									web: {
 										uri: "https://example.com/blog",
-										title: "AI Stats Blog",
+										title: "Phaseo Blog",
 									},
 								},
 							],

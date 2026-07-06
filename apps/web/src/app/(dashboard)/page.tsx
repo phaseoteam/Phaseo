@@ -53,7 +53,7 @@ const standardFeePct = standardTier?.feePct ?? 5;
 const standardFeeText = Number.isInteger(standardFeePct)
 	? standardFeePct.toFixed(0)
 	: String(standardFeePct);
-const GITHUB_HREF = "https://github.com/AI-Stats/AI-Stats";
+const GITHUB_HREF = "https://github.com/phaseoteam/Phaseo";
 
 const HERO_METRICS = [
 	{ label: "Models live", value: "300+" },
@@ -78,7 +78,7 @@ const PRICING_POINTS: Array<{
 	},
 	{
 		title: "Managed credits or BYOK",
-		body: "Start with AI Stats credits, or keep provider relationships intact and route through your own keys when you need to.",
+		body: "Start with Phaseo credits, or keep provider relationships intact and route through your own keys when you need to.",
 		icon: LockOpen,
 	},
 ] as const;
@@ -108,7 +108,7 @@ function HeroSection() {
 							<span className="block">Keep the stack legible.</span>
 						</h1>
 						<p className="mx-auto max-w-2xl text-[15px] leading-[1.75] text-zinc-700 sm:text-lg sm:leading-[1.85]">
-							AI Stats gives teams one place to compare benchmarks, pricing, and
+							Phaseo gives teams one place to compare benchmarks, pricing, and
 							provider coverage, then ship through a single OpenAI-compatible
 							gateway without losing operational clarity.
 						</p>
@@ -365,9 +365,10 @@ export default async function Page() {
 		url: absoluteUrl("/"),
 		logo: absoluteUrl("/png_logo_light.png"),
 		sameAs: [
-			"https://github.com/AI-Stats/AI-Stats",
-			"https://x.com/ai_stats_team",
+			"https://github.com/phaseoteam/Phaseo",
+			"https://x.com/phaseoteam",
 			"https://www.linkedin.com/company/phaseoapp/",
+			"https://www.reddit.com/r/Phaseo/",
 		],
 	};
 

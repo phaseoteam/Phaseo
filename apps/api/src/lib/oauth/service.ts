@@ -83,7 +83,7 @@ export function getApiBaseUrl(): string {
 
 export function getWebBaseUrl(): string {
 	const bindings = getBindings();
-	return String(bindings.AI_STATS_WEB_BASE_URL ?? DEFAULT_WEB_BASE_URL).replace(/\/+$/, "");
+	return String(bindings.PHASEO_WEB_BASE_URL ?? DEFAULT_WEB_BASE_URL).replace(/\/+$/, "");
 }
 
 export function getIssuer(): string {
@@ -92,7 +92,7 @@ export function getIssuer(): string {
 
 export function isThirdPartyOAuthEnabled(): boolean {
 	const bindings = getBindings();
-	const raw = bindings.AI_STATS_THIRD_PARTY_OAUTH_ENABLED;
+	const raw = bindings.PHASEO_THIRD_PARTY_OAUTH_ENABLED;
 	if (typeof raw === "boolean") return raw;
 	return TRUTHY_VALUES.has(String(raw ?? "").trim().toLowerCase());
 }
@@ -134,7 +134,7 @@ async function sha256Base64Url(value: string): Promise<string> {
 export async function hashOAuthSecret(value: string): Promise<string> {
 	const bindings = getBindings();
 	const pepper = String(
-		bindings.AI_STATS_OAUTH_TOKEN_PEPPER ??
+		bindings.PHASEO_OAUTH_TOKEN_PEPPER ??
 			bindings.KEY_PEPPER_ACTIVE ??
 			bindings.KEY_PEPPER ??
 			"",
@@ -185,7 +185,7 @@ function publicJwkFromPrivate(jwk: JsonWebKey): JsonWebKey {
 	const { d, p, q, dp, dq, qi, oth, key_ops, ...publicJwk } = jwk as any;
 	return {
 		...publicJwk,
-		kid: (jwk as any).kid ?? "aistats-oauth-v1",
+		kid: (jwk as any).kid ?? "phaseo-oauth-v1",
 		alg: "RS256",
 		use: "sig",
 		key_ops: ["verify"],
@@ -194,18 +194,18 @@ function publicJwkFromPrivate(jwk: JsonWebKey): JsonWebKey {
 
 async function getSigningMaterial() {
 	const bindings = getBindings();
-	const rawJwk = String(bindings.AI_STATS_OAUTH_PRIVATE_JWK ?? "").trim();
+	const rawJwk = String(bindings.PHASEO_OAUTH_PRIVATE_JWK ?? "").trim();
 	if (rawJwk) {
 		const jwk = JSON.parse(rawJwk) as JsonWebKey;
 		return {
 			privateKey: await importPrivateJwk(jwk),
 			publicJwk: publicJwkFromPrivate(jwk),
-			kid: String((jwk as any).kid ?? "aistats-oauth-v1"),
+			kid: String((jwk as any).kid ?? "phaseo-oauth-v1"),
 		};
 	}
 
 	if (String(bindings.NODE_ENV ?? "").toLowerCase() === "production") {
-		throw new Error("AI_STATS_OAUTH_PRIVATE_JWK is required for OAuth token signing");
+		throw new Error("PHASEO_OAUTH_PRIVATE_JWK is required for OAuth token signing");
 	}
 
 	if (!ephemeralSigningKey) {

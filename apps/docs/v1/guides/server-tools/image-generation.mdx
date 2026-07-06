@@ -1,9 +1,9 @@
 ---
 title: "Image Generation"
-description: "Let models create images through an AI Stats server tool."
+description: "Let models create images through A Phaseo server tool."
 ---
 
-Use `ai-stats:image_generation` when the model should be able to create an image while it is answering. AI Stats exposes a managed tool to the model, executes the image request server-side, and feeds the image result back into the model loop.
+Use `ai-stats:image_generation` when the model should be able to create an image while it is answering. Phaseo exposes a managed tool to the model, executes the image request server-side, and feeds the image result back into the model loop.
 
 ## Request
 
@@ -43,7 +43,7 @@ curl https://api.phaseo.app/v1/responses \
 
 The model supplies the final `prompt` when it calls the tool. Tool-level parameters provide defaults and constraints for that call.
 
-The tool call may also send `description` instead of `prompt`. AI Stats treats `description` as a prompt alias for compatibility with model-generated image descriptions.
+The tool call may also send `description` instead of `prompt`. Phaseo treats `description` as a prompt alias for compatibility with model-generated image descriptions.
 
 ## Tool Result
 
@@ -71,7 +71,7 @@ Some providers return base64 image data instead:
 
 ## Usage And Pricing
 
-Image generation usage is included in the parent response usage when the image model reports token usage. AI Stats also records:
+Image generation usage is included in the parent response usage when the image model reports token usage. Phaseo also records:
 
 ```json
 {

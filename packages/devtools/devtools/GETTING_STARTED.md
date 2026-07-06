@@ -1,19 +1,19 @@
-# Getting Started with AI Stats Devtools
+# Getting Started with Phaseo Devtools
 
-This guide walks you through setting up and using AI Stats Devtools to debug and monitor your AI application.
+This guide walks you through setting up and using Phaseo Devtools to debug and monitor your AI application.
 
 ## Installation
 
 ### Option 1: Built into the SDK
 
-The devtools function is already included in `@ai-stats/sdk`:
+The devtools function is already included in `@phaseo/sdk`:
 
 ```bash
-npm install @ai-stats/sdk
+npm install @phaseo/sdk
 ```
 
 ```typescript
-import { AIStats, createAIStatsDevtools } from '@ai-stats/sdk';
+import { AIStats, createAIStatsDevtools } from '@phaseo/sdk';
 ```
 
 ### Option 2: Standalone Package
@@ -21,11 +21,11 @@ import { AIStats, createAIStatsDevtools } from '@ai-stats/sdk';
 Install the devtools as a separate package:
 
 ```bash
-npm install @ai-stats/sdk @ai-stats/devtools
+npm install @phaseo/sdk @ai-stats/devtools
 ```
 
 ```typescript
-import { AIStats } from '@ai-stats/sdk';
+import { AIStats } from '@phaseo/sdk';
 import { createAIStatsDevtools } from '@ai-stats/devtools';
 ```
 
@@ -35,13 +35,13 @@ Both approaches work identically - choose whichever fits your project structure 
 
 ### Step 1: Enable Devtools
 
-Add one line to your AI Stats client initialization:
+Add one line to your Phaseo client initialization:
 
 ```typescript
-import { AIStats, createAIStatsDevtools } from '@ai-stats/sdk';
+import { AIStats, createAIStatsDevtools } from '@phaseo/sdk';
 
 const client = new AIStats({
-  apiKey: process.env.AI_STATS_API_KEY,
+  apiKey: process.env.PHASEO_API_KEY,
   devtools: createAIStatsDevtools()  // ← Add this line
 });
 ```
@@ -50,7 +50,7 @@ That's it! All your API calls are now being captured.
 
 ### Step 2: Make API Calls
 
-Use your AI Stats client normally:
+Use your Phaseo client normally:
 
 ```typescript
 // Chat completion
@@ -86,7 +86,7 @@ All of these calls are automatically captured with:
 Start the devtools viewer:
 
 ```bash
-npx @ai-stats/devtools-viewer
+npx @phaseo/devtools-viewer
 ```
 
 Then open http://localhost:4983 in your browser to see:
@@ -136,7 +136,7 @@ Customize the devtools behavior:
 
 ```typescript
 const client = new AIStats({
-  apiKey: process.env.AI_STATS_API_KEY,
+  apiKey: process.env.PHASEO_API_KEY,
   devtools: createAIStatsDevtools({
     // Where to store telemetry data
     directory: '.ai-stats-devtools',  // default
@@ -162,10 +162,10 @@ Control devtools via environment variables:
 
 ```bash
 # Enable/disable devtools
-AI_STATS_DEVTOOLS=true
+PHASEO_DEVTOOLS=true
 
 # Custom data directory
-AI_STATS_DEVTOOLS_DIR=./my-devtools-data
+PHASEO_DEVTOOLS_DIR=./my-devtools-data
 
 # Then run your app
 tsx app.ts
@@ -174,7 +174,7 @@ tsx app.ts
 **Default behavior:**
 - Enabled when `NODE_ENV !== 'production'`
 - Disabled in production
-- Can override with `AI_STATS_DEVTOOLS` env var
+- Can override with `PHASEO_DEVTOOLS` env var
 
 ## Common Patterns
 
@@ -182,7 +182,7 @@ tsx app.ts
 
 ```typescript
 const client = new AIStats({
-  apiKey: process.env.AI_STATS_API_KEY,
+  apiKey: process.env.PHASEO_API_KEY,
   devtools: process.env.NODE_ENV !== 'production'
     ? createAIStatsDevtools()
     : undefined
@@ -193,7 +193,7 @@ const client = new AIStats({
 
 ```typescript
 const client = new AIStats({
-  apiKey: process.env.AI_STATS_API_KEY,
+  apiKey: process.env.PHASEO_API_KEY,
   devtools: createAIStatsDevtools({
     directory: `.devtools-${process.env.NODE_ENV}`
   })
@@ -204,7 +204,7 @@ const client = new AIStats({
 
 ```typescript
 const client = new AIStats({
-  apiKey: process.env.AI_STATS_API_KEY,
+  apiKey: process.env.PHASEO_API_KEY,
   devtools: createAIStatsDevtools({
     captureHeaders: process.env.DEBUG === 'true',
     flushIntervalMs: 500  // Faster flushing in debug mode
@@ -218,17 +218,17 @@ const client = new AIStats({
 
 ```bash
 # Run from any directory
-npx @ai-stats/devtools-viewer
+npx @phaseo/devtools-viewer
 
 # Or install globally
-npm install -g @ai-stats/devtools-viewer
+npm install -g @phaseo/devtools-viewer
 devtools-viewer
 
 # Custom data directory
-npx @ai-stats/devtools-viewer --dir ./my-devtools-data
+npx @phaseo/devtools-viewer --dir ./my-devtools-data
 
 # Custom port
-npx @ai-stats/devtools-viewer --port 8080
+npx @phaseo/devtools-viewer --port 8080
 ```
 
 ### Viewer Features
@@ -326,7 +326,7 @@ fs.writeFileSync('telemetry.json', json);
 
 2. Check environment variables:
    ```bash
-   echo $AI_STATS_DEVTOOLS  # Should be 'true' or undefined (dev)
+   echo $PHASEO_DEVTOOLS  # Should be 'true' or undefined (dev)
    echo $NODE_ENV           # Should NOT be 'production'
    ```
 
@@ -341,7 +341,7 @@ fs.writeFileSync('telemetry.json', json);
 1. Make sure you've made at least one API call
 2. Check the data directory matches:
    ```bash
-   npx @ai-stats/devtools-viewer --dir .ai-stats-devtools
+   npx @phaseo/devtools-viewer --dir .ai-stats-devtools
    ```
 3. Verify entries.jsonl exists and has content:
    ```bash
@@ -380,7 +380,7 @@ fs.writeFileSync('telemetry.json', json);
 
 ## Comparison to Other Tools
 
-| Feature | AI Stats Devtools | OpenRouter Devtools | LangSmith |
+| Feature | Phaseo Devtools | OpenRouter Devtools | LangSmith |
 |---------|-------------------|---------------------|-----------|
 | **Data Storage** | Local (your machine) | Local | Cloud |
 | **Privacy** | 100% private | 100% private | Data sent to cloud |
@@ -390,4 +390,4 @@ fs.writeFileSync('telemetry.json', json);
 | **Multi-language** | ✓ (TS, Py, Go, etc.) | ✗ (Node.js only) | ✓ |
 | **Offline** | ✓ | ✓ | ✗ |
 
-Inspired by OpenRouter's excellent devtools pattern, AI Stats Devtools brings the same developer experience to 400+ AI models across all major providers.
+Inspired by OpenRouter's excellent devtools pattern, Phaseo Devtools brings the same developer experience to 400+ AI models across all major providers.

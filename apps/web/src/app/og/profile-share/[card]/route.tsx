@@ -74,7 +74,7 @@ export async function GET(_request: NextRequest, { params }: RouteProps) {
 						<div style={{ display: "flex", flexDirection: "column", maxWidth: 760 }}>
 							<img
 								src={wordmarkSrc}
-								alt="AI Stats"
+								alt="Phaseo"
 								width={172}
 								height={36}
 								style={{
@@ -189,7 +189,7 @@ export async function GET(_request: NextRequest, { params }: RouteProps) {
 								color: "#111827",
 							}}
 						>
-							ai-stats.phaseo.app
+							phaseo.app
 						</div>
 					</div>
 				</div>

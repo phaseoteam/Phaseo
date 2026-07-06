@@ -61,7 +61,7 @@
 		"validate:cli": "pnpm run packages:build:cli && pnpm run packages:test:cli && pnpm run packages:pack:cli",
 		"packages:build:ts": "pnpm --filter @ai-stats/devtools-core run build && cd packages/sdk/sdk-ts && pnpm run build",
 		"packages:build:agent-sdk": "cd packages/sdk/agent-sdk-ts && pnpm run build && pnpm run test",
-		"packages:build:ai-sdk-provider": "cd packages/integrations/ai-sdk-ai-stats && pnpm run build",
+		"packages:build:ai-sdk-provider": "cd packages/integrations/ai-sdk-phaseo && pnpm run build",
 		"packages:pack:ts": "cd packages/sdk/sdk-ts && pnpm run pack:dry",
 		"packages:pack:agent-sdk": "cd packages/sdk/agent-sdk-ts && pnpm run pack:dry",
 		"packages:build:py": "cd packages/sdk/sdk-py && pnpm run build",

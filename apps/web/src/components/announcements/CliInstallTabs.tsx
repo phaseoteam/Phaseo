@@ -19,7 +19,7 @@ function commandFor(packageName: string, packageManager: PackageManager, mode: C
 }
 
 export default function CliInstallTabs({
-	packageName = "@ai-stats/cli",
+	packageName = "@phaseo/cli",
 	mode = "install",
 	title,
 }: {

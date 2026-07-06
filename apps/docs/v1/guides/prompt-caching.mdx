@@ -25,7 +25,7 @@ Avoid caching content that changes every request, contains short one-off user in
 
 ## Cache controls
 
-AI Stats accepts an OpenRouter-style top-level `cache_control` hint on Chat Completions, Responses, and Anthropic Messages requests:
+Phaseo accepts an OpenRouter-style top-level `cache_control` hint on Chat Completions, Responses, and Anthropic Messages requests:
 
 ```json
 {
@@ -83,7 +83,7 @@ Use `/v1/chat/completions` when you are using OpenAI-compatible chat clients.
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer $AI_STATS_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "anthropic/claude-sonnet-4",
@@ -132,7 +132,7 @@ Use `/v1/responses` for new OpenAI-compatible text integrations and agent flows.
 
 ```bash
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer $AI_STATS_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "anthropic/claude-sonnet-4",
@@ -173,7 +173,7 @@ Use `/v1/messages` when your client is Anthropic-compatible.
 
 ```bash
 curl https://api.phaseo.app/v1/messages \
-  -H "Authorization: Bearer $AI_STATS_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "anthropic/claude-sonnet-4",
@@ -227,7 +227,7 @@ Anthropic Messages supports cache control on:
 
 ## Usage and pricing fields
 
-When a provider returns cache usage, AI Stats normalizes it into common usage fields.
+When a provider returns cache usage, Phaseo normalizes it into common usage fields.
 
 | Field | Meaning |
 | --- | --- |

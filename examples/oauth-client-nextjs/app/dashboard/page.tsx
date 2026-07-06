@@ -15,7 +15,7 @@ export default async function DashboardPage() {
     <main className="screen">
       <header className="header">
         <div>
-          <h1>AI Stats Gateway Integration Workbench</h1>
+          <h1>Phaseo Gateway Integration Workbench</h1>
           <p className="muted">
             Complete OAuth-backed integration for control routes and generation surfaces.
           </p>

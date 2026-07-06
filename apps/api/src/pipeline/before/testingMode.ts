@@ -8,8 +8,8 @@ function normalizeBooleanFlag(value: unknown): boolean {
 
 export function isTestingModeRequested(req: Request, rawBody: any): boolean {
 	return normalizeBooleanFlag(
+		req.headers.get("x-phaseo-testing-mode") ??
 		req.headers.get("x-aistats-testing-mode") ??
-		req.headers.get("x-ai-stats-testing-mode") ??
 		req.headers.get("x-gateway-testing-mode") ??
 		rawBody?.testing_mode ??
 		rawBody?.testingMode ??

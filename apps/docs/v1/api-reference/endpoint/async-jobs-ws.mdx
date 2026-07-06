@@ -16,7 +16,7 @@ Successful connection is HTTP `101 Switching Protocols` (not `200`). If you call
 - Method semantics: WebSocket starts as an HTTP `GET` with `Upgrade: websocket`
 - Auth: `Authorization: Bearer YOUR_API_KEY`
 
-AI Stats checks workspace ownership before opening the socket. If the async job is missing or not owned by the caller, the HTTP handshake fails with `404 async_job_not_found_or_not_owned`.
+Phaseo checks workspace ownership before opening the socket. If the async job is missing or not owned by the caller, the HTTP handshake fails with `404 async_job_not_found_or_not_owned`.
 
 ## Query parameters
 
@@ -76,7 +76,7 @@ Failed batch and video payloads can also include the same normalized gateway fai
 - `provider_enablement`
   - capability/provider activation diagnostics when enablement gating was part of the failure path
 - `provider_candidate_diagnostics`
-  - candidate counts and dropped-provider summary data when AI Stats computed a narrowed provider set
+  - candidate counts and dropped-provider summary data when Phaseo computed a narrowed provider set
 
 For video jobs, timing fields use the same explicit semantics as the rest of the gateway where available:
 
@@ -130,4 +130,4 @@ Async job payloads can also include webhook dispatch state copied from the owned
 
 ## Terminal behavior
 
-When `close_on_terminal=true`, AI Stats closes the socket after a terminal `completed`, `failed`, or `cancelled` update. Disable that flag if you want the client to keep the connection open and decide when to close it.
+When `close_on_terminal=true`, Phaseo closes the socket after a terminal `completed`, `failed`, or `cancelled` update. Disable that flag if you want the client to keep the connection open and decide when to close it.

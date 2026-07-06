@@ -35,7 +35,7 @@ describe("text request schema validation", () => {
 		expect(parsed.success).toBe(true);
 	});
 
-	it("accepts AI Stats web search server tool on chat requests", () => {
+	it("accepts Phaseo web search server tool on chat requests", () => {
 		const parsed = ChatCompletionsSchema.safeParse({
 			model: "gpt-4.1",
 			messages: [{ role: "user", content: "find recent AI news" }],
@@ -52,7 +52,7 @@ describe("text request schema validation", () => {
 		expect(parsed.success).toBe(true);
 	});
 
-	it("accepts AI Stats web search engine parameters on chat requests", () => {
+	it("accepts Phaseo web search engine parameters on chat requests", () => {
 		const parsed = ChatCompletionsSchema.safeParse({
 			model: "gpt-4.1",
 			messages: [{ role: "user", content: "find recent AI news" }],
@@ -70,7 +70,7 @@ describe("text request schema validation", () => {
 		expect(parsed.success).toBe(true);
 	});
 
-	it("accepts AI Stats web fetch server tool on chat requests", () => {
+	it("accepts Phaseo web fetch server tool on chat requests", () => {
 		const parsed = ChatCompletionsSchema.safeParse({
 			model: "gpt-4.1",
 			messages: [{ role: "user", content: "fetch this page" }],
@@ -86,7 +86,7 @@ describe("text request schema validation", () => {
 		expect(parsed.success).toBe(true);
 	});
 
-	it("accepts AI Stats advisor server tool on chat requests", () => {
+	it("accepts Phaseo advisor server tool on chat requests", () => {
 		const parsed = ChatCompletionsSchema.safeParse({
 			model: "gpt-4.1",
 			messages: [{ role: "user", content: "review this plan" }],
@@ -109,7 +109,7 @@ describe("text request schema validation", () => {
 		expect(parsed.success).toBe(true);
 	});
 
-	it("accepts AI Stats image generation server tool on chat requests", () => {
+	it("accepts Phaseo image generation server tool on chat requests", () => {
 		const parsed = ChatCompletionsSchema.safeParse({
 			model: "gpt-4.1",
 			messages: [{ role: "user", content: "make an image" }],
@@ -129,7 +129,7 @@ describe("text request schema validation", () => {
 		expect(parsed.success).toBe(true);
 	});
 
-	it("rejects AI Stats apply patch server tool on chat requests", () => {
+	it("rejects Phaseo apply patch server tool on chat requests", () => {
 		const parsed = ChatCompletionsSchema.safeParse({
 			model: "gpt-4.1",
 			messages: [{ role: "user", content: "propose a patch" }],
@@ -184,7 +184,7 @@ describe("text request schema validation", () => {
 		expect(parsed.success).toBe(true);
 	});
 
-	it("accepts AI Stats web search server tool on responses requests", () => {
+	it("accepts Phaseo web search server tool on responses requests", () => {
 		const parsed = ResponsesSchema.safeParse({
 			model: "gpt-4.1",
 			input: "find recent AI news",
@@ -201,7 +201,7 @@ describe("text request schema validation", () => {
 		expect(parsed.success).toBe(true);
 	});
 
-	it("accepts AI Stats web fetch server tool on responses requests", () => {
+	it("accepts Phaseo web fetch server tool on responses requests", () => {
 		const parsed = ResponsesSchema.safeParse({
 			model: "gpt-4.1",
 			input: "fetch this page",
@@ -217,7 +217,7 @@ describe("text request schema validation", () => {
 		expect(parsed.success).toBe(true);
 	});
 
-	it("accepts AI Stats advisor server tool on responses requests", () => {
+	it("accepts Phaseo advisor server tool on responses requests", () => {
 		const parsed = ResponsesSchema.safeParse({
 			model: "gpt-4.1",
 			input: "review this plan",
@@ -237,7 +237,7 @@ describe("text request schema validation", () => {
 		expect(parsed.success).toBe(true);
 	});
 
-	it("accepts AI Stats image generation and apply patch server tools on responses requests", () => {
+	it("accepts Phaseo image generation and apply patch server tools on responses requests", () => {
 		const parsed = ResponsesSchema.safeParse({
 			model: "gpt-4.1",
 			input: "create an image and propose a patch",
@@ -387,7 +387,7 @@ describe("text request schema validation", () => {
 		expect(parsed.success).toBe(true);
 	});
 
-	it("accepts AI Stats web search server tool on anthropic messages requests", () => {
+	it("accepts Phaseo web search server tool on anthropic messages requests", () => {
 		const parsed = AnthropicMessagesSchema.safeParse({
 			model: "anthropic/claude-3.7-sonnet",
 			max_tokens: 128,
@@ -416,7 +416,7 @@ describe("text request schema validation", () => {
 		expect(parsed.success).toBe(true);
 	});
 
-	it("accepts AI Stats web fetch server tool on anthropic messages requests", () => {
+	it("accepts Phaseo web fetch server tool on anthropic messages requests", () => {
 		const parsed = AnthropicMessagesSchema.safeParse({
 			model: "anthropic/claude-3.7-sonnet",
 			max_tokens: 128,
@@ -429,7 +429,7 @@ describe("text request schema validation", () => {
 		expect(parsed.success).toBe(true);
 	});
 
-	it("accepts AI Stats image generation server tool on anthropic messages requests", () => {
+	it("accepts Phaseo image generation server tool on anthropic messages requests", () => {
 		const parsed = AnthropicMessagesSchema.safeParse({
 			model: "anthropic/claude-3.7-sonnet",
 			max_tokens: 128,
@@ -445,7 +445,7 @@ describe("text request schema validation", () => {
 		expect(parsed.success).toBe(true);
 	});
 
-	it("accepts AI Stats advisor server tool on chat requests", () => {
+	it("accepts Phaseo advisor server tool on chat requests", () => {
 		const parsed = ChatCompletionsSchema.safeParse({
 			model: "anthropic/claude-sonnet-4.6",
 			messages: [{ role: "user", content: "plan this refactor" }],
@@ -467,12 +467,12 @@ describe("text request schema validation", () => {
 		const parsed = AnthropicMessagesSchema.safeParse({
 			model: "claude-sonnet-4.6",
 			max_tokens: 1024,
-			messages: [{ role: "user", content: "read https://docs.ai-stats.com" }],
+			messages: [{ role: "user", content: "read https://docs.phaseo.app" }],
 			tools: [{
 				type: "web_fetch_20260209",
 				name: "web_fetch",
 				max_content_tokens: 9000,
-				allowed_domains: ["docs.ai-stats.com"],
+				allowed_domains: ["docs.phaseo.app"],
 			}],
 			tool_choice: { type: "tool", name: "web_fetch" },
 		});
@@ -480,8 +480,8 @@ describe("text request schema validation", () => {
 		expect(parsed.success).toBe(true);
 	});
 
-	it("accepts AI Stats advisor and native Anthropic advisor on messages requests", () => {
-		const aiStatsParsed = AnthropicMessagesSchema.safeParse({
+	it("accepts Phaseo advisor and native Anthropic advisor on messages requests", () => {
+		const phaseoParsed = AnthropicMessagesSchema.safeParse({
 			model: "claude-sonnet-4.6",
 			max_tokens: 1024,
 			messages: [{ role: "user", content: "plan this refactor" }],
@@ -500,7 +500,7 @@ describe("text request schema validation", () => {
 			}],
 			tool_choice: { type: "tool", name: "ai-stats:advisor" },
 		});
-		expect(aiStatsParsed.success).toBe(true);
+		expect(phaseoParsed.success).toBe(true);
 
 		const nativeParsed = AnthropicMessagesSchema.safeParse({
 			model: "claude-sonnet-4.6",

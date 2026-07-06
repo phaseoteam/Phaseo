@@ -17,9 +17,9 @@ Use this recipe when a Python service should rely on dashboard-managed defaults 
 ```python
 import os
 
-from ai_stats import AIStats
+from phaseo import Phaseo
 
-gateway = AIStats(api_key=os.environ["AI_STATS_API_KEY"])
+gateway = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
 ```
 
 Keep the client shared instead of creating one per request.

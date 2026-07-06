@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . "/../src/index.php";
 
-use AIStats\Sdk\AIStats;
+use Phaseo\Sdk\Phaseo;
 
 function assert_true(bool $condition, string $message): void
 {
@@ -12,7 +12,7 @@ function assert_true(bool $condition, string $message): void
     }
 }
 
-final class FakeBatchClient extends \AIStats\Gen\Client
+final class FakeBatchClient extends \Phaseo\Gen\Client
 {
     public array $calls = [];
     public ?Throwable $error = null;
@@ -36,7 +36,7 @@ final class FakeBatchClient extends \AIStats\Gen\Client
     }
 }
 
-$client = new AIStats(
+$client = new Phaseo(
     apiKey: "test",
     basePath: "https://api.phaseo.app/v1",
     enableDeprecationWarnings: false
@@ -92,11 +92,11 @@ assert_true($fake->calls === [
     ["POST", "/batches/batch_123/cancel", null, null, null],
 ], "expected batch helpers to call create/retrieve/cancel routes");
 
-$fake->error = new \AIStats\Gen\RequestException(404, "{\"error\":\"not found\"}");
+$fake->error = new \Phaseo\Gen\RequestException(404, "{\"error\":\"not found\"}");
 try {
     $client->cancelBatch("batch_missing_123");
     throw new RuntimeException("expected RequestException to be thrown");
-} catch (\AIStats\Gen\RequestException $error) {
+} catch (\Phaseo\Gen\RequestException $error) {
     assert_true($error->getStatusCode() === 404, "expected RequestException status code");
 }
 

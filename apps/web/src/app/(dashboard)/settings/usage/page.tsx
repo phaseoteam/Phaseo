@@ -968,14 +968,14 @@ async function ObservabilityContent({
 		from,
 		to,
 		series: [
-			{ id: "aiStats", label: "AI Stats Credits", color: "#2563eb" },
+			{ id: "phaseo", label: "Phaseo Credits", color: "#2563eb" },
 			{ id: "byok", label: "BYOK", color: "#059669" },
 		],
 		getValues: (row) => {
 			const cost = toNumber(row.cost_nanos) / 1e9;
 			return isByokRequest(row)
-				? { aiStats: 0, byok: cost }
-				: { aiStats: cost, byok: 0 };
+				? { phaseo: 0, byok: cost }
+				: { phaseo: cost, byok: 0 };
 		},
 	});
 	const tokenSplit = buildFixedTimeSeries({

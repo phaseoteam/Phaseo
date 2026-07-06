@@ -145,7 +145,7 @@ export default async function TierOverview({ workspaceId }: Props) {
 
 					{/* Learn More Link */}
 					<Link
-						href="https://docs.ai-stats.phaseo.app"
+						href="https://phaseo.app"
 						className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
 					>
 						<span>Learn about pricing</span>

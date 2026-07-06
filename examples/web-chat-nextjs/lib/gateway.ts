@@ -10,9 +10,9 @@ function gatewayBase() {
 }
 
 function apiKey() {
-  const key = process.env.AI_STATS_API_KEY;
+  const key = process.env.PHASEO_API_KEY;
   if (!key) {
-    throw new Error('Missing AI_STATS_API_KEY');
+    throw new Error('Missing PHASEO_API_KEY');
   }
   return key;
 }
@@ -21,7 +21,7 @@ function buildHeaders(extra?: HeadersInit): Headers {
   const headers = new Headers(extra);
   headers.set('Authorization', `Bearer ${apiKey()}`);
   headers.set('Content-Type', headers.get('Content-Type') || 'application/json');
-  headers.set('x-title', process.env.GATEWAY_APP_TITLE || 'AI Stats Web Chat Example');
+  headers.set('x-title', process.env.GATEWAY_APP_TITLE || 'Phaseo Web Chat Example');
   const referer = process.env.GATEWAY_HTTP_REFERER;
   if (referer) headers.set('http-referer', referer);
   return headers;

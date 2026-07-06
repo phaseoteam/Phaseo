@@ -2,11 +2,11 @@
   "fixtures": [
     {
       "match": { "userMessage": "[aimock-chat] hello" },
-      "response": { "content": "Hello from AIMock via AI Stats." }
+      "response": { "content": "Hello from AIMock via Phaseo." }
     },
     {
       "match": { "userMessage": "[aimock-chat] stream" },
-      "response": { "content": "Streaming hello from AIMock via AI Stats." },
+      "response": { "content": "Streaming hello from AIMock via Phaseo." },
       "streamingProfile": {
         "ttftMs": 5,
         "tokensPerSecond": 200

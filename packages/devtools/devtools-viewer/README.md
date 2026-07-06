@@ -1,10 +1,10 @@
-# @ai-stats/devtools-viewer
+# @phaseo/devtools-viewer
 
-Web-based viewer for AI Stats DevTools telemetry data.
+Web-based viewer for Phaseo DevTools telemetry data.
 
 ## Overview
 
-The DevTools Viewer provides a beautiful, real-time web interface for inspecting API requests captured by AI Stats SDKs. It features:
+The DevTools Viewer provides a beautiful, real-time web interface for inspecting API requests captured by Phaseo SDKs. It features:
 
 - **Live telemetry updates** - Auto-refreshes every 2 seconds
 - **Adaptive UI** - Different views for chat, images, audio, video, etc.
@@ -14,19 +14,19 @@ The DevTools Viewer provides a beautiful, real-time web interface for inspecting
 ## Installation
 
 ```bash
-npm install @ai-stats/sdk
+npm install @phaseo/sdk
 # or
-pnpm add @ai-stats/sdk
+pnpm add @phaseo/sdk
 ```
 
 The DevTools CLI ships with the TypeScript SDK. You can also install it separately:
 
 ```bash
-npm install -g @ai-stats/devtools-viewer
+npm install -g @phaseo/devtools-viewer
 # or
-pnpm add -g @ai-stats/devtools-viewer
+pnpm add -g @phaseo/devtools-viewer
 # or
-npx @ai-stats/devtools-viewer start
+npx @phaseo/devtools-viewer start
 ```
 
 ## Usage
@@ -56,7 +56,7 @@ Then open http://localhost:4983 in your browser.
 
 ```bash
 # Set devtools directory
-export AI_STATS_DEVTOOLS_DIR=/path/to/devtools
+export PHASEO_DEVTOOLS_DIR=/path/to/devtools
 
 # Set port
 export PORT=3000
@@ -314,7 +314,7 @@ pnpm run dev
 # - Terminal output (server logs)
 
 # 7. Test with real data
-# - Run your app with AI Stats SDK
+# - Run your app with Phaseo SDK
 # - Watch requests appear in real-time
 ```
 

@@ -1,6 +1,6 @@
 from typing import Any
 
-from ai_stats import AIStats
+from phaseo import Phaseo
 from gen import operations as ops
 
 
@@ -24,7 +24,7 @@ def test_generate_image_helpers_use_generated_operations(monkeypatch):
     monkeypatch.setattr(ops, "createImage", fake_create_image)
     monkeypatch.setattr(ops, "createImageEdit", fake_create_image_edit)
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test", enable_deprecation_warnings=False)
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test", enable_deprecation_warnings=False)
     image = client.generate_image({"model": "openai/gpt-image-1", "prompt": "Golden hour lighthouse"})
     edited = client.generate_image_edit(
         {
@@ -68,7 +68,7 @@ def test_generate_audio_helpers_use_generated_operations(monkeypatch):
     monkeypatch.setattr(ops, "createTranscription", fake_create_transcription)
     monkeypatch.setattr(ops, "createTranslation", fake_create_translation)
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test", enable_deprecation_warnings=False)
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test", enable_deprecation_warnings=False)
     speech = client.generate_speech({"model": "openai/gpt-4o-mini-tts", "input": "Hello world"})
     transcription = client.generate_transcription(
         {"model": "openai/gpt-4o-transcribe", "audio_b64": "base64-audio"}

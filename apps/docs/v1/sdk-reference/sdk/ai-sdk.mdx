@@ -1,24 +1,24 @@
 ---
 title: "AI SDK (Vercel) Overview"
-description: "Use the official AI Stats provider with Vercel AI SDK v6."
+description: "Use the official Phaseo provider with Vercel AI SDK v6."
 ---
 
-Use `@ai-stats/ai-sdk-provider` to connect Vercel AI SDK v6 to AI Stats Gateway.
+Use `@phaseo/ai-sdk-provider` to connect Vercel AI SDK v6 to Phaseo Gateway.
 
 ## Install packages
 
 ```bash
-npm install @ai-stats/ai-sdk-provider ai@^6
+npm install @phaseo/ai-sdk-provider ai@^6
 ```
 
 ## Quick start
 
 ```typescript
-import { aiStats } from "@ai-stats/ai-sdk-provider";
+import { phaseo } from "@phaseo/ai-sdk-provider";
 import { generateText } from "ai";
 
 const result = await generateText({
-  model: aiStats("openai/gpt-5-nano"),
+  model: phaseo("openai/gpt-5-nano"),
   prompt: "Summarize the benefits of vector search.",
 });
 
@@ -28,25 +28,23 @@ console.log(result.providerMetadata);
 
 ## Environment variables
 
-Set one of the following:
+Set:
 
-- `AI_STATS_API_KEY` (recommended)
-- `OPENAI_GATEWAY_API_KEY` (compatibility fallback)
+- `PHASEO_API_KEY`
 
 Optional base URL:
 
-- `AI_STATS_BASE_URL`
-- `OPENAI_GATEWAY_URL` (compatibility fallback)
+- `PHASEO_BASE_URL`
 
 ## Custom provider instance
 
 ```typescript
-import { createAIStats } from "@ai-stats/ai-sdk-provider";
+import { createPhaseo } from "@phaseo/ai-sdk-provider";
 import { generateText } from "ai";
 
-const provider = createAIStats({
-  apiKey: process.env.AI_STATS_API_KEY,
-  baseURL: process.env.AI_STATS_BASE_URL ?? "https://api.phaseo.app/v1",
+const provider = createPhaseo({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: process.env.PHASEO_BASE_URL ?? "https://api.phaseo.app/v1",
   headers: {
     "x-title": "My App",
     "http-referer": "https://example.com",
@@ -76,11 +74,11 @@ console.log(result.providerMetadata);
 ## Streaming example
 
 ```typescript
-import { aiStats } from "@ai-stats/ai-sdk-provider";
+import { phaseo } from "@phaseo/ai-sdk-provider";
 import { streamText } from "ai";
 
 const result = streamText({
-  model: aiStats("openai/gpt-5-nano"),
+  model: phaseo("openai/gpt-5-nano"),
   prompt: "Stream a short greeting.",
 });
 

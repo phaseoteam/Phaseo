@@ -81,7 +81,7 @@ function copyRequestHeaders(request: NextRequest, accessToken: string): Headers 
     if (value) headers.set(headerName, value);
   }
 
-  const title = process.env.GATEWAY_APP_TITLE || 'AI Stats Gateway Integration Example';
+  const title = process.env.GATEWAY_APP_TITLE || 'Phaseo Gateway Integration Example';
   headers.set('x-title', title);
 
   const referer = process.env.GATEWAY_HTTP_REFERER || process.env.NEXT_PUBLIC_REDIRECT_URI;

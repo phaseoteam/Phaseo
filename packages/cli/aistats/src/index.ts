@@ -50,7 +50,7 @@ type LoginMethodOption = {
 const LOGIN_METHOD_OPTIONS: LoginMethodOption[] = [
 	{
 		value: "browser",
-		label: "Sign in with AI Stats",
+		label: "Sign in with Phaseo",
 		description: "Open a browser, approve access, and return here automatically.",
 	},
 	{
@@ -166,131 +166,131 @@ function formatMoneyFromNanos(nanos: unknown): string {
 
 const HELP_ENTRIES: Record<string, HelpEntry> = {
 	root: {
-		description: "AI Stats CLI",
+		description: "Phaseo CLI",
 		usage: [
-			"aistats login [--api-url <url>] [--method browser|device] [--browser] [--device-code] [--scopes <csv>] [--json]",
-			"aistats logout [--json]",
-			"aistats whoami [--json]",
-			"aistats version [--json]",
+			"phaseo login [--api-url <url>] [--method browser|device] [--browser] [--device-code] [--scopes <csv>] [--json]",
+			"phaseo logout [--json]",
+			"phaseo whoami [--json]",
+			"phaseo version [--json]",
 			"",
-			"aistats keys --help",
-			"aistats workspaces --help",
-			"aistats presets --help",
-			"aistats settings --help",
-			"aistats guardrails --help",
-			"aistats oauth-clients --help",
-			"aistats management-keys --help",
-			"aistats models --help",
-			"aistats providers --help",
-			"aistats pricing --help",
-			"aistats credits --help",
-			"aistats activity --help",
-			"aistats analytics --help",
-			"aistats generation --help",
-			"aistats api --help",
+			"phaseo keys --help",
+			"phaseo workspaces --help",
+			"phaseo presets --help",
+			"phaseo settings --help",
+			"phaseo guardrails --help",
+			"phaseo oauth-clients --help",
+			"phaseo management-keys --help",
+			"phaseo models --help",
+			"phaseo providers --help",
+			"phaseo pricing --help",
+			"phaseo credits --help",
+			"phaseo activity --help",
+			"phaseo analytics --help",
+			"phaseo generation --help",
+			"phaseo api --help",
 			"",
 			"Login scopes:",
 			"  Default login requests full first-party CLI access across the control plane.",
 			"  Use --scopes workspaces:read,keys:write,... when a narrower token is preferred.",
 			"",
 			"Environment:",
-			"  AI_STATS_API_URL  Override API root, defaults to https://api.phaseo.app",
+			"  PHASEO_API_URL  Override API root, defaults to https://api.phaseo.app",
 		],
 	},
 	login: {
 		usage: [
-			"aistats login [--api-url <url>] [--method browser|device] [--browser] [--device-code] [--scopes <csv>] [--json]",
+			"phaseo login [--api-url <url>] [--method browser|device] [--browser] [--device-code] [--scopes <csv>] [--json]",
 		],
 	},
-	version: { usage: ["aistats version [--json]"] },
-	logout: { usage: ["aistats logout [--json]"] },
-	whoami: { usage: ["aistats whoami [--json]"] },
+	version: { usage: ["phaseo version [--json]"] },
+	logout: { usage: ["phaseo logout [--json]"] },
+	whoami: { usage: ["phaseo whoami [--json]"] },
 	keys: {
 		usage: [
-			"aistats keys current [--json]",
-			"aistats keys list [--limit <n>] [--offset <n>] [--include-disabled] [--json]",
-			"aistats keys create --name <name> [--limit <usd>] [--limit-reset daily|weekly|monthly] [--expires-at <iso>] [--show-secret] [--json]",
-			"aistats keys get <id-or-hash> [--json]",
-			"aistats keys update <id-or-hash> [--name <name>] [--disabled true|false] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--json]",
-			"aistats keys delete <id-or-hash> [--json]",
+			"phaseo keys current [--json]",
+			"phaseo keys list [--limit <n>] [--offset <n>] [--include-disabled] [--json]",
+			"phaseo keys create --name <name> [--limit <usd>] [--limit-reset daily|weekly|monthly] [--expires-at <iso>] [--show-secret] [--json]",
+			"phaseo keys get <id-or-hash> [--json]",
+			"phaseo keys update <id-or-hash> [--name <name>] [--disabled true|false] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--json]",
+			"phaseo keys delete <id-or-hash> [--json]",
 		],
 	},
-	"keys current": { usage: ["aistats keys current [--json]"] },
-	"keys list": { usage: ["aistats keys list [--limit <n>] [--offset <n>] [--include-disabled] [--json]"] },
-	"keys create": { usage: ["aistats keys create --name <name> [--limit <usd>] [--limit-reset daily|weekly|monthly] [--expires-at <iso>] [--show-secret] [--json]"] },
-	"keys get": { usage: ["aistats keys get <id-or-hash> [--json]"] },
-	"keys update": { usage: ["aistats keys update <id-or-hash> [--name <name>] [--disabled true|false] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--json]"] },
-	"keys delete": { usage: ["aistats keys delete <id-or-hash> [--json]"] },
+	"keys current": { usage: ["phaseo keys current [--json]"] },
+	"keys list": { usage: ["phaseo keys list [--limit <n>] [--offset <n>] [--include-disabled] [--json]"] },
+	"keys create": { usage: ["phaseo keys create --name <name> [--limit <usd>] [--limit-reset daily|weekly|monthly] [--expires-at <iso>] [--show-secret] [--json]"] },
+	"keys get": { usage: ["phaseo keys get <id-or-hash> [--json]"] },
+	"keys update": { usage: ["phaseo keys update <id-or-hash> [--name <name>] [--disabled true|false] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--json]"] },
+	"keys delete": { usage: ["phaseo keys delete <id-or-hash> [--json]"] },
 	workspaces: {
 		usage: [
-			"aistats workspaces list [--json]",
-			"aistats workspaces create --name <name> [--slug <slug>] [--json]",
-			"aistats workspaces get <id-or-slug> [--json]",
-			"aistats workspaces update <id-or-slug> [--name <name>] [--slug <slug>] [--json]",
-			"aistats workspaces delete <id-or-slug> [--json]",
-			"aistats workspaces members <id-or-slug> [--json]",
-			"aistats workspaces add-members <id-or-slug> --user-ids <id,id> [--role member|admin] [--json]",
-			"aistats workspaces remove-members <id-or-slug> --user-ids <id,id> [--json]",
+			"phaseo workspaces list [--json]",
+			"phaseo workspaces create --name <name> [--slug <slug>] [--json]",
+			"phaseo workspaces get <id-or-slug> [--json]",
+			"phaseo workspaces update <id-or-slug> [--name <name>] [--slug <slug>] [--json]",
+			"phaseo workspaces delete <id-or-slug> [--json]",
+			"phaseo workspaces members <id-or-slug> [--json]",
+			"phaseo workspaces add-members <id-or-slug> --user-ids <id,id> [--role member|admin] [--json]",
+			"phaseo workspaces remove-members <id-or-slug> --user-ids <id,id> [--json]",
 		],
 	},
-	"workspaces list": { usage: ["aistats workspaces list [--json]"] },
-	"workspaces create": { usage: ["aistats workspaces create --name <name> [--slug <slug>] [--json]"] },
-	"workspaces get": { usage: ["aistats workspaces get <id-or-slug> [--json]"] },
-	"workspaces update": { usage: ["aistats workspaces update <id-or-slug> [--name <name>] [--slug <slug>] [--json]"] },
-	"workspaces delete": { usage: ["aistats workspaces delete <id-or-slug> [--json]"] },
-	"workspaces members": { usage: ["aistats workspaces members <id-or-slug> [--json]"] },
-	"workspaces add-members": { usage: ["aistats workspaces add-members <id-or-slug> --user-ids <id,id> [--role member|admin] [--json]"] },
-	"workspaces remove-members": { usage: ["aistats workspaces remove-members <id-or-slug> --user-ids <id,id> [--json]"] },
+	"workspaces list": { usage: ["phaseo workspaces list [--json]"] },
+	"workspaces create": { usage: ["phaseo workspaces create --name <name> [--slug <slug>] [--json]"] },
+	"workspaces get": { usage: ["phaseo workspaces get <id-or-slug> [--json]"] },
+	"workspaces update": { usage: ["phaseo workspaces update <id-or-slug> [--name <name>] [--slug <slug>] [--json]"] },
+	"workspaces delete": { usage: ["phaseo workspaces delete <id-or-slug> [--json]"] },
+	"workspaces members": { usage: ["phaseo workspaces members <id-or-slug> [--json]"] },
+	"workspaces add-members": { usage: ["phaseo workspaces add-members <id-or-slug> --user-ids <id,id> [--role member|admin] [--json]"] },
+	"workspaces remove-members": { usage: ["phaseo workspaces remove-members <id-or-slug> --user-ids <id,id> [--json]"] },
 	presets: {
 		usage: [
-			"aistats presets list [--json]",
-			"aistats presets create --name <@name> [--model <model>] [--system-prompt <text>] [--config-json <json>] [--json]",
-			"aistats presets get <id-or-slug-or-name> [--json]",
-			"aistats presets update <id-or-slug-or-name> [--config-json <json>] [--json]",
-			"aistats presets delete <id-or-slug-or-name> [--json]",
+			"phaseo presets list [--json]",
+			"phaseo presets create --name <@name> [--model <model>] [--system-prompt <text>] [--config-json <json>] [--json]",
+			"phaseo presets get <id-or-slug-or-name> [--json]",
+			"phaseo presets update <id-or-slug-or-name> [--config-json <json>] [--json]",
+			"phaseo presets delete <id-or-slug-or-name> [--json]",
 		],
 	},
-	"presets list": { usage: ["aistats presets list [--json]"] },
-	"presets create": { usage: ["aistats presets create --name <@name> [--model <model>] [--system-prompt <text>] [--config-json <json>] [--json]"] },
-	"presets get": { usage: ["aistats presets get <id-or-slug-or-name> [--json]"] },
-	"presets update": { usage: ["aistats presets update <id-or-slug-or-name> [--config-json <json>] [--json]"] },
-	"presets delete": { usage: ["aistats presets delete <id-or-slug-or-name> [--json]"] },
+	"presets list": { usage: ["phaseo presets list [--json]"] },
+	"presets create": { usage: ["phaseo presets create --name <@name> [--model <model>] [--system-prompt <text>] [--config-json <json>] [--json]"] },
+	"presets get": { usage: ["phaseo presets get <id-or-slug-or-name> [--json]"] },
+	"presets update": { usage: ["phaseo presets update <id-or-slug-or-name> [--config-json <json>] [--json]"] },
+	"presets delete": { usage: ["phaseo presets delete <id-or-slug-or-name> [--json]"] },
 	settings: {
 		usage: [
-			"aistats settings get [--json]",
-			"aistats settings update [--routing-mode balanced|price|latency|throughput] [--body-json <json>] [--json]",
+			"phaseo settings get [--json]",
+			"phaseo settings update [--routing-mode balanced|price|latency|throughput] [--body-json <json>] [--json]",
 		],
 	},
-	"settings get": { usage: ["aistats settings get [--json]"] },
-	"settings update": { usage: ["aistats settings update [--routing-mode balanced|price|latency|throughput] [--body-json <json>] [--json]"] },
+	"settings get": { usage: ["phaseo settings get [--json]"] },
+	"settings update": { usage: ["phaseo settings update [--routing-mode balanced|price|latency|throughput] [--body-json <json>] [--json]"] },
 	guardrails: {
 		usage: [
-			"aistats guardrails list [--json]",
-			"aistats guardrails create --name <name> [--body-json <json>] [--json]",
-			"aistats guardrails get <id> [--json]",
-			"aistats guardrails update <id> --body-json <json> [--json]",
-			"aistats guardrails delete <id> [--json]",
-			"aistats guardrails list-keys <id> [--json]",
-			"aistats guardrails add-keys <id> --key-ids <id,id> [--json]",
-			"aistats guardrails remove-keys <id> --key-ids <id,id> [--json]",
-			"aistats guardrails list-members <id> [--json]",
-			"aistats guardrails add-members <id> --user-ids <id,id> [--json]",
-			"aistats guardrails remove-members <id> --user-ids <id,id> [--json]",
-			"aistats guardrails set-keys <id> --key-ids <id,id> [--json]",
+			"phaseo guardrails list [--json]",
+			"phaseo guardrails create --name <name> [--body-json <json>] [--json]",
+			"phaseo guardrails get <id> [--json]",
+			"phaseo guardrails update <id> --body-json <json> [--json]",
+			"phaseo guardrails delete <id> [--json]",
+			"phaseo guardrails list-keys <id> [--json]",
+			"phaseo guardrails add-keys <id> --key-ids <id,id> [--json]",
+			"phaseo guardrails remove-keys <id> --key-ids <id,id> [--json]",
+			"phaseo guardrails list-members <id> [--json]",
+			"phaseo guardrails add-members <id> --user-ids <id,id> [--json]",
+			"phaseo guardrails remove-members <id> --user-ids <id,id> [--json]",
+			"phaseo guardrails set-keys <id> --key-ids <id,id> [--json]",
 		],
 	},
-	"guardrails list": { usage: ["aistats guardrails list [--json]"] },
-	"guardrails create": { usage: ["aistats guardrails create --name <name> [--body-json <json>] [--json]"] },
-	"guardrails get": { usage: ["aistats guardrails get <id> [--json]"] },
-	"guardrails update": { usage: ["aistats guardrails update <id> --body-json <json> [--json]"] },
-	"guardrails delete": { usage: ["aistats guardrails delete <id> [--json]"] },
-	"guardrails list-keys": { usage: ["aistats guardrails list-keys <id> [--json]"] },
-	"guardrails add-keys": { usage: ["aistats guardrails add-keys <id> --key-ids <id,id> [--json]"] },
-	"guardrails remove-keys": { usage: ["aistats guardrails remove-keys <id> --key-ids <id,id> [--json]"] },
-	"guardrails list-members": { usage: ["aistats guardrails list-members <id> [--json]"] },
-	"guardrails add-members": { usage: ["aistats guardrails add-members <id> --user-ids <id,id> [--json]"] },
-	"guardrails remove-members": { usage: ["aistats guardrails remove-members <id> --user-ids <id,id> [--json]"] },
-	"guardrails set-keys": { usage: ["aistats guardrails set-keys <id> --key-ids <id,id> [--json]"] },
+	"guardrails list": { usage: ["phaseo guardrails list [--json]"] },
+	"guardrails create": { usage: ["phaseo guardrails create --name <name> [--body-json <json>] [--json]"] },
+	"guardrails get": { usage: ["phaseo guardrails get <id> [--json]"] },
+	"guardrails update": { usage: ["phaseo guardrails update <id> --body-json <json> [--json]"] },
+	"guardrails delete": { usage: ["phaseo guardrails delete <id> [--json]"] },
+	"guardrails list-keys": { usage: ["phaseo guardrails list-keys <id> [--json]"] },
+	"guardrails add-keys": { usage: ["phaseo guardrails add-keys <id> --key-ids <id,id> [--json]"] },
+	"guardrails remove-keys": { usage: ["phaseo guardrails remove-keys <id> --key-ids <id,id> [--json]"] },
+	"guardrails list-members": { usage: ["phaseo guardrails list-members <id> [--json]"] },
+	"guardrails add-members": { usage: ["phaseo guardrails add-members <id> --user-ids <id,id> [--json]"] },
+	"guardrails remove-members": { usage: ["phaseo guardrails remove-members <id> --user-ids <id,id> [--json]"] },
+	"guardrails set-keys": { usage: ["phaseo guardrails set-keys <id> --key-ids <id,id> [--json]"] },
 	"oauth-clients": {
 		usage: [
 			"User-created OAuth apps are coming soon during the first-party CLI OAuth beta.",
@@ -304,52 +304,52 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	"oauth-clients regenerate-secret": { usage: ["User-created OAuth apps are coming soon during the first-party CLI OAuth beta."] },
 	"management-keys": {
 		usage: [
-			"aistats management-keys list [--json]",
-			"aistats management-keys create --name <name> [--show-secret] [--json]",
-			"aistats management-keys get <id> [--json]",
-			"aistats management-keys update <id> [--name <name>] [--paused true|false] [--json]",
-			"aistats management-keys delete <id> [--json]",
+			"phaseo management-keys list [--json]",
+			"phaseo management-keys create --name <name> [--show-secret] [--json]",
+			"phaseo management-keys get <id> [--json]",
+			"phaseo management-keys update <id> [--name <name>] [--paused true|false] [--json]",
+			"phaseo management-keys delete <id> [--json]",
 		],
 	},
-	"management-keys list": { usage: ["aistats management-keys list [--json]"] },
-	"management-keys create": { usage: ["aistats management-keys create --name <name> [--show-secret] [--json]"] },
-	"management-keys get": { usage: ["aistats management-keys get <id> [--json]"] },
-	"management-keys update": { usage: ["aistats management-keys update <id> [--name <name>] [--paused true|false] [--json]"] },
-	"management-keys delete": { usage: ["aistats management-keys delete <id> [--json]"] },
-	models: { usage: ["aistats models list [--limit <n>] [--offset <n>] [--all] [--json]"] },
-	"models list": { usage: ["aistats models list [--limit <n>] [--offset <n>] [--all] [--json]"] },
-	providers: { usage: ["aistats providers list [--json]"] },
-	"providers list": { usage: ["aistats providers list [--json]"] },
+	"management-keys list": { usage: ["phaseo management-keys list [--json]"] },
+	"management-keys create": { usage: ["phaseo management-keys create --name <name> [--show-secret] [--json]"] },
+	"management-keys get": { usage: ["phaseo management-keys get <id> [--json]"] },
+	"management-keys update": { usage: ["phaseo management-keys update <id> [--name <name>] [--paused true|false] [--json]"] },
+	"management-keys delete": { usage: ["phaseo management-keys delete <id> [--json]"] },
+	models: { usage: ["phaseo models list [--limit <n>] [--offset <n>] [--all] [--json]"] },
+	"models list": { usage: ["phaseo models list [--limit <n>] [--offset <n>] [--all] [--json]"] },
+	providers: { usage: ["phaseo providers list [--json]"] },
+	"providers list": { usage: ["phaseo providers list [--json]"] },
 	pricing: {
 		usage: [
-			"aistats pricing models [--json]",
-			"aistats pricing calculate --provider <provider> --model <model> --endpoint <endpoint> --usage-json <json>",
+			"phaseo pricing models [--json]",
+			"phaseo pricing calculate --provider <provider> --model <model> --endpoint <endpoint> --usage-json <json>",
 		],
 	},
-	"pricing models": { usage: ["aistats pricing models [--json]"] },
-	"pricing calculate": { usage: ["aistats pricing calculate --provider <provider> --model <model> --endpoint <endpoint> --usage-json <json>"] },
-	credits: { usage: ["aistats credits get [--json]"] },
-	"credits get": { usage: ["aistats credits get [--json]"] },
-	activity: { usage: ["aistats activity list [--days <n>] [--limit <n>] [--offset <n>] [--json]"] },
-	"activity list": { usage: ["aistats activity list [--days <n>] [--limit <n>] [--offset <n>] [--json]"] },
-	analytics: { usage: ["aistats analytics get [--date YYYY-MM-DD] [--json]"] },
-	"analytics get": { usage: ["aistats analytics get [--date YYYY-MM-DD] [--json]"] },
-	generation: { usage: ["aistats generation get --id <request-id> [--json]"] },
-	"generation get": { usage: ["aistats generation get --id <request-id> [--json]"] },
+	"pricing models": { usage: ["phaseo pricing models [--json]"] },
+	"pricing calculate": { usage: ["phaseo pricing calculate --provider <provider> --model <model> --endpoint <endpoint> --usage-json <json>"] },
+	credits: { usage: ["phaseo credits get [--json]"] },
+	"credits get": { usage: ["phaseo credits get [--json]"] },
+	activity: { usage: ["phaseo activity list [--days <n>] [--limit <n>] [--offset <n>] [--json]"] },
+	"activity list": { usage: ["phaseo activity list [--days <n>] [--limit <n>] [--offset <n>] [--json]"] },
+	analytics: { usage: ["phaseo analytics get [--date YYYY-MM-DD] [--json]"] },
+	"analytics get": { usage: ["phaseo analytics get [--date YYYY-MM-DD] [--json]"] },
+	generation: { usage: ["phaseo generation get --id <request-id> [--json]"] },
+	"generation get": { usage: ["phaseo generation get --id <request-id> [--json]"] },
 	api: {
 		usage: [
-			"aistats api get <v1-path> [--json]",
-			"aistats api post <v1-path> --body-json <json> [--json]",
-			"aistats api put <v1-path> --body-json <json> [--json]",
-			"aistats api patch <v1-path> --body-json <json> [--json]",
-			"aistats api delete <v1-path> [--json]",
+			"phaseo api get <v1-path> [--json]",
+			"phaseo api post <v1-path> --body-json <json> [--json]",
+			"phaseo api put <v1-path> --body-json <json> [--json]",
+			"phaseo api patch <v1-path> --body-json <json> [--json]",
+			"phaseo api delete <v1-path> [--json]",
 		],
 	},
-	"api get": { usage: ["aistats api get <v1-path> [--json]"] },
-	"api post": { usage: ["aistats api post <v1-path> --body-json <json> [--json]"] },
-	"api put": { usage: ["aistats api put <v1-path> --body-json <json> [--json]"] },
-	"api patch": { usage: ["aistats api patch <v1-path> --body-json <json> [--json]"] },
-	"api delete": { usage: ["aistats api delete <v1-path> [--json]"] },
+	"api get": { usage: ["phaseo api get <v1-path> [--json]"] },
+	"api post": { usage: ["phaseo api post <v1-path> --body-json <json> [--json]"] },
+	"api put": { usage: ["phaseo api put <v1-path> --body-json <json> [--json]"] },
+	"api patch": { usage: ["phaseo api patch <v1-path> --body-json <json> [--json]"] },
+	"api delete": { usage: ["phaseo api delete <v1-path> [--json]"] },
 };
 
 export function helpKeyForCommand(command: string[]): string {
@@ -366,9 +366,9 @@ export function renderHelp(command: string[]): string {
 	const entry = HELP_ENTRIES[key] ?? HELP_ENTRIES.root;
 	const lines: string[] = [];
 	if (key === "root") {
-		lines.push(entry.description ?? "AI Stats CLI", "", "Usage:");
+		lines.push(entry.description ?? "Phaseo CLI", "", "Usage:");
 	} else {
-		lines.push(`AI Stats CLI Help: ${key}`, "", "Usage:");
+		lines.push(`Phaseo CLI Help: ${key}`, "", "Usage:");
 	}
 	for (const usageLine of entry.usage) {
 		if (usageLine === "") {
@@ -397,7 +397,7 @@ export function renderVersionText(details: {
 	updateAvailable: boolean;
 }): string {
 	const lines = [
-		`AI Stats CLI ${details.version}`,
+		`Phaseo CLI ${details.version}`,
 		`Package manager: ${details.packageManager}`,
 		`Install: ${details.installCommand}`,
 		`Update: ${details.updateCommand}`,
@@ -431,7 +431,7 @@ async function printVersion(flags: Record<string, string | boolean>, options: { 
 }
 
 async function maybePrintUpdateNotice(json: boolean) {
-	if (json || process.env.AI_STATS_DISABLE_UPDATE_CHECK === "1") return;
+	if (json || process.env.PHASEO_DISABLE_UPDATE_CHECK === "1") return;
 	const info = await getVersionInfo({ lookupLatest: true });
 	if (!info.updateAvailable || !info.latestVersion) return;
 	process.stdout.write(
@@ -502,13 +502,16 @@ function loginOptionIndex(method: LoginMethod): number {
 
 export function renderLoginBanner(): string {
 	return [
-		"    _    ___     ____  _        _       ",
-		"   / \\  |_ _|   / ___|| |_ __ _| |_ ___ ",
-		"  / _ \\  | |____\\___ \\| __/ _` | __/ __|",
-		" / ___ \\ | |_____|__) | || (_| | |_\\__ \\",
-		"/_/   \\_\\___|   |____/ \\__\\__,_|\\__|___/",
+		"  _____  _                          ",
+		" |  __ \\| |                         ",
+		" | |__) | |__   __ _ ___  ___  ___  ",
+		" |  ___/| '_ \\ / _` / __|/ _ \\/ _ \\ ",
+		" | |    | | | | (_| \\__ \\  __/ (_) |",
+		" |_|    |_| |_|\\__,_|___/\\___|\\___/ ",
+		"                                    ",
+		"                                    ",
 		"",
-		"AI Stats CLI",
+		"Phaseo CLI",
 		"Workspace control, keys, and routing tools from your terminal.",
 	].join("\n");
 }
@@ -672,7 +675,7 @@ async function chooseLoginMethod(flags: Record<string, string | boolean>, json: 
 		const defaultChoice = defaultMethod === "device" ? "2" : "1";
 		const answer = (
 			await prompt.question(
-				`Login method: [1] Sign in with AI Stats  [2] Sign in with Device Code (default ${defaultChoice}): `,
+				`Login method: [1] Sign in with Phaseo  [2] Sign in with Device Code (default ${defaultChoice}): `,
 			)
 		).trim();
 		if (!answer) return defaultMethod;
@@ -711,13 +714,13 @@ function createCallbackServer(args: { redirectUri: string; expectedState: string
 		if ("pending" in outcome) {
 			res.statusCode = 200;
 			res.setHeader("content-type", "text/html; charset=utf-8");
-			res.end("<!doctype html><html><body style=\"font-family:sans-serif;padding:24px\"><h1>Waiting for AI Stats authorization</h1><p>This browser window can stay open until authorization completes.</p></body></html>");
+			res.end("<!doctype html><html><body style=\"font-family:sans-serif;padding:24px\"><h1>Waiting for Phaseo authorization</h1><p>This browser window can stay open until authorization completes.</p></body></html>");
 			return;
 		}
 		finish(outcome);
 		res.statusCode = 200;
 		res.setHeader("content-type", "text/html; charset=utf-8");
-		res.end("<!doctype html><html><body style=\"font-family:sans-serif;padding:24px\"><h1>AI Stats login complete</h1><p>You can return to your terminal now.</p></body></html>");
+		res.end("<!doctype html><html><body style=\"font-family:sans-serif;padding:24px\"><h1>Phaseo login complete</h1><p>You can return to your terminal now.</p></body></html>");
 	});
 
 	return {
@@ -753,7 +756,7 @@ async function completeLogin(apiRoot: string, tokens: {
 	if (json) {
 		printJson({ ok: true, logged_in: true, api_url: apiRoot, scope: tokens.scope ?? null });
 	} else {
-		process.stdout.write("Logged in to AI Stats.\n");
+		process.stdout.write("Logged in to Phaseo.\n");
 	}
 }
 
@@ -773,7 +776,7 @@ async function loginWithDeviceCode(apiRoot: string, flags: Record<string, string
 			expires_in: device.expires_in,
 		});
 	} else {
-		process.stdout.write("Authorize AI Stats CLI\n\n");
+		process.stdout.write("Authorize Phaseo CLI\n\n");
 		process.stdout.write(`Open: ${device.verification_uri_complete}\n`);
 		process.stdout.write(`Code: ${device.user_code}\n\n`);
 		process.stdout.write("Waiting for approval...\n");
@@ -792,7 +795,7 @@ async function loginWithDeviceCode(apiRoot: string, flags: Record<string, string
 			throw error;
 		}
 	}
-	throw new Error("Device login expired. Run `aistats login` again.");
+	throw new Error("Device login expired. Run `phaseo login` again.");
 }
 
 async function loginWithBrowser(apiRoot: string, flags: Record<string, string | boolean>) {
@@ -812,7 +815,7 @@ async function loginWithBrowser(apiRoot: string, flags: Record<string, string | 
 			codeChallenge,
 		});
 		const didOpen = openUrl(authUrl);
-		process.stdout.write("Sign in with AI Stats\n\n");
+		process.stdout.write("Sign in with Phaseo\n\n");
 		process.stdout.write(`Open: ${authUrl}\n\n`);
 		if (!didOpen) {
 			process.stdout.write("Browser auto-open was unavailable, so use the URL above.\n");
@@ -864,7 +867,7 @@ async function logout(flags: Record<string, string | boolean>) {
 	if (flagBool(flags, "json")) {
 		printJson({ ok: true, logged_in: false, refresh_token_revoked: revoked });
 	} else {
-		process.stdout.write(revoked ? "Logged out of AI Stats and revoked the session.\n" : "Logged out of AI Stats.\n");
+		process.stdout.write(revoked ? "Logged out of Phaseo and revoked the session.\n" : "Logged out of Phaseo.\n");
 	}
 }
 

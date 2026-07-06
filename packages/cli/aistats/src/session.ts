@@ -13,11 +13,11 @@ export type Session = {
 
 type SessionBackend = "dpapi-file" | "keychain" | "secret-service" | "file";
 
-const SESSION_SERVICE = "ai-stats-cli-session";
+const SESSION_SERVICE = "phaseo-cli-session";
 const SESSION_ACCOUNT = "default";
 
 function configDir(): string {
-	return process.env.AI_STATS_CONFIG_DIR || join(process.env.XDG_CONFIG_HOME || join(homedir(), ".config"), "aistats");
+	return process.env.PHASEO_CONFIG_DIR || join(process.env.XDG_CONFIG_HOME || join(homedir(), ".config"), "phaseo");
 }
 
 export function configDirPath(): string {
@@ -36,7 +36,7 @@ export function preferredSessionBackend(
 	env: NodeJS.ProcessEnv = process.env,
 	platform = currentPlatform(),
 ): SessionBackend {
-	const override = env.AI_STATS_SESSION_BACKEND?.trim().toLowerCase();
+	const override = env.PHASEO_SESSION_BACKEND?.trim().toLowerCase();
 	if (override === "file") return "file";
 	if (override === "os") {
 		if (platform === "win32") return "dpapi-file";
@@ -209,7 +209,7 @@ async function writeSecretServiceSession(session: Session): Promise<void> {
 		"secret-tool",
 		[
 			"store",
-			"--label=AI Stats CLI session",
+			"--label=Phaseo CLI session",
 			"service",
 			SESSION_SERVICE,
 			"account",

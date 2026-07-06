@@ -1,8 +1,8 @@
-# AI Stats Agent SDK
+# Phaseo Agent SDK
 
-- Use `@ai-stats/agent-sdk` as an installable TypeScript SDK for building agentic applications on top of AI Stats Gateway.
-- Prefer `createGatewayAgentClient()` when the repository already uses `@ai-stats/sdk`.
-- Read credentials from `AI_STATS_API_KEY`.
+- Use `@phaseo/agent-sdk` as an installable TypeScript SDK for building agentic applications on top of Phaseo Gateway.
+- Prefer `createGatewayAgentClient()` when the repository already uses `@phaseo/sdk`.
+- Read credentials from `PHASEO_API_KEY`.
 - Use the Responses API path for new agent loops unless the project explicitly needs another surface.
 - Keep runtime tools small, deterministic, and idempotent when possible.
 - Treat returned run state as application-owned data. If the app needs resumability, serialize that returned state in the app itself.

@@ -124,12 +124,15 @@ export default function HeaderClient({
 		{ href: "/apps", label: "Apps", icon: AppWindow },
 		{ href: "/rankings", label: "Rankings", icon: Trophy },
 	];
-	const docsHref = "https://docs.ai-stats.phaseo.app/v1";
+	const docsHref = "https://docs.phaseo.app/v1";
 
 	if (variant === "mobile") {
 		if (!isLoggedIn) {
 			return (
-				<DropdownMenu open={isMobileNavOpen} onOpenChange={setIsMobileNavOpen}>
+				<DropdownMenu
+					open={isMobileNavOpen}
+					onOpenChange={(open) => setIsMobileNavOpen(Boolean(open))}
+				>
 					<ButtonGroup className="h-8 items-stretch overflow-hidden rounded-2xl shadow-xs">
 						<Button asChild className="h-8 rounded-r-none px-4">
 							<Link href="/sign-up" prefetch={false}>
@@ -221,35 +224,65 @@ export default function HeaderClient({
 		}
 
 		return (
-			<DropdownMenu>
+			<DropdownMenu
+				open={isMobileNavOpen}
+				onOpenChange={(open) => {
+					const nextOpen = Boolean(open);
+					setIsMobileNavOpen(nextOpen);
+					if (!nextOpen) setIsMobileTeamDialogOpen(false);
+				}}
+			>
 				<DropdownMenuTrigger asChild>
 					<Button
 						variant="ghost"
 						size="icon"
-						className="group overflow-hidden"
+						className="overflow-hidden rounded-lg"
 						aria-label="Toggle menu"
+						aria-expanded={isMobileNavOpen}
 					>
 						<span className="relative block h-5 w-5 overflow-hidden" aria-hidden="true">
-							<span className="absolute left-0 top-1/2 h-0.5 w-5 origin-center -translate-y-[6px] rounded-full bg-current transition-all duration-200 ease-out group-data-[state=open]:translate-y-0 group-data-[state=open]:rotate-45" />
-							<span className="absolute left-0 top-1/2 h-0.5 w-5 origin-center rounded-full bg-current transition-all duration-200 ease-out group-data-[state=open]:opacity-0" />
-							<span className="absolute left-0 top-1/2 h-0.5 w-5 origin-center translate-y-[6px] rounded-full bg-current transition-all duration-200 ease-out group-data-[state=open]:translate-y-0 group-data-[state=open]:-rotate-45" />
+							<span
+								className={cn(
+									"absolute left-0 top-1/2 h-0.5 w-5 origin-center rounded-full bg-current transition-all duration-200 ease-out",
+									isMobileNavOpen
+										? "translate-y-0 rotate-45"
+										: "-translate-y-[6px] rotate-0",
+								)}
+							/>
+							<span
+								className={cn(
+									"absolute left-0 top-1/2 h-0.5 w-5 origin-center rounded-full bg-current transition-all duration-200 ease-out",
+									isMobileNavOpen ? "opacity-0" : "opacity-100",
+								)}
+							/>
+							<span
+								className={cn(
+									"absolute left-0 top-1/2 h-0.5 w-5 origin-center rounded-full bg-current transition-all duration-200 ease-out",
+									isMobileNavOpen
+										? "translate-y-0 -rotate-45"
+										: "translate-y-[6px] rotate-0",
+								)}
+							/>
 						</span>
 					</Button>
 				</DropdownMenuTrigger>
-					<DropdownMenuContent align="end" className="w-56 rounded-xl p-1">
+					<DropdownMenuContent align="end" className="w-56">
 						{isLoggedIn && teams.length > 0 && (
 							<>
 								<Popover
 									modal={false}
 									open={isMobileTeamDialogOpen}
-									onOpenChange={setIsMobileTeamDialogOpen}
+									onOpenChange={(open) =>
+										setIsMobileTeamDialogOpen(Boolean(open))
+									}
 								>
 									<PopoverTrigger asChild>
 										<button
 											type="button"
 											className={cn(
-												"relative flex w-full select-none items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-hidden transition-colors",
-												"hover:bg-zinc-100 hover:text-zinc-900 focus:bg-zinc-100 focus:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 dark:focus:bg-zinc-800 dark:focus:text-zinc-50",
+												"relative flex min-h-7 w-full cursor-pointer select-none items-center gap-2 rounded-xl px-2 py-1.5 text-left text-sm outline-hidden transition-colors",
+												"hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+												isMobileTeamDialogOpen && "bg-accent text-accent-foreground",
 											)}
 										>
 											<Users className="h-4 w-4" />
@@ -268,7 +301,7 @@ export default function HeaderClient({
 										side="bottom"
 										align="start"
 										sideOffset={6}
-										className="w-52 rounded-xl p-1"
+										className="w-56 gap-0 rounded-2xl p-1"
 									>
 										{teams.slice(0, 5).map((team) => {
 											const isActive = team.id === activeWorkspaceId;
@@ -277,8 +310,9 @@ export default function HeaderClient({
 													key={team.id}
 													type="button"
 													className={cn(
-														"flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden transition-colors",
-														"hover:bg-zinc-100 hover:text-zinc-900 focus:bg-zinc-100 focus:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 dark:focus:bg-zinc-800 dark:focus:text-zinc-50",
+														"flex min-h-7 w-full cursor-pointer select-none items-center gap-2 rounded-xl px-2 py-1.5 text-sm outline-hidden transition-colors",
+														"hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+														isActive && "bg-accent text-accent-foreground",
 													)}
 													onClick={() => {
 														void handleTeamSwitch(team.id, team.name).then((ok) => {
@@ -303,8 +337,8 @@ export default function HeaderClient({
 											href="/settings/workspaces/settings"
 											prefetch={false}
 											className={cn(
-												"flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden transition-colors",
-												"hover:bg-zinc-100 hover:text-zinc-900 focus:bg-zinc-100 focus:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 dark:focus:bg-zinc-800 dark:focus:text-zinc-50",
+												"flex min-h-7 w-full cursor-pointer select-none items-center gap-2 rounded-xl px-2 py-1.5 text-sm outline-hidden transition-colors",
+												"hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
 											)}
 											onClick={() => setIsMobileTeamDialogOpen(false)}
 										>
@@ -325,8 +359,8 @@ export default function HeaderClient({
 								key={href}
 								asChild
 								className={cn(
-									"rounded-md py-1.5 text-sm",
-									isActive && "font-semibold text-blue-500",
+									"cursor-pointer text-sm",
+									isActive && "bg-accent font-medium text-accent-foreground",
 								)}
 							>
 								<Link href={href} prefetch={false} className="flex items-center gap-2">
@@ -343,7 +377,7 @@ export default function HeaderClient({
 						<>
 							{(userRole === "editor" || userRole === "admin") && (
 								<>
-									<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
+									<DropdownMenuItem asChild className="cursor-pointer text-sm">
 										<Link href="/internal" prefetch={false}>
 											<Lock className="h-4 w-4" />
 											<span>Internal</span>
@@ -353,21 +387,21 @@ export default function HeaderClient({
 								</>
 							)}
 
-							<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
+							<DropdownMenuItem asChild className="cursor-pointer text-sm">
 								<Link href="/experiments" prefetch={false}>
 									<FlaskConical className="h-4 w-4" />
 									<span>Experiments</span>
 								</Link>
 							</DropdownMenuItem>
 
-							<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
+							<DropdownMenuItem asChild className="cursor-pointer text-sm">
 								<Link href="/settings/workspaces/settings" prefetch={false}>
 									<Users className="h-4 w-4" />
 									<span>Workspaces</span>
 								</Link>
 							</DropdownMenuItem>
 
-								<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
+								<DropdownMenuItem asChild className="cursor-pointer text-sm">
 									<Link href="/settings/account" prefetch={false}>
 										<Settings className="h-4 w-4" />
 									<span>Settings</span>
@@ -376,7 +410,7 @@ export default function HeaderClient({
 
 							<DropdownMenuSeparator />
 
-							<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
+							<DropdownMenuItem asChild className="cursor-pointer text-sm">
 								<Link
 									href={`/settings/usage?workspace_id=${encodeURIComponent(
 										activeWorkspaceId ?? "",
@@ -387,25 +421,25 @@ export default function HeaderClient({
 									<span>Usage</span>
 								</Link>
 							</DropdownMenuItem>
-							<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
+							<DropdownMenuItem asChild className="cursor-pointer text-sm">
 								<Link href="/settings/credits" prefetch={false}>
 									<CreditCard className="h-4 w-4" />
 									<span>Credits</span>
 								</Link>
 							</DropdownMenuItem>
-							<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
+							<DropdownMenuItem asChild className="cursor-pointer text-sm">
 								<Link href="/settings/keys" prefetch={false}>
 									<KeyIcon className="h-4 w-4" />
 									<span>Keys</span>
 								</Link>
 							</DropdownMenuItem>
-								<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
+								<DropdownMenuItem asChild className="cursor-pointer text-sm">
 									<Link href="/contact" prefetch={false}>
 										<LifeBuoy className="h-4 w-4" />
 										<span>Support</span>
 									</Link>
 								</DropdownMenuItem>
-								<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
+								<DropdownMenuItem asChild className="cursor-pointer text-sm">
 									<Link href={docsHref} target="_blank" rel="noreferrer">
 										<BookOpenText className="h-4 w-4" />
 										<span>Docs</span>
@@ -418,7 +452,7 @@ export default function HeaderClient({
 									<div
 										role="radiogroup"
 										aria-label="Theme mode"
-										className="inline-flex w-full items-center justify-center gap-1 rounded-md p-0.5"
+										className="inline-flex w-full items-center justify-center gap-1 rounded-xl bg-muted/60 p-0.5"
 									>
 										{(["light", "dark", "system"] as const).map((mode) => {
 											const Icon = themeMeta[mode].icon;
@@ -432,11 +466,11 @@ export default function HeaderClient({
 													aria-label={`Set theme: ${themeMeta[mode].label}`}
 													onClick={() => setTheme(mode)}
 													className={cn(
-														"relative flex h-7 flex-1 items-center justify-center rounded-md text-zinc-500 transition-colors",
-														"hover:bg-zinc-100/70 hover:text-zinc-900 dark:hover:bg-zinc-800/70 dark:hover:text-zinc-100",
+														"relative flex h-7 flex-1 items-center justify-center rounded-lg text-muted-foreground transition-colors",
+														"hover:bg-background hover:text-foreground",
 														selected
-															? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
-															: "bg-transparent dark:text-zinc-300",
+															? "bg-background text-foreground shadow-xs"
+															: "bg-transparent",
 													)}
 													title={themeMeta[mode].label}
 												>
@@ -450,7 +484,8 @@ export default function HeaderClient({
 								<DropdownMenuSeparator />
 
 								<DropdownMenuItem
-									className="rounded-md py-1.5 text-sm"
+									variant="destructive"
+									className="cursor-pointer text-sm"
 								onClick={(event) => {
 									event.preventDefault();
 									void handleSignOut();
@@ -462,7 +497,7 @@ export default function HeaderClient({
 						</>
 					) : (
 						<>
-							<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
+							<DropdownMenuItem asChild className="cursor-pointer text-sm">
 								<Link href="/sign-up" prefetch={false}>
 									Sign Up
 								</Link>
@@ -472,7 +507,7 @@ export default function HeaderClient({
 								<div
 									role="radiogroup"
 									aria-label="Theme mode"
-									className="inline-flex w-full items-center justify-center gap-1 rounded-md p-0.5"
+									className="inline-flex w-full items-center justify-center gap-1 rounded-xl bg-muted/60 p-0.5"
 								>
 									{(["light", "dark", "system"] as const).map((mode) => {
 										const Icon = themeMeta[mode].icon;
@@ -486,11 +521,11 @@ export default function HeaderClient({
 												aria-label={`Set theme: ${themeMeta[mode].label}`}
 												onClick={() => setTheme(mode)}
 												className={cn(
-													"relative flex h-7 flex-1 items-center justify-center rounded-md text-zinc-500 transition-colors",
-													"hover:bg-zinc-100/70 hover:text-zinc-900 dark:hover:bg-zinc-800/70 dark:hover:text-zinc-100",
+													"relative flex h-7 flex-1 items-center justify-center rounded-lg text-muted-foreground transition-colors",
+													"hover:bg-background hover:text-foreground",
 													selected
-														? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
-														: "bg-transparent dark:text-zinc-300",
+														? "bg-background text-foreground shadow-xs"
+														: "bg-transparent",
 												)}
 												title={themeMeta[mode].label}
 											>

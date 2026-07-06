@@ -1,11 +1,12 @@
 {
-  "name": "@ai-stats/devtools-viewer",
-  "description": "Web-based viewer for AI Stats DevTools telemetry",
+  "name": "@phaseo/devtools-viewer",
+  "description": "Web-based viewer for Phaseo DevTools telemetry",
   "version": "0.2.1",
   "type": "module",
   "private": false,
   "license": "MIT",
   "bin": {
+    "phaseo-devtools": "./dist/cli/index.js",
     "ai-stats-devtools": "./dist/cli/index.js"
   },
   "main": "./dist/server/index.js",
@@ -59,7 +60,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/AI-Stats/AI-Stats"
+    "url": "https://github.com/phaseoteam/Phaseo"
   },
   "publishConfig": {
     "access": "public"

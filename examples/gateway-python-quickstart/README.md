@@ -1,6 +1,6 @@
-# AI Stats Gateway Python Quickstart
+# Phaseo Gateway Python Quickstart
 
-A standard-library Python example for control and generation surfaces on AI Stats Gateway.
+A standard-library Python example for control and generation surfaces on Phaseo Gateway.
 
 ## What It Supports
 
@@ -32,7 +32,7 @@ cd examples/gateway-python-quickstart
 cp .env.example .env.local
 ```
 
-Set `AI_STATS_API_KEY`.
+Set `PHASEO_API_KEY`.
 
 2. Run a control-route smoke:
 

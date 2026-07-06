@@ -71,7 +71,7 @@ curl "https://api.phaseo.app/v1/batches?status=in_progress&status=pending&limit=
 
 The list response uses the same public batch object shape as create and retrieve, including lifecycle, webhook delivery, and billing reservation metadata.
 
-Resume work from the returned gateway `id` values. Provider-native ids are exposed for diagnostics, but they are not the durable handle for AI Stats polling or cancellation.
+Resume work from the returned gateway `id` values. Provider-native ids are exposed for diagnostics, but they are not the durable handle for Phaseo polling or cancellation.
 
 ## 5. Cancel stale work when needed
 
@@ -102,25 +102,25 @@ Your webhook consumer should:
 3. treat retries as normal
 4. fetch the latest batch status when the payload and local state disagree
 
-When you configure `webhook.secret`, AI Stats signs each delivery with:
+When you configure `webhook.secret`, Phaseo signs each delivery with:
 
-- `x-ai-stats-timestamp`: Unix timestamp in seconds
-- `x-ai-stats-signature`: hex HMAC-SHA256 of `${timestamp}.${rawBody}` using your webhook secret
-- `x-ai-stats-event-id`: stable event id for this batch/event
-- `x-ai-stats-event-type`: event type such as `batch.progress` or `batch.completed`
-- `x-ai-stats-delivery-key`: idempotency key, including progress bucket when applicable
-- `x-ai-stats-attempt` and `x-ai-stats-max-attempts`: retry attempt metadata
+- `x-phaseo-timestamp`: Unix timestamp in seconds
+- `x-phaseo-signature`: hex HMAC-SHA256 of `${timestamp}.${rawBody}` using your webhook secret
+- `x-phaseo-event-id`: stable event id for this batch/event
+- `x-phaseo-event-type`: event type such as `batch.progress` or `batch.completed`
+- `x-phaseo-delivery-key`: idempotency key, including progress bucket when applicable
+- `x-phaseo-attempt` and `x-phaseo-max-attempts`: retry attempt metadata
 
 Verify the signature against the exact raw request body before parsing JSON:
 
 <CodeGroup>
 ```typescript TypeScript
-import { verifyAsyncWebhookSignature } from "@ai-stats/sdk";
+import { verifyAsyncWebhookSignature } from "@phaseo/sdk";
 
 export async function POST(request: Request) {
   const rawBody = await request.text();
   const ok = verifyAsyncWebhookSignature({
-    secret: process.env.AI_STATS_WEBHOOK_SECRET!,
+    secret: process.env.PHASEO_WEBHOOK_SECRET!,
     body: rawBody,
     headers: request.headers,
   });
@@ -130,13 +130,13 @@ export async function POST(request: Request) {
   }
 
   const event = JSON.parse(rawBody);
-  // Persist event.id or the x-ai-stats-delivery-key header before side effects.
+  // Persist event.id or the x-phaseo-delivery-key header before side effects.
   return Response.json({ received: true });
 }
 ```
 
 ```python Python
-from ai_stats import verify_async_webhook_signature
+from phaseo import verify_async_webhook_signature
 
 
 async def handle_batch_webhook(request):
@@ -150,14 +150,14 @@ async def handle_batch_webhook(request):
         return {"status": 401, "body": "invalid signature"}
 
     event = await request.json()
-    # Persist event["id"] or the x-ai-stats-delivery-key header before side effects.
+    # Persist event["id"] or the x-phaseo-delivery-key header before side effects.
     return {"received": True}
 ```
 </CodeGroup>
 
-Store `x-ai-stats-delivery-key` or the payload `id` before side effects. Return any 2xx status only after your durable state has been updated; non-2xx responses are retried with the same event id and an incremented attempt number.
+Store `x-phaseo-delivery-key` or the payload `id` before side effects. Return any 2xx status only after your durable state has been updated; non-2xx responses are retried with the same event id and an incremented attempt number.
 
-Webhook subscriptions accept generic `job.*` events or matching `batch.*` events, including `batch.progress` / `job.progress` for request-count progress. Progress notifications are bucketed for idempotency and may be skipped when the provider has not reported usable `request_counts` yet. If you omit `events`, AI Stats subscribes the webhook to terminal `job.completed`, `job.failed`, `job.cancelled`, and `job.expired` notifications. If you provide `events`, at least one event must be valid for batch jobs; all-invalid or cross-kind-only lists such as `["video.completed"]` are rejected instead of being broadened silently.
+Webhook subscriptions accept generic `job.*` events or matching `batch.*` events, including `batch.progress` / `job.progress` for request-count progress. Progress notifications are bucketed for idempotency and may be skipped when the provider has not reported usable `request_counts` yet. If you omit `events`, Phaseo subscribes the webhook to terminal `job.completed`, `job.failed`, `job.cancelled`, and `job.expired` notifications. If you provide `events`, at least one event must be valid for batch jobs; all-invalid or cross-kind-only lists such as `["video.completed"]` are rejected instead of being broadened silently.
 
 Webhook callback URLs must use HTTPS. Literal private, loopback, link-local, and wildcard hosts are rejected; `http://localhost`, `http://127.0.0.1`, and `http://[::1]` are accepted only for local development callbacks.
 

@@ -1,25 +1,25 @@
-# AI Stats Agent SDK (C#)
+# Phaseo Agent SDK (C#)
 
-`AI.Stats.AgentSdk` is a minimal .NET agent runtime for AI Stats Gateway.
+`Phaseo.AgentSdk` is a minimal .NET agent runtime for Phaseo Gateway.
 
 It provides:
 
 - `AgentSdk.CreateAgent(...)`
 - `AgentSdk.DefineTool(...)`
 - `AgentSdk.CreateGatewayAgentClient(...)`
-- a bounded tool loop on top of the AI Stats `responses` API
+- a bounded tool loop on top of the Phaseo `responses` API
 
 ## Install
 
 ```bash
-dotnet add package AI.Stats.Sdk
-dotnet add package AI.Stats.AgentSdk
+dotnet add package Phaseo.Sdk
+dotnet add package Phaseo.AgentSdk
 ```
 
 ## Quickstart
 
 ```csharp
-using AiStatsAgentSdk;
+using PhaseoAgentSdk;
 
 var agent = AgentSdk.CreateAgent(new AgentDefinition
 {

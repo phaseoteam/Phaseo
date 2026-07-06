@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 from .client import Client
 from . import models
+from .models import BatchListResponse, BatchModelsResponse, VideoListResponse, VideoModelsResponse
 
 def calculatePricing(
 	client: Client,
@@ -232,7 +233,7 @@ def createSpeech(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Any:
+) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = "/audio/speech"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
@@ -570,7 +571,7 @@ def getVideoContent(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Any:
+) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = f"/videos/{path.get("video_id", "")}/content"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
@@ -583,7 +584,7 @@ def getVideoContentAlias(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Any:
+) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = f"/video/generations/{path.get("video_id", "")}/content"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
@@ -622,7 +623,7 @@ def listBatches(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Dict[str, Any]:
+) -> BatchListResponse:
 	path = path or {}
 	resolved_path = "/batches"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
@@ -635,7 +636,7 @@ def listBatchesAlias(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Dict[str, Any]:
+) -> BatchListResponse:
 	path = path or {}
 	resolved_path = "/batch"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
@@ -648,7 +649,7 @@ def listBatchModels(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Dict[str, Any]:
+) -> BatchModelsResponse:
 	path = path or {}
 	resolved_path = "/batches/models"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
@@ -661,7 +662,7 @@ def listBatchModelsAlias(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Dict[str, Any]:
+) -> BatchModelsResponse:
 	path = path or {}
 	resolved_path = "/batch/models"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
@@ -700,7 +701,7 @@ def listFiles(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Any:
+) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = "/files"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
@@ -715,7 +716,7 @@ def listModels(
 	body: Optional[Any] = None,
 ) -> Dict[str, Any]:
 	path = path or {}
-	resolved_path = "/gateway/models"
+	resolved_path = "/models"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -767,7 +768,7 @@ def listTeamModels(
 	body: Optional[Any] = None,
 ) -> Dict[str, Any]:
 	path = path or {}
-	resolved_path = "/gateway/models/me"
+	resolved_path = "/models/me"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -778,7 +779,7 @@ def listVideoModels(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Dict[str, Any]:
+) -> VideoModelsResponse:
 	path = path or {}
 	resolved_path = "/videos/models"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
@@ -791,7 +792,7 @@ def listVideoModelsAlias(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Dict[str, Any]:
+) -> VideoModelsResponse:
 	path = path or {}
 	resolved_path = "/video/generations/models"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
@@ -804,7 +805,7 @@ def listVideos(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Dict[str, Any]:
+) -> VideoListResponse:
 	path = path or {}
 	resolved_path = "/videos"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
@@ -817,7 +818,7 @@ def listVideosAlias(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Dict[str, Any]:
+) -> VideoListResponse:
 	path = path or {}
 	resolved_path = "/video/generations"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
@@ -843,7 +844,7 @@ def openAsyncJobWebSocket(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Any:
+) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = f"/async/{path.get("kind", "")}/{path.get("id", "")}/ws"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
@@ -895,7 +896,7 @@ def retrieveFileContent(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Any:
+) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = f"/files/{path.get("file_id", "")}/content"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)

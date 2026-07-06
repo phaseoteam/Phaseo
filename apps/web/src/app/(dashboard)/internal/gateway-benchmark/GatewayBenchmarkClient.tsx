@@ -94,7 +94,7 @@ function getSummary(data: CompareResponse | null, target: CompareSummary["target
 function targetLabel(target: CompareSummary["target"]): string {
 	switch (target) {
 		case "ai-stats":
-			return "AI Stats Gateway";
+			return "Phaseo Gateway";
 		case "openrouter":
 			return "OpenRouter";
 		case "llmgateway":
@@ -388,7 +388,7 @@ export default function GatewayBenchmarkClient() {
 		"vercel-ai-gateway": { ...EMPTY_LIVE_PANE },
 	});
 
-	const aiStatsSummary = getSummary(data, "ai-stats");
+	const phaseoSummary = getSummary(data, "ai-stats");
 	const openRouterSummary = getSummary(data, "openrouter");
 	const llmGatewaySummary = getSummary(data, "llmgateway");
 	const vercelAiGatewaySummary = getSummary(data, "vercel-ai-gateway");
@@ -513,7 +513,7 @@ export default function GatewayBenchmarkClient() {
 				<div>
 					<h1 className="text-2xl font-semibold">Gateway Benchmark</h1>
 					<p className="text-sm text-muted-foreground">
-						Public client-visible compare view for AI Stats Gateway vs OpenRouter, LLMGateway, and Vercel AI Gateway.
+						Public client-visible compare view for Phaseo Gateway vs OpenRouter, LLMGateway, and Vercel AI Gateway.
 					</p>
 					<p className="text-xs text-muted-foreground">
 						Current endpoint: {endpoint === "responses" ? "/responses" : "/chat/completions"}
@@ -635,7 +635,7 @@ export default function GatewayBenchmarkClient() {
 				<CardContent className="space-y-4">
 					<div className="grid gap-4 xl:grid-cols-4">
 						<LiveStreamPane
-							label="AI Stats Gateway"
+							label="Phaseo Gateway"
 							baseUrl={`${gatewayBaseUrl} ${endpoint === "responses" ? "/responses" : "/chat/completions"}`}
 							state={livePanes["ai-stats"]}
 						/>
@@ -674,8 +674,8 @@ export default function GatewayBenchmarkClient() {
 						<Card>
 							<CardHeader>
 								<CardTitle className="flex items-center justify-between">
-									<span>AI Stats Gateway</span>
-									<Badge variant="outline">{aiStatsSummary?.successes ?? 0}/{data.config.runs} ok</Badge>
+									<span>Phaseo Gateway</span>
+									<Badge variant="outline">{phaseoSummary?.successes ?? 0}/{data.config.runs} ok</Badge>
 								</CardTitle>
 								<CardDescription>
 									{data.config.gatewayBaseUrl}
@@ -684,10 +684,10 @@ export default function GatewayBenchmarkClient() {
 								</CardDescription>
 							</CardHeader>
 							<CardContent className="space-y-2 text-sm">
-								<div>Headers: {formatStats(aiStatsSummary?.headersMs ?? null)}</div>
-								<div>First byte: {formatStats(aiStatsSummary?.firstByteMs ?? null)}</div>
-								<div>First content: {formatStats(aiStatsSummary?.firstContentMs ?? null)}</div>
-								<div>Total: {formatStats(aiStatsSummary?.totalMs ?? null)}</div>
+								<div>Headers: {formatStats(phaseoSummary?.headersMs ?? null)}</div>
+								<div>First byte: {formatStats(phaseoSummary?.firstByteMs ?? null)}</div>
+								<div>First content: {formatStats(phaseoSummary?.firstContentMs ?? null)}</div>
+								<div>Total: {formatStats(phaseoSummary?.totalMs ?? null)}</div>
 							</CardContent>
 						</Card>
 
@@ -760,23 +760,23 @@ export default function GatewayBenchmarkClient() {
 						) : null}
 					</div>
 
-					{aiStatsSummary?.stageSummary ? (
+					{phaseoSummary?.stageSummary ? (
 						<Card>
 							<CardHeader>
-								<CardTitle>AI Stats Header Breakdown</CardTitle>
+								<CardTitle>Phaseo Header Breakdown</CardTitle>
 								<CardDescription>
 									Public `Server-Timing` spans plus the browser-observed post-header wait.
 								</CardDescription>
 							</CardHeader>
 							<CardContent>
-								<GatewayStageTable summary={aiStatsSummary.stageSummary} />
+								<GatewayStageTable summary={phaseoSummary.stageSummary} />
 							</CardContent>
 						</Card>
 					) : null}
 
 					<div className="grid gap-4">
 						{Array.from({ length: data.config.runs }, (_, index) => index + 1).map((run) => {
-							const aiStats = data.results.find((result) => result.target === "ai-stats" && result.run === run);
+							const phaseo = data.results.find((result) => result.target === "ai-stats" && result.run === run);
 							const openrouter = data.results.find((result) => result.target === "openrouter" && result.run === run);
 							const llmgateway = data.results.find((result) => result.target === "llmgateway" && result.run === run);
 							const vercelAiGateway = data.results.find(
@@ -791,7 +791,7 @@ export default function GatewayBenchmarkClient() {
 										</CardDescription>
 									</CardHeader>
 									<CardContent className="grid gap-6 xl:grid-cols-2">
-										{[aiStats, openrouter, llmgateway, vercelAiGateway].map((result) =>
+										{[phaseo, openrouter, llmgateway, vercelAiGateway].map((result) =>
 											result ? (
 												<div key={`${result.target}-${run}`} className="space-y-4 rounded-lg border p-4">
 													<div className="flex items-center justify-between">

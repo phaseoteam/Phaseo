@@ -3,20 +3,20 @@ title: "Build a Next.js Web Chat App"
 description: "Use the existing Next.js sample chat app as a full walkthrough, with a copyable build prompt at the top."
 ---
 
-Use this page when you want a small Next.js chat app that feels real, but still keeps your AI Stats API key on the server.
+Use this page when you want a small Next.js chat app that feels real, but still keeps your Phaseo API key on the server.
 
 <Prompt
-  description="Build a **Next.js web chat app** on top of AI Stats Gateway."
+  description="Build a **Next.js web chat app** on top of Phaseo Gateway."
   icon="message-square"
   actions={["copy", "cursor"]}
 >
-{`You are building a small production-style chat app with AI Stats Gateway.
+{`You are building a small production-style chat app with Phaseo Gateway.
 
 Create a Next.js app with:
 - a chat UI
 - a model picker backed by GET /v1/models
 - a server-side route that calls POST /v1/responses
-- server-side API key handling using AI_STATS_API_KEY
+- server-side API key handling using PHASEO_API_KEY
 - loading, success, and error states
 
 Keep the app intentionally small and easy to inspect.
@@ -36,7 +36,7 @@ Verification:
 
 ## Sample project
 
-- GitHub: [examples/web-chat-nextjs](https://github.com/AI-Stats/AI-Stats/tree/main/examples/web-chat-nextjs)
+- GitHub: [examples/web-chat-nextjs](https://github.com/phaseoteam/Phaseo/tree/main/examples/web-chat-nextjs)
 - Local repo path: `examples/web-chat-nextjs`
 
 ## What this app does
@@ -55,9 +55,9 @@ Verification:
 
 ## Why the sample is structured this way
 
-### 1. The browser does not call AI Stats directly
+### 1. The browser does not call Phaseo directly
 
-The UI talks to your own Next.js routes first. Those routes call AI Stats on the server.
+The UI talks to your own Next.js routes first. Those routes call Phaseo on the server.
 
 This gives you:
 
@@ -113,7 +113,7 @@ cp .env.example .env.local
 
 Set:
 
-- `AI_STATS_API_KEY`
+- `PHASEO_API_KEY`
 - `NEXT_PUBLIC_GATEWAY_URL`
 
 Then run:

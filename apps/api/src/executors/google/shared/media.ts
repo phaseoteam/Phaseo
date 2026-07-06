@@ -2,7 +2,7 @@ import type { IRContentPart } from "@core/ir";
 
 const DEFAULT_MAX_REMOTE_ASSET_BYTES = 20 * 1024 * 1024;
 const RETRY_FETCH_USER_AGENT =
-	"Mozilla/5.0 (compatible; AI-Stats-Gateway/1.0; +https://phaseo.app)";
+	"Mozilla/5.0 (compatible; Phaseo-Gateway/1.0; +https://phaseo.app)";
 
 const AUDIO_MIME_BY_FORMAT: Record<string, string> = {
 	wav: "audio/wav",

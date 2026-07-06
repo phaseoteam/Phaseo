@@ -1,6 +1,6 @@
-# AI Stats Agent SDK
+# Phaseo Agent SDK
 
-`@ai-stats/agent-sdk` is a TypeScript SDK for building agentic applications on top of AI Stats Gateway.
+`@phaseo/agent-sdk` is a TypeScript SDK for building agentic applications on top of Phaseo Gateway.
 
 It is not a hosted orchestration platform. The package gives you:
 
@@ -19,7 +19,7 @@ You own the surrounding application, any persistence you want around it, queues,
 
 ## State model
 
-The SDK does not store runs in any AI Stats-hosted service.
+The SDK does not store runs in any Phaseo-hosted service.
 
 `run()` returns the full agent state needed to continue later:
 
@@ -33,7 +33,7 @@ If your application wants resumability across requests, workers, or process rest
 ## Install
 
 ```bash
-pnpm add @ai-stats/sdk @ai-stats/agent-sdk
+pnpm add @phaseo/sdk @phaseo/agent-sdk
 ```
 
 ## Quickstart
@@ -43,7 +43,7 @@ import {
   createAgent,
   createGatewayAgentClient,
   defineTool,
-} from "@ai-stats/agent-sdk";
+} from "@phaseo/agent-sdk";
 
 const lookupDocs = defineTool({
   id: "lookup-docs",
@@ -59,14 +59,14 @@ const lookupDocs = defineTool({
   async execute(input: { slug: string }) {
     return {
       slug: input.slug,
-      url: `https://docs.ai-stats.phaseo.app/v1/${input.slug}`,
+      url: `https://phaseo.app/v1/${input.slug}`,
     };
   },
 });
 
 const agent = createAgent({
   id: "support-docs-agent",
-  model: "ai-stats/free",
+  model: "phaseo/free",
   instructions: "Use tools when helpful and finish with a concise answer.",
   tools: [lookupDocs],
 });
@@ -75,7 +75,7 @@ const result = await agent.run({
   input: "Find the docs page for presets and explain when to use them.",
   client: createGatewayAgentClient({
     clientOptions: {
-      apiKey: process.env.AI_STATS_API_KEY!,
+      apiKey: process.env.PHASEO_API_KEY!,
     },
   }),
 });
@@ -85,21 +85,21 @@ console.log(result.output);
 
 ## Devtools
 
-Agent runs can write to the same `.ai-stats-devtools` session format used by `@ai-stats/sdk`.
+Agent runs can write to the same `.phaseo-devtools` session format used by `@phaseo/sdk`.
 
 ```ts
-import { createAgentDevtools } from "@ai-stats/agent-sdk";
+import { createAgentDevtools } from "@phaseo/agent-sdk";
 
 const result = await agent.run({
   input: "Summarize this ticket.",
   client,
   devtools: createAgentDevtools({
-    directory: ".ai-stats-devtools",
+    directory: ".phaseo-devtools",
   }),
 });
 ```
 
-You can also enable capture process-wide with `AI_STATS_DEVTOOLS=true` and optionally set `AI_STATS_DEVTOOLS_DIR`.
+You can also enable capture process-wide with `PHASEO_DEVTOOLS=true` and optionally set `PHASEO_DEVTOOLS_DIR`.
 
 ## Core concepts
 
@@ -118,7 +118,7 @@ Keep the first agent narrow. One workflow, one or two tools, one clear output sh
 
 ### Gateway-backed execution
 
-Use `createGatewayAgentClient()` when model turns should run through AI Stats Gateway.
+Use `createGatewayAgentClient()` when model turns should run through Phaseo Gateway.
 
 The adapter can carry gateway-native controls such as:
 
@@ -183,7 +183,7 @@ For stricter model behavior, pair that with gateway structured outputs on the ad
 
 ```ts
 const client = createGatewayAgentClient({
-  clientOptions: { apiKey: process.env.AI_STATS_API_KEY! },
+  clientOptions: { apiKey: process.env.PHASEO_API_KEY! },
   responseFormat: {
     type: "json_schema",
     name: "agent_answer",
@@ -280,7 +280,7 @@ If a gateway request exposes request correlation data, the step can also persist
 Gateway failures are rethrown as `AgentGatewayError`:
 
 ```ts
-import { AgentGatewayError } from "@ai-stats/agent-sdk";
+import { AgentGatewayError } from "@phaseo/agent-sdk";
 
 try {
   await agent.run({ input, client, store });

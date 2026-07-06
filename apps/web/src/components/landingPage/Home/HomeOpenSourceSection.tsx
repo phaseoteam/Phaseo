@@ -81,7 +81,7 @@ const FIRST_PROMPT_SNIPPETS: readonly FirstPromptSnippet[] = [
 		label: "cURL",
 		lang: "bash",
 		code: (modelId) => `curl https://api.phaseo.app/v1/responses \\
-  -H "Authorization: Bearer $AI_STATS_API_KEY" \\
+  -H "Authorization: Bearer $PHASEO_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
     "model": "${modelId}",
@@ -95,7 +95,7 @@ const FIRST_PROMPT_SNIPPETS: readonly FirstPromptSnippet[] = [
 		code: (modelId) => `const response = await fetch("https://api.phaseo.app/v1/responses", {
   method: "POST",
   headers: {
-    "Authorization": \`Bearer \${process.env.AI_STATS_API_KEY!}\`,
+    "Authorization": \`Bearer \${process.env.PHASEO_API_KEY!}\`,
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
@@ -117,7 +117,7 @@ import requests
 response = requests.post(
     "https://api.phaseo.app/v1/responses",
     headers={
-        "Authorization": f"Bearer {os.environ['AI_STATS_API_KEY']}",
+        "Authorization": f"Bearer {os.environ['PHASEO_API_KEY']}",
         "Content-Type": "application/json",
     },
     json={
@@ -135,7 +135,7 @@ print(response.json())`,
 		code: (modelId) => `const response = await fetch("https://api.phaseo.app/v1/responses", {
   method: "POST",
   headers: {
-    Authorization: \`Bearer \${process.env.AI_STATS_API_KEY}\`,
+    Authorization: \`Bearer \${process.env.PHASEO_API_KEY}\`,
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
@@ -169,7 +169,7 @@ func main() {
     "https://api.phaseo.app/v1/responses",
     bytes.NewBuffer(body),
   )
-  req.Header.Set("Authorization", "Bearer "+os.Getenv("AI_STATS_API_KEY"))
+  req.Header.Set("Authorization", "Bearer "+os.Getenv("PHASEO_API_KEY"))
   req.Header.Set("Content-Type", "application/json")
 
   res, _ := http.DefaultClient.Do(req)
@@ -193,7 +193,7 @@ $ch = curl_init("https://api.phaseo.app/v1/responses");
 curl_setopt_array($ch, [
   CURLOPT_POST => true,
   CURLOPT_HTTPHEADER => [
-    "Authorization: Bearer " . getenv("AI_STATS_API_KEY"),
+    "Authorization: Bearer " . getenv("PHASEO_API_KEY"),
     "Content-Type: application/json",
   ],
   CURLOPT_POSTFIELDS => $payload,
@@ -216,7 +216,7 @@ curl_close($ch);`,
 
 var request = java.net.http.HttpRequest.newBuilder()
   .uri(java.net.URI.create("https://api.phaseo.app/v1/responses"))
-  .header("Authorization", "Bearer " + System.getenv("AI_STATS_API_KEY"))
+  .header("Authorization", "Bearer " + System.getenv("PHASEO_API_KEY"))
   .header("Content-Type", "application/json")
   .POST(java.net.http.HttpRequest.BodyPublishers.ofString(body))
   .build();`,
@@ -231,7 +231,7 @@ using System.Text;
 var client = new HttpClient();
 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
     "Bearer",
-    Environment.GetEnvironmentVariable("AI_STATS_API_KEY")
+    Environment.GetEnvironmentVariable("PHASEO_API_KEY")
 );
 
 var body = """
@@ -773,7 +773,7 @@ export default function HomeOpenSourceSection({
 							variant="outline"
 							className="h-10 rounded-xl px-5 text-sm font-semibold"
 						>
-								<Link href={variant === "beta" ? "/models" : "https://docs.ai-stats.phaseo.app/v1/quickstart"}>
+								<Link href={variant === "beta" ? "/models" : "https://docs.phaseo.app/v1/quickstart"}>
 									{variant === "beta" ? (
 										<span className="group inline-flex items-center gap-2">
 											<span>Explore</span>
@@ -800,7 +800,7 @@ export default function HomeOpenSourceSection({
 							</Link>
 						</Button>
 						<Button asChild variant="outline" className="h-10 rounded-xl px-5 text-sm font-semibold">
-							<Link href="https://github.com/AI-Stats/AI-Stats">
+							<Link href="https://github.com/phaseoteam/Phaseo">
 								<GitHubBrandIcon className="h-4 w-4" />
 								View GitHub
 							</Link>

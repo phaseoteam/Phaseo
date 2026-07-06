@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export const metadata: Metadata = {
 	title: "AI Organisations - Compare Organisations and their AI Models",
 	description:
-		"Explore a comprehensive directory of AI organisations. Compare providers by their models, features, benchmarks, and pricing, and find the best fit for your use case with AI Stats.",
+		"Explore a comprehensive directory of AI organisations. Compare providers by their models, features, benchmarks, and pricing, and find the best fit for your use case with Phaseo.",
 	keywords: [
 		"AI providers",
 		"AI companies",
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 		"AI pricing",
 		"AI directory",
 		"compare AI providers",
-		"AI Stats",
+		"Phaseo",
 	],
 	alternates: {
 		canonical: "/organisations",

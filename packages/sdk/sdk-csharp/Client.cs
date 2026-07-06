@@ -5,17 +5,17 @@ using System.Diagnostics;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
-using AiStats.Gen;
+using Phaseo.Gen;
 
-namespace AiStatsSdk
+namespace PhaseoSdk
 {
-    public delegate void AIStatsLogger(string level, string message, Dictionary<string, object?> meta);
+    public delegate void PhaseoLogger(string level, string message, Dictionary<string, object?> meta);
 
     public sealed class AsyncJobsResource
     {
-        private readonly AIStats _client;
+        private readonly Phaseo _client;
 
-        internal AsyncJobsResource(AIStats client)
+        internal AsyncJobsResource(Phaseo client)
         {
             _client = client;
         }
@@ -39,12 +39,12 @@ namespace AiStatsSdk
 
     // Lightweight facade over the in-house generated SDK.
     // Regenerate with: `pnpm openapi:gen:csharp`
-    public class AIStats
+    public class Phaseo
     {
-        private readonly AiStats.Gen.Client _client;
+        private readonly global::Phaseo.Gen.Client _client;
         private readonly bool _enableDeprecationWarnings;
         private readonly bool _warningsAsErrors;
-        private readonly AIStatsLogger? _logger;
+        private readonly PhaseoLogger? _logger;
         private readonly TelemetryRecorder _telemetry;
         private readonly Func<string, Task<ModelLifecycleInfo?>> _lifecycleResolver;
         private readonly string _basePath;
@@ -75,27 +75,27 @@ namespace AiStatsSdk
             "end-of-life"
         };
 
-        public AiStats.Gen.Client RawClient => _client;
+        public global::Phaseo.Gen.Client RawClient => _client;
 
-        public AIStats(
+        public Phaseo(
             string? apiKey = null,
             string basePath = "https://api.phaseo.app/v1",
             bool enableDeprecationWarnings = true,
             bool warningsAsErrors = false,
-            AIStatsLogger? logger = null,
+            PhaseoLogger? logger = null,
             Func<string, Task<ModelLifecycleInfo?>>? lifecycleResolver = null,
             HttpClient? httpClient = null,
             DevtoolsConfig? devtools = null)
         {
-            apiKey ??= Environment.GetEnvironmentVariable("AI_STATS_API_KEY");
+            apiKey ??= Environment.GetEnvironmentVariable("PHASEO_API_KEY");
             if (string.IsNullOrWhiteSpace(apiKey))
             {
-                throw new InvalidOperationException("Missing API key. Pass apiKey or set AI_STATS_API_KEY.");
+                throw new InvalidOperationException("Missing API key. Pass apiKey or set PHASEO_API_KEY.");
             }
 
             var headers = new Dictionary<string, string> { { "Authorization", $"Bearer {apiKey}" } };
             _basePath = string.IsNullOrWhiteSpace(basePath) ? "https://api.phaseo.app/v1" : basePath.TrimEnd('/');
-            _client = new AiStats.Gen.Client(_basePath, httpClient, headers: headers);
+            _client = new global::Phaseo.Gen.Client(_basePath, httpClient, headers: headers);
             _enableDeprecationWarnings = enableDeprecationWarnings;
             _warningsAsErrors = warningsAsErrors;
             _logger = logger;
@@ -806,15 +806,15 @@ namespace AiStatsSdk
             return status switch
             {
                 "retired" when !string.IsNullOrWhiteSpace(retirementDate)
-                    => $"[ai-stats] Model \"{modelId}\" is retired as of {retirementDate}.{replacement}",
+                    => $"[phaseo] Model \"{modelId}\" is retired as of {retirementDate}.{replacement}",
                 "retired"
-                    => $"[ai-stats] Model \"{modelId}\" is retired.{replacement}",
+                    => $"[phaseo] Model \"{modelId}\" is retired.{replacement}",
                 "deprecated" when !string.IsNullOrWhiteSpace(retirementDate)
-                    => $"[ai-stats] Model \"{modelId}\" is deprecated and scheduled for retirement on {retirementDate}.{replacement}",
+                    => $"[phaseo] Model \"{modelId}\" is deprecated and scheduled for retirement on {retirementDate}.{replacement}",
                 "deprecated" when !string.IsNullOrWhiteSpace(deprecationDate)
-                    => $"[ai-stats] Model \"{modelId}\" has been deprecated since {deprecationDate}.{replacement}",
+                    => $"[phaseo] Model \"{modelId}\" has been deprecated since {deprecationDate}.{replacement}",
                 "deprecated"
-                    => $"[ai-stats] Model \"{modelId}\" is deprecated.{replacement}",
+                    => $"[phaseo] Model \"{modelId}\" is deprecated.{replacement}",
                 _ => string.Empty
             };
         }
@@ -884,14 +884,14 @@ namespace AiStatsSdk
                 {
                     return fallback;
                 }
-                return $"[ai-stats] Model \"{info.ModelId}\" is not active for inference.";
+                return $"[phaseo] Model \"{info.ModelId}\" is not active for inference.";
             }
 
             var sourceStatus = NormalizeSourceStatus(info.SourceStatus) ?? "unknown";
             var replacement = string.IsNullOrWhiteSpace(info.ReplacementModelId)
                 ? string.Empty
                 : $" Use \"{info.ReplacementModelId}\" instead.";
-            return $"[ai-stats] Model \"{info.ModelId}\" is not active for inference (status: {sourceStatus}).{replacement}";
+            return $"[phaseo] Model \"{info.ModelId}\" is not active for inference (status: {sourceStatus}).{replacement}";
         }
 
         private static JsonElement GetObject(JsonElement source, string property)
@@ -969,4 +969,5 @@ namespace AiStatsSdk
             return JsonSerializer.Deserialize<Dictionary<string, object>>(JsonSerializer.Serialize(payload));
         }
     }
+
 }

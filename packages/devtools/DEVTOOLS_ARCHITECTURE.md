@@ -1,13 +1,13 @@
-# AI Stats Devtools Architecture
+# Phaseo Devtools Architecture
 
 This document explains the complete devtools architecture and how it works across the codebase.
 
 ## Overview
 
-AI Stats Devtools provides a comprehensive debugging and monitoring solution for AI applications. It consists of three main components:
+Phaseo Devtools provides a comprehensive debugging and monitoring solution for AI applications. It consists of three main components:
 
 1. **@ai-stats/devtools-core** - Core telemetry capture and storage
-2. **@ai-stats/devtools-viewer** - Web-based visualization UI
+2. **@phaseo/devtools-viewer** - Web-based visualization UI
 3. **@ai-stats/devtools** - Hook pattern for SDK integration
 
 ## Architecture Diagram
@@ -16,7 +16,7 @@ AI Stats Devtools provides a comprehensive debugging and monitoring solution for
 ┌─────────────────────────────────────────────────────────────┐
 │                     User Application                        │
 │                                                             │
-│  import { AIStats } from '@ai-stats/sdk';                   │
+│  import { AIStats } from '@phaseo/sdk';                   │
 │  import { createAIStatsDevtools } from '@ai-stats/devtools';│
 │                                                             │
 │  const client = new AIStats({                               │
@@ -26,7 +26,7 @@ AI Stats Devtools provides a comprehensive debugging and monitoring solution for
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                     @ai-stats/sdk                           │
+│                     @phaseo/sdk                           │
 │                                                             │
 │  ┌──────────────────────────────────────────────────────┐  │
 │  │              TelemetryCapture                        │  │
@@ -68,7 +68,7 @@ AI Stats Devtools provides a comprehensive debugging and monitoring solution for
                             │
                             ▼ (reads from)
 ┌─────────────────────────────────────────────────────────────┐
-│               @ai-stats/devtools-viewer                     │
+│               @phaseo/devtools-viewer                     │
 │                                                             │
 │  ┌──────────────────────────────────────────────────────┐  │
 │  │         Node.js Server (Express)                     │  │
@@ -114,7 +114,7 @@ AI Stats Devtools provides a comprehensive debugging and monitoring solution for
 DevToolsEntry → DevToolsWriter → .ai-stats-devtools/entries.jsonl
 ```
 
-### 2. @ai-stats/devtools-viewer
+### 2. @phaseo/devtools-viewer
 
 **Purpose**: Web-based visualization and debugging UI
 
@@ -158,10 +158,10 @@ File System → Express API → React UI (polling)
 
 **Usage Pattern**:
 ```typescript
-import { AIStats, createAIStatsDevtools } from '@ai-stats/sdk';
+import { AIStats, createAIStatsDevtools } from '@phaseo/sdk';
 
 const client = new AIStats({
-  apiKey: process.env.AI_STATS_API_KEY,
+  apiKey: process.env.PHASEO_API_KEY,
   devtools: createAIStatsDevtools({
     directory: '.ai-stats-devtools',
     flushIntervalMs: 1000,
@@ -171,7 +171,7 @@ const client = new AIStats({
 });
 ```
 
-### 4. SDK Integration (@ai-stats/sdk)
+### 4. SDK Integration (@phaseo/sdk)
 
 **Purpose**: TypeScript SDK with built-in telemetry
 
@@ -284,7 +284,7 @@ The architecture is designed for multi-language support:
 
 | Language | Status | Package |
 |----------|--------|---------|
-| TypeScript | ✅ Complete | `@ai-stats/sdk`, `@ai-stats/devtools` |
+| TypeScript | ✅ Complete | `@phaseo/sdk`, `@ai-stats/devtools` |
 | Python | 🚧 Planned | `ai-stats[devtools]` |
 | Go | 🚧 Planned | `github.com/ai-stats/ai-stats-go/devtools` |
 | C# | 🚧 Planned | `AIStats.Devtools` |
@@ -296,8 +296,8 @@ The architecture is designed for multi-language support:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `AI_STATS_DEVTOOLS` | `NODE_ENV !== 'production'` | Enable/disable devtools |
-| `AI_STATS_DEVTOOLS_DIR` | `.ai-stats-devtools` | Data directory path |
+| `PHASEO_DEVTOOLS` | `NODE_ENV !== 'production'` | Enable/disable devtools |
+| `PHASEO_DEVTOOLS_DIR` | `.ai-stats-devtools` | Data directory path |
 | `NODE_ENV` | - | Auto-disable in production |
 
 ## Security & Privacy
@@ -320,7 +320,7 @@ The architecture is designed for multi-language support:
 
 ### vs LangSmith
 
-| Feature | AI Stats Devtools | LangSmith |
+| Feature | Phaseo Devtools | LangSmith |
 |---------|-------------------|-----------|
 | Data Location | Local | Cloud |
 | Privacy | 100% private | Depends on plan |
@@ -330,7 +330,7 @@ The architecture is designed for multi-language support:
 
 ### vs OpenRouter Devtools
 
-| Feature | AI Stats | OpenRouter |
+| Feature | Phaseo | OpenRouter |
 |---------|----------|------------|
 | Models | 400+ | 200+ |
 | Languages | TS, Py, Go, etc. | Node.js only |

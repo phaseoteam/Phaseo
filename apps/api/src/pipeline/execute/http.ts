@@ -27,7 +27,7 @@ const STATUS: Record<ExecuteErrorCode, number> = {
 
 const FRIENDLY_DESCRIPTIONS: Partial<Record<ExecuteErrorCode, string>> = {
     unsupported_model_or_endpoint:
-        "Unsupported model or endpoint. Please check https://ai-stats.phaseo.app/models for your model id, or the API Reference at https://docs.ai-stats.phaseo.app/v1/api-reference for valid endpoints.",
+        "Unsupported model or endpoint. Please check https://phaseo.app/models for your model id, or the API Reference at https://docs.phaseo.app/v1/api-reference for valid endpoints.",
     provider_payment_required:
         "Oops, we forgot to pay our provider bills. Please try again in a few minutes.",
 };

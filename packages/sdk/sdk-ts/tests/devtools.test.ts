@@ -1,13 +1,13 @@
-import { AIStats } from "../src/index.js";
+import { Phaseo } from "../src/index.js";
 import { DevToolsWriter } from "../src/devtools/core.js";
 import { randomUUID } from "crypto";
 import * as fs from "fs";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 
-const TEST_DIR = `.ai-stats-devtools-test-${randomUUID()}`;
+const TEST_DIR = `.phaseo-devtools-test-${randomUUID()}`;
 
 describe("DevTools Integration", () => {
-  let client: AIStats;
+  let client: Phaseo;
   let writer: DevToolsWriter;
 
   beforeEach(() => {
@@ -17,8 +17,8 @@ describe("DevTools Integration", () => {
     }
 
     // Create client with devtools enabled
-    client = new AIStats({
-      apiKey: process.env.AI_STATS_API_KEY || "test-key",
+    client = new Phaseo({
+      apiKey: process.env.PHASEO_API_KEY || "test-key",
       devtools: {
         enabled: true,
         directory: TEST_DIR,
@@ -84,7 +84,7 @@ describe("DevTools Integration", () => {
       });
     };
 
-    client = new AIStats({
+    client = new Phaseo({
       apiKey: "test-key",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -169,7 +169,7 @@ describe("DevTools Integration", () => {
       throw new Error(`Unexpected fetch: ${method} ${url}`);
     };
 
-    const batchClient = new AIStats({
+    const batchClient = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -266,7 +266,7 @@ describe("DevTools Integration", () => {
       throw new Error(`Unexpected fetch: ${method} ${url}`);
     };
 
-    const generationClient = new AIStats({
+    const generationClient = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -325,7 +325,7 @@ describe("DevTools Integration", () => {
       throw new Error(`Unexpected fetch: ${method} ${url.toString()}`);
     };
 
-    const adminClient = new AIStats({
+    const adminClient = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -378,7 +378,7 @@ describe("DevTools Integration", () => {
       throw new Error(`Unexpected fetch: ${method} ${url}`);
     };
 
-    const adminClient = new AIStats({
+    const adminClient = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -459,7 +459,7 @@ describe("DevTools Integration", () => {
       throw new Error(`Unexpected fetch: ${method} ${url}`);
     };
 
-    const adminClient = new AIStats({
+    const adminClient = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -542,7 +542,7 @@ describe("DevTools Integration", () => {
       throw new Error(`Unexpected fetch: ${method} ${url.toString()}`);
     };
 
-    const adminClient = new AIStats({
+    const adminClient = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -595,7 +595,7 @@ describe("DevTools Integration", () => {
       throw new Error(`Unexpected fetch: ${method} ${url}`);
     };
 
-    const adminClient = new AIStats({
+    const adminClient = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -685,7 +685,7 @@ describe("DevTools Integration", () => {
       throw new Error(`Unexpected fetch: ${method} ${url}`);
     };
 
-    const adminClient = new AIStats({
+    const adminClient = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -814,7 +814,7 @@ describe("DevTools Integration", () => {
       throw new Error(`Unexpected fetch: ${method} ${url.toString()}`);
     };
 
-    const adminClient = new AIStats({
+    const adminClient = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -899,7 +899,7 @@ describe("DevTools Integration", () => {
       throw new Error(`Unexpected fetch: ${method} ${url}`);
     };
 
-    const adminClient = new AIStats({
+    const adminClient = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -959,7 +959,7 @@ describe("DevTools Integration", () => {
       throw new Error(`Unexpected fetch: ${method} ${url.toString()}`);
     };
 
-    const adminClient = new AIStats({
+    const adminClient = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -1027,7 +1027,7 @@ describe("DevTools Integration", () => {
       throw new Error(`Unexpected fetch: ${method} ${url.toString()}`);
     };
 
-    const adminClient = new AIStats({
+    const adminClient = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -1084,7 +1084,7 @@ describe("DevTools Integration", () => {
       throw new Error(`Unexpected fetch: ${method} ${url.toString()}`);
     };
 
-    const adminClient = new AIStats({
+    const adminClient = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -1130,7 +1130,7 @@ describe("DevTools Integration", () => {
       const url = new URL(String(input));
       const method = String(init?.method ?? "GET").toUpperCase();
 
-      if (`${url.origin}${url.pathname}` === "https://example.test/gateway/models" && method === "GET") {
+      if (`${url.origin}${url.pathname}` === "https://example.test/models" && method === "GET") {
         expect(url.searchParams.get("limit")).toBe("2");
         expect(url.searchParams.get("endpoints")).toBe("responses");
         return new Response(JSON.stringify({
@@ -1151,7 +1151,7 @@ describe("DevTools Integration", () => {
       throw new Error(`Unexpected fetch: ${method} ${url.toString()}`);
     };
 
-    const adminClient = new AIStats({
+    const adminClient = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -1235,7 +1235,7 @@ describe("DevTools Integration", () => {
       throw new Error(`Unexpected fetch: ${method} ${url}`);
     };
 
-    const videoClient = new AIStats({
+    const videoClient = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -1316,7 +1316,7 @@ describe("DevTools Integration", () => {
       throw new Error(`Unexpected fetch: ${method} ${url}`);
     };
 
-    const videoClient = new AIStats({
+    const videoClient = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -1354,7 +1354,7 @@ describe("DevTools Integration", () => {
       fs.rmSync(disabledDir, { recursive: true });
     }
 
-    const disabledClient = new AIStats({
+    const disabledClient = new Phaseo({
       apiKey: "test-key",
       devtools: {
         enabled: false,

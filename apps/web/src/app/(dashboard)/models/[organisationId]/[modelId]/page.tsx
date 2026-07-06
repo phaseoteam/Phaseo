@@ -168,8 +168,8 @@ export async function generateMetadata(props: {
 		description: buildModelPageMetadataDescription({
 			modelDescription,
 			suffix:
-				"Compare pricing, benchmarks, providers, latency signals, and compatibility details on AI Stats.",
-			fallback: `Compare pricing, benchmarks, providers, latency signals, and compatibility details for ${modelName} on AI Stats.`,
+				"Compare pricing, benchmarks, providers, latency signals, and compatibility details on Phaseo.",
+			fallback: `Compare pricing, benchmarks, providers, latency signals, and compatibility details for ${modelName} on Phaseo.`,
 		}),
 		path,
 		keywords: [
@@ -177,7 +177,7 @@ export async function generateMetadata(props: {
 			`${modelName} benchmarks`,
 			`${modelName} pricing`,
 			organisationName ? `${organisationName} AI` : null,
-			"AI Stats",
+			"Phaseo",
 			"AI model comparison",
 		].filter(Boolean) as string[],
 		imagePath,
@@ -239,7 +239,7 @@ export default async function Page({
 		"@context": "https://schema.org",
 		"@type": "Dataset",
 		name: `${organisationName} ${modelName}`.trim(),
-		description: `AI Stats profile for ${modelName} with pricing, benchmarks, providers, latency signals, and gateway compatibility details.`,
+		description: `Phaseo profile for ${modelName} with pricing, benchmarks, providers, latency signals, and gateway compatibility details.`,
 		url: absoluteUrl(getModelPath(modelId)),
 		creator: {
 			"@type": "Organization",

@@ -1,41 +1,36 @@
 {
-  "apiKeyEnv": "AI_STATS_API_KEY",
-  "baseUrlEnv": "AI_STATS_BASE_URL",
+  "apiKeyEnv": "PHASEO_API_KEY",
+  "baseUrlEnv": "PHASEO_BASE_URL",
   "defaultBaseUrl": "https://api.phaseo.app/v1",
-  "testModel": "openai/gpt-5-nano",
+  "testModel": "openai/gpt-5.4-nano",
   "operations": {
     "responses": {
-      "description": "Responses API test with gpt-5-nano",
+      "description": "Responses API test with gpt-5.4-nano",
       "endpoint": "/responses",
       "method": "POST",
       "body": {
-        "model": "openai/gpt-5-nano",
+        "model": "openai/gpt-5.4-nano",
         "input": "Hi",
-        "messages": [
-          {
-            "role": "user",
-            "content": "Hi"
-          }
-        ]
+        "max_output_tokens": 32
       },
       "expectStatus": 200,
       "validateResponse": {
-        "choices": "array",
-        "choices.0.message.content": "string"
+        "id": "string"
       }
     },
     "chat": {
-      "description": "Text generation test with gpt-5-nano",
+      "description": "Text generation test with gpt-5.4-nano",
       "endpoint": "/chat/completions",
       "method": "POST",
       "body": {
-        "model": "openai/gpt-5-nano",
+        "model": "openai/gpt-5.4-nano",
         "messages": [
           {
             "role": "user",
             "content": "Hi"
           }
-        ]
+        ],
+        "max_tokens": 32
       },
       "expectStatus": 200,
       "validateResponse": {
@@ -73,7 +68,7 @@
   },
   "constraints": {
     "onlyTextGeneration": true,
-    "requiredModel": "gpt-5-nano",
+    "requiredModel": "gpt-5.4-nano",
     "timeout": 30000
   }
 }

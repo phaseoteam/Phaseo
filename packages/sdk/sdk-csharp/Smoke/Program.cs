@@ -1,6 +1,6 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
-using AiStatsSdk;
+using PhaseoSdk;
 
 static Manifest LoadManifest()
 {
@@ -13,8 +13,8 @@ static Manifest LoadManifest()
 static HttpClient CreateHttp() => new() { Timeout = TimeSpan.FromSeconds(30) };
 
 var manifest = LoadManifest();
-var apiKeyEnv = manifest.ApiKeyEnv ?? "AI_STATS_API_KEY";
-var baseUrlEnv = manifest.BaseUrlEnv ?? "AI_STATS_BASE_URL";
+var apiKeyEnv = manifest.ApiKeyEnv ?? "PHASEO_API_KEY";
+var baseUrlEnv = manifest.BaseUrlEnv ?? "PHASEO_BASE_URL";
 var apiKey = Environment.GetEnvironmentVariable(apiKeyEnv);
 if (string.IsNullOrWhiteSpace(apiKey))
 {
@@ -41,7 +41,7 @@ if (!healthJson.RootElement.TryGetProperty("status", out _))
     throw new InvalidOperationException("health status missing");
 }
 
-var client = new AIStats(apiKey, baseUrl);
+var client = new Phaseo(apiKey, baseUrl);
 
 // Models
 var models = await client.ListModels();

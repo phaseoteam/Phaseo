@@ -1,17 +1,17 @@
 ---
 title: "Launch on the free router"
-description: "Start with ai-stats/free so your first integration can run without choosing a single fixed free model up front."
+description: "Start with phaseo/free so your first integration can run without choosing a single fixed free model up front."
 ---
 
-Use this recipe to get your first AI Stats integration running without picking a paid model yet.
+Use this recipe to get your first Phaseo integration running without picking a paid model yet.
 
-Instead of picking one free model yourself, send requests to `ai-stats/free`. AI Stats will choose an available free model that supports the request you are making.
+Instead of picking one free model yourself, send requests to `phaseo/free`. Phaseo will choose an available free model that supports the request you are making.
 
 ## When to use this
 
 - You want a working prototype before choosing a paid model.
 - You expect the best free option to change over time.
-- You want one stable model ID in application code while AI Stats handles free-provider changes behind the scenes.
+- You want one stable model ID in application code while Phaseo handles free-provider changes behind the scenes.
 
 ## Example request
 
@@ -21,19 +21,19 @@ curl https://api.phaseo.app/v1/responses \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "ai-stats/free",
+    "model": "phaseo/free",
     "input": "Summarize why provider-aware free routing helps prototypes.",
     "temperature": 0.2
   }'
 ```
 
 ```typescript TypeScript SDK
-import AIStats from "@ai-stats/sdk";
+import Phaseo from "@phaseo/sdk";
 
-const client = new AIStats({ apiKey: process.env.AI_STATS_API_KEY! });
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
-  model: "ai-stats/free",
+  model: "phaseo/free",
   input: "Summarize why provider-aware free routing helps prototypes.",
   temperature: 0.2,
 });
@@ -42,13 +42,13 @@ console.log(response.output_text);
 ```
 
 ```python Python SDK
-from ai_stats import AIStats
+from phaseo import Phaseo
 
-client = AIStats(api_key="YOUR_API_KEY")
+client = Phaseo(api_key="YOUR_API_KEY")
 
 response = client.generate_response(
     {
-        "model": "ai-stats/free",
+        "model": "phaseo/free",
         "input": "Summarize why provider-aware free routing helps prototypes.",
         "temperature": 0.2,
     }
@@ -64,14 +64,14 @@ import (
   "context"
   "fmt"
 
-  aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
+  aistats "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
 )
 
 func main() {
   client := aistats.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
 
   response, err := client.GenerateResponse(context.Background(), aistats.ResponsesRequest{
-    Model: "ai-stats/free",
+    Model: "phaseo/free",
     Input: map[string]interface{}{
       "role": "user",
       "content": []map[string]string{
@@ -94,11 +94,11 @@ func main() {
 using AiStatsSdk;
 using System.Collections.Generic;
 
-var client = new AIStats("YOUR_API_KEY");
+var client = new Phaseo("YOUR_API_KEY");
 
 var response = await client.GenerateResponse(new Dictionary<string, object>
 {
-    ["model"] = "ai-stats/free",
+    ["model"] = "phaseo/free",
     ["input"] = "Summarize why provider-aware free routing helps prototypes.",
     ["temperature"] = 0.2
 });
@@ -110,12 +110,12 @@ Console.WriteLine(response);
 <?php
 require 'vendor/autoload.php';
 
-use AIStats\Sdk\AIStats;
+use AIStats\Sdk\Phaseo;
 
-$client = new AIStats(getenv('AI_STATS_API_KEY') ?: 'YOUR_API_KEY');
+$client = new Phaseo(getenv('PHASEO_API_KEY') ?: 'YOUR_API_KEY');
 
 $response = $client->generateResponse([
-    'model' => 'ai-stats/free',
+    'model' => 'phaseo/free',
     'input' => 'Summarize why provider-aware free routing helps prototypes.',
     'temperature' => 0.2,
 ]);
@@ -124,12 +124,12 @@ print_r($response);
 ```
 
 ```ruby Ruby SDK
-require 'ai_stats_sdk'
+require 'phaseo_sdk'
 
-client = AIStatsSdk::AIStats.new(api_key: ENV.fetch('AI_STATS_API_KEY', 'YOUR_API_KEY'))
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY', 'YOUR_API_KEY'))
 
 response = client.generate_response(
-  model: 'ai-stats/free',
+  model: 'phaseo/free',
   input: 'Summarize why provider-aware free routing helps prototypes.',
   temperature: 0.2
 )
@@ -140,8 +140,8 @@ puts response
 
 ## What happens behind the scenes
 
-1. Your request goes to the shared `ai-stats/free` alias.
-2. AI Stats checks which free models can handle that request.
+1. Your request goes to the shared `phaseo/free` alias.
+2. Phaseo checks which free models can handle that request.
 3. One available free model is selected and used for the response.
 4. Request details still show the exact model that ran, so you can inspect or debug it later.
 
@@ -149,11 +149,11 @@ puts response
 
 - In **Gateway -> Usage**, open the request details and confirm which model was used.
 - If the request is blocked by workspace policy, check the request details to see which setting stopped it.
-- If no free model supports the feature you need, switch from `ai-stats/free` to a specific paid model instead of retrying the same request.
+- If no free model supports the feature you need, switch from `phaseo/free` to a specific paid model instead of retrying the same request.
 
 ## Production notes
 
-- Keep `ai-stats/free` for prototypes, demos, and low-stakes traffic.
+- Keep `phaseo/free` for prototypes, demos, and low-stakes traffic.
 - If you need predictable latency, output style, or provider choice, move to a specific model once you know what works best.
 - If you need stable prompt behavior across services, pair this recipe with [Presets](../guides/presets).
 

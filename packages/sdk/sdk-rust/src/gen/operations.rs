@@ -276,7 +276,7 @@ pub fn listFiles<T: Transport>(client: &Client<T>, path: &HashMap<String, String
 }
 
 pub fn listModels<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/gateway/models");
+	let resolved_path = String::from("/models");
 	client.request("GET", &resolved_path, body)
 }
 
@@ -296,7 +296,7 @@ pub fn listProviders<T: Transport>(client: &Client<T>, path: &HashMap<String, St
 }
 
 pub fn listTeamModels<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/gateway/models/me");
+	let resolved_path = String::from("/models/me");
 	client.request("GET", &resolved_path, body)
 }
 

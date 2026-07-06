@@ -1,9 +1,9 @@
 ---
 title: "Gateway Parity Review"
-description: "Understand how ready AI Stats is for migrations from OpenRouter, Vercel AI Gateway, and LLMGateway."
+description: "Understand how ready Phaseo is for migrations from OpenRouter, Vercel AI Gateway, and LLMGateway."
 ---
 
-Use this page to understand how ready AI Stats is for migrations from OpenRouter, Vercel AI Gateway, and LLMGateway.
+Use this page to understand how ready Phaseo is for migrations from OpenRouter, Vercel AI Gateway, and LLMGateway.
 
 This review is based on the current codebase, tests, SDKs, and docs in this repo.
 
@@ -18,14 +18,14 @@ This review is based on the current codebase, tests, SDKs, and docs in this repo
 
 ## Current parity status
 
-| Capability | OpenRouter | Vercel AI Gateway | LLMGateway | Current AI Stats status |
+| Capability | OpenRouter | Vercel AI Gateway | LLMGateway | Current Phaseo status |
 | --- | --- | --- | --- | --- |
 | Public migration guide | Yes | Yes | Yes | Public docs now include all three guides |
 | OpenAI-compatible base URL + key swap | Yes | Yes | Yes | Covered in migration docs and SDK examples |
 | Model-ID verification guidance | Yes | Yes | Yes | Covered in migration docs via `/v1/models` checks |
 | Batch + file migration readiness | Partial | Partial | Partial | Gateway/API/SDK/docs now support batch create/retrieve/cancel, owned files, and result download |
 | Routing and observability metadata | Strong | Medium | Medium | Usage UI, devtools, and batch responses expose `request_id`, `provider`, `pricing_lines`, and related metadata |
-| Public benchmark tooling | Strong | Medium | Medium | Internal benchmark tooling now compares AI Stats vs OpenRouter, LLMGateway, and Vercel AI Gateway, with aggregate and live compare support when benchmark keys are configured |
+| Public benchmark tooling | Strong | Medium | Medium | Internal benchmark tooling now compares Phaseo vs OpenRouter, LLMGateway, and Vercel AI Gateway, with aggregate and live compare support when benchmark keys are configured |
 | Vercel AI SDK compatibility proof | N/A | Strong across shipped modalities | N/A | Local compatibility tests now exist for language, streaming, embeddings, image, speech, and transcription flows |
 
 ## What the repo now clearly covers
@@ -54,7 +54,7 @@ OpenRouter currently has the deepest repo support among the reviewed competitors
 - OpenRouter-specific compatibility headers in the benchmark flow
 - existing product copy and internal compare UI built around the OpenRouter comparison path
 
-This does not mean every OpenRouter feature is matched. It means AI Stats currently gives you the clearest migration and validation path for that competitor.
+This does not mean every OpenRouter feature is matched. It means Phaseo currently gives you the clearest migration and validation path for that competitor.
 
 ### 3) Batch and async support is much stronger now
 
@@ -85,7 +85,7 @@ This means the migration story is no longer only "change the base URL." The loca
 
 The internal benchmark and compare tooling now supports:
 
-- AI Stats
+- Phaseo
 - OpenRouter
 - LLMGateway
 - Vercel AI Gateway
@@ -114,7 +114,7 @@ Treat those as follow-up validation work rather than assumed product failures.
 
 ## What still matters most
 
-AI Stats already has strong evidence for:
+Phaseo already has strong evidence for:
 
 - provider routing transparency
 - richer generation metadata

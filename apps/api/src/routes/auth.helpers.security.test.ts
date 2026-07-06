@@ -6,7 +6,7 @@ const state = vi.hoisted(() => ({
 
 vi.mock("@/runtime/env", () => ({
 	getBindings: () => ({
-		AI_STATS_THIRD_PARTY_OAUTH_ENABLED: undefined,
+		PHASEO_THIRD_PARTY_OAUTH_ENABLED: undefined,
 	}),
 	getSupabaseAdmin: () => ({
 		from(table: string) {

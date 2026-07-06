@@ -33,7 +33,7 @@ const RELEVANT_PATH_PREFIXES = [
   "packages/sdk/sdk-ruby/lib/ai_stats_sdk/model_ids.rb",
 ];
 const SDK_PACKAGES = [
-  "@ai-stats/sdk",
+  "@phaseo/sdk",
   "@ai-stats/py-sdk",
   "@ai-stats/go-sdk",
   "@ai-stats/csharp-sdk",

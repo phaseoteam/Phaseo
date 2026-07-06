@@ -16,12 +16,12 @@ export type SiteNotice = {
 };
 
 export const VERCEL_SECURITY_NOTICE_HREF =
-	"/announcements/security-notice-key-rotation-vercel-2026-04-19";
+	"/blog/security-notice-key-rotation-vercel-2026-04-19";
 
 export const SITE_NOTICES: SiteNotice[] = [
 	{
 		id: "vercel-april-2026-security-incident",
-		enabled: true,
+		enabled: false,
 		audience: "authenticated",
 		tone: "warning",
 		message:

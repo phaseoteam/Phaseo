@@ -1,28 +1,28 @@
 ---
 title: "Docs MCP"
-description: "Connect the AI Stats documentation MCP server to Codex, Claude Code, Cursor, or VS Code."
+description: "Connect the Phaseo documentation MCP server to Codex, Claude Code, Cursor, or VS Code."
 ---
 
-If you want your coding agent to answer AI Stats questions using the live docs instead of stale training data, connect the AI Stats documentation MCP server.
+If you want your coding agent to answer Phaseo questions using the live docs instead of stale training data, connect the Phaseo documentation MCP server.
 
 This MCP server is read-only. It helps agents search the docs and read full pages while they work.
 
 ## Server URL
 
-`https://ai-stats.phaseo.app/mcp`
+`https://docs.phaseo.app/mcp`
 
 ## What it gives you
 
-- live search across the AI Stats docs
+- live search across the Phaseo docs
 - full page content when an agent needs more detail
-- access to the hosted [skill.md](https://ai-stats.phaseo.app/skill.md) capability summary
+- access to the hosted [skill.md](https://docs.phaseo.app/skill.md) capability summary
 
 ## Codex
 
 Add the server:
 
 ```bash
-codex mcp add aiStatsDocs --url https://ai-stats.phaseo.app/mcp
+codex mcp add phaseoDocs --url https://docs.phaseo.app/mcp
 ```
 
 Check it:
@@ -36,13 +36,13 @@ codex mcp list
 Add the server for the current project:
 
 ```bash
-claude mcp add --transport http ai-stats-docs https://ai-stats.phaseo.app/mcp
+claude mcp add --transport http phaseo-docs https://docs.phaseo.app/mcp
 ```
 
 Make it available across all projects:
 
 ```bash
-claude mcp add --transport http --scope user ai-stats-docs https://ai-stats.phaseo.app/mcp
+claude mcp add --transport http --scope user phaseo-docs https://docs.phaseo.app/mcp
 ```
 
 Check it:
@@ -58,8 +58,8 @@ Use the contextual menu in the docs to install the MCP server in Cursor, or add 
 ```json
 {
   "mcpServers": {
-    "aiStatsDocs": {
-      "url": "https://ai-stats.phaseo.app/mcp"
+    "phaseoDocs": {
+      "url": "https://docs.phaseo.app/mcp"
     }
   }
 }
@@ -67,15 +67,15 @@ Use the contextual menu in the docs to install the MCP server in Cursor, or add 
 
 ## OpenCode
 
-Add the AI Stats docs server to `opencode.json`:
+Add the Phaseo docs server to `opencode.json`:
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
-    "aiStatsDocs": {
+    "phaseoDocs": {
       "type": "remote",
-      "url": "https://ai-stats.phaseo.app/mcp"
+      "url": "https://docs.phaseo.app/mcp"
     }
   }
 }
@@ -88,9 +88,9 @@ Use the contextual menu in the docs to install the MCP server in VS Code, or add
 ```json
 {
   "servers": {
-    "aiStatsDocs": {
+    "phaseoDocs": {
       "type": "http",
-      "url": "https://ai-stats.phaseo.app/mcp"
+      "url": "https://docs.phaseo.app/mcp"
     }
   }
 }
@@ -107,9 +107,9 @@ Use Docs MCP when you want your agent to:
 
 ## Good prompts
 
-- `Look up the Responses request format in the AI Stats docs and give me a minimal example.`
-- `Use the AI Stats docs MCP server to check how provider.sort works before you change this request.`
-- `Find the guardrails docs in AI Stats and summarize the parts that affect provider routing.`
+- `Look up the Responses request format in the Phaseo docs and give me a minimal example.`
+- `Use the Phaseo docs MCP server to check how provider.sort works before you change this request.`
+- `Find the guardrails docs in Phaseo and summarize the parts that affect provider routing.`
 
 ## Related guides
 

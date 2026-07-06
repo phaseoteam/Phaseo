@@ -57,10 +57,10 @@ import type { ShikiLang } from "@/components/(data)/model/quickstart/shiki";
 import { normalizePlaygroundMediaUrl } from "@/lib/utils/urlSafety";
 
 const PLAYGROUND_APP_HEADERS = {
-	"x-app-id": "ai-stats-playground",
-	"x-app-name": "AI Stats Playground",
-	"x-title": "AI Stats Playground",
-	"http-referer": "https://ai-stats.phaseo.app/models",
+	"x-app-id": "phaseo-playground",
+	"x-app-name": "Phaseo Playground",
+	"x-title": "Phaseo Playground",
+	"http-referer": "https://phaseo.app/models",
 };
 
 type ModelPlaygroundProps = {
@@ -102,7 +102,7 @@ type PlaygroundCodeSnippet = {
 	id: string;
 	label: string;
 	category:
-		| "AI Stats SDK"
+		| "Phaseo SDK"
 		| "OpenAI SDK"
 		| "Anthropic SDK"
 		| "HTTP"
@@ -114,7 +114,7 @@ type PlaygroundCodeSnippet = {
 };
 
 const CODE_CATEGORY_ORDER: PlaygroundCodeSnippet["category"][] = [
-	"AI Stats SDK",
+	"Phaseo SDK",
 	"OpenAI SDK",
 	"Anthropic SDK",
 	"HTTP",
@@ -841,11 +841,11 @@ function buildPlaygroundCodeSnippets({
 			description: "Lowest-level HTTP request against the gateway.",
 			lang: "bash",
 			code: `# 1) Set your key
-export AI_STATS_API_KEY="aistats_***"
+export PHASEO_API_KEY="phaseo_v1_sk_..."
 
 # 2) Send a request
 curl -s ${endpointUrl} \\
-  -H "Authorization: Bearer $AI_STATS_API_KEY" \\
+  -H "Authorization: Bearer $PHASEO_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '${payloadJson}'`,
 		},
@@ -855,7 +855,7 @@ curl -s ${endpointUrl} \\
 			category: "HTTP",
 			description: "OpenAI-compatible call using native fetch in TS/Node.",
 			lang: "ts",
-			code: `const apiKey = process.env.AI_STATS_API_KEY;
+			code: `const apiKey = process.env.PHASEO_API_KEY;
 
 const response = await fetch("${endpointUrl}", {
   method: "POST",
@@ -877,7 +877,7 @@ console.log(data);`,
 			category: "HTTP",
 			description: "OpenAI-compatible call using native fetch in JavaScript.",
 			lang: "js",
-			code: `const apiKey = process.env.AI_STATS_API_KEY;
+			code: `const apiKey = process.env.PHASEO_API_KEY;
 
 const response = await fetch("${endpointUrl}", {
   method: "POST",
@@ -902,7 +902,7 @@ console.log(data);`,
 			code: `import os
 import requests
 
-api_key = os.environ.get("AI_STATS_API_KEY")
+api_key = os.environ.get("PHASEO_API_KEY")
 url = "${endpointUrl}"
 payload = ${payloadJsonPython}
 
@@ -930,7 +930,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ${payloadJson}
 "#;
 
-    let api_key = std::env::var("AI_STATS_API_KEY")?;
+    let api_key = std::env::var("PHASEO_API_KEY")?;
     let client = reqwest::Client::new();
 
     let response = client
@@ -971,7 +971,7 @@ func main() {
         panic(err)
     }
 
-    req.Header.Set("Authorization", "Bearer "+os.Getenv("AI_STATS_API_KEY"))
+    req.Header.Set("Authorization", "Bearer "+os.Getenv("PHASEO_API_KEY"))
     req.Header.Set("Content-Type", "application/json")
 
     resp, err := (&http.Client{}).Do(req)
@@ -993,7 +993,7 @@ func main() {
 			code: `using System.Net.Http.Headers;
 using System.Text;
 
-var apiKey = Environment.GetEnvironmentVariable("AI_STATS_API_KEY");
+var apiKey = Environment.GetEnvironmentVariable("PHASEO_API_KEY");
 
 using var http = new HttpClient();
 using var request = new HttpRequestMessage(HttpMethod.Post, "${endpointUrl}");
@@ -1020,7 +1020,7 @@ import java.net.http.HttpResponse;
 
 public class Main {
     public static void main(String[] args) throws Exception {
-        String apiKey = System.getenv("AI_STATS_API_KEY");
+        String apiKey = System.getenv("PHASEO_API_KEY");
         String payload = """
 ${payloadJson}
 """;
@@ -1046,7 +1046,7 @@ ${payloadJson}
 			description: "OpenAI-compatible call using PHP cURL.",
 			lang: "php",
 			code: `<?php
-$apiKey = getenv("AI_STATS_API_KEY");
+$apiKey = getenv("PHASEO_API_KEY");
 $payload = <<<'JSON'
 ${payloadJson}
 JSON;
@@ -1081,7 +1081,7 @@ require "uri"
 
 uri = URI("${endpointUrl}")
 request = Net::HTTP::Post.new(uri)
-request["Authorization"] = "Bearer #{ENV["AI_STATS_API_KEY"]}"
+request["Authorization"] = "Bearer #{ENV["PHASEO_API_KEY"]}"
 request["Content-Type"] = "application/json"
 request.body = <<~JSON
 ${payloadJson}
@@ -1097,13 +1097,13 @@ puts response.body`,
 			id: "openai-node",
 			label: "TypeScript",
 			category: "OpenAI SDK",
-			description: "OpenAI JavaScript SDK pointed at AI Stats Gateway.",
+			description: "OpenAI JavaScript SDK pointed at Phaseo Gateway.",
 			lang: "ts",
 			installCommand: "npm install openai",
 			code: `import OpenAI from "openai";
 
 const client = new OpenAI({
-  apiKey: process.env.AI_STATS_API_KEY,
+  apiKey: process.env.PHASEO_API_KEY,
   baseURL: "${BASE_URL}",
 });
 
@@ -1117,13 +1117,13 @@ console.log(response);`,
 			id: "openai-javascript",
 			label: "JavaScript",
 			category: "OpenAI SDK",
-			description: "OpenAI JavaScript SDK (CommonJS) for AI Stats Gateway.",
+			description: "OpenAI JavaScript SDK (CommonJS) for Phaseo Gateway.",
 			lang: "js",
 			installCommand: "npm install openai",
 			code: `const OpenAI = require("openai");
 
 const client = new OpenAI({
-  apiKey: process.env.AI_STATS_API_KEY,
+  apiKey: process.env.PHASEO_API_KEY,
   baseURL: "${BASE_URL}",
 });
 
@@ -1137,14 +1137,14 @@ console.log(response);`,
 			id: "openai-python",
 			label: "Python",
 			category: "OpenAI SDK",
-			description: "OpenAI Python SDK pointed at AI Stats Gateway.",
+			description: "OpenAI Python SDK pointed at Phaseo Gateway.",
 			lang: "python",
 			installCommand: "pip install openai",
 			code: `import os
 from openai import OpenAI
 
 client = OpenAI(
-    api_key=os.environ.get("AI_STATS_API_KEY"),
+    api_key=os.environ.get("PHASEO_API_KEY"),
     base_url="${BASE_URL}",
 )
 
@@ -1157,13 +1157,13 @@ print(response)`,
 			id: "openai-csharp",
 			label: "C#",
 			category: "OpenAI SDK",
-			description: "OpenAI .NET SDK configured to use AI Stats Gateway.",
+			description: "OpenAI .NET SDK configured to use Phaseo Gateway.",
 			lang: "csharp",
 			installCommand: "dotnet add package OpenAI",
 			code: `using OpenAI;
 using OpenAI.Responses;
 
-var apiKey = Environment.GetEnvironmentVariable("AI_STATS_API_KEY");
+var apiKey = Environment.GetEnvironmentVariable("PHASEO_API_KEY");
 var client = new OpenAIClient(apiKey, new OpenAIClientOptions
 {
     Endpoint = new Uri("${BASE_URL}")
@@ -1182,7 +1182,7 @@ Console.WriteLine(result.Value.OutputText);`,
 			id: "openai-go",
 			label: "Go",
 			category: "OpenAI SDK",
-			description: "OpenAI Go SDK configured to use AI Stats Gateway.",
+			description: "OpenAI Go SDK configured to use Phaseo Gateway.",
 			lang: "go",
 			installCommand: "go get github.com/openai/openai-go",
 			code: `package main
@@ -1198,7 +1198,7 @@ import (
 
 func main() {
     client := openai.NewClient(
-        option.WithAPIKey(os.Getenv("AI_STATS_API_KEY")),
+        option.WithAPIKey(os.Getenv("PHASEO_API_KEY")),
         option.WithBaseURL("${BASE_URL}"),
     )
 
@@ -1219,7 +1219,7 @@ func main() {
 			id: "openai-java",
 			label: "Java",
 			category: "OpenAI SDK",
-			description: "OpenAI Java SDK configured for AI Stats Gateway.",
+			description: "OpenAI Java SDK configured for Phaseo Gateway.",
 			lang: "java",
 			installCommand: "./mvnw dependency:get -Dartifact=com.openai:openai-java:latest.release",
 			code: `import com.openai.client.OpenAIClient;
@@ -1230,7 +1230,7 @@ import com.openai.models.responses.ResponseCreateParams;
 public class Main {
     public static void main(String[] args) {
         // Set env vars before running:
-        // OPENAI_API_KEY=$AI_STATS_API_KEY
+        // OPENAI_API_KEY=$PHASEO_API_KEY
         // OPENAI_BASE_URL=${BASE_URL}
         OpenAIClient client = OpenAIOkHttpClient.fromEnv();
 
@@ -1248,13 +1248,13 @@ public class Main {
 			id: "anthropic-node",
 			label: "TypeScript",
 			category: "Anthropic SDK",
-			description: "Anthropic JavaScript SDK configured to use AI Stats Gateway.",
+			description: "Anthropic JavaScript SDK configured to use Phaseo Gateway.",
 			lang: "ts",
 			installCommand: "npm install @anthropic-ai/sdk",
 			code: `import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
-  apiKey: process.env.AI_STATS_API_KEY,
+  apiKey: process.env.PHASEO_API_KEY,
   baseURL: "${BASE_URL}",
 });
 
@@ -1270,13 +1270,13 @@ console.log(response);`,
 			id: "anthropic-javascript",
 			label: "JavaScript",
 			category: "Anthropic SDK",
-			description: "Anthropic JavaScript SDK (CommonJS) for AI Stats Gateway.",
+			description: "Anthropic JavaScript SDK (CommonJS) for Phaseo Gateway.",
 			lang: "js",
 			installCommand: "npm install @anthropic-ai/sdk",
 			code: `const Anthropic = require("@anthropic-ai/sdk");
 
 const client = new Anthropic({
-  apiKey: process.env.AI_STATS_API_KEY,
+  apiKey: process.env.PHASEO_API_KEY,
   baseURL: "${BASE_URL}",
 });
 
@@ -1292,14 +1292,14 @@ console.log(response);`,
 			id: "anthropic-python",
 			label: "Python",
 			category: "Anthropic SDK",
-			description: "Anthropic Python SDK configured to use AI Stats Gateway.",
+			description: "Anthropic Python SDK configured to use Phaseo Gateway.",
 			lang: "python",
 			installCommand: "pip install anthropic",
 			code: `import os
 from anthropic import Anthropic
 
 client = Anthropic(
-    api_key=os.environ.get("AI_STATS_API_KEY"),
+    api_key=os.environ.get("PHASEO_API_KEY"),
     base_url="${BASE_URL}",
 )
 
@@ -1314,14 +1314,14 @@ print(response)`,
 		{
 			id: "aistats-typescript",
 			label: "TypeScript",
-			category: "AI Stats SDK",
-			description: "Official AI Stats SDK for TypeScript.",
+			category: "Phaseo SDK",
+			description: "Official Phaseo SDK for TypeScript.",
 			lang: "ts",
-			installCommand: "npm install @ai-stats/sdk",
-			code: `import AIStats from "@ai-stats/sdk";
+			installCommand: "npm install @phaseo/sdk",
+			code: `import Phaseo from "@phaseo/sdk";
 
-const client = new AIStats({
-  apiKey: process.env.AI_STATS_API_KEY,
+const client = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY,
 });
 
 const response = await client.generateResponse(
@@ -1333,14 +1333,14 @@ console.log(response);`,
 		{
 			id: "aistats-python",
 			label: "Python",
-			category: "AI Stats SDK",
-			description: "Official AI Stats SDK for Python.",
+			category: "Phaseo SDK",
+			description: "Official Phaseo SDK for Python.",
 			lang: "python",
-			installCommand: "pip install ai-stats-py-sdk",
+			installCommand: "pip install phaseo",
 			code: `import os
-from ai_stats import AIStats
+from phaseo import Phaseo
 
-client = AIStats(api_key=os.environ.get("AI_STATS_API_KEY"))
+client = Phaseo(api_key=os.environ.get("PHASEO_API_KEY"))
 
 payload = ${payloadJsonPython}
 response = client.generate_response(payload)
@@ -1350,22 +1350,22 @@ print(response)`,
 		{
 			id: "aistats-go",
 			label: "Go",
-			category: "AI Stats SDK",
-			description: "Official AI Stats SDK for Go.",
+			category: "Phaseo SDK",
+			description: "Official Phaseo SDK for Go.",
 			lang: "go",
 			installCommand:
-				"go get github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go@latest",
+				"go get github.com/phaseoteam/Phaseo/packages/sdk/sdk-go@latest",
 			code: `package main
 
 import (
     "context"
     "encoding/json"
     "fmt"
-    aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
+    aistats "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
 )
 
 func main() {
-    client, err := aistats.NewAIStatsFromEnv()
+    client, err := aistats.NewPhaseoFromEnv()
     if err != nil {
         panic(err)
     }
@@ -1387,15 +1387,15 @@ func main() {
 		{
 			id: "aistats-csharp",
 			label: "C#",
-			category: "AI Stats SDK",
-			description: "Official AI Stats SDK for C#.",
+			category: "Phaseo SDK",
+			description: "Official Phaseo SDK for C#.",
 			lang: "csharp",
-			installCommand: "dotnet add package AI.Stats.Sdk",
+			installCommand: "dotnet add package Phaseo.Sdk",
 			code: `using System.Collections.Generic;
 using System.Text.Json;
 using AiStatsSdk;
 
-var client = new AIStats();
+var client = new Phaseo();
 var payload = JsonSerializer.Deserialize<Dictionary<string, object>>("""
 ${payloadJson}
 """);
@@ -1414,8 +1414,8 @@ Console.WriteLine(JsonSerializer.Serialize(response, new JsonSerializerOptions
 		{
 			id: "aistats-php",
 			label: "PHP",
-			category: "AI Stats SDK",
-			description: "Official AI Stats SDK for PHP.",
+			category: "Phaseo SDK",
+			description: "Official Phaseo SDK for PHP.",
 			lang: "php",
 			installCommand: "composer require ai-stats/php-sdk",
 			code: `<?php
@@ -1423,7 +1423,7 @@ require "vendor/autoload.php";
 
 use AIStats\\Sdk\\AIStats;
 
-$client = new AIStats(apiKey: getenv("AI_STATS_API_KEY"));
+$client = new Phaseo(apiKey: getenv("PHASEO_API_KEY"));
 $payload = json_decode(<<<'JSON'
 ${payloadJson}
 JSON, true, 512, JSON_THROW_ON_ERROR);
@@ -1441,14 +1441,14 @@ echo json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), PHP_EOL
 		{
 			id: "aistats-ruby",
 			label: "Ruby",
-			category: "AI Stats SDK",
-			description: "Official AI Stats SDK for Ruby.",
+			category: "Phaseo SDK",
+			description: "Official Phaseo SDK for Ruby.",
 			lang: "ruby",
-			installCommand: "gem install ai_stats_sdk",
+			installCommand: "gem install phaseo_sdk",
 			code: `require "json"
-require "ai_stats_sdk"
+require "phaseo_sdk"
 
-client = AIStatsSdk::AIStats.new
+client = PhaseoSdk::Phaseo.new
 payload = JSON.parse(<<~JSON)
 ${payloadJson}
 JSON
@@ -1539,7 +1539,7 @@ export default function ModelPlayground({
 	const [moderationError, setModerationError] = useState<string | null>(null);
 	const [isCodeDialogOpen, setIsCodeDialogOpen] = useState(false);
 	const [selectedCodeCategory, setSelectedCodeCategory] =
-		useState<PlaygroundCodeSnippet["category"]>("AI Stats SDK");
+		useState<PlaygroundCodeSnippet["category"]>("Phaseo SDK");
 	const [selectedCodeSnippetId, setSelectedCodeSnippetId] = useState(
 		"aistats-typescript",
 	);
@@ -3104,7 +3104,7 @@ export default function ModelPlayground({
 							<DialogTitle>Get Code</DialogTitle>
 							<DialogDescription>
 								Ready-to-copy snippets for {modelName} across raw HTTP,
-								OpenAI SDK, and AI Stats SDK integrations.
+								OpenAI SDK, and Phaseo SDK integrations.
 							</DialogDescription>
 						</DialogHeader>
 

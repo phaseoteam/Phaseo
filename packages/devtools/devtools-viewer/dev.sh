@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# AI Stats Devtools - Development Script
+# Phaseo Devtools - Development Script
 # Quick start script for local development
 
 set -e
 
-echo "🚀 Starting AI Stats Devtools Development Environment"
+echo "🚀 Starting Phaseo Devtools Development Environment"
 echo ""
 
 # Check if node_modules exists

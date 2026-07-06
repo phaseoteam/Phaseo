@@ -37,7 +37,7 @@ Keep the first output shape small enough that operators can inspect it quickly.
 ## 3. Create the preset-driven agent
 
 ```ts
-import { createAgent } from "@ai-stats/agent-sdk";
+import { createAgent } from "@phaseo/agent-sdk";
 
 const supportTriageAgent = createAgent<string, SupportTriageDecision>({
   id: "support-triage-agent",
@@ -64,11 +64,11 @@ Use adapter defaults for the parts that should stay fixed across every triage ru
 ```ts
 import {
   createGatewayAgentClient,
-} from "@ai-stats/agent-sdk";
+} from "@phaseo/agent-sdk";
 
 const client = createGatewayAgentClient({
   clientOptions: {
-    apiKey: process.env.AI_STATS_API_KEY!,
+    apiKey: process.env.PHASEO_API_KEY!,
   },
   responseFormat: {
     type: "json_schema",
@@ -132,7 +132,7 @@ Do not hide failures by swallowing them inside the agent callback chain.
 Instead, catch `AgentGatewayError` explicitly:
 
 ```ts
-import { AgentGatewayError } from "@ai-stats/agent-sdk";
+import { AgentGatewayError } from "@phaseo/agent-sdk";
 
 try {
   await supportTriageAgent.run({

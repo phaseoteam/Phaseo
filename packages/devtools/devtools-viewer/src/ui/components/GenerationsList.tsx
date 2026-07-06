@@ -154,12 +154,12 @@ export function GenerationsList({ selectedId, onSelect }: GenerationsListProps) 
         <BarChart3 className="h-10 w-10 text-muted-foreground mb-4" />
         <div className="text-sm font-medium text-foreground mb-2">No Generations Yet</div>
         <p className="text-xs text-muted-foreground max-w-xs">
-          Make API requests with the AI Stats SDK to see them appear here in real-time.
+          Make API requests with the Phaseo SDK to see them appear here in real-time.
         </p>
         <div className="mt-6 rounded-xl border border-border/60 bg-card/80 p-4 text-left text-xs max-w-xs">
           <div className="font-medium mb-2">Quick Start:</div>
           <code className="block text-[10px] bg-muted/60 p-2 rounded">
-            import {"{"} AIStats {"}"} from '@ai-stats/sdk'<br/>
+            import {"{"} AIStats {"}"} from '@phaseo/sdk'<br/>
             const client = new AIStats()
           </code>
         </div>

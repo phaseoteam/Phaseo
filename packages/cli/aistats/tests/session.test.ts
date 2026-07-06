@@ -10,11 +10,11 @@ test("prefers OS-backed storage on supported platforms", () => {
 
 test("allows overriding the session backend", () => {
 	assert.equal(
-		preferredSessionBackend({ AI_STATS_SESSION_BACKEND: "file" } as NodeJS.ProcessEnv, "win32"),
+		preferredSessionBackend({ PHASEO_SESSION_BACKEND: "file" } as NodeJS.ProcessEnv, "win32"),
 		"file",
 	);
 	assert.equal(
-		preferredSessionBackend({ AI_STATS_SESSION_BACKEND: "os" } as NodeJS.ProcessEnv, "linux"),
+		preferredSessionBackend({ PHASEO_SESSION_BACKEND: "os" } as NodeJS.ProcessEnv, "linux"),
 		"secret-service",
 	);
 });

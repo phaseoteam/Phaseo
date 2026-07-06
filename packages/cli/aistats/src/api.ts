@@ -21,7 +21,7 @@ export function parseScopeArgument(raw?: string): string {
 }
 
 export function normalizeApiRoot(input?: string): string {
-	const raw = input || process.env.AI_STATS_API_URL || DEFAULT_API_URL;
+	const raw = input || process.env.PHASEO_API_URL || DEFAULT_API_URL;
 	return raw.replace(/\/+$/, "").replace(/\/v1$/, "");
 }
 
@@ -87,7 +87,7 @@ export async function refreshSession(session: Session): Promise<Session> {
 	});
 	const body = await parseJson(response);
 	if (!response.ok) {
-		throw new Error(typeof body?.error_description === "string" ? body.error_description : "Failed to refresh AI Stats session");
+		throw new Error(typeof body?.error_description === "string" ? body.error_description : "Failed to refresh Phaseo session");
 	}
 	const next: Session = {
 		accessToken: body.access_token,
@@ -102,7 +102,7 @@ export async function refreshSession(session: Session): Promise<Session> {
 
 export async function getSessionAccessToken(): Promise<Session> {
 	const session = await readSession();
-	if (!session) throw new Error("Not logged in. Run `aistats login` first.");
+	if (!session) throw new Error("Not logged in. Run `phaseo login` first.");
 	if (session.expiresAt - Date.now() < 60_000) {
 		return refreshSession(session);
 	}

@@ -1,16 +1,16 @@
 ---
 title: "Images (AI SDK)"
-description: "Generate images with Vercel AI SDK and the AI Stats provider."
+description: "Generate images with Vercel AI SDK and the Phaseo provider."
 ---
 
-Use `generateImage` with `aiStats.imageModel(...)`.
+Use `generateImage` with `phaseo.imageModel(...)`.
 
 ```ts
-import { aiStats } from "@ai-stats/ai-sdk-provider";
+import { phaseo } from "@phaseo/ai-sdk-provider";
 import { generateImage } from "ai";
 
 const result = await generateImage({
-  model: aiStats.imageModel("openai/gpt-image-1"),
+  model: phaseo.imageModel("openai/gpt-image-1"),
   prompt: "A minimalist poster of a lighthouse at dawn.",
   size: "1024x1024",
 });

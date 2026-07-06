@@ -3,7 +3,7 @@ require_relative "../lib/index"
 
 class BatchesTest < Minitest::Test
   def test_create_batch_returns_payload
-    client = AIStatsSdk::AIStats.new(
+    client = PhaseoSdk::Phaseo.new(
       api_key: "test",
       enable_deprecation_warnings: false
     )
@@ -43,7 +43,7 @@ class BatchesTest < Minitest::Test
   end
 
   def test_retrieve_batch_returns_payload
-    client = AIStatsSdk::AIStats.new(
+    client = PhaseoSdk::Phaseo.new(
       api_key: "test",
       enable_deprecation_warnings: false
     )
@@ -75,7 +75,7 @@ class BatchesTest < Minitest::Test
   end
 
   def test_cancel_batch_returns_payload
-    client = AIStatsSdk::AIStats.new(
+    client = PhaseoSdk::Phaseo.new(
       api_key: "test",
       enable_deprecation_warnings: false
     )
@@ -102,20 +102,20 @@ class BatchesTest < Minitest::Test
   end
 
   def test_cancel_batch_surfaces_request_errors
-    client = AIStatsSdk::AIStats.new(
+    client = PhaseoSdk::Phaseo.new(
       api_key: "test",
       enable_deprecation_warnings: false
     )
 
     client.raw_client.define_singleton_method(:request) do |**_args|
-      raise AiStats::Gen::RequestError.new(
+      raise Phaseo::Gen::RequestError.new(
         status_code: 404,
         status_message: "Not Found",
         response_body: "{\"error\":\"not found\"}"
       )
     end
 
-    error = assert_raises(AiStats::Gen::RequestError) do
+    error = assert_raises(Phaseo::Gen::RequestError) do
       client.cancel_batch("batch_missing_123")
     end
 

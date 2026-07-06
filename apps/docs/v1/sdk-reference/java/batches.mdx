@@ -3,14 +3,14 @@ title: "Batches"
 description: "Call /batches with the Java SDK."
 ---
 
-**Methods**: `AIStats#createBatch(...)`, `AIStats#retrieveBatch(...)`, `AIStats#cancelBatch(...)`, `AIStats#getAsyncJobWebSocketUrl(...)`, `AIStats#getBatchWebSocketUrl(...)`, `client.asyncJobs.websocketUrl(...)`
+**Methods**: `Phaseo#createBatch(...)`, `Phaseo#retrieveBatch(...)`, `Phaseo#cancelBatch(...)`, `Phaseo#getAsyncJobWebSocketUrl(...)`, `Phaseo#getBatchWebSocketUrl(...)`, `client.asyncJobs.websocketUrl(...)`
 
 ```java
-import ai.stats.sdk.AIStats;
+import app.phaseo.sdk.Phaseo;
 import java.util.HashMap;
 import java.util.Map;
 
-AIStats client = new AIStats(apiKey, "https://api.phaseo.app/v1");
+Phaseo client = new Phaseo(apiKey, "https://api.phaseo.app/v1");
 
 Map<String, Object> request = new HashMap<>();
 request.put("endpoint", "responses");
@@ -33,7 +33,7 @@ System.out.println(websocketUrl);
 - `endpoint` (required): Target endpoint for batch items such as `responses`.
 - `input_file_id` (required): File id uploaded through the files API.
 - `completion_window`: Upstream batch completion window such as `24h`.
-- `session_id`: Optional AI Stats grouping id for logs, sessions, and investigate tooling.
+- `session_id`: Optional Phaseo grouping id for logs, sessions, and investigate tooling.
 - `webhook`: Optional webhook configuration for async lifecycle notifications.
 - `metadata`: Optional object persisted with the batch.
 

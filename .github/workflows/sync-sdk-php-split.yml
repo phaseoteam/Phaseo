@@ -41,7 +41,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          split_repo="${PHP_SDK_SPLIT_REPO:-AI-Stats/ai-stats-php-sdk}"
+          split_repo="${PHP_SDK_SPLIT_REPO:-phaseoteam/phaseo-php-sdk}"
           split_remote_url="https://x-access-token:${PHP_SDK_SPLIT_REPO_TOKEN}@github.com/${split_repo}.git"
 
           git remote add split "$split_remote_url"

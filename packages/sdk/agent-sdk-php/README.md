@@ -1,18 +1,18 @@
-# AI Stats Agent SDK (PHP)
+# Phaseo Agent SDK (PHP)
 
-`ai-stats/agent-sdk-php` is a minimal PHP agent runtime for AI Stats Gateway.
+`phaseo/agent-sdk` is a minimal PHP agent runtime for Phaseo Gateway.
 
 It provides:
 
 - `AgentSdk::createAgent(...)`
 - `AgentSdk::defineTool(...)`
 - `AgentSdk::createGatewayAgentClient(...)`
-- a bounded tool loop on top of the AI Stats `responses` API
+- a bounded tool loop on top of the Phaseo `responses` API
 
 ## Install
 
 ```bash
-composer require ai-stats/php-sdk ai-stats/agent-sdk-php
+composer require phaseo/sdk phaseo/agent-sdk
 ```
 
 ## Quickstart
@@ -21,8 +21,8 @@ composer require ai-stats/php-sdk ai-stats/agent-sdk-php
 <?php
 require "vendor/autoload.php";
 
-use AIStats\AgentSdk\AgentDefinition;
-use AIStats\AgentSdk\AgentSdk;
+use Phaseo\AgentSdk\AgentDefinition;
+use Phaseo\AgentSdk\AgentSdk;
 
 $agent = AgentSdk::createAgent(new AgentDefinition(
     id: "quickstart-agent",

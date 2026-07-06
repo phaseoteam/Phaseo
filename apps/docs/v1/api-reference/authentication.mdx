@@ -6,7 +6,7 @@ icon: "key"
 
 All Gateway requests require a bearer API key.
 
-Create and manage keys in the AI Stats dashboard.
+Create and manage keys in the Phaseo dashboard.
 
 <Note>
 Calls to `:free` models can run with zero deposited credits. Paid-model calls require available wallet balance.
@@ -28,13 +28,13 @@ curl https://api.phaseo.app/v1/responses \
 
 ## Key format and handling
 
-- Key format: `aistats_v1_sk_<kid>_<secret>`
+- Key format: `phaseo_v1_sk_<kid>_<secret>`
 - Store keys in a secrets manager, not in browser code.
 - Use separate keys per app/environment for safer rotation.
 
 ## Management keys
 
-Management API keys are created and managed in the AI Stats dashboard, not through the public API.
+Management API keys are created and managed in the Phaseo dashboard, not through the public API.
 
 Use them for elevated administration endpoints such as [Credits](./endpoint/credits) and [Activity](./endpoint/activity), and for future control-plane APIs like guardrails, key management, and workspace management.
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-AI Stats Gateway Python Quickstart
+Phaseo Gateway Python Quickstart
 
 Standard-library-only reference CLI for control + generation surfaces.
 """
@@ -36,11 +36,11 @@ def load_local_env() -> None:
 
 load_local_env()
 
-BASE_URL = os.getenv("AI_STATS_BASE_URL", "https://api.phaseo.app/v1").rstrip("/")
-API_KEY = os.getenv("AI_STATS_API_KEY", "")
-DEFAULT_MODEL = os.getenv("AI_STATS_MODEL", "openai/gpt-5-nano-2025-08-07")
-APP_TITLE = os.getenv("AI_STATS_APP_TITLE", "AI Stats Python Quickstart")
-HTTP_REFERER = os.getenv("AI_STATS_HTTP_REFERER", "http://localhost")
+BASE_URL = os.getenv("PHASEO_BASE_URL") or "https://api.phaseo.app/v1".rstrip("/")
+API_KEY = os.getenv("PHASEO_API_KEY") or ""
+DEFAULT_MODEL = os.getenv("PHASEO_MODEL") or os.getenv("PHASEO_MODEL") or "openai/gpt-5-nano-2025-08-07"
+APP_TITLE = os.getenv("PHASEO_APP_TITLE") or os.getenv("PHASEO_APP_TITLE") or "Phaseo Python Quickstart"
+HTTP_REFERER = os.getenv("PHASEO_HTTP_REFERER") or os.getenv("PHASEO_HTTP_REFERER") or "http://localhost"
 
 def gateway_request(
     method: str,
@@ -138,7 +138,7 @@ def run_smoke() -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="AI Stats Gateway Python quickstart CLI")
+    parser = argparse.ArgumentParser(description="Phaseo Gateway Python quickstart CLI")
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("smoke", help="Run control + responses smoke checks")
@@ -201,7 +201,7 @@ def main() -> int:
     args = parser.parse_args()
 
     if not API_KEY:
-        print("Missing AI_STATS_API_KEY. Set it in .env.local or environment.", file=sys.stderr)
+        print("Missing PHASEO_API_KEY. Set it in .env.local or environment.", file=sys.stderr)
         return 1
 
     if args.command == "smoke":

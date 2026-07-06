@@ -1,6 +1,6 @@
 ---
 title: "C# SDK (preview)"
-description: "Local-preview C# wrapper for the AI Stats API."
+description: "Local-preview C# wrapper for the Phaseo API."
 ---
 
 <Note type="warning">
@@ -10,8 +10,8 @@ description: "Local-preview C# wrapper for the AI Stats API."
 The local wrapper at `packages/sdk/sdk-csharp/Client.cs` currently exposes high-level helpers for chat, responses, Anthropic messages, images, audio, embeddings, moderations, files, batches, videos, generations, models/providers/endpoints/organisations/pricing, API-key discovery and lifecycle mutations, workspace/current-key lifecycle helpers, pricing calculation, activity/credits/analytics, health checks, model lifecycle validation, and async-job websocket URLs through both direct helpers and `client.AsyncJobs.WebSocketUrl(...)`.
 
 ```csharp
-using AiStatsSdk;
+using PhaseoSdk;
 
-var client = new AIStats("YOUR_KEY");
+var client = new Phaseo("YOUR_KEY");
 var models = await client.ListModels(new Dictionary<string, string> { ["limit"] = "5" });
 ```

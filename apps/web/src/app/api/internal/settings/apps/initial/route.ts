@@ -27,10 +27,14 @@ type AppQueryResult = {
 };
 
 const INTERNAL_APP_TITLES = new Set([
+	"phaseo chat",
+	"phaseo playground",
 	"ai stats chat",
 	"ai stats playground",
 ]);
 const INTERNAL_APP_KEY_PREFIXES = [
+	"phaseo-chat",
+	"phaseo-playground",
 	"ai-stats-chat",
 	"aistats-chat",
 	"ai-stats-playground",

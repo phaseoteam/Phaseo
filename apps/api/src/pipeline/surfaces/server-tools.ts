@@ -153,7 +153,7 @@ const WEB_FETCH_TOOL_PARAMETERS = {
 } as const;
 
 const IMAGE_GENERATION_TOOL_DESCRIPTION =
-	"Generate an image from a text prompt using an AI Stats image generation model.";
+	"Generate an image from a text prompt using a Phaseo image generation model.";
 const IMAGE_GENERATION_TOOL_PARAMETERS = {
 	type: "object",
 	properties: {
@@ -202,7 +202,7 @@ const IMAGE_GENERATION_TOOL_PARAMETERS = {
 } as const;
 
 const APPLY_PATCH_TOOL_DESCRIPTION =
-	"Propose a file create, update, or delete as a V4A-style patch. AI Stats validates the patch but does not apply it.";
+	"Propose a file create, update, or delete as a V4A-style patch. Phaseo validates the patch but does not apply it.";
 const APPLY_PATCH_TOOL_PARAMETERS = {
 	type: "object",
 	properties: {
@@ -2333,7 +2333,7 @@ async function executeWebFetchToolCall(
 				method: "GET",
 				headers: {
 					Accept: "text/html,text/plain,application/json;q=0.9,*/*;q=0.8",
-					"User-Agent": "AI-Stats-Gateway/1.0 (+https://ai-stats.phaseo.app)",
+					"User-Agent": "Phaseo-Gateway/1.0 (+https://phaseo.app)",
 				},
 				redirect: "manual",
 			});

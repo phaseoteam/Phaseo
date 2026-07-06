@@ -24,25 +24,25 @@ const PACKAGES: PackageConfig[] = [
     },
     // SDKs
     {
-        name: "@ai-stats/ai-sdk-provider",
+        name: "@phaseo/ai-sdk-provider",
         manifestPath: "packages/integrations/ai-sdk-ai-stats/package.json",
         manifestType: "npm",
         changelogPath: "packages/integrations/ai-sdk-ai-stats/CHANGELOG.md",
     },
     {
-        name: "@ai-stats/sdk",
+        name: "@phaseo/sdk",
         manifestPath: "packages/sdk/sdk-ts/package.json",
         manifestType: "npm",
         changelogPath: "packages/sdk/sdk-ts/CHANGELOG.md",
     },
     {
-        name: "@ai-stats/agent-sdk",
+        name: "@phaseo/agent-sdk",
         manifestPath: "packages/sdk/agent-sdk-ts/package.json",
         manifestType: "npm",
         changelogPath: "packages/sdk/agent-sdk-ts/CHANGELOG.md",
     },
     {
-        name: "@ai-stats/devtools-viewer",
+        name: "@phaseo/devtools-viewer",
         manifestPath: "packages/devtools/devtools-viewer/package.json",
         manifestType: "npm",
         changelogPath: "packages/devtools/devtools-viewer/CHANGELOG.md",
@@ -343,13 +343,13 @@ function main() {
         throw new Error("GITHUB_TOKEN is required");
     }
 
-    const mode = (process.env.AI_STATS_GH_RELEASE_MODE ?? "all").trim().toLowerCase() as ReleaseMode;
+    const mode = (process.env.PHASEO_GH_RELEASE_MODE ?? "all").trim().toLowerCase() as ReleaseMode;
     if (mode === "off") {
-        console.log("[releases] AI_STATS_GH_RELEASE_MODE=off; skipping GitHub release creation");
+        console.log("[releases] PHASEO_GH_RELEASE_MODE=off; skipping GitHub release creation");
         return;
     }
     if (mode !== "notable_only" && mode !== "all") {
-        throw new Error(`Unsupported AI_STATS_GH_RELEASE_MODE: ${mode}`);
+        throw new Error(`Unsupported PHASEO_GH_RELEASE_MODE: ${mode}`);
     }
 
     for (const pkg of PACKAGES) {

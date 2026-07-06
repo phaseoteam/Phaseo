@@ -1,0 +1,30 @@
+{
+  "name": "@phaseo/agent-sdk",
+  "version": "0.1.1",
+  "description": "Phaseo Agent SDK transition package.",
+  "type": "module",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "dependencies": {
+    "@ai-stats/agent-sdk": "0.1.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/phaseoteam/Phaseo.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

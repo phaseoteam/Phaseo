@@ -39,7 +39,7 @@ import { loadMonitorHistoryPageAction } from "@/app/(dashboard)/monitor/actions"
 import { resolveLogo } from "@/lib/logos";
 
 const DEFAULT_NOW = Date.now();
-const GITHUB_REPO = "https://github.com/AI-Stats/AI-Stats";
+const GITHUB_REPO = "https://github.com/phaseoteam/Phaseo";
 const DEFAULT_VISIBLE_COMMITS = 18;
 const LOAD_MORE_COMMITS = 18;
 const INITIAL_COMBOBOX_OPTIONS = 80;

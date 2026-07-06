@@ -130,43 +130,43 @@ const DOC_LINKS = [
         {
                 label: "API Reference",
                 description: "Endpoints, auth, and error formats.",
-                href: "https://docs.ai-stats.phaseo.app/v1/api-reference/introduction",
+                href: "https://docs.phaseo.app/v1/api-reference/introduction",
 	},
 	{
 		label: "Quickstart",
 		description: "Make your first Gateway call in minutes.",
-		href: "https://docs.ai-stats.phaseo.app/v1/quickstart",
+		href: "https://docs.phaseo.app/v1/quickstart",
 	},
 	{
 		label: "Tool Calling",
 		description: "Tools, tool_choice, and function routing.",
-		href: "https://docs.ai-stats.phaseo.app/v1/guides/tool-calling",
+		href: "https://docs.phaseo.app/v1/guides/tool-calling",
 	},
         {
                 label: "Structured Outputs",
                 description: "Schema-locked responses with constraints.",
-                href: "https://docs.ai-stats.phaseo.app/v1/guides/structured-outputs",
+                href: "https://docs.phaseo.app/v1/guides/structured-outputs",
         },
         {
                 label: "Feature Parity Matrix",
                 description: "Gateway migration parity by surface and competitor.",
-                href: "https://docs.ai-stats.phaseo.app/v1/migration-guides/feature-parity-matrix",
+                href: "https://docs.phaseo.app/v1/migration-guides/feature-parity-matrix",
         },
         {
                 label: "Gateway Parity Review",
                 description: "Repo-grounded review of proven and still-open parity areas.",
-                href: "https://docs.ai-stats.phaseo.app/v1/migration-guides/gateway-parity-review",
+                href: "https://docs.phaseo.app/v1/migration-guides/gateway-parity-review",
         },
 ] as const;
 
 const SHARED_STEPS = {
 	key: {
-		title: "Use your AI Stats API key",
+		title: "Use your Phaseo API key",
 		description:
-			"Create a key in the AI Stats dashboard and store it as AI_STATS_API_KEY.",
+			"Create a key in the Phaseo dashboard and store it as PHASEO_API_KEY.",
 	},
 	baseUrl: {
-		title: "Point the base URL to AI Stats",
+		title: "Point the base URL to Phaseo",
 		description: `Set the base URL to ${BASE_URL}.`,
 	},
 	payload: {
@@ -187,7 +187,7 @@ const SNIPPETS: Record<PathId, Snippet> = {
 		code: `import OpenAI from "openai";
 
 const client = new OpenAI({
-  apiKey: process.env.AI_STATS_API_KEY ?? "YOUR_API_KEY",
+  apiKey: process.env.PHASEO_API_KEY ?? "YOUR_API_KEY",
   baseURL: "${BASE_URL}",
 });
 
@@ -205,7 +205,7 @@ console.log(response);`,
 import os
 
 client = OpenAI(
-    api_key=os.getenv("AI_STATS_API_KEY", "YOUR_API_KEY"),
+    api_key=os.getenv("PHASEO_API_KEY", "YOUR_API_KEY"),
     base_url="${BASE_URL}",
 )
 
@@ -222,7 +222,7 @@ print(response)`,
 		code: `import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
-  apiKey: process.env.AI_STATS_API_KEY ?? "YOUR_API_KEY",
+  apiKey: process.env.PHASEO_API_KEY ?? "YOUR_API_KEY",
   baseURL: "${BASE_URL}",
 });
 
@@ -241,7 +241,7 @@ console.log(response);`,
 import os
 
 client = Anthropic(
-    api_key=os.getenv("AI_STATS_API_KEY", "YOUR_API_KEY"),
+    api_key=os.getenv("PHASEO_API_KEY", "YOUR_API_KEY"),
     base_url="${BASE_URL}",
 )
 
@@ -267,12 +267,12 @@ print(response)`,
   }'`,
 	},
 	"ts-sdk": {
-		label: "AI Stats SDK (TypeScript)",
+		label: "Phaseo SDK (TypeScript)",
 		lang: "ts",
-		code: `import AIStats from "@ai-stats/sdk";
+		code: `import Phaseo from "@phaseo/sdk";
 
-const client = new AIStats({
-  apiKey: process.env.AI_STATS_API_KEY ?? "YOUR_API_KEY",
+const client = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY ?? "YOUR_API_KEY",
 });
 
 const response = await client.generateText({
@@ -283,13 +283,13 @@ const response = await client.generateText({
 console.log(response);`,
 	},
 	"py-sdk": {
-		label: "AI Stats SDK (Python)",
+		label: "Phaseo SDK (Python)",
 		lang: "python",
-		code: `from ai_stats import AIStats
+		code: `from phaseo import Phaseo
 import asyncio
 
 async def main():
-    async with AIStats(api_key="YOUR_API_KEY") as client:
+    async with Phaseo(api_key="YOUR_API_KEY") as client:
         response = await client.generate_text(
             model="openai/gpt-4.1-mini",
             messages=[{"role": "user", "content": "Ship a migration checklist."}],
@@ -302,15 +302,15 @@ asyncio.run(main())`,
 		label: "Vercel AI SDK",
 		lang: "ts",
 		code: `import { generateText } from "ai";
-import { createAIStats } from "@ai-stats/ai-sdk-provider";
+import { createPhaseo } from "@phaseo/ai-sdk-provider";
 
-const aiStats = createAIStats({
-  apiKey: process.env.AI_STATS_API_KEY ?? "YOUR_API_KEY",
+const phaseo = createPhaseo({
+  apiKey: process.env.PHASEO_API_KEY ?? "YOUR_API_KEY",
   baseURL: "${BASE_URL}",
 });
 
 const { text } = await generateText({
-  model: aiStats("openai/gpt-4.1-mini"),
+  model: phaseo("openai/gpt-4.1-mini"),
   prompt: "Ship a migration checklist.",
 });
 
@@ -403,12 +403,12 @@ print(response)`,
 	"ts-sdk": {
 		label: "Before (No SDK configured)",
 		lang: "ts",
-		code: `// No AI Stats client configured yet.`,
+		code: `// No Phaseo client configured yet.`,
 	},
 	"py-sdk": {
 		label: "Before (No SDK configured)",
 		lang: "python",
-		code: `# No AI Stats client configured yet.`,
+		code: `# No Phaseo client configured yet.`,
 	},
 	"vercel-ai-sdk": {
 		label: "Before (Vercel AI SDK)",
@@ -536,7 +536,7 @@ const DIFF_SNIPPETS: Record<PathId, Snippet> = {
 
  const client = new OpenAI({
 -  apiKey: process.env.OPENAI_API_KEY ?? "YOUR_OPENAI_KEY",
-+  apiKey: process.env.AI_STATS_API_KEY ?? "YOUR_API_KEY",
++  apiKey: process.env.PHASEO_API_KEY ?? "YOUR_API_KEY",
 +  baseURL: "${BASE_URL}",
  });
 
@@ -557,7 +557,7 @@ const DIFF_SNIPPETS: Record<PathId, Snippet> = {
 -    api_key=os.getenv("OPENAI_API_KEY", "YOUR_OPENAI_KEY"),
 -)
 +client = OpenAI(
-+    api_key=os.getenv("AI_STATS_API_KEY", "YOUR_API_KEY"),
++    api_key=os.getenv("PHASEO_API_KEY", "YOUR_API_KEY"),
 +    base_url="${BASE_URL}",
 +)
 
@@ -575,7 +575,7 @@ const DIFF_SNIPPETS: Record<PathId, Snippet> = {
 
  const client = new Anthropic({
 -  apiKey: process.env.ANTHROPIC_API_KEY ?? "YOUR_ANTHROPIC_KEY",
-+  apiKey: process.env.AI_STATS_API_KEY ?? "YOUR_API_KEY",
++  apiKey: process.env.PHASEO_API_KEY ?? "YOUR_API_KEY",
 +  baseURL: "${BASE_URL}",
  });
 
@@ -597,7 +597,7 @@ const DIFF_SNIPPETS: Record<PathId, Snippet> = {
 -    api_key=os.getenv("ANTHROPIC_API_KEY", "YOUR_ANTHROPIC_KEY"),
 -)
 +client = Anthropic(
-+    api_key=os.getenv("AI_STATS_API_KEY", "YOUR_API_KEY"),
++    api_key=os.getenv("PHASEO_API_KEY", "YOUR_API_KEY"),
 +    base_url="${BASE_URL}",
 +)
 
@@ -628,11 +628,11 @@ const DIFF_SNIPPETS: Record<PathId, Snippet> = {
 	"ts-sdk": {
 		label: "Diff",
 		lang: "diff",
-		code: `-// No AI Stats client configured yet.
-+import AIStats from "@ai-stats/sdk";
+		code: `-// No Phaseo client configured yet.
++import Phaseo from "@phaseo/sdk";
 +
-+const client = new AIStats({
-+  apiKey: process.env.AI_STATS_API_KEY ?? "YOUR_API_KEY",
++const client = new Phaseo({
++  apiKey: process.env.PHASEO_API_KEY ?? "YOUR_API_KEY",
 +});
 +
 +const response = await client.generateText({
@@ -645,12 +645,12 @@ const DIFF_SNIPPETS: Record<PathId, Snippet> = {
 	"py-sdk": {
 		label: "Diff",
 		lang: "diff",
-		code: `-# No AI Stats client configured yet.
-+from ai_stats import AIStats
+		code: `-# No Phaseo client configured yet.
++from phaseo import Phaseo
 +import asyncio
 +
 +async def main():
-+    async with AIStats(api_key="YOUR_API_KEY") as client:
++    async with Phaseo(api_key="YOUR_API_KEY") as client:
 +        response = await client.generate_text(
 +            model="openai/gpt-4.1-mini",
 +            messages=[{"role": "user", "content": "Ship a migration checklist."}],
@@ -663,17 +663,17 @@ const DIFF_SNIPPETS: Record<PathId, Snippet> = {
 		label: "Diff",
 		lang: "diff",
 		code: ` import { generateText } from "ai";
- import { createAIStats } from "@ai-stats/ai-sdk-provider";
+ import { createPhaseo } from "@phaseo/ai-sdk-provider";
 
- const aiStats = createAIStats({
+ const phaseo = createPhaseo({
 -  apiKey: process.env.OPENAI_API_KEY ?? "YOUR_OPENAI_KEY",
-+  apiKey: process.env.AI_STATS_API_KEY ?? "YOUR_API_KEY",
++  apiKey: process.env.PHASEO_API_KEY ?? "YOUR_API_KEY",
 +  baseURL: "${BASE_URL}",
  });
 
  const { text } = await generateText({
 -  model: openai("gpt-4.1-mini"),
-+  model: aiStats("openai/gpt-4.1-mini"),
++  model: phaseo("openai/gpt-4.1-mini"),
    prompt: "Ship a migration checklist.",
  });
 `,
@@ -689,7 +689,7 @@ const DIFF_SNIPPETS_OPENROUTER: Partial<Record<PathId, Snippet>> = {
  const client = new OpenAI({
 -  apiKey: process.env.OPENROUTER_API_KEY ?? "YOUR_OPENROUTER_KEY",
 -  baseURL: "https://openrouter.ai/api/v1",
-+  apiKey: process.env.AI_STATS_API_KEY ?? "YOUR_API_KEY",
++  apiKey: process.env.PHASEO_API_KEY ?? "YOUR_API_KEY",
 +  baseURL: "${BASE_URL}",
  });
 
@@ -725,7 +725,7 @@ const DIFF_SNIPPETS_REQUESTY: Partial<Record<PathId, Snippet>> = {
  const client = new OpenAI({
 -  apiKey: process.env.REQUESTY_API_KEY ?? "YOUR_REQUESTY_KEY",
 -  baseURL: "https://router.requesty.ai/v1",
-+  apiKey: process.env.AI_STATS_API_KEY ?? "YOUR_API_KEY",
++  apiKey: process.env.PHASEO_API_KEY ?? "YOUR_API_KEY",
 +  baseURL: "${BASE_URL}",
  });
 
@@ -763,7 +763,7 @@ const DIFF_SNIPPETS_LLM_GATEWAY: Partial<Record<PathId, Snippet>> = {
  const client = new OpenAI({
 -  apiKey: process.env.LLM_GATEWAY_API_KEY ?? "YOUR_LLM_GATEWAY_KEY",
 -  baseURL: "https://api.llmgateway.io/v1",
-+  apiKey: process.env.AI_STATS_API_KEY ?? "YOUR_API_KEY",
++  apiKey: process.env.PHASEO_API_KEY ?? "YOUR_API_KEY",
 +  baseURL: "${BASE_URL}",
  });
 
@@ -841,122 +841,122 @@ const getDiffSnippet = (source: SourceId, pathId: PathId) => {
 const CHANGE_NOTES: Record<PathId, ChangeNote[]> = {
 	"ts-openai": [
 		{
-			title: "Use your AI Stats Gateway key",
+			title: "Use your Phaseo Gateway key",
 			description:
-				"Replace OPENAI_API_KEY with AI_STATS_API_KEY from the AI Stats dashboard.",
+				"Replace OPENAI_API_KEY with PHASEO_API_KEY from the Phaseo dashboard.",
 		},
 		{
-			title: "Route requests through AI Stats",
+			title: "Route requests through Phaseo",
 			description: `Set baseURL to ${BASE_URL} so traffic goes through the Gateway.`,
 		},
 		{
 			title: "Update model ids",
 			description:
-				"Use AI Stats model ids like openai/gpt-4.1-mini. Find them on each model quickstart page.",
+				"Use Phaseo model ids like openai/gpt-4.1-mini. Find them on each model quickstart page.",
 		},
 	],
 	"py-openai": [
 		{
-			title: "Use your AI Stats Gateway key",
+			title: "Use your Phaseo Gateway key",
 			description:
-				"Replace OPENAI_API_KEY with AI_STATS_API_KEY from the AI Stats dashboard.",
+				"Replace OPENAI_API_KEY with PHASEO_API_KEY from the Phaseo dashboard.",
 		},
 		{
-			title: "Route requests through AI Stats",
+			title: "Route requests through Phaseo",
 			description: `Set base_url to ${BASE_URL} so traffic goes through the Gateway.`,
 		},
 		{
 			title: "Update model ids",
 			description:
-				"Use AI Stats model ids like openai/gpt-4.1-mini. Find them on each model quickstart page.",
+				"Use Phaseo model ids like openai/gpt-4.1-mini. Find them on each model quickstart page.",
 		},
 	],
 	"ts-anthropic": [
 		{
-			title: "Use your AI Stats Gateway key",
+			title: "Use your Phaseo Gateway key",
 			description:
-				"Replace ANTHROPIC_API_KEY with AI_STATS_API_KEY from the AI Stats dashboard.",
+				"Replace ANTHROPIC_API_KEY with PHASEO_API_KEY from the Phaseo dashboard.",
 		},
 		{
-			title: "Route requests through AI Stats",
+			title: "Route requests through Phaseo",
 			description: `Set baseURL to ${BASE_URL} so traffic goes through the Gateway.`,
 		},
 		{
 			title: "Update model ids",
 			description:
-				"Use AI Stats model ids like anthropic/claude-3.5-sonnet. Find them on each model quickstart page.",
+				"Use Phaseo model ids like anthropic/claude-3.5-sonnet. Find them on each model quickstart page.",
 		},
 	],
 	"py-anthropic": [
 		{
-			title: "Use your AI Stats Gateway key",
+			title: "Use your Phaseo Gateway key",
 			description:
-				"Replace ANTHROPIC_API_KEY with AI_STATS_API_KEY from the AI Stats dashboard.",
+				"Replace ANTHROPIC_API_KEY with PHASEO_API_KEY from the Phaseo dashboard.",
 		},
 		{
-			title: "Route requests through AI Stats",
+			title: "Route requests through Phaseo",
 			description: `Set base_url to ${BASE_URL} so traffic goes through the Gateway.`,
 		},
 		{
 			title: "Update model ids",
 			description:
-				"Use AI Stats model ids like anthropic/claude-3.5-sonnet. Find them on each model quickstart page.",
+				"Use Phaseo model ids like anthropic/claude-3.5-sonnet. Find them on each model quickstart page.",
 		},
 	],
 	rest: [
 		{
-			title: "Use your AI Stats Gateway key",
+			title: "Use your Phaseo Gateway key",
 			description: "Send Authorization: Bearer YOUR_API_KEY on every request.",
 		},
 		{
-			title: "Route requests through AI Stats",
+			title: "Route requests through Phaseo",
 			description: `Send requests to ${BASE_URL}/chat/completions.`,
 		},
 		{
 			title: "Update model ids",
 			description:
-				"Use AI Stats model ids like openai/gpt-4.1-mini. Find them on each model quickstart page.",
+				"Use Phaseo model ids like openai/gpt-4.1-mini. Find them on each model quickstart page.",
 		},
 	],
 	"ts-sdk": [
 		{
-			title: "Use your AI Stats Gateway key",
+			title: "Use your Phaseo Gateway key",
 			description:
-				"Set AI_STATS_API_KEY from the AI Stats dashboard for the SDK client.",
+				"Set PHASEO_API_KEY from the Phaseo dashboard for the SDK client.",
 		},
 		{
 			title: "Update model ids",
 			description:
-				"Use AI Stats model ids like openai/gpt-4.1-mini. Find them on each model quickstart page.",
+				"Use Phaseo model ids like openai/gpt-4.1-mini. Find them on each model quickstart page.",
 		},
 	],
 	"py-sdk": [
 		{
-			title: "Use your AI Stats Gateway key",
+			title: "Use your Phaseo Gateway key",
 			description:
-				"Set AI_STATS_API_KEY from the AI Stats dashboard for the SDK client.",
+				"Set PHASEO_API_KEY from the Phaseo dashboard for the SDK client.",
 		},
 		{
 			title: "Update model ids",
 			description:
-				"Use AI Stats model ids like openai/gpt-4.1-mini. Find them on each model quickstart page.",
+				"Use Phaseo model ids like openai/gpt-4.1-mini. Find them on each model quickstart page.",
 		},
 	],
 	"vercel-ai-sdk": [
 		{
-			title: "Use your AI Stats Gateway key",
+			title: "Use your Phaseo Gateway key",
 			description:
-				"Replace OPENAI_API_KEY with AI_STATS_API_KEY from the AI Stats dashboard.",
+				"Replace OPENAI_API_KEY with PHASEO_API_KEY from the Phaseo dashboard.",
 		},
 		{
-			title: "Switch to the AI Stats AI SDK provider",
+			title: "Switch to the Phaseo AI SDK provider",
 			description:
-				"Replace the Vercel OpenAI provider factory with createAIStats(...) from @ai-stats/ai-sdk-provider.",
+				"Replace the Vercel OpenAI provider factory with createPhaseo(...) from @phaseo/ai-sdk-provider.",
 		},
 		{
 			title: "Update model ids",
 			description:
-				"Use AI Stats model ids like openai/gpt-4.1-mini. Find them on each model quickstart page.",
+				"Use Phaseo model ids like openai/gpt-4.1-mini. Find them on each model quickstart page.",
 		},
 	],
 };
@@ -975,7 +975,7 @@ const FLOWS: Record<SourceId, Flow> = {
 			{
 				id: "py-openai",
 				label: "Python",
-				description: "Point the Python SDK to AI Stats.",
+				description: "Point the Python SDK to Phaseo.",
 				steps: [SHARED_STEPS.key, SHARED_STEPS.baseUrl, SHARED_STEPS.payload],
 				snippet: SNIPPETS["py-openai"],
 			},
@@ -1001,7 +1001,7 @@ const FLOWS: Record<SourceId, Flow> = {
 			{
 				id: "py-anthropic",
 				label: "Python",
-				description: "Point the Python SDK to AI Stats.",
+				description: "Point the Python SDK to Phaseo.",
 				steps: [SHARED_STEPS.key, SHARED_STEPS.baseUrl, SHARED_STEPS.payload],
 				snippet: SNIPPETS["py-anthropic"],
 			},
@@ -1039,7 +1039,7 @@ const FLOWS: Record<SourceId, Flow> = {
 			{
 				id: "vercel-ai-sdk",
 				label: "Vercel AI SDK",
-				description: "Replace the Vercel/OpenAI provider factory with the official AI Stats provider.",
+				description: "Replace the Vercel/OpenAI provider factory with the official Phaseo provider.",
 				steps: [SHARED_STEPS.key, SHARED_STEPS.baseUrl, SHARED_STEPS.payload],
 				snippet: SNIPPETS["vercel-ai-sdk"],
 			},
@@ -1065,14 +1065,14 @@ const FLOWS: Record<SourceId, Flow> = {
 			{
 				id: "py-openai",
 				label: "Python SDK",
-				description: "Use OpenAI Python client settings for AI Stats.",
+				description: "Use OpenAI Python client settings for Phaseo.",
 				steps: [SHARED_STEPS.key, SHARED_STEPS.baseUrl, SHARED_STEPS.payload],
 				snippet: SNIPPETS["py-openai"],
 			},
 			{
 				id: "rest",
 				label: "REST",
-				description: "Switch REST calls to AI Stats Gateway.",
+				description: "Switch REST calls to Phaseo Gateway.",
 				steps: [SHARED_STEPS.headers, SHARED_STEPS.baseUrl, SHARED_STEPS.payload],
 				snippet: SNIPPETS.rest,
 			},
@@ -1091,14 +1091,14 @@ const FLOWS: Record<SourceId, Flow> = {
 			{
 				id: "py-openai",
 				label: "Python SDK",
-				description: "Use OpenAI Python client settings for AI Stats.",
+				description: "Use OpenAI Python client settings for Phaseo.",
 				steps: [SHARED_STEPS.key, SHARED_STEPS.baseUrl, SHARED_STEPS.payload],
 				snippet: SNIPPETS["py-openai"],
 			},
 			{
 				id: "rest",
 				label: "REST",
-				description: "Switch REST calls to AI Stats Gateway.",
+				description: "Switch REST calls to Phaseo Gateway.",
 				steps: [SHARED_STEPS.headers, SHARED_STEPS.baseUrl, SHARED_STEPS.payload],
 				snippet: SNIPPETS.rest,
 			},
@@ -1117,7 +1117,7 @@ const FLOWS: Record<SourceId, Flow> = {
 			{
 				id: "py-openai",
 				label: "Python",
-				description: "Use the OpenAI Python client with AI Stats.",
+				description: "Use the OpenAI Python client with Phaseo.",
 				steps: [SHARED_STEPS.key, SHARED_STEPS.baseUrl, SHARED_STEPS.payload],
 				snippet: SNIPPETS["py-openai"],
 			},
@@ -1135,14 +1135,14 @@ const FLOWS: Record<SourceId, Flow> = {
 		options: [
 			{
 				id: "ts-sdk",
-				label: "AI Stats SDK (TypeScript)",
+				label: "Phaseo SDK (TypeScript)",
 				description: "Full typed client with helpers.",
 				steps: [SHARED_STEPS.key, SHARED_STEPS.payload],
 				snippet: SNIPPETS["ts-sdk"],
 			},
 			{
 				id: "py-sdk",
-				label: "AI Stats SDK (Python)",
+				label: "Phaseo SDK (Python)",
 				description: "Async-first Python client.",
 				steps: [SHARED_STEPS.key, SHARED_STEPS.payload],
 				snippet: SNIPPETS["py-sdk"],
@@ -1193,7 +1193,7 @@ function getAfterSnippet(pathId: PathId, surface: AfterApiSurface): Snippet {
 import os
 
 client = OpenAI(
-    api_key=os.getenv("AI_STATS_API_KEY", "YOUR_API_KEY"),
+    api_key=os.getenv("PHASEO_API_KEY", "YOUR_API_KEY"),
     base_url="${BASE_URL}",
 )
 
@@ -1226,7 +1226,7 @@ print(response.output_text)`,
 			code: `import OpenAI from "openai";
 
 const client = new OpenAI({
-  apiKey: process.env.AI_STATS_API_KEY ?? "YOUR_API_KEY",
+  apiKey: process.env.PHASEO_API_KEY ?? "YOUR_API_KEY",
   baseURL: "${BASE_URL}",
 });
 
@@ -1248,7 +1248,7 @@ console.log(response.output_text);`,
 import os
 
 client = Anthropic(
-    api_key=os.getenv("AI_STATS_API_KEY", "YOUR_API_KEY"),
+    api_key=os.getenv("PHASEO_API_KEY", "YOUR_API_KEY"),
     base_url="${BASE_URL}",
 )
 
@@ -1285,7 +1285,7 @@ print(response)`,
 		code: `import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
-  apiKey: process.env.AI_STATS_API_KEY ?? "YOUR_API_KEY",
+  apiKey: process.env.PHASEO_API_KEY ?? "YOUR_API_KEY",
   baseURL: "${BASE_URL}",
 });
 
@@ -1523,7 +1523,7 @@ export function MigrationGuide() {
 										Before & After
 									</p>
 									<p className="text-sm text-muted-foreground">
-										Compare your current integration with the AI Stats version,
+										Compare your current integration with the Phaseo version,
 										or switch to Diff for a single view.
 									</p>
 								</div>

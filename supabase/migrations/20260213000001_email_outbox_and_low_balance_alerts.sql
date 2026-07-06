@@ -53,7 +53,7 @@ begin
       'welcome',
       'welcome',
       new.email,
-      'Welcome to AI Stats',
+      'Welcome to Phaseo',
       new.id,
       jsonb_build_object('user_id', new.id)
     );

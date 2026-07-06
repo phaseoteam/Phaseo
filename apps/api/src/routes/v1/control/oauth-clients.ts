@@ -255,7 +255,7 @@ function thirdPartyOAuthComingSoon() {
 	return new Response(
 		JSON.stringify({
 			error: "third_party_oauth_disabled",
-			message: "OAuth client management is coming soon. The AI Stats CLI is available during the private OAuth beta.",
+			message: "OAuth client management is coming soon. The Phaseo CLI is available during the private OAuth beta.",
 		}),
 		{
 			status: 403,

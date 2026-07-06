@@ -6,7 +6,7 @@ insert into public.data_api_model_page_notices (
 values (
   'anthropic/claude-mythos-5',
   'info',
-  'This Anthropic API model ID appears to have leaked ahead of a wider release. AI Stats has added this page in preparation while formal pricing and fuller public documentation remain unconfirmed.'
+  'This Anthropic API model ID appears to have leaked ahead of a wider release. Phaseo has added this page in preparation while formal pricing and fuller public documentation remain unconfirmed.'
 )
 on conflict (api_model_id) do update
 set

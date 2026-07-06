@@ -85,7 +85,7 @@ Interactive shell script for end-to-end testing:
 
 **Run:**
 ```bash
-export API_KEY=aistats_v1_sk_YOUR_KEY
+export API_KEY=phaseo_v1_sk_YOUR_KEY
 export SUPABASE_URL=https://your-project.supabase.co
 ./scripts/test-oauth-flow.sh
 ```

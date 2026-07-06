@@ -4,10 +4,10 @@ import { RoomScaffold } from "@/components/(chat)/RoomScaffold";
 import { RealtimeRoom } from "@/components/(chat)/rooms/RealtimeRoom";
 
 export const metadata: Metadata = buildMetadata({
-	title: "Realtime Room - AI Stats Chat",
+	title: "Realtime Room - Phaseo Chat",
 	description: "Realtime voice and multimodal conversation workspace.",
 	path: "/chat/realtime",
-	keywords: ["AI realtime", "voice chat", "AI Stats chat"],
+	keywords: ["AI realtime", "voice chat", "Phaseo chat"],
 });
 
 export default function ChatRealtimePage() {

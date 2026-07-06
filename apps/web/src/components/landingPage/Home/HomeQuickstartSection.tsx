@@ -440,7 +440,7 @@ function UptimeVisual({ variant = "default" }: { variant?: QuickstartVariant }) 
 							</div>
 							<span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">↔</span>
 							<div className="rounded-xl border border-zinc-200/80 bg-zinc-50/70 px-2 py-2 text-center dark:border-zinc-800 dark:bg-zinc-900/70">
-								<p className="text-[10px] font-semibold text-zinc-800 dark:text-zinc-100">AI Stats</p>
+								<p className="text-[10px] font-semibold text-zinc-800 dark:text-zinc-100">Phaseo</p>
 							</div>
 							<span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">↔</span>
 							<div className="rounded-xl border border-zinc-200/80 bg-zinc-50/70 px-2 py-2 text-center dark:border-zinc-800 dark:bg-zinc-900/70">

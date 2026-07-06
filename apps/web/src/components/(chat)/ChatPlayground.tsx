@@ -375,7 +375,7 @@ function ChatPlaygroundContent({
 		const url = URL.createObjectURL(blob);
 		const link = document.createElement("a");
 		link.href = url;
-		link.download = `ai-stats-chats-${Date.now()}.json`;
+		link.download = `phaseo-chats-${Date.now()}.json`;
 		document.body.appendChild(link);
 		link.click();
 		link.remove();

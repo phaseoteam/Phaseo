@@ -1,9 +1,9 @@
 ---
 title: "Observability"
-description: "Trace AI Stats requests with Langfuse, LangSmith, OpenTelemetry, and similar tools."
+description: "Trace Phaseo requests with Langfuse, LangSmith, OpenTelemetry, and similar tools."
 ---
 
-Most observability tools sit above the model client. Keep your tracing setup the same, then point the underlying OpenAI-compatible or Anthropic-compatible client at AI Stats.
+Most observability tools sit above the model client. Keep your tracing setup the same, then point the underlying OpenAI-compatible or Anthropic-compatible client at Phaseo.
 
 ## Langfuse with OpenAI SDK
 
@@ -16,7 +16,7 @@ import os
 from langfuse.openai import openai
 
 client = openai.OpenAI(
-    api_key=os.environ["AI_STATS_API_KEY"],
+    api_key=os.environ["PHASEO_API_KEY"],
     base_url="https://api.phaseo.app/v1",
 )
 
@@ -33,23 +33,23 @@ Use the [LangChain](./langchain.mdx) setup and enable LangSmith through the usua
 ```bash
 export LANGSMITH_TRACING=true
 export LANGSMITH_API_KEY="your_langsmith_key"
-export AI_STATS_API_KEY="your_ai_stats_key"
+export PHASEO_API_KEY="your_phaseo_key"
 ```
 
 ## OpenTelemetry
 
-If your framework emits OpenTelemetry spans, AI Stats does not require a special exporter. Add useful request context yourself:
+If your framework emits OpenTelemetry spans, Phaseo does not require a special exporter. Add useful request context yourself:
 
 - model id
 - endpoint, such as `responses` or `chat.completions`
-- AI Stats request id from response metadata or logs
+- Phaseo request id from response metadata or logs
 - selected provider when response metadata is enabled
 
 ## Notes
 
-- Do not send AI Stats API keys to observability tools as attributes.
+- Do not send Phaseo API keys to observability tools as attributes.
 - If the observability library wraps the OpenAI SDK, configure the wrapped client with `base_url: "https://api.phaseo.app/v1"`.
-- For LangChain traces, pair the tracing callback with the AI Stats `ChatOpenAI` configuration.
+- For LangChain traces, pair the tracing callback with the Phaseo `ChatOpenAI` configuration.
 
 ## Related
 

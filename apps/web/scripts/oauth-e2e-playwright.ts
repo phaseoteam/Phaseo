@@ -115,7 +115,7 @@ function safeJsonParse(text: string): unknown {
 function sanitizeLogText(value: string): string {
 	return value
 		.replace(/\bBearer\s+[A-Za-z0-9._-]+\b/gi, "Bearer [redacted]")
-		.replace(/aistats_v1_sk_[A-Za-z0-9]+_[A-Za-z0-9]+/g, "[redacted_key]")
+		.replace(/phaseo_v1_sk_[A-Za-z0-9]+_[A-Za-z0-9]+/g, "[redacted_key]")
 		.replace(/"(access_token|refresh_token|client_secret)"\s*:\s*"[^"]+"/gi, "\"$1\":\"[redacted]\"");
 }
 

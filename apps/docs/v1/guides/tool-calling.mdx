@@ -247,7 +247,7 @@ Notes:
 Notes:
 
 - The model supplies the image `prompt` when it calls the tool. `description` is also accepted as a prompt alias.
-- `parameters.model` pins the image model. If omitted, the tool call can provide `model`; otherwise AI Stats uses the default image model.
+- `parameters.model` pins the image model. If omitted, the tool call can provide `model`; otherwise Phaseo uses the default image model.
 - The tool result contains either `imageUrl` or base64 image data, depending on the provider response.
 - Usage includes `usage.server_tool_use.image_generation_requests`; image-model token usage is merged into the parent request.
 
@@ -267,7 +267,7 @@ Notes:
 Notes:
 
 - `ai-stats:apply_patch` is supported on the Responses API.
-- AI Stats validates patch operations and returns them in the tool result. Your client decides whether to apply or reject the patch.
+- Phaseo validates patch operations and returns them in the tool result. Your client decides whether to apply or reject the patch.
 - Supported operation types are `create_file`, `update_file`, and `delete_file`.
 - Usage includes `usage.server_tool_use.apply_patch_requests`.
 

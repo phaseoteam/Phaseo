@@ -1,32 +1,32 @@
 /**
  * DevTools Demo
  *
- * This example demonstrates how to use AI Stats DevTools to capture
+ * This example demonstrates how to use Phaseo DevTools to capture
  * and inspect API requests in real-time.
  *
  * Setup:
- * 1. Set AI_STATS_API_KEY environment variable
- * 2. Run this script: AI_STATS_DEVTOOLS=true tsx examples/devtools-demo.ts
- * 3. In another terminal, start the viewer: npx @ai-stats/devtools-viewer start
+ * 1. Set PHASEO_API_KEY environment variable
+ * 2. Run this script: PHASEO_DEVTOOLS=true tsx examples/devtools-demo.ts
+ * 3. In another terminal, start the viewer: npx @phaseo/devtools-viewer start
  * 4. Open http://localhost:4983 to see requests in real-time
  */
 
-import { AIStats } from "../src/index.js";
+import { Phaseo } from "../src/index.js";
 
 async function main() {
   // Create client with devtools enabled
-  const client = new AIStats({
-    apiKey: process.env.AI_STATS_API_KEY!,
+  const client = new Phaseo({
+    apiKey: process.env.PHASEO_API_KEY!,
     devtools: {
-      enabled: true, // Can also use AI_STATS_DEVTOOLS=true env var
-      directory: ".ai-stats-devtools", // Default directory
+      enabled: true, // Can also use PHASEO_DEVTOOLS=true env var
+      directory: ".phaseo-devtools", // Default directory
       flushIntervalMs: 1000 // Flush every 1 second
     }
   });
 
-  console.log("🚀 Running AI Stats SDK with DevTools enabled");
-  console.log("📂 Telemetry will be saved to .ai-stats-devtools/");
-  console.log("🌐 Start the viewer: npx @ai-stats/devtools-viewer start");
+  console.log("🚀 Running Phaseo SDK with DevTools enabled");
+  console.log("📂 Telemetry will be saved to .phaseo-devtools/");
+  console.log("🌐 Start the viewer: npx @phaseo/devtools-viewer start");
   console.log("");
 
   try {

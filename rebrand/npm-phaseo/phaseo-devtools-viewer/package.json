@@ -1,0 +1,28 @@
+{
+  "name": "@phaseo/devtools-viewer",
+  "version": "0.2.1",
+  "description": "Phaseo DevTools viewer transition package.",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "phaseo-devtools": "bin/phaseo-devtools.js",
+    "ai-stats-devtools": "bin/phaseo-devtools.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "bin",
+    "dist",
+    "README.md"
+  ],
+  "dependencies": {
+    "@ai-stats/devtools-viewer": "0.2.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/phaseoteam/Phaseo.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -7,9 +7,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
 
 export const metadata = {
-	title: "Authorize Application - AI Stats",
+	title: "Authorize Application - Phaseo",
 	description:
-		"Authorize a third-party application to access your AI Stats account, choose permitted team scopes, and review exactly what the integration can read or modify before approval.",
+		"Authorize a third-party application to access your Phaseo account, choose permitted team scopes, and review exactly what the integration can read or modify before approval.",
 };
 
 interface ConsentPageProps {
@@ -35,9 +35,9 @@ const FIRST_PARTY_CLIENTS: Record<
 	}
 > = {
 	aistats_cli: {
-		name: "AI Stats CLI",
+		name: "Phaseo CLI",
 		description:
-			"Official first-party AI Stats command line interface for signing in, managing workspaces, and creating keys.",
+			"Official first-party Phaseo command line interface for signing in, managing workspaces, and creating keys.",
 		homepage_url: null,
 		logo_url: null,
 	},

@@ -1,6 +1,6 @@
 ---
 title: "Service Tiers"
-description: "How Standard, Priority, Flex, and Batch pricing modes work in AI Stats Gateway."
+description: "How Standard, Priority, Flex, and Batch pricing modes work in Phaseo Gateway."
 ---
 
 Service tiers let you choose between different pricing and delivery modes when a provider supports them.
@@ -38,7 +38,7 @@ Use the same `service_tier` field when you call any supported synchronous text A
 The accepted `service_tier` values are `standard`, `priority`, `flex`, and `batch`. `Standard` is the default behavior when `service_tier` is omitted. `Priority` and `Flex` are opt-in request modes, and `Batch` is handled by the Batch API rather than synchronous text requests.
 
 <Note>
-AI Stats maps the normalized gateway values to provider-native controls internally. For example, an Anthropic route may receive Anthropic-native tier fields upstream, but the client-facing request still uses the gateway values listed here.
+Phaseo maps the normalized gateway values to provider-native controls internally. For example, an Anthropic route may receive Anthropic-native tier fields upstream, but the client-facing request still uses the gateway values listed here.
 </Note>
 
 ## Standard
@@ -77,7 +77,7 @@ Use `Priority` when you want the provider's premium or higher-priority offer.
 }
 ```
 
-AI Stats maps this to the appropriate provider-native control when routing to Anthropic.
+Phaseo maps this to the appropriate provider-native control when routing to Anthropic.
 
 ## Flex
 
@@ -125,7 +125,7 @@ Use the Batch API or batch job workflow because batch pricing applies to deferre
 
 - Tier support is provider-specific and model-specific.
 - Pricing cards on model pages show the tier-specific rates when we have data for them.
-- Some providers expose specialized upstream offers that AI Stats maps into a unified tiered experience in the catalog.
+- Some providers expose specialized upstream offers that Phaseo maps into a unified tiered experience in the catalog.
 - Client-facing `service_tier` values are normalized across supported text surfaces; provider-native names are handled inside the gateway.
 
 ## Related pages

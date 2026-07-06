@@ -1,10 +1,10 @@
 # @ai-stats/devtools-core
 
-Core types, schemas, and utilities for AI Stats DevTools.
+Core types, schemas, and utilities for Phaseo DevTools.
 
 ## Overview
 
-This package provides the shared TypeScript types and Zod schemas used across all AI Stats DevTools packages. It ensures consistent telemetry data format across all SDK languages (TypeScript, Python, Go, C#, Ruby, PHP, Java, Rust, C++).
+This package provides the shared TypeScript types and Zod schemas used across all Phaseo DevTools packages. It ensures consistent telemetry data format across all SDK languages (TypeScript, Python, Go, C#, Ruby, PHP, Java, Rust, C++).
 
 ## Installation
 

@@ -8,6 +8,7 @@ const DATA_ROOT = path.join(ROOT, "packages", "data", "catalog", "src", "data");
 const MANIFEST_PATH = path.join(DATA_ROOT, "manifest.json");
 const BENCHMARKS_DIR = path.join(DATA_ROOT, "benchmarks");
 const API_PROVIDERS_DIR = path.join(DATA_ROOT, "api_providers");
+const VIRTUAL_CALLABLE_MODEL_IDS = ["phaseo/free"];
 
 function readYaml(file: string): any {
   return yaml.load(fs.readFileSync(file, "utf8"));
@@ -81,7 +82,7 @@ function loadCallableModelIds(): string[] {
     }
   }
 
-  return uniqSorted(Array.from(modelIds));
+  return uniqSorted([...Array.from(modelIds), ...VIRTUAL_CALLABLE_MODEL_IDS]);
 }
 
 function loadOrganisationIds(): string[] {

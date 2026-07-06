@@ -12,7 +12,7 @@ pnpm --filter @ai-stats/web resend:provision:onboarding
 
 ## Optional
 
-- `RESEND_FROM_EMAIL` (default: `AI Stats <noreply@phaseo.app>`)
+- `RESEND_FROM_EMAIL` (default: `Phaseo <noreply@phaseo.app>`)
 - `RESEND_ONBOARDING_REPLY_TO_EMAIL` (default: `daniel@phaseo.app`)
 - `RESEND_ONBOARDING_DASHBOARD_URL` (default: `NEXT_PUBLIC_WEBSITE_URL` then `https://www.aistats.com`)
 - `RESEND_ONBOARDING_PURCHASE_WINDOW` (default: `3 days`)

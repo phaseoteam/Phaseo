@@ -1,7 +1,7 @@
 import type { Model, Organisation, Provider } from "./types";
 
-// Base URL for AI Stats website
-const AI_STATS_BASE_URL = "https://phaseo.app";
+// Base URL for Phaseo website
+const PHASEO_BASE_URL = "https://phaseo.app";
 
 // Date formatting
 export function formatDate(dateString: string | null): string {
@@ -41,15 +41,15 @@ export function formatRelativeDate(dateString: string | null): string {
 
 // URL builders
 export function getModelURL(modelId: string): string {
-  return `${AI_STATS_BASE_URL}/models/${modelId}`;
+  return `${PHASEO_BASE_URL}/models/${modelId}`;
 }
 
 export function getOrganisationURL(organisationId: string): string {
-  return `${AI_STATS_BASE_URL}/organisations/${organisationId}`;
+  return `${PHASEO_BASE_URL}/organisations/${organisationId}`;
 }
 
 export function getProviderURL(providerId: string): string {
-  return `${AI_STATS_BASE_URL}/api-providers/${providerId}`;
+  return `${PHASEO_BASE_URL}/api-providers/${providerId}`;
 }
 
 // Country code to flag emoji

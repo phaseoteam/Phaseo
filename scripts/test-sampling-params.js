@@ -2,12 +2,12 @@
 "use strict";
 
 const DEFAULT_BASE_URL =
-	process.env.AI_STATS_BASE_URL ||
+	process.env.PHASEO_BASE_URL ||
 	process.env.GATEWAY_URL ||
 	"http://127.0.0.1:8787/v1";
 
 const DEFAULT_API_KEY =
-	process.env.AI_STATS_API_KEY ||
+	process.env.PHASEO_API_KEY ||
 	process.env.GATEWAY_API_KEY ||
 	"";
 
@@ -236,7 +236,7 @@ async function main() {
 	const args = parseArgs(process.argv.slice(2));
 	if (!args.model) printUsageAndExit();
 	if (!args.apiKey) {
-		console.error("Missing API key. Pass --api-key or set AI_STATS_API_KEY / GATEWAY_API_KEY.");
+		console.error("Missing API key. Pass --api-key or set PHASEO_API_KEY / GATEWAY_API_KEY.");
 		process.exit(1);
 	}
 	if (!["chat", "responses"].includes(args.protocol)) {

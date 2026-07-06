@@ -1,14 +1,14 @@
 # SDK Compatibility Guide 🔄
 
-The AI Stats SDK provides **drop-in replacement** compatibility layers for both OpenAI and Anthropic SDKs, allowing you to switch providers with minimal code changes while accessing 300+ AI models.
+The Phaseo SDK provides **drop-in replacement** compatibility layers for both OpenAI and Anthropic SDKs, allowing you to switch providers with minimal code changes while accessing 300+ AI models.
 
-## Why Use AI Stats SDK?
+## Why Use Phaseo SDK?
 
 ✅ **Drop-in replacement** - Use the same API as OpenAI/Anthropic SDKs
 ✅ **300+ models** - Access models from OpenAI, Anthropic, Google, Meta, and more
 ✅ **Unified pricing** - One billing system across all providers
 ✅ **Built-in telemetry** - Track usage and performance automatically
-✅ **Native features** - Access AI Stats-specific features via `.native` property
+✅ **Native features** - Access Phaseo-specific features via `.native` property
 
 ---
 
@@ -17,9 +17,9 @@ The AI Stats SDK provides **drop-in replacement** compatibility layers for both 
 ### Installation
 
 ```bash
-npm install @ai-stats/sdk
+npm install @phaseo/sdk
 # or
-pnpm add @ai-stats/sdk
+pnpm add @phaseo/sdk
 ```
 
 ### Drop-in Replacement
@@ -42,10 +42,10 @@ const completion = await client.chat.completions.create({
 With this:
 
 ```typescript
-import { OpenAI } from '@ai-stats/sdk/compat/openai';
+import { OpenAI } from '@phaseo/sdk/compat/openai';
 
 const client = new OpenAI({
-  apiKey: process.env.AI_STATS_API_KEY  // Get your key at ai-stats.app
+  apiKey: process.env.PHASEO_API_KEY  // Get your key at phaseo.app
 });
 
 const completion = await client.chat.completions.create({
@@ -74,10 +74,10 @@ const completion = await client.chat.completions.create({
 ### Streaming Example
 
 ```typescript
-import { OpenAI } from '@ai-stats/sdk/compat/openai';
+import { OpenAI } from '@phaseo/sdk/compat/openai';
 
 const client = new OpenAI({
-  apiKey: process.env.AI_STATS_API_KEY
+  apiKey: process.env.PHASEO_API_KEY
 });
 
 const stream = await client.chat.completions.create({
@@ -93,14 +93,14 @@ for await (const chunk of stream) {
 
 ### Access Native Features
 
-The AI Stats SDK has features not available in the OpenAI SDK. Access them via `.native`:
+The Phaseo SDK has features not available in the OpenAI SDK. Access them via `.native`:
 
 ```typescript
-import { OpenAI } from '@ai-stats/sdk/compat/openai';
+import { OpenAI } from '@phaseo/sdk/compat/openai';
 
 const client = new OpenAI({
-  apiKey: process.env.AI_STATS_API_KEY,
-  baseURL: 'https://gateway.ai-stats.app/v1'
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: 'https://phaseo.app/v1'
 });
 
 // OpenAI-compatible API
@@ -109,7 +109,7 @@ const completion = await client.chat.completions.create({
   messages: [{ role: 'user', content: 'Hello!' }]
 });
 
-// Access AI Stats-specific features
+// Access Phaseo-specific features
 const analytics = await client.native.getAnalytics({
   timeRange: 'week'
 });
@@ -142,10 +142,10 @@ const message = await client.messages.create({
 With this:
 
 ```typescript
-import { Anthropic } from '@ai-stats/sdk/compat/anthropic';
+import { Anthropic } from '@phaseo/sdk/compat/anthropic';
 
 const client = new Anthropic({
-  apiKey: process.env.AI_STATS_API_KEY
+  apiKey: process.env.PHASEO_API_KEY
 });
 
 const message = await client.messages.create({
@@ -160,10 +160,10 @@ const message = await client.messages.create({
 The Anthropic compatibility layer automatically converts between Anthropic's message format and OpenAI's chat format:
 
 ```typescript
-import { Anthropic } from '@ai-stats/sdk/compat/anthropic';
+import { Anthropic } from '@phaseo/sdk/compat/anthropic';
 
 const client = new Anthropic({
-  apiKey: process.env.AI_STATS_API_KEY
+  apiKey: process.env.PHASEO_API_KEY
 });
 
 // Use Anthropic's native format
@@ -209,10 +209,10 @@ console.log(message.content[0].text);  // Response in Anthropic format
 ### Streaming Example
 
 ```typescript
-import { Anthropic } from '@ai-stats/sdk/compat/anthropic';
+import { Anthropic } from '@phaseo/sdk/compat/anthropic';
 
 const client = new Anthropic({
-  apiKey: process.env.AI_STATS_API_KEY
+  apiKey: process.env.PHASEO_API_KEY
 });
 
 const stream = await client.messages.create({
@@ -251,9 +251,9 @@ Responses match the Anthropic SDK format:
 
 ## Model Naming Convention
 
-AI Stats uses a provider-prefixed naming convention:
+Phaseo uses a provider-prefixed naming convention:
 
-| SDK | AI Stats Equivalent |
+| SDK | Phaseo Equivalent |
 |-----|---------------------|
 | `gpt-4o` | `openai/gpt-4o` |
 | `gpt-4o-mini` | `openai/gpt-4o-mini` |
@@ -261,7 +261,7 @@ AI Stats uses a provider-prefixed naming convention:
 | `gemini-2.0-flash` | `google-ai-studio/gemini-2.0-flash` |
 | `llama-3.3-70b` | `meta/llama-3.3-70b` |
 
-Browse all 300+ models at [ai-stats.app/models](https://ai-stats.app/models)
+Browse all 300+ models at [phaseo.app/models](https://phaseo.app/models)
 
 ---
 
@@ -270,11 +270,11 @@ Browse all 300+ models at [ai-stats.app/models](https://ai-stats.app/models)
 ### OpenAI Compatibility
 
 ```typescript
-import { OpenAI } from '@ai-stats/sdk/compat/openai';
+import { OpenAI } from '@phaseo/sdk/compat/openai';
 
 const client = new OpenAI({
-  apiKey: process.env.AI_STATS_API_KEY,           // Required
-  baseURL: 'https://gateway.ai-stats.app/v1',     // Optional (default)
+  apiKey: process.env.PHASEO_API_KEY,           // Required
+  baseURL: 'https://phaseo.app/v1',     // Optional (default)
   timeout: 60000,                                 // Optional (60s default)
   dangerouslyAllowBrowser: false,                 // Optional
   defaultHeaders: {                               // Optional
@@ -286,11 +286,11 @@ const client = new OpenAI({
 ### Anthropic Compatibility
 
 ```typescript
-import { Anthropic } from '@ai-stats/sdk/compat/anthropic';
+import { Anthropic } from '@phaseo/sdk/compat/anthropic';
 
 const client = new Anthropic({
-  apiKey: process.env.AI_STATS_API_KEY,           // Required
-  baseURL: 'https://gateway.ai-stats.app/v1',     // Optional (default)
+  apiKey: process.env.PHASEO_API_KEY,           // Required
+  baseURL: 'https://phaseo.app/v1',     // Optional (default)
   timeout: 60000,                                 // Optional (60s default)
   maxRetries: 3,                                  // Optional
   defaultHeaders: {                               // Optional
@@ -307,32 +307,32 @@ Migrating from OpenAI or Anthropic? Here's your checklist:
 
 ### From OpenAI SDK
 
-- [ ] Replace `import OpenAI from 'openai'` with `import { OpenAI } from '@ai-stats/sdk/compat/openai'`
-- [ ] Update API key from `OPENAI_API_KEY` to `AI_STATS_API_KEY`
+- [ ] Replace `import OpenAI from 'openai'` with `import { OpenAI } from '@phaseo/sdk/compat/openai'`
+- [ ] Update API key from `OPENAI_API_KEY` to `PHASEO_API_KEY`
 - [ ] Prefix model names with `openai/` (e.g., `gpt-4o` → `openai/gpt-4o`)
 - [ ] Optional: Update `baseURL` if using custom gateway URL
 - [ ] Test existing code - it should work without other changes!
 
 ### From Anthropic SDK
 
-- [ ] Replace `import Anthropic from '@anthropic-ai/sdk'` with `import { Anthropic } from '@ai-stats/sdk/compat/anthropic'`
-- [ ] Update API key from `ANTHROPIC_API_KEY` to `AI_STATS_API_KEY`
+- [ ] Replace `import Anthropic from '@anthropic-ai/sdk'` with `import { Anthropic } from '@phaseo/sdk/compat/anthropic'`
+- [ ] Update API key from `ANTHROPIC_API_KEY` to `PHASEO_API_KEY`
 - [ ] Prefix model names with `anthropic/` (e.g., `claude-3-5-sonnet-20241022` → `anthropic/claude-3-5-sonnet-20241022`)
 - [ ] Optional: Update `baseURL` if using custom gateway URL
 - [ ] Test existing code - message format conversion is automatic!
 
 ---
 
-## Native AI Stats SDK
+## Native Phaseo SDK
 
-Want to use the native AI Stats SDK instead of compatibility layers?
+Want to use the native Phaseo SDK instead of compatibility layers?
 
 ```typescript
-import { AIStats } from '@ai-stats/sdk';
+import { Phaseo } from '@phaseo/sdk';
 
-const client = new AIStats({
-  apiKey: process.env.AI_STATS_API_KEY,
-  baseUrl: 'https://gateway.ai-stats.app/v1',
+const client = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseUrl: 'https://phaseo.app/v1',
   devtools: {
     enabled: true,  // Enable built-in devtools
     endpoint: 'http://localhost:3001'
@@ -373,21 +373,21 @@ const analytics = await client.getAnalytics({
 Create a `.env` file:
 
 ```bash
-# AI Stats Gateway API Key (get yours at ai-stats.app)
-AI_STATS_API_KEY=your-api-key-here
+# Phaseo Gateway API Key (get yours at phaseo.app)
+PHASEO_API_KEY=your-api-key-here
 
-# Optional: Custom gateway URL (defaults to https://gateway.ai-stats.app/v1)
-AI_STATS_BASE_URL=https://gateway.ai-stats.app/v1
+# Optional: Custom gateway URL (defaults to https://phaseo.app/v1)
+PHASEO_BASE_URL=https://phaseo.app/v1
 ```
 
 ---
 
 ## Getting Your API Key
 
-1. Sign up at [ai-stats.app](https://ai-stats.app)
+1. Sign up at [phaseo.app](https://phaseo.app)
 2. Navigate to **Settings → API Keys**
 3. Click **Create API Key**
-4. Copy your key to `.env` as `AI_STATS_API_KEY`
+4. Copy your key to `.env` as `PHASEO_API_KEY`
 
 ---
 
@@ -404,9 +404,9 @@ AI_STATS_BASE_URL=https://gateway.ai-stats.app/v1
 
 **A:** No! The compatibility layers handle format conversion automatically.
 
-### Q: Can I access AI Stats-specific features?
+### Q: Can I access Phaseo-specific features?
 
-**A:** Yes! Use the `.native` property to access the underlying AIStats client:
+**A:** Yes! Use the `.native` property to access the underlying Phaseo client:
 
 ```typescript
 const openai = new OpenAI({ apiKey: '...' });
@@ -423,20 +423,20 @@ const analytics = await openai.native.getAnalytics();
 
 ### Q: How do I list available models?
 
-**A:** Use `client.models.list()` (OpenAI compat) or visit [ai-stats.app/models](https://ai-stats.app/models)
+**A:** Use `client.models.list()` (OpenAI compat) or visit [phaseo.app/models](https://phaseo.app/models)
 
 ### Q: What about pricing?
 
-**A:** AI Stats uses unified pricing across all providers. View pricing at [ai-stats.app/pricing](https://ai-stats.app/pricing)
+**A:** Phaseo uses unified pricing across all providers. View pricing at [phaseo.app/pricing](https://phaseo.app/pricing)
 
 ---
 
 ## Support
 
-- 📖 **Documentation**: [ai-stats.app/docs](https://ai-stats.app/docs)
-- 💬 **Discord**: [Join our community](https://discord.gg/ai-stats)
-- 🐛 **Issues**: [GitHub Issues](https://github.com/AI-Stats/AI-Stats/issues)
-- 📧 **Email**: support@ai-stats.app
+- 📖 **Documentation**: [phaseo.app](https://phaseo.app)
+- 💬 **Discord**: [Join our community](https://discord.gg/phaseo)
+- 🐛 **Issues**: [GitHub Issues](https://github.com/phaseoteam/Phaseo/issues)
+- 📧 **Email**: support@phaseo.app
 
 ---
 

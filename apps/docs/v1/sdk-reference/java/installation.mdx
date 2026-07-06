@@ -30,7 +30,7 @@ Install the generated jar into your local Maven cache:
 ```bash
 mvn install:install-file \
   -Dfile=target/sdk-java-0.0.0-local.jar \
-  -DgroupId=ai.stats \
+  -DgroupId=app.phaseo \
   -DartifactId=sdk-java \
   -Dversion=0.0.0-local \
   -Dpackaging=jar
@@ -40,7 +40,7 @@ Then add it as a dependency in your app `pom.xml`:
 
 ```xml
 <dependency>
-  <groupId>ai.stats</groupId>
+  <groupId>app.phaseo</groupId>
   <artifactId>sdk-java</artifactId>
   <version>0.0.0-local</version>
 </dependency>

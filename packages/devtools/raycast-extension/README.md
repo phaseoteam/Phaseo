@@ -1,4 +1,4 @@
-# AI Stats Raycast Extension
+# Phaseo Raycast Extension
 
 Browse AI models, organisations, and API providers directly from Raycast.
 
@@ -33,7 +33,7 @@ npm run lint
 ## Requirements
 
 - Raycast (macOS/Windows)
-- AI Stats API key
+- Phaseo API key
 - Internet connection
 
 ## License

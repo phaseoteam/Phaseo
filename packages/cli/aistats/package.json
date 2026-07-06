@@ -1,11 +1,12 @@
 {
-	"name": "@ai-stats/cli",
-	"description": "Official AI Stats command line interface",
+	"name": "@phaseo/cli",
+	"description": "Official Phaseo command line interface",
 	"version": "0.1.1",
 	"type": "module",
 	"private": false,
 	"license": "MIT",
 	"bin": {
+		"phaseo": "./dist/index.js",
 		"aistats": "./dist/index.js"
 	},
 	"exports": {
@@ -36,7 +37,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/AI-Stats/AI-Stats.git",
+		"url": "git+https://github.com/phaseoteam/Phaseo.git",
 		"directory": "packages/cli/aistats"
 	}
 }

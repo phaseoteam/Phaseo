@@ -97,7 +97,7 @@ vi.mock("@/lib/oauth/service", () => ({
 		state.issuedTokenPairs.push(input);
 		return { access_token: "token" };
 	}),
-	loadOAuthClient: vi.fn(async () => ({ id: "aistats_cli", name: "AI Stats CLI", client_type: "public" })),
+	loadOAuthClient: vi.fn(async () => ({ id: "aistats_cli", name: "Phaseo CLI", client_type: "public" })),
 	makeAuthCodeExpiry: vi.fn(() => "2026-06-10T16:00:00.000Z"),
 	makeDeviceCodeExpiry: vi.fn(() => "2026-06-10T16:00:00.000Z"),
 	normalizeScopes: vi.fn((raw, fallback) => fallback ?? []),

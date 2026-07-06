@@ -1,27 +1,27 @@
 /**
- * AI Stats Devtools
+ * Phaseo Devtools
  *
- * Provides telemetry capture and debugging tools for AI Stats SDK.
+ * Provides telemetry capture and debugging tools for Phaseo SDK.
  * Import this package to enable devtools in your application.
  *
  * @example Basic usage
  * ```typescript
- * import { AIStats } from '@ai-stats/sdk';
+ * import { AIStats } from '@phaseo/sdk';
  * import { createAIStatsDevtools } from '@ai-stats/devtools';
  *
  * const client = new AIStats({
- *   apiKey: process.env.AI_STATS_API_KEY,
+ *   apiKey: process.env.PHASEO_API_KEY,
  *   devtools: createAIStatsDevtools()
  * });
  * ```
  *
  * @example With custom options
  * ```typescript
- * import { AIStats } from '@ai-stats/sdk';
+ * import { AIStats } from '@phaseo/sdk';
  * import { createAIStatsDevtools } from '@ai-stats/devtools';
  *
  * const client = new AIStats({
- *   apiKey: process.env.AI_STATS_API_KEY,
+ *   apiKey: process.env.PHASEO_API_KEY,
  *   devtools: createAIStatsDevtools({
  *     directory: './my-devtools-data',
  *     flushIntervalMs: 2000,
@@ -33,9 +33,9 @@
  * @example Environment variable control
  * ```typescript
  * // Enable via environment variable
- * // Set AI_STATS_DEVTOOLS=true in your environment
+ * // Set PHASEO_DEVTOOLS=true in your environment
  * const client = new AIStats({
- *   apiKey: process.env.AI_STATS_API_KEY,
+ *   apiKey: process.env.PHASEO_API_KEY,
  *   devtools: createAIStatsDevtools()
  * });
  * ```
@@ -51,7 +51,7 @@ import type { DevToolsConfig } from "@ai-stats/devtools-core";
  * The captured data is stored locally and can be viewed using the devtools viewer.
  *
  * By default, devtools is enabled in development (NODE_ENV !== 'production') but
- * can be explicitly controlled via the AI_STATS_DEVTOOLS environment variable.
+ * can be explicitly controlled via the PHASEO_DEVTOOLS environment variable.
  *
  * @param options - Optional devtools configuration
  * @returns DevToolsConfig object to pass to AIStats constructor

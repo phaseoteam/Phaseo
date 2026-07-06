@@ -1,4 +1,4 @@
-package aistats
+package phaseo
 
 import (
 	"context"
@@ -7,12 +7,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	gen "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go/src/gen"
+	gen "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/src/gen"
 )
 
 func TestGenerateTextPreservesGatewayMetadata(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet && r.URL.Path == "/gateway/models" {
+		if r.Method == http.MethodGet && r.URL.Path == "/models" {
 			w.Header().Set("Content-Type", "application/json")
 			_, _ = w.Write([]byte(`{"models":[{"model_id":"openai/gpt-5-nano","status":"active"}]}`))
 			return

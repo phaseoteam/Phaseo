@@ -1,19 +1,19 @@
 ---
 name: ai-stats
-description: Use AI Stats when you need one API for multiple AI providers, stable model discovery, routing controls, pricing visibility, async jobs, or agent-ready gateway workflows.
+description: Use Phaseo when you need one API for multiple AI providers, stable model discovery, routing controls, pricing visibility, async jobs, or agent-ready gateway workflows.
 compatibility: Public Mintlify documentation with OpenAPI-backed API reference pages. Best used by agents that can read Markdown docs, follow links, and make HTTP requests.
 metadata:
-  author: AI Stats
+  author: Phaseo
   version: "1.1"
 ---
 
-# AI Stats
+# Phaseo
 
-AI Stats gives developers and agents one way to call many AI providers through a single API.
+Phaseo gives developers and agents one way to call many AI providers through a single API.
 
-## What AI Stats is for
+## What Phaseo is for
 
-Use AI Stats when you need to:
+Use Phaseo when you need to:
 
 - send requests to multiple providers through one API
 - discover models and providers before sending traffic
@@ -37,7 +37,7 @@ Most integrations start with:
 
 ### Auth
 
-`Authorization: Bearer <AI_STATS_API_KEY>`
+`Authorization: Bearer <PHASEO_API_KEY>`
 
 ### Common first endpoint
 
@@ -81,7 +81,7 @@ Useful discovery endpoints:
 
 ## Routing controls
 
-AI Stats can:
+Phaseo can:
 
 - choose providers automatically
 - sort providers by price, latency, or throughput
@@ -109,7 +109,7 @@ Do not assume async endpoints return final content immediately.
 
 ## Agent workflows
 
-AI Stats supports agentic workflows through:
+Phaseo supports agentic workflows through:
 
 - gateway-native tools like `ai-stats:web_search`, `ai-stats:web_fetch`, and `gateway:datetime`
 - Agent SDK docs and examples

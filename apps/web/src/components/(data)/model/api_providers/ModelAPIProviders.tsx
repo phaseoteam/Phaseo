@@ -23,7 +23,7 @@ export default function ModelAPIProviders({ model }: ModelAPIProvidersProps) {
 				</p>
 				<div className="mt-3">
 					<a
-						href="https://github.com/AI-Stats/AI-Stats"
+						href="https://github.com/phaseoteam/Phaseo"
 						target="_blank"
 						rel="noopener noreferrer"
 						className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"

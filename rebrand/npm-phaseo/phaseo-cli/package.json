@@ -1,0 +1,25 @@
+{
+  "name": "@phaseo/cli",
+  "version": "0.1.1",
+  "description": "Phaseo command line interface transition package.",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "phaseo": "bin/phaseo.js",
+    "aistats": "bin/phaseo.js"
+  },
+  "files": [
+    "bin",
+    "README.md"
+  ],
+  "dependencies": {
+    "@ai-stats/cli": "0.1.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/phaseoteam/Phaseo.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

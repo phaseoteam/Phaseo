@@ -42,8 +42,8 @@ insert into public.oauth_clients (
   status
 ) values (
   'aistats_cli',
-  'AI Stats CLI',
-  'Official first-party AI Stats command line interface.',
+  'Phaseo CLI',
+  'Official first-party Phaseo command line interface.',
   'public',
   array[
     'openid',

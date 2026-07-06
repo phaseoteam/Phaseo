@@ -5,13 +5,13 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
 	title: "Monitor",
 	description:
-		"Track model availability, pricing updates, benchmark changes, and description edits on AI Stats in a compact monitor feed.",
+		"Track model availability, pricing updates, benchmark changes, and description edits on Phaseo in a compact monitor feed.",
 	keywords: [
 		"AI model changes",
 		"AI updates",
 		"AI pricing changes",
-		"AI Stats monitor",
-		"AI Stats",
+		"Phaseo monitor",
+		"Phaseo",
 	],
 	alternates: {
 		canonical: "/monitor",

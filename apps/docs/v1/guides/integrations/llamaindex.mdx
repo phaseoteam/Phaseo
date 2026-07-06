@@ -1,9 +1,9 @@
 ---
 title: "LlamaIndex"
-description: "Use AI Stats in LlamaIndex RAG workflows."
+description: "Use Phaseo in LlamaIndex RAG workflows."
 ---
 
-Use this guide when your LlamaIndex app should route generation or embeddings through AI Stats.
+Use this guide when your LlamaIndex app should route generation or embeddings through Phaseo.
 
 ## Install
 
@@ -19,7 +19,7 @@ from llama_index.llms.openai_like import OpenAILike
 
 llm = OpenAILike(
     model="openai/gpt-5-nano",
-    api_key=os.environ["AI_STATS_API_KEY"],
+    api_key=os.environ["PHASEO_API_KEY"],
     api_base="https://api.phaseo.app/v1",
     is_chat_model=True,
 )
@@ -41,8 +41,8 @@ Then build or query your index as usual.
 ## Notes
 
 - Use `OpenAILike` for third-party OpenAI-compatible APIs.
-- Keep generation and embedding model ids explicit. Do not assume LlamaIndex defaults point at AI Stats.
-- If you use AI Stats embeddings, set the embedding model with an AI Stats model id and the same base URL.
+- Keep generation and embedding model ids explicit. Do not assume LlamaIndex defaults point at Phaseo.
+- If you use Phaseo embeddings, set the embedding model with A Phaseo model id and the same base URL.
 
 ## Related
 

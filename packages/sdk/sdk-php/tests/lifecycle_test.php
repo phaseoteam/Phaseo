@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . "/../src/index.php";
 
-use AIStats\Sdk\AIStats;
+use Phaseo\Sdk\Phaseo;
 
 function assert_true(bool $condition, string $message): void
 {
@@ -21,7 +21,7 @@ function invoke_private(object $target, string $method, array $args = []): mixed
 }
 
 $warnings = [];
-$deprecatedClient = new AIStats(
+$deprecatedClient = new Phaseo(
     apiKey: "test",
     basePath: "https://api.phaseo.app/v1",
     enableDeprecationWarnings: true,
@@ -37,7 +37,7 @@ $deprecatedClient = new AIStats(
             "status" => "deprecated",
             "retirement_date" => "2099-01-01T00:00:00Z",
             "replacement_model_id" => "provider/new-model",
-            "message" => "[ai-stats] Model \"{$modelId}\" is deprecated and scheduled for retirement on 2099-01-01T00:00:00Z. Use \"provider/new-model\" instead."
+            "message" => "[phaseo] Model \"{$modelId}\" is deprecated and scheduled for retirement on 2099-01-01T00:00:00Z. Use \"provider/new-model\" instead."
         ];
     }
 );
@@ -55,7 +55,7 @@ try {
 assert_true($threw, "expected inactive model preflight to throw before dispatch");
 assert_true(count($warnings) === 0, "expected no warning callback when request is blocked");
 
-$retiredClient = new AIStats(
+$retiredClient = new Phaseo(
     apiKey: "test",
     basePath: "https://api.phaseo.app/v1",
     enableDeprecationWarnings: true,
@@ -65,7 +65,7 @@ $retiredClient = new AIStats(
             "model_id" => $modelId,
             "status" => "retired",
             "retirement_date" => "2020-01-01T00:00:00Z",
-            "message" => "[ai-stats] Model \"{$modelId}\" is retired as of 2020-01-01T00:00:00Z."
+            "message" => "[phaseo] Model \"{$modelId}\" is retired as of 2020-01-01T00:00:00Z."
         ];
     }
 );

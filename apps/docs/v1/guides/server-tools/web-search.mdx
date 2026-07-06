@@ -5,17 +5,17 @@ description: "Let models search the web during a request."
 
 Use `ai-stats:web_search` when the model needs current or source-backed information. The model decides when to search, writes the query, and can search multiple times in one request.
 
-AI Stats returns URLs, titles, snippets, highlights, and optional page text to the model so it can write a grounded response.
+Phaseo returns URLs, titles, snippets, highlights, and optional page text to the model so it can write a grounded response.
 
 <Note>
-Google native web search is not enabled in AI Stats server tools yet. Use managed search or provider-native search on supported OpenAI and Anthropic routes.
+Google native web search is not enabled in Phaseo server tools yet. Use managed search or provider-native search on supported OpenAI and Anthropic routes.
 </Note>
 
 ## How it works
 
 1. Add `{ "type": "ai-stats:web_search" }` to `tools`.
 2. The model decides whether it needs a search and emits a query.
-3. AI Stats executes the search using the configured engine.
+3. Phaseo executes the search using the configured engine.
 4. Results are returned to the model as tool context.
 5. The model writes the final response and may search again if needed.
 
@@ -72,14 +72,14 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 | Engine | Behavior |
 | --- | --- |
-| `exa` | Managed Exa search. Requires AI Stats to have Exa configured for the gateway runtime. |
+| `exa` | Managed Exa search. Requires Phaseo to have Exa configured for the gateway runtime. |
 | `auto` | Uses the configured managed default, currently Exa. |
 | `parallel` | Uses Parallel search when configured. |
 | `firecrawl` | Uses Firecrawl search when configured. |
 | `perplexity` | Uses the first-party Perplexity Search API when configured. Supports ranked results, `search_context_size`, regional search from `user_location.country`, and either allowed or excluded domains. |
 | `native` | Converts the declaration to a provider-native web-search tool before the upstream model call when the request surface supports it. |
 
-Use `engine: "native"` only in the tool declaration. If a model tries to pass `engine: "native"` inside an already-emitted gateway search call, AI Stats returns a tool error because native tools must be selected before the upstream request is sent.
+Use `engine: "native"` only in the tool declaration. If a model tries to pass `engine: "native"` inside an already-emitted gateway search call, Phaseo returns a tool error because native tools must be selected before the upstream request is sent.
 
 ## Domain filtering
 
@@ -89,7 +89,7 @@ Use `allowed_domains` when the answer must come from a controlled source set:
 {
   "type": "ai-stats:web_search",
   "parameters": {
-    "allowed_domains": ["docs.ai-stats.com", "github.com"]
+    "allowed_domains": ["docs.phaseo.app", "github.com"]
   }
 }
 ```
@@ -105,7 +105,7 @@ The same tool shape works with `/v1/responses`:
 ```json
 {
   "model": "openai/gpt-5-nano",
-  "input": "Find the latest release notes for AI Stats.",
+  "input": "Find the latest release notes for Phaseo.",
   "tools": [
     { "type": "ai-stats:web_search", "parameters": { "max_results": 4 } }
   ]

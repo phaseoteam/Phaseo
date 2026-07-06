@@ -56,17 +56,17 @@ export function detectPackageManager(env: NodeJS.ProcessEnv = process.env): Pack
 }
 
 export function installCommandFor(manager: PackageManager): string {
-	if (manager === "pnpm") return "pnpm add -g @ai-stats/cli";
-	if (manager === "yarn") return "yarn global add @ai-stats/cli";
-	if (manager === "bun") return "bun add -g @ai-stats/cli";
-	return "npm install -g @ai-stats/cli";
+	if (manager === "pnpm") return "pnpm add -g @phaseo/cli";
+	if (manager === "yarn") return "yarn global add @phaseo/cli";
+	if (manager === "bun") return "bun add -g @phaseo/cli";
+	return "npm install -g @phaseo/cli";
 }
 
 export function updateCommandFor(manager: PackageManager): string {
-	if (manager === "pnpm") return "pnpm add -g @ai-stats/cli@latest";
-	if (manager === "yarn") return "yarn global add @ai-stats/cli@latest";
-	if (manager === "bun") return "bun add -g @ai-stats/cli@latest";
-	return "npm install -g @ai-stats/cli@latest";
+	if (manager === "pnpm") return "pnpm add -g @phaseo/cli@latest";
+	if (manager === "yarn") return "yarn global add @phaseo/cli@latest";
+	if (manager === "bun") return "bun add -g @phaseo/cli@latest";
+	return "npm install -g @phaseo/cli@latest";
 }
 
 async function readUpdateCache(): Promise<UpdateCheckCache | null> {

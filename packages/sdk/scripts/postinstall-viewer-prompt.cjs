@@ -5,8 +5,8 @@ const path = require("path");
 const readline = require("readline");
 const { spawn } = require("child_process");
 
-const packageName = process.argv[2] || "@ai-stats/sdk";
-const viewerPackage = "@ai-stats/devtools-viewer";
+const packageName = process.argv[2] || "@phaseo/sdk";
+const viewerPackage = "@phaseo/devtools-viewer";
 
 function hasFile(p) {
   try {
@@ -80,8 +80,8 @@ async function main() {
     process.env.GITHUB_ACTIONS === "true" ||
     process.env.GITLAB_CI === "true" ||
     process.env.CIRCLECI === "true";
-  const skip = process.env.AI_STATS_SKIP_POSTINSTALL === "true";
-  const auto = process.env.AI_STATS_INSTALL_VIEWER;
+  const skip = process.env.PHASEO_SKIP_POSTINSTALL === "true";
+  const auto = process.env.PHASEO_INSTALL_VIEWER;
   const publishing =
     process.env.npm_lifecycle_event === "publish" ||
     process.env.npm_lifecycle_event === "prepublishOnly";

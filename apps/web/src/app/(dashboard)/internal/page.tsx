@@ -5,7 +5,7 @@ import InternalToolsGrid from "@/components/internal/InternalToolsGrid";
 export const metadata = {
 	title: "Internal Tools",
 	description:
-		"Internal admin tools and operational utilities for managing AI Stats platform data, validating integrations, and running maintenance workflows safely.",
+		"Internal admin tools and operational utilities for managing Phaseo platform data, validating integrations, and running maintenance workflows safely.",
 };
 
 export default async function InternalPage() {
@@ -36,7 +36,7 @@ export default async function InternalPage() {
 				<div className="mb-8">
 					<h1 className="text-3xl font-bold mb-2">Internal Tools</h1>
 					<p className="text-muted-foreground">
-						Admin tools and utilities for managing the AI Stats platform.
+						Admin tools and utilities for managing the Phaseo platform.
 					</p>
 				</div>
 				<InternalToolsGrid />

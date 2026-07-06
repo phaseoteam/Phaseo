@@ -15,7 +15,7 @@ export const metadata: Metadata = buildMetadata({
 		"model changelog",
 		"AI benchmarks",
 		"new AI models",
-		"AI Stats",
+		"Phaseo",
 		"GPT-5.1",
 		"Claude 4.5",
 		"Gemini 2.5",

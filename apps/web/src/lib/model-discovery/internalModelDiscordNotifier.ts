@@ -54,10 +54,10 @@ export type SendDiscordWebhookOptions = {
 };
 
 const DEFAULT_EMBED_COLOR = 0x2563eb;
-const DEFAULT_USERNAME = "AI Stats Model Discovery";
+const DEFAULT_USERNAME = "Phaseo Model Discovery";
 const DEFAULT_MAX_MODEL_EMBEDS = 10;
-const DEFAULT_LATEST_MODELS_URL = "https://ai-stats.phaseo.app/models";
-const DEFAULT_ASSET_BASE_URL = "https://ai-stats.phaseo.app";
+const DEFAULT_LATEST_MODELS_URL = "https://phaseo.app/models";
+const DEFAULT_ASSET_BASE_URL = "https://phaseo.app";
 const DEFAULT_AVATAR_PATH = "/png_logo_light.png";
 const ALLOWED_DISCORD_WEBHOOK_HOSTS = new Set([
 	"discord.com",
@@ -135,11 +135,11 @@ function resolveEmbedColor(model: InternalModelNotificationModel): number {
 
 function formatFooterText(nowIso: string): string {
 	const date = new Date(nowIso);
-	if (!Number.isFinite(date.getTime())) return "AI Stats";
+	if (!Number.isFinite(date.getTime())) return "Phaseo";
 	const day = date.getUTCDate().toString().padStart(2, "0");
 	const month = date.toLocaleString("en-GB", { month: "short", timeZone: "UTC" });
 	const year = date.getUTCFullYear();
-	return `AI Stats | ${day} ${month} ${year}`;
+	return `Phaseo | ${day} ${month} ${year}`;
 }
 
 function buildDisplayTitle(model: InternalModelNotificationModel): string {

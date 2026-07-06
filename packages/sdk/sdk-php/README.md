@@ -1,13 +1,13 @@
-# AI Stats PHP SDK
+# Phaseo PHP SDK
 
-Official PHP SDK for AI Stats Gateway.
+Official PHP SDK for Phaseo Gateway.
 
-Packagist package name: `ai-stats/php-sdk`
+Packagist package name: `phaseo/sdk`
 
 ## Installation
 
 ```bash
-composer require ai-stats/php-sdk
+composer require phaseo/sdk
 ```
 
 ## Quick start
@@ -19,11 +19,11 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/vendor/autoload.php';
 
-use AIStats\Sdk\AIStats;
+use Phaseo\Sdk\Phaseo;
 
-$client = new AIStats(
-    apiKey: getenv('AI_STATS_API_KEY') ?: null,
-    basePath: getenv('AI_STATS_BASE_URL') ?: 'https://api.phaseo.app/v1',
+$client = new Phaseo(
+    apiKey: getenv('PHASEO_API_KEY') ?: null,
+    basePath: getenv('PHASEO_BASE_URL') ?: 'https://api.phaseo.app/v1',
 );
 
 $response = $client->createResponse([
@@ -89,7 +89,7 @@ TLS verification is enabled by default.
 Resolution order for CA bundle:
 
 1. Constructor `caBundlePath`
-2. `AI_STATS_CA_BUNDLE`
+2. `PHASEO_CA_BUNDLE`
 3. `curl.cainfo` / `openssl.cafile`
 4. `SSL_CERT_FILE`
 5. Bundled `certs/cacert.pem`
@@ -103,11 +103,11 @@ Disabling TLS verification (`verifyTls: false`) should only be used for local de
 
 ## Environment variables
 
-- `AI_STATS_API_KEY` (required unless passed in code)
-- `AI_STATS_BASE_URL` (optional, defaults to `https://api.phaseo.app/v1`)
-- `AI_STATS_CA_BUNDLE` (optional TLS override)
+- `PHASEO_API_KEY` (required unless passed in code)
+- `PHASEO_BASE_URL` (optional, defaults to `https://api.phaseo.app/v1`)
+- `PHASEO_CA_BUNDLE` (optional TLS override)
 
 ## Regeneration and local checks
 
 - Regenerate generated client: `pnpm openapi:gen:php`
-- Validate and test: `pnpm --filter @ai-stats/php-sdk run validate && pnpm --filter @ai-stats/php-sdk run test`
+- Validate and test: `pnpm --filter @phaseo/php-sdk run validate && pnpm --filter @phaseo/php-sdk run test`

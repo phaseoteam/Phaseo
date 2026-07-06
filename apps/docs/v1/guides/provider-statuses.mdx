@@ -1,6 +1,6 @@
 ---
 title: "Provider Statuses"
-description: "What Active, Coming Soon, Deranked, Not Active, and Disabled mean on AI Stats model pages."
+description: "What Active, Coming Soon, Deranked, Not Active, and Disabled mean on Phaseo model pages."
 ---
 
 Provider status explains whether a provider is currently routable for a model and, if it is routable, whether routing health is deprioritizing it.
@@ -16,7 +16,7 @@ You will see these labels on model pages, provider pricing cards, and related av
 | `Deranked L2` | The provider is live, but routing health is currently deprioritizing it more clearly. | Routable now, but less preferred than healthy providers. |
 | `Deranked L3` | The provider is live, but routing health is heavily deprioritizing it. | Routable now, but strongly deprioritized. |
 | `Coming Soon` | The provider/model mapping is listed in the catalog, but it is not active for normal routing yet. | Not routable yet. |
-| `Not Active` | AI Stats knows about the provider or mapping, but it is not currently available for public routing. | Not routable now. |
+| `Not Active` | Phaseo knows about the provider or mapping, but it is not currently available for public routing. | Not routable now. |
 | `Disabled` | The mapping is explicitly disabled. | Never routed while disabled. |
 
 ## How deranking works
@@ -33,14 +33,14 @@ If a provider is deranked, a model page may also show extra hover-card detail ab
 
 Use this distinction when reading model pages:
 
-- `Not Active` means the mapping exists in the catalog, but AI Stats is not routing to it right now.
+- `Not Active` means the mapping exists in the catalog, but Phaseo is not routing to it right now.
 - `Disabled` means the mapping has been explicitly switched off.
 
 In practice, `Not Active` can cover several underlying rollout or access states, while `Disabled` is an intentional hard-off state.
 
 ## Coming Soon
 
-`Coming Soon` is used when AI Stats has catalog coverage for a provider/model mapping before that mapping is publicly routable.
+`Coming Soon` is used when Phaseo has catalog coverage for a provider/model mapping before that mapping is publicly routable.
 
 Common reasons include:
 

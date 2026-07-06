@@ -1,66 +1,116 @@
 ---
 title: "ICYMI: What We Shipped in May 2026"
-description: From video rollout and provider activation to the TypeScript Agent SDK and major May model launches, here is what shipped in May 2026.
+description: A plain-English recap of May improvements across video, observability, provider activation, SDKs, model pages, and catalog coverage.
 publishedAt: 2026-05-31
-author: AI Stats Team
+author: Phaseo Team
+category: data
+pinned: true
+coverImage: /blog-images/recap-may-2026.svg
 tags:
   - ICYMI
   - Monthly Recap
   - Product
-  - API
+  - Models
 draft: false
 ---
 
-May was one of our busiest release months so far.
+May was one of the busiest Phaseo release months so far. The product moved further beyond a model directory and deeper into gateway workflows: video, async jobs, observability, provider activation, and SDK work all moved forward.
 
-This recap covers shipping from **May 1, 2026** through **May 31, 2026**, across gateway capabilities, SDKs, product UX, and model coverage.
+This recap covers the work that shipped from **1 May 2026** through **31 May 2026**, based on the release history, commit history, and catalog data for the month.
 
 ## What Shipped
 
-### Video, async jobs, and observability rolled out
+### Video and async jobs became more complete
 
-We pushed AI Stats further into production-ready async workflows in May.
+May shipped a large gateway update covering video rollout, usage visibility, request diagnostics, and the batch and video async lifecycle.
 
-Video support expanded across status, cancellation, content, and download flows. We also completed more of the batch lifecycle and made request, session, and async-job details much easier to inspect when you need to debug real traffic instead of toy examples.
+That included support for status checks, cancellation, content retrieval, downloads, and clearer usage details. In plain English: long-running work became easier to start, track, inspect, and debug.
 
-For teams operating through the gateway, this means fewer blind spots when something goes wrong and better visibility into what actually happened on a request.
+This was an important product shift. Video and batch jobs do not behave like simple chat requests. They take longer, they can fail in different ways, and users need better ways to follow progress. May made those workflows feel more like first-class parts of the gateway.
 
-### Provider activation and pricing got clearer
+### Observability moved closer to real production use
 
-We made provider availability much easier to read across the product.
+Request diagnostics became more useful in May. The gateway added clearer request detail, early error visibility, provider activation states, and better usage refresh paths.
 
-Provider activation states are now surfaced more consistently across model pages and discovery flows, region-aware filtering makes it easier to narrow models by execution geography, and pricing summaries are clearer at a glance. We also refreshed realtime minute pricing, improved hover-card summaries, and fixed homepage token and monthly request metrics so public numbers line up more closely with current activity.
+For teams running real workloads, this reduces guesswork. If a request fails, routes differently than expected, or uses an unexpected provider, the product should help explain what happened.
 
-### TypeScript Agent SDK launched
+That is the difference between a demo gateway and something a team can actually operate. Observability is not only about charts; it is about giving people enough context to fix the next request.
 
-We launched the first public version of `@ai-stats/agent-sdk`.
+### Provider activation and pricing became clearer
 
-This release adds a TypeScript-first runtime for bounded, resumable agent loops on AI Stats Gateway, with docs, installation guides, and cookbook examples for coding review, research, support triage, and parallel local tools. It is an important step toward making AI Stats easier to use for longer-running application workflows, not just single request-response integrations.
+Provider availability became easier to understand across catalog pages and internal data. Provider activation states started showing more consistently, pricing summaries and hover cards improved, and realtime minute pricing was corrected.
 
-### May model coverage kept moving
+May also included provider data refreshes for Google, Anthropic, Baseten, Venice, Novita, CrofAI, AWS, and others. Several of those updates were small on their own, but together they made the catalog more current and more dependable.
 
-May also brought a steady stream of new model additions and promotions across text, realtime, image, video, and coding.
+This is especially useful when the same model has several providers. Users need to know not just that a model exists, but where it can be run, what it costs, and whether the route is active.
 
-Highlights included `chat-latest`, `GPT Realtime 2`, `GPT Realtime Translate`, `GPT Realtime Whisper`, `Grok Imagine Image Quality`, `Grok Build 0.1`, `Gemini 3.5 Flash`, `Command A Plus`, `Qwen 3.7 Max`, `Claude Opus 4.8`, the GA Gemini image models, and the late-month Grok Imagine Video 1.5 Preview placeholder ahead of fuller rollout work.
+### The TypeScript Agent SDK launched
 
-Explore models here:
+May introduced the first public TypeScript Agent SDK work for Phaseo. The release added SDK code, examples, docs, devtools alignment, and migration tooling around the gateway contract.
 
-- [Explore models here](/models)
+The goal was to make longer-running agent workflows easier to build without making every team stitch together their own loop, tools, telemetry, and retry behaviour from scratch.
+
+The first examples focused on practical workflows: coding review, research, support triage, and parallel local tools. That gave developers a clearer starting point than a bare API reference.
+
+### Model discovery got more automated
+
+We added GitHub issue sync for provider model changes, controlled notifications, and clearer model discovery handling. We also refreshed benchmark data and improved date ordering and model-family behaviour.
+
+This work helped the catalog keep up with fast provider changes without turning every update into a manual hunt. It also made it easier to separate real provider changes from noisy discovery output.
+
+The catalog is only useful if it stays current. May was about reducing the manual work needed to keep it that way.
+
+## Also Shipped
+
+- Header search loading was deferred so the main page could load before the search index.
+- Homepage monthly token stats were corrected.
+- Media retry settings and duplicate handling were fixed.
+- Benchmark rank ordering was corrected.
+- Organisation social links gained URL validation.
+- Free-model credit gating and workspace policy enforcement were hardened.
+- Dependency updates landed across Next.js, Mintlify, Hono, Zod, PostHog, and CI tooling.
+
+## Model Highlights
+
+May brought a wide model mix. OpenAI added `chat-latest` and several realtime models. Google moved Gemini 3.1 Flash-Lite and Gemini 3.5 Flash forward, then added image-model releases later in the month. xAI added Grok Imagine Image Quality, Grok Build 0.1, and a Grok Imagine Video 1.5 Preview entry.
+
+The month also included Claude Opus 4.8, Command A+, Qwen 3.7 Max variants, Cursor Composer 2.5, Step 3.7 Flash, CrofAI Greg RP, and NVIDIA Cosmos3 Super Reasoner.
+
+Browse the latest release data here:
+
 - [Explore recent updates here](/updates)
 
-### Late-May catalog and reliability refresh
+## Shipping Snapshot
 
-We closed the month with a dense round of cleanup and release tracking work.
+The local git history shows **77 commits** during May. The month centred on video and async jobs, provider activation, observability, SDK launch work, pricing fixes, model discovery automation, and a steady run of catalog releases.
 
-That included provider pricing refreshes, benchmark backfills, Baseten and provider deprecation sync work, CrofAI scheduling, timestamp normalization, and dependency refreshes. A lot of this work is less visible than a new feature launch, but it keeps the catalog, changelogs, and gateway behavior aligned as releases accelerate.
+## Models Released In May 2026
 
-## Shipping Snapshot (May 1-31)
+The catalog includes these models with May 2026 release dates:
 
-- **82 pull requests** merged to `main`
-- **60 human-authored pull requests**
-- **2 Version Packages** release PRs
-- **1 new public SDK launch**: `@ai-stats/agent-sdk`
+- 5 May: chat-latest (`openai/chat-latest`)
+- 6 May: Grok Imagine Image Quality (`x-ai/grok-imagine-image-quality`)
+- 7 May: Gemini 3.1 Flash-Lite (`google/gemini-3.1-flash-lite`)
+- 7 May: GPT Realtime 2 (`openai/gpt-realtime-2`)
+- 7 May: GPT Realtime Translate (`openai/gpt-realtime-translate`)
+- 7 May: GPT Realtime Whisper (`openai/gpt-realtime-whisper`)
+- 15 May: Grok Build 0.1 (`x-ai/grok-build-0.1`)
+- 18 May: Composer 2.5 (`cursor/composer-2.5`)
+- 19 May: Gemini 3.5 Flash (`google/gemini-3.5-flash`)
+- 19 May: Qwen 3.5 LiveTranslate Flash Realtime (2026-05-19) (`qwen/qwen3.5-livetranslate-flash-realtime-2026-05-19`)
+- 20 May: Command A+ (`cohere/command-a-plus`)
+- 21 May: Qwen 3.7 Max (`qwen/qwen3.7-max`)
+- 25 May: Qwen 3.7 Max (2026-05-17) (`qwen/qwen3.7-max-2026-05-17`)
+- 25 May: Qwen 3.7 Max Preview (`qwen/qwen3.7-max-preview`)
+- 26 May: Qwen 3.7 Plus (2026-05-26) (`qwen/qwen3.7-plus-2026-05-26`)
+- 28 May: Claude Opus 4.8 (`anthropic/claude-opus-4.8`)
+- 28 May: Greg RP (`crofai/greg-rp`)
+- 28 May: Gemini 3.1 Flash Image (Nano Banana 2) (`google/gemini-3.1-flash-image`)
+- 28 May: Gemini 3 Pro Image (Nano Banana Pro) (`google/gemini-3-pro-image`)
+- 29 May: Step 3.7 Flash (`stepfun/step-3.7-flash`)
+- 30 May: Grok Imagine Video 1.5 Preview (`x-ai/grok-imagine-video-1.5-preview`)
+- 31 May: Cosmos3 Super Reasoner (`nvidia/cosmos3-super-reasoner`)
 
 ## Next Up
 
-June picks up from here with more model releases, provider refreshes, and follow-through on the new agent tooling.
+May set up June for more catalog automation, more provider coverage, better monitor pages, and more work around onboarding and local developer workflows.

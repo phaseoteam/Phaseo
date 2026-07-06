@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . "/../src/index.php";
 
-use AIStats\Sdk\AIStats;
+use Phaseo\Sdk\Phaseo;
 
 function assert_true(bool $condition, string $message): void
 {
@@ -12,7 +12,7 @@ function assert_true(bool $condition, string $message): void
     }
 }
 
-final class FakeChatClient extends \AIStats\Gen\Client
+final class FakeChatClient extends \Phaseo\Gen\Client
 {
     public array $calls = [];
 
@@ -24,7 +24,7 @@ final class FakeChatClient extends \AIStats\Gen\Client
     public function request(string $method, string $path, ?array $query = null, ?array $headers = null, $body = null)
     {
         $this->calls[] = [$method, $path, $query, $headers, $body];
-        if ($method === "GET" && $path === "/gateway/models") {
+        if ($method === "GET" && $path === "/models") {
             return [
                 "models" => [
                     [
@@ -65,7 +65,7 @@ final class FakeChatClient extends \AIStats\Gen\Client
     }
 }
 
-$client = new AIStats(
+$client = new Phaseo(
     apiKey: "test",
     basePath: "https://api.phaseo.app/v1",
     enableDeprecationWarnings: false
@@ -96,7 +96,7 @@ assert_true((($response["usage"]["total_tokens"] ?? null) === 3), "expected tota
 assert_true($fake->calls === [
     [
         "GET",
-        "/gateway/models",
+        "/models",
         ["model_id" => "openai/gpt-5-nano", "limit" => "1"],
         null,
         null,

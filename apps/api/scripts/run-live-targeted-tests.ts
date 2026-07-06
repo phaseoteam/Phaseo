@@ -99,7 +99,7 @@ function normalizeEnvValue(value: string | undefined): string {
 
 function looksLikeGatewayAuthToken(token: string): boolean {
     if (!token) return false;
-    if (token.startsWith("aistats_v1_sk_")) return true;
+    if (token.startsWith("phaseo_v1_sk_")) return true;
     return token.split(".").length === 3;
 }
 
@@ -117,7 +117,7 @@ function resolveGatewayApiKey(): string {
 
     const kid = normalizeEnvValue(process.env.PLAYGROUND_GATEWAY_KEY_KID);
     if (!kid) return playgroundSecret;
-    return `aistats_v1_sk_${kid}_${playgroundSecret}`;
+    return `phaseo_v1_sk_${kid}_${playgroundSecret}`;
 }
 
 function loadLocalEnv(apiRoot: string) {

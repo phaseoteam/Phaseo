@@ -1,17 +1,17 @@
 using System.Text.Json;
-using AiStatsSdk;
+using PhaseoSdk;
 
-var apiKey = Environment.GetEnvironmentVariable("AI_STATS_API_KEY");
+var apiKey = Environment.GetEnvironmentVariable("PHASEO_API_KEY");
 if (string.IsNullOrWhiteSpace(apiKey))
 {
-    throw new InvalidOperationException("AI_STATS_API_KEY is required");
+    throw new InvalidOperationException("PHASEO_API_KEY is required");
 }
 
-var baseUrl = Environment.GetEnvironmentVariable("AI_STATS_BASE_URL") ?? "https://api.phaseo.app/v1";
-var client = new AIStats(apiKey, baseUrl);
-var model = Environment.GetEnvironmentVariable("AI_STATS_SMOKE_MODEL") ?? "openai/gpt-5-nano";
-var input = Environment.GetEnvironmentVariable("AI_STATS_SMOKE_INPUT") ?? "Hi";
-var maxOutputTokensRaw = Environment.GetEnvironmentVariable("AI_STATS_SMOKE_MAX_OUTPUT_TOKENS");
+var baseUrl = Environment.GetEnvironmentVariable("PHASEO_BASE_URL") ?? "https://api.phaseo.app/v1";
+var client = new PhaseoSdk.Phaseo(apiKey, baseUrl);
+var model = Environment.GetEnvironmentVariable("PHASEO_SMOKE_MODEL") ?? "openai/gpt-5.4-nano";
+var input = Environment.GetEnvironmentVariable("PHASEO_SMOKE_INPUT") ?? "Hi";
+var maxOutputTokensRaw = Environment.GetEnvironmentVariable("PHASEO_SMOKE_MAX_OUTPUT_TOKENS");
 var maxOutputTokens = int.TryParse(maxOutputTokensRaw, out var parsedMaxOutputTokens) && parsedMaxOutputTokens > 0
     ? parsedMaxOutputTokens
     : 32;

@@ -1,4 +1,4 @@
-export const FREE_ROUTER_MODEL_ID = "ai-stats/free";
+export const FREE_ROUTER_MODEL_ID = "phaseo/free";
 export const FREE_ROUTER_ORGANISATION_ID = "ai-stats";
 export const FREE_ROUTER_NAME = "Free Models Router";
 export const FREE_ROUTER_PRIMARY_DATE = "2026-05-12";

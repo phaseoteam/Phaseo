@@ -267,7 +267,7 @@ export async function POST(req: Request) {
 	};
 
 	const repo =
-		asString(process.env.GITHUB_REPOSITORY) ?? "AI-Stats/AI-Stats";
+		asString(process.env.GITHUB_REPOSITORY) ?? "phaseoteam/Phaseo";
 	const title = buildIssueTitle(normalizedError);
 	const body = buildIssueBody({
 		error: normalizedError,
@@ -310,7 +310,7 @@ export async function POST(req: Request) {
 				Authorization: `Bearer ${token}`,
 				Accept: "application/vnd.github+json",
 				"Content-Type": "application/json",
-				"User-Agent": "AI-Stats-Chat-Issue-Reporter",
+				"User-Agent": "Phaseo-Chat-Issue-Reporter",
 				"X-GitHub-Api-Version": "2022-11-28",
 			},
 			body: JSON.stringify({

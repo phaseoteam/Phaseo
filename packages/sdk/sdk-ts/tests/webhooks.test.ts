@@ -14,15 +14,15 @@ describe("async webhook signature helpers", () => {
     },
   });
 
-  test("verifies a valid AI Stats async webhook signature", () => {
+  test("verifies a valid Phaseo async webhook signature", () => {
     const signature = computeAsyncWebhookSignature(secret, timestamp, body);
 
     expect(verifyAsyncWebhookSignature({
       secret,
       body,
       headers: {
-        "x-ai-stats-timestamp": timestamp,
-        "x-ai-stats-signature": signature,
+        "x-phaseo-timestamp": timestamp,
+        "x-phaseo-signature": signature,
       },
       now: nowMs + 30_000,
     })).toBe(true);
@@ -35,8 +35,8 @@ describe("async webhook signature helpers", () => {
       secret,
       body: body.replace("completed", "failed"),
       headers: {
-        "x-ai-stats-timestamp": timestamp,
-        "x-ai-stats-signature": signature,
+        "x-phaseo-timestamp": timestamp,
+        "x-phaseo-signature": signature,
       },
       now: nowMs,
     })).toBe(false);
@@ -49,8 +49,8 @@ describe("async webhook signature helpers", () => {
       secret,
       body,
       headers: {
-        "x-ai-stats-timestamp": timestamp,
-        "x-ai-stats-signature": signature,
+        "x-phaseo-timestamp": timestamp,
+        "x-phaseo-signature": signature,
       },
       now: nowMs + 301_000,
     })).toBe(false);
@@ -63,8 +63,8 @@ describe("async webhook signature helpers", () => {
       secret,
       body,
       headers: {
-        "x-ai-stats-timestamp": timestamp,
-        "x-ai-stats-signature": signature,
+        "x-phaseo-timestamp": timestamp,
+        "x-phaseo-signature": signature,
       },
       now: 1781166630,
     })).toBe(true);
@@ -77,8 +77,8 @@ describe("async webhook signature helpers", () => {
       secret,
       body,
       headers: {
-        "x-ai-stats-timestamp": timestamp,
-        "x-ai-stats-signature": signature,
+        "x-phaseo-timestamp": timestamp,
+        "x-phaseo-signature": signature,
       },
       now: nowMs,
     })).toBe(true);
@@ -88,8 +88,8 @@ describe("async webhook signature helpers", () => {
     const bytes = new TextEncoder().encode(body);
     const signature = computeAsyncWebhookSignature(secret, timestamp, bytes);
     const headers = new Headers({
-      "x-ai-stats-timestamp": timestamp,
-      "x-ai-stats-signature": signature,
+      "x-phaseo-timestamp": timestamp,
+      "x-phaseo-signature": signature,
     });
 
     expect(verifyAsyncWebhookSignature({
@@ -108,8 +108,8 @@ describe("async webhook signature helpers", () => {
       secret,
       body,
       headers: {
-        "x-ai-stats-timestamp": isoTimestamp,
-        "x-ai-stats-signature": signature,
+        "x-phaseo-timestamp": isoTimestamp,
+        "x-phaseo-signature": signature,
       },
       now: nowMs,
     })).toBe(true);

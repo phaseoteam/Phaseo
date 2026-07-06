@@ -9,7 +9,7 @@ const command = args[0] || "start";
 
 function printHelp() {
   console.log(`
-AI Stats DevTools Viewer
+Phaseo DevTools Viewer
 
 Usage:
   ai-stats-devtools [command] [options]
@@ -30,7 +30,7 @@ Examples:
   ai-stats-devtools --port 8080 --dir ./my-devtools
 
 Environment Variables:
-  AI_STATS_DEVTOOLS_DIR  Path to devtools directory
+  PHASEO_DEVTOOLS_DIR  Path to devtools directory
   PORT                   Port to run the server on
 `);
 }
@@ -38,7 +38,7 @@ Environment Variables:
 function parseArgs() {
   const config = {
     port: parseInt(process.env.PORT || "4983", 10),
-    directory: process.env.AI_STATS_DEVTOOLS_DIR || ".ai-stats-devtools"
+    directory: process.env.PHASEO_DEVTOOLS_DIR || ".ai-stats-devtools"
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -79,7 +79,7 @@ async function main() {
     const config = parseArgs();
 
     // Set environment variables for the server
-    process.env.AI_STATS_DEVTOOLS_DIR = config.directory;
+    process.env.PHASEO_DEVTOOLS_DIR = config.directory;
     process.env.PORT = config.port.toString();
 
     startServer(config.port);

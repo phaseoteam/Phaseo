@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . "/../src/index.php";
 
-use AIStats\Sdk\AIStats;
+use Phaseo\Sdk\Phaseo;
 
 function assert_true(bool $condition, string $message): void
 {
@@ -12,7 +12,7 @@ function assert_true(bool $condition, string $message): void
     }
 }
 
-final class FakePricingCalculateClient extends \AIStats\Gen\Client
+final class FakePricingCalculateClient extends \Phaseo\Gen\Client
 {
     public array $calls = [];
 
@@ -34,7 +34,7 @@ final class FakePricingCalculateClient extends \AIStats\Gen\Client
     }
 }
 
-$client = new AIStats(
+$client = new Phaseo(
     apiKey: "test",
     basePath: "https://api.phaseo.app/v1",
     enableDeprecationWarnings: false

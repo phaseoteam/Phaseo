@@ -6,11 +6,11 @@ description: "Use the full OAuth Next.js example as a walkthrough for a signed-i
 Use this page when your product needs sign-in, session-backed gateway access, and more than a single chat route.
 
 <Prompt
-  description="Build a **signed-in Next.js workbench** with OAuth and a unified AI Stats proxy."
+  description="Build a **signed-in Next.js workbench** with OAuth and a unified Phaseo proxy."
   icon="shield-user"
   actions={["copy", "cursor"]}
 >
-{`You are building a signed-in Next.js app on top of AI Stats Gateway.
+{`You are building a signed-in Next.js app on top of Phaseo Gateway.
 
 Create a workbench-style app with:
 - OAuth 2.1 + PKCE sign-in
@@ -18,7 +18,7 @@ Create a workbench-style app with:
 - one unified gateway proxy route on the server
 - model discovery
 - one chat flow using the Responses API
-- one generic endpoint tester for additional AI Stats endpoints
+- one generic endpoint tester for additional Phaseo endpoints
 
 Requirements:
 - Keep gateway credentials and access tokens server-side.
@@ -36,7 +36,7 @@ Verification:
 
 ## Sample project
 
-- GitHub: [examples/oauth-client-nextjs](https://github.com/AI-Stats/AI-Stats/tree/main/examples/oauth-client-nextjs)
+- GitHub: [examples/oauth-client-nextjs](https://github.com/phaseoteam/Phaseo/tree/main/examples/oauth-client-nextjs)
 - Local repo path: `examples/oauth-client-nextjs`
 
 ## What this app covers
@@ -54,7 +54,7 @@ Use this when:
 
 - end users should sign in with delegated access
 - you need more than a simple chat page
-- you want one secure server route for several AI Stats endpoints
+- you want one secure server route for several Phaseo endpoints
 
 Do not start here if:
 
@@ -91,7 +91,7 @@ The catch-all proxy route:
 - refreshes tokens when needed
 - forwards request and response bodies
 
-This is a good pattern when you want several AI Stats endpoints without copying auth logic into every route.
+This is a good pattern when you want several Phaseo endpoints without copying auth logic into every route.
 
 ### 3. The dashboard doubles as an internal workbench
 

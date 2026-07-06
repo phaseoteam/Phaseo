@@ -2,7 +2,7 @@ require "json"
 require "net/http"
 require "uri"
 
-module AiStats
+module Phaseo
   module Gen
     class Client
       def initialize(base_url:, headers: {})
