@@ -1,0 +1,76 @@
+{
+  "model_id": "spacex-ai/grok-imagine-video",
+  "organisation_id": "spacex-ai",
+  "name": "Grok Imagine Video",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Grok Imagine Video is a video generation model from SpaceXAI for prompt-driven clip and scene creation. It supports turning still images into animated clips as well as prompt-driven video workflows.",
+  "announced_date": "2026-01-29T00:00:00",
+  "release_date": "2026-01-29T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image,video",
+  "output_types": "video",
+  "api_model_id": "spacex-ai/grok-imagine-video",
+  "links": [],
+  "details": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-t2v-rank",
+      "score": 1,
+      "is_self_reported": true,
+      "other_info": "Grok Imagine API benchmark table | Artificial Analysis Text-to-Video Rank",
+      "source_link": "https://x.ai/news/grok-imagine-api",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "ivebench-overall-vs-kling-o1",
+      "score": 57,
+      "is_self_reported": true,
+      "other_info": "Grok Imagine API benchmark table | IVEBench Overall vs Kling o1",
+      "source_link": "https://x.ai/news/grok-imagine-api",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "ivebench-instruction-following-vs-kling-o1",
+      "score": 53.1,
+      "is_self_reported": true,
+      "other_info": "Grok Imagine API benchmark table | IVEBench Instruction Following vs Kling o1",
+      "source_link": "https://x.ai/news/grok-imagine-api",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "ivebench-consistency-vs-kling-o1",
+      "score": 60.6,
+      "is_self_reported": true,
+      "other_info": "Grok Imagine API benchmark table | IVEBench Consistency vs Kling o1",
+      "source_link": "https://x.ai/news/grok-imagine-api",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "ivebench-overall-vs-runway-aleph",
+      "score": 64.1,
+      "is_self_reported": true,
+      "other_info": "Grok Imagine API benchmark table | IVEBench Overall vs Runway Aleph",
+      "source_link": "https://x.ai/news/grok-imagine-api",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "ivebench-instruction-following-vs-runway-aleph",
+      "score": 57.4,
+      "is_self_reported": true,
+      "other_info": "Grok Imagine API benchmark table | IVEBench Instruction Following vs Runway Aleph",
+      "source_link": "https://x.ai/news/grok-imagine-api",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "ivebench-consistency-vs-runway-aleph",
+      "score": 63.1,
+      "is_self_reported": true,
+      "other_info": "Grok Imagine API benchmark table | IVEBench Consistency vs Runway Aleph",
+      "source_link": "https://x.ai/news/grok-imagine-api",
+      "rank": 1
+    }
+  ]
+}

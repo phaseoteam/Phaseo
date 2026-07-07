@@ -1,5 +1,5 @@
 // Purpose: Executor for x-ai / video-generate.
-// Why: Uses xAI native video generation endpoints for direct provider support.
+// Why: Uses SpaceXAI native video generation endpoints for direct provider support.
 // How: Submits generation jobs to /videos/generations and returns normalized IR.
 
 import type { IRVideoGenerationRequest, IRVideoGenerationResponse } from "@core/ir";
@@ -289,7 +289,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			JSON.stringify({
 				error: {
 					type: "invalid_upstream_response",
-					message: "xAI video create response did not include a generation id.",
+					message: "SpaceXAI video create response did not include a generation id.",
 				},
 			}),
 			{ status: 502, headers: { "Content-Type": "application/json" } },
@@ -337,7 +337,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				note: "reservation_retained_for_manual_reconciliation",
 			});
 			return asyncVideoJobPersistenceFailureResult({
-				providerLabel: "xAI",
+				providerLabel: "SpaceXAI",
 				nativeVideoId: encodedId,
 				reservationId,
 				reservationStatus,

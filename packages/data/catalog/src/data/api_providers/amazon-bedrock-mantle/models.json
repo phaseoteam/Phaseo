@@ -882,10 +882,10 @@
     ]
   },
   {
-    "api_model_id": "x-ai/grok-4.3",
-    "provider_api_model_id": "amazon-bedrock-mantle:x-ai/grok-4.3",
+    "api_model_id": "spacex-ai/grok-4.3",
+    "provider_api_model_id": "amazon-bedrock-mantle:spacex-ai/grok-4.3",
     "provider_model_slug": "xai.grok-4.3",
-    "internal_model_id": "x-ai/grok-4.3",
+    "internal_model_id": "spacex-ai/grok-4.3",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",

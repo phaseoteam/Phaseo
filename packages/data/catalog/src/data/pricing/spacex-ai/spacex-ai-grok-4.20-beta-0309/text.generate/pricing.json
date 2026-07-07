@@ -1,0 +1,261 @@
+{
+  "key": "spacex-ai:spacex-ai/grok-4.20-beta-0309:text.generate",
+  "api_provider_id": "spacex-ai",
+  "provider_slug": "spacex-ai",
+  "api_model_id": "spacex-ai/grok-4.20-beta-0309",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-03-11T00:00:00Z",
+      "effective_to": "2026-04-30T23:59:59Z"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.2,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-03-11T00:00:00Z",
+      "effective_to": "2026-04-30T23:59:59Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 6,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-03-11T00:00:00Z",
+      "effective_to": "2026-04-30T23:59:59Z"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 4,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-03-11T00:00:00Z",
+      "effective_to": "2026-04-30T23:59:59Z"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.2,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-03-11T00:00:00Z",
+      "effective_to": "2026-04-30T23:59:59Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 12,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-03-11T00:00:00Z",
+      "effective_to": "2026-04-30T23:59:59Z"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.25,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-05-01T00:00:00Z",
+      "effective_to": "2026-06-15T00:00:00Z"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.2,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-05-01T00:00:00Z",
+      "effective_to": "2026-06-15T00:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-05-01T00:00:00Z",
+      "effective_to": "2026-06-15T00:00:00Z"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-05-01T00:00:00Z",
+      "effective_to": "2026-06-15T00:00:00Z"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.4,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-05-01T00:00:00Z",
+      "effective_to": "2026-06-15T00:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-05-01T00:00:00Z",
+      "effective_to": "2026-06-15T00:00:00Z"
+    }
+  ]
+}

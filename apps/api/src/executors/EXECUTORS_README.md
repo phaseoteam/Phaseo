@@ -71,7 +71,7 @@ The gateway automatically handles the mixed-media responses through native Googl
 
 | Provider | Status | Documentation | Specialty |
 |----------|--------|---------------|-----------|
-| **xAI** | ✅ Active | [Docs](https://docs.x.ai/) | Grok with real-time data |
+| **SpaceXAI** | ✅ Active | [Docs](https://docs.x.ai/) | Grok with real-time data |
 | **Mistral** | ✅ NEW | [Docs](https://docs.mistral.ai/) | European AI, open models |
 | **Cohere** | ✅ NEW | [Docs](https://docs.cohere.com/) | Enterprise RAG, embeddings |
 | **Perplexity** | ✅ NEW | [Docs](https://docs.perplexity.ai/) | Search-augmented responses |

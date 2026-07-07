@@ -6232,6 +6232,7 @@ components:
         - qwen
         - relace
         - sourceful
+        - spacex-ai
         - stepfun
         - suno
         - tencent
@@ -6239,7 +6240,6 @@ components:
         - vercel
         - voyage
         - windsurf
-        - x-ai
         - xiaomi
         - z-ai
     OrganisationIdList:
@@ -8502,6 +8502,15 @@ components:
         - qwen/text-embedding-v3
         - qwen/text-embedding-v4
         - qwen/wan2.7-t2v
+        - spacex-ai/grok-4.20-beta-0309
+        - spacex-ai/grok-4.20-multi-agent-beta-0309
+        - spacex-ai/grok-4.3
+        - spacex-ai/grok-build-0.1
+        - spacex-ai/grok-code-fast-1
+        - spacex-ai/grok-imagine-image
+        - spacex-ai/grok-imagine-image-quality
+        - spacex-ai/grok-imagine-video
+        - spacex-ai/grok-tts
         - stepfun/step-3.5-flash
         - stepfun/step-3.7-flash
         - tencent/hunyuan-a13b-instruct
@@ -8538,15 +8547,6 @@ components:
         - voyage/voyage-multilingual-2
         - voyage/voyage-multimodal-3
         - voyage/voyage-multimodal-3.5
-        - x-ai/grok-4.20-beta-0309
-        - x-ai/grok-4.20-multi-agent-beta-0309
-        - x-ai/grok-4.3
-        - x-ai/grok-build-0.1
-        - x-ai/grok-code-fast-1
-        - x-ai/grok-imagine-image
-        - x-ai/grok-imagine-image-quality
-        - x-ai/grok-imagine-video
-        - x-ai/grok-tts
         - xiaomi/mimo-v2-flash
         - xiaomi/mimo-v2.5
         - xiaomi/mimo-v2.5-pro

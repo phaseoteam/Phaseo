@@ -12,12 +12,12 @@ describe("parseAsyncJobFailureDiagnostics", () => {
 			},
 			providerFailureDiagnostics: {
 				category: "provider_access_missing",
-				provider: "x-ai",
+				provider: "spacex-ai",
 				hint: "Enable the model for this project.",
 			},
 			failureSample: [
 				{
-					provider: "x-ai",
+					provider: "spacex-ai",
 					type: "upstream_non_2xx",
 					status: 403,
 					retryable: false,
@@ -54,12 +54,12 @@ describe("parseAsyncJobFailureDiagnostics", () => {
 			},
 			job_provider_failure_diagnostics: {
 				category: "provider_access_missing",
-				provider: "x-ai",
+				provider: "spacex-ai",
 				hint: "Enable the model for this project.",
 			},
 			job_failure_sample: [
 				{
-					provider: "x-ai",
+					provider: "spacex-ai",
 					type: "upstream_non_2xx",
 					status: 403,
 					retryable: false,

@@ -1,5 +1,6 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { isMissingRelationError } from "./missingRelation";
 
 export type AppStats = {
     app_id: string;
@@ -54,6 +55,9 @@ export async function getTopApps(
             });
 
         if (error) {
+            if (isMissingRelationError(error)) {
+                return [];
+            }
             console.error("Error fetching top apps:", error);
             return [];
         }
@@ -92,6 +96,9 @@ export async function getTopApps(
             total_tokens: Number(row.total_tokens),
         }));
     } catch (err) {
+        if (isMissingRelationError(err)) {
+            return [];
+        }
         console.error("Unexpected error fetching top apps:", err);
         return [];
     }

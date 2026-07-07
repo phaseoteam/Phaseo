@@ -3,6 +3,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { cacheLife, cacheTag } from "next/cache";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { isMissingRelationError } from "./api-provider/missingRelation";
 
 type ProviderRollupRow = {
 	bucket_15m: string;
@@ -143,6 +144,16 @@ async function fetchProviderRollupRows(
 		if (error) {
 			hadError = true;
 			hitPageCap = false;
+			if (isMissingRelationError(error)) {
+				logUsageFetch("provider_metrics_rollup_missing_relation", {
+					providerId,
+					hours,
+					pagesFetched,
+					pageSize: PAGE_SIZE,
+					message: error.message ?? "Provider rollup table is missing",
+				});
+				break;
+			}
 			logUsageFetch("provider_metrics_rollup_query_error", {
 				providerId,
 				hours,
@@ -392,7 +403,9 @@ export async function getProviderMetrics(
 			now,
 		);
 	} catch (error) {
-		console.error("Failed to load provider performance rollups:", error);
+		if (!isMissingRelationError(error)) {
+			console.error("Failed to load provider performance rollups:", error);
+		}
 		return {
 			summary: {
 				uptimePct: null,

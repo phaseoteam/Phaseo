@@ -1,0 +1,113 @@
+{
+  "model_id": "spacex-ai/grok-4-heavy",
+  "organisation_id": "spacex-ai",
+  "name": "Grok 4 Heavy",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Grok 4 Heavy is a text-to-speech model from SpaceXAI. It targets higher-capability workloads where depth, quality, or scale matter more than raw speed.",
+  "announced_date": "2025-07-10T00:00:00",
+  "release_date": "2025-07-10T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "spacex-ai/grok-4-heavy",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://x.ai/news/grok-4"
+    }
+  ],
+  "details": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "aime-2025",
+      "score": 100,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/news/grok-4",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 88.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/news/grok-4",
+      "rank": 20
+    },
+    {
+      "benchmark_id": "hmmt-2025",
+      "score": 96.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/news/grok-4",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 44.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/news/grok-4",
+      "rank": 32
+    },
+    {
+      "benchmark_id": "usamo-2025",
+      "score": 61.9,
+      "is_self_reported": true,
+      "other_info": "With Python",
+      "source_link": "https://x.ai/news/grok-4",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 100,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.com/xai/status/1943158495588815072",
+      "rank": 11
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 88.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.com/xai/status/1943158495588815072",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 50.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.com/xai/status/1943158495588815072",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "livecodebench",
+      "score": 79.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.com/xai/status/1943158495588815072",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "usamo25",
+      "score": 61.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.com/xai/status/1943158495588815072",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 100,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.com/xai/status/1943158495588815072",
+      "rank": 12
+    }
+  ]
+}

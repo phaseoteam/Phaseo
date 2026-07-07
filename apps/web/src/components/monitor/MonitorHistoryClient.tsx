@@ -59,8 +59,8 @@ const PROVIDER_NAME_OVERRIDES: Record<string, string> = {
 	microsoft: "Microsoft",
 	mistral: "Mistral",
 	openai: "OpenAI",
-	"x-ai": "xAI",
-	xai: "xAI",
+	"spacex-ai": "SpaceXAI",
+	xai: "SpaceXAI",
 	"z-ai": "Z.ai",
 };
 

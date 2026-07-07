@@ -79,10 +79,10 @@ export const curatedGroups: ResultGroup[] = [
             },
             {
                 id: "org-xai",
-                title: "xAI",
-                href: "/organisations/x-ai",
+                title: "SpaceXAI",
+                href: "/organisations/spacex-ai",
                 icon: "organisation",
-                logoId: "x-ai",
+                logoId: "spacex-ai",
                 badge: "New Release"
             },
             {
@@ -134,7 +134,7 @@ export const curatedGroups: ResultGroup[] = [
                 title: "Grok-4.1",
                 href: "/models/grok-4.1",
                 icon: "model",
-                logoId: "x-ai",
+                logoId: "spacex-ai",
                 badge: "New",
             },
             {
@@ -223,10 +223,10 @@ export const curatedGroups: ResultGroup[] = [
             },
             {
                 id: "prov-xai",
-                title: "xAI",
-                href: "/api-providers/x-ai",
+                title: "SpaceXAI",
+                href: "/api-providers/spacex-ai",
                 icon: "api-provider",
-                logoId: "x-ai",
+                logoId: "spacex-ai",
             },
             {
                 id: "prov-deepseek",
@@ -288,7 +288,7 @@ export const curatedGroups: ResultGroup[] = [
                 title: "Grok Max",
                 href: "/subscription-plans/grok-max",
                 icon: "plan",
-                logoId: "x-ai",
+                logoId: "spacex-ai",
             },
         ],
     },
@@ -363,9 +363,9 @@ export const curatedGroups: ResultGroup[] = [
             {
                 id: "compare-grok-claude",
                 title: "Grok-4 vs Claude 3.5",
-                href: "/compare?models=x-ai_grok-4-2025-07-10,anthropic_claude-3-5-sonnet-2024-10-22",
+                href: "/compare?models=spacex-ai_grok-4-2025-07-10,anthropic_claude-3-5-sonnet-2024-10-22",
                 icon: "compare",
-                leftLogoId: "x-ai",
+                leftLogoId: "spacex-ai",
                 rightLogoId: "anthropic",
             },
             {

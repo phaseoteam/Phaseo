@@ -1,0 +1,29 @@
+{
+  "key": "spacex-ai:spacex-ai/grok-imagine-image:image.edit",
+  "api_provider_id": "spacex-ai",
+  "provider_slug": "spacex-ai",
+  "api_model_id": "spacex-ai/grok-imagine-image",
+  "capability_id": "image.edit",
+  "rules": [
+    {
+      "meter": "output_image",
+      "unit": "image",
+      "unit_size": 1,
+      "price_per_unit": 0.02,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "image_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "2k"
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-01-29T00:00:00Z"
+    }
+  ]
+}

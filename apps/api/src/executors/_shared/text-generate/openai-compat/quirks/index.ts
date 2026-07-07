@@ -47,6 +47,7 @@ const PROVIDER_QUIRKS: Record<string, ProviderQuirks> = {
 	"moonshot-ai-turbo": moonshotQuirks,
 	"moonshotai-turbo": moonshotQuirks,
 	xiaomi: xiaomiQuirks,
+	"spacex-ai": xAiQuirks,
 	"x-ai": xAiQuirks,
 	xai: xAiQuirks,
 	groq: groqQuirks,

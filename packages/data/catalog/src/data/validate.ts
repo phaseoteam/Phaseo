@@ -445,7 +445,7 @@ const VIDEO_PROVIDERS_WITH_EXECUTOR_METADATA = new Set([
     'openai',
     'atlascloud',
     'runway',
-    'x-ai',
+    'spacex-ai',
 ]);
 
 function isEnabledCapabilityStatus(value: unknown): boolean {

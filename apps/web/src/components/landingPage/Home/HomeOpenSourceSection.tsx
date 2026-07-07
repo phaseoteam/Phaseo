@@ -30,7 +30,7 @@ const CTA_TICKER_PROVIDERS = [
 	{ id: "openai", label: "OpenAI" },
 	{ id: "anthropic", label: "Anthropic" },
 	{ id: "google", label: "Google" },
-	{ id: "xai", label: "xAI" },
+	{ id: "xai", label: "SpaceXAI" },
 	{ id: "mistral", label: "Mistral" },
 	{ id: "deepseek", label: "DeepSeek" },
 	{ id: "minimax", label: "MiniMax" },
@@ -67,7 +67,7 @@ const ROTATING_MODEL_IDS = [
 	"openai/gpt-5.5",
 	"anthropic/claude-opus-4.7",
 	"google/gemini-3.1-pro-preview",
-	"x-ai/grok-4.20-beta-0309",
+	"spacex-ai/grok-4.20-beta-0309",
 	"mistral/mistral-medium-3.5",
 ] as const;
 

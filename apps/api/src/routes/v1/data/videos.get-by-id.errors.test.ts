@@ -57,7 +57,7 @@ describe("getVideoByIdHandler upstream error normalization", () => {
 		vi.restoreAllMocks();
 	});
 
-	it("normalizes xAI status fetch failures instead of proxying raw upstream JSON", async () => {
+	it("normalizes SpaceXAI status fetch failures instead of proxying raw upstream JSON", async () => {
 		const response = await getVideoByIdHandler(
 			new Request("https://api.phaseo.app/v1/videos/video_xai_error"),
 		);

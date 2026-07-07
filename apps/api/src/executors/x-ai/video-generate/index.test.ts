@@ -132,7 +132,7 @@ describe("x-ai video executor", () => {
 		);
 	});
 
-	it("fails the gateway response when xAI video metadata cannot be persisted", async () => {
+	it("fails the gateway response when SpaceXAI video metadata cannot be persisted", async () => {
 		state.reservationResult = {
 			reservationId: "video_hold:req_xai_video_test",
 			held: true,
@@ -152,7 +152,7 @@ describe("x-ai video executor", () => {
 
 		const result = await execute(buildArgs({
 			model: "x-ai/grok-imagine-video-latest",
-			prompt: "An xAI metadata persistence failure",
+			prompt: "A SpaceXAI metadata persistence failure",
 		}));
 
 		mock.restore();
@@ -171,7 +171,7 @@ describe("x-ai video executor", () => {
 		expect(state.releaseCalls).toEqual([]);
 	});
 
-	it("releases a held reservation when xAI returns success without a generation id", async () => {
+	it("releases a held reservation when SpaceXAI returns success without a generation id", async () => {
 		state.reservationResult = {
 			reservationId: "video_hold:req_xai_video_test",
 			held: true,
@@ -187,7 +187,7 @@ describe("x-ai video executor", () => {
 
 		const result = await execute(buildArgs({
 			model: "x-ai/grok-imagine-video-latest",
-			prompt: "An xAI response without a generation id",
+			prompt: "A SpaceXAI response without a generation id",
 		}));
 
 		mock.restore();
