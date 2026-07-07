@@ -24,6 +24,7 @@ function isMissingRelationError(error: unknown): boolean {
 		text.includes("does not exist") ||
 		text.includes("could not find table") ||
 		text.includes("could not find the table") ||
+		text.includes("schema cache") ||
 		text.includes("relation")
 	);
 }
@@ -237,6 +238,10 @@ async function resolveCanonicalModelIdUncached(
 	}
 
 	const providerMappingCandidate = normalizeId(providerByApiRes.data?.[0]?.model_id);
+	const providerApiModelCandidate = normalizeId(providerByApiRes.data?.[0]?.api_model_id);
+	if (providerApiModelCandidate === modelId && providerMappingCandidate) {
+		return buildResult(modelId, "api_model", providerMappingCandidate);
+	}
 	if (providerMappingCandidate) {
 		return buildResult(providerMappingCandidate, "provider_mapping");
 	}

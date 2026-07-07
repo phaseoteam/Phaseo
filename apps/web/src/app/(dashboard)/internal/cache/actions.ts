@@ -2,6 +2,7 @@
 
 import { revalidatePath, revalidateTag } from "next/cache";
 import {
+	expirePublicModelCatalogueCache,
 	revalidateAppDataTags,
 	revalidateBenchmarkDataTags,
 	revalidateModelDataOnlyTags,
@@ -166,18 +167,12 @@ export async function revalidateModelsGlobalDataAction(): Promise<CacheOpResult>
 }
 
 export async function revalidatePublicModelCatalogueAction(): Promise<CacheOpResult> {
-	return runAdminAction("Public catalogue", async () => {
-		revalidateModelDataTags();
+	return runAdminAction("Public catalogue", () => {
+		expirePublicModelCatalogueCache();
 		for (const tag of APP_FRONTEND_TAGS) {
 			revalidateTag(tag, EXPIRE_NOW);
 		}
 		revalidateTag("collections", EXPIRE_NOW);
-		revalidatePath("/models");
-		revalidatePath("/models/collections");
-		revalidatePath("/monitor");
-		revalidatePath("/compare");
-		revalidatePath("/api-providers");
-		revalidatePath("/apps");
 	});
 }
 

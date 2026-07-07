@@ -1,4 +1,4 @@
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag, updateTag } from "next/cache";
 
 const STALE_WHILE_REVALIDATE = "max" as const;
 const EXPIRE_IMMEDIATELY = { expire: 0 } as const;
@@ -169,7 +169,7 @@ function revalidateTagList(tags: readonly string[]) {
 
 function expireTagList(tags: readonly string[]) {
 	for (const tag of new Set(tags)) {
-		revalidateTag(tag, EXPIRE_IMMEDIATELY);
+		updateTag(tag);
 	}
 }
 
@@ -181,6 +181,7 @@ function revalidatePublicCataloguePaths(options: RevalidateModelDataTagOptions) 
 	revalidatePath("/chat/audio");
 	revalidatePath("/chat/moderation");
 	revalidatePath("/chat/embeddings");
+	revalidatePath("/models");
 	revalidatePath("/models", "layout");
 	revalidatePath("/models/table");
 	revalidatePath("/models/collections");
