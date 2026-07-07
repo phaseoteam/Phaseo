@@ -25,6 +25,10 @@
       "value": "Available in Meta AI; powers creative experiences on Instagram and WhatsApp, with Facebook, Messenger, and Meta Advantage+ creative support planned."
     },
     {
+      "name": "api_availability",
+      "value": "No public Meta API or AI Stats Gateway route has been announced or configured for Muse Image."
+    },
+    {
       "name": "reasoning_workflow",
       "value": "Pairs with Muse Spark to plan layouts, use real-time web context, and blend multiple visual references."
     },

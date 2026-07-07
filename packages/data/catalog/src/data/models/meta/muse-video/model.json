@@ -23,6 +23,10 @@
     {
       "name": "availability",
       "value": "Meta says Muse Video is already in development; no public release surface or external API availability has been announced."
+    },
+    {
+      "name": "api_availability",
+      "value": "No public Meta API or AI Stats Gateway route has been announced or configured for Muse Video."
     }
   ],
   "benchmarks": []
