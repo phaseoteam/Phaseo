@@ -232,6 +232,35 @@ function encodeOpenAIResponses(
 	}
 	if (event.type === "delta_tool") {
 		const hasDelta = typeof event.argumentsDelta === "string";
+		const serverToolResult =
+			event.payload &&
+			typeof event.payload === "object" &&
+			"server_tool_result" in event.payload
+				? (event.payload as { server_tool_result?: any }).server_tool_result
+				: null;
+		if (serverToolResult && !hasDelta) {
+			return {
+				eventName: "response.output_item.done",
+				frame: {
+					item_id: event.toolCallId,
+					output_index: event.choiceIndex ?? 0,
+					item: {
+						type: "function_call",
+						id: event.toolCallId,
+						call_id: event.toolCallId,
+						name: event.toolName,
+						arguments: event.arguments ?? "",
+						status: serverToolResult?.is_error ? "failed" : "completed",
+						...(serverToolResult?.output !== undefined
+							? { output: serverToolResult.output }
+							: {}),
+						...(serverToolResult?.is_error
+							? { error: { message: "Server tool returned an error." } }
+							: {}),
+					},
+				},
+			};
+		}
 		return {
 			eventName: hasDelta
 				? "response.function_call_arguments.delta"

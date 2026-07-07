@@ -109,6 +109,42 @@ function parseChatMediaParts(value: any): Array<Extract<IRContentPart, { type: "
 	}
 	return parts;
 }
+
+function readResponseToolCallName(item: any): string | null {
+	const candidates = [
+		item?.name,
+		item?.function?.name,
+		item?.tool_name,
+		item?.tool?.name,
+	];
+	for (const candidate of candidates) {
+		if (typeof candidate !== "string") continue;
+		const trimmed = candidate.trim();
+		if (trimmed && trimmed !== "tool_call") return trimmed;
+	}
+	return null;
+}
+
+function readResponseToolCallArguments(item: any): string | undefined {
+	const raw =
+		item?.arguments ??
+		item?.function?.arguments ??
+		item?.args ??
+		item?.input;
+	if (typeof raw === "string") return raw;
+	if (raw == null) return undefined;
+	try {
+		return JSON.stringify(raw);
+	} catch {
+		return undefined;
+	}
+}
+
+function isExecutableResponseToolItem(item: any): boolean {
+	const itemType = String(item?.type ?? "").toLowerCase();
+	return (itemType === "function_call" || itemType === "tool_call") && readResponseToolCallName(item) !== null;
+}
+
 export function transformChatStream(
 	stream: ReadableStream<Uint8Array>,
 	args: ExecutorExecuteArgs,
@@ -252,23 +288,21 @@ export function transformResponsesStreamToChat(
 								break;
 							case "response.output_text.delta":
 								if (typeof payload?.delta === "string") {
-									await emitDelta({ role: "assistant", content: payload.delta }, controller, payload?.output_index ?? 0, payload?.logprobs ? { logprobs: payload.logprobs } : undefined);
+									await emitDelta({ role: "assistant", content: payload.delta }, controller, 0, payload?.logprobs ? { logprobs: payload.logprobs } : undefined);
 								}
 								break;
 							case "response.reasoning_text.delta":
 								if (typeof payload?.delta === "string") {
-									await emitDelta({ role: "assistant", reasoning_content: payload.delta }, controller, payload?.output_index ?? 0);
+									await emitDelta({ role: "assistant", reasoning_content: payload.delta }, controller, 0);
 								}
 								break;
 							case "response.function_call_arguments.delta": {
 								const resolvedId = canonicalToolId(payload?.item_id);
 								if (!resolvedId) break;
+								const existing = toolBuffer.get(resolvedId);
+								if (!existing) break;
 								const entry: { arguments: string; name?: string; output_index: number; tool_index: number } =
-									toolBuffer.get(resolvedId) ?? {
-									arguments: "",
-									output_index: payload?.output_index ?? 0,
-									tool_index: ensureToolIndex(resolvedId),
-								};
+									existing;
 								if (typeof payload?.delta === "string") {
 									entry.arguments += payload.delta;
 								}
@@ -284,34 +318,33 @@ export function transformResponsesStreamToChat(
 											arguments: entry.arguments ?? "",
 										},
 									}],
-								}, controller, entry.output_index ?? 0);
+								}, controller, 0);
 								break;
 							}
 							case "response.output_item.added":
 							case "response.output_item.done": {
 								const item = payload?.item;
-								const itemType = String(item?.type ?? "").toLowerCase();
-								if (itemType !== "function_call" && itemType !== "tool_call") break;
+								if (!isExecutableResponseToolItem(item)) break;
+								const itemName = readResponseToolCallName(item);
 								const canonicalId =
 									canonicalToolId(item?.call_id) ??
 									canonicalToolId(item?.id) ??
+									canonicalToolId(item?.tool_call_id) ??
 									canonicalToolId(payload?.item_id);
-								if (!canonicalId) break;
+								if (!canonicalId || !itemName) break;
 								aliasToolId(item?.call_id, canonicalId);
 								aliasToolId(item?.id, canonicalId);
+								aliasToolId(item?.tool_call_id, canonicalId);
 								aliasToolId(payload?.item_id, canonicalId);
 								const entry: { arguments: string; name?: string; output_index: number; tool_index: number } =
 									toolBuffer.get(canonicalId) ?? {
 									arguments: "",
-									output_index: payload?.output_index ?? 0,
+									output_index: 0,
 									tool_index: ensureToolIndex(canonicalId),
 								};
-								if (typeof item?.name === "string") {
-									entry.name = item.name;
-								}
-								if (typeof item?.arguments === "string") {
-									entry.arguments = item.arguments;
-								}
+								entry.name = itemName;
+								const itemArguments = readResponseToolCallArguments(item);
+								if (itemArguments !== undefined) entry.arguments = itemArguments;
 								toolBuffer.set(canonicalId, entry);
 								await emitDelta({
 									role: "assistant",
@@ -324,24 +357,29 @@ export function transformResponsesStreamToChat(
 											arguments: entry.arguments ?? "",
 										},
 									}],
-								}, controller, entry.output_index ?? 0);
+								}, controller, 0);
 								break;
 							}
 							case "response.function_call_arguments.done": {
 								const resolvedId = canonicalToolId(payload?.item_id);
+								const payloadName =
+									typeof payload?.name === "string" && payload.name.trim().length > 0
+										? payload.name.trim()
+										: undefined;
 								if (!resolvedId) break;
 								const entry: { arguments: string; name?: string; output_index: number; tool_index: number } =
 									toolBuffer.get(resolvedId) ?? {
 									arguments: "",
-									output_index: payload?.output_index ?? 0,
+									output_index: 0,
 									tool_index: ensureToolIndex(resolvedId),
 								};
 								if (typeof payload?.arguments === "string") {
 									entry.arguments = payload.arguments;
 								}
-								if (typeof payload?.name === "string") {
-									entry.name = payload.name;
+								if (payloadName && payloadName !== "tool_call") {
+									entry.name = payloadName;
 								}
+								if (!entry.name || entry.name === "tool_call") break;
 								toolBuffer.set(resolvedId, entry);
 								await emitDelta({
 									role: "assistant",
@@ -354,7 +392,7 @@ export function transformResponsesStreamToChat(
 											arguments: entry.arguments ?? "",
 										},
 									}],
-								}, controller, entry.output_index ?? 0);
+								}, controller, 0);
 								break;
 							}
 							case "response.completed":

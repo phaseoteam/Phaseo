@@ -10,6 +10,58 @@ import { applyResponsesRequestQuirks, applyResponsesResponseQuirks } from "./res
 import { applyReasoningParams } from "./reasoning";
 import { getProviderQuirks } from "./quirks";
 
+function readResponseToolCallName(item: any): string | null {
+	const candidates = [
+		item?.name,
+		item?.function?.name,
+		item?.tool_name,
+		item?.tool?.name,
+	];
+	for (const candidate of candidates) {
+		if (typeof candidate !== "string") continue;
+		const trimmed = candidate.trim();
+		if (trimmed && trimmed !== "tool_call") return trimmed;
+	}
+	return null;
+}
+
+function readResponseToolCallArguments(item: any): string {
+	const raw =
+		item?.arguments ??
+		item?.function?.arguments ??
+		item?.args ??
+		item?.input;
+	if (typeof raw === "string") return raw || "{}";
+	if (raw == null) return "{}";
+	try {
+		return JSON.stringify(raw);
+	} catch {
+		return "{}";
+	}
+}
+
+function readResponseToolCallId(item: any): string | null {
+	const candidates = [item?.call_id, item?.id, item?.tool_call_id];
+	for (const candidate of candidates) {
+		if (typeof candidate === "string" && candidate.trim().length > 0) {
+			return candidate;
+		}
+	}
+	return null;
+}
+
+function readExecutableResponseToolCall(item: any): { id: string | null; name: string; arguments: string } | null {
+	const itemType = String(item?.type ?? "").toLowerCase();
+	if (itemType !== "function_call" && itemType !== "tool_call") return null;
+	const name = readResponseToolCallName(item);
+	if (!name) return null;
+	return {
+		id: readResponseToolCallId(item),
+		name,
+		arguments: readResponseToolCallArguments(item),
+	};
+}
+
 /**
  * Transform IR request to OpenAI Responses API format
  *
@@ -438,7 +490,9 @@ export function openAIResponsesToIR(
 	}
 
 	// Process output items
-	// Group by index to handle multiple choices
+	// Responses output_index is an output item position, not a choice index.
+	// The Responses API does not expose chat-style n-best choices, so keep all output
+	// items for a response on the same assistant choice.
 	const choicesMap = new Map<number, IRChoice>();
 	const toInlineImagePart = (value: any): IRContentPart | null => {
 		if (!value || typeof value !== "object") return null;
@@ -586,7 +640,7 @@ export function openAIResponsesToIR(
 		: (Array.isArray(json?.output) ? json.output : []);
 
 	for (const item of outputItems) {
-		const index = item.index ?? item.output_index ?? 0;
+		const index = 0;
 
 		if (!choicesMap.has(index)) {
 			choicesMap.set(index, {
@@ -670,13 +724,15 @@ export function openAIResponsesToIR(
 			if (audioPart) {
 				choice.message.content.push(audioPart);
 			}
-		} else if (item.type === "function_call" || item.type === "tool_call") {
+		} else {
+			const toolCall = readExecutableResponseToolCall(item);
+			if (!toolCall) continue;
 			// Tool call from assistant
 			choice.message.toolCalls = choice.message.toolCalls || [];
 			choice.message.toolCalls.push({
-				id: item.call_id || item.id || `call_${requestId}_${index}_${choice.message.toolCalls.length}`,
-				name: item.name,
-				arguments: item.arguments || "{}",
+				id: toolCall.id || `call_${requestId}_${index}_${choice.message.toolCalls.length}`,
+				name: toolCall.name,
+				arguments: toolCall.arguments,
 			});
 		}
 	}

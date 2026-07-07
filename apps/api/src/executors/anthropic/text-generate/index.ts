@@ -376,6 +376,23 @@ function supportsAnthropicFastMode(model: string | null | undefined): boolean {
 	);
 }
 
+function parseAnthropicToolInput(argumentsRaw: unknown): Record<string, any> {
+	if (argumentsRaw && typeof argumentsRaw === "object" && !Array.isArray(argumentsRaw)) {
+		return argumentsRaw as Record<string, any>;
+	}
+	if (typeof argumentsRaw === "string" && argumentsRaw.trim().length > 0) {
+		try {
+			const parsed = JSON.parse(argumentsRaw);
+			if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+				return parsed as Record<string, any>;
+			}
+		} catch {
+			// Treat incomplete or malformed tool-call arguments as empty input.
+		}
+	}
+	return {};
+}
+
 export function irToAnthropicMessages(
 	ir: IRChatRequest,
 	providerMaxOutputTokens?: number | null,
@@ -418,7 +435,7 @@ export function irToAnthropicMessages(
 						type: "tool_use",
 						id: tc.id,
 						name: tc.name,
-						input: JSON.parse(tc.arguments),
+						input: parseAnthropicToolInput(tc.arguments),
 					});
 				}
 			}

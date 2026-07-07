@@ -95,6 +95,7 @@ type AssistantMessageFooterProps = {
 	activeVariantIndex: number;
 	assistantCopied: boolean;
 	costLabel: string | null;
+	endToEndDisplay: string | null;
 	generationDisplay: string | null;
 	isPendingAssistant: boolean;
 	latencyDisplay: number | null;
@@ -116,6 +117,7 @@ export function AssistantMessageFooter({
 	activeVariantIndex,
 	assistantCopied,
 	costLabel,
+	endToEndDisplay,
 	generationDisplay,
 	isPendingAssistant,
 	latencyDisplay,
@@ -264,6 +266,14 @@ export function AssistantMessageFooter({
 									</div>
 									<div className="flex items-center justify-between">
 										<span className="text-muted-foreground">
+											End-to-end
+										</span>
+										<span>
+											{formatMetric(endToEndDisplay)}
+										</span>
+									</div>
+									<div className="flex items-center justify-between">
+										<span className="text-muted-foreground">
 											Throughput
 										</span>
 										<span>
@@ -280,7 +290,7 @@ export function AssistantMessageFooter({
 							</div>
 						</PopoverContent>
 					</Popover>
-					{sentAtLabel ? (
+					{sentAtLabel && variantCount <= 1 ? (
 						<span className="select-none whitespace-nowrap opacity-0 transition-opacity duration-150 group-hover/message:opacity-100 group-focus-within/message:opacity-100">
 							{sentAtLabel}
 						</span>
@@ -316,6 +326,11 @@ export function AssistantMessageFooter({
 					>
 						<ChevronRight className="h-4 w-4" />
 					</Button>
+					{sentAtLabel ? (
+						<span className="select-none whitespace-nowrap opacity-0 transition-opacity duration-150 group-hover/message:opacity-100 group-focus-within/message:opacity-100">
+							{sentAtLabel}
+						</span>
+					) : null}
 				</div>
 			) : null}
 		</MessageFooter>

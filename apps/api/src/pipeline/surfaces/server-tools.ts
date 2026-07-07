@@ -312,6 +312,7 @@ type WebFetchEngine = (typeof WEB_FETCH_ENGINE_VALUES)[number];
 
 export type ServerToolConfig = {
 	enabled: boolean;
+	clientToolFunctionNames?: string[];
 	datetimeDefaultTimezones: string[];
 	webSearchEnabled: boolean;
 	webSearchEngine?: WebSearchEngine;
@@ -867,6 +868,28 @@ function hasAnthropicToolNamed(tools: any[], name: string): boolean {
 	});
 }
 
+function getToolFunctionName(tool: any, protocol: Protocol): string | null {
+	if (!tool || typeof tool !== "object") return null;
+	if (protocol === "anthropic.messages") {
+		return toNonEmptyString(tool?.name);
+	}
+	return toNonEmptyString(tool?.function?.name) ?? toNonEmptyString(tool?.name);
+}
+
+function collectClientToolFunctionNames(
+	tools: any[],
+	protocol: Protocol,
+	serverToolNames: Set<string>,
+): string[] {
+	const names: string[] = [];
+	for (const tool of tools) {
+		const name = getToolFunctionName(tool, protocol);
+		if (!name || serverToolNames.has(name) || names.includes(name)) continue;
+		names.push(name);
+	}
+	return names;
+}
+
 function rewriteToolChoice(toolChoice: any, protocol: Protocol, advisorFunctionName = ADVISOR_SERVER_TOOL_FUNCTION_NAME): any {
 	if (toolChoice == null) return toolChoice;
 	if (typeof toolChoice === "string") {
@@ -1335,11 +1358,27 @@ export function prepareServerToolsForTextRequest(
 		nextBody.tool_choice = rewriteToolChoice(nextBody.tool_choice, protocol, defaultAdvisorFunctionName);
 	}
 
+	const serverToolNames = new Set<string>();
+	if (datetimeEnabled) serverToolNames.add(DATETIME_SERVER_TOOL_FUNCTION_NAME);
+	if (webSearchEnabled) serverToolNames.add(WEB_SEARCH_SERVER_TOOL_FUNCTION_NAME);
+	if (webFetchEnabled) serverToolNames.add(WEB_FETCH_SERVER_TOOL_FUNCTION_NAME);
+	if (imageGenerationEnabled) serverToolNames.add(IMAGE_GENERATION_SERVER_TOOL_FUNCTION_NAME);
+	if (applyPatchEnabled) serverToolNames.add(APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME);
+	for (const advisor of Object.values(advisors)) {
+		serverToolNames.add(advisor.functionName);
+	}
+	const clientToolFunctionNames = collectClientToolFunctionNames(
+		filteredTools,
+		protocol,
+		serverToolNames,
+	);
+
 	return {
 		ok: true,
 		body: nextBody,
 		config: {
 			enabled: datetimeEnabled || webSearchEnabled || webFetchEnabled || advisorEnabled || imageGenerationEnabled || applyPatchEnabled,
+			clientToolFunctionNames,
 			datetimeDefaultTimezones,
 			webSearchEnabled,
 			webSearchEngine,
@@ -1384,14 +1423,18 @@ function readDatetimeTimezones(
 	args: Record<string, unknown>,
 	fallback: string[],
 ): { timezones: string[]; tooMany: boolean } {
+	if (fallback.length > 0) {
+		return {
+			timezones: fallback.slice(0, MAX_DATETIME_TIMEZONES),
+			tooMany: false,
+		};
+	}
 	const timezones: string[] = [];
 	const ok = appendTimezoneList(timezones, args.timezones);
 	if (!ok) return { timezones: [], tooMany: true };
 	const resolved = timezones.length > 0
 		? timezones
-		: fallback.length > 0
-			? fallback
-			: [DEFAULT_TIMEZONE];
+		: [DEFAULT_TIMEZONE];
 	return { timezones: resolved.slice(0, MAX_DATETIME_TIMEZONES), tooMany: false };
 }
 
@@ -2737,19 +2780,22 @@ export async function buildServerToolContinuation(
 		: [];
 	if (toolCalls.length === 0) return null;
 
-	const serverToolCalls = toolCalls.filter(
-		(call) =>
-			call?.name === DATETIME_SERVER_TOOL_FUNCTION_NAME ||
-			call?.name === WEB_SEARCH_SERVER_TOOL_FUNCTION_NAME ||
-			call?.name === WEB_FETCH_SERVER_TOOL_FUNCTION_NAME ||
-			call?.name === IMAGE_GENERATION_SERVER_TOOL_FUNCTION_NAME ||
-			call?.name === APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME ||
-			Boolean(config.advisors?.[call?.name]),
-	);
+	const isServerToolCall = (call: IRToolCall) =>
+		call?.name === DATETIME_SERVER_TOOL_FUNCTION_NAME ||
+		call?.name === WEB_SEARCH_SERVER_TOOL_FUNCTION_NAME ||
+		call?.name === WEB_FETCH_SERVER_TOOL_FUNCTION_NAME ||
+		call?.name === IMAGE_GENERATION_SERVER_TOOL_FUNCTION_NAME ||
+		call?.name === APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME ||
+		Boolean(config.advisors?.[call?.name]);
+	const serverToolCalls = toolCalls.filter(isServerToolCall);
 	if (serverToolCalls.length === 0) return null;
 
-	// If mixed with client-managed function calls, skip server execution for this turn.
-	if (serverToolCalls.length !== toolCalls.length) return null;
+	const clientToolNames = new Set(config.clientToolFunctionNames ?? []);
+	const clientToolCalls = toolCalls.filter(
+		(call) => !isServerToolCall(call) && clientToolNames.has(call.name),
+	);
+	// If mixed with advertised client-managed function calls, skip server execution for this turn.
+	if (clientToolCalls.length > 0) return null;
 
 	const toolResults: IRToolResult[] = [];
 	let advisorUsage: IRUsage | undefined;
@@ -2766,7 +2812,20 @@ export async function buildServerToolContinuation(
 	};
 	const advisorCallsUsed = new Map<string, number>();
 	let remainingSearchResults = config.webSearchMaxTotalResults ?? DEFAULT_WEB_SEARCH_MAX_TOTAL_RESULTS;
-	for (const call of serverToolCalls) {
+	for (const call of toolCalls) {
+		if (!isServerToolCall(call)) {
+			toolResults.push({
+				toolCallId: call.id,
+				isError: true,
+				content: JSON.stringify({
+					error: "unsupported_server_tool_call",
+					tool_name: call.name,
+					message: `Tool "${call.name}" is not available to this request.`,
+				}),
+			});
+			continue;
+		}
+
 		if (call.name === DATETIME_SERVER_TOOL_FUNCTION_NAME) {
 			toolResults.push(
 				executeDatetimeToolCall(

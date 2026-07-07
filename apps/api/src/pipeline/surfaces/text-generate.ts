@@ -786,6 +786,14 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 			}
 		}
 
+		const serverToolTrace: Array<{
+			id: string;
+			name: string;
+			arguments?: string;
+			output?: unknown;
+			isError?: boolean;
+		}> = [];
+
 		if (preparedServerTools.config.enabled && exec.result.kind === "completed" && exec.result.ir) {
 			const maxServerToolRounds = 8;
 			let serverToolRounds = 0;
@@ -867,6 +875,22 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 				serverToolUsage.advisorRequests += continuation.usage.advisorRequests ?? 0;
 				serverToolUsage.imageGenerationRequests += continuation.usage.imageGenerationRequests ?? 0;
 				serverToolUsage.applyPatchRequests += continuation.usage.applyPatchRequests ?? 0;
+				const toolCallsById = new Map(
+					(continuation.assistantMessage.toolCalls ?? [])
+						.filter((call) => call.name && call.name !== "tool_call")
+						.map((call) => [call.id, call]),
+				);
+				for (const result of continuation.toolResults) {
+					const call = toolCallsById.get(result.toolCallId);
+					if (!call) continue;
+					serverToolTrace.push({
+						id: call.id,
+						name: call.name,
+						arguments: call.arguments,
+						output: result.content,
+						...(result.isError ? { isError: true } : {}),
+					});
+				}
 				if (continuation.advisorUsage) {
 					aggregateUsage = mergeIRUsageTotals(aggregateUsage, continuation.advisorUsage);
 				}
@@ -1037,6 +1061,7 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 					typeof (protocolResponse as any)?.created === "number"
 						? (protocolResponse as any).created
 						: null,
+				serverToolTrace,
 			});
 			if (stream) {
 				exec.result.kind = "stream";

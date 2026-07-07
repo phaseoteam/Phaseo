@@ -209,9 +209,17 @@ describe("resolveStreamForProtocol", () => {
 				},
 			},
 			{
+				event: "response.reasoning_text.delta",
+				data: {
+					item_id: "rs_fc_1",
+					output_index: 0,
+					delta: "Need a lookup.",
+				},
+			},
+			{
 				event: "response.output_item.added",
 				data: {
-					output_index: 0,
+					output_index: 1,
 					item: {
 						type: "function_call",
 						id: "fc_item_1",
@@ -225,7 +233,7 @@ describe("resolveStreamForProtocol", () => {
 				event: "response.function_call_arguments.delta",
 				data: {
 					item_id: "fc_item_1",
-					output_index: 0,
+					output_index: 1,
 					delta: "{\"city\":\"SF\"}",
 				},
 			},
@@ -233,7 +241,7 @@ describe("resolveStreamForProtocol", () => {
 				event: "response.function_call_arguments.done",
 				data: {
 					item_id: "fc_item_1",
-					output_index: 0,
+					output_index: 1,
 					name: "get_weather",
 					arguments: "{\"city\":\"SF\"}",
 				},
@@ -281,6 +289,128 @@ describe("resolveStreamForProtocol", () => {
 			expect(tc?.function?.name).toBe("get_weather");
 		}
 		expect(output).toContain("\"arguments\":\"{\\\"city\\\":\\\"SF\\\"}\"");
+	});
+
+	it("converts named responses tool_call stream events to chat tool_call deltas", async () => {
+		const upstream = makeSseResponse([
+			{
+				event: "response.created",
+				data: {
+					response: {
+						id: "resp_tc_1",
+						created_at: 1710000002,
+						model: "test-model",
+					},
+				},
+			},
+			{
+				event: "response.output_item.added",
+				data: {
+					output_index: 0,
+					item: {
+						type: "tool_call",
+						id: "tc_item_1",
+						call_id: "call_weather_1",
+						function: {
+							name: "get_weather",
+							arguments: "",
+						},
+					},
+				},
+			},
+			{
+				event: "response.function_call_arguments.delta",
+				data: {
+					item_id: "tc_item_1",
+					output_index: 0,
+					delta: "{\"city\":\"SF\"}",
+				},
+			},
+			{
+				event: "response.function_call_arguments.done",
+				data: {
+					item_id: "tc_item_1",
+					output_index: 0,
+					name: "get_weather",
+					arguments: "{\"city\":\"SF\"}",
+				},
+			},
+			"[DONE]",
+		]);
+
+		const stream = resolveStreamForProtocol(
+			upstream,
+			baseArgs({
+				endpoint: "chat.completions",
+				protocol: "openai.chat.completions",
+				providerId: "poolside",
+			}),
+			"responses",
+		);
+
+		const output = await readStreamText(stream);
+		const chunks = parseSseJsonFrames(output).filter((payload) => payload?.object === "chat.completion.chunk");
+		const toolChunks = chunks.filter((payload) => Array.isArray(payload?.choices?.[0]?.delta?.tool_calls));
+		expect(toolChunks.length).toBeGreaterThan(0);
+		for (const chunk of toolChunks) {
+			expect(chunk.choices?.[0]?.index).toBe(0);
+			const tc = chunk.choices?.[0]?.delta?.tool_calls?.[0];
+			expect(tc?.id).toBe("call_weather_1");
+			expect(tc?.function?.name).toBe("get_weather");
+		}
+		expect(output).toContain("\"arguments\":\"{\\\"city\\\":\\\"SF\\\"}\"");
+	});
+
+	it("does not convert generic responses tool_call completions to chat tool_call deltas", async () => {
+		const upstream = makeSseResponse([
+			{
+				event: "response.created",
+				data: {
+					response: {
+						id: "resp_fc_shadow",
+						created_at: 1710000002,
+						model: "test-model",
+					},
+				},
+			},
+			{
+				event: "response.function_call_arguments.done",
+				data: {
+					item_id: "fc_shadow",
+					output_index: 0,
+					name: "tool_call",
+					arguments: "{\"timezones\":[\"UTC\"]}",
+				},
+			},
+			{
+				event: "response.completed",
+				data: {
+					response: {
+						id: "resp_fc_shadow",
+						object: "response",
+						created_at: 1710000002,
+						model: "test-model",
+						status: "completed",
+						output: [],
+						usage: { input_tokens: 2, output_tokens: 1, total_tokens: 3 },
+					},
+				},
+			},
+			"[DONE]",
+		]);
+
+		const stream = resolveStreamForProtocol(
+			upstream,
+			baseArgs({
+				endpoint: "chat.completions",
+				protocol: "openai.chat.completions",
+			}),
+			"responses",
+		);
+
+		const output = await readStreamText(stream);
+		const chunks = parseSseJsonFrames(output).filter((payload) => payload?.object === "chat.completion.chunk");
+		expect(chunks.some((payload) => Array.isArray(payload?.choices?.[0]?.delta?.tool_calls))).toBe(false);
 	});
 
 	it("emits output_item function-call events when transforming chat stream to responses", async () => {

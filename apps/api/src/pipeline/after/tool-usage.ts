@@ -12,15 +12,43 @@ type ToolUsageMetrics = {
 	request_tool_count?: number | null;
 	request_tool_result_count?: number | null;
 	output_tool_call_count?: number | null;
+	request_tool_names?: string[] | null;
+	output_tool_call_names?: string[] | null;
 	requested_native_web_search_tools?: number | null;
 	output_web_search_result_count?: number | null;
 	output_citation_count?: number | null;
 };
 
+const MAX_TOOL_NAMES = 25;
+
+function normalizeToolName(value: unknown): string | null {
+	if (typeof value !== "string") return null;
+	const trimmed = value.trim();
+	if (!trimmed) return null;
+	return trimmed.slice(0, 128);
+}
+
+function pushUniqueToolName(names: string[], value: unknown) {
+	if (names.length >= MAX_TOOL_NAMES) return;
+	const name = normalizeToolName(value);
+	if (!name || names.includes(name)) return;
+	names.push(name);
+}
+
 export function countRequestedTools(body: any): number {
 	if (!body || typeof body !== "object") return 0;
 	const tools = Array.isArray(body.tools) ? body.tools : [];
 	return tools.length;
+}
+
+export function collectRequestedToolNames(body: any): string[] {
+	if (!body || typeof body !== "object") return [];
+	const tools = Array.isArray(body.tools) ? body.tools : [];
+	const names: string[] = [];
+	for (const tool of tools) {
+		pushUniqueToolName(names, extractToolNameOrType(tool));
+	}
+	return names;
 }
 
 export function countRequestedToolResults(body: any): number {
@@ -98,6 +126,18 @@ function countFromChatLikePayload(payload: any): number {
 	return total;
 }
 
+function collectNamesFromChatLikePayload(payload: any, names: string[]) {
+	if (!payload || typeof payload !== "object" || !Array.isArray(payload.choices)) return;
+	for (const choice of payload.choices) {
+		const calls = Array.isArray(choice?.message?.tool_calls)
+			? choice.message.tool_calls
+			: (Array.isArray(choice?.delta?.tool_calls) ? choice.delta.tool_calls : []);
+		for (const call of calls) {
+			pushUniqueToolName(names, call?.function?.name ?? call?.name);
+		}
+	}
+}
+
 function countFromResponsesPayload(payload: any): number {
 	if (!payload || typeof payload !== "object") return 0;
 	const items = Array.isArray(payload.output)
@@ -106,9 +146,21 @@ function countFromResponsesPayload(payload: any): number {
 	let total = 0;
 	for (const item of items) {
 		const type = String(item?.type ?? "").toLowerCase();
-		if (type === "function_call" || type === "tool_call") total += 1;
+		if (type === "function_call") total += 1;
 	}
 	return total;
+}
+
+function collectNamesFromResponsesPayload(payload: any, names: string[]) {
+	if (!payload || typeof payload !== "object") return;
+	const items = Array.isArray(payload.output)
+		? payload.output
+		: (Array.isArray(payload.output_items) ? payload.output_items : []);
+	for (const item of items) {
+		const type = String(item?.type ?? "").toLowerCase();
+		if (type !== "function_call") continue;
+		pushUniqueToolName(names, item?.name ?? item?.tool_name ?? item?.function?.name);
+	}
 }
 
 function countFromAnthropicPayload(payload: any): number {
@@ -120,6 +172,14 @@ function countFromAnthropicPayload(payload: any): number {
 	return total;
 }
 
+function collectNamesFromAnthropicPayload(payload: any, names: string[]) {
+	if (!payload || typeof payload !== "object" || !Array.isArray(payload.content)) return;
+	for (const block of payload.content) {
+		if (String(block?.type ?? "").toLowerCase() !== "tool_use") continue;
+		pushUniqueToolName(names, block?.name);
+	}
+}
+
 export function countOutputToolCallsFromPayload(payload: any): number {
 	if (!payload || typeof payload !== "object") return 0;
 	return Math.max(
@@ -127,6 +187,14 @@ export function countOutputToolCallsFromPayload(payload: any): number {
 		countFromResponsesPayload(payload),
 		countFromAnthropicPayload(payload),
 	);
+}
+
+export function collectOutputToolCallNamesFromPayload(payload: any): string[] {
+	const names: string[] = [];
+	collectNamesFromChatLikePayload(payload, names);
+	collectNamesFromResponsesPayload(payload, names);
+	collectNamesFromAnthropicPayload(payload, names);
+	return names;
 }
 
 export function countOutputToolCallsFromIR(ir: any): number {
@@ -137,6 +205,18 @@ export function countOutputToolCallsFromIR(ir: any): number {
 		total += calls;
 	}
 	return total;
+}
+
+export function collectOutputToolCallNamesFromIR(ir: any): string[] {
+	if (!ir || typeof ir !== "object" || !Array.isArray(ir.choices)) return [];
+	const names: string[] = [];
+	for (const choice of ir.choices) {
+		const calls = Array.isArray(choice?.message?.toolCalls) ? choice.message.toolCalls : [];
+		for (const call of calls) {
+			pushUniqueToolName(names, call?.name);
+		}
+	}
+	return names;
 }
 
 function countMatchingNodes(value: any, predicate: (node: any) => boolean): number {
@@ -283,12 +363,20 @@ export function summarizeToolUsage(args: {
 	payload?: any;
 }): ToolUsageMetrics {
 	const requested = countRequestedTools(args.body);
+	const requestedToolNames = collectRequestedToolNames(args.body);
 	const requestToolResultsFromBody = countRequestedToolResults(args.body);
 	const requestToolResultsFromIr = countToolResultsFromIR(args.ir);
 	const requestToolResults = Math.max(requestToolResultsFromBody, requestToolResultsFromIr);
 	const emittedFromIr = countOutputToolCallsFromIR(args.ir);
 	const emittedFromPayload = countOutputToolCallsFromPayload(args.payload);
 	const emitted = Math.max(emittedFromIr, emittedFromPayload);
+	const outputToolCallNames = [
+		...collectOutputToolCallNamesFromIR(args.ir),
+		...collectOutputToolCallNamesFromPayload(args.payload),
+	].reduce<string[]>((names, name) => {
+		pushUniqueToolName(names, name);
+		return names;
+	}, []);
 	const requestedNativeWebSearchTools = countRequestedNativeWebSearchTools(args.body);
 	const outputWebSearchResults = countOutputWebSearchResults(args);
 	const outputCitations = countOutputCitations(args);
@@ -297,6 +385,8 @@ export function summarizeToolUsage(args: {
 		request_tool_count: requested > 0 ? requested : null,
 		request_tool_result_count: requestToolResults > 0 ? requestToolResults : null,
 		output_tool_call_count: emitted > 0 ? emitted : null,
+		request_tool_names: requestedToolNames.length > 0 ? requestedToolNames : null,
+		output_tool_call_names: outputToolCallNames.length > 0 ? outputToolCallNames : null,
 		requested_native_web_search_tools:
 			requestedNativeWebSearchTools > 0 ? requestedNativeWebSearchTools : null,
 		output_web_search_result_count: outputWebSearchResults > 0 ? outputWebSearchResults : null,
@@ -343,6 +433,9 @@ export function attachToolUsageMetrics(usage: any, metrics: ToolUsageMetrics): a
 			: Number(metrics.output_citation_count ?? 0);
 
 	if (requestedResolved > 0) base.request_tool_count = requestedResolved;
+	if (Array.isArray(metrics.request_tool_names) && metrics.request_tool_names.length > 0) {
+		base.request_tool_names = metrics.request_tool_names;
+	}
 	if (requestToolResultsResolved > 0) {
 		base.request_tool_result_count = requestToolResultsResolved;
 		// Alias for compatibility with other consumers.
@@ -352,6 +445,9 @@ export function attachToolUsageMetrics(usage: any, metrics: ToolUsageMetrics): a
 		base.output_tool_call_count = emittedResolved;
 		// Alias for compatibility with other consumers.
 		if (base.tool_call_count == null) base.tool_call_count = emittedResolved;
+	}
+	if (Array.isArray(metrics.output_tool_call_names) && metrics.output_tool_call_names.length > 0) {
+		base.output_tool_call_names = metrics.output_tool_call_names;
 	}
 	if (requestedNativeWebSearchResolved > 0) {
 		base.requested_native_web_search_tools = requestedNativeWebSearchResolved;

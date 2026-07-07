@@ -154,9 +154,23 @@ const isPlainToolDetailObject = (
 ): value is Record<string, unknown> =>
 	Boolean(value) && typeof value === "object" && !Array.isArray(value);
 
+const hasRenderableToolDetailValue = (value: unknown): boolean => {
+	if (value == null) return false;
+	if (typeof value === "string") return value.trim().length > 0;
+	if (Array.isArray(value)) {
+		return value.some((item) => hasRenderableToolDetailValue(item));
+	}
+	if (isPlainToolDetailObject(value)) {
+		return Object.values(value).some((item) =>
+			hasRenderableToolDetailValue(item),
+		);
+	}
+	return true;
+};
+
 const hasToolDetailEntries = (value: unknown) =>
 	isPlainToolDetailObject(value) &&
-	Object.values(value).some((item) => item != null && item !== "");
+	Object.values(value).some((item) => hasRenderableToolDetailValue(item));
 
 const isDatetimeToolCall = (toolCall: ChatToolCall) =>
 	toolCall.name === "gateway_datetime" ||
@@ -211,7 +225,11 @@ const formatToolInlineValue = (value: unknown) => {
 		);
 		if (primitiveItems) {
 			return value
-				.filter((item) => item != null)
+				.filter(
+					(item) =>
+						item != null &&
+						(typeof item !== "string" || item.trim().length > 0),
+				)
 				.map((item) => String(item))
 				.join(", ");
 		}
@@ -264,7 +282,9 @@ function ToolDetailBlock({
 }) {
 	if (value == null || value === "") return null;
 	const entries = isPlainToolDetailObject(value)
-		? Object.entries(value).filter(([, item]) => item != null && item !== "")
+		? Object.entries(value).filter(([, item]) =>
+				hasRenderableToolDetailValue(item),
+			)
 		: [];
 	const canRenderRows =
 		entries.length > 0 &&
