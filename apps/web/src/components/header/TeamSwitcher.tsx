@@ -273,14 +273,20 @@ export default function TeamSwitcher({
 					{(userRole === "editor" || userRole === "admin") && (
 						<>
 							<DropdownMenuItem
+								asChild
 								className="cursor-pointer"
-								onSelect={(e) => {
-									e.preventDefault();
-									router.push("/internal");
-								}}
 							>
-								<Lock className="h-4 w-4" />
-								<span>Internal</span>
+								<Link
+									href="/internal"
+									onClick={(e) => {
+										e.preventDefault();
+										setIsProfileMenuOpen(false);
+										navigateWithViewTransition("/internal");
+									}}
+								>
+									<Lock className="h-4 w-4" />
+									<span>Internal</span>
+								</Link>
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
 						</>
