@@ -388,7 +388,6 @@ export type KnownModelId =
   | "qwen/text-embedding-v3"
   | "qwen/text-embedding-v4"
   | "qwen/wan2.7-t2v"
-  | "sakana/fugu-ultra"
   | "spacex-ai/grok-4.20-beta-0309"
   | "spacex-ai/grok-4.20-multi-agent-beta-0309"
   | "spacex-ai/grok-4.3"
