@@ -13,18 +13,18 @@ const (
 	// Model ID: ai21/jamba-mini-2
 	// Model page: https://ai-stats.phaseo.app/models/ai21/jamba-mini-2
 	ModelIDAi21JambaMini2 gen.ModelId = "ai21/jamba-mini-2"
-	// Model ID: aion-labs/aion-1.0
-	// Model page: https://ai-stats.phaseo.app/models/aion-labs/aion-1.0
-	ModelIDAionLabsAion10 gen.ModelId = "aion-labs/aion-1.0"
-	// Model ID: aion-labs/aion-1.0-mini
-	// Model page: https://ai-stats.phaseo.app/models/aion-labs/aion-1.0-mini
-	ModelIDAionLabsAion10Mini gen.ModelId = "aion-labs/aion-1.0-mini"
 	// Model ID: aion-labs/aion-2.0
 	// Model page: https://ai-stats.phaseo.app/models/aion-labs/aion-2.0
 	ModelIDAionLabsAion20 gen.ModelId = "aion-labs/aion-2.0"
 	// Model ID: aion-labs/aion-2.5
 	// Model page: https://ai-stats.phaseo.app/models/aion-labs/aion-2.5
 	ModelIDAionLabsAion25 gen.ModelId = "aion-labs/aion-2.5"
+	// Model ID: aion-labs/aion-3.0
+	// Model page: https://ai-stats.phaseo.app/models/aion-labs/aion-3.0
+	ModelIDAionLabsAion30 gen.ModelId = "aion-labs/aion-3.0"
+	// Model ID: aion-labs/aion-3.0-mini
+	// Model page: https://ai-stats.phaseo.app/models/aion-labs/aion-3.0-mini
+	ModelIDAionLabsAion30Mini gen.ModelId = "aion-labs/aion-3.0-mini"
 	// Model ID: aion-labs/aion-rp-llama-3.1-8b
 	// Model page: https://ai-stats.phaseo.app/models/aion-labs/aion-rp-llama-3.1-8b
 	ModelIDAionLabsAionRpLlama318b gen.ModelId = "aion-labs/aion-rp-llama-3.1-8b"
@@ -847,6 +847,9 @@ const (
 	// Model ID: poolside/laguna-m.1:free
 	// Model page: https://ai-stats.phaseo.app/models/poolside/laguna-m.1%3Afree
 	ModelIDPoolsideLagunaM1Free gen.ModelId = "poolside/laguna-m.1:free"
+	// Model ID: poolside/laguna-xs-2.1:free
+	// Model page: https://ai-stats.phaseo.app/models/poolside/laguna-xs-2.1%3Afree
+	ModelIDPoolsideLagunaXs21Free gen.ModelId = "poolside/laguna-xs-2.1:free"
 	// Model ID: poolside/laguna-xs.2:free
 	// Model page: https://ai-stats.phaseo.app/models/poolside/laguna-xs.2%3Afree
 	ModelIDPoolsideLagunaXs2Free gen.ModelId = "poolside/laguna-xs.2:free"
@@ -1162,6 +1165,33 @@ const (
 	// Model ID: qwen/wan2.7-t2v
 	// Model page: https://ai-stats.phaseo.app/models/qwen/wan2.7-t2v
 	ModelIDQwenWan27T2v gen.ModelId = "qwen/wan2.7-t2v"
+	// Model ID: spacex-ai/grok-4.20-beta-0309
+	// Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-4.20-beta-0309
+	ModelIDSpacexAiGrok420Beta0309 gen.ModelId = "spacex-ai/grok-4.20-beta-0309"
+	// Model ID: spacex-ai/grok-4.20-multi-agent-beta-0309
+	// Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-4.20-multi-agent-beta-0309
+	ModelIDSpacexAiGrok420MultiAgentBeta0309 gen.ModelId = "spacex-ai/grok-4.20-multi-agent-beta-0309"
+	// Model ID: spacex-ai/grok-4.3
+	// Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-4.3
+	ModelIDSpacexAiGrok43 gen.ModelId = "spacex-ai/grok-4.3"
+	// Model ID: spacex-ai/grok-build-0.1
+	// Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-build-0.1
+	ModelIDSpacexAiGrokBuild01 gen.ModelId = "spacex-ai/grok-build-0.1"
+	// Model ID: spacex-ai/grok-code-fast-1
+	// Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-code-fast-1
+	ModelIDSpacexAiGrokCodeFast1 gen.ModelId = "spacex-ai/grok-code-fast-1"
+	// Model ID: spacex-ai/grok-imagine-image
+	// Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-imagine-image
+	ModelIDSpacexAiGrokImagineImage gen.ModelId = "spacex-ai/grok-imagine-image"
+	// Model ID: spacex-ai/grok-imagine-image-quality
+	// Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-imagine-image-quality
+	ModelIDSpacexAiGrokImagineImageQuality gen.ModelId = "spacex-ai/grok-imagine-image-quality"
+	// Model ID: spacex-ai/grok-imagine-video
+	// Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-imagine-video
+	ModelIDSpacexAiGrokImagineVideo gen.ModelId = "spacex-ai/grok-imagine-video"
+	// Model ID: spacex-ai/grok-tts
+	// Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-tts
+	ModelIDSpacexAiGrokTts gen.ModelId = "spacex-ai/grok-tts"
 	// Model ID: stepfun/step-3.5-flash
 	// Model page: https://ai-stats.phaseo.app/models/stepfun/step-3.5-flash
 	ModelIDStepfunStep35Flash gen.ModelId = "stepfun/step-3.5-flash"
@@ -1171,9 +1201,15 @@ const (
 	// Model ID: tencent/hunyuan-a13b-instruct
 	// Model page: https://ai-stats.phaseo.app/models/tencent/hunyuan-a13b-instruct
 	ModelIDTencentHunyuanA13bInstruct gen.ModelId = "tencent/hunyuan-a13b-instruct"
+	// Model ID: tencent/hy3
+	// Model page: https://ai-stats.phaseo.app/models/tencent/hy3
+	ModelIDTencentHy3 gen.ModelId = "tencent/hy3"
 	// Model ID: tencent/hy3-preview
 	// Model page: https://ai-stats.phaseo.app/models/tencent/hy3-preview
 	ModelIDTencentHy3Preview gen.ModelId = "tencent/hy3-preview"
+	// Model ID: tencent/hy3:free
+	// Model page: https://ai-stats.phaseo.app/models/tencent/hy3%3Afree
+	ModelIDTencentHy3Free gen.ModelId = "tencent/hy3:free"
 	// Model ID: venice/venice-uncensored
 	// Model page: https://ai-stats.phaseo.app/models/venice/venice-uncensored
 	ModelIDVeniceVeniceUncensored gen.ModelId = "venice/venice-uncensored"
@@ -1264,33 +1300,6 @@ const (
 	// Model ID: voyage/voyage-multimodal-3.5
 	// Model page: https://ai-stats.phaseo.app/models/voyage/voyage-multimodal-3.5
 	ModelIDVoyageVoyageMultimodal35 gen.ModelId = "voyage/voyage-multimodal-3.5"
-	// Model ID: x-ai/grok-4.20-beta-0309
-	// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.20-beta-0309
-	ModelIDXAiGrok420Beta0309 gen.ModelId = "x-ai/grok-4.20-beta-0309"
-	// Model ID: x-ai/grok-4.20-multi-agent-beta-0309
-	// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.20-multi-agent-beta-0309
-	ModelIDXAiGrok420MultiAgentBeta0309 gen.ModelId = "x-ai/grok-4.20-multi-agent-beta-0309"
-	// Model ID: x-ai/grok-4.3
-	// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.3
-	ModelIDXAiGrok43 gen.ModelId = "x-ai/grok-4.3"
-	// Model ID: x-ai/grok-build-0.1
-	// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-build-0.1
-	ModelIDXAiGrokBuild01 gen.ModelId = "x-ai/grok-build-0.1"
-	// Model ID: x-ai/grok-code-fast-1
-	// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-code-fast-1
-	ModelIDXAiGrokCodeFast1 gen.ModelId = "x-ai/grok-code-fast-1"
-	// Model ID: x-ai/grok-imagine-image
-	// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-imagine-image
-	ModelIDXAiGrokImagineImage gen.ModelId = "x-ai/grok-imagine-image"
-	// Model ID: x-ai/grok-imagine-image-quality
-	// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-imagine-image-quality
-	ModelIDXAiGrokImagineImageQuality gen.ModelId = "x-ai/grok-imagine-image-quality"
-	// Model ID: x-ai/grok-imagine-video
-	// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-imagine-video
-	ModelIDXAiGrokImagineVideo gen.ModelId = "x-ai/grok-imagine-video"
-	// Model ID: x-ai/grok-tts
-	// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-tts
-	ModelIDXAiGrokTts gen.ModelId = "x-ai/grok-tts"
 	// Model ID: xiaomi/mimo-v2-flash
 	// Model page: https://ai-stats.phaseo.app/models/xiaomi/mimo-v2-flash
 	ModelIDXiaomiMimoV2Flash gen.ModelId = "xiaomi/mimo-v2-flash"
@@ -1370,10 +1379,10 @@ const (
 var KnownModelIDs = []gen.ModelId{
 	ModelIDAi21JambaLarge17,
 	ModelIDAi21JambaMini2,
-	ModelIDAionLabsAion10,
-	ModelIDAionLabsAion10Mini,
 	ModelIDAionLabsAion20,
 	ModelIDAionLabsAion25,
+	ModelIDAionLabsAion30,
+	ModelIDAionLabsAion30Mini,
 	ModelIDAionLabsAionRpLlama318b,
 	ModelIDAllenaiMolmo28b,
 	ModelIDAllenaiOlmo3132b,
@@ -1648,6 +1657,7 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDOpenaiTextEmbeddingAda002,
 	ModelIDOpenaiWhisper1,
 	ModelIDPoolsideLagunaM1Free,
+	ModelIDPoolsideLagunaXs21Free,
 	ModelIDPoolsideLagunaXs2Free,
 	ModelIDQwenQvqMax,
 	ModelIDQwenQwen36Plus,
@@ -1753,10 +1763,21 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDQwenTextEmbeddingV3,
 	ModelIDQwenTextEmbeddingV4,
 	ModelIDQwenWan27T2v,
+	ModelIDSpacexAiGrok420Beta0309,
+	ModelIDSpacexAiGrok420MultiAgentBeta0309,
+	ModelIDSpacexAiGrok43,
+	ModelIDSpacexAiGrokBuild01,
+	ModelIDSpacexAiGrokCodeFast1,
+	ModelIDSpacexAiGrokImagineImage,
+	ModelIDSpacexAiGrokImagineImageQuality,
+	ModelIDSpacexAiGrokImagineVideo,
+	ModelIDSpacexAiGrokTts,
 	ModelIDStepfunStep35Flash,
 	ModelIDStepfunStep37Flash,
 	ModelIDTencentHunyuanA13bInstruct,
+	ModelIDTencentHy3,
 	ModelIDTencentHy3Preview,
+	ModelIDTencentHy3Free,
 	ModelIDVeniceVeniceUncensored,
 	ModelIDVeniceVeniceUncensored11,
 	ModelIDVoyageRerank1,
@@ -1787,15 +1808,6 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDVoyageVoyageMultilingual2,
 	ModelIDVoyageVoyageMultimodal3,
 	ModelIDVoyageVoyageMultimodal35,
-	ModelIDXAiGrok420Beta0309,
-	ModelIDXAiGrok420MultiAgentBeta0309,
-	ModelIDXAiGrok43,
-	ModelIDXAiGrokBuild01,
-	ModelIDXAiGrokCodeFast1,
-	ModelIDXAiGrokImagineImage,
-	ModelIDXAiGrokImagineImageQuality,
-	ModelIDXAiGrokImagineVideo,
-	ModelIDXAiGrokTts,
 	ModelIDXiaomiMimoV2Flash,
 	ModelIDXiaomiMimoV25,
 	ModelIDXiaomiMimoV25Pro,
