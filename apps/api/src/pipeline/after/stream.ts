@@ -94,7 +94,27 @@ function attachStreamTimingMeta(args: {
         throughput_tps: throughputTps,
         generation_ms: generationMs,
         latency_ms: ctx.meta.latency_ms ?? 0,
+        end_to_end_ms: ctx.meta.end_to_end_ms ?? null,
     };
+    const responsePayload =
+        frame.response &&
+        typeof frame.response === "object" &&
+        frame.response.object === "response"
+            ? frame.response
+            : frame.object === "response"
+                ? frame
+                : null;
+    if (responsePayload) {
+        responsePayload.metadata = {
+            ...(responsePayload.metadata && typeof responsePayload.metadata === "object"
+                ? responsePayload.metadata
+                : {}),
+            latency_ms: ctx.meta.latency_ms ?? 0,
+            generation_ms: generationMs,
+            end_to_end_ms: ctx.meta.end_to_end_ms ?? null,
+            throughput_tps: throughputTps,
+        };
+    }
     if (frame.meta && typeof frame.meta === "object" && "finish_reason" in frame.meta) {
         delete (frame.meta as Record<string, unknown>).finish_reason;
     }
@@ -328,7 +348,7 @@ export async function handleStreamResponse(
                 next.message?.usage ??
                 (next?.type === "message_stop" ? latestStreamUsageRaw : null) ??
                 null;
-            if (includeMeta && matchedTimingFrame) {
+            if ((includeMeta || ctx.meta?.debug?.enabled) && matchedTimingFrame) {
                 attachStreamTimingMeta({
                     ctx,
                     frame: next,

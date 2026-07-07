@@ -16,6 +16,7 @@ import Link from "next/link";
 import Image from "next/image";
 import {
 	ArrowLeft,
+	AudioLines,
 	Bot,
 	Brain,
 	CalendarClock,
@@ -36,6 +37,7 @@ import {
 	Plus,
 	SendHorizontal,
 	Star,
+	Square,
 	type LucideIcon,
 	Search,
 	Settings2,
@@ -532,7 +534,58 @@ function getReadableTextColor(backgroundColor: string) {
 }
 
 function getAttachmentDescription(file: File) {
+	if (file.type.startsWith("audio/")) {
+		return ["Audio", formatAttachmentSize(file.size)].join(" - ");
+	}
 	return [file.type || "File", formatAttachmentSize(file.size)].join(" - ");
+}
+
+function getAudioAttachmentTitle(file: File) {
+	const match = file.name.match(
+		/^Voice note (\d{4})-(\d{2})-(\d{2}) (\d{2})-(\d{2})-(\d{2})\./,
+	);
+	if (!match) return file.name;
+	const [, year, month, day, hour, minute] = match;
+	return `Voice note ${day}/${month}/${year} ${hour}:${minute}`;
+}
+
+function formatRecordingDuration(milliseconds: number) {
+	const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
+	const minutes = Math.floor(totalSeconds / 60);
+	const seconds = totalSeconds % 60;
+	return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+function RecordingWaveform({
+	bars,
+	durationMs,
+}: {
+	bars: number[];
+	durationMs: number;
+}) {
+	return (
+		<div
+			role="status"
+			aria-label="Recording audio"
+			className="order-1 flex min-h-9 w-full min-w-0 flex-1 items-center gap-2 px-2 sm:order-2"
+		>
+			<span className="sr-only">Recording audio</span>
+			<div className="flex h-10 min-w-0 flex-1 items-center gap-0.5 overflow-hidden">
+				{bars.map((height, index) => (
+					<span
+						key={`${height}-${index}`}
+						className="min-w-px flex-1 rounded-full bg-muted-foreground/75 transition-[height] duration-75 ease-linear"
+						style={{
+							height,
+						}}
+					/>
+				))}
+			</div>
+			<span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
+				{formatRecordingDuration(durationMs)}
+			</span>
+		</div>
+	);
 }
 
 function ComposerModelSelectField({
@@ -841,6 +894,8 @@ interface ChatConversationComposerProps {
 	selectedModelLabel: string;
 	modelOptions: ComposerModelOption[];
 	isRecording: boolean;
+	recordingWaveformBars: number[];
+	recordingDurationMs: number;
 	isStartingRecording: boolean;
 	recordingSupported: boolean;
 	onToggleRecording: () => void;
@@ -888,6 +943,9 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		selectedModelId,
 		selectedModelLabel,
 		modelOptions,
+		isRecording,
+		recordingWaveformBars,
+		recordingDurationMs,
 		isStartingRecording,
 		recordingSupported,
 		onToggleRecording,
@@ -927,11 +985,18 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 	);
 	const slashSearchInputRef = useRef<HTMLInputElement | null>(null);
 	const slashQuery = normalizeSlashQuery(composer);
-	const slashMenuOpen = commandMenuOpen || slashQuery !== null;
+	const slashMenuOpen = !isRecording && (commandMenuOpen || slashQuery !== null);
 	const activeSlashSearchValue =
 		slashMenu === "main" ? (slashQuery ?? "") : commandSearch;
 	const showSlashSearch =
 		slashMenuOpen && slashMenu !== "main" && slashMenu !== "tool-settings";
+
+	useEffect(() => {
+		if (isRecording) {
+			setCommandMenuOpen(false);
+			setCommandSearch("");
+		}
+	}, [isRecording]);
 	const hasComposerContent =
 		(composer.trim().length > 0 && slashQuery === null) ||
 		attachments.length > 0;
@@ -1093,7 +1158,6 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		trimmedComposer.length >= COMPOSER_EXPAND_PROMPT_LENGTH ||
 		trimmedComposer.includes("\n");
 	const composerExpanded =
-		attachments.length > 0 ||
 		activeInlineTools.length > 0 ||
 		promptNeedsExpandedComposer;
 	const advisorConfigs = useMemo(() => {
@@ -1378,9 +1442,18 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 
 	useEffect(() => {
 		if (!showSlashSearch) return;
-		requestAnimationFrame(() => {
-			slashSearchInputRef.current?.focus();
+		let secondFrame: number | null = null;
+		const firstFrame = requestAnimationFrame(() => {
+			secondFrame = requestAnimationFrame(() => {
+				slashSearchInputRef.current?.focus({ preventScroll: true });
+			});
 		});
+		return () => {
+			cancelAnimationFrame(firstFrame);
+			if (secondFrame !== null) {
+				cancelAnimationFrame(secondFrame);
+			}
+		};
 	}, [showSlashSearch, slashMenu]);
 
 	useEffect(() => {
@@ -1442,7 +1515,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 				onComposerChange("");
 			}
 			requestAnimationFrame(() => {
-				slashSearchInputRef.current?.focus();
+				slashSearchInputRef.current?.focus({ preventScroll: true });
 			});
 		},
 		[onComposerChange, slashQuery],
@@ -1501,8 +1574,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		const commands: SlashCommand[] = [
 			{
 				id: "attach",
-				label: "Add photos & files",
-				description: "Upload from computer",
+				label: "Upload from device",
 				keywords: ["attach", "attachment", "file", "upload"],
 				icon: Paperclip,
 				disabled: !isUnified,
@@ -1544,29 +1616,17 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 				icon: Settings2,
 				disabled: !isUnified || !onServerToolsChange,
 			},
-			{
-				id: "audio",
-				label: recordingSupported ? "Record audio" : "Add audio file",
-				description: recordingSupported
-					? "Capture a voice clip"
-					: "Upload audio",
-				keywords: ["audio", "voice", "record", "mic", "microphone"],
-				icon: Mic,
-				disabled: isStartingRecording,
-			},
 		];
 
 		return commands;
 	}, [
 		activeCustomServerTools.length,
 		defaultServerToolsDisabled,
-		isStartingRecording,
 		isUnified,
 		enabledServerToolSet,
 		onServerToolsChange,
 		reasoningOptions,
 		reasoningSelection,
-		recordingSupported,
 		selectedModelCount,
 		selectedModelId,
 		selectedModelLabel,
@@ -1577,10 +1637,6 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		return reasoningOptions.map((option) => ({
 				id: `reasoning-${option.value}`,
 				label: option.label,
-				description:
-					reasoningSelection === option.value
-						? "Currently selected"
-						: "Apply to next request",
 				keywords: ["reasoning", "think", "effort", option.value, option.label],
 				icon: Brain,
 				selected: reasoningSelection === option.value,
@@ -2411,11 +2467,6 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 			clearSlashCommand();
 			return;
 		}
-		if (command.id === "audio") {
-			onToggleRecording();
-			clearSlashCommand();
-			return;
-		}
 		if (command.id.startsWith("reasoning-")) {
 			const value = command.id.replace(
 				"reasoning-",
@@ -2719,6 +2770,43 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		</Button>
 	);
 
+	const renderAudioButton = () => {
+		const label = isRecording
+			? "Stop recording"
+			: recordingSupported
+				? "Record audio"
+				: "Add audio file";
+		const Icon = isRecording ? Square : recordingSupported ? Mic : AudioLines;
+
+		return (
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<Button
+						type="button"
+						size="icon"
+						variant={isRecording ? "destructive" : "ghost"}
+						aria-label={label}
+						aria-pressed={isRecording}
+						data-chat-audio-button="true"
+						disabled={isStartingRecording}
+						className={cn(
+							"h-8 w-8 rounded-full",
+							isRecording
+								? "animate-pulse"
+								: "text-muted-foreground hover:text-foreground",
+						)}
+						onClick={onToggleRecording}
+					>
+						<Icon className={cn("h-4 w-4", isRecording && "fill-current")} />
+					</Button>
+				</TooltipTrigger>
+				<TooltipContent>
+					{isStartingRecording ? "Starting recording..." : label}
+				</TooltipContent>
+			</Tooltip>
+		);
+	};
+
 	const handleQueuedPromptDragStart = (
 		event: DragEvent<HTMLButtonElement>,
 		id: string,
@@ -2741,6 +2829,96 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		if (!activeId || activeId === targetId) return;
 		onReorderQueuedPrompt(activeId, targetId);
 	};
+
+	const renderAttachmentStrip = () => (
+		<AttachmentGroup
+			tabIndex={0}
+			role="group"
+			aria-label="Attached files"
+			className="-mx-4 w-[calc(100%+2rem)] px-4 pb-1 md:-mx-8 md:w-[calc(100%+4rem)] md:px-8"
+		>
+			{attachments.map((file, index) => {
+				const previewUrl = attachmentPreviewUrls[index];
+				const isImagePreview =
+					file.type.startsWith("image/") && Boolean(previewUrl);
+				const isAudioPreview =
+					file.type.startsWith("audio/") && Boolean(previewUrl);
+
+				if (isAudioPreview && previewUrl) {
+					return (
+						<Attachment
+							key={`${file.name}-${file.size}-${index}`}
+							size="sm"
+							state="done"
+							className="w-[19rem] max-w-[calc(100vw-3rem)] flex-nowrap items-start gap-2.5"
+						>
+							<AttachmentMedia className="mt-0.5 w-8 bg-foreground text-background">
+								<AudioLines className="h-3.5 w-3.5" />
+							</AttachmentMedia>
+							<AttachmentContent className="min-w-0 pb-1 pr-0">
+								<AttachmentTitle>{getAudioAttachmentTitle(file)}</AttachmentTitle>
+								<AttachmentDescription>
+									{getAttachmentDescription(file)}
+								</AttachmentDescription>
+								<audio
+									controls
+									src={previewUrl}
+									aria-label={`Preview ${file.name}`}
+									className="mt-1.5 h-7 w-full min-w-0"
+								/>
+							</AttachmentContent>
+							<AttachmentActions className="pt-1 pr-0.5">
+								<AttachmentAction
+									aria-label={`Remove ${file.name}`}
+									onClick={() => onRemoveAttachment(index)}
+								>
+									<X className="h-3.5 w-3.5" />
+								</AttachmentAction>
+							</AttachmentActions>
+						</Attachment>
+					);
+				}
+
+				return (
+					<Attachment
+						key={`${file.name}-${file.size}-${index}`}
+						size="sm"
+						state="done"
+						className="max-w-[260px]"
+					>
+						<AttachmentMedia variant={isImagePreview ? "image" : "icon"}>
+							{isImagePreview && previewUrl ? (
+								<Image
+									src={previewUrl}
+									alt=""
+									width={32}
+									height={32}
+									unoptimized
+									className="h-full w-full object-cover"
+								/>
+							) : (
+								<Paperclip className="h-4 w-4" />
+							)}
+						</AttachmentMedia>
+						<AttachmentContent>
+							<AttachmentTitle>{file.name}</AttachmentTitle>
+							<AttachmentDescription>
+								{getAttachmentDescription(file)}
+							</AttachmentDescription>
+						</AttachmentContent>
+						<AttachmentActions>
+							<AttachmentAction
+								aria-label={`Remove ${file.name}`}
+								onClick={() => onRemoveAttachment(index)}
+							>
+								<X className="h-3.5 w-3.5" />
+							</AttachmentAction>
+						</AttachmentActions>
+					</Attachment>
+				);
+			})}
+		</AttachmentGroup>
+	);
 
 	return (
 		<div className="border-t border-border bg-background px-4 py-[17px] md:px-8">
@@ -2837,7 +3015,9 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 						</div>
 					</div>
 				) : null}
-				{showEvaluationPrompts ? (
+				{attachments.length > 0 ? (
+					renderAttachmentStrip()
+				) : showEvaluationPrompts ? (
 					<ScrollArea
 						ref={promptScrollAreaRef}
 						className="-mx-4 w-[calc(100%+2rem)] whitespace-nowrap px-4 [mask-image:linear-gradient(90deg,transparent,black_1.25rem,black_calc(100%-1.25rem),transparent)] md:-mx-8 md:w-[calc(100%+4rem)] md:px-8 md:[mask-image:linear-gradient(90deg,transparent,black_2rem,black_calc(100%-2rem),transparent)]"
@@ -2907,6 +3087,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 										<Search className="h-3.5 w-3.5 shrink-0" />
 										<Input
 											ref={slashSearchInputRef}
+											autoFocus
 											value={commandSearch}
 											onChange={(event) =>
 												setCommandSearch(event.target.value)
@@ -2992,86 +3173,45 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 						multiple
 						onChange={onFileSelect}
 					/>
-					<Textarea
-						ref={textareaRef}
-						data-chat-composer-input="true"
-						value={composer}
-						onChange={(event) => {
-							handleComposerChange(event.target.value);
-						}}
-						onKeyDown={(event) => {
-							if (slashMenuOpen) {
-								if (handleSlashNavigationKeyDown(event)) {
+					{isRecording ? (
+						<RecordingWaveform
+							bars={recordingWaveformBars}
+							durationMs={recordingDurationMs}
+						/>
+					) : (
+						<Textarea
+							ref={textareaRef}
+							data-chat-composer-input="true"
+							value={composer}
+							onChange={(event) => {
+								handleComposerChange(event.target.value);
+							}}
+							onKeyDown={(event) => {
+								if (slashMenuOpen) {
+									if (handleSlashNavigationKeyDown(event)) {
+										return;
+									}
+								}
+								if (handlePromptHistoryKeyDown(event)) {
 									return;
 								}
-							}
-							if (handlePromptHistoryKeyDown(event)) {
-								return;
-							}
-							if (event.key === "Enter" && !event.shiftKey) {
-								event.preventDefault();
-								if (canSubmit) {
-									handleComposerSubmit();
+								if (event.key === "Enter" && !event.shiftKey) {
+									event.preventDefault();
+									if (canSubmit) {
+										handleComposerSubmit();
+									}
 								}
-							}
-						}}
-						rows={1}
-						placeholder={placeholder}
-						className={cn(
-							"resize-none border-0 !bg-transparent shadow-none transition-[min-height,padding] duration-[220ms] ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform focus-visible:ring-0 motion-reduce:transition-none dark:!bg-transparent",
-							composerExpanded
-								? "min-h-[56px] px-1 py-2"
-								: "order-1 min-h-9 w-full px-2 py-2 sm:order-2 sm:flex-1",
-						)}
-					/>
-					{attachments.length > 0 ? (
-						<AttachmentGroup className="pb-1">
-							{attachments.map((file, index) => {
-								const previewUrl = attachmentPreviewUrls[index];
-								const isImagePreview = Boolean(previewUrl);
-
-								return (
-									<Attachment
-										key={`${file.name}-${file.size}-${index}`}
-										size="sm"
-										state="done"
-										className="max-w-[260px]"
-									>
-										<AttachmentMedia
-											variant={isImagePreview ? "image" : "icon"}
-										>
-											{previewUrl ? (
-												<Image
-													src={previewUrl}
-													alt=""
-													width={32}
-													height={32}
-													unoptimized
-													className="h-full w-full object-cover"
-												/>
-											) : (
-												<Paperclip className="h-4 w-4" />
-											)}
-										</AttachmentMedia>
-										<AttachmentContent>
-											<AttachmentTitle>{file.name}</AttachmentTitle>
-											<AttachmentDescription>
-												{getAttachmentDescription(file)}
-											</AttachmentDescription>
-										</AttachmentContent>
-										<AttachmentActions>
-											<AttachmentAction
-												aria-label={`Remove ${file.name}`}
-												onClick={() => onRemoveAttachment(index)}
-											>
-												<X className="h-3.5 w-3.5" />
-											</AttachmentAction>
-										</AttachmentActions>
-									</Attachment>
-								);
-							})}
-						</AttachmentGroup>
-					) : null}
+							}}
+							rows={1}
+							placeholder={placeholder}
+							className={cn(
+								"resize-none border-0 !bg-transparent shadow-none transition-[min-height,padding] duration-[220ms] ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform focus-visible:ring-0 motion-reduce:transition-none dark:!bg-transparent",
+								composerExpanded
+									? "min-h-[56px] px-1 py-2"
+									: "order-1 min-h-9 w-full px-2 py-2 sm:order-2 sm:flex-1",
+							)}
+						/>
+					)}
 					<div
 						className={cn(
 							composerExpanded
@@ -3092,7 +3232,8 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 										variant="ghost"
 										size="icon"
 										className="h-8 w-8"
-										onClick={toggleSlashCommandMenu}
+										onClick={isRecording ? undefined : toggleSlashCommandMenu}
+										disabled={isRecording}
 										aria-label="Open action menu"
 									>
 										<Plus className="h-4 w-4" />
@@ -3140,10 +3281,11 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 						<div
 							ref={composerSendControlsRef}
 							className={cn(
-								"flex items-center gap-2 will-change-transform",
+								"flex items-center gap-1.5 will-change-transform",
 								composerExpanded ? "" : "order-3",
 							)}
 						>
+							{renderAudioButton()}
 							{renderSendButton()}
 						</div>
 					</div>

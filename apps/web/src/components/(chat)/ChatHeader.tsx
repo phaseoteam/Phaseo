@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	ModelSelector,
 	ModelSelectorContent,
@@ -326,6 +326,7 @@ export function ChatHeader({
 		"personalization" | "data-controls" | "shortcuts" | "admin"
 	>("personalization");
 	const [modelSearchValue, setModelSearchValue] = useState("");
+	const modelSearchInputRef = useRef<HTMLInputElement | null>(null);
 	const [quickFilters, setQuickFilters] = useState({
 		free: false,
 		new: false,
@@ -683,6 +684,81 @@ export function ChatHeader({
 			setModelSearchValue("");
 		}
 	};
+	const focusModelSearchInput = useCallback(() => {
+		const input =
+			modelSearchInputRef.current ??
+			document.querySelector<HTMLInputElement>(
+				"[data-chat-model-selector-search='true']",
+			);
+		input?.focus({ preventScroll: true });
+	}, []);
+	const scheduleModelSearchFocus = useCallback(() => {
+		const timeoutIds: number[] = [];
+		let secondFrame: number | null = null;
+		focusModelSearchInput();
+		for (const delay of [0, 25, 75, 150, 250, 400]) {
+			timeoutIds.push(window.setTimeout(focusModelSearchInput, delay));
+		}
+		const firstFrame = requestAnimationFrame(() => {
+			secondFrame = requestAnimationFrame(() => {
+				focusModelSearchInput();
+				for (const delay of [25, 75, 150, 250, 400]) {
+					timeoutIds.push(window.setTimeout(focusModelSearchInput, delay));
+				}
+			});
+		});
+		return () => {
+			cancelAnimationFrame(firstFrame);
+			if (secondFrame !== null) {
+				cancelAnimationFrame(secondFrame);
+			}
+			for (const timeoutId of timeoutIds) {
+				window.clearTimeout(timeoutId);
+			}
+		};
+	}, [focusModelSearchInput]);
+	useEffect(() => {
+		if (!modelPickerOpen) return;
+		return scheduleModelSearchFocus();
+	}, [modelPickerOpen, scheduleModelSearchFocus]);
+	useEffect(() => {
+		if (!modelPickerOpen) return;
+		const handleModelPickerKeyDown = (event: globalThis.KeyboardEvent) => {
+			if (event.isComposing || event.metaKey || event.ctrlKey || event.altKey) {
+				return;
+			}
+			const target = event.target;
+			if (
+				target instanceof HTMLElement &&
+				target.closest("[data-chat-model-selector-search='true']")
+			) {
+				return;
+			}
+			const input =
+				modelSearchInputRef.current ??
+				document.querySelector<HTMLInputElement>(
+					"[data-chat-model-selector-search='true']",
+				);
+			if (!input) return;
+			if (event.key.length === 1) {
+				event.preventDefault();
+				event.stopPropagation();
+				input.focus({ preventScroll: true });
+				setModelSearchValue((value) => `${value}${event.key}`);
+				return;
+			}
+			if (event.key === "Backspace") {
+				event.preventDefault();
+				event.stopPropagation();
+				input.focus({ preventScroll: true });
+				setModelSearchValue((value) => value.slice(0, -1));
+			}
+		};
+		window.addEventListener("keydown", handleModelPickerKeyDown, true);
+		return () => {
+			window.removeEventListener("keydown", handleModelPickerKeyDown, true);
+		};
+	}, [modelPickerOpen]);
 	const handleRemoveModel = (modelId: string) => {
 		onRemoveModel?.(modelId);
 	};
@@ -1197,6 +1273,9 @@ export function ChatHeader({
 						commandProps={{ shouldFilter: false }}
 					>
 						<ModelSelectorInput
+							ref={modelSearchInputRef}
+							data-chat-model-selector-search="true"
+							autoFocus
 							placeholder="Search models..."
 							value={modelSearchValue}
 							onValueChange={setModelSearchValue}
