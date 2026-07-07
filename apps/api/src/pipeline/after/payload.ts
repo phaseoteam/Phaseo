@@ -137,9 +137,13 @@ function buildResponsesPayload(ctx: PipelineContext, result: RequestResult): Any
         ? raw.output
         : (Array.isArray(raw?.output_items) ? raw.output_items : null);
     const irOutputItems = ir ? buildResponsesOutput(ir, ctx.requestId) : [];
-    const outputRaw =
+    const sanitizedRawOutputItems =
         Array.isArray(rawOutputItems) && rawOutputItems.length > 0
-            ? rawOutputItems
+            ? sanitizeResponsesOutputItems(rawOutputItems)
+            : null;
+    const outputRaw =
+        Array.isArray(sanitizedRawOutputItems) && sanitizedRawOutputItems.length > 0
+            ? sanitizedRawOutputItems
             : irOutputItems;
     const output = backfillAssistantPhaseFromIr(outputRaw, ir);
     const resolvedId = ctx.requestId ?? raw?.id ?? (ctx.requestId ? `resp_${ctx.requestId.replace(/^req_/, "")}` : ctx.requestId);
@@ -206,6 +210,16 @@ function backfillAssistantPhaseFromIr(outputRaw: any, ir?: IRChatResponse): any[
         if (item.phase !== undefined && item.phase !== null) return item;
         if (fallbackPhase === undefined || fallbackPhase === null) return item;
         return { ...item, phase: fallbackPhase };
+    });
+}
+
+function sanitizeResponsesOutputItems(outputItems: any[]): any[] {
+    return outputItems.filter((item) => {
+        if (!item || typeof item !== "object") return true;
+        const type = String(item.type ?? "").toLowerCase();
+        if (type !== "tool_call") return true;
+        const name = String(item.name ?? item.tool_name ?? item.function?.name ?? "").trim();
+        return name.length > 0 && name !== "tool_call";
     });
 }
 
@@ -414,7 +428,7 @@ export function extractFinishReason(payload: any): string | null {
             if (Array.isArray(output)) {
                 const hasToolCall = output.some((item: any) => {
                     const type = String(item?.type ?? "").toLowerCase();
-                    return type === "tool_call" || type === "function_call";
+                    return type === "function_call";
                 });
                 if (hasToolCall) return "tool_calls";
             }

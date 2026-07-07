@@ -107,6 +107,7 @@ const TOOL_OUTPUT_ITEM_TYPES = new Set([
 	"computer_call",
 	"mcp_call",
 ]);
+const GENERIC_TOOL_CALL_NAMES = new Set(["tool_call"]);
 
 const parseJsonIfPossible = (value: string): unknown => {
 	const trimmed = value.trim();
@@ -160,6 +161,17 @@ const normalizeToolCallFromOutputItem = (
 	if (!item || typeof item !== "object") return null;
 	const type = typeof item.type === "string" ? item.type : "tool_call";
 	if (!TOOL_OUTPUT_ITEM_TYPES.has(type)) return null;
+	const explicitName =
+		typeof item.name === "string" && item.name.trim()
+			? item.name.trim()
+			: typeof item.tool_name === "string" && item.tool_name.trim()
+				? item.tool_name.trim()
+				: typeof item.function?.name === "string" &&
+					  item.function.name.trim()
+					? item.function.name.trim()
+					: null;
+	if (explicitName && GENERIC_TOOL_CALL_NAMES.has(explicitName)) return null;
+	if (type === "tool_call" && !explicitName) return null;
 	const idCandidate =
 		item.call_id ??
 		item.id ??
@@ -171,12 +183,7 @@ const normalizeToolCallFromOutputItem = (
 		typeof idCandidate === "string" && idCandidate.trim()
 			? idCandidate.trim()
 			: `tool-${index}`;
-	const name =
-		typeof item.name === "string" && item.name.trim()
-			? item.name.trim()
-			: typeof item.tool_name === "string" && item.tool_name.trim()
-				? item.tool_name.trim()
-				: type;
+	const name = explicitName ?? type;
 	const argumentText =
 		typeof item.arguments === "string"
 			? item.arguments
@@ -227,6 +234,7 @@ const normalizeToolCallFromChatToolCall = (
 			: typeof toolCall.name === "string" && toolCall.name.trim()
 				? toolCall.name.trim()
 				: type;
+	if (GENERIC_TOOL_CALL_NAMES.has(name)) return null;
 	const argumentText =
 		typeof functionCall.arguments === "string"
 			? functionCall.arguments

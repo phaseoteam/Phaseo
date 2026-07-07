@@ -119,6 +119,140 @@ describe("extractUnifiedStreamEvents", () => {
 		).toBe(true);
 	});
 
+	it("does not treat generic responses tool_call items as function calls", () => {
+		const events = extractUnifiedStreamEvents({
+			protocol: "openai.responses",
+			eventName: "response.output_item.added",
+			frame: {
+				output_index: 1,
+				item: {
+					id: "tc_unknown",
+					type: "tool_call",
+					status: "completed",
+				},
+			},
+		});
+
+		expect(events.some((event) => event.type === "delta_tool")).toBe(false);
+	});
+
+	it("treats named responses tool_call items as function calls", () => {
+		const events = extractUnifiedStreamEvents({
+			protocol: "openai.responses",
+			eventName: "response.output_item.added",
+			frame: {
+				output_index: 1,
+				item: {
+					id: "tc_datetime",
+					call_id: "call_datetime",
+					type: "tool_call",
+					function: {
+						name: "gateway_datetime",
+						arguments: "{\"timezones\":[\"UTC\"]}",
+					},
+				},
+			},
+		});
+
+		expect(events).toContainEqual(
+			expect.objectContaining({
+				type: "delta_tool",
+				toolCallKey: "tc_datetime",
+				toolCallId: "call_datetime",
+				toolName: "gateway_datetime",
+				arguments: "{\"timezones\":[\"UTC\"]}",
+			}),
+		);
+
+		const completedEvents = extractUnifiedStreamEvents({
+			protocol: "openai.responses",
+			eventName: "response.completed",
+			frame: {
+				response: {
+					status: "completed",
+					output: [
+						{
+							type: "tool_call",
+							id: "tc_datetime",
+							call_id: "call_datetime",
+							function: {
+								name: "gateway_datetime",
+								arguments: "{\"timezones\":[\"UTC\"]}",
+							},
+						},
+					],
+				},
+			},
+		});
+		expect(
+			completedEvents.some(
+				(event) =>
+					event.type === "stop" && event.finishReason === "tool_calls",
+			),
+		).toBe(true);
+	});
+
+	it("does not treat generic responses tool_call argument completions as function calls", () => {
+		const events = extractUnifiedStreamEvents({
+			protocol: "openai.responses",
+			eventName: "response.function_call_arguments.done",
+			frame: {
+				item_id: "fc_shadow",
+				output_index: 2,
+				name: "tool_call",
+				arguments: "{\"timezones\":[\"UTC\"]}",
+			},
+		});
+
+		expect(events.some((event) => event.type === "delta_tool")).toBe(false);
+	});
+
+	it("preserves separate Responses item and provider call IDs for function-call events", () => {
+		const outputItemEvents = extractUnifiedStreamEvents({
+			protocol: "openai.responses",
+			eventName: "response.output_item.added",
+			frame: {
+				output_index: 0,
+				item: {
+					type: "function_call",
+					id: "fc_123",
+					call_id: "call_123",
+					name: "gateway_datetime",
+					arguments: "",
+				},
+			},
+		});
+		expect(outputItemEvents).toContainEqual(
+			expect.objectContaining({
+				type: "delta_tool",
+				toolCallKey: "fc_123",
+				toolCallId: "call_123",
+				toolName: "gateway_datetime",
+			}),
+		);
+
+		const argumentEvents = extractUnifiedStreamEvents({
+			protocol: "openai.responses",
+			eventName: "response.function_call_arguments.done",
+			frame: {
+				item_id: "fc_123",
+				call_id: "call_123",
+				output_index: 0,
+				name: "gateway_datetime",
+				arguments: "{\"timezones\":[\"UTC\"]}",
+			},
+		});
+		expect(argumentEvents).toContainEqual(
+			expect.objectContaining({
+				type: "delta_tool",
+				toolCallKey: "fc_123",
+				toolCallId: "call_123",
+				toolName: "gateway_datetime",
+				arguments: "{\"timezones\":[\"UTC\"]}",
+			}),
+		);
+	});
+
 	it("extracts anthropic message deltas, tool events, usage, and stop", () => {
 		const toolStart = extractUnifiedStreamEvents({
 			protocol: "anthropic.messages",

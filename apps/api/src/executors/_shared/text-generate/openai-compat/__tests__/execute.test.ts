@@ -115,6 +115,95 @@ describe("executeOpenAICompat", () => {
 		expect(capturedBody?.stream).toBe(true);
 	});
 
+	it("routes Poolside responses-surface continuations through chat completions payloads", async () => {
+		const args = buildArgs();
+		args.providerId = "poolside";
+		args.endpoint = "responses";
+		args.protocol = "openai.responses";
+		args.providerModelSlug = "laguna-xs-2.1";
+		args.ir = {
+			...args.ir,
+			model: "poolside/laguna-xs-2.1:free",
+			stream: false,
+			messages: [
+				{ role: "user", content: [{ type: "text", text: "What is the time?" }] },
+				{
+					role: "assistant",
+					content: [],
+					toolCalls: [{
+						id: "call_datetime",
+						name: "gateway_datetime",
+						arguments: "{}",
+					}],
+				},
+				{
+					role: "tool",
+					toolResults: [{
+						toolCallId: "call_datetime",
+						content: "{\"timezones\":[{\"timezone\":\"UTC\",\"datetime\":\"2026-07-06T15:25:15.298+00:00\"}]}",
+					}],
+				},
+			],
+			tools: [{
+				name: "gateway_datetime",
+				parameters: { type: "object" },
+			}],
+		};
+
+		let capturedBody: any = null;
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.poolside.example/v1/chat/completions",
+			response: jsonResponse({
+				id: "chatcmpl_laguna_final",
+				object: "chat.completion",
+				created: 1778073915,
+				model: "laguna-xs-2.1",
+				choices: [{
+					index: 0,
+					message: { role: "assistant", content: "It is 15:25 UTC." },
+					finish_reason: "stop",
+				}],
+				usage: { prompt_tokens: 10, completion_tokens: 6, total_tokens: 16 },
+			}),
+			onRequest: (call) => {
+				capturedBody = call.bodyJson;
+			},
+		}]);
+
+		const result = await executeOpenAICompat(args);
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect(mock.calls).toHaveLength(1);
+		expect(mock.calls[0]?.url).toBe("https://api.poolside.example/v1/chat/completions");
+		expect(capturedBody?.input).toBeUndefined();
+		expect(capturedBody?.messages).toEqual([
+			{
+				role: "user",
+				content: "What is the time?",
+			},
+			{
+				role: "assistant",
+				content: null,
+				tool_calls: [{
+					id: "call_datetime",
+					type: "function",
+					function: {
+						name: "gateway_datetime",
+						arguments: "{}",
+					},
+				}],
+			},
+			{
+				role: "tool",
+				tool_call_id: "call_datetime",
+				content: "{\"timezones\":[{\"timezone\":\"UTC\",\"datetime\":\"2026-07-06T15:25:15.298+00:00\"}]}",
+			},
+		]);
+		expect(capturedBody?.stream).toBe(true);
+		expect(capturedBody?.stream_options?.include_usage).toBe(true);
+	});
+
 	it("routes alibaba-cloud omni models to chat completions", async () => {
 		const args = buildArgs();
 		args.providerId = "alibaba-cloud";

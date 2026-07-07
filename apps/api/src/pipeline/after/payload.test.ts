@@ -454,4 +454,67 @@ describe("enrichSuccessPayload model selection", () => {
 		expect(body.provider).toBe("minimax");
 		expect(body.provider_id).toBe("minimax");
 	});
+
+	it("removes generic raw Responses tool_call items from client payloads", async () => {
+		const ctx: any = {
+			endpoint: "responses",
+			protocol: "openai.responses",
+			requestId: "req_datetime",
+			model: "openai/gpt-5.4-nano",
+			body: {},
+			meta: {},
+		};
+		const result: any = {
+			provider: "openai",
+			ir: {
+				choices: [{
+					index: 0,
+					message: {
+						role: "assistant",
+						content: [],
+						toolCalls: [{
+							id: "call_datetime",
+							name: "gateway_datetime",
+							arguments: "{\"timezones\":[\"UTC\"]}",
+						}],
+					},
+					finishReason: "tool_calls",
+				}],
+				usage: {
+					inputTokens: 5,
+					outputTokens: 7,
+					totalTokens: 12,
+				},
+			},
+			rawResponse: {
+				id: "resp_datetime",
+				model: "gpt-5.4-nano",
+				status: "completed",
+				output: [
+					{
+						type: "function_call",
+						call_id: "call_datetime",
+						name: "gateway_datetime",
+						arguments: "{\"timezones\":[\"UTC\"]}",
+					},
+					{
+						type: "tool_call",
+						id: "fc_shadow",
+						name: "tool_call",
+						arguments: "{\"timezones\":[\"UTC\"]}",
+					},
+				],
+			},
+		};
+
+		const payload = await enrichSuccessPayload(ctx, result);
+		expect(payload.output).toEqual([
+			{
+				type: "function_call",
+				call_id: "call_datetime",
+				name: "gateway_datetime",
+				arguments: "{\"timezones\":[\"UTC\"]}",
+			},
+		]);
+	});
 });

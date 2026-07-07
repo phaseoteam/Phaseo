@@ -175,6 +175,7 @@ export function createAnthropicToResponsesStreamTransformer(
 							delta: chunk,
 							output_index: block.outputIndex,
 							item_id: block.itemId,
+							call_id: block.id,
 						});
 					}
 
@@ -186,6 +187,7 @@ export function createAnthropicToResponsesStreamTransformer(
 					if (block.type === "tool_use") {
 						emitEvent(controller, "response.function_call_arguments.done", {
 							item_id: block.itemId,
+							call_id: block.id,
 							output_index: block.outputIndex,
 							name: block.name || "",
 							arguments: block.input || "",
