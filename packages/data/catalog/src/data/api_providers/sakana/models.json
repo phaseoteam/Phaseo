@@ -15,7 +15,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "coming_soon",
         "params": [
           { "param_id": "max_output_tokens", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Responses API field." },
           { "param_id": "max_completion_tokens", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Chat Completions API field." },
@@ -53,7 +53,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
+        "status": "coming_soon",
         "params": [
           { "param_id": "max_output_tokens", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Responses API field; applies only to the final model response for Fugu Ultra." },
           { "param_id": "max_completion_tokens", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Chat Completions API field." },
