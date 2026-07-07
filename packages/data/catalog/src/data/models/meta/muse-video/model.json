@@ -1,0 +1,29 @@
+{
+  "model_id": "meta/muse-video",
+  "organisation_id": "meta",
+  "name": "Muse Video",
+  "status": "Coming Soon",
+  "previous_model_id": null,
+  "description": "Muse Video is Meta's in-development video generation model in the Muse family, intended to bring prompt-driven creative video workflows into Meta's AI products.",
+  "announced_date": "2026-07-07T00:00:00",
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": null,
+  "output_types": "video",
+  "api_model_id": "meta/muse-video",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://about.fb.com/news/2026/07/introducing-muse-image-meta-ai/"
+    }
+  ],
+  "details": [
+    {
+      "name": "availability",
+      "value": "Meta says Muse Video is already in development; no public release surface or external API availability has been announced."
+    }
+  ],
+  "benchmarks": []
+}
