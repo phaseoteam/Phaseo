@@ -77,8 +77,8 @@ const HUGGING_FACE_API_ORIGIN = "https://huggingface.co";
 const HUGGING_FACE_MODELS_API_PATH = "/api/models";
 const PUBLIC_MODEL_DISCOVERY_USERNAME = "Phaseo Public Model Discovery";
 const PRIVATE_MODEL_DISCOVERY_USERNAME = "Phaseo Private Model Discovery";
-const PUBLIC_MODEL_DISCOVERY_AVATAR_URL = "https://phaseo.ai/png_logo_light.png";
-const PRIVATE_MODEL_DISCOVERY_AVATAR_URL = "https://phaseo.ai/png_logo_dark.png";
+const PUBLIC_MODEL_DISCOVERY_AVATAR_URL = "https://phaseo.app/png_logo_light.png";
+const PRIVATE_MODEL_DISCOVERY_AVATAR_URL = "https://phaseo.app/png_logo_dark.png";
 
 function nowIso(): string {
     return new Date().toISOString();
@@ -535,7 +535,7 @@ async function fetchHfOrgModelIds(org: string, hfToken: string | null): Promise<
     }
 
     const discovered = new Set<string>();
-    let nextUrl = `https://huggingface.co/api/models?author=${encodeURIComponent(org)}&limit=100&full=false&config=false&cardData=false`;
+    let nextUrl: string | null = `https://huggingface.co/api/models?author=${encodeURIComponent(org)}&limit=100&full=false&config=false&cardData=false`;
     let pageCount = 0;
     const maxPages = 50;
 
@@ -676,7 +676,7 @@ function displayModelName(snapshot: ModelFileSnapshot): string {
     return parts.length >= 2 ? parts[parts.length - 2] : snapshot.filePath;
 }
 
-const MODEL_DETAILS_BASE_URL = "https://phaseo.ai";
+const MODEL_DETAILS_BASE_URL = "https://phaseo.app";
 const HUGGING_FACE_BASE_URL = "https://huggingface.co";
 
 function appendBoundedLines(lines: string[], values: string[], maxItems = 40): void {
@@ -742,55 +742,6 @@ function toInternalNotificationModel(
         creatorName: creatorMeta?.name,
         creatorColor: creatorMeta?.colour,
     };
-}
-
-function formatStatusValue(status: string | null): string {
-    return status ?? "Not set";
-}
-
-function formatDateValue(value: string | null): string {
-    if (!value) return "Not set";
-    const parsed = new Date(value);
-    if (!Number.isFinite(parsed.getTime())) return value;
-    return parsed.toLocaleDateString("en-GB", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        timeZone: "UTC",
-    });
-}
-
-function buildAddedModelSummaryLines(snapshot: ModelFileSnapshot): string[] {
-    const lines = [`Event: Added`, `Status: ${formatStatusValue(snapshot.status)}`];
-    if (snapshot.announcedDate) lines.push(`Announced: ${formatDateValue(snapshot.announcedDate)}`);
-    if (snapshot.releaseDate) lines.push(`Release: ${formatDateValue(snapshot.releaseDate)}`);
-    if (snapshot.deprecationDate) lines.push(`Deprecation: ${formatDateValue(snapshot.deprecationDate)}`);
-    if (snapshot.retirementDate) lines.push(`Retirement: ${formatDateValue(snapshot.retirementDate)}`);
-    return lines;
-}
-
-function buildUpdatedModelSummaryLines(previous: ModelFileSnapshot, current: ModelFileSnapshot): string[] {
-    const lines: string[] = ["Event: Updated"];
-
-    if (previous.status !== current.status) {
-        lines.push(`Status: ${formatStatusValue(previous.status)} -> ${formatStatusValue(current.status)}`);
-    }
-    if (previous.announcedDate !== current.announcedDate) {
-        lines.push(`Announced: ${formatDateValue(previous.announcedDate)} -> ${formatDateValue(current.announcedDate)}`);
-    }
-    if (previous.releaseDate !== current.releaseDate) {
-        lines.push(`Release: ${formatDateValue(previous.releaseDate)} -> ${formatDateValue(current.releaseDate)}`);
-    }
-    if (previous.deprecationDate !== current.deprecationDate) {
-        lines.push(
-            `Deprecation: ${formatDateValue(previous.deprecationDate)} -> ${formatDateValue(current.deprecationDate)}`
-        );
-    }
-    if (previous.retirementDate !== current.retirementDate) {
-        lines.push(`Retirement: ${formatDateValue(previous.retirementDate)} -> ${formatDateValue(current.retirementDate)}`);
-    }
-
-    return lines.length > 1 ? lines : [];
 }
 
 function buildHfModelLine(modelId: string): string {
@@ -928,11 +879,7 @@ export async function runInternalModelDiscovery(argv: string[], hooks: InternalM
             .filter((snapshot): snapshot is ModelFileSnapshot => Boolean(snapshot))
             .map((snapshot) => {
                 const model = toInternalNotificationModel(snapshot, organisationMetaMap);
-                if (!model) return null;
-                return {
-                    ...model,
-                    changeSummaryLines: buildAddedModelSummaryLines(snapshot),
-                } satisfies InternalModelNotificationModel;
+                return model;
             })
             .filter((snapshot): snapshot is InternalModelNotificationModel => Boolean(snapshot))
         : [];
@@ -941,38 +888,10 @@ export async function runInternalModelDiscovery(argv: string[], hooks: InternalM
         0,
         detectedInternalAddedModels.length - newInternalModels.length
     );
-    const detectedInternalUpdatedModels = shouldCheckInternal
-        ? diff.changed
-            .map((filePath) => {
-                const previousSnapshot = previousState.files[filePath];
-                const currentSnapshot = currentFiles[filePath];
-                if (!previousSnapshot || !currentSnapshot) return null;
-                const changeSummaryLines = buildUpdatedModelSummaryLines(previousSnapshot, currentSnapshot);
-                if (changeSummaryLines.length === 0) return null;
-                const model = toInternalNotificationModel(currentSnapshot, organisationMetaMap);
-                if (!model) return null;
-                return {
-                    ...model,
-                    changeSummaryLines,
-                } satisfies InternalModelNotificationModel;
-            })
-            .filter((snapshot): snapshot is InternalModelNotificationModel => Boolean(snapshot))
-        : [];
-    const suppressLegacyLifecycleBackfillUpdates =
-        shouldCheckInternal &&
-        previous.sourceVersion !== null &&
-        previous.sourceVersion < 3 &&
-        detectedInternalUpdatedModels.length > 0;
-    const internalUpdatedModels = suppressLegacyLifecycleBackfillUpdates
-        ? []
-        : detectedInternalUpdatedModels;
-    const suppressedLegacyLifecycleUpdates = suppressLegacyLifecycleBackfillUpdates
-        ? detectedInternalUpdatedModels.length
-        : 0;
-    const internalNotificationModels = [...newInternalModels, ...internalUpdatedModels];
     const internalAdditionsCount = shouldCheckInternal ? newInternalModels.length : 0;
-    const internalUpdatesCount = shouldCheckInternal ? internalUpdatedModels.length : 0;
-    const internalNotificationCount = internalNotificationModels.length;
+    const internalUpdatesCount = shouldCheckInternal ? diff.changed.length : 0;
+    const internalNotificationModels = newInternalModels;
+    const internalNotificationCount = internalAdditionsCount;
 
     const hfFirstBaseline = shouldCheckHf && !previous.hasHfState;
     const hfAdditionsByOrg = !shouldCheckHf || hfFirstBaseline
@@ -995,9 +914,8 @@ export async function runInternalModelDiscovery(argv: string[], hooks: InternalM
             detectedAdded: detectedInternalAddedModels.length,
             detectedUpdated: internalUpdatesCount,
             newlyAnnouncedAdded: newInternalModels.length,
-            notifiedUpdates: internalUpdatesCount,
+            notifiedUpdates: 0,
             skippedAlreadyAnnounced: skippedAlreadyAnnouncedInternal,
-            suppressedLegacyLifecycleUpdates,
             announcedStatePath: path.relative(repoRoot, announcedStatePath),
         },
     });
@@ -1012,11 +930,8 @@ export async function runInternalModelDiscovery(argv: string[], hooks: InternalM
             );
         }
         if (internalUpdatesCount > 0) {
-            console.log(`[internal-model-check] Internal model updates detected: ${internalUpdatesCount}.`);
-        }
-        if (suppressedLegacyLifecycleUpdates > 0) {
             console.log(
-                `[internal-model-check] Suppressed ${suppressedLegacyLifecycleUpdates} lifecycle update notification(s) while upgrading legacy discovery state.`
+                `[internal-model-check] Internal model updates detected but not notified: ${internalUpdatesCount}.`
             );
         }
     } else {
@@ -1042,7 +957,7 @@ export async function runInternalModelDiscovery(argv: string[], hooks: InternalM
 
     if (internalNotificationCount === 0 && hfAdditionsTotal === 0) {
         writeDiscoveryState(statePath, currentFiles, currentHf.snapshots);
-        console.log("[internal-model-check] No internal model updates/additions or HF additions detected.");
+        console.log("[internal-model-check] No internal model additions or HF additions detected.");
         return;
     }
 
