@@ -258,8 +258,8 @@ importers:
         specifier: ^9.6.1
         version: 9.6.1(@types/react@19.2.14)(immer@11.1.8)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(three@0.184.0)
       '@shadcn/react':
-        specifier: 0.1.0
-        version: 0.1.0(@types/react@19.2.14)(react@19.2.6)
+        specifier: 0.2.0
+        version: 0.2.0(@types/react@19.2.14)(react@19.2.6)
       '@statsig/js-client':
         specifier: ^3.33.2
         version: 3.33.2
@@ -4372,8 +4372,8 @@ packages:
   '@sec-ant/readable-stream@0.4.1':
     resolution: {integrity: sha512-831qok9r2t8AlxLko40y2ebgSDhenenCatLVeW/uBtnHPyhHOvG0C7TvfgecV+wHzIm5KUICgzmVpWS+IMEAeg==}
 
-  '@shadcn/react@0.1.0':
-    resolution: {integrity: sha512-6i67TEnqValsZY7e4exJ4rkHo2OdHXmDH152YulwSpuEUnTQYumHkXzFsaje7HB7GbMTWuI9x1Jn6sSduCYdeA==}
+  '@shadcn/react@0.2.0':
+    resolution: {integrity: sha512-g/LMtyL0eiHCHkOCelhYf32RC5nTMdtUNag1ZQRhSDCW+jnHxDY1Dajk7P6zJosOg8z2N4wzfKOY5sh54QTDYA==}
     peerDependencies:
       '@types/react': '>=19'
       react: '>=19'
@@ -16110,7 +16110,7 @@ snapshots:
 
   '@sec-ant/readable-stream@0.4.1': {}
 
-  '@shadcn/react@0.1.0(@types/react@19.2.14)(react@19.2.6)':
+  '@shadcn/react@0.2.0(@types/react@19.2.14)(react@19.2.6)':
     optionalDependencies:
       '@types/react': 19.2.14
       react: 19.2.6
