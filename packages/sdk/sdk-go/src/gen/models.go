@@ -1376,10 +1376,10 @@ type KnownModelId string
 const (
 	KnownModelIdAi21JambaLarge17 KnownModelId = "ai21/jamba-large-1.7"
 	KnownModelIdAi21JambaMini2 KnownModelId = "ai21/jamba-mini-2"
-	KnownModelIdAionLabsAion10 KnownModelId = "aion-labs/aion-1.0"
-	KnownModelIdAionLabsAion10Mini KnownModelId = "aion-labs/aion-1.0-mini"
 	KnownModelIdAionLabsAion20 KnownModelId = "aion-labs/aion-2.0"
 	KnownModelIdAionLabsAion25 KnownModelId = "aion-labs/aion-2.5"
+	KnownModelIdAionLabsAion30 KnownModelId = "aion-labs/aion-3.0"
+	KnownModelIdAionLabsAion30Mini KnownModelId = "aion-labs/aion-3.0-mini"
 	KnownModelIdAionLabsAionRpLlama318b KnownModelId = "aion-labs/aion-rp-llama-3.1-8b"
 	KnownModelIdAllenaiMolmo28b KnownModelId = "allenai/molmo-2-8b"
 	KnownModelIdAllenaiOlmo3132b KnownModelId = "allenai/olmo-3.1-32b"
