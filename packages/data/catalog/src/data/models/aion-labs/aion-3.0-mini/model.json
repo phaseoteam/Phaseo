@@ -6,7 +6,7 @@
   "previous_model_id": "aion-labs/aion-1.0-mini",
   "description": "Aion 3.0 Mini is a multimodal system built on the DeepSeek family of models. It uses multiple specialized models during generation to improve narrative structure, tension, conflict, and mature-theme handling.",
   "announced_date": "2026-07-07T00:00:00",
-  "release_date": "2026-05-14T00:00:00",
+  "release_date": "2026-07-07T00:00:00",
   "deprecation_date": null,
   "retirement_date": null,
   "license": "Proprietary",
