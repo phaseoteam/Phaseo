@@ -13,11 +13,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
 import { ArrowUpRight, Search as SearchIcon, Trophy } from "lucide-react";
-import type { SearchData } from "@/lib/fetchers/search/getSearchData";
+import type {
+	CompactSearchData,
+	SearchData,
+} from "@/lib/fetchers/search/getSearchData";
 
 interface Props {
 	className?: string;
-	initialData?: SearchData | null;
 }
 
 type SearchableItem = {
@@ -134,6 +136,97 @@ function createSearchIndex<T extends SearchableItem>(
 }
 
 let cachedSearchData: SearchData | null = null;
+let searchDataRequest: Promise<SearchData> | null = null;
+
+function isCompactSearchData(value: unknown): value is CompactSearchData {
+	return Boolean(
+		value &&
+			typeof value === "object" &&
+			Array.isArray((value as CompactSearchData).m) &&
+			Array.isArray((value as CompactSearchData).o) &&
+			Array.isArray((value as CompactSearchData).b) &&
+			Array.isArray((value as CompactSearchData).p) &&
+			Array.isArray((value as CompactSearchData).s) &&
+			Array.isArray((value as CompactSearchData).c),
+	);
+}
+
+function expandSearchData(value: SearchData | CompactSearchData): SearchData {
+	if (!isCompactSearchData(value)) return value;
+
+	return {
+		models: value.m.map(([id, title, subtitle, href, logoId, releaseGroupLabel]) => ({
+			id,
+			title,
+			subtitle,
+			href,
+			logoId,
+			releaseGroupLabel,
+		})),
+		organisations: value.o.map(([id, title, subtitle, href, logoId]) => ({
+			id,
+			title,
+			subtitle,
+			href,
+			logoId,
+		})),
+		benchmarks: value.b.map(([id, title, subtitle, href]) => ({
+			id,
+			title,
+			subtitle,
+			href,
+		})),
+		apiProviders: value.p.map(([id, title, subtitle, href, logoId]) => ({
+			id,
+			title,
+			subtitle,
+			href,
+			logoId,
+		})),
+		subscriptionPlans: value.s.map(([id, title, subtitle, href, logoId]) => ({
+			id,
+			title,
+			subtitle,
+			href,
+			logoId,
+		})),
+		countries: value.c.map(([id, title, subtitle, href, flagIso]) => ({
+			id,
+			title,
+			subtitle,
+			href,
+			flagIso,
+		})),
+	};
+}
+
+async function fetchSearchData(): Promise<SearchData> {
+	if (cachedSearchData) return cachedSearchData;
+	if (searchDataRequest) return searchDataRequest;
+
+	searchDataRequest = fetch("/api/frontend/search", {
+		method: "GET",
+		cache: "no-store",
+		credentials: "same-origin",
+	})
+		.then(async (response) => {
+			if (!response.ok) {
+				throw new Error("Failed to load search data");
+			}
+			return expandSearchData(
+				(await response.json()) as SearchData | CompactSearchData,
+			);
+		})
+		.then((data) => {
+			cachedSearchData = data;
+			return data;
+		})
+		.finally(() => {
+			searchDataRequest = null;
+		});
+
+	return searchDataRequest;
+}
 
 function getIndexedMatchScore<T extends SearchableItem>(
 	indexedItem: IndexedSearchItem<T>,
@@ -344,24 +437,18 @@ function SearchEmptyState({
 	);
 }
 
-export default function Search({ className, initialData = null }: Props) {
+export default function Search({ className }: Props) {
 	const router = useRouter();
 	const listRef = useRef<HTMLDivElement>(null);
 	const queryUpdateTimeoutRef = useRef<number | null>(null);
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState("");
 	const [searchData, setSearchData] = useState<SearchData | null>(
-		initialData ?? cachedSearchData
+		cachedSearchData
 	);
 	const [isLoadingSearchData, setIsLoadingSearchData] = useState(false);
 	const [searchDataError, setSearchDataError] = useState<string | null>(null);
 	const [scrollViewport, setScrollViewport] = useState<HTMLDivElement | null>(null);
-
-	useEffect(() => {
-		if (!initialData) return;
-		cachedSearchData = initialData;
-		setSearchData(initialData);
-	}, [initialData]);
 
 	useEffect(() => {
 		function onKeyDown(event: KeyboardEvent) {
@@ -401,7 +488,27 @@ export default function Search({ className, initialData = null }: Props) {
 
 	useEffect(() => {
 		if (!open || searchData || searchDataError) return;
-		setSearchDataError("Unable to load search data.");
+
+		let cancelled = false;
+		setIsLoadingSearchData(true);
+
+		void fetchSearchData()
+			.then((data) => {
+				if (cancelled) return;
+				setSearchData(data);
+			})
+			.catch(() => {
+				if (cancelled) return;
+				setSearchDataError("Unable to load search data.");
+			})
+			.finally(() => {
+				if (cancelled) return;
+				setIsLoadingSearchData(false);
+			});
+
+		return () => {
+			cancelled = true;
+		};
 	}, [open, searchData, searchDataError]);
 
 	useEffect(() => {
