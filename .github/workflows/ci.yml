@@ -18,7 +18,7 @@ jobs:
         name: Validate data
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+            - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
             - name: Setup pnpm
               uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
@@ -51,7 +51,7 @@ jobs:
         outputs:
             data-changed: ${{ steps.filter.outputs.data }}
         steps:
-            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+            - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
             - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706
               id: filter
@@ -65,7 +65,7 @@ jobs:
         needs: data
         if: github.event_name == 'push' || !startsWith(github.head_ref, 'chore/auto-model-statuses')
         steps:
-            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+            - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
             - name: Setup pnpm
               uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
@@ -112,7 +112,7 @@ jobs:
             matrix:
                 app: [api, docs, web]
         steps:
-            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+            - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
             - name: Setup pnpm
               uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
@@ -156,7 +156,7 @@ jobs:
         needs: openapi-lint
         if: github.event_name == 'push' || !startsWith(github.head_ref, 'chore/auto-model-statuses')
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@v7
 
             - name: Setup pnpm
               uses: pnpm/action-setup@v5
@@ -185,7 +185,7 @@ jobs:
         needs: openapi-lint
         if: github.event_name == 'push' || !startsWith(github.head_ref, 'chore/auto-model-statuses')
         steps:
-            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+            - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
             - name: Setup pnpm
               uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
@@ -220,7 +220,7 @@ jobs:
             SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
             NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
         steps:
-            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+            - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
             - name: Setup pnpm
               uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
@@ -284,7 +284,7 @@ jobs:
                     - sdk: ruby
                       name: Generate Ruby SDK
         steps:
-            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+            - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
               with:
                   fetch-depth: 0
 
@@ -345,7 +345,7 @@ jobs:
         needs: sdk-gen
         if: github.event_name == 'push' || !startsWith(github.head_ref, 'chore/auto-model-statuses')
         steps:
-            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+            - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
             - name: Set up Python for SDK builds
               uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
@@ -384,7 +384,7 @@ jobs:
         needs: sdk-gen
         if: github.event_name == 'push' || !startsWith(github.head_ref, 'chore/auto-model-statuses')
         steps:
-            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+            - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
               with:
                   persist-credentials: false
 
@@ -419,7 +419,7 @@ jobs:
             matrix:
                 sdk: [go, csharp, java, php, ruby]
         steps:
-            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+            - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
             - name: Setup pnpm
               uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
@@ -486,7 +486,7 @@ jobs:
         permissions:
             contents: read
         steps:
-            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+            - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
             - name: Setup pnpm
               uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
@@ -536,7 +536,7 @@ jobs:
                     - target: docs
                       name: Deploy Docs
         steps:
-            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+            - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
             - name: Setup pnpm
               uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
@@ -639,7 +639,7 @@ jobs:
             pull-requests: write
             id-token: write
         steps:
-            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+            - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
               with:
                   fetch-depth: 0
 
