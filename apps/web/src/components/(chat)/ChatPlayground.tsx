@@ -157,6 +157,95 @@ const resolveChatApiBaseUrl = (
 
 const DATETIME_TOOL_NAMES = new Set(["gateway_datetime", "gateway:datetime"]);
 
+const isPlainRecord = (value: unknown): value is Record<string, unknown> =>
+	Boolean(value) && typeof value === "object" && !Array.isArray(value);
+
+const normalizeServerToolKey = (value: unknown) => {
+	if (typeof value !== "string") return null;
+	const normalized = value.trim();
+	if (!normalized) return null;
+	if (DATETIME_TOOL_NAMES.has(normalized)) return "gateway:datetime";
+	return normalized;
+};
+
+const hasRenderableToolValue = (value: unknown): boolean => {
+	if (value == null) return false;
+	if (typeof value === "string") return value.trim().length > 0;
+	if (Array.isArray(value)) {
+		return value.some((item) => hasRenderableToolValue(item));
+	}
+	if (isPlainRecord(value)) {
+		return Object.values(value).some((item) =>
+			hasRenderableToolValue(item),
+		);
+	}
+	return true;
+};
+
+const collectRequestServerToolInputs = (tools: unknown[]) => {
+	const inputs = new Map<string, Record<string, unknown>>();
+	for (const tool of tools) {
+		if (!isPlainRecord(tool)) continue;
+		const key = normalizeServerToolKey(tool.type);
+		if (!key || !isPlainRecord(tool.parameters)) continue;
+		inputs.set(key, tool.parameters);
+	}
+	return inputs;
+};
+
+const getRequestContext = (
+	message: ChatMessage | undefined,
+): Record<string, unknown> | null => {
+	const meta = isPlainRecord(message?.meta) ? message.meta : null;
+	return isPlainRecord(meta?.request_context)
+		? meta.request_context
+		: null;
+};
+
+const buildRetrySendPayload = (
+	contextMessages: ChatMessage[],
+): ChatSendPayload | undefined => {
+	const userMessage = [...contextMessages]
+		.reverse()
+		.find((message) => message.role === "user");
+	const context = getRequestContext(userMessage);
+	if (!context) return undefined;
+	const serverTools = Array.isArray(context.server_tools)
+		? normalizeServerTools(context.server_tools as ChatServerToolType[])
+		: undefined;
+	const serverToolConfigs = isPlainRecord(context.server_tool_configs)
+		? (context.server_tool_configs as ChatServerToolConfigs)
+		: undefined;
+	const hasServerToolContext =
+		serverTools !== undefined || serverToolConfigs !== undefined;
+	const apiServerToolsEnabled =
+		typeof context.api_server_tools_enabled === "boolean"
+			? context.api_server_tools_enabled
+			: hasServerToolContext
+				? true
+				: undefined;
+	const webSearchEnabled =
+		typeof context.web_search_enabled === "boolean"
+			? context.web_search_enabled
+			: undefined;
+	if (
+		serverTools === undefined &&
+		serverToolConfigs === undefined &&
+		apiServerToolsEnabled === undefined &&
+		webSearchEnabled === undefined
+	) {
+		return undefined;
+	}
+	return {
+		content: userMessage?.content ?? "",
+		attachments: [],
+		webSearchEnabled: webSearchEnabled ?? false,
+		apiServerToolsEnabled: apiServerToolsEnabled ?? false,
+		serverTools: serverTools ?? [],
+		serverToolConfigs: serverToolConfigs ?? {},
+	};
+};
+
 const getBrowserTimeZone = () => {
 	try {
 		return Intl.DateTimeFormat().resolvedOptions().timeZone || null;
@@ -182,19 +271,19 @@ const appendTimezoneList = (timezones: string[], value: unknown) => {
 
 const getDefaultDatetimeTimezones = () => {
 	const timezones: string[] = [];
-	appendTimezone(timezones, getBrowserTimeZone());
 	appendTimezone(timezones, "UTC");
+	appendTimezone(timezones, getBrowserTimeZone());
 	return timezones.length ? timezones : ["UTC"];
 };
 
 const parseToolInput = (toolCall: ChatToolCall): Record<string, unknown> => {
-	if (toolCall.input && typeof toolCall.input === "object" && !Array.isArray(toolCall.input)) {
+	if (isPlainRecord(toolCall.input)) {
 		return toolCall.input as Record<string, unknown>;
 	}
 	if (toolCall.inputText) {
 		try {
 			const parsed = JSON.parse(toolCall.inputText);
-			if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+			if (isPlainRecord(parsed)) {
 				return parsed as Record<string, unknown>;
 			}
 		} catch {
@@ -202,6 +291,59 @@ const parseToolInput = (toolCall: ChatToolCall): Record<string, unknown> => {
 		}
 	}
 	return {};
+};
+
+const mergeRequestToolInput = (
+	toolInput: Record<string, unknown>,
+	requestInput: Record<string, unknown>,
+) => {
+	const merged = {
+		...requestInput,
+		...toolInput,
+	};
+	for (const [key, value] of Object.entries(requestInput)) {
+		if (
+			hasRenderableToolValue(value) &&
+			!hasRenderableToolValue(toolInput[key])
+		) {
+			merged[key] = value;
+		}
+	}
+	return merged;
+};
+
+const enrichToolCallWithRequestInput = (
+	toolCall: ChatToolCall,
+	requestServerToolInputs: Map<string, Record<string, unknown>>,
+): ChatToolCall => {
+	const key =
+		normalizeServerToolKey(toolCall.name) ??
+		normalizeServerToolKey(toolCall.type);
+	if (!key) return toolCall;
+	const requestInput = requestServerToolInputs.get(key);
+	if (!requestInput || !hasRenderableToolValue(requestInput)) {
+		return toolCall;
+	}
+	if (key === "gateway:datetime") {
+		return {
+			...toolCall,
+			input: requestInput,
+			inputText: JSON.stringify(requestInput),
+		};
+	}
+	const toolInput = parseToolInput(toolCall);
+	const mergedInput = mergeRequestToolInput(toolInput, requestInput);
+	if (
+		JSON.stringify(mergedInput) === JSON.stringify(toolInput) &&
+		hasRenderableToolValue(toolInput)
+	) {
+		return toolCall;
+	}
+	return {
+		...toolCall,
+		input: mergedInput,
+		inputText: JSON.stringify(mergedInput),
+	};
 };
 
 const isValidTimezone = (timezone: string) => {
@@ -1019,6 +1161,11 @@ function ChatPlaygroundContent({
 			const requestBody: Record<string, unknown> = {
 				model: requestExecutionModelId,
 			};
+			let requestUsesGatewayDatetimeServerTool = false;
+			let requestServerToolInputs = new Map<
+				string,
+				Record<string, unknown>
+			>();
 			const setOptionalRequestNumber = (
 				key: string,
 				value: number | null | undefined,
@@ -1073,6 +1220,11 @@ function ChatPlaygroundContent({
 					: [];
 				if (tools.length > 0) {
 					requestBody.tools = tools;
+					requestServerToolInputs =
+						collectRequestServerToolInputs(tools);
+					requestUsesGatewayDatetimeServerTool = tools.some(
+						(tool) => tool.type === "gateway:datetime",
+					);
 				}
 			}
 
@@ -1096,6 +1248,7 @@ function ChatPlaygroundContent({
 
 			const performanceRunId = sendPayload?.performanceRunId;
 			const requestStartedAt = performance.now();
+			let responseHeadersAt: number | null = null;
 			let firstTokenAt: number | null = null;
 			let finalUsage: Record<string, unknown> | null = null;
 			let finalMeta: Record<string, unknown> | null = null;
@@ -1151,56 +1304,54 @@ function ChatPlaygroundContent({
 				);
 			};
 
-			if (!streamEnabled) {
-				if (targetAssistantId) {
-					const initialVariant = {
-						id: generateId(),
-						content: "Generating...",
-						createdAt: nowIso(),
-						meta: compareMeta ?? undefined,
-					};
-					const result = appendAssistantVariant(
-						latestThread,
-						targetAssistantId,
-						initialVariant,
-					);
-					latestThread = result.nextThread;
-					variantIndex = result.variantIndex;
-					assistantContent = initialVariant.content;
-					streamingMessageId = targetAssistantId;
-					placeholderReady = true;
-					await updateThreadState(latestThread, false);
-				} else {
-					const orgId = getOrgId(selectedModelId);
-					const createdAt = nowIso();
-					const assistantMessage: ChatMessage = {
-						id: assistantId,
-						role: "assistant",
-						content: "Generating...",
-						createdAt,
-						modelId: selectedModelId,
-						providerId: effectiveProviderId,
-						providerName:
-							orgNameById[orgId] ?? formatOrgLabel(orgId),
-						variants: [
-							{
-								id: assistantId,
-								content: "Generating...",
-								createdAt,
-								meta: compareMeta ?? undefined,
-							},
-						],
-						activeVariantIndex: 0,
-						meta: compareMeta ?? undefined,
-					};
-					latestThread = {
-						...thread,
-						messages: [...thread.messages, assistantMessage],
-						updatedAt: nowIso(),
-					};
-					placeholderReady = true;
-					await updateThreadState(latestThread, false);
-				}
+			if (targetAssistantId) {
+				const initialVariant = {
+					id: generateId(),
+					content: "Generating...",
+					createdAt: nowIso(),
+					meta: compareMeta ?? undefined,
+				};
+				const result = appendAssistantVariant(
+					latestThread,
+					targetAssistantId,
+					initialVariant,
+				);
+				latestThread = result.nextThread;
+				variantIndex = result.variantIndex;
+				assistantContent = streamEnabled ? "" : initialVariant.content;
+				streamingMessageId = targetAssistantId;
+				placeholderReady = true;
+				void updateThreadState(latestThread, false);
+			} else {
+				const orgId = getOrgId(selectedModelId);
+				const createdAt = nowIso();
+				const assistantMessage: ChatMessage = {
+					id: assistantId,
+					role: "assistant",
+					content: "Generating...",
+					createdAt,
+					modelId: selectedModelId,
+					providerId: effectiveProviderId,
+					providerName:
+						orgNameById[orgId] ?? formatOrgLabel(orgId),
+					variants: [
+						{
+							id: assistantId,
+							content: "Generating...",
+							createdAt,
+							meta: compareMeta ?? undefined,
+						},
+					],
+					activeVariantIndex: 0,
+					meta: compareMeta ?? undefined,
+				};
+				latestThread = {
+					...thread,
+					messages: [...thread.messages, assistantMessage],
+					updatedAt: nowIso(),
+				};
+				placeholderReady = true;
+				void updateThreadState(latestThread, false);
 			}
 
 			const getUsageNumber = (...keys: string[]) => {
@@ -1214,11 +1365,10 @@ function ChatPlaygroundContent({
 				return null;
 			};
 			const buildClientMeta = (endAt: number) => {
-				const firstToken = firstTokenAt ?? endAt;
-				const latencyMs = Math.max(0, firstToken - requestStartedAt);
-				const generationMs = firstTokenAt
-					? Math.max(0, endAt - firstToken)
-					: Math.max(0, endAt - requestStartedAt);
+				const firstResponseAt = firstTokenAt ?? responseHeadersAt ?? endAt;
+				const latencyMs = Math.max(0, firstResponseAt - requestStartedAt);
+				const generationMs = Math.max(0, endAt - firstResponseAt);
+				const endToEndMs = Math.max(0, endAt - requestStartedAt);
 				const totalTokens =
 					getUsageNumber("total_tokens", "totalTokens") ??
 					getUsageNumber(
@@ -1236,6 +1386,7 @@ function ChatPlaygroundContent({
 				return {
 					latencyMs,
 					generationMs,
+					endToEndMs,
 					throughputTokensPerSecond,
 				};
 			};
@@ -1271,6 +1422,7 @@ function ChatPlaygroundContent({
 						debug: shouldDebug,
 					}),
 				});
+				responseHeadersAt = performance.now();
 				markChatPerformance(performanceRunId, "response-headers");
 				// eslint-disable-next-line no-console
 				console.log(
@@ -1318,7 +1470,13 @@ function ChatPlaygroundContent({
 						if (reasoningText) {
 							mergedMeta.reasoning_text = reasoningText;
 						}
-						const toolCalls = extractResponseToolCalls(data);
+						const toolCalls = extractResponseToolCalls(data).map(
+							(toolCall) =>
+								enrichToolCallWithRequestInput(
+									toolCall,
+									requestServerToolInputs,
+								),
+						);
 						if (toolCalls.length) {
 							mergedMeta.tool_calls = toolCalls;
 						}
@@ -1431,24 +1589,33 @@ function ChatPlaygroundContent({
 					streamToolAliases.set(source.trim(), target);
 				};
 				const upsertStreamToolCall = (toolCall: ChatToolCall) => {
-					const existing = streamToolCalls.get(toolCall.id);
+					const enrichedToolCall = enrichToolCallWithRequestInput(
+						toolCall,
+						requestServerToolInputs,
+					);
+					const existing = streamToolCalls.get(enrichedToolCall.id);
 					const next: ChatToolCall = existing
 						? {
 								...existing,
-								...toolCall,
-								input: toolCall.input ?? existing.input,
+								...enrichedToolCall,
+								input:
+									enrichedToolCall.input ?? existing.input,
 								inputText:
-									toolCall.inputText ?? existing.inputText,
-								output: toolCall.output ?? existing.output,
+									enrichedToolCall.inputText ??
+									existing.inputText,
+								output:
+									enrichedToolCall.output ??
+									existing.output,
 								errorText:
-									toolCall.errorText ?? existing.errorText,
+									enrichedToolCall.errorText ??
+									existing.errorText,
 								status:
-									toolCall.status === "running" &&
+									enrichedToolCall.status === "running" &&
 									existing.status !== "running"
 										? existing.status
-										: toolCall.status,
+										: enrichedToolCall.status,
 							}
-						: toolCall;
+						: enrichedToolCall;
 					streamToolCalls.set(next.id, next);
 				};
 				const appendStreamToolArguments = (
@@ -1535,30 +1702,18 @@ function ChatPlaygroundContent({
 					Array.from(streamTraceEvents.values()).sort(
 						(a, b) => a.sequence - b.sequence,
 					);
-				const hasPendingToolCallTrace = () => {
-					const traceEvents = getTraceEvents();
-					let lastToolSequence = -1;
-					let lastResponseSequence = -1;
-					for (const event of traceEvents) {
-						if (event.type === "tool_call") {
-							lastToolSequence = Math.max(
-								lastToolSequence,
-								event.sequence,
-							);
-						} else if (
-							event.type === "response" &&
-							event.text.trim()
-						) {
-							lastResponseSequence = Math.max(
-								lastResponseSequence,
-								event.sequence,
-							);
-						}
-					}
-					return lastToolSequence > lastResponseSequence;
+				const getPendingClientDatetimeToolCalls = () => {
+					if (requestUsesGatewayDatetimeServerTool) return [];
+					return getStreamToolCalls().filter(
+						(toolCall) =>
+							DATETIME_TOOL_NAMES.has(toolCall.name) &&
+							toolCall.status !== "running" &&
+							toolCall.output === undefined &&
+							!toolCall.errorText,
+					);
 				};
 
-				if (targetAssistantId) {
+				if (!placeholderReady && targetAssistantId) {
 					const initialVariant = {
 						id: generateId(),
 						content: "",
@@ -1574,7 +1729,7 @@ function ChatPlaygroundContent({
 					variantIndex = result.variantIndex;
 					streamingMessageId = targetAssistantId;
 					await updateThreadState(latestThread, false);
-				} else {
+				} else if (!placeholderReady) {
 					const orgId = getOrgId(selectedModelId);
 					const assistantMessage: ChatMessage = {
 						id: assistantId,
@@ -1642,6 +1797,28 @@ function ChatPlaygroundContent({
 							await updateThreadState(latestThread, false);
 						});
 					}, delay);
+				};
+				const flushPendingStreamUpdate = async () => {
+					if (flushTimer != null) {
+						window.clearTimeout(flushTimer);
+						flushTimer = null;
+						lastFlushAt = performance.now();
+						const meta = pendingMetaPartial;
+						pendingMetaPartial = undefined;
+						flushPromise = flushPromise.then(async () => {
+							latestThread = updateAssistantVariant(
+								latestThread,
+								assistantId,
+								variantIndex,
+								assistantContent,
+								undefined,
+								meta,
+								finalProviderId,
+							);
+							await updateThreadState(latestThread, false);
+						});
+					}
+					await flushPromise;
 				};
 				let reasoningContent = "";
 				const reasoningSummaries: Record<number, string> = {};
@@ -1820,8 +1997,17 @@ function ChatPlaygroundContent({
 									frameType ===
 									"response.function_call_arguments.delta"
 								) {
+									if (parsed?.call_id) {
+										aliasStreamToolId(
+											parsed?.item_id,
+											parsed.call_id,
+										);
+									}
 									const resolvedId =
-										resolveStreamToolId(parsed?.item_id);
+										resolveStreamToolId(
+											parsed?.call_id ??
+												parsed?.item_id,
+										);
 									if (
 										resolvedId &&
 										typeof parsed?.delta === "string"
@@ -1837,8 +2023,24 @@ function ChatPlaygroundContent({
 									frameType ===
 									"response.function_call_arguments.done"
 								) {
+									const parsedToolName =
+										typeof parsed?.name === "string"
+											? parsed.name.trim()
+											: "";
+									if (parsedToolName === "tool_call") {
+										continue;
+									}
+									if (parsed?.call_id) {
+										aliasStreamToolId(
+											parsed?.item_id,
+											parsed.call_id,
+										);
+									}
 									const resolvedId =
-										resolveStreamToolId(parsed?.item_id);
+										resolveStreamToolId(
+											parsed?.call_id ??
+												parsed?.item_id,
+										);
 									if (resolvedId) {
 										const existing =
 											streamToolCalls.get(resolvedId);
@@ -2063,10 +2265,11 @@ function ChatPlaygroundContent({
 					}
 				}
 
-				if (hasPendingToolCallTrace()) {
-					const toolCalls = getStreamToolCalls();
+				const pendingClientDatetimeToolCalls =
+					getPendingClientDatetimeToolCalls();
+				if (pendingClientDatetimeToolCalls.length > 0) {
 					const toolResults = buildClientDatetimeToolResults(
-						toolCalls,
+						pendingClientDatetimeToolCalls,
 						getDefaultDatetimeTimezones(),
 					);
 					if (toolResults) {
@@ -2079,9 +2282,10 @@ function ChatPlaygroundContent({
 								status: "completed",
 							});
 						}
+						scheduleUpdate(buildStreamingMetaPartial());
 						const continuationInput = [
 							...input,
-							...toolCalls.map((toolCall) => ({
+							...pendingClientDatetimeToolCalls.map((toolCall) => ({
 								type: "function_call",
 								call_id: toolCall.id,
 								name: toolCall.name,
@@ -2161,6 +2365,8 @@ function ChatPlaygroundContent({
 						}
 					}
 				}
+
+				await flushPendingStreamUpdate();
 
 				const clientMeta = buildClientMeta(performance.now());
 				const mergedMeta = mergeMeta(clientMeta);
@@ -2862,6 +3068,7 @@ function ChatPlaygroundContent({
 				0,
 				messageIndex,
 			);
+			const retryPayload = buildRetrySendPayload(contextMessages);
 			const targetModelId =
 				activeThread.messages[messageIndex]?.modelId ??
 				activeThread.modelId;
@@ -2881,7 +3088,7 @@ function ChatPlaygroundContent({
 				buildThreadForModel(activeThread, targetModelId),
 				contextMessages,
 				messageId,
-				undefined,
+				retryPayload,
 				undefined,
 				targetModelId,
 			);

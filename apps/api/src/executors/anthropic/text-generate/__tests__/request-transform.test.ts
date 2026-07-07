@@ -138,6 +138,48 @@ describe("irToAnthropicMessages service controls", () => {
 		]);
 	});
 
+	it("falls back to empty tool input for empty or malformed tool-call arguments", () => {
+		const request = createBaseRequest();
+		request.messages = [
+			{
+				role: "assistant",
+				content: [],
+				toolCalls: [
+					{
+						id: "call_empty",
+						name: "lookup",
+						arguments: "",
+					},
+					{
+						id: "call_partial",
+						name: "lookup",
+						arguments: "{\"q\":\"unfinished",
+					},
+				],
+			},
+			{
+				role: "user",
+				content: [{ type: "text", text: "Continue" }],
+			},
+		] as any;
+
+		const payload = irToAnthropicMessages(request);
+		expect(payload.messages[0].content).toEqual([
+			{
+				type: "tool_use",
+				id: "call_empty",
+				name: "lookup",
+				input: {},
+			},
+			{
+				type: "tool_use",
+				id: "call_partial",
+				name: "lookup",
+				input: {},
+			},
+		]);
+	});
+
 	it("preserves provider-native blocks in response history", () => {
 		const ir = anthropicMessagesToIR(
 			{

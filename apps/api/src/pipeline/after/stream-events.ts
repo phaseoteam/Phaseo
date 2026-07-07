@@ -17,6 +17,7 @@ export type UnifiedStreamEvent =
 	  }
 	| {
 			type: "delta_tool";
+			toolCallKey?: string;
 			toolCallId?: string;
 			toolName?: string;
 			argumentsDelta?: string;
@@ -82,6 +83,41 @@ function isTerminalResponsesStatus(status: string | null | undefined): boolean {
 	return status === "completed" || status === "failed" || status === "incomplete";
 }
 
+function readResponseToolCallName(item: any): string | null {
+	const candidates = [
+		item?.name,
+		item?.function?.name,
+		item?.tool_name,
+		item?.tool?.name,
+	];
+	for (const candidate of candidates) {
+		if (typeof candidate !== "string") continue;
+		const trimmed = candidate.trim();
+		if (trimmed && trimmed !== "tool_call") return trimmed;
+	}
+	return null;
+}
+
+function readResponseToolCallArguments(item: any): string | undefined {
+	const raw =
+		item?.arguments ??
+		item?.function?.arguments ??
+		item?.args ??
+		item?.input;
+	if (typeof raw === "string") return raw;
+	if (raw == null) return undefined;
+	try {
+		return JSON.stringify(raw);
+	} catch {
+		return undefined;
+	}
+}
+
+function isExecutableResponseToolItem(item: any): boolean {
+	const itemType = String(item?.type ?? "").toLowerCase();
+	return (itemType === "function_call" || itemType === "tool_call") && readResponseToolCallName(item) !== null;
+}
+
 function deriveResponsesStopReason(response: any): StopReason {
 	const status = String(response?.status ?? "").toLowerCase();
 	if (status === "failed") return "error";
@@ -97,10 +133,7 @@ function deriveResponsesStopReason(response: any): StopReason {
 	const outputItems = Array.isArray(response?.output)
 		? response.output
 		: (Array.isArray(response?.output_items) ? response.output_items : []);
-	const hasToolCalls = outputItems.some((item: any) => {
-		const type = String(item?.type ?? "").toLowerCase();
-		return type === "function_call" || type === "tool_call";
-	});
+	const hasToolCalls = outputItems.some((item: any) => isExecutableResponseToolItem(item));
 	if (hasToolCalls) return "tool_calls";
 	return status || "stop";
 }
@@ -378,8 +411,7 @@ function extractOpenAIResponsesEvents(
 			type: "delta_text",
 			channel: "output_text",
 			text: frame.delta,
-			choiceIndex:
-				typeof frame?.output_index === "number" ? frame.output_index : undefined,
+			choiceIndex: 0,
 			payload: frame,
 		});
 		return events;
@@ -390,8 +422,7 @@ function extractOpenAIResponsesEvents(
 			type: "delta_text",
 			channel: "reasoning_text",
 			text: frame.delta,
-			choiceIndex:
-				typeof frame?.output_index === "number" ? frame.output_index : undefined,
+			choiceIndex: 0,
 			payload: frame,
 		});
 		return events;
@@ -400,13 +431,14 @@ function extractOpenAIResponsesEvents(
 	if (event === "response.function_call_arguments.delta") {
 		events.push({
 			type: "delta_tool",
-			toolCallId:
+			toolCallKey:
 				typeof frame?.item_id === "string" ? frame.item_id : undefined,
+			toolCallId:
+				typeof frame?.call_id === "string" ? frame.call_id : undefined,
 			toolName: typeof frame?.name === "string" ? frame.name : undefined,
 			argumentsDelta:
 				typeof frame?.delta === "string" ? frame.delta : undefined,
-			choiceIndex:
-				typeof frame?.output_index === "number" ? frame.output_index : undefined,
+			choiceIndex: 0,
 			payload: frame,
 		});
 		return events;
@@ -423,24 +455,27 @@ function extractOpenAIResponsesEvents(
 				events.push({
 					type: "delta_content_part",
 					part,
-					choiceIndex:
-						typeof frame?.output_index === "number" ? frame.output_index : undefined,
+					choiceIndex: 0,
 					payload: frame,
 				});
 			}
 		}
-		if (itemType === "function_call" || itemType === "tool_call") {
+		if (isExecutableResponseToolItem(item)) {
 			events.push({
 				type: "delta_tool",
+				toolCallKey:
+					typeof item?.id === "string"
+						? item.id
+						: (typeof frame?.item_id === "string" ? frame.item_id : undefined),
 				toolCallId:
 					typeof item?.call_id === "string"
 						? item.call_id
-						: (typeof item?.id === "string" ? item.id : undefined),
-				toolName: typeof item?.name === "string" ? item.name : undefined,
-				arguments:
-					typeof item?.arguments === "string" ? item.arguments : undefined,
-				choiceIndex:
-					typeof frame?.output_index === "number" ? frame.output_index : undefined,
+						: (typeof item?.tool_call_id === "string"
+							? item.tool_call_id
+							: (typeof item?.id === "string" ? item.id : undefined)),
+				toolName: readResponseToolCallName(item) ?? undefined,
+				arguments: readResponseToolCallArguments(item),
+				choiceIndex: 0,
 				payload: frame,
 			});
 		}
@@ -448,15 +483,23 @@ function extractOpenAIResponsesEvents(
 	}
 
 	if (event === "response.function_call_arguments.done") {
+		const toolName =
+			typeof frame?.name === "string" && frame.name.trim().length > 0
+				? frame.name.trim()
+				: undefined;
+		if (toolName === "tool_call") {
+			return events;
+		}
 		events.push({
 			type: "delta_tool",
-			toolCallId:
+			toolCallKey:
 				typeof frame?.item_id === "string" ? frame.item_id : undefined,
-			toolName: typeof frame?.name === "string" ? frame.name : undefined,
+			toolCallId:
+				typeof frame?.call_id === "string" ? frame.call_id : undefined,
+			toolName,
 			arguments:
 				typeof frame?.arguments === "string" ? frame.arguments : undefined,
-			choiceIndex:
-				typeof frame?.output_index === "number" ? frame.output_index : undefined,
+			choiceIndex: 0,
 			payload: frame,
 		});
 		return events;
@@ -552,8 +595,7 @@ function extractAnthropicMessagesEvents(
 				type: "delta_text",
 				channel: "output_text",
 				text: frame.delta.text,
-				choiceIndex:
-					typeof frame?.index === "number" ? frame.index : undefined,
+				choiceIndex: 0,
 				payload: frame,
 			});
 		} else if (
@@ -564,8 +606,7 @@ function extractAnthropicMessagesEvents(
 				type: "delta_text",
 				channel: "reasoning_text",
 				text: frame.delta.thinking,
-				choiceIndex:
-					typeof frame?.index === "number" ? frame.index : undefined,
+				choiceIndex: 0,
 				payload: frame,
 			});
 		} else if (
@@ -575,8 +616,7 @@ function extractAnthropicMessagesEvents(
 			events.push({
 				type: "delta_tool",
 				argumentsDelta: frame.delta.partial_json,
-				choiceIndex:
-					typeof frame?.index === "number" ? frame.index : undefined,
+				choiceIndex: 0,
 				payload: frame,
 			});
 		}
@@ -600,8 +640,7 @@ function extractAnthropicMessagesEvents(
 					frame?.content_block?.input != null
 						? JSON.stringify(frame.content_block.input)
 						: undefined,
-				choiceIndex:
-					typeof frame?.index === "number" ? frame.index : undefined,
+				choiceIndex: 0,
 				payload: frame,
 			});
 		}

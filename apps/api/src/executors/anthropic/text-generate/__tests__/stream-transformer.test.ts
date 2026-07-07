@@ -64,5 +64,6 @@ describe("anthropic stream transformer", () => {
 		expect(output).toContain("event: response.function_call_arguments.delta");
 		expect(output).toContain("event: response.function_call_arguments.done");
 		expect(output).toContain("event: response.output_item.done");
+		expect(output).toContain("\"call_id\":\"toolu_123\"");
 	});
 });

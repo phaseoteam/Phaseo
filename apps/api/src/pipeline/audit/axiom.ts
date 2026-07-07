@@ -62,6 +62,8 @@ export type AxiomArgs = {
         request_tool_count?: number | null;
         request_tool_result_count?: number | null;
         output_tool_call_count?: number | null;
+        request_tool_names?: string[] | null;
+        output_tool_call_names?: string[] | null;
         tool_call_count?: number | null;
         tool_result_count?: number | null;
         input_tokens_details?: {
@@ -422,6 +424,8 @@ export function buildAxiomEvent(a: AxiomArgs) {
         usage_request_tool_count: a.usage?.request_tool_count ?? null,
         usage_request_tool_result_count: a.usage?.request_tool_result_count ?? a.usage?.tool_result_count ?? null,
         usage_output_tool_call_count: a.usage?.output_tool_call_count ?? a.usage?.tool_call_count ?? null,
+        usage_request_tool_names_json: stringifyCompact(a.usage?.request_tool_names ?? null),
+        usage_output_tool_call_names_json: stringifyCompact(a.usage?.output_tool_call_names ?? null),
         usage_cached_tokens: inputDetails.cached_tokens ?? null,
         usage_reasoning_tokens: outputDetails.reasoning_tokens ?? null,
         usage_audio_tokens_in: inputDetails.input_audio ?? null,

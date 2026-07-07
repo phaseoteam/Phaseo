@@ -26,6 +26,8 @@ import { normalizeFinishReason } from "../audit/normalize-finish-reason";
 import { applyByokServiceFee } from "../pricing/byok-fee";
 import {
     attachToolUsageMetrics,
+    collectOutputToolCallNamesFromPayload,
+    collectRequestedToolNames,
     countOutputToolCallsFromPayload,
     countRequestedTools,
     countRequestedToolResults,
@@ -126,9 +128,19 @@ export async function handleStreamResponse(
     let latestGatewaySnapshot: any = null;
     let appliedStreamResponsePlugins = false;
     const streamedToolCallKeys = new Set<string>();
+    const streamedToolCallNames = new Set<string>();
     const requestedToolCount = countRequestedTools(ctx.body);
+    const requestedToolNames = collectRequestedToolNames(ctx.body);
     const requestedToolResultCount = countRequestedToolResults(ctx.body);
     let cachedOutputToolCallCount: number | null = null;
+    let cachedOutputToolCallNames: string[] | null = null;
+    const buildToolUsage = () => ({
+        request_tool_count: requestedToolCount > 0 ? requestedToolCount : null,
+        request_tool_result_count: requestedToolResultCount > 0 ? requestedToolResultCount : null,
+        output_tool_call_count: cachedOutputToolCallCount,
+        request_tool_names: requestedToolNames.length > 0 ? requestedToolNames : null,
+        output_tool_call_names: cachedOutputToolCallNames,
+    });
     const withProviderHint = (usage: any) => {
         if (!usage || typeof usage !== "object") return usage;
         return {
@@ -158,6 +170,10 @@ export async function handleStreamResponse(
                 `choice:${event.choiceIndex ?? 0}:tool:${event.toolIndex ?? streamedToolCallKeys.size}`;
             streamedToolCallKeys.add(key);
             cachedOutputToolCallCount = streamedToolCallKeys.size;
+            if (event.toolName) {
+                streamedToolCallNames.add(event.toolName);
+                cachedOutputToolCallNames = Array.from(streamedToolCallNames);
+            }
             return;
         }
 
@@ -371,6 +387,10 @@ export async function handleStreamResponse(
             if (outputToolCalls > 0) {
                 cachedOutputToolCallCount = outputToolCalls;
             }
+            const outputToolCallNames = collectOutputToolCallNamesFromPayload(payload);
+            if (outputToolCallNames.length > 0) {
+                cachedOutputToolCallNames = outputToolCallNames;
+            }
             if (finishReason) {
                 cachedFinishReason = finishReason;
                 result.bill.finish_reason = finishReason;
@@ -433,10 +453,7 @@ export async function handleStreamResponse(
             // console.log("[DEBUG After Stream] Final usage from stream:", usageRaw);
             const shapedUsage = attachToolUsageMetrics(
                 shapeStreamUsageForClient(usageForShaping),
-                {
-                    request_tool_count: requestedToolCount > 0 ? requestedToolCount : null,
-                    output_tool_call_count: cachedOutputToolCallCount,
-                }
+                buildToolUsage()
             );
             const baseModel = getBaseModel(ctx.model);
             const healthContext = (result as any).healthContext ?? null;
@@ -477,11 +494,7 @@ export async function handleStreamResponse(
 
             const finalizeFromBill = async (bill: Bill | null | undefined) => {
                 if (!bill) return false;
-                const toolUsage = {
-                    request_tool_count: requestedToolCount > 0 ? requestedToolCount : null,
-                    request_tool_result_count: requestedToolResultCount > 0 ? requestedToolResultCount : null,
-                    output_tool_call_count: cachedOutputToolCallCount,
-                };
+                const toolUsage = buildToolUsage();
                 const usageFromBill = stripUsagePricing(bill.usage);
                 let usageWithToolMetrics = attachToolUsageMetrics(
                     usageFromBill ?? shapedUsage ?? stripUsagePricing(result.bill.usage),
@@ -565,19 +578,13 @@ export async function handleStreamResponse(
 
             if (!effectiveUsageRaw) {
                 const usageWithToolMetrics = attachToolUsageMetrics(null, {
-                    request_tool_count: requestedToolCount > 0 ? requestedToolCount : null,
-                    request_tool_result_count: requestedToolResultCount > 0 ? requestedToolResultCount : null,
-                    output_tool_call_count: cachedOutputToolCallCount,
+                    ...buildToolUsage(),
                 });
                 const finalized = result.usageFinalizer ? await result.usageFinalizer() : null;
                 if (await finalizeFromBill(finalized)) return;
                 const fallbackUsageWithToolMetrics = attachToolUsageMetrics(
                     shapeStreamUsageForClient(usageForShaping),
-                    {
-                        request_tool_count: requestedToolCount > 0 ? requestedToolCount : null,
-                        request_tool_result_count: requestedToolResultCount > 0 ? requestedToolResultCount : null,
-                        output_tool_call_count: cachedOutputToolCallCount,
-                    }
+                    buildToolUsage()
                 );
                 const pricedWithByok = await applyByokServiceFee({
                     workspaceId: ctx.workspaceId,
@@ -628,9 +635,7 @@ export async function handleStreamResponse(
             }
 
             const usageWithToolMetrics = attachToolUsageMetrics(pricedUsage, {
-                request_tool_count: requestedToolCount > 0 ? requestedToolCount : null,
-                request_tool_result_count: requestedToolResultCount > 0 ? requestedToolResultCount : null,
-                output_tool_call_count: cachedOutputToolCallCount,
+                ...buildToolUsage(),
             });
             const pricedWithByok = await applyByokServiceFee({
                 workspaceId: ctx.workspaceId,

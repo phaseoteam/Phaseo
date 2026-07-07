@@ -19,7 +19,6 @@ import {
 	ReasoningContent,
 	ReasoningTrigger,
 } from "@/components/ai-elements/reasoning";
-import { Shimmer } from "@/components/ai-elements/shimmer";
 import { Button } from "@/components/ui/button";
 import {
 	ChatRequestErrorNotice,
@@ -56,6 +55,12 @@ import {
 	MessageContent,
 	MessageHeader,
 } from "@/components/ui/message";
+import {
+	Marker,
+	MarkerContent,
+	MarkerIcon,
+} from "@/components/ui/marker";
+import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import type { ChatThread } from "@/lib/indexeddb/chats";
 import type {
@@ -101,6 +106,17 @@ const VIRTUALIZE_AFTER_MESSAGES = 80;
 const VIRTUAL_MESSAGE_OVERSCAN = 16;
 const ESTIMATED_MESSAGE_HEIGHT = 220;
 const EMPTY_MESSAGES: ChatThread["messages"] = [];
+
+function GeneratingResponseIndicator() {
+	return (
+		<Marker role="status" aria-live="polite" className="min-h-7">
+			<MarkerIcon>
+				<Spinner />
+			</MarkerIcon>
+			<MarkerContent className="shimmer">Generating response&hellip;</MarkerContent>
+		</Marker>
+	);
+}
 
 function formatGenerationDuration(value: unknown): string | null {
 	if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
@@ -357,15 +373,24 @@ export function ChatConversationMessages({
 		? `$${costNumber.toFixed(5)}`
 		: null;
 	const latencyMs =
+		(meta as any)?.client?.latencyMs ??
 		(meta as any)?.latency_ms ??
 		(meta as any)?.latencyMs ??
-		(meta as any)?.client?.latencyMs ??
 		null;
 	const generationMs =
+		(meta as any)?.client?.generationMs ??
 		(meta as any)?.generation_ms ??
 		(meta as any)?.generationMs ??
-		(meta as any)?.client?.generationMs ??
 		null;
+	const endToEndMs =
+		(meta as any)?.client?.endToEndMs ??
+		(meta as any)?.end_to_end_ms ??
+		(meta as any)?.endToEndMs ??
+		(meta as any)?.total_ms ??
+		(meta as any)?.totalMs ??
+		(typeof latencyMs === "number" && typeof generationMs === "number"
+			? latencyMs + generationMs
+			: null);
 	const throughput =
 		(meta as any)?.throughput_tps ??
 		(meta as any)?.throughput_tokens_per_second ??
@@ -375,6 +400,7 @@ export function ChatConversationMessages({
 	const latencyDisplay =
 		typeof latencyMs === "number" ? Math.round(latencyMs) : null;
 	const generationDisplay = formatGenerationDuration(generationMs);
+	const endToEndDisplay = formatGenerationDuration(endToEndMs);
 	const throughputDisplay =
 		typeof throughput === "number" ? Math.round(throughput) : null;
 	const metadataProviderId =
@@ -643,7 +669,11 @@ export function ChatConversationMessages({
 							color: getReadableTextColor(accentColor),
 						}
 					: undefined;
-			const sentAtLabel = formatMessageSentAt(message.createdAt);
+			const sentAtLabel = formatMessageSentAt(
+				!isUser && activeVariant?.createdAt
+					? activeVariant.createdAt
+					: message.createdAt,
+			);
 
 			const messageNode = (
 						<Message
@@ -877,14 +907,7 @@ export function ChatConversationMessages({
 						) : isSending &&
 							(!content || content === "Generating...") &&
 							toolCalls.length === 0 ? (
-							<div className="flex min-h-7 items-center">
-								<Shimmer
-									className="text-sm text-muted-foreground"
-									duration={1.4}
-								>
-									{`Generating with ${modelLabel}...`}
-								</Shimmer>
-							</div>
+							<GeneratingResponseIndicator />
 						) : (
 							<div className="prose prose-sm max-w-none text-foreground dark:prose-invert prose-ul:pl-5 prose-ol:pl-5 prose-li:my-1">
 								{traceEvents.length ? (
@@ -1001,13 +1024,8 @@ export function ChatConversationMessages({
 								{isPendingAssistant &&
 								!contentWithoutMediaLinks &&
 								!messageRequestError ? (
-									<div className="not-prose flex min-h-7 items-center">
-										<Shimmer
-											className="text-sm text-muted-foreground"
-											duration={1.4}
-										>
-											Generating final response...
-										</Shimmer>
+									<div className="not-prose">
+										<GeneratingResponseIndicator />
 									</div>
 								) : null}
 								{imageUrl ? (
@@ -1122,6 +1140,7 @@ export function ChatConversationMessages({
 										activeVariantIndex={activeVariantIndex}
 										assistantCopied={assistantCopied}
 										costLabel={costLabel}
+										endToEndDisplay={endToEndDisplay}
 										generationDisplay={generationDisplay}
 										isPendingAssistant={isPendingAssistant}
 										latencyDisplay={latencyDisplay}
@@ -1485,6 +1504,7 @@ export function ChatConversationMessages({
 		onBranchAssistant,
 		onSelectVariant,
 		latencyDisplay,
+		endToEndDisplay,
 		generationDisplay,
 		throughputDisplay,
 		costLabel,
