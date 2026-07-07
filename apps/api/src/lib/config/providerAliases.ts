@@ -5,7 +5,8 @@
 const PROVIDER_ID_ALIASES = new Map<string, string>([
 	["novitaai", "novita"],
 	["novita-ai", "novita"],
-	["spacex-ai", "x-ai"],
+	["x-ai", "spacex-ai"],
+	["xai", "spacex-ai"],
 ]);
 
 export function normalizeProviderId(value: string): string {

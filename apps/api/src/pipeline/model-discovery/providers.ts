@@ -43,6 +43,7 @@ const PROVIDER_ID_ALIASES_TO_SKIP = new Set<string>([
 	"qwen",
 	"relace",
 	"voyageai",
+	"x-ai",
 	"xai",
 	"zai",
 ]);

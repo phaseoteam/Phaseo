@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
+import { getProviderQuirks } from "../index";
 import { xAiQuirks } from "../../providers/x-ai/quirks";
 
 describe("SpaceXAI quirks", () => {
+	it("registers xAI quirks for the canonical SpaceXAI provider id", () => {
+		expect(getProviderQuirks("spacex-ai")).toBe(xAiQuirks);
+		expect(getProviderQuirks("x-ai")).toBe(xAiQuirks);
+		expect(getProviderQuirks("xai")).toBe(xAiQuirks);
+	});
+
 	describe("transformRequest", () => {
 		it("downgrades json_schema and strips unsupported fields for reasoning models", () => {
 			const request: Record<string, any> = {
