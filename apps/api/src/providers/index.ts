@@ -42,6 +42,7 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     "bytedance-seed": createOpenAICompatibleAdapter("bytedance-seed"),
     byteplus: createOpenAICompatibleAdapter("byteplus"),
     mistral: createOpenAICompatibleAdapter("mistral"),
+    sakana: createOpenAICompatibleAdapter("sakana"),
     elevenlabs: ElevenLabsAdapter,
     suno: SunoAdapter,
     alibaba: createOpenAICompatibleAdapter("alibaba"),
