@@ -593,27 +593,6 @@ function RecordingWaveform({
 	);
 }
 
-function AudioAttachmentPlayer({ file }: { file: File }) {
-	const [audioUrl, setAudioUrl] = useState<string | null>(null);
-
-	useEffect(() => {
-		const objectUrl = URL.createObjectURL(file);
-		setAudioUrl(objectUrl);
-		return () => {
-			URL.revokeObjectURL(objectUrl);
-		};
-	}, [file]);
-
-	return (
-		<audio
-			controls
-			src={audioUrl ?? undefined}
-			aria-label={`Preview ${file.name}`}
-			className="mt-1.5 h-7 w-full min-w-0"
-		/>
-	);
-}
-
 function ComposerModelSelectField({
 	label,
 	value,
@@ -2887,7 +2866,6 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 								<AttachmentDescription>
 									{getAttachmentDescription(file)}
 								</AttachmentDescription>
-								<AudioAttachmentPlayer file={file} />
 							</AttachmentContent>
 							<AttachmentActions className="pt-1 pr-0.5">
 								<AttachmentAction
