@@ -31,6 +31,7 @@
 		"test": "jest --runInBand"
 	},
 	"dependencies": {
+		"@1password/save-button": "^1.3.0",
 		"@base-ui/react": "^1.3.0",
 		"@dqbd/tiktoken": "^1.0.22",
 		"@flags-sdk/statsig": "^0.2.5",

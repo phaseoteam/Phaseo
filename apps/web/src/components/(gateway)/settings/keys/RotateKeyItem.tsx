@@ -14,7 +14,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CopyButton } from "@/components/ui/copy-button";
 import {
 	Select,
 	SelectContent,
@@ -25,6 +24,7 @@ import {
 import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { rotateApiKeyAction } from "@/app/(dashboard)/settings/keys/actions";
+import { SecretRevealActions } from "./SecretRevealActions";
 
 type ExpiryMode = "immediate" | "1h" | "24h" | "7d" | "custom" | "never";
 
@@ -218,13 +218,12 @@ export default function RotateKeyItem({
 						<div className="text-sm text-muted-foreground font-semibold">
 							Store this key now. It will not be shown again.
 						</div>
+						<SecretRevealActions
+							secret={newPlaintext}
+							name={newName || "AI Stats rotated API key"}
+							kind="api-key"
+						/>
 						<DialogFooter>
-							<CopyButton
-								content={newPlaintext}
-								size="default"
-								variant="outline"
-								aria-label="Copy rotated API key"
-							/>
 							<DialogClose asChild>
 								<Button>Done</Button>
 							</DialogClose>

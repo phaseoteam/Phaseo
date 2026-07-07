@@ -13,7 +13,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { CopyButton } from "@/components/ui/copy-button";
 import { createApiKeyAction } from "@/app/(dashboard)/settings/keys/actions";
 import {
 	DropdownMenu,
@@ -23,6 +22,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
+import {
+	API_KEY_LIMIT_PRESETS,
+	getApiKeyPreset,
+	type ApiKeyPresetId,
+} from "@/lib/gateway/secretReveal";
+import { SecretRevealActions } from "./SecretRevealActions";
 
 export default function CreateKeyDialog({
 	currentUserId,
@@ -43,6 +48,8 @@ export default function CreateKeyDialog({
 	const [name, setName] = useState("");
 	const [loading, setLoading] = useState(false);
 	const [plainKey, setPlainKey] = useState<string | null>(null);
+	const [selectedPresetId, setSelectedPresetId] =
+		useState<ApiKeyPresetId>("production");
 	const [selectedTeamId, setSelectedTeamId] = useState<string | null>(
 		resolvedCurrentTeamId
 	);
@@ -70,7 +77,8 @@ export default function CreateKeyDialog({
 				name,
 				currentUserId as string,
 				teamArg,
-				JSON.stringify([]) // default empty scopes
+				JSON.stringify([]), // default empty scopes
+				getApiKeyPreset(selectedPresetId).limits
 			);
 			setPlainKey(res?.plaintext ?? null);
 		} catch (err: any) {
@@ -82,16 +90,11 @@ export default function CreateKeyDialog({
 		}
 	}
 
-	function onCopy() {
-		if (!plainKey) return;
-		// CopyButton already writes to clipboard; just show a toast
-		toast.success("Copied to clipboard", { duration: 2000 });
-	}
-
 	function onClose() {
 		setOpen(false);
 		setName("");
 		setPlainKey(null);
+		setSelectedPresetId("production");
 	}
 
 	return (
@@ -171,6 +174,34 @@ export default function CreateKeyDialog({
 							onChange={(e) => setName(e.target.value)}
 							placeholder="Key name (e.g. my app)"
 						/>
+						<div className="space-y-2">
+							<div className="text-sm font-medium">Preset</div>
+							<div className="grid gap-2 sm:grid-cols-2">
+								{API_KEY_LIMIT_PRESETS.map((preset) => {
+									const selected = selectedPresetId === preset.id;
+									return (
+										<button
+											key={preset.id}
+											type="button"
+											onClick={() => setSelectedPresetId(preset.id)}
+											className={[
+												"rounded-md border p-3 text-left transition",
+												selected
+													? "border-foreground bg-muted/60"
+													: "border-border hover:border-foreground/40",
+											].join(" ")}
+										>
+											<div className="text-sm font-medium">
+												{preset.label}
+											</div>
+											<div className="mt-1 text-xs leading-5 text-muted-foreground">
+												{preset.description}
+											</div>
+										</button>
+									);
+								})}
+							</div>
+						</div>
 						<DialogFooter>
 							<DialogClose asChild>
 								<Button
@@ -198,15 +229,12 @@ export default function CreateKeyDialog({
 								Keep this code secret at all times.
 							</div>
 						</div>
+						<SecretRevealActions
+							secret={plainKey}
+							name={name || "AI Stats API key"}
+							kind="api-key"
+						/>
 						<DialogFooter>
-							<CopyButton
-								content={plainKey ?? ""}
-								size="default"
-								variant="outline"
-								onCopy={() => onCopy()}
-								className="mr-2"
-								aria-label="Copy API key"
-							/>
 							<DialogClose asChild>
 								<Button onClick={onClose}>Done</Button>
 							</DialogClose>

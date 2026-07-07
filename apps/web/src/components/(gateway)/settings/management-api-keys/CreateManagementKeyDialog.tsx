@@ -13,7 +13,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Plus, ShieldAlert } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { CopyButton } from "@/components/ui/copy-button";
 import { createManagementKeyAction } from "@/app/(dashboard)/settings/management-api-keys/actions";
 import {
 	DropdownMenu,
@@ -23,6 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
+import { SecretRevealActions } from "../keys/SecretRevealActions";
 
 function toIsoFromDateTimeLocalInput(value: string): string | null {
 	if (!value) return null;
@@ -71,7 +71,10 @@ export default function CreateManagementKeyDialog({
 	React.useEffect(() => {
 		const nextWorkspaceId = resolveInitialWorkspaceId();
 		if (nextWorkspaceId !== selectedWorkspaceId) {
-			setSelectedWorkspaceId(nextWorkspaceId);
+			const timeoutId = window.setTimeout(() => {
+				setSelectedWorkspaceId(nextWorkspaceId);
+			}, 0);
+			return () => window.clearTimeout(timeoutId);
 		}
 	}, [resolveInitialWorkspaceId, selectedWorkspaceId]);
 
@@ -108,11 +111,6 @@ export default function CreateManagementKeyDialog({
 		} finally {
 			setLoading(false);
 		}
-	}
-
-	function onCopy() {
-		if (!plainKey) return;
-		toast.success("Copied to clipboard", { duration: 2000 });
 	}
 
 	function onClose() {
@@ -237,15 +235,13 @@ export default function CreateManagementKeyDialog({
 								privileges. Keep this code secret at all times.
 							</div>
 						</div>
+						<SecretRevealActions
+							secret={plainKey}
+							name={name || "AI Stats management API key"}
+							kind="management-key"
+							enableTest={false}
+						/>
 						<DialogFooter>
-							<CopyButton
-								content={plainKey ?? ""}
-								size="default"
-								variant="outline"
-								onCopy={() => onCopy()}
-								className="mr-2"
-								aria-label="Copy management API key"
-							/>
 							<DialogClose asChild>
 								<Button onClick={onClose}>Done</Button>
 							</DialogClose>
