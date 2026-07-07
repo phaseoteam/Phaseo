@@ -549,6 +549,11 @@ function getAudioAttachmentTitle(file: File) {
 	return `Voice note ${day}/${month}/${year} ${hour}:${minute}`;
 }
 
+function getSafeAttachmentPreviewUrl(value: string | null | undefined) {
+	if (!value) return null;
+	return value.startsWith("blob:") ? value : null;
+}
+
 function formatRecordingDuration(milliseconds: number) {
 	const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
 	const minutes = Math.floor(totalSeconds / 60);
@@ -2838,7 +2843,9 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 			className="-mx-4 w-[calc(100%+2rem)] px-4 pb-1 md:-mx-8 md:w-[calc(100%+4rem)] md:px-8"
 		>
 			{attachments.map((file, index) => {
-				const previewUrl = attachmentPreviewUrls[index];
+				const previewUrl = getSafeAttachmentPreviewUrl(
+					attachmentPreviewUrls[index],
+				);
 				const isImagePreview =
 					file.type.startsWith("image/") && Boolean(previewUrl);
 				const isAudioPreview =
