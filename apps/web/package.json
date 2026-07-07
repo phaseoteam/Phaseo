@@ -118,9 +118,9 @@
 		"posthog-js": "^1.372.10",
 		"posthog-node": "^5.28.0",
 		"radix-ui": "^1.4.3",
-		"react": "19.2.6",
+		"react": "19.2.7",
 		"react-day-picker": "^10.0.1",
-		"react-dom": "19.2.6",
+		"react-dom": "19.2.7",
 		"react-fast-marquee": "^1.6.5",
 		"react-hook-form": "^7.71.1",
 		"react-markdown": "^10.1.0",
@@ -152,7 +152,7 @@
 		"@tailwindcss/postcss": "^4",
 		"@types/jest": "^30.0.0",
 		"@types/node": "^25",
-		"@types/react": "19.2.14",
+		"@types/react": "19.2.17",
 		"@types/react-dom": "19.2.3",
 		"@types/three": "^0.184.0",
 		"baseline-browser-mapping": "^2.9.0",
@@ -169,7 +169,7 @@
 		"wrangler": "^4.94.0"
 	},
 	"overrides": {
-		"@types/react": "19.2.14",
+		"@types/react": "19.2.17",
 		"@types/react-dom": "19.2.3"
 	}
 }
