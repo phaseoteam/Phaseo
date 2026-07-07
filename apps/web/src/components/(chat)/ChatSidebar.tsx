@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, type ReactElement } from "react";
+import { useEffect, useMemo, useState, type ReactElement } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Collapsible,
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
 	SidebarContent,
 	SidebarFooter,
@@ -43,6 +44,7 @@ import {
 	ArrowUpRight,
 	Check,
 	ChevronRight,
+	Coins,
 	Database,
 	Gauge,
 	LogOut,
@@ -99,6 +101,20 @@ type ThreadDateGroup = {
 	label: string;
 	threads: ChatThread[];
 };
+
+type CreditsBalanceResponse = {
+	initialBalance?: number | null;
+};
+
+function formatCreditsBalance(value: number | null) {
+	if (value === null || !Number.isFinite(value)) return "Credits";
+	return new Intl.NumberFormat("en-US", {
+		style: "currency",
+		currency: "USD",
+		minimumFractionDigits: 2,
+		maximumFractionDigits: 2,
+	}).format(value);
+}
 
 function getOrdinalDay(day: number) {
 	const remainder = day % 100;
@@ -201,6 +217,8 @@ export function ChatSidebar({
 	const [selectedThreadIds, setSelectedThreadIds] = useState<Set<string>>(
 		() => new Set(),
 	);
+	const [creditsBalance, setCreditsBalance] = useState<number | null>(null);
+	const [creditsLoading, setCreditsLoading] = useState(false);
 	const collapsed = sidebarState === "collapsed" && !isMobile;
 	const brandLightSrc = collapsed ? "/logo_light.svg" : "/wordmark_light.svg";
 	const brandDarkSrc = collapsed ? "/logo_dark.svg" : "/wordmark_dark.svg";
@@ -222,6 +240,7 @@ export function ChatSidebar({
 		.join("")
 		.slice(0, 2)
 		.toUpperCase();
+	const creditsLabel = formatCreditsBalance(creditsBalance);
 	const activeTag = tags.find((tag) => tag.id === activeTagId) ?? null;
 	const dateThreadGroups = buildThreadDateGroups(groupedThreads);
 	const tagsByRecentUse = useMemo(() => {
@@ -250,6 +269,52 @@ export function ChatSidebar({
 		[threads, selectedThreadIds],
 	);
 	const selectedCount = selectedThreads.length;
+	useEffect(() => {
+		if (!authUser?.id) {
+			setCreditsBalance(null);
+			setCreditsLoading(false);
+			return;
+		}
+
+		let active = true;
+		const controller = new AbortController();
+		const timeoutId = window.setTimeout(() => controller.abort(), 8000);
+		setCreditsLoading(true);
+		fetch("/api/internal/credits/balance", {
+			headers: { accept: "application/json" },
+			signal: controller.signal,
+		})
+			.then(async (response) => {
+				if (!response.ok) throw new Error(`Credits request failed: ${response.status}`);
+				return (await response.json()) as CreditsBalanceResponse;
+			})
+			.then((data) => {
+				if (!active) return;
+				const rawBalance = data.initialBalance;
+				const balance =
+					rawBalance === null || rawBalance === undefined
+						? null
+						: Number(rawBalance);
+				setCreditsBalance(balance !== null && Number.isFinite(balance) ? balance : null);
+			})
+			.catch((error) => {
+				if (active && (error as Error).name !== "AbortError") {
+					setCreditsBalance(null);
+				}
+			})
+			.finally(() => {
+				window.clearTimeout(timeoutId);
+				if (active) {
+					setCreditsLoading(false);
+				}
+			});
+
+		return () => {
+			active = false;
+			window.clearTimeout(timeoutId);
+			controller.abort();
+		};
+	}, [authUser?.id]);
 	const toggleThreadSelection = (threadId: string) => {
 		setSelectedThreadIds((prev) => {
 			const next = new Set(prev);
@@ -320,10 +385,11 @@ export function ChatSidebar({
 						</DropdownMenuItem>
 						<DropdownMenuSeparator />
 						<DropdownMenuItem
+							variant="destructive"
+							className="cursor-pointer"
 							onClick={() => onRequestDelete(thread)}
-							className="group text-foreground focus:text-destructive data-highlighted:text-destructive"
 						>
-							<Trash2 className="mr-2 h-4 w-4 text-muted-foreground group-data-highlighted:text-destructive" />
+							<Trash2 className="mr-2 h-4 w-4" />
 							Delete
 						</DropdownMenuItem>
 					</DropdownMenuContent>
@@ -573,9 +639,9 @@ export function ChatSidebar({
 								</Button>
 								<Button
 									type="button"
-									variant="ghost"
+									variant="destructive"
 									size="sm"
-									className="h-7 w-full px-1.5 text-xs text-destructive hover:text-destructive"
+									className="h-7 w-full px-1.5 text-xs"
 									disabled={selectedCount === 0}
 									onClick={() => onRequestDeleteSelected(selectedThreads)}
 								>
@@ -674,6 +740,22 @@ export function ChatSidebar({
 									<Link href="/gateway/usage">
 										<Gauge className="mr-2 h-4 w-4" />
 										Usage
+									</Link>
+								</DropdownMenuItem>
+								<DropdownMenuItem asChild>
+									<Link
+										href="/settings/credits"
+										aria-label={`Credits balance: ${creditsLabel}`}
+									>
+										<Coins className="mr-2 h-4 w-4" />
+										<span>Credits</span>
+										{creditsLoading ? (
+											<Skeleton className="ml-auto h-3.5 w-16 rounded-sm" />
+										) : (
+											<span className="ml-auto font-mono text-xs tabular-nums text-muted-foreground">
+												{creditsLabel}
+											</span>
+										)}
 									</Link>
 								</DropdownMenuItem>
 								<DropdownMenuSeparator />

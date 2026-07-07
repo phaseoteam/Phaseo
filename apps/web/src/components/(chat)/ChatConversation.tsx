@@ -12,7 +12,7 @@ import type {
 	ChatSettings,
 	ChatThread,
 } from "@/lib/indexeddb/chats";
-import { ArrowDown, Square } from "lucide-react";
+import { ArrowDown } from "lucide-react";
 import {
 	DEFAULT_CHAT_PLACEHOLDER,
 	REASONING_OPTIONS,
@@ -41,6 +41,18 @@ type QueuedChatPrompt = Omit<ChatSendPayload, "performanceRunId"> & {
 	id: string;
 	threadId: string;
 };
+
+const RECORDING_WAVEFORM_BAR_COUNT = 96;
+const DEFAULT_RECORDING_WAVEFORM = Array.from(
+	{ length: RECORDING_WAVEFORM_BAR_COUNT },
+	() => 4,
+);
+
+function formatRecordingFilename(date = new Date()) {
+	const [day = "", time = ""] = date.toISOString().split("T");
+	const normalizedTime = time.slice(0, 8).replace(/:/g, "-");
+	return `Voice note ${day} ${normalizedTime}`;
+}
 
 type ChatConversationProps = {
 	activeThread: ChatThread | null;
@@ -145,20 +157,22 @@ export function ChatConversation({
 	const [editingQueuedPromptIndex, setEditingQueuedPromptIndex] = useState<
 		number | null
 	>(null);
-	const [recordingSupported] = useState(() => {
-		return (
-			typeof navigator !== "undefined" &&
-			typeof window !== "undefined" &&
-			typeof MediaRecorder !== "undefined" &&
-			typeof navigator.mediaDevices?.getUserMedia === "function"
-		);
-	});
+	const [recordingSupported, setRecordingSupported] = useState(false);
 	const [isRecording, setIsRecording] = useState(false);
 	const [isStartingRecording, setIsStartingRecording] = useState(false);
+	const [recordingWaveformBars, setRecordingWaveformBars] = useState<number[]>(
+		DEFAULT_RECORDING_WAVEFORM,
+	);
+	const [recordingDurationMs, setRecordingDurationMs] = useState(0);
 	const [reasoningPickerOpen, setReasoningPickerOpen] = useState(false);
 	const [sendGateType, setSendGateType] = useState<SendGateType | null>(null);
 	const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 	const mediaStreamRef = useRef<MediaStream | null>(null);
+	const audioContextRef = useRef<AudioContext | null>(null);
+	const waveformAnimationRef = useRef<number | null>(null);
+	const waveformLastUpdateRef = useRef(0);
+	const recordingStartedAtRef = useRef(0);
+	const recordingTimerRef = useRef<number | null>(null);
 	const recordingChunksRef = useRef<Blob[]>([]);
 	const appliedPresetRef = useRef<string | null>(null);
 
@@ -169,12 +183,19 @@ export function ChatConversation({
 	useEffect(() => {
 		setPlaceholder(getRandomPlaceholder());
 	}, []);
+
+	useEffect(() => {
+		setRecordingSupported(
+			typeof MediaRecorder !== "undefined" &&
+				typeof navigator.mediaDevices?.getUserMedia === "function",
+		);
+	}, []);
 	const reasoningSelection: NonNullable<ChatSettings["reasoningEffort"]> =
 		reasoningEffort ?? "medium";
 	const attachmentPreviewUrls = useMemo(
 		() =>
 			attachments.map((file) =>
-				file.type.startsWith("image/")
+				file.type.startsWith("image/") || file.type.startsWith("audio/")
 					? URL.createObjectURL(file)
 					: null,
 			),
@@ -205,6 +226,79 @@ export function ChatConversation({
 		onAudioAttachmentRequirementChange?.(requiresAudioInput);
 	}, [attachments, onAudioAttachmentRequirementChange]);
 
+	const stopWaveformAnalysis = useCallback(() => {
+		if (waveformAnimationRef.current !== null) {
+			cancelAnimationFrame(waveformAnimationRef.current);
+			waveformAnimationRef.current = null;
+		}
+		void audioContextRef.current?.close().catch(() => undefined);
+		audioContextRef.current = null;
+		waveformLastUpdateRef.current = 0;
+		setRecordingWaveformBars(DEFAULT_RECORDING_WAVEFORM);
+	}, []);
+
+	const stopRecordingTimer = useCallback(() => {
+		if (recordingTimerRef.current !== null) {
+			window.clearInterval(recordingTimerRef.current);
+			recordingTimerRef.current = null;
+		}
+		recordingStartedAtRef.current = 0;
+		setRecordingDurationMs(0);
+	}, []);
+
+	const startRecordingTimer = useCallback(() => {
+		stopRecordingTimer();
+		recordingStartedAtRef.current = performance.now();
+		setRecordingDurationMs(0);
+		recordingTimerRef.current = window.setInterval(() => {
+			setRecordingDurationMs(performance.now() - recordingStartedAtRef.current);
+		}, 200);
+	}, [stopRecordingTimer]);
+
+	const startWaveformAnalysis = useCallback(
+		(stream: MediaStream) => {
+			stopWaveformAnalysis();
+			const AudioContextConstructor =
+				window.AudioContext ??
+				(window as typeof window & { webkitAudioContext?: typeof AudioContext })
+					.webkitAudioContext;
+			if (!AudioContextConstructor) return;
+
+			try {
+				const audioContext = new AudioContextConstructor();
+				const analyser = audioContext.createAnalyser();
+				analyser.fftSize = 512;
+				analyser.smoothingTimeConstant = 0.72;
+				audioContext.createMediaStreamSource(stream).connect(analyser);
+				audioContextRef.current = audioContext;
+
+				const samples = new Uint8Array(analyser.fftSize);
+				const tick = (timestamp: number) => {
+					analyser.getByteTimeDomainData(samples);
+					if (timestamp - waveformLastUpdateRef.current >= 58) {
+						let total = 0;
+						for (const sample of samples) {
+							const centered = (sample - 128) / 128;
+							total += centered * centered;
+						}
+						const rms = Math.sqrt(total / samples.length);
+						const nextHeight = Math.max(4, Math.min(30, 4 + rms * 96));
+						setRecordingWaveformBars((prev) => [
+							...prev.slice(1),
+							Math.round(nextHeight),
+						]);
+						waveformLastUpdateRef.current = timestamp;
+					}
+					waveformAnimationRef.current = requestAnimationFrame(tick);
+				};
+				waveformAnimationRef.current = requestAnimationFrame(tick);
+			} catch (error) {
+				console.error("Audio waveform analysis failed", error);
+			}
+		},
+		[stopWaveformAnalysis],
+	);
+
 	const stopRecording = useCallback(() => {
 		const recorder = mediaRecorderRef.current;
 		if (recorder && recorder.state !== "inactive") {
@@ -216,9 +310,11 @@ export function ChatConversation({
 			}
 			mediaStreamRef.current = null;
 		}
+		stopWaveformAnalysis();
+		stopRecordingTimer();
 		setIsRecording(false);
 		setIsStartingRecording(false);
-	}, []);
+	}, [stopRecordingTimer, stopWaveformAnalysis]);
 
 	const startRecording = useCallback(async () => {
 		if (!recordingSupported) return;
@@ -228,6 +324,8 @@ export function ChatConversation({
 				audio: true,
 			});
 			mediaStreamRef.current = stream;
+			startRecordingTimer();
+			startWaveformAnalysis(stream);
 			recordingChunksRef.current = [];
 			const mimeType = getSupportedRecordingMimeType();
 			const recorder = mimeType
@@ -250,7 +348,7 @@ export function ChatConversation({
 					const extension = extensionForAudioMimeType(fallbackType);
 					const file = new File(
 						[audioBlob],
-						`recording-${Date.now()}.${extension}`,
+						`${formatRecordingFilename()}.${extension}`,
 						{ type: fallbackType },
 					);
 					setAttachments((prev) => prev.concat(file));
@@ -261,16 +359,29 @@ export function ChatConversation({
 					}
 					mediaStreamRef.current = null;
 				}
+				stopWaveformAnalysis();
+				stopRecordingTimer();
 				setIsRecording(false);
 			};
 			recorder.start(200);
 			setIsRecording(true);
-		} catch {
+		} catch (error) {
+			console.error("Audio recording failed", error);
+			setRecordingSupported(false);
+			stopWaveformAnalysis();
+			stopRecordingTimer();
+			audioInputRef.current?.click();
 			setIsRecording(false);
 		} finally {
 			setIsStartingRecording(false);
 		}
-	}, [recordingSupported]);
+	}, [
+		recordingSupported,
+		startRecordingTimer,
+		startWaveformAnalysis,
+		stopRecordingTimer,
+		stopWaveformAnalysis,
+	]);
 
 	useEffect(() => {
 		return () => {
@@ -283,8 +394,10 @@ export function ChatConversation({
 					track.stop();
 				}
 			}
+			stopWaveformAnalysis();
+			stopRecordingTimer();
 		};
-	}, []);
+	}, [stopRecordingTimer, stopWaveformAnalysis]);
 
 	useEffect(() => {
 		return () => {
@@ -308,7 +421,8 @@ export function ChatConversation({
 					'[data-state="open"][role="dialog"],' +
 						' [data-state="open"][role="menu"],' +
 						' [data-state="open"][role="listbox"],' +
-						' [data-state="open"][data-radix-popper-content-wrapper]',
+						' [data-state="open"][data-radix-popper-content-wrapper],' +
+						' [data-slot="dialog-content"]',
 				),
 			);
 			if (overlayOpen) return;
@@ -334,7 +448,8 @@ export function ChatConversation({
 					'[data-state="open"][role="dialog"],' +
 						' [data-state="open"][role="menu"],' +
 						' [data-state="open"][role="listbox"],' +
-						' [data-state="open"][data-radix-popper-content-wrapper]',
+						' [data-state="open"][data-radix-popper-content-wrapper],' +
+						' [data-slot="dialog-content"]',
 				),
 			);
 			if (overlayOpen) return;
@@ -644,30 +759,6 @@ export function ChatConversation({
 						<MessageScroller.Content
 							className={`mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-6 md:px-8 ${hasNoMessages ? "min-h-full" : ""}`}
 						>
-							{isRecording ? (
-								<div className="sticky top-2 z-10 mx-auto w-full max-w-md rounded-2xl border border-border bg-background/92 px-4 py-3 shadow-sm backdrop-blur">
-									<div className="flex items-center gap-3">
-										<button
-											type="button"
-											onClick={toggleRecording}
-											disabled={isStartingRecording}
-											aria-label="Stop recording"
-											className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-destructive/30 bg-destructive/10 text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-										>
-											<span className="pointer-events-none absolute inset-0 rounded-full bg-destructive/10 animate-pulse" />
-											<span className="pointer-events-none relative inline-flex h-9 w-9 items-center justify-center rounded-full bg-destructive/20">
-												<Square className="h-4 w-4 fill-current" />
-											</span>
-										</button>
-										<div className="min-w-0">
-											<p className="text-sm font-medium">Listening...</p>
-											<p className="text-xs text-muted-foreground">
-												Speak now, then stop to attach the clip.
-											</p>
-										</div>
-									</div>
-								</div>
-							) : null}
 							<ChatConversationMessages
 								activeThread={activeThread}
 								isSending={isSending}
@@ -741,6 +832,8 @@ export function ChatConversation({
 				selectedModelLabel={selectedModelLabel}
 				modelOptions={modelOptions}
 				isRecording={isRecording}
+				recordingWaveformBars={recordingWaveformBars}
+				recordingDurationMs={recordingDurationMs}
 				isStartingRecording={isStartingRecording}
 				recordingSupported={recordingSupported}
 				onToggleRecording={toggleRecording}

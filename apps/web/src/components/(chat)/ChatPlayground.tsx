@@ -114,11 +114,27 @@ const CHAT_SHORTCUT_OVERLAY_SELECTOR = [
 	'[data-state="open"][role="menu"]',
 	'[data-state="open"][role="listbox"]',
 	'[data-state="open"][data-radix-popper-content-wrapper]',
+	'[data-slot="dialog-content"]',
 ].join(", ");
 
 const isChatShortcutOverlayOpen = () => {
 	if (typeof document === "undefined") return false;
 	return Boolean(document.querySelector(CHAT_SHORTCUT_OVERLAY_SELECTOR));
+};
+
+const focusChatModelPickerSearch = () => {
+	if (typeof window === "undefined") return;
+	const focusSearch = () => {
+		document
+			.querySelector<HTMLInputElement>(
+				"[data-chat-model-selector-search='true']",
+			)
+			?.focus({ preventScroll: true });
+	};
+	focusSearch();
+	for (const delay of [0, 25, 75, 150, 250, 400]) {
+		window.setTimeout(focusSearch, delay);
+	}
 };
 
 const CHAT_API_TARGETS = new Set<ChatApiTarget>([
@@ -1300,8 +1316,22 @@ function ChatPlaygroundContent({
 				}
 				return (
 					resolveMetaProviderId(payload?.meta ?? null) ??
-					resolveMetaProviderId(payload?.response?.meta ?? null)
+					resolveMetaProviderId(payload?.response?.meta ?? null) ??
+					resolveMetaProviderId(payload?.response?.metadata ?? null)
 				);
+			};
+
+			const extractPayloadMeta = (
+				payload: any,
+			): Record<string, unknown> | null => {
+				const meta =
+					payload?.meta ??
+					payload?.response?.meta ??
+					payload?.response?.metadata ??
+					null;
+				return meta && typeof meta === "object" && !Array.isArray(meta)
+					? (meta as Record<string, unknown>)
+					: null;
 			};
 
 			if (targetAssistantId) {
@@ -1458,7 +1488,7 @@ function ChatPlaygroundContent({
 							data?.response?.usage ??
 							data?.response?.output?.usage ??
 							null;
-						finalMeta = data?.meta ?? data?.response?.meta ?? null;
+						finalMeta = extractPayloadMeta(data);
 						finalProviderId =
 							resolvePayloadProviderId(data) ?? finalProviderId;
 						const clientMeta = buildClientMeta(performance.now());
@@ -1887,11 +1917,9 @@ function ChatPlaygroundContent({
 										);
 									}
 								}
-								if (parsed?.meta || parsed?.response?.meta) {
-									finalMeta =
-										parsed?.meta ??
-										parsed?.response?.meta ??
-										null;
+								const parsedMeta = extractPayloadMeta(parsed);
+								if (parsedMeta) {
+									finalMeta = parsedMeta;
 								}
 								finalProviderId =
 									resolvePayloadProviderId(parsed) ??
@@ -2352,9 +2380,7 @@ function ChatPlaygroundContent({
 								continuationData?.response?.usage ??
 								finalUsage;
 							finalMeta =
-								continuationData?.meta ??
-								continuationData?.response?.meta ??
-								finalMeta;
+								extractPayloadMeta(continuationData) ?? finalMeta;
 							finalProviderId =
 								resolvePayloadProviderId(continuationData) ??
 								finalProviderId;
@@ -3828,7 +3854,11 @@ function ChatPlaygroundContent({
 			}
 			if (key === "m") {
 				event.preventDefault();
+				if (document.activeElement instanceof HTMLElement) {
+					document.activeElement.blur();
+				}
 				setModelPickerOpen(true);
+				focusChatModelPickerSearch();
 				return;
 			}
 			if (key === "c") {

@@ -34,13 +34,16 @@ export function ChatDeleteDialog({
                     </AlertDialogTitle>
                     <AlertDialogDescription>
                         {multiple
-                            ? "This will permanently delete the selected chats and their messages."
-                            : "This will permanently delete the chat and its messages."}
+                            ? "This will permanently delete the selected chats and their messages. This action is irreversible and cannot be undone."
+                            : "This will permanently delete the chat and its messages. This action is irreversible and cannot be undone."}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={onConfirm}>
+                    <AlertDialogAction
+                        variant="destructive"
+                        onClick={onConfirm}
+                    >
                         Delete
                     </AlertDialogAction>
                 </AlertDialogFooter>
