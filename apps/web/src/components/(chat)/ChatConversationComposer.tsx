@@ -578,7 +578,7 @@ function RecordingWaveform({
 			<div className="flex h-10 min-w-0 flex-1 items-center gap-0.5 overflow-hidden">
 				{bars.map((height, index) => (
 					<span
-						key={`${height}-${index}`}
+						key={index}
 						className="min-w-px flex-1 rounded-full bg-muted-foreground/75 transition-[height] duration-75 ease-linear"
 						style={{
 							height,
@@ -1010,7 +1010,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		selectedModelCount > 0 ||
 		Boolean(selectedModelId);
 	const canSubmit =
-		hasSelectedModel && !slashMenuOpen && hasComposerContent;
+		!isRecording && hasSelectedModel && !slashMenuOpen && hasComposerContent;
 	const showChooseModelTooltip = !hasSelectedModel && hasComposerContent;
 	const resetPromptHistoryNavigation = useCallback(() => {
 		setHistoryIndex(null);

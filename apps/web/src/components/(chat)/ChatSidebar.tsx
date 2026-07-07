@@ -276,9 +276,11 @@ export function ChatSidebar({
 			return;
 		}
 
+		let active = true;
 		const controller = new AbortController();
+		const timeoutId = window.setTimeout(() => controller.abort(), 8000);
 		setCreditsLoading(true);
-		fetch("/api/internal/settings/credits/initial", {
+		fetch("/api/internal/credits/balance", {
 			headers: { accept: "application/json" },
 			signal: controller.signal,
 		})
@@ -287,23 +289,29 @@ export function ChatSidebar({
 				return (await response.json()) as CreditsBalanceResponse;
 			})
 			.then((data) => {
-				const balance = Number(data.initialBalance ?? 0);
-				if (Number.isFinite(balance)) {
-					setCreditsBalance(balance);
-				}
+				if (!active) return;
+				const rawBalance = data.initialBalance;
+				const balance =
+					rawBalance === null || rawBalance === undefined
+						? null
+						: Number(rawBalance);
+				setCreditsBalance(balance !== null && Number.isFinite(balance) ? balance : null);
 			})
 			.catch((error) => {
-				if ((error as Error).name !== "AbortError") {
+				if (active && (error as Error).name !== "AbortError") {
 					setCreditsBalance(null);
 				}
 			})
 			.finally(() => {
-				if (!controller.signal.aborted) {
+				window.clearTimeout(timeoutId);
+				if (active) {
 					setCreditsLoading(false);
 				}
 			});
 
 		return () => {
+			active = false;
+			window.clearTimeout(timeoutId);
 			controller.abort();
 		};
 	}, [authUser?.id]);
