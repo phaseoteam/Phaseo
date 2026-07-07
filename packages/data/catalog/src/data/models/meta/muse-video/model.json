@@ -2,7 +2,7 @@
   "model_id": "meta/muse-video",
   "organisation_id": "meta",
   "name": "Muse Video",
-  "status": "Coming Soon",
+  "status": "Announced",
   "previous_model_id": null,
   "description": "Muse Video is Meta's in-development video generation model in the Muse family, intended to bring prompt-driven creative video workflows into Meta's AI products.",
   "announced_date": "2026-07-07T00:00:00",
