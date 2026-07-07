@@ -30,13 +30,7 @@ Issue state is stored in `scripts/model-discovery/state/provider-change-issues.j
 Public Phaseo catalog discovery checks Phaseo-owned state such as database records, public model/catalog files, provider mapping data, and generated SDK/OpenAPI model surfaces. These checks may send Discord notifications or write reports, but they do not create, update, comment on, close, label, or otherwise mutate GitHub issues.
 
 Internal model file checks read from `packages/data/catalog/src/data/models`.
-Internal Discord alerts are sent as embed payloads when internal models are added or when lifecycle fields change:
-
-- status
-- announced date
-- release date
-- deprecation date
-- retirement date
+Internal Discord alerts are sent as embed payloads only when internal models are added. Lifecycle/status edits are recorded in the discovery report but do not send Discord notifications.
 Already-announced model IDs are persisted to:
 
 - `scripts/model-discovery/state/internal-announced-models.json`
@@ -70,9 +64,9 @@ pnpm run data:check-new-models:test
 
 - `DISCORD_WEBHOOK_NEW_MODELS_PUBLIC` (public webhook URL for internal website model additions)
 - `DISCORD_WEBHOOK_URL` (private/default webhook URL for provider and Hugging Face tracking alerts)
-- `DISCORD_PUBLIC_MODEL_DISCOVERY_AVATAR_URL` (optional public bot avatar override; defaults to `https://phaseo.ai/png_logo_light.png`)
-- `DISCORD_PRIVATE_MODEL_DISCOVERY_AVATAR_URL` (optional private bot avatar override; defaults to `https://phaseo.ai/png_logo_dark.png`)
-- `DISCORD_MODEL_DISCOVERY_AVATAR_URL` (optional shared avatar override when calling internal runner scripts with `--discord-avatar-url` or `--hf-discord-avatar-url`)
+- `DISCORD_PUBLIC_MODEL_DISCOVERY_AVATAR_URL` (optional public bot avatar override; defaults to `https://phaseo.app/png_logo_light.png`)
+- `DISCORD_PRIVATE_MODEL_DISCOVERY_AVATAR_URL` (optional private bot avatar override; defaults to `https://phaseo.app/png_logo_dark.png`)
+- `DISCORD_MODEL_DISCOVERY_AVATAR_URL` (legacy fallback avatar override when calling internal runner scripts with `--discord-avatar-url`)
 - Watched Hugging Face orgs for the GitHub Actions scheduled runner are currently passed in `.github/workflows/huggingface-model-discovery.yml`
 - `HF_TOKEN` (optional Hugging Face token for orgs/models that require authenticated API access)
 - `GITHUB_TOKEN` or `GH_TOKEN` (optional, enables automatic GitHub issues for external provider and Hugging Face additions/changes/deletions)
