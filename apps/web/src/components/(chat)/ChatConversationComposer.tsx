@@ -593,6 +593,27 @@ function RecordingWaveform({
 	);
 }
 
+function AudioAttachmentPlayer({ file }: { file: File }) {
+	const [audioUrl, setAudioUrl] = useState<string | null>(null);
+
+	useEffect(() => {
+		const objectUrl = URL.createObjectURL(file);
+		setAudioUrl(objectUrl);
+		return () => {
+			URL.revokeObjectURL(objectUrl);
+		};
+	}, [file]);
+
+	return (
+		<audio
+			controls
+			src={audioUrl ?? undefined}
+			aria-label={`Preview ${file.name}`}
+			className="mt-1.5 h-7 w-full min-w-0"
+		/>
+	);
+}
+
 function ComposerModelSelectField({
 	label,
 	value,
@@ -2848,10 +2869,9 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 				);
 				const isImagePreview =
 					file.type.startsWith("image/") && Boolean(previewUrl);
-				const isAudioPreview =
-					file.type.startsWith("audio/") && Boolean(previewUrl);
+				const isAudioPreview = file.type.startsWith("audio/");
 
-				if (isAudioPreview && previewUrl) {
+				if (isAudioPreview) {
 					return (
 						<Attachment
 							key={`${file.name}-${file.size}-${index}`}
@@ -2867,12 +2887,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 								<AttachmentDescription>
 									{getAttachmentDescription(file)}
 								</AttachmentDescription>
-								<audio
-									controls
-									src={previewUrl}
-									aria-label={`Preview ${file.name}`}
-									className="mt-1.5 h-7 w-full min-w-0"
-								/>
+								<AudioAttachmentPlayer file={file} />
 							</AttachmentContent>
 							<AttachmentActions className="pt-1 pr-0.5">
 								<AttachmentAction
