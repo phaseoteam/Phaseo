@@ -1,0 +1,45 @@
+{
+  "model_id": "spacex-ai/grok-4.5",
+  "organisation_id": "spacex-ai",
+  "name": "Grok 4.5",
+  "status": "Rumoured",
+  "previous_model_id": "spacex-ai/grok-4.3",
+  "description": "Grok 4.5 is an announced SpaceXAI reasoning model currently in private beta at SpaceX and Tesla. Public API availability, pricing, and independent benchmark results have not been announced.",
+  "announced_date": "2026-06-28T00:00:00",
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "spacex-ai/grok-4.5",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://x.com/elonmusk/status/2071184354756477041"
+    },
+    {
+      "platform": "docs",
+      "url": "https://docs.x.ai/developers/models"
+    }
+  ],
+  "details": [
+    {
+      "name": "availability",
+      "value": "Elon Musk announced Grok 4.5 as a private beta at SpaceX and Tesla; no public launch date has been announced."
+    },
+    {
+      "name": "api_availability",
+      "value": "SpaceXAI documentation does not list a public Grok 4.5 API model ID, pricing, or AI Stats Gateway route yet."
+    },
+    {
+      "name": "foundation_model",
+      "value": "Announced as based on a 1.5T V9 foundation model with Cursor data added during supplemental training."
+    },
+    {
+      "name": "public_benchmarks",
+      "value": "No independent public benchmark results are available for Grok 4.5 yet."
+    }
+  ],
+  "benchmarks": []
+}
