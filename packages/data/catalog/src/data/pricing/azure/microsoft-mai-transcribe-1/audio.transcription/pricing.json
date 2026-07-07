@@ -1,0 +1,21 @@
+{
+  "key": "azure:microsoft/mai-transcribe-1:audio.transcription",
+  "api_provider_id": "azure",
+  "provider_slug": "azure",
+  "api_model_id": "microsoft/mai-transcribe-1",
+  "capability_id": "audio.transcription",
+  "rules": [
+    {
+      "meter": "input_audio_minutes",
+      "unit": "minute",
+      "unit_size": 1,
+      "price_per_unit": 0.006,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-04-02T00:00:00Z"
+    }
+  ]
+}
