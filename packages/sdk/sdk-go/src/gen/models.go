@@ -1760,6 +1760,7 @@ const (
 	KnownModelIdQwenTextEmbeddingV3 KnownModelId = "qwen/text-embedding-v3"
 	KnownModelIdQwenTextEmbeddingV4 KnownModelId = "qwen/text-embedding-v4"
 	KnownModelIdQwenWan27T2v KnownModelId = "qwen/wan2.7-t2v"
+	KnownModelIdSakanaFuguUltra KnownModelId = "sakana/fugu-ultra"
 	KnownModelIdSpacexAiGrok420Beta0309 KnownModelId = "spacex-ai/grok-4.20-beta-0309"
 	KnownModelIdSpacexAiGrok420MultiAgentBeta0309 KnownModelId = "spacex-ai/grok-4.20-multi-agent-beta-0309"
 	KnownModelIdSpacexAiGrok43 KnownModelId = "spacex-ai/grok-4.3"
