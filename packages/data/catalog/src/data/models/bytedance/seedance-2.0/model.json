@@ -15,11 +15,13 @@
   "api_model_id": "bytedance/seedance-2.0",
   "links": [
     {
-      "platform": "documentation",
+      "title": "Documentation",
+      "kind": "documentation",
       "url": "https://docs.byteplus.com/en/docs/ModelArk/1330310"
     },
     {
-      "platform": "pricing",
+      "title": "Pricing",
+      "kind": "pricing",
       "url": "https://docs.byteplus.com/en/docs/ModelArk/1544106"
     }
   ],

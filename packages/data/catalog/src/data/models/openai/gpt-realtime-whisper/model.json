@@ -15,11 +15,13 @@
   "api_model_id": "openai/gpt-realtime-whisper",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://developers.openai.com/api/docs/models/gpt-realtime-whisper"
     },
     {
-      "platform": "guide",
+      "title": "Guide",
+      "kind": "guide",
       "url": "https://developers.openai.com/api/docs/guides/realtime-transcription"
     }
   ],

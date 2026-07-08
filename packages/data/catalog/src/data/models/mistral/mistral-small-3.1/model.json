@@ -15,27 +15,33 @@
   "api_model_id": "mistral/mistral-small-3.1",
   "links": [
     {
-      "platform": "playground",
+      "title": "Playground",
+      "kind": "playground",
       "url": "https://console.mistral.ai/"
     },
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://mistral.ai/news/mistral-small-3-1"
     },
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Base-2503"
     },
     {
-      "platform": "playground",
+      "title": "Playground",
+      "kind": "playground",
       "url": "https://console.mistral.ai/"
     },
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://mistral.ai/news/mistral-small-3-1"
     },
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503"
     }
   ],

@@ -15,15 +15,18 @@
   "api_model_id": "nvidia/nemotron-3-ultra-550b-a55b",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://investor.nvidia.com/news/press-release-details/2026/Enterprise-Software-Leaders-Build-AI-Agents-With-NVIDIA/default.aspx"
     },
     {
-      "platform": "website",
+      "title": "Website",
+      "kind": "website",
       "url": "https://developer.nvidia.com/nemotron"
     },
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://docs.nvidia.com/nemotron/nightly/usage-cookbook/Nemotron-3-Ultra-Base/README.html"
     }
   ],

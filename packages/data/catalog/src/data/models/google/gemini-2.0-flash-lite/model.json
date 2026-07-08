@@ -16,15 +16,18 @@
   "family_id": "google/gemini-2.0",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://ai.google.dev/gemini-api/docs/models#gemini-2.0-flash-lite"
     },
     {
-      "platform": "playground",
+      "title": "Playground",
+      "kind": "playground",
       "url": "https://aistudio.google.com/prompts/new_chat?model=gemini-2.0-flash-lite"
     },
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://developers.googleblog.com/en/gemini-2-family-expands"
     }
   ],

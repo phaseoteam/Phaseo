@@ -15,7 +15,8 @@
   "api_model_id": "windsurf/swe-1",
   "links": [
     {
-      "platform": "docs",
+      "title": "Docs",
+      "kind": "docs",
       "url": "https://docs.windsurf.com/windsurf/models"
     }
   ],

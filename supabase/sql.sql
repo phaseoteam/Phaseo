@@ -186,10 +186,13 @@ CREATE TABLE public.data_model_links (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   model_id text NOT NULL,
   platform text NOT NULL,
+  kind text NOT NULL,
+  title text NOT NULL,
   url text NOT NULL,
   created_at timestamp with time zone NOT NULL DEFAULT (now() AT TIME ZONE 'utc'::text),
   updated_at timestamp with time zone NOT NULL DEFAULT (now() AT TIME ZONE 'utc'::text),
   CONSTRAINT data_model_links_pkey PRIMARY KEY (id),
+  CONSTRAINT data_model_links_model_id_url_key UNIQUE (model_id, url),
   CONSTRAINT data_model_links_model_id_fkey FOREIGN KEY (model_id) REFERENCES public.data_models(model_id)
 );
 CREATE TABLE public.data_models (

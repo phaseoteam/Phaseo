@@ -1231,8 +1231,16 @@ function checkModelReferences(state: ValidationState): { errors: string[]; warni
         }
         const links = Array.isArray(data.links) ? data.links : [];
         for (const link of links) {
-            if (typeof link?.platform !== 'string' || !link.platform.trim()) {
-                errors.push(`${label} has a link without a platform`);
+            const kind = typeof link?.kind === 'string' && link.kind.trim()
+                ? link.kind.trim()
+                : typeof link?.platform === 'string'
+                    ? link.platform.trim()
+                    : '';
+            if (!kind) {
+                errors.push(`${label} has a link without a kind`);
+            }
+            if (typeof link?.title !== 'string' || !link.title.trim()) {
+                errors.push(`${label} has a link without a title`);
             }
             if (typeof link?.url !== 'string' || !link.url.trim()) {
                 errors.push(`${label} has a link without a url`);

@@ -15,7 +15,8 @@
   "api_model_id": "mistral/mistral-large-3.0",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://mistral.ai/news/mistral-3"
     }
   ],

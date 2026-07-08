@@ -15,7 +15,8 @@
   "api_model_id": "morph/morph-v3-large",
   "links": [
     {
-      "platform": "documentation",
+      "title": "Documentation",
+      "kind": "documentation",
       "url": "https://www.morphllm.com/products/fastapply.md"
     }
   ],

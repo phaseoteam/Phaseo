@@ -16,7 +16,8 @@
   "family_id": "google/gemini-3.0",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://blog.google/products/gemini/gemini-3-flash/"
     }
   ],

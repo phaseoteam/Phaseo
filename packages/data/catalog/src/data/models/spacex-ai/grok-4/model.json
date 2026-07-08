@@ -15,15 +15,18 @@
   "api_model_id": "spacex-ai/grok-4",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://docs.x.ai/docs/models/grok-4-0709"
     },
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://x.ai/news/grok-4"
     },
     {
-      "platform": "deprecation",
+      "title": "Deprecation",
+      "kind": "deprecation",
       "url": "https://docs.x.ai/developers/migration/may-15-retirement"
     }
   ],

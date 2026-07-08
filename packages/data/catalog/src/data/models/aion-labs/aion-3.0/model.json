@@ -15,7 +15,8 @@
   "api_model_id": "aion-labs/aion-3.0",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://www.aionlabs.ai/docs/models/"
     }
   ],

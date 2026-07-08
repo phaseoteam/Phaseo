@@ -16,19 +16,23 @@
   "family_id": "google/gemini-omni",
   "links": [
     {
-      "platform": "event",
+      "title": "Event",
+      "kind": "event",
       "url": "https://blog.google/innovation-and-ai/technology/developers-tools/google-io-2026-collection/"
     },
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://ai.google.dev/gemini-api/docs/models/gemini-omni-flash"
     },
     {
-      "platform": "documentation",
+      "title": "Documentation",
+      "kind": "documentation",
       "url": "https://ai.google.dev/gemini-api/docs/omni"
     },
     {
-      "platform": "pricing",
+      "title": "Pricing",
+      "kind": "pricing",
       "url": "https://ai.google.dev/gemini-api/docs/pricing#gemini-omni-flash-preview"
     }
   ],

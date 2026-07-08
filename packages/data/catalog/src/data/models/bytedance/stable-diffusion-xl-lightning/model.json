@@ -15,7 +15,8 @@
   "api_model_id": "bytedance/stable-diffusion-xl-lightning",
   "links": [
     {
-      "platform": "website",
+      "title": "Website",
+      "kind": "website",
       "url": "https://huggingface.co/ByteDance/SDXL-Lightning"
     }
   ],

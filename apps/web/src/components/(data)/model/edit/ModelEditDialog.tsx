@@ -69,7 +69,7 @@ export default function ModelEditDialog({ modelId, tab }: ModelEditDialogProps) 
   const [model, setModel] = useState<ModelData | null>(null)
   const [providers, setProviders] = useState<Array<{ id: string; name: string }>>([])
   const [detailRows, setDetailRows] = useState<Array<{ id?: string; detail_name: string; detail_value: string }>>([])
-  const [linkRows, setLinkRows] = useState<Array<{ id?: string; platform: string; url: string }>>([])
+  const [linkRows, setLinkRows] = useState<Array<{ id?: string; platform: string; kind?: string; title?: string; url: string }>>([])
   const [detailsTouched, setDetailsTouched] = useState(false)
   const [linksTouched, setLinksTouched] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -142,6 +142,8 @@ export default function ModelEditDialog({ modelId, tab }: ModelEditDialogProps) 
           links: linksTouched
             ? linkRows.map((row) => ({
                 platform: row.platform,
+                kind: row.kind,
+                title: row.title,
                 url: row.url,
               }))
             : undefined,

@@ -15,7 +15,8 @@
   "api_model_id": "windsurf/swe-grep",
   "links": [
     {
-      "platform": "docs",
+      "title": "Docs",
+      "kind": "docs",
       "url": "https://docs.windsurf.com/windsurf/models"
     }
   ],

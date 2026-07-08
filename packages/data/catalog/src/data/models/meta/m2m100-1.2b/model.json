@@ -15,7 +15,8 @@
   "api_model_id": "meta/m2m100-1.2b",
   "links": [
     {
-      "platform": "website",
+      "title": "Website",
+      "kind": "website",
       "url": "https://github.com/facebookresearch/fairseq/tree/main/examples/m2m_100"
     }
   ],

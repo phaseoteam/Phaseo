@@ -48,7 +48,7 @@ type ModelJSON = {
         tone: "info" | "warning" | "critical";
         markdown: string;
     } | null;
-    links?: Array<{ platform: string; url: string }>;
+    links?: Array<{ title?: string | null; kind?: string | null; platform?: string | null; url: string }>;
     details?: Array<{ name: string; value: unknown }>;
     benchmarks?: Array<{
         benchmark_id: string;
@@ -73,6 +73,42 @@ type ModelFileMeta = {
     api_model_id: string | null;
     has_page_notice: boolean;
 };
+
+function humanizeModelLinkKind(kind: string): string {
+    switch (kind) {
+        case "api_reference":
+            return "API Reference";
+        case "model_card":
+            return "Model Card";
+        default:
+            return kind
+                .replace(/[_-]+/g, " ")
+                .replace(/\b\w/g, (char) => char.toUpperCase());
+    }
+}
+
+function normalizeModelLinkRow(
+    model_id: string,
+    link: NonNullable<ModelJSON["links"]>[number]
+): { model_id: string; platform: string; kind: string; title: string; url: string } | null {
+    const url = typeof link.url === "string" ? link.url.trim() : "";
+    const kind =
+        (typeof link.kind === "string" && link.kind.trim()) ||
+        (typeof link.platform === "string" && link.platform.trim()) ||
+        "";
+    if (!url || !kind) return null;
+    const normalizedKind = kind.toLowerCase().replace(/[\s-]+/g, "_");
+    const title =
+        (typeof link.title === "string" && link.title.trim()) ||
+        humanizeModelLinkKind(normalizedKind);
+    return {
+        model_id,
+        platform: normalizedKind,
+        kind: normalizedKind,
+        title,
+        url,
+    };
+}
 
 async function dataModelsHasApiModelIdColumn(
     supa: ReturnType<typeof client>
@@ -326,31 +362,33 @@ export async function loadModels(
                 await syncModelPageNotice(apiModelId, null);
             }
 
-            // LINKS (dedupe by platform to avoid upsert conflicts)
-            const rawLinkRows = (m.links ?? []).map(l => ({ model_id, platform: l.platform, url: l.url }));
-            const linkMap = new Map<string, { model_id: string; platform: string; url: string }>();
+            // LINKS (dedupe by URL to allow multiple links of the same kind)
+            const rawLinkRows = (m.links ?? [])
+                .map(l => normalizeModelLinkRow(model_id, l))
+                .filter((row): row is { model_id: string; platform: string; kind: string; title: string; url: string } => Boolean(row));
+            const linkMap = new Map<string, { model_id: string; platform: string; kind: string; title: string; url: string }>();
             for (const r of rawLinkRows) {
-                // keep the last occurrence for a given platform
-                linkMap.set(r.platform, r);
+                // keep the last occurrence for a given URL
+                linkMap.set(r.url, r);
             }
             const linkRows = Array.from(linkMap.values());
 
             if (isDryRun()) {
-                for (const r of linkRows) logWrite("public.data_model_links", "UPSERT", r, { onConflict: "model_id,platform" });
+                for (const r of linkRows) logWrite("public.data_model_links", "UPSERT", r, { onConflict: "model_id,url" });
                 if (linkRows.length === 0) logWrite("public.data_model_links", "PRUNE", { model_id });
             } else {
                 if (linkRows.length) {
                     assertOk(
-                        await supa.from("data_model_links").upsert(linkRows, { onConflict: "model_id,platform" }),
+                        await supa.from("data_model_links").upsert(linkRows, { onConflict: "model_id,url" }),
                         "upsert data_model_links"
                     );
-                    const platforms = [...new Set(linkRows.map(l => l.platform))];
+                    const urls = [...new Set(linkRows.map(l => l.url))];
                     assertOk(
                         await supa
                             .from("data_model_links")
                             .delete()
                             .eq("model_id", model_id)
-                            .not("platform", "in", toInList(platforms)),
+                            .not("url", "in", toInList(urls)),
                         "prune data_model_links"
                     );
                 } else {

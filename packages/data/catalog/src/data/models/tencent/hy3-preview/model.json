@@ -15,7 +15,8 @@
   "api_model_id": "tencent/hy3-preview",
   "links": [
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/tencent/Hy3-preview"
     }
   ],

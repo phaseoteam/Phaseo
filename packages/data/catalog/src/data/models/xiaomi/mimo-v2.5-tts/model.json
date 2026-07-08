@@ -15,7 +15,8 @@
   "api_model_id": "xiaomi/mimo-v2.5-tts",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://platform.xiaomimimo.com/docs/news/v2.5-news"
     }
   ],

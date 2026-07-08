@@ -15,15 +15,18 @@
   "api_model_id": "cohere/command-a",
   "links": [
     {
-      "platform": "playground",
+      "title": "Playground",
+      "kind": "playground",
       "url": "https://dashboard.cohere.com/playground/chat"
     },
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://cohere.com/blog/command-a"
     },
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/CohereLabs/c4ai-command-a-03-2025"
     }
   ],

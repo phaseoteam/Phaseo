@@ -16,11 +16,13 @@
   "family_id": "openai/gpt-4o",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://platform.openai.com/docs/models/chatgpt-4o-latest"
     },
     {
-      "platform": "playground",
+      "title": "Playground",
+      "kind": "playground",
       "url": "https://platform.openai.com/playground/prompts?models=chatgpt-4o-latest"
     }
   ],

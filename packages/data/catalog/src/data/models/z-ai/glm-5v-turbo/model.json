@@ -15,7 +15,8 @@
   "api_model_id": "z-ai/glm-5v-turbo",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://docs.z.ai/guides/vlm/glm-5v-turbo"
     }
   ],

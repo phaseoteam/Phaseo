@@ -16,23 +16,28 @@
   "family_id": "google/gemma-3",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://huggingface.co/google/gemma-3-1b-it"
     },
     {
-      "platform": "playground",
+      "title": "Playground",
+      "kind": "playground",
       "url": "https://huggingface.co/chat/models/google/gemma-3-1b-it"
     },
     {
-      "platform": "paper",
+      "title": "Paper",
+      "kind": "paper",
       "url": "https://storage.googleapis.com/deepmind-media/gemma/Gemma3Report.pdf"
     },
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://huggingface.co/blog/gemma3"
     },
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/google/gemma-3-1b-it"
     }
   ],

@@ -15,11 +15,13 @@
   "api_model_id": "inclusionai/ling-flash-2.0",
   "links": [
     {
-      "platform": "paper",
+      "title": "Paper",
+      "kind": "paper",
       "url": "https://arxiv.org/abs/2507.17702"
     },
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/inclusionAI/Ling-flash-2.0"
     }
   ],

@@ -16,19 +16,23 @@
   "family_id": "lg/exaone-deep",
   "links": [
     {
-      "platform": "paper",
+      "title": "Paper",
+      "kind": "paper",
       "url": "https://arxiv.org/pdf/2503.12524"
     },
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://www.lgresearch.ai/news/view?seq=543"
     },
     {
-      "platform": "repository",
+      "title": "Repository",
+      "kind": "repository",
       "url": "https://github.com/LG-AI-EXAONE/EXAONE-Deep"
     },
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/LGAI-EXAONE/EXAONE-Deep-32B"
     }
   ],

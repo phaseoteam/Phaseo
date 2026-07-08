@@ -15,15 +15,18 @@
   "api_model_id": "qwen/qwen2.5-vl-32b",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://qwenlm.github.io/blog/qwen2.5-vl-32b/"
     },
     {
-      "platform": "paper",
+      "title": "Paper",
+      "kind": "paper",
       "url": "https://arxiv.org/abs/2502.13923"
     },
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/Qwen/Qwen2.5-VL-32B-Instruct"
     }
   ],

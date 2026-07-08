@@ -15,7 +15,8 @@
   "api_model_id": "qwen/qwen3-livetranslate-flash-realtime",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://qwen.ai/blog?from=home.latest-research-list&id=4266edf7f3718f2d3fda098b3f4c48f3573215d0"
     }
   ],

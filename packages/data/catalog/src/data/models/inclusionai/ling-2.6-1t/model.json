@@ -15,7 +15,8 @@
   "api_model_id": "inclusionai/ling-2.6-1t",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://novita.ai/models-console/model-detail/inclusionai-ling-2.6-1t"
     }
   ],

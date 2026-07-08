@@ -123,7 +123,8 @@ const mapLinks = (model: ModelPage, target: ExtendedModel): ExtendedModel => {
 	};
 
 	for (const link of model.model_links ?? []) {
-		const field = linkMap[link.platform as keyof typeof linkMap];
+		const kind = link.kind ?? link.platform;
+		const field = kind ? linkMap[kind as keyof typeof linkMap] : undefined;
 		if (field && !target[field]) {
 			(target as any)[field] = link.url;
 		}

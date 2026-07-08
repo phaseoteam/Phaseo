@@ -15,11 +15,13 @@
   "api_model_id": "amazon/nova-micro-1.0",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://docs.aws.amazon.com/nova/latest/userguide/what-is-nova.html"
     },
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://aws.amazon.com/about-aws/whats-new/2024/12/amazon-nova-foundation-models-bedrock"
     }
   ],

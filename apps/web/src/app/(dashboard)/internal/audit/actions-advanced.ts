@@ -119,6 +119,7 @@ export interface UpdateModelLinksInput {
 	modelId: string;
 	links: Array<{
 		type: string;
+		title?: string;
 		url: string;
 	}>;
 }
@@ -136,8 +137,10 @@ export async function updateModelLinks(input: UpdateModelLinksInput) {
 	if (input.links.length > 0) {
 		const linksToInsert = input.links.map((l) => ({
 			model_id: input.modelId,
-			link_type: l.type,
-			link_url: l.url,
+			platform: l.type,
+			kind: l.type,
+			title: l.title || l.type.replace(/[_-]+/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()),
+			url: l.url,
 		}));
 
 		const { error } = await supabase
@@ -496,7 +499,7 @@ export interface CompleteModelData {
 
 	// Related data
 	details: Array<{ detail_name: string; detail_value: string }>;
-	links: Array<{ link_type: string; link_url: string }>;
+	links: Array<{ platform: string; kind: string; title: string; url: string }>;
 	aliases: Array<{ alias_slug: string; is_enabled: boolean }>;
 	provider_models: Array<{
 		provider_api_model_id: string;
@@ -561,7 +564,7 @@ export async function fetchCompleteModelData(modelId: string) {
 	// Fetch links
 	const { data: links } = await supabase
 		.from("data_model_links")
-		.select("link_type, link_url")
+		.select("platform, kind, title, url")
 		.eq("model_id", modelId);
 
 	// Fetch aliases
@@ -609,8 +612,10 @@ export async function fetchCompleteModelData(modelId: string) {
 			detail_value: String(d.detail_value || ""),
 		})),
 		links: (links || []).map((l) => ({
-			link_type: l.link_type,
-			link_url: l.link_url,
+			platform: l.platform,
+			kind: l.kind,
+			title: l.title,
+			url: l.url,
 		})),
 		aliases: (aliases || []).map((a) => ({
 			alias_slug: a.alias_slug,

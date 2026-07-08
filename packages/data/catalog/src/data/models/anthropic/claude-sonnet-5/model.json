@@ -16,15 +16,18 @@
   "family_id": "anthropic/claude-5",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://www.anthropic.com/news/claude-sonnet-5"
     },
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://platform.claude.com/docs/en/about-claude/models/overview"
     },
     {
-      "platform": "model_card",
+      "title": "Model Card",
+      "kind": "model_card",
       "url": "https://www.anthropic.com/claude-sonnet-5-system-card"
     }
   ],

@@ -15,11 +15,13 @@
   "api_model_id": "mistral/leanstral-1.5",
   "links": [
     {
-      "platform": "model_card",
+      "title": "Model Card",
+      "kind": "model_card",
       "url": "https://docs.mistral.ai/models/model-cards/leanstral-1-5"
     },
     {
-      "platform": "privacy",
+      "title": "Privacy",
+      "kind": "privacy",
       "url": "https://docs.mistral.ai/admin/monitor-comply/privacy-data-controls"
     }
   ],

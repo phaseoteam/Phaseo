@@ -15,7 +15,8 @@
   "api_model_id": "morph/morph-warp-grep-v2.1",
   "links": [
     {
-      "platform": "documentation",
+      "title": "Documentation",
+      "kind": "documentation",
       "url": "https://www.morphllm.com/products/warpgrep.md"
     }
   ],

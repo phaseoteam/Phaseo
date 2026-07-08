@@ -621,6 +621,8 @@ export default function NewModelForm({
 			JSON.stringify(
 				MODEL_LINK_FIELDS.map((field) => ({
 					platform: field.key,
+					kind: field.key,
+					title: field.label,
 					url: linkValues[field.key].trim() || null,
 				}))
 			),

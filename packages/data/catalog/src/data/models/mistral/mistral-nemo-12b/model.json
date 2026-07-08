@@ -15,19 +15,23 @@
   "api_model_id": "mistral/mistral-nemo-12b",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://docs.mistral.ai/getting-started/models/models_overview/"
     },
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://mistral.ai/news/mistral-nemo/"
     },
     {
-      "platform": "repository",
+      "title": "Repository",
+      "kind": "repository",
       "url": "https://huggingface.co/mistralai/Mistral-Nemo-Instruct-2407"
     },
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/mistralai/Mistral-Nemo-Instruct-2407"
     }
   ],

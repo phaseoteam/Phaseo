@@ -15,7 +15,8 @@
   "api_model_id": "morph/morph-compactor",
   "links": [
     {
-      "platform": "documentation",
+      "title": "Documentation",
+      "kind": "documentation",
       "url": "https://www.morphllm.com/products/compact.md"
     }
   ],

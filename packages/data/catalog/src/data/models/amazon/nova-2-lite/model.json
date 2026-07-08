@@ -16,7 +16,8 @@
   "family_id": "amazon/nova-2",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://www.aboutamazon.com/news/aws/aws-agentic-ai-amazon-bedrock-nova-models"
     }
   ],

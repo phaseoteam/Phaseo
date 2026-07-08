@@ -15,7 +15,8 @@
   "api_model_id": "meta/muse-image",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://about.fb.com/news/2026/07/introducing-muse-image-meta-ai/"
     }
   ],

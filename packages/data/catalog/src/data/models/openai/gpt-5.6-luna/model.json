@@ -16,12 +16,19 @@
   "family_id": "openai/gpt-5.6",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Previewing GPT-5.6 Sol",
+      "kind": "announcement",
       "url": "https://openai.com/index/previewing-gpt-5-6-sol/"
     },
     {
-      "platform": "paper",
+      "title": "GPT-5.6 Preview System Card",
+      "kind": "paper",
       "url": "https://deploymentsafety.openai.com/gpt-5-6-preview"
+    },
+    {
+      "title": "OpenAI GPT-5.6 X release post",
+      "kind": "announcement",
+      "url": "https://x.com/i/status/2074740539874775163"
     }
   ],
   "details": [

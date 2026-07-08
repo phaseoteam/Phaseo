@@ -20,19 +20,23 @@
   },
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://www.anthropic.com/news/claude-fable-5-mythos-5"
     },
     {
-      "platform": "docs",
+      "title": "Docs",
+      "kind": "docs",
       "url": "https://platform.claude.com/docs/en/about-claude/models/introducing-claude-fable-5-and-claude-mythos-5"
     },
     {
-      "platform": "website",
+      "title": "Website",
+      "kind": "website",
       "url": "https://www.anthropic.com/claude/mythos"
     },
     {
-      "platform": "model_card",
+      "title": "Model Card",
+      "kind": "model_card",
       "url": "https://www-cdn.anthropic.com/d00db56fa754a1b115b6dd7cb2e3c342ee809620.pdf"
     }
   ],
@@ -81,7 +85,7 @@
     },
     {
       "benchmark_id": "frontiercode-diamond",
-      "score": 24.0,
+      "score": 24,
       "is_self_reported": true,
       "other_info": "High effort; Anthropic Mythos-class FrontierCode compute-scaling chart",
       "source_link": "https://www-cdn.anthropic.com/d00db56fa754a1b115b6dd7cb2e3c342ee809620.pdf",

@@ -16,7 +16,8 @@
   "family_id": "anthropic/claude-mythos",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://www.anthropic.com/glasswing"
     }
   ],

@@ -16,23 +16,28 @@
   "family_id": "openai/gpt-oss",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://platform.openai.com/docs/models/gpt-oss-120b"
     },
     {
-      "platform": "playground",
+      "title": "Playground",
+      "kind": "playground",
       "url": "https://gpt-oss.com/"
     },
     {
-      "platform": "paper",
+      "title": "Paper",
+      "kind": "paper",
       "url": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf"
     },
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://openai.com/index/introducing-gpt-oss/"
     },
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/openai/gpt-oss-120b"
     }
   ],

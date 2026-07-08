@@ -15,11 +15,13 @@
   "api_model_id": "cohere/command-r-2024-03-11",
   "links": [
     {
-      "platform": "playground",
+      "title": "Playground",
+      "kind": "playground",
       "url": "https://dashboard.cohere.com/playground/chat"
     },
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://cohere.com/blog/command-r"
     }
   ],

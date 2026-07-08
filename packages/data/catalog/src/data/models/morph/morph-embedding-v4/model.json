@@ -15,7 +15,8 @@
   "api_model_id": "morph/morph-embedding-v4",
   "links": [
     {
-      "platform": "documentation",
+      "title": "Documentation",
+      "kind": "documentation",
       "url": "https://docs.morphllm.com/models/embedding"
     }
   ],

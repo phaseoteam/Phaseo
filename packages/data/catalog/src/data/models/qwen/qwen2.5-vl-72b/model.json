@@ -15,11 +15,13 @@
   "api_model_id": "qwen/qwen2.5-vl-72b",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://qwenlm.github.io/blog/qwen2.5-vl/"
     },
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct"
     }
   ],

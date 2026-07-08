@@ -62,15 +62,6 @@ const MODEL_DETAIL_NAME_OPTIONS = [
 	"parameter_count",
 	"training_tokens",
 ] as const;
-const MODEL_LINK_PLATFORM_OPTIONS = [
-	"announcement",
-	"api_reference",
-	"model_card",
-	"paper",
-	"playground",
-	"repository",
-	"weights",
-] as const;
 const NUMERIC_ONLY_DETAIL_NAME_OPTIONS = ["parameter_count", "training_tokens"] as const;
 
 function normalizeCoreTypes(value: FormDataEntryValue | null): string | null {
@@ -96,13 +87,35 @@ function normalizeModelDetailName(input: unknown): (typeof MODEL_DETAIL_NAME_OPT
 		: null;
 }
 
-function normalizeModelLinkPlatform(input: unknown): (typeof MODEL_LINK_PLATFORM_OPTIONS)[number] | null {
+function normalizeModelLinkKind(input: unknown): string | null {
 	if (typeof input !== "string") return null;
-	const value = input.trim().toLowerCase();
+	const value = input
+		.trim()
+		.toLowerCase()
+		.replace(/[\s-]+/g, "_")
+		.replace(/[^a-z0-9_]+/g, "")
+		.replace(/^_+|_+$/g, "");
 	if (!value) return null;
-	return MODEL_LINK_PLATFORM_OPTIONS.includes(value as (typeof MODEL_LINK_PLATFORM_OPTIONS)[number])
-		? (value as (typeof MODEL_LINK_PLATFORM_OPTIONS)[number])
-		: null;
+	return value.slice(0, 80);
+}
+
+function titleForModelLinkKind(kind: string): string {
+	switch (kind) {
+		case "api_reference":
+			return "API Reference";
+		case "model_card":
+			return "Model Card";
+		default:
+			return kind
+				.replace(/[_-]+/g, " ")
+				.replace(/\b\w/g, (char) => char.toUpperCase());
+	}
+}
+
+function normalizeModelLinkTitle(input: unknown, kind: string): string {
+	if (typeof input !== "string") return titleForModelLinkKind(kind);
+	const title = input.trim();
+	return title || titleForModelLinkKind(kind);
 }
 
 function normalizeModelDetailValue(
@@ -687,6 +700,8 @@ export async function createModelAction(formData: FormData) {
 	const modelLinks = parseJsonField<
 		Array<{
 			platform?: string;
+			kind?: string;
+			title?: string | null;
 			url?: string | null;
 		}>
 	>(formData.get("model_links_payload"), "model_links_payload", []);
@@ -870,15 +885,17 @@ export async function createModelAction(formData: FormData) {
 
 	const modelLinkRows = modelLinks
 		.map((row) => {
-			const platform = normalizeModelLinkPlatform(row.platform);
+			const kind = normalizeModelLinkKind(row.kind ?? row.platform);
 			const url = typeof row.url === "string" ? row.url.trim() : "";
-			if (!platform || !url) return null;
+			if (!kind || !url) return null;
 			return {
-				platform,
+				platform: kind,
+				kind,
+				title: normalizeModelLinkTitle(row.title, kind),
 				url,
 			};
 		})
-		.filter((row): row is { platform: (typeof MODEL_LINK_PLATFORM_OPTIONS)[number]; url: string } => Boolean(row));
+		.filter((row): row is { platform: string; kind: string; title: string; url: string } => Boolean(row));
 
 		const insertedInlinePlanRows = newSubscriptionPlans
 			.map((row) => {

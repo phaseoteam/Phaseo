@@ -24,6 +24,8 @@ interface ModelDetail {
 interface ModelLink {
   id: string
   platform: string
+  kind: string
+  title: string
   url: string
 }
 
@@ -173,7 +175,7 @@ export default function DetailsTab({
 
       const { data: linksData } = await supabase
         .from("data_model_links")
-        .select("platform, url")
+        .select("platform, kind, title, url")
         .eq("model_id", modelId)
 
       const nextDetails = createEmptyDetailValues()
@@ -215,6 +217,8 @@ export default function DetailsTab({
       .map((field) => ({
         id: field.key,
         platform: field.key,
+        kind: field.key,
+        title: field.label,
         url: linkValues[field.key].trim(),
       }))
       .filter((row) => row.url.length > 0)

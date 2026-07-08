@@ -15,15 +15,18 @@
   "api_model_id": "spacex-ai/grok-code-fast-1",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://x.ai/news/grok-code-fast-1"
     },
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://docs.x.ai/docs/models/grok-code-fast-1"
     },
     {
-      "platform": "deprecation",
+      "title": "Deprecation",
+      "kind": "deprecation",
       "url": "https://docs.x.ai/developers/migration/may-15-retirement"
     }
   ],

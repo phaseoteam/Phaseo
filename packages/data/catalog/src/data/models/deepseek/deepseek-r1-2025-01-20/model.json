@@ -15,23 +15,28 @@
   "api_model_id": "deepseek/deepseek-r1-2025-01-20",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://api-docs.deepseek.com/guides/reasoning_model"
     },
     {
-      "platform": "paper",
+      "title": "Paper",
+      "kind": "paper",
       "url": "https://github.com/deepseek-ai/DeepSeek-R1/blob/main/DeepSeek_R1.pdf"
     },
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://api-docs.deepseek.com/news/news250120"
     },
     {
-      "platform": "repository",
+      "title": "Repository",
+      "kind": "repository",
       "url": "https://github.com/deepseek-ai/DeepSeek-R1"
     },
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/deepseek-ai/DeepSeek-R1"
     }
   ],

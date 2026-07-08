@@ -15,7 +15,8 @@
   "api_model_id": "crofai/greg-1",
   "links": [
     {
-      "platform": "website",
+      "title": "Website",
+      "kind": "website",
       "url": "https://crof.ai/pricing"
     }
   ],

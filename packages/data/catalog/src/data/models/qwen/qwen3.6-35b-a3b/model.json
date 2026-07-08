@@ -15,11 +15,13 @@
   "api_model_id": "qwen/qwen3.6-35b-a3b",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://qwen.ai/blog?id=qwen3.6-35b-a3b"
     },
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B"
     }
   ],

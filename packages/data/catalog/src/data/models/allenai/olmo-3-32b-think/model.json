@@ -15,7 +15,8 @@
   "api_model_id": "allenai/olmo-3-32b-think",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://x.com/allen_ai/status/1991507983881379896?s=20"
     }
   ],

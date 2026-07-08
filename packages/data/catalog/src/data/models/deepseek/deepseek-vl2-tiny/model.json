@@ -15,23 +15,28 @@
   "api_model_id": "deepseek/deepseek-vl2-tiny",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://www.deepseek.com/"
     },
     {
-      "platform": "playground",
+      "title": "Playground",
+      "kind": "playground",
       "url": "https://huggingface.co/deepseek-ai/deepseek-vl2-tiny"
     },
     {
-      "platform": "paper",
+      "title": "Paper",
+      "kind": "paper",
       "url": "https://arxiv.org/pdf/2412.10302"
     },
     {
-      "platform": "repository",
+      "title": "Repository",
+      "kind": "repository",
       "url": "https://github.com/deepseek-ai/DeepSeek-VL2"
     },
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/deepseek-ai/deepseek-vl2-tiny"
     }
   ],

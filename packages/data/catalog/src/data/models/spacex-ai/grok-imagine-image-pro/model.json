@@ -15,7 +15,8 @@
   "api_model_id": "spacex-ai/grok-imagine-image-pro",
   "links": [
     {
-      "platform": "deprecation",
+      "title": "Deprecation",
+      "kind": "deprecation",
       "url": "https://docs.x.ai/developers/migration/may-15-retirement"
     }
   ],

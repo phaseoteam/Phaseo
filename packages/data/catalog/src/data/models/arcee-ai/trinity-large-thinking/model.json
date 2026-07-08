@@ -15,7 +15,8 @@
   "api_model_id": "arcee-ai/trinity-large-thinking",
   "links": [
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/arcee-ai/Trinity-Large-Thinking"
     }
   ],

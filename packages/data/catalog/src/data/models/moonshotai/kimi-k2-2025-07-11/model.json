@@ -15,51 +15,63 @@
   "api_model_id": "moonshotai/kimi-k2-2025-07-11",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://platform.moonshot.ai/docs/introduction#"
     },
     {
-      "platform": "playground",
+      "title": "Playground",
+      "kind": "playground",
       "url": "https://www.kimi.com/"
     },
     {
-      "platform": "paper",
+      "title": "Paper",
+      "kind": "paper",
       "url": "https://github.com/MoonshotAI/Kimi-K2/blob/main/tech_report.pdf"
     },
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://x.com/Kimi_Moonshot/status/1943687594560332025"
     },
     {
-      "platform": "repository",
+      "title": "Repository",
+      "kind": "repository",
       "url": "https://github.com/MoonshotAI/Kimi-K2"
     },
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/moonshotai/Kimi-K2-Base"
     },
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://platform.moonshot.ai/docs/introduction#"
     },
     {
-      "platform": "playground",
+      "title": "Playground",
+      "kind": "playground",
       "url": "https://www.kimi.com/"
     },
     {
-      "platform": "paper",
+      "title": "Paper",
+      "kind": "paper",
       "url": "https://github.com/MoonshotAI/Kimi-K2/blob/main/tech_report.pdf"
     },
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://x.com/Kimi_Moonshot/status/1943687594560332025"
     },
     {
-      "platform": "repository",
+      "title": "Repository",
+      "kind": "repository",
       "url": "https://github.com/MoonshotAI/Kimi-K2"
     },
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/moonshotai/Kimi-K2-Instruct"
     }
   ],
