@@ -1176,6 +1176,9 @@ pub mod model_ids {
     /// Model ID: `spacex-ai/grok-4.3`.
     /// Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-4.3
     pub const SPACEX_AI_GROK_4_3: &str = "spacex-ai/grok-4.3";
+    /// Model ID: `spacex-ai/grok-4.5`.
+    /// Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-4.5
+    pub const SPACEX_AI_GROK_4_5: &str = "spacex-ai/grok-4.5";
     /// Model ID: `spacex-ai/grok-build-0.1`.
     /// Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-build-0.1
     pub const SPACEX_AI_GROK_BUILD_0_1: &str = "spacex-ai/grok-build-0.1";
@@ -1770,6 +1773,7 @@ pub mod model_ids {
         SPACEX_AI_GROK_4_20_BETA_0309,
         SPACEX_AI_GROK_4_20_MULTI_AGENT_BETA_0309,
         SPACEX_AI_GROK_4_3,
+        SPACEX_AI_GROK_4_5,
         SPACEX_AI_GROK_BUILD_0_1,
         SPACEX_AI_GROK_CODE_FAST_1,
         SPACEX_AI_GROK_IMAGINE_IMAGE,

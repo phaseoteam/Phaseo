@@ -1180,6 +1180,9 @@ public final class ModelIds {
     /** Model ID: <code>spacex-ai/grok-4.3</code>. Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-4.3 */
     public static final String SPACEX_AI_GROK_4_3 = "spacex-ai/grok-4.3";
 
+    /** Model ID: <code>spacex-ai/grok-4.5</code>. Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-4.5 */
+    public static final String SPACEX_AI_GROK_4_5 = "spacex-ai/grok-4.5";
+
     /** Model ID: <code>spacex-ai/grok-build-0.1</code>. Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-build-0.1 */
     public static final String SPACEX_AI_GROK_BUILD_0_1 = "spacex-ai/grok-build-0.1";
 
