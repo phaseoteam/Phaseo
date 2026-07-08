@@ -486,6 +486,10 @@ class ModelIds:
     # Model page: https://ai-stats.phaseo.app/models/inflection/inflection-3-productivity
     INFLECTION_INFLECTION_3_PRODUCTIVITY: Final[str] = "inflection/inflection-3-productivity"
 
+    # Model ID: kwaipilot/kat-coder-air-v2.5
+    # Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-air-v2.5
+    KWAIPILOT_KAT_CODER_AIR_V2_5: Final[str] = "kwaipilot/kat-coder-air-v2.5"
+
     # Model ID: kwaipilot/kat-coder-exp-72b-1010
     # Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-exp-72b-1010
     KWAIPILOT_KAT_CODER_EXP_72B_1010: Final[str] = "kwaipilot/kat-coder-exp-72b-1010"
@@ -501,6 +505,10 @@ class ModelIds:
     # Model ID: kwaipilot/kat-coder-pro-v2
     # Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-pro-v2
     KWAIPILOT_KAT_CODER_PRO_V2: Final[str] = "kwaipilot/kat-coder-pro-v2"
+
+    # Model ID: kwaipilot/kat-coder-pro-v2.5
+    # Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-pro-v2.5
+    KWAIPILOT_KAT_CODER_PRO_V2_5: Final[str] = "kwaipilot/kat-coder-pro-v2.5"
 
     # Model ID: liquid-ai/lfm-2-24b-a2b
     # Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2-24b-a2b
@@ -1955,10 +1963,12 @@ MODEL_IDS: Final[tuple[str, ...]] = tuple(
         ModelIds.INCLUSIONAI_RING_FLASH_2_0,
         ModelIds.INFLECTION_INFLECTION_3_PI,
         ModelIds.INFLECTION_INFLECTION_3_PRODUCTIVITY,
+        ModelIds.KWAIPILOT_KAT_CODER_AIR_V2_5,
         ModelIds.KWAIPILOT_KAT_CODER_EXP_72B_1010,
         ModelIds.KWAIPILOT_KAT_CODER_PRO,
         ModelIds.KWAIPILOT_KAT_CODER_PRO_V1,
         ModelIds.KWAIPILOT_KAT_CODER_PRO_V2,
+        ModelIds.KWAIPILOT_KAT_CODER_PRO_V2_5,
         ModelIds.LIQUID_AI_LFM_2_24B_A2B,
         ModelIds.MEITUAN_LONGCAT_2_0,
         ModelIds.META_LLAMA_3_70B,

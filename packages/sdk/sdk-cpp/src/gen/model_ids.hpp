@@ -363,6 +363,9 @@ inline constexpr std::string_view INFLECTION_INFLECTION_3_PI = "inflection/infle
 // Model ID: inflection/inflection-3-productivity
 // Model page: https://ai-stats.phaseo.app/models/inflection/inflection-3-productivity
 inline constexpr std::string_view INFLECTION_INFLECTION_3_PRODUCTIVITY = "inflection/inflection-3-productivity";
+// Model ID: kwaipilot/kat-coder-air-v2.5
+// Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-air-v2.5
+inline constexpr std::string_view KWAIPILOT_KAT_CODER_AIR_V2_5 = "kwaipilot/kat-coder-air-v2.5";
 // Model ID: kwaipilot/kat-coder-exp-72b-1010
 // Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-exp-72b-1010
 inline constexpr std::string_view KWAIPILOT_KAT_CODER_EXP_72B_1010 = "kwaipilot/kat-coder-exp-72b-1010";
@@ -375,6 +378,9 @@ inline constexpr std::string_view KWAIPILOT_KAT_CODER_PRO_V1 = "kwaipilot/kat-co
 // Model ID: kwaipilot/kat-coder-pro-v2
 // Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-pro-v2
 inline constexpr std::string_view KWAIPILOT_KAT_CODER_PRO_V2 = "kwaipilot/kat-coder-pro-v2";
+// Model ID: kwaipilot/kat-coder-pro-v2.5
+// Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-pro-v2.5
+inline constexpr std::string_view KWAIPILOT_KAT_CODER_PRO_V2_5 = "kwaipilot/kat-coder-pro-v2.5";
 // Model ID: liquid-ai/lfm-2-24b-a2b
 // Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2-24b-a2b
 inline constexpr std::string_view LIQUID_AI_LFM_2_24B_A2B = "liquid-ai/lfm-2-24b-a2b";
@@ -1374,7 +1380,7 @@ inline constexpr std::string_view ZAI_GLM_5 = "zai/glm-5";
 // Deprecated alias for deepseek/deepseek-v4; use deepseek/deepseek-v4-pro. Remove in the next major SDK release.
 inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4 = DEEPSEEK_DEEPSEEK_V4_PRO;
 
-inline constexpr std::array<std::string_view, 455> ALL = {
+inline constexpr std::array<std::string_view, 457> ALL = {
 	AI21_JAMBA_LARGE_1_7,
 	AI21_JAMBA_MINI_2,
 	AION_LABS_AION_2_0,
@@ -1494,10 +1500,12 @@ inline constexpr std::array<std::string_view, 455> ALL = {
 	INCLUSIONAI_RING_FLASH_2_0,
 	INFLECTION_INFLECTION_3_PI,
 	INFLECTION_INFLECTION_3_PRODUCTIVITY,
+	KWAIPILOT_KAT_CODER_AIR_V2_5,
 	KWAIPILOT_KAT_CODER_EXP_72B_1010,
 	KWAIPILOT_KAT_CODER_PRO,
 	KWAIPILOT_KAT_CODER_PRO_V1,
 	KWAIPILOT_KAT_CODER_PRO_V2,
+	KWAIPILOT_KAT_CODER_PRO_V2_5,
 	LIQUID_AI_LFM_2_24B_A2B,
 	MEITUAN_LONGCAT_2_0,
 	META_LLAMA_3_70B,
