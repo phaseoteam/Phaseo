@@ -30,9 +30,11 @@ describe("image-request-options", () => {
 		expect(options).toEqual({
 			size: "1024x1024",
 			resolution: "1024x1024",
+			output_pixels: 1048576,
 			quality: "high",
 			image_params: {
 				resolution: "1024x1024",
+				output_pixels: 1048576,
 				quality: "high",
 			},
 		});
@@ -52,9 +54,11 @@ describe("image-request-options", () => {
 		expect(options).toEqual({
 			size: "1024x1024",
 			resolution: "1024x1024",
+			output_pixels: 1048576,
 			quality: "high",
 			image_params: {
 				resolution: "1024x1024",
+				output_pixels: 1048576,
 				quality: "high",
 			},
 		});
@@ -89,9 +93,11 @@ describe("image-request-options", () => {
 		expect(options).toEqual({
 			size: "1024x1536",
 			resolution: "1024x1536",
+			output_pixels: 1572864,
 			quality: "high",
 			image_params: {
 				resolution: "1024x1536",
+				output_pixels: 1572864,
 				quality: "high",
 			},
 		});
@@ -110,6 +116,19 @@ describe("image-request-options", () => {
 			image_params: {
 				resolution: "1K",
 				quality: "1K",
+			},
+		});
+	});
+
+	it("derives output pixel count from exact image dimensions for tiered providers", () => {
+		const options = buildImagePricingRequestOptions({
+			size: "2048x2048",
+		});
+
+		expect(options).toMatchObject({
+			output_pixels: 4194304,
+			image_params: {
+				output_pixels: 4194304,
 			},
 		});
 	});

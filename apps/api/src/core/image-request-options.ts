@@ -78,6 +78,18 @@ function normalizeProviderImageSize(value: string | undefined): string | undefin
 	return undefined;
 }
 
+function parsePixelDimensions(value: string | undefined): { width: number; height: number } | undefined {
+	if (!value) return undefined;
+	const match = /^(\d+)x(\d+)$/i.exec(value.trim());
+	if (!match) return undefined;
+	const width = Number(match[1]);
+	const height = Number(match[2]);
+	if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+		return undefined;
+	}
+	return { width, height };
+}
+
 export function resolveImageSize(input: ImageOptionInput): string | undefined {
 	return (
 		toNonEmptyString(input.size) ??
@@ -121,6 +133,14 @@ export function buildImagePricingRequestOptions(
 		// Keep legacy aliases while pricing migrates fully to canonical size.
 		out.resolution = size;
 		out.image_params = { resolution: size };
+		const dimensions = parsePixelDimensions(size);
+		if (dimensions) {
+			out.output_pixels = dimensions.width * dimensions.height;
+			out.image_params = {
+				...(out.image_params as Record<string, unknown>),
+				output_pixels: dimensions.width * dimensions.height,
+			};
+		}
 	}
 
 	if (providerImageSize) {
