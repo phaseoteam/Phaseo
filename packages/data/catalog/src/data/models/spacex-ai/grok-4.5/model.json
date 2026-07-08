@@ -2,11 +2,11 @@
   "model_id": "spacex-ai/grok-4.5",
   "organisation_id": "spacex-ai",
   "name": "Grok 4.5",
-  "status": "Rumoured",
+  "status": "Available",
   "previous_model_id": "spacex-ai/grok-4.3",
-  "description": "Grok 4.5 is an announced SpaceXAI reasoning model currently in private beta at SpaceX and Tesla. Public API availability, pricing, and independent benchmark results have not been announced.",
+  "description": "Grok 4.5 is an xAI chat and reasoning model with text and image input, text output, function calling, structured outputs, and a 500k token context window.",
   "announced_date": "2026-06-28T00:00:00",
-  "release_date": null,
+  "release_date": "2026-07-08T00:00:00",
   "deprecation_date": null,
   "retirement_date": null,
   "license": "Proprietary",
@@ -15,30 +15,62 @@
   "api_model_id": "spacex-ai/grok-4.5",
   "links": [
     {
-      "platform": "announcement",
-      "url": "https://x.com/elonmusk/status/2071184354756477041"
+      "platform": "api_reference",
+      "url": "https://docs.x.ai/developers/models/grok-4.5"
     },
     {
-      "platform": "docs",
-      "url": "https://docs.x.ai/developers/models"
+      "platform": "pricing",
+      "url": "https://docs.x.ai/developers/pricing"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://x.com/elonmusk/status/2071184354756477041"
     }
   ],
   "details": [
     {
-      "name": "availability",
-      "value": "Elon Musk announced Grok 4.5 as a private beta at SpaceX and Tesla; no public launch date has been announced."
+      "name": "api_model_id",
+      "value": "grok-4.5"
     },
     {
-      "name": "api_availability",
-      "value": "SpaceXAI documentation does not list a public Grok 4.5 API model ID, pricing, or AI Stats Gateway route yet."
+      "name": "input_context_length",
+      "value": "500000"
     },
     {
-      "name": "foundation_model",
-      "value": "Announced as based on a 1.5T V9 foundation model with Cursor data added during supplemental training."
+      "name": "input_modalities",
+      "value": "text,image"
     },
     {
-      "name": "public_benchmarks",
-      "value": "No independent public benchmark results are available for Grok 4.5 yet."
+      "name": "output_modalities",
+      "value": "text"
+    },
+    {
+      "name": "capabilities",
+      "value": "reasoning,function_calling,structured_outputs"
+    },
+    {
+      "name": "aliases",
+      "value": "grok-4.5-latest,grok-build-latest"
+    },
+    {
+      "name": "regions",
+      "value": "us-east-1,us-west-2"
+    },
+    {
+      "name": "rate_limits",
+      "value": "150 requests/sec, 50000000 tokens/min"
+    },
+    {
+      "name": "pricing",
+      "value": "Standard pricing up to 200k context: $2.00 input, $0.50 cached input, $6.00 output per 1M tokens. Higher-context pricing above 200k context: $4.00 input, $1.00 cached input, $12.00 output per 1M tokens. Priority Processing is 2x the applicable standard tier."
+    },
+    {
+      "name": "higher_context_pricing",
+      "value": "Requests above the 200k context threshold use higher-context pricing: $4.00 input, $1.00 cached input, and $12.00 output per 1M tokens."
+    },
+    {
+      "name": "release_observation_note",
+      "value": "Public availability was observed in xAI docs and the xAI console on 2026-07-08; xAI docs do not expose a separate release-date field."
     }
   ],
   "benchmarks": []
