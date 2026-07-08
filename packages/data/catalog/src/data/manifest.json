@@ -1898,7 +1898,8 @@
     "openai-gpt-mini-latest",
     "openai-gpt-nano-latest",
     "openai-gpt-pro-latest",
-    "spacex-ai-grok-4.5-latest"
+    "spacex-ai-grok-4.5-latest",
+    "spacex-ai-grok-build-latest"
   ],
   "families": [
     "ai21-jamba-1.5",
