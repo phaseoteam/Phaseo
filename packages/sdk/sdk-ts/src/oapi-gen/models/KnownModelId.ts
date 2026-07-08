@@ -391,6 +391,7 @@ export type KnownModelId =
   | "spacex-ai/grok-4.20-beta-0309"
   | "spacex-ai/grok-4.20-multi-agent-beta-0309"
   | "spacex-ai/grok-4.3"
+  | "spacex-ai/grok-4.5"
   | "spacex-ai/grok-build-0.1"
   | "spacex-ai/grok-code-fast-1"
   | "spacex-ai/grok-imagine-image"
