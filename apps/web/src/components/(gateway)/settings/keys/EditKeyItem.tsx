@@ -61,17 +61,16 @@ export default function EditKeyItem({
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
 			{trigger ? (
-				<DropdownMenuItem asChild>
-					<div
+				<DropdownMenuItem render={<div
 						className="w-full text-left flex items-center gap-2"
 						onClick={() => {
 							// open after menu closes
 							setTimeout(() => setOpen(true), 0);
-						}}
-					>
+						}} />}>
+
 						<Edit2 className="mr-2" />
 						Edit
-					</div>
+
 				</DropdownMenuItem>
 			) : null}
 			<DialogContent>

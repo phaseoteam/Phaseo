@@ -137,19 +137,18 @@ export default function CreateKeyDialog({
 						{/* Team selector (dropdown placed above name input) */}
 						{resolvedTeams && resolvedTeams.length > 0 ? (
 							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button
+								<DropdownMenuTrigger render={<Button
 										variant="outline"
 										size="sm"
-										className="w-full flex items-center justify-between"
-									>
+										className="w-full flex items-center justify-between" />}>
+
 										<span>
 											{resolvedTeams.find(
 												(t) => t.id === selectedTeamId
 											)?.name || "Personal"}
 										</span>
 										<ChevronDown className="ml-2 h-4 w-4" />
-									</Button>
+
 								</DropdownMenuTrigger>
 								<DropdownMenuContent
 									side="bottom"

@@ -212,14 +212,13 @@ export default function AppsPanel({ apps }: { apps: AppItem[] }) {
 
 		return (
 			<DropdownMenu>
-				<DropdownMenuTrigger asChild>
-					<Button
+				<DropdownMenuTrigger render={<Button
 						variant="ghost"
 						size="icon-sm"
-						aria-label={`Manage ${app.title}`}
-					>
+						aria-label={`Manage ${app.title}`} />}>
+
 						<MoreHorizontal className="size-4" />
-					</Button>
+
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className="w-44">
 					<DropdownMenuItem

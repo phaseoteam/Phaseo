@@ -515,15 +515,14 @@ export default function UsageViewFilters({
 	return (
 		<div className="flex flex-wrap items-center justify-end gap-2">
 			<DropdownMenu>
-				<DropdownMenuTrigger asChild>
-					<Button
+				<DropdownMenuTrigger render={<Button
 						type="button"
 						variant="outline"
-						className="h-9 gap-2 rounded-md px-3 text-xs font-medium"
-					>
+						className="h-9 gap-2 rounded-md px-3 text-xs font-medium" />}>
+
 						<ListFilter className="h-3.5 w-3.5" />
 						Add filter
-					</Button>
+
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className="w-[260px]">
 					<DropdownMenuLabel>Filters</DropdownMenuLabel>

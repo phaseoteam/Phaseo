@@ -109,19 +109,19 @@ export default function CountryTabs({ iso }: CountryTabsProps) {
 
 			<div className="mb-4 md:hidden">
 				<DropdownMenu>
-					<DropdownMenuTrigger asChild>
-						<Button className="group flex w-full items-center justify-between rounded border bg-background p-2 text-base text-foreground">
+					<DropdownMenuTrigger render={<Button className="group flex w-full items-center justify-between rounded border bg-background p-2 text-base text-foreground" />}>
+
 							{tabs.find((tab) => tab.key === activeKey)?.label ?? "Overview"}
 							<ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
-						</Button>
+
 					</DropdownMenuTrigger>
 					<DropdownMenuContent
 						align="start"
 						className="w-(--radix-popper-anchor-width)"
 					>
 						{tabs.map((tab) => (
-							<DropdownMenuItem key={tab.key} asChild>
-								<Link href={hrefFor(tab.key)}>{tab.label}</Link>
+							<DropdownMenuItem key={tab.key}  render={<Link href={hrefFor(tab.key)} />}>
+								{tab.label}
 							</DropdownMenuItem>
 						))}
 					</DropdownMenuContent>

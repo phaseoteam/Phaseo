@@ -146,11 +146,11 @@ export default function UsageHeader({
 			<h1 className="font-bold text-2xl">Usage Dashboard</h1>
 			<div className="flex items-center gap-2">
 				<DropdownMenu>
-					<DropdownMenuTrigger asChild>
-						<Button variant="outline" className="flex items-center gap-2">
+					<DropdownMenuTrigger render={<Button variant="outline" className="flex items-center gap-2" />}>
+
 							<span>{groupLabel}</span>
 							<ChevronDown className="h-4 w-4" />
-						</Button>
+
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="end" className="w-64">
 						<DropdownMenuLabel>Breakdown view</DropdownMenuLabel>

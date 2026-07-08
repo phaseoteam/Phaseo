@@ -107,15 +107,14 @@ export default function TabBar({ benchmarkId }: { benchmarkId: string }) {
 			{/* Mobile */}
 			<div className="md:hidden mb-4">
 				<DropdownMenu>
-					<DropdownMenuTrigger asChild>
-						<Button
+					<DropdownMenuTrigger render={<Button
 							variant="outline"
-							className="group w-full justify-between"
-						>
+							className="group w-full justify-between" />}>
+
 							{tabs.find((t) => t.key === activeKey)?.label ??
 								"Overview"}
 							<ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
-						</Button>
+
 					</DropdownMenuTrigger>
 					<DropdownMenuContent
 						align="start"
@@ -124,10 +123,10 @@ export default function TabBar({ benchmarkId }: { benchmarkId: string }) {
 						{tabs.map((t) => {
 							const href = hrefFor(t.key);
 							return (
-								<DropdownMenuItem key={t.key} asChild>
-									<Link href={href} className="w-full">
+								<DropdownMenuItem key={t.key}  render={<Link href={href} className="w-full" />}>
+
 										{t.label}
-									</Link>
+
 								</DropdownMenuItem>
 							);
 						})}

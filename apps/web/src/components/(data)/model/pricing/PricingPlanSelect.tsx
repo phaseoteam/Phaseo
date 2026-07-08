@@ -102,12 +102,11 @@ export default function PricingPlanSelect({
 
 		return (
 			<DropdownMenu>
-				<DropdownMenuTrigger asChild>
-					<button
+				<DropdownMenuTrigger render={<button
 						type="button"
 						className="inline-flex h-9 min-w-[178px] items-center justify-between gap-3 rounded-md border border-zinc-200 bg-background px-3 text-sm font-medium text-foreground shadow-xs transition-colors hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 dark:border-zinc-800 dark:hover:bg-zinc-900"
-						aria-label="Select service tier"
-					>
+						aria-label="Select service tier" />}>
+
 						<span className="inline-flex min-w-0 items-center gap-2">
 							{renderPlanIcon(value, "h-3.5 w-3.5 shrink-0 text-muted-foreground")}
 							<span className="truncate">{labelForPlan(value)}</span>
@@ -123,7 +122,7 @@ export default function PricingPlanSelect({
 							) : null}
 						</span>
 						<ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-					</button>
+
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className="w-72 p-1.5">
 					{plans.map((plan) => {
