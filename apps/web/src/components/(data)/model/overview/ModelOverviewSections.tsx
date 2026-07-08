@@ -218,6 +218,28 @@ export async function ModelPricingInsightsOverviewSection({
 	);
 }
 
+function IdentifierCodeList({ ids }: { ids: string[] }) {
+	const uniqueIds = Array.from(
+		new Set(ids.map((id) => id.trim()).filter(Boolean)),
+	);
+
+	if (uniqueIds.length === 0) return null;
+
+	return (
+		<div className="mt-1 flex min-w-0 flex-wrap gap-1.5">
+			{uniqueIds.map((id) => (
+				<code
+					key={id}
+					className="min-w-0 max-w-full select-all break-all rounded-md bg-muted px-2 py-1 font-mono text-xs text-foreground"
+					title={id}
+				>
+					{id}
+				</code>
+			))}
+		</div>
+	);
+}
+
 function SectionHeader({
 	title,
 	description,
@@ -611,9 +633,20 @@ export async function ModelLineageSection({
 
 export async function ModelAboutSection({
 	model,
+	includeHidden = false,
 }: {
 	model: ModelOverviewPage;
+	includeHidden?: boolean;
 }) {
+	const gatewayMetadata = await withOptionalSectionTimeout(
+		getModelGatewayMetadataCached(model.model_id, includeHidden),
+		null,
+		"model about gateway metadata"
+	);
+	const apiModelIds =
+		gatewayMetadata?.apiModelIds && gatewayMetadata.apiModelIds.length > 0
+			? gatewayMetadata.apiModelIds
+			: [model.model_id];
 	const inputTypes = parseTypes(model.input_types);
 	const outputTypes = parseTypes(model.output_types);
 	const inputTypeSet = new Set(inputTypes);
@@ -688,6 +721,11 @@ export async function ModelAboutSection({
 				showHeading={false}
 				showEmpty
 				extraItems={[
+					{
+						key: "api_model_ids",
+						label: apiModelIds.length > 1 ? "API IDs" : "API ID",
+						value: <IdentifierCodeList ids={apiModelIds} />,
+					},
 					{
 						key: "input_modalities",
 						label: "Input",
@@ -1139,7 +1177,7 @@ export default function ModelOverviewSections({
 								description="Archived dates, capabilities, links, and model metadata."
 							/>
 							<Suspense fallback={<AboutSectionSkeleton />}>
-								<ModelAboutSection model={model!} />
+								<ModelAboutSection model={model!} includeHidden={includeHidden} />
 							</Suspense>
 						</Section>
 						{showSubscriptions ? (
@@ -1266,7 +1304,7 @@ export default function ModelOverviewSections({
 							description="Key dates, capabilities, and model metadata."
 						/>
 						<Suspense fallback={<AboutSectionSkeleton />}>
-							<ModelAboutSection model={model!} />
+							<ModelAboutSection model={model!} includeHidden={includeHidden} />
 						</Suspense>
 					</Section>
 					{showSubscriptions ? (
