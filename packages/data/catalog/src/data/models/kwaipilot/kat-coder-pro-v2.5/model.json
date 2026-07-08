@@ -20,6 +20,10 @@
   "links": [],
   "details": [
     {
+      "name": "api_model_id",
+      "value": "kwaipilot/kat-coder-pro-v2.5"
+    },
+    {
       "name": "upstream_discovery",
       "value": "AI Stats provider discovery detected AtlasCloud adding kwaipilot/kat-coder-pro-v2.5 on 2026-07-08."
     }
