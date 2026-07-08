@@ -440,9 +440,11 @@
       "inclusionai/ring-1t-2.5"
     ],
     "kwaipilot": [
+      "kwaipilot/kat-coder-air-v2.5",
       "kwaipilot/kat-coder-exp-72b-1010",
       "kwaipilot/kat-coder-pro",
-      "kwaipilot/kat-coder-pro-v2"
+      "kwaipilot/kat-coder-pro-v2",
+      "kwaipilot/kat-coder-pro-v2.5"
     ],
     "lg": [
       "lg/exaone-3.0",
@@ -2078,8 +2080,10 @@
     "atlascloud:text.generate:deepseek-deepseek-v3.2",
     "atlascloud:text.generate:deepseek-deepseek-v3.2-exp",
     "atlascloud:text.generate:deepseek-deepseek-v3.2-speciale",
+    "atlascloud:text.generate:kwaipilot-kat-coder-air-v2.5",
     "atlascloud:text.generate:kwaipilot-kat-coder-exp-72b-1010",
     "atlascloud:text.generate:kwaipilot-kat-coder-pro-v1",
+    "atlascloud:text.generate:kwaipilot-kat-coder-pro-v2.5",
     "atlascloud:text.generate:meituan-longcat-flash-cat",
     "atlascloud:text.generate:minimax-minimax-m2",
     "atlascloud:text.generate:minimax-minimax-m2.1",
