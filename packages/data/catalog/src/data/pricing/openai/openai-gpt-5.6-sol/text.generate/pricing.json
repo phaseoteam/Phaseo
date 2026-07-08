@@ -15,7 +15,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-26T00:00:00Z"
+      "effective_from": "2026-07-09T00:00:00Z"
     },
     {
       "meter": "cached_read_text_tokens",
@@ -27,7 +27,7 @@
       "note": "90% cached input discount from the announced uncached input price.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-26T00:00:00Z"
+      "effective_from": "2026-07-09T00:00:00Z"
     },
     {
       "meter": "cached_write_text_tokens",
@@ -39,7 +39,7 @@
       "note": "1.25x the announced uncached input price for cache writes.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-26T00:00:00Z"
+      "effective_from": "2026-07-09T00:00:00Z"
     },
     {
       "meter": "output_text_tokens",
@@ -51,7 +51,103 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-26T00:00:00Z"
+      "effective_from": "2026-07-09T00:00:00Z"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2.5,
+      "currency": "USD",
+      "pricing_plan": "flex",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-09T00:00:00Z"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.25,
+      "currency": "USD",
+      "pricing_plan": "flex",
+      "note": "90% cached input discount from the announced uncached input price.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-09T00:00:00Z"
+    },
+    {
+      "meter": "cached_write_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 3.125,
+      "currency": "USD",
+      "pricing_plan": "flex",
+      "note": "1.25x the announced uncached input price for cache writes.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-09T00:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 15,
+      "currency": "USD",
+      "pricing_plan": "flex",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-09T00:00:00Z"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 12.5,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-09T00:00:00Z"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.25,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": "90% cached input discount from the announced uncached input price.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-09T00:00:00Z"
+    },
+    {
+      "meter": "cached_write_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 15.625,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": "1.25x the announced uncached input price for cache writes.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-09T00:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 75,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-09T00:00:00Z"
     }
   ]
 }

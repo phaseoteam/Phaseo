@@ -4360,7 +4360,7 @@
     "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
-    "effective_from": "2026-06-26T00:00:00",
+    "effective_from": "2026-07-09T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -4424,6 +4424,27 @@
             "notes": null
           }
         ]
+      },
+      {
+        "capability_id": "batch",
+        "status": "coming_soon",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/responses",
+              "/v1/chat/completions"
+            ],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -4438,7 +4459,7 @@
     "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
-    "effective_from": "2026-06-26T00:00:00",
+    "effective_from": "2026-07-09T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -4502,6 +4523,27 @@
             "notes": null
           }
         ]
+      },
+      {
+        "capability_id": "batch",
+        "status": "coming_soon",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/responses",
+              "/v1/chat/completions"
+            ],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -4516,7 +4558,7 @@
     "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
-    "effective_from": "2026-06-26T00:00:00",
+    "effective_from": "2026-07-09T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -4580,6 +4622,27 @@
             "notes": null
           }
         ]
+      },
+      {
+        "capability_id": "batch",
+        "status": "coming_soon",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/responses",
+              "/v1/chat/completions"
+            ],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
