@@ -241,6 +241,8 @@ export const ModelIds = {
   INFLECTION_INFLECTION_3_PI: "inflection/inflection-3-pi",
   /** Model ID: `inflection/inflection-3-productivity`. Model page: https://ai-stats.phaseo.app/models/inflection/inflection-3-productivity */
   INFLECTION_INFLECTION_3_PRODUCTIVITY: "inflection/inflection-3-productivity",
+  /** Model ID: `kwaipilot/kat-coder-air-v2.5`. Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-air-v2.5 */
+  KWAIPILOT_KAT_CODER_AIR_V2_5: "kwaipilot/kat-coder-air-v2.5",
   /** Model ID: `kwaipilot/kat-coder-exp-72b-1010`. Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-exp-72b-1010 */
   KWAIPILOT_KAT_CODER_EXP_72B_1010: "kwaipilot/kat-coder-exp-72b-1010",
   /** Model ID: `kwaipilot/kat-coder-pro`. Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-pro */
@@ -249,6 +251,8 @@ export const ModelIds = {
   KWAIPILOT_KAT_CODER_PRO_V1: "kwaipilot/kat-coder-pro-v1",
   /** Model ID: `kwaipilot/kat-coder-pro-v2`. Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-pro-v2 */
   KWAIPILOT_KAT_CODER_PRO_V2: "kwaipilot/kat-coder-pro-v2",
+  /** Model ID: `kwaipilot/kat-coder-pro-v2.5`. Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-pro-v2.5 */
+  KWAIPILOT_KAT_CODER_PRO_V2_5: "kwaipilot/kat-coder-pro-v2.5",
   /** Model ID: `liquid-ai/lfm-2-24b-a2b`. Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2-24b-a2b */
   LIQUID_AI_LFM_2_24B_A2B: "liquid-ai/lfm-2-24b-a2b",
   /** Model ID: `meituan/longcat-2.0`. Model page: https://ai-stats.phaseo.app/models/meituan/longcat-2.0 */

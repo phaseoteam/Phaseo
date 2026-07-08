@@ -364,6 +364,9 @@ const (
 	// Model ID: inflection/inflection-3-productivity
 	// Model page: https://ai-stats.phaseo.app/models/inflection/inflection-3-productivity
 	ModelIDInflectionInflection3Productivity gen.ModelId = "inflection/inflection-3-productivity"
+	// Model ID: kwaipilot/kat-coder-air-v2.5
+	// Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-air-v2.5
+	ModelIDKwaipilotKatCoderAirV25 gen.ModelId = "kwaipilot/kat-coder-air-v2.5"
 	// Model ID: kwaipilot/kat-coder-exp-72b-1010
 	// Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-exp-72b-1010
 	ModelIDKwaipilotKatCoderExp72b1010 gen.ModelId = "kwaipilot/kat-coder-exp-72b-1010"
@@ -376,6 +379,9 @@ const (
 	// Model ID: kwaipilot/kat-coder-pro-v2
 	// Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-pro-v2
 	ModelIDKwaipilotKatCoderProV2 gen.ModelId = "kwaipilot/kat-coder-pro-v2"
+	// Model ID: kwaipilot/kat-coder-pro-v2.5
+	// Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-pro-v2.5
+	ModelIDKwaipilotKatCoderProV25 gen.ModelId = "kwaipilot/kat-coder-pro-v2.5"
 	// Model ID: liquid-ai/lfm-2-24b-a2b
 	// Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2-24b-a2b
 	ModelIDLiquidAiLfm224bA2b gen.ModelId = "liquid-ai/lfm-2-24b-a2b"
@@ -1496,10 +1502,12 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDInclusionaiRingFlash20,
 	ModelIDInflectionInflection3Pi,
 	ModelIDInflectionInflection3Productivity,
+	ModelIDKwaipilotKatCoderAirV25,
 	ModelIDKwaipilotKatCoderExp72b1010,
 	ModelIDKwaipilotKatCoderPro,
 	ModelIDKwaipilotKatCoderProV1,
 	ModelIDKwaipilotKatCoderProV2,
+	ModelIDKwaipilotKatCoderProV25,
 	ModelIDLiquidAiLfm224bA2b,
 	ModelIDMeituanLongcat20,
 	ModelIDMetaLlama370b,
