@@ -364,6 +364,9 @@ public final class ModelIds {
     /** Model ID: <code>inflection/inflection-3-productivity</code>. Model page: https://ai-stats.phaseo.app/models/inflection/inflection-3-productivity */
     public static final String INFLECTION_INFLECTION_3_PRODUCTIVITY = "inflection/inflection-3-productivity";
 
+    /** Model ID: <code>kwaipilot/kat-coder-air-v2.5</code>. Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-air-v2.5 */
+    public static final String KWAIPILOT_KAT_CODER_AIR_V2_5 = "kwaipilot/kat-coder-air-v2.5";
+
     /** Model ID: <code>kwaipilot/kat-coder-exp-72b-1010</code>. Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-exp-72b-1010 */
     public static final String KWAIPILOT_KAT_CODER_EXP_72B_1010 = "kwaipilot/kat-coder-exp-72b-1010";
 
@@ -375,6 +378,9 @@ public final class ModelIds {
 
     /** Model ID: <code>kwaipilot/kat-coder-pro-v2</code>. Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-pro-v2 */
     public static final String KWAIPILOT_KAT_CODER_PRO_V2 = "kwaipilot/kat-coder-pro-v2";
+
+    /** Model ID: <code>kwaipilot/kat-coder-pro-v2.5</code>. Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-pro-v2.5 */
+    public static final String KWAIPILOT_KAT_CODER_PRO_V2_5 = "kwaipilot/kat-coder-pro-v2.5";
 
     /** Model ID: <code>liquid-ai/lfm-2-24b-a2b</code>. Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2-24b-a2b */
     public static final String LIQUID_AI_LFM_2_24B_A2B = "liquid-ai/lfm-2-24b-a2b";
@@ -1173,6 +1179,9 @@ public final class ModelIds {
 
     /** Model ID: <code>spacex-ai/grok-4.3</code>. Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-4.3 */
     public static final String SPACEX_AI_GROK_4_3 = "spacex-ai/grok-4.3";
+
+    /** Model ID: <code>spacex-ai/grok-4.5</code>. Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-4.5 */
+    public static final String SPACEX_AI_GROK_4_5 = "spacex-ai/grok-4.5";
 
     /** Model ID: <code>spacex-ai/grok-build-0.1</code>. Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-build-0.1 */
     public static final String SPACEX_AI_GROK_BUILD_0_1 = "spacex-ai/grok-build-0.1";
