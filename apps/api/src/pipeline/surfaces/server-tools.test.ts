@@ -249,7 +249,7 @@ describe("prepareServerToolsForTextRequest", () => {
 						parameters: {
 							engine: "native",
 							max_content_tokens: 9000,
-							allowed_domains: ["docs.phaseo.ai"],
+							allowed_domains: ["phaseo.app"],
 							blocked_domains: ["internal.phaseo.ai"],
 						},
 					},
@@ -268,7 +268,7 @@ describe("prepareServerToolsForTextRequest", () => {
 				type: "web_fetch_20260209",
 				name: "web_fetch",
 				max_content_tokens: 9000,
-				allowed_domains: ["docs.phaseo.ai"],
+				allowed_domains: ["phaseo.app"],
 				blocked_domains: ["internal.phaseo.ai"],
 			},
 		]);

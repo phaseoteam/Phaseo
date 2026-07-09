@@ -25,7 +25,7 @@ export default async function Endpoints() {
 				<CardDescription>
 					Our main gateway endpoints. See more on the{" "}
 					<Link
-						href="https://phaseo.ai/"
+						href="https://phaseo.app/"
 						className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200"
 					>
 						documentation

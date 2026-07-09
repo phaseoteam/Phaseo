@@ -538,15 +538,17 @@ export function ContactClient({
 								<p className="text-xs font-medium text-muted-foreground">
 									Step 2
 								</p>
-								<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-									<div className="flex gap-3">
+								<div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+									<div className="flex min-w-0 flex-col gap-3 sm:flex-row">
 										<span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-muted/60 text-foreground">
 											<MethodIcon method={recommendedMethod} />
 										</span>
-										<div className="space-y-1">
-											<p className="flex items-center gap-2 text-sm font-medium">
-												<CheckCircle2 className="size-4 text-emerald-500" />
-												Recommended: {recommendedMethod.title}
+										<div className="min-w-0 space-y-1">
+											<p className="flex min-w-0 flex-wrap items-center gap-2 text-sm font-medium">
+												<CheckCircle2 className="size-4 shrink-0 text-emerald-500" />
+												<span className="min-w-0 break-words">
+													Recommended: {recommendedMethod.title}
+												</span>
 											</p>
 											<p className="max-w-2xl text-sm leading-6 text-muted-foreground">
 												{selectedIssue.helper}
@@ -615,7 +617,7 @@ export function ContactClient({
 							<Link
 								key={method.key}
 								href={method.href}
-								className="group flex items-center justify-between gap-3 rounded-2xl border border-border/60 px-3 py-3 text-sm transition-colors hover:border-border hover:bg-muted/35"
+								className="group flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-border/60 px-3 py-3 text-sm transition-colors hover:border-border hover:bg-muted/35"
 								{...(method.external ? { target: "_blank", rel: "noreferrer" } : {})}
 							>
 								<span className="flex min-w-0 items-center gap-3">
@@ -623,8 +625,8 @@ export function ContactClient({
 										<MethodIcon method={method} />
 									</span>
 									<span className="min-w-0">
-										<span className="block font-medium">{method.title}</span>
-										<span className="block truncate text-xs text-muted-foreground">
+										<span className="block break-words font-medium">{method.title}</span>
+										<span className="block break-words text-xs leading-5 text-muted-foreground">
 											{method.description}
 										</span>
 									</span>

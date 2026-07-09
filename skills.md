@@ -30,7 +30,7 @@ An agent following this file should have enough information to implement:
   - `http-referer: <origin-url>`
 - OpenAPI source of truth:
   - Repo copy: `apps/docs/openapi/v1/openapi.yaml`
-  - Docs: `https://phaseo.ai`
+  - Docs: `https://phaseo.app`
 
 ## SDK Coverage + Fallback Rule
 
@@ -50,7 +50,7 @@ All of these SDKs exist and should be considered valid integration targets:
   - module: `github.com/phaseoteam/Phaseo/packages/sdk/sdk-go`
   - local path: `packages/sdk/sdk-go`
 - C#:
-  - package: `AI.Stats.Sdk`
+  - package: `Phaseo.Sdk`
   - local path: `packages/sdk/sdk-csharp`
 - Java:
   - artifact: `app.phaseo:phaseo-sdk`
@@ -59,7 +59,7 @@ All of these SDKs exist and should be considered valid integration targets:
   - package: `phaseo/php-sdk`
   - local path: `packages/sdk/sdk-php`
 - Ruby:
-  - gem: `ai_stats_sdk`
+  - gem: `phaseo_sdk`
   - local path: `packages/sdk/sdk-ruby`
 - Rust:
   - crate: `phaseo`

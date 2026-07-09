@@ -1,5 +1,5 @@
 {
-  "name": "aistats-web-chat-example",
+  "name": "phaseo-web-chat-example",
   "version": "1.0.0",
   "private": true,
   "description": "API-key based web chat app example for Phaseo Gateway",

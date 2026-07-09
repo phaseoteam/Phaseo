@@ -2333,7 +2333,7 @@ async function executeWebFetchToolCall(
 				method: "GET",
 				headers: {
 					Accept: "text/html,text/plain,application/json;q=0.9,*/*;q=0.8",
-					"User-Agent": "Phaseo-Gateway/1.0 (+https://phaseo.ai)",
+					"User-Agent": "Phaseo-Gateway/1.0 (+https://phaseo.app)",
 				},
 				redirect: "manual",
 			});

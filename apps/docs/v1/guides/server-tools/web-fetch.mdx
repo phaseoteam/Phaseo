@@ -24,7 +24,7 @@ curl https://api.phaseo.ai/v1/chat/completions \
   -d '{
     "model": "openai/gpt-5-nano",
     "messages": [
-      { "role": "user", "content": "Summarize https://docs.phaseo.ai/v1/guides/tool-calling" }
+      { "role": "user", "content": "Summarize https://phaseo.app/docs/v1/guides/tool-calling" }
     ],
     "tools": [
       { "type": "phaseo:web_fetch" }
@@ -40,7 +40,7 @@ curl https://api.phaseo.ai/v1/chat/completions \
   "parameters": {
     "engine": "direct",
     "max_chars": 12000,
-    "allowed_domains": ["docs.phaseo.ai"],
+    "allowed_domains": ["phaseo.app"],
     "blocked_domains": ["internal.example.com"]
   }
 }
@@ -82,7 +82,7 @@ Only HTTP(S) URLs are supported. Direct gateway fetch accepts text-like content 
       "parameters": {
         "engine": "native",
         "max_content_tokens": 9000,
-        "allowed_domains": ["docs.phaseo.ai"]
+        "allowed_domains": ["phaseo.app"]
       }
     }
   ],
@@ -98,8 +98,8 @@ Managed fetch returns a JSON tool result with fields such as:
 {
   "provider": "fetch",
   "engine": "direct",
-  "url": "https://docs.phaseo.ai/v1/guides/tool-calling",
-  "final_url": "https://docs.phaseo.ai/v1/guides/tool-calling",
+  "url": "https://phaseo.app/docs/v1/guides/tool-calling",
+  "final_url": "https://phaseo.app/docs/v1/guides/tool-calling",
   "status": 200,
   "content_type": "text/html",
   "title": "Tool Calling",

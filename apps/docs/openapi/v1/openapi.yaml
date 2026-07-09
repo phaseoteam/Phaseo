@@ -7,7 +7,7 @@ info:
   version: 1.0.0
   contact:
     name: Phaseo
-    url: https://phaseo.ai
+    url: https://phaseo.app
     email: danielbutler500@gmail.com
 servers:
   - url: https://api.phaseo.ai/v1

@@ -188,7 +188,7 @@ describe("authenticateManagement", () => {
 		);
 	});
 
-	it("accepts legacy AI Stats-prefixed management keys", async () => {
+	it("accepts legacy aistats-prefixed management keys", async () => {
 		const kid = "MGMTLEGACY1";
 		const secret = "secret_legacy_management_key";
 		runtime.dbRow.value = {
@@ -213,7 +213,7 @@ describe("authenticateManagement", () => {
 		});
 	});
 
-	it("rejects legacy AI Stats-prefixed management keys after the cutoff", async () => {
+	it("rejects legacy aistats-prefixed management keys after the cutoff", async () => {
 		vi.useFakeTimers();
 		vi.setSystemTime(new Date("2027-01-01T00:00:00.000Z"));
 

@@ -193,6 +193,6 @@ MIT
 
 ## Links
 
-- [Documentation](https://docs.phaseo.ai/v1)
+- [Documentation](https://phaseo.app/docs/v1)
 - [GitHub Repository](https://github.com/phaseoteam/Phaseo)
-- [Phaseo Dashboard](https://phaseo.ai)
+- [Phaseo Dashboard](https://phaseo.app)

@@ -148,7 +148,7 @@ describe("extractSearchObservability", () => {
 				candidates: [
 					{
 						groundingMetadata: {
-							webSearchQueries: ["ai stats gateway web search"],
+							webSearchQueries: ["phaseo gateway web search"],
 							groundingChunks: [
 								{
 									web: {
@@ -213,7 +213,7 @@ describe("extractSearchObservability", () => {
 			nativeSearches: [
 				{
 					type: "google_search_query",
-					query: "ai stats gateway web search",
+					query: "phaseo gateway web search",
 					status: null,
 				},
 			],
@@ -238,7 +238,7 @@ describe("extractSearchObservability", () => {
 					provider: "exa",
 					request_id: "req_exa_1",
 					search_type: "auto",
-					query: "ai stats gateway docs",
+					query: "phaseo gateway docs",
 					results: [
 						{
 							title: "Phaseo Docs",
@@ -276,7 +276,7 @@ describe("extractSearchObservability", () => {
 			managedSearches: [
 				{
 					provider: "exa",
-					query: "ai stats gateway docs",
+					query: "phaseo gateway docs",
 					requestId: "req_exa_1",
 					searchType: "auto",
 					resultCount: 1,

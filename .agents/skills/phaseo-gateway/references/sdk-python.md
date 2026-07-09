@@ -7,9 +7,9 @@ pip install phaseo
 
 ## Setup
 ```python
-from ai_stats import AIStats
+from phaseo import Phaseo
 
-client = AIStats(api_key="phaseo_v1_sk_...")
+client = Phaseo(api_key="phaseo_v1_sk_...")
 ```
 
 ## Text Generation

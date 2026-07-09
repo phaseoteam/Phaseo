@@ -60,7 +60,7 @@ const PLAYGROUND_APP_HEADERS = {
 	"x-app-id": "phaseo-playground",
 	"x-app-name": "Phaseo Playground",
 	"x-title": "Phaseo Playground",
-	"http-referer": "https://phaseo.ai/models",
+	"http-referer": "https://phaseo.app/models",
 };
 
 type ModelPlaygroundProps = {

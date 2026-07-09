@@ -90,7 +90,7 @@ async function sendSignupWelcomeEmail(args: {
 	const dashboardUrl =
 		String(
 			process.env.NEXT_PUBLIC_WEBSITE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "",
-		).trim() || "https://phaseo.ai";
+		).trim() || "https://phaseo.app";
 	const getStartedUrl = `${dashboardUrl.replace(/\/+$/, "")}/settings/keys`;
 	const docsUrl = `${dashboardUrl.replace(/\/+$/, "")}/help`;
 	const resend = new Resend(apiKey);

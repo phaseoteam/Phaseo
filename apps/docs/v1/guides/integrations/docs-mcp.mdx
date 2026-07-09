@@ -9,20 +9,20 @@ This MCP server is read-only. It helps agents search the docs and read full page
 
 ## Server URL
 
-`https://docs.phaseo.ai/mcp`
+`https://phaseo.app/docs/mcp`
 
 ## What it gives you
 
 - live search across the Phaseo docs
 - full page content when an agent needs more detail
-- access to the hosted [skill.md](https://docs.phaseo.ai/skill.md) capability summary
+- access to the hosted [skill.md](https://phaseo.app/docs/skill.md) capability summary
 
 ## Codex
 
 Add the server:
 
 ```bash
-codex mcp add phaseoDocs --url https://docs.phaseo.ai/mcp
+codex mcp add phaseoDocs --url https://phaseo.app/docs/mcp
 ```
 
 Check it:
@@ -36,13 +36,13 @@ codex mcp list
 Add the server for the current project:
 
 ```bash
-claude mcp add --transport http phaseo-docs https://docs.phaseo.ai/mcp
+claude mcp add --transport http phaseo-docs https://phaseo.app/docs/mcp
 ```
 
 Make it available across all projects:
 
 ```bash
-claude mcp add --transport http --scope user phaseo-docs https://docs.phaseo.ai/mcp
+claude mcp add --transport http --scope user phaseo-docs https://phaseo.app/docs/mcp
 ```
 
 Check it:
@@ -59,7 +59,7 @@ Use the contextual menu in the docs to install the MCP server in Cursor, or add 
 {
   "mcpServers": {
     "phaseoDocs": {
-      "url": "https://docs.phaseo.ai/mcp"
+      "url": "https://phaseo.app/docs/mcp"
     }
   }
 }
@@ -75,7 +75,7 @@ Add the Phaseo docs server to `opencode.json`:
   "mcp": {
     "phaseoDocs": {
       "type": "remote",
-      "url": "https://docs.phaseo.ai/mcp"
+      "url": "https://phaseo.app/docs/mcp"
     }
   }
 }
@@ -90,7 +90,7 @@ Use the contextual menu in the docs to install the MCP server in VS Code, or add
   "servers": {
     "phaseoDocs": {
       "type": "http",
-      "url": "https://docs.phaseo.ai/mcp"
+      "url": "https://phaseo.app/docs/mcp"
     }
   }
 }

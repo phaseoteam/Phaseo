@@ -73,7 +73,7 @@ describe("handleSuccessAudit search observability", () => {
 					output: [
 						{
 							type: "web_search_call",
-							query: "ai stats docs routing guide",
+							query: "phaseo docs routing guide",
 							status: "completed",
 						},
 						{
@@ -140,7 +140,7 @@ describe("handleSuccessAudit search observability", () => {
 			nativeSearches: [
 				{
 					type: "web_search_call",
-					query: "ai stats docs routing guide",
+					query: "phaseo docs routing guide",
 					status: "completed",
 				},
 			],
@@ -206,7 +206,7 @@ describe("handleSuccessAudit search observability", () => {
 					managedSearches: [
 						{
 							provider: "exa",
-							query: "ai stats docs",
+							query: "phaseo docs",
 							requestId: "req_exa_1",
 							searchType: "auto",
 							resultCount: 1,
@@ -291,7 +291,7 @@ describe("handleSuccessAudit search observability", () => {
 			managedSearches: [
 				{
 					provider: "exa",
-					query: "ai stats docs",
+					query: "phaseo docs",
 					requestId: "req_exa_1",
 					searchType: "auto",
 					resultCount: 1,
@@ -355,7 +355,7 @@ describe("handleSuccessAudit search observability", () => {
 					candidates: [
 						{
 							groundingMetadata: {
-								webSearchQueries: ["ai stats gateway web search"],
+								webSearchQueries: ["phaseo gateway web search"],
 								groundingChunks: [
 									{
 										web: {
@@ -414,7 +414,7 @@ describe("handleSuccessAudit search observability", () => {
 			nativeSearches: [
 				{
 					type: "google_search_query",
-					query: "ai stats gateway web search",
+					query: "phaseo gateway web search",
 					status: null,
 				},
 			],

@@ -8,7 +8,7 @@ Gem::Specification.new do |spec|
 
   spec.summary = "Official Phaseo Gateway SDK for Ruby"
   spec.description = "Ruby client for the Phaseo Gateway API with generated endpoints and typed wrappers."
-  spec.homepage = "https://phaseo.ai"
+  spec.homepage = "https://phaseo.app"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.0.0"
 

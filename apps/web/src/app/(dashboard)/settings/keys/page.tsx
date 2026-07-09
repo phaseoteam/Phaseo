@@ -8,7 +8,7 @@ import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHead
 import { Button } from "@/components/ui/button";
 import { fetchSettingsKeysInitialData } from "@/lib/fetchers/internal/fetchSettingsKeysInitialData";
 
-const QUICKSTART_DOCS_HREF = "https://docs.phaseo.ai/v1/quickstart";
+const QUICKSTART_DOCS_HREF = "https://phaseo.app/docs/v1/quickstart";
 
 export const metadata = {
 	title: "API Keys - Settings",

@@ -1,5 +1,5 @@
 {
-  "name": "aistats-oauth-client-example",
+  "name": "phaseo-oauth-client-example",
   "version": "1.0.0",
   "private": true,
   "description": "Example OAuth 2.1 client for Phaseo integration",

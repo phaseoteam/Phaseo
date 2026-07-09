@@ -1,13 +1,13 @@
 ---
 title: "Quickstart"
-description: "Create an API key and make your first Phaseo request with a free model."
+description: "Create an API key and make your first Phaseo request with a current text model."
 ---
 
 Use this tutorial to make one successful Phaseo request and confirm where the response text appears.
 
 You will:
 - create an API key
-- send one free text request
+- send one text request
 - read the assistant output
 - know what to check first if the request fails
 
@@ -15,7 +15,7 @@ You will:
 
 ## 1. Create an API key
 
-1. Open the [Phaseo Dashboard](https://phaseo.ai/gateway/keys).
+1. Open the [Phaseo Dashboard](https://phaseo.app/gateway/keys).
 2. Create a key under **Gateway -> Keys**.
 3. Copy it once and store it securely.
 
@@ -31,13 +31,9 @@ Treat your API key like a password. Do not expose it in client-side code.
 
 ---
 
-## 2. Send a free text request
+## 2. Send a text request
 
 Use `POST /v1/responses` for the first request. It is the recommended endpoint for new text-generation work.
-
-<Note>
-Requests to `:free` models do not require deposited credits. Paid models still require available wallet balance.
-</Note>
 
 ### Request
 
@@ -47,7 +43,7 @@ curl https://api.phaseo.ai/v1/responses \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "google/gemma-3-27b:free",
+    "model": "openai/gpt-5.6-sol",
     "input": "Reply with: quickstart works",
     "temperature": 0
   }'
@@ -61,7 +57,7 @@ const response = await fetch("https://api.phaseo.ai/v1/responses", {
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
-    model: "google/gemma-3-27b:free",
+    model: "openai/gpt-5.6-sol",
     input: "Reply with: quickstart works",
     temperature: 0,
   }),
@@ -82,7 +78,7 @@ import Phaseo from "@phaseo/sdk";
 const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
-  model: "google/gemma-3-27b:free",
+  model: "openai/gpt-5.6-sol",
   input: "Reply with: quickstart works",
   temperature: 0,
 });
@@ -102,7 +98,7 @@ client = Phaseo(api_key="YOUR_API_KEY")
 
 response = client.generate_response(
     {
-        "model": "google/gemma-3-27b:free",
+        "model": "openai/gpt-5.6-sol",
         "input": "Reply with: quickstart works",
         "temperature": 0,
     }
@@ -145,7 +141,7 @@ func main() {
   }
 
   response, err := client.GenerateResponse(context.Background(), phaseo.ResponsesRequest{
-    Model: "google/gemma-3-27b:free",
+    Model: "openai/gpt-5.6-sol",
     Input: &input,
   })
   if err != nil {
@@ -164,7 +160,7 @@ var client = new Phaseo("YOUR_API_KEY");
 
 var response = await client.GenerateResponse(new Dictionary<string, object>
 {
-    ["model"] = "google/gemma-3-27b:free",
+    ["model"] = "openai/gpt-5.6-sol",
     ["input"] = "Reply with: quickstart works",
     ["temperature"] = 0
 });
@@ -181,7 +177,7 @@ use Phaseo\Sdk\Phaseo;
 $client = new Phaseo(getenv('PHASEO_API_KEY') ?: 'YOUR_API_KEY');
 
 $response = $client->generateResponse([
-    'model' => 'google/gemma-3-27b:free',
+    'model' => 'openai/gpt-5.6-sol',
     'input' => 'Reply with: quickstart works',
     'temperature' => 0,
 ]);
@@ -195,7 +191,7 @@ require 'phaseo_sdk'
 client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY', 'YOUR_API_KEY'))
 
 response = client.generate_response(
-  model: 'google/gemma-3-27b:free',
+  model: 'openai/gpt-5.6-sol',
   input: 'Reply with: quickstart works',
   temperature: 0
 )
@@ -210,7 +206,7 @@ Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
 
 String body = """
 {
-  "model": "google/gemma-3-27b:free",
+  "model": "openai/gpt-5.6-sol",
   "input": [
     {
       "role": "user",
@@ -232,7 +228,7 @@ import { phaseo } from "@phaseo/ai-sdk-provider";
 import { generateText } from "ai";
 
 const result = await generateText({
-  model: phaseo("google/gemma-3-27b:free"),
+  model: phaseo("openai/gpt-5.6-sol"),
   prompt: "Reply with: quickstart works",
 });
 
@@ -249,7 +245,7 @@ console.log(result.text);
   "created_at": 1730000000,
   "status": "completed",
   "completed_at": 1730000001,
-  "model": "google/gemma-3-27b:free",
+  "model": "openai/gpt-5.6-sol",
   "output": [
     {
       "type": "message",
@@ -323,7 +319,7 @@ curl https://api.phaseo.ai/v1/videos/VIDEO_ID \
 	<Card title="Examples" icon="code" href="./guides/examples">
 		More complete request samples for common workflows.
 	</Card>
-	<Card title="Support" icon="message-circle" href="https://phaseo.ai/help">
+	<Card title="Support" icon="message-circle" href="https://phaseo.app/help">
 		Get help with debugging, routing, and model behavior.
 	</Card>
 </Columns>

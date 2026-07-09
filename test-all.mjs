@@ -1,6 +1,6 @@
-﻿#!/usr/bin/env node
+#!/usr/bin/env node
 /**
- * Parallel Test Runner for AI Stats Project
+ * Parallel Test Runner for Phaseo
  * Tests all SDKs, AI SDK, and Devtools in parallel
  * Outputs a beautiful results table
  */
@@ -29,8 +29,8 @@ const colors = {
 const testConfigs = [
     // AI SDK
     {
-        name: 'AI SDK (ai-sdk-ai-stats)',
-        path: 'packages/integrations/ai-sdk-ai-stats',
+        name: 'AI SDK provider',
+        path: 'packages/integrations/ai-sdk-phaseo',
         command: 'pnpm',
         args: ['run', 'test'],
         timeout: 60000,
@@ -335,7 +335,7 @@ function printSummary(results) {
 async function main() {
     console.log(colors.bright + colors.blue);
     console.log('============================================================');
-    console.log('     AI Stats Parallel Test Runner');
+    console.log('     Phaseo Parallel Test Runner');
     console.log('     Testing All SDKs, AI SDK, and Devtools');
     console.log('============================================================');
     console.log(colors.reset);
@@ -374,4 +374,3 @@ main().catch((error) => {
     console.error(colors.red + 'Fatal error:' + colors.reset, error);
     process.exit(1);
 });
-

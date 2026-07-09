@@ -53,7 +53,7 @@ const labelOverrides: Partial<Record<KnownLogoId, string>> = {
 	opencode: "OpenCode",
 	openwebui: "Open WebUI",
 	stepfun: "StepFun",
-	xai: "xAI",
+	"spacex-ai": "SpaceXAI",
 	"zai": "Z.ai",
 };
 
@@ -71,6 +71,8 @@ normalisedAliasMap.set(normalise("novitaai"), "novita");
 normalisedAliasMap.set(normalise("cogito-ai"), "cogito");
 normalisedAliasMap.set(normalise("anthropic-aws"), "aws");
 normalisedAliasMap.set(normalise("anthropic-aws-us"), "aws");
+normalisedAliasMap.set(normalise("x-ai"), "spacex-ai");
+normalisedAliasMap.set(normalise("xai"), "spacex-ai");
 
 function normalise(value: string): string {
 	return value.toLowerCase().replace(/[^a-z0-9]/g, "");

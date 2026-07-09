@@ -167,7 +167,7 @@ describe("handleStreamResponse search observability", () => {
 						output: [
 							{
 								type: "web_search_call",
-								query: "ai stats stream search observability",
+								query: "phaseo stream search observability",
 								status: "completed",
 							},
 							{
@@ -249,7 +249,7 @@ describe("handleStreamResponse search observability", () => {
 			nativeSearches: [
 				{
 					type: "web_search_call",
-					query: "ai stats stream search observability",
+					query: "phaseo stream search observability",
 					status: "completed",
 				},
 			],
@@ -341,7 +341,7 @@ describe("handleStreamResponse search observability", () => {
 					managedSearches: [
 						{
 							provider: "exa",
-							query: "ai stats docs",
+							query: "phaseo docs",
 							requestId: "req_exa_stream_1",
 							searchType: "auto",
 							resultCount: 1,
@@ -404,7 +404,7 @@ describe("handleStreamResponse search observability", () => {
 			managedSearches: [
 				{
 					provider: "exa",
-					query: "ai stats docs",
+					query: "phaseo docs",
 					requestId: "req_exa_stream_1",
 					searchType: "auto",
 					resultCount: 1,

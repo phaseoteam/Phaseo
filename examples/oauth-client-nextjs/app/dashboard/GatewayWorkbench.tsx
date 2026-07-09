@@ -24,7 +24,7 @@ const TESTER_PRESETS: TesterPreset[] = [
     surface: 'embeddings',
     sampleBody: JSON.stringify(
       {
-        model: 'openai/text-embedding-3-small',
+        model: 'google/gemini-embedding-2',
         input: 'hello world',
       },
       null,
@@ -50,7 +50,7 @@ const TESTER_PRESETS: TesterPreset[] = [
     surface: 'images/generations',
     sampleBody: JSON.stringify(
       {
-        model: 'openai/gpt-image-1',
+        model: 'openai/gpt-image-2',
         prompt: 'A minimalist poster showing latency as a race track',
       },
       null,
@@ -169,7 +169,7 @@ export default function GatewayWorkbench() {
   const [testerBusy, setTesterBusy] = useState(false);
 
   const modelOptions = useMemo(() => {
-    return models.length > 0 ? models : ['openai/gpt-5-nano-2025-08-07'];
+    return models.length > 0 ? models : ['openai/gpt-5.6-sol'];
   }, [models]);
 
   useEffect(() => {

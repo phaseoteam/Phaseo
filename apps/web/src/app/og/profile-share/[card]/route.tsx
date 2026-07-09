@@ -189,7 +189,7 @@ export async function GET(_request: NextRequest, { params }: RouteProps) {
 								color: "#111827",
 							}}
 						>
-							phaseo.ai
+							phaseo.app
 						</div>
 					</div>
 				</div>

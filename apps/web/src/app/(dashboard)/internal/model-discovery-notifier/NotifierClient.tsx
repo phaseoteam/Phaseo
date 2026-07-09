@@ -18,7 +18,7 @@ type ActionResult = {
 const SAMPLE_MODELS = [
 	"anthropic/claude-mythos-preview",
 	"voyage/voyage-4",
-	"Voyage Code 3 | https://phaseo.ai/models/voyage/voyage-code-3",
+	"Voyage Code 3 | https://phaseo.app/models/voyage/voyage-code-3",
 ].join("\n");
 
 export default function NotifierClient() {

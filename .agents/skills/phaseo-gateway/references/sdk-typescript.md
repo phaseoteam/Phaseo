@@ -7,9 +7,9 @@ pnpm add @phaseo/sdk
 
 ## Setup
 ```ts
-import AIStats from "@phaseo/sdk";
+import { Phaseo } from "@phaseo/sdk";
 
-const client = new AIStats({
+const client = new Phaseo({
   apiKey: process.env.PHASEO_API_KEY!,
 });
 ```

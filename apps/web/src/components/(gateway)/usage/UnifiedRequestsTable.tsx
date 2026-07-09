@@ -116,10 +116,10 @@ function getRoutedModelId(row: RequestRow): string | null {
 
 const PHASEO_CHAT_APP_KEYS = new Set([
 	"phaseo-chat@phaseo.ai",
-	"https://phaseo.ai/chat",
+	"https://phaseo.app/chat",
 	"phaseo-chat@phaseo.ai",
 	"phaseo-chat@phaseo.ai",
-	"https://phaseo.ai/chat",
+	"https://phaseo.app/chat",
 ]);
 
 function isPhaseoChatApp(row: RequestRow): boolean {

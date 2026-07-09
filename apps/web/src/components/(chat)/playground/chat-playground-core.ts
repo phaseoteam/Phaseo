@@ -218,7 +218,7 @@ export const APP_HEADERS = {
 	"x-app-id": "phaseo-chat",
 	"x-app-name": "Phaseo Chat",
 	"x-title": "Phaseo Chat",
-	"http-referer": "https://phaseo.ai/chat",
+	"http-referer": "https://phaseo.app/chat",
 };
 
 export const TEMP_CHAT_ID = "temp-chat";

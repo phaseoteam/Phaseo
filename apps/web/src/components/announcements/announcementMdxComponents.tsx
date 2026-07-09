@@ -77,13 +77,13 @@ const socialLinks = [
 
 const getStartedLinks = [
 	{
-		href: "https://phaseo.ai/gateway/keys",
+		href: "https://phaseo.app/gateway/keys",
 		label: "Create a gateway key",
 		external: true,
 		variant: "primary",
 	},
 	{
-		href: "https://docs.phaseo.ai/v1/quickstart",
+		href: "https://phaseo.app/docs/v1/quickstart",
 		label: "Read the quickstart",
 		external: true,
 		variant: "secondary",

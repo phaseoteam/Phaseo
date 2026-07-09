@@ -52,8 +52,8 @@ type SendDiscordTextMessageArgs = {
 const DEFAULT_EMBED_COLOR = 0x2563eb;
 const DEFAULT_USERNAME = "Phaseo Model Discovery";
 const DEFAULT_MAX_MODEL_EMBEDS = 10;
-const DEFAULT_LATEST_MODELS_URL = "https://phaseo.ai/models";
-const DEFAULT_ASSET_BASE_URL = "https://phaseo.ai";
+const DEFAULT_LATEST_MODELS_URL = "https://phaseo.app/models";
+const DEFAULT_ASSET_BASE_URL = "https://phaseo.app";
 const DEFAULT_AVATAR_PATH = "/png_logo_light.png";
 const DISCORD_WEBHOOK_TIMEOUT_MS = 30_000;
 

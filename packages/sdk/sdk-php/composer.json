@@ -4,7 +4,7 @@
 	"type": "library",
 	"license": "MIT",
 	"keywords": ["ai", "sdk", "llm", "gateway"],
-	"homepage": "https://phaseo.ai",
+	"homepage": "https://phaseo.app",
 	"authors": [
 		{
 			"name": "Phaseo",
@@ -12,7 +12,7 @@
 		}
 	],
 	"support": {
-		"docs": "https://phaseo.ai",
+		"docs": "https://phaseo.app",
 		"issues": "https://github.com/phaseoteam/Phaseo/issues",
 		"source": "https://github.com/phaseoteam/Phaseo"
 	},

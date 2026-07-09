@@ -261,7 +261,7 @@ Phaseo uses a provider-prefixed naming convention:
 | `gemini-2.0-flash` | `google-ai-studio/gemini-2.0-flash` |
 | `llama-3.3-70b` | `meta/llama-3.3-70b` |
 
-Browse all 300+ models at [phaseo.ai/models](https://phaseo.ai/models)
+Browse all 300+ models at [phaseo.ai/models](https://phaseo.app/models)
 
 ---
 
@@ -384,7 +384,7 @@ PHASEO_BASE_URL=https://api.phaseo.ai/v1
 
 ## Getting Your API Key
 
-1. Sign up at [phaseo.ai](https://phaseo.ai)
+1. Sign up at [phaseo.ai](https://phaseo.app)
 2. Navigate to **Settings → API Keys**
 3. Click **Create API Key**
 4. Copy your key to `.env` as `PHASEO_API_KEY`
@@ -423,17 +423,17 @@ const analytics = await openai.native.getAnalytics();
 
 ### Q: How do I list available models?
 
-**A:** Use `client.models.list()` (OpenAI compat) or visit [phaseo.ai/models](https://phaseo.ai/models)
+**A:** Use `client.models.list()` (OpenAI compat) or visit [phaseo.ai/models](https://phaseo.app/models)
 
 ### Q: What about pricing?
 
-**A:** Phaseo uses unified pricing across all providers. View pricing at [phaseo.ai/pricing](https://phaseo.ai/pricing)
+**A:** Phaseo uses unified pricing across all providers. View pricing at [phaseo.ai/pricing](https://phaseo.app/pricing)
 
 ---
 
 ## Support
 
-- 📖 **Documentation**: [phaseo.ai](https://phaseo.ai)
+- 📖 **Documentation**: [phaseo.ai](https://phaseo.app)
 - 💬 **Discord**: [Join our community](https://discord.gg/phaseo)
 - 🐛 **Issues**: [GitHub Issues](https://github.com/phaseoteam/Phaseo/issues)
 - 📧 **Email**: support@phaseo.ai

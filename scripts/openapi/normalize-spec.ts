@@ -46,7 +46,7 @@ function ensureInfoContact() {
 		0,
 		`${childPad}contact:`,
 		`${nestedPad}name: Phaseo`,
-		`${nestedPad}url: https://phaseo.ai`,
+		`${nestedPad}url: https://phaseo.app`,
 		`${nestedPad}email: danielbutler500@gmail.com`,
 	);
 }

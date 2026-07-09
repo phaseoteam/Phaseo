@@ -14,6 +14,18 @@ const configuredAllowedDevOrigins =
     .map((origin) => origin.trim())
     .filter(Boolean) ?? [];
 
+const mintlifyProxyOrigin = "https://aistats.mintlify.site";
+const docsProxyRewrites = [
+  {
+    source: "/docs",
+    destination: `${mintlifyProxyOrigin}/docs`,
+  },
+  {
+    source: "/docs/:match*",
+    destination: `${mintlifyProxyOrigin}/docs/:match*`,
+  },
+];
+
 /** @type {import("next").NextConfig} */
 const nextConfig = {
   ...(configuredAllowedDevOrigins.length > 0
@@ -39,7 +51,7 @@ const nextConfig = {
           {
             key: "Link",
             value:
-              '</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json", <https://docs.phaseo.ai/v1/api-reference/introduction>; rel="service-doc"; type="text/html", </.well-known/agent-skills/index.json>; rel="describedby"; type="application/json"',
+              '</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json", <https://phaseo.app/docs/v1/api-reference/introduction>; rel="service-doc"; type="text/html", </.well-known/agent-skills/index.json>; rel="describedby"; type="application/json"',
           },
           {
             key: "Vary",
@@ -92,6 +104,7 @@ const nextConfig = {
         },
       ],
       afterFiles: [
+        ...docsProxyRewrites,
         {
           source: "/ingest/static/:path*",
           destination: "https://eu-assets.i.posthog.com/static/:path*",

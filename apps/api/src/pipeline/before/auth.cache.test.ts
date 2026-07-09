@@ -227,7 +227,7 @@ describe("authenticate hot-path caching", () => {
         expect(result).toEqual({ ok: false, reason: "key_expired" });
     });
 
-    it("accepts legacy AI Stats-prefixed keys before the cutoff", async () => {
+    it("accepts legacy aistats-prefixed keys before the cutoff", async () => {
         const kid = "KIDLEGACY001";
         const secret = "secret_legacy";
         const hash = hashSecret(secret);
@@ -252,7 +252,7 @@ describe("authenticate hot-path caching", () => {
         });
     });
 
-    it("rejects legacy AI Stats-prefixed keys after the cutoff", async () => {
+    it("rejects legacy aistats-prefixed keys after the cutoff", async () => {
         vi.useFakeTimers();
         vi.setSystemTime(new Date("2027-01-01T00:00:00.000Z"));
 

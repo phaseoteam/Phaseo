@@ -1,6 +1,6 @@
 ---
 name: phaseo-sdk-python
-description: Implement Phaseo integrations with the official Python SDK (`phaseo`). Use when repositories already depend on `ai_stats`, need a new client setup, Responses API calls, async video jobs, preset usage, or request logging patterns for the Python SDK surface.
+description: Implement Phaseo integrations with the official Python SDK (`phaseo`). Use when repositories already depend on `phaseo`, need a new client setup, Responses API calls, async video jobs, preset usage, or request logging patterns for the Python SDK surface.
 ---
 
 # Phaseo SDK Python
@@ -9,13 +9,13 @@ Use this skill when the repository should call Phaseo through `phaseo` instead o
 
 ## Outcome
 Deliver a working Python integration that:
-- imports `AIStats` from `ai_stats`
+- imports `Phaseo` from `phaseo`
 - reads credentials from `PHASEO_API_KEY`
 - uses the smallest suitable SDK helper
 - logs enough request context to debug failures safely
 
 ## Workflow
-1. Create one shared `AIStats` client.
+1. Create one shared `Phaseo` client.
 2. Prefer the Responses API helpers for new text integrations.
 3. Reuse preset slugs instead of copying prompt and routing defaults into each caller.
 4. For async video, persist the returned job id and poll status until terminal.
@@ -26,9 +26,9 @@ Deliver a working Python integration that:
 ```python
 import os
 
-from ai_stats import AIStats
+from phaseo import Phaseo
 
-gateway = AIStats(api_key=os.environ["PHASEO_API_KEY"])
+gateway = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
 ```
 
 ## Preferred surface selection

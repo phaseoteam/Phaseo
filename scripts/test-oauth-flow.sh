@@ -15,7 +15,7 @@ echo ""
 
 # Configuration
 API_BASE_URL="${API_BASE_URL:-https://api.phaseo.ai}"
-WEB_BASE_URL="${WEB_BASE_URL:-https://phaseo.ai}"
+WEB_BASE_URL="${WEB_BASE_URL:-https://phaseo.app}"
 API_KEY="${API_KEY:-}"
 
 # Colors

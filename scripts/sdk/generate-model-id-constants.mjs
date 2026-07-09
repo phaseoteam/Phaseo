@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "../..");
 const specPath = path.join(repoRoot, "apps/docs/openapi/v1/openapi.yaml");
-const websiteBase = "https://phaseo.ai";
+const websiteBase = "https://phaseo.app";
 
 const specRaw = await fs.readFile(specPath, "utf8");
 const spec = yaml.load(specRaw);

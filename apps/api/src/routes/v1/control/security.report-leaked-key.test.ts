@@ -324,7 +324,7 @@ describe("public leaked key reports", () => {
 		});
 	});
 
-	it("matches legacy AI Stats-prefixed leaked keys", async () => {
+	it("matches legacy aistats-prefixed leaked keys", async () => {
 		const token = "aistats_v1_sk_kid123_supersecret";
 		const hash = createHmac("sha256", "pepper").update("supersecret").digest("hex");
 		state.keysRows.push({

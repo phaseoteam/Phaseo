@@ -1210,28 +1210,28 @@
 	"logo": {
 		"light": "/logo/light.svg",
 		"dark": "/logo/dark.svg",
-		"href": "https://phaseo.ai"
+		"href": "https://phaseo.app"
 	},
 	"navbar": {
 		"links": [
 			{
 				"label": "Migration Guide",
-				"href": "https://phaseo.ai/migrate"
+				"href": "https://phaseo.app/migrate"
 			},
 			{
 				"label": "Support",
-				"href": "https://phaseo.ai/help"
+				"href": "https://phaseo.app/help"
 			}
 		],
 		"primary": {
 			"type": "button",
 			"label": "Get API Key",
-			"href": "https://phaseo.ai/gateway/keys"
+			"href": "https://phaseo.app/gateway/keys"
 		}
 	},
 	"seo": {
 		"metatags": {
-			"canonical": "https://phaseo.ai"
+			"canonical": "https://phaseo.app/docs"
 		}
 	},
 	"metadata": {

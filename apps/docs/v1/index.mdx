@@ -14,13 +14,9 @@ If you are new to Phaseo, start with one successful request. If you already have
 For a new integration, use this path:
 
 1. Create an API key in the dashboard.
-2. Send one request to a `:free` model.
+2. Send one request to a current text model.
 3. Read the model output from the response.
 4. Move into the SDK, routing, or production guide that matches your next step.
-
-<Note>
-Free models can be used with zero deposited credits. Paid models require available wallet balance.
-</Note>
 
 ## First request
 
@@ -30,7 +26,7 @@ curl https://api.phaseo.ai/v1/responses \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "google/gemma-3-27b:free",
+    "model": "openai/gpt-5.6-sol",
     "input": "Reply with: docs ready",
     "temperature": 0
   }'
@@ -42,7 +38,7 @@ import Phaseo from "@phaseo/sdk";
 const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
-  model: "google/gemma-3-27b:free",
+  model: "openai/gpt-5.6-sol",
   input: "Reply with: docs ready",
   temperature: 0,
 });
@@ -57,7 +53,7 @@ client = Phaseo(api_key="YOUR_API_KEY")
 
 response = client.generate_response(
     {
-        "model": "google/gemma-3-27b:free",
+        "model": "openai/gpt-5.6-sol",
         "input": "Reply with: docs ready",
         "temperature": 0,
     }
@@ -166,7 +162,7 @@ Start here:
 	<Card title="Docs MCP" icon="plug-zap" href="./guides/integrations/docs-mcp">
 		Let Codex, Claude Code, Cursor, or VS Code search the live Phaseo docs while they work.
 	</Card>
-	<Card title="skill.md" icon="file-text" href="https://docs.phaseo.ai/skill.md">
+	<Card title="skill.md" icon="file-text" href="https://phaseo.app/docs/skill.md">
 		Capability summary for agents that need to understand what Phaseo can do and how requests work.
 	</Card>
 	<Card title="Integrations" icon="plug" href="./guides/integrations/index">
@@ -187,14 +183,14 @@ Use the data surfaces when you need to choose before you build:
 	<Card
 		title="Browse Models"
 		icon="database"
-		href="https://phaseo.ai/models"
+		href="https://phaseo.app/models"
 	>
 		Find models, pricing, context windows, capabilities, and provider offers in one place.
 	</Card>
 	<Card
 		title="Compare Models"
 		icon="diff"
-		href="https://phaseo.ai/compare"
+		href="https://phaseo.app/compare"
 	>
 		Compare performance, cost, and metadata side by side before you commit to one route.
 	</Card>

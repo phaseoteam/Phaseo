@@ -277,7 +277,7 @@ export function ChatSidebar({
 							aria-hidden="true"
 							className={cn(
 								"select-none",
-								collapsed ? "h-7" : "h-8",
+								collapsed ? "h-5" : "h-6",
 								"block dark:hidden",
 							)}
 						/>
@@ -287,7 +287,7 @@ export function ChatSidebar({
 							aria-hidden="true"
 							className={cn(
 								"select-none",
-								collapsed ? "h-7" : "h-8",
+								collapsed ? "h-5" : "h-6",
 								"hidden dark:block",
 							)}
 						/>

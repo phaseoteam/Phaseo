@@ -167,7 +167,7 @@ export function buildCompareHeaders(target: CompareTarget, apiKey: string): Head
 		"User-Agent": "phaseo-internal-gateway-compare/1.0",
 	};
 	if (target === "openrouter") {
-		headers["HTTP-Referer"] = "https://phaseo.ai";
+		headers["HTTP-Referer"] = "https://phaseo.app";
 		headers["X-Title"] = "Phaseo Internal Gateway Compare";
 	}
 	return headers;

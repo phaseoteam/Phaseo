@@ -27,8 +27,8 @@ jobs:
               id: app-token
               uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
               with:
-                  app-id: ${{ secrets.AI_STATS_APP_ID }}
-                  private-key: ${{ secrets.AI_STATS_APP_PRIVATE_KEY }}
+                  app-id: ${{ secrets.PHASEO_APP_ID }}
+                  private-key: ${{ secrets.PHASEO_APP_PRIVATE_KEY }}
 
             - name: Compute bot commit identity
               id: bot

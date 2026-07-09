@@ -29,7 +29,7 @@ const suggestions = [
 		icon: Layers,
 	},
 	{
-		href: "https://docs.phaseo.ai/v1",
+		href: "https://phaseo.app/docs/v1",
 		label: "Read the docs",
 		description:
 			"Check the documentation for guides, references, and examples.",

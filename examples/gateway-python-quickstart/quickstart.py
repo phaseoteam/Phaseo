@@ -38,7 +38,7 @@ load_local_env()
 
 BASE_URL = os.getenv("PHASEO_BASE_URL") or "https://api.phaseo.ai/v1".rstrip("/")
 API_KEY = os.getenv("PHASEO_API_KEY") or ""
-DEFAULT_MODEL = os.getenv("PHASEO_MODEL") or os.getenv("PHASEO_MODEL") or "openai/gpt-5-nano-2025-08-07"
+DEFAULT_MODEL = os.getenv("PHASEO_MODEL") or "openai/gpt-5.6-sol"
 APP_TITLE = os.getenv("PHASEO_APP_TITLE") or os.getenv("PHASEO_APP_TITLE") or "Phaseo Python Quickstart"
 HTTP_REFERER = os.getenv("PHASEO_HTTP_REFERER") or os.getenv("PHASEO_HTTP_REFERER") or "http://localhost"
 
@@ -156,7 +156,7 @@ def build_parser() -> argparse.ArgumentParser:
     chat.add_argument("--prompt", required=True)
 
     embeddings = sub.add_parser("embeddings", help="POST /embeddings")
-    embeddings.add_argument("--model", default="openai/text-embedding-3-small")
+    embeddings.add_argument("--model", default="google/gemini-embedding-2")
     embeddings.add_argument("--text", required=True)
 
     moderations = sub.add_parser("moderations", help="POST /moderations")
@@ -164,7 +164,7 @@ def build_parser() -> argparse.ArgumentParser:
     moderations.add_argument("--text", required=True)
 
     image = sub.add_parser("image", help="POST /images/generations")
-    image.add_argument("--model", default="openai/gpt-image-1")
+    image.add_argument("--model", default="openai/gpt-image-2")
     image.add_argument("--prompt", required=True)
 
     ocr = sub.add_parser("ocr", help="POST /ocr")

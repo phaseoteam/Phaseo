@@ -36,7 +36,7 @@ import {
 export const metadata: Metadata = buildMetadata({
 	title: "AI Models, Benchmarks & Gateway API",
 	description:
-		"Compare AI models, benchmarks, pricing and providers, then route them through one OpenAI-compatible gateway with transparent pricing.",
+		"Discover, route, and observe every AI model with an open source AI gateway and model intelligence layer.",
 	path: "/",
 	keywords: [
 		"AI models",
@@ -260,14 +260,15 @@ function LandingPage({ isBeta }: { isBeta: boolean }) {
 				<section className="space-y-12 border-b border-zinc-200/80 pb-20 dark:border-zinc-800/80">
 					<div className="mx-auto max-w-5xl space-y-8 text-center">
 						<div className="space-y-6">
-							<h1 className="mx-auto max-w-4xl text-5xl font-semibold tracking-[-0.07em] text-zinc-950 dark:text-zinc-50 md:text-7xl">
-								<span className="block">One API for Every AI Model</span>
-								<span className="mt-2 block">One Open Model Database</span>
+							<h1 className="text-balance mx-auto max-w-5xl text-5xl font-semibold leading-[0.96] tracking-[-0.065em] text-zinc-950 dark:text-zinc-50 md:text-7xl md:leading-[0.94] 2xl:max-w-7xl 2xl:whitespace-nowrap">
+								One Platform for Every AI Model
 							</h1>
-							<p className="mx-auto max-w-2xl text-lg leading-8 text-zinc-600 dark:text-zinc-300">
-								Open-source AI gateway and open model database, with
-								OpenAI-compatible drop-in access to 300+ models plus benchmarks,
-								pricing, and reliability data.
+							<p className="text-balance mx-auto max-w-[44rem] text-lg leading-8 text-zinc-600 dark:text-zinc-300 2xl:max-w-5xl 2xl:text-pretty">
+								Discover trusted data for 300+ AI models, route requests
+								through one{" "}
+								<span className="whitespace-nowrap">OpenAI-compatible</span>{" "}
+								gateway, and monitor pricing, reliability, usage, and performance
+								in one place.
 							</p>
 						</div>
 						<div

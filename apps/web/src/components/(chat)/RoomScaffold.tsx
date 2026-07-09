@@ -47,7 +47,7 @@ function RoomSidebarBrand() {
 	const collapsed = sidebarState === "collapsed" && !isMobile;
 	const brandLightSrc = collapsed ? "/logo_light.svg" : "/wordmark_light.svg";
 	const brandDarkSrc = collapsed ? "/logo_dark.svg" : "/wordmark_dark.svg";
-	const brandClassName = collapsed ? "h-7 select-none" : "h-8 select-none";
+	const brandClassName = collapsed ? "h-5 select-none" : "h-6 select-none";
 
 	return (
 		<>

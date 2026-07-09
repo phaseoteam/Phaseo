@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CurrentUserAvatar } from "@/components/ui/current-user-avatar";
+import { getSupportAvailability } from "@/lib/support/schedule";
 
 interface HeaderProps {
 	isLoggedIn: boolean;
@@ -74,6 +75,14 @@ export default function HeaderClient({
 		dark: { label: "Dark", icon: Moon },
 		system: { label: "System", icon: Monitor },
 	} as const;
+	const { isOpen: supportIsOpen } = getSupportAvailability();
+	const supportDotClasses = supportIsOpen
+		? "bg-emerald-500 ring-emerald-400/60"
+		: "bg-amber-500 ring-amber-400/60";
+	const supportDotClass =
+		supportDotClasses
+			.split(" ")
+			.find((value) => value.startsWith("bg-")) ?? "bg-muted-foreground";
 	const [activeWorkspaceId, setActiveTeamId] = useState<string | undefined>(
 		currentTeamId ?? teams[0]?.id,
 	);
@@ -125,7 +134,7 @@ export default function HeaderClient({
 		{ href: "/apps", label: "Apps", icon: AppWindow },
 		{ href: "/rankings", label: "Rankings", icon: Trophy },
 	];
-	const docsHref = "https://docs.phaseo.ai/v1";
+	const docsHref = "https://phaseo.app/docs/v1";
 
 	if (variant === "mobile") {
 		if (!isLoggedIn) {
@@ -250,6 +259,17 @@ export default function HeaderClient({
 					</Button>
 				</DropdownMenuTrigger>
 					<DropdownMenuContent align="end" className="w-56">
+						{(userRole === "editor" || userRole === "admin") && (
+							<>
+								<DropdownMenuItem asChild className="cursor-pointer text-sm">
+									<Link href="/internal" prefetch={false}>
+										<Lock className="h-4 w-4" />
+										<span>Internal</span>
+									</Link>
+								</DropdownMenuItem>
+								<DropdownMenuSeparator />
+							</>
+						)}
 						{isLoggedIn && teams.length > 0 && (
 							<>
 								<Popover
@@ -358,18 +378,6 @@ export default function HeaderClient({
 
 					{isLoggedIn ? (
 						<>
-							{(userRole === "editor" || userRole === "admin") && (
-								<>
-									<DropdownMenuItem asChild className="cursor-pointer text-sm">
-										<Link href="/internal" prefetch={false}>
-											<Lock className="h-4 w-4" />
-											<span>Internal</span>
-										</Link>
-									</DropdownMenuItem>
-									<DropdownMenuSeparator />
-								</>
-							)}
-
 							<DropdownMenuItem asChild className="cursor-pointer text-sm">
 								<Link href="/experiments" prefetch={false}>
 									<FlaskConical className="h-4 w-4" />
@@ -419,7 +427,26 @@ export default function HeaderClient({
 								<DropdownMenuItem asChild className="cursor-pointer text-sm">
 									<Link href="/contact" prefetch={false}>
 										<LifeBuoy className="h-4 w-4" />
-										<span>Support</span>
+										<span className="flex min-w-0 flex-1 items-center justify-between gap-3">
+											<span>Support</span>
+											<span
+												className="relative flex h-2.5 w-2.5 shrink-0"
+												aria-hidden="true"
+											>
+												<span
+													className={cn(
+														"absolute inline-flex h-full w-full animate-ping rounded-full opacity-60",
+														supportDotClass,
+													)}
+												/>
+												<span
+													className={cn(
+														"relative inline-flex h-full w-full rounded-full",
+														supportDotClass,
+													)}
+												/>
+											</span>
+										</span>
 									</Link>
 								</DropdownMenuItem>
 								<DropdownMenuItem asChild className="cursor-pointer text-sm">

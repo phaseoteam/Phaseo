@@ -52,7 +52,7 @@ export type ModelIdLiteral = KnownModelId;
  * Model identifier in `provider/model` format (for example: `openai/gpt-5.4`).
  *
  * Model page URL pattern:
- * `https://phaseo.ai/models/{provider/model}`
+ * `https://phaseo.app/models/{provider/model}`
  */
 // Allow new server-side models before a package release while preserving known-ID autocomplete.
 export type ModelId = KnownModelId | (string & {});

@@ -189,51 +189,68 @@ const ENDPOINT_CONFIGS: EndpointConfig[] = [
 
 const FALLBACK_MODELS: Record<EndpointId, string[]> = {
 	completions: [
-		"openai/gpt-4.1-mini",
-		"anthropic/claude-3.5-sonnet",
-		"google-ai-studio/gemini-2.5-flash",
+		"openai/gpt-5.6-sol",
+		"anthropic/claude-fable-5",
+		"google/gemini-3.1-pro-preview",
+		"spacex-ai/grok-4.5",
+		"moonshotai/kimi-k2.7-code",
+		"deepseek/deepseek-v4-pro",
+		"minimax/minimax-m3",
 	],
 	images: [
-		"openai/gpt-image-1",
-		"stability/stable-diffusion-3.5",
-		"google-ai-studio/image-3.0",
+		"openai/gpt-image-2",
+		"openai/gpt-image-1.5",
+		"google/gemini-3.1-flash-image",
 	],
-	video: ["openai/sora-1", "runway/gen-3", "luma/dream-machine"],
+	video: ["openai/sora-2", "openai/sora-2-pro", "google/veo-3.1-preview"],
 	audio: [
-		"openai/gpt-4o-mini-voice",
-		"elevenlabs/voice-v3",
-		"google-ai-studio/audiofx-1",
+		"eleven-labs/eleven-v3",
+		"openai/gpt-4o-mini-tts",
+		"google/gemini-3.1-flash-tts-preview",
 	],
 	embeddings: [
+		"google/gemini-embedding-2",
 		"openai/text-embedding-3-large",
-		"cohere/embed-multilingual-v3.0",
-		"nomic-ai/nomic-embed-text",
+		"qwen/text-embedding-v4",
 	],
 	moderations: [
 		"openai/omni-moderation-latest",
-		"meta/llama-guard-3",
-		"google-ai-studio/safescreen-1",
+		"meta/llama-guard-4-12b",
+		"mistral/mistral-moderation-2",
 	],
 };
 
 const PROMOTED_MODELS: Record<EndpointId, string[]> = {
 	completions: [
-		"openai/gpt-4.1-mini",
-		"anthropic/claude-3.5-sonnet",
-		"mistral/miro-1",
+		"openai/gpt-5.6-sol",
+		"anthropic/claude-fable-5",
+		"google/gemini-3.1-pro-preview",
+		"spacex-ai/grok-4.5",
+		"moonshotai/kimi-k2.7-code",
+		"deepseek/deepseek-v4-pro",
+		"minimax/minimax-m3",
 	],
 	images: [
-		"openai/gpt-image-1",
-		"stability/stable-diffusion-3.5",
-		"runway/gen-2",
+		"openai/gpt-image-2",
+		"openai/gpt-image-1.5",
+		"google/gemini-3.1-flash-image",
 	],
-	video: ["openai/sora-1", "runway/gen-3"],
-	audio: ["openai/gpt-4o-mini-voice", "elevenlabs/voice-v3"],
+	video: ["openai/sora-2", "openai/sora-2-pro", "google/veo-3.1-preview"],
+	audio: [
+		"eleven-labs/eleven-v3",
+		"openai/gpt-4o-mini-tts",
+		"google/gemini-3.1-flash-tts-preview",
+	],
 	embeddings: [
+		"google/gemini-embedding-2",
 		"openai/text-embedding-3-large",
-		"cohere/embed-multilingual-v3.0",
+		"qwen/text-embedding-v4",
 	],
-	moderations: ["openai/omni-moderation-latest"],
+	moderations: [
+		"openai/omni-moderation-latest",
+		"meta/llama-guard-4-12b",
+		"mistral/mistral-moderation-2",
+	],
 };
 
 const OPENAI_CLIENT_METHODS: Record<EndpointId, string> = {
@@ -778,7 +795,7 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 								selectedModels[currentConfig.id] ??
 								availableModels[0] ??
 								baseModels[0] ??
-								"openai/gpt-4.1-mini";
+								"openai/gpt-5.6-sol";
 
 							return (
 								<div className="space-y-3">

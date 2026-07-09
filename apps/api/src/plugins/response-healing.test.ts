@@ -564,7 +564,7 @@ describe("applyResponseHealingPlugin", () => {
 									type: "output_text",
 									text: JSON.stringify({
 										email: "team@example.com",
-										homepage: "https://docs.phaseo.ai/v1",
+										homepage: "https://phaseo.app/docs/v1",
 										runId: "123e4567-e89b-42d3-a456-426614174000",
 										updatedAt: "2026-05-09T12:00:00Z",
 										tags: ["ops", "gateway"],
@@ -582,7 +582,7 @@ describe("applyResponseHealingPlugin", () => {
 				type: "output_text",
 				text: JSON.stringify({
 					email: "team@example.com",
-					homepage: "https://docs.phaseo.ai/v1",
+					homepage: "https://phaseo.app/docs/v1",
 					runId: "123e4567-e89b-42d3-a456-426614174000",
 					updatedAt: "2026-05-09T12:00:00Z",
 					tags: ["ops", "gateway"],

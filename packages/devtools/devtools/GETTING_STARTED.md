@@ -375,7 +375,7 @@ fs.writeFileSync('telemetry.json', json);
 
 - Check out the [examples directory](../../sdk/sdk-ts/examples/) for more usage patterns
 - Read the [cross-language guide](./CROSS_LANGUAGE.md) for Python, Go, and other languages
-- Explore the [API documentation](https://docs.phaseo.ai/v1) for advanced features
+- Explore the [API documentation](https://phaseo.app/docs/v1) for advanced features
 - Join our [Discord](https://discord.gg/aQyywCvgZ5) for support and discussion
 
 ## Comparison to Other Tools

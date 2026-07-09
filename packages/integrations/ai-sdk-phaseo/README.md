@@ -1,6 +1,6 @@
 # Phaseo Gateway Provider for Vercel AI SDK
 
-Official [Vercel AI SDK](https://sdk.vercel.ai/docs) provider for [Phaseo Gateway](https://phaseo.ai/), enabling access to 30+ AI providers through a unified interface.
+Official [Vercel AI SDK](https://sdk.vercel.ai/docs) provider for [Phaseo Gateway](https://phaseo.app/), enabling access to 30+ AI providers through a unified interface.
 
 ## Features
 
@@ -292,7 +292,7 @@ Access 30+ AI providers through the gateway:
 -   **Fireworks**: Optimized inference for open models
 -   **Cerebras**: Extremely fast inference
 
-[View all supported models →](https://phaseo.ai/api-providers)
+[View all supported models →](https://phaseo.app/api-providers)
 
 ## Model ID Format
 
@@ -535,15 +535,15 @@ MIT License - see [LICENSE](../../LICENSE) for details.
 
 ## Links
 
--   [Phaseo Gateway](https://phaseo.ai/)
+-   [Phaseo Gateway](https://phaseo.app/)
 -   [Vercel AI SDK](https://sdk.vercel.ai/docs)
--   [Documentation](https://docs.phaseo.ai/v1)
--   [API Reference](https://docs.phaseo.ai/v1/api-reference/introduction)
+-   [Documentation](https://phaseo.app/docs/v1)
+-   [API Reference](https://phaseo.app/docs/v1/api-reference/introduction)
 -   [GitHub](https://github.com/phaseoteam/Phaseo)
 
 ## Support
 
--   **Documentation**: https://docs.phaseo.ai/v1
+-   **Documentation**: https://phaseo.app/docs/v1
 -   **Discord**: Join our community
 -   **Email**: support@phaseo.ai
 

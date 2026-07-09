@@ -10,7 +10,7 @@ import {
 	type EndpointRoute,
 } from "./endpointRoutes";
 
-const DOCS_BASE_URL = "https://docs.phaseo.ai/v1";
+const DOCS_BASE_URL = "https://phaseo.app/docs/v1";
 
 const ENDPOINT_DOCS_SLUGS: Record<string, string> = {
 	responses: "responses",

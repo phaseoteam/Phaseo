@@ -30,7 +30,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [ "${GITHUB_REPOSITORY_OWNER}" != "AI-Stats" ]; then
+          if [ "${GITHUB_REPOSITORY_OWNER}" != "phaseoteam" ]; then
             echo "::error::This workflow only runs in the canonical repository."
             exit 1
           fi

@@ -4,9 +4,9 @@
   <p><strong>Unified AI gateway and model intelligence for teams building with AI APIs.</strong></p>
 
   <p>
-    <a href="https://phaseo.ai">Website</a>
+    <a href="https://phaseo.app">Website</a>
     &middot;
-    <a href="https://docs.phaseo.ai/v1">Docs</a>
+    <a href="https://phaseo.app/docs/v1">Docs</a>
     &middot;
     <a href="https://github.com/phaseoteam/Phaseo/issues">Issues</a>
     &middot;
@@ -43,7 +43,7 @@ Phaseo keeps those decisions in one place: the gateway handles requests, while t
 
 ## Quickstart
 
-Create an API key at `https://phaseo.ai`, then call the gateway:
+Create an API key at `https://phaseo.app`, then call the gateway:
 
 ```bash
 curl https://api.phaseo.ai/v1/chat/completions \
@@ -117,9 +117,9 @@ pnpm docs:build
 
 ## Resources
 
-- Website: https://phaseo.ai
-- Docs: https://docs.phaseo.ai/v1
-- API reference: https://docs.phaseo.ai/v1/api-reference/introduction
+- Website: https://phaseo.app
+- Docs: https://phaseo.app/docs/v1
+- API reference: https://phaseo.app/docs/v1/api-reference/introduction
 - Issues: https://github.com/phaseoteam/Phaseo/issues
 - Good first issues: https://github.com/phaseoteam/Phaseo/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22
 - Discord: https://discord.gg/aQyywCvgZ5

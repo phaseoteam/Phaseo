@@ -177,7 +177,7 @@ const STREAMING_SNIPPET_LANGUAGES = new Set([
 	"php-sdk",
 	"ruby-sdk",
 ]);
-const DOCS_BASE_URL = "https://docs.phaseo.ai/v1";
+const DOCS_BASE_URL = "https://phaseo.app/docs/v1";
 const SERVICE_TIERS_DOCS_HREF = `${DOCS_BASE_URL}/guides/service-tiers`;
 const STREAMING_DOCS_HREF = `${DOCS_BASE_URL}/guides/streaming`;
 const ENDPOINT_DOCS_BY_VALUE: Partial<Record<string, { label: string; href: string }>> = {

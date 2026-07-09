@@ -9,13 +9,13 @@ Use this skill when the repository should call Phaseo through `@phaseo/sdk` inst
 
 ## Outcome
 Deliver a working TypeScript or JavaScript integration that:
-- imports `AIStats` from `@phaseo/sdk`
+- imports `Phaseo` from `@phaseo/sdk`
 - reads credentials from `PHASEO_API_KEY`
 - uses the smallest suitable SDK surface
 - preserves request ids and model ids for debugging
 
 ## Workflow
-1. Create one shared `AIStats` client.
+1. Create one shared `Phaseo` client.
 2. Prefer the Responses API for new text integrations.
 3. Reuse preset slugs instead of copying prompt and routing defaults into each caller.
 4. For async video, store the returned job id and poll until terminal.
@@ -24,9 +24,9 @@ Deliver a working TypeScript or JavaScript integration that:
 ## Canonical client setup
 
 ```ts
-import AIStats from "@phaseo/sdk";
+import { Phaseo } from "@phaseo/sdk";
 
-export const gateway = new AIStats({
+export const gateway = new Phaseo({
   apiKey: process.env.PHASEO_API_KEY!,
 });
 ```

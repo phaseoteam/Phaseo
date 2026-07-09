@@ -467,12 +467,12 @@ describe("text request schema validation", () => {
 		const parsed = AnthropicMessagesSchema.safeParse({
 			model: "claude-sonnet-4.6",
 			max_tokens: 1024,
-			messages: [{ role: "user", content: "read https://docs.phaseo.ai" }],
+			messages: [{ role: "user", content: "read https://phaseo.app/docs" }],
 			tools: [{
 				type: "web_fetch_20260209",
 				name: "web_fetch",
 				max_content_tokens: 9000,
-				allowed_domains: ["docs.phaseo.ai"],
+				allowed_domains: ["phaseo.app"],
 			}],
 			tool_choice: { type: "tool", name: "web_fetch" },
 		});
