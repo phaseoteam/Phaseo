@@ -213,6 +213,7 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 	const reasoningCandidate: IRReasoning | undefined = req.reasoning
 		? {
 			effort: req.reasoning.effort,
+			mode: req.reasoning.mode ?? undefined,
 			summary: req.reasoning.summary || undefined,
 			enabled: req.reasoning.enabled ?? undefined,
 			maxTokens: req.reasoning.max_tokens ?? undefined,

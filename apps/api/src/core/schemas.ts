@@ -228,6 +228,7 @@ export const ResponsesSchema = z.object({
     previous_response_id: z.string().optional(),
     reasoning: z.object({
         effort: z.enum(["none", "minimal", "low", "medium", "high", "xhigh", "max"]).nullable().optional(),
+        mode: z.enum(["standard", "pro"]).nullable().optional(),
         summary: z.enum(["auto", "concise", "detailed"]).nullable().optional(),
         enabled: z.boolean().nullable().optional(),
         max_tokens: z.number().int().nonnegative().nullable().optional(),
@@ -689,6 +690,7 @@ export const ChatCompletionsSchema = z.object({
     ).min(1),
     reasoning: z.object({
         effort: z.enum(["none", "minimal", "low", "medium", "high", "xhigh", "max"]).optional().default("medium"),
+        mode: z.enum(["standard", "pro"]).optional(),
         summary: z.enum(["auto", "concise", "detailed"]).optional().default("auto"),
         enabled: z.boolean().optional(),
         max_tokens: z.number().int().nonnegative().optional(),

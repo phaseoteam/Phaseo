@@ -403,6 +403,36 @@ function normalizeModelName(model?: string | null): string {
 	return parts[parts.length - 1] || value;
 }
 
+function normalizeOpenAIGpt56ProModelSlug(model?: string | null): {
+	model: string | null;
+	proMode: boolean;
+} {
+	const normalized = normalizeModelName(model);
+	if (!normalized) return { model: model ?? null, proMode: false };
+	const match = normalized.match(/^(gpt-5\.6-(?:sol|terra|luna))-pro$/i);
+	if (!match) return { model: model ?? null, proMode: false };
+	return { model: match[1].toLowerCase(), proMode: true };
+}
+
+function withOpenAIProReasoningMode(
+	ir: IRChatRequest,
+	providerId: string,
+	modelForRouting: string | null | undefined,
+): IRChatRequest {
+	if (providerId !== "openai") return ir;
+	const routed = normalizeOpenAIGpt56ProModelSlug(modelForRouting);
+	const requested = normalizeOpenAIGpt56ProModelSlug(ir.model);
+	if (!routed.proMode && !requested.proMode) return ir;
+
+	return {
+		...ir,
+		reasoning: {
+			...(ir.reasoning ?? {}),
+			mode: "pro",
+		},
+	};
+}
+
 function getSupportedEfforts(model: string): ReasoningEffort[] {
 	const normalized = normalizeModelName(model);
 	if (normalized in OPENAI_REASONING_EFFORT_SUPPORT) {
@@ -695,7 +725,9 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 		byokMeta: args.byokMeta,
 	} as any);
 
-	const modelForRouting = args.providerModelSlug ?? (args.ir as IRChatRequest).model;
+	const requestedRoutingModel = args.providerModelSlug ?? (args.ir as IRChatRequest).model;
+	const normalizedRoutingModel = normalizeOpenAIGpt56ProModelSlug(requestedRoutingModel);
+	const modelForRouting = normalizedRoutingModel.model ?? requestedRoutingModel;
 	const useNativeChatRoute =
 		args.providerId === "openai" &&
 		args.protocol === "openai.chat.completions" &&
@@ -841,9 +873,14 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 }
 
 export const executor: ProviderExecutor = async (execArgs: ExecutorExecuteArgs) => {
-	const normalized = withNormalizedReasoning(
+	const proModeIr = withOpenAIProReasoningMode(
 		execArgs.ir as IRChatRequest,
+		execArgs.providerId,
 		execArgs.providerModelSlug ?? (execArgs.ir as IRChatRequest).model,
+	);
+	const normalized = withNormalizedReasoning(
+		proModeIr,
+		execArgs.providerModelSlug ?? proModeIr.model,
 		execArgs.capabilityParams,
 	);
 	const processed = cherryPickIRParams(normalized, execArgs.capabilityParams);

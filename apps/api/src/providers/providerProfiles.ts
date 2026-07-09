@@ -73,6 +73,7 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 			paramPolicy: {
 				supportedParams: [
 					"provider_options.openai.context_management",
+					"reasoning.mode",
 				],
 			},
 			normalize: {
