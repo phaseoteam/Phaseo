@@ -21,16 +21,6 @@ export const VERCEL_SECURITY_NOTICE_HREF =
 
 export const SITE_NOTICES: SiteNotice[] = [
 	{
-		id: "maintenance-2026-07-09",
-		enabled: true,
-		audience: "all",
-		tone: "warning",
-		message:
-			"Maintenance is in progress. Some features may be temporarily unavailable. Please try again shortly if something is not working.",
-		showTiming: true,
-		endsAt: "2026-07-09T16:00:00.000Z",
-	},
-	{
 		id: "vercel-april-2026-security-incident",
 		enabled: false,
 		audience: "authenticated",
