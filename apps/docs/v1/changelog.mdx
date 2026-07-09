@@ -9,6 +9,8 @@ rss: true
 ### Features
 
 - Dropdown menus and tab selectors now use Base UI render composition consistently across chat, settings, usage, rankings, and data screens ([PR #938](https://github.com/phaseoteam/Phaseo/pull/938)).
+- Amazon Bedrock provider coverage was staged for SpaceXAI Grok 4.3 with Bedrock Mantle model id `xai.grok-4.3`, standard pricing, and current `us-west-2` in-region availability. The provider-model capability is currently disabled pending setup. AWS currently lists Grok 4.3 as the only SpaceXAI model on Bedrock, and does not list Geo or Global inference for it.
+- Amazon Bedrock OpenAI frontier model coverage was checked; AWS still documents GPT-5.5 and GPT-5.4 as regional/Geo in-region offerings, with Global cross-region pricing marked as coming soon.
 
 ### Model Releases
 
@@ -40,6 +42,9 @@ rss: true
 - Header search now lazy-loads a compact cached index only when opened, reducing normal dashboard payloads ([PR #920](https://github.com/phaseoteam/Phaseo/pull/920)).
 - Chat streaming, tool-call continuation, and model catalogue cache refresh paths were hardened for more reliable server-tool turns and model pages ([PR #919](https://github.com/phaseoteam/Phaseo/pull/919), [PR #918](https://github.com/phaseoteam/Phaseo/pull/918)).
 - API key reveal flows, internal navigation, and new-model Discord notifications were tightened for cleaner settings, admin, and release workflows ([PR #812](https://github.com/phaseoteam/Phaseo/pull/812), [PR #925](https://github.com/phaseoteam/Phaseo/pull/925), [PR #927](https://github.com/phaseoteam/Phaseo/pull/927)).
+- SiliconFlow provider coverage was added for Tencent Hy3, including the free route and current pricing.
+- xAI catalogue and provider labels were renamed to SpaceXAI across model pages, provider records, aliases, logos, and generated SDK/OpenAPI surfaces.
+- Aion 1.0 and Aion 1.0 Mini were marked deprecated and retired on July 4, 2026 after Aion Labs removed them from the live model endpoint.
 
 ### Model Releases
 
@@ -69,6 +74,26 @@ rss: true
 
 </Update>
 
+<Update label="July 6, 2026" tags={["Model Releases","Provider Coverage","Pricing"]}>
+
+### Model Releases
+
+- [OpenAI: GPT Realtime 2.1](https://phaseo.app/models/openai/gpt-realtime-2.1)
+- [OpenAI: GPT Realtime 2.1 Mini](https://phaseo.app/models/openai/gpt-realtime-2.1-mini)
+- [Tencent: Hy3](https://phaseo.app/models/tencent/hy3)
+
+### Provider Coverage
+
+- Amazon Bedrock Mantle was split into its own provider catalogue with model coverage and pricing for Anthropic, Google, MiniMax, MoonshotAI, NVIDIA, OpenAI, Qwen, SpaceXAI, and Z.AI models.
+- AtlasCloud and Novita provider coverage was added for Tencent Hy3, including free-route pricing where available.
+- Groq Qwen 3.6 gateway routing was disabled until provider pricing is available.
+
+### Pricing
+
+- DeepSeek V4 Flash and DeepSeek V4 Pro pricing now supports time-windowed provider rates.
+
+</Update>
+
 <Update label="July 5, 2026" tags={["Features"]}>
 
 ### Features
@@ -76,6 +101,9 @@ rss: true
 - Server-tool inputs, monitor history links, workspace credit cache invalidation, and pricing edge cases were hardened across gateway and web surfaces ([PR #900](https://github.com/phaseoteam/Phaseo/pull/900)).
 - Chat gateway target resolution now fails closed in production when the configured gateway URL is missing, while preserving local-development overrides ([PR #899](https://github.com/phaseoteam/Phaseo/pull/899)).
 - Anthropic and Bedrock request shaping now uses adaptive thinking controls for Claude Sonnet 5 and newer Opus 4.x models ([PR #901](https://github.com/phaseoteam/Phaseo/pull/901)).
+- Server-tool handling was hardened for datetime, web fetch, web search, image generation, and fusion workflows.
+- Monitor links now apply stricter URL safety checks.
+- GMICloud MiniMax M3 cached-read pricing and Google Vertex Gemini 3.1 Flash-Lite Image pricing validation were tightened.
 
 </Update>
 

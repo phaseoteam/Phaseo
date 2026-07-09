@@ -18,13 +18,23 @@ import { cn } from "@/lib/utils";
 
 const TAG_COLORS = [
 	"#52525b",
+	"#64748b",
 	"#2563eb",
-	"#059669",
-	"#d97706",
-	"#dc2626",
+	"#4f46e5",
 	"#7c3aed",
-	"#0891b2",
+	"#9333ea",
+	"#c026d3",
+	"#db2777",
 	"#be123c",
+	"#059669",
+	"#16a34a",
+	"#65a30d",
+	"#0891b2",
+	"#0284c7",
+	"#d97706",
+	"#ea580c",
+	"#dc2626",
+	"#991b1b",
 ];
 
 function makeTagId(name: string) {
@@ -39,37 +49,59 @@ function makeTagId(name: string) {
 type ChatTagsDialogProps = {
 	open: boolean;
 	thread: ChatThread | null;
+	threads?: ChatThread[];
 	availableTags: ChatTag[];
 	onOpenChange: (open: boolean) => void;
 	onSave: (tags: ChatTag[]) => void;
 };
 
+function getCommonTags(threads: ChatThread[]) {
+	if (threads.length === 0) return [];
+	const [firstThread, ...remainingThreads] = threads;
+	return (firstThread.tags ?? []).filter((tag) =>
+		remainingThreads.every((thread) =>
+			(thread.tags ?? []).some((entry) => entry.id === tag.id),
+		),
+	);
+}
+
 export function ChatTagsDialog({
 	open,
 	thread,
+	threads,
 	availableTags,
 	onOpenChange,
 	onSave,
 }: ChatTagsDialogProps) {
+	const targets = useMemo(
+		() => (threads && threads.length > 0 ? threads : thread ? [thread] : []),
+		[thread, threads],
+	);
 	const [selectedTags, setSelectedTags] = useState<ChatTag[]>(
-		() => thread?.tags ?? [],
+		() => getCommonTags(targets),
 	);
 	const [name, setName] = useState("");
 	const [color, setColor] = useState(TAG_COLORS[0]);
+	const multiple = targets.length > 1;
 
 	const selectedTagIds = useMemo(
 		() => new Set(selectedTags.map((tag) => tag.id)),
 		[selectedTags],
 	);
+	const normalizedName = name.trim().replace(/\s+/g, " ");
+	const matchingExistingTag = normalizedName
+		? availableTags.find(
+				(tag) => tag.name.toLowerCase() === normalizedName.toLowerCase(),
+			)
+		: null;
+	const canAddTag = normalizedName.length > 0;
+	const createButtonLabel = matchingExistingTag ? "Add tag" : "Create tag";
 
 	const addTag = () => {
-		const normalizedName = name.trim().replace(/\s+/g, " ");
 		if (!normalizedName) return;
-		const existing = availableTags.find(
-			(tag) => tag.name.toLowerCase() === normalizedName.toLowerCase(),
-		);
 		const nextTag =
-			existing ?? { id: makeTagId(normalizedName), name: normalizedName, color };
+			matchingExistingTag ??
+			{ id: makeTagId(normalizedName), name: normalizedName, color };
 		setSelectedTags((prev) => {
 			if (prev.some((tag) => tag.id === nextTag.id)) return prev;
 			return [...prev, nextTag];
@@ -91,15 +123,22 @@ export function ChatTagsDialog({
 			<DialogContent className="max-w-lg gap-5 p-5">
 				<DialogHeader>
 					<DialogTitle>Chat Tags</DialogTitle>
-					<DialogDescription>
-						Organise this chat with tags that can be filtered from the sidebar.
-					</DialogDescription>
+					{multiple ? (
+						<DialogDescription>
+							Apply tags to {targets.length} selected chats.
+						</DialogDescription>
+					) : null}
 				</DialogHeader>
 				<div className="grid gap-4">
 					{availableTags.length > 0 ? (
 						<div className="grid gap-2">
-							<Label>Existing Tags</Label>
-							<div className="flex max-h-32 flex-wrap gap-2 overflow-y-auto rounded-xl border border-border bg-muted/20 p-2">
+							<div className="flex items-center justify-between gap-3">
+								<Label>Choose existing tags</Label>
+								<span className="text-xs text-muted-foreground">
+									{selectedTags.length} selected
+								</span>
+							</div>
+							<div className="flex max-h-36 flex-wrap gap-2 overflow-y-auto rounded-xl border border-border bg-muted/20 p-2">
 								{availableTags.map((tag) => {
 									const selected = selectedTagIds.has(tag.id);
 									return (
@@ -127,50 +166,66 @@ export function ChatTagsDialog({
 						</div>
 					) : null}
 					<div className="grid gap-2">
-						<Label htmlFor="chat-tag-name">New Tag</Label>
-						<div className="flex gap-2">
-							<div className="relative min-w-0 flex-1">
-								<TagIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-								<Input
-									id="chat-tag-name"
-									value={name}
-									onChange={(event) => setName(event.target.value)}
-									onKeyDown={(event) => {
-										if (event.key === "Enter") {
-											event.preventDefault();
-											addTag();
-										}
-									}}
-									placeholder="Research, billing, ideas..."
-									className="pl-9"
-								/>
+						<div className="flex items-center justify-between gap-3">
+							<Label htmlFor="chat-tag-name">Create a tag</Label>
+							{matchingExistingTag ? (
+								<span className="text-xs text-muted-foreground">
+									Matches existing tag
+								</span>
+							) : null}
+						</div>
+						<div className="relative min-w-0">
+							<TagIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+							<Input
+								id="chat-tag-name"
+								value={name}
+								onChange={(event) => setName(event.target.value)}
+								onKeyDown={(event) => {
+									if (event.key === "Enter") {
+										event.preventDefault();
+										addTag();
+									}
+								}}
+								placeholder="Research, billing, ideas..."
+								className="pl-9"
+							/>
+						</div>
+						{matchingExistingTag ? null : (
+							<div className="grid gap-1.5">
+								<span className="text-xs text-muted-foreground">Color</span>
+								<div className="grid grid-cols-9 gap-1.5 rounded-xl border border-border bg-muted/20 p-2">
+									{TAG_COLORS.map((option) => (
+										<button
+											key={option}
+											type="button"
+											className={cn(
+												"size-6 rounded-full border border-border ring-offset-background transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+												option === color &&
+													"ring-2 ring-foreground ring-offset-2",
+											)}
+											style={{ backgroundColor: option }}
+											onClick={() => setColor(option)}
+											aria-label={`Use tag color ${option}`}
+											aria-pressed={option === color}
+										/>
+									))}
+								</div>
 							</div>
-							<div className="flex items-center gap-1 rounded-xl border border-border px-1.5">
-								{TAG_COLORS.slice(0, 5).map((option) => (
-									<button
-										key={option}
-										type="button"
-										className="h-5 w-5 rounded-full border border-border ring-offset-background transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-										style={{
-											backgroundColor: option,
-											boxShadow:
-												option === color
-													? "0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--foreground))"
-													: undefined,
-										}}
-										onClick={() => setColor(option)}
-										aria-label={`Use tag color ${option}`}
-									/>
-								))}
-							</div>
-							<Button type="button" size="icon" onClick={addTag}>
+						)}
+						<div>
+							<Button
+								type="button"
+								className="w-full"
+								onClick={addTag}
+								disabled={!canAddTag}
+							>
 								<Plus className="h-4 w-4" />
-								<span className="sr-only">Add tag</span>
+								{createButtonLabel}
 							</Button>
 						</div>
 					</div>
 					<div className="grid gap-2">
-						<Label>Assigned Tags</Label>
+						<Label>Assigned tags</Label>
 						{selectedTags.length > 0 ? (
 							<div className="flex flex-wrap gap-2">
 								{selectedTags.map((tag) => (

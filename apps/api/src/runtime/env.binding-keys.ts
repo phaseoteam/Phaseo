@@ -181,6 +181,8 @@ export const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "OVH_AI_ENDPOINTS_URL",
     "RELACE_API_KEY",
     "RELACE_BASE_URL",
+    "SAKANA_API_KEY",
+    "SAKANA_BASE_URL",
     "SAMBANOVA_API_KEY",
     "SAMBANOVA_BASE_URL",
     "SCW_SECRET_KEY",

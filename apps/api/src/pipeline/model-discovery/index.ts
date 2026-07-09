@@ -222,7 +222,7 @@ const PRICING_EXTRACTION_MAX_DEPTH = 4;
 const MAX_SAMPLE_TEXT_LENGTH = 180;
 const PROVIDER_ID_ALIASES: Record<string, string> = {
 	"alibaba-cloud": "alibaba",
-	"xai": "x-ai",
+	"xai": "spacex-ai",
 	"atlas-cloud": "atlascloud",
 };
 const PROVIDER_API_PRICING_WATCH_PROVIDER_IDS = new Set<string>(["atlascloud", "crofai"]);
@@ -326,7 +326,7 @@ const PROVIDERS: ProviderConfig[] = [
 			modelsEndpoint: "https://api.inference.wandb.ai/v1/models",
 			apiKeyEnv: ["WEIGHTSANDBIASES_API_KEY", "WANDB_API_KEY"],
 		},
-	{ providerId: "x-ai", providerName: "xAI", modelsEndpoint: "https://api.x.ai/v1/models", apiKeyEnv: ["X_AI_API_KEY"] },
+	{ providerId: "spacex-ai", providerName: "SpaceXAI", modelsEndpoint: "https://api.x.ai/v1/models", apiKeyEnv: ["X_AI_API_KEY"] },
 	{ providerId: "xiaomi", providerName: "Xiaomi", modelsEndpoint: "https://api.xiaomimimo.com/v1/models", apiKeyEnv: ["XIAOMI_MIMO_API_KEY"] },
 	{ providerId: "z-ai", providerName: "z.AI", modelsEndpoint: "https://api.z.ai/api/paas/v4/models", apiKeyEnv: ["ZAI_API_KEY"] },
 ];

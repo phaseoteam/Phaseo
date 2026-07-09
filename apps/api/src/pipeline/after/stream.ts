@@ -26,6 +26,8 @@ import { normalizeFinishReason } from "../audit/normalize-finish-reason";
 import { applyByokServiceFee } from "../pricing/byok-fee";
 import {
     attachToolUsageMetrics,
+    collectOutputToolCallNamesFromPayload,
+    collectRequestedToolNames,
     countOutputToolCallsFromPayload,
     countRequestedTools,
     countRequestedToolResults,
@@ -53,6 +55,69 @@ function getStreamTerminalPayload(frame: any): any | null {
         return frame.response;
     }
     return null;
+}
+
+function getUsageOutputTokens(usage: any): number {
+    if (!usage || typeof usage !== "object") return 0;
+    const value =
+        usage.completion_tokens ??
+        usage.output_tokens ??
+        usage.output_text_tokens ??
+        usage.outputTokens ??
+        usage.output_tokens_total ??
+        usage.output ??
+        0;
+    const numeric = Number(value);
+    return Number.isFinite(numeric) && numeric > 0 ? numeric : 0;
+}
+
+function attachStreamTimingMeta(args: {
+    ctx: PipelineContext;
+    frame: any;
+    usage: any;
+}) {
+    const { ctx, frame, usage } = args;
+    if (!frame || typeof frame !== "object") return;
+    if (typeof ctx.meta.generation_ms !== "number") return;
+
+    const generationMs = ctx.meta.generation_ms;
+    const tokensOut = getUsageOutputTokens(usage);
+    const throughputTps =
+        typeof ctx.meta.throughput_tps === "number"
+            ? ctx.meta.throughput_tps
+            : generationMs > 0 && tokensOut > 0
+                ? tokensOut / (generationMs / 1000)
+                : null;
+
+    frame.meta = {
+        ...frame.meta,
+        throughput_tps: throughputTps,
+        generation_ms: generationMs,
+        latency_ms: ctx.meta.latency_ms ?? 0,
+        end_to_end_ms: ctx.meta.end_to_end_ms ?? null,
+    };
+    const responsePayload =
+        frame.response &&
+        typeof frame.response === "object" &&
+        frame.response.object === "response"
+            ? frame.response
+            : frame.object === "response"
+                ? frame
+                : null;
+    if (responsePayload) {
+        responsePayload.metadata = {
+            ...(responsePayload.metadata && typeof responsePayload.metadata === "object"
+                ? responsePayload.metadata
+                : {}),
+            latency_ms: ctx.meta.latency_ms ?? 0,
+            generation_ms: generationMs,
+            end_to_end_ms: ctx.meta.end_to_end_ms ?? null,
+            throughput_tps: throughputTps,
+        };
+    }
+    if (frame.meta && typeof frame.meta === "object" && "finish_reason" in frame.meta) {
+        delete (frame.meta as Record<string, unknown>).finish_reason;
+    }
 }
 
 export async function handleStreamResponse(
@@ -83,9 +148,19 @@ export async function handleStreamResponse(
     let latestGatewaySnapshot: any = null;
     let appliedStreamResponsePlugins = false;
     const streamedToolCallKeys = new Set<string>();
+    const streamedToolCallNames = new Set<string>();
     const requestedToolCount = countRequestedTools(ctx.body);
+    const requestedToolNames = collectRequestedToolNames(ctx.body);
     const requestedToolResultCount = countRequestedToolResults(ctx.body);
     let cachedOutputToolCallCount: number | null = null;
+    let cachedOutputToolCallNames: string[] | null = null;
+    const buildToolUsage = () => ({
+        request_tool_count: requestedToolCount > 0 ? requestedToolCount : null,
+        request_tool_result_count: requestedToolResultCount > 0 ? requestedToolResultCount : null,
+        output_tool_call_count: cachedOutputToolCallCount,
+        request_tool_names: requestedToolNames.length > 0 ? requestedToolNames : null,
+        output_tool_call_names: cachedOutputToolCallNames,
+    });
     const withProviderHint = (usage: any) => {
         if (!usage || typeof usage !== "object") return usage;
         return {
@@ -115,6 +190,10 @@ export async function handleStreamResponse(
                 `choice:${event.choiceIndex ?? 0}:tool:${event.toolIndex ?? streamedToolCallKeys.size}`;
             streamedToolCallKeys.add(key);
             cachedOutputToolCallCount = streamedToolCallKeys.size;
+            if (event.toolName) {
+                streamedToolCallNames.add(event.toolName);
+                cachedOutputToolCallNames = Array.from(streamedToolCallNames);
+            }
             return;
         }
 
@@ -172,7 +251,8 @@ export async function handleStreamResponse(
                         shapedUsage,
                         card,
                         ctx.body,
-                        tier
+                        tier,
+                        ctx.meta
                     );
                     if (ctx.meta.debug) {
                         console.log("[gateway][pricing] stream frame priced usage", {
@@ -209,7 +289,8 @@ export async function handleStreamResponse(
                         shapedUsage,
                         card,
                         ctx.body,
-                        tier
+                        tier,
+                        ctx.meta
                     );
                     if (ctx.meta.debug) {
                         console.log("[gateway][pricing] stream response priced usage", {
@@ -251,21 +332,28 @@ export async function handleStreamResponse(
                 latestGatewaySnapshot = pluginOutcome.payload;
             }
 
-            // Add meta to final frame when available and requested
-            if (includeMeta && next?.object === "chat.completion" && next?.usage && ctx.meta.generation_ms !== undefined) {
-                const generationMs = ctx.meta.generation_ms;
-                const tokensOut = next.usage.completion_tokens ?? next.usage.output_tokens ?? next.usage.output_text_tokens ?? 0;
-                const throughputTps = generationMs > 0 ? tokensOut / (generationMs / 1000) : 0;
-
-                next.meta = {
-                    ...next.meta,
-                    throughput_tps: throughputTps,
-                    generation_ms: generationMs,
-                    latency_ms: ctx.meta.latency_ms ?? 0
-                };
-                if (next.meta && typeof next.meta === "object" && "finish_reason" in next.meta) {
-                    delete (next.meta as Record<string, unknown>).finish_reason;
-                }
+            // Add API timing meta to terminal stream frames when requested.
+            // Responses streams previously only received routing meta here, so chat
+            // clients could not display API latency/generation/throughput values.
+            const matchedTimingFrame =
+                next?.object === "chat.completion" ||
+                next?.object === "response" ||
+                next?.response?.object === "response" ||
+                next?.response?.object === "chat.completion" ||
+                next?.type === "message_delta" ||
+                next?.type === "message_stop";
+            const timingUsage =
+                next.usage ??
+                next.response?.usage ??
+                next.message?.usage ??
+                (next?.type === "message_stop" ? latestStreamUsageRaw : null) ??
+                null;
+            if ((includeMeta || ctx.meta?.debug?.enabled) && matchedTimingFrame) {
+                attachStreamTimingMeta({
+                    ctx,
+                    frame: next,
+                    usage: timingUsage,
+                });
             }
             if (
                 (includeMeta || ctx.meta?.debug?.enabled) &&
@@ -320,6 +408,10 @@ export async function handleStreamResponse(
             const outputToolCalls = countOutputToolCallsFromPayload(payload);
             if (outputToolCalls > 0) {
                 cachedOutputToolCallCount = outputToolCalls;
+            }
+            const outputToolCallNames = collectOutputToolCallNamesFromPayload(payload);
+            if (outputToolCallNames.length > 0) {
+                cachedOutputToolCallNames = outputToolCallNames;
             }
             if (finishReason) {
                 cachedFinishReason = finishReason;
@@ -383,10 +475,7 @@ export async function handleStreamResponse(
             // console.log("[DEBUG After Stream] Final usage from stream:", usageRaw);
             const shapedUsage = attachToolUsageMetrics(
                 shapeStreamUsageForClient(usageForShaping),
-                {
-                    request_tool_count: requestedToolCount > 0 ? requestedToolCount : null,
-                    output_tool_call_count: cachedOutputToolCallCount,
-                }
+                buildToolUsage()
             );
             const baseModel = getBaseModel(ctx.model);
             const healthContext = (result as any).healthContext ?? null;
@@ -427,11 +516,7 @@ export async function handleStreamResponse(
 
             const finalizeFromBill = async (bill: Bill | null | undefined) => {
                 if (!bill) return false;
-                const toolUsage = {
-                    request_tool_count: requestedToolCount > 0 ? requestedToolCount : null,
-                    request_tool_result_count: requestedToolResultCount > 0 ? requestedToolResultCount : null,
-                    output_tool_call_count: cachedOutputToolCallCount,
-                };
+                const toolUsage = buildToolUsage();
                 const usageFromBill = stripUsagePricing(bill.usage);
                 let usageWithToolMetrics = attachToolUsageMetrics(
                     usageFromBill ?? shapedUsage ?? stripUsagePricing(result.bill.usage),
@@ -460,7 +545,8 @@ export async function handleStreamResponse(
                         shapeStreamUsageForClient(usageWithToolMetrics),
                         card,
                         ctx.body,
-                        tier
+                        tier,
+                        ctx.meta
                     );
                     usageWithToolMetrics = attachToolUsageMetrics(repriced.pricedUsage, toolUsage);
                     totalCentsOverride = repriced.totalCents;
@@ -515,19 +601,13 @@ export async function handleStreamResponse(
 
             if (!effectiveUsageRaw) {
                 const usageWithToolMetrics = attachToolUsageMetrics(null, {
-                    request_tool_count: requestedToolCount > 0 ? requestedToolCount : null,
-                    request_tool_result_count: requestedToolResultCount > 0 ? requestedToolResultCount : null,
-                    output_tool_call_count: cachedOutputToolCallCount,
+                    ...buildToolUsage(),
                 });
                 const finalized = result.usageFinalizer ? await result.usageFinalizer() : null;
                 if (await finalizeFromBill(finalized)) return;
                 const fallbackUsageWithToolMetrics = attachToolUsageMetrics(
                     shapeStreamUsageForClient(usageForShaping),
-                    {
-                        request_tool_count: requestedToolCount > 0 ? requestedToolCount : null,
-                        request_tool_result_count: requestedToolResultCount > 0 ? requestedToolResultCount : null,
-                        output_tool_call_count: cachedOutputToolCallCount,
-                    }
+                    buildToolUsage()
                 );
                 const pricedWithByok = await applyByokServiceFee({
                     workspaceId: ctx.workspaceId,
@@ -563,7 +643,8 @@ export async function handleStreamResponse(
                 shapedUsage,
                 card,
                 ctx.body,
-                tier
+                tier,
+                ctx.meta
             );
             if (ctx.meta.debug) {
                 console.log("[gateway][pricing] stream final priced usage", {
@@ -578,9 +659,7 @@ export async function handleStreamResponse(
             }
 
             const usageWithToolMetrics = attachToolUsageMetrics(pricedUsage, {
-                request_tool_count: requestedToolCount > 0 ? requestedToolCount : null,
-                request_tool_result_count: requestedToolResultCount > 0 ? requestedToolResultCount : null,
-                output_tool_call_count: cachedOutputToolCallCount,
+                ...buildToolUsage(),
             });
             const pricedWithByok = await applyByokServiceFee({
                 workspaceId: ctx.workspaceId,

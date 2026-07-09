@@ -39,12 +39,14 @@ export type UnifiedChatEndpoint =
     | "embeddings";
 
 export type ChatServerToolType =
-    | "gateway:datetime"
-    | "phaseo:web_search"
-    | "phaseo:web_fetch"
-    | "phaseo:advisor"
-    | "phaseo:image_generation"
-    | "phaseo:apply_patch";
+	| "gateway:datetime"
+	| "phaseo:web_search"
+	| "phaseo:web_fetch"
+	| "phaseo:advisor"
+	| "phaseo:image_generation"
+	| "phaseo:apply_patch"
+	| "phaseo:fusion"
+	| "phaseo:subagent";
 
 export type ChatAdvisorServerToolConfig = {
     name?: string;
@@ -54,11 +56,67 @@ export type ChatAdvisorServerToolConfig = {
     maxUses?: number | null;
     maxCompletionTokens?: number | null;
     temperature?: number | null;
-    reasoningEffort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
+    reasoningEffort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+};
+
+export type ChatSubagentServerToolConfig = {
+    model?: string;
+    instructions?: string;
+    maxUses?: number | null;
+    maxCompletionTokens?: number | null;
+    temperature?: number | null;
+    reasoningEffort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+};
+
+export type ChatFusionServerToolConfig = {
+    models?: string[];
+    judgeModel?: string;
+    maxUses?: number | null;
+};
+
+export type ChatDatetimeServerToolConfig = {
+    timezone?: string;
+};
+
+export type ChatWebSearchServerToolConfig = {
+    engine?: "auto" | "native" | "exa" | "parallel" | "firecrawl" | "perplexity";
+    searchContextSize?: "low" | "medium" | "high";
+    maxResults?: number | null;
+    maxTotalResults?: number | null;
+    maxCharacters?: number | null;
+    allowedDomains?: string;
+    excludedDomains?: string;
+    includeHighlights?: boolean;
+    includeText?: boolean;
+};
+
+export type ChatWebFetchServerToolConfig = {
+    engine?: "auto" | "native" | "direct" | "exa" | "parallel" | "firecrawl";
+    maxChars?: number | null;
+    allowedDomains?: string;
+    blockedDomains?: string;
+};
+
+export type ChatImageGenerationServerToolConfig = {
+    model?: string;
+    quality?: "auto" | "low" | "medium" | "high";
+    size?: string;
+    aspectRatio?: string;
+    background?: "auto" | "transparent" | "opaque";
+    outputFormat?: "auto" | "png" | "jpeg" | "webp";
+    outputCompression?: number | null;
+    moderation?: "auto" | "low" | "standard";
 };
 
 export type ChatServerToolConfigs = {
+    datetime?: ChatDatetimeServerToolConfig;
+    webSearch?: ChatWebSearchServerToolConfig;
+    webFetch?: ChatWebFetchServerToolConfig;
     advisor?: ChatAdvisorServerToolConfig;
+    advisors?: ChatAdvisorServerToolConfig[];
+    imageGeneration?: ChatImageGenerationServerToolConfig;
+    fusion?: ChatFusionServerToolConfig;
+    subagent?: ChatSubagentServerToolConfig;
 };
 
 export type ChatModelSettings = {
@@ -76,7 +134,7 @@ export type ChatModelSettings = {
     stream: boolean;
     providerId?: string;
     reasoningEnabled?: boolean;
-    reasoningEffort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
+    reasoningEffort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
     endpoint?: UnifiedChatEndpoint;
     webSearchEnabled?: boolean;
     apiServerToolsEnabled?: boolean;
@@ -108,6 +166,7 @@ export type ChatThread = {
 
 const DB_NAME = "phaseo-chat";
 const LEGACY_DB_NAME = "ai-stats-chat";
+const DEFAULT_CHAT_TAG_COLOR = "#737373";
 const DB_VERSION = 7;
 const LEGACY_TEXT_STORE_NAME = "chats";
 const TAG_STORE_NAME = "chat-tags";
@@ -126,6 +185,42 @@ const ROOM_STORE_NAMES: Record<ChatRoomId, string> = {
 
 function getStoreName(roomId: ChatRoomId): string {
     return ROOM_STORE_NAMES[roomId];
+}
+
+export function normalizeChatTags(value: unknown): ChatTag[] {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+
+    const byId = new Map<string, ChatTag>();
+    for (const item of value) {
+        if (!item || typeof item !== "object" || Array.isArray(item)) {
+            continue;
+        }
+
+        const candidate = item as Partial<Record<keyof ChatTag, unknown>>;
+        const id = typeof candidate.id === "string" ? candidate.id.trim() : "";
+        const name = typeof candidate.name === "string" ? candidate.name.trim() : "";
+        const color =
+            typeof candidate.color === "string" && candidate.color.trim()
+                ? candidate.color.trim()
+                : DEFAULT_CHAT_TAG_COLOR;
+
+        if (!id || !name) {
+            continue;
+        }
+
+        byId.set(id, { id, name, color });
+    }
+
+    return Array.from(byId.values());
+}
+
+export function normalizeChatThread(chat: ChatThread): ChatThread {
+    return {
+        ...chat,
+        tags: normalizeChatTags((chat as { tags?: unknown }).tags),
+    };
 }
 
 function openDb(): Promise<IDBDatabase> {
@@ -267,7 +362,7 @@ export async function getAllChats(roomId: ChatRoomId = "text"): Promise<ChatThre
         (store) => store.getAll(),
         roomId,
     );
-    return Array.isArray(result) ? result : [];
+    return Array.isArray(result) ? result.map(normalizeChatThread) : [];
 }
 
 export async function getChat(
@@ -279,14 +374,18 @@ export async function getChat(
         (store) => store.get(id),
         roomId,
     );
-    return result ?? null;
+    return result ? normalizeChatThread(result) : null;
 }
 
 export async function upsertChat(
     chat: ChatThread,
     roomId: ChatRoomId = "text",
 ): Promise<void> {
-    await withStore("readwrite", (store) => store.put(chat), roomId);
+    await withStore(
+        "readwrite",
+        (store) => store.put(normalizeChatThread(chat)),
+        roomId,
+    );
 }
 
 export async function deleteChat(
@@ -305,20 +404,21 @@ export async function getAllChatTags(): Promise<ChatTag[]> {
         request.onerror = () => reject(request.error ?? new Error("IndexedDB error"));
         request.onsuccess = () => {
             const result = request.result;
-            resolve(Array.isArray(result) ? (result as ChatTag[]) : []);
+            resolve(normalizeChatTags(result));
         };
     });
 }
 
 export async function upsertChatTags(tags: ChatTag[]): Promise<void> {
-    if (tags.length === 0) return;
+    const normalizedTags = normalizeChatTags(tags);
+    if (normalizedTags.length === 0) return;
     const db = await openDb();
     await new Promise<void>((resolve, reject) => {
         const tx = db.transaction(TAG_STORE_NAME, "readwrite");
         const store = tx.objectStore(TAG_STORE_NAME);
         tx.onerror = () => reject(tx.error ?? new Error("IndexedDB error"));
         tx.oncomplete = () => resolve();
-        for (const tag of tags) {
+        for (const tag of normalizedTags) {
             store.put(tag);
         }
     });

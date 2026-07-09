@@ -1,0 +1,36 @@
+{
+  "api_provider_id": "amazon-bedrock-mantle",
+  "api_provider_name": "Amazon Bedrock (Mantle)",
+  "provider_family_id": "amazon-bedrock",
+  "offer_scope": "global",
+  "description": "Amazon Bedrock models served through the Bedrock Mantle OpenAI-compatible APIs.",
+  "link": "https://docs.aws.amazon.com/bedrock/latest/userguide/apis.html",
+  "residency_mode": "customer_selectable",
+  "default_execution_regions": [
+    "us",
+    "eu",
+    "apac",
+    "jp",
+    "au"
+  ],
+  "default_data_regions": [
+    "us",
+    "eu",
+    "apac",
+    "jp",
+    "au"
+  ],
+  "zero_data_retention": "unknown",
+  "residency_source_url": "https://docs.aws.amazon.com/bedrock/latest/userguide/models-region-compatibility.html",
+  "regional_pricing_mode": "source_region_rates",
+  "pricing_source_url": "https://docs.aws.amazon.com/bedrock/latest/userguide/models-region-compatibility.html",
+  "regional_pricing_notes": "Bedrock Mantle pricing follows Amazon Bedrock model pricing. AI Stats keeps Mantle separate from Converse because AWS exposes different model coverage and API surfaces across the two endpoints.",
+  "country_code": "US",
+  "status": "Alpha",
+  "colour": "#FF9900",
+  "privacy_policy_url": "https://aws.amazon.com/privacy/",
+  "terms_of_service_url": "https://aws.amazon.com/service-terms/",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "AWS says Amazon Bedrock inputs and outputs are never shared with model providers and are not used to train base models.",
+  "prompt_training_source_url": "https://aws.amazon.com/bedrock/security-privacy-responsible-ai/"
+}

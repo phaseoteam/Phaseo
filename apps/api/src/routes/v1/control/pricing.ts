@@ -24,6 +24,8 @@ type PricingModel = {
         price_per_unit: string;
         currency: string;
         conditions?: any[];
+        billing_timestamp_basis?: string;
+        time_windows?: any[];
     }>;
 };
 
@@ -111,7 +113,7 @@ async function handlePricingModels(req: Request) {
 
         const { data: pricingRules, error: prError } = await supabase
             .from("data_api_pricing_rules")
-            .select("rule_id, model_key, capability_id, pricing_plan, meter, unit, unit_size, price_per_unit, currency, priority, effective_from, effective_to, match")
+            .select("rule_id, model_key, capability_id, pricing_plan, meter, unit, unit_size, price_per_unit, currency, priority, effective_from, effective_to, match, billing_timestamp_basis, time_windows")
             .or([
                 "and(effective_from.is.null,effective_to.is.null)",
                 `and(effective_from.is.null,effective_to.gt.${nowIso})`,
@@ -174,6 +176,8 @@ async function handlePricingModels(req: Request) {
                 price_per_unit: String(rule.price_per_unit ?? "0"),
                 currency: rule.currency ?? "USD",
                 conditions: Array.isArray(rule.match) ? rule.match : [],
+                billing_timestamp_basis: rule.billing_timestamp_basis ?? "request_start",
+                time_windows: Array.isArray(rule.time_windows) ? rule.time_windows : [],
             });
         }
 
@@ -216,7 +220,15 @@ async function handlePricingCalculate(req: Request) {
 
     try {
         const body = await req.json();
-        const { provider, model, endpoint, usage } = body;
+        const {
+            provider,
+            model,
+            endpoint,
+            usage,
+            request_started_at,
+            provider_accepted_at,
+            completed_at,
+        } = body;
 
         if (!provider || !model || !endpoint || !usage) {
             return json(
@@ -238,7 +250,17 @@ async function handlePricingCalculate(req: Request) {
         }
 
         // Calculate pricing
-        const result = computeBillSummary(usage, card, {}, "standard");
+        const pricingOptions: Record<string, unknown> = {};
+        if (request_started_at != null) pricingOptions.request_started_at = request_started_at;
+        if (provider_accepted_at != null) pricingOptions.provider_accepted_at = provider_accepted_at;
+        if (completed_at != null) pricingOptions.completed_at = completed_at;
+
+        const result = computeBillSummary(
+            usage,
+            card,
+            pricingOptions,
+            "standard",
+        );
 
         return json(
             { ok: true, pricing: result },

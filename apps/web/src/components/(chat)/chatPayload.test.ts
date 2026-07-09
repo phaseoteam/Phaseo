@@ -86,6 +86,60 @@ describe("extractResponseToolCalls", () => {
 			},
 		]);
 	});
+
+	it("ignores unnamed generic Responses tool_call items", () => {
+		const calls = extractResponseToolCalls({
+			output: [
+				{
+					type: "function_call",
+					call_id: "call_datetime_1",
+					name: "gateway_datetime",
+					arguments: "{\"timezones\":[\"UTC\"]}",
+					status: "completed",
+				},
+				{
+					type: "tool_call",
+					call_id: "call_datetime_1_shadow",
+					input: "{\"timezones\":[\"UTC\"]}",
+					status: "completed",
+				},
+			],
+		});
+
+		expect(calls).toEqual([
+			{
+				id: "call_datetime_1",
+				type: "function_call",
+				name: "gateway_datetime",
+				status: "completed",
+				input: { timezones: ["UTC"] },
+				inputText: "{\"timezones\":[\"UTC\"]}",
+			},
+		]);
+	});
+
+	it("ignores named generic Responses tool_call shadows", () => {
+		const calls = extractResponseToolCalls({
+			output: [
+				{
+					type: "function_call",
+					call_id: "call_datetime_1",
+					name: "gateway_datetime",
+					arguments: "{\"timezones\":[\"UTC\"]}",
+					status: "completed",
+				},
+				{
+					type: "tool_call",
+					call_id: "call_datetime_1_shadow",
+					name: "tool_call",
+					input: "{\"timezones\":[\"UTC\"]}",
+					status: "completed",
+				},
+			],
+		});
+
+		expect(calls.map((call) => call.name)).toEqual(["gateway_datetime"]);
+	});
 });
 
 describe("extractResponseText", () => {

@@ -1,0 +1,203 @@
+{
+  "key": "spacex-ai:spacex-ai/grok-4.1-thinking:text.generate",
+  "api_provider_id": "spacex-ai",
+  "provider_slug": "spacex-ai",
+  "api_model_id": "spacex-ai/grok-4.1-thinking",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.2,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 128000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2025-11-17T00:00:00Z",
+      "effective_to": "2026-04-30T23:59:59Z"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.05,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-11-17T00:00:00Z",
+      "effective_to": "2026-04-30T23:59:59Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 128000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2025-11-17T00:00:00Z",
+      "effective_to": "2026-04-30T23:59:59Z"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.4,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 128000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2025-11-17T00:00:00Z",
+      "effective_to": "2026-04-30T23:59:59Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 128000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2025-11-17T00:00:00Z",
+      "effective_to": "2026-04-30T23:59:59Z"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.2,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 128000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-05-01T00:00:00Z",
+      "effective_to": "2026-05-15T19:00:00Z"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.05,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-05-01T00:00:00Z",
+      "effective_to": "2026-05-15T19:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 128000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-05-01T00:00:00Z",
+      "effective_to": "2026-05-15T19:00:00Z"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.4,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 128000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-05-01T00:00:00Z",
+      "effective_to": "2026-05-15T19:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 128000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-05-01T00:00:00Z",
+      "effective_to": "2026-05-15T19:00:00Z"
+    }
+  ]
+}

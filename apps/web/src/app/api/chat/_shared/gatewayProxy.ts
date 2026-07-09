@@ -13,6 +13,7 @@ type UpstreamCause = {
 };
 
 export type ChatProxyEnvelope = {
+	baseUrl?: string;
 	requestBody?: Record<string, unknown>;
 	appHeaders?: Record<string, string>;
 	debug?: boolean;
@@ -32,6 +33,7 @@ const configuredGatewayBaseUrl = normalizeGatewayBaseUrl(
 	process.env.PHASEO_GATEWAY_URL,
 );
 export const GATEWAY_BASE_URL = configuredGatewayBaseUrl ?? "";
+const PUBLIC_GATEWAY_BASE_URL = "https://api.phaseo.app/v1";
 const ALLOWED_APP_HEADERS = new Set([
 	"x-title",
 	"http-referer",
@@ -218,8 +220,57 @@ function buildGatewayMissingConfigResponse(): Response {
 	);
 }
 
-function resolveGatewayBaseUrl(): string | null {
-	return configuredGatewayBaseUrl ?? null;
+function isDevelopmentLocalGatewayBaseUrl(
+	baseUrl: string,
+	nodeEnv: string | undefined = process.env.NODE_ENV,
+): boolean {
+	if (nodeEnv === "production") return false;
+	try {
+		const url = new URL(baseUrl);
+		return (
+			url.protocol === "http:" &&
+			(url.hostname === "127.0.0.1" || url.hostname === "localhost") &&
+			url.port === "8787" &&
+			url.pathname.replace(/\/+$/, "") === "/v1"
+		);
+	} catch {
+		return false;
+	}
+}
+
+export function resolveGatewayBaseUrlForEnvironment(args: {
+	configuredBaseUrl?: string;
+	requestedBaseUrl?: string;
+	nodeEnv?: string;
+}): string | null {
+	const nodeEnv = args.nodeEnv ?? process.env.NODE_ENV;
+	const normalizedConfiguredBaseUrl = normalizeGatewayBaseUrl(
+		args.configuredBaseUrl,
+	);
+	if (nodeEnv === "production") {
+		return normalizedConfiguredBaseUrl ?? null;
+	}
+
+	const normalizedRequestedBaseUrl = normalizeGatewayBaseUrl(
+		args.requestedBaseUrl,
+	);
+	if (
+		normalizedRequestedBaseUrl &&
+		(normalizedRequestedBaseUrl === PUBLIC_GATEWAY_BASE_URL ||
+			normalizedRequestedBaseUrl === normalizedConfiguredBaseUrl ||
+			isDevelopmentLocalGatewayBaseUrl(normalizedRequestedBaseUrl, nodeEnv))
+	) {
+		return normalizedRequestedBaseUrl;
+	}
+	return normalizedConfiguredBaseUrl ?? PUBLIC_GATEWAY_BASE_URL;
+}
+
+function resolveGatewayBaseUrl(requestedBaseUrl?: string): string | null {
+	return resolveGatewayBaseUrlForEnvironment({
+		configuredBaseUrl: process.env.AI_STATS_GATEWAY_URL,
+		requestedBaseUrl,
+		nodeEnv: process.env.NODE_ENV,
+	});
 }
 
 export async function forwardUpstreamResponse(args: {
@@ -267,8 +318,9 @@ export async function proxyGatewayPost(args: {
 	debug?: boolean;
 	stream?: boolean;
 	contentType?: string | null;
+	baseUrl?: string;
 }): Promise<Response> {
-	const gatewayBaseUrl = resolveGatewayBaseUrl();
+	const gatewayBaseUrl = resolveGatewayBaseUrl(args.baseUrl);
 	if (!gatewayBaseUrl) {
 		return buildGatewayMissingConfigResponse();
 	}
@@ -305,8 +357,9 @@ export async function proxyGatewayGet(args: {
 	path: string;
 	appHeaders?: unknown;
 	debug?: boolean;
+	baseUrl?: string;
 }): Promise<Response> {
-	const gatewayBaseUrl = resolveGatewayBaseUrl();
+	const gatewayBaseUrl = resolveGatewayBaseUrl(args.baseUrl);
 	if (!gatewayBaseUrl) {
 		return buildGatewayMissingConfigResponse();
 	}

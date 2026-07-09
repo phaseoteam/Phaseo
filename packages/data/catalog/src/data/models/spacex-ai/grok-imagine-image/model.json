@@ -1,0 +1,19 @@
+{
+  "model_id": "spacex-ai/grok-imagine-image",
+  "organisation_id": "spacex-ai",
+  "name": "Grok Imagine Image",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Grok Imagine Image is an image generation model from SpaceXAI for visual creation workflows. It supports text and image inputs for generation, restyling, or edit-style workflows.",
+  "announced_date": "2026-01-29T00:00:00",
+  "release_date": "2026-01-29T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "image",
+  "api_model_id": "spacex-ai/grok-imagine-image",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

@@ -16,6 +16,33 @@ import {
 	fetchFrontendModelUsageDailyBreakdown,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 
+const OPTIONAL_PRICING_INSIGHTS_TIMEOUT_MS = 2_500;
+
+function withOptionalPricingTimeout<T>(
+	promise: Promise<T>,
+	fallback: T,
+	label: string
+): Promise<T> {
+	let timeout: ReturnType<typeof setTimeout> | null = null;
+	const timeoutPromise = new Promise<T>((resolve) => {
+		timeout = setTimeout(() => {
+			console.warn(`[pricing] ${label} timed out; using fallback.`);
+			resolve(fallback);
+		}, OPTIONAL_PRICING_INSIGHTS_TIMEOUT_MS);
+	});
+
+	return Promise.race([promise, timeoutPromise])
+		.catch((error) => {
+			console.warn(`[pricing] ${label} failed; using fallback.`, {
+				error,
+			});
+			return fallback;
+		})
+		.finally(() => {
+			if (timeout) clearTimeout(timeout);
+		});
+}
+
 export default async function ModelPricingInsightsSection({
 	modelId,
 	includeHidden,
@@ -25,11 +52,16 @@ export default async function ModelPricingInsightsSection({
 	includeHidden: boolean;
 	showPageHeader?: boolean;
 }) {
-	const providers = await fetchFrontendModelPricing(modelId);
-	const pendingApiRelease = await fetchFrontendModelPendingApiReleaseState(
-		modelId,
-		includeHidden,
-	).catch(() => null);
+	const providers = await withOptionalPricingTimeout(
+		fetchFrontendModelPricing(modelId),
+		[],
+		"pricing providers"
+	);
+	const pendingApiRelease = await withOptionalPricingTimeout(
+		fetchFrontendModelPendingApiReleaseState(modelId, includeHidden),
+		null,
+		"pending API release state"
+	);
 	const providersForDisplay = (providers || []).filter(
 		(provider) =>
 			Array.isArray(provider.provider_models) && provider.provider_models.length > 0,
@@ -80,28 +112,24 @@ export default async function ModelPricingInsightsSection({
 	}
 
 	const [pricingHistoryRules, usageRows] = await Promise.all([
-		fetchFrontendModelPricingHistory(modelId, {
-			includeHidden,
-			days: 30,
-		}).catch((error) => {
-			console.warn("[pricing] failed to fetch pricing history rules", {
+		withOptionalPricingTimeout(
+			fetchFrontendModelPricingHistory(modelId, {
+				includeHidden,
+				days: 30,
+			}),
+			[],
+			"pricing history rules"
+		),
+		withOptionalPricingTimeout(
+			fetchFrontendModelUsageDailyBreakdown({
 				modelId,
-				error,
-			});
-			return [];
-		}),
-		fetchFrontendModelUsageDailyBreakdown({
-			modelId,
-			providerIds,
-			modelAliases,
-			days: 30,
-		}).catch((error) => {
-			console.warn("[pricing] failed to fetch usage breakdown", {
-				modelId,
-				error,
-			});
-			return [];
-		}),
+				providerIds,
+				modelAliases,
+				days: 30,
+			}),
+			[],
+			"usage breakdown"
+		),
 	]);
 
 	return (

@@ -1,0 +1,7 @@
+{
+  "alias_slug": "spacex-ai/grok-latest",
+  "resolved_api_model_id": "spacex-ai/grok-4.3",
+  "channel": "stable",
+  "is_enabled": true,
+  "notes": null
+}

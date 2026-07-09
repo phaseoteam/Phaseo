@@ -116,16 +116,15 @@ export function AppsUsageList({
 				) : null}
 				{availableRanges.length > 1 ? (
 					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<Button
+						<DropdownMenuTrigger render={<Button
 								type="button"
 								variant="outline"
 								size="sm"
-								className="h-9 w-32 justify-between rounded-lg px-4 font-normal text-muted-foreground"
-							>
+								className="h-9 w-32 justify-between rounded-lg px-4 font-normal text-muted-foreground" />}>
+
 								{rangeLabel(range)}
 								<ChevronDown className="ml-2 h-4 w-4 opacity-60" />
-							</Button>
+
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end" className="min-w-32">
 							{RANGE_OPTIONS.map((option) => (

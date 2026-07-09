@@ -5,6 +5,14 @@ import type { Protocol } from "@protocols/detect";
 import { encodeUnifiedStreamEvent, type StreamProtocol } from "@protocols/stream/encode";
 import { extractUnifiedStreamEvents, type UnifiedStreamEvent } from "../after/stream-events";
 
+export type ServerToolTraceItem = {
+	id: string;
+	name: string;
+	arguments?: string;
+	output?: unknown;
+	isError?: boolean;
+};
+
 function toStreamProtocol(protocol: Protocol): StreamProtocol | null {
 	switch (protocol) {
 		case "openai.chat.completions":
@@ -14,6 +22,80 @@ function toStreamProtocol(protocol: Protocol): StreamProtocol | null {
 		default:
 			return null;
 	}
+}
+
+function buildServerToolTraceEvents(
+	traceItems: readonly ServerToolTraceItem[] | undefined,
+): UnifiedStreamEvent[] {
+	if (!traceItems?.length) return [];
+	const events: UnifiedStreamEvent[] = [];
+	for (let index = 0; index < traceItems.length; index += 1) {
+		const item = traceItems[index];
+		if (!item.id || !item.name || item.name === "tool_call") continue;
+		events.push({
+			type: "delta_tool",
+			toolCallId: item.id,
+			toolName: item.name,
+			arguments: item.arguments ?? "",
+			choiceIndex: 0,
+			toolIndex: index,
+			payload:
+				item.output !== undefined || item.isError
+					? {
+							server_tool_result: {
+								...(item.output !== undefined ? { output: item.output } : {}),
+								...(item.isError ? { is_error: true } : {}),
+							},
+						}
+					: undefined,
+		});
+	}
+	return events;
+}
+
+function readResponseToolCallName(item: any): string | null {
+	const candidates = [
+		item?.name,
+		item?.function?.name,
+		item?.tool_name,
+		item?.tool?.name,
+	];
+	for (const candidate of candidates) {
+		if (typeof candidate !== "string") continue;
+		const trimmed = candidate.trim();
+		if (trimmed && trimmed !== "tool_call") return trimmed;
+	}
+	return null;
+}
+
+function readResponseToolCallArguments(item: any): string | undefined {
+	const raw =
+		item?.arguments ??
+		item?.function?.arguments ??
+		item?.args ??
+		item?.input;
+	if (typeof raw === "string") return raw;
+	if (raw == null) return undefined;
+	try {
+		return JSON.stringify(raw);
+	} catch {
+		return undefined;
+	}
+}
+
+function readResponseToolCallId(item: any): string | undefined {
+	const candidates = [item?.call_id, item?.id, item?.tool_call_id];
+	for (const candidate of candidates) {
+		if (typeof candidate === "string" && candidate.trim().length > 0) {
+			return candidate;
+		}
+	}
+	return undefined;
+}
+
+function isExecutableResponseToolItem(item: any): boolean {
+	const itemType = String(item?.type ?? "").toLowerCase();
+	return (itemType === "function_call" || itemType === "tool_call") && readResponseToolCallName(item) !== null;
 }
 
 function buildUnifiedEventsFromChatCompletionsPayload(payload: any): UnifiedStreamEvent[] {
@@ -110,7 +192,7 @@ function buildUnifiedEventsFromResponsesPayload(payload: any): UnifiedStreamEven
 						type: "delta_text",
 						channel: "output_text",
 						text: part.text,
-						choiceIndex: outputIndex,
+						choiceIndex: 0,
 					});
 				}
 				if (part?.type === "reasoning_text" && typeof part?.text === "string" && part.text.length > 0) {
@@ -118,14 +200,14 @@ function buildUnifiedEventsFromResponsesPayload(payload: any): UnifiedStreamEven
 						type: "delta_text",
 						channel: "reasoning_text",
 						text: part.text,
-						choiceIndex: outputIndex,
+						choiceIndex: 0,
 					});
 				}
 				for (const mediaPart of parseResponsesMediaParts([part])) {
 					events.push({
 						type: "delta_content_part",
 						part: mediaPart,
-						choiceIndex: outputIndex,
+						choiceIndex: 0,
 					});
 				}
 			}
@@ -138,21 +220,18 @@ function buildUnifiedEventsFromResponsesPayload(payload: any): UnifiedStreamEven
 						type: "delta_text",
 						channel: "reasoning_text",
 						text: part.text,
-						choiceIndex: outputIndex,
+						choiceIndex: 0,
 					});
 				}
 			}
 		}
-		if (itemType === "function_call" || itemType === "tool_call") {
+		if (isExecutableResponseToolItem(item)) {
 			events.push({
 				type: "delta_tool",
-				toolCallId:
-					typeof item?.call_id === "string"
-						? item.call_id
-						: (typeof item?.id === "string" ? item.id : undefined),
-				toolName: typeof item?.name === "string" ? item.name : undefined,
-				arguments: typeof item?.arguments === "string" ? item.arguments : undefined,
-				choiceIndex: outputIndex,
+				toolCallId: readResponseToolCallId(item),
+				toolName: readResponseToolCallName(item) ?? undefined,
+				arguments: readResponseToolCallArguments(item),
+				choiceIndex: 0,
 			});
 		}
 	}
@@ -181,7 +260,7 @@ function buildUnifiedEventsFromAnthropicPayload(payload: any): UnifiedStreamEven
 				type: "delta_text",
 				channel: "output_text",
 				text: block.text,
-				choiceIndex: index,
+				choiceIndex: 0,
 			});
 		}
 		if (blockType === "thinking" && typeof block?.thinking === "string" && block.thinking.length > 0) {
@@ -189,7 +268,7 @@ function buildUnifiedEventsFromAnthropicPayload(payload: any): UnifiedStreamEven
 				type: "delta_text",
 				channel: "reasoning_text",
 				text: block.thinking,
-				choiceIndex: index,
+				choiceIndex: 0,
 			});
 		}
 		if (blockType === "tool_use") {
@@ -198,7 +277,7 @@ function buildUnifiedEventsFromAnthropicPayload(payload: any): UnifiedStreamEven
 				toolCallId: typeof block?.id === "string" ? block.id : undefined,
 				toolName: typeof block?.name === "string" ? block.name : undefined,
 				arguments: block?.input != null ? JSON.stringify(block.input) : "{}",
-				choiceIndex: index,
+				choiceIndex: 0,
 			});
 		}
 	}
@@ -232,10 +311,16 @@ export function buildSyntheticServerToolStream(args: {
 	requestId: string;
 	model?: string | null;
 	created?: number | null;
+	serverToolTrace?: readonly ServerToolTraceItem[];
 }): ReadableStream<Uint8Array> | null {
 	const streamProtocol = toStreamProtocol(args.protocol);
 	if (!streamProtocol) return null;
-	const events = buildUnifiedEventsFromPayload(streamProtocol, args.payload);
+	const payloadEvents = buildUnifiedEventsFromPayload(streamProtocol, args.payload);
+	const traceEvents = buildServerToolTraceEvents(args.serverToolTrace);
+	const events =
+		traceEvents.length > 0 && payloadEvents[0]?.type === "start"
+			? [payloadEvents[0], ...traceEvents, ...payloadEvents.slice(1)]
+			: [...traceEvents, ...payloadEvents];
 	const encoder = new TextEncoder();
 	return new ReadableStream<Uint8Array>({
 		start(controller) {
@@ -509,25 +594,41 @@ function applyUnifiedEventToAccumulators(args: {
 			? Number(event.choiceIndex)
 			: 0;
 		const accumulator = getChoiceAccumulator(choices, index);
+		const eventToolName =
+			typeof event.toolName === "string" && event.toolName.trim().length > 0
+				? event.toolName.trim()
+				: null;
+		const eventToolKey =
+			typeof event.toolCallKey === "string" && event.toolCallKey.trim().length > 0
+				? event.toolCallKey.trim()
+				: null;
+		const eventToolCallId =
+			typeof event.toolCallId === "string" && event.toolCallId.trim().length > 0
+				? event.toolCallId.trim()
+				: null;
 		const key =
-			Number.isFinite(event.toolIndex as number)
+			eventToolKey ??
+			(Number.isFinite(event.toolIndex as number)
 				? `tool_${index}_${Number(event.toolIndex)}`
-				: (event.toolCallId ?? `tool_${index}_${accumulator.toolCallOrder.length}`);
+				: (eventToolCallId ?? `tool_${index}_${accumulator.toolCallOrder.length}`));
 		let toolCall = accumulator.toolCallsByKey.get(key);
 		if (!toolCall) {
+			if (!eventToolName || eventToolName === "tool_call") {
+				return;
+			}
 			toolCall = {
-				id: event.toolCallId ?? `${requestId}_${key}`,
-				name: event.toolName ?? "tool_call",
+				id: eventToolCallId ?? eventToolKey ?? `${requestId}_${key}`,
+				name: eventToolName,
 				arguments: "",
 			};
 			accumulator.toolCallsByKey.set(key, toolCall);
 			accumulator.toolCallOrder.push(key);
 		}
-		if (typeof event.toolName === "string" && event.toolName.length > 0) {
-			toolCall.name = event.toolName;
+		if (eventToolName && eventToolName !== "tool_call") {
+			toolCall.name = eventToolName;
 		}
-		if (typeof event.toolCallId === "string" && event.toolCallId.length > 0) {
-			toolCall.id = event.toolCallId;
+		if (eventToolCallId) {
+			toolCall.id = eventToolCallId;
 		}
 		if (typeof event.argumentsDelta === "string") {
 			toolCall.arguments += event.argumentsDelta;

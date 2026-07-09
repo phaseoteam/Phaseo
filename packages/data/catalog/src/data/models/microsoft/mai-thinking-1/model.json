@@ -1,0 +1,34 @@
+{
+  "model_id": "microsoft/mai-thinking-1",
+  "organisation_id": "microsoft",
+  "name": "MAI Thinking 1",
+  "status": "Announced",
+  "previous_model_id": null,
+  "description": "MAI Thinking 1 is Microsoft's flagship reasoning model for chat, code generation, and complex multi-step workflows. This entry tracks the Build 2026 launch ahead of broader public availability.",
+  "announced_date": "2026-06-02T00:00:00",
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "microsoft/mai-thinking-1",
+  "family_id": "microsoft/mai",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://microsoft.ai/news/introducing-mai-thinking-1/"
+    }
+  ],
+  "details": [
+    {
+      "name": "parameter_count",
+      "value": 35000000000
+    },
+    {
+      "name": "availability",
+      "value": "Microsoft positioned MAI Thinking 1 as open to select early partners at Build 2026."
+    }
+  ],
+  "benchmarks": []
+}

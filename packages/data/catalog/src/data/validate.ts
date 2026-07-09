@@ -32,7 +32,14 @@ const KNOWN_REASONING_EFFORTS = new Set<string>([
 ]);
 
 const ALLOWED_BILL_MODES = new Set<string>(['all', 'over', 'between']);
+const ALLOWED_BILLING_TIMESTAMP_BASES = new Set<string>([
+    'request_start',
+    'provider_accept',
+    'completion',
+    'unknown',
+]);
 const EXPLICIT_UTC_TIMESTAMP_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
+const UTC_MINUTE_TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 function parseNumericValue(value: unknown): number | undefined {
     if (typeof value === 'number') {
@@ -60,6 +67,8 @@ export function isMajorError(msg: string): boolean {
         /pricing.*non-positive price/i,
         /pricing.*unit_size.*invalid/i,
         /pricing.*bill mode.*invalid/i,
+        /pricing.*billing timestamp basis.*invalid/i,
+        /pricing.*time window/i,
         /pricing.*effective_to.*before.*effective_from/i,
     ];
     return majorPatterns.some((p) => p.test(msg));
@@ -67,6 +76,13 @@ export function isMajorError(msg: string): boolean {
 
 function hasExplicitUtcTimestamp(value: unknown): value is string {
     return typeof value === 'string' && EXPLICIT_UTC_TIMESTAMP_REGEX.test(value);
+}
+
+function parseUtcMinuteTime(value: unknown): number | null {
+    if (typeof value !== 'string') return null;
+    const match = value.match(UTC_MINUTE_TIME_REGEX);
+    if (!match) return null;
+    return Number(match[1]) * 60 + Number(match[2]);
 }
 
 export function checkPricingEntrySafety(p: any): string[] {
@@ -162,6 +178,60 @@ export function checkPricingEntrySafety(p: any): string[] {
                 errs.push(
                     `pricing: bill mode invalid ('${r.bill.mode}') for ${api_provider_id ?? '?'}:${model_id ?? '?'}:${endpoint ?? '?'}` 
                 );
+            }
+            if (
+                r?.billing_timestamp_basis !== undefined &&
+                r?.billing_timestamp_basis !== null &&
+                !ALLOWED_BILLING_TIMESTAMP_BASES.has(String(r.billing_timestamp_basis))
+            ) {
+                errs.push(
+                    `pricing: billing timestamp basis invalid ('${r.billing_timestamp_basis}') for ${api_provider_id ?? '?'}:${model_id ?? '?'}:${endpoint ?? '?'}:${meter}`
+                );
+            }
+            if (r?.time_windows !== undefined) {
+                if (!Array.isArray(r.time_windows)) {
+                    errs.push(
+                        `pricing: time_windows must be an array for ${api_provider_id ?? '?'}:${model_id ?? '?'}:${endpoint ?? '?'}:${meter}`
+                    );
+                } else {
+                    for (const [index, window] of r.time_windows.entries()) {
+                        const label = window?.label;
+                        const timezone = window?.timezone;
+                        const startMinute = parseUtcMinuteTime(window?.start_time);
+                        const endMinute = parseUtcMinuteTime(window?.end_time);
+                        if (typeof label !== 'string' || !label.trim()) {
+                            errs.push(
+                                `pricing: time window ${index} missing label for ${api_provider_id ?? '?'}:${model_id ?? '?'}:${endpoint ?? '?'}:${meter}`
+                            );
+                        }
+                        if (timezone !== 'UTC') {
+                            errs.push(
+                                `pricing: time window ${index} timezone must be UTC for ${api_provider_id ?? '?'}:${model_id ?? '?'}:${endpoint ?? '?'}:${meter}`
+                            );
+                        }
+                        if (startMinute === null || endMinute === null || startMinute === endMinute) {
+                            errs.push(
+                                `pricing: time window ${index} must use HH:mm UTC start/end times for ${api_provider_id ?? '?'}:${model_id ?? '?'}:${endpoint ?? '?'}:${meter}`
+                            );
+                        }
+                        if (window?.price_per_unit !== undefined && window?.price_per_unit !== null) {
+                            const windowPrice = parseNumericValue(window.price_per_unit);
+                            if (windowPrice === undefined || windowPrice < 0) {
+                                errs.push(
+                                    `pricing: time window ${index} invalid price for ${api_provider_id ?? '?'}:${model_id ?? '?'}:${endpoint ?? '?'}:${meter}`
+                                );
+                            }
+                        }
+                        if (window?.priority !== undefined && window?.priority !== null) {
+                            const priority = parseNumericValue(window.priority);
+                            if (priority === undefined || !Number.isInteger(priority)) {
+                                errs.push(
+                                    `pricing: time window ${index} invalid priority for ${api_provider_id ?? '?'}:${model_id ?? '?'}:${endpoint ?? '?'}:${meter}`
+                                );
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -375,7 +445,7 @@ const VIDEO_PROVIDERS_WITH_EXECUTOR_METADATA = new Set([
     'openai',
     'atlascloud',
     'runway',
-    'x-ai',
+    'spacex-ai',
 ]);
 
 function isEnabledCapabilityStatus(value: unknown): boolean {

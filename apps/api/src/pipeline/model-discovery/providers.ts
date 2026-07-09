@@ -43,6 +43,7 @@ const PROVIDER_ID_ALIASES_TO_SKIP = new Set<string>([
 	"qwen",
 	"relace",
 	"voyageai",
+	"x-ai",
 	"xai",
 	"zai",
 ]);
@@ -118,7 +119,7 @@ const PROVIDER_OVERRIDES: Record<string, ProviderOverride> = {
 		providerName: "Weights & Biases",
 		apiKeyEnv: ["WEIGHTSANDBIASES_API_KEY", "WANDB_API_KEY"],
 	},
-	"x-ai": { providerName: "xAI", apiKeyEnv: ["X_AI_API_KEY"] },
+	"spacex-ai": { providerName: "SpaceXAI", apiKeyEnv: ["X_AI_API_KEY"] },
 	xiaomi: { providerName: "Xiaomi", apiKeyEnv: ["XIAOMI_MIMO_API_KEY"] },
 	"z-ai": { providerName: "z.AI", apiKeyEnv: ["ZAI_API_KEY"] },
 };

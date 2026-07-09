@@ -46,17 +46,16 @@ export default function DeletePresetItem({ p }: any) {
 
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
-			<DropdownMenuItem asChild>
-				<button
+			<DropdownMenuItem render={<button
 					className="w-full text-left flex items-center gap-2 text-red-600"
 					onClick={(e) => {
 						e.preventDefault();
 						setTimeout(() => setOpen(true), 0);
-					}}
-				>
+					}} />}>
+
 					<Trash2 className="mr-2" />
 					Delete
-				</button>
+
 			</DropdownMenuItem>
 
 			<DialogContent>

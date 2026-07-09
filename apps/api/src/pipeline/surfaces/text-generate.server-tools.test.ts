@@ -547,6 +547,12 @@ describe("runTextGeneratePipeline server tools", () => {
 			requestId: "req_server_tools",
 			model: "openai/gpt-5.4-nano-2026-03-17",
 			created: 1778073808,
+			serverToolTrace: [{
+				id: "call_datetime",
+				name: "gateway_datetime",
+				arguments: "{\"timezones\":[\"UTC\"]}",
+				output: "{\"timezones\":[{\"timezone\":\"UTC\",\"datetime\":\"2026-05-09T12:00:00.000+00:00\"}]}",
+			}],
 		});
 
 		const finalizeArgs = finalizeRequestMock.mock.calls[0]?.[0];
@@ -1027,6 +1033,12 @@ describe("runTextGeneratePipeline server tools", () => {
 			requestId: "req_server_tools",
 			model: "openai/gpt-5.4-nano-2026-03-17",
 			created: 1778073808,
+			serverToolTrace: [{
+				id: "call_web_fetch",
+				name: "ai_stats_web_fetch",
+				arguments: "{\"url\":\"https://example.com/spec\",\"max_chars\":4000}",
+				output: "{\"provider\":\"fetch\",\"url\":\"https://example.com/spec\",\"final_url\":\"https://example.com/spec\",\"status\":200,\"content_type\":\"text/html\",\"title\":\"Gateway Spec\",\"text\":\"Grounded specification text\",\"truncated\":false,\"returned_chars\":27}",
+			}],
 		});
 
 		expect(attachServerToolUsageMock).toHaveBeenCalledWith(

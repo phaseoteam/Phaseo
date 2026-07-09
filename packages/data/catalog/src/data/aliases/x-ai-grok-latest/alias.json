@@ -1,7 +1,0 @@
-{
-  "alias_slug": "x-ai/grok-latest",
-  "resolved_api_model_id": "x-ai/grok-4.3",
-  "channel": "stable",
-  "is_enabled": true,
-  "notes": null
-}

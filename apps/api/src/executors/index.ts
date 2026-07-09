@@ -282,6 +282,7 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 		"audio.speech": googleAudioSpeech,
 		"music.generate": googleMusic,
 	},
+	"spacex-ai": { "text.generate": xAiText, "video.generate": xAiVideo },
 	"x-ai": { "text.generate": xAiText, "video.generate": xAiVideo },
 	xai: { "text.generate": xAiText, "video.generate": xAiVideo },
 	featherless: { "text.generate": featherlessText },

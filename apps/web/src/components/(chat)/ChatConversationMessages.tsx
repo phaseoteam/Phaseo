@@ -19,7 +19,6 @@ import {
 	ReasoningContent,
 	ReasoningTrigger,
 } from "@/components/ai-elements/reasoning";
-import { Shimmer } from "@/components/ai-elements/shimmer";
 import { Button } from "@/components/ui/button";
 import {
 	ChatRequestErrorNotice,
@@ -56,6 +55,12 @@ import {
 	MessageContent,
 	MessageHeader,
 } from "@/components/ui/message";
+import {
+	Marker,
+	MarkerContent,
+	MarkerIcon,
+} from "@/components/ui/marker";
+import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import type { ChatThread } from "@/lib/indexeddb/chats";
 import type {
@@ -101,6 +106,99 @@ const VIRTUALIZE_AFTER_MESSAGES = 80;
 const VIRTUAL_MESSAGE_OVERSCAN = 16;
 const ESTIMATED_MESSAGE_HEIGHT = 220;
 const EMPTY_MESSAGES: ChatThread["messages"] = [];
+
+function GeneratingResponseIndicator() {
+	return (
+		<Marker role="status" aria-live="polite" className="min-h-7">
+			<MarkerIcon>
+				<Spinner />
+			</MarkerIcon>
+			<MarkerContent className="shimmer">Generating response&hellip;</MarkerContent>
+		</Marker>
+	);
+}
+
+function formatGenerationDuration(value: unknown): string | null {
+	if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+		return null;
+	}
+	if (value < 1000) {
+		return `${Math.round(value)} ms`;
+	}
+	const seconds = value / 1000;
+	if (seconds < 10) {
+		return `${seconds.toFixed(2).replace(/\.?0+$/, "")} s`;
+	}
+	if (seconds < 60) {
+		return `${seconds.toFixed(1).replace(/\.0$/, "")} s`;
+	}
+	const minutes = seconds / 60;
+	if (minutes < 10) {
+		return `${minutes.toFixed(2).replace(/\.?0+$/, "")} min`;
+	}
+	return `${minutes.toFixed(1).replace(/\.0$/, "")} min`;
+}
+
+function formatUsdCost(value: unknown): string | null {
+	const amount =
+		typeof value === "number"
+			? value
+			: typeof value === "string"
+				? Number.parseFloat(value)
+				: NaN;
+	if (!Number.isFinite(amount) || amount < 0) return null;
+	if (amount === 0) return "$0";
+	if (amount >= 0.01) {
+		return `$${amount.toFixed(4).replace(/\.?0+$/, "")}`;
+	}
+	if (amount >= 0.00001) {
+		return `$${amount.toFixed(6).replace(/0+$/, "").replace(/\.$/, "")}`;
+	}
+	return `$${amount.toFixed(9).replace(/0+$/, "").replace(/\.$/, "")}`;
+}
+
+function formatMessageSentAt(value: string): string | null {
+	const date = new Date(value);
+	if (Number.isNaN(date.getTime())) return null;
+	const now = new Date();
+	const isSameDay =
+		date.getFullYear() === now.getFullYear() &&
+		date.getMonth() === now.getMonth() &&
+		date.getDate() === now.getDate();
+	const time = new Intl.DateTimeFormat("en-GB", {
+		hour: "2-digit",
+		minute: "2-digit",
+		hour12: false,
+	}).format(date);
+	if (isSameDay) return time;
+	const startOfToday = new Date(
+		now.getFullYear(),
+		now.getMonth(),
+		now.getDate(),
+	).getTime();
+	const startOfMessageDay = new Date(
+		date.getFullYear(),
+		date.getMonth(),
+		date.getDate(),
+	).getTime();
+	const daysAgo = Math.round(
+		(startOfToday - startOfMessageDay) / 86_400_000,
+	);
+	if (daysAgo > 0 && daysAgo < 7) {
+		const dayName = new Intl.DateTimeFormat("en-GB", {
+			weekday: "long",
+		}).format(date);
+		return `${dayName} ${time}`;
+	}
+	const dateLabel = new Intl.DateTimeFormat("en-GB", {
+		day: "numeric",
+		month: "short",
+		...(date.getFullYear() === now.getFullYear()
+			? {}
+			: { year: "numeric" as const }),
+	}).format(date);
+	return `${dateLabel}, ${time}`;
+}
 
 const getReadableTextColor = (backgroundColor: string) => {
 	const hex = backgroundColor.trim().replace(/^#/, "");
@@ -275,25 +373,30 @@ export function ChatConversationMessages({
 	const usage = metadataVariant?.usage ?? metadataMessage?.usage ?? null;
 	const meta = metadataVariant?.meta ?? metadataMessage?.meta ?? null;
 	const totalTokens =
+		(usage as any)?.total_tokens ??
+		(usage as any)?.totalTokens ??
 		(usage as any)?.output_text_tokens ??
 		(usage as any)?.output_tokens ??
 		(usage as any)?.outputTokens ??
 		null;
 	const pricing = (usage as any)?.pricing_breakdown ?? null;
 	const costUsdStr =
-		pricing?.total_usd_str ??
+		(typeof pricing?.total_usd_str === "string"
+			? pricing.total_usd_str
+			: null) ??
+		(typeof pricing?.total_usd === "number"
+			? pricing.total_usd
+			: null) ??
 		(typeof pricing?.total_nanos === "number"
 			? (pricing.total_nanos / 1e9).toFixed(7)
 			: null);
 	const costDisplay =
-		costUsdStr ||
-		(typeof (meta as any)?.total_cost_usd === "string"
+		costUsdStr ??
+		(typeof (meta as any)?.total_cost_usd === "string" ||
+		typeof (meta as any)?.total_cost_usd === "number"
 			? (meta as any).total_cost_usd
 			: null);
-	const costNumber = costDisplay ? Number.parseFloat(costDisplay) : NaN;
-	const costLabel = Number.isFinite(costNumber)
-		? `$${costNumber.toFixed(5)}`
-		: null;
+	const costLabel = formatUsdCost(costDisplay);
 	const latencyMs =
 		(meta as any)?.latency_ms ??
 		(meta as any)?.latencyMs ??
@@ -304,18 +407,22 @@ export function ChatConversationMessages({
 		(meta as any)?.generationMs ??
 		(meta as any)?.client?.generationMs ??
 		null;
+	const endToEndMs =
+		(meta as any)?.end_to_end_ms ??
+		(meta as any)?.endToEndMs ??
+		(meta as any)?.total_ms ??
+		(meta as any)?.totalMs ??
+		(meta as any)?.client?.endToEndMs ??
+		(typeof latencyMs === "number" && typeof generationMs === "number"
+			? latencyMs + generationMs
+			: null);
 	const throughput =
 		(meta as any)?.throughput_tps ??
 		(meta as any)?.throughput_tokens_per_second ??
 		(meta as any)?.throughputTokensPerSecond ??
 		(meta as any)?.client?.throughputTokensPerSecond ??
 		null;
-	const latencyDisplay =
-		typeof latencyMs === "number" ? Math.round(latencyMs) : null;
-	const generationSeconds =
-		typeof generationMs === "number"
-			? Math.round(generationMs / 1000)
-			: null;
+	const endToEndDisplay = formatGenerationDuration(endToEndMs);
 	const throughputDisplay =
 		typeof throughput === "number" ? Math.round(throughput) : null;
 	const metadataProviderId =
@@ -537,26 +644,6 @@ export function ChatConversationMessages({
 				(displayModelId ? modelLinkById[displayModelId] : undefined) ??
 				buildModelLink(displayModelId);
 			const hasModelLink = Boolean(displayModelId && modelLink !== "#");
-			const routingSelectedProvider =
-				(activeMeta?.routing as any)?.selected_provider;
-			let responseProviderId = message.providerId?.trim() || null;
-			if (
-				typeof activeMeta?.provider === "string" &&
-				activeMeta.provider.trim().length > 0
-			) {
-				responseProviderId = activeMeta.provider.trim();
-			} else if (
-				typeof routingSelectedProvider === "string" &&
-				routingSelectedProvider.trim().length > 0
-			) {
-				responseProviderId = routingSelectedProvider.trim();
-			}
-			const responseProviderLabel =
-				message.providerName?.trim() || responseProviderId || null;
-			const responseProviderHref =
-				responseProviderId && responseProviderId !== "auto"
-					? `/api-providers/${encodeURIComponent(responseProviderId)}`
-					: null;
 			const isEditing = editingId === message.id;
 			const userInlineAttachmentPreviews = isUser
 				? getInlineAttachmentPreviewsFromMeta(message.meta)
@@ -584,13 +671,21 @@ export function ChatConversationMessages({
 							color: getReadableTextColor(accentColor),
 						}
 					: undefined;
+			const sentAtLabel = formatMessageSentAt(
+				!isUser && activeVariant?.createdAt
+					? activeVariant.createdAt
+					: message.createdAt,
+			);
 
 			const messageNode = (
 						<Message
 							align={isUser ? "end" : "start"}
 							data-chat-message-id={message.id}
 							data-chat-message-role={message.role}
-							className={cn(inSideBySideGroup && "h-full")}
+							className={cn(
+								"group/message",
+								inSideBySideGroup && "h-full",
+							)}
 						>
 							<MessageContent
 								className={cn(
@@ -632,20 +727,6 @@ export function ChatConversationMessages({
 												</span>
 											</span>
 										)}
-										{responseProviderLabel ? (
-											responseProviderHref ? (
-												<Link
-													href={responseProviderHref}
-													className="pl-6 text-[11px] text-muted-foreground/80 transition-colors hover:text-foreground"
-												>
-													via {responseProviderLabel}
-												</Link>
-											) : (
-												<span className="pl-6 text-[11px] text-muted-foreground/80">
-													via {responseProviderLabel}
-												</span>
-											)
-										) : null}
 									</MessageHeader>
 								)}
 								{showRequestError && messageRequestError ? (
@@ -814,14 +895,7 @@ export function ChatConversationMessages({
 						) : isSending &&
 							(!content || content === "Generating...") &&
 							toolCalls.length === 0 ? (
-							<div className="flex min-h-7 items-center">
-								<Shimmer
-									className="text-sm text-muted-foreground"
-									duration={1.4}
-								>
-									{`Generating with ${modelLabel}...`}
-								</Shimmer>
-							</div>
+							<GeneratingResponseIndicator />
 						) : (
 							<div className="prose prose-sm max-w-none text-foreground dark:prose-invert prose-ul:pl-5 prose-ol:pl-5 prose-li:my-1">
 								{traceEvents.length ? (
@@ -938,13 +1012,8 @@ export function ChatConversationMessages({
 								{isPendingAssistant &&
 								!contentWithoutMediaLinks &&
 								!messageRequestError ? (
-									<div className="not-prose flex min-h-7 items-center">
-										<Shimmer
-											className="text-sm text-muted-foreground"
-											duration={1.4}
-										>
-											Generating final response...
-										</Shimmer>
+									<div className="not-prose">
+										<GeneratingResponseIndicator />
 									</div>
 								) : null}
 								{imageUrl ? (
@@ -1042,6 +1111,7 @@ export function ChatConversationMessages({
 								{isUser ? (
 									<UserMessageFooter
 										copied={userCopied}
+										sentAtLabel={sentAtLabel}
 										onCopy={() => {
 											void handleCopyForMessage(
 												userCopyKey,
@@ -1058,12 +1128,27 @@ export function ChatConversationMessages({
 										activeVariantIndex={activeVariantIndex}
 										assistantCopied={assistantCopied}
 										costLabel={costLabel}
-										generationSeconds={generationSeconds}
+										endToEndDisplay={endToEndDisplay}
+										endToEndMs={
+											typeof endToEndMs === "number"
+												? endToEndMs
+												: null
+										}
+										generationMs={
+											typeof generationMs === "number"
+												? generationMs
+												: null
+										}
 										isPendingAssistant={isPendingAssistant}
-										latencyDisplay={latencyDisplay}
+										latencyMs={
+											typeof latencyMs === "number"
+												? latencyMs
+												: null
+										}
 										metadataOpen={metadataOpenId === message.id}
 										metadataProviderId={metadataProviderId}
 										metadataProviderLabel={metadataProviderLabel}
+										sentAtLabel={sentAtLabel}
 										onBranch={() => onBranchAssistant(message.id)}
 										onCopy={() => {
 											void handleCopyForMessage(
@@ -1419,8 +1504,7 @@ export function ChatConversationMessages({
 		onRetryAssistant,
 		onBranchAssistant,
 		onSelectVariant,
-		latencyDisplay,
-		generationSeconds,
+		endToEndDisplay,
 		throughputDisplay,
 		costLabel,
 		totalTokens,

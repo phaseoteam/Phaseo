@@ -415,16 +415,15 @@ export default function TeamsMembers({
 											</TableCell>
 											<TableCell className="px-4 py-3 text-right">
 												<DropdownMenu>
-													<DropdownMenuTrigger asChild>
-														<Button
+													<DropdownMenuTrigger render={<Button
 															variant="ghost"
 															size="icon"
 															aria-label={`Actions for ${
 																member.display_name ?? member.user_id
-															}`}
-														>
+															}`} />}>
+
 															<MoreHorizontal className="h-4 w-4" />
-														</Button>
+
 													</DropdownMenuTrigger>
 													<DropdownMenuContent align="end">
 														{canOpenEditDialog ? (

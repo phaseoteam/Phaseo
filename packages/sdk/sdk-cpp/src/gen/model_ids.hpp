@@ -12,18 +12,18 @@ inline constexpr std::string_view AI21_JAMBA_LARGE_1_7 = "ai21/jamba-large-1.7";
 // Model ID: ai21/jamba-mini-2
 // Model page: https://phaseo.app/models/ai21/jamba-mini-2
 inline constexpr std::string_view AI21_JAMBA_MINI_2 = "ai21/jamba-mini-2";
-// Model ID: aion-labs/aion-1.0
-// Model page: https://phaseo.app/models/aion-labs/aion-1.0
-inline constexpr std::string_view AION_LABS_AION_1_0 = "aion-labs/aion-1.0";
-// Model ID: aion-labs/aion-1.0-mini
-// Model page: https://phaseo.app/models/aion-labs/aion-1.0-mini
-inline constexpr std::string_view AION_LABS_AION_1_0_MINI = "aion-labs/aion-1.0-mini";
 // Model ID: aion-labs/aion-2.0
 // Model page: https://phaseo.app/models/aion-labs/aion-2.0
 inline constexpr std::string_view AION_LABS_AION_2_0 = "aion-labs/aion-2.0";
 // Model ID: aion-labs/aion-2.5
 // Model page: https://phaseo.app/models/aion-labs/aion-2.5
 inline constexpr std::string_view AION_LABS_AION_2_5 = "aion-labs/aion-2.5";
+// Model ID: aion-labs/aion-3.0
+// Model page: https://phaseo.app/models/aion-labs/aion-3.0
+inline constexpr std::string_view AION_LABS_AION_3_0 = "aion-labs/aion-3.0";
+// Model ID: aion-labs/aion-3.0-mini
+// Model page: https://phaseo.app/models/aion-labs/aion-3.0-mini
+inline constexpr std::string_view AION_LABS_AION_3_0_MINI = "aion-labs/aion-3.0-mini";
 // Model ID: aion-labs/aion-rp-llama-3.1-8b
 // Model page: https://phaseo.app/models/aion-labs/aion-rp-llama-3.1-8b
 inline constexpr std::string_view AION_LABS_AION_RP_LLAMA_3_1_8B = "aion-labs/aion-rp-llama-3.1-8b";
@@ -216,12 +216,6 @@ inline constexpr std::string_view ELEVEN_LABS_ELEVEN_FLASH_V2 = "eleven-labs/ele
 // Model ID: eleven-labs/eleven-flash-v2.5
 // Model page: https://phaseo.app/models/eleven-labs/eleven-flash-v2.5
 inline constexpr std::string_view ELEVEN_LABS_ELEVEN_FLASH_V2_5 = "eleven-labs/eleven-flash-v2.5";
-// Model ID: eleven-labs/eleven-monolingual-v1
-// Model page: https://phaseo.app/models/eleven-labs/eleven-monolingual-v1
-inline constexpr std::string_view ELEVEN_LABS_ELEVEN_MONOLINGUAL_V1 = "eleven-labs/eleven-monolingual-v1";
-// Model ID: eleven-labs/eleven-multilingual-v1
-// Model page: https://phaseo.app/models/eleven-labs/eleven-multilingual-v1
-inline constexpr std::string_view ELEVEN_LABS_ELEVEN_MULTILINGUAL_V1 = "eleven-labs/eleven-multilingual-v1";
 // Model ID: eleven-labs/eleven-multilingual-v2
 // Model page: https://phaseo.app/models/eleven-labs/eleven-multilingual-v2
 inline constexpr std::string_view ELEVEN_LABS_ELEVEN_MULTILINGUAL_V2 = "eleven-labs/eleven-multilingual-v2";
@@ -363,6 +357,9 @@ inline constexpr std::string_view INFLECTION_INFLECTION_3_PI = "inflection/infle
 // Model ID: inflection/inflection-3-productivity
 // Model page: https://phaseo.app/models/inflection/inflection-3-productivity
 inline constexpr std::string_view INFLECTION_INFLECTION_3_PRODUCTIVITY = "inflection/inflection-3-productivity";
+// Model ID: kwaipilot/kat-coder-air-v2.5
+// Model page: https://phaseo.app/models/kwaipilot/kat-coder-air-v2.5
+inline constexpr std::string_view KWAIPILOT_KAT_CODER_AIR_V2_5 = "kwaipilot/kat-coder-air-v2.5";
 // Model ID: kwaipilot/kat-coder-exp-72b-1010
 // Model page: https://phaseo.app/models/kwaipilot/kat-coder-exp-72b-1010
 inline constexpr std::string_view KWAIPILOT_KAT_CODER_EXP_72B_1010 = "kwaipilot/kat-coder-exp-72b-1010";
@@ -375,6 +372,9 @@ inline constexpr std::string_view KWAIPILOT_KAT_CODER_PRO_V1 = "kwaipilot/kat-co
 // Model ID: kwaipilot/kat-coder-pro-v2
 // Model page: https://phaseo.app/models/kwaipilot/kat-coder-pro-v2
 inline constexpr std::string_view KWAIPILOT_KAT_CODER_PRO_V2 = "kwaipilot/kat-coder-pro-v2";
+// Model ID: kwaipilot/kat-coder-pro-v2.5
+// Model page: https://phaseo.app/models/kwaipilot/kat-coder-pro-v2.5
+inline constexpr std::string_view KWAIPILOT_KAT_CODER_PRO_V2_5 = "kwaipilot/kat-coder-pro-v2.5";
 // Model ID: liquid-ai/lfm-2-24b-a2b
 // Model page: https://phaseo.app/models/liquid-ai/lfm-2-24b-a2b
 inline constexpr std::string_view LIQUID_AI_LFM_2_24B_A2B = "liquid-ai/lfm-2-24b-a2b";
@@ -852,9 +852,6 @@ inline constexpr std::string_view POOLSIDE_LAGUNA_M_1_FREE = "poolside/laguna-m.
 // Model ID: poolside/laguna-xs-2.1:free
 // Model page: https://phaseo.app/models/poolside/laguna-xs-2.1%3Afree
 inline constexpr std::string_view POOLSIDE_LAGUNA_XS_2_1_FREE = "poolside/laguna-xs-2.1:free";
-// Model ID: poolside/laguna-xs.2:free
-// Model page: https://phaseo.app/models/poolside/laguna-xs.2%3Afree
-inline constexpr std::string_view POOLSIDE_LAGUNA_XS_2_FREE = "poolside/laguna-xs.2:free";
 // Model ID: qwen/qvq-max
 // Model page: https://phaseo.app/models/qwen/qvq-max
 inline constexpr std::string_view QWEN_QVQ_MAX = "qwen/qvq-max";
@@ -1167,6 +1164,36 @@ inline constexpr std::string_view QWEN_TEXT_EMBEDDING_V4 = "qwen/text-embedding-
 // Model ID: qwen/wan2.7-t2v
 // Model page: https://phaseo.app/models/qwen/wan2.7-t2v
 inline constexpr std::string_view QWEN_WAN2_7_T2V = "qwen/wan2.7-t2v";
+// Model ID: spacex-ai/grok-4.20-beta-0309
+// Model page: https://phaseo.app/models/spacex-ai/grok-4.20-beta-0309
+inline constexpr std::string_view SPACEX_AI_GROK_4_20_BETA_0309 = "spacex-ai/grok-4.20-beta-0309";
+// Model ID: spacex-ai/grok-4.20-multi-agent-beta-0309
+// Model page: https://phaseo.app/models/spacex-ai/grok-4.20-multi-agent-beta-0309
+inline constexpr std::string_view SPACEX_AI_GROK_4_20_MULTI_AGENT_BETA_0309 = "spacex-ai/grok-4.20-multi-agent-beta-0309";
+// Model ID: spacex-ai/grok-4.3
+// Model page: https://phaseo.app/models/spacex-ai/grok-4.3
+inline constexpr std::string_view SPACEX_AI_GROK_4_3 = "spacex-ai/grok-4.3";
+// Model ID: spacex-ai/grok-4.5
+// Model page: https://phaseo.app/models/spacex-ai/grok-4.5
+inline constexpr std::string_view SPACEX_AI_GROK_4_5 = "spacex-ai/grok-4.5";
+// Model ID: spacex-ai/grok-build-0.1
+// Model page: https://phaseo.app/models/spacex-ai/grok-build-0.1
+inline constexpr std::string_view SPACEX_AI_GROK_BUILD_0_1 = "spacex-ai/grok-build-0.1";
+// Model ID: spacex-ai/grok-code-fast-1
+// Model page: https://phaseo.app/models/spacex-ai/grok-code-fast-1
+inline constexpr std::string_view SPACEX_AI_GROK_CODE_FAST_1 = "spacex-ai/grok-code-fast-1";
+// Model ID: spacex-ai/grok-imagine-image
+// Model page: https://phaseo.app/models/spacex-ai/grok-imagine-image
+inline constexpr std::string_view SPACEX_AI_GROK_IMAGINE_IMAGE = "spacex-ai/grok-imagine-image";
+// Model ID: spacex-ai/grok-imagine-image-quality
+// Model page: https://phaseo.app/models/spacex-ai/grok-imagine-image-quality
+inline constexpr std::string_view SPACEX_AI_GROK_IMAGINE_IMAGE_QUALITY = "spacex-ai/grok-imagine-image-quality";
+// Model ID: spacex-ai/grok-imagine-video
+// Model page: https://phaseo.app/models/spacex-ai/grok-imagine-video
+inline constexpr std::string_view SPACEX_AI_GROK_IMAGINE_VIDEO = "spacex-ai/grok-imagine-video";
+// Model ID: spacex-ai/grok-tts
+// Model page: https://phaseo.app/models/spacex-ai/grok-tts
+inline constexpr std::string_view SPACEX_AI_GROK_TTS = "spacex-ai/grok-tts";
 // Model ID: stepfun/step-3.5-flash
 // Model page: https://phaseo.app/models/stepfun/step-3.5-flash
 inline constexpr std::string_view STEPFUN_STEP_3_5_FLASH = "stepfun/step-3.5-flash";
@@ -1176,9 +1203,15 @@ inline constexpr std::string_view STEPFUN_STEP_3_7_FLASH = "stepfun/step-3.7-fla
 // Model ID: tencent/hunyuan-a13b-instruct
 // Model page: https://phaseo.app/models/tencent/hunyuan-a13b-instruct
 inline constexpr std::string_view TENCENT_HUNYUAN_A13B_INSTRUCT = "tencent/hunyuan-a13b-instruct";
+// Model ID: tencent/hy3
+// Model page: https://phaseo.app/models/tencent/hy3
+inline constexpr std::string_view TENCENT_HY3 = "tencent/hy3";
 // Model ID: tencent/hy3-preview
 // Model page: https://phaseo.app/models/tencent/hy3-preview
 inline constexpr std::string_view TENCENT_HY3_PREVIEW = "tencent/hy3-preview";
+// Model ID: tencent/hy3:free
+// Model page: https://phaseo.app/models/tencent/hy3%3Afree
+inline constexpr std::string_view TENCENT_HY3_FREE = "tencent/hy3:free";
 // Model ID: venice/venice-uncensored
 // Model page: https://phaseo.app/models/venice/venice-uncensored
 inline constexpr std::string_view VENICE_VENICE_UNCENSORED = "venice/venice-uncensored";
@@ -1269,33 +1302,6 @@ inline constexpr std::string_view VOYAGE_VOYAGE_MULTIMODAL_3 = "voyage/voyage-mu
 // Model ID: voyage/voyage-multimodal-3.5
 // Model page: https://phaseo.app/models/voyage/voyage-multimodal-3.5
 inline constexpr std::string_view VOYAGE_VOYAGE_MULTIMODAL_3_5 = "voyage/voyage-multimodal-3.5";
-// Model ID: x-ai/grok-4.20-beta-0309
-// Model page: https://phaseo.app/models/x-ai/grok-4.20-beta-0309
-inline constexpr std::string_view X_AI_GROK_4_20_BETA_0309 = "x-ai/grok-4.20-beta-0309";
-// Model ID: x-ai/grok-4.20-multi-agent-beta-0309
-// Model page: https://phaseo.app/models/x-ai/grok-4.20-multi-agent-beta-0309
-inline constexpr std::string_view X_AI_GROK_4_20_MULTI_AGENT_BETA_0309 = "x-ai/grok-4.20-multi-agent-beta-0309";
-// Model ID: x-ai/grok-4.3
-// Model page: https://phaseo.app/models/x-ai/grok-4.3
-inline constexpr std::string_view X_AI_GROK_4_3 = "x-ai/grok-4.3";
-// Model ID: x-ai/grok-build-0.1
-// Model page: https://phaseo.app/models/x-ai/grok-build-0.1
-inline constexpr std::string_view X_AI_GROK_BUILD_0_1 = "x-ai/grok-build-0.1";
-// Model ID: x-ai/grok-code-fast-1
-// Model page: https://phaseo.app/models/x-ai/grok-code-fast-1
-inline constexpr std::string_view X_AI_GROK_CODE_FAST_1 = "x-ai/grok-code-fast-1";
-// Model ID: x-ai/grok-imagine-image
-// Model page: https://phaseo.app/models/x-ai/grok-imagine-image
-inline constexpr std::string_view X_AI_GROK_IMAGINE_IMAGE = "x-ai/grok-imagine-image";
-// Model ID: x-ai/grok-imagine-image-quality
-// Model page: https://phaseo.app/models/x-ai/grok-imagine-image-quality
-inline constexpr std::string_view X_AI_GROK_IMAGINE_IMAGE_QUALITY = "x-ai/grok-imagine-image-quality";
-// Model ID: x-ai/grok-imagine-video
-// Model page: https://phaseo.app/models/x-ai/grok-imagine-video
-inline constexpr std::string_view X_AI_GROK_IMAGINE_VIDEO = "x-ai/grok-imagine-video";
-// Model ID: x-ai/grok-tts
-// Model page: https://phaseo.app/models/x-ai/grok-tts
-inline constexpr std::string_view X_AI_GROK_TTS = "x-ai/grok-tts";
 // Model ID: xiaomi/mimo-v2-flash
 // Model page: https://phaseo.app/models/xiaomi/mimo-v2-flash
 inline constexpr std::string_view XIAOMI_MIMO_V2_FLASH = "xiaomi/mimo-v2-flash";
@@ -1371,13 +1377,13 @@ inline constexpr std::string_view ZAI_GLM_5 = "zai/glm-5";
 // Deprecated alias for deepseek/deepseek-v4; use deepseek/deepseek-v4-pro. Remove in the next major SDK release.
 inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4 = DEEPSEEK_DEEPSEEK_V4_PRO;
 
-inline constexpr std::array<std::string_view, 454> ALL = {
+inline constexpr std::array<std::string_view, 456> ALL = {
 	AI21_JAMBA_LARGE_1_7,
 	AI21_JAMBA_MINI_2,
-	AION_LABS_AION_1_0,
-	AION_LABS_AION_1_0_MINI,
 	AION_LABS_AION_2_0,
 	AION_LABS_AION_2_5,
+	AION_LABS_AION_3_0,
+	AION_LABS_AION_3_0_MINI,
 	AION_LABS_AION_RP_LLAMA_3_1_8B,
 	ALLENAI_MOLMO_2_8B,
 	ALLENAI_OLMO_3_1_32B,
@@ -1442,8 +1448,6 @@ inline constexpr std::array<std::string_view, 454> ALL = {
 	DEEPSEEK_DEEPSEEK_V4_PRO_LIGHTNING,
 	ELEVEN_LABS_ELEVEN_FLASH_V2,
 	ELEVEN_LABS_ELEVEN_FLASH_V2_5,
-	ELEVEN_LABS_ELEVEN_MONOLINGUAL_V1,
-	ELEVEN_LABS_ELEVEN_MULTILINGUAL_V1,
 	ELEVEN_LABS_ELEVEN_MULTILINGUAL_V2,
 	ELEVEN_LABS_ELEVEN_TURBO_V2,
 	ELEVEN_LABS_ELEVEN_TURBO_V2_5,
@@ -1491,10 +1495,12 @@ inline constexpr std::array<std::string_view, 454> ALL = {
 	INCLUSIONAI_RING_FLASH_2_0,
 	INFLECTION_INFLECTION_3_PI,
 	INFLECTION_INFLECTION_3_PRODUCTIVITY,
+	KWAIPILOT_KAT_CODER_AIR_V2_5,
 	KWAIPILOT_KAT_CODER_EXP_72B_1010,
 	KWAIPILOT_KAT_CODER_PRO,
 	KWAIPILOT_KAT_CODER_PRO_V1,
 	KWAIPILOT_KAT_CODER_PRO_V2,
+	KWAIPILOT_KAT_CODER_PRO_V2_5,
 	LIQUID_AI_LFM_2_24B_A2B,
 	MEITUAN_LONGCAT_2_0,
 	META_LLAMA_3_70B,
@@ -1654,7 +1660,6 @@ inline constexpr std::array<std::string_view, 454> ALL = {
 	PHASEO_FREE,
 	POOLSIDE_LAGUNA_M_1_FREE,
 	POOLSIDE_LAGUNA_XS_2_1_FREE,
-	POOLSIDE_LAGUNA_XS_2_FREE,
 	QWEN_QVQ_MAX,
 	QWEN_QWEN_3_6_PLUS,
 	QWEN_QWEN_FLASH,
@@ -1759,10 +1764,22 @@ inline constexpr std::array<std::string_view, 454> ALL = {
 	QWEN_TEXT_EMBEDDING_V3,
 	QWEN_TEXT_EMBEDDING_V4,
 	QWEN_WAN2_7_T2V,
+	SPACEX_AI_GROK_4_20_BETA_0309,
+	SPACEX_AI_GROK_4_20_MULTI_AGENT_BETA_0309,
+	SPACEX_AI_GROK_4_3,
+	SPACEX_AI_GROK_4_5,
+	SPACEX_AI_GROK_BUILD_0_1,
+	SPACEX_AI_GROK_CODE_FAST_1,
+	SPACEX_AI_GROK_IMAGINE_IMAGE,
+	SPACEX_AI_GROK_IMAGINE_IMAGE_QUALITY,
+	SPACEX_AI_GROK_IMAGINE_VIDEO,
+	SPACEX_AI_GROK_TTS,
 	STEPFUN_STEP_3_5_FLASH,
 	STEPFUN_STEP_3_7_FLASH,
 	TENCENT_HUNYUAN_A13B_INSTRUCT,
+	TENCENT_HY3,
 	TENCENT_HY3_PREVIEW,
+	TENCENT_HY3_FREE,
 	VENICE_VENICE_UNCENSORED,
 	VENICE_VENICE_UNCENSORED_1_1,
 	VOYAGE_RERANK_1,
@@ -1793,15 +1810,6 @@ inline constexpr std::array<std::string_view, 454> ALL = {
 	VOYAGE_VOYAGE_MULTILINGUAL_2,
 	VOYAGE_VOYAGE_MULTIMODAL_3,
 	VOYAGE_VOYAGE_MULTIMODAL_3_5,
-	X_AI_GROK_4_20_BETA_0309,
-	X_AI_GROK_4_20_MULTI_AGENT_BETA_0309,
-	X_AI_GROK_4_3,
-	X_AI_GROK_BUILD_0_1,
-	X_AI_GROK_CODE_FAST_1,
-	X_AI_GROK_IMAGINE_IMAGE,
-	X_AI_GROK_IMAGINE_IMAGE_QUALITY,
-	X_AI_GROK_IMAGINE_VIDEO,
-	X_AI_GROK_TTS,
 	XIAOMI_MIMO_V2_FLASH,
 	XIAOMI_MIMO_V2_5,
 	XIAOMI_MIMO_V2_5_PRO,

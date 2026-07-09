@@ -117,6 +117,8 @@ export function setupTestRuntime() {
         NOVITA_BASE_URL: "https://api.novita.example",
         PARASAIL_API_KEY: "test-parasail-key",
         PARASAIL_BASE_URL: "https://api.parasail.example",
+        POOLSIDE_API_KEY: "test-poolside-key",
+        POOLSIDE_BASE_URL: "https://api.poolside.example",
         TOGETHER_API_KEY: "test-together-key",
         TOGETHER_BASE_URL: "https://api.together.example",
         VENICE_API_KEY: "test-venice-key",

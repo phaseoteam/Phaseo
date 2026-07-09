@@ -33,6 +33,7 @@ describe("MODEL_DISCOVERY_PROVIDERS", () => {
 		expect(providerIds.has("novitaai")).toBe(false);
 		expect(providerIds.has("voyage")).toBe(false);
 		expect(providerIds.has("voyageai")).toBe(false);
+		expect(providerIds.has("x-ai")).toBe(false);
 		expect(providerIds.has("xai")).toBe(false);
 		expect(providerIds.has("zai")).toBe(false);
 	});

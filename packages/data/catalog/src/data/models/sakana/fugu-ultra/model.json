@@ -1,0 +1,135 @@
+{
+  "model_id": "sakana/fugu-ultra",
+  "organisation_id": "sakana",
+  "name": "Fugu Ultra",
+  "status": "Coming Soon",
+  "previous_model_id": null,
+  "description": "Fugu Ultra is Sakana AI's higher-quality Fugu model for difficult, multi-step reasoning, code review, research, paper reproduction, cybersecurity analysis, and literature or patent investigations.",
+  "announced_date": "2026-06-22T00:00:00",
+  "release_date": "2026-06-22T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "sakana/fugu-ultra",
+  "family_id": "sakana/fugu",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://sakana.ai/fugu-release/"
+    },
+    {
+      "platform": "docs",
+      "url": "https://sakana.ai/fugu/"
+    },
+    {
+      "platform": "api_reference",
+      "url": "https://console.sakana.ai/models"
+    },
+    {
+      "platform": "api_reference",
+      "url": "https://console.sakana.ai/get-started"
+    },
+    {
+      "platform": "pricing",
+      "url": "https://console.sakana.ai/pricing"
+    }
+  ],
+  "details": [
+    {
+      "name": "official_api_model_ids",
+      "value": "fugu-ultra, fugu-ultra-20260615"
+    },
+    {
+      "name": "input_context_length",
+      "value": 1000000
+    },
+    {
+      "name": "api_endpoints",
+      "value": "Supports OpenAI-compatible Responses, Chat Completions, and Models APIs."
+    },
+    {
+      "name": "reasoning_effort",
+      "value": "Supports high and xhigh reasoning effort values; max is accepted as an alias for xhigh."
+    },
+    {
+      "name": "pricing",
+      "value": "fugu-ultra-20260615 is priced at $5 input, $30 output, and $0.50 cached input per 1M tokens; when context exceeds 272K tokens, pricing is $10 input, $45 output, and $1.00 cached input per 1M tokens."
+    }
+  ],
+  "benchmarks": [
+    {
+      "benchmark_id": "swe-bench-pro",
+      "score": 73.7,
+      "is_self_reported": true,
+      "other_info": "Sakana Fugu product page benchmark table.",
+      "source_link": "https://sakana.ai/fugu/",
+      "rank": null
+    },
+    {
+      "benchmark_id": "terminal-bench-2.1",
+      "score": 82.1,
+      "is_self_reported": true,
+      "other_info": "Sakana Fugu product page benchmark table.",
+      "source_link": "https://sakana.ai/fugu/",
+      "rank": null
+    },
+    {
+      "benchmark_id": "livecodebench",
+      "score": 93.2,
+      "is_self_reported": true,
+      "other_info": "Sakana Fugu product page benchmark table.",
+      "source_link": "https://sakana.ai/fugu/",
+      "rank": null
+    },
+    {
+      "benchmark_id": "livecodebench-pro",
+      "score": 90.8,
+      "is_self_reported": true,
+      "other_info": "Sakana Fugu product page benchmark table.",
+      "source_link": "https://sakana.ai/fugu/",
+      "rank": null
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 50,
+      "is_self_reported": true,
+      "other_info": "Sakana Fugu product page benchmark table.",
+      "source_link": "https://sakana.ai/fugu/",
+      "rank": null
+    },
+    {
+      "benchmark_id": "charxiv-reasoning",
+      "score": 86.6,
+      "is_self_reported": true,
+      "other_info": "Sakana Fugu product page benchmark table.",
+      "source_link": "https://sakana.ai/fugu/",
+      "rank": null
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 95.5,
+      "is_self_reported": true,
+      "other_info": "Sakana reports this benchmark as GPQA-D.",
+      "source_link": "https://sakana.ai/fugu/",
+      "rank": null
+    },
+    {
+      "benchmark_id": "scicode",
+      "score": 58.7,
+      "is_self_reported": true,
+      "other_info": "Sakana Fugu product page benchmark table.",
+      "source_link": "https://sakana.ai/fugu/",
+      "rank": null
+    },
+    {
+      "benchmark_id": "tau3-bench",
+      "score": 20.6,
+      "is_self_reported": true,
+      "other_info": "Sakana reports this benchmark as Tau3 Banking.",
+      "source_link": "https://sakana.ai/fugu/",
+      "rank": null
+    }
+  ]
+}

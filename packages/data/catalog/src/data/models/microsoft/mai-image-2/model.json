@@ -1,0 +1,25 @@
+{
+  "model_id": "microsoft/mai-image-2",
+  "organisation_id": "microsoft",
+  "name": "MAI Image 2",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "MAI Image 2 is Microsoft's text-to-image model for high-quality creative generation with strong photorealism and in-image text rendering.",
+  "announced_date": "2026-03-19T00:00:00",
+  "release_date": "2026-03-19T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "image",
+  "api_model_id": "microsoft/mai-image-2",
+  "family_id": "microsoft/mai",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://microsoft.ai/news/introducing-MAI-Image-2"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

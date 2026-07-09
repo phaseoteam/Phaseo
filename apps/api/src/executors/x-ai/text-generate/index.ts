@@ -1,6 +1,6 @@
 // Purpose: Executor for x-ai / text-generate.
 // Why: Isolates provider-specific behavior per capability.
-// How: Transforms IR to xAI Responses API and normalizes usage.
+// How: Transforms IR to SpaceXAI Responses API and normalizes usage.
 
 import type { IRChatRequest } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult, Bill, ProviderExecutor } from "@executors/types";
@@ -58,7 +58,7 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 			model: modelForRouting,
 		});
 	}
-	// Enforce non-persistent storage semantics for xAI requests.
+	// Enforce non-persistent storage semantics for SpaceXAI requests.
 	requestPayload.store = false;
 
 	const captureRequest = Boolean(

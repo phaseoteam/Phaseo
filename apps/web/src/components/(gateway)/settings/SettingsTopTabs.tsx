@@ -277,11 +277,10 @@ export default function SettingsTopTabs({
 			<div className="md:hidden mb-2">
 				{tabs.length <= 1 ? null : (
 					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<Button
+						<DropdownMenuTrigger render={<Button
 								variant="outline"
-								className="group w-full justify-between"
-							>
+								className="group w-full justify-between" />}>
+
 								<span className="flex items-center gap-2 min-w-0">
 									<span className="truncate text-sm">
 										{activeTab?.label ?? "Settings"}
@@ -296,15 +295,15 @@ export default function SettingsTopTabs({
 									) : null}
 								</span>
 								<ChevronDown className="ml-2 h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
-							</Button>
+
 						</DropdownMenuTrigger>
 						<DropdownMenuContent
 							align="start"
-							className="w-(--radix-popper-anchor-width)"
+							className="w-(--anchor-width)"
 						>
 							{tabs.map((t) => (
-								<DropdownMenuItem key={t.href} asChild>
-									<Link href={t.href}>
+								<DropdownMenuItem key={t.href}  render={<Link href={t.href} />}>
+
 										<span className="flex w-full items-center justify-between gap-3">
 											<span className="min-w-0 truncate">
 												{t.label}
@@ -324,7 +323,7 @@ export default function SettingsTopTabs({
 												</span>
 											) : null}
 										</span>
-									</Link>
+
 								</DropdownMenuItem>
 							))}
 						</DropdownMenuContent>

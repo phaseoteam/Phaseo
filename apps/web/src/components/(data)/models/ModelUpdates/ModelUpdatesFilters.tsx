@@ -77,7 +77,7 @@ export default function ModelUpdatesFilters({
 														"openai",
 														"google",
 														"anthropic",
-														"x-ai",
+														"spacex-ai",
 												  ].map((id) => (
 														<span
 															key={id}

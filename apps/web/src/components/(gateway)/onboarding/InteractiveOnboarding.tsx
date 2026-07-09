@@ -20,6 +20,7 @@ import { CodeBlock as HighlightedCodeBlock } from "@/components/ai-elements/code
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/ui/copy-button";
+import { SecretRevealActions } from "@/components/(gateway)/settings/keys/SecretRevealActions";
 import {
 	Drawer,
 	DrawerContent,
@@ -782,10 +783,12 @@ export default function InteractiveOnboarding({
 													<code className="min-w-0 flex-1 overflow-auto whitespace-nowrap text-sm">
 														{createdPlaintextKey}
 													</code>
-													<CopyButton
-														content={createdPlaintextKey}
-														variant="outline"
-														onCopy={() => toast.success("Copied API key")}
+												</div>
+												<div className="mt-3">
+													<SecretRevealActions
+														secret={createdPlaintextKey}
+														name={keyName || "AI Stats onboarding key"}
+														kind="api-key"
 													/>
 												</div>
 											</div>

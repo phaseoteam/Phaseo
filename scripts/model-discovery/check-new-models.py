@@ -165,7 +165,7 @@ def fetch_xai_models() -> list[str]:
         if response.status_code != 200:
             return []
         data = response.json()
-        return [f"x-ai/{m['id']}" for m in data.get('data', [])]
+        return [f"spacex-ai/{m['id']}" for m in data.get('data', [])]
     except requests.RequestException:
         return []
 
@@ -424,7 +424,7 @@ def fetch_all_provider_models() -> list[dict]:
         {'id': 'openai', 'name': 'OpenAI', 'fetch': fetch_openai_models},
         {'id': 'anthropic', 'name': 'Anthropic', 'fetch': fetch_anthropic_models},
         {'id': 'mistral', 'name': 'Mistral', 'fetch': fetch_mistral_models},
-        {'id': 'x-ai', 'name': 'xAI', 'fetch': fetch_xai_models},
+        {'id': 'spacex-ai', 'name': 'SpaceXAI', 'fetch': fetch_xai_models},
         {'id': 'deepseek', 'name': 'DeepSeek', 'fetch': fetch_deepseek_models},
         {'id': 'minimax', 'name': 'MiniMax', 'fetch': fetch_minimax_models},
         {'id': 'z-ai', 'name': 'z.AI', 'fetch': fetch_zai_models},

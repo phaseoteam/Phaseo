@@ -7,7 +7,7 @@ const EXPLORE_PROVIDERS = [
 	{ id: "openai", label: "OpenAI" },
 	{ id: "anthropic", label: "Anthropic" },
 	{ id: "google", label: "Google" },
-	{ id: "xai", label: "xAI" },
+	{ id: "xai", label: "SpaceXAI" },
 	{ id: "mistral", label: "Mistral" },
 	{ id: "deepseek", label: "DeepSeek" },
 	{ id: "minimax", label: "MiniMax" },

@@ -138,8 +138,8 @@ function formatProviderName(provider: string): string {
 		mistral: "Mistral AI",
 		openai: "OpenAI",
 		openrouter: "OpenRouter",
-		xai: "xAI",
-		"x-ai": "xAI",
+		xai: "SpaceXAI",
+		"spacex-ai": "SpaceXAI",
 	}
 
 	return (

@@ -2,14 +2,37 @@ import { useMemo } from "react";
 import type { ChatThread } from "@/lib/indexeddb/chats";
 import type { GroupedThreads } from "@/components/(chat)/ChatSidebar";
 
+export function getChatThreadActivityTime(thread: ChatThread) {
+	const messageTimes = thread.messages
+		.map((message) => Date.parse(message.createdAt))
+		.filter(Number.isFinite);
+	if (messageTimes.length > 0) {
+		return Math.max(...messageTimes);
+	}
+	const createdMs = Date.parse(thread.createdAt);
+	if (Number.isFinite(createdMs)) return createdMs;
+	const updatedMs = Date.parse(thread.updatedAt);
+	return Number.isFinite(updatedMs) ? updatedMs : null;
+}
+
+export function getChatThreadActivityDate(thread: ChatThread) {
+	const timestamp = getChatThreadActivityTime(thread);
+	return timestamp == null ? null : new Date(timestamp);
+}
+
 export function useGroupedChatThreads(
 	threads: ChatThread[],
 	groupingNowMs: number | null,
 ) {
 	const sortedThreads = useMemo(() => {
-		return [...threads].sort((a, b) =>
-			b.updatedAt.localeCompare(a.updatedAt),
-		);
+		return [...threads].sort((a, b) => {
+			const firstActivityMs = getChatThreadActivityTime(a) ?? 0;
+			const secondActivityMs = getChatThreadActivityTime(b) ?? 0;
+			if (secondActivityMs !== firstActivityMs) {
+				return secondActivityMs - firstActivityMs;
+			}
+			return b.updatedAt.localeCompare(a.updatedAt);
+		});
 	}, [threads]);
 
 	const groupedThreads = useMemo(() => {
@@ -22,7 +45,9 @@ export function useGroupedChatThreads(
 			older: [],
 		};
 
-		const fallbackAnchorMs = Date.parse(sortedThreads[0]?.updatedAt ?? "");
+		const fallbackAnchorMs = sortedThreads[0]
+			? getChatThreadActivityTime(sortedThreads[0])
+			: null;
 		const anchorMs =
 			groupingNowMs ?? (Number.isFinite(fallbackAnchorMs) ? fallbackAnchorMs : null);
 		if (anchorMs == null) {
@@ -48,18 +73,18 @@ export function useGroupedChatThreads(
 				groups.pinned.push(thread);
 				continue;
 			}
-			const updatedMs = Date.parse(thread.updatedAt);
-			if (!Number.isFinite(updatedMs)) {
+			const activityMs = getChatThreadActivityTime(thread);
+			if (activityMs == null) {
 				groups.older.push(thread);
 				continue;
 			}
-			if (updatedMs >= startOfTodayMs) {
+			if (activityMs >= startOfTodayMs) {
 				groups.today.push(thread);
-			} else if (updatedMs >= startOfYesterdayMs) {
+			} else if (activityMs >= startOfYesterdayMs) {
 				groups.yesterday.push(thread);
-			} else if (updatedMs >= startOfWeekMs) {
+			} else if (activityMs >= startOfWeekMs) {
 				groups.week.push(thread);
-			} else if (updatedMs >= startOfMonthMs) {
+			} else if (activityMs >= startOfMonthMs) {
 				groups.month.push(thread);
 			} else {
 				groups.older.push(thread);

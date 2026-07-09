@@ -126,7 +126,7 @@ const PROVIDER_ID_ALIASES: Record<string, string> = {
 	"moonshot-ai": "moonshotai",
 	"moonshot-ai-turbo": "moonshotai-turbo",
 	"novitaai": "novita",
-	"xai": "x-ai",
+	"xai": "spacex-ai",
 	"atlas-cloud": "atlascloud",
 	"voyageai": "voyage",
 	"zai": "z-ai",

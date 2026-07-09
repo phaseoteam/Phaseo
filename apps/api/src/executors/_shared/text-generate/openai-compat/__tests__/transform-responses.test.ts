@@ -200,6 +200,109 @@ describe("openAIResponsesToIR", () => {
 			expect(ir.provider).toBe("openai");
 		});
 
+		it("does not map generic Responses tool_call items into executable function calls", () => {
+			const openaiResponse = {
+				id: "resp_tool_call_marker",
+				object: "response",
+				status: "completed",
+				created_at: 1234567890,
+				output: [
+					{
+						type: "function_call",
+						id: "fc_datetime",
+						call_id: "call_datetime",
+						name: "gateway_datetime",
+						arguments: "{\"timezones\":[\"UTC\"]}",
+					},
+					{
+						type: "tool_call",
+						id: "tc_unknown",
+						status: "completed",
+					},
+				],
+			};
+
+			const ir = openAIResponsesToIR(openaiResponse, "req_openai", "gpt-5.4-nano", "openai");
+
+			expect(ir.choices[0]?.message.toolCalls).toEqual([
+				{
+					id: "call_datetime",
+					name: "gateway_datetime",
+					arguments: "{\"timezones\":[\"UTC\"]}",
+				},
+			]);
+		});
+
+		it("maps named provider Responses tool_call items into executable function calls", () => {
+			const openaiResponse = {
+				id: "resp_provider_tool_call",
+				object: "response",
+				status: "completed",
+				created_at: 1234567890,
+				output: [
+					{
+						type: "tool_call",
+						id: "tc_datetime",
+						call_id: "call_datetime",
+						function: {
+							name: "gateway_datetime",
+							arguments: "{\"timezones\":[\"UTC\"]}",
+						},
+					},
+				],
+			};
+
+			const ir = openAIResponsesToIR(openaiResponse, "req_poolside", "laguna-xs-2.1", "poolside");
+
+			expect(ir.choices[0]?.finishReason).toBe("tool_calls");
+			expect(ir.choices[0]?.message.toolCalls).toEqual([
+				{
+					id: "call_datetime",
+					name: "gateway_datetime",
+					arguments: "{\"timezones\":[\"UTC\"]}",
+				},
+			]);
+		});
+
+		it("keeps Responses output items on one IR choice even when output_index differs", () => {
+			const openaiResponse = {
+				id: "resp_laguna_tool",
+				object: "response",
+				status: "completed",
+				created_at: 1234567890,
+				output: [
+					{
+						type: "reasoning",
+						output_index: 0,
+						content: [{ type: "output_text", text: "Need the current time." }],
+					},
+					{
+						type: "function_call",
+						output_index: 1,
+						id: "fc_datetime",
+						call_id: "call_datetime",
+						name: "gateway_datetime",
+						arguments: "{}",
+					},
+				],
+			};
+
+			const ir = openAIResponsesToIR(openaiResponse, "req_laguna", "laguna-xs-2.1", "poolside");
+
+			expect(ir.choices).toHaveLength(1);
+			expect(ir.choices[0]?.finishReason).toBe("tool_calls");
+			expect(ir.choices[0]?.message.content).toEqual([
+				{ type: "reasoning_text", text: "Need the current time." },
+			]);
+			expect(ir.choices[0]?.message.toolCalls).toEqual([
+				{
+					id: "call_datetime",
+					name: "gateway_datetime",
+					arguments: "{}",
+				},
+			]);
+		});
+
 		it("maps cached and multimodal usage details into IR usage", () => {
 			const openaiResponse = {
 				id: "resp_usage",

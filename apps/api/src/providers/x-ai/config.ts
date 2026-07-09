@@ -9,6 +9,10 @@ const common = {
 } as const;
 
 export const X_AI_OPENAI_COMPAT_CONFIGS = {
+	"spacex-ai": {
+		providerId: "spacex-ai",
+		...common,
+	},
 	"x-ai": {
 		providerId: "x-ai",
 		...common,

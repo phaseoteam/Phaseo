@@ -1,0 +1,21 @@
+{
+  "key": "azure:microsoft/mai-voice-1:audio.speech",
+  "api_provider_id": "azure",
+  "provider_slug": "azure",
+  "api_model_id": "microsoft/mai-voice-1",
+  "capability_id": "audio.speech",
+  "rules": [
+    {
+      "meter": "input_characters",
+      "unit": "character",
+      "unit_size": 1000000,
+      "price_per_unit": 22,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-04-02T00:00:00Z"
+    }
+  ]
+}

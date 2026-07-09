@@ -451,7 +451,7 @@ describe("passthroughWithPricing", () => {
 		});
 	});
 
-	it("records stream latency from upstream start and generation as total upstream duration", async () => {
+	it("records stream latency, post-first-frame generation, and end-to-end duration separately", async () => {
 		const ctx = baseCtx({
 			endpoint: "chat.completions",
 			protocol: "openai.chat.completions",
@@ -486,9 +486,11 @@ describe("passthroughWithPricing", () => {
 
 		expect(typeof ctx.meta.latency_ms).toBe("number");
 		expect(typeof ctx.meta.generation_ms).toBe("number");
+		expect(typeof ctx.meta.end_to_end_ms).toBe("number");
 		expect((ctx.meta.latency_ms as number)!).toBeGreaterThan(0);
 		expect((ctx.meta.generation_ms as number)!).toBeGreaterThanOrEqual(0);
-		expect((ctx.meta.generation_ms as number)!).toBeGreaterThanOrEqual((ctx.meta.latency_ms as number)!);
+		expect((ctx.meta.end_to_end_ms as number)!).toBeGreaterThanOrEqual((ctx.meta.latency_ms as number)!);
+		expect((ctx.meta.generation_ms as number)!).toBeLessThan((ctx.meta.latency_ms as number)!);
 	});
 
 	it("overwrites adapter latency with first downstream frame timing for streamed responses", async () => {
@@ -525,8 +527,11 @@ describe("passthroughWithPricing", () => {
 		await drain(response);
 
 		expect(typeof ctx.meta.latency_ms).toBe("number");
+		expect(typeof ctx.meta.generation_ms).toBe("number");
+		expect(typeof ctx.meta.end_to_end_ms).toBe("number");
 		expect((ctx.meta.latency_ms as number)!).toBeGreaterThan(1);
-		expect((ctx.meta.generation_ms as number)!).toBeGreaterThanOrEqual((ctx.meta.latency_ms as number)!);
+		expect((ctx.meta.end_to_end_ms as number)!).toBeGreaterThanOrEqual((ctx.meta.latency_ms as number)!);
+		expect((ctx.meta.generation_ms as number)!).toBeLessThan((ctx.meta.latency_ms as number)!);
 	});
 
 });

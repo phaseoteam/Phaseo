@@ -14,6 +14,61 @@ function buildSseStream(frames: string[]): ReadableStream<Uint8Array> {
 }
 
 describe("consumeTextProtocolStreamToIR", () => {
+	it("deduplicates Responses function-call item and argument events for one provider call", async () => {
+		const stream = buildSseStream([
+			`event: response.output_item.added\ndata: ${JSON.stringify({
+				output_index: 0,
+				item: {
+					type: "function_call",
+					id: "fc_datetime",
+					call_id: "call_datetime",
+					name: "gateway_datetime",
+					arguments: "",
+				},
+			})}\n\n`,
+			`event: response.function_call_arguments.delta\ndata: ${JSON.stringify({
+				item_id: "fc_datetime",
+				call_id: "call_datetime",
+				output_index: 0,
+				delta: "{\"timezones\"",
+			})}\n\n`,
+			`event: response.function_call_arguments.done\ndata: ${JSON.stringify({
+				item_id: "fc_datetime",
+				call_id: "call_datetime",
+				output_index: 0,
+				name: "gateway_datetime",
+				arguments: "{\"timezones\":[\"UTC\"]}",
+			})}\n\n`,
+			`event: response.output_item.done\ndata: ${JSON.stringify({
+				output_index: 0,
+				item: {
+					type: "function_call",
+					id: "fc_datetime",
+					call_id: "call_datetime",
+					name: "gateway_datetime",
+					arguments: "{\"timezones\":[\"UTC\"]}",
+				},
+			})}\n\n`,
+			"data: [DONE]",
+		]);
+
+		const consumed = await consumeTextProtocolStreamToIR({
+			protocol: "openai.responses",
+			stream,
+			requestId: "req_responses_tool",
+			model: "openai/gpt-5.4-nano",
+			provider: "openai",
+		});
+
+		const toolCalls = consumed.ir.choices[0]?.message?.toolCalls ?? [];
+		expect(toolCalls).toHaveLength(1);
+		expect(toolCalls[0]).toEqual({
+			id: "call_datetime",
+			name: "gateway_datetime",
+			arguments: "{\"timezones\":[\"UTC\"]}",
+		});
+	});
+
 	it("recovers final assistant text from terminal chat completion snapshots", async () => {
 		const finalPayload = {
 			id: "req_server_tool_stream",
@@ -184,6 +239,269 @@ describe("consumeTextProtocolStreamToIR", () => {
 		expect(consumed.rawResponse?.output?.[0]?.content?.[1]?.type).toBe("output_image");
 	});
 
+	it("ignores generic responses tool_call items when materializing tool calls", async () => {
+		const stream = buildSseStream([
+			`event: response.output_item.added\ndata: ${JSON.stringify({
+				output_index: 0,
+				item: {
+					type: "function_call",
+					id: "fc_datetime",
+					call_id: "call_datetime",
+					name: "gateway_datetime",
+					arguments: "{\"timezones\":[\"UTC\"]}",
+				},
+			})}\n\n`,
+			`event: response.output_item.added\ndata: ${JSON.stringify({
+				output_index: 1,
+				item: {
+					type: "tool_call",
+					id: "tc_unknown",
+					status: "completed",
+				},
+			})}\n\n`,
+			`event: response.completed\ndata: ${JSON.stringify({
+				response: {
+					id: "resp_datetime",
+					object: "response",
+					status: "completed",
+					output: [
+						{
+							type: "function_call",
+							id: "fc_datetime",
+							call_id: "call_datetime",
+							name: "gateway_datetime",
+							arguments: "{\"timezones\":[\"UTC\"]}",
+						},
+						{
+							type: "tool_call",
+							id: "tc_unknown",
+							status: "completed",
+						},
+					],
+				},
+			})}\n\n`,
+			"data: [DONE]",
+		]);
+
+		const consumed = await consumeTextProtocolStreamToIR({
+			protocol: "openai.responses",
+			stream,
+			requestId: "req_datetime",
+			model: "openai/gpt-5.4-nano",
+			provider: "openai",
+		});
+
+		expect(consumed.ir.choices.flatMap((choice) => choice.message.toolCalls ?? [])).toEqual([
+			{
+				id: "call_datetime",
+				name: "gateway_datetime",
+				arguments: "{\"timezones\":[\"UTC\"]}",
+			},
+		]);
+	});
+
+	it("materializes named responses tool_call items as tool calls", async () => {
+		const stream = buildSseStream([
+			`event: response.output_item.added\ndata: ${JSON.stringify({
+				output_index: 0,
+				item: {
+					type: "tool_call",
+					id: "tc_datetime",
+					call_id: "call_datetime",
+					function: {
+						name: "gateway_datetime",
+						arguments: "{\"timezones\":[\"UTC\"]}",
+					},
+				},
+			})}\n\n`,
+			`event: response.completed\ndata: ${JSON.stringify({
+				response: {
+					id: "resp_datetime",
+					object: "response",
+					status: "completed",
+					output: [
+						{
+							type: "tool_call",
+							id: "tc_datetime",
+							call_id: "call_datetime",
+							function: {
+								name: "gateway_datetime",
+								arguments: "{\"timezones\":[\"UTC\"]}",
+							},
+						},
+					],
+				},
+			})}\n\n`,
+			"data: [DONE]",
+		]);
+
+		const consumed = await consumeTextProtocolStreamToIR({
+			protocol: "openai.responses",
+			stream,
+			requestId: "req_datetime",
+			model: "poolside/laguna-xs-2.1:free",
+			provider: "poolside",
+		});
+
+		expect(consumed.ir.choices[0]?.finishReason).toBe("tool_calls");
+		expect(consumed.ir.choices.flatMap((choice) => choice.message.toolCalls ?? [])).toEqual([
+			{
+				id: "call_datetime",
+				name: "gateway_datetime",
+				arguments: "{\"timezones\":[\"UTC\"]}",
+			},
+		]);
+	});
+
+	it("ignores generic responses tool_call argument completions when materializing tool calls", async () => {
+		const stream = buildSseStream([
+			`event: response.function_call_arguments.done\ndata: ${JSON.stringify({
+				item_id: "call_datetime",
+				output_index: 1,
+				name: "gateway_datetime",
+				arguments: "{\"timezones\":[\"UTC\"]}",
+			})}\n\n`,
+			`event: response.function_call_arguments.done\ndata: ${JSON.stringify({
+				item_id: "fc_shadow",
+				output_index: 2,
+				name: "tool_call",
+				arguments: "{\"timezones\":[\"UTC\"]}",
+			})}\n\n`,
+			"data: [DONE]",
+		]);
+
+		const consumed = await consumeTextProtocolStreamToIR({
+			protocol: "openai.responses",
+			stream,
+			requestId: "req_datetime",
+			model: "openai/gpt-5.4-nano",
+			provider: "openai",
+		});
+
+		expect(consumed.ir.choices.flatMap((choice) => choice.message.toolCalls ?? [])).toEqual([
+			{
+				id: "call_datetime",
+				name: "gateway_datetime",
+				arguments: "{\"timezones\":[\"UTC\"]}",
+			},
+		]);
+	});
+
+	it("keeps responses argument-completion tool calls when the final snapshot has no output", async () => {
+		const stream = buildSseStream([
+			`event: response.created\ndata: ${JSON.stringify({
+				response: {
+					id: "resp_datetime",
+					object: "response",
+					model: "gpt-5.4-nano",
+					status: "in_progress",
+				},
+			})}\n\n`,
+			`event: response.function_call_arguments.done\ndata: ${JSON.stringify({
+				item_id: "call_datetime",
+				output_index: 0,
+				name: "gateway_datetime",
+				arguments: "{\"timezones\":[]}",
+			})}\n\n`,
+			`event: response.function_call_arguments.done\ndata: ${JSON.stringify({
+				item_id: "fc_shadow",
+				output_index: 1,
+				name: "tool_call",
+				arguments: "{\"timezones\":[]}",
+			})}\n\n`,
+			`event: response.completed\ndata: ${JSON.stringify({
+				response: {
+					id: "resp_datetime",
+					object: "response",
+					model: "gpt-5.4-nano",
+					status: "completed",
+					usage: {
+						input_tokens: 101,
+						output_tokens: 18,
+						total_tokens: 119,
+					},
+				},
+			})}\n\n`,
+			"data: [DONE]",
+		]);
+
+		const consumed = await consumeTextProtocolStreamToIR({
+			protocol: "openai.responses",
+			stream,
+			requestId: "req_datetime",
+			model: "openai/gpt-5.4-nano",
+			provider: "openai",
+		});
+
+		expect(consumed.ir.choices[0]?.finishReason).toBe("tool_calls");
+		expect(consumed.ir.choices.flatMap((choice) => choice.message.toolCalls ?? [])).toEqual([
+			{
+				id: "call_datetime",
+				name: "gateway_datetime",
+				arguments: "{\"timezones\":[]}",
+			},
+		]);
+	});
+
+	it("keeps reasoning and later Responses tool calls on the same choice", async () => {
+		const stream = buildSseStream([
+			`event: response.created\ndata: ${JSON.stringify({
+				response: {
+					id: "resp_laguna_datetime",
+					object: "response",
+					model: "laguna-xs-2.1",
+					status: "in_progress",
+				},
+			})}\n\n`,
+			`event: response.reasoning_text.delta\ndata: ${JSON.stringify({
+				item_id: "rs_laguna_datetime",
+				output_index: 0,
+				delta: "Need the current time.",
+			})}\n\n`,
+			`event: response.function_call_arguments.done\ndata: ${JSON.stringify({
+				item_id: "chatcmpl-tool-laguna",
+				output_index: 1,
+				name: "gateway_datetime",
+				arguments: "{}",
+			})}\n\n`,
+			`event: response.completed\ndata: ${JSON.stringify({
+				response: {
+					id: "resp_laguna_datetime",
+					object: "response",
+					model: "laguna-xs-2.1",
+					status: "completed",
+					usage: {
+						input_tokens: 101,
+						output_tokens: 18,
+						total_tokens: 119,
+					},
+				},
+			})}\n\n`,
+			"data: [DONE]",
+		]);
+
+		const consumed = await consumeTextProtocolStreamToIR({
+			protocol: "openai.responses",
+			stream,
+			requestId: "req_laguna_datetime",
+			model: "poolside/laguna-xs-2.1:free",
+			provider: "poolside",
+		});
+
+		expect(consumed.ir.choices).toHaveLength(1);
+		expect(consumed.ir.choices[0]?.message?.content).toEqual([
+			{ type: "reasoning_text", text: "Need the current time." },
+		]);
+		expect(consumed.ir.choices[0]?.message?.toolCalls).toEqual([
+			{
+				id: "chatcmpl-tool-laguna",
+				name: "gateway_datetime",
+				arguments: "{}",
+			},
+		]);
+		expect(consumed.ir.choices[0]?.finishReason).toBe("tool_calls");
+	});
+
 	it("preserves media from chat completion deltas", async () => {
 		const stream = buildSseStream([
 			`data: ${JSON.stringify({
@@ -288,5 +606,42 @@ describe("consumeTextProtocolStreamToIR", () => {
 			},
 			{ type: "text", text: "Then some text." },
 		]);
+	});
+
+	it("emits sanitized server tool traces in synthetic Responses streams", async () => {
+		const syntheticStream = buildSyntheticServerToolStream({
+			protocol: "openai.responses",
+			requestId: "resp_datetime_trace",
+			model: "openai/gpt-5.4-nano",
+			serverToolTrace: [{
+				id: "call_datetime",
+				name: "gateway_datetime",
+				arguments: "{\"timezones\":[\"UTC\"]}",
+				output: "{\"timezones\":[{\"timezone\":\"UTC\",\"datetime\":\"2026-07-06T12:00:00.000+00:00\"}]}",
+			}],
+			payload: {
+				id: "resp_datetime_trace",
+				object: "response",
+				model: "openai/gpt-5.4-nano",
+				status: "completed",
+				output: [{
+					type: "message",
+					role: "assistant",
+					content: [{
+						type: "output_text",
+						text: "It is noon UTC.",
+					}],
+				}],
+			},
+		});
+
+		expect(syntheticStream).not.toBeNull();
+		const text = await new Response(syntheticStream).text();
+
+		expect(text).toContain("event: response.output_item.done");
+		expect(text).toContain("\"name\":\"gateway_datetime\"");
+		expect(text).toContain("\"output\":");
+		expect(text).toContain("It is noon UTC.");
+		expect(text).not.toContain("\"name\":\"tool_call\"");
 	});
 });

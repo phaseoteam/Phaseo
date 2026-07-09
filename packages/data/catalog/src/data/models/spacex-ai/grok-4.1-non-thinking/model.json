@@ -1,0 +1,41 @@
+{
+  "model_id": "spacex-ai/grok-4.1-non-thinking",
+  "organisation_id": "spacex-ai",
+  "name": "Grok 4.1 Non Thinking",
+  "status": "Retired",
+  "previous_model_id": "spacex-ai/grok-4-fast-non-reasoning-2025-09-20",
+  "description": "Grok 4.1 Non Thinking is a reasoning model from SpaceXAI. It accepts text and image inputs with text output, and is suited for agentic workflows, instruction-following tasks, and applications requiring high factual.",
+  "announced_date": "2025-11-17T00:00:00",
+  "release_date": "2025-11-17T00:00:00",
+  "deprecation_date": "2026-05-06T00:00:00",
+  "retirement_date": "2026-05-15T19:00:00",
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "spacex-ai/grok-4.1-non-thinking",
+  "links": [
+    {
+      "platform": "deprecation",
+      "url": "https://docs.x.ai/developers/migration/may-15-retirement"
+    }
+  ],
+  "details": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "vending-bench-2",
+      "score": 350.66,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://andonlabs.com/evals/vending-bench-2",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 25.1,
+      "is_self_reported": false,
+      "other_info": "Fast non-reasoning; 940 puzzles",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 68
+    }
+  ]
+}

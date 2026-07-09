@@ -21,6 +21,31 @@ import {
 	EmptyTitle,
 } from "@/components/ui/empty";
 
+const OPTIONAL_PROVIDER_TELEMETRY_TIMEOUT_MS = 2_500;
+
+function withOptionalTimeout<T>(
+	promise: Promise<T>,
+	fallback: T,
+	label: string
+): Promise<T> {
+	let timeout: ReturnType<typeof setTimeout> | null = null;
+	const timeoutPromise = new Promise<T>((resolve) => {
+		timeout = setTimeout(() => {
+			console.warn(`[ModelPricing] ${label} timed out; using fallback.`);
+			resolve(fallback);
+		}, OPTIONAL_PROVIDER_TELEMETRY_TIMEOUT_MS);
+	});
+
+	return Promise.race([promise, timeoutPromise])
+		.catch((error) => {
+			console.warn(`[ModelPricing] ${label} failed; using fallback.`, error);
+			return fallback;
+		})
+		.finally(() => {
+			if (timeout) clearTimeout(timeout);
+		});
+}
+
 export default async function ModelPricing({
 	modelId,
 	includeHidden,
@@ -30,7 +55,11 @@ export default async function ModelPricing({
 	includeHidden: boolean;
 	showHeader?: boolean;
 }) {
-	const includeInternalProviders = await isAdminViewer().catch(() => false);
+	const includeInternalProviders = await withOptionalTimeout(
+		isAdminViewer(),
+		false,
+		"admin viewer check"
+	);
 	const [providers, header] = await Promise.all([
 		includeInternalProviders
 			? getModelPricingCached(modelId, includeHidden)
@@ -38,9 +67,11 @@ export default async function ModelPricing({
 		fetchFrontendModelHeader(modelId, includeHidden),
 	]);
 	const workspacePrivacySettings: WorkspacePrivacySettings | null =
-		await fetchWorkspacePrivacySettings().catch(() => {
-			return null;
-		});
+		await withOptionalTimeout(
+			fetchWorkspacePrivacySettings(),
+			null,
+			"workspace privacy settings"
+		);
 
 	// Show providers with model mappings even when pricing rules are missing.
 	const providersForDisplay = (providers || []).filter(
@@ -66,21 +97,31 @@ export default async function ModelPricing({
 	const showPendingApiBanner =
 		header?.status === "Available" && !hasActiveApiProviders;
 
-	const runtimeStats = await fetchFrontendModelProviderRuntimeStats({
-		modelId,
-		providerIds: providersForDisplay.map((p) => p.provider.api_provider_id),
-		modelAliases: providersForDisplay.flatMap((p) =>
-			p.provider_models.flatMap((pm) => [
-				pm.model_id,
-				pm.provider_model_slug ?? "",
-			])
+	const [runtimeStats, routingHealth] = await Promise.all([
+		withOptionalTimeout(
+			fetchFrontendModelProviderRuntimeStats({
+				modelId,
+				providerIds: providersForDisplay.map((p) => p.provider.api_provider_id),
+				modelAliases: providersForDisplay.flatMap((p) =>
+					p.provider_models.flatMap((pm) => [
+						pm.model_id,
+						pm.provider_model_slug ?? "",
+					])
+				),
+			}),
+			{},
+			"provider runtime stats"
 		),
-	});
-	const routingHealth = await fetchFrontendModelProviderRoutingHealth({
-		modelId,
-		providerIds: providersForDisplay.map((p) => p.provider.api_provider_id),
-		windowHours: 24,
-	});
+		withOptionalTimeout(
+			fetchFrontendModelProviderRoutingHealth({
+				modelId,
+				providerIds: providersForDisplay.map((p) => p.provider.api_provider_id),
+				windowHours: 24,
+			}),
+			{},
+			"provider routing health"
+		),
+	]);
 
 	// console.log(
 	// 	"Providers with rules:",

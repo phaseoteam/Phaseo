@@ -25,17 +25,16 @@ export default function ExportDropdown({
 }: ExportDropdownProps) {
 	return (
 		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<Button
+			<DropdownMenuTrigger render={<Button
 					variant="outline"
 					size={iconOnly ? "icon" : "sm"}
 					disabled={disabled}
 					aria-label="Export"
-					title="Export"
-				>
+					title="Export" />}>
+
 					<Download className={iconOnly ? "h-4 w-4" : "mr-2 h-4 w-4"} />
 					{iconOnly ? null : "Export"}
-				</Button>
+
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end">
 				<DropdownMenuItem onClick={onExportCSV}>

@@ -296,8 +296,8 @@ export const BYOK_PROVIDER_KEY_SPECS: Record<string, ProviderKeySpec> = {
 		docsUrl: "https://docs.wandb.ai/inference/api-reference",
 		minLength: 16,
 	},
-	"x-ai": {
-		hint: "xAI keys are commonly xai-... or sk-... style keys.",
+	"spacex-ai": {
+		hint: "SpaceXAI keys are commonly xai-... or sk-... style keys.",
 		example: "xai-xxxxxxxx",
 		docsUrl: "https://console.x.ai/",
 		regex: /^(xai-|sk-)[A-Za-z0-9_-]{16,}$/,

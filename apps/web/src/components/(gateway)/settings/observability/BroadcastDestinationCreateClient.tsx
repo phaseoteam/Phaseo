@@ -514,13 +514,13 @@ export default function BroadcastDestinationCreateClient(props: {
 						<Label className="text-xs font-medium">API Key Filter (Optional)</Label>
 						{keys.length ? (
 							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button variant="outline" className="h-10 w-full justify-between px-3 font-normal">
+								<DropdownMenuTrigger render={<Button variant="outline" className="h-10 w-full justify-between px-3 font-normal" />}>
+
 										{selectedKeyIds.length === 0
 											? "Select API keys"
 											: `${selectedKeyIds.length} Selected`}
 										<ChevronsUpDown className="ml-2 h-4 w-4 text-muted-foreground" />
-									</Button>
+
 								</DropdownMenuTrigger>
 								<DropdownMenuContent align="start" className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-[360px]">
 									<DropdownMenuLabel>Filter by API Key</DropdownMenuLabel>

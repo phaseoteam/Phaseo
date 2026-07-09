@@ -73,6 +73,16 @@ function bigintToDisplayNumber(value: bigint): number {
 	return Number(value);
 }
 
+function isMissingRelationError(error: unknown): boolean {
+	const text = String((error as { message?: unknown })?.message ?? "").toLowerCase();
+	return (
+		text.includes("does not exist") ||
+		text.includes("could not find table") ||
+		text.includes("could not find the table") ||
+		text.includes("relation")
+	);
+}
+
 async function getModelAliases(client: ReturnType<typeof createAdminClient>, modelId: string): Promise<string[]> {
 	const aliases = new Set<string>([modelId]);
 
@@ -149,6 +159,9 @@ async function fetchModelAppsFromRollupRpc(args: {
 	});
 
 	if (error) {
+		if (isMissingRelationError(error)) {
+			return null;
+		}
 		console.warn("[model-apps] rpc get_usage_model_apps failed; falling back to row pagination", {
 			modelId: args.modelId,
 			error,
@@ -186,6 +199,9 @@ async function fetchModelAppsFromDailyRollupsFallback(args: {
 			.range(offset, offset + PAGE_SIZE - 1);
 
 		if (error) {
+			if (isMissingRelationError(error)) {
+				return [];
+			}
 			console.warn("[model-apps] failed to load model app rollups", {
 				modelId: args.modelId,
 				error,

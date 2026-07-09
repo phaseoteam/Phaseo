@@ -680,15 +680,14 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 								</p>
 							</div>
 							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button
+								<DropdownMenuTrigger render={<Button
 										variant="outline"
 										size="sm"
-										className="flex items-center gap-2"
-									>
+										className="flex items-center gap-2" />}>
+
 										{currentConfig.label}
 										<ChevronDown className="h-4 w-4" />
-									</Button>
+
 								</DropdownMenuTrigger>
 								<DropdownMenuContent align="end">
 									{ENDPOINT_CONFIGS.map((config) => (
@@ -711,12 +710,11 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 						</div>
 						<div className="flex flex-wrap items-center gap-3">
 							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button
+								<DropdownMenuTrigger render={<Button
 										variant="outline"
 										size="sm"
-										className="flex items-center gap-2"
-									>
+										className="flex items-center gap-2" />}>
+
 										<span>
 											{LANGUAGE_LABELS[selectedLanguage]}
 										</span>
@@ -730,7 +728,7 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 											</span>
 										) : null}
 										<ChevronDown className="h-4 w-4" />
-									</Button>
+
 								</DropdownMenuTrigger>
 								<DropdownMenuContent>
 									{LANGUAGE_OPTIONS.map((option) => (
@@ -804,15 +802,14 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 											Model
 										</p>
 										<DropdownMenu>
-											<DropdownMenuTrigger asChild>
-												<Button
+											<DropdownMenuTrigger render={<Button
 													variant="outline"
 													size="sm"
-													className="flex items-center gap-2"
-												>
+													className="flex items-center gap-2" />}>
+
 													<span>{activeModel}</span>
 													<ChevronDown className="h-4 w-4" />
-												</Button>
+
 											</DropdownMenuTrigger>
 											<DropdownMenuContent>
 												{availableModels.map(
