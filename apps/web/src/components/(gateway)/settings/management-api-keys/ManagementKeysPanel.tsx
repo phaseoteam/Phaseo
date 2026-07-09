@@ -59,14 +59,13 @@ function ManagementDialogMenuItem({
 	onOpen: () => void;
 }) {
 	return (
-		<DropdownMenuItem asChild variant={variant}>
-			<div
+		<DropdownMenuItem variant={variant} render={<div
 				className="flex w-full items-center gap-2 text-left"
-				onClick={onOpen}
-			>
+				onClick={onOpen} />}>
+
 				<Icon className="mr-2 h-4 w-4" />
 				<span>{label}</span>
-			</div>
+
 		</DropdownMenuItem>
 	);
 }
@@ -236,14 +235,13 @@ export default function ManagementKeysPanel({ teamsWithKeys }: any) {
 								</TableCell>
 								<TableCell className="text-right">
 									<DropdownMenu>
-										<DropdownMenuTrigger asChild>
-											<Button
+										<DropdownMenuTrigger render={<Button
 												variant="ghost"
 												size="icon"
-												aria-label="Actions"
-											>
+												aria-label="Actions" />}>
+
 												<MoreVertical />
-											</Button>
+
 										</DropdownMenuTrigger>
 										<DropdownMenuContent
 											side="bottom"

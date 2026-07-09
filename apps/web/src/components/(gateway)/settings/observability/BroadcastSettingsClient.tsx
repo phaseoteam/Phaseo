@@ -171,19 +171,18 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 
 									<div className="flex justify-end">
 										<DropdownMenu>
-											<DropdownMenuTrigger asChild>
-												<Button size="icon" variant="ghost" disabled={actionDisabled}>
+											<DropdownMenuTrigger render={<Button size="icon" variant="ghost" disabled={actionDisabled} />}>
+
 													<MoreHorizontal className="h-4 w-4" />
-												</Button>
+
 											</DropdownMenuTrigger>
 											<DropdownMenuContent align="end" className="w-56">
-												<DropdownMenuItem asChild>
-													<Link
+												<DropdownMenuItem render={<Link
 														prefetch={false}
-														href={`/settings/observability/destinations/new/${destination.destinationId}?edit=${destination.id}`}
-													>
+														href={`/settings/observability/destinations/new/${destination.destinationId}?edit=${destination.id}`} />}>
+
 														Edit Connection
-													</Link>
+
 												</DropdownMenuItem>
 												<DropdownMenuItem
 													onClick={() =>

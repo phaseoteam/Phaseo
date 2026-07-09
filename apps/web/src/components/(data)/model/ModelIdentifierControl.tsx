@@ -120,17 +120,16 @@ export default function ModelIdentifierControl({
 
 	return (
 		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<button
+			<DropdownMenuTrigger render={<button
 					type="button"
 				className="group inline-flex max-w-full items-center gap-1 px-0 py-0 text-left text-xs font-medium text-zinc-700 transition-colors hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-0 dark:text-zinc-300 dark:hover:text-zinc-50"
-					aria-label="Model identifiers"
-				>
+					aria-label="Model identifiers" />}>
+
 					<span className="min-w-0 select-none truncate font-mono">{defaultIdentifier}</span>
 					<span className="ml-0.5 shrink-0 text-zinc-500 transition-all duration-150 group-hover:opacity-100 group-focus-visible:opacity-100 dark:text-zinc-400">
 						{triggerIcon}
 					</span>
-				</button>
+
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="start" className="w-auto min-w-0 max-w-[calc(100vw-2rem)]">
 				{options.map((option, index) => (

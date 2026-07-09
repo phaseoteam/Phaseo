@@ -1014,15 +1014,14 @@ function MediaPlayerSettings({
 
 	return (
 		<DropdownMenu modal={false}>
-			<DropdownMenuTrigger asChild>
-				<Button
+			<DropdownMenuTrigger render={<Button
 					type="button"
 					size="icon"
 					variant="ghost"
-					className={cn(getControlButtonClass(theme), className)}
-				>
+					className={cn(getControlButtonClass(theme), className)} />}>
+
 					<Settings2 className="h-4 w-4" />
-				</Button>
+
 			</DropdownMenuTrigger>
 			<DropdownMenuContent
 				align="end"

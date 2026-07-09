@@ -156,11 +156,11 @@ export function SecretRevealActions({
 
 				{kind === "api-key" ? (
 					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<Button type="button" variant="outline" size="sm">
+						<DropdownMenuTrigger render={<Button type="button" variant="outline" size="sm" />}>
+
 								Copy config
 								<ChevronDown className="h-4 w-4" />
-							</Button>
+
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="start">
 							{appConfigSnippets.map((snippet) => (
@@ -182,12 +182,12 @@ export function SecretRevealActions({
 
 				{kind === "api-key" ? (
 					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<Button type="button" variant="outline" size="sm">
+						<DropdownMenuTrigger render={<Button type="button" variant="outline" size="sm" />}>
+
 								<Download className="h-4 w-4" />
 								Export
 								<ChevronDown className="h-4 w-4" />
-							</Button>
+
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="start">
 							{collectionExports.map((item) => (

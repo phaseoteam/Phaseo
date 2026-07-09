@@ -616,88 +616,79 @@ export function AuditDataTable({
 									<TableRow key={item.modelId}>
 										<TableCell className="border border-gray-200 sticky left-0 bg-background z-10">
 											<DropdownMenu>
-												<DropdownMenuTrigger asChild>
-													<Button
+												<DropdownMenuTrigger render={<Button
 														variant="ghost"
-														className="h-8 w-8 p-0"
-													>
+														className="h-8 w-8 p-0" />}>
+
 														<span className="sr-only">
 															Open menu
 														</span>
 														<MoreHorizontal className="h-4 w-4" />
-													</Button>
+
 												</DropdownMenuTrigger>
 												<DropdownMenuContent align="start">
 													<DropdownMenuLabel>
 														Actions
 													</DropdownMenuLabel>
-													<DropdownMenuItem asChild>
-														<Link
+													<DropdownMenuItem render={<Link
 															href={`/internal/data/models/edit/${item.modelId}?tab=basic`}
-															className="cursor-pointer"
-														>
+															className="cursor-pointer" />}>
+
 															Edit Basic
-														</Link>
+
 													</DropdownMenuItem>
-													<DropdownMenuItem asChild>
-														<Link
+													<DropdownMenuItem render={<Link
 															href={`/internal/data/models/edit/${item.modelId}?tab=details`}
-															className="cursor-pointer"
-														>
+															className="cursor-pointer" />}>
+
 															Edit Details
-														</Link>
+
 													</DropdownMenuItem>
-													<DropdownMenuItem asChild>
-														<Link
+													<DropdownMenuItem render={<Link
 															href={`/internal/data/models/edit/${item.modelId}?tab=benchmarks`}
-															className="cursor-pointer"
-														>
+															className="cursor-pointer" />}>
+
 															Edit Benchmarks
-														</Link>
+
 													</DropdownMenuItem>
-													<DropdownMenuItem asChild>
-														<Link
+													<DropdownMenuItem render={<Link
 															href={`/internal/data/models/edit/${item.modelId}?tab=providers${filterProvider ? `&provider=${encodeURIComponent(filterProvider)}` : ""}`}
-															className="cursor-pointer"
-														>
+															className="cursor-pointer" />}>
+
 															Edit Providers
-														</Link>
+
 													</DropdownMenuItem>
-													<DropdownMenuItem asChild>
-														<Link
+													<DropdownMenuItem render={<Link
 															href={`/internal/data/models/edit/${item.modelId}?tab=pricing`}
-															className="cursor-pointer"
-														>
+															className="cursor-pointer" />}>
+
 															Edit Pricing
-														</Link>
+
 													</DropdownMenuItem>
 													<DropdownMenuSeparator />
-													<DropdownMenuItem asChild>
-														<Link
+													<DropdownMenuItem render={<Link
 															href={`/models/${item.modelId}`}
-															className="cursor-pointer"
-														>
+															className="cursor-pointer" />}>
+
 															<ExternalLink className="mr-2 h-4 w-4" />
 															View Model
-														</Link>
+
 													</DropdownMenuItem>
-													<DropdownMenuItem asChild>
-														<Link
+													<DropdownMenuItem render={<Link
 															href={`/models/${item.modelId}/providers`}
-															className="cursor-pointer"
-														>
+															className="cursor-pointer" />}>
+
 															<ExternalLink className="mr-2 h-4 w-4" />
 															View Providers
-														</Link>
+
 													</DropdownMenuItem>
-													<DropdownMenuItem asChild>
-														<Link
+													<DropdownMenuItem render={<Link
 															href={`/models/${item.modelId}/benchmarks`}
-															className="cursor-pointer"
-														>
+															className="cursor-pointer" />}>
+
 															<ExternalLink className="mr-2 h-4 w-4" />
 															View Benchmarks
-														</Link>
+
 													</DropdownMenuItem>
 												</DropdownMenuContent>
 											</DropdownMenu>

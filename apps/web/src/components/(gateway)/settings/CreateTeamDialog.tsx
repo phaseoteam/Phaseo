@@ -73,12 +73,11 @@ export default function CreateTeamDialog({
 					open={dropdownOpen}
 					onOpenChange={setDropdownOpen}
 				>
-					<DropdownMenuTrigger asChild>
-						<Button
+					<DropdownMenuTrigger render={<Button
 							variant="outline"
 							size="sm"
-							className="rounded-l-none"
-						>
+							className="rounded-l-none" />}>
+
 							<ChevronDown
 								className={
 									dropdownOpen
@@ -86,7 +85,7 @@ export default function CreateTeamDialog({
 										: "h-4 w-4 transition-transform"
 								}
 							/>
-						</Button>
+
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="end">
 						<DropdownMenuItem

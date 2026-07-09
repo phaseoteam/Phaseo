@@ -1373,13 +1373,12 @@ export function ChatHeader({
 					<DropdownMenu>
 						<Tooltip>
 							<TooltipTrigger asChild>
-								<DropdownMenuTrigger asChild>
-									<Button
+								<DropdownMenuTrigger render={<Button
 										variant="outline"
 										size="sm"
 										className="h-8 gap-1.5 rounded-md bg-muted/40 px-2.5 text-xs font-medium shadow-none"
-										aria-label="Response layout"
-									>
+										aria-label="Response layout" />}>
+
 										{responseLayout === "side-by-side" ? (
 											<Columns2 className="h-4 w-4" />
 										) : (
@@ -1391,7 +1390,7 @@ export function ChatHeader({
 												: "Sequential"}
 										</span>
 										<ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-									</Button>
+
 								</DropdownMenuTrigger>
 							</TooltipTrigger>
 							<TooltipContent className="max-w-64 text-left">
@@ -1981,7 +1980,7 @@ export function ChatHeader({
 											</div>
 											{importResult && (
 												<div className={`rounded-lg border px-3 py-3 ${
-													importResult.type === 'success' 
+													importResult.type === 'success'
 														? 'border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200'
 														: importResult.type === 'error'
 														? 'border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200'

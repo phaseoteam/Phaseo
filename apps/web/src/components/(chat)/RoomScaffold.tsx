@@ -195,12 +195,11 @@ export function RoomScaffold({ children }: RoomScaffoldProps) {
 					{authUser ? (
 						<div className="grid gap-2">
 							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button
+								<DropdownMenuTrigger render={<Button
 										variant="ghost"
 										aria-label="Open account menu"
-										className="h-auto min-h-14 w-full touch-manipulation justify-start gap-3 rounded-2xl py-2 active:bg-muted data-open:bg-muted group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
-									>
+										className="h-auto min-h-14 w-full touch-manipulation justify-start gap-3 rounded-2xl py-2 active:bg-muted data-open:bg-muted group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0" />}>
+
 										<Avatar className="pointer-events-none h-8 w-8 rounded-lg border border-zinc-200/70 dark:border-zinc-800/70">
 											{authUser.avatarUrl ? (
 												<AvatarImage
@@ -221,7 +220,7 @@ export function RoomScaffold({ children }: RoomScaffoldProps) {
 												All data is stored locally.
 											</span>
 										</div>
-									</Button>
+
 								</DropdownMenuTrigger>
 								<DropdownMenuContent
 									side="right"
@@ -229,17 +228,17 @@ export function RoomScaffold({ children }: RoomScaffoldProps) {
 									sideOffset={8}
 									className="w-56 z-[90]"
 								>
-									<DropdownMenuItem asChild>
-										<Link href="/settings/account">
+									<DropdownMenuItem render={<Link href="/settings/account" />}>
+
 											<UserRound className="mr-2 h-4 w-4" />
 											Account
-										</Link>
+
 									</DropdownMenuItem>
-									<DropdownMenuItem asChild>
-										<Link href="/gateway/usage">
+									<DropdownMenuItem render={<Link href="/gateway/usage" />}>
+
 											<Gauge className="mr-2 h-4 w-4" />
 											Usage
-										</Link>
+
 									</DropdownMenuItem>
 									<DropdownMenuSeparator />
 									<div className="flex min-h-10 items-center justify-between gap-3 px-2 py-1.5">

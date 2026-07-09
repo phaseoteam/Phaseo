@@ -358,13 +358,12 @@ export function ChatSidebar({
 			</SidebarMenuButton>
 			{chatEditMode ? null : (
 				<DropdownMenu>
-					<DropdownMenuTrigger asChild>
-						<SidebarMenuAction
+					<DropdownMenuTrigger render={<SidebarMenuAction
 							showOnHover
-							aria-label={`Open actions for ${thread.title}`}
-						>
+							aria-label={`Open actions for ${thread.title}`} />}>
+
 							<MoreHorizontal className="h-4 w-4" />
-						</SidebarMenuAction>
+
 					</DropdownMenuTrigger>
 					<DropdownMenuContent side="right">
 						<DropdownMenuItem onClick={() => onRenameThread(thread)}>
@@ -686,15 +685,14 @@ export function ChatSidebar({
 				{authUser ? (
 					<div className="grid gap-2">
 						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button
+							<DropdownMenuTrigger render={<Button
 									variant="ghost"
 									className={cn(
 										"h-auto min-h-14 w-full touch-manipulation items-center gap-3 rounded-2xl py-2 active:bg-muted data-open:bg-muted",
 										collapsed ? "justify-center px-0" : "justify-start",
 									)}
-									aria-label="Open account menu"
-								>
+									aria-label="Open account menu" />}>
+
 									<Avatar className="pointer-events-none h-8 w-8 rounded-lg border border-zinc-200/70 dark:border-zinc-800/70">
 										{authUser.avatarUrl && (
 											<AvatarImage
@@ -722,7 +720,7 @@ export function ChatSidebar({
 												: "All data is stored locally."}
 										</span>
 									</div>
-								</Button>
+
 							</DropdownMenuTrigger>
 							<DropdownMenuContent
 								side={collapsed ? "right" : "top"}
@@ -730,23 +728,22 @@ export function ChatSidebar({
 								sideOffset={8}
 								className="w-56 z-[90]"
 							>
-								<DropdownMenuItem asChild>
-									<Link href="/settings/account">
+								<DropdownMenuItem render={<Link href="/settings/account" />}>
+
 										<UserRound className="mr-2 h-4 w-4" />
 										Account
-									</Link>
+
 								</DropdownMenuItem>
-								<DropdownMenuItem asChild>
-									<Link href="/gateway/usage">
+								<DropdownMenuItem render={<Link href="/gateway/usage" />}>
+
 										<Gauge className="mr-2 h-4 w-4" />
 										Usage
-									</Link>
+
 								</DropdownMenuItem>
-								<DropdownMenuItem asChild>
-									<Link
+								<DropdownMenuItem render={<Link
 										href="/settings/credits"
-										aria-label={`Credits balance: ${creditsLabel}`}
-									>
+										aria-label={`Credits balance: ${creditsLabel}`} />}>
+
 										<Coins className="mr-2 h-4 w-4" />
 										<span>Credits</span>
 										{creditsLoading ? (
@@ -756,7 +753,7 @@ export function ChatSidebar({
 												{creditsLabel}
 											</span>
 										)}
-									</Link>
+
 								</DropdownMenuItem>
 								<DropdownMenuSeparator />
 								<div className="flex min-h-10 items-center justify-between gap-3 px-2 py-1.5">

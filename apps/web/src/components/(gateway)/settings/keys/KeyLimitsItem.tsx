@@ -161,22 +161,21 @@ export default function KeyLimitsItem({
 	return (
 		<>
 			{trigger ? (
-				<DropdownMenuItem asChild>
-					<div
+				<DropdownMenuItem render={<div
 						className="w-full text-left flex items-center gap-2"
 						onClick={() => {
 							setTimeout(() => {
 								resetForm();
 								setOpen(true);
 							}, 0);
-						}}
-					>
+						}} />}>
+
 						<SlidersHorizontal className="mr-2" />
 						<span>Limits</span>
 						<Badge variant="outline" className="ml-auto">
 							Beta
 						</Badge>
-					</div>
+
 				</DropdownMenuItem>
 			) : null}
 			<Dialog

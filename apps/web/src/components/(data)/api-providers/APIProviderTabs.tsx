@@ -116,24 +116,23 @@ export default function TabBar({ apiProviderId }: { apiProviderId: string }) {
 			{/* Mobile */}
 			<div className="md:hidden mb-4">
 				<DropdownMenu>
-					<DropdownMenuTrigger asChild>
-						<Button className="group w-full p-2 border rounded text-base bg-background text-foreground flex justify-between items-center">
+					<DropdownMenuTrigger render={<Button className="group w-full p-2 border rounded text-base bg-background text-foreground flex justify-between items-center" />}>
+
 							{tabs.find((t) => t.key === activeKey)?.label ??
 								"Overview"}
 							<ChevronDown className="ml-2 h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
-						</Button>
+
 					</DropdownMenuTrigger>
 					<DropdownMenuContent
 						align="start"
-						className="w-(--radix-popper-anchor-width)"
+						className="w-(--anchor-width)"
 					>
 						{tabs.map((t) => (
-							<DropdownMenuItem key={t.key} asChild>
-								<Link
-									href={hrefFor(t.key)}
-								>
+							<DropdownMenuItem key={t.key}  render={<Link
+									href={hrefFor(t.key)} />}>
+
 									{t.label}
-								</Link>
+
 							</DropdownMenuItem>
 						))}
 					</DropdownMenuContent>

@@ -10,14 +10,13 @@ export default function UsageItem({ k }: any) {
 	const href = `/settings/usage?key=${encodeURIComponent(k.id)}`;
 
 	return (
-		<DropdownMenuItem asChild>
-			<Link
+		<DropdownMenuItem render={<Link
 				className="w-full text-left flex items-center gap-2"
-				href={href}
-			>
+				href={href} />}>
+
 				<BarChart2 className="mr-2" />
 				Usage
-			</Link>
+
 		</DropdownMenuItem>
 	);
 }
