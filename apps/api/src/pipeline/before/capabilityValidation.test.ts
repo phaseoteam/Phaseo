@@ -531,6 +531,34 @@ describe("validateCapabilities", () => {
 		}
 	});
 
+	it("tracks responses reasoning.effort for Meta reasoning support", () => {
+		const result = validateCapabilities({
+			endpoint: "responses",
+			rawBody: {
+				model: "meta/muse-spark-1.1",
+				input: "hello",
+				reasoning: { effort: "xhigh" },
+			},
+			body: {
+				model: "meta/muse-spark-1.1",
+				input: "hello",
+				reasoning: { effort: "xhigh" },
+			},
+			requestId: "req_meta_reasoning_effort",
+			workspaceId: "team_test",
+			providers: [
+				provider("meta", { "reasoning.effort": {} }, 1_000_000),
+			],
+			model: "meta/muse-spark-1.1",
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.requestedParams).toEqual(["reasoning.effort"]);
+			expect(result.providers.map((p: any) => p.providerId)).toEqual(["meta"]);
+		}
+	});
+
 	it("keeps reasoning requests when provider metadata is partial", async () => {
 		const pass = validateCapabilities({
 			endpoint: "responses",

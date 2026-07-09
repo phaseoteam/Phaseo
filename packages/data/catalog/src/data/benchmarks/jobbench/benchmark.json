@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "jobbench",
+  "benchmark_name": "JobBench",
+  "category": "agents",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": "https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/",
+  "total_models": 1
+}

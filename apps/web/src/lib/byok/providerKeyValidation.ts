@@ -260,6 +260,13 @@ export const BYOK_PROVIDER_KEY_SPECS: Record<string, ProviderKeySpec> = {
 		docsUrl: "/api-providers/moonshotai",
 		regex: OPENAI_STYLE_REGEX,
 	},
+	meta: {
+		hint: "Meta Model API key from the Muse Spark get-started flow.",
+		example: "meta-xxxxxxxxxxxxxxxx",
+		docsUrl:
+			"https://developer.meta.com/ai/resources/blog/build-with-muse-spark/#5-get-started",
+		minLength: 16,
+	},
 	novitaai: {
 		hint: "NovitaAI keys are usually OpenAI-style (sk-...).",
 		example: "sk-xxxxxxxx",

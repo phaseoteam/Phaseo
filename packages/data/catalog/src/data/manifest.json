@@ -490,7 +490,10 @@
       "meta/llama-3.2-90b-vision",
       "meta/llama-3.3-70b",
       "meta/llama-4-maverick",
-      "meta/llama-4-scout"
+      "meta/llama-4-scout",
+      "meta/muse-spark",
+      "meta/muse-spark-1.1",
+      "meta/muse-spark-contemplating"
     ],
     "microsoft": [
       "microsoft/phi-1",
@@ -1304,6 +1307,7 @@
     "fiction-live-bench",
     "figqa",
     "financeagent-v1.1",
+    "financeagent-v2",
     "finsearchcomp",
     "finsearchcomp-t2-t3",
     "finsearchcomp-t3",
@@ -1363,6 +1367,7 @@
     "humaneval-mul",
     "humanevalfim-average",
     "humanitys-last-exam",
+    "jobbench",
     "hypersim",
     "if",
     "if-bench",
@@ -1891,6 +1896,7 @@
     "google-gemini-image-latest",
     "google-gemini-image-lite-latest",
     "google-gemini-image-pro-latest",
+    "meta-muse-spark-latest",
     "google-gemini-pro-latest",
     "minimax-m2.x-latest",
     "openai-gpt-chat-latest",
@@ -2324,6 +2330,7 @@
     "ionrouter:text.generate:qwen-qwen3.5-35b-a3b",
     "ionrouter:text.generate:z-ai-glm-5",
     "longcat:text.generate:meituan-longcat-2.0",
+    "meta:text.generate:meta-muse-spark-1.1",
     "minimax-lightning:text.generate:minimax-minimax-m2.1",
     "minimax-lightning:text.generate:minimax-minimax-m2.7",
     "minimax:text.generate:minimax-m2-her",

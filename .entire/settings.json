@@ -3,7 +3,7 @@
   "strategy_options": {
     "checkpoint_remote": {
       "provider": "github",
-      "repo": "phaseoteam/phaseo-checkpoints-private"
+      "repo": "AI-Stats/ai-stats-checkpoints-private"
     }
   },
   "telemetry": true
