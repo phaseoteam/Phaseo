@@ -507,6 +507,20 @@ describe("decodeOpenAIResponsesRequest", () => {
 		});
 	});
 
+	it("should decode top-level reasoning_effort alias", () => {
+		const request = {
+			model: "meta/muse-spark-1.1",
+			input: "Solve this problem",
+			reasoning_effort: "xhigh",
+		};
+
+		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
+
+		expect(ir.reasoning).toEqual({
+			effort: "xhigh",
+		});
+	});
+
 	it("should omit empty reasoning object", () => {
 		const request = {
 			model: "gpt-4",

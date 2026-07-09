@@ -544,6 +544,89 @@ describe("irToOpenAIResponses", () => {
 		}]);
 	});
 
+	it("maps Meta reasoning effort and stateful responses fields", () => {
+		const request = irToOpenAIResponses({
+			model: "meta/muse-spark-1.1",
+			messages: [
+				{
+					role: "developer",
+					content: [{ type: "text", text: "Use terse bullet points." }],
+				},
+				{
+					role: "user",
+					content: [{ type: "text", text: "Plan the migration." }],
+				},
+			],
+			stream: false,
+			previousResponseId: "resp_prev_meta",
+			reasoning: {
+				effort: "xhigh",
+			},
+		} as any, "muse-spark-1.1", "meta");
+
+		expect(request.input).toEqual([
+			{
+				type: "message",
+				role: "developer",
+				content: [{ type: "input_text", text: "Use terse bullet points." }],
+			},
+			{
+				type: "message",
+				role: "user",
+				content: [{ type: "input_text", text: "Plan the migration." }],
+			},
+		]);
+		expect(request.input_items).toBeUndefined();
+		expect(request.previous_response_id).toBe("resp_prev_meta");
+		expect(request.reasoning_effort).toBe("xhigh");
+		expect(request.reasoning).toBeUndefined();
+	});
+
+	it("maps Meta disabled reasoning to minimal effort", () => {
+		const request = irToOpenAIResponses({
+			model: "meta/muse-spark-1.1",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "Answer directly." }],
+			}],
+			stream: false,
+			reasoning: {
+				enabled: false,
+			},
+		} as any, "muse-spark-1.1", "meta");
+
+		expect(request.reasoning_effort).toBe("minimal");
+		expect(request.reasoning).toBeUndefined();
+	});
+
+	it("clamps Meta reasoning effort aliases to the supported range", () => {
+		const minRequest = irToOpenAIResponses({
+			model: "meta/muse-spark-1.1",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "Answer directly." }],
+			}],
+			stream: false,
+			reasoning: {
+				effort: "none",
+			},
+		} as any, "muse-spark-1.1", "meta");
+		const maxRequest = irToOpenAIResponses({
+			model: "meta/muse-spark-1.1",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "Think deeply." }],
+			}],
+			stream: false,
+			reasoning: {
+				effort: "max",
+			},
+		} as any, "muse-spark-1.1", "meta");
+
+		expect(minRequest.reasoning_effort).toBe("minimal");
+		expect(maxRequest.reasoning_effort).toBe("xhigh");
+	});
+
 	it("passes image generation raw request options through to upstream responses requests", () => {
 		const request = irToOpenAIResponses({
 			model: "openai/gpt-image-2",

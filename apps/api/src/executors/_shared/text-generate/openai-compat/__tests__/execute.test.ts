@@ -133,6 +133,10 @@ describe("executeOpenAICompat", () => {
 				role: "user",
 				content: [{ type: "text", text: "Find the latest Meta Model API news." }],
 			}],
+			previousResponseId: "resp_previous_meta",
+			reasoning: {
+				effort: "high",
+			},
 			webSearchOptions: {
 				search_context_size: "high",
 			},
@@ -157,9 +161,12 @@ describe("executeOpenAICompat", () => {
 						}],
 					}],
 					usage: {
-						input_tokens: 20,
-						output_tokens: 8,
+						prompt_tokens: 20,
+						completion_tokens: 12,
 						total_tokens: 28,
+						completion_tokens_details: {
+							reasoning_tokens: 4,
+						},
 						server_tool_use: {
 							web_search_requests: 2,
 						},
@@ -188,13 +195,17 @@ describe("executeOpenAICompat", () => {
 		expect(capturedBody?.web_search_options).toEqual({
 			search_context_size: "high",
 		});
+		expect(capturedBody?.previous_response_id).toBe("resp_previous_meta");
+		expect(capturedBody?.reasoning_effort).toBe("high");
+		expect(capturedBody?.reasoning).toBeUndefined();
 		expect(capturedBody?.tools).toEqual([{
 			type: "web_search_preview",
 			search_context_size: "high",
 		}]);
 		expect(result.bill.usage).toMatchObject({
 			input_text_tokens: 20,
-			output_text_tokens: 8,
+			output_text_tokens: 12,
+			reasoning_tokens: 4,
 			native_web_search_requests: 2,
 		});
 	});

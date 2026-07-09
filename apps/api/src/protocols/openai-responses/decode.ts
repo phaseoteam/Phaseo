@@ -218,9 +218,20 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 			maxTokens: req.reasoning.max_tokens ?? undefined,
 		}
 		: undefined;
+	const reasoningEffortAlias =
+		typeof (req as any).reasoning_effort === "string" && (req as any).reasoning_effort.length > 0
+			? (req as any).reasoning_effort
+			: undefined;
+	const mergedReasoningCandidate: IRReasoning | undefined =
+		reasoningCandidate || reasoningEffortAlias !== undefined
+			? {
+				...(reasoningCandidate ?? {}),
+				...(reasoningEffortAlias !== undefined ? { effort: reasoningEffortAlias as any } : {}),
+			}
+			: undefined;
 	const reasoning: IRReasoning | undefined =
-		reasoningCandidate && Object.values(reasoningCandidate).some((value) => value !== undefined)
-			? reasoningCandidate
+		mergedReasoningCandidate && Object.values(mergedReasoningCandidate).some((value) => value !== undefined)
+			? mergedReasoningCandidate
 			: undefined;
 	return {
 		messages,
