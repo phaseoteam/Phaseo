@@ -1,6 +1,6 @@
 import type { ShikiLang } from "@/components/(data)/model/quickstart/shiki";
 
-const AI_STATS_BASE_URL = "https://api.phaseo.app/v1";
+const PHASEO_BASE_URL = "https://api.phaseo.ai/v1";
 
 export type MigrationCodeSnippet = {
 	label: string;
@@ -47,10 +47,10 @@ export type MigrationPost = {
 export const MIGRATION_POSTS: MigrationPost[] = [
 	{
 		slug: "openrouter",
-		title: "Migrating from OpenRouter to AI Stats Gateway",
-		seoTitle: "Migrating from OpenRouter to AI Stats Gateway: Complete Walkthrough",
+		title: "Migrating from OpenRouter to Phaseo Gateway",
+		seoTitle: "Migrating from OpenRouter to Phaseo Gateway: Complete Walkthrough",
 		description:
-			"Move from OpenRouter to AI Stats Gateway with a safe rollout plan, code-level before/after examples, model-ID checks, and validation commands for non-streaming and streaming traffic.",
+			"Move from OpenRouter to Phaseo Gateway with a safe rollout plan, code-level before/after examples, model-ID checks, and validation commands for non-streaming and streaming traffic.",
 		excerpt:
 			"Step-by-step OpenRouter migration with model mapping, header cleanup, and production rollout guidance.",
 		sourceLabel: "OpenRouter",
@@ -58,13 +58,13 @@ export const MIGRATION_POSTS: MigrationPost[] = [
 		updatedAt: "2026-04-09",
 		keywords: [
 			"OpenRouter migration",
-			"migrate OpenRouter to AI Stats",
+			"migrate OpenRouter to Phaseo",
 			"AI gateway migration",
 			"OpenAI compatible migration",
 		],
 		prerequisites: [
 			"Access to your current OpenRouter integration code and deployment config.",
-			"An AI Stats API key stored as `AI_STATS_API_KEY` in each target environment.",
+			"A Phaseo API key stored as `PHASEO_API_KEY` in each target environment.",
 			"A list of production model IDs currently used by your application.",
 		],
 		sections: [
@@ -94,7 +94,7 @@ export const MIGRATION_POSTS: MigrationPost[] = [
 				id: "code-switch",
 				title: "2) Switch base URL and credentials",
 				paragraphs: [
-					"Replace the OpenRouter base URL with AI Stats and move authentication to `AI_STATS_API_KEY`.",
+					"Replace the OpenRouter base URL with Phaseo and move authentication to `PHASEO_API_KEY`.",
 					"Keep request payload shape unchanged first. Do behavior parity before optimization.",
 				],
 				codeSnippets: [
@@ -114,13 +114,13 @@ const response = await client.chat.completions.create({
 });`,
 					},
 					{
-						label: "After (AI Stats Gateway + OpenAI SDK)",
+						label: "After (Phaseo Gateway + OpenAI SDK)",
 						lang: "ts",
 						code: `import OpenAI from "openai";
 
 const client = new OpenAI({
-  apiKey: process.env.AI_STATS_API_KEY,
-  baseURL: "${AI_STATS_BASE_URL}",
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "${PHASEO_BASE_URL}",
 });
 
 const response = await client.chat.completions.create({
@@ -135,14 +135,14 @@ const response = await client.chat.completions.create({
 OPENROUTER_API_KEY=...
 
 # After
-AI_STATS_API_KEY=...`,
+PHASEO_API_KEY=...`,
 					},
 				],
 				screenshots: [
 					{
 						title: "Environment variable update",
 						description:
-							"Capture your hosting dashboard after adding `AI_STATS_API_KEY` and removing `OPENROUTER_API_KEY`.",
+							"Capture your hosting dashboard after adding `PHASEO_API_KEY` and removing `OPENROUTER_API_KEY`.",
 						suggestedAssetPath: "/migrate/openrouter/02-env-vars.png",
 					},
 				],
@@ -156,10 +156,10 @@ AI_STATS_API_KEY=...`,
 				],
 				codeSnippets: [
 					{
-						label: "Check model list from AI Stats",
+						label: "Check model list from Phaseo",
 						lang: "bash",
-						code: `curl -s "${AI_STATS_BASE_URL}/models" \\
-  -H "Authorization: Bearer $AI_STATS_API_KEY" | jq '.data[0:10] | map(.id)'`,
+						code: `curl -s "${PHASEO_BASE_URL}/models" \\
+  -H "Authorization: Bearer $PHASEO_API_KEY" | jq '.data[0:10] | map(.id)'`,
 					},
 					{
 						label: "Optional model alias compatibility map",
@@ -203,9 +203,9 @@ export function resolveModelId(input: string): string {
 			},
 		],
 		validationSteps: [
-			`curl -s "${AI_STATS_BASE_URL}/health"`,
-			`curl -s "${AI_STATS_BASE_URL}/models" -H "Authorization: Bearer $AI_STATS_API_KEY"`,
-			`curl -s "${AI_STATS_BASE_URL}/chat/completions" -H "Content-Type: application/json" -H "Authorization: Bearer $AI_STATS_API_KEY" -d '{"model":"openai/gpt-4.1-mini","messages":[{"role":"user","content":"Say hello"}]}'`,
+			`curl -s "${PHASEO_BASE_URL}/health"`,
+			`curl -s "${PHASEO_BASE_URL}/models" -H "Authorization: Bearer $PHASEO_API_KEY"`,
+			`curl -s "${PHASEO_BASE_URL}/chat/completions" -H "Content-Type: application/json" -H "Authorization: Bearer $PHASEO_API_KEY" -d '{"model":"openai/gpt-4.1-mini","messages":[{"role":"user","content":"Say hello"}]}'`,
 			"Run one streaming request through your app-level integration test.",
 			"Run one negative test (invalid key or invalid model) to verify failure handling.",
 		],
@@ -224,11 +224,11 @@ export function resolveModelId(input: string): string {
 	},
 	{
 		slug: "vercel-ai-gateway",
-		title: "Migrating from Vercel AI Gateway to AI Stats Gateway",
+		title: "Migrating from Vercel AI Gateway to Phaseo Gateway",
 		seoTitle:
-			"Migrating from Vercel AI Gateway to AI Stats Gateway: Step-by-Step Guide",
+			"Migrating from Vercel AI Gateway to Phaseo Gateway: Step-by-Step Guide",
 		description:
-			"Replace Vercel AI Gateway routing with AI Stats Gateway while preserving app behavior, with examples for AI SDK/OpenAI-style integrations and rollout validation.",
+			"Replace Vercel AI Gateway routing with Phaseo Gateway while preserving app behavior, with examples for AI SDK/OpenAI-style integrations and rollout validation.",
 		excerpt:
 			"Move from Vercel AI Gateway with minimal app changes, clear config swaps, and safe production rollout checks.",
 		sourceLabel: "Vercel AI Gateway",
@@ -237,11 +237,11 @@ export function resolveModelId(input: string): string {
 		keywords: [
 			"Vercel AI Gateway migration",
 			"AI SDK gateway migration",
-			"migrate to AI Stats Gateway",
+			"migrate to Phaseo Gateway",
 		],
 		prerequisites: [
 			"Current Vercel AI Gateway base URL and key configuration.",
-			"`AI_STATS_API_KEY` added to local/dev/staging/prod environments.",
+			"`PHASEO_API_KEY` added to local/dev/staging/prod environments.",
 			"A short list of critical prompts or endpoints for parity tests.",
 		],
 		sections: [
@@ -277,28 +277,28 @@ const client = new OpenAI({
 });`,
 					},
 					{
-						label: "After (AI Stats gateway endpoint)",
+						label: "After (Phaseo gateway endpoint)",
 						lang: "ts",
 						code: `import OpenAI from "openai";
 
 const client = new OpenAI({
-  apiKey: process.env.AI_STATS_API_KEY,
-  baseURL: "${AI_STATS_BASE_URL}",
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "${PHASEO_BASE_URL}",
 });`,
 					},
 					{
 						label: "Vercel AI SDK style provider switch",
 						lang: "ts",
 						code: `import { generateText } from "ai";
-import { createAIStats } from "@ai-stats/ai-sdk-provider";
+import { createPhaseo } from "@phaseo/ai-sdk-provider";
 
-const aiStats = createAIStats({
-  apiKey: process.env.AI_STATS_API_KEY,
-  baseURL: "${AI_STATS_BASE_URL}",
+const phaseo = createPhaseo({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "${PHASEO_BASE_URL}",
 });
 
 const { text } = await generateText({
-  model: aiStats("openai/gpt-4.1-mini"),
+  model: phaseo("openai/gpt-4.1-mini"),
   prompt: "Generate a migration checklist.",
 });`,
 					},
@@ -343,7 +343,7 @@ const { text } = await generateText({
 			},
 		],
 		validationSteps: [
-			`curl -s "${AI_STATS_BASE_URL}/health"`,
+			`curl -s "${PHASEO_BASE_URL}/health"`,
 			"Run your app's primary text generation integration test.",
 			"Run one app-level streaming test in staging.",
 			"Compare old/new outputs for your top 10 prompts before full rollout.",
@@ -352,7 +352,7 @@ const { text } = await generateText({
 			{
 				question: "Do I need to replace the AI SDK?",
 				answer:
-					"No. Most migrations keep the same SDK and only swap provider configuration to point at AI Stats.",
+					"No. Most migrations keep the same SDK and only swap provider configuration to point at Phaseo.",
 			},
 			{
 				question: "What if my app uses edge runtimes and server runtimes?",
@@ -363,23 +363,23 @@ const { text } = await generateText({
 	},
 	{
 		slug: "requesty",
-		title: "Migrating from Requesty to AI Stats Gateway",
-		seoTitle: "Migrating from Requesty to AI Stats Gateway: Practical Migration Guide",
+		title: "Migrating from Requesty to Phaseo Gateway",
+		seoTitle: "Migrating from Requesty to Phaseo Gateway: Practical Migration Guide",
 		description:
-			"Migrate from Requesty to AI Stats Gateway with an OpenAI-compatible approach: endpoint/key swap, model compatibility checks, and production validation.",
+			"Migrate from Requesty to Phaseo Gateway with an OpenAI-compatible approach: endpoint/key swap, model compatibility checks, and production validation.",
 		excerpt:
-			"A practical migration guide for Requesty users moving to AI Stats with minimal code changes.",
+			"A practical migration guide for Requesty users moving to Phaseo with minimal code changes.",
 		sourceLabel: "Requesty",
 		readTimeMinutes: 10,
 		updatedAt: "2026-04-09",
 		keywords: [
 			"Requesty migration",
 			"OpenAI compatible gateway migration",
-			"migrate Requesty to AI Stats",
+			"migrate Requesty to Phaseo",
 		],
 		prerequisites: [
 			"Your current Requesty client configuration and env vars.",
-			"`AI_STATS_API_KEY` available in all deployment environments.",
+			"`PHASEO_API_KEY` available in all deployment environments.",
 			"A baseline of current latency/error metrics for comparison.",
 		],
 		sections: [
@@ -401,7 +401,7 @@ const { text } = await generateText({
 				title: "2) Replace endpoint and credentials",
 				paragraphs: [
 					"Treat this as an OpenAI-compatible migration. Keep payload shape first and only update endpoint + API key source.",
-					"Move old Requesty key names to `AI_STATS_API_KEY` to standardize runtime config.",
+					"Move old Requesty key names to `PHASEO_API_KEY` to standardize runtime config.",
 				],
 				codeSnippets: [
 					{
@@ -415,13 +415,13 @@ const client = new OpenAI({
 });`,
 					},
 					{
-						label: "After (AI Stats gateway)",
+						label: "After (Phaseo gateway)",
 						lang: "ts",
 						code: `import OpenAI from "openai";
 
 const client = new OpenAI({
-  apiKey: process.env.AI_STATS_API_KEY,
-  baseURL: "${AI_STATS_BASE_URL}",
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "${PHASEO_BASE_URL}",
 });`,
 					},
 				],
@@ -429,7 +429,7 @@ const client = new OpenAI({
 					{
 						title: "Secrets rotation",
 						description:
-							"Capture your deployment secret manager after switching from Requesty key names to `AI_STATS_API_KEY`.",
+							"Capture your deployment secret manager after switching from Requesty key names to `PHASEO_API_KEY`.",
 						suggestedAssetPath: "/migrate/requesty/01-secret-rotation.png",
 					},
 				],
@@ -438,15 +438,15 @@ const client = new OpenAI({
 				id: "models",
 				title: "3) Verify model availability and normalize IDs",
 				paragraphs: [
-					"Check that your existing model IDs are valid in AI Stats. If needed, centralize mapping in one resolver function.",
+					"Check that your existing model IDs are valid in Phaseo. If needed, centralize mapping in one resolver function.",
 					"Avoid ad-hoc replacements throughout the codebase; keep migration edits reversible.",
 				],
 				codeSnippets: [
 					{
 						label: "Model availability check",
 						lang: "bash",
-						code: `curl -s "${AI_STATS_BASE_URL}/models" \\
-  -H "Authorization: Bearer $AI_STATS_API_KEY" | jq '.data | length'`,
+						code: `curl -s "${PHASEO_BASE_URL}/models" \\
+  -H "Authorization: Bearer $PHASEO_API_KEY" | jq '.data | length'`,
 					},
 					{
 						label: "Single-boundary model resolver",
@@ -483,8 +483,8 @@ const client = new OpenAI({
 			},
 		],
 		validationSteps: [
-			`curl -s "${AI_STATS_BASE_URL}/health"`,
-			`curl -s "${AI_STATS_BASE_URL}/models" -H "Authorization: Bearer $AI_STATS_API_KEY"`,
+			`curl -s "${PHASEO_BASE_URL}/health"`,
+			`curl -s "${PHASEO_BASE_URL}/models" -H "Authorization: Bearer $PHASEO_API_KEY"`,
 			"Replay your golden prompt set through the migrated path.",
 			"Verify one invalid-key error path and one invalid-model error path.",
 		],
@@ -508,23 +508,23 @@ const client = new OpenAI({
 	},
 	{
 		slug: "llmgateway",
-		title: "Migrating from LLM Gateway to AI Stats Gateway",
-		seoTitle: "Migrating from LLM Gateway to AI Stats Gateway: Complete Guide",
+		title: "Migrating from LLM Gateway to Phaseo Gateway",
+		seoTitle: "Migrating from LLM Gateway to Phaseo Gateway: Complete Guide",
 		description:
-			"Migrate from LLMGateway to AI Stats Gateway using an OpenAI-compatible flow with endpoint and key migration, model checks, and staged rollout validation.",
+			"Migrate from LLMGateway to Phaseo Gateway using an OpenAI-compatible flow with endpoint and key migration, model checks, and staged rollout validation.",
 		excerpt:
-			"Practical migration steps for LLMGateway users who want a low-risk cutover to AI Stats.",
+			"Practical migration steps for LLMGateway users who want a low-risk cutover to Phaseo.",
 		sourceLabel: "LLM Gateway",
 		readTimeMinutes: 10,
 		updatedAt: "2026-04-09",
 		keywords: [
 			"LLMGateway migration",
-			"migrate LLM Gateway to AI Stats",
+			"migrate LLM Gateway to Phaseo",
 			"AI gateway migration guide",
 		],
 		prerequisites: [
 			"Your existing LLM Gateway endpoint and API key configuration.",
-			"`AI_STATS_API_KEY` added to dev, staging, and production.",
+			"`PHASEO_API_KEY` added to dev, staging, and production.",
 			"A baseline sample of output quality, latency, and error rate.",
 		],
 		sections: [
@@ -546,7 +546,7 @@ const client = new OpenAI({
 				title: "2) Switch endpoint and credentials",
 				paragraphs: [
 					"Keep payloads unchanged first. Start with a pure endpoint and key migration to reduce risk.",
-					"Rename keys to `AI_STATS_API_KEY` across local and deployed environments.",
+					"Rename keys to `PHASEO_API_KEY` across local and deployed environments.",
 				],
 				codeSnippets: [
 					{
@@ -560,13 +560,13 @@ const client = new OpenAI({
 });`,
 					},
 					{
-						label: "After (AI Stats Gateway)",
+						label: "After (Phaseo Gateway)",
 						lang: "ts",
 						code: `import OpenAI from "openai";
 
 const client = new OpenAI({
-  apiKey: process.env.AI_STATS_API_KEY,
-  baseURL: "${AI_STATS_BASE_URL}",
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "${PHASEO_BASE_URL}",
 });`,
 					},
 				],
@@ -574,7 +574,7 @@ const client = new OpenAI({
 					{
 						title: "Environment key migration",
 						description:
-							"Capture your environment config after replacing `LLM_GATEWAY_API_KEY` with `AI_STATS_API_KEY`.",
+							"Capture your environment config after replacing `LLM_GATEWAY_API_KEY` with `PHASEO_API_KEY`.",
 						suggestedAssetPath: "/migrate/llmgateway/01-env-migration.png",
 					},
 				],
@@ -583,15 +583,15 @@ const client = new OpenAI({
 				id: "models",
 				title: "3) Validate model compatibility",
 				paragraphs: [
-					"Query the AI Stats model catalog and verify each model used in production.",
-					"If aliases differ, implement a single mapping function at the gateway boundary. LLM Gateway examples often use unprefixed IDs like `gpt-4o`, while AI Stats uses provider-prefixed IDs.",
+					"Query the Phaseo model catalog and verify each model used in production.",
+					"If aliases differ, implement a single mapping function at the gateway boundary. LLM Gateway examples often use unprefixed IDs like `gpt-4o`, while Phaseo uses provider-prefixed IDs.",
 				],
 				codeSnippets: [
 					{
 						label: "Model list check",
 						lang: "bash",
-						code: `curl -s "${AI_STATS_BASE_URL}/models" \\
-  -H "Authorization: Bearer $AI_STATS_API_KEY" | jq '.data | length'`,
+						code: `curl -s "${PHASEO_BASE_URL}/models" \\
+  -H "Authorization: Bearer $PHASEO_API_KEY" | jq '.data | length'`,
 					},
 				],
 			},
@@ -618,8 +618,8 @@ const client = new OpenAI({
 			},
 		],
 		validationSteps: [
-			`curl -s "${AI_STATS_BASE_URL}/health"`,
-			`curl -s "${AI_STATS_BASE_URL}/models" -H "Authorization: Bearer $AI_STATS_API_KEY"`,
+			`curl -s "${PHASEO_BASE_URL}/health"`,
+			`curl -s "${PHASEO_BASE_URL}/models" -H "Authorization: Bearer $PHASEO_API_KEY"`,
 			"Run one non-streaming and one streaming request in staging.",
 			"Replay your golden prompts and compare to baseline.",
 		],
@@ -632,7 +632,7 @@ const client = new OpenAI({
 			{
 				question: "Do model IDs need to change when migrating from LLM Gateway?",
 				answer:
-					"Usually yes. If you currently use unprefixed IDs (for example `gpt-4o`), map them to AI Stats provider-prefixed IDs (for example `openai/gpt-4.1-mini`).",
+					"Usually yes. If you currently use unprefixed IDs (for example `gpt-4o`), map them to Phaseo provider-prefixed IDs (for example `openai/gpt-4.1-mini`).",
 			},
 			{
 				question: "Should we remove old LLMGateway env vars immediately?",

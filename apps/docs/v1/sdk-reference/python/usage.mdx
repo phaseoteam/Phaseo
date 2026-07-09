@@ -6,9 +6,9 @@ description: "Endpoint-by-endpoint examples using the Python SDK."
 ## Setup
 
 ```python
-from ai_stats import AIStats
+from phaseo import Phaseo
 
-client = AIStats(api_key="your-api-key")
+client = Phaseo(api_key="your-api-key")
 ```
 
 ## Chat completions
@@ -159,11 +159,11 @@ except Exception as exc:
 ## Configuration options
 
 ```python
-from ai_stats import AIStats
+from phaseo import Phaseo
 
-client = AIStats(
+client = Phaseo(
     api_key="your-api-key",
-    base_url="https://api.phaseo.app/v1",
+    base_url="https://api.phaseo.ai/v1",
     timeout=30.0,
 )
 ```

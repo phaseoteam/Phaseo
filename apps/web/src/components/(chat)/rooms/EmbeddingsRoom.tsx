@@ -477,7 +477,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 	const composerModelLogoId =
 		composerSelectedModel?.organisationId?.trim() ||
 		composerSelectedModel?.providerId ||
-		(modelId.split("/")[0] || "ai-stats");
+		(modelId.split("/")[0] || "phaseo");
 	const composerModelLabel =
 		(modelId &&
 			(modelSettings.modelDisplayNameById[modelId] ||
@@ -1344,7 +1344,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 							const logoId =
 								resolvedModel?.organisationId?.trim() ||
 								resolvedModel?.providerId ||
-								"ai-stats";
+								"phaseo";
 							const logoAlt =
 								resolvedModel?.organisationName ||
 								resolvedModel?.providerName ||

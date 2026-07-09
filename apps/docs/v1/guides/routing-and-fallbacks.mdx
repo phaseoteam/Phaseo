@@ -3,7 +3,7 @@ title: "Routing and Fallbacks"
 description: "How the Gateway selects providers and keeps requests reliable."
 ---
 
-The AI Stats Gateway routes each request to a provider that can serve your chosen model. When a provider is slow, rate-limited, or returning errors, the Gateway can attempt fallbacks so your requests still complete.
+The Phaseo Gateway routes each request to a provider that can serve your chosen model. When a provider is slow, rate-limited, or returning errors, the Gateway can attempt fallbacks so your requests still complete.
 
 ## How routing works at a high level
 
@@ -41,7 +41,7 @@ The same page also exposes beta and alpha channel toggles so preview traffic can
 
 ### 3) BYOK fallback is explicit
 
-In **Dashboard -> Settings -> BYOK**, teams can choose whether a failed BYOK request is allowed to fall back to AI Stats credits. This is the current public control for the common "my own key failed, should the request still complete?" decision.
+In **Dashboard -> Settings -> BYOK**, teams can choose whether a failed BYOK request is allowed to fall back to Phaseo credits. This is the current public control for the common "my own key failed, should the request still complete?" decision.
 
 ## Fallback behavior
 

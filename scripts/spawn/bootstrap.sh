@@ -12,7 +12,7 @@ if command -v spawn >/dev/null 2>&1; then
 fi
 
 if command -v npx >/dev/null 2>&1; then
-  exec npx --yes @ai-stats/spawn@latest "$@"
+  exec npx --yes @phaseo/spawn@latest "$@"
 fi
 
 echo "Could not find spawn CLI or npx on PATH."

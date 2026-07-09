@@ -36,7 +36,7 @@ const blockedMarqueeProviderIds = new Set([
 	"openrouter",
 	"huggingface",
 	"hugging-face",
-	"ai-stats",
+	"phaseo",
 ]);
 
 export function HeroSection({ metrics }: HeroSectionProps) {

@@ -101,7 +101,7 @@ export default function Command() {
                 />
               )}
               <Action.OpenInBrowser
-                title="Open in AI Stats"
+                title="Open in Phaseo"
                 url={getProviderURL(provider.api_provider_id)}
                 icon={Icon.Globe}
                 shortcut={{ modifiers: ["cmd"], key: "o" }}
@@ -139,7 +139,7 @@ ${provider.description || "_No description available_"}
 
 ${provider.link ? `[Provider Documentation](${provider.link})` : "_No documentation link available_"}
 
-[View on AI Stats](${getProviderURL(provider.api_provider_id)})
+[View on Phaseo](${getProviderURL(provider.api_provider_id)})
 `;
 
   return (
@@ -156,7 +156,7 @@ ${provider.link ? `[Provider Documentation](${provider.link})` : "_No documentat
             />
           )}
           <Action.OpenInBrowser
-            title="Open in AI Stats"
+            title="Open in Phaseo"
             url={getProviderURL(provider.api_provider_id)}
             icon={Icon.Globe}
           />

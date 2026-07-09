@@ -5,7 +5,6 @@ export type InternalModelNotificationModel = {
 	creatorId?: string;
 	creatorName?: string;
 	creatorColor?: string;
-	changeSummaryLines?: string[];
 };
 
 export type DiscordEmbed = {
@@ -54,10 +53,10 @@ export type SendDiscordWebhookOptions = {
 };
 
 const DEFAULT_EMBED_COLOR = 0x2563eb;
-const DEFAULT_USERNAME = "AI Stats Model Discovery";
+const DEFAULT_USERNAME = "Phaseo Model Discovery";
 const DEFAULT_MAX_MODEL_EMBEDS = 10;
-const DEFAULT_LATEST_MODELS_URL = "https://ai-stats.phaseo.app/models";
-const DEFAULT_ASSET_BASE_URL = "https://ai-stats.phaseo.app";
+const DEFAULT_LATEST_MODELS_URL = "https://phaseo.app/models";
+const DEFAULT_ASSET_BASE_URL = "https://phaseo.app";
 const DEFAULT_AVATAR_PATH = "/png_logo_light.png";
 const ALLOWED_DISCORD_WEBHOOK_HOSTS = new Set([
 	"discord.com",
@@ -87,13 +86,6 @@ function sanitizeModel(input: InternalModelNotificationModel): InternalModelNoti
 	const creatorId = trimOrNull(input.creatorId) ?? modelId.split("/")[0] ?? null;
 	const creatorName = trimOrNull(input.creatorName);
 	const creatorColor = trimOrNull(input.creatorColor);
-	const changeSummaryLines = Array.isArray(input.changeSummaryLines)
-		? input.changeSummaryLines
-				.filter((line): line is string => typeof line === "string")
-				.map((line) => line.trim())
-				.filter(Boolean)
-				.slice(0, 8)
-		: [];
 	return {
 		modelId,
 		modelName,
@@ -101,7 +93,6 @@ function sanitizeModel(input: InternalModelNotificationModel): InternalModelNoti
 		creatorId: creatorId ?? undefined,
 		creatorName: creatorName ?? undefined,
 		creatorColor: creatorColor ?? undefined,
-		changeSummaryLines: changeSummaryLines.length > 0 ? changeSummaryLines : undefined,
 	};
 }
 
@@ -135,11 +126,11 @@ function resolveEmbedColor(model: InternalModelNotificationModel): number {
 
 function formatFooterText(nowIso: string): string {
 	const date = new Date(nowIso);
-	if (!Number.isFinite(date.getTime())) return "AI Stats";
+	if (!Number.isFinite(date.getTime())) return "Phaseo";
 	const day = date.getUTCDate().toString().padStart(2, "0");
 	const month = date.toLocaleString("en-GB", { month: "short", timeZone: "UTC" });
 	const year = date.getUTCFullYear();
-	return `AI Stats | ${day} ${month} ${year}`;
+	return `Phaseo | ${day} ${month} ${year}`;
 }
 
 function buildDisplayTitle(model: InternalModelNotificationModel): string {
@@ -196,7 +187,6 @@ export function formatSingleModelEmbed(
 	const descriptionLines = [
 		`Model ID: \`${safeModel.modelId}\``,
 		`[View Model](${safeModel.modelUrl})`,
-		...(safeModel.changeSummaryLines ? ["", ...safeModel.changeSummaryLines] : []),
 	];
 
 	return {
@@ -220,7 +210,6 @@ function formatPerModelDetailEmbed(
 	const descriptionLines = [
 		`Model ID: \`${safeModel.modelId}\``,
 		`[View Model](${safeModel.modelUrl})`,
-		...(safeModel.changeSummaryLines ? ["", ...safeModel.changeSummaryLines] : []),
 	];
 
 	return {

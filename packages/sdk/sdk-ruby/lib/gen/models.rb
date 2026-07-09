@@ -1,4 +1,4 @@
-module AiStats
+module Phaseo
   module Gen
     # @!attribute [rw] byok_usage_inference
     #   @return [Float]

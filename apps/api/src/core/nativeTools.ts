@@ -150,6 +150,6 @@ export function isIRNativeToolDefinition(tool: unknown): boolean {
 		type &&
 			type !== "function" &&
 			type !== "gateway:datetime" &&
-			!type.startsWith("ai-stats:"),
+			!type.startsWith("phaseo:"),
 	);
 }

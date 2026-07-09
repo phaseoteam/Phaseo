@@ -1,10 +1,10 @@
-# @ai-stats/devtools-viewer
+# @phaseo/devtools-viewer
 
-Web-based viewer for AI Stats DevTools telemetry data.
+Web-based viewer for Phaseo DevTools telemetry data.
 
 ## Overview
 
-The DevTools Viewer provides a beautiful, real-time web interface for inspecting API requests captured by AI Stats SDKs. It features:
+The DevTools Viewer provides a beautiful, real-time web interface for inspecting API requests captured by Phaseo SDKs. It features:
 
 - **Live telemetry updates** - Auto-refreshes every 2 seconds
 - **Adaptive UI** - Different views for chat, images, audio, video, etc.
@@ -14,19 +14,19 @@ The DevTools Viewer provides a beautiful, real-time web interface for inspecting
 ## Installation
 
 ```bash
-npm install @ai-stats/sdk
+npm install @phaseo/sdk
 # or
-pnpm add @ai-stats/sdk
+pnpm add @phaseo/sdk
 ```
 
 The DevTools CLI ships with the TypeScript SDK. You can also install it separately:
 
 ```bash
-npm install -g @ai-stats/devtools-viewer
+npm install -g @phaseo/devtools-viewer
 # or
-pnpm add -g @ai-stats/devtools-viewer
+pnpm add -g @phaseo/devtools-viewer
 # or
-npx @ai-stats/devtools-viewer start
+npx @phaseo/devtools-viewer start
 ```
 
 ## Usage
@@ -34,20 +34,20 @@ npx @ai-stats/devtools-viewer start
 ### Start the Viewer
 
 ```bash
-# Start with defaults (port 4983, directory .ai-stats-devtools)
-ai-stats-devtools start
+# Start with defaults (port 4983, directory .phaseo-devtools)
+phaseo-devtools start
 
 # Custom port
-ai-stats-devtools start -p 3000
+phaseo-devtools start -p 3000
 
 # Custom directory
-ai-stats-devtools start -d /path/to/devtools
+phaseo-devtools start -d /path/to/devtools
 
 # Both
-ai-stats-devtools start -p 8080 -d ./my-devtools
+phaseo-devtools start -p 8080 -d ./my-devtools
 
 # If installed locally (recommended)
-pnpm exec ai-stats-devtools start
+pnpm exec phaseo-devtools start
 ```
 
 Then open http://localhost:4983 in your browser.
@@ -56,13 +56,13 @@ Then open http://localhost:4983 in your browser.
 
 ```bash
 # Set devtools directory
-export AI_STATS_DEVTOOLS_DIR=/path/to/devtools
+export PHASEO_DEVTOOLS_DIR=/path/to/devtools
 
 # Set port
 export PORT=3000
 
 # Start server
-ai-stats-devtools start
+phaseo-devtools start
 ```
 
 ## Features
@@ -158,7 +158,7 @@ This will:
 **Troubleshooting:**
 - If port 4984 is busy, the server won't start. Kill the process or change the port.
 - If port 4983 is busy, the UI dev server won't start. Same solution.
-- If you see `ENOENT` errors, make sure `.ai-stats-devtools` directory exists with sample data
+- If you see `ENOENT` errors, make sure `.phaseo-devtools` directory exists with sample data
 - Check browser DevTools console (F12) for client-side errors
 - Check terminal output for server-side errors
 
@@ -198,7 +198,7 @@ packages/devtools/devtools-viewer/
 The viewer reads JSONL (JSON Lines) files from the devtools directory:
 
 ```
-.ai-stats-devtools/
+.phaseo-devtools/
 ├── generations.jsonl     # Main telemetry log
 ├── metadata.json         # Session info
 └── assets/               # Binary assets
@@ -276,7 +276,7 @@ pnpm run build
 
 1. **Check devtools directory exists:**
    ```bash
-   ls -la .ai-stats-devtools/
+   ls -la .phaseo-devtools/
    ```
 
 2. **Verify files are present:**
@@ -286,7 +286,7 @@ pnpm run build
 3. **Test with sample data:**
    ```bash
    # Create test entry
-   echo '{"id":"test-1","type":"chat.completions","timestamp":1234567890,"duration_ms":100,"request":{"messages":[{"role":"user","content":"test"}]},"response":null,"error":null,"metadata":{"sdk":"test"}}' >> .ai-stats-devtools/generations.jsonl
+   echo '{"id":"test-1","type":"chat.completions","timestamp":1234567890,"duration_ms":100,"request":{"messages":[{"role":"user","content":"test"}]},"response":null,"error":null,"metadata":{"sdk":"test"}}' >> .phaseo-devtools/generations.jsonl
    ```
 
 ## Quick Development Workflow
@@ -314,7 +314,7 @@ pnpm run dev
 # - Terminal output (server logs)
 
 # 7. Test with real data
-# - Run your app with AI Stats SDK
+# - Run your app with Phaseo SDK
 # - Watch requests appear in real-time
 ```
 

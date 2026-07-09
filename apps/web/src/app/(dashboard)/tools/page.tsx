@@ -5,7 +5,7 @@ import ToolsGrid from "@/components/(tools)/ToolsGrid";
 export const metadata: Metadata = buildMetadata({
 	title: "Developer tools - Utilities for AI & LLM workflows",
 	description:
-		"Browse free developer tools from AI Stats for working with AI models and APIs, including token counting, request building, JSON formatting and more.",
+		"Browse free developer tools from Phaseo for working with AI models and APIs, including token counting, request building, JSON formatting and more.",
 	path: "/tools",
 	keywords: [
 		"AI tools",
@@ -14,7 +14,7 @@ export const metadata: Metadata = buildMetadata({
 		"token counter",
 		"request builder",
 		"JSON formatter",
-		"AI Stats",
+		"Phaseo",
 	],
 });
 

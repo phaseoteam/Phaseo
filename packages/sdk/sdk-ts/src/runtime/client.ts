@@ -13,7 +13,7 @@ export type ClientOptions = {
 	timeoutMs?: number;
 };
 
-export class AIStatsHttpError extends Error {
+export class PhaseoHttpError extends Error {
 	readonly status: number;
 	readonly statusText: string;
 	readonly body: unknown;
@@ -30,7 +30,7 @@ export class AIStatsHttpError extends Error {
 			args.message ??
 			`Request failed: ${args.status} ${args.statusText}${formatErrorBodySuffix(args.body)}`
 		);
-		this.name = "AIStatsHttpError";
+		this.name = "PhaseoHttpError";
 		this.status = args.status;
 		this.statusText = args.statusText;
 		this.body = args.body;
@@ -84,7 +84,7 @@ export class Client {
 			const text = await response.text();
 			const parsedBody = parseResponseText(text);
 			if (!response.ok) {
-				throw new AIStatsHttpError({
+				throw new PhaseoHttpError({
 					status: response.status,
 					statusText: response.statusText,
 					body: parsedBody,

@@ -30,7 +30,7 @@ export async function generateMetadata(props: {
 			modelDescription,
 			suffix:
 				"Track weighted effective input and output pricing plus 30-day pricing history by provider and meter.",
-			fallback: `${modelName} pricing on AI Stats. Track weighted effective input/output pricing and 30-day pricing history by provider and meter.`,
+			fallback: `${modelName} pricing on Phaseo. Track weighted effective input/output pricing and 30-day pricing history by provider and meter.`,
 		}),
 		path,
 		keywords: [
@@ -41,7 +41,7 @@ export async function generateMetadata(props: {
 			organisationName ? `${organisationName} AI` : null,
 			"token pricing",
 			"AI billing",
-			"AI Stats",
+			"Phaseo",
 		].filter(Boolean) as string[],
 		imagePath,
 	});

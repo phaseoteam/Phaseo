@@ -6,9 +6,9 @@ description: "Call /audio/speech with the Java SDK."
 **Method**: `client.createSpeech(...)`
 
 ```java
-import ai.stats.sdk.AIStats;
+import app.phaseo.sdk.Phaseo;
 
-AIStats client = new AIStats(System.getenv("AI_STATS_API_KEY"));
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
 
 String body = """
 {

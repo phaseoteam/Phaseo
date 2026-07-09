@@ -1,6 +1,6 @@
 ---
 title: "Build a durable agent loop in TypeScript"
-description: "Run a resumable agent loop on top of AI Stats Gateway with the TypeScript Agent SDK."
+description: "Run a resumable agent loop on top of Phaseo Gateway with the TypeScript Agent SDK."
 ---
 
 Use this recipe when you want more than a one-shot text request:
@@ -14,19 +14,19 @@ Use this recipe when you want more than a one-shot text request:
 
 <CodeGroup>
 ```bash npm
-npm install @ai-stats/sdk @ai-stats/agent-sdk
+npm install @phaseo/sdk @phaseo/agent-sdk
 ```
 
 ```bash pnpm
-pnpm add @ai-stats/sdk @ai-stats/agent-sdk
+pnpm add @phaseo/sdk @phaseo/agent-sdk
 ```
 
 ```bash yarn
-yarn add @ai-stats/sdk @ai-stats/agent-sdk
+yarn add @phaseo/sdk @phaseo/agent-sdk
 ```
 
 ```bash bun
-bun add @ai-stats/sdk @ai-stats/agent-sdk
+bun add @phaseo/sdk @phaseo/agent-sdk
 ```
 </CodeGroup>
 
@@ -35,7 +35,7 @@ bun add @ai-stats/sdk @ai-stats/agent-sdk
 Keep the first tool deterministic and easy to inspect.
 
 ```ts
-import { defineTool } from "@ai-stats/agent-sdk";
+import { defineTool } from "@phaseo/agent-sdk";
 
 export const lookupDocs = defineTool({
   id: "lookup-docs",
@@ -43,7 +43,7 @@ export const lookupDocs = defineTool({
   async execute(input: { slug: string }) {
     return {
       slug: input.slug,
-      url: `https://docs.ai-stats.phaseo.app/v1/${input.slug}`,
+      url: `https://phaseo.app/docs/v1/${input.slug}`,
     };
   },
 });
@@ -52,12 +52,12 @@ export const lookupDocs = defineTool({
 ## 3. Create the agent
 
 ```ts
-import { createAgent } from "@ai-stats/agent-sdk";
+import { createAgent } from "@phaseo/agent-sdk";
 import { lookupDocs } from "./tools";
 
 export const supportDocsAgent = createAgent({
   id: "support-docs-agent",
-  model: "ai-stats/free",
+  model: "phaseo/free",
   instructions: "Use tools when helpful and finish with a concise answer.",
   tools: [lookupDocs],
 });
@@ -68,14 +68,14 @@ export const supportDocsAgent = createAgent({
 ```ts
 import {
   createGatewayAgentClient,
-} from "@ai-stats/agent-sdk";
+} from "@phaseo/agent-sdk";
 import { supportDocsAgent } from "./agent";
 
 const result = await supportDocsAgent.run({
   input: "Find the docs page for presets and explain when to use them.",
   client: createGatewayAgentClient({
     clientOptions: {
-      apiKey: process.env.AI_STATS_API_KEY!,
+      apiKey: process.env.PHASEO_API_KEY!,
     },
   }),
 });

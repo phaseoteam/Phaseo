@@ -96,7 +96,7 @@ async function createAndFinalizeStripeInvoice(args: { run: DueInvoiceRun; stripe
 		days_until_due: Math.max(1, Number(run.payment_terms_days ?? 30)),
 		auto_advance: false,
 		currency: "usd",
-		description: `AI Stats usage (${run.period_start} - ${run.period_end})`,
+		description: `Phaseo usage (${run.period_start} - ${run.period_end})`,
 		metadata: {
 			source: "ai_stats_enterprise_invoice_job",
 			workspace_id: run.workspace_id,
@@ -113,7 +113,7 @@ async function createAndFinalizeStripeInvoice(args: { run: DueInvoiceRun; stripe
 		invoice: created.id,
 		amount: cents,
 		currency: "usd",
-		description: `AI Stats usage ${run.period_start} to ${run.period_end}`,
+		description: `Phaseo usage ${run.period_start} to ${run.period_end}`,
 		metadata: {
 			source: "ai_stats_enterprise_invoice_job",
 			workspace_id: run.workspace_id,

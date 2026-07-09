@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 /**
- * Post-install script for @ai-stats/sdk
+ * Post-install script for @phaseo/sdk
  *
- * Prompts users to optionally install @ai-stats/devtools-viewer
+ * Prompts users to optionally install @phaseo/devtools-viewer
  * for debugging and monitoring their AI applications.
  */
 
@@ -24,11 +24,11 @@ const isPublishing = process.env.npm_config_global === 'true' ||
                      process.env.npm_lifecycle_event === 'prepublishOnly';
 
 // Allow skipping via environment variable
-const skipPostInstall = process.env.AI_STATS_SKIP_POSTINSTALL === 'true';
+const skipPostInstall = process.env.PHASEO_SKIP_POSTINSTALL === 'true';
 
 // Allow auto-install/skip via environment variable
-const autoInstall = process.env.AI_STATS_INSTALL_VIEWER === 'true';
-const autoSkip = process.env.AI_STATS_INSTALL_VIEWER === 'false';
+const autoInstall = process.env.PHASEO_INSTALL_VIEWER === 'true';
+const autoSkip = process.env.PHASEO_INSTALL_VIEWER === 'false';
 
 // Skip if already installed (in workspace context)
 const viewerInstalled = existsSync(path.join(__dirname, '../../../devtools/devtools-viewer'));
@@ -65,7 +65,7 @@ function askQuestion() {
       output: process.stdout
     });
 
-    console.log('\n' + colors.cyan + colors.bright + '🎯 AI Stats Devtools' + colors.reset);
+    console.log('\n' + colors.cyan + colors.bright + '🎯 Phaseo Devtools' + colors.reset);
     console.log(colors.dim + '━'.repeat(60) + colors.reset);
     console.log('');
     console.log('Install the ' + colors.bright + 'devtools viewer' + colors.reset + ' to debug your API requests?');
@@ -76,7 +76,7 @@ function askQuestion() {
     console.log('  • Error debugging with solutions');
     console.log('  • Export to JSON/CSV');
     console.log('');
-    console.log(colors.dim + 'You can install it later with: npx @ai-stats/devtools-viewer' + colors.reset);
+    console.log(colors.dim + 'You can install it later with: npx @phaseo/devtools-viewer' + colors.reset);
     console.log('');
 
     const promptUser = () => {
@@ -108,13 +108,13 @@ function askQuestion() {
 function installViewer(packageManager) {
   return new Promise((resolve, reject) => {
     console.log('');
-    console.log(colors.cyan + '📦 Installing @ai-stats/devtools-viewer...' + colors.reset);
+    console.log(colors.cyan + '📦 Installing @phaseo/devtools-viewer...' + colors.reset);
     console.log('');
 
     const commands = {
-      npm: ['install', '--save-dev', '@ai-stats/devtools-viewer'],
-      pnpm: ['add', '-D', '@ai-stats/devtools-viewer'],
-      yarn: ['add', '-D', '@ai-stats/devtools-viewer']
+      npm: ['install', '--save-dev', '@phaseo/devtools-viewer'],
+      pnpm: ['add', '-D', '@phaseo/devtools-viewer'],
+      yarn: ['add', '-D', '@phaseo/devtools-viewer']
     };
 
     const args = commands[packageManager];
@@ -149,7 +149,7 @@ async function main() {
     } else if (autoSkip) {
       shouldInstall = false;
       console.log('');
-      console.log(colors.dim + '⏭️  Skipping devtools viewer install (AI_STATS_INSTALL_VIEWER=false)' + colors.reset);
+      console.log(colors.dim + '⏭️  Skipping devtools viewer install (PHASEO_INSTALL_VIEWER=false)' + colors.reset);
       console.log('');
       process.exit(0);
     } else {
@@ -166,19 +166,19 @@ async function main() {
       console.log(colors.bright + 'Quick start:' + colors.reset);
       console.log('');
       console.log('1. Enable devtools:');
-      console.log(colors.dim + '   const client = new AIStats({' + colors.reset);
-      console.log(colors.dim + '     devtools: createAIStatsDevtools()' + colors.reset);
+      console.log(colors.dim + '   const client = new Phaseo({' + colors.reset);
+      console.log(colors.dim + '     devtools: createPhaseoDevtools()' + colors.reset);
       console.log(colors.dim + '   });' + colors.reset);
       console.log('');
       console.log('2. View your requests:');
-      console.log(colors.dim + '   npx @ai-stats/devtools-viewer' + colors.reset);
+      console.log(colors.dim + '   npx @phaseo/devtools-viewer' + colors.reset);
       console.log('');
-      console.log(colors.cyan + '📖 Docs: https://docs.ai-stats.org/devtools' + colors.reset);
+      console.log(colors.cyan + '📖 Docs: https://docs.phaseo.org/devtools' + colors.reset);
       console.log('');
     } else {
       console.log('');
       console.log(colors.dim + '⏭️  Skipped. Install later with:' + colors.reset);
-      console.log(colors.dim + '   npm install -D @ai-stats/devtools-viewer' + colors.reset);
+      console.log(colors.dim + '   npm install -D @phaseo/devtools-viewer' + colors.reset);
       console.log('');
     }
 
@@ -187,7 +187,7 @@ async function main() {
     // Non-blocking - don't fail the install if this script has issues
     console.error('');
     console.error(colors.yellow + '⚠️  Note: Could not prompt for devtools viewer.' + colors.reset);
-    console.error(colors.dim + '   Install manually with: npm install -D @ai-stats/devtools-viewer' + colors.reset);
+    console.error(colors.dim + '   Install manually with: npm install -D @phaseo/devtools-viewer' + colors.reset);
     console.error('');
     process.exit(0); // Exit successfully to not block install
   }

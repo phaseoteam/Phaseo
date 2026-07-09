@@ -1,9 +1,9 @@
 {
-	"name": "@ai-stats/py-sdk",
-	"version": "2.0.4",
+	"name": "@phaseo/py-sdk",
+	"version": "2.0.5",
 	"private": true,
 	"scripts": {
-		"postinstall": "node ../scripts/postinstall-viewer-prompt.cjs @ai-stats/py-sdk",
+		"postinstall": "node ../scripts/postinstall-viewer-prompt.cjs @phaseo/py-sdk",
 		"build": "python -m build --sdist --wheel",
 		"smoke:chat": "dotenv -e .env.local -- python tests/smoke_chat.py",
 		"smoke:responses": "dotenv -e .env.local -- python tests/smoke_responses.py"

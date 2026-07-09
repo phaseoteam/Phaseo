@@ -40,7 +40,7 @@ export function buildExamplePayload(
 			return {
 				model,
 				messages: [
-					{ role: "user", content: "Summarize the latest AI Stats metrics." },
+					{ role: "user", content: "Summarize the latest Phaseo metrics." },
 				],
 				max_tokens: 256,
 			};
@@ -54,7 +54,7 @@ export function buildExamplePayload(
 			return {
 				model,
 				input: [
-					"Route requests across providers with AI Stats.",
+					"Route requests across providers with Phaseo.",
 					"Monitor latency, throughput, and spend in real time.",
 				],
 			};
@@ -73,7 +73,7 @@ export function buildExamplePayload(
 			return {
 				model,
 				prompt: "Add a warm sunset glow to the skyline.",
-				image_url: "https://assets.ai-stats.com/sample-image.png",
+				image_url: "https://assets.phaseo.ai/sample-image.png",
 			};
 		case "video.generations":
 		case "video.generation":
@@ -93,7 +93,7 @@ export function buildExamplePayload(
 			return {
 				model,
 				voice: resolveSpeechVoiceForModel(model),
-				input: "Welcome to the AI Stats Gateway where latency, uptime, and pricing are in your control.",
+				input: "Welcome to the Phaseo Gateway where latency, uptime, and pricing are in your control.",
 				response_format: "mp3",
 			};
 		case "audio.realtime":
@@ -105,14 +105,14 @@ export function buildExamplePayload(
 		case "audio.transcription":
 			return {
 				model,
-				audio_url: "https://assets.ai-stats.com/sample-audio.wav",
+				audio_url: "https://assets.phaseo.ai/sample-audio.wav",
 				language: "en",
 			};
 		case "audio.translations":
 		case "audio.translation":
 			return {
 				model,
-				audio_url: "https://assets.ai-stats.com/sample-audio.wav",
+				audio_url: "https://assets.phaseo.ai/sample-audio.wav",
 				target_language: "en",
 			};
 		case "batch.create":

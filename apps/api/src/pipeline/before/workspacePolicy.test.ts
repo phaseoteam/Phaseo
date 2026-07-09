@@ -195,7 +195,7 @@ describe("applyWorkspacePolicy", () => {
 		});
 	});
 
-    it("filters ai-stats/free providers by concrete allowed model ids", () => {
+    it("filters phaseo/free providers by concrete allowed model ids", () => {
         const result = applyWorkspacePolicy({
             providers: [
                 candidate({
@@ -207,7 +207,7 @@ describe("applyWorkspacePolicy", () => {
                     apiModelId: "google/gemini-free",
                 }),
             ],
-            resolvedModel: "ai-stats/free",
+            resolvedModel: "phaseo/free",
             body: {},
             workspacePolicy: {
                 providerAllowlist: null,
@@ -240,7 +240,7 @@ describe("applyWorkspacePolicy", () => {
                     apiModelId: "anthropic/claude-sonnet-4",
                 }),
             ],
-            resolvedModel: "ai-stats/free",
+            resolvedModel: "phaseo/free",
             body: {},
             workspacePolicy: {
                 providerAllowlist: null,

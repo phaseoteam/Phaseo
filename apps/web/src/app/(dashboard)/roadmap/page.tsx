@@ -22,11 +22,11 @@ import {
 } from "@/lib/roadmap";
 
 export const metadata: Metadata = {
-	title: "Roadmap - What We're Building Next For AI Stats",
+	title: "Roadmap - What We're Building Next For Phaseo",
 	description:
-		"Follow the AI Stats roadmap to see what we're building next. Track upcoming features and shipped milestones for the AI model database, gateway, and analytics tools.",
+		"Follow the Phaseo roadmap to see what we're building next. Track upcoming features and shipped milestones for the AI model database, gateway, and analytics tools.",
 	keywords: [
-		"AI Stats roadmap",
+		"Phaseo roadmap",
 		"product roadmap",
 		"AI gateway roadmap",
 		"AI model database",
@@ -38,9 +38,9 @@ export const metadata: Metadata = {
 	},
 	openGraph: {
 		type: "website",
-		title: "AI Stats roadmap - Upcoming Features & Shipped Milestones",
+		title: "Phaseo roadmap - Upcoming Features & Shipped Milestones",
 		description:
-			"See what's shipping next at AI Stats. Explore upcoming features and recently shipped milestones across the AI model database, gateway, and analytics.",
+			"See what's shipping next at Phaseo. Explore upcoming features and recently shipped milestones across the AI model database, gateway, and analytics.",
 	},
 };
 
@@ -120,7 +120,7 @@ export default async function RoadmapPage() {
 			<section className="mx-auto container px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
 				<div className="mx-auto max-w-3xl text-center">
 					<h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">
-						AI Stats Roadmap
+						Phaseo Roadmap
 					</h1>
 					<p className="mt-3 text-zinc-600 dark:text-zinc-400">
 						A transparent look at what we're building next.

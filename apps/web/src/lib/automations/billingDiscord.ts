@@ -30,11 +30,11 @@ const BILLING_EVENT_METADATA: Record<
 	{ title: string; timestampLabel: string }
 > = {
 	checkout_started: {
-		title: "AI Stats checkout started",
+		title: "Phaseo checkout started",
 		timestampLabel: "started_at",
 	},
 	credits_purchased: {
-		title: "AI Stats credits purchased",
+		title: "Phaseo credits purchased",
 		timestampLabel: "credited_at",
 	},
 };

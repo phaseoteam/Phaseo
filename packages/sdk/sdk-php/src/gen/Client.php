@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace AIStats\Gen;
+namespace Phaseo\Gen;
 
 class RequestException extends \RuntimeException
 {
@@ -81,7 +81,7 @@ class Client
 		curl_close($ch);
 		if ($response === false) {
 			$hint = $errno === 60
-				? " TLS verification failed. Configure curl.cainfo/openssl.cafile or set AI_STATS_CA_BUNDLE to a valid CA bundle path."
+				? " TLS verification failed. Configure curl.cainfo/openssl.cafile or set PHASEO_CA_BUNDLE to a valid CA bundle path."
 				: "";
 			throw new \RuntimeException("Request transport failed (cURL errno {$errno}): {$error}.{$hint}");
 		}
@@ -113,7 +113,7 @@ class Client
 		}
 
 		$candidates = [];
-		$envCandidate = getenv("AI_STATS_CA_BUNDLE");
+		$envCandidate = getenv("PHASEO_CA_BUNDLE");
 		if (is_string($envCandidate) && trim($envCandidate) !== "") {
 			$candidates[] = $envCandidate;
 		}

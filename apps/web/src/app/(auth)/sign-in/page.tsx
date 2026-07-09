@@ -12,7 +12,7 @@ type SignInPageProps = {
 export const metadata: Metadata = {
 	title: "Sign In",
 	description:
-		"Sign in to AI Stats to access the Gateway, manage teams, monitor usage, and continue with provider routing, model analytics, and account-level billing controls.",
+		"Sign in to Phaseo to access the Gateway, manage teams, monitor usage, and continue with provider routing, model analytics, and account-level billing controls.",
 };
 
 export default function Page({ searchParams }: SignInPageProps) {

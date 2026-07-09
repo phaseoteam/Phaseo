@@ -71,7 +71,7 @@ test.describe("chat send performance", () => {
 		const perfHandle = await page.waitForFunction(() => {
 			const store = (
 				window as typeof window & {
-					__AI_STATS_CHAT_PERF__?: {
+					__PHASEO_CHAT_PERF__?: {
 						getLatest: () => {
 							id: string;
 							messageId: string | null;
@@ -79,7 +79,7 @@ test.describe("chat send performance", () => {
 						} | null;
 					};
 				}
-			).__AI_STATS_CHAT_PERF__;
+			).__PHASEO_CHAT_PERF__;
 			const latest = store?.getLatest();
 			const measures = latest?.measures;
 			if (

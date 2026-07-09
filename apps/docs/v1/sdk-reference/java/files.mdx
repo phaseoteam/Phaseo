@@ -3,14 +3,14 @@ title: "Files"
 description: "Use the Java SDK for file upload, metadata, and file-content retrieval."
 ---
 
-**Methods**: `AIStats#uploadFile(...)`, `AIStats#listFiles(...)`, `AIStats#retrieveFile(...)`, `AIStats#retrieveFileContent(...)`
+**Methods**: `Phaseo#uploadFile(...)`, `Phaseo#listFiles(...)`, `Phaseo#retrieveFile(...)`, `Phaseo#retrieveFileContent(...)`
 
 ```java
-import ai.stats.sdk.AIStats;
+import app.phaseo.sdk.Phaseo;
 import java.util.HashMap;
 import java.util.Map;
 
-AIStats client = new AIStats(apiKey, "https://api.phaseo.app/v1");
+Phaseo client = new Phaseo(apiKey, "https://api.phaseo.ai/v1");
 
 Object uploaded = client.uploadFile("""
   {"purpose":"batch","file":"data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ=="}

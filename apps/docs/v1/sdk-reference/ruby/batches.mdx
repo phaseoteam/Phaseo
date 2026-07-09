@@ -7,9 +7,9 @@ description: "Call /batches with the Ruby SDK."
 
 ### Example
 ```ruby
-require 'ai_stats_sdk'
+require 'phaseo_sdk'
 
-client = AIStatsSdk::AIStats.new(api_key: ENV.fetch('AI_STATS_API_KEY'))
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY'))
 
 batch = client.create_batch(
   endpoint: 'responses',
@@ -27,7 +27,7 @@ websocket_url = client.batch_websocket_url(batch["id"], interval_ms: 1500)
 - `endpoint` (required): Target endpoint for batch items (e.g., `responses`).
 - `input_file_id` (required): File id uploaded via `/files`.
 - `completion_window`: e.g., `24h`.
-- `session_id`: Optional AI Stats grouping id for logs, sessions, and investigate tooling.
+- `session_id`: Optional Phaseo grouping id for logs, sessions, and investigate tooling.
 - `webhook`: Optional webhook configuration for async lifecycle notifications.
 - `metadata`: Optional object stored with the batch.
 

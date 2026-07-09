@@ -8,7 +8,7 @@ import { Logo } from "@/components/Logo";
 type SocialProviderId = "google" | "github" | "gitlab";
 
 const SOCIAL_PROVIDER_IDS: SocialProviderId[] = ["google", "github", "gitlab"];
-const LAST_AUTH_PROVIDER_STORAGE_KEY = "ai-stats:last-auth-provider";
+const LAST_AUTH_PROVIDER_STORAGE_KEY = "phaseo:last-auth-provider";
 
 type ProviderMeta = {
 	label: string;

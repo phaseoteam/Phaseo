@@ -4,9 +4,9 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading;
-using AiStats.Gen;
+using Phaseo.Gen;
 
-namespace AiStatsSdk
+namespace PhaseoSdk
 {
     public sealed class DevtoolsConfig
     {
@@ -16,7 +16,7 @@ namespace AiStatsSdk
         public bool SaveAssets { get; init; } = true;
     }
 
-    public static class AIStatsDevtools
+    public static class PhaseoDevtools
     {
         public static DevtoolsConfig Create(
             bool enabled = true,
@@ -49,16 +49,16 @@ namespace AiStatsSdk
         {
             var enabled = config?.Enabled ?? false;
             var directory = string.IsNullOrWhiteSpace(config?.Directory)
-                ? ".ai-stats-devtools"
+                ? ".phaseo-devtools"
                 : config!.Directory!;
 
-            var envEnabled = Environment.GetEnvironmentVariable("AI_STATS_DEVTOOLS");
+            var envEnabled = Environment.GetEnvironmentVariable("PHASEO_DEVTOOLS");
             if (!string.IsNullOrWhiteSpace(envEnabled) && bool.TryParse(envEnabled, out var parsedEnabled))
             {
                 enabled = parsedEnabled;
             }
 
-            var envDirectory = Environment.GetEnvironmentVariable("AI_STATS_DEVTOOLS_DIR");
+            var envDirectory = Environment.GetEnvironmentVariable("PHASEO_DEVTOOLS_DIR");
             if (!string.IsNullOrWhiteSpace(envDirectory))
             {
                 directory = envDirectory;

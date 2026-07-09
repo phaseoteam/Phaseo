@@ -6,14 +6,14 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata: Metadata = buildMetadata({
 	title: "Gateway FAQ",
 	description:
-		"Common questions about AI Stats Gateway, including billing, BYOK, routing, model support, logging, and getting started.",
+		"Common questions about Phaseo Gateway, including billing, BYOK, routing, model support, logging, and getting started.",
 	path: "/faq",
 	keywords: [
 		"AI gateway FAQ",
 		"BYOK FAQ",
 		"OpenAI compatible API FAQ",
 		"model routing FAQ",
-		"AI Stats support",
+		"Phaseo support",
 	],
 });
 

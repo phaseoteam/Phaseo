@@ -28,7 +28,7 @@ export async function generateMetadata(props: {
 			modelDescription,
 			suffix:
 				"Explore announcements, launches, version changes, deprecations, and retirement milestones over time.",
-			fallback: `Explore the release timeline for ${modelName} on AI Stats, including announcements, launches, version changes, deprecations, and retirement milestones over time.`,
+			fallback: `Explore the release timeline for ${modelName} on Phaseo, including announcements, launches, version changes, deprecations, and retirement milestones over time.`,
 		}),
 		path,
 		imagePath,
@@ -37,7 +37,7 @@ export async function generateMetadata(props: {
 			`${modelName} timeline`,
 			organisationName ? `${organisationName} AI` : null,
 			"AI model releases",
-			"AI Stats",
+			"Phaseo",
 		].filter(Boolean) as string[],
 	});
 }

@@ -30,7 +30,7 @@ export async function generateMetadata(props: {
 		return buildMetadata({
 			title: "AI API Provider Performance Analytics",
 			description:
-				"Inspect AI API provider performance on AI Stats with latency, throughput, and reliability metrics from real gateway traffic, plus model usage trends and provider-level rankings.",
+				"Inspect AI API provider performance on Phaseo with latency, throughput, and reliability metrics from real gateway traffic, plus model usage trends and provider-level rankings.",
 			path: `/api-providers/${apiProvider}`,
 			keywords: [
 				"AI API provider",
@@ -38,10 +38,10 @@ export async function generateMetadata(props: {
 				"latency monitoring",
 				"throughput metrics",
 				"gateway analytics",
-				"AI Stats",
+				"Phaseo",
 			],
 			imagePath,
-			imageAlt: "AI Stats API provider insights",
+			imageAlt: "Phaseo API provider insights",
 			openGraph: {
 				type: "website",
 			},
@@ -51,7 +51,7 @@ export async function generateMetadata(props: {
 	const providerName = header.api_provider_name ?? "AI API provider";
 
 	const description = [
-		`${providerName} on AI Stats - real-world performance analytics from the AI Stats Gateway.`,
+		`${providerName} on Phaseo - real-world performance analytics from the Phaseo Gateway.`,
 		"Review token usage trends, latency, throughput, and average generation time, plus which apps and models drive this provider's traffic.",
 	]
 		.filter(Boolean)
@@ -68,10 +68,10 @@ export async function generateMetadata(props: {
 			"AI API provider",
 			"API latency metrics",
 			"gateway analytics",
-			"AI Stats",
+			"Phaseo",
 		],
 		imagePath,
-		imageAlt: `${providerName} gateway analytics on AI Stats`,
+		imageAlt: `${providerName} gateway analytics on Phaseo`,
 		openGraph: {
 			type: "website",
 		},
@@ -98,7 +98,7 @@ export default async function Page({
 			"@context": "https://schema.org",
 			"@type": "Organization",
 			"name": providerName,
-			"description": `${providerName} is an AI API provider tracked on AI Stats. View real-world performance analytics, latency metrics, throughput data, and popular models.`,
+			"description": `${providerName} is an AI API provider tracked on Phaseo. View real-world performance analytics, latency metrics, throughput data, and popular models.`,
 		};
 
 		// FAQ Schema
@@ -111,7 +111,7 @@ export default async function Page({
 					"name": `What is ${providerName}?`,
 					"acceptedAnswer": {
 						"@type": "Answer",
-						"text": `${providerName} is an AI API provider that offers access to various AI models. On AI Stats, you can view real-world performance metrics captured by the AI Stats Gateway, including latency, throughput, and reliability data.`,
+						"text": `${providerName} is an AI API provider that offers access to various AI models. On Phaseo, you can view real-world performance metrics captured by the Phaseo Gateway, including latency, throughput, and reliability data.`,
 					},
 				},
 				{
@@ -119,7 +119,7 @@ export default async function Page({
 					"name": `How is ${providerName} performance measured?`,
 					"acceptedAnswer": {
 						"@type": "Answer",
-						"text": `${providerName} performance is measured using real-world data from the AI Stats Gateway. We track metrics including average latency (time to first token and total generation time), throughput (tokens per second), request success rates, and API reliability across different models and endpoints.`,
+						"text": `${providerName} performance is measured using real-world data from the Phaseo Gateway. We track metrics including average latency (time to first token and total generation time), throughput (tokens per second), request success rates, and API reliability across different models and endpoints.`,
 					},
 				},
 				{
@@ -127,7 +127,7 @@ export default async function Page({
 					"name": `What models are available on ${providerName}?`,
 					"acceptedAnswer": {
 						"@type": "Answer",
-						"text": `${providerName} offers various AI models across different modalities. Check the Top Models section on AI Stats to see which models are most popular, their performance characteristics, and usage statistics. You can also compare models across different providers.`,
+						"text": `${providerName} offers various AI models across different modalities. Check the Top Models section on Phaseo to see which models are most popular, their performance characteristics, and usage statistics. You can also compare models across different providers.`,
 					},
 				},
 				{
@@ -135,7 +135,7 @@ export default async function Page({
 					"name": `How does ${providerName} compare to other providers?`,
 					"acceptedAnswer": {
 						"@type": "Answer",
-						"text": `Compare ${providerName} against other AI API providers on AI Stats by viewing side-by-side performance metrics, pricing data, model availability, and real-world usage statistics. Use our comparison tools to find the best provider for your specific use case.`,
+						"text": `Compare ${providerName} against other AI API providers on Phaseo by viewing side-by-side performance metrics, pricing data, model availability, and real-world usage statistics. Use our comparison tools to find the best provider for your specific use case.`,
 					},
 				},
 				{
@@ -143,7 +143,7 @@ export default async function Page({
 					"name": `What apps use ${providerName}?`,
 					"acceptedAnswer": {
 						"@type": "Answer",
-						"text": `See which applications and services rely on ${providerName} in the Top Apps section on AI Stats. We track real-world usage patterns to show you how developers are integrating ${providerName} into their products.`,
+						"text": `See which applications and services rely on ${providerName} in the Top Apps section on Phaseo. We track real-world usage patterns to show you how developers are integrating ${providerName} into their products.`,
 					},
 				},
 			],

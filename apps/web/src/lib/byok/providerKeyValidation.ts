@@ -79,7 +79,7 @@ function validateAzureCredentials(value: string): boolean {
 			if (!deployment || typeof deployment !== "object") return false;
 
 			const modelSlug =
-				deployment.modelSlug ?? deployment.aiStatsModelSlug;
+				deployment.modelSlug ?? deployment.phaseoModelSlug ?? deployment.aiStatsModelSlug;
 			const endpointUrl =
 				deployment.endpointUrl ??
 				deployment.endpoint ??

@@ -1,4 +1,4 @@
-package aistatsagent
+package phaseoagent
 
 import (
 	"context"
@@ -8,8 +8,8 @@ import (
 	"os"
 	"strings"
 
-	aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
-	gen "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go/src/gen"
+	phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
+	gen "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/src/gen"
 )
 
 type ToolCall struct {
@@ -111,7 +111,7 @@ type RunOptions struct {
 }
 
 type GatewayAgentClientOptions struct {
-	Client           *aistats.AIStats
+	Client           *phaseo.Phaseo
 	APIKey           string
 	BaseURL          string
 	Model            string
@@ -281,7 +281,7 @@ func stringValue(value any) string {
 }
 
 type GatewayAgentClient struct {
-	client  *aistats.AIStats
+	client  *phaseo.Phaseo
 	options GatewayAgentClientOptions
 }
 
@@ -290,16 +290,16 @@ func CreateGatewayAgentClient(options GatewayAgentClientOptions) (*GatewayAgentC
 	if client == nil {
 		apiKey := strings.TrimSpace(options.APIKey)
 		if apiKey == "" {
-			apiKey = strings.TrimSpace(os.Getenv("AI_STATS_API_KEY"))
+			apiKey = strings.TrimSpace(os.Getenv("PHASEO_API_KEY"))
 		}
 		if apiKey == "" {
-			return nil, errors.New("AI_STATS_API_KEY is required")
+			return nil, errors.New("PHASEO_API_KEY is required")
 		}
 		baseURL := strings.TrimSpace(options.BaseURL)
 		if baseURL == "" {
-			baseURL = strings.TrimSpace(os.Getenv("AI_STATS_BASE_URL"))
+			baseURL = strings.TrimSpace(os.Getenv("PHASEO_BASE_URL"))
 		}
-		client = aistats.New(apiKey, baseURL)
+		client = phaseo.New(apiKey, baseURL)
 	}
 	return &GatewayAgentClient{client: client, options: options}, nil
 }
@@ -313,7 +313,7 @@ func (g *GatewayAgentClient) Generate(ctx context.Context, request ModelRequest)
 		model = toPresetAlias(g.options.Preset)
 	}
 	if model == "" {
-		model = "ai-stats/free"
+		model = "phaseo/free"
 	}
 
 	tools := make([]interface{}, 0, len(request.Tools)+len(g.options.GatewayTools))

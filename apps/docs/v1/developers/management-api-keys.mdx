@@ -5,20 +5,20 @@ description: Create management API keys in the dashboard and use them for elevat
 
 Management API keys are elevated credentials for administration APIs.
 
-Create and manage management API keys in the AI Stats dashboard only.
+Create and manage management API keys in the Phaseo dashboard only.
 
 ## Authentication
 
 Management API requests authenticate with a management API key:
 
 ```http
-Authorization: Bearer aistats_v1_sk_<kid>_<secret>
+Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
 ```
 
 Base URL:
 
 ```text
-https://api.phaseo.app/v1
+https://api.phaseo.ai/v1
 ```
 
 ## What they are for
@@ -31,7 +31,7 @@ https://api.phaseo.app/v1
 
 ## How to get one
 
-Create the key in the AI Stats dashboard under management key settings, then store it in your server-side secret manager.
+Create the key in the Phaseo dashboard under management key settings, then store it in your server-side secret manager.
 
 ## Notes
 

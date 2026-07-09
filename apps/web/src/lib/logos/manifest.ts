@@ -3,7 +3,7 @@ export const logoManifest = {
 		light: "/logos/ai21_light.svg",
 		dark: "/logos/ai21_dark.svg",
 	},
-	"ai-stats": {
+	phaseo: {
 		light: "/logo_light.svg",
 		dark: "/logo_dark.svg",
 	},

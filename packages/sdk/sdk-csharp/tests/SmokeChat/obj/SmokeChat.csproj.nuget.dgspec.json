@@ -1,30 +1,30 @@
 {
   "format": 1,
   "restore": {
-    "Z:\\ai-stats-public\\packages\\sdk\\sdk-csharp\\tests\\SmokeChat\\SmokeChat.csproj": {}
+    "E:\\ai-stats-public-phaseo-rebrand\\packages\\sdk\\sdk-csharp\\tests\\SmokeChat\\SmokeChat.csproj": {}
   },
   "projects": {
-    "Z:\\ai-stats-public\\packages\\sdk\\sdk-csharp\\tests\\SmokeChat\\SmokeChat.csproj": {
+    "E:\\ai-stats-public-phaseo-rebrand\\packages\\sdk\\sdk-csharp\\tests\\SmokeChat\\SmokeChat.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "Z:\\ai-stats-public\\packages\\sdk\\sdk-csharp\\tests\\SmokeChat\\SmokeChat.csproj",
+        "projectUniqueName": "E:\\ai-stats-public-phaseo-rebrand\\packages\\sdk\\sdk-csharp\\tests\\SmokeChat\\SmokeChat.csproj",
         "projectName": "SmokeChat",
-        "projectPath": "Z:\\ai-stats-public\\packages\\sdk\\sdk-csharp\\tests\\SmokeChat\\SmokeChat.csproj",
+        "projectPath": "E:\\ai-stats-public-phaseo-rebrand\\packages\\sdk\\sdk-csharp\\tests\\SmokeChat\\SmokeChat.csproj",
         "packagesPath": "C:\\Users\\danie\\.nuget\\packages\\",
-        "outputPath": "Z:\\ai-stats-public\\packages\\sdk\\sdk-csharp\\tests\\SmokeChat\\obj\\",
+        "outputPath": "E:\\ai-stats-public-phaseo-rebrand\\packages\\sdk\\sdk-csharp\\tests\\SmokeChat\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\danie\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
-          "net6.0"
+          "net8.0"
         ],
         "sources": {
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
-          "net6.0": {
-            "targetAlias": "net6.0",
+          "net8.0": {
+            "targetAlias": "net8.0",
             "projectReferences": {}
           }
         },
@@ -40,8 +40,8 @@
         }
       },
       "frameworks": {
-        "net6.0": {
-          "targetAlias": "net6.0",
+        "net8.0": {
+          "targetAlias": "net8.0",
           "imports": [
             "net461",
             "net462",
@@ -53,30 +53,12 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
-          "downloadDependencies": [
-            {
-              "name": "Microsoft.AspNetCore.App.Ref",
-              "version": "[6.0.36, 6.0.36]"
-            },
-            {
-              "name": "Microsoft.NETCore.App.Host.win-x64",
-              "version": "[6.0.36, 6.0.36]"
-            },
-            {
-              "name": "Microsoft.NETCore.App.Ref",
-              "version": "[6.0.36, 6.0.36]"
-            },
-            {
-              "name": "Microsoft.WindowsDesktop.App.Ref",
-              "version": "[6.0.36, 6.0.36]"
-            }
-          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.417\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.422/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

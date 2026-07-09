@@ -491,7 +491,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				JSON.stringify({
 					error: {
 						type: "async_job_persistence_failed",
-						message: "OpenAI video job was created upstream, but AI Stats could not persist gateway ownership metadata.",
+						message: "OpenAI video job was created upstream, but Phaseo could not persist gateway ownership metadata.",
 						native_video_id: String(nativeVideoId),
 						reservation_id: reservationId,
 						reservation_status: reservationStatus,

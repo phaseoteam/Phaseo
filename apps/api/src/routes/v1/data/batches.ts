@@ -891,7 +891,7 @@ async function handleCreate(req: Request) {
 					note: "upstream_cancel_and_reservation_release_attempted",
 				});
 				return batchAsyncPersistenceFailureResponse({
-					message: "Batch job was created upstream, but AI Stats could not persist gateway ownership metadata.",
+					message: "Batch job was created upstream, but Phaseo could not persist gateway ownership metadata.",
 					batchId,
 					nativeBatchId: batchId,
 					status: toText(upstreamJson?.status),
@@ -1133,7 +1133,7 @@ async function handleRetrieve(req: Request, id: string) {
 				status: toText(upstreamJson?.status),
 			});
 			return batchAsyncPersistenceFailureResponse({
-				message: "Batch status was refreshed upstream, but AI Stats could not persist the refreshed gateway metadata.",
+				message: "Batch status was refreshed upstream, but Phaseo could not persist the refreshed gateway metadata.",
 				batchId,
 				nativeBatchId: meta.nativeBatchId ?? batchId,
 				status: toText(upstreamJson?.status),
@@ -1301,7 +1301,7 @@ async function handleCancel(req: Request, id: string) {
 				status: toText(upstreamJson?.status),
 			});
 			return batchAsyncPersistenceFailureResponse({
-				message: "Batch cancellation was accepted upstream, but AI Stats could not persist the refreshed gateway metadata.",
+				message: "Batch cancellation was accepted upstream, but Phaseo could not persist the refreshed gateway metadata.",
 				batchId,
 				nativeBatchId: meta.nativeBatchId ?? batchId,
 				status: toText(upstreamJson?.status),

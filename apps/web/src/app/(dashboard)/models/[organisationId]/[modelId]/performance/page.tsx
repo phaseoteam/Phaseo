@@ -28,7 +28,7 @@ export async function generateMetadata(props: {
 			modelDescription,
 			suffix:
 				"Track latency trends, throughput signals, reliability movement, and historical usage metrics across recent gateway traffic.",
-			fallback: `Track ${modelName} performance on AI Stats with latency trends, throughput signals, reliability movement, and historical usage metrics across recent gateway traffic.`,
+			fallback: `Track ${modelName} performance on Phaseo with latency trends, throughput signals, reliability movement, and historical usage metrics across recent gateway traffic.`,
 		}),
 		path,
 		keywords: [
@@ -37,7 +37,7 @@ export async function generateMetadata(props: {
 			organisationName ? `${organisationName} AI` : null,
 			"latency metrics",
 			"token usage",
-			"AI Stats",
+			"Phaseo",
 		].filter(Boolean) as string[],
 		imagePath,
 	});

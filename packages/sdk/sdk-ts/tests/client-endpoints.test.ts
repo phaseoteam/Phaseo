@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from "vitest";
-import { AIStats } from "../src/index.js";
+import { Phaseo } from "../src/index.js";
 
-describe("AIStats endpoints discovery helper", () => {
+describe("Phaseo endpoints discovery helper", () => {
   test("calls /endpoints through listEndpoints", async () => {
     const fetchImpl: typeof fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       expect(String(input)).toBe("https://example.test/endpoints");
@@ -22,7 +22,7 @@ describe("AIStats endpoints discovery helper", () => {
       );
     }) as unknown as typeof fetch;
 
-    const client = new AIStats({
+    const client = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -55,7 +55,7 @@ describe("AIStats endpoints discovery helper", () => {
       if (url === "https://example.test/music/generate/music_1" && method === "GET") {
         return jsonResponse({ id: "music_1", status: "completed" });
       }
-      if (url.startsWith("https://example.test/gateway/models?") && method === "GET") {
+      if (url.startsWith("https://example.test/models?") && method === "GET") {
         const parsedUrl = new URL(url);
         const modelId = parsedUrl.searchParams.get("model_id");
         if (modelId) {
@@ -73,7 +73,7 @@ describe("AIStats endpoints discovery helper", () => {
       throw new Error(`Unexpected request: ${method} ${url}`);
     }) as unknown as typeof fetch;
 
-    const client = new AIStats({
+    const client = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -99,7 +99,7 @@ describe("AIStats endpoints discovery helper", () => {
       "GET https://example.test/models?model_id=minimax%2Fmusic-2.6&limit=1",
       "POST https://example.test/music/generate",
       "GET https://example.test/music/generate/music_1",
-      "GET https://example.test/gateway/models?limit=1",
+      "GET https://example.test/models?limit=1",
       "GET https://example.test/health/providers/openai/derank?window_hours=24",
     ]);
   });

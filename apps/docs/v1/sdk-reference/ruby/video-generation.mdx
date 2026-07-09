@@ -21,7 +21,7 @@ description: "Create and manage async video jobs with the Ruby SDK."
 ```ruby
 require_relative "../lib/index"
 
-client = AIStatsSdk::AIStats.new(api_key: ENV.fetch("AI_STATS_API_KEY"))
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
 
 job = client.create_video(
   model: "openai/sora-2",

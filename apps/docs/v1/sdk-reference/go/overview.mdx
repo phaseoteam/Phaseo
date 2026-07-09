@@ -1,6 +1,6 @@
 ---
 title: "Go SDK (preview)"
-description: "Local-preview Go wrapper for the AI Stats API."
+description: "Local-preview Go wrapper for the Phaseo API."
 ---
 
 <Note type="warning">
@@ -44,10 +44,10 @@ For endpoints that are not yet promoted to the wrapper, use the generated client
 import (
   "context"
   "fmt"
-  aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
 )
 
-client := aistats.New("YOUR_KEY", "https://api.phaseo.app/v1")
+client := phaseo.New("YOUR_KEY", "https://api.phaseo.ai/v1")
 models, err := client.GetModels(context.Background(), map[string]string{"limit": "5"})
 if err != nil {
   panic(err)

@@ -128,7 +128,7 @@ async function fetchContributors() {
 			headers: {
 				Authorization: `Bearer ${TOKEN}`,
 				Accept: "application/vnd.github+json",
-				"User-Agent": "ai-stats-supporters-export",
+				"User-Agent": "phaseo-supporters-export",
 			},
 		}
 	);

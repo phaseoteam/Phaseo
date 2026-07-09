@@ -263,7 +263,7 @@ describe("buildAsyncNotificationData", () => {
 			SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
 			GATEWAY_CACHE: {} as KVNamespace,
 			NODE_ENV: "test",
-			GATEWAY_PUBLIC_BASE_URL: "https://api.phaseo.app",
+			GATEWAY_PUBLIC_BASE_URL: "https://api.phaseo.ai",
 			KEY_PEPPER: "test-video-secret",
 		} as any);
 	});
@@ -322,7 +322,7 @@ describe("buildAsyncNotificationData", () => {
 		};
 
 		const payload = await buildAsyncNotificationData({
-			baseUrl: "https://api.phaseo.app",
+			baseUrl: "https://api.phaseo.ai",
 			record,
 			progress: 100,
 		});
@@ -340,10 +340,10 @@ describe("buildAsyncNotificationData", () => {
 			progress: 100,
 			provider: "google-vertex",
 			model: "google/veo-3.1-lite-generate-preview",
-			polling_url: "https://api.phaseo.app/v1/videos/video_123",
-			websocket_url: "wss://api.phaseo.app/v1/async/video/video_123/ws",
+			polling_url: "https://api.phaseo.ai/v1/videos/video_123",
+			websocket_url: "wss://api.phaseo.ai/v1/async/video/video_123/ws",
 			cancel_url: null,
-			content_url: "https://api.phaseo.app/v1/videos/video_123/content",
+			content_url: "https://api.phaseo.ai/v1/videos/video_123/content",
 			duration_seconds: 5,
 			duration_ms: 12000,
 			total_duration_ms: 12000,
@@ -422,7 +422,7 @@ describe("buildAsyncNotificationData", () => {
 		};
 
 		const payload = await buildAsyncNotificationData({
-			baseUrl: "https://api.phaseo.app",
+			baseUrl: "https://api.phaseo.ai",
 			record,
 			progress: 40,
 		});
@@ -431,7 +431,7 @@ describe("buildAsyncNotificationData", () => {
 			id: "video_hold_123",
 			status: "processing",
 			lifecycle_status: "running",
-			cancel_url: "https://api.phaseo.app/v1/videos/video_hold_123/cancel",
+			cancel_url: "https://api.phaseo.ai/v1/videos/video_hold_123/cancel",
 			reservation_id: "video_hold:req_video_hold_123",
 			reservation_status: "held",
 			billing: {
@@ -486,7 +486,7 @@ describe("buildAsyncNotificationData", () => {
 		};
 
 		const payload = await buildAsyncNotificationData({
-			baseUrl: "https://api.phaseo.app",
+			baseUrl: "https://api.phaseo.ai",
 			record,
 		});
 
@@ -528,7 +528,7 @@ describe("buildAsyncNotificationData", () => {
 		};
 
 		const payload = await buildAsyncNotificationData({
-			baseUrl: "https://api.phaseo.app",
+			baseUrl: "https://api.phaseo.ai",
 			record,
 			progress: 25,
 		});
@@ -538,7 +538,7 @@ describe("buildAsyncNotificationData", () => {
 			status: "processing",
 			lifecycle_status: "running",
 			provider: "google-ai-studio",
-			polling_url: "https://api.phaseo.app/v1/videos/video_unsupported_123",
+			polling_url: "https://api.phaseo.ai/v1/videos/video_unsupported_123",
 			cancel_url: null,
 		});
 	});
@@ -628,7 +628,7 @@ describe("buildAsyncNotificationData", () => {
 
 		await expect(
 			buildAsyncNotificationData({
-				baseUrl: "https://api.phaseo.app",
+				baseUrl: "https://api.phaseo.ai",
 				record,
 			}),
 		).resolves.toMatchObject({
@@ -643,9 +643,9 @@ describe("buildAsyncNotificationData", () => {
 			native_id: "batch_123",
 			provider: "openai",
 			model: "openai/gpt-5-mini",
-			polling_url: "https://api.phaseo.app/v1/batches/batch_123",
-			websocket_url: "wss://api.phaseo.app/v1/async/batch/batch_123/ws",
-			cancel_url: "https://api.phaseo.app/v1/batches/batch_123/cancel",
+			polling_url: "https://api.phaseo.ai/v1/batches/batch_123",
+			websocket_url: "wss://api.phaseo.ai/v1/async/batch/batch_123/ws",
+			cancel_url: "https://api.phaseo.ai/v1/batches/batch_123/cancel",
 			webhook: {
 				url: "https://example.com/hooks/batch",
 				events: ["job.completed", "batch.failed"],
@@ -742,7 +742,7 @@ describe("buildAsyncNotificationData", () => {
 		};
 
 		const payload = await buildAsyncNotificationData({
-			baseUrl: "https://api.phaseo.app",
+			baseUrl: "https://api.phaseo.ai",
 			record,
 		});
 
@@ -751,7 +751,7 @@ describe("buildAsyncNotificationData", () => {
 			status: "in_progress",
 			lifecycle_status: "running",
 			provider: "custom-provider",
-			polling_url: "https://api.phaseo.app/v1/batches/batch_custom_123",
+			polling_url: "https://api.phaseo.ai/v1/batches/batch_custom_123",
 			cancel_url: null,
 		});
 	});
@@ -782,7 +782,7 @@ describe("buildAsyncNotificationData", () => {
 		};
 
 		const payload = await buildAsyncNotificationData({
-			baseUrl: "https://api.phaseo.app",
+			baseUrl: "https://api.phaseo.ai",
 			record,
 			progress: 50,
 		});
@@ -827,7 +827,7 @@ describe("buildAsyncNotificationData", () => {
 		};
 
 		const payload = await buildAsyncNotificationData({
-			baseUrl: "https://api.phaseo.app",
+			baseUrl: "https://api.phaseo.ai",
 			record,
 		});
 
@@ -864,7 +864,7 @@ describe("buildAsyncNotificationData", () => {
 		};
 
 		const payload = await buildAsyncNotificationData({
-			baseUrl: "https://api.phaseo.app",
+			baseUrl: "https://api.phaseo.ai",
 			record,
 		});
 		expect(payload).toMatchObject({
@@ -872,7 +872,7 @@ describe("buildAsyncNotificationData", () => {
 			status: "completed",
 			lifecycle_status: "completed",
 			cancel_url: null,
-			websocket_url: "wss://api.phaseo.app/v1/async/batch/batch_456/ws",
+			websocket_url: "wss://api.phaseo.ai/v1/async/batch/batch_456/ws",
 		});
 	});
 
@@ -901,7 +901,7 @@ describe("buildAsyncNotificationData", () => {
 		};
 
 		const payload = await buildAsyncNotificationData({
-			baseUrl: "https://api.phaseo.app",
+			baseUrl: "https://api.phaseo.ai",
 			record,
 		});
 		expect(payload).toMatchObject({
@@ -953,7 +953,7 @@ describe("buildAsyncNotificationData", () => {
 		};
 
 		const payload = await buildAsyncNotificationData({
-			baseUrl: "https://api.phaseo.app",
+			baseUrl: "https://api.phaseo.ai",
 			record,
 		});
 
@@ -1003,7 +1003,7 @@ describe("buildAsyncNotificationData", () => {
 		};
 
 		const payload = await buildAsyncNotificationData({
-			baseUrl: "https://api.phaseo.app",
+			baseUrl: "https://api.phaseo.ai",
 			record,
 		});
 		expect(payload).toMatchObject({
@@ -1059,7 +1059,7 @@ describe("buildAsyncNotificationData", () => {
 		};
 
 		const payload = await buildAsyncNotificationData({
-			baseUrl: "https://api.phaseo.app",
+			baseUrl: "https://api.phaseo.ai",
 			record,
 		});
 		expect(payload).toMatchObject({
@@ -1142,7 +1142,7 @@ describe("buildAsyncNotificationData", () => {
 		};
 
 		const payload = await buildAsyncNotificationData({
-			baseUrl: "https://api.phaseo.app",
+			baseUrl: "https://api.phaseo.ai",
 			record,
 		});
 
@@ -1249,7 +1249,7 @@ describe("buildAsyncNotificationData", () => {
 		};
 
 		const payload = await buildAsyncNotificationData({
-			baseUrl: "https://api.phaseo.app",
+			baseUrl: "https://api.phaseo.ai",
 			record,
 		});
 
@@ -1320,7 +1320,7 @@ describe("buildAsyncNotificationData", () => {
 		};
 
 		const payload = await buildAsyncNotificationData({
-			baseUrl: "https://api.phaseo.app",
+			baseUrl: "https://api.phaseo.ai",
 			record,
 		});
 
@@ -1376,7 +1376,7 @@ describe("buildAsyncNotificationData", () => {
 		};
 
 		const payload = await buildAsyncNotificationData({
-			baseUrl: "https://api.phaseo.app",
+			baseUrl: "https://api.phaseo.ai",
 			record,
 		});
 

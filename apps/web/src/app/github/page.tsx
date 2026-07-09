@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
 	title: "GitHub redirect",
-	description: "Redirect route to the official AI Stats GitHub repository.",
+	description: "Redirect route to the official Phaseo GitHub repository.",
 	robots: {
 		index: false,
 		follow: false,
@@ -11,5 +11,5 @@ export const metadata: Metadata = {
 };
 
 export default function RedirectPage() {
-	redirect("https://github.com/AI-Stats/AI-Stats");
+	redirect("https://github.com/phaseoteam/Phaseo");
 }

@@ -3,7 +3,7 @@ require_relative "../lib/index"
 
 class ApiKeyMutationsTest < Minitest::Test
   def test_api_key_mutation_helpers_return_payloads
-    client = AIStatsSdk::AIStats.new(
+    client = PhaseoSdk::Phaseo.new(
       api_key: "test",
       enable_deprecation_warnings: false
     )

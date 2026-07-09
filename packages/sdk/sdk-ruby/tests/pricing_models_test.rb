@@ -3,7 +3,7 @@ require_relative "../lib/index"
 
 class PricingModelsTest < Minitest::Test
   def test_list_pricing_models_returns_payload
-    client = AIStatsSdk::AIStats.new(
+    client = PhaseoSdk::Phaseo.new(
       api_key: "test",
       enable_deprecation_warnings: false
     )

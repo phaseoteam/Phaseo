@@ -1,8 +1,8 @@
-# ai-stats-public
+# Phaseo
 
 ## What this codebase does
 
-AI Stats is a unified AI gateway and model intelligence platform. The main security surface is `apps/api`, a Hono + Cloudflare Workers gateway that authenticates API keys or OAuth tokens, routes requests across AI providers, applies workspace policy and guardrails, and records usage. `apps/web` is a Next.js dashboard backed by Supabase for workspace settings, management API keys, OAuth apps, guardrails, billing, and authorized-app management. The repo also ships SDKs and generated clients, but the highest-risk paths are gateway auth, key issuance, workspace-scoped control-plane routes, and provider credential forwarding.
+Phaseo is a unified AI gateway and model intelligence platform. The main security surface is `apps/api`, a Hono + Cloudflare Workers gateway that authenticates API keys or OAuth tokens, routes requests across AI providers, applies workspace policy and guardrails, and records usage. `apps/web` is a Next.js dashboard backed by Supabase for workspace settings, management API keys, OAuth apps, guardrails, billing, and authorized-app management. The repo also ships SDKs and generated clients, but the highest-risk paths are gateway auth, key issuance, workspace-scoped control-plane routes, and provider credential forwarding.
 
 ## Auth shape
 

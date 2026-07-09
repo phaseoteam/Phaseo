@@ -1,11 +1,11 @@
 ---
 title: "Migrating from Cloudflare AI Gateway"
-description: "Step-by-step guide to migrate your Cloudflare AI Gateway integration to AI Stats Gateway."
+description: "Step-by-step guide to migrate your Cloudflare AI Gateway integration to Phaseo Gateway."
 ---
 
 # Migrating from Cloudflare AI Gateway
 
-This guide helps migrate from Cloudflare's AI Gateway to AI Stats.
+This guide helps migrate from Cloudflare's AI Gateway to Phaseo.
 
 ## Overview
 
@@ -17,7 +17,7 @@ Both are AI API gateways. Migration involves:
 
 ## Prerequisites
 
--   AI Stats account
+-   Phaseo account
 -   Cloudflare AI Gateway setup
 
 ## Migration Steps
@@ -39,10 +39,10 @@ curl https://gateway.ai.cloudflare.com/v1/your-account/your-gateway/openai/chat/
     "messages": [{"role": "user", "content": "Hello!"}]
   }'
 
-# After (AI Stats)
+# After (Phaseo)
 
-curl https://api.phaseo.app/v1/chat/completions \
- -H "Authorization: Bearer your-ai-stats-key" \
+curl https://api.phaseo.ai/v1/chat/completions \
+ -H "Authorization: Bearer your-phaseo-key" \
  -H "Content-Type: application/json" \
  -d '{
 "model": "gpt-4",
@@ -55,8 +55,8 @@ curl https://api.phaseo.app/v1/chat/completions \
 import openai
 
 client = openai.OpenAI(
-    api_key="your-ai-stats-key",
-    base_url="https://api.phaseo.app/v1"
+    api_key="your-phaseo-key",
+    base_url="https://api.phaseo.ai/v1"
 )
 
 response = client.chat.completions.create(
@@ -69,8 +69,8 @@ response = client.chat.completions.create(
 import OpenAI from "openai";
 
 const client = new OpenAI({
-	apiKey: "your-ai-stats-key",
-	baseURL: "https://api.phaseo.app/v1",
+	apiKey: "your-phaseo-key",
+	baseURL: "https://api.phaseo.ai/v1",
 });
 
 const response = await client.chat.completions.create({
@@ -87,7 +87,7 @@ Use Bearer token instead of Cloudflare's auth.
 
 ### 3. Model Routing
 
-Cloudflare routes based on headers. AI Stats uses model names.
+Cloudflare routes based on headers. Phaseo uses model names.
 
 Check available models.
 
@@ -98,8 +98,8 @@ Verify functionality.
 ## Common Issues
 
 -   **Caching**: Different caching behaviors.
--   **Analytics**: Cloudflare's analytics vs AI Stats'.
+-   **Analytics**: Cloudflare's analytics vs Phaseo'.
 
 ## Next Steps
 
--   Explore AI Stats' advanced features.
+-   Explore Phaseo' advanced features.

@@ -1,6 +1,6 @@
 ---
 title: "TanStack AI"
-description: "Use AI Stats with TanStack AI's OpenAI-compatible adapter."
+description: "Use Phaseo with TanStack AI's OpenAI-compatible adapter."
 ---
 
 Use TanStack AI when you want type-safe chat flows in React, Solid, Preact, Vue, Svelte, or server-side TypeScript.
@@ -17,22 +17,22 @@ npm install @tanstack/ai @tanstack/ai-openai
 import { chat } from "@tanstack/ai";
 import { openaiCompatible } from "@tanstack/ai-openai/compatible";
 
-const aiStats = openaiCompatible({
-	name: "ai-stats",
-	baseURL: "https://api.phaseo.app/v1",
-	apiKey: process.env.AI_STATS_API_KEY!,
+const phaseo = openaiCompatible({
+	name: "phaseo",
+	baseURL: "https://api.phaseo.ai/v1",
+	apiKey: process.env.PHASEO_API_KEY!,
 	models: ["openai/gpt-5-nano", "anthropic/claude-sonnet-4.5"],
 });
 
 const stream = chat({
-	adapter: aiStats("openai/gpt-5-nano"),
+	adapter: phaseo("openai/gpt-5-nano"),
 	messages: [{ role: "user", content: "Reply with only: ok" }],
 });
 ```
 
 ## Notes
 
-- Declare the AI Stats model ids you plan to use in the `models` array.
+- Declare the Phaseo model ids you plan to use in the `models` array.
 - The OpenAI-compatible adapter defaults to Chat Completions. Use direct API calls for Responses-only features.
 - If a model does not support tools or images in your workflow, declare narrower capabilities in TanStack AI so TypeScript catches unsupported calls earlier.
 

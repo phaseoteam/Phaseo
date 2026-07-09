@@ -1,4 +1,4 @@
-import { createAgent, createGatewayAgentClient } from "@ai-stats/agent-sdk";
+import { createAgent, createGatewayAgentClient } from "@phaseo/agent-sdk";
 
 type ResearchBrief = {
 	topic: string;
@@ -11,7 +11,7 @@ type ResearchBrief = {
 
 export const researchBriefAgent = createAgent<string, ResearchBrief>({
 	id: "research-brief-agent",
-	model: "ai-stats/free",
+	model: "phaseo/free",
 	instructions:
 		"Research the user's topic with web search when needed and return a concise JSON brief with cited sources.",
 	parseOutput(text) {
@@ -21,7 +21,7 @@ export const researchBriefAgent = createAgent<string, ResearchBrief>({
 
 const client = createGatewayAgentClient({
 	clientOptions: {
-		apiKey: process.env.AI_STATS_API_KEY!,
+		apiKey: process.env.PHASEO_API_KEY!,
 	},
 	responseFormat: {
 		type: "json_schema",

@@ -3,7 +3,7 @@ require_relative "../lib/index"
 
 class CurrentKeyTest < Minitest::Test
   def test_get_current_api_key_returns_payload
-    client = AIStatsSdk::AIStats.new(
+    client = PhaseoSdk::Phaseo.new(
       api_key: "test",
       enable_deprecation_warnings: false
     )
@@ -14,7 +14,7 @@ class CurrentKeyTest < Minitest::Test
       {
         "data" => {
           "id" => "key_123",
-          "prefix" => "aistats_v1_sk_test",
+          "prefix" => "phaseo_v1_sk_test",
           "status" => "active"
         }
       }

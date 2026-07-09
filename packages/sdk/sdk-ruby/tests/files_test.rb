@@ -3,7 +3,7 @@ require_relative "../lib/index"
 
 class FilesTest < Minitest::Test
   def test_upload_file_returns_payload
-    client = AIStatsSdk::AIStats.new(
+    client = PhaseoSdk::Phaseo.new(
       api_key: "test",
       enable_deprecation_warnings: false
     )
@@ -27,7 +27,7 @@ class FilesTest < Minitest::Test
   end
 
   def test_retrieve_file_content_returns_bytes
-    client = AIStatsSdk::AIStats.new(
+    client = PhaseoSdk::Phaseo.new(
       api_key: "test",
       enable_deprecation_warnings: false
     )
@@ -45,20 +45,20 @@ class FilesTest < Minitest::Test
   end
 
   def test_retrieve_file_content_surfaces_request_errors
-    client = AIStatsSdk::AIStats.new(
+    client = PhaseoSdk::Phaseo.new(
       api_key: "test",
       enable_deprecation_warnings: false
     )
 
     client.raw_client.define_singleton_method(:request_bytes) do |**_args|
-      raise AiStats::Gen::RequestError.new(
+      raise Phaseo::Gen::RequestError.new(
         status_code: 404,
         status_message: "Not Found",
         response_body: "{\"error\":\"not found\"}"
       )
     end
 
-    error = assert_raises(AiStats::Gen::RequestError) do
+    error = assert_raises(Phaseo::Gen::RequestError) do
       client.retrieve_file_content("file_missing_123")
     end
 

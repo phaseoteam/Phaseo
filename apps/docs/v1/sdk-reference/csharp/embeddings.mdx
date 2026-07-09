@@ -8,9 +8,9 @@ description: "Call /embeddings with the C# SDK."
 ### Example
 
 ```csharp
-using AiStatsSdk;
+using PhaseoSdk;
 
-var client = new AIStats(apiKey);
+var client = new Phaseo(apiKey);
 var response = await client.CreateEmbedding(new Dictionary<string, object>
 {
     ["model"] = "openai/text-embedding-3-large",

@@ -1,11 +1,11 @@
 import os
-from ai_stats import AIStats
+from phaseo import Phaseo
 
-api_key = os.getenv("AI_STATS_API_KEY")
+api_key = os.getenv("PHASEO_API_KEY")
 if not api_key:
-	raise RuntimeError("Set AI_STATS_API_KEY")
+	raise RuntimeError("Set PHASEO_API_KEY")
 
-client = AIStats(api_key=api_key)
+client = Phaseo(api_key=api_key)
 
 response = client.responses.create({
 	"model": "openai/gpt-5-nano",

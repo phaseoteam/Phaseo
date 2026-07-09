@@ -24,12 +24,12 @@ jobs:
             exit 1
           fi
 
-      - name: Create GitHub App token (AI Stats Bot)
+      - name: Create GitHub App token (Phaseo Bot)
         id: app-token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
         with:
-          app-id: ${{ secrets.AI_STATS_APP_ID }}
-          private-key: ${{ secrets.AI_STATS_APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.PHASEO_APP_ID }}
+          private-key: ${{ secrets.PHASEO_APP_PRIVATE_KEY }}
 
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
@@ -127,7 +127,7 @@ jobs:
             exit 1
           fi
 
-          split_repo="${PHP_SDK_SPLIT_REPO:-AI-Stats/ai-stats-php-sdk}"
+          split_repo="${PHP_SDK_SPLIT_REPO:-phaseoteam/phaseo-php-sdk}"
           split_repo_url="https://github.com/${split_repo}"
           split_remote_url="https://x-access-token:${PHP_SDK_SPLIT_REPO_TOKEN}@github.com/${split_repo}.git"
 

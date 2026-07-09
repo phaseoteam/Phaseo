@@ -13,28 +13,28 @@ Set `stream: true` to receive server-sent events in Anthropic format (`message_s
 ## Notes
 
 - Anthropic tool-use fields are supported.
-- `stream: true` also works with tool loops. For gateway-managed server tools, AI Stats may materialize the upstream tool-call turn, continue the loop, and re-emit a synthetic stream.
+- `stream: true` also works with tool loops. For gateway-managed server tools, Phaseo may materialize the upstream tool-call turn, continue the loop, and re-emit a synthetic stream.
 - The Anthropic-native web search tool shape is also accepted directly in `tools`, for example `type: "web_search_20250305"`.
-- The `X-AIStats-Strictness` header controls how unsupported parameters are handled.
+- The `X-Phaseo-Strictness` header controls how unsupported parameters are handled.
 
 ## Server tools
 
 `/v1/messages` also supports these gateway-managed server tools:
 
 - `gateway:datetime`
-- `ai-stats:web_search`
-- `ai-stats:web_fetch`
-- `ai-stats:advisor`
-- `ai-stats:image_generation`
+- `phaseo:web_search`
+- `phaseo:web_fetch`
+- `phaseo:advisor`
+- `phaseo:image_generation`
 
-AI Stats rewrites these tools to Anthropic-compatible format upstream, executes them server-side, and continues the tool loop.
+Phaseo rewrites these tools to Anthropic-compatible format upstream, executes them server-side, and continues the tool loop.
 
 ## Native provider web search
 
 When a compatible Anthropic model/provider pair supports native web search, you can also pass the native tool definition through directly:
 
 ```bash
-curl https://api.phaseo.app/v1/messages \
+curl https://api.phaseo.ai/v1/messages \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -60,7 +60,7 @@ Provider routing still filters for `web_search_options` support before execution
 ### Datetime example
 
 ```bash
-curl https://api.phaseo.app/v1/messages \
+curl https://api.phaseo.ai/v1/messages \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{

@@ -115,7 +115,7 @@ function safeJsonParse(text: string): unknown {
 function sanitizeLogText(value: string): string {
 	return value
 		.replace(/\bBearer\s+[A-Za-z0-9._-]+\b/gi, "Bearer [redacted]")
-		.replace(/aistats_v1_sk_[A-Za-z0-9]+_[A-Za-z0-9]+/g, "[redacted_key]")
+		.replace(/phaseo_v1_sk_[A-Za-z0-9]+_[A-Za-z0-9]+/g, "[redacted_key]")
 		.replace(/"(access_token|refresh_token|client_secret)"\s*:\s*"[^"]+"/gi, "\"$1\":\"[redacted]\"");
 }
 
@@ -334,7 +334,7 @@ function createCallbackServer(args: {
 }
 
 function writeReport(payload: unknown): string {
-	const reportDir = resolve(__dirname, "../../../internal/oauth-e2e-mini/reports");
+	const reportDir = resolve(__dirname, "../../../.tmp/oauth-e2e-playwright/reports");
 	mkdirSync(reportDir, { recursive: true });
 	const stamp = new Date().toISOString().replace(/[:.]/g, "-");
 	const reportPath = resolve(reportDir, `oauth-e2e-playwright-${stamp}.json`);
@@ -344,7 +344,7 @@ function writeReport(payload: unknown): string {
 
 function usage(): void {
 	console.log("Usage:");
-	console.log("  pnpm --filter @ai-stats/web tsx scripts/oauth-e2e-playwright.ts");
+	console.log("  pnpm --filter @phaseo/web tsx scripts/oauth-e2e-playwright.ts");
 	console.log("");
 	console.log("Required:");
 	console.log("  API_BASE_URL");
@@ -369,7 +369,6 @@ function isHelpRequest(argv: string[]): boolean {
 }
 
 async function main(): Promise<void> {
-	loadEnvFile(resolve(__dirname, "../../../internal/oauth-e2e-mini/.env.local"));
 	loadEnvFile(resolve(__dirname, "../.env.local"));
 
 	if (isHelpRequest(process.argv.slice(2))) {

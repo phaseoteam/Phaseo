@@ -59,7 +59,7 @@ describe("getVideoByIdHandler upstream error normalization", () => {
 
 	it("normalizes SpaceXAI status fetch failures instead of proxying raw upstream JSON", async () => {
 		const response = await getVideoByIdHandler(
-			new Request("https://api.phaseo.app/v1/videos/video_xai_error"),
+			new Request("https://api.phaseo.ai/v1/videos/video_xai_error"),
 		);
 
 		expect(response.status).toBe(502);

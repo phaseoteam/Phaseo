@@ -452,7 +452,7 @@ export default function BYOKInputDialog({
 													),
 												)
 											}
-											placeholder="AI Stats model slug (for example openai/gpt-4o-mini)"
+											placeholder="Phaseo model slug (for example openai/gpt-4o-mini)"
 										/>
 										<Input
 											value={deployment.endpointUrl}
@@ -549,10 +549,10 @@ export default function BYOKInputDialog({
 							<Switch checked={alwaysUse} onCheckedChange={(checked: any) => setAlwaysUse(Boolean(checked))} />
 						</div>
 						<p className="text-xs text-muted-foreground">
-							By default, if your key encounters a rate limit or failure, AI Stats falls back to shared AI Stats credits.
+							By default, if your key encounters a rate limit or failure, Phaseo falls back to shared Phaseo credits.
 						</p>
 						<p className="text-xs text-muted-foreground">
-							When enabled, AI Stats only uses this key for requests to this provider. This can return rate-limit
+							When enabled, Phaseo only uses this key for requests to this provider. This can return rate-limit
 							errors if your key is exhausted, but ensures requests go through your account.
 						</p>
 					</div>

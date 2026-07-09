@@ -35,12 +35,12 @@ import type { MarketplacePreset } from "@/lib/fetchers/gateway/marketplace";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
-	title: "Gateway Marketplace - AI Stats",
+	title: "Gateway Marketplace - Phaseo",
 	description:
-		"Browse public AI Stats Gateway presets, copy proven configurations to your workspace, and customize model routing, retries, and policy behavior for your team.",
+		"Browse public Phaseo Gateway presets, copy proven configurations to your workspace, and customize model routing, retries, and policy behavior for your team.",
 	path: "/gateway/marketplace",
 	keywords: [
-		"AI Stats marketplace",
+		"Phaseo marketplace",
 		"gateway presets",
 		"AI routing presets",
 	],
@@ -64,12 +64,12 @@ export default async function GatewayMarketplacePage() {
 					<div className="space-y-3">
 						<div className="flex items-center gap-2">
 							<h1 className="text-3xl font-semibold tracking-tight">
-								AI Stats Gateway Marketplace
+								Phaseo Gateway Marketplace
 							</h1>
 							<Badge variant="outline">Beta</Badge>
 						</div>
 						<p className="text-sm text-muted-foreground max-w-2xl">
-							Browse community and team presets built for the AI Stats Gateway.
+							Browse community and team presets built for the Phaseo Gateway.
 							Copy a preset to your account and customize it from there.
 						</p>
 						<div className="flex flex-wrap items-center gap-3">
@@ -98,7 +98,7 @@ export default async function GatewayMarketplacePage() {
 							Featured presets
 						</CardTitle>
 						<CardDescription>
-							Curated presets from the AI Stats team for high impact workflows.
+							Curated presets from the Phaseo team for high impact workflows.
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="relative">

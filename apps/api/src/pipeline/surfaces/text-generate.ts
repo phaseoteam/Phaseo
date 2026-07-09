@@ -519,7 +519,7 @@ async function handleCachedTextResponse(args: {
 	}
 
 	const headers = makeHeaders(timingHeader);
-	headers.set("X-AI-Stats-Response-Cache", "hit");
+	headers.set("X-Phaseo-Response-Cache", "hit");
 	return createResponse(responseBody, record.statusCode, headers);
 }
 

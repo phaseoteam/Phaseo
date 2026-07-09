@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from "vitest";
-import { AIStats } from "../src/index.js";
+import { Phaseo } from "../src/index.js";
 
-describe("AIStats current key helper", () => {
+describe("Phaseo current key helper", () => {
   test("calls /key through getCurrentApiKey", async () => {
     const fetchImpl: typeof fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       expect(String(input)).toBe("https://example.test/key");
@@ -13,7 +13,7 @@ describe("AIStats current key helper", () => {
         JSON.stringify({
           data: {
             id: "key_123",
-            prefix: "aistats_v1_sk_test",
+            prefix: "phaseo_v1_sk_test",
             status: "active",
           },
         }),
@@ -24,7 +24,7 @@ describe("AIStats current key helper", () => {
       );
     }) as unknown as typeof fetch;
 
-    const client = new AIStats({
+    const client = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,

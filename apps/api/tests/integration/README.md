@@ -13,7 +13,7 @@ This suite validates modern text-generation behavior across providers:
 Run it with:
 
 ```bash
-pnpm --filter @ai-stats/gateway-api test:live:text-modern
+pnpm --filter @phaseo/gateway-api test:live:text-modern
 ```
 
 Required environment:
@@ -55,10 +55,10 @@ These suites track the currently intended supported gateway surface:
 You can run these suites one at a time with their dedicated scripts, or use the targeted runner to select only the suites you still care about:
 
 ```bash
-pnpm --filter @ai-stats/gateway-api test:live:targeted -- --list
-pnpm --filter @ai-stats/gateway-api test:live:targeted -- --suite gpt54-nano-text
-pnpm --filter @ai-stats/gateway-api test:live:targeted -- --suite embeddings-moderation,audio-images
-pnpm --filter @ai-stats/gateway-api test:live:targeted -- --from deepseek-v4-flash
+pnpm --filter @phaseo/gateway-api test:live:targeted -- --list
+pnpm --filter @phaseo/gateway-api test:live:targeted -- --suite gpt54-nano-text
+pnpm --filter @phaseo/gateway-api test:live:targeted -- --suite embeddings-moderation,audio-images
+pnpm --filter @phaseo/gateway-api test:live:targeted -- --from deepseek-v4-flash
 ```
 
 That means if `gpt54-nano-text` already passed, you can just start from `embeddings-moderation` or name the remaining suites explicitly, instead of rerunning the earlier ones.
@@ -83,7 +83,7 @@ Each surface covers:
 Run it with:
 
 ```bash
-pnpm --filter @ai-stats/gateway-api test:live:gpt54-nano-text
+pnpm --filter @phaseo/gateway-api test:live:gpt54-nano-text
 ```
 
 Required environment:
@@ -99,7 +99,7 @@ Provider-pinned `/responses` coverage for `deepseek/deepseek-v4-flash`, using wh
 Run it with:
 
 ```bash
-pnpm --filter @ai-stats/gateway-api test:live:deepseek-v4-flash
+pnpm --filter @phaseo/gateway-api test:live:deepseek-v4-flash
 ```
 
 Required environment:
@@ -121,7 +121,7 @@ This suite asserts returned usage and pricing for the embedding and moderation p
 Run it with:
 
 ```bash
-pnpm --filter @ai-stats/gateway-api test:live:embeddings-moderation
+pnpm --filter @phaseo/gateway-api test:live:embeddings-moderation
 ```
 
 Required environment:
@@ -142,7 +142,7 @@ Focused coverage for:
 Run it with:
 
 ```bash
-pnpm --filter @ai-stats/gateway-api test:live:audio-images
+pnpm --filter @phaseo/gateway-api test:live:audio-images
 ```
 
 Required environment:
@@ -161,7 +161,7 @@ Heavy async coverage for:
 Run it with:
 
 ```bash
-pnpm --filter @ai-stats/gateway-api test:live:video-batch
+pnpm --filter @phaseo/gateway-api test:live:video-batch
 ```
 
 Required environment:
@@ -201,7 +201,7 @@ Covered HTTP surfaces:
 Run it with:
 
 ```bash
-pnpm --filter @ai-stats/gateway-api test:live:provider-endpoint-matrix
+pnpm --filter @phaseo/gateway-api test:live:provider-endpoint-matrix
 ```
 
 Required environment:

@@ -27,9 +27,9 @@ type StaticSponsor = {
 export const metadata = buildMetadata({
 	title: "Contributors & Sponsors",
 	description:
-		"Meet the contributors and sponsors supporting AI Stats, browse community profiles and contribution history, and find clear ways to participate, sponsor, or help improve the platform.",
+		"Meet the contributors and sponsors supporting Phaseo, browse community profiles and contribution history, and find clear ways to participate, sponsor, or help improve the platform.",
 	path: "/contribute",
-	keywords: ["AI Stats contributors", "AI sponsors", "open source contributors"],
+	keywords: ["Phaseo contributors", "AI sponsors", "open source contributors"],
 });
 
 const staticSponsors = null;
@@ -73,7 +73,7 @@ export default async function Page() {
 	let contributors: StaticContributor[] = [];
 	try {
 		const response = await fetch(
-			"https://api.github.com/repos/DanielButler1/AI-Stats/contributors?per_page=100",
+			"https://api.github.com/repos/phaseoteam/Phaseo/contributors?per_page=100",
 			{
 				next: { revalidate: 86400 }, // Cache for 24 hour
 			}
@@ -106,7 +106,7 @@ export default async function Page() {
 					</h1>
 					<p className="text-base text-zinc-600 dark:text-zinc-300">
 						We build in public. These lists show everyone who has
-						contributed to the AI Stats repository and those who
+						contributed to the Phaseo repository and those who
 						sponsor its development via GitHub Sponsors. These are
 						great people!
 					</p>

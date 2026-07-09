@@ -32,20 +32,20 @@ export async function generateMetadata(props: {
 		return buildMetadata({
 			title: "AI Models Overview by Organisation",
 			description:
-				"Discover AI models from leading organisations and review gateway availability, pricing coverage, release visibility, and model lifecycle context inside AI Stats.",
+				"Discover AI models from leading organisations and review gateway availability, pricing coverage, release visibility, and model lifecycle context inside Phaseo.",
 			path,
 			keywords: [
 				"AI models",
 				"AI organisation",
 				"AI providers",
-				"AI Stats",
+				"Phaseo",
 			],
 			imagePath,
 		});
 	}
 
 	const description = [
-		`Explore all AI models from ${organisation.name} on AI Stats.`,
+		`Explore all AI models from ${organisation.name} on Phaseo.`,
 		organisation.description?.slice(0, 180) ?? undefined,
 		"View gateway availability, pricing coverage, and model details in one place.",
 	]
@@ -58,7 +58,7 @@ export async function generateMetadata(props: {
 		`${organisation.name} models`,
 		"AI models",
 		"AI gateway",
-		"AI Stats",
+		"Phaseo",
 	];
 
 	return buildMetadata({

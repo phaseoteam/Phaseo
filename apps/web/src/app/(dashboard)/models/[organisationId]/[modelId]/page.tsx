@@ -168,8 +168,8 @@ export async function generateMetadata(props: {
 		description: buildModelPageMetadataDescription({
 			modelDescription,
 			suffix:
-				"Compare pricing, benchmarks, providers, latency signals, and compatibility details on AI Stats.",
-			fallback: `Compare pricing, benchmarks, providers, latency signals, and compatibility details for ${modelName} on AI Stats.`,
+				"Compare pricing, benchmarks, providers, latency signals, and compatibility details on Phaseo.",
+			fallback: `Compare pricing, benchmarks, providers, latency signals, and compatibility details for ${modelName} on Phaseo.`,
 		}),
 		path,
 		keywords: [
@@ -177,7 +177,7 @@ export async function generateMetadata(props: {
 			`${modelName} benchmarks`,
 			`${modelName} pricing`,
 			organisationName ? `${organisationName} AI` : null,
-			"AI Stats",
+			"Phaseo",
 			"AI model comparison",
 		].filter(Boolean) as string[],
 		imagePath,
@@ -239,7 +239,7 @@ export default async function Page({
 		"@context": "https://schema.org",
 		"@type": "Dataset",
 		name: `${organisationName} ${modelName}`.trim(),
-		description: `AI Stats profile for ${modelName} with pricing, benchmarks, providers, latency signals, and gateway compatibility details.`,
+		description: `Phaseo profile for ${modelName} with pricing, benchmarks, providers, latency signals, and gateway compatibility details.`,
 		url: absoluteUrl(getModelPath(modelId)),
 		creator: {
 			"@type": "Organization",
@@ -294,9 +294,12 @@ export default async function Page({
 			/>
 			<ModelDetailShell modelId={modelId} tab="overview" includeHidden={includeHidden}>
 				<div className="space-y-10">
-					<div className="grid gap-8 lg:grid-cols-[220px,minmax(0,1fr)] xl:grid-cols-[240px,minmax(0,1fr)]">
-						<ModelPageToc items={modelPageTocItems} className="lg:col-start-1 lg:h-full" />
-						<div className="min-w-0 space-y-10 lg:col-start-2">
+					<div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+						<ModelPageToc
+							items={modelPageTocItems}
+							className="lg:h-full lg:w-40 lg:shrink-0 xl:w-44"
+						/>
+						<div className="min-w-0 flex-1 space-y-10">
 							<ModelOverviewSections
 								modelId={modelId}
 								model={modelOverview}

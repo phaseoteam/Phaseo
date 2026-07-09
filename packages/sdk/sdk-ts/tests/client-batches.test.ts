@@ -1,9 +1,9 @@
 import { describe, expect, test, vi } from "vitest";
-import { AIStats } from "../src/index.js";
+import { Phaseo } from "../src/index.js";
 import { OpenAI } from "../src/compat/openai.js";
-import { AIStatsHttpError } from "../src/runtime/client.js";
+import { PhaseoHttpError } from "../src/runtime/client.js";
 
-describe("AIStats batch helpers", () => {
+describe("Phaseo batch helpers", () => {
   test("preserves gateway metadata across create and retrieve batch helpers", async () => {
     const fetchImpl: typeof fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
@@ -78,7 +78,7 @@ describe("AIStats batch helpers", () => {
       });
     }) as unknown as typeof fetch;
 
-    const client = new AIStats({
+    const client = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -151,7 +151,7 @@ describe("AIStats batch helpers", () => {
       });
     }) as unknown as typeof fetch;
 
-    const client = new AIStats({
+    const client = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -194,7 +194,7 @@ describe("AIStats batch helpers", () => {
       });
     }) as unknown as typeof fetch;
 
-    const client = new AIStats({
+    const client = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -229,7 +229,7 @@ describe("AIStats batch helpers", () => {
       });
     }) as unknown as typeof fetch;
 
-    const client = new AIStats({
+    const client = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -249,13 +249,13 @@ describe("AIStats batch helpers", () => {
       });
     }) as unknown as typeof fetch;
 
-    const client = new AIStats({
+    const client = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
     });
 
-    await expect(client.cancelBatch("batch_missing_123")).rejects.toBeInstanceOf(AIStatsHttpError);
+    await expect(client.cancelBatch("batch_missing_123")).rejects.toBeInstanceOf(PhaseoHttpError);
   });
 
   test("batches resource delegates to cancelBatch", async () => {
@@ -270,7 +270,7 @@ describe("AIStats batch helpers", () => {
       });
     }) as unknown as typeof fetch;
 
-    const client = new AIStats({
+    const client = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -296,7 +296,7 @@ describe("AIStats batch helpers", () => {
       });
     }) as unknown as typeof fetch;
 
-    const client = new AIStats({
+    const client = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -349,7 +349,7 @@ describe("AIStats batch helpers", () => {
       });
     }) as unknown as typeof fetch;
 
-    const client = new AIStats({
+    const client = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -375,7 +375,7 @@ describe("AIStats batch helpers", () => {
       });
     }) as unknown as typeof fetch;
 
-    const client = new AIStats({
+    const client = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,

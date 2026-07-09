@@ -5,10 +5,10 @@ import { RoomScaffold } from "@/components/(chat)/RoomScaffold";
 import { AudioRoom } from "@/components/(chat)/rooms/AudioRoom";
 
 export const metadata: Metadata = buildMetadata({
-	title: "Speech to Text Room - AI Stats Chat",
+	title: "Speech to Text Room - Phaseo Chat",
 	description: "Speech transcription workspace for audio inputs.",
 	path: "/chat/speech-to-text",
-	keywords: ["AI transcription", "speech to text", "AI Stats chat"],
+	keywords: ["AI transcription", "speech to text", "Phaseo chat"],
 });
 
 export default async function ChatSpeechToTextPage() {

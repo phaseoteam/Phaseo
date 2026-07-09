@@ -6,7 +6,7 @@ import type { OgEntity } from "@/lib/fetchers/frontend/getOgPayload";
 import { resolveLogo } from "@/lib/logos";
 
 const brandLogoPath = "/wordmark_light.svg";
-const FALLBACK_HOST = "ai-stats.org";
+const FALLBACK_HOST = "phaseo.app";
 const ASSET_BASE_URL =
 	process.env.NEXT_PUBLIC_WEBSITE_URL ??
 	process.env.WEBSITE_URL ??
@@ -289,7 +289,7 @@ export async function GET(
 						{brandLogoSrc ? (
 							<img
 								src={brandLogoSrc}
-								alt="AI Stats logo"
+								alt="Phaseo logo"
 								width={160}
 								height={54}
 								style={{ objectFit: "contain", opacity: 0.96 }}

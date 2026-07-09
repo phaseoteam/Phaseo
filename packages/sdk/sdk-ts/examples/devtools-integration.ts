@@ -1,24 +1,24 @@
 /**
- * AI Stats SDK - Devtools Integration Example
+ * Phaseo SDK - Devtools Integration Example
  *
  * This example demonstrates how to enable devtools for debugging and monitoring
- * your AI Stats API usage. The devtools capture all requests and responses locally,
+ * your Phaseo API usage. The devtools capture all requests and responses locally,
  * which can be viewed using the devtools viewer.
  */
 
-import { AIStats, createAIStatsDevtools } from "../src/index.js";
+import { Phaseo, createPhaseoDevtools } from "../src/index.js";
 
 // Example 1: Basic devtools setup
 // This will automatically enable devtools in development (NODE_ENV !== 'production')
-const client1 = new AIStats({
-  apiKey: process.env.AI_STATS_API_KEY!,
-  devtools: createAIStatsDevtools()
+const client1 = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY!,
+  devtools: createPhaseoDevtools()
 });
 
 // Example 2: Custom configuration
-const client2 = new AIStats({
-  apiKey: process.env.AI_STATS_API_KEY!,
-  devtools: createAIStatsDevtools({
+const client2 = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY!,
+  devtools: createPhaseoDevtools({
     // Store data in custom directory
     directory: './my-devtools-data',
 
@@ -38,9 +38,9 @@ const client2 = new AIStats({
 
 // Example 3: Conditional devtools (only in dev)
 const isDev = process.env.NODE_ENV !== 'production';
-const client3 = new AIStats({
-  apiKey: process.env.AI_STATS_API_KEY!,
-  devtools: isDev ? createAIStatsDevtools() : undefined
+const client3 = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY!,
+  devtools: isDev ? createPhaseoDevtools() : undefined
 });
 
 // Now make some API calls - all will be captured automatically
@@ -83,14 +83,14 @@ async function main() {
   console.log('Available models:', models.models.length);
 
   console.log('\n✅ All requests captured!');
-  console.log('View them by running: npx @ai-stats/devtools-viewer');
+  console.log('View them by running: npx @phaseo/devtools-viewer');
   console.log('Or with the standalone package: npx devtools-viewer');
 }
 
 // Run the example
-if (process.env.AI_STATS_API_KEY) {
+if (process.env.PHASEO_API_KEY) {
   main().catch(console.error);
 } else {
-  console.error('Please set AI_STATS_API_KEY environment variable');
+  console.error('Please set PHASEO_API_KEY environment variable');
   process.exit(1);
 }

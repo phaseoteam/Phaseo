@@ -8,20 +8,20 @@ import (
 	"fmt"
 	"os"
 
-	aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
+	phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
 )
 
 func main() {
-	apiKey := os.Getenv("AI_STATS_API_KEY")
+	apiKey := os.Getenv("PHASEO_API_KEY")
 	if apiKey == "" {
-		panic("Set AI_STATS_API_KEY")
+		panic("Set PHASEO_API_KEY")
 	}
-	baseURL := os.Getenv("AI_STATS_BASE_URL")
+	baseURL := os.Getenv("PHASEO_BASE_URL")
 	if baseURL == "" {
-		baseURL = "https://api.phaseo.app/v1"
+		baseURL = "https://api.phaseo.ai/v1"
 	}
 
-	client := aistats.NewAIStats(apiKey, baseURL)
+	client := phaseo.NewPhaseo(apiKey, baseURL)
 	body := map[string]any{
 		"model": "google/gemini-embedding-001",
 		"input": "Vector search uses embeddings to compare meaning.",

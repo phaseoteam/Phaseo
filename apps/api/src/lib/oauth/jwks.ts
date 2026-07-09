@@ -46,7 +46,7 @@ export async function fetchJWKS(supabaseUrl: string): Promise<JWKS> {
 		try {
 			const response = await fetch(jwksUrl, {
 				headers: {
-					"User-Agent": "AIStats-Gateway/1.0",
+					"User-Agent": "Phaseo-Gateway/1.0",
 				},
 			});
 

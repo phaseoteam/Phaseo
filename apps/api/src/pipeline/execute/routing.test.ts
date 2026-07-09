@@ -961,7 +961,7 @@ describe("routeProviders testing mode", () => {
 			],
 			{
 				endpoint: "responses",
-				model: "ai-stats/free",
+				model: "phaseo/free",
 				workspaceId: "team_123",
 				testingMode: false,
 			},

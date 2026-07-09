@@ -42,7 +42,7 @@ type AgentDevtoolsEntry = {
 };
 
 const AGENT_SDK_VERSION = "0.1.1";
-const DEFAULT_DEVTOOLS_DIR = ".ai-stats-devtools";
+const DEFAULT_DEVTOOLS_DIR = ".phaseo-devtools";
 
 export function createAgentDevtools(
 	options: AgentDevtoolsConfig = {},
@@ -119,10 +119,10 @@ function resolveDevtoolsConfig(config?: Partial<AgentDevtoolsConfig>) {
 	const enabled =
 		typeof config?.enabled === "boolean"
 			? config.enabled
-			: process.env.AI_STATS_DEVTOOLS === "true";
+			: process.env.PHASEO_DEVTOOLS === "true";
 	return {
 		enabled,
-		directory: config?.directory ?? process.env.AI_STATS_DEVTOOLS_DIR ?? DEFAULT_DEVTOOLS_DIR,
+		directory: config?.directory ?? process.env.PHASEO_DEVTOOLS_DIR ?? DEFAULT_DEVTOOLS_DIR,
 	};
 }
 

@@ -553,7 +553,7 @@ importers:
         specifier: ^4.94.0
         version: 4.94.0(@cloudflare/workers-types@4.20260523.1)
 
-  packages/cli/aistats:
+  packages/cli/phaseo:
     devDependencies:
       '@types/node':
         specifier: ^25.6.0
@@ -569,7 +569,7 @@ importers:
 
   packages/devtools/devtools:
     dependencies:
-      '@ai-stats/devtools-core':
+      '@phaseo/devtools-core':
         specifier: workspace:*
         version: link:../devtools-core
     devDependencies:
@@ -709,7 +709,7 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
 
-  packages/integrations/ai-sdk-ai-stats:
+  packages/integrations/ai-sdk-phaseo:
     dependencies:
       '@ai-sdk/provider':
         specifier: ^3.0.10
@@ -720,7 +720,7 @@ importers:
     devDependencies:
       '@types/node':
         specifier: ^25.6.0
-        version: 25.6.0
+        version: 25.9.1
       '@vitest/coverage-v8':
         specifier: ^4.1.7
         version: 4.1.7(vitest@4.1.7)
@@ -735,14 +735,14 @@ importers:
         version: 6.0.3
       vitest:
         specifier: ^4.1.7
-        version: 4.1.7(@opentelemetry/api@1.9.1)(@types/node@25.6.0)(@vitest/coverage-v8@4.1.7)(vite@8.0.14(@types/node@25.6.0)(esbuild@0.25.12)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
+        version: 4.1.7(@opentelemetry/api@1.9.1)(@types/node@25.9.1)(@vitest/coverage-v8@4.1.7)(vite@8.0.14(@types/node@25.9.1)(esbuild@0.25.12)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
       zod:
         specifier: ^4.4.3
         version: 4.4.3
 
   packages/openapi-backends/oapi-backend-cpp:
     dependencies:
-      '@ai-stats/oapi-core':
+      '@phaseo/oapi-core':
         specifier: workspace:*
         version: link:../../openapi/oapi-core
     devDependencies:
@@ -755,7 +755,7 @@ importers:
 
   packages/openapi-backends/oapi-backend-csharp:
     dependencies:
-      '@ai-stats/oapi-core':
+      '@phaseo/oapi-core':
         specifier: workspace:*
         version: link:../../openapi/oapi-core
     devDependencies:
@@ -768,7 +768,7 @@ importers:
 
   packages/openapi-backends/oapi-backend-go:
     dependencies:
-      '@ai-stats/oapi-core':
+      '@phaseo/oapi-core':
         specifier: workspace:*
         version: link:../../openapi/oapi-core
     devDependencies:
@@ -781,7 +781,7 @@ importers:
 
   packages/openapi-backends/oapi-backend-java:
     dependencies:
-      '@ai-stats/oapi-core':
+      '@phaseo/oapi-core':
         specifier: workspace:*
         version: link:../../openapi/oapi-core
     devDependencies:
@@ -794,7 +794,7 @@ importers:
 
   packages/openapi-backends/oapi-backend-php:
     dependencies:
-      '@ai-stats/oapi-core':
+      '@phaseo/oapi-core':
         specifier: workspace:*
         version: link:../../openapi/oapi-core
     devDependencies:
@@ -807,7 +807,7 @@ importers:
 
   packages/openapi-backends/oapi-backend-python:
     dependencies:
-      '@ai-stats/oapi-core':
+      '@phaseo/oapi-core':
         specifier: workspace:*
         version: link:../../openapi/oapi-core
     devDependencies:
@@ -820,7 +820,7 @@ importers:
 
   packages/openapi-backends/oapi-backend-ruby:
     dependencies:
-      '@ai-stats/oapi-core':
+      '@phaseo/oapi-core':
         specifier: workspace:*
         version: link:../../openapi/oapi-core
     devDependencies:
@@ -833,7 +833,7 @@ importers:
 
   packages/openapi-backends/oapi-backend-rust:
     dependencies:
-      '@ai-stats/oapi-core':
+      '@phaseo/oapi-core':
         specifier: workspace:*
         version: link:../../openapi/oapi-core
     devDependencies:
@@ -846,7 +846,7 @@ importers:
 
   packages/openapi-backends/oapi-backend-ts:
     dependencies:
-      '@ai-stats/oapi-core':
+      '@phaseo/oapi-core':
         specifier: workspace:*
         version: link:../../openapi/oapi-core
       prettier:
@@ -865,34 +865,34 @@ importers:
 
   packages/openapi/oapi-cli:
     dependencies:
-      '@ai-stats/oapi-backend-cpp':
+      '@phaseo/oapi-backend-cpp':
         specifier: workspace:*
         version: link:../../openapi-backends/oapi-backend-cpp
-      '@ai-stats/oapi-backend-csharp':
+      '@phaseo/oapi-backend-csharp':
         specifier: workspace:*
         version: link:../../openapi-backends/oapi-backend-csharp
-      '@ai-stats/oapi-backend-go':
+      '@phaseo/oapi-backend-go':
         specifier: workspace:*
         version: link:../../openapi-backends/oapi-backend-go
-      '@ai-stats/oapi-backend-java':
+      '@phaseo/oapi-backend-java':
         specifier: workspace:*
         version: link:../../openapi-backends/oapi-backend-java
-      '@ai-stats/oapi-backend-php':
+      '@phaseo/oapi-backend-php':
         specifier: workspace:*
         version: link:../../openapi-backends/oapi-backend-php
-      '@ai-stats/oapi-backend-python':
+      '@phaseo/oapi-backend-python':
         specifier: workspace:*
         version: link:../../openapi-backends/oapi-backend-python
-      '@ai-stats/oapi-backend-ruby':
+      '@phaseo/oapi-backend-ruby':
         specifier: workspace:*
         version: link:../../openapi-backends/oapi-backend-ruby
-      '@ai-stats/oapi-backend-rust':
+      '@phaseo/oapi-backend-rust':
         specifier: workspace:*
         version: link:../../openapi-backends/oapi-backend-rust
-      '@ai-stats/oapi-backend-ts':
+      '@phaseo/oapi-backend-ts':
         specifier: workspace:*
         version: link:../../openapi-backends/oapi-backend-ts
-      '@ai-stats/oapi-core':
+      '@phaseo/oapi-core':
         specifier: workspace:*
         version: link:../oapi-core
     devDependencies:
@@ -930,7 +930,7 @@ importers:
 
   packages/sdk/agent-sdk-ts:
     dependencies:
-      '@ai-stats/sdk':
+      '@phaseo/sdk':
         specifier: workspace:*
         version: link:../sdk-ts
     devDependencies:
@@ -11957,9 +11957,6 @@ packages:
     peerDependencies:
       zod: ^3.22.3
 
-  zod@3.23.8:
-    resolution: {integrity: sha512-XBx9AXhXktjUqnepgTiE5flcKIYWi/rme0Eaj+5Y0lftuGBq+jyRu/md4WnuxqgP1ubdpNCsYEYPxrzVHD8d6g==}
-
   zod@3.24.0:
     resolution: {integrity: sha512-Hz+wiY8yD0VLA2k/+nsg2Abez674dDGTai33SwNvMPuf9uIrBC9eFgIMQxBBbHFxVXi8W+5nX9DcAh9YNSQm/w==}
 
@@ -13998,7 +13995,7 @@ snapshots:
       unified: 11.0.5
       unist-util-visit: 5.0.0
       yargs: 17.7.1
-      zod: 3.24.0
+      zod: 3.25.76
     transitivePeerDependencies:
       - '@radix-ui/react-popover'
       - '@types/react'
@@ -18156,7 +18153,7 @@ snapshots:
       devtools-protocol: 0.0.1312386
       mitt: 3.0.1
       urlpattern-polyfill: 10.0.0
-      zod: 3.23.8
+      zod: 3.25.76
 
   ci-info@4.4.0: {}
 
@@ -25812,8 +25809,6 @@ snapshots:
   zod-validation-error@4.0.2(zod@3.25.76):
     dependencies:
       zod: 3.25.76
-
-  zod@3.23.8: {}
 
   zod@3.24.0: {}
 

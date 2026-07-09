@@ -8,8 +8,8 @@ export default function HeaderShell({ children }: HeaderShellProps) {
 	const headerVars: CSSProperties & Record<string, string> = {
 		"--site-header-height": "3.75rem",
 		"--site-header-gap": "1.5rem",
-		"--site-header-left-gap": "1.25rem",
-		"--site-header-logo-height": "2.3rem",
+		"--site-header-left-gap": "0.625rem",
+		"--site-header-logo-height": "1.2rem",
 		"--site-header-divider-height": "1.5rem",
 		"--site-header-control-h": "2.25rem",
 		"--site-header-nav-px": "0.5rem",

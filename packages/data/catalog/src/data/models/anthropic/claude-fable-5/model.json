@@ -43,11 +43,11 @@
     },
     {
       "name": "availability",
-      "value": "Claude Fable 5 is Anthropic's released public counterpart to [Claude Mythos 5](/anthropic/claude-mythos-5). AI Stats now tracks launch coverage across Anthropic, Claude Platform on AWS, Amazon Bedrock, and Google Vertex AI, with release pricing, cache pricing, and the `anthropic/claude-fable-latest` alias synced to the June 9 rollout."
+      "value": "Claude Fable 5 is Anthropic's released public counterpart to [Claude Mythos 5](/anthropic/claude-mythos-5). Phaseo now tracks launch coverage across Anthropic, Claude Platform on AWS, Amazon Bedrock, and Google Vertex AI, with release pricing, cache pricing, and the `anthropic/claude-fable-latest` alias synced to the June 9 rollout."
     },
     {
       "name": "frontiercode_effort_note",
-      "value": "Anthropic's Mythos-class FrontierCode (Diamond) compute-scaling chart reports 11.5% at low effort, 17.8% at medium, 24.0% at high, 29.3% at xHigh, and 30.9% at max. AI Stats mirrors those effort-level scores onto Claude Fable 5 because Fable 5 and Mythos 5 are the same underlying model with safeguards applied differently."
+      "value": "Anthropic's Mythos-class FrontierCode (Diamond) compute-scaling chart reports 11.5% at low effort, 17.8% at medium, 24.0% at high, 29.3% at xHigh, and 30.9% at max. Phaseo mirrors those effort-level scores onto Claude Fable 5 because Fable 5 and Mythos 5 are the same underlying model with safeguards applied differently."
     }
   ],
   "benchmarks": [

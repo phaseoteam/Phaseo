@@ -49,8 +49,8 @@ type GitHubIssueClient = {
 
 const DEFAULT_GITHUB_API_BASE_URL = "https://api.github.com";
 const DEFAULT_GITHUB_REQUEST_TIMEOUT_MS = 30_000;
-const DEFAULT_GITHUB_REPOSITORY = "AI-Stats/AI-Stats";
-const DEFAULT_GITHUB_USER_AGENT = "ai-stats-gateway-model-discovery";
+const DEFAULT_GITHUB_REPOSITORY = "phaseoteam/Phaseo";
+const DEFAULT_GITHUB_USER_AGENT = "phaseo-gateway-model-discovery";
 
 function toBool(value: string | null | undefined, fallback = false): boolean {
 	if (value === undefined || value === null) return fallback;
@@ -133,7 +133,7 @@ function buildIssueBody(group: GitHubIssueGroup): string {
 		...formatModelList(group.entries),
 		"",
 		"## Triage notes",
-		"- Check whether each upstream model should be added to AI Stats or mapped to an existing catalog entry.",
+		"- Check whether each upstream model should be added to Phaseo or mapped to an existing catalog entry.",
 		"- Reuse this issue for repeated signals with the same source family, provider/org, and action type.",
 		"- Close this issue once the upstream signal has been triaged.",
 	].join("\n");

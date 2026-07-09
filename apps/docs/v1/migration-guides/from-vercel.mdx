@@ -1,6 +1,6 @@
 ---
 title: "Migrating from Vercel AI Gateway"
-description: "Replace Vercel AI Gateway routing with AI Stats Gateway while preserving AI SDK or OpenAI-compatible application behavior."
+description: "Replace Vercel AI Gateway routing with Phaseo Gateway while preserving AI SDK or OpenAI-compatible application behavior."
 ---
 
 If you already use Vercel AI Gateway through the Vercel AI SDK or an OpenAI-compatible client, the safest migration path is to keep your app logic the same and swap only the provider boundary first.
@@ -8,7 +8,7 @@ If you already use Vercel AI Gateway through the Vercel AI SDK or an OpenAI-comp
 ## Before you start
 
 - Current Vercel AI Gateway base URL and key configuration.
-- `AI_STATS_API_KEY` available in local, staging, and production environments.
+- `PHASEO_API_KEY` available in local, staging, and production environments.
 - A small prompt set or integration suite that covers non-streaming, streaming, and any tool-calling paths you rely on.
 
 ## 1) Document your current gateway boundary
@@ -41,30 +41,30 @@ const before = new OpenAI({
 import OpenAI from "openai";
 
 const after = new OpenAI({
-  apiKey: process.env.AI_STATS_API_KEY,
-  baseURL: "https://api.phaseo.app/v1",
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.ai/v1",
 });
 ```
 
 ```typescript TypeScript
-// Official AI Stats provider for the Vercel AI SDK
+// Official Phaseo provider for the Vercel AI SDK
 import { generateText } from "ai";
-import { createAIStats } from "@ai-stats/ai-sdk-provider";
+import { createPhaseo } from "@phaseo/ai-sdk-provider";
 
-const aiStats = createAIStats({
-  apiKey: process.env.AI_STATS_API_KEY,
-  baseURL: "https://api.phaseo.app/v1",
+const phaseo = createPhaseo({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.ai/v1",
 });
 
 const { text } = await generateText({
-  model: aiStats("openai/gpt-4.1-mini"),
+  model: phaseo("openai/gpt-4.1-mini"),
   prompt: "Generate a migration checklist.",
 });
 ```
 
 ```bash cURL
-curl -s "https://api.phaseo.app/v1/chat/completions" \
-  -H "Authorization: Bearer $AI_STATS_API_KEY" \
+curl -s "https://api.phaseo.ai/v1/chat/completions" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "openai/gpt-4.1-mini",
@@ -87,9 +87,9 @@ Run the same prompt set against old and new paths, then compare latency, output 
 
 Use this checklist before promoting traffic:
 
-- Base URL updated to `https://api.phaseo.app/v1`.
-- `AI_STATS_API_KEY` configured in every runtime that previously used the Vercel gateway key.
-- Official `@ai-stats/ai-sdk-provider` wired in if your app uses the Vercel AI SDK directly.
+- Base URL updated to `https://api.phaseo.ai/v1`.
+- `PHASEO_API_KEY` configured in every runtime that previously used the Vercel gateway key.
+- Official `@phaseo/ai-sdk-provider` wired in if your app uses the Vercel AI SDK directly.
 - Primary AI SDK text generation path passes in staging.
 - One app-level streaming test passes unchanged.
 - Tool-calling and structured-output flows rechecked if used.
@@ -108,8 +108,8 @@ Use this checklist before promoting traffic:
 ## Validation commands
 
 ```bash
-curl -s "https://api.phaseo.app/v1/health"
-curl -s "https://api.phaseo.app/v1/models" -H "Authorization: Bearer $AI_STATS_API_KEY"
+curl -s "https://api.phaseo.ai/v1/health"
+curl -s "https://api.phaseo.ai/v1/models" -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
 Then:

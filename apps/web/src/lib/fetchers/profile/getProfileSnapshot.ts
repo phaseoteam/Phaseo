@@ -150,8 +150,8 @@ async function buildOwnProfileSnapshot(): Promise<ProfileSnapshot | null> {
 		.maybeSingle()
 
 	const displayName =
-		String(userRow?.display_name ?? user.user_metadata?.display_name ?? user.user_metadata?.name ?? user.email?.split("@")[0] ?? "AI Stats User").trim() ||
-		"AI Stats User"
+		String(userRow?.display_name ?? user.user_metadata?.display_name ?? user.user_metadata?.name ?? user.email?.split("@")[0] ?? "Phaseo User").trim() ||
+		"Phaseo User"
 	const defaultWorkspaceId = String(userRow?.default_workspace_id ?? "").trim() || null
 	const memberSince = String(userRow?.created_at ?? user.created_at ?? new Date().toISOString())
 

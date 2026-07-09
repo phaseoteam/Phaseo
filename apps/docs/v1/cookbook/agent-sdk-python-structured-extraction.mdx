@@ -1,6 +1,6 @@
 ---
 title: "Extract structured JSON with the Python Agent SDK"
-description: "Use the Python Agent SDK for a bounded local-tool loop that returns strict JSON through AI Stats Gateway."
+description: "Use the Python Agent SDK for a bounded local-tool loop that returns strict JSON through Phaseo Gateway."
 ---
 
 Use this recipe when a Python workflow needs:
@@ -12,13 +12,13 @@ Use this recipe when a Python workflow needs:
 ## 1. Install the SDKs
 
 ```bash
-pip install ai-stats-py-sdk ai-stats-agent-sdk
+pip install phaseo phaseo-agent-sdk
 ```
 
 ## 2. Define one local tool
 
 ```python
-from ai_stats_agent import AgentTool, define_tool
+from phaseo_agent import AgentTool, define_tool
 
 lookup_policy = define_tool(
     AgentTool(
@@ -43,7 +43,7 @@ lookup_policy = define_tool(
 ## 3. Create the agent
 
 ```python
-from ai_stats_agent import create_agent
+from phaseo_agent import create_agent
 
 agent = create_agent(
     {
@@ -59,7 +59,7 @@ agent = create_agent(
 ## 4. Run through the gateway-backed client
 
 ```python
-from ai_stats_agent import create_gateway_agent_client
+from phaseo_agent import create_gateway_agent_client
 
 result = agent.run(
     input="Look up presets and return JSON with keys summary and recommendation.",

@@ -1,6 +1,6 @@
 require_relative "client"
 
-module AiStats
+module Phaseo
   module Gen
     module Operations
       def self.calculatePricing(client, path: nil, query: nil, headers: nil, body: nil)
@@ -329,7 +329,7 @@ module AiStats
 
       def self.listModels(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
-        resolved_path = "/gateway/models"
+        resolved_path = "/models"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -353,7 +353,7 @@ module AiStats
 
       def self.listTeamModels(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
-        resolved_path = "/gateway/models/me"
+        resolved_path = "/models/me"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 

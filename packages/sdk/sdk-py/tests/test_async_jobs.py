@@ -1,8 +1,8 @@
-from ai_stats import AIStats
+from phaseo import Phaseo
 
 
 def test_get_async_job_websocket_url_builds_expected_url():
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test/v1")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test/v1")
 
     assert client.get_async_job_websocket_url(
         "batch",
@@ -13,7 +13,7 @@ def test_get_async_job_websocket_url_builds_expected_url():
 
 
 def test_async_job_resource_shortcuts_delegate_to_helper():
-    client = AIStats(api_key="sk_test_123", base_url="http://localhost:8787/v1")
+    client = Phaseo(api_key="sk_test_123", base_url="http://localhost:8787/v1")
 
     assert client.batches.websocket_url("batch_123") == "ws://localhost:8787/v1/async/batch/batch_123/ws"
     assert (

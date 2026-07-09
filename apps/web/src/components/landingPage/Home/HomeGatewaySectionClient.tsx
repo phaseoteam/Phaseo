@@ -33,8 +33,8 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
-const BASE_URL = "https://api.phaseo.app/v1";
-const DOCS_HREF = "https://docs.ai-stats.phaseo.app/v1/quickstart";
+const BASE_URL = "https://api.phaseo.ai/v1";
+const DOCS_HREF = "https://phaseo.app/docs/v1/quickstart";
 
 const FALLBACK_MODEL_OPTIONS = [
 	{
@@ -114,7 +114,7 @@ function buildSnippet(language: LanguageId, model: ModelOption) {
 from openai import OpenAI
 
 client = OpenAI(
-    api_key=os.environ["AI_STATS_API_KEY"],
+    api_key=os.environ["PHASEO_API_KEY"],
     base_url="${BASE_URL}"
 )
 
@@ -130,7 +130,7 @@ print(response.choices[0].message.content)`;
 		case "curl":
 			return `curl ${BASE_URL}/chat/completions \\
   -H "Content-Type: application/json" \\
-  -H "Authorization: Bearer $AI_STATS_API_KEY" \\
+  -H "Authorization: Bearer $PHASEO_API_KEY" \\
   -d '{
     "model": "${model.id}",
     "messages": [
@@ -143,7 +143,7 @@ print(response.choices[0].message.content)`;
 			return `import OpenAI from "openai";
 
 const client = new OpenAI({
-  apiKey: process.env.AI_STATS_API_KEY!,
+  apiKey: process.env.PHASEO_API_KEY!,
   baseURL: "${BASE_URL}",
 });
 

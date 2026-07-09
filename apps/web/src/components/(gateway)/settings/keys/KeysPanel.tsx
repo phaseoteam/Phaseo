@@ -172,7 +172,7 @@ function fmtUsdFromNanos(v: number) {
 
 function formatKeyReference(v?: string | null) {
 	const ref = typeof v === "string" ? v.trim() : "";
-	return ref ? `aistats_v1_sk_...${ref}` : "aistats_v1_sk_...";
+	return ref ? `phaseo_v1_sk_...${ref}` : "phaseo_v1_sk_...";
 }
 
 function GuardrailSummary({

@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace AIStats\Gen;
+namespace Phaseo\Gen;
 
 function calculatePricing(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
@@ -384,7 +384,7 @@ function listFiles(Client $client, ?array $path = null, ?array $query = null, ?a
 function listModels(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
-	$resolvedPath = "/gateway/models";
+	$resolvedPath = "/models";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
@@ -412,7 +412,7 @@ function listProviders(Client $client, ?array $path = null, ?array $query = null
 function listTeamModels(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
-	$resolvedPath = "/gateway/models/me";
+	$resolvedPath = "/models/me";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 

@@ -1,9 +1,9 @@
 import { describe, expect, test } from "vitest";
-import { AIStats } from "../src/index.js";
+import { Phaseo } from "../src/index.js";
 
-describe("AIStats async job websocket helpers", () => {
+describe("Phaseo async job websocket helpers", () => {
   test("builds websocket URLs for async jobs from the configured base URL", () => {
-    const client = new AIStats({
+    const client = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test/v1",
     });
@@ -19,7 +19,7 @@ describe("AIStats async job websocket helpers", () => {
   });
 
   test("exposes batch and video resource shortcuts", () => {
-    const client = new AIStats({
+    const client = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "http://localhost:8787/v1",
     });

@@ -11,8 +11,8 @@ import {
 import { Separator } from "@/components/ui/separator";
 
 const externalLinks = {
-	github: "https://github.com/AI-Stats/AI-Stats",
-	discord: "https://discord.gg/zDw73wamdX",
+	github: "https://github.com/phaseoteam/Phaseo",
+	discord: "https://discord.gg/aQyywCvgZ5",
 };
 
 const suggestions = [
@@ -29,7 +29,7 @@ const suggestions = [
 		icon: Layers,
 	},
 	{
-		href: "https://docs.ai-stats.phaseo.app",
+		href: "https://phaseo.app/docs/v1",
 		label: "Read the docs",
 		description:
 			"Check the documentation for guides, references, and examples.",
@@ -54,7 +54,7 @@ export default function NotFound() {
 						href="/"
 						className="text-sm font-semibold tracking-tight text-muted-foreground hover:text-foreground"
 					>
-						AI Stats
+						Phaseo
 					</Link>
 				</div>
 

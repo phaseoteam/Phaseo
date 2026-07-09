@@ -1,12 +1,12 @@
 ---
 title: "Usage"
-description: "Run a minimal local agent loop on top of AI Stats Gateway with the Go Agent SDK."
+description: "Run a minimal local agent loop on top of Phaseo Gateway with the Go Agent SDK."
 ---
 
 ## Install
 
 ```bash
-go get github.com/AI-Stats/AI-Stats/packages/sdk/agent-sdk-go@latest
+go get github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go@latest
 ```
 
 ## Quickstart
@@ -18,22 +18,22 @@ import (
   "context"
   "fmt"
 
-  aistatsagent "github.com/AI-Stats/AI-Stats/packages/sdk/agent-sdk-go"
+  phaseoagent "github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go"
 )
 
 func main() {
-  client, err := aistatsagent.CreateGatewayAgentClient(aistatsagent.GatewayAgentClientOptions{})
+  client, err := phaseoagent.CreateGatewayAgentClient(phaseoagent.GatewayAgentClientOptions{})
   if err != nil {
     panic(err)
   }
 
-  agent := aistatsagent.CreateAgent(aistatsagent.AgentDefinition{
+  agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
     ID:           "quickstart-agent",
     Model:        "openai/gpt-5.4-nano",
     Instructions: "Answer concisely and helpfully.",
   })
 
-  result, err := agent.Run(context.Background(), aistatsagent.RunOptions{
+  result, err := agent.Run(context.Background(), phaseoagent.RunOptions{
     Input:  "Give me one fun fact about cURL.",
     Client: client,
   })
@@ -50,7 +50,7 @@ func main() {
 - `CreateAgent(...)`
 - `DefineTool(...)`
 - `CreateGatewayAgentClient(...)`
-- a bounded tool loop over the AI Stats `responses` API
+- a bounded tool loop over the Phaseo `responses` API
 
 ## Related
 

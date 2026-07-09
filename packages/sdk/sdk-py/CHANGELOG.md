@@ -1,4 +1,10 @@
-# @ai-stats/py-sdk
+# @phaseo/py-sdk
+
+## 2.0.5
+
+### Patch Changes
+
+- Mark the `phaseo` package name as deprecated in favour of `phaseo` and update the Python user agent to Phaseo branding.
 
 ## 2.0.4
 
@@ -6,7 +12,7 @@
 
 - Auto-release functional SDK packages after OpenAPI or model-surface changes (sdk/openapi changes).
 
-  Excluded for now: @ai-stats/cpp-sdk and @ai-stats/rust-sdk.
+  Excluded for now: @phaseo/cpp-sdk and @phaseo/rust-sdk.
 
 ## 2.0.3
 
@@ -14,13 +20,13 @@
 
 - Auto-release functional SDK packages after OpenAPI or model-surface changes (sdk/openapi changes).
 
-  Excluded for now: @ai-stats/cpp-sdk and @ai-stats/rust-sdk.
+  Excluded for now: @phaseo/cpp-sdk and @phaseo/rust-sdk.
 
 ## 2.0.2
 
 ### Patch Changes
 
-- [#396](https://github.com/AI-Stats/AI-Stats/pull/396) [`0023fc3`](https://github.com/AI-Stats/AI-Stats/commit/0023fc3c6d87a007189bfe1d0c8c13af8db3f21d) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Separate catalog model discovery from callable SDK helper IDs.
+- [#396](https://github.com/phaseoteam/Phaseo/pull/396) [`0023fc3`](https://github.com/phaseoteam/Phaseo/commit/0023fc3c6d87a007189bfe1d0c8c13af8db3f21d) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Separate catalog model discovery from callable SDK helper IDs.
 
   Request-side model identifiers are now treated as runtime strings so newly released
   models can be used without waiting for an SDK release. Generated helper constants
@@ -32,7 +38,7 @@
 
 ### Patch Changes
 
-- [#367](https://github.com/AI-Stats/AI-Stats/pull/367) [`4153c29`](https://github.com/AI-Stats/AI-Stats/commit/4153c293f05414e68dcfd4e0d6b84952b2ec6fcd) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Separate catalog model discovery from callable SDK helper IDs.
+- [#367](https://github.com/phaseoteam/Phaseo/pull/367) [`4153c29`](https://github.com/phaseoteam/Phaseo/commit/4153c293f05414e68dcfd4e0d6b84952b2ec6fcd) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Separate catalog model discovery from callable SDK helper IDs.
 
   Request-side model identifiers are now treated as runtime strings so newly released
   models can be used without waiting for an SDK release. Generated helper constants
@@ -46,7 +52,7 @@
 
 - Auto-release functional SDK packages after OpenAPI or model-surface changes (model IDs removed (1) [qwen/qwen3-tts-tokenizer-12hz]).
 
-  Excluded for now: @ai-stats/cpp-sdk and @ai-stats/rust-sdk.
+  Excluded for now: @phaseo/cpp-sdk and @phaseo/rust-sdk.
 
 ## 1.2.0
 
@@ -54,7 +60,7 @@
 
 - Auto-release functional SDK packages after OpenAPI or model-surface changes (model IDs added (1) [x-ai/grok-4.3]).
 
-  Excluded for now: @ai-stats/cpp-sdk and @ai-stats/rust-sdk.
+  Excluded for now: @phaseo/cpp-sdk and @phaseo/rust-sdk.
 
 ## 1.1.3
 
@@ -62,7 +68,7 @@
 
 - Auto-release functional SDK packages after OpenAPI or model-surface changes (sdk/openapi changes with no model-id surface changes).
 
-  Excluded for now: @ai-stats/cpp-sdk and @ai-stats/rust-sdk.
+  Excluded for now: @phaseo/cpp-sdk and @phaseo/rust-sdk.
 
 ## 1.1.2
 
@@ -70,7 +76,7 @@
 
 - Auto-release functional SDK packages after OpenAPI or model-surface changes (sdk/openapi changes with no model-id surface changes).
 
-  Excluded for now: @ai-stats/cpp-sdk and @ai-stats/rust-sdk.
+  Excluded for now: @phaseo/cpp-sdk and @phaseo/rust-sdk.
 
 ## 1.1.1
 
@@ -78,13 +84,13 @@
 
 - Auto-release functional SDK packages after OpenAPI or model-surface changes.
 
-  Excluded for now: @ai-stats/cpp-sdk and @ai-stats/rust-sdk.
+  Excluded for now: @phaseo/cpp-sdk and @phaseo/rust-sdk.
 
 ## 1.1.0
 
 ### Minor Changes
 
-- [#201](https://github.com/AI-Stats/AI-Stats/pull/201) [`31a2268`](https://github.com/AI-Stats/AI-Stats/commit/31a226829939099401558cb206890d9fede74495) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Bump all functional SDKs to 1.1.0 due to model-surface changes and cross-language SDK updates.
+- [#201](https://github.com/phaseoteam/Phaseo/pull/201) [`31a2268`](https://github.com/phaseoteam/Phaseo/commit/31a226829939099401558cb206890d9fede74495) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Bump all functional SDKs to 1.1.0 due to model-surface changes and cross-language SDK updates.
 
 ## 1.0.2
 
@@ -96,7 +102,7 @@
 
 ### Patch Changes
 
-- [#47](https://github.com/AI-Stats/AI-Stats/pull/47) [`3d6f643`](https://github.com/AI-Stats/AI-Stats/commit/3d6f64336d20794c6f44c16a0f04cbf325ebdbdf) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Bundle devtools core primitives directly into the TypeScript SDK and devtools viewer so runtime installs no longer depend on `@ai-stats/devtools-core`.
+- [#47](https://github.com/phaseoteam/Phaseo/pull/47) [`3d6f643`](https://github.com/phaseoteam/Phaseo/commit/3d6f64336d20794c6f44c16a0f04cbf325ebdbdf) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Bundle devtools core primitives directly into the TypeScript SDK and devtools viewer so runtime installs no longer depend on `@phaseo/devtools-core`.
 
   Also harden publish reliability by validating `NPM_TOKEN` in CI and fixing Python `pyproject.toml` version sync.
 
@@ -104,7 +110,7 @@
 
 ### Major Changes
 
-- [`f610264`](https://github.com/AI-Stats/AI-Stats/commit/f6102647107d57ff8e4292ffcab57109fe6c92b7) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Prepare the API and all SDKs for a coordinated breaking release.
+- [`f610264`](https://github.com/phaseoteam/Phaseo/commit/f6102647107d57ff8e4292ffcab57109fe6c92b7) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Prepare the API and all SDKs for a coordinated breaking release.
 
   This captures breaking changes across endpoint surfaces, protocol/IR conversions,
   provider routing/usage behavior, and regenerated SDK interfaces from the latest
@@ -112,11 +118,11 @@
 
 ### Minor Changes
 
-- [`f610264`](https://github.com/AI-Stats/AI-Stats/commit/f6102647107d57ff8e4292ffcab57109fe6c92b7) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Regenerate SDKs against the latest OpenAPI spec and refresh runtime helpers for the TS and Python clients.
+- [`f610264`](https://github.com/phaseoteam/Phaseo/commit/f6102647107d57ff8e4292ffcab57109fe6c92b7) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Regenerate SDKs against the latest OpenAPI spec and refresh runtime helpers for the TS and Python clients.
 
 ### Patch Changes
 
-- [#13](https://github.com/AI-Stats/AI-Stats/pull/13) [`d280bf0`](https://github.com/AI-Stats/AI-Stats/commit/d280bf07747eb9b07e8aff7a1dcf36038240bc11) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Bump all SDKs for the next alpha drop so they land on 0.2.1-alpha.0 together.
+- [#13](https://github.com/phaseoteam/Phaseo/pull/13) [`d280bf0`](https://github.com/phaseoteam/Phaseo/commit/d280bf07747eb9b07e8aff7a1dcf36038240bc11) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Bump all SDKs for the next alpha drop so they land on 0.2.1-alpha.0 together.
 
 ## 0.2.1-alpha.0
 
@@ -128,34 +134,34 @@
 
 ### Minor Changes
 
-- [#8](https://github.com/AI-Stats/AI-Stats/pull/8) [`144dad5`](https://github.com/AI-Stats/AI-Stats/commit/144dad5cbf8f56b0e1d987b0eafb9d0be5a98d5e) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Regenerated the SDKs from the latest OpenAPI spec to reflect the updated Gateway API contract. This may include typing and surface-area changes where the API schema changed.
+- [#8](https://github.com/phaseoteam/Phaseo/pull/8) [`144dad5`](https://github.com/phaseoteam/Phaseo/commit/144dad5cbf8f56b0e1d987b0eafb9d0be5a98d5e) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Regenerated the SDKs from the latest OpenAPI spec to reflect the updated Gateway API contract. This may include typing and surface-area changes where the API schema changed.
 
 ## 0.1.4
 
 ### Patch Changes
 
-- [#6](https://github.com/AI-Stats/AI-Stats/pull/6) [`4322886`](https://github.com/AI-Stats/AI-Stats/commit/4322886327dde92030846969718c9131a2a30431) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add some older Google Models + IF Bench
+- [#6](https://github.com/phaseoteam/Phaseo/pull/6) [`4322886`](https://github.com/phaseoteam/Phaseo/commit/4322886327dde92030846969718c9131a2a30431) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add some older Google Models + IF Bench
 
 ## 0.1.3
 
 ### Patch Changes
 
-- [`d322b30`](https://github.com/AI-Stats/AI-Stats/commit/d322b30bbe33cde56ca80f17c5612c4609d58f3c) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add Nova 2 Models + Adjust Deepseek V3.2
+- [`d322b30`](https://github.com/phaseoteam/Phaseo/commit/d322b30bbe33cde56ca80f17c5612c4609d58f3c) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add Nova 2 Models + Adjust Deepseek V3.2
 
 ## 0.1.2
 
 ### Patch Changes
 
-- [`6210556`](https://github.com/AI-Stats/AI-Stats/commit/62105560578881ccfb086074755ab1a8bf67d767) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add Mistral 3 Models
+- [`6210556`](https://github.com/phaseoteam/Phaseo/commit/62105560578881ccfb086074755ab1a8bf67d767) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add Mistral 3 Models
 
 ## 0.1.1
 
 ### Patch Changes
 
-- [`d96c317`](https://github.com/AI-Stats/AI-Stats/commit/d96c3178a85269e72836524492137574d285fe1d) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Update Readme
+- [`d96c317`](https://github.com/phaseoteam/Phaseo/commit/d96c3178a85269e72836524492137574d285fe1d) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Update Readme
 
 ## 0.1.1
 
 ### Patch Changes
 
-- [`01d8857`](https://github.com/AI-Stats/AI-Stats/commit/01d8857e1cb2144c2c1e2b3b34cca758aaba2728) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Update README
+- [`01d8857`](https://github.com/phaseoteam/Phaseo/commit/01d8857e1cb2144c2c1e2b3b34cca758aaba2728) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Update README

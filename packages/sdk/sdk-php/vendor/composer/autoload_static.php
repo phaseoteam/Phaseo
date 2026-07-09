@@ -33,7 +33,7 @@ class ComposerStaticInit70a59080eaf48229c46e00a8bbf3e81e
         ),
         'A' => 
         array (
-            'AIStats\\Sdk\\' => 12,
+            'Phaseo\\Sdk\\' => 12,
         ),
     );
 
@@ -67,7 +67,7 @@ class ComposerStaticInit70a59080eaf48229c46e00a8bbf3e81e
         array (
             0 => __DIR__ . '/..' . '/myclabs/deep-copy/src/DeepCopy',
         ),
-        'AIStats\\Sdk\\' => 
+        'Phaseo\\Sdk\\' => 
         array (
             0 => __DIR__ . '/../..' . '/src',
         ),

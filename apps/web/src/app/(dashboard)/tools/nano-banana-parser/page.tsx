@@ -12,7 +12,7 @@ export const metadata: Metadata = buildMetadata({
 		"Gemini candidates parser",
 		"AI response parser",
 		"JSON candidates",
-		"AI Stats tools",
+		"Phaseo tools",
 	],
 });
 

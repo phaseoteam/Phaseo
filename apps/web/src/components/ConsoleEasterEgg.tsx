@@ -2,28 +2,28 @@
 
 import { useEffect } from "react"
 
-const AI_STATS_ASCII = [
-  "    _    ___      ____ _____  _    _____ ____  ",
-  "   / \\  |_ _|    / ___|_   _|/ \\  |_   _/ ___| ",
-  "  / _ \\  | |     \\___ \\ | | / _ \\   | | \\___ \\ ",
-  " / ___ \\ | |      ___) || |/ ___ \\  | |  ___) |",
-  "/_/   \\_\\___|    |____/ |_/_/   \\_\\ |_| |____/ ",
+const PHASEO_ASCII = [
+  " ____  _   _    _    ____  _____ ___  ",
+  "|  _ \\| | | |  / \\  / ___|| ____/ _ \\ ",
+  "| |_) | |_| | / _ \\ \\___ \\|  _|| | | |",
+  "|  __/|  _  |/ ___ \\ ___) | |__| |_| |",
+  "|_|   |_| |_/_/   \\_\\____/|_____\\___/ ",
 ].join("\n")
 
 declare global {
   interface Window {
-    __aiStatsAsciiShown?: true
+    __phaseoAsciiShown?: true
   }
 }
 
 export function ConsoleEasterEgg() {
   useEffect(() => {
-    if (window.__aiStatsAsciiShown) {
+    if (window.__phaseoAsciiShown) {
       return
     }
 
-    window.__aiStatsAsciiShown = true
-    console.log(`\n${AI_STATS_ASCII}\n`)
+    window.__phaseoAsciiShown = true
+    console.log(`\n${PHASEO_ASCII}\n`)
   }, [])
 
   return null

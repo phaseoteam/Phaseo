@@ -1,5 +1,5 @@
 {
-	"name": "@ai-stats/gateway-api",
+	"name": "@phaseo/gateway-api",
 	"version": "1.1.0",
 	"private": true,
 	"type": "module",

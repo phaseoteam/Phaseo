@@ -1,6 +1,6 @@
 {
-  "name": "@ai-stats/devtools-core",
-  "description": "Core types and schemas for AI Stats DevTools",
+  "name": "@phaseo/devtools-core",
+  "description": "Core types and schemas for Phaseo DevTools",
   "version": "0.1.0",
   "type": "module",
   "private": true,
@@ -37,7 +37,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AI-Stats/AI-Stats.git"
+    "url": "git+https://github.com/phaseoteam/Phaseo.git"
   },
   "publishConfig": {
     "access": "public"

@@ -1655,6 +1655,7 @@ const (
 	KnownModelIdOpenaiTextEmbedding3Small KnownModelId = "openai/text-embedding-3-small"
 	KnownModelIdOpenaiTextEmbeddingAda002 KnownModelId = "openai/text-embedding-ada-002"
 	KnownModelIdOpenaiWhisper1 KnownModelId = "openai/whisper-1"
+	KnownModelIdPhaseoFree KnownModelId = "phaseo/free"
 	KnownModelIdPoolsideLagunaM1Free KnownModelId = "poolside/laguna-m.1:free"
 	KnownModelIdPoolsideLagunaXs21Free KnownModelId = "poolside/laguna-xs-2.1:free"
 	KnownModelIdQwenQvqMax KnownModelId = "qwen/qvq-max"

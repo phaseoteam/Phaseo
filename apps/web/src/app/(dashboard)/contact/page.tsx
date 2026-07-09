@@ -8,26 +8,65 @@ import {
 	getLondonInfo,
 } from "@/lib/support/schedule";
 import { ContactClient } from "@/components/contact/ContactClient";
-import { fetchContactPersonalization } from "@/lib/fetchers/internal/fetchContactPersonalization";
+import { createClient } from "@/utils/supabase/server";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 
 export const metadata: Metadata = buildMetadata({
-	title: "Contact AI Stats Support",
+	title: "Contact Phaseo Support",
 	description:
-		"Contact AI Stats support for account, billing, and product questions, with direct human responses from the founder plus docs, community resources, and current support availability.",
+		"Contact Phaseo support for account, billing, and product questions, with direct human responses from the founder plus docs, community resources, and current support availability.",
 	path: "/contact",
 	keywords: [
-		"AI Stats support",
-		"contact AI Stats",
+		"Phaseo support",
+		"contact Phaseo",
 		"AI gateway support",
 		"AI model database help",
 	],
 });
 
+async function getContactPersonalization() {
+	const supabase = await createClient();
+	const {
+		data: { user },
+	} = await supabase.auth.getUser();
+
+	const result = {
+		defaultInternalId: "",
+		isAuthenticated: Boolean(user),
+		tierLabel: "",
+		userEmail: user?.email ?? null,
+	};
+
+	const workspaceId = await getWorkspaceIdFromCookie();
+	if (!workspaceId) return result;
+
+	try {
+		const [{ data: prev }, { data: teamResult }] = await Promise.all([
+			supabase.rpc("monthly_spend_prev_cents", { p_team: workspaceId }).single(),
+			supabase
+				.from("workspaces")
+				.select("slug")
+				.eq("id", workspaceId)
+				.maybeSingle(),
+		]);
+		const lastMonthCents = Number(prev ?? 0);
+		const lastMonthUsd = lastMonthCents / 1_000_000_000;
+
+		return {
+			...result,
+			defaultInternalId: teamResult?.slug ?? workspaceId,
+			tierLabel: lastMonthUsd >= 10000 ? "Enterprise" : "Basic",
+		};
+	} catch {
+		return result;
+	}
+}
+
 async function ContactPersonalization() {
 	await connection();
 
 	const { isOpen, minutesUntilNextWindow } = getSupportAvailability();
-	const { label: londonLabel } = getLondonInfo();
+	const londonInfo = getLondonInfo();
 	const backOnlineLabel = formatSupportWait(minutesUntilNextWindow);
 	const statusLabel = isOpen
 		? "Available now"
@@ -42,19 +81,16 @@ async function ContactPersonalization() {
 		: backOnlineLabel
 			? `Support will be back online in ${backOnlineLabel}. Replies may be delayed, but you will still get a direct human response from me as soon as possible.`
 			: "I'm away right now. Replies may be delayed, but you will still get a direct human response from me as soon as possible.";
-	const personalization = await fetchContactPersonalization().catch(() => ({
-		defaultInternalId: "",
-		tierLabel: "",
-		userEmail: null,
-	}));
+	const personalization = await getContactPersonalization();
 
 	return (
 		<ContactClient
 			isOpen={isOpen}
+			isAuthenticated={personalization.isAuthenticated}
+			londonTimeLabel={londonInfo.label}
 			statusLabel={statusLabel}
 			statusTone={statusTone}
 			waitText={waitText}
-			londonLabel={londonLabel}
 			userEmail={personalization.userEmail}
 			tierLabel={personalization.tierLabel}
 			defaultInternalId={personalization.defaultInternalId}
@@ -68,10 +104,11 @@ export default function ContactPage() {
 			fallback={
 				<ContactClient
 					isOpen={false}
+					isAuthenticated={false}
+					londonTimeLabel=""
 					statusLabel="Checking availability"
 					statusTone="bg-amber-500 ring-amber-400/60"
 					waitText="Loading current support hours..."
-					londonLabel=""
 					userEmail={null}
 					tierLabel=""
 					defaultInternalId=""

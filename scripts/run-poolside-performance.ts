@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import AIStats from "../packages/sdk/sdk-ts/dist/index.js";
+import Phaseo from "../packages/sdk/sdk-ts/dist/index.js";
 
 type CliOptions = {
 	models: string[];
@@ -14,7 +14,7 @@ type CliOptions = {
 type LoadedEnv = Record<string, string>;
 
 const DEFAULT_MODELS = ["poolside/laguna-xs.2:free", "poolside/laguna-m.1:free"];
-const DEFAULT_BASE_URL = "https://api.phaseo.app/v1";
+const DEFAULT_BASE_URL = "https://api.phaseo.ai/v1";
 const DEFAULT_COUNT = 5;
 const DEFAULT_MAX_OUTPUT_TOKENS = 160;
 const DEFAULT_DELAY_MS = 750;
@@ -24,35 +24,28 @@ async function main() {
 	const fileEnv = loadEnvFile(resolve(process.cwd(), "apps/web/.env.local"));
 	const apiKey =
 		options.apiKey ??
-		process.env.AI_STATS_API_KEY ??
-		process.env.AI_STATS_PERFORMANCE_TEST_KEY ??
-		process.env.GATEWAY_API_KEY ??
-		process.env.OPENAI_GATEWAY_API_KEY ??
-		fileEnv.AI_STATS_API_KEY ??
-		fileEnv.AI_STATS_PERFORMANCE_TEST_KEY ??
-		fileEnv.GATEWAY_API_KEY ??
-		fileEnv.OPENAI_GATEWAY_API_KEY;
+		process.env.PHASEO_PERFORMANCE_TEST_KEY ??
+		process.env.PHASEO_API_KEY ??
+		fileEnv.PHASEO_API_KEY ??
+		fileEnv.PHASEO_PERFORMANCE_TEST_KEY;
 
 	if (!apiKey) {
 		throw new Error(
-			"Missing API key. Pass --api-key or set AI_STATS_API_KEY / AI_STATS_PERFORMANCE_TEST_KEY.",
+			"Missing API key. Pass --api-key or set PHASEO_API_KEY / PHASEO_PERFORMANCE_TEST_KEY.",
 		);
 	}
 
 	const baseUrl = normalizeBaseUrl(
 		options.baseUrl ??
-			process.env.AI_STATS_BASE_URL ??
-			process.env.AI_STATS_GATEWAY_URL ??
-			process.env.GATEWAY_URL ??
+			process.env.PHASEO_GATEWAY_URL ??
 			process.env.NEXT_PUBLIC_API_URL ??
-			fileEnv.AI_STATS_BASE_URL ??
-			fileEnv.AI_STATS_GATEWAY_URL ??
-			fileEnv.GATEWAY_URL ??
+			fileEnv.PHASEO_BASE_URL ??
+			fileEnv.PHASEO_GATEWAY_URL ??
 			fileEnv.NEXT_PUBLIC_API_URL ??
 			DEFAULT_BASE_URL,
 	);
 
-	const client = new AIStats({
+	const client = new Phaseo({
 		apiKey,
 		baseUrl,
 	});

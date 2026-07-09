@@ -277,7 +277,7 @@ async function invokeResponses(args: {
 	body: Record<string, unknown>;
 }): Promise<InvokeResult> {
 	const startedAt = Date.now();
-	const request = new Request("https://ai-stats.local/v1/responses", {
+	const request = new Request("https://phaseo.local/v1/responses", {
 		method: "POST",
 		headers: {
 			Authorization: args.authorizationHeader,

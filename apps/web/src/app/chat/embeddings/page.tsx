@@ -5,7 +5,7 @@ import { RoomScaffold } from "@/components/(chat)/RoomScaffold";
 import { EmbeddingsRoom } from "@/components/(chat)/rooms/EmbeddingsRoom";
 
 export const metadata: Metadata = buildMetadata({
-	title: "Embeddings Room - AI Stats Chat",
+	title: "Embeddings Room - Phaseo Chat",
 	description:
 		"Generate multimodal embeddings and inspect vectors on a 2D projection.",
 	path: "/chat/embeddings",

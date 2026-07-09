@@ -1,15 +1,15 @@
 ---
 title: "Migrating from Anthropic SDK"
-description: "Step-by-step guide to migrate your Anthropic SDK integration to AI Stats Gateway."
+description: "Step-by-step guide to migrate your Anthropic SDK integration to Phaseo Gateway."
 ---
 
 # Migrating from Anthropic SDK
 
-This guide will help you migrate your existing Anthropic SDK integration to use the AI Stats Gateway instead.
+This guide will help you migrate your existing Anthropic SDK integration to use the Phaseo Gateway instead.
 
 ## Overview
 
-AI Stats Gateway provides Anthropic-compatible endpoints, making migration straightforward. You'll primarily need to:
+Phaseo Gateway provides Anthropic-compatible endpoints, making migration straightforward. You'll primarily need to:
 
 -   Change the API base URL
 -   Update your API key
@@ -17,14 +17,14 @@ AI Stats Gateway provides Anthropic-compatible endpoints, making migration strai
 
 ## Prerequisites
 
--   An AI Stats account and API key (get one at [Gateway Keys](https://ai-stats.phaseo.app/gateway/keys))
+-   A Phaseo account and API key (get one at [Gateway Keys](https://phaseo.app/gateway/keys))
 -   Existing Anthropic SDK code
 
 ## Migration Steps
 
 ### 1. Update API Key and Base URL
 
-Instead of using the Anthropic API key and default base URL, use your AI Stats credentials.
+Instead of using the Anthropic API key and default base URL, use your Phaseo credentials.
 
 <CodeGroup>
 ```bash
@@ -39,10 +39,10 @@ curl https://api.anthropic.com/v1/messages \
     "messages": [{"role": "user", "content": "Hello!"}]
   }'
 
-# After (AI Stats)
+# After (Phaseo)
 
-curl https://api.phaseo.app/v1/messages \
- -H "Authorization: Bearer your-ai-stats-key" \
+curl https://api.phaseo.ai/v1/messages \
+ -H "Authorization: Bearer your-phaseo-key" \
  -H "Content-Type: application/json" \
  -d '{
 "model": "claude-3-sonnet-20240229",
@@ -60,8 +60,8 @@ client = anthropic.Anthropic(api_key="sk-ant-your-anthropic-key")
 
 # After
 client = anthropic.Anthropic(
-    api_key="your-ai-stats-key",
-    base_url="https://api.phaseo.app/v1"
+    api_key="your-phaseo-key",
+    base_url="https://api.phaseo.ai/v1"
 )
 
 response = client.messages.create(
@@ -81,8 +81,8 @@ const client = new Anthropic({
 
 // After
 const client = new Anthropic({
-	apiKey: "your-ai-stats-key",
-	baseURL: "https://api.phaseo.app/v1",
+	apiKey: "your-phaseo-key",
+	baseURL: "https://api.phaseo.ai/v1",
 });
 
 const response = await client.messages.create({
@@ -100,17 +100,17 @@ Run your existing code with the updated configuration to ensure it works.
 
 ### 4. Handle Model Names
 
-AI Stats supports Anthropic models. Check the [models endpoint](../api-reference/endpoint/models) for available models.
+Phaseo supports Anthropic models. Check the [models endpoint](../api-reference/endpoint/models) for available models.
 
 Model names should be compatible with Anthropic's naming.
 
 ## Common Issues
 
--   **Model not found**: Ensure the model is available in AI Stats.
--   **Rate limits**: AI Stats may have different rate limits.
+-   **Model not found**: Ensure the model is available in Phaseo.
+-   **Rate limits**: Phaseo may have different rate limits.
 -   **Features**: Some Anthropic-specific features may work differently.
 
 ## Next Steps
 
--   Explore AI Stats' additional features.
+-   Explore Phaseo' additional features.
 -   Check out the [API Reference](../api-reference/introduction) for full documentation.

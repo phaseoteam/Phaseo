@@ -7,7 +7,7 @@ description: "What to review before moving GPT-5.x traffic to GPT-5.6 Sol, Terra
 
 Use this guide when you are preparing existing OpenAI traffic for GPT-5.6.
 
-GPT-5.6 is currently tracked as a limited preview. In AI Stats, the models are listed as coming soon until public gateway routing is active, so treat this as a readiness checklist rather than a same-day production cutover.
+GPT-5.6 is currently tracked as a limited preview. In Phaseo, the models are listed as coming soon until public gateway routing is active, so treat this as a readiness checklist rather than a same-day production cutover.
 
 ## Choose the right GPT-5.6 model
 
@@ -19,7 +19,7 @@ GPT-5.6 is currently tracked as a limited preview. In AI Stats, the models are l
 
 Only Sol is currently marked for the new `max` reasoning effort. Do not send `max` to Terra or Luna unless their model metadata changes.
 
-AI Stats also tracks preview aliases for the latest model in each tier: `openai/gpt-sol-latest`, `openai/gpt-terra-latest`, and `openai/gpt-luna-latest`. Use the fixed GPT-5.6 IDs for controlled migrations, and use the tier aliases only when you deliberately want future Sol, Terra, or Luna releases to roll forward through the same route.
+Phaseo also tracks preview aliases for the latest model in each tier: `openai/gpt-sol-latest`, `openai/gpt-terra-latest`, and `openai/gpt-luna-latest`. Use the fixed GPT-5.6 IDs for controlled migrations, and use the tier aliases only when you deliberately want future Sol, Terra, or Luna releases to roll forward through the same route.
 
 ## What changed
 
@@ -57,7 +57,7 @@ Use Sol's `max` effort only for routes where the extra reasoning budget is worth
 }
 ```
 
-If your integration still sends the flat OpenAI-compatible field, AI Stats also accepts `reasoning_effort` where the route supports it:
+If your integration still sends the flat OpenAI-compatible field, Phaseo also accepts `reasoning_effort` where the route supports it:
 
 ```json
 {
@@ -143,4 +143,4 @@ Use `cache_control` when you want provider-neutral cache hints or explicit cache
 
 - [OpenAI GPT-5.6 preview announcement](https://openai.com/index/previewing-gpt-5-6-sol/)
 - [GPT-5.6 preview system card](https://deploymentsafety.openai.com/gpt-5-6-preview)
-- [AI Stats prompt caching guide](../guides/prompt-caching)
+- [Phaseo prompt caching guide](../guides/prompt-caching)

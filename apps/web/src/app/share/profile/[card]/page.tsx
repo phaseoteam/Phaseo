@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 	const payload = parseProfileShareCardToken(card)
 
 	return buildMetadata({
-		title: `${payload.displayName} - AI Stats Share Card`,
+		title: `${payload.displayName} - Phaseo Share Card`,
 		description: buildProfileShareCopy(),
 		path: `/share/profile/${card}`,
 		imagePath: `/og/profile-share/${card}?v=${PROFILE_SHARE_CARD_VERSION}`,
@@ -47,7 +47,7 @@ async function ProfileSharePageContent({ params }: PageProps) {
 			<div className="mx-auto max-w-4xl space-y-6">
 				<div className="space-y-2">
 					<p className="text-xs font-medium uppercase tracking-[0.18em] text-zinc-400">
-						AI Stats
+						Phaseo
 					</p>
 					<h1 className="text-3xl font-semibold tracking-tight text-zinc-950">
 						{payload.displayName}&rsquo;s share card
@@ -60,7 +60,7 @@ async function ProfileSharePageContent({ params }: PageProps) {
 				<div className="overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-white p-3 shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
 					<img
 						src={imageUrl}
-						alt={`${payload.displayName} AI Stats share card`}
+						alt={`${payload.displayName} Phaseo share card`}
 						className="block w-full rounded-[1.1rem]"
 					/>
 				</div>
@@ -69,7 +69,7 @@ async function ProfileSharePageContent({ params }: PageProps) {
 					<Button asChild>
 						<a
 							href={imageUrl}
-							download="ai-stats-profile-share.png"
+							download="phaseo-profile-share.png"
 							target="_blank"
 							rel="noreferrer"
 						>
@@ -78,7 +78,7 @@ async function ProfileSharePageContent({ params }: PageProps) {
 					</Button>
 					<Button asChild variant="outline">
 						<Link href="/">
-							Open AI Stats
+							Open Phaseo
 							<ArrowUpRight className="h-4 w-4" />
 						</Link>
 					</Button>

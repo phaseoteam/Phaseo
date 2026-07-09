@@ -17,80 +17,80 @@ type ChangeBucket = "major" | "minor" | "patch" | "other";
 const PACKAGES: PackageConfig[] = [
     // Gateway API
     {
-        name: "@ai-stats/gateway-api",
+        name: "@phaseo/gateway-api",
         manifestPath: "apps/api/package.json",
         manifestType: "npm",
         changelogPath: "apps/api/CHANGELOG.md",
     },
     // SDKs
     {
-        name: "@ai-stats/ai-sdk-provider",
-        manifestPath: "packages/integrations/ai-sdk-ai-stats/package.json",
+        name: "@phaseo/ai-sdk-provider",
+        manifestPath: "packages/integrations/ai-sdk-phaseo/package.json",
         manifestType: "npm",
-        changelogPath: "packages/integrations/ai-sdk-ai-stats/CHANGELOG.md",
+        changelogPath: "packages/integrations/ai-sdk-phaseo/CHANGELOG.md",
     },
     {
-        name: "@ai-stats/sdk",
+        name: "@phaseo/sdk",
         manifestPath: "packages/sdk/sdk-ts/package.json",
         manifestType: "npm",
         changelogPath: "packages/sdk/sdk-ts/CHANGELOG.md",
     },
     {
-        name: "@ai-stats/agent-sdk",
+        name: "@phaseo/agent-sdk",
         manifestPath: "packages/sdk/agent-sdk-ts/package.json",
         manifestType: "npm",
         changelogPath: "packages/sdk/agent-sdk-ts/CHANGELOG.md",
     },
     {
-        name: "@ai-stats/devtools-viewer",
+        name: "@phaseo/devtools-viewer",
         manifestPath: "packages/devtools/devtools-viewer/package.json",
         manifestType: "npm",
         changelogPath: "packages/devtools/devtools-viewer/CHANGELOG.md",
     },
     {
-        name: "@ai-stats/py-sdk",
+        name: "@phaseo/py-sdk",
         manifestPath: "packages/sdk/sdk-py/pyproject.toml",
         manifestType: "pyproject",
         changelogPath: "packages/sdk/sdk-py/CHANGELOG.md",
     },
     {
-        name: "@ai-stats/go-sdk",
+        name: "@phaseo/go-sdk",
         manifestPath: "packages/sdk/sdk-go/package.json",
         manifestType: "npm",
         changelogPath: "packages/sdk/sdk-go/CHANGELOG.md",
     },
     {
-        name: "@ai-stats/csharp-sdk",
+        name: "@phaseo/csharp-sdk",
         manifestPath: "packages/sdk/sdk-csharp/package.json",
         manifestType: "npm",
         changelogPath: "packages/sdk/sdk-csharp/CHANGELOG.md",
     },
     {
-        name: "@ai-stats/php-sdk",
+        name: "@phaseo/php-sdk",
         manifestPath: "packages/sdk/sdk-php/package.json",
         manifestType: "npm",
         changelogPath: "packages/sdk/sdk-php/CHANGELOG.md",
     },
     {
-        name: "@ai-stats/ruby-sdk",
+        name: "@phaseo/ruby-sdk",
         manifestPath: "packages/sdk/sdk-ruby/package.json",
         manifestType: "npm",
         changelogPath: "packages/sdk/sdk-ruby/CHANGELOG.md",
     },
     {
-        name: "@ai-stats/java-sdk",
+        name: "@phaseo/java-sdk",
         manifestPath: "packages/sdk/sdk-java/package.json",
         manifestType: "npm",
         changelogPath: "packages/sdk/sdk-java/CHANGELOG.md",
     },
     {
-        name: "@ai-stats/rust-sdk",
+        name: "@phaseo/rust-sdk",
         manifestPath: "packages/sdk/sdk-rust/package.json",
         manifestType: "npm",
         changelogPath: "packages/sdk/sdk-rust/CHANGELOG.md",
     },
     {
-        name: "@ai-stats/cpp-sdk",
+        name: "@phaseo/cpp-sdk",
         manifestPath: "packages/sdk/sdk-cpp/package.json",
         manifestType: "npm",
         changelogPath: "packages/sdk/sdk-cpp/CHANGELOG.md",
@@ -343,13 +343,13 @@ function main() {
         throw new Error("GITHUB_TOKEN is required");
     }
 
-    const mode = (process.env.AI_STATS_GH_RELEASE_MODE ?? "all").trim().toLowerCase() as ReleaseMode;
+    const mode = (process.env.PHASEO_GH_RELEASE_MODE ?? "all").trim().toLowerCase() as ReleaseMode;
     if (mode === "off") {
-        console.log("[releases] AI_STATS_GH_RELEASE_MODE=off; skipping GitHub release creation");
+        console.log("[releases] PHASEO_GH_RELEASE_MODE=off; skipping GitHub release creation");
         return;
     }
     if (mode !== "notable_only" && mode !== "all") {
-        throw new Error(`Unsupported AI_STATS_GH_RELEASE_MODE: ${mode}`);
+        throw new Error(`Unsupported PHASEO_GH_RELEASE_MODE: ${mode}`);
     }
 
     for (const pkg of PACKAGES) {

@@ -148,7 +148,7 @@ export function CookieConsentManager({
             Cookie Preferences
           </p>
           <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">
-            We use analytics cookies to measure traffic and improve AI Stats.
+            We use analytics cookies to measure traffic and improve Phaseo.
             You can change your mind anytime in Settings, and read more in our{" "}
             <Link className="underline" href="/privacy">
               Privacy Policy

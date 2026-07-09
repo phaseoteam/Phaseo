@@ -21,7 +21,7 @@ describe('JWT Utilities', () => {
     });
 
     it('returns false for API key format', () => {
-      const apiKey = 'aistats_v1_sk_abc_xyz';
+      const apiKey = 'phaseo_v1_sk_abc_xyz';
       expect(isJWT(apiKey)).toBe(false);
     });
 

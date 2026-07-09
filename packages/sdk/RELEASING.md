@@ -9,14 +9,14 @@ This repo uses a hybrid release model:
 
 ## Canonical Distribution Targets
 
-- TypeScript (`@ai-stats/sdk`) -> npm
-- TypeScript Agent SDK (`@ai-stats/agent-sdk`) -> npm
-- Python (`ai-stats-py-sdk`) -> PyPI
-- Go (`github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go`) -> Go proxy (`pkg.go.dev`) via git tags
-- C# (`AI.Stats.Sdk`) -> NuGet
-- Java (`app.phaseo:ai-stats-sdk`) -> Maven Central
-- PHP (`ai-stats/php-sdk`) -> Packagist
-- Ruby (`ai_stats_sdk`) -> RubyGems
+- TypeScript (`@phaseo/sdk`) -> npm
+- TypeScript Agent SDK (`@phaseo/agent-sdk`) -> npm
+- Python (`phaseo`) -> PyPI
+- Go (`github.com/phaseoteam/Phaseo/packages/sdk/sdk-go`) -> Go proxy (`pkg.go.dev`) via git tags
+- C# (`Phaseo.Sdk`) -> NuGet
+- Java (`app.phaseo:phaseo-sdk`) -> Maven Central
+- PHP (`phaseo/php-sdk`) -> Packagist
+- Ruby (`phaseo_sdk`) -> RubyGems
 
 ## Auto Release (TS/Python)
 
@@ -31,14 +31,14 @@ CI workflow: `.github/workflows/ci.yml` publish job.
 Version manifest sync script:
 
 - `scripts/update-sdk-language-manifest-versions.ts`
-  - C#: `packages/sdk/sdk-csharp/AIStats.Sdk.csproj`
+  - C#: `packages/sdk/sdk-csharp/Phaseo.Sdk.csproj`
   - Java: `packages/sdk/sdk-java/pom.xml`
-  - Ruby: `packages/sdk/sdk-ruby/lib/ai_stats_sdk/version.rb`
+  - Ruby: `packages/sdk/sdk-ruby/lib/phaseo_sdk/version.rb`
 
 ## GitHub Release Policy
 
 - Package publishing and package changelogs are the source of truth.
-- CI now defaults to `AI_STATS_GH_RELEASE_MODE=all`.
+- CI now defaults to `PHASEO_GH_RELEASE_MODE=all`.
 - A per-package GitHub Release is created immediately when publish succeeds.
 - Release notes are generated from package changelog sections, with grouped `Core Changes`/`Misc Changes` plus `Credits` when contributors are present.
 
@@ -74,7 +74,7 @@ General policy:
 ## Manual Publish Workflows (Other SDKs)
 
 - First npm publish / bootstrap: `.github/workflows/npm-bootstrap-publish.yml`
-  - Supports `@ai-stats/agent-sdk`, `@ai-stats/ai-sdk-provider`, and `@ai-stats/devtools-viewer`
+  - Supports `@phaseo/agent-sdk`, `@phaseo/ai-sdk-provider`, and `@phaseo/devtools-viewer`
   - Uses pnpm trusted publishing so workspace dependencies are rewritten to registry versions in the published tarball
 
 - Go: `.github/workflows/publish-sdk-go.yml`
@@ -102,7 +102,7 @@ General policy:
     - `PACKAGIST_MAIN_TOKEN`
     - `PHP_SDK_SPLIT_REPO_TOKEN`
   - Optional repo variable:
-    - `PHP_SDK_SPLIT_REPO` (defaults to `AI-Stats/ai-stats-php-sdk`)
+    - `PHP_SDK_SPLIT_REPO` (defaults to `phaseoteam/phaseo-php-sdk`)
 
 - PHP split sync automation: `.github/workflows/sync-sdk-php-split.yml`
   - Keeps split repo main in sync from monorepo path `packages/sdk/sdk-php/**` on pushes to main

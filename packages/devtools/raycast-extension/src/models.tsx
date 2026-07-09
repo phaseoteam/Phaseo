@@ -139,7 +139,7 @@ export default function Command() {
                 target={<ModelDetail model={model} />}
               />
               <Action.OpenInBrowser
-                title="Open in AI Stats"
+                title="Open in Phaseo"
                 url={getModelURL(model.model_id)}
                 icon={Icon.Globe}
               />
@@ -205,7 +205,7 @@ ${model.aliases && model.aliases.length > 0 ? model.aliases.map((a) => `- \`${a}
 
 ---
 
-[View on AI Stats](${getModelURL(model.model_id)})
+[View on Phaseo](${getModelURL(model.model_id)})
 `;
 
   return (
@@ -215,7 +215,7 @@ ${model.aliases && model.aliases.length > 0 ? model.aliases.map((a) => `- \`${a}
       actions={
         <ActionPanel>
           <Action.OpenInBrowser
-            title="Open in AI Stats"
+            title="Open in Phaseo"
             url={getModelURL(model.model_id)}
             icon={Icon.Globe}
           />

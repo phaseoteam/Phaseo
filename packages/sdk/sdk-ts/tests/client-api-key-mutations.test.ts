@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from "vitest";
-import { AIStats } from "../src/index.js";
+import { Phaseo } from "../src/index.js";
 
-describe("AIStats API key mutation helpers", () => {
+describe("Phaseo API key mutation helpers", () => {
   test("calls /keys through createApiKey", async () => {
     const fetchImpl: typeof fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       expect(String(input)).toBe("https://example.test/keys");
@@ -28,7 +28,7 @@ describe("AIStats API key mutation helpers", () => {
       );
     }) as unknown as typeof fetch;
 
-    const client = new AIStats({
+    const client = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -69,7 +69,7 @@ describe("AIStats API key mutation helpers", () => {
       );
     }) as unknown as typeof fetch;
 
-    const client = new AIStats({
+    const client = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -105,7 +105,7 @@ describe("AIStats API key mutation helpers", () => {
       );
     }) as unknown as typeof fetch;
 
-    const client = new AIStats({
+    const client = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,

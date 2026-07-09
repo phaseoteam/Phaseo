@@ -62,13 +62,13 @@ export async function generateMetadata(props: {
 		return buildMetadata({
 			title: "AI Model Family",
 			description:
-				"Explore related AI models within the same family, compare member variants, and follow release milestones, pricing context, and provider availability across AI Stats.",
+				"Explore related AI models within the same family, compare member variants, and follow release milestones, pricing context, and provider availability across Phaseo.",
 			path,
-			keywords: ["AI model family", "AI models", "AI Stats"],
+			keywords: ["AI model family", "AI models", "Phaseo"],
 		});
 	}
 
-	const description = `${family.family_name} family on AI Stats. Explore ${family.models.length} related models and their release timelines.`;
+	const description = `${family.family_name} family on Phaseo. Explore ${family.models.length} related models and their release timelines.`;
 
 	return buildMetadata({
 		title: `${family.family_name} Family - Related AI Models`,
@@ -78,7 +78,7 @@ export async function generateMetadata(props: {
 			family.family_name,
 			`${family.family_name} family`,
 			"AI model family",
-			"AI Stats",
+			"Phaseo",
 		],
 	});
 }

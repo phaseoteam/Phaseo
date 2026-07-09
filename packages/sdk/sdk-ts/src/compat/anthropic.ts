@@ -3,12 +3,12 @@
  * Drop-in replacement for '@anthropic-ai/sdk' package
  *
  * Usage:
- *   import { Anthropic } from '@ai-stats/sdk/compat/anthropic';
+ *   import { Anthropic } from '@phaseo/sdk/compat/anthropic';
  *   const anthropic = new Anthropic({ apiKey: '...' });
  *   const message = await anthropic.messages.create({...});
  */
 
-import { AIStats } from "../index.js";
+import { Phaseo } from "../index.js";
 import type {
   ChatCompletionsRequest,
   ChatCompletionsResponse,
@@ -153,7 +153,7 @@ function openAIToAnthropic(response: ChatCompletionsResponse): Message {
  * Mimics the official Anthropic SDK interface
  */
 export class Anthropic {
-  private readonly aiStats: AIStats;
+  private readonly phaseo: Phaseo;
 
   // Nested resource accessors (matching Anthropic SDK structure)
   public readonly messages: {
@@ -163,8 +163,8 @@ export class Anthropic {
   };
 
   constructor(config: AnthropicConfig) {
-    // Map Anthropic config to AIStats config
-    this.aiStats = new AIStats({
+    // Map Anthropic config to Phaseo config
+    this.phaseo = new Phaseo({
       apiKey: config.apiKey,
       baseUrl: config.baseURL,
       timeoutMs: config.timeout
@@ -177,22 +177,22 @@ export class Anthropic {
 
         if (params.stream) {
           // Return streaming response
-          return this.aiStats.streamText(openAIParams as any);
+          return this.phaseo.streamText(openAIParams as any);
         }
 
         // Return non-streaming response
-        return this.aiStats.generateText(openAIParams as any)
+        return this.phaseo.generateText(openAIParams as any)
           .then(openAIToAnthropic);
       }) as any
     };
   }
 
   /**
-   * Direct access to underlying AIStats client
+   * Direct access to underlying Phaseo client
    * For features not available in Anthropic SDK
    */
-  get native(): AIStats {
-    return this.aiStats;
+  get native(): Phaseo {
+    return this.phaseo;
   }
 }
 

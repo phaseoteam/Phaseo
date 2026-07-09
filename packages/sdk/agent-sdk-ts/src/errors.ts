@@ -74,7 +74,7 @@ function isGatewayHttpErrorLike(value: unknown): value is AgentGatewayErrorLike 
 		typeof value.status === "number" &&
 		typeof value.statusText === "string" &&
 		"body" in value &&
-		(value.name === "AIStatsHttpError" || "headers" in value)
+		(value.name === "PhaseoHttpError" || value.name === "PhaseoHttpError" || "headers" in value)
 	);
 }
 
@@ -143,7 +143,7 @@ export class AgentGatewayError extends Error {
 		if (isRecord(args.body)) {
 			this.requestId =
 				readString(args.body.request_id) ??
-				headerValue(this.headers, "x-request-id", "request-id", "x-ai-stats-request-id") ??
+				headerValue(this.headers, "x-request-id", "request-id", "x-phaseo-request-id") ??
 				null;
 			this.generationId = readString(args.body.generation_id) ?? null;
 			this.reason = readString(args.body.reason) ?? null;
@@ -169,7 +169,7 @@ export class AgentGatewayError extends Error {
 				: [];
 		} else {
 			this.requestId =
-				headerValue(this.headers, "x-request-id", "request-id", "x-ai-stats-request-id") ??
+				headerValue(this.headers, "x-request-id", "request-id", "x-phaseo-request-id") ??
 				null;
 			this.generationId = null;
 			this.reason = null;

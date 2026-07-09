@@ -1189,6 +1189,9 @@ export function shouldNotifyConfiguredModelCoverage(): boolean {
 	return toBool(readBindingEnv(["CONFIGURED_MODEL_COVERAGE_NOTIFY_ENABLED"]) ?? "false", false);
 }
 
+const PRIVATE_MODEL_DISCOVERY_USERNAME = "Phaseo Private Model Discovery";
+const PRIVATE_MODEL_DISCOVERY_AVATAR_URL = "https://phaseo.app/png_logo_dark.png";
+
 export function buildDiscordMessage(args: {
 	modelChanges: ProviderChange[];
 	pricing: PricingMonitorSummary;
@@ -1253,6 +1256,8 @@ export async function sendDiscordNotification(args: {
 		message,
 		roleId: readBindingEnv(["DISCORD_ROLE_ID"]),
 		userId: readBindingEnv(["DISCORD_USER_ID"]),
+		username: PRIVATE_MODEL_DISCOVERY_USERNAME,
+		avatarUrl: PRIVATE_MODEL_DISCOVERY_AVATAR_URL,
 	});
 	return { delivered: true, skipped: false };
 }

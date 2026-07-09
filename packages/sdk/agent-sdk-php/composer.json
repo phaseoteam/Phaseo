@@ -1,28 +1,28 @@
 {
-  "name": "ai-stats/agent-sdk-php",
-  "description": "AI Stats Agent SDK for PHP",
+  "name": "phaseo/agent-sdk",
+  "description": "Phaseo Agent SDK for PHP",
   "type": "library",
   "license": "MIT",
   "keywords": ["ai", "sdk", "agent", "llm", "gateway"],
-  "homepage": "https://docs.ai-stats.phaseo.app",
+  "homepage": "https://phaseo.app",
   "authors": [
     {
-      "name": "AI Stats",
+      "name": "Phaseo",
       "email": "danielbutler500@gmail.com"
     }
   ],
   "support": {
-    "docs": "https://docs.ai-stats.phaseo.app",
-    "issues": "https://github.com/AI-Stats/AI-Stats/issues",
-    "source": "https://github.com/AI-Stats/AI-Stats"
+    "docs": "https://phaseo.app",
+    "issues": "https://github.com/phaseoteam/Phaseo/issues",
+    "source": "https://github.com/phaseoteam/Phaseo"
   },
   "require": {
     "php": ">=8.1",
-    "ai-stats/php-sdk": "^2.0.3"
+    "phaseo/sdk": "^2.0.4"
   },
   "autoload": {
     "psr-4": {
-      "AIStats\\AgentSdk\\": "src/"
+      "Phaseo\\AgentSdk\\": "src/"
     }
   },
   "require-dev": {

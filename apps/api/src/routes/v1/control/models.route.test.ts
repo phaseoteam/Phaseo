@@ -32,7 +32,7 @@ describe("handleModels", () => {
 		});
 		fetchCatalogueMock.mockResolvedValue([]);
 		fetchGatewayContextMock.mockResolvedValue({
-			resolvedModel: "ai-stats/free",
+			resolvedModel: "phaseo/free",
 			providers: [],
 			pricing: {},
 		});

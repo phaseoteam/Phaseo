@@ -37,7 +37,7 @@ const INTEGRATIONS = [
 	{ label: "Claude Code", variant: "tool" as const },
 	{ label: "Codex", variant: "tool" as const },
 	{ label: "OpenCode", variant: "tool" as const },
-	{ label: "AI Stats SDKs", variant: "native" as const },
+	{ label: "Phaseo SDKs", variant: "native" as const },
 ];
 
 const CODE_SNIPPETS = [
@@ -50,8 +50,8 @@ const CODE_SNIPPETS = [
 		code: `import OpenAI from "openai";
 
 const client = new OpenAI({
-  apiKey: process.env.AI_STATS_API_KEY!,
-  baseURL: "https://api.phaseo.app/v1"
+  apiKey: process.env.PHASEO_API_KEY!,
+  baseURL: "https://api.phaseo.ai/v1"
 });
 
 const response = await client.chat.completions.create({
@@ -67,9 +67,9 @@ const response = await client.chat.completions.create({
 		language: "bash",
 		description:
 			"Call the Gateway directly over HTTP with your API key and model ID.",
-		code: `curl https://api.phaseo.app/v1/chat/completions \\
+		code: `curl https://api.phaseo.ai/v1/chat/completions \\
   -H "Content-Type: application/json" \\
-  -H "Authorization: Bearer $AI_STATS_API_KEY" \\
+  -H "Authorization: Bearer $PHASEO_API_KEY" \\
   -d '{
     "model": "anthropic/claude-opus-4-6",
     "messages": [
@@ -89,8 +89,8 @@ const response = await client.chat.completions.create({
 		code: `import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
-  apiKey: process.env.AI_STATS_API_KEY!,
-  baseURL: "https://api.phaseo.app/v1"
+  apiKey: process.env.PHASEO_API_KEY!,
+  baseURL: "https://api.phaseo.ai/v1"
 });
 
 const message = await client.messages.create({
@@ -102,15 +102,15 @@ const message = await client.messages.create({
 });`,
 	},
 	{
-		id: "ai-stats",
-		label: "AI Stats SDK",
+		id: "phaseo",
+		label: "Phaseo SDK",
 		language: "typescript",
 		description:
 			"Full-featured SDK with typed routing controls and built-in telemetry.",
-		code: `import { GatewayClient } from "@ai-stats/sdk";
+		code: `import { GatewayClient } from "@phaseo/sdk";
 
 const client = new GatewayClient({
-  apiKey: process.env.AI_STATS_API_KEY!
+  apiKey: process.env.PHASEO_API_KEY!
 });
 
 const result = await client.chat.completions.create({
@@ -156,7 +156,7 @@ export function Integrations() {
 						Drop Gateway into the stack you already ship
 					</h2>
 					<p className="mt-4 text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">
-						Keep your existing SDK ergonomics, or adopt AI Stats SDKs
+						Keep your existing SDK ergonomics, or adopt Phaseo SDKs
 						for typed routing and first-class observability.
 					</p>
 				</div>
@@ -253,7 +253,7 @@ export function Integrations() {
 											Drop-in snippets
 										</h3>
 										<p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
-											Keep native SDK calls, route through AI Stats
+											Keep native SDK calls, route through Phaseo
 											Gateway.
 										</p>
 									</div>

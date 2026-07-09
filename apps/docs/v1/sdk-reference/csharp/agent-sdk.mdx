@@ -1,19 +1,19 @@
 ---
 title: "Usage"
-description: "Run a minimal local agent loop on top of AI Stats Gateway with the C# Agent SDK."
+description: "Run a minimal local agent loop on top of Phaseo Gateway with the C# Agent SDK."
 ---
 
 ## Install
 
 ```bash
-dotnet add package AI.Stats.Sdk
-dotnet add package AI.Stats.AgentSdk
+dotnet add package Phaseo.Sdk
+dotnet add package Phaseo.AgentSdk
 ```
 
 ## Quickstart
 
 ```csharp
-using AiStatsAgentSdk;
+using PhaseoAgentSdk;
 
 var agent = AgentSdk.CreateAgent(new AgentDefinition
 {
@@ -36,7 +36,7 @@ Console.WriteLine(result.Output);
 - `AgentSdk.CreateAgent(...)`
 - `AgentSdk.DefineTool(...)`
 - `AgentSdk.CreateGatewayAgentClient(...)`
-- a bounded tool loop over the AI Stats `responses` API
+- a bounded tool loop over the Phaseo `responses` API
 
 ## Related
 

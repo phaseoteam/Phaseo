@@ -3,12 +3,12 @@
  * Drop-in replacement for 'openai' package
  *
  * Usage:
- *   import { OpenAI } from '@ai-stats/sdk/compat/openai';
+ *   import { OpenAI } from '@phaseo/sdk/compat/openai';
  *   const openai = new OpenAI({ apiKey: '...' });
  *   const completion = await openai.chat.completions.create({...});
  */
 
-import { AIStats } from "../index.js";
+import { Phaseo } from "../index.js";
 import type {
   ChatCompletionsRequest,
   ChatCompletionsResponse,
@@ -52,7 +52,7 @@ type ModerationCreateParams = ModerationsRequest;
  * Mimics the official OpenAI SDK interface
  */
 export class OpenAI {
-  private readonly aiStats: AIStats;
+  private readonly phaseo: Phaseo;
 
   // Nested resource accessors (matching OpenAI SDK structure)
   public readonly chat: {
@@ -103,8 +103,8 @@ export class OpenAI {
   };
 
   constructor(config: OpenAIConfig) {
-    // Map OpenAI config to AIStats config
-    this.aiStats = new AIStats({
+    // Map OpenAI config to Phaseo config
+    this.phaseo = new Phaseo({
       apiKey: config.apiKey,
       baseUrl: config.baseURL,
       timeoutMs: config.timeout
@@ -115,65 +115,65 @@ export class OpenAI {
       completions: {
         create: ((params: ChatCompletionCreateParams) => {
           if (params.stream) {
-            return this.aiStats.streamText(params as any);
+            return this.phaseo.streamText(params as any);
           }
-          return this.aiStats.generateText(params as any);
+          return this.phaseo.generateText(params as any);
         }) as any
       }
     };
 
     // Images
     this.images = {
-      generate: (params) => this.aiStats.generateImage(params)
+      generate: (params) => this.phaseo.generateImage(params)
     };
 
     // Audio
     this.audio = {
       speech: {
-        create: (params) => this.aiStats.generateSpeech(params)
+        create: (params) => this.phaseo.generateSpeech(params)
       },
       transcriptions: {
-        create: (params) => this.aiStats.generateTranscription(params)
+        create: (params) => this.phaseo.generateTranscription(params)
       },
       translations: {
-        create: (params) => this.aiStats.generateTranslation(params as any)
+        create: (params) => this.phaseo.generateTranslation(params as any)
       }
     };
 
     // Moderations
     this.moderations = {
-      create: (params) => this.aiStats.generateModeration(params)
+      create: (params) => this.phaseo.generateModeration(params)
     };
 
     // Models
     this.models = {
-      list: (params) => this.aiStats.getModels(params)
+      list: (params) => this.phaseo.getModels(params)
     };
 
     // Files
     this.files = {
-      create: (params) => this.aiStats.uploadFile(params),
-      retrieve: (fileId) => this.aiStats.getFile(fileId),
-      list: () => this.aiStats.listFiles(),
+      create: (params) => this.phaseo.uploadFile(params),
+      retrieve: (fileId) => this.phaseo.getFile(fileId),
+      list: () => this.phaseo.listFiles(),
       del: () => Promise.reject(new Error('File deletion not implemented'))
     };
 
     // Batches
     this.batches = {
-      create: (params) => this.aiStats.createBatch(params),
-      list: (params) => this.aiStats.listBatches(params),
-      retrieve: (batchId) => this.aiStats.getBatch(batchId),
-      cancel: (batchId) => this.aiStats.cancelBatch(batchId),
-      listModels: (params) => this.aiStats.listBatchModels(params)
+      create: (params) => this.phaseo.createBatch(params),
+      list: (params) => this.phaseo.listBatches(params),
+      retrieve: (batchId) => this.phaseo.getBatch(batchId),
+      cancel: (batchId) => this.phaseo.cancelBatch(batchId),
+      listModels: (params) => this.phaseo.listBatchModels(params)
     };
   }
 
   /**
-   * Direct access to underlying AIStats client
+   * Direct access to underlying Phaseo client
    * For features not available in OpenAI SDK
    */
-  get native(): AIStats {
-    return this.aiStats;
+  get native(): Phaseo {
+    return this.phaseo;
   }
 }
 

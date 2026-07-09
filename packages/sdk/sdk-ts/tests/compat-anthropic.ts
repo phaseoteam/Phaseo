@@ -15,11 +15,11 @@ const __dirname = dirname(__filename);
 const manifestPath = join(__dirname, "../../smoke-manifest.json");
 const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
 
-const apiKey = process.env.AI_STATS_API_KEY;
-const baseURL = process.env.AI_STATS_BASE_URL || manifest.defaultBaseUrl;
+const apiKey = process.env.PHASEO_API_KEY;
+const baseURL = process.env.PHASEO_BASE_URL || manifest.defaultBaseUrl;
 
 if (!apiKey) {
-  console.error("❌ AI_STATS_API_KEY environment variable is required");
+  console.error("❌ PHASEO_API_KEY environment variable is required");
   process.exit(1);
 }
 

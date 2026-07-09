@@ -46,7 +46,7 @@ import {
 import { normalizeQuantizationScheme } from "@/lib/quantization";
 
 const QUANTIZATION_DOCS_URL =
-	"https://docs.ai-stats.phaseo.app/v1/guides/model-quantization";
+	"https://phaseo.app/docs/v1/guides/model-quantization";
 
 function uniqueDefined(values: Array<string | null | undefined>): string[] {
 	return Array.from(

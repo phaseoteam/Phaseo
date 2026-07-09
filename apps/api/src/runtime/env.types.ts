@@ -6,7 +6,7 @@ export type GatewayBindings = {
     GATEWAY_CACHE: KVNamespace;
     KV?: KVNamespace;
     DB?: D1Database;
-    GATEWAY_CONTROL_SECRET?: string;
+    PHASEO_CONTROL_SECRET?: string;
     NEXT_PUBLIC_GATEWAY_VERSION?: string;
     AXIOM_API_KEY?: string;
     AXIOM_DATASET?: string;
@@ -211,10 +211,10 @@ export type GatewayBindings = {
     GITHUB_TOKEN?: string;
     GH_TOKEN?: string;
     GATEWAY_PUBLIC_BASE_URL?: string;
-    AI_STATS_WEB_BASE_URL?: string;
-    AI_STATS_OAUTH_PRIVATE_JWK?: string;
-    AI_STATS_OAUTH_TOKEN_PEPPER?: string;
-    AI_STATS_THIRD_PARTY_OAUTH_ENABLED?: string;
+    PHASEO_WEB_BASE_URL?: string;
+    PHASEO_OAUTH_PRIVATE_JWK?: string;
+    PHASEO_OAUTH_TOKEN_PEPPER?: string;
+    PHASEO_THIRD_PARTY_OAUTH_ENABLED?: string;
     KEY_PEPPER?: string;
     KEY_PEPPER_ACTIVE?: string;
     KEY_PEPPER_PREVIOUS?: string;

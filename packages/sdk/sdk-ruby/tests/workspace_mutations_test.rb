@@ -3,7 +3,7 @@ require_relative "../lib/index"
 
 class WorkspaceMutationsTest < Minitest::Test
   def test_workspace_mutation_helpers_return_payloads
-    client = AIStatsSdk::AIStats.new(
+    client = PhaseoSdk::Phaseo.new(
       api_key: "test",
       enable_deprecation_warnings: false
     )

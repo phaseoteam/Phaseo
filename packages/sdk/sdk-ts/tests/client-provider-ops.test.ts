@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from "vitest";
-import { AIStats } from "../src/index.js";
+import { Phaseo } from "../src/index.js";
 
-describe("AIStats provider and usage helpers", () => {
+describe("Phaseo provider and usage helpers", () => {
   test("calls /providers through listProviders", async () => {
     const fetchImpl: typeof fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = new URL(String(input));
@@ -26,7 +26,7 @@ describe("AIStats provider and usage helpers", () => {
       );
     }) as unknown as typeof fetch;
 
-    const client = new AIStats({
+    const client = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -61,7 +61,7 @@ describe("AIStats provider and usage helpers", () => {
       );
     }) as unknown as typeof fetch;
 
-    const client = new AIStats({
+    const client = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -101,7 +101,7 @@ describe("AIStats provider and usage helpers", () => {
       );
     }) as unknown as typeof fetch;
 
-    const client = new AIStats({
+    const client = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -139,7 +139,7 @@ describe("AIStats provider and usage helpers", () => {
       );
     }) as unknown as typeof fetch;
 
-    const client = new AIStats({
+    const client = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,

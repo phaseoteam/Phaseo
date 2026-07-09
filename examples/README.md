@@ -1,4 +1,4 @@
-# AI Stats Gateway Examples
+# Phaseo Gateway Examples
 
 This directory contains focused integration examples for different use cases.
 

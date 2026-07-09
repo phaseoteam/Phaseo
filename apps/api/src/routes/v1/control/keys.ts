@@ -92,11 +92,10 @@ function readBearerToken(req: Request): string | null {
 	return token || null;
 }
 
-function isLegacyInvalidateControlToken(token: string, bindings: ReturnType<typeof getBindings>): boolean {
-	const legacyBindings = bindings as Record<string, unknown>;
+function isPhaseoInvalidateControlToken(token: string, bindings: ReturnType<typeof getBindings>): boolean {
+	const phaseoBindings = bindings as Record<string, unknown>;
 	const candidates = [
-		String(legacyBindings.GATEWAY_CONTROL_KEY ?? "").trim(),
-		String(legacyBindings.AI_STATS_GATEWAY_KEY ?? "").trim(),
+		String(phaseoBindings.PHASEO_CONTROL_KEY ?? "").trim(),
 	].filter(Boolean);
 	return candidates.some((candidate) => timingSafeEqual(token, candidate));
 }
@@ -774,10 +773,10 @@ async function handleDeleteKey(req: Request) {
 
 async function handleInvalidateKey(req: Request) {
 	const bindings = getBindings();
-	const controlSecret = bindings.GATEWAY_CONTROL_SECRET?.trim();
+	const controlSecret = bindings.PHASEO_CONTROL_SECRET?.trim();
 	if (!controlSecret) {
 		return json(
-			{ ok: false, error: "control_secret_missing", message: "GATEWAY_CONTROL_SECRET is not configured" },
+			{ ok: false, error: "control_secret_missing", message: "PHASEO_CONTROL_SECRET is not configured" },
 			503,
 			{ "Cache-Control": "no-store" },
 		);
@@ -793,10 +792,10 @@ async function handleInvalidateKey(req: Request) {
 
 	const auth = await guardManagementAuth(req, { useKvCache: false });
 	const bearerToken = readBearerToken(req);
-	const legacyControlAuthorised =
-		typeof bearerToken === "string" && isLegacyInvalidateControlToken(bearerToken, bindings);
+	const phaseoControlAuthorised =
+		typeof bearerToken === "string" && isPhaseoInvalidateControlToken(bearerToken, bindings);
 
-	if (!auth.ok && !legacyControlAuthorised) {
+	if (!auth.ok && !phaseoControlAuthorised) {
 		return (auth as GuardErr).response;
 	}
 

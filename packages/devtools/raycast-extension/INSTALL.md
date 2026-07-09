@@ -4,7 +4,7 @@
 
 ### 1. Create Extension Icon
 
-The extension requires an icon file. Create `assets/icon.png` (512x512 pixels) from the AI Stats favicon:
+The extension requires an icon file. Create `assets/icon.png` (512x512 pixels) from the Phaseo favicon:
 
 ```bash
 # Option 1: Using ImageMagick
@@ -39,9 +39,9 @@ This will:
 ### Configure API Key
 
 1. Open Raycast
-2. Search for "AI Stats"
+2. Search for "Phaseo"
 3. Press `⌘ + ,` to open preferences
-4. Enter your API key from [api.phaseo.app](https://api.phaseo.app)
+4. Enter your API key from [api.phaseo.ai](https://api.phaseo.ai)
 
 ## Testing
 
@@ -51,12 +51,12 @@ This will:
    - Search for a model by name
    - Try sorting by different criteria
    - View model details
-   - Open a model in AI Stats
+   - Open a model in Phaseo
 
 2. **Browse Organisations**
    - Search for an organisation
    - View organisation details
-   - Open in AI Stats
+   - Open in Phaseo
 
 3. **Browse Providers**
    - Search for a provider
@@ -82,7 +82,7 @@ The built extension will be in the `dist/` directory.
 
 ### "API key is required" Error
 - Make sure you've configured your API key in Raycast preferences
-- The key should start with `aistats_`
+- The key should start with `phaseo_v1_sk_`
 
 ### "Failed to load models/organisations/providers" Error
 - Check your internet connection

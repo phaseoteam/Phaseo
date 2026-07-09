@@ -98,7 +98,7 @@ export default function Command() {
                 target={<OrganisationDetail organisation={org} />}
               />
               <Action.OpenInBrowser
-                title="Open in AI Stats"
+                title="Open in Phaseo"
                 url={getOrganisationURL(org.organisation_id)}
                 icon={Icon.Globe}
               />
@@ -131,7 +131,7 @@ ${organisation.description || "_No description available_"}
 
 ---
 
-[View on AI Stats](${getOrganisationURL(organisation.organisation_id)})
+[View on Phaseo](${getOrganisationURL(organisation.organisation_id)})
 `;
 
   return (
@@ -141,7 +141,7 @@ ${organisation.description || "_No description available_"}
       actions={
         <ActionPanel>
           <Action.OpenInBrowser
-            title="Open in AI Stats"
+            title="Open in Phaseo"
             url={getOrganisationURL(organisation.organisation_id)}
             icon={Icon.Globe}
           />

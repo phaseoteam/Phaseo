@@ -14,7 +14,7 @@ describe("internal model discord notifier", () => {
 				{
 					modelId: "anthropic/claude-mythos-preview",
 					modelName: "Claude Mythos Preview",
-					modelUrl: "https://ai-stats.phaseo.app/models/anthropic/claude-mythos-preview",
+					modelUrl: "https://phaseo.app/models/anthropic/claude-mythos-preview",
 					creatorName: "Anthropic",
 					creatorColor: "#cc785c",
 				},
@@ -32,20 +32,20 @@ describe("internal model discord notifier", () => {
 		expect(payload.embeds).toHaveLength(1);
 		expect(payload.embeds[0].title).toBe("Anthropic: Claude Mythos Preview");
 		expect(payload.embeds[0].url).toBe(
-			"https://ai-stats.phaseo.app/models/anthropic/claude-mythos-preview"
+			"https://phaseo.app/models/anthropic/claude-mythos-preview"
 		);
 		expect(payload.embeds[0].description).toContain("Model ID: `anthropic/claude-mythos-preview`");
-		expect(payload.embeds[0].description).toContain("[View Model](https://ai-stats.phaseo.app/models/anthropic/claude-mythos-preview)");
-		expect(payload.embeds[0].footer.text).toBe("AI Stats | 10 Apr 2026");
+		expect(payload.embeds[0].description).toContain("[View Model](https://phaseo.app/models/anthropic/claude-mythos-preview)");
+		expect(payload.embeds[0].footer.text).toBe("Phaseo | 10 Apr 2026");
 		expect(payload.embeds[0].color).toBe(0xcc785c);
-		expect(payload.avatar_url).toBe("https://ai-stats.phaseo.app/png_logo_light.png");
+		expect(payload.avatar_url).toBe("https://phaseo.app/png_logo_light.png");
 	});
 
 	it("builds multi-model payload as model cards with one overflow card", () => {
 		const models = Array.from({ length: 15 }, (_, index) => ({
 			modelId: `openai/model-${index + 1}`,
 			modelName: `Model ${index + 1}`,
-			modelUrl: `https://ai-stats.phaseo.app/models/openai/model-${index + 1}`,
+			modelUrl: `https://phaseo.app/models/openai/model-${index + 1}`,
 			creatorName: "OpenAI",
 		}));
 
@@ -58,7 +58,24 @@ describe("internal model discord notifier", () => {
 		expect(payload.embeds[0].title).toBe("OpenAI: Model 1");
 		expect(payload.embeds[1].title).toBe("OpenAI: Model 2");
 		expect(payload.embeds[2].title).toBe("+13 more models");
-		expect(payload.embeds[2].description).toContain("[View Models](https://ai-stats.phaseo.app/models)");
+		expect(payload.embeds[2].description).toContain("[View Models](https://phaseo.app/models)");
+	});
+
+	it("does not include legacy event or status summary lines", () => {
+		const embed = formatSingleModelEmbed(
+			{
+				modelId: "openai/gpt-5.5",
+				modelName: "GPT 5.5",
+				modelUrl: "https://phaseo.app/models/openai/gpt-5-5",
+				changeSummaryLines: ["Event: Updated", "Status: active -> coming_soon"],
+			} as Parameters<typeof formatSingleModelEmbed>[0],
+			"2026-04-10T12:00:00.000Z"
+		);
+
+		expect(embed.description).toContain("Model ID: `openai/gpt-5.5`");
+		expect(embed.description).toContain("[View Model](https://phaseo.app/models/openai/gpt-5-5)");
+		expect(embed.description).not.toContain("Event:");
+		expect(embed.description).not.toContain("Status:");
 	});
 
 	it("filters duplicate and previously announced models", () => {
@@ -66,17 +83,17 @@ describe("internal model discord notifier", () => {
 			{
 				modelId: "voyage/voyage-3",
 				modelName: "Voyage 3",
-				modelUrl: "https://ai-stats.phaseo.app/models/voyage/voyage-3",
+				modelUrl: "https://phaseo.app/models/voyage/voyage-3",
 			},
 			{
 				modelId: "voyage/voyage-3",
 				modelName: "Voyage 3 Duplicate",
-				modelUrl: "https://ai-stats.phaseo.app/models/voyage/voyage-3",
+				modelUrl: "https://phaseo.app/models/voyage/voyage-3",
 			},
 			{
 				modelId: "voyage/voyage-4",
 				modelName: "Voyage 4",
-				modelUrl: "https://ai-stats.phaseo.app/models/voyage/voyage-4",
+				modelUrl: "https://phaseo.app/models/voyage/voyage-4",
 			},
 		];
 		const announced = {
@@ -101,7 +118,7 @@ describe("internal model discord notifier", () => {
 				{
 					modelId: "voyage/voyage-4",
 					modelName: "Voyage 4",
-					modelUrl: "https://ai-stats.phaseo.app/models/voyage/voyage-4",
+					modelUrl: "https://phaseo.app/models/voyage/voyage-4",
 				},
 			],
 			null
@@ -127,7 +144,7 @@ describe("internal model discord notifier", () => {
 			{
 				modelId: "voyage/voyage-3",
 				modelName: "Voyage 3",
-				modelUrl: "https://ai-stats.phaseo.app/models/voyage/voyage-3",
+				modelUrl: "https://phaseo.app/models/voyage/voyage-3",
 				creatorName: "Voyage",
 				creatorColor: "#1A2B3C",
 			},
@@ -136,7 +153,7 @@ describe("internal model discord notifier", () => {
 
 		expect(embed.title).toBe("Voyage: Voyage 3");
 		expect(embed.description).toContain("voyage/voyage-3");
-		expect(embed.footer.text).toBe("AI Stats | 10 Apr 2026");
+		expect(embed.footer.text).toBe("Phaseo | 10 Apr 2026");
 		expect(embed.color).toBe(0x1a2b3c);
 		expect(embed.timestamp).toBeUndefined();
 	});
@@ -165,7 +182,7 @@ describe("internal model discord notifier", () => {
 				{
 					modelId: "voyage/voyage-4",
 					modelName: "Voyage 4",
-					modelUrl: "https://ai-stats.phaseo.app/models/voyage/voyage-4",
+					modelUrl: "https://phaseo.app/models/voyage/voyage-4",
 				},
 			],
 			null

@@ -33,11 +33,11 @@ describe("handleSuccessAudit web fetch observability", () => {
 				stream: false,
 				body: {
 					model: "openai/gpt-5.4",
-					tools: [{ type: "function", function: { name: "ai_stats_web_fetch" } }],
+					tools: [{ type: "function", function: { name: "phaseo_web_fetch" } }],
 				},
 				rawBody: {
 					model: "openai/gpt-5.4",
-					tools: [{ type: "ai-stats:web_fetch" }],
+					tools: [{ type: "phaseo:web_fetch" }],
 				},
 				webFetchObservability: {
 					requestCount: 1,
@@ -46,7 +46,7 @@ describe("handleSuccessAudit web fetch observability", () => {
 							provider: "fetch",
 							url: "https://example.com/docs",
 							finalUrl: "https://www.example.com/docs",
-							title: "AI Stats Docs",
+							title: "Phaseo Docs",
 							status: 200,
 							contentType: "text/html; charset=utf-8",
 							returnedChars: 12000,
@@ -114,7 +114,7 @@ describe("handleSuccessAudit web fetch observability", () => {
 					provider: "fetch",
 					url: "https://example.com/docs",
 					finalUrl: "https://www.example.com/docs",
-					title: "AI Stats Docs",
+					title: "Phaseo Docs",
 					status: 200,
 					contentType: "text/html; charset=utf-8",
 					returnedChars: 12000,

@@ -36,7 +36,7 @@ import {
 export const metadata: Metadata = buildMetadata({
 	title: "AI Models, Benchmarks & Gateway API",
 	description:
-		"Compare AI models, benchmarks, pricing and providers, then route them through one OpenAI-compatible gateway with transparent pricing.",
+		"Discover, route, and observe every AI model with an open source AI gateway and model intelligence layer.",
 	path: "/",
 	keywords: [
 		"AI models",
@@ -53,7 +53,7 @@ const standardFeePct = standardTier?.feePct ?? 5;
 const standardFeeText = Number.isInteger(standardFeePct)
 	? standardFeePct.toFixed(0)
 	: String(standardFeePct);
-const GITHUB_HREF = "https://github.com/AI-Stats/AI-Stats";
+const GITHUB_HREF = "https://github.com/phaseoteam/Phaseo";
 
 const HERO_METRICS = [
 	{ label: "Models live", value: "300+" },
@@ -78,7 +78,7 @@ const PRICING_POINTS: Array<{
 	},
 	{
 		title: "Managed credits or BYOK",
-		body: "Start with AI Stats credits, or keep provider relationships intact and route through your own keys when you need to.",
+		body: "Start with Phaseo credits, or keep provider relationships intact and route through your own keys when you need to.",
 		icon: LockOpen,
 	},
 ] as const;
@@ -108,7 +108,7 @@ function HeroSection() {
 							<span className="block">Keep the stack legible.</span>
 						</h1>
 						<p className="mx-auto max-w-2xl text-[15px] leading-[1.75] text-zinc-700 sm:text-lg sm:leading-[1.85]">
-							AI Stats gives teams one place to compare benchmarks, pricing, and
+							Phaseo gives teams one place to compare benchmarks, pricing, and
 							provider coverage, then ship through a single OpenAI-compatible
 							gateway without losing operational clarity.
 						</p>
@@ -260,14 +260,15 @@ function LandingPage({ isBeta }: { isBeta: boolean }) {
 				<section className="space-y-12 border-b border-zinc-200/80 pb-20 dark:border-zinc-800/80">
 					<div className="mx-auto max-w-5xl space-y-8 text-center">
 						<div className="space-y-6">
-							<h1 className="mx-auto max-w-4xl text-5xl font-semibold tracking-[-0.07em] text-zinc-950 dark:text-zinc-50 md:text-7xl">
-								<span className="block">One API for Every AI Model</span>
-								<span className="mt-2 block">One Open Model Database</span>
+							<h1 className="text-balance mx-auto max-w-5xl text-5xl font-semibold leading-[0.96] tracking-[-0.065em] text-zinc-950 dark:text-zinc-50 md:text-7xl md:leading-[0.94] 2xl:max-w-7xl 2xl:whitespace-nowrap">
+								One Platform for Every AI Model
 							</h1>
-							<p className="mx-auto max-w-2xl text-lg leading-8 text-zinc-600 dark:text-zinc-300">
-								Open-source AI gateway and open model database, with
-								OpenAI-compatible drop-in access to 300+ models plus benchmarks,
-								pricing, and reliability data.
+							<p className="text-balance mx-auto max-w-[44rem] text-lg leading-8 text-zinc-600 dark:text-zinc-300 2xl:max-w-5xl 2xl:text-pretty">
+								Discover trusted data for 300+ AI models, route requests
+								through one{" "}
+								<span className="whitespace-nowrap">OpenAI-compatible</span>{" "}
+								gateway, and monitor pricing, reliability, usage, and performance
+								in one place.
 							</p>
 						</div>
 						<div
@@ -365,9 +366,10 @@ export default async function Page() {
 		url: absoluteUrl("/"),
 		logo: absoluteUrl("/png_logo_light.png"),
 		sameAs: [
-			"https://github.com/AI-Stats/AI-Stats",
-			"https://x.com/ai_stats_team",
+			"https://github.com/phaseoteam/Phaseo",
+			"https://x.com/phaseoteam",
 			"https://www.linkedin.com/company/phaseoapp/",
+			"https://www.reddit.com/r/Phaseo/",
 		],
 	};
 

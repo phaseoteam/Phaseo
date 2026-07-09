@@ -133,12 +133,12 @@ function titleCaseFromSlug(raw: string): string {
 
 function toModelUrlFromId(modelId: string): string {
 	const trimmed = modelId.trim();
-	if (!trimmed) return "https://ai-stats.phaseo.app/models";
+	if (!trimmed) return "https://phaseo.app/models";
 	const parts = trimmed.split("/");
-	if (parts.length < 2) return "https://ai-stats.phaseo.app/models";
+	if (parts.length < 2) return "https://phaseo.app/models";
 	const organisation = encodeURIComponent(parts[0]);
 	const slug = encodeURIComponent(parts.slice(1).join("/"));
-	return `https://ai-stats.phaseo.app/models/${organisation}/${slug}`;
+	return `https://phaseo.app/models/${organisation}/${slug}`;
 }
 
 function parseModelLine(rawLine: string): InternalModelNotificationModel | null {

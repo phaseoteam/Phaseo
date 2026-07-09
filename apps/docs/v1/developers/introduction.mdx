@@ -1,11 +1,11 @@
 ---
-title: "Developers Introduction"
-description: "A practical overview of AI Stats Gateway and the fastest path from first call to production."
+title: "How Phaseo Works"
+description: "Understand the Phaseo Gateway before you choose endpoints, SDKs, routing, or production settings."
 ---
 
-Use this page if you want the fastest mental model for how AI Stats works before you move into the quickstart, SDKs, or API reference.
+Use this explanation when you want the mental model before you build against the Gateway.
 
-AI Stats gives you one API for models, providers, routing, pricing, and async AI workflows.
+Phaseo gives you one API for models, providers, routing, pricing, and async AI workflows.
 
 That means you can:
 
@@ -20,47 +20,43 @@ You can get started on `:free` models with zero deposited credits. Paid models r
 
 ---
 
-## Why teams use AI Stats
+## Why use a gateway
 
-AI integrations get harder as soon as you need more than one provider, more than one model, or more than one deployment environment.
+AI integrations become harder as soon as you need more than one provider, model, endpoint family, or deployment environment.
 
-AI Stats gives you a stable integration layer so you can ship features first and adjust providers, routing, or pricing strategy later.
+Phaseo gives your app one stable integration layer. You can ship the product flow first, then adjust models, providers, routing, and pricing strategy without rewriting every caller.
 
 ---
 
-## Core features
+## Core concepts
 
 <Columns cols={2}>
 	<Card
-		title="Unified Endpoints"
+		title="Unified endpoints"
 		icon="terminal"
 		href="../api-reference/introduction"
 	>
-		Standardized chat, image, and moderation endpoints that work
-		consistently across all providers.
+		Use one API shape across text, image, moderation, audio, video, and provider-compatible routes.
 	</Card>
-	<Card title="Smart Routing" icon="git-branch">
-		Requests are dynamically routed to the optimal provider for speed, cost,
-		or reliability.
+	<Card title="Routing controls" icon="git-branch" href="../guides/routing-and-fallbacks">
+		Choose how requests move across providers for availability, cost, latency, region, and policy.
 	</Card>
-	<Card title="Built-in Usage Tracking" icon="chart-column-increasing">
-		Every request is logged with latency, token counts, and cost metrics for
-		transparent reporting.
+	<Card title="Usage and cost tracking" icon="chart-column-increasing">
+		Track request volume, token usage, latency, and price so production behavior is visible.
 	</Card>
 	<Card title="BYOK (Bring Your Own Key)" icon="key">
-		Optionally connect your own provider API keys to manage billing and rate
-		limits yourself while still benefiting from the Gateway's unified
-		interface.
+		Connect provider keys when you want provider billing and limits while keeping the same Gateway interface.
 	</Card>
 </Columns>
 
 ---
 
-## Getting started
+## Recommended path
 
-1. **[Sign up](https://ai-stats.phaseo.app/sign-up)** for an AI Stats account.
-2. **[Generate an API key](https://ai-stats.phaseo.app/gateway/keys)** in your dashboard.
-3. **Make your first request** to the `/v1/responses` endpoint.
+1. **[Sign up](https://phaseo.app/sign-up)** for a Phaseo account.
+2. **[Generate an API key](https://phaseo.app/gateway/keys)** in your dashboard.
+3. **Make your first request** with the `/v1/responses` endpoint.
+4. **Choose your production path** for SDKs, routing, observability, and rollout.
 
 <Card
 	title="Quickstart"
@@ -68,8 +64,7 @@ AI Stats gives you a stable integration layer so you can ship features first and
 	href="/v1/quickstart"
 	horizontal
 >
-	Jump into our quickstart to make your first successful API call in under a
-	minute.
+	Make your first successful API call with a free model.
 </Card>
 
 ---
@@ -93,7 +88,7 @@ AI Stats gives you a stable integration layer so you can ship features first and
 		icon="shield-check"
 		href="./best-practices"
 	>
-		Guidance on how to get the most out of the AI Stats Gateway.
+		Guidance on how to get the most out of the Phaseo Gateway.
 	</Card>
 	<Card title="Examples" icon="terminal" href="../guides/examples">
 		Copy ready-to-run snippets for Next.js, Node.js streaming, Python, and
@@ -103,4 +98,4 @@ AI Stats gives you a stable integration layer so you can ship features first and
 
 ---
 
-Need more detail? Continue with [Integrating with the Gateway](./integrating-with-the-gateway) for an end-to-end walkthrough, then explore [Integrations](../guides/integrations/index) or [Rate limits](./rate-limits) as you scale.
+Need a build-focused walkthrough? Continue with [Integrating with the Gateway](./integrating-with-the-gateway), then explore [Integrations](../guides/integrations/index) or [Rate limits](./rate-limits) as you scale.

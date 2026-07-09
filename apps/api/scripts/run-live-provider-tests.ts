@@ -111,14 +111,14 @@ function normalizeEnvValue(value: string | undefined): string {
 
 function looksLikeGatewayAuthToken(token: string): boolean {
     if (!token) return false;
-    if (token.startsWith("aistats_v1_sk_")) return true;
+    if (token.startsWith("phaseo_v1_sk_")) return true;
     // OAuth JWT path is also accepted by gateway auth.
     return token.split(".").length === 3;
 }
 
 function redactSensitiveText(input: string): string {
     return input
-        .replace(/aistats_v1_sk_[A-Za-z0-9_-]+_[A-Za-z0-9._~-]+/g, "aistats_v1_sk_[REDACTED]")
+        .replace(/phaseo_v1_sk_[A-Za-z0-9_-]+_[A-Za-z0-9._~-]+/g, "phaseo_v1_sk_[REDACTED]")
         .replace(/Bearer\s+[A-Za-z0-9._~+\-/=]+/gi, "Bearer [REDACTED]")
         .replace(/\bsk-[A-Za-z0-9._~-]+\b/g, "sk-[REDACTED]");
 }
@@ -163,7 +163,7 @@ function resolveGatewayApiKey(argsKey?: string): {
 
     if (playgroundKid) {
         return {
-            key: `aistats_v1_sk_${playgroundKid}_${playgroundSecret}`,
+            key: `phaseo_v1_sk_${playgroundKid}_${playgroundSecret}`,
             source: "PLAYGROUND_KEY+PLAYGROUND_GATEWAY_KEY_KID",
             derivedFromPlayground: true,
         };
@@ -357,16 +357,16 @@ function printUsage() {
     console.log("Run live text-provider tests from active-providers.live.spec.ts");
     console.log("");
     console.log("Usage:");
-    console.log("  pnpm --filter @ai-stats/gateway-api test:live:provider -- --provider openai");
-    console.log("  pnpm --filter @ai-stats/gateway-api test:live:provider -- --providers openai,anthropic");
-    console.log("  pnpm --filter @ai-stats/gateway-api test:live:provider -- --all-providers");
-    console.log("  pnpm --filter @ai-stats/gateway-api test:live:provider -- --all-api-providers");
-    console.log("  pnpm --filter @ai-stats/gateway-api test:live:provider -- --provider x-ai --scenario chat_stream_hi");
-    console.log("  pnpm --filter @ai-stats/gateway-api test:live:provider -- --provider baseten");
-    console.log("  pnpm --filter @ai-stats/gateway-api test:live:provider -- --provider cohere --scenarios chat_nonstream_hi,chat_stream_hi,chat_nonstream_tool,chat_nonstream_structured,messages_nonstream_hi,messages_nonstream_tool,messages_nonstream_structured");
-    console.log("  pnpm --filter @ai-stats/gateway-api test:live:provider -- --provider together --scenarios chat_nonstream_hi,chat_stream_hi,chat_nonstream_tool,chat_nonstream_structured,messages_nonstream_hi,messages_nonstream_tool,messages_nonstream_structured");
-    console.log("  pnpm --filter @ai-stats/gateway-api test:live:provider -- --providers arcee,deepinfra,together");
-    console.log("  pnpm --filter @ai-stats/gateway-api test:live:provider -- --provider arcee --model-override arcee=arcee-ai/trinity-mini");
+    console.log("  pnpm --filter @phaseo/gateway-api test:live:provider -- --provider openai");
+    console.log("  pnpm --filter @phaseo/gateway-api test:live:provider -- --providers openai,anthropic");
+    console.log("  pnpm --filter @phaseo/gateway-api test:live:provider -- --all-providers");
+    console.log("  pnpm --filter @phaseo/gateway-api test:live:provider -- --all-api-providers");
+    console.log("  pnpm --filter @phaseo/gateway-api test:live:provider -- --provider x-ai --scenario chat_stream_hi");
+    console.log("  pnpm --filter @phaseo/gateway-api test:live:provider -- --provider baseten");
+    console.log("  pnpm --filter @phaseo/gateway-api test:live:provider -- --provider cohere --scenarios chat_nonstream_hi,chat_stream_hi,chat_nonstream_tool,chat_nonstream_structured,messages_nonstream_hi,messages_nonstream_tool,messages_nonstream_structured");
+    console.log("  pnpm --filter @phaseo/gateway-api test:live:provider -- --provider together --scenarios chat_nonstream_hi,chat_stream_hi,chat_nonstream_tool,chat_nonstream_structured,messages_nonstream_hi,messages_nonstream_tool,messages_nonstream_structured");
+    console.log("  pnpm --filter @phaseo/gateway-api test:live:provider -- --providers arcee,deepinfra,together");
+    console.log("  pnpm --filter @phaseo/gateway-api test:live:provider -- --provider arcee --model-override arcee=arcee-ai/trinity-mini");
     console.log("");
     console.log("Flags:");
     console.log("  --provider <id>               Provider ID (repeatable or comma-separated)");
@@ -635,7 +635,7 @@ async function main() {
     if (!looksLikeGatewayAuthToken(apiKey)) {
         throw new Error(
             `Resolved API key source (${apiKeyResolved.source || "unknown"}) is not in a supported gateway auth format. ` +
-            "Expected aistats_v1_sk_* key or OAuth JWT."
+            "Expected phaseo_v1_sk_* key or OAuth JWT."
         );
     }
 

@@ -1,31 +1,31 @@
-# AI Stats C# SDK
+# Phaseo C# SDK
 
-Official .NET SDK for AI Stats Gateway.
+Official .NET SDK for Phaseo Gateway.
 
-Package ID: `AI.Stats.Sdk`
+Package ID: `Phaseo.Sdk`
 
 ## Installation
 
 If published in your feed:
 
 ```bash
-dotnet add package AI.Stats.Sdk
+dotnet add package Phaseo.Sdk
 ```
 
 From this monorepo:
 
 ```bash
-dotnet add ./packages/sdk/sdk-csharp/AIStats.Sdk.csproj
+dotnet add ./packages/sdk/sdk-csharp/Phaseo.Sdk.csproj
 ```
 
 ## Quick start
 
 ```csharp
-using AiStatsSdk;
+using PhaseoSdk;
 
-var client = new AIStats(
-    apiKey: Environment.GetEnvironmentVariable("AI_STATS_API_KEY"),
-    basePath: Environment.GetEnvironmentVariable("AI_STATS_BASE_URL") ?? "https://api.phaseo.app/v1"
+var client = new Phaseo(
+    apiKey: Environment.GetEnvironmentVariable("PHASEO_API_KEY"),
+    basePath: Environment.GetEnvironmentVariable("PHASEO_BASE_URL") ?? "https://api.phaseo.ai/v1"
 );
 
 var response = await client.CreateResponse(new Dictionary<string, object>
@@ -93,11 +93,11 @@ Console.WriteLine(resourceSocketUrl);
 
 ## Environment variables
 
-- `AI_STATS_API_KEY` (required unless passed in code)
-- `AI_STATS_BASE_URL` (optional, defaults to `https://api.phaseo.app/v1`)
+- `PHASEO_API_KEY` (required unless passed in code)
+- `PHASEO_BASE_URL` (optional, defaults to `https://api.phaseo.ai/v1`)
 
 ## Regeneration and local checks
 
 - Regenerate generated client: `pnpm openapi:gen:csharp`
-- Build: `pnpm --filter @ai-stats/csharp-sdk build`
-- Test: `pnpm --filter @ai-stats/csharp-sdk test`
+- Build: `pnpm --filter @phaseo/csharp-sdk build`
+- Test: `pnpm --filter @phaseo/csharp-sdk test`

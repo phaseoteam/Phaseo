@@ -16,7 +16,7 @@ export const metadata: Metadata = buildMetadata({
 		"LLM releases",
 		"AI changelog",
 		"model lifecycle",
-		"AI Stats",
+		"Phaseo",
 	],
 });
 

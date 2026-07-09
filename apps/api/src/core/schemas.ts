@@ -484,7 +484,7 @@ const GatewayDatetimeToolSchema = z.object({
 });
 
 const GatewayWebSearchToolSchema = z.object({
-	type: z.enum(["ai-stats:web_search", "gateway:web_search"]),
+	type: z.enum(["phaseo:web_search", "gateway:web_search"]),
 	parameters: z.object({
 		engine: z.enum(["auto", "native", "exa", "firecrawl", "parallel"]).optional(),
 		max_results: z.number().int().positive().max(25).optional(),
@@ -514,7 +514,7 @@ const GatewayWebSearchToolSchema = z.object({
 });
 
 const GatewayWebFetchToolSchema = z.object({
-	type: z.enum(["ai-stats:web_fetch", "gateway:web_fetch"]),
+	type: z.enum(["phaseo:web_fetch", "gateway:web_fetch"]),
 	parameters: z.object({
 		engine: z.enum(["auto", "native", "direct", "exa", "firecrawl", "parallel"]).optional(),
 		max_chars: z.number().int().positive().max(50000).optional(),
@@ -533,7 +533,7 @@ const GatewayWebFetchToolSchema = z.object({
 });
 
 const GatewayAdvisorToolSchema = z.object({
-	type: z.literal("ai-stats:advisor"),
+	type: z.literal("phaseo:advisor"),
 	parameters: z.object({
 		name: z.string().trim().min(1).max(64).regex(/^[A-Za-z0-9 _-]+$/).optional(),
 		model: z.string().min(1).optional(),
@@ -557,7 +557,7 @@ const GatewayAdvisorToolSchema = z.object({
 });
 
 const GatewaySubagentToolSchema = z.object({
-	type: z.enum(["ai-stats:subagent", "openrouter:subagent"]),
+	type: z.enum(["phaseo:subagent", "openrouter:subagent"]),
 	parameters: z.object({
 		model: z.string().min(1).optional(),
 		instructions: z.string().min(1).optional(),
@@ -579,7 +579,7 @@ const GatewaySubagentToolSchema = z.object({
 });
 
 const GatewayImageGenerationToolSchema = z.object({
-	type: z.literal("ai-stats:image_generation"),
+	type: z.literal("phaseo:image_generation"),
 	parameters: z.object({
 		prompt: z.string().min(1).optional(),
 		description: z.string().min(1).optional(),
@@ -605,11 +605,11 @@ const GatewayImageGenerationToolSchema = z.object({
 });
 
 const GatewayApplyPatchToolSchema = z.object({
-	type: z.literal("ai-stats:apply_patch"),
+	type: z.literal("phaseo:apply_patch"),
 	parameters: z.object({
-		engine: z.enum(["auto", "native", "ai-stats"]).optional(),
+		engine: z.enum(["auto", "native", "phaseo"]).optional(),
 	}).optional(),
-	engine: z.enum(["auto", "native", "ai-stats"]).optional(),
+	engine: z.enum(["auto", "native", "phaseo"]).optional(),
 });
 
 const OpenAINativeWebSearchToolSchema = z.object({

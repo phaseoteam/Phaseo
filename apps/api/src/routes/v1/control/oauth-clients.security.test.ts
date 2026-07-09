@@ -11,7 +11,7 @@ vi.mock("@/runtime/env", () => ({
 	configureRuntime: () => undefined,
 	clearRuntime: () => undefined,
 	getBindings: () => ({
-		AI_STATS_THIRD_PARTY_OAUTH_ENABLED: state.thirdPartyOAuthEnabled ? "true" : undefined,
+		PHASEO_THIRD_PARTY_OAUTH_ENABLED: state.thirdPartyOAuthEnabled ? "true" : undefined,
 	}),
 	getSupabaseAdmin: () => ({
 		auth: {

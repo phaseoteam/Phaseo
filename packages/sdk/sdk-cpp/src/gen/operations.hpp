@@ -3,7 +3,7 @@
 #include <string>
 #include "client.hpp"
 
-namespace ai_stats::gen {
+namespace phaseo::gen {
 inline Response CalculatePricing(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/pricing/calculate";
 	return client.request("POST", resolved_path, body);
@@ -275,7 +275,7 @@ inline Response ListFiles(Client& client, const std::map<std::string, std::strin
 }
 
 inline Response ListModels(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/gateway/models";
+	const std::string resolved_path = "/models";
 	return client.request("GET", resolved_path, body);
 }
 
@@ -295,7 +295,7 @@ inline Response ListProviders(Client& client, const std::map<std::string, std::s
 }
 
 inline Response ListTeamModels(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/gateway/models/me";
+	const std::string resolved_path = "/models/me";
 	return client.request("GET", resolved_path, body);
 }
 
@@ -364,4 +364,11 @@ inline Response UploadFile(Client& client, const std::map<std::string, std::stri
 	return client.request("POST", resolved_path, body);
 }
 
-} // namespace ai_stats::gen
+} // namespace phaseo::gen
+
+#ifndef PHASEO_CPP_NAMESPACE_ALIAS
+#define PHASEO_CPP_NAMESPACE_ALIAS
+namespace phaseo {
+namespace gen = ::phaseo::gen;
+}
+#endif

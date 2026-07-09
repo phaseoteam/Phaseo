@@ -1,4 +1,4 @@
-# AI Stats Gateway Web Chat Example (Next.js)
+# Phaseo Gateway Web Chat Example (Next.js)
 
 This example is a minimal chat product integration using:
 
@@ -22,8 +22,8 @@ cp .env.example .env.local
 ```
 
 Set:
-- `AI_STATS_API_KEY`
-- `NEXT_PUBLIC_GATEWAY_URL` (recommended `https://api.phaseo.app`)
+- `PHASEO_API_KEY`
+- `NEXT_PUBLIC_GATEWAY_URL` (recommended `https://api.phaseo.ai`)
 
 3. Run:
 

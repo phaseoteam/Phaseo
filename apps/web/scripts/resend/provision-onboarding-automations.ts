@@ -205,10 +205,10 @@ function buildTemplates(args: {
 		{
 			alias: RESEND_ONBOARDING_TEMPLATE_ALIASES.WELCOME_INITIAL,
 			name: "Onboarding - Welcome",
-			subject: "Welcome to AI Stats",
+			subject: "Welcome to Phaseo",
 			replyTo: args.replyToEmail,
 			html: renderEmailHtml({
-				kicker: "AI Stats onboarding",
+				kicker: "Phaseo onboarding",
 				title: "Welcome. Your control layer is ready.",
 				intro: "You now have one place to route requests, monitor usage, and move quickly across providers.",
 				ctaLabel: "Open dashboard",
@@ -236,12 +236,12 @@ function buildTemplates(args: {
 				replyNote: `Replies go straight to ${args.replyToEmail} if you want help shipping your first request this week.`,
 				includeUnsubscribe: false,
 			}),
-			text: `Hi {{{user_name}}},\n\nWelcome to AI Stats.\n\n1) Add your first key: ${keysUrl}\n2) Explore models: ${modelsUrl}\n3) Top up credits: ${creditsUrl}\n\nReply to ${args.replyToEmail} if you want help with setup.`,
+			text: `Hi {{{user_name}}},\n\nWelcome to Phaseo.\n\n1) Add your first key: ${keysUrl}\n2) Explore models: ${modelsUrl}\n3) Top up credits: ${creditsUrl}\n\nReply to ${args.replyToEmail} if you want help with setup.`,
 		},
 		{
 			alias: RESEND_ONBOARDING_TEMPLATE_ALIASES.WELCOME_PURCHASED_7D,
 			name: "Onboarding - Purchased Within 3 Days",
-			subject: "You're ready to ship with AI Stats",
+			subject: "You're ready to ship with Phaseo",
 			replyTo: args.replyToEmail,
 			html: renderEmailHtml({
 				kicker: "Momentum unlocked",
@@ -757,11 +757,11 @@ async function upsertAutomation(
 
 async function main(): Promise<void> {
 	const apiKey = requiredEnv("RESEND_API_KEY");
-	const fromEmail = env("RESEND_FROM_EMAIL", "AI Stats <noreply@phaseo.app>");
-	const replyToEmail = env("RESEND_ONBOARDING_REPLY_TO_EMAIL", "daniel@phaseo.app");
+	const fromEmail = env("RESEND_FROM_EMAIL", "Phaseo <noreply@phaseo.ai>");
+	const replyToEmail = env("RESEND_ONBOARDING_REPLY_TO_EMAIL", "daniel@phaseo.ai");
 	const dashboardUrl = env(
 		"RESEND_ONBOARDING_DASHBOARD_URL",
-		env("NEXT_PUBLIC_WEBSITE_URL", "https://www.aistats.com"),
+		env("NEXT_PUBLIC_WEBSITE_URL", "https://phaseo.app"),
 	);
 	const purchaseWindow = env("RESEND_ONBOARDING_PURCHASE_WINDOW", "3 days");
 	const checkoutTimeout = env("RESEND_CHECKOUT_ABANDONED_TIMEOUT", "24 hours");

@@ -66,7 +66,7 @@ const OPENAI_WEBSOCKET_RECOVERABLE_ERRORS = new Set([
 ]);
 const OPENAI_WEBSOCKET_MAX_RECONNECTS = 1;
 const OPENAI_WEBSOCKET_HANDSHAKE_MAX_RETRIES = 1;
-const OPENAI_INTERNAL_REQUEST_ID_METADATA_KEY = "aistats_request_id";
+const OPENAI_INTERNAL_REQUEST_ID_METADATA_KEY = "phaseo_request_id";
 
 function buildOpenAIResponsesWebSocketUrl(providerId: string): string {
 	// Cloudflare Workers WebSocket fetch upgrade expects https:// URL.

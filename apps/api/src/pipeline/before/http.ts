@@ -114,7 +114,7 @@ const STATUS: Record<ErrorCode, number> = {
 
 const FRIENDLY_DESCRIPTIONS: Partial<Record<ErrorCode, string>> = {
     unsupported_model_or_endpoint:
-        "Unsupported model or endpoint. Please check https://ai-stats.phaseo.app/models for your model id, or the API Reference at https://docs.ai-stats.phaseo.app/v1/api-reference for valid endpoints.",
+        "Unsupported model or endpoint. Please check https://phaseo.app/models for your model id, or the API Reference at https://phaseo.app/docs/v1/api-reference for valid endpoints.",
 };
 
 export function err(code: ErrorCode, payload: Record<string, unknown>) {
