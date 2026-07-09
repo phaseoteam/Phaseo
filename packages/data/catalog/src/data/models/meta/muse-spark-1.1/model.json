@@ -39,6 +39,10 @@
       "other_info": "Meta announced public preview access through the Meta Model API."
     }
   ],
+  "page_notice": {
+    "tone": "warning",
+    "markdown": "AI Stats is currently unable to offer Muse Spark 1.1 through the Gateway because Meta Model API access is restricted by location. We will make it available as soon as we can."
+  },
   "benchmarks": [
     {
       "benchmark_id": "scale-mcp-atlas",

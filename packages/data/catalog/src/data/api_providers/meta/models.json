@@ -46,7 +46,7 @@
     "provider_api_model_id": "meta:meta/muse-spark-1.1",
     "provider_model_slug": "muse-spark-1.1",
     "internal_model_id": "meta/muse-spark-1.1",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image,video,audio",
     "output_modalities": "text",
