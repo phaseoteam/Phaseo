@@ -151,6 +151,7 @@ export type IRToolChoice =
  */
 export type IRReasoning = {
 	effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+	mode?: "standard" | "pro";
 	summary?: "auto" | "concise" | "detailed";
 	enabled?: boolean;
 	maxTokens?: number;

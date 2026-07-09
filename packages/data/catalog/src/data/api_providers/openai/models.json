@@ -4397,6 +4397,149 @@
             "notes": null
           },
           {
+            "param_id": "reasoning.mode",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": "standard",
+            "values": [
+              "standard",
+              "pro"
+            ],
+            "notes": null
+          },
+          {
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/responses",
+              "/v1/chat/completions"
+            ],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/gpt-5.6-luna-pro",
+    "provider_api_model_id": "openai:openai/gpt-5.6-luna-pro",
+    "provider_model_slug": "gpt-5.6-luna-pro",
+    "internal_model_id": "openai/gpt-5.6-luna-pro",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1050000,
+    "max_output_tokens": 128000,
+    "effective_from": "2026-07-09T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "notes": null
+          },
+          {
+            "param_id": "reasoning.mode",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": "pro",
+            "values": [
+              "standard",
+              "pro"
+            ],
+            "notes": null
+          },
+          {
             "param_id": "response_format",
             "provider_min": null,
             "provider_max": null,
@@ -4518,6 +4661,149 @@
             "notes": null
           },
           {
+            "param_id": "reasoning.mode",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": "standard",
+            "values": [
+              "standard",
+              "pro"
+            ],
+            "notes": null
+          },
+          {
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/responses",
+              "/v1/chat/completions"
+            ],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/gpt-5.6-sol-pro",
+    "provider_api_model_id": "openai:openai/gpt-5.6-sol-pro",
+    "provider_model_slug": "gpt-5.6-sol-pro",
+    "internal_model_id": "openai/gpt-5.6-sol-pro",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1050000,
+    "max_output_tokens": 128000,
+    "effective_from": "2026-07-09T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "notes": null
+          },
+          {
+            "param_id": "reasoning.mode",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": "pro",
+            "values": [
+              "standard",
+              "pro"
+            ],
+            "notes": null
+          },
+          {
             "param_id": "response_format",
             "provider_min": null,
             "provider_max": null,
@@ -4635,6 +4921,149 @@
               "high",
               "xhigh",
               "max"
+            ],
+            "notes": null
+          },
+          {
+            "param_id": "reasoning.mode",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": "standard",
+            "values": [
+              "standard",
+              "pro"
+            ],
+            "notes": null
+          },
+          {
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/responses",
+              "/v1/chat/completions"
+            ],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/gpt-5.6-terra-pro",
+    "provider_api_model_id": "openai:openai/gpt-5.6-terra-pro",
+    "provider_model_slug": "gpt-5.6-terra-pro",
+    "internal_model_id": "openai/gpt-5.6-terra-pro",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1050000,
+    "max_output_tokens": 128000,
+    "effective_from": "2026-07-09T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "values": [
+              "none",
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "notes": null
+          },
+          {
+            "param_id": "reasoning.mode",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": "pro",
+            "values": [
+              "standard",
+              "pro"
             ],
             "notes": null
           },
