@@ -788,6 +788,8 @@ namespace AiStatsSdk
         public const string SpacexAiGrok420MultiAgentBeta0309 = "spacex-ai/grok-4.20-multi-agent-beta-0309";
         /// <summary>Model ID: <c>spacex-ai/grok-4.3</c>. Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-4.3</summary>
         public const string SpacexAiGrok43 = "spacex-ai/grok-4.3";
+        /// <summary>Model ID: <c>spacex-ai/grok-4.5</c>. Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-4.5</summary>
+        public const string SpacexAiGrok45 = "spacex-ai/grok-4.5";
         /// <summary>Model ID: <c>spacex-ai/grok-build-0.1</c>. Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-build-0.1</summary>
         public const string SpacexAiGrokBuild01 = "spacex-ai/grok-build-0.1";
         /// <summary>Model ID: <c>spacex-ai/grok-code-fast-1</c>. Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-code-fast-1</summary>

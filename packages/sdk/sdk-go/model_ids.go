@@ -1180,6 +1180,9 @@ const (
 	// Model ID: spacex-ai/grok-4.3
 	// Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-4.3
 	ModelIDSpacexAiGrok43 gen.ModelId = "spacex-ai/grok-4.3"
+	// Model ID: spacex-ai/grok-4.5
+	// Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-4.5
+	ModelIDSpacexAiGrok45 gen.ModelId = "spacex-ai/grok-4.5"
 	// Model ID: spacex-ai/grok-build-0.1
 	// Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-build-0.1
 	ModelIDSpacexAiGrokBuild01 gen.ModelId = "spacex-ai/grok-build-0.1"
@@ -1774,6 +1777,7 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDSpacexAiGrok420Beta0309,
 	ModelIDSpacexAiGrok420MultiAgentBeta0309,
 	ModelIDSpacexAiGrok43,
+	ModelIDSpacexAiGrok45,
 	ModelIDSpacexAiGrokBuild01,
 	ModelIDSpacexAiGrokCodeFast1,
 	ModelIDSpacexAiGrokImagineImage,

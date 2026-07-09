@@ -785,6 +785,8 @@ export const ModelIds = {
   SPACEX_AI_GROK_4_20_MULTI_AGENT_BETA_0309: "spacex-ai/grok-4.20-multi-agent-beta-0309",
   /** Model ID: `spacex-ai/grok-4.3`. Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-4.3 */
   SPACEX_AI_GROK_4_3: "spacex-ai/grok-4.3",
+  /** Model ID: `spacex-ai/grok-4.5`. Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-4.5 */
+  SPACEX_AI_GROK_4_5: "spacex-ai/grok-4.5",
   /** Model ID: `spacex-ai/grok-build-0.1`. Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-build-0.1 */
   SPACEX_AI_GROK_BUILD_0_1: "spacex-ai/grok-build-0.1",
   /** Model ID: `spacex-ai/grok-code-fast-1`. Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-code-fast-1 */

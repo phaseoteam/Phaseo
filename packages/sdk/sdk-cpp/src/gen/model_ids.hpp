@@ -1179,6 +1179,9 @@ inline constexpr std::string_view SPACEX_AI_GROK_4_20_MULTI_AGENT_BETA_0309 = "s
 // Model ID: spacex-ai/grok-4.3
 // Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-4.3
 inline constexpr std::string_view SPACEX_AI_GROK_4_3 = "spacex-ai/grok-4.3";
+// Model ID: spacex-ai/grok-4.5
+// Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-4.5
+inline constexpr std::string_view SPACEX_AI_GROK_4_5 = "spacex-ai/grok-4.5";
 // Model ID: spacex-ai/grok-build-0.1
 // Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-build-0.1
 inline constexpr std::string_view SPACEX_AI_GROK_BUILD_0_1 = "spacex-ai/grok-build-0.1";
@@ -1380,7 +1383,7 @@ inline constexpr std::string_view ZAI_GLM_5 = "zai/glm-5";
 // Deprecated alias for deepseek/deepseek-v4; use deepseek/deepseek-v4-pro. Remove in the next major SDK release.
 inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4 = DEEPSEEK_DEEPSEEK_V4_PRO;
 
-inline constexpr std::array<std::string_view, 457> ALL = {
+inline constexpr std::array<std::string_view, 458> ALL = {
 	AI21_JAMBA_LARGE_1_7,
 	AI21_JAMBA_MINI_2,
 	AION_LABS_AION_2_0,
@@ -1772,6 +1775,7 @@ inline constexpr std::array<std::string_view, 457> ALL = {
 	SPACEX_AI_GROK_4_20_BETA_0309,
 	SPACEX_AI_GROK_4_20_MULTI_AGENT_BETA_0309,
 	SPACEX_AI_GROK_4_3,
+	SPACEX_AI_GROK_4_5,
 	SPACEX_AI_GROK_BUILD_0_1,
 	SPACEX_AI_GROK_CODE_FAST_1,
 	SPACEX_AI_GROK_IMAGINE_IMAGE,
