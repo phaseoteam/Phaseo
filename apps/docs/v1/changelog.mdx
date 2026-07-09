@@ -4,6 +4,58 @@ description: "Recent product updates, SDK changes, and model releases across Pha
 rss: true
 ---
 
+<Update label="July 9, 2026" tags={["Features","Model Releases"]}>
+
+### Features
+
+- Dropdown menus and tab selectors now use Base UI render composition consistently across chat, settings, usage, rankings, and data screens ([PR #938](https://github.com/phaseoteam/Phaseo/pull/938)).
+
+### Model Releases
+
+![GPT 5.6 model release artwork](../../images/model-releases/2026-07-09--openai--gpt-5-6.png)
+
+- [OpenAI: GPT 5.6 Sol](https://phaseo.ai/models/openai/gpt-5.6-sol)
+- [OpenAI: GPT 5.6 Terra](https://phaseo.ai/models/openai/gpt-5.6-terra)
+- [OpenAI: GPT 5.6 Luna](https://phaseo.ai/models/openai/gpt-5.6-luna)
+
+</Update>
+
+<Update label="July 8, 2026" tags={["Model Releases"]}>
+
+### Model Releases
+
+![Grok 4.5 model release artwork](../../images/model-releases/2026-07-08--spacex-ai--grok-4-5.png)
+
+- [SpaceXAI: Grok 4.5](https://phaseo.ai/models/spacex-ai/grok-4.5)
+- [KwaiPilot: Kat Coder Air V2.5](https://phaseo.ai/models/kwaipilot/kat-coder-air-v2.5)
+- [KwaiPilot: Kat Coder Pro V2.5](https://phaseo.ai/models/kwaipilot/kat-coder-pro-v2.5)
+
+</Update>
+
+<Update label="July 7, 2026" tags={["Features","Model Releases"]}>
+
+### Features
+
+- Chat now surfaces clearer timing and tool metadata, audio attachments, model-picker focus handling, tag management, and account credit display ([PR #922](https://github.com/phaseoteam/Phaseo/pull/922)).
+- Header search now lazy-loads a compact cached index only when opened, reducing normal dashboard payloads ([PR #920](https://github.com/phaseoteam/Phaseo/pull/920)).
+- Chat streaming, tool-call continuation, and model catalogue cache refresh paths were hardened for more reliable server-tool turns and model pages ([PR #919](https://github.com/phaseoteam/Phaseo/pull/919), [PR #918](https://github.com/phaseoteam/Phaseo/pull/918)).
+- API key reveal flows, internal navigation, and new-model Discord notifications were tightened for cleaner settings, admin, and release workflows ([PR #812](https://github.com/phaseoteam/Phaseo/pull/812), [PR #925](https://github.com/phaseoteam/Phaseo/pull/925), [PR #927](https://github.com/phaseoteam/Phaseo/pull/927)).
+
+### Model Releases
+
+![Aion 3.0 model release artwork](../../images/model-releases/2026-07-07--aion-labs--aion-3-0.png)
+
+- [Aion Labs: Aion 3.0](https://phaseo.ai/models/aion-labs/aion-3.0)
+- [Aion Labs: Aion 3.0 Mini](https://phaseo.ai/models/aion-labs/aion-3.0-mini)
+- [Meta: Muse Image](https://phaseo.ai/models/meta/muse-image)
+- [Meta: Muse Video](https://phaseo.ai/models/meta/muse-video)
+- [Sakana: Fugu](https://phaseo.ai/models/sakana/fugu)
+- [Sakana: Fugu Ultra](https://phaseo.ai/models/sakana/fugu-ultra)
+- [Tencent: Hy3](https://phaseo.ai/models/tencent/hy3)
+- Microsoft MAI and Phi catalog entries
+
+</Update>
+
 <Update label="July 6, 2026" tags={["Features","Docs","Branding","Migration"]}>
 
 ![Phaseo migration overview](../../images/migration.png)
@@ -17,12 +69,31 @@ rss: true
 
 </Update>
 
+<Update label="July 5, 2026" tags={["Features"]}>
+
+### Features
+
+- Server-tool inputs, monitor history links, workspace credit cache invalidation, and pricing edge cases were hardened across gateway and web surfaces ([PR #900](https://github.com/phaseoteam/Phaseo/pull/900)).
+- Chat gateway target resolution now fails closed in production when the configured gateway URL is missing, while preserving local-development overrides ([PR #899](https://github.com/phaseoteam/Phaseo/pull/899)).
+- Anthropic and Bedrock request shaping now uses adaptive thinking controls for Claude Sonnet 5 and newer Opus 4.x models ([PR #901](https://github.com/phaseoteam/Phaseo/pull/901)).
+
+</Update>
+
+<Update label="July 4, 2026" tags={["Features"]}>
+
+### Features
+
+- Chat shortcuts, prompt queue controls, composer tool configuration, restored tags, bulk editing, and richer response timing metadata shipped together for the chat workspace ([PR #896](https://github.com/phaseoteam/Phaseo/pull/896)).
+
+</Update>
+
 <Update label="July 3, 2026" tags={["Features"]}>
 
 ### Features
 
 - Individual model pages were overhauled with clearer lifecycle notices, restored routing details, and better handoffs from model pages into gateway workflows ([PR #888](https://github.com/phaseoteam/Phaseo/pull/888)).
 - Retired and replaced model pages now make status, alternatives, and historical context easier to scan without burying the current model link ([PR #888](https://github.com/phaseoteam/Phaseo/pull/888)).
+- Chat tags, tool-call markers, API target controls, and mobile viewport handling were restored or tightened across the chat experience ([PR #894](https://github.com/phaseoteam/Phaseo/pull/894), [PR #895](https://github.com/phaseoteam/Phaseo/pull/895), [PR #891](https://github.com/phaseoteam/Phaseo/pull/891)).
 
 </Update>
 
@@ -37,7 +108,7 @@ rss: true
 
 ![Laguna XS 2.1 model release artwork](../../images/model-releases/2026-07-02--poolside--laguna-xs-2-1.png)
 
-- [Poolside: Laguna XS 2.1](https://phaseo.ai/models/poolside/laguna-xs-2.1).
+- [Poolside: Laguna XS 2.1](https://phaseo.ai/models/poolside/laguna-xs-2.1)
 
 </Update>
 
@@ -47,7 +118,7 @@ rss: true
 
 ![Claude Fable 5 model release artwork](../../images/model-releases/2026-06-09--anthropic--claude-fable-5.png)
 
-- [Anthropic: Claude Fable 5](https://phaseo.ai/models/anthropic/claude-fable-5).
+- [Anthropic: Claude Fable 5](https://phaseo.ai/models/anthropic/claude-fable-5)
 
 </Update>
 
@@ -62,10 +133,10 @@ rss: true
 
 ![Claude Sonnet 5 model release artwork](../../images/model-releases/2026-06-30--anthropic--claude-sonnet-5.png)
 
-- [Anthropic: Claude Sonnet 5](https://phaseo.ai/models/anthropic/claude-sonnet-5).
-- [Google: Gemini Omni Flash Preview](https://phaseo.ai/models/google/gemini-omni-flash-preview).
-- [Mistral: Leanstral 1.5](https://phaseo.ai/models/mistral/leanstral-1.5).
-- [Mistral: OCR 4](https://phaseo.ai/models/mistral/ocr-4).
+- [Anthropic: Claude Sonnet 5](https://phaseo.ai/models/anthropic/claude-sonnet-5)
+- [Google: Gemini Omni Flash Preview](https://phaseo.ai/models/google/gemini-omni-flash-preview)
+- [Mistral: Leanstral 1.5](https://phaseo.ai/models/mistral/leanstral-1.5)
+- [Mistral: OCR 4](https://phaseo.ai/models/mistral/ocr-4)
 
 </Update>
 
@@ -73,7 +144,7 @@ rss: true
 
 ### Model Releases
 
-- [Meituan: LongCat 2.0](https://phaseo.ai/models/meituan/longcat-2.0).
+- [Meituan: LongCat 2.0](https://phaseo.ai/models/meituan/longcat-2.0)
 
 </Update>
 
@@ -83,7 +154,7 @@ rss: true
 
 ![Gemini 3.1 Flash Lite image (Nano Banana 2 Lite) model release artwork](../../images/model-releases/2026-06-23--google--gemini-3-1-flash-lite-image.png)
 
-- [Google: Gemini 3.1 Flash Lite image (Nano Banana 2 Lite)](https://phaseo.ai/models/google/gemini-3.1-flash-lite-image).
+- [Google: Gemini 3.1 Flash Lite image (Nano Banana 2 Lite)](https://phaseo.ai/models/google/gemini-3.1-flash-lite-image)
 
 </Update>
 
@@ -93,7 +164,7 @@ rss: true
 
 ![Grok Imagine Video 1.5 model release artwork](../../images/model-releases/2026-06-17--x-ai--grok-imagine-video-1-5.png)
 
-- [xAI: Grok Imagine Video 1.5](https://phaseo.ai/models/x-ai/grok-imagine-video-1.5).
+- [xAI: Grok Imagine Video 1.5](https://phaseo.ai/models/x-ai/grok-imagine-video-1.5)
 
 </Update>
 
@@ -103,7 +174,7 @@ rss: true
 
 ![GLM 5.2 model release artwork](../../images/model-releases/2026-06-16--z-ai--glm-5-2.png)
 
-- [z.AI: GLM 5.2](https://phaseo.ai/models/z-ai/glm-5.2).
+- [z.AI: GLM 5.2](https://phaseo.ai/models/z-ai/glm-5.2)
 
 </Update>
 
@@ -111,7 +182,7 @@ rss: true
 
 ### Model Releases
 
-- [ByteDance: Seedance 2.0 Mini (2026-06-15)](https://phaseo.ai/models/bytedance/seedance-2.0-mini-260615).
+- [ByteDance: Seedance 2.0 Mini (2026-06-15)](https://phaseo.ai/models/bytedance/seedance-2.0-mini-260615)
 
 </Update>
 
@@ -119,8 +190,8 @@ rss: true
 
 ### Model Releases
 
-- [CrofAI: Greg 2 Super](https://phaseo.ai/models/crofai/greg-2-super).
-- [CrofAI: Greg 2 Ultra](https://phaseo.ai/models/crofai/greg-2-ultra).
+- [CrofAI: Greg 2 Super](https://phaseo.ai/models/crofai/greg-2-super)
+- [CrofAI: Greg 2 Ultra](https://phaseo.ai/models/crofai/greg-2-ultra)
 
 </Update>
 
@@ -130,7 +201,7 @@ rss: true
 
 ![Kimi K2.7 Code model release artwork](../../images/model-releases/2026-06-12--moonshotai--kimi-k2-7-code.png)
 
-- [Moonshot: Kimi K2.7 Code](https://phaseo.ai/models/moonshotai/kimi-k2.7-code).
+- [Moonshot: Kimi K2.7 Code](https://phaseo.ai/models/moonshotai/kimi-k2.7-code)
 
 </Update>
 
@@ -138,7 +209,7 @@ rss: true
 
 ### Model Releases
 
-- [z.AI: GLM 5.2](https://phaseo.ai/models/z-ai/glm-5.2).
+- [z.AI: GLM 5.2](https://phaseo.ai/models/z-ai/glm-5.2)
 
 </Update>
 
@@ -148,7 +219,7 @@ rss: true
 
 ![DiffusionGemma 26B A4B IT model release artwork](../../images/model-releases/2026-06-10--google--diffusiongemma-26b-a4b-it.png)
 
-- [Google: DiffusionGemma 26B A4B IT](https://phaseo.ai/models/google/diffusiongemma-26b-a4b-it).
+- [Google: DiffusionGemma 26B A4B IT](https://phaseo.ai/models/google/diffusiongemma-26b-a4b-it)
 
 </Update>
 
@@ -158,9 +229,9 @@ rss: true
 
 ![Claude Fable 5 model release artwork](../../images/model-releases/2026-06-09--anthropic--claude-fable-5.png)
 
-- [Anthropic: Claude Fable 5](https://phaseo.ai/models/anthropic/claude-fable-5).
-- [Anthropic: Claude Mythos 5](https://phaseo.ai/models/anthropic/claude-mythos-5).
-- [Google: Gemini 3.5 Live Translate Preview](https://phaseo.ai/models/google/gemini-3.5-live-translate-preview).
+- [Anthropic: Claude Fable 5](https://phaseo.ai/models/anthropic/claude-fable-5)
+- [Anthropic: Claude Mythos 5](https://phaseo.ai/models/anthropic/claude-mythos-5)
+- [Google: Gemini 3.5 Live Translate Preview](https://phaseo.ai/models/google/gemini-3.5-live-translate-preview)
 
 </Update>
 
@@ -170,8 +241,8 @@ rss: true
 
 ![Nex N2 Mini model release artwork](../../images/model-releases/2026-06-05--nex-agi--nex-n2-mini.png)
 
-- [Nex AGI: Nex N2 Mini](https://phaseo.ai/models/nex-agi/nex-n2-mini).
-- [Nex AGI: Nex N2 Pro](https://phaseo.ai/models/nex-agi/nex-n2-pro).
+- [Nex AGI: Nex N2 Mini](https://phaseo.ai/models/nex-agi/nex-n2-mini)
+- [Nex AGI: Nex N2 Pro](https://phaseo.ai/models/nex-agi/nex-n2-pro)
 
 </Update>
 
@@ -181,7 +252,7 @@ rss: true
 
 ![Gemma 4 12B model release artwork](../../images/model-releases/2026-06-03--google--gemma-4-12b.png)
 
-- [Google: Gemma 4 12B](https://phaseo.ai/models/google/gemma-4-12b).
+- [Google: Gemma 4 12B](https://phaseo.ai/models/google/gemma-4-12b)
 
 </Update>
 
@@ -191,9 +262,9 @@ rss: true
 
 ![MiniMax M3 model release artwork](../../images/model-releases/2026-06-01--minimax--minimax-m3.png)
 
-- [MiniMax: MiniMax M3](https://phaseo.ai/models/minimax/minimax-m3).
-- [Nvidia: Nemotron 3 Ultra](https://phaseo.ai/models/nvidia/nemotron-3-ultra-550b-a55b).
-- [Qwen: Qwen 3.7 Plus](https://phaseo.ai/models/qwen/qwen3.7-plus).
+- [MiniMax: MiniMax M3](https://phaseo.ai/models/minimax/minimax-m3)
+- [Nvidia: Nemotron 3 Ultra](https://phaseo.ai/models/nvidia/nemotron-3-ultra-550b-a55b)
+- [Qwen: Qwen 3.7 Plus](https://phaseo.ai/models/qwen/qwen3.7-plus)
 
 </Update>
 
@@ -203,7 +274,7 @@ rss: true
 
 ![Cosmos3 Super Reasoner model release artwork](../../images/model-releases/2026-05-31--nvidia--cosmos3-super-reasoner.png)
 
-- [Nvidia: Cosmos3 Super Reasoner](https://phaseo.ai/models/nvidia/cosmos3-super-reasoner).
+- [Nvidia: Cosmos3 Super Reasoner](https://phaseo.ai/models/nvidia/cosmos3-super-reasoner)
 
 </Update>
 
@@ -213,7 +284,7 @@ rss: true
 
 ![Grok Imagine Video 1.5 Preview model release artwork](../../images/model-releases/2026-05-30--x-ai--grok-imagine-video-1-5-preview.png)
 
-- [xAI: Grok Imagine Video 1.5 Preview](https://phaseo.ai/models/x-ai/grok-imagine-video-1.5-preview).
+- [xAI: Grok Imagine Video 1.5 Preview](https://phaseo.ai/models/x-ai/grok-imagine-video-1.5-preview)
 
 </Update>
 
@@ -221,7 +292,7 @@ rss: true
 
 ### Model Releases
 
-- [StepFun: Step 3.7 Flash](https://phaseo.ai/models/stepfun/step-3.7-flash).
+- [StepFun: Step 3.7 Flash](https://phaseo.ai/models/stepfun/step-3.7-flash)
 
 </Update>
 
@@ -236,10 +307,10 @@ rss: true
 
 ![Claude Opus 4.8 model release artwork](../../images/model-releases/2026-05-28--anthropic--claude-opus-4-8.png)
 
-- [Anthropic: Claude Opus 4.8](https://phaseo.ai/models/anthropic/claude-opus-4.8).
-- [CrofAI: Greg RP](https://phaseo.ai/models/crofai/greg-rp).
-- [Google: Gemini 3 Pro Image (Nano Banana Pro)](https://phaseo.ai/models/google/gemini-3-pro-image).
-- [Google: Gemini 3.1 Flash Image (Nano Banana 2)](https://phaseo.ai/models/google/gemini-3.1-flash-image).
+- [Anthropic: Claude Opus 4.8](https://phaseo.ai/models/anthropic/claude-opus-4.8)
+- [CrofAI: Greg RP](https://phaseo.ai/models/crofai/greg-rp)
+- [Google: Gemini 3 Pro Image (Nano Banana Pro)](https://phaseo.ai/models/google/gemini-3-pro-image)
+- [Google: Gemini 3.1 Flash Image (Nano Banana 2)](https://phaseo.ai/models/google/gemini-3.1-flash-image)
 
 </Update>
 
@@ -249,7 +320,7 @@ rss: true
 
 ![Qwen 3.7 Plus (2026-05-26) model release artwork](../../images/model-releases/2026-05-26--qwen--qwen3-7-plus-2026-05-26.png)
 
-- [Qwen: Qwen 3.7 Plus (2026-05-26)](https://phaseo.ai/models/qwen/qwen3.7-plus-2026-05-26).
+- [Qwen: Qwen 3.7 Plus (2026-05-26)](https://phaseo.ai/models/qwen/qwen3.7-plus-2026-05-26)
 
 </Update>
 
@@ -259,8 +330,8 @@ rss: true
 
 ![Qwen 3.7 Max (2026-05-17) model release artwork](../../images/model-releases/2026-05-25--qwen--qwen3-7-max-2026-05-17.png)
 
-- [Qwen: Qwen 3.7 Max (2026-05-17)](https://phaseo.ai/models/qwen/qwen3.7-max-2026-05-17).
-- [Qwen: Qwen 3.7 Max Preview](https://phaseo.ai/models/qwen/qwen3.7-max-preview).
+- [Qwen: Qwen 3.7 Max (2026-05-17)](https://phaseo.ai/models/qwen/qwen3.7-max-2026-05-17)
+- [Qwen: Qwen 3.7 Max Preview](https://phaseo.ai/models/qwen/qwen3.7-max-preview)
 
 </Update>
 
@@ -270,7 +341,7 @@ rss: true
 
 ![Qwen 3.7 Max model release artwork](../../images/model-releases/2026-05-21--qwen--qwen3-7-max.png)
 
-- [Qwen: Qwen 3.7 Max](https://phaseo.ai/models/qwen/qwen3.7-max).
+- [Qwen: Qwen 3.7 Max](https://phaseo.ai/models/qwen/qwen3.7-max)
 
 </Update>
 
@@ -280,7 +351,7 @@ rss: true
 
 ![Command A+ model release artwork](../../images/model-releases/2026-05-20--cohere--command-a-plus.png)
 
-- [Cohere: Command A+](https://phaseo.ai/models/cohere/command-a-plus).
+- [Cohere: Command A+](https://phaseo.ai/models/cohere/command-a-plus)
 
 </Update>
 
@@ -294,8 +365,8 @@ rss: true
 
 ![Gemini 3.5 Flash model release artwork](../../images/model-releases/2026-05-19--google--gemini-3-5-flash.png)
 
-- [Google: Gemini 3.5 Flash](https://phaseo.ai/models/google/gemini-3.5-flash).
-- [Qwen: Qwen 3.5 LiveTranslate Flash Realtime (2026-05-19)](https://phaseo.ai/models/qwen/qwen3.5-livetranslate-flash-realtime-2026-05-19).
+- [Google: Gemini 3.5 Flash](https://phaseo.ai/models/google/gemini-3.5-flash)
+- [Qwen: Qwen 3.5 LiveTranslate Flash Realtime (2026-05-19)](https://phaseo.ai/models/qwen/qwen3.5-livetranslate-flash-realtime-2026-05-19)
 
 </Update>
 
@@ -305,7 +376,7 @@ rss: true
 
 ![Composer 2.5 model release artwork](../../images/model-releases/2026-05-18--cursor--composer-2-5.png)
 
-- [Cursor: Composer 2.5](https://phaseo.ai/models/cursor/composer-2.5).
+- [Cursor: Composer 2.5](https://phaseo.ai/models/cursor/composer-2.5)
 
 </Update>
 
@@ -322,7 +393,7 @@ rss: true
 
 ### Model Releases
 
-- [xAI: Grok TTS](https://phaseo.ai/models/x-ai/grok-tts).
+- [xAI: Grok TTS](https://phaseo.ai/models/x-ai/grok-tts)
 
 </Update>
 
@@ -332,7 +403,7 @@ rss: true
 
 ![Grok Build 0.1 model release artwork](../../images/model-releases/2026-05-15--x-ai--grok-build-0-1.png)
 
-- [xAI: Grok Build 0.1](https://phaseo.ai/models/x-ai/grok-build-0.1).
+- [xAI: Grok Build 0.1](https://phaseo.ai/models/x-ai/grok-build-0.1)
 
 </Update>
 
@@ -347,10 +418,10 @@ rss: true
 
 ![Gemini 3.1 Flash-Lite model release artwork](../../images/model-releases/2026-05-07--google--gemini-3-1-flash-lite.png)
 
-- [Google: Gemini 3.1 Flash-Lite](https://phaseo.ai/models/google/gemini-3.1-flash-lite).
-- [OpenAI: GPT Realtime 2](https://phaseo.ai/models/openai/gpt-realtime-2).
-- [OpenAI: GPT Realtime Translate](https://phaseo.ai/models/openai/gpt-realtime-translate).
-- [OpenAI: GPT Realtime Whisper](https://phaseo.ai/models/openai/gpt-realtime-whisper).
+- [Google: Gemini 3.1 Flash-Lite](https://phaseo.ai/models/google/gemini-3.1-flash-lite)
+- [OpenAI: GPT Realtime 2](https://phaseo.ai/models/openai/gpt-realtime-2)
+- [OpenAI: GPT Realtime Translate](https://phaseo.ai/models/openai/gpt-realtime-translate)
+- [OpenAI: GPT Realtime Whisper](https://phaseo.ai/models/openai/gpt-realtime-whisper)
 
 </Update>
 
@@ -365,7 +436,7 @@ rss: true
 
 ![Grok Imagine Image Quality model release artwork](../../images/model-releases/2026-05-06--x-ai--grok-imagine-image-quality.png)
 
-- [xAI: Grok Imagine Image Quality](https://phaseo.ai/models/x-ai/grok-imagine-image-quality).
+- [xAI: Grok Imagine Image Quality](https://phaseo.ai/models/x-ai/grok-imagine-image-quality)
 
 </Update>
 
@@ -375,7 +446,7 @@ rss: true
 
 ![chat-latest model release artwork](../../images/model-releases/2026-05-05--openai--chat-latest.png)
 
-- [OpenAI: chat-latest](https://phaseo.ai/models/openai/chat-latest).
+- [OpenAI: chat-latest](https://phaseo.ai/models/openai/chat-latest)
 
 </Update>
 
@@ -399,7 +470,7 @@ rss: true
 
 ![Grok 4.3 model release artwork](../../images/model-releases/2026-04-30--x-ai--grok-4-3.png)
 
-- [xAI: Grok 4.3](https://phaseo.ai/models/x-ai/grok-4.3).
+- [xAI: Grok 4.3](https://phaseo.ai/models/x-ai/grok-4.3)
 
 </Update>
 
@@ -415,10 +486,10 @@ rss: true
 
 ![Granite 4.1 30B model release artwork](../../images/model-releases/2026-04-29--ibm--granite-4-1-30b.png)
 
-- [IBM: Granite 4.1 30B](https://phaseo.ai/models/ibm/granite-4.1-30b).
-- [IBM: Granite 4.1 3B](https://phaseo.ai/models/ibm/granite-4.1-3b).
-- [IBM: Granite 4.1 8B](https://phaseo.ai/models/ibm/granite-4.1-8b).
-- [Mistral: Mistral Medium 3.5](https://phaseo.ai/models/mistral/mistral-medium-3.5).
+- [IBM: Granite 4.1 30B](https://phaseo.ai/models/ibm/granite-4.1-30b)
+- [IBM: Granite 4.1 3B](https://phaseo.ai/models/ibm/granite-4.1-3b)
+- [IBM: Granite 4.1 8B](https://phaseo.ai/models/ibm/granite-4.1-8b)
+- [Mistral: Mistral Medium 3.5](https://phaseo.ai/models/mistral/mistral-medium-3.5)
 
 </Update>
 
@@ -428,10 +499,10 @@ rss: true
 
 ![Nemotron 3 Nano Omni 30B A3B Reasoning model release artwork](../../images/model-releases/2026-04-28--nvidia--nemotron-3-nano-omni-30b-a3b-reasoning.png)
 
-- [ByteDance: Seed 2.0 Lite (2026-04-28)](https://phaseo.ai/models/bytedance/seed-2.0-lite-2026-04-28).
-- [ByteDance: Seed 2.0 Mini (2026-04-28)](https://phaseo.ai/models/bytedance/seed-2.0-mini-2026-04-28).
-- [Nvidia: Nemotron 3 Nano Omni 30B A3B Reasoning](https://phaseo.ai/models/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning).
-- [Poolside: Laguna XS.2](https://phaseo.ai/models/poolside/laguna-xs.2).
+- [ByteDance: Seed 2.0 Lite (2026-04-28)](https://phaseo.ai/models/bytedance/seed-2.0-lite-2026-04-28)
+- [ByteDance: Seed 2.0 Mini (2026-04-28)](https://phaseo.ai/models/bytedance/seed-2.0-mini-2026-04-28)
+- [Nvidia: Nemotron 3 Nano Omni 30B A3B Reasoning](https://phaseo.ai/models/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning)
+- [Poolside: Laguna XS.2](https://phaseo.ai/models/poolside/laguna-xs.2)
 
 </Update>
 
@@ -446,7 +517,7 @@ rss: true
 
 ![DeepSeek V4 Pro Lightning model release artwork](../../images/model-releases/2026-04-25--deepseek--deepseek-v4-pro-lightning.png)
 
-- [DeepSeek: DeepSeek V4 Pro Lightning](https://phaseo.ai/models/deepseek/deepseek-v4-pro-lightning).
+- [DeepSeek: DeepSeek V4 Pro Lightning](https://phaseo.ai/models/deepseek/deepseek-v4-pro-lightning)
 
 </Update>
 
@@ -456,8 +527,8 @@ rss: true
 
 ![DeepSeek V4 Flash model release artwork](../../images/model-releases/2026-04-24--deepseek--deepseek-v4-flash.png)
 
-- [DeepSeek: DeepSeek V4 Flash](https://phaseo.ai/models/deepseek/deepseek-v4-flash).
-- [DeepSeek: DeepSeek V4 Pro](https://phaseo.ai/models/deepseek/deepseek-v4-pro).
+- [DeepSeek: DeepSeek V4 Flash](https://phaseo.ai/models/deepseek/deepseek-v4-flash)
+- [DeepSeek: DeepSeek V4 Pro](https://phaseo.ai/models/deepseek/deepseek-v4-pro)
 
 </Update>
 
@@ -467,9 +538,9 @@ rss: true
 
 ![GPT 5.5 model release artwork](../../images/model-releases/2026-04-23--openai--gpt-5-5.png)
 
-- [OpenAI: GPT 5.5](https://phaseo.ai/models/openai/gpt-5.5).
-- [OpenAI: GPT 5.5 Pro](https://phaseo.ai/models/openai/gpt-5.5-pro).
-- [Tencent Hunyuan: Hy3 Preview](https://phaseo.ai/models/tencent/hy3-preview).
+- [OpenAI: GPT 5.5](https://phaseo.ai/models/openai/gpt-5.5)
+- [OpenAI: GPT 5.5 Pro](https://phaseo.ai/models/openai/gpt-5.5-pro)
+- [Tencent Hunyuan: Hy3 Preview](https://phaseo.ai/models/tencent/hy3-preview)
 
 </Update>
 
@@ -483,11 +554,11 @@ rss: true
 
 ![Gemini Embedding 2 model release artwork](../../images/model-releases/2026-04-22--google--gemini-embedding-2.png)
 
-- [Google: Gemini Embedding 2](https://phaseo.ai/models/google/gemini-embedding-2).
-- [Qwen: Qwen 3.6 27B](https://phaseo.ai/models/qwen/qwen3.6-27b).
-- [Xiaomi: MiMo V2.5](https://phaseo.ai/models/xiaomi/mimo-v2.5).
-- [Xiaomi: MiMo V2.5 Pro](https://phaseo.ai/models/xiaomi/mimo-v2.5-pro).
-- [Xiaomi: MiMo V2.5 TTS](https://phaseo.ai/models/xiaomi/mimo-v2.5-tts).
+- [Google: Gemini Embedding 2](https://phaseo.ai/models/google/gemini-embedding-2)
+- [Qwen: Qwen 3.6 27B](https://phaseo.ai/models/qwen/qwen3.6-27b)
+- [Xiaomi: MiMo V2.5](https://phaseo.ai/models/xiaomi/mimo-v2.5)
+- [Xiaomi: MiMo V2.5 Pro](https://phaseo.ai/models/xiaomi/mimo-v2.5-pro)
+- [Xiaomi: MiMo V2.5 TTS](https://phaseo.ai/models/xiaomi/mimo-v2.5-tts)
 
 </Update>
 
@@ -501,9 +572,9 @@ rss: true
 
 ![Gemini Deep Research Max Preview (04-2026) model release artwork](../../images/model-releases/2026-04-21--google--deep-research-max-preview-04-2026.png)
 
-- [Google: Gemini Deep Research Max Preview (04-2026)](https://phaseo.ai/models/google/deep-research-max-preview-04-2026).
-- [Google: Gemini Deep Research Preview (04-2026)](https://phaseo.ai/models/google/deep-research-preview-04-2026).
-- [OpenAI: GPT Image 2](https://phaseo.ai/models/openai/gpt-image-2).
+- [Google: Gemini Deep Research Max Preview (04-2026)](https://phaseo.ai/models/google/deep-research-max-preview-04-2026)
+- [Google: Gemini Deep Research Preview (04-2026)](https://phaseo.ai/models/google/deep-research-preview-04-2026)
+- [OpenAI: GPT Image 2](https://phaseo.ai/models/openai/gpt-image-2)
 
 </Update>
 
@@ -513,8 +584,8 @@ rss: true
 
 ![Kimi K2.6 model release artwork](../../images/model-releases/2026-04-20--moonshotai--kimi-k2-6.png)
 
-- [Moonshot: Kimi K2.6](https://phaseo.ai/models/moonshotai/kimi-k2.6).
-- [Qwen: Qwen 3.5 Plus (2026-04-20)](https://phaseo.ai/models/qwen/qwen3.5-plus-2026-04-20).
+- [Moonshot: Kimi K2.6](https://phaseo.ai/models/moonshotai/kimi-k2.6)
+- [Qwen: Qwen 3.5 Plus (2026-04-20)](https://phaseo.ai/models/qwen/qwen3.5-plus-2026-04-20)
 
 </Update>
 
@@ -532,8 +603,8 @@ rss: true
 
 ![Qwen 3.6 35B A3B model release artwork](../../images/model-releases/2026-04-17--qwen--qwen3-6-35b-a3b.png)
 
-- [Qwen: Qwen 3.6 35B A3B](https://phaseo.ai/models/qwen/qwen3.6-35b-a3b).
-- [xAI: Grok TTS](https://phaseo.ai/models/x-ai/grok-tts).
+- [Qwen: Qwen 3.6 35B A3B](https://phaseo.ai/models/qwen/qwen3.6-35b-a3b)
+- [xAI: Grok TTS](https://phaseo.ai/models/x-ai/grok-tts)
 
 </Update>
 
@@ -543,7 +614,7 @@ rss: true
 
 ![Claude Opus 4.7 model release artwork](../../images/model-releases/2026-04-16--anthropic--claude-opus-4-7.png)
 
-- [Anthropic: Claude Opus 4.7](https://phaseo.ai/models/anthropic/claude-opus-4.7).
+- [Anthropic: Claude Opus 4.7](https://phaseo.ai/models/anthropic/claude-opus-4.7)
 
 </Update>
 
@@ -553,7 +624,7 @@ rss: true
 
 ![Gemini 3.1 Flash TTS Preview model release artwork](../../images/model-releases/2026-04-15--google--gemini-3-1-flash-tts-preview.png)
 
-- [Google: Gemini 3.1 Flash TTS Preview](https://phaseo.ai/models/google/gemini-3.1-flash-tts-preview).
+- [Google: Gemini 3.1 Flash TTS Preview](https://phaseo.ai/models/google/gemini-3.1-flash-tts-preview)
 
 </Update>
 
@@ -563,7 +634,7 @@ rss: true
 
 ![Gemini Robotics ER 1.6 Preview model release artwork](../../images/model-releases/2026-04-14--google--gemini-robotics-er-1-6-preview.png)
 
-- [Google: Gemini Robotics ER 1.6 Preview](https://phaseo.ai/models/google/gemini-robotics-er-1.6-preview).
+- [Google: Gemini Robotics ER 1.6 Preview](https://phaseo.ai/models/google/gemini-robotics-er-1.6-preview)
 
 </Update>
 
@@ -573,7 +644,7 @@ rss: true
 
 ![Kimi K2.6 Code Preview model release artwork](../../images/model-releases/2026-04-13--moonshotai--kimi-k2-6-code-preview.png)
 
-- [Moonshot: Kimi K2.6 Code Preview](https://phaseo.ai/models/moonshotai/kimi-k2.6-code-preview).
+- [Moonshot: Kimi K2.6 Code Preview](https://phaseo.ai/models/moonshotai/kimi-k2.6-code-preview)
 
 </Update>
 
@@ -583,7 +654,7 @@ rss: true
 
 ![Music 2.6 model release artwork](../../images/model-releases/2026-04-11--minimax--music-2-6.png)
 
-- [MiniMax: Music 2.6](https://phaseo.ai/models/minimax/music-2.6).
+- [MiniMax: Music 2.6](https://phaseo.ai/models/minimax/music-2.6)
 
 </Update>
 
@@ -593,8 +664,8 @@ rss: true
 
 ![Muse Spark model release artwork](../../images/model-releases/2026-04-08--meta--muse-spark.png)
 
-- [Meta: Muse Spark](https://phaseo.ai/models/meta/muse-spark).
-- [Meta: Muse Spark Contemplating](https://phaseo.ai/models/meta/muse-spark-contemplating).
+- [Meta: Muse Spark](https://phaseo.ai/models/meta/muse-spark)
+- [Meta: Muse Spark Contemplating](https://phaseo.ai/models/meta/muse-spark-contemplating)
 
 </Update>
 
@@ -604,7 +675,7 @@ rss: true
 
 ![GLM 5.1 model release artwork](../../images/model-releases/2026-04-07--z-ai--glm-5-1.png)
 
-- [z.AI: GLM 5.1](https://phaseo.ai/models/z-ai/glm-5.1).
+- [z.AI: GLM 5.1](https://phaseo.ai/models/z-ai/glm-5.1)
 
 </Update>
 
@@ -622,7 +693,7 @@ rss: true
 
 ![Wan 2.7 T2V model release artwork](../../images/model-releases/2026-04-03--qwen--wan2-7-t2v.png)
 
-- [Qwen: Wan 2.7 T2V](https://phaseo.ai/models/qwen/wan2.7-t2v).
+- [Qwen: Wan 2.7 T2V](https://phaseo.ai/models/qwen/wan2.7-t2v)
 
 </Update>
 
@@ -632,8 +703,8 @@ rss: true
 
 ![Gemma 4 26B A4B model release artwork](../../images/model-releases/2026-04-02--google--gemma-4-26b-a4b.png)
 
-- [Google: Gemma 4 26B A4B](https://phaseo.ai/models/google/gemma-4-26b-a4b).
-- [Google: Gemma 4 31B](https://phaseo.ai/models/google/gemma-4-31b).
+- [Google: Gemma 4 26B A4B](https://phaseo.ai/models/google/gemma-4-26b-a4b)
+- [Google: Gemma 4 31B](https://phaseo.ai/models/google/gemma-4-31b)
 
 </Update>
 
@@ -643,9 +714,9 @@ rss: true
 
 ![Qwen 3.6 Plus model release artwork](../../images/model-releases/2026-04-01--qwen--qwen3-6-plus.png)
 
-- [Arcee AI: Trinity Large Thinking](https://phaseo.ai/models/arcee-ai/trinity-large-thinking).
-- [Qwen: Qwen 3.6 Plus](https://phaseo.ai/models/qwen/qwen3.6-plus).
-- [z.AI: GLM 5V Turbo](https://phaseo.ai/models/z-ai/glm-5v-turbo).
+- [Arcee AI: Trinity Large Thinking](https://phaseo.ai/models/arcee-ai/trinity-large-thinking)
+- [Qwen: Qwen 3.6 Plus](https://phaseo.ai/models/qwen/qwen3.6-plus)
+- [z.AI: GLM 5V Turbo](https://phaseo.ai/models/z-ai/glm-5v-turbo)
 
 </Update>
 
@@ -655,7 +726,7 @@ rss: true
 
 ![Veo 3.1 Lite Preview model release artwork](../../images/model-releases/2026-03-31--google--veo-3-1-lite-preview.png)
 
-- [Google: Veo 3.1 Lite Preview](https://phaseo.ai/models/google/veo-3.1-lite-preview).
+- [Google: Veo 3.1 Lite Preview](https://phaseo.ai/models/google/veo-3.1-lite-preview)
 
 </Update>
 
@@ -665,7 +736,7 @@ rss: true
 
 ![Voxtral TTS model release artwork](../../images/model-releases/2026-03-23--mistral--voxtral-tts.png)
 
-- [Mistral: Voxtral TTS](https://phaseo.ai/models/mistral/voxtral-tts).
+- [Mistral: Voxtral TTS](https://phaseo.ai/models/mistral/voxtral-tts)
 
 </Update>
 
@@ -682,9 +753,9 @@ rss: true
 
 ### Model Releases
 
-- [Xiaomi: MiMo V2 Omni](https://phaseo.ai/models/xiaomi/mimo-v2-omni).
-- [Xiaomi: MiMo V2 Pro](https://phaseo.ai/models/xiaomi/mimo-v2-pro).
-- [Xiaomi: MiMo V2 TTS](https://phaseo.ai/models/xiaomi/mimo-v2-tts).
+- [Xiaomi: MiMo V2 Omni](https://phaseo.ai/models/xiaomi/mimo-v2-omni)
+- [Xiaomi: MiMo V2 Pro](https://phaseo.ai/models/xiaomi/mimo-v2-pro)
+- [Xiaomi: MiMo V2 TTS](https://phaseo.ai/models/xiaomi/mimo-v2-tts)
 
 </Update>
 
@@ -694,10 +765,10 @@ rss: true
 
 ![MiniMax M2.7 model release artwork](../../images/model-releases/2026-03-18--minimax--minimax-m2-7.png)
 
-- [MiniMax: MiniMax M2.7](https://phaseo.ai/models/minimax/minimax-m2.7).
-- [Xiaomi: MiMo V2 Omni](https://phaseo.ai/models/xiaomi/mimo-v2-omni).
-- [Xiaomi: MiMo V2 Pro](https://phaseo.ai/models/xiaomi/mimo-v2-pro).
-- [Xiaomi: MiMo V2 TTS](https://phaseo.ai/models/xiaomi/mimo-v2-tts).
+- [MiniMax: MiniMax M2.7](https://phaseo.ai/models/minimax/minimax-m2.7)
+- [Xiaomi: MiMo V2 Omni](https://phaseo.ai/models/xiaomi/mimo-v2-omni)
+- [Xiaomi: MiMo V2 Pro](https://phaseo.ai/models/xiaomi/mimo-v2-pro)
+- [Xiaomi: MiMo V2 TTS](https://phaseo.ai/models/xiaomi/mimo-v2-tts)
 
 </Update>
 
@@ -707,9 +778,9 @@ rss: true
 
 ![Mistral Moderation 2 model release artwork](../../images/model-releases/2026-03-17--mistral--mistral-moderation-2.png)
 
-- [Mistral: Mistral Moderation 2](https://phaseo.ai/models/mistral/mistral-moderation-2).
-- [OpenAI: GPT 5.4 Mini](https://phaseo.ai/models/openai/gpt-5.4-mini).
-- [OpenAI: GPT 5.4 Nano](https://phaseo.ai/models/openai/gpt-5.4-nano).
+- [Mistral: Mistral Moderation 2](https://phaseo.ai/models/mistral/mistral-moderation-2)
+- [OpenAI: GPT 5.4 Mini](https://phaseo.ai/models/openai/gpt-5.4-mini)
+- [OpenAI: GPT 5.4 Nano](https://phaseo.ai/models/openai/gpt-5.4-nano)
 
 </Update>
 
@@ -719,8 +790,8 @@ rss: true
 
 ![Leanstral model release artwork](../../images/model-releases/2026-03-16--mistral--leanstral.png)
 
-- [Mistral: Leanstral](https://phaseo.ai/models/mistral/leanstral).
-- [Mistral: Mistral Small 4](https://phaseo.ai/models/mistral/mistral-small-4).
+- [Mistral: Leanstral](https://phaseo.ai/models/mistral/leanstral)
+- [Mistral: Mistral Small 4](https://phaseo.ai/models/mistral/mistral-small-4)
 
 </Update>
 
@@ -730,7 +801,7 @@ rss: true
 
 ![GLM 5 Turbo model release artwork](../../images/model-releases/2026-03-15--z-ai--glm-5-turbo.png)
 
-- [z.AI: GLM 5 Turbo](https://phaseo.ai/models/z-ai/glm-5-turbo).
+- [z.AI: GLM 5 Turbo](https://phaseo.ai/models/z-ai/glm-5-turbo)
 
 </Update>
 
@@ -742,7 +813,7 @@ rss: true
 
 ### Model Releases
 
-- [Nvidia: Nemotron 3 Super](https://phaseo.ai/models/nvidia/nemotron-3-super-120b-a12b).
+- [Nvidia: Nemotron 3 Super](https://phaseo.ai/models/nvidia/nemotron-3-super-120b-a12b)
 
 </Update>
 
@@ -752,7 +823,7 @@ rss: true
 
 ![Nemotron 3 Super model release artwork](../../images/model-releases/2026-03-11--nvidia--nemotron-3-super-120b-a12b.png)
 
-- [Nvidia: Nemotron 3 Super](https://phaseo.ai/models/nvidia/nemotron-3-super-120b-a12b).
+- [Nvidia: Nemotron 3 Super](https://phaseo.ai/models/nvidia/nemotron-3-super-120b-a12b)
 
 </Update>
 
@@ -767,8 +838,8 @@ rss: true
 
 ![Aion 2.5 model release artwork](../../images/model-releases/2026-03-10--aion-labs--aion-2-5.png)
 
-- [Aion Labs: Aion 2.5](https://phaseo.ai/models/aion-labs/aion-2.5).
-- [Google: Gemini Embedding 2 Preview](https://phaseo.ai/models/google/gemini-embedding-2-preview).
+- [Aion Labs: Aion 2.5](https://phaseo.ai/models/aion-labs/aion-2.5)
+- [Google: Gemini Embedding 2 Preview](https://phaseo.ai/models/google/gemini-embedding-2-preview)
 
 </Update>
 
@@ -782,8 +853,8 @@ rss: true
 
 ![GPT 5.4 model release artwork](../../images/model-releases/2026-03-05--openai--gpt-5-4.png)
 
-- [OpenAI: GPT 5.4](https://phaseo.ai/models/openai/gpt-5.4).
-- [OpenAI: GPT 5.4 Pro](https://phaseo.ai/models/openai/gpt-5.4-pro).
+- [OpenAI: GPT 5.4](https://phaseo.ai/models/openai/gpt-5.4)
+- [OpenAI: GPT 5.4 Pro](https://phaseo.ai/models/openai/gpt-5.4-pro)
 
 </Update>
 
@@ -797,8 +868,8 @@ rss: true
 
 ![Gemini 3.1 Flash Lite Preview model release artwork](../../images/model-releases/2026-03-03--google--gemini-3-1-flash-lite-preview.png)
 
-- [Google: Gemini 3.1 Flash Lite Preview](https://phaseo.ai/models/google/gemini-3.1-flash-lite-preview).
-- [OpenAI: GPT 5.3 Chat](https://phaseo.ai/models/openai/gpt-5.3-chat).
+- [Google: Gemini 3.1 Flash Lite Preview](https://phaseo.ai/models/google/gemini-3.1-flash-lite-preview)
+- [OpenAI: GPT 5.3 Chat](https://phaseo.ai/models/openai/gpt-5.3-chat)
 
 </Update>
 
@@ -812,10 +883,10 @@ rss: true
 
 ![Qwen 3.5 0.8B model release artwork](../../images/model-releases/2026-03-02--qwen--qwen3-5-0-8b.png)
 
-- [Qwen: Qwen 3.5 0.8B](https://phaseo.ai/models/qwen/qwen3.5-0.8b).
-- [Qwen: Qwen 3.5 2B](https://phaseo.ai/models/qwen/qwen3.5-2b).
-- [Qwen: Qwen 3.5 4B](https://phaseo.ai/models/qwen/qwen3.5-4b).
-- [Qwen: Qwen 3.5 9B](https://phaseo.ai/models/qwen/qwen3.5-9b).
+- [Qwen: Qwen 3.5 0.8B](https://phaseo.ai/models/qwen/qwen3.5-0.8b)
+- [Qwen: Qwen 3.5 2B](https://phaseo.ai/models/qwen/qwen3.5-2b)
+- [Qwen: Qwen 3.5 4B](https://phaseo.ai/models/qwen/qwen3.5-4b)
+- [Qwen: Qwen 3.5 9B](https://phaseo.ai/models/qwen/qwen3.5-9b)
 
 </Update>
 
@@ -829,7 +900,7 @@ rss: true
 
 ![Gemini 3.1 Flash Image Preview (Nano Banana 2) model release artwork](../../images/model-releases/2026-02-26--google--gemini-3-1-flash-image-preview.png)
 
-- [Google: Gemini 3.1 Flash Image Preview (Nano Banana 2)](https://phaseo.ai/models/google/gemini-3.1-flash-image-preview).
+- [Google: Gemini 3.1 Flash Image Preview (Nano Banana 2)](https://phaseo.ai/models/google/gemini-3.1-flash-image-preview)
 
 </Update>
 
@@ -839,12 +910,12 @@ rss: true
 
 ![Qwen 3.5 122B A10B model release artwork](../../images/model-releases/2026-02-24--qwen--qwen3-5-122b-a10b.png)
 
-- [Inception: Mercury 2](https://phaseo.ai/models/inception/mercury-2).
-- [Inception: Mercury Edit 2](https://phaseo.ai/models/inception/mercury-edit-2).
-- [Liquid AI: LFM 2 24B A2B](https://phaseo.ai/models/liquid-ai/lfm-2-24b-a2b).
-- [Qwen: Qwen 3.5 122B A10B](https://phaseo.ai/models/qwen/qwen3.5-122b-a10b).
-- [Qwen: Qwen 3.5 27B](https://phaseo.ai/models/qwen/qwen3.5-27b).
-- [Qwen: Qwen 3.5 35B A3B](https://phaseo.ai/models/qwen/qwen3.5-35b-a3b).
+- [Inception: Mercury 2](https://phaseo.ai/models/inception/mercury-2)
+- [Inception: Mercury Edit 2](https://phaseo.ai/models/inception/mercury-edit-2)
+- [Liquid AI: LFM 2 24B A2B](https://phaseo.ai/models/liquid-ai/lfm-2-24b-a2b)
+- [Qwen: Qwen 3.5 122B A10B](https://phaseo.ai/models/qwen/qwen3.5-122b-a10b)
+- [Qwen: Qwen 3.5 27B](https://phaseo.ai/models/qwen/qwen3.5-27b)
+- [Qwen: Qwen 3.5 35B A3B](https://phaseo.ai/models/qwen/qwen3.5-35b-a3b)
 
 </Update>
 
@@ -854,9 +925,9 @@ rss: true
 
 ![GPT Audio 1.5 model release artwork](../../images/model-releases/2026-02-23--openai--gpt-audio-1-5.png)
 
-- [OpenAI: GPT Audio 1.5](https://phaseo.ai/models/openai/gpt-audio-1.5).
-- [OpenAI: GPT Realtime 1.5](https://phaseo.ai/models/openai/gpt-realtime-1.5).
-- [Qwen: Qwen 3.5 Flash](https://phaseo.ai/models/qwen/qwen3.5-flash).
+- [OpenAI: GPT Audio 1.5](https://phaseo.ai/models/openai/gpt-audio-1.5)
+- [OpenAI: GPT Realtime 1.5](https://phaseo.ai/models/openai/gpt-realtime-1.5)
+- [Qwen: Qwen 3.5 Flash](https://phaseo.ai/models/qwen/qwen3.5-flash)
 
 </Update>
 
@@ -870,8 +941,8 @@ rss: true
 
 ![Gemini 3.1 Pro Preview model release artwork](../../images/model-releases/2026-02-19--google--gemini-3-1-pro-preview.png)
 
-- [Google: Gemini 3.1 Pro Preview](https://phaseo.ai/models/google/gemini-3.1-pro-preview).
-- [Google: Gemini 3.1 Pro Preview Customtools](https://phaseo.ai/models/google/gemini-3.1-pro-preview-customtools).
+- [Google: Gemini 3.1 Pro Preview](https://phaseo.ai/models/google/gemini-3.1-pro-preview)
+- [Google: Gemini 3.1 Pro Preview Customtools](https://phaseo.ai/models/google/gemini-3.1-pro-preview-customtools)
 
 </Update>
 
@@ -885,8 +956,8 @@ rss: true
 
 ![Lyria 3 model release artwork](../../images/model-releases/2026-02-18--google--lyria-3.png)
 
-- [Google: Lyria 3](https://phaseo.ai/models/google/lyria-3).
-- [Prime Intellect: Intellect 3.1](https://phaseo.ai/models/prime-intellect/intellect-3.1).
+- [Google: Lyria 3](https://phaseo.ai/models/google/lyria-3)
+- [Prime Intellect: Intellect 3.1](https://phaseo.ai/models/prime-intellect/intellect-3.1)
 
 </Update>
 
@@ -896,13 +967,13 @@ rss: true
 
 ![Claude Sonnet 4.6 model release artwork](../../images/model-releases/2026-02-17--anthropic--claude-sonnet-4-6.png)
 
-- [Anthropic: Claude Sonnet 4.6](https://phaseo.ai/models/anthropic/claude-sonnet-4.6).
-- [Cohere: Tiny Aya Earth](https://phaseo.ai/models/cohere/tiny-aya-earth).
-- [Cohere: Tiny Aya Fire](https://phaseo.ai/models/cohere/tiny-aya-fire).
-- [Cohere: Tiny Aya Global](https://phaseo.ai/models/cohere/tiny-aya-global).
-- [Cohere: Tiny Aya Water](https://phaseo.ai/models/cohere/tiny-aya-water).
-- [xAI: Grok 4.20](https://phaseo.ai/models/x-ai/grok-4.20).
-- [xAI: Grok 4.20 Multi Agent Beta](https://phaseo.ai/models/x-ai/grok-4.20-multi-agent-beta).
+- [Anthropic: Claude Sonnet 4.6](https://phaseo.ai/models/anthropic/claude-sonnet-4.6)
+- [Cohere: Tiny Aya Earth](https://phaseo.ai/models/cohere/tiny-aya-earth)
+- [Cohere: Tiny Aya Fire](https://phaseo.ai/models/cohere/tiny-aya-fire)
+- [Cohere: Tiny Aya Global](https://phaseo.ai/models/cohere/tiny-aya-global)
+- [Cohere: Tiny Aya Water](https://phaseo.ai/models/cohere/tiny-aya-water)
+- [xAI: Grok 4.20](https://phaseo.ai/models/x-ai/grok-4.20)
+- [xAI: Grok 4.20 Multi Agent Beta](https://phaseo.ai/models/x-ai/grok-4.20-multi-agent-beta)
 
 </Update>
 
@@ -912,9 +983,9 @@ rss: true
 
 ![Qwen 3.5 397B A17B model release artwork](../../images/model-releases/2026-02-16--qwen--qwen3-5-397b-a17b.png)
 
-- [Qwen: Qwen 3.5 397B A17B](https://phaseo.ai/models/qwen/qwen3.5-397b-a17b).
-- [Qwen: Qwen 3.5 Plus](https://phaseo.ai/models/qwen/qwen3.5-plus).
-- [Qwen: Qwen 3.5 Plus (2026-02-15)](https://phaseo.ai/models/qwen/qwen3.5-plus-2026-02-15).
+- [Qwen: Qwen 3.5 397B A17B](https://phaseo.ai/models/qwen/qwen3.5-397b-a17b)
+- [Qwen: Qwen 3.5 Plus](https://phaseo.ai/models/qwen/qwen3.5-plus)
+- [Qwen: Qwen 3.5 Plus (2026-02-15)](https://phaseo.ai/models/qwen/qwen3.5-plus-2026-02-15)
 
 </Update>
 
@@ -922,7 +993,7 @@ rss: true
 
 ### Model Releases
 
-- [ByteDance: Seed 2.0 Code Preview (2026-02-15)](https://phaseo.ai/models/bytedance/seed-2.0-code-preview-2026-02-15).
+- [ByteDance: Seed 2.0 Code Preview (2026-02-15)](https://phaseo.ai/models/bytedance/seed-2.0-code-preview-2026-02-15)
 
 </Update>
 
@@ -930,9 +1001,9 @@ rss: true
 
 ### Model Releases
 
-- [ByteDance: Seed 2.0 Lite](https://phaseo.ai/models/bytedance/seed-2.0-lite).
-- [ByteDance: Seed 2.0 Mini](https://phaseo.ai/models/bytedance/seed-2.0-mini).
-- [ByteDance: Seed 2.0 Pro](https://phaseo.ai/models/bytedance/seed-2.0-pro).
+- [ByteDance: Seed 2.0 Lite](https://phaseo.ai/models/bytedance/seed-2.0-lite)
+- [ByteDance: Seed 2.0 Mini](https://phaseo.ai/models/bytedance/seed-2.0-mini)
+- [ByteDance: Seed 2.0 Pro](https://phaseo.ai/models/bytedance/seed-2.0-pro)
 
 </Update>
 
@@ -942,11 +1013,11 @@ rss: true
 
 ![MiniMax M2.5 model release artwork](../../images/model-releases/2026-02-12--minimax--minimax-m2-5.png)
 
-- [ByteDance: Seedance 2.0](https://phaseo.ai/models/bytedance/seedance-2.0).
-- [ByteDance: Seedance 2.0 Fast](https://phaseo.ai/models/bytedance/seedance-2.0-fast).
-- [Inclusion AI: Ring 1T 2.5](https://phaseo.ai/models/inclusionai/ring-1t-2.5).
-- [MiniMax: MiniMax M2.5](https://phaseo.ai/models/minimax/minimax-m2.5).
-- [OpenAI: GPT 5.3 Codex Spark](https://phaseo.ai/models/openai/gpt-5.3-codex-spark).
+- [ByteDance: Seedance 2.0](https://phaseo.ai/models/bytedance/seedance-2.0)
+- [ByteDance: Seedance 2.0 Fast](https://phaseo.ai/models/bytedance/seedance-2.0-fast)
+- [Inclusion AI: Ring 1T 2.5](https://phaseo.ai/models/inclusionai/ring-1t-2.5)
+- [MiniMax: MiniMax M2.5](https://phaseo.ai/models/minimax/minimax-m2.5)
+- [OpenAI: GPT 5.3 Codex Spark](https://phaseo.ai/models/openai/gpt-5.3-codex-spark)
 
 </Update>
 
@@ -956,7 +1027,7 @@ rss: true
 
 ![GLM 5 model release artwork](../../images/model-releases/2026-02-11--z-ai--glm-5.png)
 
-- [z.AI: GLM 5](https://phaseo.ai/models/z-ai/glm-5).
+- [z.AI: GLM 5](https://phaseo.ai/models/z-ai/glm-5)
 
 </Update>
 
@@ -966,7 +1037,7 @@ rss: true
 
 ![Composer 1.5 model release artwork](../../images/model-releases/2026-02-09--cursor--composer-1-5.png)
 
-- [Cursor: Composer 1.5](https://phaseo.ai/models/cursor/composer-1.5).
+- [Cursor: Composer 1.5](https://phaseo.ai/models/cursor/composer-1.5)
 
 </Update>
 
@@ -976,8 +1047,8 @@ rss: true
 
 ![Claude Opus 4.6 model release artwork](../../images/model-releases/2026-02-05--anthropic--claude-opus-4-6.png)
 
-- [Anthropic: Claude Opus 4.6](https://phaseo.ai/models/anthropic/claude-opus-4.6).
-- [OpenAI: GPT 5.3 Codex](https://phaseo.ai/models/openai/gpt-5.3-codex).
+- [Anthropic: Claude Opus 4.6](https://phaseo.ai/models/anthropic/claude-opus-4.6)
+- [OpenAI: GPT 5.3 Codex](https://phaseo.ai/models/openai/gpt-5.3-codex)
 
 </Update>
 
@@ -987,7 +1058,7 @@ rss: true
 
 ![Voxtral Mini Transcribe 2 model release artwork](../../images/model-releases/2026-02-04--mistral--voxtral-mini-transcribe-2.png)
 
-- [Mistral: Voxtral Mini Transcribe 2](https://phaseo.ai/models/mistral/voxtral-mini-transcribe-2).
+- [Mistral: Voxtral Mini Transcribe 2](https://phaseo.ai/models/mistral/voxtral-mini-transcribe-2)
 
 </Update>
 
@@ -1000,13 +1071,13 @@ rss: true
 
 ### Model Releases
 
-- [z.AI: GLM 4.5 Air X](https://phaseo.ai/models/z-ai/glm-4.5-air-x).
-- [z.AI: GLM 4.5 X](https://phaseo.ai/models/z-ai/glm-4.5-x).
-- [xAI: Grok Imagine Image](https://phaseo.ai/models/x-ai/grok-imagine-image).
-- [xAI: Grok Imagine Video](https://phaseo.ai/models/x-ai/grok-imagine-video).
-- [Moonshot: Kimi K2.5](https://phaseo.ai/models/moonshotai/kimi-k2.5).
-- [MiniMax: MiniMax M2 Her](https://phaseo.ai/models/minimax/minimax-m2-her).
-- [Qwen: Qwen 3 Max Thinking](https://phaseo.ai/models/qwen/qwen3-max-thinking).
+- [z.AI: GLM 4.5 Air X](https://phaseo.ai/models/z-ai/glm-4.5-air-x)
+- [z.AI: GLM 4.5 X](https://phaseo.ai/models/z-ai/glm-4.5-x)
+- [xAI: Grok Imagine Image](https://phaseo.ai/models/x-ai/grok-imagine-image)
+- [xAI: Grok Imagine Video](https://phaseo.ai/models/x-ai/grok-imagine-video)
+- [Moonshot: Kimi K2.5](https://phaseo.ai/models/moonshotai/kimi-k2.5)
+- [MiniMax: MiniMax M2 Her](https://phaseo.ai/models/minimax/minimax-m2-her)
+- [Qwen: Qwen 3 Max Thinking](https://phaseo.ai/models/qwen/qwen3-max-thinking)
 
 </Update>
 
@@ -1016,9 +1087,9 @@ rss: true
 
 ![Grok Imagine Image model release artwork](../../images/model-releases/2026-01-29--x-ai--grok-imagine-image.png)
 
-- [xAI: Grok Imagine Image](https://phaseo.ai/models/x-ai/grok-imagine-image).
-- [xAI: Grok Imagine Image Pro](https://phaseo.ai/models/x-ai/grok-imagine-image-pro).
-- [xAI: Grok Imagine Video](https://phaseo.ai/models/x-ai/grok-imagine-video).
+- [xAI: Grok Imagine Image](https://phaseo.ai/models/x-ai/grok-imagine-image)
+- [xAI: Grok Imagine Image Pro](https://phaseo.ai/models/x-ai/grok-imagine-image-pro)
+- [xAI: Grok Imagine Video](https://phaseo.ai/models/x-ai/grok-imagine-video)
 
 </Update>
 
@@ -1028,11 +1099,11 @@ rss: true
 
 ![Kimi K2.5 model release artwork](../../images/model-releases/2026-01-27--moonshotai--kimi-k2-5.png)
 
-- [Arcee AI: Trinity Large](https://phaseo.ai/models/arcee-ai/trinity-large).
-- [CrofAI: Greg 1](https://phaseo.ai/models/crofai/greg-1).
-- [CrofAI: Greg 1 Mini](https://phaseo.ai/models/crofai/greg-1-mini).
-- [CrofAI: Greg 1 Super](https://phaseo.ai/models/crofai/greg-1-super).
-- [Moonshot: Kimi K2.5](https://phaseo.ai/models/moonshotai/kimi-k2.5).
+- [Arcee AI: Trinity Large](https://phaseo.ai/models/arcee-ai/trinity-large)
+- [CrofAI: Greg 1](https://phaseo.ai/models/crofai/greg-1)
+- [CrofAI: Greg 1 Mini](https://phaseo.ai/models/crofai/greg-1-mini)
+- [CrofAI: Greg 1 Super](https://phaseo.ai/models/crofai/greg-1-super)
+- [Moonshot: Kimi K2.5](https://phaseo.ai/models/moonshotai/kimi-k2.5)
 
 </Update>
 
@@ -1042,8 +1113,8 @@ rss: true
 
 ![Qwen 3 Max Thinking model release artwork](../../images/model-releases/2026-01-26--qwen--qwen3-max-thinking.png)
 
-- [Qwen: Qwen 3 Max Thinking](https://phaseo.ai/models/qwen/qwen3-max-thinking).
-- [Upstage: Solar Pro 3 (2026-01-26)](https://phaseo.ai/models/upstage/solar-pro-3).
+- [Qwen: Qwen 3 Max Thinking](https://phaseo.ai/models/qwen/qwen3-max-thinking)
+- [Upstage: Solar Pro 3 (2026-01-26)](https://phaseo.ai/models/upstage/solar-pro-3)
 
 </Update>
 
@@ -1053,7 +1124,7 @@ rss: true
 
 ![MiniMax M2 Her model release artwork](../../images/model-releases/2026-01-24--minimax--minimax-m2-her.png)
 
-- [MiniMax: MiniMax M2 Her](https://phaseo.ai/models/minimax/minimax-m2-her).
+- [MiniMax: MiniMax M2 Her](https://phaseo.ai/models/minimax/minimax-m2-her)
 
 </Update>
 
@@ -1061,7 +1132,7 @@ rss: true
 
 ### Model Releases
 
-- [Baidu: Ernie 5.0](https://phaseo.ai/models/baidu/ernie-5.0).
+- [Baidu: Ernie 5.0](https://phaseo.ai/models/baidu/ernie-5.0)
 
 </Update>
 
@@ -1069,7 +1140,7 @@ rss: true
 
 ### Model Releases
 
-- [Liquid AI: LFM 2.5 1.2B Thinking](https://phaseo.ai/models/liquid-ai/lfm-2.5-1.2b-thinking).
+- [Liquid AI: LFM 2.5 1.2B Thinking](https://phaseo.ai/models/liquid-ai/lfm-2.5-1.2b-thinking)
 
 </Update>
 
@@ -1079,7 +1150,7 @@ rss: true
 
 ![GLM 4.7 Flash model release artwork](../../images/model-releases/2026-01-19--z-ai--glm-4-7-flash.png)
 
-- [z.AI: GLM 4.7 Flash](https://phaseo.ai/models/z-ai/glm-4.7-flash).
+- [z.AI: GLM 4.7 Flash](https://phaseo.ai/models/z-ai/glm-4.7-flash)
 
 </Update>
 
@@ -1089,7 +1160,7 @@ rss: true
 
 ![Music 2.5 model release artwork](../../images/model-releases/2026-01-16--minimax--music-2-5.png)
 
-- [MiniMax: Music 2.5](https://phaseo.ai/models/minimax/music-2.5).
+- [MiniMax: Music 2.5](https://phaseo.ai/models/minimax/music-2.5)
 
 </Update>
 
@@ -1099,15 +1170,15 @@ rss: true
 
 ![TranslateGemma 12B model release artwork](../../images/model-releases/2026-01-15--google--translategemma-12b.png)
 
-- [Black Forest Labs: Flux 2 Klein 4B](https://phaseo.ai/models/black-forest-labs/flux-2-klein-4b).
-- [Black Forest Labs: Flux 2 Klein 9B](https://phaseo.ai/models/black-forest-labs/flux-2-klein-9b).
-- [Google: TranslateGemma 12B](https://phaseo.ai/models/google/translategemma-12b).
-- [Google: TranslateGemma 27B](https://phaseo.ai/models/google/translategemma-27b).
-- [Google: TranslateGemma 4B](https://phaseo.ai/models/google/translategemma-4b).
-- [Voyage: Voyage 4](https://phaseo.ai/models/voyage/voyage-4).
-- [Voyage: Voyage 4 Large](https://phaseo.ai/models/voyage/voyage-4-large).
-- [Voyage: Voyage 4 Lite](https://phaseo.ai/models/voyage/voyage-4-lite).
-- [Voyage: Voyage Multimodal 3.5](https://phaseo.ai/models/voyage/voyage-multimodal-3.5).
+- [Black Forest Labs: Flux 2 Klein 4B](https://phaseo.ai/models/black-forest-labs/flux-2-klein-4b)
+- [Black Forest Labs: Flux 2 Klein 9B](https://phaseo.ai/models/black-forest-labs/flux-2-klein-9b)
+- [Google: TranslateGemma 12B](https://phaseo.ai/models/google/translategemma-12b)
+- [Google: TranslateGemma 27B](https://phaseo.ai/models/google/translategemma-27b)
+- [Google: TranslateGemma 4B](https://phaseo.ai/models/google/translategemma-4b)
+- [Voyage: Voyage 4](https://phaseo.ai/models/voyage/voyage-4)
+- [Voyage: Voyage 4 Large](https://phaseo.ai/models/voyage/voyage-4-large)
+- [Voyage: Voyage 4 Lite](https://phaseo.ai/models/voyage/voyage-4-lite)
+- [Voyage: Voyage Multimodal 3.5](https://phaseo.ai/models/voyage/voyage-multimodal-3.5)
 
 </Update>
 
@@ -1117,7 +1188,7 @@ rss: true
 
 ![GLM Image model release artwork](../../images/model-releases/2026-01-14--z-ai--glm-image.png)
 
-- [z.AI: GLM Image](https://phaseo.ai/models/z-ai/glm-image).
+- [z.AI: GLM Image](https://phaseo.ai/models/z-ai/glm-image)
 
 </Update>
 
@@ -1127,7 +1198,7 @@ rss: true
 
 ![MedGemma 1.5 4B model release artwork](../../images/model-releases/2026-01-13--google--medgemma-1-5-4b.png)
 
-- [Google: MedGemma 1.5 4B](https://phaseo.ai/models/google/medgemma-1.5-4b).
+- [Google: MedGemma 1.5 4B](https://phaseo.ai/models/google/medgemma-1.5-4b)
 
 </Update>
 
@@ -1137,7 +1208,7 @@ rss: true
 
 ![Scribe V2 model release artwork](../../images/model-releases/2026-01-09--eleven-labs--scribe-v2.png)
 
-- [ElevenLabs: Scribe V2](https://phaseo.ai/models/eleven-labs/scribe-v2).
+- [ElevenLabs: Scribe V2](https://phaseo.ai/models/eleven-labs/scribe-v2)
 
 </Update>
 
@@ -1147,8 +1218,8 @@ rss: true
 
 ![Jamba 2 3B model release artwork](../../images/model-releases/2026-01-08--ai21--jamba-2-3b.png)
 
-- [ai21: Jamba 2 3B](https://phaseo.ai/models/ai21/jamba-2-3b).
-- [ai21: Jamba Mini 2](https://phaseo.ai/models/ai21/jamba-mini-2).
+- [ai21: Jamba 2 3B](https://phaseo.ai/models/ai21/jamba-2-3b)
+- [ai21: Jamba Mini 2](https://phaseo.ai/models/ai21/jamba-mini-2)
 
 </Update>
 
@@ -1156,9 +1227,9 @@ rss: true
 
 ### Model Releases
 
-- [Liquid AI: LFM 2.5 1.2B](https://phaseo.ai/models/liquid-ai/lfm-2.5-1.2b).
-- [Liquid AI: LFM 2.5 1.2B JP](https://phaseo.ai/models/liquid-ai/lfm-2.5-1.2b-jp).
-- [Nous: NousCoder 14B](https://phaseo.ai/models/nous/nouscoder-14b).
+- [Liquid AI: LFM 2.5 1.2B](https://phaseo.ai/models/liquid-ai/lfm-2.5-1.2b)
+- [Liquid AI: LFM 2.5 1.2B JP](https://phaseo.ai/models/liquid-ai/lfm-2.5-1.2b-jp)
+- [Nous: NousCoder 14B](https://phaseo.ai/models/nous/nouscoder-14b)
 
 </Update>
 
@@ -1166,15 +1237,15 @@ rss: true
 
 ### Model Releases
 
-- [z.AI: GLM 4.7](https://phaseo.ai/models/z-ai/glm-4.7).
-- [MiniMax: Music 2.0](https://phaseo.ai/models/minimax/music-2.0).
-- [Relace: Relace Search](https://phaseo.ai/models/relace/relace-search).
-- [ByteDance: Seed 1.6 (2025-10-15)](https://phaseo.ai/models/bytedance/seed-1.6-2025-10-15).
-- [ByteDance: Seed 1.6 Flash (2025-08-28)](https://phaseo.ai/models/bytedance/seed-1.6-flash-2025-08-28).
-- [ByteDance: Seed 1.8](https://phaseo.ai/models/bytedance/seed-1.8).
-- [ByteDance: Seedream 4.5](https://phaseo.ai/models/bytedance/seedream-4.5).
-- [MiniMax: Speech 2.6](https://phaseo.ai/models/minimax/speech-2.6).
-- [Arcee AI: Trinity Large](https://phaseo.ai/models/arcee-ai/trinity-large).
+- [z.AI: GLM 4.7](https://phaseo.ai/models/z-ai/glm-4.7)
+- [MiniMax: Music 2.0](https://phaseo.ai/models/minimax/music-2.0)
+- [Relace: Relace Search](https://phaseo.ai/models/relace/relace-search)
+- [ByteDance: Seed 1.6 (2025-10-15)](https://phaseo.ai/models/bytedance/seed-1.6-2025-10-15)
+- [ByteDance: Seed 1.6 Flash (2025-08-28)](https://phaseo.ai/models/bytedance/seed-1.6-flash-2025-08-28)
+- [ByteDance: Seed 1.8](https://phaseo.ai/models/bytedance/seed-1.8)
+- [ByteDance: Seedream 4.5](https://phaseo.ai/models/bytedance/seedream-4.5)
+- [MiniMax: Speech 2.6](https://phaseo.ai/models/minimax/speech-2.6)
+- [Arcee AI: Trinity Large](https://phaseo.ai/models/arcee-ai/trinity-large)
 
 </Update>
 
@@ -1182,7 +1253,7 @@ rss: true
 
 ### Model Releases
 
-- [LG: K EXAONE](https://phaseo.ai/models/lg/k-exaone).
+- [LG: K EXAONE](https://phaseo.ai/models/lg/k-exaone)
 
 </Update>
 
@@ -1190,8 +1261,8 @@ rss: true
 
 ### Model Releases
 
-- [NAVER: HyperClova X Seed Omni 8B](https://phaseo.ai/models/naver-hyperclova/hyperclova-x-seed-omni-8b).
-- [NAVER: HyperClova X Seed Think 32B](https://phaseo.ai/models/naver-hyperclova/hyperclova-x-seed-think-32b).
+- [NAVER: HyperClova X Seed Omni 8B](https://phaseo.ai/models/naver-hyperclova/hyperclova-x-seed-omni-8b)
+- [NAVER: HyperClova X Seed Think 32B](https://phaseo.ai/models/naver-hyperclova/hyperclova-x-seed-think-32b)
 
 </Update>
 
@@ -1199,7 +1270,7 @@ rss: true
 
 ### Model Releases
 
-- [ByteDance: Seed 1.8 (2025-12-28)](https://phaseo.ai/models/bytedance/seed-1.8-2025-12-28).
+- [ByteDance: Seed 1.8 (2025-12-28)](https://phaseo.ai/models/bytedance/seed-1.8-2025-12-28)
 
 </Update>
 
@@ -1207,7 +1278,7 @@ rss: true
 
 ### Model Releases
 
-- [MiniMax: MiniMax M2.1](https://phaseo.ai/models/minimax/minimax-m2.1).
+- [MiniMax: MiniMax M2.1](https://phaseo.ai/models/minimax/minimax-m2.1)
 
 </Update>
 
@@ -1215,7 +1286,7 @@ rss: true
 
 ### Model Releases
 
-- [z.AI: GLM 4.7](https://phaseo.ai/models/z-ai/glm-4.7).
+- [z.AI: GLM 4.7](https://phaseo.ai/models/z-ai/glm-4.7)
 
 </Update>
 
@@ -1223,7 +1294,7 @@ rss: true
 
 ### Model Releases
 
-- [Aion Labs: Aion 2.0](https://phaseo.ai/models/aion-labs/aion-2.0).
+- [Aion Labs: Aion 2.0](https://phaseo.ai/models/aion-labs/aion-2.0)
 
 </Update>
 
@@ -1231,9 +1302,9 @@ rss: true
 
 ### Model Releases
 
-- [z.AI: GLM 4.7](https://phaseo.ai/models/z-ai/glm-4.7).
-- [OpenAI: GPT 5.2 Codex](https://phaseo.ai/models/openai/gpt-5.2-codex).
-- [Mistral: OCR 3](https://phaseo.ai/models/mistral/ocr-3).
+- [z.AI: GLM 4.7](https://phaseo.ai/models/z-ai/glm-4.7)
+- [OpenAI: GPT 5.2 Codex](https://phaseo.ai/models/openai/gpt-5.2-codex)
+- [Mistral: OCR 3](https://phaseo.ai/models/mistral/ocr-3)
 
 </Update>
 
@@ -1241,9 +1312,9 @@ rss: true
 
 ### Model Releases
 
-- [ByteDance: Seed 1.8](https://phaseo.ai/models/bytedance/seed-1.8).
-- [Mistral: OCR 3](https://phaseo.ai/models/mistral/ocr-3).
-- [OpenAI: GPT 5.2 Codex](https://phaseo.ai/models/openai/gpt-5.2-codex).
+- [ByteDance: Seed 1.8](https://phaseo.ai/models/bytedance/seed-1.8)
+- [Mistral: OCR 3](https://phaseo.ai/models/mistral/ocr-3)
+- [OpenAI: GPT 5.2 Codex](https://phaseo.ai/models/openai/gpt-5.2-codex)
 
 </Update>
 
@@ -1251,7 +1322,7 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemini 3 Flash Preview](https://phaseo.ai/models/google/gemini-3-flash-preview).
+- [Google: Gemini 3 Flash Preview](https://phaseo.ai/models/google/gemini-3-flash-preview)
 
 </Update>
 
@@ -1259,13 +1330,13 @@ rss: true
 
 ### Model Releases
 
-- [AllenAI: Molmo 2 4B](https://phaseo.ai/models/allenai/molmo-2-4b).
-- [AllenAI: Molmo 2 8B](https://phaseo.ai/models/allenai/molmo-2-8b).
-- [Black Forest Labs: Flux 2 Max](https://phaseo.ai/models/black-forest-labs/flux-2-max).
-- [Mistral: Mistral Small Creative](https://phaseo.ai/models/mistral/mistral-small-creative).
-- [OpenAI: ChatGPT Image Latest](https://phaseo.ai/models/openai/chatgpt-image-latest).
-- [OpenAI: GPT Image 1.5](https://phaseo.ai/models/openai/gpt-image-1.5).
-- [Xiaomi: MiMo V2 Flash](https://phaseo.ai/models/xiaomi/mimo-v2-flash).
+- [AllenAI: Molmo 2 4B](https://phaseo.ai/models/allenai/molmo-2-4b)
+- [AllenAI: Molmo 2 8B](https://phaseo.ai/models/allenai/molmo-2-8b)
+- [Black Forest Labs: Flux 2 Max](https://phaseo.ai/models/black-forest-labs/flux-2-max)
+- [Mistral: Mistral Small Creative](https://phaseo.ai/models/mistral/mistral-small-creative)
+- [OpenAI: ChatGPT Image Latest](https://phaseo.ai/models/openai/chatgpt-image-latest)
+- [OpenAI: GPT Image 1.5](https://phaseo.ai/models/openai/gpt-image-1.5)
+- [Xiaomi: MiMo V2 Flash](https://phaseo.ai/models/xiaomi/mimo-v2-flash)
 
 </Update>
 
@@ -1277,14 +1348,14 @@ rss: true
 
 ### Model Releases
 
-- [AllenAI: Bolmo 1B](https://phaseo.ai/models/allenai/bolmo-1b).
-- [AllenAI: Bolmo 7B](https://phaseo.ai/models/allenai/bolmo-7b).
-- [Nvidia: Nemotron Nano 3 30B A3B](https://phaseo.ai/models/nvidia/nemotron-3-nano-30b-a3b).
-- [OpenAI: GPT 4o Mini Transcribe (2025-12-15)](https://phaseo.ai/models/openai/gpt-4o-mini-transcribe).
-- [OpenAI: GPT 4o Mini TTS (2025-12-15)](https://phaseo.ai/models/openai/gpt-4o-mini-tts).
-- [OpenAI: GPT Audio Mini (2025-12-15)](https://phaseo.ai/models/openai/gpt-audio-mini).
-- [OpenAI: GPT Realtime Mini (2025-12-15)](https://phaseo.ai/models/openai/gpt-realtime-mini).
-- [Upstage: Solar Pro 2 (2025-12-15)](https://phaseo.ai/models/upstage/solar-pro-2).
+- [AllenAI: Bolmo 1B](https://phaseo.ai/models/allenai/bolmo-1b)
+- [AllenAI: Bolmo 7B](https://phaseo.ai/models/allenai/bolmo-7b)
+- [Nvidia: Nemotron Nano 3 30B A3B](https://phaseo.ai/models/nvidia/nemotron-3-nano-30b-a3b)
+- [OpenAI: GPT 4o Mini Transcribe (2025-12-15)](https://phaseo.ai/models/openai/gpt-4o-mini-transcribe)
+- [OpenAI: GPT 4o Mini TTS (2025-12-15)](https://phaseo.ai/models/openai/gpt-4o-mini-tts)
+- [OpenAI: GPT Audio Mini (2025-12-15)](https://phaseo.ai/models/openai/gpt-audio-mini)
+- [OpenAI: GPT Realtime Mini (2025-12-15)](https://phaseo.ai/models/openai/gpt-realtime-mini)
+- [Upstage: Solar Pro 2 (2025-12-15)](https://phaseo.ai/models/upstage/solar-pro-2)
 
 </Update>
 
@@ -1297,9 +1368,9 @@ rss: true
 
 ### Model Releases
 
-- [AllenAI: Olmo 3.1 32B Instruct](https://phaseo.ai/models/allenai/olmo-3.1-32b-instruct).
-- [AllenAI: Olmo 3.1 32B Think](https://phaseo.ai/models/allenai/olmo-3.1-32b-think).
-- [Google: Gemini 2.5 Flash Native Audio Preview (2025-12-12)](https://phaseo.ai/models/google/gemini-2.5-flash-native-audio-preview-2025-12-12).
+- [AllenAI: Olmo 3.1 32B Instruct](https://phaseo.ai/models/allenai/olmo-3.1-32b-instruct)
+- [AllenAI: Olmo 3.1 32B Think](https://phaseo.ai/models/allenai/olmo-3.1-32b-think)
+- [Google: Gemini 2.5 Flash Native Audio Preview (2025-12-12)](https://phaseo.ai/models/google/gemini-2.5-flash-native-audio-preview-2025-12-12)
 
 </Update>
 
@@ -1307,11 +1378,11 @@ rss: true
 
 ### Model Releases
 
-- [Cohere: Rerank V4.0 Fast](https://phaseo.ai/models/cohere/rerank-v4.0-fast).
-- [Cohere: Rerank V4.0 Pro](https://phaseo.ai/models/cohere/rerank-v4.0-pro).
-- [OpenAI: GPT 5.2](https://phaseo.ai/models/openai/gpt-5.2).
-- [OpenAI: GPT 5.2 Chat](https://phaseo.ai/models/openai/gpt-5.2-chat).
-- [OpenAI: GPT 5.2 Pro](https://phaseo.ai/models/openai/gpt-5.2-pro).
+- [Cohere: Rerank V4.0 Fast](https://phaseo.ai/models/cohere/rerank-v4.0-fast)
+- [Cohere: Rerank V4.0 Pro](https://phaseo.ai/models/cohere/rerank-v4.0-pro)
+- [OpenAI: GPT 5.2](https://phaseo.ai/models/openai/gpt-5.2)
+- [OpenAI: GPT 5.2 Chat](https://phaseo.ai/models/openai/gpt-5.2-chat)
+- [OpenAI: GPT 5.2 Pro](https://phaseo.ai/models/openai/gpt-5.2-pro)
 
 </Update>
 
@@ -1319,8 +1390,8 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemini 2.5 Flash Preview TTS (2025-12-10)](https://phaseo.ai/models/google/gemini-2.5-flash-preview-tts-2025-12-10).
-- [Google: Gemini 2.5 Pro Preview TTS (2025-12-10)](https://phaseo.ai/models/google/gemini-2.5-pro-preview-tts).
+- [Google: Gemini 2.5 Flash Preview TTS (2025-12-10)](https://phaseo.ai/models/google/gemini-2.5-flash-preview-tts-2025-12-10)
+- [Google: Gemini 2.5 Pro Preview TTS (2025-12-10)](https://phaseo.ai/models/google/gemini-2.5-pro-preview-tts)
 
 </Update>
 
@@ -1328,9 +1399,9 @@ rss: true
 
 ### Model Releases
 
-- [Mistral: Devstral 2.0](https://phaseo.ai/models/mistral/devstral-2.0).
-- [Mistral: Devstral Small 2.0](https://phaseo.ai/models/mistral/devstral-small-2.0).
-- [Nous: Nomos 1](https://phaseo.ai/models/nous/nomos-1).
+- [Mistral: Devstral 2.0](https://phaseo.ai/models/mistral/devstral-2.0)
+- [Mistral: Devstral Small 2.0](https://phaseo.ai/models/mistral/devstral-small-2.0)
+- [Nous: Nomos 1](https://phaseo.ai/models/nous/nomos-1)
 
 </Update>
 
@@ -1338,9 +1409,9 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: Sora 2 (2025-12-08)](https://phaseo.ai/models/openai/sora-2).
-- [z.AI: GLM 4.6V](https://phaseo.ai/models/z-ai/glm-4.6v).
-- [z.AI: GLM 4.6V Flash](https://phaseo.ai/models/z-ai/glm-4.6v-flash).
+- [OpenAI: Sora 2 (2025-12-08)](https://phaseo.ai/models/openai/sora-2)
+- [z.AI: GLM 4.6V](https://phaseo.ai/models/z-ai/glm-4.6v)
+- [z.AI: GLM 4.6V Flash](https://phaseo.ai/models/z-ai/glm-4.6v-flash)
 
 </Update>
 
@@ -1348,7 +1419,7 @@ rss: true
 
 ### Model Releases
 
-- [Essential AI: Rnj-1](https://phaseo.ai/models/essential-ai/rnj-1).
+- [Essential AI: Rnj-1](https://phaseo.ai/models/essential-ai/rnj-1)
 
 </Update>
 
@@ -1364,8 +1435,8 @@ rss: true
 
 ### Model Releases
 
-- [ByteDance: Seedream 4.5](https://phaseo.ai/models/bytedance/seedream-4.5).
-- [Nous: Hermes 4.3 36B](https://phaseo.ai/models/nous/hermes-4.3-36b).
+- [ByteDance: Seedream 4.5](https://phaseo.ai/models/bytedance/seedream-4.5)
+- [Nous: Hermes 4.3 36B](https://phaseo.ai/models/nous/hermes-4.3-36b)
 
 </Update>
 
@@ -1373,15 +1444,15 @@ rss: true
 
 ### Model Releases
 
-- [Amazon: Nova 2 Lite](https://phaseo.ai/models/amazon/nova-2-lite).
-- [Amazon: Nova 2 Omni](https://phaseo.ai/models/amazon/nova-2-omni).
-- [Amazon: Nova 2 Pro](https://phaseo.ai/models/amazon/nova-2-pro).
-- [Amazon: Nova 2 Sonic](https://phaseo.ai/models/amazon/nova-2-sonic).
-- [Amazon: Nova Multimodal Embeddings](https://phaseo.ai/models/amazon/nova-multimodal-embeddings).
-- [Mistral: Ministral 3.0 14B](https://phaseo.ai/models/mistral/ministral-3.0-14b).
-- [Mistral: Ministral 3.0 3B](https://phaseo.ai/models/mistral/ministral-3.0-3b).
-- [Mistral: Ministral 3.0 8B](https://phaseo.ai/models/mistral/ministral-3.0-8b).
-- [Mistral: Mistral Large 3.0](https://phaseo.ai/models/mistral/mistral-large-3.0).
+- [Amazon: Nova 2 Lite](https://phaseo.ai/models/amazon/nova-2-lite)
+- [Amazon: Nova 2 Omni](https://phaseo.ai/models/amazon/nova-2-omni)
+- [Amazon: Nova 2 Pro](https://phaseo.ai/models/amazon/nova-2-pro)
+- [Amazon: Nova 2 Sonic](https://phaseo.ai/models/amazon/nova-2-sonic)
+- [Amazon: Nova Multimodal Embeddings](https://phaseo.ai/models/amazon/nova-multimodal-embeddings)
+- [Mistral: Ministral 3.0 14B](https://phaseo.ai/models/mistral/ministral-3.0-14b)
+- [Mistral: Ministral 3.0 3B](https://phaseo.ai/models/mistral/ministral-3.0-3b)
+- [Mistral: Ministral 3.0 8B](https://phaseo.ai/models/mistral/ministral-3.0-8b)
+- [Mistral: Mistral Large 3.0](https://phaseo.ai/models/mistral/mistral-large-3.0)
 
 </Update>
 
@@ -1395,11 +1466,11 @@ rss: true
 
 ### Model Releases
 
-- [Arcee AI: Trinity Mini](https://phaseo.ai/models/arcee-ai/trinity-mini).
-- [Arcee AI: Trinity Nano Preview](https://phaseo.ai/models/arcee-ai/trinity-nano-preview).
-- [DeepSeek: DeepSeek V3.2](https://phaseo.ai/models/deepseek/deepseek-v3.2).
-- [DeepSeek: DeepSeek V3.2 Speciale](https://phaseo.ai/models/deepseek/deepseek-v3.2-speciale).
-- [DeepSeek: DeepSeek V3.2 Thinking](https://phaseo.ai/models/deepseek/deepseek-v3.2-thinking).
+- [Arcee AI: Trinity Mini](https://phaseo.ai/models/arcee-ai/trinity-mini)
+- [Arcee AI: Trinity Nano Preview](https://phaseo.ai/models/arcee-ai/trinity-nano-preview)
+- [DeepSeek: DeepSeek V3.2](https://phaseo.ai/models/deepseek/deepseek-v3.2)
+- [DeepSeek: DeepSeek V3.2 Speciale](https://phaseo.ai/models/deepseek/deepseek-v3.2-speciale)
+- [DeepSeek: DeepSeek V3.2 Thinking](https://phaseo.ai/models/deepseek/deepseek-v3.2-thinking)
 
 </Update>
 
@@ -1407,7 +1478,7 @@ rss: true
 
 ### Model Releases
 
-- [Prime Intellect: Intellect 3](https://phaseo.ai/models/prime-intellect/intellect-3).
+- [Prime Intellect: Intellect 3](https://phaseo.ai/models/prime-intellect/intellect-3)
 
 </Update>
 
@@ -1415,9 +1486,9 @@ rss: true
 
 ### Model Releases
 
-- [Black Forest Labs: Flux 2 Dev](https://phaseo.ai/models/black-forest-labs/flux-2-dev).
-- [Black Forest Labs: Flux 2 Flex](https://phaseo.ai/models/black-forest-labs/flux-2-flex).
-- [Black Forest Labs: Flux 2 Pro](https://phaseo.ai/models/black-forest-labs/flux-2-pro).
+- [Black Forest Labs: Flux 2 Dev](https://phaseo.ai/models/black-forest-labs/flux-2-dev)
+- [Black Forest Labs: Flux 2 Flex](https://phaseo.ai/models/black-forest-labs/flux-2-flex)
+- [Black Forest Labs: Flux 2 Pro](https://phaseo.ai/models/black-forest-labs/flux-2-pro)
 
 </Update>
 
@@ -1425,7 +1496,7 @@ rss: true
 
 ### Model Releases
 
-- [Anthropic: Claude Opus 4.5](https://phaseo.ai/models/anthropic/claude-opus-4.5).
+- [Anthropic: Claude Opus 4.5](https://phaseo.ai/models/anthropic/claude-opus-4.5)
 
 </Update>
 
@@ -1433,10 +1504,10 @@ rss: true
 
 ### Model Releases
 
-- [AllenAI: Olmo 3 32B Think](https://phaseo.ai/models/allenai/olmo-3-32b-think).
-- [AllenAI: Olmo 3 7B Instruct](https://phaseo.ai/models/allenai/olmo-3-7b-instruct).
-- [AllenAI: Olmo 3 7B Think](https://phaseo.ai/models/allenai/olmo-3-7b-think).
-- [Google: Gemini 3 Pro Image Preview (Nano Banana Pro)](https://phaseo.ai/models/google/gemini-3-pro-image-preview).
+- [AllenAI: Olmo 3 32B Think](https://phaseo.ai/models/allenai/olmo-3-32b-think)
+- [AllenAI: Olmo 3 7B Instruct](https://phaseo.ai/models/allenai/olmo-3-7b-instruct)
+- [AllenAI: Olmo 3 7B Think](https://phaseo.ai/models/allenai/olmo-3-7b-think)
+- [Google: Gemini 3 Pro Image Preview (Nano Banana Pro)](https://phaseo.ai/models/google/gemini-3-pro-image-preview)
 
 </Update>
 
@@ -1444,7 +1515,7 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: GPT 5.1 Codex Max](https://phaseo.ai/models/openai/gpt-5.1-codex-max).
+- [OpenAI: GPT 5.1 Codex Max](https://phaseo.ai/models/openai/gpt-5.1-codex-max)
 
 </Update>
 
@@ -1452,7 +1523,7 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemini 3 Pro Preview](https://phaseo.ai/models/google/gemini-3-pro-preview).
+- [Google: Gemini 3 Pro Preview](https://phaseo.ai/models/google/gemini-3-pro-preview)
 
 </Update>
 
@@ -1460,8 +1531,8 @@ rss: true
 
 ### Model Releases
 
-- [xAI: Grok 4.1 Non Thinking](https://phaseo.ai/models/x-ai/grok-4.1-non-thinking).
-- [xAI: Grok 4.1 Thinking](https://phaseo.ai/models/x-ai/grok-4.1-thinking).
+- [xAI: Grok 4.1 Non Thinking](https://phaseo.ai/models/x-ai/grok-4.1-non-thinking)
+- [xAI: Grok 4.1 Thinking](https://phaseo.ai/models/x-ai/grok-4.1-thinking)
 
 </Update>
 
@@ -1469,9 +1540,9 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: GPT 5.1 Chat](https://phaseo.ai/models/openai/gpt-5.1-chat).
-- [OpenAI: GPT 5.1 Codex](https://phaseo.ai/models/openai/gpt-5.1-codex).
-- [OpenAI: GPT 5.1 Codex Mini](https://phaseo.ai/models/openai/gpt-5.1-codex-mini).
+- [OpenAI: GPT 5.1 Chat](https://phaseo.ai/models/openai/gpt-5.1-chat)
+- [OpenAI: GPT 5.1 Codex](https://phaseo.ai/models/openai/gpt-5.1-codex)
+- [OpenAI: GPT 5.1 Codex Mini](https://phaseo.ai/models/openai/gpt-5.1-codex-mini)
 
 </Update>
 
@@ -1479,7 +1550,7 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: GPT 5.1](https://phaseo.ai/models/openai/gpt-5.1).
+- [OpenAI: GPT 5.1](https://phaseo.ai/models/openai/gpt-5.1)
 
 </Update>
 
@@ -1487,7 +1558,7 @@ rss: true
 
 ### Model Releases
 
-- [ElevenLabs: Scribe V2 Realtime](https://phaseo.ai/models/eleven-labs/scribe-v2-realtime).
+- [ElevenLabs: Scribe V2 Realtime](https://phaseo.ai/models/eleven-labs/scribe-v2-realtime)
 
 </Update>
 
@@ -1495,7 +1566,7 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: GPT 5 Codex Mini](https://phaseo.ai/models/openai/gpt-5-codex-mini).
+- [OpenAI: GPT 5 Codex Mini](https://phaseo.ai/models/openai/gpt-5-codex-mini)
 
 </Update>
 
@@ -1503,7 +1574,7 @@ rss: true
 
 ### Model Releases
 
-- [Moonshot: Kimi K2 Thinking](https://phaseo.ai/models/moonshotai/kimi-k2-thinking).
+- [Moonshot: Kimi K2 Thinking](https://phaseo.ai/models/moonshotai/kimi-k2-thinking)
 
 </Update>
 
@@ -1511,7 +1582,7 @@ rss: true
 
 ### Model Releases
 
-- [Moonshot: Kimi Linear 48B](https://phaseo.ai/models/moonshotai/kimi-linear-48b).
+- [Moonshot: Kimi Linear 48B](https://phaseo.ai/models/moonshotai/kimi-linear-48b)
 
 </Update>
 
@@ -1519,11 +1590,11 @@ rss: true
 
 ### Model Releases
 
-- [Cursor: Composer 1](https://phaseo.ai/models/cursor/composer-1).
-- [MiniMax: Music 2.0](https://phaseo.ai/models/minimax/music-2.0).
-- [MiniMax: Speech 2.6](https://phaseo.ai/models/minimax/speech-2.6).
-- [OpenAI: GPT OSS Safeguard 120b](https://phaseo.ai/models/openai/gpt-oss-safeguard-120b).
-- [OpenAI: GPT OSS Safeguard 20b](https://phaseo.ai/models/openai/gpt-oss-safeguard-20b).
+- [Cursor: Composer 1](https://phaseo.ai/models/cursor/composer-1)
+- [MiniMax: Music 2.0](https://phaseo.ai/models/minimax/music-2.0)
+- [MiniMax: Speech 2.6](https://phaseo.ai/models/minimax/speech-2.6)
+- [OpenAI: GPT OSS Safeguard 120b](https://phaseo.ai/models/openai/gpt-oss-safeguard-120b)
+- [OpenAI: GPT OSS Safeguard 20b](https://phaseo.ai/models/openai/gpt-oss-safeguard-20b)
 
 </Update>
 
@@ -1531,8 +1602,8 @@ rss: true
 
 ### Model Releases
 
-- [MiniMax: Hailuo 2.3](https://phaseo.ai/models/minimax/hailuo-2.3).
-- [MiniMax: Hailuo 2.3 Fast](https://phaseo.ai/models/minimax/hailuo-2.3-fast).
+- [MiniMax: Hailuo 2.3](https://phaseo.ai/models/minimax/hailuo-2.3)
+- [MiniMax: Hailuo 2.3 Fast](https://phaseo.ai/models/minimax/hailuo-2.3-fast)
 
 </Update>
 
@@ -1540,8 +1611,8 @@ rss: true
 
 ### Model Releases
 
-- [MiniMax: MiniMax M2](https://phaseo.ai/models/minimax/minimax-m2).
-- [Suno: Suno V4.5 All](https://phaseo.ai/models/suno/suno-v4.5-all).
+- [MiniMax: MiniMax M2](https://phaseo.ai/models/minimax/minimax-m2)
+- [Suno: Suno V4.5 All](https://phaseo.ai/models/suno/suno-v4.5-all)
 
 </Update>
 
@@ -1549,7 +1620,7 @@ rss: true
 
 ### Model Releases
 
-- [DeepSeek: DeepSeek OCR](https://phaseo.ai/models/deepseek/deepseek-ocr).
+- [DeepSeek: DeepSeek OCR](https://phaseo.ai/models/deepseek/deepseek-ocr)
 
 </Update>
 
@@ -1557,11 +1628,11 @@ rss: true
 
 ### Model Releases
 
-- [Anthropic: Claude Haiku 4.5](https://phaseo.ai/models/anthropic/claude-haiku-4.5).
-- [ByteDance: Seed 1.6 (2025-10-15)](https://phaseo.ai/models/bytedance/seed-1.6-2025-10-15).
-- [Google: Veo 3.1 Fast Preview](https://phaseo.ai/models/google/veo-3.1-fast-preview).
-- [Google: Veo 3.1 Preview](https://phaseo.ai/models/google/veo-3.1-preview).
-- [OpenAI: GPT 4o Transcribe Diarize](https://phaseo.ai/models/openai/gpt-4o-transcribe-diarize).
+- [Anthropic: Claude Haiku 4.5](https://phaseo.ai/models/anthropic/claude-haiku-4.5)
+- [ByteDance: Seed 1.6 (2025-10-15)](https://phaseo.ai/models/bytedance/seed-1.6-2025-10-15)
+- [Google: Veo 3.1 Fast Preview](https://phaseo.ai/models/google/veo-3.1-fast-preview)
+- [Google: Veo 3.1 Preview](https://phaseo.ai/models/google/veo-3.1-preview)
+- [OpenAI: GPT 4o Transcribe Diarize](https://phaseo.ai/models/openai/gpt-4o-transcribe-diarize)
 
 </Update>
 
@@ -1569,7 +1640,7 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: GPT 5 Search API](https://phaseo.ai/models/openai/gpt-5-search-api).
+- [OpenAI: GPT 5 Search API](https://phaseo.ai/models/openai/gpt-5-search-api)
 
 </Update>
 
@@ -1577,7 +1648,7 @@ rss: true
 
 ### Model Releases
 
-- [ai21: Jamba Reasoning 3B](https://phaseo.ai/models/ai21/jamba-reasoning-3b).
+- [ai21: Jamba Reasoning 3B](https://phaseo.ai/models/ai21/jamba-reasoning-3b)
 
 </Update>
 
@@ -1585,8 +1656,8 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemini 2.5 Computer Use Preview](https://phaseo.ai/models/google/gemini-2.5-computer-use-preview).
-- [Liquid AI: LFM 2 8B A1B](https://phaseo.ai/models/liquid-ai/lfm-2-8b-a1b).
+- [Google: Gemini 2.5 Computer Use Preview](https://phaseo.ai/models/google/gemini-2.5-computer-use-preview)
+- [Liquid AI: LFM 2 8B A1B](https://phaseo.ai/models/liquid-ai/lfm-2-8b-a1b)
 
 </Update>
 
@@ -1594,9 +1665,9 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: GPT Audio Mini (2025-10-06)](https://phaseo.ai/models/openai/gpt-audio-mini-2025-10-06).
-- [OpenAI: GPT Image 1 Mini](https://phaseo.ai/models/openai/gpt-image-1-mini).
-- [OpenAI: GPT Realtime Mini (2025-10-06)](https://phaseo.ai/models/openai/gpt-realtime-mini-2025-10-06).
+- [OpenAI: GPT Audio Mini (2025-10-06)](https://phaseo.ai/models/openai/gpt-audio-mini-2025-10-06)
+- [OpenAI: GPT Image 1 Mini](https://phaseo.ai/models/openai/gpt-image-1-mini)
+- [OpenAI: GPT Realtime Mini (2025-10-06)](https://phaseo.ai/models/openai/gpt-realtime-mini-2025-10-06)
 
 </Update>
 
@@ -1604,7 +1675,7 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: Sora 2 Pro](https://phaseo.ai/models/openai/sora-2-pro).
+- [OpenAI: Sora 2 Pro](https://phaseo.ai/models/openai/sora-2-pro)
 
 </Update>
 
@@ -1612,10 +1683,10 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemini 2.5 Flash Image (Nano Banana)](https://phaseo.ai/models/google/gemini-2.5-flash-image).
-- [IBM: Granite 4.0 Micro](https://phaseo.ai/models/ibm/granite-4.0-micro).
-- [IBM: Granite 4.0 Small](https://phaseo.ai/models/ibm/granite-4.0-small).
-- [IBM: Granite 4.0 Tiny](https://phaseo.ai/models/ibm/granite-4.0-tiny).
+- [Google: Gemini 2.5 Flash Image (Nano Banana)](https://phaseo.ai/models/google/gemini-2.5-flash-image)
+- [IBM: Granite 4.0 Micro](https://phaseo.ai/models/ibm/granite-4.0-micro)
+- [IBM: Granite 4.0 Small](https://phaseo.ai/models/ibm/granite-4.0-small)
+- [IBM: Granite 4.0 Tiny](https://phaseo.ai/models/ibm/granite-4.0-tiny)
 
 </Update>
 
@@ -1623,8 +1694,8 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: Sora 2 (2025-09-30)](https://phaseo.ai/models/openai/sora-2-2025-09-30).
-- [z.AI: GLM 4.6](https://phaseo.ai/models/z-ai/glm-4.6).
+- [OpenAI: Sora 2 (2025-09-30)](https://phaseo.ai/models/openai/sora-2-2025-09-30)
+- [z.AI: GLM 4.6](https://phaseo.ai/models/z-ai/glm-4.6)
 
 </Update>
 
@@ -1632,8 +1703,8 @@ rss: true
 
 ### Model Releases
 
-- [Anthropic: Claude Sonnet 4.5](https://phaseo.ai/models/anthropic/claude-sonnet-4.5).
-- [DeepSeek: DeepSeek V3.2 Exp](https://phaseo.ai/models/deepseek/deepseek-v3.2-exp).
+- [Anthropic: Claude Sonnet 4.5](https://phaseo.ai/models/anthropic/claude-sonnet-4.5)
+- [DeepSeek: DeepSeek V3.2 Exp](https://phaseo.ai/models/deepseek/deepseek-v3.2-exp)
 
 </Update>
 
@@ -1641,9 +1712,9 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemini 2.5 Flash Lite Preview (2025-09-25)](https://phaseo.ai/models/google/gemini-2.5-flash-lite-preview-2025-09-25).
-- [Google: Gemini 2.5 Flash Preview (2025-09-25)](https://phaseo.ai/models/google/gemini-2.5-flash-preview-2025-09-25).
-- [Google: Gemini Robotics ER 1.5 Preview](https://phaseo.ai/models/google/gemini-robotics-er-1.5-preview).
+- [Google: Gemini 2.5 Flash Lite Preview (2025-09-25)](https://phaseo.ai/models/google/gemini-2.5-flash-lite-preview-2025-09-25)
+- [Google: Gemini 2.5 Flash Preview (2025-09-25)](https://phaseo.ai/models/google/gemini-2.5-flash-preview-2025-09-25)
+- [Google: Gemini Robotics ER 1.5 Preview](https://phaseo.ai/models/google/gemini-robotics-er-1.5-preview)
 
 </Update>
 
@@ -1651,8 +1722,8 @@ rss: true
 
 ### Model Releases
 
-- [Liquid AI: LFM 2 2.6B](https://phaseo.ai/models/liquid-ai/lfm-2-2.6b).
-- [Suno: Suno V5](https://phaseo.ai/models/suno/suno-v5).
+- [Liquid AI: LFM 2 2.6B](https://phaseo.ai/models/liquid-ai/lfm-2-2.6b)
+- [Suno: Suno V5](https://phaseo.ai/models/suno/suno-v5)
 
 </Update>
 
@@ -1660,8 +1731,8 @@ rss: true
 
 ### Model Releases
 
-- [DeepSeek: DeepSeek V3.1 Terminus](https://phaseo.ai/models/deepseek/deepseek-v3.1-terminus).
-- [Qwen: Qwen3 LiveTranslate Flash Realtime](https://phaseo.ai/models/qwen/qwen3-livetranslate-flash-realtime).
+- [DeepSeek: DeepSeek V3.1 Terminus](https://phaseo.ai/models/deepseek/deepseek-v3.1-terminus)
+- [Qwen: Qwen3 LiveTranslate Flash Realtime](https://phaseo.ai/models/qwen/qwen3-livetranslate-flash-realtime)
 
 </Update>
 
@@ -1669,8 +1740,8 @@ rss: true
 
 ### Model Releases
 
-- [xAI: Grok 4 Fast Non Reasoning](https://phaseo.ai/models/x-ai/grok-4-fast-non-reasoning).
-- [xAI: Grok 4 Fast Reasoning](https://phaseo.ai/models/x-ai/grok-4-fast-reasoning).
+- [xAI: Grok 4 Fast Non Reasoning](https://phaseo.ai/models/x-ai/grok-4-fast-non-reasoning)
+- [xAI: Grok 4 Fast Reasoning](https://phaseo.ai/models/x-ai/grok-4-fast-reasoning)
 
 </Update>
 
@@ -1678,7 +1749,7 @@ rss: true
 
 ### Model Releases
 
-- [Inclusion AI: Ring Flash 2.0](https://phaseo.ai/models/inclusionai/ring-flash-2.0).
+- [Inclusion AI: Ring Flash 2.0](https://phaseo.ai/models/inclusionai/ring-flash-2.0)
 
 </Update>
 
@@ -1686,9 +1757,9 @@ rss: true
 
 ### Model Releases
 
-- [Inclusion AI: Ling Flash 2.0](https://phaseo.ai/models/inclusionai/ling-flash-2.0).
-- [Mistral: Magistral Medium 1.2](https://phaseo.ai/models/mistral/magistral-medium-1.2).
-- [Mistral: Magistral Small 1.2](https://phaseo.ai/models/mistral/magistral-small-1.2).
+- [Inclusion AI: Ling Flash 2.0](https://phaseo.ai/models/inclusionai/ling-flash-2.0)
+- [Mistral: Magistral Medium 1.2](https://phaseo.ai/models/mistral/magistral-medium-1.2)
+- [Mistral: Magistral Small 1.2](https://phaseo.ai/models/mistral/magistral-small-1.2)
 
 </Update>
 
@@ -1696,7 +1767,7 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: GPT 5 Codex](https://phaseo.ai/models/openai/gpt-5-codex).
+- [OpenAI: GPT 5 Codex](https://phaseo.ai/models/openai/gpt-5-codex)
 
 </Update>
 
@@ -1704,9 +1775,9 @@ rss: true
 
 ### Model Releases
 
-- [Google: Veo 3](https://phaseo.ai/models/google/veo-3).
-- [Google: Veo 3 Fast](https://phaseo.ai/models/google/veo-3-fast).
-- [Upstage: Solar Pro 2 (2025-09-09)](https://phaseo.ai/models/upstage/solar-pro-2-2025-09-09).
+- [Google: Veo 3](https://phaseo.ai/models/google/veo-3)
+- [Google: Veo 3 Fast](https://phaseo.ai/models/google/veo-3-fast)
+- [Upstage: Solar Pro 2 (2025-09-09)](https://phaseo.ai/models/upstage/solar-pro-2-2025-09-09)
 
 </Update>
 
@@ -1714,7 +1785,7 @@ rss: true
 
 ### Model Releases
 
-- [Moonshot: Kimi K2 (2025-09-05)](https://phaseo.ai/models/moonshotai/kimi-k2).
+- [Moonshot: Kimi K2 (2025-09-05)](https://phaseo.ai/models/moonshotai/kimi-k2)
 
 </Update>
 
@@ -1722,11 +1793,11 @@ rss: true
 
 ### Model Releases
 
-- [ByteDance: Seed 1.6 Flash (2025-08-28)](https://phaseo.ai/models/bytedance/seed-1.6-flash-2025-08-28).
-- [Cohere: Command A Translate](https://phaseo.ai/models/cohere/command-a-translate).
-- [OpenAI: GPT Audio](https://phaseo.ai/models/openai/gpt-audio).
-- [OpenAI: GPT Realtime](https://phaseo.ai/models/openai/gpt-realtime).
-- [xAI: Grok Code Fast 1](https://phaseo.ai/models/x-ai/grok-code-fast-1).
+- [ByteDance: Seed 1.6 Flash (2025-08-28)](https://phaseo.ai/models/bytedance/seed-1.6-flash-2025-08-28)
+- [Cohere: Command A Translate](https://phaseo.ai/models/cohere/command-a-translate)
+- [OpenAI: GPT Audio](https://phaseo.ai/models/openai/gpt-audio)
+- [OpenAI: GPT Realtime](https://phaseo.ai/models/openai/gpt-realtime)
+- [xAI: Grok Code Fast 1](https://phaseo.ai/models/x-ai/grok-code-fast-1)
 
 </Update>
 
@@ -1734,7 +1805,7 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemini 2.5 Flash Image Preview (Nano Banana)](https://phaseo.ai/models/google/gemini-2.5-flash-image-preview).
+- [Google: Gemini 2.5 Flash Image Preview (Nano Banana)](https://phaseo.ai/models/google/gemini-2.5-flash-image-preview)
 
 </Update>
 
@@ -1742,8 +1813,8 @@ rss: true
 
 ### Model Releases
 
-- [Cohere: Command A Reasoning](https://phaseo.ai/models/cohere/command-a-reasoning).
-- [DeepSeek: DeepSeek V3.1](https://phaseo.ai/models/deepseek/deepseek-v3.1).
+- [Cohere: Command A Reasoning](https://phaseo.ai/models/cohere/command-a-reasoning)
+- [DeepSeek: DeepSeek V3.1](https://phaseo.ai/models/deepseek/deepseek-v3.1)
 
 </Update>
 
@@ -1751,9 +1822,9 @@ rss: true
 
 ### Model Releases
 
-- [Google: Imagen 4.0 Fast Generate 001](https://phaseo.ai/models/google/imagen-4.0-fast-generate-001).
-- [Google: Imagen 4.0 Generate 001](https://phaseo.ai/models/google/imagen-4.0-generate-001).
-- [Google: Imagen 4.0 Ultra Generate 001](https://phaseo.ai/models/google/imagen-4.0-ultra-generate-001).
+- [Google: Imagen 4.0 Fast Generate 001](https://phaseo.ai/models/google/imagen-4.0-fast-generate-001)
+- [Google: Imagen 4.0 Generate 001](https://phaseo.ai/models/google/imagen-4.0-generate-001)
+- [Google: Imagen 4.0 Ultra Generate 001](https://phaseo.ai/models/google/imagen-4.0-ultra-generate-001)
 
 </Update>
 
@@ -1761,7 +1832,7 @@ rss: true
 
 ### Model Releases
 
-- [Mistral: Mistral Medium 3.1](https://phaseo.ai/models/mistral/mistral-medium-3.1).
+- [Mistral: Mistral Medium 3.1](https://phaseo.ai/models/mistral/mistral-medium-3.1)
 
 </Update>
 
@@ -1769,7 +1840,7 @@ rss: true
 
 ### Model Releases
 
-- [z.AI: GLM 4.5V](https://phaseo.ai/models/z-ai/glm-4.5v).
+- [z.AI: GLM 4.5V](https://phaseo.ai/models/z-ai/glm-4.5v)
 
 </Update>
 
@@ -1777,11 +1848,11 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: GPT 5](https://phaseo.ai/models/openai/gpt-5).
-- [OpenAI: GPT 5 Chat](https://phaseo.ai/models/openai/gpt-5-chat).
-- [OpenAI: GPT 5 Mini](https://phaseo.ai/models/openai/gpt-5-mini).
-- [OpenAI: GPT 5 Nano](https://phaseo.ai/models/openai/gpt-5-nano).
-- [OpenAI: GPT 5 Pro](https://phaseo.ai/models/openai/gpt-5-pro).
+- [OpenAI: GPT 5](https://phaseo.ai/models/openai/gpt-5)
+- [OpenAI: GPT 5 Chat](https://phaseo.ai/models/openai/gpt-5-chat)
+- [OpenAI: GPT 5 Mini](https://phaseo.ai/models/openai/gpt-5-mini)
+- [OpenAI: GPT 5 Nano](https://phaseo.ai/models/openai/gpt-5-nano)
+- [OpenAI: GPT 5 Pro](https://phaseo.ai/models/openai/gpt-5-pro)
 
 </Update>
 
@@ -1789,8 +1860,8 @@ rss: true
 
 ### Model Releases
 
-- [MiniMax: Speech 2.5 HD Preview](https://phaseo.ai/models/minimax/speech-2.5-hd-preview).
-- [MiniMax: Speech 2.5 Turbo Preview](https://phaseo.ai/models/minimax/speech-2.5-turbo-preview).
+- [MiniMax: Speech 2.5 HD Preview](https://phaseo.ai/models/minimax/speech-2.5-hd-preview)
+- [MiniMax: Speech 2.5 Turbo Preview](https://phaseo.ai/models/minimax/speech-2.5-turbo-preview)
 
 </Update>
 
@@ -1798,9 +1869,9 @@ rss: true
 
 ### Model Releases
 
-- [Anthropic: Claude Opus 4.1](https://phaseo.ai/models/anthropic/claude-opus-4.1).
-- [OpenAI: GPT OSS 120b](https://phaseo.ai/models/openai/gpt-oss-120b).
-- [OpenAI: GPT OSS 20b](https://phaseo.ai/models/openai/gpt-oss-20b).
+- [Anthropic: Claude Opus 4.1](https://phaseo.ai/models/anthropic/claude-opus-4.1)
+- [OpenAI: GPT OSS 120b](https://phaseo.ai/models/openai/gpt-oss-120b)
+- [OpenAI: GPT OSS 20b](https://phaseo.ai/models/openai/gpt-oss-20b)
 
 </Update>
 
@@ -1808,7 +1879,7 @@ rss: true
 
 ### Model Releases
 
-- [Cohere: Command A Vision](https://phaseo.ai/models/cohere/command-a-vision).
+- [Cohere: Command A Vision](https://phaseo.ai/models/cohere/command-a-vision)
 
 </Update>
 
@@ -1816,7 +1887,7 @@ rss: true
 
 ### Model Releases
 
-- [Mistral: Codestral (2025-07-30)](https://phaseo.ai/models/mistral/codestral).
+- [Mistral: Codestral (2025-07-30)](https://phaseo.ai/models/mistral/codestral)
 
 </Update>
 
@@ -1824,8 +1895,8 @@ rss: true
 
 ### Model Releases
 
-- [z.AI: GLM 4.5](https://phaseo.ai/models/z-ai/glm-4.5).
-- [z.AI: GLM 4.5 Air](https://phaseo.ai/models/z-ai/glm-4.5-air).
+- [z.AI: GLM 4.5](https://phaseo.ai/models/z-ai/glm-4.5)
+- [z.AI: GLM 4.5 Air](https://phaseo.ai/models/z-ai/glm-4.5-air)
 
 </Update>
 
@@ -1833,9 +1904,9 @@ rss: true
 
 ### Model Releases
 
-- [Nous: Hermes 4 14B](https://phaseo.ai/models/nous/hermes-4-14b).
-- [Nous: Hermes 4 405B](https://phaseo.ai/models/nous/hermes-4-405b).
-- [Nous: Hermes 4 70B](https://phaseo.ai/models/nous/hermes-4-70b).
+- [Nous: Hermes 4 14B](https://phaseo.ai/models/nous/hermes-4-14b)
+- [Nous: Hermes 4 405B](https://phaseo.ai/models/nous/hermes-4-405b)
+- [Nous: Hermes 4 70B](https://phaseo.ai/models/nous/hermes-4-70b)
 
 </Update>
 
@@ -1843,8 +1914,8 @@ rss: true
 
 ### Model Releases
 
-- [Mistral: Magistral Medium 1.1](https://phaseo.ai/models/mistral/magistral-medium-1.1).
-- [Mistral: Magistral Small 1.1](https://phaseo.ai/models/mistral/magistral-small-1.1).
+- [Mistral: Magistral Medium 1.1](https://phaseo.ai/models/mistral/magistral-medium-1.1)
+- [Mistral: Magistral Small 1.1](https://phaseo.ai/models/mistral/magistral-small-1.1)
 
 </Update>
 
@@ -1852,8 +1923,8 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemini 2.5 Flash-Lite](https://phaseo.ai/models/google/gemini-2.5-flash-lite).
-- [NAVER: HyperClova X Seed Think 14B](https://phaseo.ai/models/naver-hyperclova/hyperclova-x-seed-think-14b).
+- [Google: Gemini 2.5 Flash-Lite](https://phaseo.ai/models/google/gemini-2.5-flash-lite)
+- [NAVER: HyperClova X Seed Think 14B](https://phaseo.ai/models/naver-hyperclova/hyperclova-x-seed-think-14b)
 
 </Update>
 
@@ -1861,9 +1932,9 @@ rss: true
 
 ### Model Releases
 
-- [Google: Veo 3.0 Fast Generate Preview](https://phaseo.ai/models/google/veo-3.0-fast-generate-preview).
-- [Google: Veo 3.0 Generate Preview](https://phaseo.ai/models/google/veo-3.0-generate-preview).
-- [Suno: Suno V4.5+](https://phaseo.ai/models/suno/suno-v4.5+).
+- [Google: Veo 3.0 Fast Generate Preview](https://phaseo.ai/models/google/veo-3.0-fast-generate-preview)
+- [Google: Veo 3.0 Generate Preview](https://phaseo.ai/models/google/veo-3.0-generate-preview)
+- [Suno: Suno V4.5+](https://phaseo.ai/models/suno/suno-v4.5+)
 
 </Update>
 
@@ -1871,11 +1942,11 @@ rss: true
 
 ### Model Releases
 
-- [LG: EXAONE 4.0 1.2B](https://phaseo.ai/models/lg/exaone-4.0-1.2b).
-- [LG: EXAONE 4.0 32B](https://phaseo.ai/models/lg/exaone-4.0-32b).
-- [Mistral: Voxtral Mini](https://phaseo.ai/models/mistral/voxtral-mini).
-- [Mistral: Voxtral Mini Transcribe](https://phaseo.ai/models/mistral/voxtral-mini-transcribe).
-- [Mistral: Voxtral Small](https://phaseo.ai/models/mistral/voxtral-small).
+- [LG: EXAONE 4.0 1.2B](https://phaseo.ai/models/lg/exaone-4.0-1.2b)
+- [LG: EXAONE 4.0 32B](https://phaseo.ai/models/lg/exaone-4.0-32b)
+- [Mistral: Voxtral Mini](https://phaseo.ai/models/mistral/voxtral-mini)
+- [Mistral: Voxtral Mini Transcribe](https://phaseo.ai/models/mistral/voxtral-mini-transcribe)
+- [Mistral: Voxtral Small](https://phaseo.ai/models/mistral/voxtral-small)
 
 </Update>
 
@@ -1883,7 +1954,7 @@ rss: true
 
 ### Model Releases
 
-- [Moonshot: Kimi K2 (2025-07-11)](https://phaseo.ai/models/moonshotai/kimi-k2-2025-07-11).
+- [Moonshot: Kimi K2 (2025-07-11)](https://phaseo.ai/models/moonshotai/kimi-k2-2025-07-11)
 
 </Update>
 
@@ -1891,14 +1962,14 @@ rss: true
 
 ### Model Releases
 
-- [Liquid AI: LFM 2 1.2B](https://phaseo.ai/models/liquid-ai/lfm-2-1.2b).
-- [Liquid AI: LFM 2 350M](https://phaseo.ai/models/liquid-ai/lfm-2-350m).
-- [Liquid AI: LFM 2 700M](https://phaseo.ai/models/liquid-ai/lfm-2-700m).
-- [Mistral: Devstral Medium 1.0](https://phaseo.ai/models/mistral/devstral-medium-1.0).
-- [Mistral: Devstral Small 1.1](https://phaseo.ai/models/mistral/devstral-small-1.1).
-- [Upstage: Solar Pro 2 (2025-07-10)](https://phaseo.ai/models/upstage/solar-pro-2-2025-07-10).
-- [xAI: Grok 4](https://phaseo.ai/models/x-ai/grok-4).
-- [xAI: Grok 4 Heavy](https://phaseo.ai/models/x-ai/grok-4-heavy).
+- [Liquid AI: LFM 2 1.2B](https://phaseo.ai/models/liquid-ai/lfm-2-1.2b)
+- [Liquid AI: LFM 2 350M](https://phaseo.ai/models/liquid-ai/lfm-2-350m)
+- [Liquid AI: LFM 2 700M](https://phaseo.ai/models/liquid-ai/lfm-2-700m)
+- [Mistral: Devstral Medium 1.0](https://phaseo.ai/models/mistral/devstral-medium-1.0)
+- [Mistral: Devstral Small 1.1](https://phaseo.ai/models/mistral/devstral-small-1.1)
+- [Upstage: Solar Pro 2 (2025-07-10)](https://phaseo.ai/models/upstage/solar-pro-2-2025-07-10)
+- [xAI: Grok 4](https://phaseo.ai/models/x-ai/grok-4)
+- [xAI: Grok 4 Heavy](https://phaseo.ai/models/x-ai/grok-4-heavy)
 
 </Update>
 
@@ -1906,8 +1977,8 @@ rss: true
 
 ### Model Releases
 
-- [ai21: Jamba Large 1.7](https://phaseo.ai/models/ai21/jamba-large-1.7).
-- [ai21: Jamba Mini 1.7](https://phaseo.ai/models/ai21/jamba-mini-1.7).
+- [ai21: Jamba Large 1.7](https://phaseo.ai/models/ai21/jamba-large-1.7)
+- [ai21: Jamba Mini 1.7](https://phaseo.ai/models/ai21/jamba-mini-1.7)
 
 </Update>
 
@@ -1915,8 +1986,8 @@ rss: true
 
 ### Model Releases
 
-- [z.AI: GLM 4.1V 9B](https://phaseo.ai/models/z-ai/glm-4.1v-9b).
-- [z.AI: GLM 4.1V Thinking 9B](https://phaseo.ai/models/z-ai/glm-4.1v-thinking-9b).
+- [z.AI: GLM 4.1V 9B](https://phaseo.ai/models/z-ai/glm-4.1v-9b)
+- [z.AI: GLM 4.1V Thinking 9B](https://phaseo.ai/models/z-ai/glm-4.1v-thinking-9b)
 
 </Update>
 
@@ -1924,7 +1995,7 @@ rss: true
 
 ### Model Releases
 
-- [Tencent Hunyuan: Hunyuan A13B Instruct](https://phaseo.ai/models/tencent/hunyuan-a13b-instruct).
+- [Tencent Hunyuan: Hunyuan A13B Instruct](https://phaseo.ai/models/tencent/hunyuan-a13b-instruct)
 
 </Update>
 
@@ -1932,8 +2003,8 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: o3 Deep Research](https://phaseo.ai/models/openai/o3-deep-research).
-- [OpenAI: o4 mini Deep Research ](https://phaseo.ai/models/openai/o4-mini-deep-research).
+- [OpenAI: o3 Deep Research](https://phaseo.ai/models/openai/o3-deep-research)
+- [OpenAI: o4 mini Deep Research ](https://phaseo.ai/models/openai/o4-mini-deep-research)
 
 </Update>
 
@@ -1941,10 +2012,10 @@ rss: true
 
 ### Model Releases
 
-- [ByteDance: Seed 1.6 (2025-06-15)](https://phaseo.ai/models/bytedance/seed-1.6-2025-06-15).
-- [ByteDance: Seed 1.6 Flash (2025-06-15)](https://phaseo.ai/models/bytedance/seed-1.6-flash-2025-06-15).
-- [Google: Gemma 3n E2B](https://phaseo.ai/models/google/gemma-3n-e2b).
-- [Google: Gemma 3n E4B](https://phaseo.ai/models/google/gemma-3n-e4b).
+- [ByteDance: Seed 1.6 (2025-06-15)](https://phaseo.ai/models/bytedance/seed-1.6-2025-06-15)
+- [ByteDance: Seed 1.6 Flash (2025-06-15)](https://phaseo.ai/models/bytedance/seed-1.6-flash-2025-06-15)
+- [Google: Gemma 3n E2B](https://phaseo.ai/models/google/gemma-3n-e2b)
+- [Google: Gemma 3n E4B](https://phaseo.ai/models/google/gemma-3n-e4b)
 
 </Update>
 
@@ -1952,7 +2023,7 @@ rss: true
 
 ### Model Releases
 
-- [Moonshot: Kimi VL A3B Thinking (2025-06-21)](https://phaseo.ai/models/moonshotai/kimi-vl-a3b-thinking).
+- [Moonshot: Kimi VL A3B Thinking (2025-06-21)](https://phaseo.ai/models/moonshotai/kimi-vl-a3b-thinking)
 
 </Update>
 
@@ -1960,8 +2031,8 @@ rss: true
 
 ### Model Releases
 
-- [MiniMax: Music 1.5](https://phaseo.ai/models/minimax/music-1.5).
-- [Mistral: Mistral Small 3.2](https://phaseo.ai/models/mistral/mistral-small-3.2).
+- [MiniMax: Music 1.5](https://phaseo.ai/models/minimax/music-1.5)
+- [Mistral: Mistral Small 3.2](https://phaseo.ai/models/mistral/mistral-small-3.2)
 
 </Update>
 
@@ -1969,7 +2040,7 @@ rss: true
 
 ### Model Releases
 
-- [MiniMax: Hailuo 02](https://phaseo.ai/models/minimax/hailuo-02).
+- [MiniMax: Hailuo 02](https://phaseo.ai/models/minimax/hailuo-02)
 
 </Update>
 
@@ -1977,9 +2048,9 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemini 2.5 Flash](https://phaseo.ai/models/google/gemini-2.5-flash).
-- [Google: Gemini 2.5 Flash Lite Preview (2025-06-17)](https://phaseo.ai/models/google/gemini-2.5-flash-lite-preview-2025-06-17).
-- [Google: Gemini 2.5 Pro](https://phaseo.ai/models/google/gemini-2.5-pro).
+- [Google: Gemini 2.5 Flash](https://phaseo.ai/models/google/gemini-2.5-flash)
+- [Google: Gemini 2.5 Flash Lite Preview (2025-06-17)](https://phaseo.ai/models/google/gemini-2.5-flash-lite-preview-2025-06-17)
+- [Google: Gemini 2.5 Pro](https://phaseo.ai/models/google/gemini-2.5-pro)
 
 </Update>
 
@@ -1987,8 +2058,8 @@ rss: true
 
 ### Model Releases
 
-- [MiniMax: Minimax M1 40K](https://phaseo.ai/models/minimax/minimax-m1-40k).
-- [MiniMax: MiniMax M1 80K](https://phaseo.ai/models/minimax/minimax-m1-80k).
+- [MiniMax: Minimax M1 40K](https://phaseo.ai/models/minimax/minimax-m1-40k)
+- [MiniMax: MiniMax M1 80K](https://phaseo.ai/models/minimax/minimax-m1-80k)
 
 </Update>
 
@@ -1996,9 +2067,9 @@ rss: true
 
 ### Model Releases
 
-- [Google: Imagen 4.0 Fast Generate Preview (2025-06-11)](https://phaseo.ai/models/google/imagen-4.0-fast-generate-preview).
-- [Google: Imagen 4.0 Generate Preview (2025-06-11)](https://phaseo.ai/models/google/imagen-4.0-generate-preview).
-- [Google: Imagen 4.0 Ultra Generate Preview (2025-06-11)](https://phaseo.ai/models/google/imagen-4.0-ultra-generate-preview).
+- [Google: Imagen 4.0 Fast Generate Preview (2025-06-11)](https://phaseo.ai/models/google/imagen-4.0-fast-generate-preview)
+- [Google: Imagen 4.0 Generate Preview (2025-06-11)](https://phaseo.ai/models/google/imagen-4.0-generate-preview)
+- [Google: Imagen 4.0 Ultra Generate Preview (2025-06-11)](https://phaseo.ai/models/google/imagen-4.0-ultra-generate-preview)
 
 </Update>
 
@@ -2006,10 +2077,10 @@ rss: true
 
 ### Model Releases
 
-- [Mistral: Magistral Medium 1.0](https://phaseo.ai/models/mistral/magistral-medium-1.0).
-- [Mistral: Magistral Small 1.0](https://phaseo.ai/models/mistral/magistral-small-1.0).
-- [Mistral: Magistral Small 2506](https://phaseo.ai/models/mistral/magistral-small-2506).
-- [OpenAI: o3 Pro](https://phaseo.ai/models/openai/o3-pro).
+- [Mistral: Magistral Medium 1.0](https://phaseo.ai/models/mistral/magistral-medium-1.0)
+- [Mistral: Magistral Small 1.0](https://phaseo.ai/models/mistral/magistral-small-1.0)
+- [Mistral: Magistral Small 2506](https://phaseo.ai/models/mistral/magistral-small-2506)
+- [OpenAI: o3 Pro](https://phaseo.ai/models/openai/o3-pro)
 
 </Update>
 
@@ -2017,7 +2088,7 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemini 2.5 Pro Preview (2025-06-05)](https://phaseo.ai/models/google/gemini-2.5-pro-preview-2025-06-05).
+- [Google: Gemini 2.5 Pro Preview (2025-06-05)](https://phaseo.ai/models/google/gemini-2.5-pro-preview-2025-06-05)
 
 </Update>
 
@@ -2025,8 +2096,8 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: GPT 4o Audio (2025-06-03)](https://phaseo.ai/models/openai/gpt-4o-audio).
-- [OpenAI: GPT 4o Realtime Preview (2025-06-03)](https://phaseo.ai/models/openai/gpt-4o-realtime-preview).
+- [OpenAI: GPT 4o Audio (2025-06-03)](https://phaseo.ai/models/openai/gpt-4o-audio)
+- [OpenAI: GPT 4o Realtime Preview (2025-06-03)](https://phaseo.ai/models/openai/gpt-4o-realtime-preview)
 
 </Update>
 
@@ -2034,8 +2105,8 @@ rss: true
 
 ### Model Releases
 
-- [DeepSeek: DeepSeek R1 (2025-05-28)](https://phaseo.ai/models/deepseek/deepseek-r1-2025-05-28).
-- [Mistral: Codestral Embed](https://phaseo.ai/models/mistral/codestral-embed).
+- [DeepSeek: DeepSeek R1 (2025-05-28)](https://phaseo.ai/models/deepseek/deepseek-r1-2025-05-28)
+- [Mistral: Codestral Embed](https://phaseo.ai/models/mistral/codestral-embed)
 
 </Update>
 
@@ -2043,7 +2114,7 @@ rss: true
 
 ### Model Releases
 
-- [Mistral: Mistral OCR 2](https://phaseo.ai/models/mistral/mistral-ocr-2).
+- [Mistral: Mistral OCR 2](https://phaseo.ai/models/mistral/mistral-ocr-2)
 
 </Update>
 
@@ -2051,9 +2122,9 @@ rss: true
 
 ### Model Releases
 
-- [Anthropic: Claude Opus 4](https://phaseo.ai/models/anthropic/claude-opus-4).
-- [Anthropic: Claude Sonnet 4](https://phaseo.ai/models/anthropic/claude-sonnet-4).
-- [Mistral: Devstral Small 1.0](https://phaseo.ai/models/mistral/devstral-small-1.0).
+- [Anthropic: Claude Opus 4](https://phaseo.ai/models/anthropic/claude-opus-4)
+- [Anthropic: Claude Sonnet 4](https://phaseo.ai/models/anthropic/claude-sonnet-4)
+- [Mistral: Devstral Small 1.0](https://phaseo.ai/models/mistral/devstral-small-1.0)
 
 </Update>
 
@@ -2061,13 +2132,13 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemini 2.5 Flash Preview (2025-05-20)](https://phaseo.ai/models/google/gemini-2.5-flash-preview-2025-05-20).
-- [Google: Gemini 2.5 Flash Preview TTS (2025-05-20)](https://phaseo.ai/models/google/gemini-2.5-flash-preview-tts-2025-05-20).
-- [Google: Gemini 2.5 Pro Preview TTS (2025-05-20)](https://phaseo.ai/models/google/gemini-2.5-pro-preview-tts-2025-05-20).
-- [Google: Gemini Embedding 001](https://phaseo.ai/models/google/gemini-embedding-001).
-- [Google: Imagen 4.0 Preview](https://phaseo.ai/models/google/imagen-4.0-preview).
-- [Google: Imagen 4.0 Ultra Preview](https://phaseo.ai/models/google/imagen-4.0-ultra-preview).
-- [Upstage: Solar Pro 2 Preview](https://phaseo.ai/models/upstage/solar-pro-2-preview).
+- [Google: Gemini 2.5 Flash Preview (2025-05-20)](https://phaseo.ai/models/google/gemini-2.5-flash-preview-2025-05-20)
+- [Google: Gemini 2.5 Flash Preview TTS (2025-05-20)](https://phaseo.ai/models/google/gemini-2.5-flash-preview-tts-2025-05-20)
+- [Google: Gemini 2.5 Pro Preview TTS (2025-05-20)](https://phaseo.ai/models/google/gemini-2.5-pro-preview-tts-2025-05-20)
+- [Google: Gemini Embedding 001](https://phaseo.ai/models/google/gemini-embedding-001)
+- [Google: Imagen 4.0 Preview](https://phaseo.ai/models/google/imagen-4.0-preview)
+- [Google: Imagen 4.0 Ultra Preview](https://phaseo.ai/models/google/imagen-4.0-ultra-preview)
+- [Upstage: Solar Pro 2 Preview](https://phaseo.ai/models/upstage/solar-pro-2-preview)
 
 </Update>
 
@@ -2075,7 +2146,7 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: Codex Mini](https://phaseo.ai/models/openai/codex-mini).
+- [OpenAI: Codex Mini](https://phaseo.ai/models/openai/codex-mini)
 
 </Update>
 
@@ -2083,8 +2154,8 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemini 2.0 Flash Preview Image Generation](https://phaseo.ai/models/google/gemini-2.0-flash-preview-image-generation).
-- [Mistral: Mistral Medium 3.0](https://phaseo.ai/models/mistral/mistral-medium-3.0).
+- [Google: Gemini 2.0 Flash Preview Image Generation](https://phaseo.ai/models/google/gemini-2.0-flash-preview-image-generation)
+- [Mistral: Mistral Medium 3.0](https://phaseo.ai/models/mistral/mistral-medium-3.0)
 
 </Update>
 
@@ -2092,7 +2163,7 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemini 2.5 Pro Preview (2025-05-06)](https://phaseo.ai/models/google/gemini-2.5-pro-preview-2025-05-06).
+- [Google: Gemini 2.5 Pro Preview (2025-05-06)](https://phaseo.ai/models/google/gemini-2.5-pro-preview-2025-05-06)
 
 </Update>
 
@@ -2100,7 +2171,7 @@ rss: true
 
 ### Model Releases
 
-- [IBM: Granite 4.0 Tiny Preview](https://phaseo.ai/models/ibm/granite-4.0-tiny-preview).
+- [IBM: Granite 4.0 Tiny Preview](https://phaseo.ai/models/ibm/granite-4.0-tiny-preview)
 
 </Update>
 
@@ -2108,7 +2179,7 @@ rss: true
 
 ### Model Releases
 
-- [Suno: Suno V4.5](https://phaseo.ai/models/suno/suno-v4.5).
+- [Suno: Suno V4.5](https://phaseo.ai/models/suno/suno-v4.5)
 
 </Update>
 
@@ -2116,10 +2187,10 @@ rss: true
 
 ### Model Releases
 
-- [Amazon: Nova Premier](https://phaseo.ai/models/amazon/nova-premier).
-- [Microsoft: Phi 4 Mini Reasoning](https://phaseo.ai/models/microsoft/phi-4-mini-reasoning).
-- [Microsoft: Phi 4 Reasoning](https://phaseo.ai/models/microsoft/phi-4-reasoning).
-- [Microsoft: Phi 4 Reasoning Plus](https://phaseo.ai/models/microsoft/phi-4-reasoning-plus).
+- [Amazon: Nova Premier](https://phaseo.ai/models/amazon/nova-premier)
+- [Microsoft: Phi 4 Mini Reasoning](https://phaseo.ai/models/microsoft/phi-4-mini-reasoning)
+- [Microsoft: Phi 4 Reasoning](https://phaseo.ai/models/microsoft/phi-4-reasoning)
+- [Microsoft: Phi 4 Reasoning Plus](https://phaseo.ai/models/microsoft/phi-4-reasoning-plus)
 
 </Update>
 
@@ -2127,7 +2198,7 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: GPT Image 1](https://phaseo.ai/models/openai/gpt-image-1).
+- [OpenAI: GPT Image 1](https://phaseo.ai/models/openai/gpt-image-1)
 
 </Update>
 
@@ -2135,8 +2206,8 @@ rss: true
 
 ### Model Releases
 
-- [xAI: Grok 3](https://phaseo.ai/models/x-ai/grok-3).
-- [xAI: Grok 3 Mini](https://phaseo.ai/models/x-ai/grok-3-mini).
+- [xAI: Grok 3](https://phaseo.ai/models/x-ai/grok-3)
+- [xAI: Grok 3 Mini](https://phaseo.ai/models/x-ai/grok-3-mini)
 
 </Update>
 
@@ -2144,8 +2215,8 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemini 2.5 Flash Preview (2025-04-17)](https://phaseo.ai/models/google/gemini-2.5-flash-preview-2025-04-17).
-- [Google: LearnLM 2.0 Flash Experimental](https://phaseo.ai/models/google/learnlm-2.0-flash-experimental).
+- [Google: Gemini 2.5 Flash Preview (2025-04-17)](https://phaseo.ai/models/google/gemini-2.5-flash-preview-2025-04-17)
+- [Google: LearnLM 2.0 Flash Experimental](https://phaseo.ai/models/google/learnlm-2.0-flash-experimental)
 
 </Update>
 
@@ -2153,10 +2224,10 @@ rss: true
 
 ### Model Releases
 
-- [IBM: Granite 3.3 2B Instruct](https://phaseo.ai/models/ibm/granite-3.3-2b-instruct).
-- [IBM: Granite 3.3 8B Instruct](https://phaseo.ai/models/ibm/granite-3.3-8b-instruct).
-- [OpenAI: o3](https://phaseo.ai/models/openai/o3).
-- [OpenAI: o4 Mini](https://phaseo.ai/models/openai/o4-mini).
+- [IBM: Granite 3.3 2B Instruct](https://phaseo.ai/models/ibm/granite-3.3-2b-instruct)
+- [IBM: Granite 3.3 8B Instruct](https://phaseo.ai/models/ibm/granite-3.3-8b-instruct)
+- [OpenAI: o3](https://phaseo.ai/models/openai/o3)
+- [OpenAI: o4 Mini](https://phaseo.ai/models/openai/o4-mini)
 
 </Update>
 
@@ -2164,8 +2235,8 @@ rss: true
 
 ### Model Releases
 
-- [Cohere: Embed V4](https://phaseo.ai/models/cohere/embed-v4).
-- [z.AI: GLM 4 32B](https://phaseo.ai/models/z-ai/glm-4-32b).
+- [Cohere: Embed V4](https://phaseo.ai/models/cohere/embed-v4)
+- [z.AI: GLM 4 32B](https://phaseo.ai/models/z-ai/glm-4-32b)
 
 </Update>
 
@@ -2173,10 +2244,10 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: GPT 4.1](https://phaseo.ai/models/openai/gpt-4.1).
-- [OpenAI: GPT 4.1 Mini](https://phaseo.ai/models/openai/gpt-4.1-mini).
-- [OpenAI: GPT 4.1 Nano](https://phaseo.ai/models/openai/gpt-4.1-nano).
-- [z.AI: GLM 4 9B (2025-04-14)](https://phaseo.ai/models/z-ai/glm-4-9b).
+- [OpenAI: GPT 4.1](https://phaseo.ai/models/openai/gpt-4.1)
+- [OpenAI: GPT 4.1 Mini](https://phaseo.ai/models/openai/gpt-4.1-mini)
+- [OpenAI: GPT 4.1 Nano](https://phaseo.ai/models/openai/gpt-4.1-nano)
+- [z.AI: GLM 4 9B (2025-04-14)](https://phaseo.ai/models/z-ai/glm-4-9b)
 
 </Update>
 
@@ -2184,11 +2255,11 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemini 2.0 Flash Live 001](https://phaseo.ai/models/google/gemini-2.0-flash-live-001).
-- [Google: Gemini Live 2.5 Flash Preview](https://phaseo.ai/models/google/gemini-live-2.5-flash-preview).
-- [Google: Veo 2](https://phaseo.ai/models/google/veo-2).
-- [Moonshot: Kimi VL A3B](https://phaseo.ai/models/moonshotai/kimi-vl-a3b).
-- [Moonshot: Kimi VL A3B Thinking (2025-04-09)](https://phaseo.ai/models/moonshotai/kimi-vl-a3b-thinking-2025-04-09).
+- [Google: Gemini 2.0 Flash Live 001](https://phaseo.ai/models/google/gemini-2.0-flash-live-001)
+- [Google: Gemini Live 2.5 Flash Preview](https://phaseo.ai/models/google/gemini-live-2.5-flash-preview)
+- [Google: Veo 2](https://phaseo.ai/models/google/veo-2)
+- [Moonshot: Kimi VL A3B](https://phaseo.ai/models/moonshotai/kimi-vl-a3b)
+- [Moonshot: Kimi VL A3B Thinking (2025-04-09)](https://phaseo.ai/models/moonshotai/kimi-vl-a3b-thinking-2025-04-09)
 
 </Update>
 
@@ -2196,7 +2267,7 @@ rss: true
 
 ### Model Releases
 
-- [Amazon: Nova Sonic](https://phaseo.ai/models/amazon/nova-sonic).
+- [Amazon: Nova Sonic](https://phaseo.ai/models/amazon/nova-sonic)
 
 </Update>
 
@@ -2204,7 +2275,7 @@ rss: true
 
 ### Model Releases
 
-- [Nvidia: Llama 3.1 Nemotron Ultra 253B v1](https://phaseo.ai/models/nvidia/llama-3.1-nemotron-ultra-253b-v1).
+- [Nvidia: Llama 3.1 Nemotron Ultra 253B v1](https://phaseo.ai/models/nvidia/llama-3.1-nemotron-ultra-253b-v1)
 
 </Update>
 
@@ -2212,8 +2283,8 @@ rss: true
 
 ### Model Releases
 
-- [Meta: Llama 4 Maverick](https://phaseo.ai/models/meta/llama-4-maverick).
-- [Meta: Llama 4 Scout](https://phaseo.ai/models/meta/llama-4-scout).
+- [Meta: Llama 4 Maverick](https://phaseo.ai/models/meta/llama-4-maverick)
+- [Meta: Llama 4 Scout](https://phaseo.ai/models/meta/llama-4-scout)
 
 </Update>
 
@@ -2221,8 +2292,8 @@ rss: true
 
 ### Model Releases
 
-- [MiniMax: Speech 02 HD](https://phaseo.ai/models/minimax/speech-02-hd).
-- [MiniMax: Speech 02 Turbo](https://phaseo.ai/models/minimax/speech-02-turbo).
+- [MiniMax: Speech 02 HD](https://phaseo.ai/models/minimax/speech-02-hd)
+- [MiniMax: Speech 02 Turbo](https://phaseo.ai/models/minimax/speech-02-turbo)
 
 </Update>
 
@@ -2230,7 +2301,7 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemini 2.5 Pro Experimental (2025-03-25)](https://phaseo.ai/models/google/gemini-2.5-pro-experimental-2025-03-25).
+- [Google: Gemini 2.5 Pro Experimental (2025-03-25)](https://phaseo.ai/models/google/gemini-2.5-pro-experimental-2025-03-25)
 
 </Update>
 
@@ -2238,8 +2309,8 @@ rss: true
 
 ### Model Releases
 
-- [DeepSeek: DeepSeek V3 (2025-03-24)](https://phaseo.ai/models/deepseek/deepseek-v3-2025-03-24).
-- [Qwen: Qwen 2.5 VL 32B Instruct](https://phaseo.ai/models/qwen/qwen2.5-vl-32b).
+- [DeepSeek: DeepSeek V3 (2025-03-24)](https://phaseo.ai/models/deepseek/deepseek-v3-2025-03-24)
+- [Qwen: Qwen 2.5 VL 32B Instruct](https://phaseo.ai/models/qwen/qwen2.5-vl-32b)
 
 </Update>
 
@@ -2247,9 +2318,9 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: GPT 4o Mini Transcribe (2025-03-20)](https://phaseo.ai/models/openai/gpt-4o-mini-transcribe-2025-03-20).
-- [OpenAI: GPT 4o Mini TTS (2025-03-20)](https://phaseo.ai/models/openai/gpt-4o-mini-tts-2025-03-20).
-- [OpenAI: GPT 4o Transcribe](https://phaseo.ai/models/openai/gpt-4o-transcribe).
+- [OpenAI: GPT 4o Mini Transcribe (2025-03-20)](https://phaseo.ai/models/openai/gpt-4o-mini-transcribe-2025-03-20)
+- [OpenAI: GPT 4o Mini TTS (2025-03-20)](https://phaseo.ai/models/openai/gpt-4o-mini-tts-2025-03-20)
+- [OpenAI: GPT 4o Transcribe](https://phaseo.ai/models/openai/gpt-4o-transcribe)
 
 </Update>
 
@@ -2257,7 +2328,7 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: o1 pro](https://phaseo.ai/models/openai/o1-pro).
+- [OpenAI: o1 pro](https://phaseo.ai/models/openai/o1-pro)
 
 </Update>
 
@@ -2265,11 +2336,11 @@ rss: true
 
 ### Model Releases
 
-- [LG: EXAONE Deep 2.4B](https://phaseo.ai/models/lg/exaone-deep-2.4b).
-- [LG: EXAONE Deep 32B](https://phaseo.ai/models/lg/exaone-deep-32b).
-- [LG: EXAONE Deep 7.8B](https://phaseo.ai/models/lg/exaone-deep-7.8b).
-- [Nvidia: Llama 3.1 Nemotron Nano 8B V1](https://phaseo.ai/models/nvidia/llama-3.1-nemotron-nano-8b-v1).
-- [Nvidia: Llama 3.3 Nemotron Super 49B v1](https://phaseo.ai/models/nvidia/llama-3.3-nemotron-super-49b-v1).
+- [LG: EXAONE Deep 2.4B](https://phaseo.ai/models/lg/exaone-deep-2.4b)
+- [LG: EXAONE Deep 32B](https://phaseo.ai/models/lg/exaone-deep-32b)
+- [LG: EXAONE Deep 7.8B](https://phaseo.ai/models/lg/exaone-deep-7.8b)
+- [Nvidia: Llama 3.1 Nemotron Nano 8B V1](https://phaseo.ai/models/nvidia/llama-3.1-nemotron-nano-8b-v1)
+- [Nvidia: Llama 3.3 Nemotron Super 49B v1](https://phaseo.ai/models/nvidia/llama-3.3-nemotron-super-49b-v1)
 
 </Update>
 
@@ -2277,7 +2348,7 @@ rss: true
 
 ### Model Releases
 
-- [Mistral: Mistral Small 3.1](https://phaseo.ai/models/mistral/mistral-small-3.1).
+- [Mistral: Mistral Small 3.1](https://phaseo.ai/models/mistral/mistral-small-3.1)
 
 </Update>
 
@@ -2285,7 +2356,7 @@ rss: true
 
 ### Model Releases
 
-- [Cohere: Command A](https://phaseo.ai/models/cohere/command-a).
+- [Cohere: Command A](https://phaseo.ai/models/cohere/command-a)
 
 </Update>
 
@@ -2293,10 +2364,10 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemma 3 12B](https://phaseo.ai/models/google/gemma-3-12b).
-- [Google: Gemma 3 1B](https://phaseo.ai/models/google/gemma-3-1b).
-- [Google: Gemma 3 27B](https://phaseo.ai/models/google/gemma-3-27b).
-- [Google: Gemma 3 4B](https://phaseo.ai/models/google/gemma-3-4b).
+- [Google: Gemma 3 12B](https://phaseo.ai/models/google/gemma-3-12b)
+- [Google: Gemma 3 1B](https://phaseo.ai/models/google/gemma-3-1b)
+- [Google: Gemma 3 27B](https://phaseo.ai/models/google/gemma-3-27b)
+- [Google: Gemma 3 4B](https://phaseo.ai/models/google/gemma-3-4b)
 
 </Update>
 
@@ -2304,9 +2375,9 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: Computer Use Preview](https://phaseo.ai/models/openai/computer-use-preview).
-- [OpenAI: GPT 4o Mini Search Preview](https://phaseo.ai/models/openai/gpt-4o-mini-search-preview).
-- [OpenAI: GPT 4o Search Preview](https://phaseo.ai/models/openai/gpt-4o-search-preview).
+- [OpenAI: Computer Use Preview](https://phaseo.ai/models/openai/computer-use-preview)
+- [OpenAI: GPT 4o Mini Search Preview](https://phaseo.ai/models/openai/gpt-4o-mini-search-preview)
+- [OpenAI: GPT 4o Search Preview](https://phaseo.ai/models/openai/gpt-4o-search-preview)
 
 </Update>
 
@@ -2314,7 +2385,7 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemini Embedding Exp 0307](https://phaseo.ai/models/google/gemini-embedding-exp-0307).
+- [Google: Gemini Embedding Exp 0307](https://phaseo.ai/models/google/gemini-embedding-exp-0307)
 
 </Update>
 
@@ -2322,9 +2393,9 @@ rss: true
 
 ### Model Releases
 
-- [ai21: Jamba Large 1.6](https://phaseo.ai/models/ai21/jamba-large-1.6).
-- [ai21: Jamba Mini 1.6](https://phaseo.ai/models/ai21/jamba-mini-1.6).
-- [Mistral: Mistral OCR](https://phaseo.ai/models/mistral/mistral-ocr).
+- [ai21: Jamba Large 1.6](https://phaseo.ai/models/ai21/jamba-large-1.6)
+- [ai21: Jamba Mini 1.6](https://phaseo.ai/models/ai21/jamba-mini-1.6)
+- [Mistral: Mistral OCR](https://phaseo.ai/models/mistral/mistral-ocr)
 
 </Update>
 
@@ -2332,8 +2403,8 @@ rss: true
 
 ### Model Releases
 
-- [Cohere: C4AI Aya Vision 32B](https://phaseo.ai/models/cohere/c4ai-aya-vision-32b).
-- [Cohere: C4AI Aya Vision 8B](https://phaseo.ai/models/cohere/c4ai-aya-vision-8b).
+- [Cohere: C4AI Aya Vision 32B](https://phaseo.ai/models/cohere/c4ai-aya-vision-32b)
+- [Cohere: C4AI Aya Vision 8B](https://phaseo.ai/models/cohere/c4ai-aya-vision-8b)
 
 </Update>
 
@@ -2341,7 +2412,7 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: GPT 4.5](https://phaseo.ai/models/openai/gpt-4.5).
+- [OpenAI: GPT 4.5](https://phaseo.ai/models/openai/gpt-4.5)
 
 </Update>
 
@@ -2349,7 +2420,7 @@ rss: true
 
 ### Model Releases
 
-- [Anthropic: Claude 3.7 Sonnet](https://phaseo.ai/models/anthropic/claude-3.7-sonnet).
+- [Anthropic: Claude 3.7 Sonnet](https://phaseo.ai/models/anthropic/claude-3.7-sonnet)
 
 </Update>
 
@@ -2357,8 +2428,8 @@ rss: true
 
 ### Model Releases
 
-- [xAI: Grok 3 Beta](https://phaseo.ai/models/x-ai/grok-3-beta).
-- [xAI: Grok 3 Mini Beta](https://phaseo.ai/models/x-ai/grok-3-mini-beta).
+- [xAI: Grok 3 Beta](https://phaseo.ai/models/x-ai/grok-3-beta)
+- [xAI: Grok 3 Mini Beta](https://phaseo.ai/models/x-ai/grok-3-mini-beta)
 
 </Update>
 
@@ -2366,7 +2437,7 @@ rss: true
 
 ### Model Releases
 
-- [Mistral: Mistral Saba](https://phaseo.ai/models/mistral/mistral-saba).
+- [Mistral: Mistral Saba](https://phaseo.ai/models/mistral/mistral-saba)
 
 </Update>
 
@@ -2374,7 +2445,7 @@ rss: true
 
 ### Model Releases
 
-- [MiniMax: Image 01](https://phaseo.ai/models/minimax/image-01).
+- [MiniMax: Image 01](https://phaseo.ai/models/minimax/image-01)
 
 </Update>
 
@@ -2382,8 +2453,8 @@ rss: true
 
 ### Model Releases
 
-- [MiniMax: I2V 01 Director](https://phaseo.ai/models/minimax/i2v-01-director).
-- [MiniMax: T2V 01 Director](https://phaseo.ai/models/minimax/t2v-01-director).
+- [MiniMax: I2V 01 Director](https://phaseo.ai/models/minimax/i2v-01-director)
+- [MiniMax: T2V 01 Director](https://phaseo.ai/models/minimax/t2v-01-director)
 
 </Update>
 
@@ -2391,9 +2462,9 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemini 2.0 Flash](https://phaseo.ai/models/google/gemini-2.0-flash).
-- [Google: Gemini 2.0 Flash Lite](https://phaseo.ai/models/google/gemini-2.0-flash-lite).
-- [Google: Gemini 2.0 Pro Exp (2025-02-05)](https://phaseo.ai/models/google/gemini-2.0-pro-exp).
+- [Google: Gemini 2.0 Flash](https://phaseo.ai/models/google/gemini-2.0-flash)
+- [Google: Gemini 2.0 Flash Lite](https://phaseo.ai/models/google/gemini-2.0-flash-lite)
+- [Google: Gemini 2.0 Pro Exp (2025-02-05)](https://phaseo.ai/models/google/gemini-2.0-pro-exp)
 
 </Update>
 
@@ -2401,8 +2472,8 @@ rss: true
 
 ### Model Releases
 
-- [Microsoft: Phi 4 Mini](https://phaseo.ai/models/microsoft/phi-4-mini).
-- [Microsoft: Phi 4 multimodal instruct](https://phaseo.ai/models/microsoft/phi-4-multimodal-instruct).
+- [Microsoft: Phi 4 Mini](https://phaseo.ai/models/microsoft/phi-4-mini)
+- [Microsoft: Phi 4 multimodal instruct](https://phaseo.ai/models/microsoft/phi-4-multimodal-instruct)
 
 </Update>
 
@@ -2410,9 +2481,9 @@ rss: true
 
 ### Model Releases
 
-- [Mistral: Mistral Small 24b 2501](https://phaseo.ai/models/mistral/mistral-small-24b-2501).
-- [Mistral: Mistral Small 3.0](https://phaseo.ai/models/mistral/mistral-small-3.0).
-- [OpenAI: o3 mini](https://phaseo.ai/models/openai/o3-mini).
+- [Mistral: Mistral Small 24b 2501](https://phaseo.ai/models/mistral/mistral-small-24b-2501)
+- [Mistral: Mistral Small 3.0](https://phaseo.ai/models/mistral/mistral-small-3.0)
+- [OpenAI: o3 mini](https://phaseo.ai/models/openai/o3-mini)
 
 </Update>
 
@@ -2420,9 +2491,9 @@ rss: true
 
 ### Model Releases
 
-- [Aion Labs: Aion 1.0](https://phaseo.ai/models/aion-labs/aion-1.0).
-- [Aion Labs: Aion 1.0 Mini](https://phaseo.ai/models/aion-labs/aion-1.0-mini).
-- [Google: Imagen 3.0 Generate 002](https://phaseo.ai/models/google/imagen-3.0-generate-002).
+- [Aion Labs: Aion 1.0](https://phaseo.ai/models/aion-labs/aion-1.0)
+- [Aion Labs: Aion 1.0 Mini](https://phaseo.ai/models/aion-labs/aion-1.0-mini)
+- [Google: Imagen 3.0 Generate 002](https://phaseo.ai/models/google/imagen-3.0-generate-002)
 
 </Update>
 
@@ -2430,7 +2501,7 @@ rss: true
 
 ### Model Releases
 
-- [Qwen: Qwen 2.5 VL 72B Instruct](https://phaseo.ai/models/qwen/qwen2.5-vl-72b).
+- [Qwen: Qwen 2.5 VL 72B Instruct](https://phaseo.ai/models/qwen/qwen2.5-vl-72b)
 
 </Update>
 
@@ -2438,7 +2509,7 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemini 2.0 Flash Thinking Exp (2025-01-21)](https://phaseo.ai/models/google/gemini-2.0-flash-thinking-exp-2025-01-21).
+- [Google: Gemini 2.0 Flash Thinking Exp (2025-01-21)](https://phaseo.ai/models/google/gemini-2.0-flash-thinking-exp-2025-01-21)
 
 </Update>
 
@@ -2446,8 +2517,8 @@ rss: true
 
 ### Model Releases
 
-- [DeepSeek: DeepSeek R1 (2025-01-20)](https://phaseo.ai/models/deepseek/deepseek-r1-2025-01-20).
-- [Moonshot: Kimi K1.5](https://phaseo.ai/models/moonshotai/kimi-k1.5).
+- [DeepSeek: DeepSeek R1 (2025-01-20)](https://phaseo.ai/models/deepseek/deepseek-r1-2025-01-20)
+- [Moonshot: Kimi K1.5](https://phaseo.ai/models/moonshotai/kimi-k1.5)
 
 </Update>
 
@@ -2455,8 +2526,8 @@ rss: true
 
 ### Model Releases
 
-- [MiniMax: Minimax Text 01](https://phaseo.ai/models/minimax/minimax-text-01).
-- [MiniMax: Minimax VL 01](https://phaseo.ai/models/minimax/minimax-vl-01).
+- [MiniMax: Minimax Text 01](https://phaseo.ai/models/minimax/minimax-text-01)
+- [MiniMax: Minimax VL 01](https://phaseo.ai/models/minimax/minimax-vl-01)
 
 </Update>
 
@@ -2464,7 +2535,7 @@ rss: true
 
 ### Model Releases
 
-- [Mistral: Codestral (2025-01-13)](https://phaseo.ai/models/mistral/codestral-2025-01-13).
+- [Mistral: Codestral (2025-01-13)](https://phaseo.ai/models/mistral/codestral-2025-01-13)
 
 </Update>
 
@@ -2472,8 +2543,8 @@ rss: true
 
 ### Model Releases
 
-- [DeepSeek: DeepSeek V3](https://phaseo.ai/models/deepseek/deepseek-v3).
-- [DeepSeek: DeepSeek V3 (2024-12-26)](https://phaseo.ai/models/deepseek/deepseek-v3-2024-12-26).
+- [DeepSeek: DeepSeek V3](https://phaseo.ai/models/deepseek/deepseek-v3)
+- [DeepSeek: DeepSeek V3 (2024-12-26)](https://phaseo.ai/models/deepseek/deepseek-v3-2024-12-26)
 
 </Update>
 
@@ -2481,7 +2552,7 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemini 2.0 Flash Thinking Exp (2024-12-19)](https://phaseo.ai/models/google/gemini-2.0-flash-thinking-exp-2024-12-19).
+- [Google: Gemini 2.0 Flash Thinking Exp (2024-12-19)](https://phaseo.ai/models/google/gemini-2.0-flash-thinking-exp-2024-12-19)
 
 </Update>
 
@@ -2489,11 +2560,11 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: GPT 4o Audio (2024-12-17)](https://phaseo.ai/models/openai/gpt-4o-audio-2024-12-17).
-- [OpenAI: GPT 4o Mini Audio Preview](https://phaseo.ai/models/openai/gpt-4o-mini-audio-preview).
-- [OpenAI: GPT 4o Mini Realtime Preview](https://phaseo.ai/models/openai/gpt-4o-mini-realtime-preview).
-- [OpenAI: GPT 4o Realtime Preview (2024-12-17)](https://phaseo.ai/models/openai/gpt-4o-realtime-preview-2024-12-17).
-- [OpenAI: o1](https://phaseo.ai/models/openai/o1).
+- [OpenAI: GPT 4o Audio (2024-12-17)](https://phaseo.ai/models/openai/gpt-4o-audio-2024-12-17)
+- [OpenAI: GPT 4o Mini Audio Preview](https://phaseo.ai/models/openai/gpt-4o-mini-audio-preview)
+- [OpenAI: GPT 4o Mini Realtime Preview](https://phaseo.ai/models/openai/gpt-4o-mini-realtime-preview)
+- [OpenAI: GPT 4o Realtime Preview (2024-12-17)](https://phaseo.ai/models/openai/gpt-4o-realtime-preview-2024-12-17)
+- [OpenAI: o1](https://phaseo.ai/models/openai/o1)
 
 </Update>
 
@@ -2501,11 +2572,11 @@ rss: true
 
 ### Model Releases
 
-- [Cohere: Command R 7b](https://phaseo.ai/models/cohere/command-r-7b).
-- [Cohere: Command R7b](https://phaseo.ai/models/cohere/command-r7b).
-- [DeepSeek: DeepSeek VL2](https://phaseo.ai/models/deepseek/deepseek-vl2).
-- [DeepSeek: DeepSeek VL2 Small](https://phaseo.ai/models/deepseek/deepseek-vl2-small).
-- [DeepSeek: DeepSeek VL2 Tiny](https://phaseo.ai/models/deepseek/deepseek-vl2-tiny).
+- [Cohere: Command R 7b](https://phaseo.ai/models/cohere/command-r-7b)
+- [Cohere: Command R7b](https://phaseo.ai/models/cohere/command-r7b)
+- [DeepSeek: DeepSeek VL2](https://phaseo.ai/models/deepseek/deepseek-vl2)
+- [DeepSeek: DeepSeek VL2 Small](https://phaseo.ai/models/deepseek/deepseek-vl2-small)
+- [DeepSeek: DeepSeek VL2 Tiny](https://phaseo.ai/models/deepseek/deepseek-vl2-tiny)
 
 </Update>
 
@@ -2513,7 +2584,7 @@ rss: true
 
 ### Model Releases
 
-- [Microsoft: Phi 4](https://phaseo.ai/models/microsoft/phi-4).
+- [Microsoft: Phi 4](https://phaseo.ai/models/microsoft/phi-4)
 
 </Update>
 
@@ -2521,7 +2592,7 @@ rss: true
 
 ### Model Releases
 
-- [Nous: Hermes 3 Llama 3.2 3B](https://phaseo.ai/models/nous/hermes-3-llama-3.2-3b).
+- [Nous: Hermes 3 Llama 3.2 3B](https://phaseo.ai/models/nous/hermes-3-llama-3.2-3b)
 
 </Update>
 
@@ -2529,7 +2600,7 @@ rss: true
 
 ### Model Releases
 
-- [DeepSeek: DeepSeek V2.5 (2024-12-10)](https://phaseo.ai/models/deepseek/deepseek-v2.5-2024-12-10).
+- [DeepSeek: DeepSeek V2.5 (2024-12-10)](https://phaseo.ai/models/deepseek/deepseek-v2.5-2024-12-10)
 
 </Update>
 
@@ -2537,10 +2608,10 @@ rss: true
 
 ### Model Releases
 
-- [LG: EXAONE 3.5 2.4B](https://phaseo.ai/models/lg/exaone-3.5-2.4b).
-- [LG: EXAONE 3.5 32B](https://phaseo.ai/models/lg/exaone-3.5-32b).
-- [LG: EXAONE 3.5 7.8B](https://phaseo.ai/models/lg/exaone-3.5-7.8b).
-- [OpenAI: Sora 1](https://phaseo.ai/models/openai/sora-1).
+- [LG: EXAONE 3.5 2.4B](https://phaseo.ai/models/lg/exaone-3.5-2.4b)
+- [LG: EXAONE 3.5 32B](https://phaseo.ai/models/lg/exaone-3.5-32b)
+- [LG: EXAONE 3.5 7.8B](https://phaseo.ai/models/lg/exaone-3.5-7.8b)
+- [OpenAI: Sora 1](https://phaseo.ai/models/openai/sora-1)
 
 </Update>
 
@@ -2548,8 +2619,8 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemini Exp 1206](https://phaseo.ai/models/google/gemini-exp-1206).
-- [Meta: Llama 3.3 70B Instruct](https://phaseo.ai/models/meta/llama-3.3-70b).
+- [Google: Gemini Exp 1206](https://phaseo.ai/models/google/gemini-exp-1206)
+- [Meta: Llama 3.3 70B Instruct](https://phaseo.ai/models/meta/llama-3.3-70b)
 
 </Update>
 
@@ -2557,9 +2628,9 @@ rss: true
 
 ### Model Releases
 
-- [Amazon: Nova Lite 1.0](https://phaseo.ai/models/amazon/nova-lite-1.0).
-- [Amazon: Nova Micro 1.0](https://phaseo.ai/models/amazon/nova-micro-1.0).
-- [Amazon: Nova Pro 1.0](https://phaseo.ai/models/amazon/nova-pro-1.0).
+- [Amazon: Nova Lite 1.0](https://phaseo.ai/models/amazon/nova-lite-1.0)
+- [Amazon: Nova Micro 1.0](https://phaseo.ai/models/amazon/nova-micro-1.0)
+- [Amazon: Nova Pro 1.0](https://phaseo.ai/models/amazon/nova-pro-1.0)
 
 </Update>
 
@@ -2567,8 +2638,8 @@ rss: true
 
 ### Model Releases
 
-- [Amazon: Nova Canvas](https://phaseo.ai/models/amazon/nova-canvas).
-- [Amazon: Nova Reel](https://phaseo.ai/models/amazon/nova-reel).
+- [Amazon: Nova Canvas](https://phaseo.ai/models/amazon/nova-canvas)
+- [Amazon: Nova Reel](https://phaseo.ai/models/amazon/nova-reel)
 
 </Update>
 
@@ -2576,7 +2647,7 @@ rss: true
 
 ### Model Releases
 
-- [Aion Labs: Aion RP Llama 3.1 8B](https://phaseo.ai/models/aion-labs/aion-rp-llama-3.1-8b).
+- [Aion Labs: Aion RP Llama 3.1 8B](https://phaseo.ai/models/aion-labs/aion-rp-llama-3.1-8b)
 
 </Update>
 
@@ -2584,7 +2655,7 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemini Exp 1121](https://phaseo.ai/models/google/gemini-exp-1121).
+- [Google: Gemini Exp 1121](https://phaseo.ai/models/google/gemini-exp-1121)
 
 </Update>
 
@@ -2592,8 +2663,8 @@ rss: true
 
 ### Model Releases
 
-- [DeepSeek: DeepSeek R1 Lite Preview](https://phaseo.ai/models/deepseek/deepseek-r1-lite-preview).
-- [OpenAI: GPT 4o (2024-11-20)](https://phaseo.ai/models/openai/gpt-4o).
+- [DeepSeek: DeepSeek R1 Lite Preview](https://phaseo.ai/models/deepseek/deepseek-r1-lite-preview)
+- [OpenAI: GPT 4o (2024-11-20)](https://phaseo.ai/models/openai/gpt-4o)
 
 </Update>
 
@@ -2601,8 +2672,8 @@ rss: true
 
 ### Model Releases
 
-- [Google: LearnLM 1.5 Pro Experimental](https://phaseo.ai/models/google/learnlm-1.5-pro-experimental).
-- [Suno: Suno V4](https://phaseo.ai/models/suno/suno-v4).
+- [Google: LearnLM 1.5 Pro Experimental](https://phaseo.ai/models/google/learnlm-1.5-pro-experimental)
+- [Suno: Suno V4](https://phaseo.ai/models/suno/suno-v4)
 
 </Update>
 
@@ -2610,9 +2681,9 @@ rss: true
 
 ### Model Releases
 
-- [Google: Text Embedding 005](https://phaseo.ai/models/google/text-embedding-005).
-- [Mistral: Mistral Large 2.1](https://phaseo.ai/models/mistral/mistral-large-2.1).
-- [Mistral: Pixtral Large](https://phaseo.ai/models/mistral/pixtral-large).
+- [Google: Text Embedding 005](https://phaseo.ai/models/google/text-embedding-005)
+- [Mistral: Mistral Large 2.1](https://phaseo.ai/models/mistral/mistral-large-2.1)
+- [Mistral: Pixtral Large](https://phaseo.ai/models/mistral/pixtral-large)
 
 </Update>
 
@@ -2620,7 +2691,7 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemini Exp 1114](https://phaseo.ai/models/google/gemini-exp-1114).
+- [Google: Gemini Exp 1114](https://phaseo.ai/models/google/gemini-exp-1114)
 
 </Update>
 
@@ -2628,7 +2699,7 @@ rss: true
 
 ### Model Releases
 
-- [Mistral: Mistral Moderation](https://phaseo.ai/models/mistral/mistral-moderation).
+- [Mistral: Mistral Moderation](https://phaseo.ai/models/mistral/mistral-moderation)
 
 </Update>
 
@@ -2636,7 +2707,7 @@ rss: true
 
 ### Model Releases
 
-- [Anthropic: Claude 3.5 Haiku](https://phaseo.ai/models/anthropic/claude-3.5-haiku).
+- [Anthropic: Claude 3.5 Haiku](https://phaseo.ai/models/anthropic/claude-3.5-haiku)
 
 </Update>
 
@@ -2644,9 +2715,9 @@ rss: true
 
 ### Model Releases
 
-- [Cohere: C4AI Aya Expanse 32B](https://phaseo.ai/models/cohere/c4ai-aya-expanse-32b).
-- [Cohere: C4AI Aya Expanse 8B](https://phaseo.ai/models/cohere/c4ai-aya-expanse-8b).
-- [z.AI: GLM 4 9B Chat 1M](https://phaseo.ai/models/z-ai/glm-4-9b-chat-1m).
+- [Cohere: C4AI Aya Expanse 32B](https://phaseo.ai/models/cohere/c4ai-aya-expanse-32b)
+- [Cohere: C4AI Aya Expanse 8B](https://phaseo.ai/models/cohere/c4ai-aya-expanse-8b)
+- [z.AI: GLM 4 9B Chat 1M](https://phaseo.ai/models/z-ai/glm-4-9b-chat-1m)
 
 </Update>
 
@@ -2654,7 +2725,7 @@ rss: true
 
 ### Model Releases
 
-- [Anthropic: Claude 3.5 Sonnet (2024-10-22)](https://phaseo.ai/models/anthropic/claude-3.5-sonnet-2024-10-22).
+- [Anthropic: Claude 3.5 Sonnet (2024-10-22)](https://phaseo.ai/models/anthropic/claude-3.5-sonnet-2024-10-22)
 
 </Update>
 
@@ -2662,8 +2733,8 @@ rss: true
 
 ### Model Releases
 
-- [Mistral: Ministral 3B](https://phaseo.ai/models/mistral/ministral-3b).
-- [Mistral: Ministral 8B](https://phaseo.ai/models/mistral/ministral-8b).
+- [Mistral: Ministral 3B](https://phaseo.ai/models/mistral/ministral-3b)
+- [Mistral: Ministral 8B](https://phaseo.ai/models/mistral/ministral-8b)
 
 </Update>
 
@@ -2671,7 +2742,7 @@ rss: true
 
 ### Model Releases
 
-- [Cohere: Rerank V3.5](https://phaseo.ai/models/cohere/rerank-v3.5).
+- [Cohere: Rerank V3.5](https://phaseo.ai/models/cohere/rerank-v3.5)
 
 </Update>
 
@@ -2679,9 +2750,9 @@ rss: true
 
 ### Model Releases
 
-- [Nvidia: Llama 3.1 Nemotron 70B Instruct](https://phaseo.ai/models/nvidia/llama-3.1-nemotron-70b-instruct).
-- [OpenAI: GPT 4o Audio (2024-10-01)](https://phaseo.ai/models/openai/gpt-4o-audio-2024-10-01).
-- [OpenAI: GPT 4o Realtime Preview (2024-10-01)](https://phaseo.ai/models/openai/gpt-4o-realtime-preview-2024-10-01).
+- [Nvidia: Llama 3.1 Nemotron 70B Instruct](https://phaseo.ai/models/nvidia/llama-3.1-nemotron-70b-instruct)
+- [OpenAI: GPT 4o Audio (2024-10-01)](https://phaseo.ai/models/openai/gpt-4o-audio-2024-10-01)
+- [OpenAI: GPT 4o Realtime Preview (2024-10-01)](https://phaseo.ai/models/openai/gpt-4o-realtime-preview-2024-10-01)
 
 </Update>
 
@@ -2689,7 +2760,7 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: Omni Moderation](https://phaseo.ai/models/openai/omni-moderation).
+- [OpenAI: Omni Moderation](https://phaseo.ai/models/openai/omni-moderation)
 
 </Update>
 
@@ -2697,8 +2768,8 @@ rss: true
 
 ### Model Releases
 
-- [Meta: Llama 3.2 1B Instruct](https://phaseo.ai/models/meta/llama-3.2-1b).
-- [Meta: Llama 3.2 3B Instruct](https://phaseo.ai/models/meta/llama-3.2-3b).
+- [Meta: Llama 3.2 1B Instruct](https://phaseo.ai/models/meta/llama-3.2-1b)
+- [Meta: Llama 3.2 3B Instruct](https://phaseo.ai/models/meta/llama-3.2-3b)
 
 </Update>
 
@@ -2706,9 +2777,9 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemini 1.5 Flash 002](https://phaseo.ai/models/google/gemini-1.5-flash-002).
-- [Google: Gemini 1.5 Flash 8B Exp (2024-09-24)](https://phaseo.ai/models/google/gemini-1.5-flash-8b-exp-2024-09-24).
-- [Google: Gemini 1.5 Pro 002](https://phaseo.ai/models/google/gemini-1.5-pro-002).
+- [Google: Gemini 1.5 Flash 002](https://phaseo.ai/models/google/gemini-1.5-flash-002)
+- [Google: Gemini 1.5 Flash 8B Exp (2024-09-24)](https://phaseo.ai/models/google/gemini-1.5-flash-8b-exp-2024-09-24)
+- [Google: Gemini 1.5 Pro 002](https://phaseo.ai/models/google/gemini-1.5-pro-002)
 
 </Update>
 
@@ -2716,8 +2787,8 @@ rss: true
 
 ### Model Releases
 
-- [Mistral: Mistral Small 2.0](https://phaseo.ai/models/mistral/mistral-small-2.0).
-- [Mistral: Pixtral 12B](https://phaseo.ai/models/mistral/pixtral-12b).
+- [Mistral: Mistral Small 2.0](https://phaseo.ai/models/mistral/mistral-small-2.0)
+- [Mistral: Pixtral 12B](https://phaseo.ai/models/mistral/pixtral-12b)
 
 </Update>
 
@@ -2725,8 +2796,8 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: o1 mini](https://phaseo.ai/models/openai/o1-mini).
-- [OpenAI: o1 preview](https://phaseo.ai/models/openai/o1-preview).
+- [OpenAI: o1 mini](https://phaseo.ai/models/openai/o1-mini)
+- [OpenAI: o1 preview](https://phaseo.ai/models/openai/o1-preview)
 
 </Update>
 
@@ -2734,7 +2805,7 @@ rss: true
 
 ### Model Releases
 
-- [DeepSeek: DeepSeek V2.5 (2024-09-05)](https://phaseo.ai/models/deepseek/deepseek-v2.5-2024-09-05).
+- [DeepSeek: DeepSeek V2.5 (2024-09-05)](https://phaseo.ai/models/deepseek/deepseek-v2.5-2024-09-05)
 
 </Update>
 
@@ -2742,9 +2813,9 @@ rss: true
 
 ### Model Releases
 
-- [Cohere: Command R](https://phaseo.ai/models/cohere/command-r).
-- [Cohere: Command R (2024-08-30)](https://phaseo.ai/models/cohere/command-r-2024-08-30).
-- [Cohere: Command R+ (2024-08-30)](https://phaseo.ai/models/cohere/command-r+-2024-08-30).
+- [Cohere: Command R](https://phaseo.ai/models/cohere/command-r)
+- [Cohere: Command R (2024-08-30)](https://phaseo.ai/models/cohere/command-r-2024-08-30)
+- [Cohere: Command R+ (2024-08-30)](https://phaseo.ai/models/cohere/command-r+-2024-08-30)
 
 </Update>
 
@@ -2752,8 +2823,8 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemini 1.5 Flash 8B Exp (2024-08-27)](https://phaseo.ai/models/google/gemini-1.5-flash-8b-exp-2024-08-27).
-- [Google: Gemini 1.5 Pro Exp (2024-08-27)](https://phaseo.ai/models/google/gemini-1.5-pro-exp-2024-08-27).
+- [Google: Gemini 1.5 Flash 8B Exp (2024-08-27)](https://phaseo.ai/models/google/gemini-1.5-flash-8b-exp-2024-08-27)
+- [Google: Gemini 1.5 Pro Exp (2024-08-27)](https://phaseo.ai/models/google/gemini-1.5-pro-exp-2024-08-27)
 
 </Update>
 
@@ -2761,9 +2832,9 @@ rss: true
 
 ### Model Releases
 
-- [Microsoft: Phi 3.5 mini instruct](https://phaseo.ai/models/microsoft/phi-3.5-mini-instruct).
-- [Microsoft: Phi 3.5 MoE instruct](https://phaseo.ai/models/microsoft/phi-3.5-moe-instruct).
-- [Microsoft: Phi 3.5 vision instruct](https://phaseo.ai/models/microsoft/phi-3.5-vision-instruct).
+- [Microsoft: Phi 3.5 mini instruct](https://phaseo.ai/models/microsoft/phi-3.5-mini-instruct)
+- [Microsoft: Phi 3.5 MoE instruct](https://phaseo.ai/models/microsoft/phi-3.5-moe-instruct)
+- [Microsoft: Phi 3.5 vision instruct](https://phaseo.ai/models/microsoft/phi-3.5-vision-instruct)
 
 </Update>
 
@@ -2771,8 +2842,8 @@ rss: true
 
 ### Model Releases
 
-- [ai21: Jamba Large 1.5](https://phaseo.ai/models/ai21/jamba-large-1.5).
-- [ai21: Jamba Mini 1.5](https://phaseo.ai/models/ai21/jamba-mini-1.5).
+- [ai21: Jamba Large 1.5](https://phaseo.ai/models/ai21/jamba-large-1.5)
+- [ai21: Jamba Mini 1.5](https://phaseo.ai/models/ai21/jamba-mini-1.5)
 
 </Update>
 
@@ -2780,9 +2851,9 @@ rss: true
 
 ### Model Releases
 
-- [Nous: Hermes 3 Llama 3.1 405B](https://phaseo.ai/models/nous/hermes-3-llama-3.1-405b).
-- [Nous: Hermes 3 Llama 3.1 70B](https://phaseo.ai/models/nous/hermes-3-llama-3.1-70b).
-- [Nous: Hermes 3 Llama 3.1 8B](https://phaseo.ai/models/nous/hermes-3-llama-3.1-8b).
+- [Nous: Hermes 3 Llama 3.1 405B](https://phaseo.ai/models/nous/hermes-3-llama-3.1-405b)
+- [Nous: Hermes 3 Llama 3.1 70B](https://phaseo.ai/models/nous/hermes-3-llama-3.1-70b)
+- [Nous: Hermes 3 Llama 3.1 8B](https://phaseo.ai/models/nous/hermes-3-llama-3.1-8b)
 
 </Update>
 
@@ -2790,8 +2861,8 @@ rss: true
 
 ### Model Releases
 
-- [xAI: Grok 2](https://phaseo.ai/models/x-ai/grok-2).
-- [xAI: Grok 2 Mini](https://phaseo.ai/models/x-ai/grok-2-mini).
+- [xAI: Grok 2](https://phaseo.ai/models/x-ai/grok-2)
+- [xAI: Grok 2 Mini](https://phaseo.ai/models/x-ai/grok-2-mini)
 
 </Update>
 
@@ -2799,7 +2870,7 @@ rss: true
 
 ### Model Releases
 
-- [LG: EXAONE 3.0](https://phaseo.ai/models/lg/exaone-3.0).
+- [LG: EXAONE 3.0](https://phaseo.ai/models/lg/exaone-3.0)
 
 </Update>
 
@@ -2807,7 +2878,7 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: GPT 4o (2024-08-06)](https://phaseo.ai/models/openai/gpt-4o-2024-08-06).
+- [OpenAI: GPT 4o (2024-08-06)](https://phaseo.ai/models/openai/gpt-4o-2024-08-06)
 
 </Update>
 
@@ -2815,7 +2886,7 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemini 1.5 Pro Exp (2024-08-01)](https://phaseo.ai/models/google/gemini-1.5-pro-exp-2024-08-01).
+- [Google: Gemini 1.5 Pro Exp (2024-08-01)](https://phaseo.ai/models/google/gemini-1.5-pro-exp-2024-08-01)
 
 </Update>
 
@@ -2823,8 +2894,8 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemma 2 2B](https://phaseo.ai/models/google/gemma-2-2b).
-- [Google: Imagen 3.0 Generate 001](https://phaseo.ai/models/google/imagen-3.0-generate-001).
+- [Google: Gemma 2 2B](https://phaseo.ai/models/google/gemma-2-2b)
+- [Google: Imagen 3.0 Generate 001](https://phaseo.ai/models/google/imagen-3.0-generate-001)
 
 </Update>
 
@@ -2832,8 +2903,8 @@ rss: true
 
 ### Model Releases
 
-- [DeepSeek: DeepSeek Coder V2 (2024-07-24)](https://phaseo.ai/models/deepseek/deepseek-coder-v2-2024-07-27).
-- [Mistral: Mistral Large 2.0](https://phaseo.ai/models/mistral/mistral-large-2.0).
+- [DeepSeek: DeepSeek Coder V2 (2024-07-24)](https://phaseo.ai/models/deepseek/deepseek-coder-v2-2024-07-27)
+- [Mistral: Mistral Large 2.0](https://phaseo.ai/models/mistral/mistral-large-2.0)
 
 </Update>
 
@@ -2841,9 +2912,9 @@ rss: true
 
 ### Model Releases
 
-- [Meta: Llama 3.1 405B Instruct](https://phaseo.ai/models/meta/llama-3.1-405b).
-- [Meta: Llama 3.1 70B Instruct](https://phaseo.ai/models/meta/llama-3.1-70b).
-- [Meta: Llama 3.1 8B Instruct](https://phaseo.ai/models/meta/llama-3.1-8b).
+- [Meta: Llama 3.1 405B Instruct](https://phaseo.ai/models/meta/llama-3.1-405b)
+- [Meta: Llama 3.1 70B Instruct](https://phaseo.ai/models/meta/llama-3.1-70b)
+- [Meta: Llama 3.1 8B Instruct](https://phaseo.ai/models/meta/llama-3.1-8b)
 
 </Update>
 
@@ -2851,10 +2922,10 @@ rss: true
 
 ### Model Releases
 
-- [Mistral: Mistral Nemo](https://phaseo.ai/models/mistralai/mistral-nemo).
-- [Mistral: Mistral Nemo 12B](https://phaseo.ai/models/mistral/mistral-nemo-12b).
-- [Mistral: Mistral Nemo 2407](https://phaseo.ai/models/mistral/mistral-nemo-2407).
-- [OpenAI: GPT 4o Mini (2024-07-18)](https://phaseo.ai/models/openai/gpt-4o-mini).
+- [Mistral: Mistral Nemo](https://phaseo.ai/models/mistralai/mistral-nemo)
+- [Mistral: Mistral Nemo 12B](https://phaseo.ai/models/mistral/mistral-nemo-12b)
+- [Mistral: Mistral Nemo 2407](https://phaseo.ai/models/mistral/mistral-nemo-2407)
+- [OpenAI: GPT 4o Mini (2024-07-18)](https://phaseo.ai/models/openai/gpt-4o-mini)
 
 </Update>
 
@@ -2862,8 +2933,8 @@ rss: true
 
 ### Model Releases
 
-- [Mistral: Codestral Mamba 7B](https://phaseo.ai/models/mistral/codestral-mamba-7b).
-- [Mistral: Mathstral 7B](https://phaseo.ai/models/mistral/mathstral-7b).
+- [Mistral: Codestral Mamba 7B](https://phaseo.ai/models/mistral/codestral-mamba-7b)
+- [Mistral: Mathstral 7B](https://phaseo.ai/models/mistral/mathstral-7b)
 
 </Update>
 
@@ -2871,7 +2942,7 @@ rss: true
 
 ### Model Releases
 
-- [DeepSeek: DeepSeek V2 (2024-06-28)](https://phaseo.ai/models/deepseek/deepseek-v2-2024-06-28).
+- [DeepSeek: DeepSeek V2 (2024-06-28)](https://phaseo.ai/models/deepseek/deepseek-v2-2024-06-28)
 
 </Update>
 
@@ -2879,9 +2950,9 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemma 2 27B](https://phaseo.ai/models/google/gemma-2-27b).
-- [Google: Gemma 2 9B](https://phaseo.ai/models/google/gemma-2-9b).
-- [Nous: Hermes 2 Pro Llama 3 70B](https://phaseo.ai/models/nous/hermes-2-pro-llama-3-70b).
+- [Google: Gemma 2 27B](https://phaseo.ai/models/google/gemma-2-27b)
+- [Google: Gemma 2 9B](https://phaseo.ai/models/google/gemma-2-9b)
+- [Nous: Hermes 2 Pro Llama 3 70B](https://phaseo.ai/models/nous/hermes-2-pro-llama-3-70b)
 
 </Update>
 
@@ -2889,7 +2960,7 @@ rss: true
 
 ### Model Releases
 
-- [Anthropic: Claude 3.5 Sonnet (2024-06-20)](https://phaseo.ai/models/anthropic/claude-3.5-sonnet-2024-06-20).
+- [Anthropic: Claude 3.5 Sonnet (2024-06-20)](https://phaseo.ai/models/anthropic/claude-3.5-sonnet-2024-06-20)
 
 </Update>
 
@@ -2897,7 +2968,7 @@ rss: true
 
 ### Model Releases
 
-- [Nous: Hermes 2 Theta Llama 3 70B](https://phaseo.ai/models/nous/hermes-2-theta-llama-3-70b).
+- [Nous: Hermes 2 Theta Llama 3 70B](https://phaseo.ai/models/nous/hermes-2-theta-llama-3-70b)
 
 </Update>
 
@@ -2905,7 +2976,7 @@ rss: true
 
 ### Model Releases
 
-- [DeepSeek: DeepSeek Coder V2 (2024-06-14)](https://phaseo.ai/models/deepseek/deepseek-coder-v2-2024-06-14).
+- [DeepSeek: DeepSeek Coder V2 (2024-06-14)](https://phaseo.ai/models/deepseek/deepseek-coder-v2-2024-06-14)
 
 </Update>
 
@@ -2913,8 +2984,8 @@ rss: true
 
 ### Model Releases
 
-- [z.AI: GLM 4 9B (2024-06-04)](https://phaseo.ai/models/z-ai/glm-4-9b-2024-06-04).
-- [z.AI: GLM 4 9B Chat](https://phaseo.ai/models/z-ai/glm-4-9b-chat).
+- [z.AI: GLM 4 9B (2024-06-04)](https://phaseo.ai/models/z-ai/glm-4-9b-2024-06-04)
+- [z.AI: GLM 4 9B Chat](https://phaseo.ai/models/z-ai/glm-4-9b-chat)
 
 </Update>
 
@@ -2922,7 +2993,7 @@ rss: true
 
 ### Model Releases
 
-- [Mistral: Codestral (2024-05-29)](https://phaseo.ai/models/mistral/codestral-2024-05-29).
+- [Mistral: Codestral (2024-05-29)](https://phaseo.ai/models/mistral/codestral-2024-05-29)
 
 </Update>
 
@@ -2930,7 +3001,7 @@ rss: true
 
 ### Model Releases
 
-- [Suno: Suno V3.5](https://phaseo.ai/models/suno/suno-v3.5).
+- [Suno: Suno V3.5](https://phaseo.ai/models/suno/suno-v3.5)
 
 </Update>
 
@@ -2938,8 +3009,8 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemini 1.5 Flash 001](https://phaseo.ai/models/google/gemini-1.5-flash-001).
-- [Google: Gemini 1.5 Pro 001](https://phaseo.ai/models/google/gemini-1.5-pro-001).
+- [Google: Gemini 1.5 Flash 001](https://phaseo.ai/models/google/gemini-1.5-flash-001)
+- [Google: Gemini 1.5 Pro 001](https://phaseo.ai/models/google/gemini-1.5-pro-001)
 
 </Update>
 
@@ -2947,7 +3018,7 @@ rss: true
 
 ### Model Releases
 
-- [Mistral: Mistral 7B (2024-05-22)](https://phaseo.ai/models/mistral/mistral-7b).
+- [Mistral: Mistral 7B (2024-05-22)](https://phaseo.ai/models/mistral/mistral-7b)
 
 </Update>
 
@@ -2955,7 +3026,7 @@ rss: true
 
 ### Model Releases
 
-- [DeepSeek: DeepSeek V2 (2024-05-17)](https://phaseo.ai/models/deepseek/deepseek-v2-2024-05-17).
+- [DeepSeek: DeepSeek V2 (2024-05-17)](https://phaseo.ai/models/deepseek/deepseek-v2-2024-05-17)
 
 </Update>
 
@@ -2963,7 +3034,7 @@ rss: true
 
 ### Model Releases
 
-- [Nous: Hermes 2 Theta Llama 3 8B](https://phaseo.ai/models/nous/hermes-2-theta-llama-3-8b).
+- [Nous: Hermes 2 Theta Llama 3 8B](https://phaseo.ai/models/nous/hermes-2-theta-llama-3-8b)
 
 </Update>
 
@@ -2971,9 +3042,9 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemini 1.5 Flash Preview](https://phaseo.ai/models/google/gemini-1.5-flash-preview-2024-05-14).
-- [Google: Text Embedding 004](https://phaseo.ai/models/google/text-embedding-004).
-- [Google: Text Multilingual Embedding 002](https://phaseo.ai/models/google/text-multilingual-embedding-002).
+- [Google: Gemini 1.5 Flash Preview](https://phaseo.ai/models/google/gemini-1.5-flash-preview-2024-05-14)
+- [Google: Text Embedding 004](https://phaseo.ai/models/google/text-embedding-004)
+- [Google: Text Multilingual Embedding 002](https://phaseo.ai/models/google/text-multilingual-embedding-002)
 
 </Update>
 
@@ -2981,8 +3052,8 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: ChatGPT 4o](https://phaseo.ai/models/openai/chatgpt-4o).
-- [OpenAI: GPT 4o (2024-05-13)](https://phaseo.ai/models/openai/gpt-4o-2024-05-13).
+- [OpenAI: ChatGPT 4o](https://phaseo.ai/models/openai/chatgpt-4o)
+- [OpenAI: GPT 4o (2024-05-13)](https://phaseo.ai/models/openai/gpt-4o-2024-05-13)
 
 </Update>
 
@@ -2990,7 +3061,7 @@ rss: true
 
 ### Model Releases
 
-- [Nous: Hermes 2 Pro Llama 3 8B](https://phaseo.ai/models/nous/hermes-2-pro-llama-3-8b).
+- [Nous: Hermes 2 Pro Llama 3 8B](https://phaseo.ai/models/nous/hermes-2-pro-llama-3-8b)
 
 </Update>
 
@@ -2998,8 +3069,8 @@ rss: true
 
 ### Model Releases
 
-- [Meta: Llama 3 70B Instruct](https://phaseo.ai/models/meta/llama-3-70b).
-- [Meta: Llama 3 8B Instruct](https://phaseo.ai/models/meta/llama-3-8b).
+- [Meta: Llama 3 70B Instruct](https://phaseo.ai/models/meta/llama-3-70b)
+- [Meta: Llama 3 8B Instruct](https://phaseo.ai/models/meta/llama-3-8b)
 
 </Update>
 
@@ -3007,7 +3078,7 @@ rss: true
 
 ### Model Releases
 
-- [Mistral: Mixtral 8x22b](https://phaseo.ai/models/mistral/mixtral-8x22b).
+- [Mistral: Mixtral 8x22b](https://phaseo.ai/models/mistral/mixtral-8x22b)
 
 </Update>
 
@@ -3015,7 +3086,7 @@ rss: true
 
 ### Model Releases
 
-- [xAI: Grok 1.5V](https://phaseo.ai/models/x-ai/grok-1.5v).
+- [xAI: Grok 1.5V](https://phaseo.ai/models/x-ai/grok-1.5v)
 
 </Update>
 
@@ -3023,7 +3094,7 @@ rss: true
 
 ### Model Releases
 
-- [Cohere: Command R+ (2024-04-04)](https://phaseo.ai/models/cohere/command-r+-2024-04-04).
+- [Cohere: Command R+ (2024-04-04)](https://phaseo.ai/models/cohere/command-r+-2024-04-04)
 
 </Update>
 
@@ -3031,7 +3102,7 @@ rss: true
 
 ### Model Releases
 
-- [xAI: Grok 1.5](https://phaseo.ai/models/x-ai/grok-1.5).
+- [xAI: Grok 1.5](https://phaseo.ai/models/x-ai/grok-1.5)
 
 </Update>
 
@@ -3039,7 +3110,7 @@ rss: true
 
 ### Model Releases
 
-- [Google: Image Generation 006](https://phaseo.ai/models/google/image-generation-006).
+- [Google: Image Generation 006](https://phaseo.ai/models/google/image-generation-006)
 
 </Update>
 
@@ -3047,7 +3118,7 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemini 1.5 Flash 8B](https://phaseo.ai/models/google/gemini-1.5-flash-8b).
+- [Google: Gemini 1.5 Flash 8B](https://phaseo.ai/models/google/gemini-1.5-flash-8b)
 
 </Update>
 
@@ -3055,8 +3126,8 @@ rss: true
 
 ### Model Releases
 
-- [Anthropic: Claude 3 Haiku](https://phaseo.ai/models/anthropic/claude-3-haiku).
-- [Nous: Hermes 2 Pro Mistral 7B](https://phaseo.ai/models/nous/hermes-2-pro-mistral-7b).
+- [Anthropic: Claude 3 Haiku](https://phaseo.ai/models/anthropic/claude-3-haiku)
+- [Nous: Hermes 2 Pro Mistral 7B](https://phaseo.ai/models/nous/hermes-2-pro-mistral-7b)
 
 </Update>
 
@@ -3064,7 +3135,7 @@ rss: true
 
 ### Model Releases
 
-- [Cohere: Command R (2024-03-11)](https://phaseo.ai/models/cohere/command-r-2024-03-11).
+- [Cohere: Command R (2024-03-11)](https://phaseo.ai/models/cohere/command-r-2024-03-11)
 
 </Update>
 
@@ -3072,8 +3143,8 @@ rss: true
 
 ### Model Releases
 
-- [Anthropic: Claude 3 Opus](https://phaseo.ai/models/anthropic/claude-3-opus).
-- [Anthropic: Claude 3 Sonnet](https://phaseo.ai/models/anthropic/claude-3-sonnet).
+- [Anthropic: Claude 3 Opus](https://phaseo.ai/models/anthropic/claude-3-opus)
+- [Anthropic: Claude 3 Sonnet](https://phaseo.ai/models/anthropic/claude-3-sonnet)
 
 </Update>
 
@@ -3081,8 +3152,8 @@ rss: true
 
 ### Model Releases
 
-- [Mistral: Mistral Large 1.0](https://phaseo.ai/models/mistral/mistral-large-1.0).
-- [Mistral: Mistral Small 1.0](https://phaseo.ai/models/mistral/mistral-small-1.0).
+- [Mistral: Mistral Large 1.0](https://phaseo.ai/models/mistral/mistral-large-1.0)
+- [Mistral: Mistral Small 1.0](https://phaseo.ai/models/mistral/mistral-small-1.0)
 
 </Update>
 
@@ -3090,8 +3161,8 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemma 1 2B](https://phaseo.ai/models/google/gemma-1-2b).
-- [Google: Gemma 1 7B](https://phaseo.ai/models/google/gemma-1-7b).
+- [Google: Gemma 1 2B](https://phaseo.ai/models/google/gemma-1-2b)
+- [Google: Gemma 1 7B](https://phaseo.ai/models/google/gemma-1-7b)
 
 </Update>
 
@@ -3099,7 +3170,7 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemini 1.0 Pro Vision 001](https://phaseo.ai/models/google/gemini-1.0-pro-vision-001).
+- [Google: Gemini 1.0 Pro Vision 001](https://phaseo.ai/models/google/gemini-1.0-pro-vision-001)
 
 </Update>
 
@@ -3107,8 +3178,8 @@ rss: true
 
 ### Model Releases
 
-- [Google: Multimodal Embedding 001](https://phaseo.ai/models/google/multimodal-embedding-001).
-- [Nous: Hermes 2 Llama 2 70B](https://phaseo.ai/models/nous/hermes-2-llama-2-70b).
+- [Google: Multimodal Embedding 001](https://phaseo.ai/models/google/multimodal-embedding-001)
+- [Nous: Hermes 2 Llama 2 70B](https://phaseo.ai/models/nous/hermes-2-llama-2-70b)
 
 </Update>
 
@@ -3116,9 +3187,9 @@ rss: true
 
 ### Model Releases
 
-- [Moonshot: Moonshot V1 128K](https://phaseo.ai/models/moonshotai/moonshot-v1-128k).
-- [Moonshot: Moonshot V1 32K](https://phaseo.ai/models/moonshotai/moonshot-v1-32k).
-- [Moonshot: Moonshot V1 8K](https://phaseo.ai/models/moonshotai/moonshot-v1-8k).
+- [Moonshot: Moonshot V1 128K](https://phaseo.ai/models/moonshotai/moonshot-v1-128k)
+- [Moonshot: Moonshot V1 32K](https://phaseo.ai/models/moonshotai/moonshot-v1-32k)
+- [Moonshot: Moonshot V1 8K](https://phaseo.ai/models/moonshotai/moonshot-v1-8k)
 
 </Update>
 
@@ -3126,9 +3197,9 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: GPT 4 Turbo (2024-01-25)](https://phaseo.ai/models/openai/gpt-4-turbo).
-- [OpenAI: Text Embedding 3 Large](https://phaseo.ai/models/openai/text-embedding-3-large).
-- [OpenAI: Text Embedding 3 Small](https://phaseo.ai/models/openai/text-embedding-3-small).
+- [OpenAI: GPT 4 Turbo (2024-01-25)](https://phaseo.ai/models/openai/gpt-4-turbo)
+- [OpenAI: Text Embedding 3 Large](https://phaseo.ai/models/openai/text-embedding-3-large)
+- [OpenAI: Text Embedding 3 Small](https://phaseo.ai/models/openai/text-embedding-3-small)
 
 </Update>
 
@@ -3136,7 +3207,7 @@ rss: true
 
 ### Model Releases
 
-- [Google: Embedding 001](https://phaseo.ai/models/google/embedding-001).
+- [Google: Embedding 001](https://phaseo.ai/models/google/embedding-001)
 
 </Update>
 
@@ -3144,7 +3215,7 @@ rss: true
 
 ### Model Releases
 
-- [Google: Text Embedding Gecko 003](https://phaseo.ai/models/google/text-embedding-gecko-003).
+- [Google: Text Embedding Gecko 003](https://phaseo.ai/models/google/text-embedding-gecko-003)
 
 </Update>
 
@@ -3152,10 +3223,10 @@ rss: true
 
 ### Model Releases
 
-- [Mistral: Mistral 7B (2023-12-11)](https://phaseo.ai/models/mistral/mistral-7b-2023-12-11).
-- [Mistral: Mistral Embed](https://phaseo.ai/models/mistral/mistral-embed).
-- [Mistral: Mistral Medium 1.0](https://phaseo.ai/models/mistral/mistral-medium-1.0).
-- [Mistral: Mixtral 8x7b](https://phaseo.ai/models/mistral/mixtral-8x7b).
+- [Mistral: Mistral 7B (2023-12-11)](https://phaseo.ai/models/mistral/mistral-7b-2023-12-11)
+- [Mistral: Mistral Embed](https://phaseo.ai/models/mistral/mistral-embed)
+- [Mistral: Mistral Medium 1.0](https://phaseo.ai/models/mistral/mistral-medium-1.0)
+- [Mistral: Mixtral 8x7b](https://phaseo.ai/models/mistral/mixtral-8x7b)
 
 </Update>
 
@@ -3163,9 +3234,9 @@ rss: true
 
 ### Model Releases
 
-- [Google: Gemini 1.0 Nano](https://phaseo.ai/models/google/gemini-1.0-nano).
-- [Google: Gemini 1.0 Pro](https://phaseo.ai/models/google/gemini-1.0-pro).
-- [Google: Gemini 1.0 Ultra](https://phaseo.ai/models/google/gemini-1.0-ultra).
+- [Google: Gemini 1.0 Nano](https://phaseo.ai/models/google/gemini-1.0-nano)
+- [Google: Gemini 1.0 Pro](https://phaseo.ai/models/google/gemini-1.0-pro)
+- [Google: Gemini 1.0 Ultra](https://phaseo.ai/models/google/gemini-1.0-ultra)
 
 </Update>
 
@@ -3173,8 +3244,8 @@ rss: true
 
 ### Model Releases
 
-- [Anthropic: Claude 2.1](https://phaseo.ai/models/anthropic/claude-2.1).
-- [Google: Image Generation 005](https://phaseo.ai/models/google/image-generation-005).
+- [Anthropic: Claude 2.1](https://phaseo.ai/models/anthropic/claude-2.1)
+- [Google: Image Generation 005](https://phaseo.ai/models/google/image-generation-005)
 
 </Update>
 
@@ -3182,10 +3253,10 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: GPT 3.5 Turbo Instruct](https://phaseo.ai/models/openai/gpt-3.5-turbo-instruct).
-- [OpenAI: GPT 4 Turbo (2023-11-06)](https://phaseo.ai/models/openai/gpt-4-turbo-2023-11-06).
-- [OpenAI: TTS 1](https://phaseo.ai/models/openai/tts-1).
-- [OpenAI: TTS 1 HD](https://phaseo.ai/models/openai/tts-1-hd).
+- [OpenAI: GPT 3.5 Turbo Instruct](https://phaseo.ai/models/openai/gpt-3.5-turbo-instruct)
+- [OpenAI: GPT 4 Turbo (2023-11-06)](https://phaseo.ai/models/openai/gpt-4-turbo-2023-11-06)
+- [OpenAI: TTS 1](https://phaseo.ai/models/openai/tts-1)
+- [OpenAI: TTS 1 HD](https://phaseo.ai/models/openai/tts-1-hd)
 
 </Update>
 
@@ -3193,8 +3264,8 @@ rss: true
 
 ### Model Releases
 
-- [Google: Text Embedding Gecko 002](https://phaseo.ai/models/google/text-embedding-gecko-002).
-- [Google: Text Embedding Gecko Multilingual 001](https://phaseo.ai/models/google/text-embedding-gecko-multilingual-001).
+- [Google: Text Embedding Gecko 002](https://phaseo.ai/models/google/text-embedding-gecko-002)
+- [Google: Text Embedding Gecko Multilingual 001](https://phaseo.ai/models/google/text-embedding-gecko-multilingual-001)
 
 </Update>
 
@@ -3202,7 +3273,7 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: Dall-E 3](https://phaseo.ai/models/openai/dall-e-3).
+- [OpenAI: Dall-E 3](https://phaseo.ai/models/openai/dall-e-3)
 
 </Update>
 
@@ -3210,7 +3281,7 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: GPT 3.5 Turbo (2023-11-06)](https://phaseo.ai/models/openai/gpt-3.5-turbo-2023-11-06).
+- [OpenAI: GPT 3.5 Turbo (2023-11-06)](https://phaseo.ai/models/openai/gpt-3.5-turbo-2023-11-06)
 
 </Update>
 
@@ -3218,7 +3289,7 @@ rss: true
 
 ### Model Releases
 
-- [Mistral: Mistral 7B (2023-09-27)](https://phaseo.ai/models/mistral/mistral-7b-2023-09-27).
+- [Mistral: Mistral 7B (2023-09-27)](https://phaseo.ai/models/mistral/mistral-7b-2023-09-27)
 
 </Update>
 
@@ -3226,8 +3297,8 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: Babbage 002](https://phaseo.ai/models/openai/babbage-002).
-- [OpenAI: Davinci 002](https://phaseo.ai/models/openai/davinci-002).
+- [OpenAI: Babbage 002](https://phaseo.ai/models/openai/babbage-002)
+- [OpenAI: Davinci 002](https://phaseo.ai/models/openai/davinci-002)
 
 </Update>
 
@@ -3235,7 +3306,7 @@ rss: true
 
 ### Model Releases
 
-- [Google: Image Generation 002](https://phaseo.ai/models/google/image-generation-002).
+- [Google: Image Generation 002](https://phaseo.ai/models/google/image-generation-002)
 
 </Update>
 
@@ -3243,7 +3314,7 @@ rss: true
 
 ### Model Releases
 
-- [Anthropic: Claude Instant 1.2](https://phaseo.ai/models/anthropic/claude-instant-1.2).
+- [Anthropic: Claude Instant 1.2](https://phaseo.ai/models/anthropic/claude-instant-1.2)
 
 </Update>
 
@@ -3251,7 +3322,7 @@ rss: true
 
 ### Model Releases
 
-- [Anthropic: Claude 2.0](https://phaseo.ai/models/anthropic/claude-2.0).
+- [Anthropic: Claude 2.0](https://phaseo.ai/models/anthropic/claude-2.0)
 
 </Update>
 
@@ -3259,8 +3330,8 @@ rss: true
 
 ### Model Releases
 
-- [Meta: Llama 2 13B Chat](https://phaseo.ai/models/meta/llama-2-13b-chat).
-- [Meta: Llama 2 70B Chat](https://phaseo.ai/models/meta/llama-2-70b-chat).
+- [Meta: Llama 2 13B Chat](https://phaseo.ai/models/meta/llama-2-13b-chat)
+- [Meta: Llama 2 70B Chat](https://phaseo.ai/models/meta/llama-2-70b-chat)
 
 </Update>
 
@@ -3268,11 +3339,11 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: GPT 3.5 Turbo 0613](https://phaseo.ai/models/openai/gpt-3.5-turbo-0613).
-- [OpenAI: GPT 3.5 Turbo 16k](https://phaseo.ai/models/openai/gpt-3.5-turbo-16k).
-- [OpenAI: GPT 3.5 Turbo 16K 0613](https://phaseo.ai/models/openai/gpt-3.5-turbo-16k-0613).
-- [OpenAI: GPT 4 (2023-06-13)](https://phaseo.ai/models/openai/gpt-4).
-- [OpenAI: GPT 4 32K 0613](https://phaseo.ai/models/openai/gpt-4-32k-0613).
+- [OpenAI: GPT 3.5 Turbo 0613](https://phaseo.ai/models/openai/gpt-3.5-turbo-0613)
+- [OpenAI: GPT 3.5 Turbo 16k](https://phaseo.ai/models/openai/gpt-3.5-turbo-16k)
+- [OpenAI: GPT 3.5 Turbo 16K 0613](https://phaseo.ai/models/openai/gpt-3.5-turbo-16k-0613)
+- [OpenAI: GPT 4 (2023-06-13)](https://phaseo.ai/models/openai/gpt-4)
+- [OpenAI: GPT 4 32K 0613](https://phaseo.ai/models/openai/gpt-4-32k-0613)
 
 </Update>
 
@@ -3280,8 +3351,8 @@ rss: true
 
 ### Model Releases
 
-- [Google: Image Text](https://phaseo.ai/models/google/image-text).
-- [Google: Text Embedding Gecko 001](https://phaseo.ai/models/google/text-embedding-gecko-001).
+- [Google: Image Text](https://phaseo.ai/models/google/image-text)
+- [Google: Text Embedding Gecko 001](https://phaseo.ai/models/google/text-embedding-gecko-001)
 
 </Update>
 
@@ -3289,9 +3360,9 @@ rss: true
 
 ### Model Releases
 
-- [Google: Chat Bison](https://phaseo.ai/models/google/chat-bison).
-- [Google: Code Gecko](https://phaseo.ai/models/google/code-gecko).
-- [Google: Text Bison](https://phaseo.ai/models/google/text-bison).
+- [Google: Chat Bison](https://phaseo.ai/models/google/chat-bison)
+- [Google: Code Gecko](https://phaseo.ai/models/google/code-gecko)
+- [Google: Text Bison](https://phaseo.ai/models/google/text-bison)
 
 </Update>
 
@@ -3299,7 +3370,7 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: GPT 3.5 Turbo (2024-01-25)](https://phaseo.ai/models/openai/gpt-3.5-turbo-2024-01-25).
+- [OpenAI: GPT 3.5 Turbo (2024-01-25)](https://phaseo.ai/models/openai/gpt-3.5-turbo-2024-01-25)
 
 </Update>
 
@@ -3307,12 +3378,12 @@ rss: true
 
 ### Model Releases
 
-- [Anthropic: Claude 1.0](https://phaseo.ai/models/anthropic/claude-1.0).
-- [Anthropic: Claude Instant 1.0](https://phaseo.ai/models/anthropic/claude-instant-1.0).
-- [OpenAI: GPT 4 (2023-03-14)](https://phaseo.ai/models/openai/gpt-4-2023-03-14).
-- [OpenAI: GPT 4 32K](https://phaseo.ai/models/openai/gpt-4-32k).
-- [OpenAI: GPT 4 32K 0314](https://phaseo.ai/models/openai/gpt-4-32k-0314).
-- [OpenAI: GPT 4 Turbo (2023-03-14)](https://phaseo.ai/models/openai/gpt-4-turbo-2023-03-14).
+- [Anthropic: Claude 1.0](https://phaseo.ai/models/anthropic/claude-1.0)
+- [Anthropic: Claude Instant 1.0](https://phaseo.ai/models/anthropic/claude-instant-1.0)
+- [OpenAI: GPT 4 (2023-03-14)](https://phaseo.ai/models/openai/gpt-4-2023-03-14)
+- [OpenAI: GPT 4 32K](https://phaseo.ai/models/openai/gpt-4-32k)
+- [OpenAI: GPT 4 32K 0314](https://phaseo.ai/models/openai/gpt-4-32k-0314)
+- [OpenAI: GPT 4 Turbo (2023-03-14)](https://phaseo.ai/models/openai/gpt-4-turbo-2023-03-14)
 
 </Update>
 
@@ -3320,7 +3391,7 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: Whisper 1](https://phaseo.ai/models/openai/whisper-1).
+- [OpenAI: Whisper 1](https://phaseo.ai/models/openai/whisper-1)
 
 </Update>
 
@@ -3328,7 +3399,7 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: Text Embedding Ada 002](https://phaseo.ai/models/openai/text-embedding-ada-002).
+- [OpenAI: Text Embedding Ada 002](https://phaseo.ai/models/openai/text-embedding-ada-002)
 
 </Update>
 
@@ -3336,7 +3407,7 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: Dall-E 2](https://phaseo.ai/models/openai/dall-e-2).
+- [OpenAI: Dall-E 2](https://phaseo.ai/models/openai/dall-e-2)
 
 </Update>
 
@@ -3344,7 +3415,7 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: Dall-E](https://phaseo.ai/models/openai/dall-e).
+- [OpenAI: Dall-E](https://phaseo.ai/models/openai/dall-e)
 
 </Update>
 
@@ -3352,11 +3423,11 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: Ada](https://phaseo.ai/models/openai/ada).
-- [OpenAI: Babbage](https://phaseo.ai/models/openai/babbage).
-- [OpenAI: Curie](https://phaseo.ai/models/openai/curie).
-- [OpenAI: Davinci](https://phaseo.ai/models/openai/davinci).
-- [OpenAI: GPT 3](https://phaseo.ai/models/openai/gpt-3).
+- [OpenAI: Ada](https://phaseo.ai/models/openai/ada)
+- [OpenAI: Babbage](https://phaseo.ai/models/openai/babbage)
+- [OpenAI: Curie](https://phaseo.ai/models/openai/curie)
+- [OpenAI: Davinci](https://phaseo.ai/models/openai/davinci)
+- [OpenAI: GPT 3](https://phaseo.ai/models/openai/gpt-3)
 
 </Update>
 
@@ -3364,7 +3435,7 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: GPT 2](https://phaseo.ai/models/openai/gpt-2).
+- [OpenAI: GPT 2](https://phaseo.ai/models/openai/gpt-2)
 
 </Update>
 
@@ -3372,6 +3443,6 @@ rss: true
 
 ### Model Releases
 
-- [OpenAI: GPT 1](https://phaseo.ai/models/openai/gpt-1).
+- [OpenAI: GPT 1](https://phaseo.ai/models/openai/gpt-1)
 
 </Update>
