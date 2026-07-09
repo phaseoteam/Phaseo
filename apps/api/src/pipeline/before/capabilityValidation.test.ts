@@ -531,7 +531,7 @@ describe("validateCapabilities", () => {
 		}
 	});
 
-	it("tracks responses reasoning_effort alias as reasoning effort", () => {
+	it("tracks responses reasoning_effort as a native provider parameter", () => {
 		const result = validateCapabilities({
 			endpoint: "responses",
 			rawBody: {
@@ -542,19 +542,19 @@ describe("validateCapabilities", () => {
 			body: {
 				model: "meta/muse-spark-1.1",
 				input: "hello",
-				reasoning: { effort: "xhigh" },
+				reasoning_effort: "xhigh",
 			},
 			requestId: "req_reasoning_effort_alias",
 			workspaceId: "team_test",
 			providers: [
-				provider("meta", { "reasoning.effort": {} }, 1_000_000),
+				provider("meta", { reasoning_effort: {} }, 1_000_000),
 			],
 			model: "meta/muse-spark-1.1",
 		});
 
 		expect(result.ok).toBe(true);
 		if (result.ok) {
-			expect(result.requestedParams).toEqual(["reasoning.effort"]);
+			expect(result.requestedParams).toEqual(["reasoning_effort"]);
 			expect(result.providers.map((p: any) => p.providerId)).toEqual(["meta"]);
 		}
 	});

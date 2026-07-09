@@ -218,21 +218,27 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 			maxTokens: req.reasoning.max_tokens ?? undefined,
 		}
 		: undefined;
-	const reasoningEffortAlias =
+	const reasoning: IRReasoning | undefined =
+		reasoningCandidate && Object.values(reasoningCandidate).some((value) => value !== undefined)
+			? reasoningCandidate
+			: undefined;
+	const metaReasoningEffort =
 		typeof (req as any).reasoning_effort === "string" && (req as any).reasoning_effort.length > 0
 			? (req as any).reasoning_effort
 			: undefined;
-	const mergedReasoningCandidate: IRReasoning | undefined =
-		reasoningCandidate || reasoningEffortAlias !== undefined
+	const vendor = {
+		...(metaReasoningEffort !== undefined
+			? { meta: { reasoningEffort: metaReasoningEffort } }
+			: {}),
+		...(openAIContextManagement
 			? {
-				...(reasoningCandidate ?? {}),
-				...(reasoningEffortAlias !== undefined ? { effort: reasoningEffortAlias as any } : {}),
+				openai: {
+					context_management: openAIContextManagement,
+				},
 			}
-			: undefined;
-	const reasoning: IRReasoning | undefined =
-		mergedReasoningCandidate && Object.values(mergedReasoningCandidate).some((value) => value !== undefined)
-			? mergedReasoningCandidate
-			: undefined;
+			: {}),
+	};
+
 	return {
 		messages,
 		model: req.model,
@@ -285,13 +291,7 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 		safetyIdentifier: (req as any).safety_identifier,
 		modalities: normalizeModalities((req as any).modalities),
 		imageConfig: normalizeImageConfig((req as any).image_config),
-		vendor: openAIContextManagement
-			? {
-				openai: {
-					context_management: openAIContextManagement,
-				},
-			}
-			: undefined,
+		vendor: Object.keys(vendor).length > 0 ? vendor : undefined,
 	};
 }
 

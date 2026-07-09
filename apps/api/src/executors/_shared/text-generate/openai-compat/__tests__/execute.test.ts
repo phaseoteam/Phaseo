@@ -134,8 +134,10 @@ describe("executeOpenAICompat", () => {
 				content: [{ type: "text", text: "Find the latest Meta Model API news." }],
 			}],
 			previousResponseId: "resp_previous_meta",
-			reasoning: {
-				effort: "high",
+			vendor: {
+				meta: {
+					reasoningEffort: "high",
+				},
 			},
 			webSearchOptions: {
 				search_context_size: "high",

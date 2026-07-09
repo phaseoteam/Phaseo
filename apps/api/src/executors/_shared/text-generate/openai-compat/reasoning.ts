@@ -59,17 +59,21 @@ export function applyReasoningParams(args: {
 	providerId?: string;
 }): void {
 	const reasoning = args.ir.reasoning;
-	if (!reasoning) return;
+	const metaReasoningEffort =
+		typeof args.ir.vendor?.meta?.reasoningEffort === "string"
+			? args.ir.vendor.meta.reasoningEffort
+			: undefined;
 
 	if (args.providerId === "meta") {
 		const rawEffort =
-			typeof reasoning.effort === "string"
+			metaReasoningEffort ??
+			(typeof reasoning?.effort === "string"
 				? reasoning.effort
-				: reasoning.enabled === false
+				: reasoning?.enabled === false
 					? "minimal"
-					: reasoning.enabled === true
+					: reasoning?.enabled === true
 						? "medium"
-						: undefined;
+						: undefined);
 		const effort = rawEffort === "none"
 			? "minimal"
 			: rawEffort === "max"
@@ -80,6 +84,8 @@ export function applyReasoningParams(args: {
 		}
 		return;
 	}
+
+	if (!reasoning) return;
 
 	const config = resolveReasoningConfig(args.providerId);
 	if (!config) return;

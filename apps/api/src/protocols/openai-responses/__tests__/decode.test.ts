@@ -507,7 +507,7 @@ describe("decodeOpenAIResponsesRequest", () => {
 		});
 	});
 
-	it("should decode top-level reasoning_effort alias", () => {
+	it("should decode top-level reasoning_effort as a Meta-native extension", () => {
 		const request = {
 			model: "meta/muse-spark-1.1",
 			input: "Solve this problem",
@@ -516,8 +516,9 @@ describe("decodeOpenAIResponsesRequest", () => {
 
 		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
 
-		expect(ir.reasoning).toEqual({
-			effort: "xhigh",
+		expect(ir.reasoning).toBeUndefined();
+		expect(ir.vendor?.meta).toEqual({
+			reasoningEffort: "xhigh",
 		});
 	});
 

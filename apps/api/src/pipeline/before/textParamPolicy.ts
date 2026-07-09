@@ -194,7 +194,7 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			top_logprobs: "top_logprobs",
 			presence_penalty: "presence_penalty",
 			frequency_penalty: "frequency_penalty",
-			reasoning_effort: "reasoning.effort",
+			reasoning_effort: "reasoning_effort",
 			reasoning: "reasoning",
 			thinking: "reasoning",
 			service_tier: "service_tier",
