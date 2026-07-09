@@ -12,20 +12,15 @@ const configuredSiteUrl =
 
 if (process.env.NODE_ENV === "production" && !configuredSiteUrl) {
 	console.warn(
-		"[seo] NEXT_PUBLIC_WEBSITE_URL (or WEBSITE_URL) is not set; falling back to https://phaseo.app during this build.",
+		"[seo] NEXT_PUBLIC_WEBSITE_URL (or WEBSITE_URL) is not set; falling back to http://localhost:3000 during this build.",
 	);
 }
 
-export function resolveSiteUrl(
-	siteUrl: string | undefined,
-	nodeEnv = process.env.NODE_ENV,
-): string {
+export function resolveSiteUrl(siteUrl: string | undefined): string {
 	const normalizedSiteUrl = siteUrl?.trim().replace(/\/+$/, "");
 
 	if (!normalizedSiteUrl) {
-		return nodeEnv === "production"
-			? CANONICAL_SITE_URL
-			: LOCAL_SITE_URL;
+		return LOCAL_SITE_URL;
 	}
 
 	return LEGACY_SITE_URLS.has(normalizedSiteUrl)

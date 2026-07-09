@@ -19,11 +19,7 @@ describe("resolveSiteUrl", () => {
 		);
 	});
 
-	it("falls back to the canonical host in production", () => {
-		expect(resolveSiteUrl(undefined, "production")).toBe("https://phaseo.app");
-	});
-
-	it("falls back to localhost outside production", () => {
-		expect(resolveSiteUrl(undefined, "test")).toBe("http://localhost:3000");
+	it("falls back to localhost when no site URL is configured", () => {
+		expect(resolveSiteUrl(undefined)).toBe("http://localhost:3000");
 	});
 });
