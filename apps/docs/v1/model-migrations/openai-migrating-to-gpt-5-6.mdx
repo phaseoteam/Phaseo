@@ -7,27 +7,29 @@ description: "What to review before moving GPT-5.x traffic to GPT-5.6 Sol, Terra
 
 Use this guide when you are preparing existing OpenAI traffic for GPT-5.6.
 
-GPT-5.6 is currently tracked as a limited preview. In Phaseo, the models are listed as coming soon until public gateway routing is active, so treat this as a readiness checklist rather than a same-day production cutover.
+GPT-5.6 is the current OpenAI GPT family for complex production workflows. In AI Stats, the fixed tier IDs map to the OpenAI model IDs `gpt-5.6-sol`, `gpt-5.6-terra`, and `gpt-5.6-luna`.
 
 ## Choose the right GPT-5.6 model
 
 | Model | Use it for | Reasoning effort |
 | --- | --- | --- |
 | `openai/gpt-5.6-sol` | Highest-capability reasoning, agentic coding, scientific analysis, and complex professional work | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
-| `openai/gpt-5.6-terra` | Balanced everyday work across reasoning, coding, and assistant workflows | `none`, `low`, `medium`, `high`, `xhigh` |
-| `openai/gpt-5.6-luna` | Lower-latency and cost-sensitive GPT-5.6 workloads | `none`, `low`, `medium`, `high`, `xhigh` |
+| `openai/gpt-5.6-terra` | Balanced everyday work across reasoning, coding, and assistant workflows | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
+| `openai/gpt-5.6-luna` | Lower-latency and cost-sensitive GPT-5.6 workloads | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
 
-Only Sol is currently marked for the new `max` reasoning effort. Do not send `max` to Terra or Luna unless their model metadata changes.
+OpenAI's `gpt-5.6` alias routes to `gpt-5.6-sol`. In AI Stats, use `openai/gpt-5.6` or `openai/gpt-sol-latest` when you want that Sol-tier default, and use the fixed tier IDs for controlled routing.
 
-Phaseo also tracks preview aliases for the latest model in each tier: `openai/gpt-sol-latest`, `openai/gpt-terra-latest`, and `openai/gpt-luna-latest`. Use the fixed GPT-5.6 IDs for controlled migrations, and use the tier aliases only when you deliberately want future Sol, Terra, or Luna releases to roll forward through the same route.
+AI Stats also tracks tier aliases for the latest model in each tier: `openai/gpt-sol-latest`, `openai/gpt-terra-latest`, and `openai/gpt-luna-latest`. Use the fixed GPT-5.6 IDs for controlled migrations, and use the tier aliases only when you deliberately want future Sol, Terra, or Luna releases to roll forward through the same route.
 
 ## What changed
 
 - GPT-5.6 adds the new Sol/Terra/Luna split instead of one default GPT route.
-- Sol adds `reasoning.effort: "max"` for the highest reasoning budget.
-- Terra and Luna keep the standard non-`max` GPT-5.6 reasoning effort set.
+- All three GPT-5.6 tiers support `reasoning.effort: "max"` for the highest reasoning budget.
+- GPT-5.6 supports `reasoning.mode: "pro"` without switching to a separate Pro model slug.
+- GPT-5.6 adds persisted reasoning controls through `reasoning.context`.
+- GPT-5.6 adds beta multi-agent support and Programmatic Tool Calling for eligible tool-heavy workflows.
 - Prompt caching is priced with separate uncached input, cache read, cache write, and output meters.
-- Explicit cache breakpoints are supported during preview, with a 30-minute minimum cache life noted in the model metadata.
+- Explicit prompt caching is supported through `prompt_cache_options`; OpenAI currently recommends `prompt_cache_options.ttl` instead of `prompt_cache_retention`.
 
 ## Update your request
 
@@ -45,7 +47,7 @@ The first examples use the Responses API-style `input` shape. If you are migrati
 }
 ```
 
-Use Sol's `max` effort only for routes where the extra reasoning budget is worth the latency and cost.
+Use `max` effort only for routes where the extra reasoning budget is worth the latency and cost.
 
 ```json
 {
@@ -57,7 +59,7 @@ Use Sol's `max` effort only for routes where the extra reasoning budget is worth
 }
 ```
 
-If your integration still sends the flat OpenAI-compatible field, Phaseo also accepts `reasoning_effort` where the route supports it:
+If your integration still sends the flat OpenAI-compatible field, AI Stats also accepts `reasoning_effort` where the route supports it:
 
 ```json
 {
@@ -110,18 +112,21 @@ For repeated context, keep the stable part of the prompt in cacheable blocks and
       ]
     }
   ],
-  "prompt_cache_retention": "24h"
+  "prompt_cache_options": {
+    "mode": "explicit",
+    "ttl": "24h"
+  }
 }
 ```
 
-Use `cache_control` when you want provider-neutral cache hints or explicit cache breakpoints. Use `prompt_cache_retention` when you want to pass OpenAI cache-retention options directly.
+Use `cache_control` when you want provider-neutral cache hints or explicit cache breakpoints. Use `prompt_cache_options` when you want to pass OpenAI cache mode and TTL options directly.
 
 ## What to test
 
 ### Reasoning and output quality
 
-- Sol at `high`, `xhigh`, and `max` on your hardest tasks
-- Terra and Luna at the effort levels you expect to expose to users
+- Sol, Terra, and Luna at the effort levels you expect to expose to users, including `max` where quality-first workflows justify it
+- standard mode versus `reasoning.mode: "pro"` on difficult tasks where quality matters more than latency
 - structured outputs and schema pass rate at each effort level
 - tool-call selection and argument quality
 
@@ -137,10 +142,12 @@ Use `cache_control` when you want provider-neutral cache hints or explicit cache
 - keep your previous GPT-5.x route available as a fallback
 - keep `max` behind a config flag or preset until it is proven on production-like prompts
 - monitor cache write volume separately from cache read volume
-- do not make GPT-5.6 your default route until the model page shows active gateway providers
+- move GPT-5.6 into default routing only after your own evals confirm task success, cost, and latency
 
 ## Sources
 
 - [OpenAI GPT-5.6 preview announcement](https://openai.com/index/previewing-gpt-5-6-sol/)
+- [OpenAI GPT-5.6 model guidance](https://developers.openai.com/api/docs/guides/latest-model)
+- [OpenAI model catalog](https://developers.openai.com/api/docs/models)
 - [GPT-5.6 preview system card](https://deploymentsafety.openai.com/gpt-5-6-preview)
-- [Phaseo prompt caching guide](../guides/prompt-caching)
+- [AI Stats prompt caching guide](../guides/prompt-caching)
