@@ -1,20 +1,44 @@
 import type { Metadata, ResolvingMetadata } from "next";
 
+const CANONICAL_SITE_URL = "https://phaseo.app";
+const LOCAL_SITE_URL = "http://localhost:3000";
+const LEGACY_SITE_URLS = new Set([
+	"http://ai-stats.phaseo.app",
+	"https://ai-stats.phaseo.app",
+]);
+
 const configuredSiteUrl =
 	process.env.NEXT_PUBLIC_WEBSITE_URL ?? process.env.WEBSITE_URL;
 
 if (process.env.NODE_ENV === "production" && !configuredSiteUrl) {
 	console.warn(
-		"[seo] NEXT_PUBLIC_WEBSITE_URL (or WEBSITE_URL) is not set; falling back to http://localhost:3000 during this build.",
+		"[seo] NEXT_PUBLIC_WEBSITE_URL (or WEBSITE_URL) is not set; falling back to https://phaseo.app during this build.",
 	);
 }
 
-const DEFAULT_SITE_URL = configuredSiteUrl ?? "http://localhost:3000";
+export function resolveSiteUrl(
+	siteUrl: string | undefined,
+	nodeEnv = process.env.NODE_ENV,
+): string {
+	const normalizedSiteUrl = siteUrl?.trim().replace(/\/+$/, "");
+
+	if (!normalizedSiteUrl) {
+		return nodeEnv === "production"
+			? CANONICAL_SITE_URL
+			: LOCAL_SITE_URL;
+	}
+
+	return LEGACY_SITE_URLS.has(normalizedSiteUrl)
+		? CANONICAL_SITE_URL
+		: normalizedSiteUrl;
+}
+
+const DEFAULT_SITE_URL = resolveSiteUrl(configuredSiteUrl);
 
 export const SITE_NAME = "Phaseo";
 export const PREFERRED_SITE_NAME = "Phaseo";
 export const SITE_ALTERNATE_NAME = SITE_NAME;
-export const SITE_URL = DEFAULT_SITE_URL.replace(/\/+$/, "");
+export const SITE_URL = DEFAULT_SITE_URL;
 export const METADATA_BASE = new URL(SITE_URL);
 
 export interface BuildMetadataOptions {
