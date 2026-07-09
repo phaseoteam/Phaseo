@@ -1,0 +1,57 @@
+{
+  "key": "meta:meta/muse-spark-1.1:text.generate",
+  "api_provider_id": "meta",
+  "provider_slug": "meta",
+  "api_model_id": "meta/muse-spark-1.1",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.25,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Meta Model API public preview pricing for Muse Spark 1.1.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-09T00:00:00Z"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.15,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Meta Model API cached input pricing for Muse Spark 1.1.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-09T00:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 4.25,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Meta Model API public preview pricing for Muse Spark 1.1.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-09T00:00:00Z"
+    },
+    {
+      "meter": "native_web_search_requests",
+      "unit": "request",
+      "unit_size": 1000,
+      "price_per_unit": 2.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Meta Model API web search grounding pricing for Muse Spark 1.1.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-09T00:00:00Z"
+    }
+  ]
+}

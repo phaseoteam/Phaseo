@@ -1,0 +1,43 @@
+{
+  "model_id": "meta/muse-spark-1.1",
+  "organisation_id": "meta",
+  "name": "Muse Spark 1.1",
+  "status": "Available",
+  "previous_model_id": "meta/muse-spark",
+  "description": "Muse Spark 1.1 is a multimodal reasoning model from Meta Superintelligence Labs built for agentic tasks, with improvements in tool and computer use, coding, long-context work, and multimodal understanding. It supports a 1 million token context window and is available through the Meta Model API public preview.",
+  "announced_date": "2026-07-09T00:00:00",
+  "release_date": "2026-07-09T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image,video,audio",
+  "output_types": "text",
+  "api_model_id": "meta/muse-spark-1.1",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/"
+    },
+    {
+      "platform": "api_docs",
+      "url": "https://developer.meta.com/ai/resources/blog/build-with-muse-spark/#5-get-started"
+    }
+  ],
+  "details": [
+    {
+      "name": "context_window",
+      "value": "1000000",
+      "unit": "tokens",
+      "source_link": "https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/",
+      "other_info": "Meta says Muse Spark 1.1 can actively manage a 1 million token context window."
+    },
+    {
+      "name": "api_status",
+      "value": "public_preview",
+      "unit": null,
+      "source_link": "https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/",
+      "other_info": "Meta announced public preview access through the Meta Model API."
+    }
+  ],
+  "benchmarks": []
+}

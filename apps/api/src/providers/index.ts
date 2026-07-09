@@ -113,6 +113,7 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     "amazon-bedrock": createOpenAICompatibleAdapter("amazon-bedrock"),
     "google-vertex": createOpenAICompatibleAdapter("google-vertex"),
     "google-vertex-eu": createOpenAICompatibleAdapter("google-vertex-eu"),
+    meta: createOpenAICompatibleAdapter("meta"),
 };
 
 // Capability-specific adapter overrides (e.g. Mistral OCR)

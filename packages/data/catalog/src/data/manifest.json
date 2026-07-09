@@ -486,7 +486,10 @@
       "meta/llama-3.2-90b-vision",
       "meta/llama-3.3-70b",
       "meta/llama-4-maverick",
-      "meta/llama-4-scout"
+      "meta/llama-4-scout",
+      "meta/muse-spark",
+      "meta/muse-spark-1.1",
+      "meta/muse-spark-contemplating"
     ],
     "microsoft": [
       "microsoft/phi-1",
@@ -2304,6 +2307,7 @@
     "ionrouter:text.generate:qwen-qwen3.5-35b-a3b",
     "ionrouter:text.generate:z-ai-glm-5",
     "longcat:text.generate:meituan-longcat-2.0",
+    "meta:text.generate:meta-muse-spark-1.1",
     "minimax-lightning:text.generate:minimax-minimax-m2.1",
     "minimax-lightning:text.generate:minimax-minimax-m2.7",
     "minimax:text.generate:minimax-m2-her",
