@@ -7,6 +7,12 @@ describe("resolveSiteUrl", () => {
 		);
 	});
 
+	it("normalizes the http legacy ai-stats subdomain to the canonical Phaseo host", () => {
+		expect(resolveSiteUrl("http://ai-stats.phaseo.app/")).toBe(
+			"https://phaseo.app",
+		);
+	});
+
 	it("preserves explicitly configured non-legacy hosts", () => {
 		expect(resolveSiteUrl("https://preview.phaseo.app/")).toBe(
 			"https://preview.phaseo.app",
