@@ -507,7 +507,7 @@ describe("decodeOpenAIResponsesRequest", () => {
 		});
 	});
 
-	it("should decode top-level reasoning_effort as a Meta-native extension", () => {
+	it("should ignore unsupported top-level reasoning_effort", () => {
 		const request = {
 			model: "meta/muse-spark-1.1",
 			input: "Solve this problem",
@@ -517,9 +517,7 @@ describe("decodeOpenAIResponsesRequest", () => {
 		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
 
 		expect(ir.reasoning).toBeUndefined();
-		expect(ir.vendor?.meta).toEqual({
-			reasoningEffort: "xhigh",
-		});
+		expect(ir.vendor?.meta).toBeUndefined();
 	});
 
 	it("should omit empty reasoning object", () => {

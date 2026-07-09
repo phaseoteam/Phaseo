@@ -226,7 +226,6 @@ export const ResponsesSchema = z.object({
     metadata: z.record(z.string(), z.string()).optional(),
     parallel_tool_calls: z.boolean().optional(),
     previous_response_id: z.string().optional(),
-    reasoning_effort: z.enum(["none", "minimal", "low", "medium", "high", "xhigh", "max"]).optional(),
     reasoning: z.object({
         effort: z.enum(["none", "minimal", "low", "medium", "high", "xhigh", "max"]).nullable().optional(),
         summary: z.enum(["auto", "concise", "detailed"]).nullable().optional(),

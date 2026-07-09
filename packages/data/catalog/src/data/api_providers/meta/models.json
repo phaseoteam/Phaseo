@@ -102,11 +102,11 @@
             "notes": "Meta announced parallel tool calling support for Muse Spark 1.1."
           },
           {
-            "param_id": "reasoning_effort",
+            "param_id": "reasoning.effort",
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,
-            "notes": "Muse Spark is a reasoning model. Meta Model API supports reasoning_effort values from minimal through xhigh to control reasoning depth; reasoning tokens are reported under completion_tokens_details.reasoning_tokens and billed as output tokens."
+            "notes": "Muse Spark is a reasoning model. Use reasoning.effort to control reasoning depth; the gateway maps it to Meta Model API's upstream reasoning_effort values from minimal through xhigh. Reasoning tokens are reported under completion_tokens_details.reasoning_tokens and billed as output tokens."
           },
           {
             "param_id": "temperature",

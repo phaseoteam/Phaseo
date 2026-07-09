@@ -222,14 +222,7 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 		reasoningCandidate && Object.values(reasoningCandidate).some((value) => value !== undefined)
 			? reasoningCandidate
 			: undefined;
-	const metaReasoningEffort =
-		typeof (req as any).reasoning_effort === "string" && (req as any).reasoning_effort.length > 0
-			? (req as any).reasoning_effort
-			: undefined;
 	const vendor = {
-		...(metaReasoningEffort !== undefined
-			? { meta: { reasoningEffort: metaReasoningEffort } }
-			: {}),
 		...(openAIContextManagement
 			? {
 				openai: {

@@ -544,7 +544,7 @@ describe("irToOpenAIResponses", () => {
 		}]);
 	});
 
-	it("maps Meta-native reasoning effort and stateful responses fields", () => {
+	it("maps Meta reasoning effort and stateful responses fields", () => {
 		const request = irToOpenAIResponses({
 			model: "meta/muse-spark-1.1",
 			messages: [
@@ -559,10 +559,8 @@ describe("irToOpenAIResponses", () => {
 			],
 			stream: false,
 			previousResponseId: "resp_prev_meta",
-			vendor: {
-				meta: {
-					reasoningEffort: "xhigh",
-				},
+			reasoning: {
+				effort: "xhigh",
 			},
 		} as any, "muse-spark-1.1", "meta");
 
@@ -581,23 +579,6 @@ describe("irToOpenAIResponses", () => {
 		expect(request.input_items).toBeUndefined();
 		expect(request.previous_response_id).toBe("resp_prev_meta");
 		expect(request.reasoning_effort).toBe("xhigh");
-		expect(request.reasoning).toBeUndefined();
-	});
-
-	it("allows generic reasoning effort to drive Meta as a fallback", () => {
-		const request = irToOpenAIResponses({
-			model: "meta/muse-spark-1.1",
-			messages: [{
-				role: "user",
-				content: [{ type: "text", text: "Think deeply." }],
-			}],
-			stream: false,
-			reasoning: {
-				effort: "high",
-			},
-		} as any, "muse-spark-1.1", "meta");
-
-		expect(request.reasoning_effort).toBe("high");
 		expect(request.reasoning).toBeUndefined();
 	});
 
