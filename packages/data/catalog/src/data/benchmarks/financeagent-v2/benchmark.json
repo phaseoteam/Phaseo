@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "financeagent-v2",
+  "benchmark_name": "FinanceAgent v2",
+  "category": "finance",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": "https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/",
+  "total_models": 1
+}

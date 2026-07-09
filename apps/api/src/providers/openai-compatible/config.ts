@@ -232,7 +232,7 @@ export function resolveOpenAICompatKey(args: ProviderExecuteArgs): ResolvedKey {
 		return resolveProviderKey(args, () => readFirstBinding(CROFAI_API_KEY_ENVS));
 	}
 	if (args.providerId === "meta") {
-		return resolveProviderKey(args, () => readFirstBinding(["META_MODEL_API_KEY", "LLAMA_API_KEY"]));
+		return resolveProviderKey(args, () => readFirstBinding(["META_MODEL_API_KEY"]));
 	}
 
 	const config = resolveOpenAICompatConfig(args.providerId);

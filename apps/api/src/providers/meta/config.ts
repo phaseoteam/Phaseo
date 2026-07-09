@@ -7,6 +7,6 @@ export const META_OPENAI_COMPAT_CONFIGS = {
 		pathPrefix: "/v1",
 		apiKeyEnv: "META_MODEL_API_KEY",
 		baseUrlEnv: "META_MODEL_BASE_URL",
-		supportsResponses: false,
+		supportsResponses: true,
 	},
 } satisfies Record<string, OpenAICompatConfig>;

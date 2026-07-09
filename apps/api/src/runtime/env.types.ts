@@ -118,7 +118,6 @@ export type GatewayBindings = {
     MANCER_BASE_URL?: string;
     META_MODEL_API_KEY?: string;
     META_MODEL_BASE_URL?: string;
-    LLAMA_API_KEY?: string;
     MINIMAX_API_KEY?: string;
     MINIMAX_BASE_URL?: string;
     MISTRAL_AI_API_KEY?: string;

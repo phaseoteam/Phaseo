@@ -114,6 +114,13 @@ export function normalizeTextUsageForPricing(
 		"output_tokens_details.output_videos",
 	]);
 	const requests = resolveRequestCountUsage(usageRaw);
+	const nativeWebSearchRequests = pickFirstNumber(usageRaw, [
+		"native_web_search_requests",
+		"native_web_searches",
+		"server_tool_use.web_search_requests",
+		"serverToolUse.web_search_requests",
+		"_ext.serverToolUse.web_search_requests",
+	]);
 	const usageRecord = usageRaw as Record<string, any>;
 	const explicitSubsetHint =
 		usageRecord.cached_read_tokens_are_subset_of_input ??
@@ -159,6 +166,7 @@ export function normalizeTextUsageForPricing(
 	if (typeof outputAudioTokens === "number") meters.output_audio_tokens = outputAudioTokens;
 	if (typeof outputVideoTokens === "number") meters.output_video_tokens = outputVideoTokens;
 	if (typeof requests === "number") meters.requests = requests;
+	if (typeof nativeWebSearchRequests === "number") meters.native_web_search_requests = nativeWebSearchRequests;
 	if (cachedReadAsSubset && typeof cachedReadTokens === "number") {
 		(meters as Record<string, any>).cached_read_tokens_are_subset_of_input = true;
 	}

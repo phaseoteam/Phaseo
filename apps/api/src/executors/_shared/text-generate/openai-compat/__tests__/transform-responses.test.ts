@@ -520,6 +520,30 @@ describe("irToOpenAIResponses", () => {
 		});
 	});
 
+	it("enables Meta native web search from web_search_options on responses requests", () => {
+		const request = irToOpenAIResponses({
+			model: "meta/muse-spark-1.1",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "Find the latest news." }],
+			}],
+			stream: false,
+			webSearchOptions: {
+				search_context_size: "high",
+			},
+		} as any, "muse-spark-1.1", "meta");
+
+		expect(request.input).toBeDefined();
+		expect(request.input_items).toBeUndefined();
+		expect(request.web_search_options).toEqual({
+			search_context_size: "high",
+		});
+		expect(request.tools).toEqual([{
+			type: "web_search_preview",
+			search_context_size: "high",
+		}]);
+	});
+
 	it("passes image generation raw request options through to upstream responses requests", () => {
 		const request = irToOpenAIResponses({
 			model: "openai/gpt-image-2",
