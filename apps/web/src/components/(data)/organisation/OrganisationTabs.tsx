@@ -125,7 +125,7 @@ export default function TabBar({ organisationId }: { organisationId: string }) {
 					</DropdownMenuTrigger>
 					<DropdownMenuContent
 						align="start"
-						className="w-(--radix-popper-anchor-width)"
+						className="w-(--anchor-width)"
 					>
 						{tabs.map((t) => (
 							<DropdownMenuItem key={t.key}  render={<Link

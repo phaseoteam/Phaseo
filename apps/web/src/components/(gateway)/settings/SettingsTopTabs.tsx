@@ -299,7 +299,7 @@ export default function SettingsTopTabs({
 						</DropdownMenuTrigger>
 						<DropdownMenuContent
 							align="start"
-							className="w-(--radix-popper-anchor-width)"
+							className="w-(--anchor-width)"
 						>
 							{tabs.map((t) => (
 								<DropdownMenuItem key={t.href}  render={<Link href={t.href} />}>

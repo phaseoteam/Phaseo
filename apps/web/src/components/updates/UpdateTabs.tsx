@@ -133,7 +133,7 @@ export default function UpdateTabs() {
 					</DropdownMenuTrigger>
 					<DropdownMenuContent
 						align="start"
-						className="w-(--radix-popper-anchor-width)"
+						className="w-(--anchor-width)"
 					>
 						{tabs.map((tab) => (
 							<DropdownMenuItem key={tab.category}  render={<Link href={tab.href} prefetch={false} />}>

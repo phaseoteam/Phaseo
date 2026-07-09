@@ -118,7 +118,7 @@ export default function TabBar({ benchmarkId }: { benchmarkId: string }) {
 					</DropdownMenuTrigger>
 					<DropdownMenuContent
 						align="start"
-						className="w-(--radix-popper-anchor-width)"
+						className="w-(--anchor-width)"
 					>
 						{tabs.map((t) => {
 							const href = hrefFor(t.key);

@@ -117,7 +117,7 @@ export default function CountryTabs({ iso }: CountryTabsProps) {
 					</DropdownMenuTrigger>
 					<DropdownMenuContent
 						align="start"
-						className="w-(--radix-popper-anchor-width)"
+						className="w-(--anchor-width)"
 					>
 						{tabs.map((tab) => (
 							<DropdownMenuItem key={tab.key}  render={<Link href={hrefFor(tab.key)} />}>
