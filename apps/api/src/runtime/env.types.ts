@@ -116,6 +116,8 @@ export type GatewayBindings = {
     LIQUID_AI_BASE_URL?: string;
     MANCER_API_KEY?: string;
     MANCER_BASE_URL?: string;
+    META_MODEL_API_KEY?: string;
+    META_MODEL_BASE_URL?: string;
     MINIMAX_API_KEY?: string;
     MINIMAX_BASE_URL?: string;
     MISTRAL_AI_API_KEY?: string;

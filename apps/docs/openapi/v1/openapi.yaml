@@ -6510,6 +6510,7 @@ components:
         - fiction-live-bench
         - figqa
         - financeagent-v1.1
+        - financeagent-v2
         - finsearchcomp
         - finsearchcomp-t2-t3
         - finsearchcomp-t3
@@ -6602,6 +6603,7 @@ components:
         - ivebench-instruction-following-vs-runway-aleph
         - ivebench-overall-vs-kling-o1
         - ivebench-overall-vs-runway-aleph
+        - jobbench
         - korbench
         - lbpp-(v2)
         - legal-agent-benchmark

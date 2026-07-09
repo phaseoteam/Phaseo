@@ -222,6 +222,16 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 		reasoningCandidate && Object.values(reasoningCandidate).some((value) => value !== undefined)
 			? reasoningCandidate
 			: undefined;
+	const vendor = {
+		...(openAIContextManagement
+			? {
+				openai: {
+					context_management: openAIContextManagement,
+				},
+			}
+			: {}),
+	};
+
 	return {
 		messages,
 		model: req.model,
@@ -274,13 +284,7 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 		safetyIdentifier: (req as any).safety_identifier,
 		modalities: normalizeModalities((req as any).modalities),
 		imageConfig: normalizeImageConfig((req as any).image_config),
-		vendor: openAIContextManagement
-			? {
-				openai: {
-					context_management: openAIContextManagement,
-				},
-			}
-			: undefined,
+		vendor: Object.keys(vendor).length > 0 ? vendor : undefined,
 	};
 }
 

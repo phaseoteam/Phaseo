@@ -53,6 +53,21 @@ describe("normalizeTextUsageForPricing", () => {
 		expect(usage?.requests).toBe(1);
 	});
 
+	it("maps OpenAI-compatible native web search usage to the native meter", () => {
+		const usage = normalizeTextUsageForPricing({
+			inputTokens: 20,
+			outputTokens: 5,
+			totalTokens: 25,
+			_ext: {
+				serverToolUse: {
+					web_search_requests: 2,
+				},
+			},
+		});
+
+		expect(usage?.native_web_search_requests).toBe(2);
+	});
+
 	it("maps OpenAI-compatible prompt/completion usage shapes", () => {
 		const usage = normalizeTextUsageForPricing({
 			prompt_tokens: 17,

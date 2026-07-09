@@ -60,6 +60,7 @@ describe("resolveOpenAICompatRoute", () => {
 		expect(resolveOpenAICompatRoute("zai", "glm-4.6")).toBe("chat");
 		expect(resolveOpenAICompatRoute("xiaomi", "MiMo-7B-RL")).toBe("chat");
 		expect(resolveOpenAICompatRoute("mistral", "mistral-large-latest")).toBe("chat");
+		expect(resolveOpenAICompatRoute("meta", "muse-spark-1.1")).toBe("chat");
 		expect(resolveOpenAICompatRoute("moonshot-ai", "kimi-k2")).toBe("chat");
 		expect(resolveOpenAICompatRoute("novitaai", "deepseek/deepseek-r1-turbo")).toBe("chat");
 		expect(resolveOpenAICompatRoute("ovhcloud", "Qwen3-32B")).toBe("chat");
@@ -396,6 +397,17 @@ describe("openAICompatUrl", () => {
 		);
 		expect(openAICompatUrl("perplexity", "/embeddings")).toBe(
 			"https://api.perplexity.ai/v1/embeddings",
+		);
+	});
+
+	it("builds meta model api chat-completions endpoint with /compat/v1 prefix", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			META_MODEL_API_KEY: "test-meta-key",
+		} as any);
+
+		expect(openAICompatUrl("meta", "/chat/completions")).toBe(
+			"https://api.llama.com/compat/v1/chat/completions",
 		);
 	});
 
@@ -742,6 +754,36 @@ describe("resolveOpenAICompatKey", () => {
 		} as any);
 
 		expect(resolved.key).toBe("test-ionrouter-key");
+		expect(resolved.source).toBe("gateway");
+	});
+
+	it("uses META_MODEL_API_KEY for meta", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			META_MODEL_API_KEY: "test-meta-key",
+		} as any);
+
+		const resolved = resolveOpenAICompatKey({
+			providerId: "meta",
+			byokMeta: [],
+		} as any);
+
+		expect(resolved.key).toBe("test-meta-key");
+		expect(resolved.source).toBe("gateway");
+	});
+
+	it("accepts LLAMA_API_KEY fallback for meta", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			LLAMA_API_KEY: "test-llama-key",
+		} as any);
+
+		const resolved = resolveOpenAICompatKey({
+			providerId: "meta",
+			byokMeta: [],
+		} as any);
+
+		expect(resolved.key).toBe("test-llama-key");
 		expect(resolved.source).toBe("gateway");
 	});
 

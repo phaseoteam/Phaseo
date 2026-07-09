@@ -62,6 +62,28 @@ function readExecutableResponseToolCall(item: any): { id: string | null; name: s
 	};
 }
 
+function usesOpenAIResponsesShape(providerId?: string): boolean {
+	return providerId === "openai" || providerId === "meta";
+}
+
+function addMetaWebSearchTool(request: any, ir: IRChatRequest): void {
+	if (ir.webSearchOptions === undefined) return;
+	const tools = Array.isArray(request.tools) ? [...request.tools] : [];
+	const hasWebSearchTool = tools.some((tool) => {
+		if (!tool || typeof tool !== "object") return false;
+		const type = String(tool.type ?? "").toLowerCase();
+		return type === "web_search" || type.startsWith("web_search_");
+	});
+	if (hasWebSearchTool) return;
+
+	tools.push({
+		type: "web_search_preview",
+		...(ir.webSearchOptions && typeof ir.webSearchOptions === "object"
+			? ir.webSearchOptions
+			: {}),
+	});
+	request.tools = tools;
+}
 /**
  * Transform IR request to OpenAI Responses API format
  *
@@ -196,10 +218,11 @@ export function irToOpenAIResponses(
 	}
 
 	// Build Responses API request
-        const request: any = {
-                model: providerModelSlug || ir.model,
-                ...(providerId === "openai" ? { input: inputItems } : { input_items: inputItems }),
-        };
+	const useOpenAIShape = usesOpenAIResponsesShape(providerId);
+	const request: any = {
+		model: providerModelSlug || ir.model,
+		...(useOpenAIShape ? { input: inputItems } : { input_items: inputItems }),
+	};
 
 	// Add generation parameters
 	if (ir.maxTokens !== undefined) request.max_output_tokens = ir.maxTokens;
@@ -209,7 +232,7 @@ export function irToOpenAIResponses(
 
 	// Add tool configuration
 	if (ir.tools && ir.tools.length > 0) {
-		if (providerId === "openai") {
+		if (useOpenAIShape) {
 			request.tools = ir.tools.map((tool) => toOpenAIResponsesTool(tool, true));
 		} else {
 			request.tools = ir.tools.map((tool) => toOpenAIResponsesTool(tool, false));
@@ -224,7 +247,7 @@ export function irToOpenAIResponses(
 			const selectedTool = ir.tools?.find((tool) => tool.name === selectedToolName);
 			if (isIRNativeToolDefinition(selectedTool)) {
 				request.tool_choice = selectedToolName;
-			} else if (providerId === "openai") {
+			} else if (useOpenAIShape) {
 				request.tool_choice = {
 					type: "function",
 					name: selectedToolName,
@@ -248,7 +271,7 @@ export function irToOpenAIResponses(
 	// Add response format
 	// For Responses API: use text.format instead of response_format
 	if (ir.responseFormat) {
-		if (providerId === "openai") {
+		if (useOpenAIShape) {
 			// OpenAI Responses API uses text.format
 			if (ir.responseFormat.type === "json_object") {
 				request.text = { format: { type: "json_object" } };
@@ -312,6 +335,7 @@ export function irToOpenAIResponses(
 	if (ir.promptCacheRetention !== undefined) request.prompt_cache_retention = ir.promptCacheRetention;
 	if (ir.safetyIdentifier !== undefined) request.safety_identifier = ir.safetyIdentifier;
 	if (ir.webSearchOptions !== undefined) request.web_search_options = ir.webSearchOptions;
+	if (providerId === "meta") addMetaWebSearchTool(request, ir);
 	const openAIContextManagement = (ir.vendor as any)?.openai?.context_management;
 	if (providerId === "openai" && openAIContextManagement && typeof openAIContextManagement === "object") {
 		request.context_management = {
