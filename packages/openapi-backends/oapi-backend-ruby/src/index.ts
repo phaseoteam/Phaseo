@@ -27,7 +27,7 @@ function renderClient(): string {
 		"require \"net/http\"",
 		"require \"uri\"",
 		"",
-		"module AiStats",
+		"module Phaseo",
 		"  module Gen",
 		"    class RequestError < StandardError",
 		"      attr_reader :status_code, :response_body",
@@ -96,7 +96,7 @@ function renderClient(): string {
 }
 
 function renderModels(models: IRModel[]): string {
-	const lines: string[] = ["module AiStats", "  module Gen"];
+	const lines: string[] = ["module Phaseo", "  module Gen"];
 	for (const model of models) {
 		lines.push(renderModel(model));
 	}
@@ -124,7 +124,7 @@ function renderModel(model: IRModel): string {
 }
 
 function renderOperations(operations: IROperation[]): string {
-	const lines: string[] = ["require_relative \"client\"", "", "module AiStats", "  module Gen", "    module Operations"];
+	const lines: string[] = ["require_relative \"client\"", "", "module Phaseo", "  module Gen", "    module Operations"];
 	for (const operation of operations) {
 		lines.push(renderOperation(operation));
 	}

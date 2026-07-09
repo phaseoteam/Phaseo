@@ -22,6 +22,10 @@ interface CurrentUserAvatarProps {
 	className?: string;
 }
 
+function isHostOrSubdomain(hostname: string, domain: string): boolean {
+	return hostname === domain || hostname.endsWith(`.${domain}`);
+}
+
 function getHighResolutionAvatarUrl(url: string | null) {
 	if (!url) return null;
 
@@ -29,7 +33,7 @@ function getHighResolutionAvatarUrl(url: string | null) {
 		const parsedUrl = new URL(url);
 		const hostname = parsedUrl.hostname.toLowerCase();
 
-		if (hostname.includes("googleusercontent.com")) {
+		if (isHostOrSubdomain(hostname, "googleusercontent.com")) {
 			if (parsedUrl.searchParams.has("sz")) {
 				parsedUrl.searchParams.set("sz", "256");
 				return parsedUrl.toString();
@@ -40,7 +44,7 @@ function getHighResolutionAvatarUrl(url: string | null) {
 				.replace(/\/s\d+(?:-c)?\//i, "/s256-c/");
 		}
 
-		if (hostname.includes("gravatar.com")) {
+		if (isHostOrSubdomain(hostname, "gravatar.com")) {
 			parsedUrl.searchParams.set("s", "256");
 			return parsedUrl.toString();
 		}

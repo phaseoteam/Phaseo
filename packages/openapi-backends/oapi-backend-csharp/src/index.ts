@@ -30,7 +30,7 @@ function renderClient(): string {
 		"using System.Text.Json;",
 		"using System.Threading.Tasks;",
 		"",
-		"namespace AiStats.Gen;",
+		"namespace Phaseo.Gen;",
 		"",
 		"public sealed class ApiErrorException : Exception",
 		"{",
@@ -137,7 +137,7 @@ function renderModels(models: IRModel[]): string {
 		"using System.Collections.Generic;",
 		"using System.Text.Json.Serialization;",
 		"",
-		"namespace AiStats.Gen;",
+		"namespace Phaseo.Gen;",
 		""
 	];
 	for (const model of models) {
@@ -171,7 +171,7 @@ function renderOperations(operations: IROperation[]): string {
 		"using System.Collections.Generic;",
 		"using System.Threading.Tasks;",
 		"",
-		"namespace AiStats.Gen;",
+		"namespace Phaseo.Gen;",
 		"",
 		"public static class Operations",
 		"{"

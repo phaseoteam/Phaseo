@@ -23,7 +23,7 @@ export default backendJava;
 
 function renderClient(): string {
 	return [
-		"package ai.stats.gen;",
+		"package app.phaseo.gen;",
 		"",
 		"import java.io.IOException;",
 		"import java.net.URI;",
@@ -128,7 +128,7 @@ function renderClient(): string {
 }
 
 function renderModels(models: IRModel[]): string {
-	const lines: string[] = ["package ai.stats.gen;", "", "public final class Models {", "\tprivate Models() {}", ""];
+	const lines: string[] = ["package app.phaseo.gen;", "", "public final class Models {", "\tprivate Models() {}", ""];
 	for (const model of models) {
 		lines.push(renderModel(model));
 		lines.push("");
@@ -153,7 +153,7 @@ function renderModel(model: IRModel): string {
 
 function renderOperations(operations: IROperation[]): string {
 	const lines: string[] = [
-		"package ai.stats.gen;",
+		"package app.phaseo.gen;",
 		"",
 		"import java.io.IOException;",
 		"import java.util.Map;",

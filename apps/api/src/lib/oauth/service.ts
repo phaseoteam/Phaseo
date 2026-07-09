@@ -15,6 +15,8 @@ const ACCESS_TOKEN_AUDIENCE = "phaseo-api";
 const TRUTHY_VALUES = new Set(["1", "true", "yes", "on"]);
 
 export const CLI_CLIENT_ID = "phaseo_cli";
+export const LEGACY_CLI_CLIENT_ID = "aistats_cli";
+const CLI_CLIENT_IDS = new Set([CLI_CLIENT_ID, LEGACY_CLI_CLIENT_ID]);
 
 export const CLI_DEFAULT_SCOPES = DEFAULT_CLI_OAUTH_CAPABILITIES;
 
@@ -98,7 +100,7 @@ export function isThirdPartyOAuthEnabled(): boolean {
 }
 
 export function isOAuthClientUsable(clientId: string): boolean {
-	return clientId.trim() === CLI_CLIENT_ID || isThirdPartyOAuthEnabled();
+	return CLI_CLIENT_IDS.has(clientId.trim()) || isThirdPartyOAuthEnabled();
 }
 
 export function normalizeScopes(raw: unknown, fallback: readonly string[] = []): string[] {
@@ -303,16 +305,24 @@ export async function loadOAuthClient(clientId: string): Promise<OAuthClient | n
 	if (!id) return null;
 	if (!isOAuthClientUsable(id)) return null;
 
-	const firstParty = await supabase
+	let firstParty = await supabase
 		.from("oauth_clients")
 		.select("id, name, description, logo_url, homepage_url, client_type, client_secret_hash, redirect_uris, allowed_scopes, is_first_party, beta_status, status")
 		.eq("id", id)
 		.eq("status", "active")
 		.maybeSingle();
+	if ((firstParty.error || !firstParty.data) && id === LEGACY_CLI_CLIENT_ID) {
+		firstParty = await supabase
+			.from("oauth_clients")
+			.select("id, name, description, logo_url, homepage_url, client_type, client_secret_hash, redirect_uris, allowed_scopes, is_first_party, beta_status, status")
+			.eq("id", CLI_CLIENT_ID)
+			.eq("status", "active")
+			.maybeSingle();
+	}
 	if (!firstParty.error && firstParty.data) {
 		const row = firstParty.data as any;
 		return {
-			id: row.id,
+			id: id === LEGACY_CLI_CLIENT_ID ? LEGACY_CLI_CLIENT_ID : row.id,
 			name: row.name,
 			description: row.description ?? null,
 			logo_url: row.logo_url ?? null,
@@ -327,16 +337,24 @@ export async function loadOAuthClient(clientId: string): Promise<OAuthClient | n
 		};
 	}
 
-	const metadata = await supabase
+	let metadata = await supabase
 		.from("oauth_app_metadata")
 		.select("client_id, name, description, logo_url, homepage_url, client_type, client_secret_hash, redirect_uris, allowed_scopes, is_first_party, beta_status, status")
 		.eq("client_id", id)
 		.eq("status", "active")
 		.maybeSingle();
+	if ((metadata.error || !metadata.data) && id === LEGACY_CLI_CLIENT_ID) {
+		metadata = await supabase
+			.from("oauth_app_metadata")
+			.select("client_id, name, description, logo_url, homepage_url, client_type, client_secret_hash, redirect_uris, allowed_scopes, is_first_party, beta_status, status")
+			.eq("client_id", CLI_CLIENT_ID)
+			.eq("status", "active")
+			.maybeSingle();
+	}
 	if (metadata.error || !metadata.data) return null;
 	const row = metadata.data as any;
 	return {
-		id: row.client_id,
+		id: id === LEGACY_CLI_CLIENT_ID ? LEGACY_CLI_CLIENT_ID : row.client_id,
 		name: row.name,
 		description: row.description ?? null,
 		logo_url: row.logo_url ?? null,
@@ -357,7 +375,7 @@ export function filterAllowedScopes(client: OAuthClient, requested: string[]): s
 }
 
 function isCliLoopbackRedirectUri(client: OAuthClient, redirectUri: string): boolean {
-	if (client.id !== CLI_CLIENT_ID) return false;
+	if (!CLI_CLIENT_IDS.has(client.id)) return false;
 	try {
 		const url = new URL(redirectUri);
 		return (
