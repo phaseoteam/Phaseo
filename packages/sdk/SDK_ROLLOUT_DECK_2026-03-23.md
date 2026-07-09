@@ -20,7 +20,7 @@ Audience: Product, Developer Experience, and Integrations
   - `validateModel(...)` / equivalent to gate retired models.
   - Warnings emitted once per model, with optional warnings-as-errors mode.
 - API key ergonomics improved:
-  - SDKs now read `AI_STATS_API_KEY` by default where applicable.
+  - SDKs now read `PHASEO_API_KEY` by default where applicable.
 - Model typing future-proofing:
   - Strongly typed known model IDs retained, with string fallback for newly released models before next SDK publish.
 - Raw access paths added:
@@ -37,22 +37,22 @@ Audience: Product, Developer Experience, and Integrations
 - OpenAPI model surfaces were synced, including lifecycle metadata and newer model IDs.
 
 ## Slide 5 - Language Highlights
-- TypeScript (`@ai-stats/sdk`):
+- TypeScript (`@phaseo/sdk`):
   - `ModelId` now supports known IDs + string fallback.
   - Added lifecycle warning controls, `models.validate`, and `models.getDeprecationInfo`.
   - Added `rawClient()` and generic `request(...)` helper.
-- Python (`@ai-stats/py-sdk`):
+- Python (`@phaseo/py-sdk`):
   - Migrated several methods from "coming soon" stubs to live ops (image, video, speech, transcription, translation, batch/files).
   - Added lifecycle warning/validation path and `raw_client`/`request` access.
   - Added env-based API key defaulting.
 - Go/C#/Java/PHP/Ruby:
-  - Upgraded from early/preview wrapper posture to fuller high-level AIStats clients.
+  - Upgraded from early/preview wrapper posture to fuller high-level Phaseo clients.
   - Added lifecycle handling and expanded smoke/lifecycle/devtools tests.
 - PHP-specific:
   - Added bundled CA cert and deterministic TLS fallback chain for cross-environment SSL reliability.
 
 ## Slide 6 - Devtools and Reliability Improvements
-- Devtools viewer minor release (`@ai-stats/devtools-viewer`):
+- Devtools viewer minor release (`@phaseo/devtools-viewer`):
   - URL-persisted generation selection.
   - Better request ID preference/lookup.
   - Improved response detail rendering and usage/cost fallbacks.

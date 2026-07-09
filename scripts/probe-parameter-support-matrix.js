@@ -6,12 +6,12 @@ const path = require("node:path");
 const { setTimeout: sleep } = require("node:timers/promises");
 
 const DEFAULT_BASE_URL =
-	process.env.AI_STATS_BASE_URL ||
+	process.env.PHASEO_BASE_URL ||
 	process.env.GATEWAY_URL ||
 	"http://127.0.0.1:8787/v1";
 
 const DEFAULT_API_KEY =
-	process.env.AI_STATS_API_KEY ||
+	process.env.PHASEO_API_KEY ||
 	process.env.GATEWAY_API_KEY ||
 	"";
 
@@ -124,8 +124,8 @@ function printUsageAndExit() {
 			"",
 			"Options:",
 			"  --run                      Execute live probes (default is dry-run plan only)",
-			"  --base-url <url>           Gateway URL (default: AI_STATS_BASE_URL/GATEWAY_URL/localhost)",
-			"  --api-key <key>            Gateway API key (default: AI_STATS_API_KEY/GATEWAY_API_KEY)",
+			"  --base-url <url>           Gateway URL (default: PHASEO_BASE_URL/GATEWAY_URL/localhost)",
+			"  --api-key <key>            Gateway API key (default: PHASEO_API_KEY/GATEWAY_API_KEY)",
 			"  --protocol <chat|responses> Endpoint surface to probe (default: chat)",
 			"  --scope <gaps|mismatch|all> Pair selection scope (default: gaps)",
 			"  --max-pairs <n>            Hard cap on number of provider-model pairs",
@@ -786,7 +786,7 @@ async function main() {
 		throw new Error(`Unsupported scope '${args.scope}'. Use gaps, mismatch, or all.`);
 	}
 	if (args.run && !args.apiKey) {
-		throw new Error("Missing API key. Pass --api-key or set AI_STATS_API_KEY / GATEWAY_API_KEY.");
+		throw new Error("Missing API key. Pass --api-key or set PHASEO_API_KEY / GATEWAY_API_KEY.");
 	}
 	if (!args.apiKey) {
 		console.warn("No API key set. Continuing in plan-only mode from /models will likely fail.");

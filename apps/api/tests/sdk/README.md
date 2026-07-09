@@ -1,6 +1,6 @@
 # SDK Compatibility Tests
 
-These tests verify that the AI Stats Gateway is fully compatible with official SDKs from OpenAI and Anthropic by simply changing the base URL.
+These tests verify that the Phaseo Gateway is fully compatible with official SDKs from OpenAI and Anthropic by simply changing the base URL.
 
 ## Overview
 
@@ -23,7 +23,7 @@ pnpm install openai @anthropic-ai/sdk --save-dev
 
 ```bash
 # In one terminal
-pnpm --filter @ai-stats/gateway-api dev
+pnpm --filter @phaseo/gateway-api dev
 
 # Gateway should be running on http://localhost:8787 (or your configured port)
 ```
@@ -246,7 +246,7 @@ pnpm test tests/sdk
 **Solution**:
 ```bash
 # Start gateway in another terminal
-pnpm --filter @ai-stats/gateway-api dev
+pnpm --filter @phaseo/gateway-api dev
 ```
 
 ### Authentication Errors
@@ -302,8 +302,8 @@ jobs:
 
       - name: Start Gateway
         run: |
-          pnpm --filter @ai-stats/gateway-api build
-          pnpm --filter @ai-stats/gateway-api preview &
+          pnpm --filter @phaseo/gateway-api build
+          pnpm --filter @phaseo/gateway-api preview &
           sleep 5  # Wait for gateway to start
 
       - name: Run SDK Tests

@@ -21,12 +21,12 @@ const MAX_ADVISOR_TOOLS = 5;
 const TIMEZONE_NAME_PATTERN = /^[A-Za-z0-9_+\-/]+$/;
 const SUPPORTED_CHAT_SERVER_TOOLS = new Set<ChatServerToolType>([
 	"gateway:datetime",
-	"ai-stats:web_search",
-	"ai-stats:web_fetch",
-	"ai-stats:advisor",
-	"ai-stats:image_generation",
-	"ai-stats:fusion",
-	"ai-stats:subagent",
+	"phaseo:web_search",
+	"phaseo:web_fetch",
+	"phaseo:advisor",
+	"phaseo:image_generation",
+	"phaseo:fusion",
+	"phaseo:subagent",
 ]);
 
 export type ChatResponseLayout = "sequential" | "side-by-side";
@@ -234,10 +234,10 @@ export const generateId = () => {
 };
 
 export const APP_HEADERS = {
-	"x-app-id": "ai-stats-chat",
-	"x-app-name": "AI Stats Chat",
-	"x-title": "AI Stats Chat",
-	"http-referer": "https://ai-stats.phaseo.app/chat",
+	"x-app-id": "phaseo-chat",
+	"x-app-name": "Phaseo Chat",
+	"x-title": "Phaseo Chat",
+	"http-referer": "https://phaseo.app/chat",
 };
 
 export const TEMP_CHAT_ID = "temp-chat";
@@ -297,7 +297,7 @@ export function normalizeBaseUrl(baseUrl: string) {
 
 export function getOrgId(modelId: string) {
 	const [org] = modelId.split("/");
-	return org || "ai-stats";
+	return org || "phaseo";
 }
 
 export function formatModelLabel(modelId: string) {
@@ -503,7 +503,7 @@ export function buildServerToolDefinitions(
 		if (advisor?.reasoningEffort && advisor.reasoningEffort !== "none") {
 			parameters.reasoning = { effort: advisor.reasoningEffort };
 		}
-		return withParameters("ai-stats:advisor", parameters);
+		return withParameters("phaseo:advisor", parameters);
 	};
 
 	return normalizeServerTools(serverTools).flatMap((toolType) => {
@@ -528,7 +528,7 @@ export function buildServerToolDefinitions(
 				? { type: toolType, parameters: { timezones } }
 				: { type: toolType };
 		}
-		if (toolType === "ai-stats:web_search") {
+		if (toolType === "phaseo:web_search") {
 			const config = serverToolConfigs?.webSearch;
 			const parameters: Record<string, unknown> = {};
 			if (config?.engine && config.engine !== "auto") {
@@ -569,7 +569,7 @@ export function buildServerToolDefinitions(
 			}
 			return withParameters(toolType, parameters);
 		}
-		if (toolType === "ai-stats:web_fetch") {
+		if (toolType === "phaseo:web_fetch") {
 			const config = serverToolConfigs?.webFetch;
 			const parameters: Record<string, unknown> = {};
 			if (config?.engine && config.engine !== "auto") {
@@ -589,7 +589,7 @@ export function buildServerToolDefinitions(
 			}
 			return withParameters(toolType, parameters);
 		}
-		if (toolType === "ai-stats:image_generation") {
+		if (toolType === "phaseo:image_generation") {
 			const config = serverToolConfigs?.imageGeneration;
 			const parameters: Record<string, unknown> = {};
 			if (config?.model?.trim()) {
@@ -621,7 +621,7 @@ export function buildServerToolDefinitions(
 			}
 			return withParameters(toolType, parameters);
 		}
-		if (toolType === "ai-stats:fusion") {
+		if (toolType === "phaseo:fusion") {
 			const fusion = serverToolConfigs?.fusion;
 			const fusionModels = Array.from(
 				new Set(
@@ -658,7 +658,7 @@ export function buildServerToolDefinitions(
 			}
 			return definitions;
 		}
-		if (toolType === "ai-stats:subagent") {
+		if (toolType === "phaseo:subagent") {
 			const config = serverToolConfigs?.subagent;
 			const parameters: Record<string, unknown> = {};
 			if (config?.model?.trim()) {
@@ -690,7 +690,7 @@ export function buildServerToolDefinitions(
 			}
 			return withParameters(toolType, parameters);
 		}
-		if (toolType !== "ai-stats:advisor") {
+		if (toolType !== "phaseo:advisor") {
 			return [{ type: toolType }];
 		}
 		const advisors =

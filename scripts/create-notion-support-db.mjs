@@ -1,7 +1,7 @@
 ﻿import fs from "fs";
 import path from "path";
 
-const DEFAULT_DB_NAME = "AI Stats Support";
+const DEFAULT_DB_NAME = "Phaseo Support";
 const ISSUE_TYPES = [
 	"Billing or account issue",
 	"Bug or outage",

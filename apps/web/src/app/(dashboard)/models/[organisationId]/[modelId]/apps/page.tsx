@@ -27,8 +27,8 @@ export async function generateMetadata(props: {
 		description: buildModelPageMetadataDescription({
 			modelDescription,
 			suffix:
-				"See which public apps are actively sending gateway requests to this model on AI Stats.",
-			fallback: `See which public apps are actively sending gateway requests to ${modelName} on AI Stats.`,
+				"See which public apps are actively sending gateway requests to this model on Phaseo.",
+			fallback: `See which public apps are actively sending gateway requests to ${modelName} on Phaseo.`,
 		}),
 		path,
 		keywords: [
@@ -37,7 +37,7 @@ export async function generateMetadata(props: {
 			`${modelName} app usage`,
 			organisationName ? `${organisationName} AI` : null,
 			"gateway request usage",
-			"AI Stats",
+			"Phaseo",
 		].filter(Boolean) as string[],
 		imagePath,
 	});

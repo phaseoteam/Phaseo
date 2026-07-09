@@ -149,7 +149,7 @@ function getLanguageOptionVisual(value: string): QuickstartVisual {
 		value === "agent-sdk-php" ||
 		value === "agent-sdk-ruby"
 	) {
-		return { kind: "logo", logoId: "ai-stats", alt: "AI Stats" };
+		return { kind: "logo", logoId: "phaseo", alt: "Phaseo" };
 	}
 
 	if (value === "openai-node" || value === "openai-python") {

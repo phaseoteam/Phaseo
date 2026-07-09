@@ -1,0 +1,4 @@
+interface:
+  display_name: "Phaseo Gateway"
+  short_description: "Build reliable Phaseo REST + SDK integrations."
+  default_prompt: "Use $phaseo-gateway to implement or migrate this integration to Phaseo."

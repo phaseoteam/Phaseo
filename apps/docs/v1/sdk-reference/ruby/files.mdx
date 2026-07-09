@@ -7,9 +7,9 @@ description: "Use the Ruby SDK for file upload, metadata, and file-content retri
 
 ### Example
 ```ruby
-require 'ai_stats_sdk'
+require 'phaseo_sdk'
 
-client = AIStatsSdk::AIStats.new(api_key: ENV.fetch('AI_STATS_API_KEY'))
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY'))
 
 uploaded = client.upload_file(
   'purpose' => 'batch',

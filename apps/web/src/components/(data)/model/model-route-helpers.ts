@@ -49,7 +49,7 @@ export async function getModelMetadataIdentity(
 		return {
 			modelId: FREE_ROUTER_MODEL_ID,
 			modelName: FREE_ROUTER_NAME,
-			organisationName: "AI Stats",
+			organisationName: "Phaseo",
 			modelDescription: FREE_ROUTER_DESCRIPTION,
 		};
 	}

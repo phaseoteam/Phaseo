@@ -1,8 +1,8 @@
-# Contributing to AI Stats
+# Contributing to Phaseo
 
-Thanks for your interest in contributing to AI Stats.
+Thanks for your interest in contributing to Phaseo.
 
-AI Stats is built in public. We welcome contributions across the web app, gateway API, SDKs, docs, and data.
+Phaseo is built in public. We welcome contributions across the web app, gateway API, SDKs, docs, and data.
 
 ## Ways to contribute
 
@@ -11,13 +11,13 @@ AI Stats is built in public. We welcome contributions across the web app, gatewa
 - Documentation improvements (guides, examples, API docs, broken links)
 - Issue triage, reproduction reports, and developer feedback
 
-Good starting point: [Good First Issues](https://github.com/AI-Stats/AI-Stats/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+Good starting point: [Good First Issues](https://github.com/phaseoteam/Phaseo/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
 
 ## Development setup
 
 ```bash
-git clone https://github.com/AI-Stats/AI-Stats.git
-cd AI-Stats
+git clone https://github.com/phaseoteam/Phaseo.git
+cd Phaseo
 pnpm install
 pnpm dev
 ```
@@ -25,9 +25,9 @@ pnpm dev
 Useful scoped commands:
 
 ```bash
-pnpm --filter @ai-stats/web dev
-pnpm --filter @ai-stats/gateway-api dev
-pnpm --filter @ai-stats/docs dev
+pnpm --filter @phaseo/web dev
+pnpm --filter @phaseo/gateway-api dev
+pnpm --filter @phaseo/docs dev
 ```
 
 ## Quality bar before requesting review

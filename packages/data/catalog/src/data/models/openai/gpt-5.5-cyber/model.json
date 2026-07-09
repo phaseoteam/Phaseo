@@ -16,7 +16,7 @@
   "family_id": "openai/gpt-5.5",
   "page_notice": {
     "tone": "info",
-    "markdown": "AI Stats shows inferred standard short-context pricing for `gpt-5.5-cyber` based on the published [OpenAI Codex rate card](https://help.openai.com/en/articles/20001106-codex-rate-card). OpenAI's public [API pricing page](https://developers.openai.com/api/docs/pricing) does not currently publish a confirmed standard API price row for `gpt-5.5-cyber`, so these values are informational estimates derived from the Codex credit mapping."
+    "markdown": "Phaseo shows inferred standard short-context pricing for `gpt-5.5-cyber` based on the published [OpenAI Codex rate card](https://help.openai.com/en/articles/20001106-codex-rate-card). OpenAI's public [API pricing page](https://developers.openai.com/api/docs/pricing) does not currently publish a confirmed standard API price row for `gpt-5.5-cyber`, so these values are informational estimates derived from the Codex credit mapping."
   },
   "links": [
     {

@@ -1,29 +1,29 @@
-# AI Stats
+# Phaseo
 
-> AI Stats is an open-source AI gateway and model intelligence database for comparing AI models, providers, pricing, benchmarks, latency, throughput, and gateway support.
+> Phaseo is an open-source AI gateway and model intelligence database for comparing AI models, providers, pricing, benchmarks, latency, throughput, and gateway support.
 
 ## Core product pages
 
-- [Models](https://ai-stats.phaseo.app/models): Browse AI models by provider, capability, modality, pricing, and gateway status.
-- [API Providers](https://ai-stats.phaseo.app/api-providers): Compare providers by model coverage, modality support, and usage signals.
-- [Rankings](https://ai-stats.phaseo.app/rankings): Usage, latency, throughput, and cost rankings across tracked models.
-- [Pricing](https://ai-stats.phaseo.app/pricing): Gateway pricing, credit fees, and cost guidance.
-- [Docs](https://docs.ai-stats.phaseo.app/v1): Developer documentation for the gateway and API.
-- [Docs LLM index](https://docs.ai-stats.phaseo.app/llms.txt): Documentation index for AI tools and answer engines.
+- [Models](https://phaseo.app/models): Browse AI models by provider, capability, modality, pricing, and gateway status.
+- [API Providers](https://phaseo.app/api-providers): Compare providers by model coverage, modality support, and usage signals.
+- [Rankings](https://phaseo.app/rankings): Usage, latency, throughput, and cost rankings across tracked models.
+- [Pricing](https://phaseo.app/pricing): Gateway pricing, credit fees, and cost guidance.
+- [Docs](https://phaseo.app/docs/v1): Developer documentation for the gateway and API.
+- [Docs LLM index](https://phaseo.app/llms.txt): Documentation index for AI tools and answer engines.
 
 ## Data and methodology
 
-- [Pricing calculator](https://ai-stats.phaseo.app/tools/pricing-calculator)
-- [Model database](https://ai-stats.phaseo.app/models)
-- [Provider database](https://ai-stats.phaseo.app/api-providers)
-- [Benchmarks](https://ai-stats.phaseo.app/benchmarks)
-- [Methodology hub](https://ai-stats.phaseo.app/methodology)
-- [How AI Stats calculates model pricing](https://ai-stats.phaseo.app/how-ai-stats-calculates-model-pricing)
-- [How AI Stats measures latency and throughput](https://ai-stats.phaseo.app/how-ai-stats-measures-latency-throughput)
-- [How AI Stats normalises AI benchmarks](https://ai-stats.phaseo.app/how-ai-stats-normalises-ai-benchmarks)
-- [How AI Stats tracks provider availability](https://ai-stats.phaseo.app/how-ai-stats-tracks-provider-availability)
+- [Pricing calculator](https://phaseo.app/tools/pricing-calculator)
+- [Model database](https://phaseo.app/models)
+- [Provider database](https://phaseo.app/api-providers)
+- [Benchmarks](https://phaseo.app/benchmarks)
+- [Methodology hub](https://phaseo.app/methodology)
+- [How Phaseo calculates model pricing](https://phaseo.app/how-phaseo-calculates-model-pricing)
+- [How Phaseo measures latency and throughput](https://phaseo.app/how-phaseo-measures-latency-throughput)
+- [How Phaseo normalises AI benchmarks](https://phaseo.app/how-phaseo-normalises-ai-benchmarks)
+- [How Phaseo tracks provider availability](https://phaseo.app/how-phaseo-tracks-provider-availability)
 
 ## API
 
-- [Quickstart](https://docs.ai-stats.phaseo.app/v1/quickstart)
-- [API reference](https://docs.ai-stats.phaseo.app/v1/api-reference/introduction)
+- [Quickstart](https://phaseo.app/docs/v1/quickstart)
+- [API reference](https://phaseo.app/docs/v1/api-reference/introduction)

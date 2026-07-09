@@ -3,13 +3,13 @@
 	"changelog": [
 		"@changesets/changelog-github",
 		{
-			"repo": "AI-Stats/AI-Stats"
+			"repo": "phaseoteam/Phaseo"
 		}
 	],
 	"commit": false,
 	"access": "public",
 	"baseBranch": "main",
-	"ignore": ["ai-stats", "@ai-stats/devtools", "@ai-stats/devtools-core"],
+	"ignore": ["phaseo", "@phaseo/devtools", "@phaseo/devtools-core"],
 	"updateInternalDependencies": "patch",
 	"privatePackages": {
 		"version": true,

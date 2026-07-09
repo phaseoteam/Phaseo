@@ -28,7 +28,7 @@ async function replaceInFile(
 }
 
 async function syncCsharpVersion(version: string): Promise<void> {
-  const csprojPath = path.join(ROOT, "packages", "sdk", "sdk-csharp", "AIStats.Sdk.csproj");
+  const csprojPath = path.join(ROOT, "packages", "sdk", "sdk-csharp", "Phaseo.Sdk.csproj");
   const updated = await replaceInFile(
     csprojPath,
     /<Version>([^<]+)<\/Version>/m,
@@ -45,7 +45,7 @@ async function syncJavaVersion(version: string): Promise<void> {
   const pomPath = path.join(ROOT, "packages", "sdk", "sdk-java", "pom.xml");
   const updated = await replaceInFile(
     pomPath,
-    /(<artifactId>ai-stats-sdk<\/artifactId>\s*[\r\n]+\s*<version>)([^<]+)(<\/version>)/m,
+    /(<artifactId>phaseo-sdk<\/artifactId>\s*[\r\n]+\s*<version>)([^<]+)(<\/version>)/m,
     (match) => `${match[1]}${version}${match[3]}`,
   );
   if (updated) {
@@ -56,7 +56,7 @@ async function syncJavaVersion(version: string): Promise<void> {
 }
 
 async function syncRubyVersion(version: string): Promise<void> {
-  const versionPath = path.join(ROOT, "packages", "sdk", "sdk-ruby", "lib", "ai_stats_sdk", "version.rb");
+  const versionPath = path.join(ROOT, "packages", "sdk", "sdk-ruby", "lib", "phaseo_sdk", "version.rb");
   const updated = await replaceInFile(
     versionPath,
     /VERSION\s*=\s*"[^"]+"/m,
@@ -93,7 +93,7 @@ async function syncTypeScriptTelemetryVersion(version: string): Promise<void> {
 }
 
 async function syncPythonTelemetryVersion(version: string): Promise<void> {
-  const recorderPath = path.join(ROOT, "packages", "sdk", "sdk-py", "src", "ai_stats_devtools", "recorder.py");
+  const recorderPath = path.join(ROOT, "packages", "sdk", "sdk-py", "src", "phaseo_devtools", "recorder.py");
   const updated = await replaceInFile(
     recorderPath,
     /^SDK_VERSION\s*=\s*"[^"]+"/m,
@@ -135,7 +135,7 @@ async function syncCsharpTelemetryVersion(version: string): Promise<void> {
 }
 
 async function syncJavaTelemetryVersion(version: string): Promise<void> {
-  const aiStatsPath = path.join(ROOT, "packages", "sdk", "sdk-java", "src", "ai", "stats", "sdk", "AIStats.java");
+  const aiStatsPath = path.join(ROOT, "packages", "sdk", "sdk-java", "src", "app", "phaseo", "sdk", "Phaseo.java");
   const updated = await replaceInFile(
     aiStatsPath,
     /new TelemetryRecorder\(devtoolsConfig,\s*"([^"]+)"\)/m,

@@ -49,8 +49,8 @@ type CompatibilityTopProvider = {
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 250;
 const MAX_OFFSET = 5000;
-const FREE_ROUTER_MODEL_ID = "ai-stats/free";
-const FREE_ROUTER_NAME = "AI Stats Free Router";
+const FREE_ROUTER_MODEL_ID = "phaseo/free";
+const FREE_ROUTER_NAME = "Phaseo Free Router";
 const FREE_ROUTER_ENDPOINTS = ["chat/completions", "responses", "messages"] as const;
 
 function parsePaginationParam(raw: string | null, fallback: number, max: number): number {
@@ -255,9 +255,9 @@ function buildDescription(model: CatalogueModel): string {
     }
     const displayName = model.name?.trim() || model.model_id;
     if (!model.endpoints.length) {
-        return `${displayName} via AI Stats Gateway.`;
+        return `${displayName} via Phaseo Gateway.`;
     }
-    return `${displayName} via AI Stats Gateway. Supports ${model.endpoints.join(", ")}.`;
+    return `${displayName} via Phaseo Gateway. Supports ${model.endpoints.join(", ")}.`;
 }
 
 function canIncludeFreeRouter(endpoints: string[]): boolean {
@@ -429,8 +429,8 @@ async function buildFreeRouterCatalogueModel(args: {
             deprecation_date: null,
             retirement_date: null,
             status: "active",
-            organisation_id: "ai-stats",
-            organisation_name: "AI Stats",
+            organisation_id: "phaseo",
+            organisation_name: "Phaseo",
             organisation_colour: null,
             aliases: [],
             endpoints,
@@ -647,8 +647,8 @@ export async function handleModels(req: Request) {
             return buildFeedResponse({
                 url,
                 format: requestedFormat.format,
-                title: "AI Stats Gateway Models",
-                description: "Gateway-served AI models available via AI Stats.",
+                title: "Phaseo Gateway Models",
+                description: "Gateway-served AI models available via Phaseo.",
                 items,
                 headers,
             });

@@ -125,7 +125,7 @@ function buildKeysSupabaseMock() {
 vi.mock("@/runtime/env", () => ({
 	getSupabaseAdmin: () => buildKeysSupabaseMock(),
 	getCache: () => ({ delete: vi.fn(async () => undefined) }),
-	getBindings: () => ({ GATEWAY_CONTROL_SECRET: "secret", KEY_PEPPER_ACTIVE: "pepper" }),
+	getBindings: () => ({ PHASEO_CONTROL_SECRET: "secret", KEY_PEPPER_ACTIVE: "pepper" }),
 }));
 
 vi.mock("@/pipeline/before/guards", () => ({
@@ -146,8 +146,8 @@ vi.mock("@/routes/auth.helpers", () => ({
 	generateGatewayKey: vi.fn(() => ({
 		kid: "kid_123",
 		secret: "secret_123",
-		plaintext: "aistats_v1_sk_kid_123_secret_123",
-		prefix: "aistats_v1_sk_kid_123",
+		plaintext: "phaseo_v1_sk_kid_123_secret_123",
+		prefix: "phaseo_v1_sk_kid_123",
 	})),
 	hmacSecret: vi.fn(async () => "hashed_secret"),
 	timingSafeEqual: vi.fn((a: string, b: string) => a === b),
@@ -190,7 +190,7 @@ describe("management key routes", () => {
 			hash: "hash_1",
 			workspace_id: "ws_1",
 			name: "Primary Key",
-			prefix: "aistats_v1_sk_abc",
+			prefix: "phaseo_v1_sk_abc",
 			status: "active",
 			scopes: "[\"chat.completions\"]",
 			created_by: "user_1",
@@ -226,7 +226,7 @@ describe("management key routes", () => {
 			hash: "hash_new",
 			workspace_id: "ws_1",
 			name: "Analytics Key",
-			prefix: "aistats_v1_sk_kid_123",
+			prefix: "phaseo_v1_sk_kid_123",
 			status: "active",
 			scopes: "[\"responses\"]",
 			created_by: "user_1",
@@ -267,7 +267,7 @@ describe("management key routes", () => {
 			hash: "hash_new",
 			limit: 5,
 			limit_reset: "weekly",
-			key: "aistats_v1_sk_kid_123_secret_123",
+			key: "phaseo_v1_sk_kid_123_secret_123",
 		});
 	});
 
@@ -345,7 +345,7 @@ describe("management key routes", () => {
 			hash: "hash_1",
 			workspace_id: "ws_1",
 			name: "Primary Key",
-			prefix: "aistats_v1_sk_abc",
+			prefix: "phaseo_v1_sk_abc",
 			status: "active",
 		});
 
@@ -369,7 +369,7 @@ describe("management key routes", () => {
 				workspace_id: "ws_1",
 				kid: "kid_1",
 				name: "Primary Key",
-				prefix: "aistats_v1_sk_abc",
+				prefix: "phaseo_v1_sk_abc",
 				status: "active",
 				scopes: "[]",
 				created_by: "user_1",
@@ -387,7 +387,7 @@ describe("management key routes", () => {
 				hash: "hash_1",
 				workspace_id: "ws_1",
 				name: "Primary Key",
-				prefix: "aistats_v1_sk_abc",
+				prefix: "phaseo_v1_sk_abc",
 				status: "active",
 				scopes: "[]",
 				created_by: "user_1",

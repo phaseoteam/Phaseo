@@ -65,17 +65,17 @@ function toOptionalUrl(value: unknown, maxLength: number): string | null {
 }
 
 function parseGatewayKey(token: string): ParsedGatewayKey | null {
-	if (!token.startsWith("aistats_")) return null;
 	const parts = token.split("_");
 	if (parts.length < 5) return null;
 	const [namespace, version, kind, kid, ...rest] = parts;
-	if (namespace !== "aistats" || version !== "v1" || kind !== "sk") return null;
+	if (namespace !== "phaseo" && namespace !== "aistats") return null;
+	if (version !== "v1" || kind !== "sk") return null;
 	const secret = rest.join("_");
 	if (!kid || !secret) return null;
 	return {
 		kid,
 		secret,
-		prefix: `aistats_v1_sk_${kid}`,
+		prefix: `${namespace}_v1_sk_${kid}`,
 	};
 }
 

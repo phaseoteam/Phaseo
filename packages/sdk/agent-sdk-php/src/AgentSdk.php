@@ -1,13 +1,13 @@
 <?php
 declare(strict_types=1);
 
-namespace AIStats\AgentSdk;
+namespace Phaseo\AgentSdk;
 
-if (!class_exists(\AIStats\Sdk\AIStats::class)) {
+if (!class_exists(\Phaseo\Sdk\Phaseo::class)) {
     require_once __DIR__ . "/../../sdk-php/src/index.php";
 }
 
-use AIStats\Sdk\AIStats;
+use Phaseo\Sdk\Phaseo;
 use JsonException;
 use RuntimeException;
 
@@ -162,7 +162,7 @@ final class GatewayAgentClientOptions
      *  @param array<string, mixed>|null $providerOptions
      */
     public function __construct(
-        public ?AIStats $client = null,
+        public ?Phaseo $client = null,
         public ?array $clientOptions = null,
         public ?string $model = null,
         public ?string $preset = null,
@@ -188,7 +188,7 @@ final class GatewayAgentClientOptions
 final class GatewayAgentClient implements ModelClient
 {
     public function __construct(
-        private AIStats $client,
+        private Phaseo $client,
         private GatewayAgentClientOptions $options
     ) {
     }
@@ -196,7 +196,7 @@ final class GatewayAgentClient implements ModelClient
     public function generate(ModelRequest $request): ModelResponse
     {
         $payload = array_filter([
-            "model" => $request->model ?: $this->options->model ?: self::presetAlias($this->options->preset) ?: "ai-stats/free",
+            "model" => $request->model ?: $this->options->model ?: self::presetAlias($this->options->preset) ?: "phaseo/free",
             "input" => self::toResponsesInput($request->messages),
             "instructions" => self::toInstructions($request->messages, $request->instructions),
             "tools" => array_merge(
@@ -529,18 +529,18 @@ final class AgentSdk
     {
         $options ??= new GatewayAgentClientOptions();
         $client = $options->client;
-        if (!$client instanceof AIStats) {
+        if (!$client instanceof Phaseo) {
             $clientOptions = $options->clientOptions ?? [];
             $apiKey = is_string($clientOptions["api_key"] ?? null)
                 ? $clientOptions["api_key"]
-                : getenv("AI_STATS_API_KEY");
+                : (getenv("PHASEO_API_KEY"));
             if (!is_string($apiKey) || trim($apiKey) === "") {
-                throw new RuntimeException("AI_STATS_API_KEY is required");
+                throw new RuntimeException("PHASEO_API_KEY is required");
             }
             $baseUrl = is_string($clientOptions["base_url"] ?? null)
                 ? $clientOptions["base_url"]
-                : (getenv("AI_STATS_BASE_URL") ?: "https://api.phaseo.app/v1");
-            $client = new AIStats(apiKey: $apiKey, basePath: $baseUrl);
+                : (getenv("PHASEO_BASE_URL") ?: "https://api.phaseo.ai/v1");
+            $client = new Phaseo(apiKey: $apiKey, basePath: $baseUrl);
         }
 
         return new GatewayAgentClient($client, $options);

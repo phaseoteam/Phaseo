@@ -51,7 +51,7 @@ export default function RoadmapComingSoon({
 		// featureList: m.featureList,
 		// tags: m.tags,
 		breadcrumb: [
-			{ label: "AI Stats", href: "/" },
+			{ label: "Phaseo", href: "/" },
 			{ label: "Roadmap", href: "/roadmap" },
 			{ label: m.title },
 		],

@@ -1,14 +1,14 @@
 /**
  * Chat Completion API Proxy
  *
- * Proxies chat requests to AI Stats gateway with OAuth token
+ * Proxies chat requests to Phaseo gateway with OAuth token
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getTokens, updateTokens } from '@/lib/session';
 import { isTokenExpired, refreshAccessToken } from '@/lib/oauth';
 
-const GATEWAY_ORIGIN = (process.env.NEXT_PUBLIC_GATEWAY_URL || 'https://api.phaseo.app').replace(/\/+$/, '');
+const GATEWAY_ORIGIN = (process.env.NEXT_PUBLIC_GATEWAY_URL || 'https://api.phaseo.ai').replace(/\/+$/, '');
 const GATEWAY_BASE = /\/v1$/i.test(GATEWAY_ORIGIN) ? GATEWAY_ORIGIN : `${GATEWAY_ORIGIN}/v1`;
 
 export async function POST(request: NextRequest) {
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     // Parse request body
     const body = await request.json();
 
-    // Forward request to AI Stats gateway
+    // Forward request to Phaseo gateway
     const response = await fetch(`${GATEWAY_BASE}/chat/completions`, {
       method: 'POST',
       headers: {

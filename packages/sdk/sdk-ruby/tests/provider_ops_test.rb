@@ -3,7 +3,7 @@ require_relative "../lib/index"
 
 class ProviderOpsTest < Minitest::Test
   def test_provider_and_usage_helpers_return_payloads
-    client = AIStatsSdk::AIStats.new(
+    client = PhaseoSdk::Phaseo.new(
       api_key: "test",
       enable_deprecation_warnings: false
     )

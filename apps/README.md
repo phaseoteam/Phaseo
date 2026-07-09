@@ -1,6 +1,6 @@
 # Apps Directory
 
-This folder holds the three main parts of **AI Stats** — each a core piece of the ecosystem.
+This folder holds the three main parts of **Phaseo** — each a core piece of the ecosystem.
 
 | App              | Description                         |
 | ---------------- | ----------------------------------- |

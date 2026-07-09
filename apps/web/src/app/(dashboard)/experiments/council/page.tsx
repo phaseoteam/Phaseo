@@ -8,8 +8,8 @@ import { buildDefaultCouncilPresets } from "@/lib/experiments/councilPresets";
 export const metadata: Metadata = {
 	title: "Experiments Council - Multi-model orchestration",
 	description:
-		"Run AI Stats Council: parallel source models, strict analyser JSON, and one fused final answer.",
-	keywords: ["Experiments Council", "model fusion", "AI orchestration", "AI Stats"],
+		"Run Phaseo Council: parallel source models, strict analyser JSON, and one fused final answer.",
+	keywords: ["Experiments Council", "model fusion", "AI orchestration", "Phaseo"],
 	alternates: {
 		canonical: "/experiments/council",
 	},

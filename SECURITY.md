@@ -31,7 +31,7 @@ If you believe you’ve found a security vulnerability, please report it via **o
     - Follow the prompts to submit a private report
 
 2. **Email**
-    - Email: `security@phaseo.app`
+    - Email: `security@phaseo.ai`
     - Subject: `SECURITY: <short summary>`
 
 ### What to include

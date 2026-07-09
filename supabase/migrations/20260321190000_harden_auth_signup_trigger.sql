@@ -29,7 +29,7 @@ begin
         'welcome',
         'welcome',
         new.email,
-        'Welcome to AI Stats',
+        'Welcome to Phaseo',
         new.id,
         jsonb_build_object('user_id', new.id)
       );
@@ -76,7 +76,7 @@ begin
         headers := jsonb_build_object('Content-Type', 'application/json'),
         body := jsonb_build_object(
           'content',
-          'New AI Stats signup' || E'\n' ||
+          'New Phaseo signup' || E'\n' ||
           '- user_id: `' || new.id::text || '`' || E'\n' ||
           '- email: `' || coalesce(new.email, 'unknown') || '`' || E'\n' ||
           '- created_at: `' || v_created_at || '`',

@@ -5,7 +5,7 @@ import { spawnSync } from "node:child_process";
 
 function parseArgs(argv) {
 	const options = {
-		dir: ".ai-stats-devtools",
+		dir: ".phaseo-devtools",
 		model: "openai/gpt-5-nano",
 		input: "Hi",
 		maxOutputTokens: "32",
@@ -58,8 +58,8 @@ const options = parseArgs(process.argv.slice(2));
 const repoRoot = process.cwd();
 const outputDir = path.resolve(repoRoot, options.dir);
 
-if (!process.env.AI_STATS_API_KEY) {
-	console.log("AI_STATS_API_KEY not set in shell; relying on per-SDK .env.local files.");
+if (!process.env.PHASEO_API_KEY) {
+	console.log("PHASEO_API_KEY not set in shell; relying on per-SDK .env.local files.");
 }
 
 if (options.clean && existsSync(outputDir)) {
@@ -69,21 +69,21 @@ mkdirSync(outputDir, { recursive: true });
 
 const sharedEnv = {
 	...process.env,
-	AI_STATS_DEVTOOLS: "true",
-	AI_STATS_DEVTOOLS_DIR: outputDir,
-	AI_STATS_SMOKE_MODEL: options.model,
-	AI_STATS_SMOKE_INPUT: options.input,
-	AI_STATS_SMOKE_MAX_OUTPUT_TOKENS: options.maxOutputTokens,
+	PHASEO_DEVTOOLS: "true",
+	PHASEO_DEVTOOLS_DIR: outputDir,
+	PHASEO_SMOKE_MODEL: options.model,
+	PHASEO_SMOKE_INPUT: options.input,
+	PHASEO_SMOKE_MAX_OUTPUT_TOKENS: options.maxOutputTokens,
 };
 
 const runs = [
-	{ name: "TypeScript SDK", command: "pnpm --filter @ai-stats/sdk smoke:responses" },
-	{ name: "Python SDK", command: "pnpm --filter @ai-stats/py-sdk smoke:responses" },
-	{ name: "Go SDK", command: "pnpm --filter @ai-stats/go-sdk smoke:responses:sdk" },
-	{ name: "C# SDK", command: "pnpm --filter @ai-stats/csharp-sdk smoke:responses:sdk" },
-	{ name: "Java SDK", command: "pnpm --filter @ai-stats/java-sdk smoke:responses:sdk" },
-	{ name: "PHP SDK", command: "pnpm --filter @ai-stats/php-sdk smoke:responses:sdk" },
-	{ name: "Ruby SDK", command: "pnpm --filter @ai-stats/ruby-sdk smoke:responses:sdk" },
+	{ name: "TypeScript SDK", command: "pnpm --filter @phaseo/sdk smoke:responses" },
+	{ name: "Python SDK", command: "pnpm --filter @phaseo/py-sdk smoke:responses" },
+	{ name: "Go SDK", command: "pnpm --filter @phaseo/go-sdk smoke:responses:sdk" },
+	{ name: "C# SDK", command: "pnpm --filter @phaseo/csharp-sdk smoke:responses:sdk" },
+	{ name: "Java SDK", command: "pnpm --filter @phaseo/java-sdk smoke:responses:sdk" },
+	{ name: "PHP SDK", command: "pnpm --filter @phaseo/php-sdk smoke:responses:sdk" },
+	{ name: "Ruby SDK", command: "pnpm --filter @phaseo/ruby-sdk smoke:responses:sdk" },
 ];
 
 const failures = [];
@@ -122,8 +122,8 @@ if (failures.length > 0) {
 console.log("\nAll 7 SDK smoke runs completed successfully.");
 console.log(`Devtools data: ${outputDir}`);
 console.log("Open viewer with:");
-if (path.resolve(repoRoot, ".ai-stats-devtools") === outputDir) {
-	console.log("pnpm ai-stats-devtools");
+if (path.resolve(repoRoot, ".phaseo-devtools") === outputDir) {
+	console.log("pnpm phaseo-devtools");
 } else {
-	console.log(`pnpm --filter @ai-stats/devtools-viewer start -- --dir \"${outputDir}\"`);
+	console.log(`pnpm --filter @phaseo/devtools-viewer start -- --dir \"${outputDir}\"`);
 }

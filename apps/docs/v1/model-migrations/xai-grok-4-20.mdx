@@ -5,7 +5,7 @@ description: "Gateway-focused migration notes for Grok 4.20, including reasoning
 
 # SpaceXAI: Grok 4.20
 
-Use this guide when you are moving traffic onto Grok 4.20 through the AI Stats Gateway.
+Use this guide when you are moving traffic onto Grok 4.20 through the Phaseo Gateway.
 
 Primary route in our catalog:
 
@@ -23,11 +23,11 @@ Existing request and response patterns can remain the same.
 
 ## What changed
 
-For the base Grok 4.20 route, there is no behavior change you need to migrate for in AI Stats Gateway.
+For the base Grok 4.20 route, there is no behavior change you need to migrate for in Phaseo Gateway.
 
 The only practical change is how to tune the multi-agent variant.
 
-For AI Stats Gateway usage:
+For Phaseo Gateway usage:
 
 - base Grok 4.20 can still be toggled with `reasoning.enabled` as normal
 - multi-agent Grok 4.20 should be tuned with `reasoning.effort`

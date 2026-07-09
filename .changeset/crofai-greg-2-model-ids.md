@@ -1,12 +1,12 @@
 ---
-"@ai-stats/sdk": patch
-"@ai-stats/go-sdk": patch
-"@ai-stats/py-sdk": patch
-"@ai-stats/csharp-sdk": patch
-"@ai-stats/java-sdk": patch
-"@ai-stats/php-sdk": patch
-"@ai-stats/ruby-sdk": patch
-"@ai-stats/rust-sdk": patch
+"@phaseo/sdk": patch
+"@phaseo/go-sdk": patch
+"@phaseo/py-sdk": patch
+"@phaseo/csharp-sdk": patch
+"@phaseo/java-sdk": patch
+"@phaseo/php-sdk": patch
+"@phaseo/ruby-sdk": patch
+"@phaseo/rust-sdk": patch
 ---
 
 Add CrofAI `greg-2-super` and `greg-2-ultra` to generated known model ID types.

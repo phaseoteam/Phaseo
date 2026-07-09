@@ -73,7 +73,7 @@ describe("handleSuccessAudit search observability", () => {
 					output: [
 						{
 							type: "web_search_call",
-							query: "ai stats docs routing guide",
+							query: "phaseo docs routing guide",
 							status: "completed",
 						},
 						{
@@ -86,7 +86,7 @@ describe("handleSuccessAudit search observability", () => {
 									annotations: [
 										{
 											type: "url_citation",
-											title: "AI Stats Docs",
+											title: "Phaseo Docs",
 											url: "https://example.com/docs",
 											quoted_text: "Useful source text",
 										},
@@ -94,7 +94,7 @@ describe("handleSuccessAudit search observability", () => {
 								},
 								{
 									type: "web_search_result",
-									title: "AI Stats Docs",
+									title: "Phaseo Docs",
 									url: "https://example.com/docs",
 									text: "Docs summary",
 								},
@@ -124,7 +124,7 @@ describe("handleSuccessAudit search observability", () => {
 			results: [
 				{
 					type: "web_search_result",
-					title: "AI Stats Docs",
+					title: "Phaseo Docs",
 					url: "https://example.com/docs",
 					snippet: "Docs summary",
 				},
@@ -132,7 +132,7 @@ describe("handleSuccessAudit search observability", () => {
 			citations: [
 				{
 					type: "url_citation",
-					title: "AI Stats Docs",
+					title: "Phaseo Docs",
 					url: "https://example.com/docs",
 					text: "Useful source text",
 				},
@@ -140,7 +140,7 @@ describe("handleSuccessAudit search observability", () => {
 			nativeSearches: [
 				{
 					type: "web_search_call",
-					query: "ai stats docs routing guide",
+					query: "phaseo docs routing guide",
 					status: "completed",
 				},
 			],
@@ -173,13 +173,13 @@ describe("handleSuccessAudit search observability", () => {
 					tools: [
 						{
 							type: "function",
-							function: { name: "ai_stats_web_search" },
+							function: { name: "phaseo_web_search" },
 						},
 					],
 				},
 				rawBody: {
 					model: "openai/gpt-5.4",
-					tools: [{ type: "ai-stats:web_search" }],
+					tools: [{ type: "phaseo:web_search" }],
 				},
 				searchObservability: {
 					usedNativeWebSearch: false,
@@ -189,7 +189,7 @@ describe("handleSuccessAudit search observability", () => {
 					results: [
 						{
 							type: null,
-							title: "AI Stats Docs",
+							title: "Phaseo Docs",
 							url: "https://example.com/docs",
 							snippet: "Managed summary",
 						},
@@ -197,7 +197,7 @@ describe("handleSuccessAudit search observability", () => {
 					citations: [
 						{
 							type: "managed_web_search_result",
-							title: "AI Stats Docs",
+							title: "Phaseo Docs",
 							url: "https://example.com/docs",
 							text: "Managed highlight",
 						},
@@ -206,7 +206,7 @@ describe("handleSuccessAudit search observability", () => {
 					managedSearches: [
 						{
 							provider: "exa",
-							query: "ai stats docs",
+							query: "phaseo docs",
 							requestId: "req_exa_1",
 							searchType: "auto",
 							resultCount: 1,
@@ -274,7 +274,7 @@ describe("handleSuccessAudit search observability", () => {
 			results: [
 				{
 					type: null,
-					title: "AI Stats Docs",
+					title: "Phaseo Docs",
 					url: "https://example.com/docs",
 					snippet: "Managed summary",
 				},
@@ -282,7 +282,7 @@ describe("handleSuccessAudit search observability", () => {
 			citations: [
 				{
 					type: "managed_web_search_result",
-					title: "AI Stats Docs",
+					title: "Phaseo Docs",
 					url: "https://example.com/docs",
 					text: "Managed highlight",
 				},
@@ -291,7 +291,7 @@ describe("handleSuccessAudit search observability", () => {
 			managedSearches: [
 				{
 					provider: "exa",
-					query: "ai stats docs",
+					query: "phaseo docs",
 					requestId: "req_exa_1",
 					searchType: "auto",
 					resultCount: 1,
@@ -355,12 +355,12 @@ describe("handleSuccessAudit search observability", () => {
 					candidates: [
 						{
 							groundingMetadata: {
-								webSearchQueries: ["ai stats gateway web search"],
+								webSearchQueries: ["phaseo gateway web search"],
 								groundingChunks: [
 									{
 										web: {
 											uri: "https://example.com/docs",
-											title: "AI Stats Docs",
+											title: "Phaseo Docs",
 										},
 									},
 								],
@@ -398,7 +398,7 @@ describe("handleSuccessAudit search observability", () => {
 			results: [
 				{
 					type: "grounding_chunk",
-					title: "AI Stats Docs",
+					title: "Phaseo Docs",
 					url: "https://example.com/docs",
 					snippet: null,
 				},
@@ -406,7 +406,7 @@ describe("handleSuccessAudit search observability", () => {
 			citations: [
 				{
 					type: "grounding_support",
-					title: "AI Stats Docs",
+					title: "Phaseo Docs",
 					url: "https://example.com/docs",
 					text: "Grounded answer segment",
 				},
@@ -414,7 +414,7 @@ describe("handleSuccessAudit search observability", () => {
 			nativeSearches: [
 				{
 					type: "google_search_query",
-					query: "ai stats gateway web search",
+					query: "phaseo gateway web search",
 					status: null,
 				},
 			],

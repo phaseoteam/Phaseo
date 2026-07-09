@@ -5,14 +5,14 @@ require_relative "lib/index"
 manifest_path = File.expand_path("../../smoke-manifest.json", __dir__)
 manifest = JSON.parse(File.read(manifest_path))
 
-api_key_env = manifest["apiKeyEnv"] || "AI_STATS_API_KEY"
-base_url_env = manifest["baseUrlEnv"] || "AI_STATS_BASE_URL"
+api_key_env = manifest["apiKeyEnv"] || "PHASEO_API_KEY"
+base_url_env = manifest["baseUrlEnv"] || "PHASEO_BASE_URL"
 api_key = ENV[api_key_env]
 abort("Set #{api_key_env}") unless api_key
 
 base_url = (ENV[base_url_env] || manifest["defaultBaseUrl"]).sub(%r{/+$}, "")
 
-client = AIStatsSdk::AIStats.new(api_key: api_key, base_path: base_url)
+client = PhaseoSdk::Phaseo.new(api_key: api_key, base_path: base_url)
 
 health = client.health
 raise "health status missing" unless health.is_a?(Hash) && health["status"]

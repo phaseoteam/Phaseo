@@ -29,7 +29,7 @@ function clampText(value: string, maxLength: number): string {
 
 function toTokenPayload(payload: ProfileShareCardPayload): ProfileShareCardTokenPayload {
 	return {
-		n: clampText(payload.displayName, 80) || "AI Stats User",
+		n: clampText(payload.displayName, 80) || "Phaseo User",
 		...(payload.workspaceName?.trim()
 			? { w: clampText(payload.workspaceName, 48) }
 			: {}),
@@ -43,7 +43,7 @@ function toTokenPayload(payload: ProfileShareCardPayload): ProfileShareCardToken
 
 function fromTokenPayload(payload: Partial<ProfileShareCardTokenPayload>): ProfileShareCardPayload {
 	return {
-		displayName: clampText(payload.n ?? "AI Stats User", 80) || "AI Stats User",
+		displayName: clampText(payload.n ?? "Phaseo User", 80) || "Phaseo User",
 		workspaceName: clampText(payload.w ?? "", 48) || null,
 		memberSinceLabel: clampText(payload.j ?? "Recently", 24) || "Recently",
 		totalRequests: Math.max(0, Math.round(Number(payload.r ?? 0) || 0)),
@@ -128,5 +128,5 @@ export function buildProfileShareCardPageUrl(
 }
 
 export function buildProfileShareCopy(): string {
-	return "My AI Stats share card"
+	return "My Phaseo share card"
 }

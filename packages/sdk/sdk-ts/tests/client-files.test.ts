@@ -1,8 +1,8 @@
 import { describe, expect, test, vi } from "vitest";
-import { AIStats } from "../src/index.js";
-import { AIStatsHttpError } from "../src/runtime/client.js";
+import { Phaseo } from "../src/index.js";
+import { PhaseoHttpError } from "../src/runtime/client.js";
 
-describe("AIStats file content helpers", () => {
+describe("Phaseo file content helpers", () => {
   test("downloads file bytes through getFileContent", async () => {
     const fetchImpl: typeof fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       expect(String(input)).toBe("https://example.test/files/file_123/content");
@@ -16,7 +16,7 @@ describe("AIStats file content helpers", () => {
       });
     }) as unknown as typeof fetch;
 
-    const client = new AIStats({
+    const client = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -36,12 +36,12 @@ describe("AIStats file content helpers", () => {
       });
     }) as unknown as typeof fetch;
 
-    const client = new AIStats({
+    const client = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
     });
 
-    await expect(client.getFileContent("file_missing_123")).rejects.toBeInstanceOf(AIStatsHttpError);
+    await expect(client.getFileContent("file_missing_123")).rejects.toBeInstanceOf(PhaseoHttpError);
   });
 });

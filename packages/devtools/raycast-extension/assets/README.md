@@ -6,7 +6,7 @@
 - **File**: `icon.png`
 - **Size**: 512x512 pixels
 - **Format**: PNG
-- **Source**: Convert from `apps/web/src/app/favicon.ico` or create from AI Stats branding
+- **Source**: Convert from `apps/web/src/app/favicon.ico` or create from Phaseo branding
 
 To convert the favicon:
 ```bash
@@ -33,6 +33,6 @@ convert apps/web/src/app/favicon.ico -resize 512x512 packages/devtools/raycast-e
 ## Notes
 
 - Raycast requires at least one icon.png file
-- The icon should represent the AI Stats brand
+- The icon should represent the Phaseo brand
 - Use the favicon from the web app as a starting point
 - Ensure the icon is clear and recognizable at small sizes (16x16, 32x32)

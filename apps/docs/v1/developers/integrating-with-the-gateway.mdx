@@ -1,15 +1,15 @@
 ---
 title: "Integrating with the Gateway"
-description: "Connect your application to AI Stats Gateway, start on free models, then scale to paid models."
+description: "Connect an application to Phaseo Gateway, choose an endpoint, and prepare the integration for production."
 ---
 
-Use this guide when you are ready to move from a first successful request to a real application integration.
+Use this how-to guide after the quickstart, when you are ready to put Phaseo behind a real application feature.
 
 By the end, you should have:
 - a safely stored API key
 - a clear endpoint choice
 - one working request in your app
-- the right next pages for routing, SDKs, and production rollout
+- links to the right production guides for routing, SDKs, and operations
 
 ---
 
@@ -17,39 +17,39 @@ By the end, you should have:
 
 Make sure you have the following in place:
 
--   An AI Stats account with Gateway access.
--   At least one API key generated from your [dashboard](https://ai-stats.phaseo.app/gateway/keys).
--   An HTTP client or SDK.
--   A model ID supported by the Gateway, such as `google/gemma-3-27b:free` for a zero-deposit start.
+- A Phaseo account with Gateway access.
+- An API key from the [dashboard](https://phaseo.app/gateway/keys).
+- An HTTP client, OpenAI-compatible SDK, or Phaseo SDK.
+- A supported model ID, such as `google/gemma-3-27b:free` for a zero-credit start.
 
 ---
 
-## 1. Create and store an API key
+## 1. Store the API key
 
-1.  Log in to the AI Stats dashboard.
-2.  Navigate to **Gateway -> API Keys**.
-3.  Create a new key, give it a descriptive name, and copy the generated value.
-4.  Store the key securely using your secret manager or environment variables:
+1. Open **Gateway -> API Keys** in the Phaseo dashboard.
+2. Create a key with a name that identifies the app and environment.
+3. Store the value in a secret manager or local environment file:
 
 ```bash
 # .env
-AI_STATS_API_KEY="aistats_v1_sk_<kid>_<secret>"
+PHASEO_API_KEY="phaseo_v1_sk_<kid>_<secret>"
 ```
 
-> Tip
-> Rotate keys regularly and remove any that are no longer needed. This keeps access scoped and auditable.
+<Tip>
+Use separate keys for local development, preview deployments, and production. It makes rotation and usage review much easier.
+</Tip>
 
 ---
 
-## 2. Choose an endpoint and model
+## 2. Choose the endpoint
 
 Choose the endpoint that best matches the job you are doing:
 
 | Endpoint                 | When to use it                                     |
 | ------------------------ | -------------------------------------------------- |
+| `/v1/responses`          | New text builds, structured outputs, and multi-step workflows. |
 | `/v1/chat/completions`   | Chat interfaces, assistants, and OpenAI-style integrations. |
-| `/v1/responses`          | New builds, structured outputs, and multi-step text workflows. |
-| `/v1/messages`           | Anthropic-compatible integrations. |
+| `/v1/messages`           | Anthropic-compatible integrations.                         |
 | `/v1/moderations`        | Safety and content policy checks.                  |
 | `/v1/images/generations` | Image generation from text prompts.                |
 
@@ -61,14 +61,14 @@ Free-model IDs end with `:free` and can be called without depositing credits. Pa
 
 ---
 
-## 3. Send a request
+## 3. Send the app request
 
-Start with one successful chat request through the integration path you plan to keep.
+Start with the request shape your app is most likely to keep. This example uses Chat Completions because it works well for OpenAI-compatible clients.
 
 <CodeGroup>
 ```bash cURL
-curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer $AI_STATS_API_KEY" \
+curl https://api.phaseo.ai/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "google/gemma-3-27b:free",
@@ -83,8 +83,8 @@ curl https://api.phaseo.app/v1/chat/completions \
 import OpenAI from "openai";
 
 const client = new OpenAI({
-  apiKey: process.env.AI_STATS_API_KEY,
-  baseURL: "https://api.phaseo.app/v1",
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.ai/v1",
 });
 
 const response = await client.chat.completions.create({
@@ -103,7 +103,7 @@ from openai import OpenAI
 
 client = OpenAI(
     api_key="YOUR_API_KEY",
-    base_url="https://api.phaseo.app/v1",
+    base_url="https://api.phaseo.ai/v1",
 )
 
 response = client.chat.completions.create(
@@ -124,11 +124,11 @@ import (
   "context"
   "fmt"
 
-  aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
 )
 
 func main() {
-  client := aistats.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
+  client := phaseo.New("YOUR_API_KEY", "https://api.phaseo.ai/v1")
 
   response, err := client.ChatCompletions(context.Background(), map[string]interface{}{
     "model": "google/gemma-3-27b:free",
@@ -146,10 +146,10 @@ func main() {
 ```
 
 ```csharp C#
-using AiStatsSdk;
+using PhaseoSdk;
 using System.Collections.Generic;
 
-var client = new AIStats("YOUR_API_KEY");
+var client = new Phaseo("YOUR_API_KEY");
 
 var response = await client.ChatCompletions(new Dictionary<string, object>
 {
@@ -168,9 +168,9 @@ Console.WriteLine(response);
 <?php
 require 'vendor/autoload.php';
 
-use AIStats\Sdk\AIStats;
+use Phaseo\Sdk\Phaseo;
 
-$client = new AIStats(getenv('AI_STATS_API_KEY') ?: 'YOUR_API_KEY');
+$client = new Phaseo(getenv('PHASEO_API_KEY') ?: 'YOUR_API_KEY');
 
 $response = $client->chatCompletions([
     'model' => 'google/gemma-3-27b:free',
@@ -184,9 +184,9 @@ print_r($response);
 ```
 
 ```ruby Ruby
-require 'ai_stats_sdk'
+require 'phaseo_sdk'
 
-client = AIStatsSdk::AIStats.new(api_key: ENV.fetch('AI_STATS_API_KEY', 'YOUR_API_KEY'))
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY', 'YOUR_API_KEY'))
 
 response = client.chat_completions(
   model: 'google/gemma-3-27b:free',
@@ -208,21 +208,21 @@ Store your API key in environment variables for different environments:
 
 ```bash
 # .env.local
-AI_STATS_API_KEY="aistats_v1_sk_<kid>_<secret>"
-AI_STATS_BASE_URL="https://api.phaseo.app/v1"
+PHASEO_API_KEY="phaseo_v1_sk_<kid>_<secret>"
+PHASEO_BASE_URL="https://api.phaseo.ai/v1"
 ```
 
-When making requests, always include the `Authorization` header with your API key:
+When making requests, send the key in the `Authorization` header:
 
 ```http
-Authorization: Bearer $AI_STATS_API_KEY
+Authorization: Bearer $PHASEO_API_KEY
 ```
 
 ---
 
-## 5. Next steps
+## 5. Production next steps
 
--   Review [Authentication](./authentication) to learn about header formats and workspace tokens.
--   Learn how [Routing and fallbacks](../guides/routing-and-fallbacks) work in production.
--   Browse [Examples](../guides/examples) to see complete integrations in popular frameworks.
--   Explore the [SDK Reference](../sdk-reference/typescript/overview) for language-specific usage.
+- Review [Authentication](./authentication) for key handling and common auth failures.
+- Learn [Routing and fallbacks](../guides/routing-and-fallbacks) before sending meaningful traffic.
+- Browse [Examples](../guides/examples) for complete app and script patterns.
+- Explore the [SDK Reference](../sdk-reference/typescript/overview) for language-specific clients.

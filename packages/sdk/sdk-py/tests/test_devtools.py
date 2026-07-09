@@ -1,7 +1,7 @@
 import json
 import httpx
 
-from ai_stats import AIStats, create_ai_stats_devtools
+from phaseo import Phaseo, create_phaseo_devtools
 from gen import operations as ops
 
 
@@ -23,10 +23,10 @@ def test_devtools_records_chat_completion(tmp_path, monkeypatch):
 
     monkeypatch.setattr(ops, "createChatCompletion", fake_create_chat_completion)
 
-    client = AIStats(
+    client = Phaseo(
         api_key="sk_test_123",
         base_url="https://example.test",
-        devtools=create_ai_stats_devtools(enabled=True, directory=str(tmp_path)),
+        devtools=create_phaseo_devtools(enabled=True, directory=str(tmp_path)),
     )
 
     client.generate_text(
@@ -67,10 +67,10 @@ def test_devtools_records_errors(tmp_path, monkeypatch):
 
     monkeypatch.setattr(ops, "createChatCompletion", fake_create_chat_completion)
 
-    client = AIStats(
+    client = Phaseo(
         api_key="sk_test_123",
         base_url="https://example.test",
-        devtools=create_ai_stats_devtools(enabled=True, directory=str(tmp_path)),
+        devtools=create_phaseo_devtools(enabled=True, directory=str(tmp_path)),
     )
 
     try:
@@ -116,10 +116,10 @@ def test_devtools_records_batch_create_and_cancel(tmp_path, monkeypatch):
     monkeypatch.setattr(ops, "createBatch", fake_create_batch)
     monkeypatch.setattr(ops, "cancelBatch", fake_cancel_batch)
 
-    client = AIStats(
+    client = Phaseo(
         api_key="sk_test_123",
         base_url="https://example.test",
-        devtools=create_ai_stats_devtools(enabled=True, directory=str(tmp_path)),
+        devtools=create_phaseo_devtools(enabled=True, directory=str(tmp_path)),
     )
 
     client.create_batch(
@@ -155,10 +155,10 @@ def test_devtools_records_generation_lookup(tmp_path, monkeypatch):
 
     monkeypatch.setattr(ops, "getGeneration", fake_get_generation)
 
-    client = AIStats(
+    client = Phaseo(
         api_key="sk_test_123",
         base_url="https://example.test",
-        devtools=create_ai_stats_devtools(enabled=True, directory=str(tmp_path)),
+        devtools=create_phaseo_devtools(enabled=True, directory=str(tmp_path)),
     )
 
     client.get_generation("gen_123")
@@ -174,10 +174,10 @@ def test_devtools_records_generation_lookup(tmp_path, monkeypatch):
 
 
 def test_devtools_records_health_entries(tmp_path, monkeypatch):
-    client = AIStats(
+    client = Phaseo(
         api_key="sk_test_123",
         base_url="https://example.test",
-        devtools=create_ai_stats_devtools(enabled=True, directory=str(tmp_path)),
+        devtools=create_phaseo_devtools(enabled=True, directory=str(tmp_path)),
     )
 
     monkeypatch.setattr(
@@ -226,10 +226,10 @@ def test_devtools_records_video_lifecycle_entries(tmp_path, monkeypatch):
     monkeypatch.setattr(ops, "createVideo", fake_create_video)
     monkeypatch.setattr(ops, "getVideo", fake_get_video)
 
-    client = AIStats(
+    client = Phaseo(
         api_key="sk_test_123",
         base_url="https://example.test",
-        devtools=create_ai_stats_devtools(enabled=True, directory=str(tmp_path)),
+        devtools=create_phaseo_devtools(enabled=True, directory=str(tmp_path)),
         enable_deprecation_warnings=False,
     )
     monkeypatch.setattr(
@@ -284,10 +284,10 @@ def test_devtools_records_video_list_entries(tmp_path, monkeypatch):
 
     monkeypatch.setattr(ops, "listVideos", fake_list_videos)
 
-    client = AIStats(
+    client = Phaseo(
         api_key="sk_test_123",
         base_url="https://example.test",
-        devtools=create_ai_stats_devtools(enabled=True, directory=str(tmp_path)),
+        devtools=create_phaseo_devtools(enabled=True, directory=str(tmp_path)),
     )
 
     client.list_videos({"status": "queued,completed", "limit": 2})
@@ -368,10 +368,10 @@ def test_devtools_records_control_plane_entries(tmp_path, monkeypatch):
         "data": {"id": "key_123", "status": "active"},
     })
 
-    client = AIStats(
+    client = Phaseo(
         api_key="sk_test_123",
         base_url="https://example.test",
-        devtools=create_ai_stats_devtools(enabled=True, directory=str(tmp_path)),
+        devtools=create_phaseo_devtools(enabled=True, directory=str(tmp_path)),
     )
     monkeypatch.setattr(
         client,

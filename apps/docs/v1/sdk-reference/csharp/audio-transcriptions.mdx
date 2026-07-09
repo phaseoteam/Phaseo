@@ -7,9 +7,9 @@ description: "Call /audio/transcriptions with the C# SDK."
 
 ### Example
 ```csharp
-using AiStatsSdk;
+using PhaseoSdk;
 
-var client = new AIStats(apiKey);
+var client = new Phaseo(apiKey);
 var response = await client.CreateTranscription(new Dictionary<string, object>
 {
     ["model"] = "openai/gpt-4o-transcribe",

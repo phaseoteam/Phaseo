@@ -1,73 +1,113 @@
 ---
 title: "ICYMI: What We Shipped in March 2026"
-description: A public recap of our March releases, including expanded embeddings API support, multimodal updates, and major model additions.
+description: A plain-English recap of March improvements across model pages, embeddings, SDKs, billing, navigation, and catalog coverage.
 publishedAt: 2026-03-31
-author: AI Stats Team
+author: Phaseo Team
+category: data
+pinned: false
+coverImage: /blog-images/recap-march-2026.png
 tags:
   - ICYMI
   - Monthly Recap
   - Product
-  - API
+  - Models
 draft: false
 ---
 
-March was a foundational release month for API coverage and model breadth.
+March was a foundation month for Phaseo. A lot of the work was about making the product easier to trust before bigger gateway and catalog releases arrived later in the spring.
 
-This recap covers shipping from **March 1, 2026** through **March 31, 2026**.
+This recap covers the work that shipped from **1 March 2026** through **31 March 2026**, based on the release history, commit history, and catalog data for the month.
 
-## The Big Drops
+## What Shipped
 
-### Embeddings API support expanded
+### Embeddings became easier to use
 
-We significantly expanded embeddings support across the stack, including API surface updates, docs coverage, SDK examples, and product surfaces for embeddings workflows.
+Embeddings support moved from "possible" to much more visible in March. The product, API, SDK examples, and docs all picked up improvements so teams could find embedding models, understand how they fit into the catalog, and build against them without hunting through separate pieces of the product.
 
-Highlights included:
+That matters because embeddings are often the first building block for search, retrieval, ranking, memory, and recommendation workflows. They are not always the most visible model releases, but they are the layer that makes a lot of useful AI features work.
 
-- Embeddings endpoint and schema updates across API and OpenAPI
-- SDK model surface and examples updates for embeddings
-- Dedicated embeddings experience in chat and provider model views
-- Added support for additional embedding models, including Gemini embedding updates
+The catalog also added Gemini Embedding 2 Preview during the month, alongside broader model metadata updates. Together, those changes made Phaseo more useful for teams building retrieval workflows, not only chat interfaces.
 
-Try it:
+Explore the catalog here:
 
-- [/chat/embeddings](/chat/embeddings)
 - [Explore models here](/models)
 
-### Multimodal support moved forward
+### Model pages got lighter and easier to navigate
 
-March also pushed multimodal coverage forward across audio and video pathways, with related executor, routing, and docs updates landing through the month.
+Model pages saw several practical improvements in March. Timeline loading moved toward a more direct previous-and-next lookup, provider and model routes were cleaned up, and model data was refreshed across the web app, API, docs, and SDKs.
 
-Explore:
+The result was a quieter but important improvement: model pages had less unnecessary work to do, and the product became better at showing the right model information in the right place.
 
-- [/chat/audio](/chat/audio)
-- [/chat/video](/chat/video)
+Search also improved. Header search started prioritising direct model-name matches, and chat links were cleaned up so messages pointed to the right model pages. That makes a difference when the catalog is growing quickly and users are trying to jump straight to a specific release.
 
-### Major model coverage updates
+### Multimodal coverage moved forward
 
-We shipped broad model and pricing updates, including notable additions and upgrades such as:
+March included a broad release that aligned SDKs, multimodal examples, docs, and product pages. Audio, video, and chat surfaces all received related work through the month.
 
-- Claude Opus 4.6 and Sonnet 4.6 coverage
-- GPT-5.4 Mini and Nano data/docs updates
-- GLM 5 Turbo and new Mistral March model onboarding
-- Gemini 3.1 Flash Lite onboarding and benchmark refreshes
-- Grok 4.20 routing/data sync updates
+This did not all land as one headline feature. Instead, it was the groundwork needed for a product that can talk about more than text models. The important change was consistency: model types, docs, examples, and product pages started matching each other more closely.
 
-### SDK and schema alignment
+That consistency matters for developers. If a model supports audio or video, the product should make that clear, the docs should explain how to use it, and SDK examples should not lag behind the product.
 
-We shipped coordinated schema and SDK alignment work so model and capability changes landed consistently across generated SDKs and docs.
+### Billing and credits became clearer
 
-## Product and reliability improvements
+March added a promo-code redemption flow, transaction polish, and an internal view for outstanding promotional credit totals. The gateway also normalised billing usage and quickstart identifiers.
 
-In parallel with feature releases, March included polish and hardening across gateway, auth, header/nav UX, and chat reliability.
+These changes are not the kind of thing users screenshot, but they reduce confusion. If a user is trying Phaseo for the first time, the basics need to be clear: what credit they have, what was used, and which account or workspace it belongs to.
 
-## Shipping Stats (Mar 1-31)
+That work also helped prepare the product for the larger account and workspace changes that shipped in April.
 
-- **74 commits** merged to `main`
-- **11 feature commits**
-- **11 fix commits**
-- **23 data/model-focused commits**
-- **2 SDK version package releases**
+### SDKs and release tooling stayed in sync
+
+The month included package releases, SDK validation work, version checks, and generated client updates. This kept public packages aligned with the API and model catalog as releases landed.
+
+That is especially important for a catalog product. New model data is only useful if it reaches the places developers actually use: model IDs, generated SDKs, docs, examples, and API responses.
+
+## Also Shipped
+
+- Mobile navigation was tightened, including dropdown width, separators, theme controls, and a more unified mobile menu.
+- Signup failures were made easier to isolate with safer side effects and better stage logging.
+- Temporary upstream chat error logging was removed after debugging work finished.
+- Dependency updates landed across the repo, including updates for security advisories.
+- Model discovery alerts and Hugging Face or internal notifications were improved so new catalog work was easier to monitor.
+
+## Model Highlights
+
+March brought several important additions. OpenAI GPT 5.4, GPT 5.4 Pro, GPT 5.4 Mini, and GPT 5.4 Nano expanded the OpenAI side of the catalog. Gemini 3.1 Flash Lite Preview and Gemini Embedding 2 Preview added useful Google coverage. Mistral Small 4, Mistral Moderation 2, Leanstral, and Voxtral TTS broadened Mistral coverage across text, moderation, and speech.
+
+The month also included GLM 5 Turbo, Nemotron 3 Super, MiniMax M2.7, multiple Xiaomi MiMo V2 models, and the first Veo 3.1 Lite Preview entry at the end of the month.
+
+## Shipping Snapshot
+
+The local git history shows **74 commits** during March. The month included model-data releases, SDK package releases, billing fixes, mobile navigation polish, and catalog updates for OpenAI, Anthropic, Google, Mistral, Xiaomi, MiniMax, Qwen, and others.
+
+## Models Released In March 2026
+
+The catalog includes these models with March 2026 release dates:
+
+- 2 March: Qwen 3.5 0.8B (`qwen/qwen3.5-0.8b`)
+- 2 March: Qwen 3.5 2B (`qwen/qwen3.5-2b`)
+- 2 March: Qwen 3.5 4B (`qwen/qwen3.5-4b`)
+- 2 March: Qwen 3.5 9B (`qwen/qwen3.5-9b`)
+- 3 March: Gemini 3.1 Flash Lite Preview (`google/gemini-3.1-flash-lite-preview`)
+- 3 March: GPT 5.3 Chat (`openai/gpt-5.3-chat`)
+- 5 March: GPT 5.4 (`openai/gpt-5.4`)
+- 5 March: GPT 5.4 Pro (`openai/gpt-5.4-pro`)
+- 10 March: Aion 2.5 (`aion-labs/aion-2.5`)
+- 10 March: Gemini Embedding 2 Preview (`google/gemini-embedding-2-preview`)
+- 11 March: Nemotron 3 Super (`nvidia/nemotron-3-super-120b-a12b`)
+- 15 March: GLM 5 Turbo (`z-ai/glm-5-turbo`)
+- 16 March: Leanstral (`mistral/leanstral`)
+- 16 March: Mistral Small 4 (`mistral/mistral-small-4`)
+- 17 March: Mistral Moderation 2 (`mistral/mistral-moderation-2`)
+- 17 March: GPT 5.4 Mini (`openai/gpt-5.4-mini`)
+- 17 March: GPT 5.4 Nano (`openai/gpt-5.4-nano`)
+- 18 March: MiniMax M2.7 (`minimax/minimax-m2.7`)
+- 18 March: MiMo V2 Omni (`xiaomi/mimo-v2-omni`)
+- 18 March: MiMo V2 Pro (`xiaomi/mimo-v2-pro`)
+- 18 March: MiMo V2 TTS (`xiaomi/mimo-v2-tts`)
+- 23 March: Voxtral TTS (`mistral/voxtral-tts`)
+- 31 March: Veo 3.1 Lite Preview (`google/veo-3.1-lite-preview`)
 
 ## Next Up
 
-We are continuing this monthly ICYMI format with feature releases first, then supporting shipping stats and reliability improvements.
+March set up the product for a faster April: better pricing pages, workspace changes, more model page improvements, and a bigger run of model releases.

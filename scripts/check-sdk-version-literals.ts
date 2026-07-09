@@ -17,13 +17,13 @@ type Spec = {
 };
 
 const SDK_VERSION_OVERRIDE_ENV: Record<Spec["sdkKey"], string> = {
-  ts: "AI_STATS_SDK_VERSION_OVERRIDE_TS",
-  py: "AI_STATS_SDK_VERSION_OVERRIDE_PY",
-  go: "AI_STATS_SDK_VERSION_OVERRIDE_GO",
-  csharp: "AI_STATS_SDK_VERSION_OVERRIDE_CSHARP",
-  java: "AI_STATS_SDK_VERSION_OVERRIDE_JAVA",
-  php: "AI_STATS_SDK_VERSION_OVERRIDE_PHP",
-  ruby: "AI_STATS_SDK_VERSION_OVERRIDE_RUBY",
+  ts: "PHASEO_SDK_VERSION_OVERRIDE_TS",
+  py: "PHASEO_SDK_VERSION_OVERRIDE_PY",
+  go: "PHASEO_SDK_VERSION_OVERRIDE_GO",
+  csharp: "PHASEO_SDK_VERSION_OVERRIDE_CSHARP",
+  java: "PHASEO_SDK_VERSION_OVERRIDE_JAVA",
+  php: "PHASEO_SDK_VERSION_OVERRIDE_PHP",
+  ruby: "PHASEO_SDK_VERSION_OVERRIDE_RUBY",
 };
 
 async function readJson<T>(filePath: string): Promise<T> {
@@ -83,7 +83,7 @@ async function main(): Promise<void> {
       packageJsonPath: file("packages", "sdk", "sdk-py", "package.json"),
       checks: [
         {
-          filePath: file("packages", "sdk", "sdk-py", "src", "ai_stats_devtools", "recorder.py"),
+          filePath: file("packages", "sdk", "sdk-py", "src", "phaseo_devtools", "recorder.py"),
           pattern: /^SDK_VERSION\s*=\s*"([^"]+)"/m,
           label: "SDK_VERSION constant",
         },
@@ -119,7 +119,7 @@ async function main(): Promise<void> {
       packageJsonPath: file("packages", "sdk", "sdk-java", "package.json"),
       checks: [
         {
-          filePath: file("packages", "sdk", "sdk-java", "src", "ai", "stats", "sdk", "AIStats.java"),
+          filePath: file("packages", "sdk", "sdk-java", "src", "app", "phaseo", "sdk", "Phaseo.java"),
           pattern: /new TelemetryRecorder\(devtoolsConfig,\s*"([^"]+)"\)/m,
           label: "TelemetryRecorder constructor version",
         },

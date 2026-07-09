@@ -24,10 +24,10 @@ async function handleInvalidateWorkspacePolicy(req: Request) {
 	const { workspaceId } = auth.value;
 
 	const bindings = getBindings();
-	const controlSecret = bindings.GATEWAY_CONTROL_SECRET?.trim();
+	const controlSecret = bindings.PHASEO_CONTROL_SECRET?.trim();
 	if (!controlSecret) {
 		return json(
-			{ ok: false, error: "control_secret_missing", message: "GATEWAY_CONTROL_SECRET is not configured" },
+			{ ok: false, error: "control_secret_missing", message: "PHASEO_CONTROL_SECRET is not configured" },
 			503,
 			{ "Cache-Control": "no-store" },
 		);

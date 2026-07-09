@@ -3,7 +3,7 @@
 -- =========================
 -- This migration adds support for OAuth 2.1 authorization server integration
 -- with Supabase's native OAuth capabilities. It enables third-party developers
--- to build integrations with "Sign in with AI Stats" and access the API gateway
+-- to build integrations with "Sign in with Phaseo" and access the API gateway
 -- on behalf of users.
 --
 -- Architecture:

@@ -812,6 +812,31 @@ function OutputModalityButtonRow({
 	selected: string[];
 	onToggle: (value: string) => void;
 }) {
+	const viewportRef = useRef<HTMLDivElement | null>(null);
+	const contentRef = useRef<HTMLDivElement | null>(null);
+	const [hasHorizontalOverflow, setHasHorizontalOverflow] = useState(false);
+
+	useEffect(() => {
+		const viewport = viewportRef.current;
+		if (!viewport) return;
+
+		const updateOverflow = () => {
+			setHasHorizontalOverflow(viewport.scrollWidth > viewport.clientWidth + 1);
+		};
+
+		updateOverflow();
+
+		const resizeObserver = new ResizeObserver(updateOverflow);
+		resizeObserver.observe(viewport);
+		if (contentRef.current) resizeObserver.observe(contentRef.current);
+		window.addEventListener("resize", updateOverflow);
+
+		return () => {
+			resizeObserver.disconnect();
+			window.removeEventListener("resize", updateOverflow);
+		};
+	}, [options]);
+
 	if (options.length === 0) return null;
 
 	const buttons = sortOutputModalityOptions(options).map((option) => {
@@ -868,9 +893,10 @@ function OutputModalityButtonRow({
 		<ScrollArea
 			className="w-full [&>[data-orientation=horizontal]]:opacity-100 [&>[data-orientation=horizontal]]:transition-none"
 			scrollBarOrientation="horizontal"
-			viewportClassName="pb-3"
+			viewportClassName={hasHorizontalOverflow ? "pb-2" : "pb-0"}
+			viewportRef={viewportRef}
 		>
-			<div className="flex min-w-max items-center gap-1.5 pr-4">
+			<div ref={contentRef} className="flex min-w-max items-center gap-1.5 pr-4">
 				{buttons}
 			</div>
 		</ScrollArea>
@@ -1943,7 +1969,7 @@ export default function ModelsDisplay({
 			</aside>
 
 			<section className="min-w-0 flex flex-1 flex-col">
-				<div className="shrink-0 border-b border-border/70 bg-background/95 px-4 py-2.5 backdrop-blur lg:px-8">
+				<div className="shrink-0 border-b border-border/70 bg-background/95 px-4 pb-1 pt-2.5 backdrop-blur lg:px-8">
 					<div className="md:hidden space-y-2">
 						<div className="flex items-center gap-2">
 							{showPrimaryHeader ? (
@@ -1978,33 +2004,30 @@ export default function ModelsDisplay({
 					<div className="hidden md:block">
 						<div className="hidden lg:block">
 							<div className="flex items-center justify-between gap-4">
-								<div className="min-w-0 shrink-0 flex h-8 items-center">
+								<div className="flex h-8 min-w-0 shrink-0 items-center">
 									{showPrimaryHeader ? (
 										<h1 className="font-bold text-xl leading-8">Models</h1>
 									) : null}
 								</div>
 
-								<div className="relative w-full max-w-[20rem]">
-									<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-									<Input
-										placeholder="Search"
-										value={search}
-										onChange={(e) =>
-											setSearch(e.target.value || null, {
-												limitUrlUpdates: debounce(250),
-											})
-										}
-										className="h-8 rounded-md border border-border bg-background pl-9 pr-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary w-full"
-										style={{ minWidth: 0 }}
-									/>
-								</div>
-							</div>
-
-							<div className="mt-2 flex items-center justify-between gap-4">
-								{sortSelect(
-									"h-8 w-[190px] rounded-md bg-background text-sm 2xl:w-[210px]",
-								)}
-								<div className="flex shrink-0 items-center justify-end gap-2">
+								<div className="flex min-w-0 flex-1 items-center justify-end gap-3">
+									<div className="relative min-w-[15rem] max-w-[22rem] flex-1 2xl:max-w-[28rem]">
+										<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+										<Input
+											placeholder="Search"
+											value={search}
+											onChange={(e) =>
+												setSearch(e.target.value || null, {
+													limitUrlUpdates: debounce(250),
+												})
+											}
+											className="h-8 rounded-md border border-border bg-background pl-9 pr-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary w-full"
+											style={{ minWidth: 0 }}
+										/>
+									</div>
+									{sortSelect(
+										"h-8 w-[12.5rem] rounded-md bg-background text-sm 2xl:w-[13.5rem]",
+									)}
 									{showPrimaryHeader ? viewSwitcher : null}
 								</div>
 							</div>
@@ -2040,7 +2063,7 @@ export default function ModelsDisplay({
 						</div>
 					</div>
 
-					<div className="mt-3">
+					<div className="mt-1.5">
 						<OutputModalityButtonRow
 							options={outputModalityOptions}
 							selected={selectedOutputModalities}
@@ -2053,7 +2076,7 @@ export default function ModelsDisplay({
 					</div>
 				</div>
 
-				<div className="w-full px-4 pt-2 pb-5 lg:px-8 lg:pt-2 lg:pb-6">
+				<div className="w-full px-4 pt-1 pb-5 lg:px-8 lg:pt-1 lg:pb-6">
 					{filteredModels.length > 0 ? (
 						<ModelsGrid
 							filteredModels={filteredModels}

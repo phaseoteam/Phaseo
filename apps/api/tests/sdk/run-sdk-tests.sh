@@ -9,7 +9,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo "ðŸ§ª AI Stats Gateway - SDK Compatibility Tests"
+echo "ðŸ§ª Phaseo Gateway - SDK Compatibility Tests"
 echo "=============================================="
 echo ""
 

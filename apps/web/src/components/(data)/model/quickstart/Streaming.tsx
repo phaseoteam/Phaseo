@@ -31,17 +31,17 @@ export default async function Streaming({
         const endpointUrl = `${BASE_URL}${endpointPath}`;
 
 	const curlStream = `# 1) Set your key
-export AI_STATS_API_KEY="aistats_***"
+export PHASEO_API_KEY="phaseo_v1_sk_..."
 
 # 2) Send a streaming request
 curl -s ${endpointUrl} \\
--H "Authorization: Bearer $AI_STATS_API_KEY" \\
+-H "Authorization: Bearer $PHASEO_API_KEY" \\
 -H "Content-Type: application/json" \\
 -d '{\n    "model": "${model}",\n    "stream": true,\n    "messages": [{ "role": "user", "content": "Write a haiku about rainy Tuesdays." }]\n}'`;
 
 	const nodeStream =
 		`// 1) Set your key
-const apiKey = process.env.AI_STATS_API_KEY;
+const apiKey = process.env.PHASEO_API_KEY;
 
 // 2) Send a streaming request
 const res = await fetch("${endpointUrl}", {
@@ -78,7 +78,7 @@ import os
 import requests
 
 # Get your API key
-API_KEY = os.environ.get("AI_STATS_API_KEY")
+API_KEY = os.environ.get("PHASEO_API_KEY")
 
 # Send a streaming request
 url = "${endpointUrl}"

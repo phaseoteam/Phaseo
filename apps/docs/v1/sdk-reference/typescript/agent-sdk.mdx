@@ -1,9 +1,9 @@
 ---
 title: "Usage"
-description: "Build your own agentic applications on top of AI Stats Gateway with the TypeScript Agent SDK."
+description: "Build your own agentic applications on top of Phaseo Gateway with the TypeScript Agent SDK."
 ---
 
-Use `@ai-stats/agent-sdk` when your application needs more than one-shot text generation:
+Use `@phaseo/agent-sdk` when your application needs more than one-shot text generation:
 
 - multi-step tool loops
 - local runtime tools
@@ -16,18 +16,18 @@ The package is an installable SDK, not a hosted agent platform. You bring the ap
 
 ## State model
 
-The Agent SDK does not persist runs into any AI Stats-hosted service.
+The Agent SDK does not persist runs into any Phaseo-hosted service.
 
 - `run()` returns the full state needed to continue later.
 - If your application wants resumability across requests or process restarts, persist that returned state in your own application store.
 - `continueRun()` accepts that prior run state directly.
 
-Nothing is persisted by AI Stats outside your application.
+Nothing is persisted by Phaseo outside your application.
 
 ## Install
 
 ```bash
-pnpm add @ai-stats/sdk @ai-stats/agent-sdk
+pnpm add @phaseo/sdk @phaseo/agent-sdk
 ```
 
 ## What the SDK ships
@@ -44,7 +44,7 @@ import {
   createAgent,
   createGatewayAgentClient,
   defineTool,
-} from "@ai-stats/agent-sdk";
+} from "@phaseo/agent-sdk";
 
 const lookupDocs = defineTool({
   id: "lookup-docs",
@@ -60,14 +60,14 @@ const lookupDocs = defineTool({
   async execute(input: { slug: string }) {
     return {
       slug: input.slug,
-      url: `https://docs.ai-stats.phaseo.app/v1/${input.slug}`,
+      url: `https://phaseo.app/docs/v1/${input.slug}`,
     };
   },
 });
 
 const agent = createAgent({
   id: "support-docs-agent",
-  model: "ai-stats/free",
+  model: "phaseo/free",
   instructions: "Use tools when helpful and finish with a concise answer.",
   tools: [lookupDocs],
 });
@@ -76,7 +76,7 @@ const result = await agent.run({
   input: "Find the docs page for presets and explain when to use them.",
   client: createGatewayAgentClient({
     clientOptions: {
-      apiKey: process.env.AI_STATS_API_KEY!,
+      apiKey: process.env.PHASEO_API_KEY!,
     },
   }),
 });
@@ -148,7 +148,7 @@ If a timeout fires, the runtime aborts `context.signal`, marks the run as `faile
 
 ### `createGatewayAgentClient()`
 
-Use the gateway-backed adapter when model turns should execute through AI Stats Gateway.
+Use the gateway-backed adapter when model turns should execute through Phaseo Gateway.
 
 It can carry gateway-native controls such as:
 
@@ -220,7 +220,7 @@ For stricter model behavior, combine that with structured outputs on the gateway
 ```typescript
 const client = createGatewayAgentClient({
   clientOptions: {
-    apiKey: process.env.AI_STATS_API_KEY!,
+    apiKey: process.env.PHASEO_API_KEY!,
   },
   responseFormat: {
     type: "json_schema",
@@ -315,7 +315,7 @@ If one step succeeds, the runtime emits `step.completed` after the checkpointed 
 Gateway failures are rethrown as `AgentGatewayError`:
 
 ```typescript
-import { AgentGatewayError } from "@ai-stats/agent-sdk";
+import { AgentGatewayError } from "@phaseo/agent-sdk";
 
 try {
   await agent.run({ input, client, store });

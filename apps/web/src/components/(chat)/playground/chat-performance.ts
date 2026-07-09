@@ -57,7 +57,7 @@ type ChatPerformanceStore = {
 
 declare global {
 	interface Window {
-		__AI_STATS_CHAT_PERF__?: ChatPerformanceStore;
+		__PHASEO_CHAT_PERF__?: ChatPerformanceStore;
 	}
 }
 
@@ -130,7 +130,7 @@ function updateMeasures(run: ChatPerformanceRun) {
 
 function markPerformanceEntry(runId: string, name: ChatPerformanceMarkName) {
 	try {
-		performance.mark(`ai-stats.chat.${runId}.${name}`);
+		performance.mark(`phaseo.chat.${runId}.${name}`);
 	} catch {
 		// User Timing marks are best-effort diagnostics.
 	}
@@ -205,8 +205,8 @@ function createStore(): ChatPerformanceStore {
 
 export function getChatPerformanceStore() {
 	if (!canMeasure()) return null;
-	window.__AI_STATS_CHAT_PERF__ ??= createStore();
-	return window.__AI_STATS_CHAT_PERF__;
+	window.__PHASEO_CHAT_PERF__ ??= createStore();
+	return window.__PHASEO_CHAT_PERF__;
 }
 
 export function startChatSendPerformanceRun(input: {

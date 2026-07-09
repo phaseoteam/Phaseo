@@ -71,16 +71,16 @@ const PROMPT_OPTIONS: PromptOption[] = [
 	{
 		id: "summary",
 		label: "One sentence summary",
-		message: "Explain what AI Stats does in one sentence.",
+		message: "Explain what Phaseo does in one sentence.",
 		response:
-			"AI Stats helps developers discover, compare, and call AI models through one gateway with consistent pricing, routing, and observability.",
+			"Phaseo helps developers discover, compare, and call AI models through one gateway with consistent pricing, routing, and observability.",
 	},
 	{
 		id: "welcome",
 		label: "Welcome message",
 		message: "Write a friendly welcome message for a developer.",
 		response:
-			"Welcome to AI Stats. Create a key, choose a model, and send your first request whenever you are ready.",
+			"Welcome to Phaseo. Create a key, choose a model, and send your first request whenever you are ready.",
 	},
 	{
 		id: "compare",
@@ -94,7 +94,7 @@ const PROMPT_OPTIONS: PromptOption[] = [
 		label: "JSON draft",
 		message: "Draft a JSON object with a project name and next action.",
 		response:
-			'{\n  "project": "AI Stats onboarding",\n  "next_action": "Send a test chat completion request"\n}',
+			'{\n  "project": "Phaseo onboarding",\n  "next_action": "Send a test chat completion request"\n}',
 	},
 ];
 
@@ -106,8 +106,8 @@ function buildModelsCode(): RestCodeExample {
 	return {
 		method: "GET",
 		endpoint: "/v1/models",
-		code: `curl "https://api.phaseo.app/v1/models?endpoints=chat/completions" \\
-  -H "Authorization: Bearer $AI_STATS_API_KEY"`,
+		code: `curl "https://api.phaseo.ai/v1/models?endpoints=chat/completions" \\
+  -H "Authorization: Bearer $PHASEO_API_KEY"`,
 	};
 }
 
@@ -123,8 +123,8 @@ function buildKeyCode(keyName: string): RestCodeExample {
 	return {
 		method: "POST",
 		endpoint: "/v1/keys",
-		code: `curl https://api.phaseo.app/v1/keys \\
-  -H "Authorization: Bearer $AI_STATS_MANAGEMENT_KEY" \\
+		code: `curl https://api.phaseo.ai/v1/keys \\
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \\
   -H "Content-Type: application/json" \\
   -d '${payload}'`,
 	};
@@ -140,7 +140,7 @@ function buildRequestCode(
 		messages: [
 			{
 				role: "user",
-				content: message || "Hello from AI Stats",
+				content: message || "Hello from Phaseo",
 			},
 		],
 	});
@@ -148,8 +148,8 @@ function buildRequestCode(
 	return {
 		method: "POST",
 		endpoint: "/v1/chat/completions",
-		code: `curl https://api.phaseo.app/v1/chat/completions \\
-  -H "Authorization: Bearer ${keyPreview || "$AI_STATS_API_KEY"}" \\
+		code: `curl https://api.phaseo.ai/v1/chat/completions \\
+  -H "Authorization: Bearer ${keyPreview || "$PHASEO_API_KEY"}" \\
   -H "Content-Type: application/json" \\
   -d '${payload}'`,
 	};
@@ -398,8 +398,8 @@ export default function InteractiveOnboarding({
 		PROMPT_OPTIONS[0];
 	const keyPreview =
 		createdPlaintextKey ||
-		(createdKeyPrefix ? `aistats_v1_sk_...${createdKeyPrefix}` : "") ||
-		"$AI_STATS_API_KEY";
+		(createdKeyPrefix ? `phaseo_v1_sk_...${createdKeyPrefix}` : "") ||
+		"$PHASEO_API_KEY";
 	const simulatedResponseObject = buildSimulatedChatCompletionResponse({
 		modelId: selectedModel?.id ?? selectedModelId,
 		prompt: selectedPrompt?.message ?? "",
@@ -416,7 +416,7 @@ export default function InteractiveOnboarding({
 				: buildRequestCode(
 						selectedModel?.id ?? selectedModelId,
 						keyPreview,
-						selectedPrompt?.message ?? "Hello from AI Stats",
+						selectedPrompt?.message ?? "Hello from Phaseo",
 					);
 
 	const clearStreamTimeouts = React.useCallback(() => {
@@ -653,7 +653,7 @@ export default function InteractiveOnboarding({
 				<div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 					<div>
 						<h1 className="text-2xl font-semibold tracking-normal">
-							Get started with AI Stats
+							Get started with Phaseo
 						</h1>
 						<p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
 							Choose a model, preview the API flow, and create a key when you

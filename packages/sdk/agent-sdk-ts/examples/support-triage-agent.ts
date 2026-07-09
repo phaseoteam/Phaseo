@@ -2,7 +2,7 @@ import {
 	AgentGatewayError,
 	createAgent,
 	createGatewayAgentClient,
-} from "@ai-stats/agent-sdk";
+} from "@phaseo/agent-sdk";
 
 type SupportTriageDecision = {
 	queue: "billing" | "reliability" | "product" | "security";
@@ -30,7 +30,7 @@ async function main() {
 	try {
 		const client = createGatewayAgentClient({
 			clientOptions: {
-				apiKey: process.env.AI_STATS_API_KEY!,
+				apiKey: process.env.PHASEO_API_KEY!,
 			},
 			responseFormat: {
 				type: "json_schema",

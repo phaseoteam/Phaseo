@@ -19,7 +19,7 @@ export function asyncVideoJobPersistenceFailureResult(args: {
 			JSON.stringify({
 				error: {
 					type: "async_job_persistence_failed",
-					message: `${args.providerLabel} video job was created upstream, but AI Stats could not persist gateway ownership metadata.`,
+					message: `${args.providerLabel} video job was created upstream, but Phaseo could not persist gateway ownership metadata.`,
 					native_video_id: args.nativeVideoId,
 					reservation_id: args.reservationId,
 					reservation_status: args.reservationStatus,

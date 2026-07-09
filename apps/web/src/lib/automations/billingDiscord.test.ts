@@ -43,7 +43,7 @@ describe("billing Discord webhook helpers", () => {
 			}),
 		).toEqual({
 			content: [
-				"AI Stats checkout started",
+				"Phaseo checkout started",
 				"- event: `checkout_started`",
 				"- workspace_id: `workspace_123`",
 				"- user_id: `user_123`",
@@ -74,7 +74,7 @@ describe("billing Discord webhook helpers", () => {
 			}),
 		).toEqual({
 			content: [
-				"AI Stats credits purchased",
+				"Phaseo credits purchased",
 				"- event: `credits_purchased`",
 				"- workspace_id: `workspace_123`",
 				"- payment_intent_id: `pi_123`",
@@ -128,7 +128,7 @@ describe("billing Discord webhook helpers", () => {
 				},
 				body: JSON.stringify({
 					content: [
-						"AI Stats checkout started",
+						"Phaseo checkout started",
 						"- event: `checkout_started`",
 						"- workspace_id: `workspace_123`",
 						"- user_id: `user_123`",

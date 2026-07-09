@@ -12,6 +12,8 @@ import type { Env } from "@/runtime/types";
 export const councilRoutes = new Hono<Env>();
 
 const EXPERIMENTAL_HEADERS = {
+	"x-phaseo-experimental": "true",
+	"x-phaseo-experimental-feature": "council",
 	"x-aistats-experimental": "true",
 	"x-aistats-experimental-feature": "council",
 } as const;
@@ -279,11 +281,9 @@ async function handleCouncilRunEvents(req: Request) {
 // Council endpoints are experimental and always return explicit feature headers.
 councilRoutes.use("*", async (c, next) => {
 	await next();
-	c.res.headers.set("x-aistats-experimental", EXPERIMENTAL_HEADERS["x-aistats-experimental"]);
-	c.res.headers.set(
-		"x-aistats-experimental-feature",
-		EXPERIMENTAL_HEADERS["x-aistats-experimental-feature"],
-	);
+	for (const [header, value] of Object.entries(EXPERIMENTAL_HEADERS)) {
+		c.res.headers.set(header, value);
+	}
 });
 
 councilRoutes.post("/runs", withRuntime(handleCreateCouncilRun));

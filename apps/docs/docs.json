@@ -1,8 +1,8 @@
 {
 	"$schema": "https://mintlify.com/docs.json",
 	"theme": "mint",
-	"name": "AI Stats Docs",
-	"description": "Documentation for AI Stats Gateway, SDKs, routing, pricing, guardrails, async jobs, and model discovery across providers.",
+	"name": "Phaseo Docs",
+	"description": "Documentation for Phaseo Gateway, SDKs, routing, pricing, guardrails, async jobs, and model discovery across providers.",
 	"colors": {
 		"primary": "#2563eb",
 		"light": "#93c5fd",
@@ -128,7 +128,7 @@
 								"pages": [
 									"v1/guides/integrations/index",
 									"v1/guides/integrations/docs-mcp",
-									"v1/guides/integrations/aistats-cli",
+									"v1/guides/integrations/phaseo-cli",
 									"v1/guides/integrations/openai-sdk",
 									"v1/guides/integrations/anthropic-sdk",
 									"v1/guides/integrations/ai-sdk",
@@ -1197,7 +1197,7 @@
 			"anchors": [
 				{
 					"anchor": "GitHub",
-					"href": "https://github.com/AI-Stats/AI-Stats",
+					"href": "https://github.com/phaseoteam/Phaseo",
 					"icon": "github"
 				},
 				{
@@ -1211,27 +1211,28 @@
 	"logo": {
 		"light": "/logo/light.svg",
 		"dark": "/logo/dark.svg",
-		"href": "https://ai-stats.phaseo.app"
+		"href": "https://phaseo.app"
 	},
 	"navbar": {
 		"links": [
 			{
-				"label": "Quickstart",
-				"href": "https://ai-stats.phaseo.app/v1/quickstart"
-			},
-			{
-				"label": "API Reference",
-				"href": "https://ai-stats.phaseo.app/v1/api-reference/introduction"
+				"label": "Migration Guide",
+				"href": "https://phaseo.app/migrate"
 			},
 			{
 				"label": "Support",
-				"href": "https://github.com/AI-Stats/AI-Stats/issues"
+				"href": "https://phaseo.app/help"
 			}
 		],
 		"primary": {
 			"type": "button",
 			"label": "Get API Key",
-			"href": "https://ai-stats.phaseo.app/gateway/keys"
+			"href": "https://phaseo.app/gateway/keys"
+		}
+	},
+	"seo": {
+		"metatags": {
+			"canonical": "https://phaseo.app/docs"
 		}
 	},
 	"metadata": {
@@ -1269,8 +1270,8 @@
 	},
 	"footer": {
 		"socials": {
-			"x": "https://x.com/phaseoapp",
-			"github": "https://github.com/ai-stats",
+			"x": "https://x.com/phaseoteam",
+			"github": "https://github.com/phaseoteam/Phaseo",
 			"discord": "https://discord.gg/aQyywCvgZ5"
 		}
 	}

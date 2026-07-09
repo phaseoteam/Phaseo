@@ -1,17 +1,17 @@
 ---
 title: "Generate Text (AI SDK)"
-description: "Non-streaming text generation with Vercel AI SDK and AI Stats."
+description: "Non-streaming text generation with Vercel AI SDK and Phaseo."
 ---
 
-Use `generateText` with `aiStats(modelId)` for one-shot completions.
+Use `generateText` with `phaseo(modelId)` for one-shot completions.
 
 ```ts
-import { aiStats } from "@ai-stats/ai-sdk-provider";
+import { phaseo } from "@phaseo/ai-sdk-provider";
 import { generateText } from "ai";
 
 const result = await generateText({
-  model: aiStats("openai/gpt-5-nano"),
-  prompt: "Write a concise summary of AI Stats Gateway.",
+  model: phaseo("openai/gpt-5-nano"),
+  prompt: "Write a concise summary of Phaseo Gateway.",
 });
 
 console.log(result.text);
@@ -21,11 +21,11 @@ console.log(result.providerMetadata);
 ## With chat history
 
 ```ts
-import { aiStats } from "@ai-stats/ai-sdk-provider";
+import { phaseo } from "@phaseo/ai-sdk-provider";
 import { generateText } from "ai";
 
 const result = await generateText({
-  model: aiStats("openai/gpt-5-nano"),
+  model: phaseo("openai/gpt-5-nano"),
   messages: [
     { role: "system", content: "You are a terse assistant." },
     { role: "user", content: "Give me three bullet points on retrieval augmentation." },
@@ -39,11 +39,11 @@ console.log(result.providerMetadata);
 ## Per-model settings
 
 ```ts
-import { aiStats } from "@ai-stats/ai-sdk-provider";
+import { phaseo } from "@phaseo/ai-sdk-provider";
 import { generateText } from "ai";
 
 const result = await generateText({
-  model: aiStats("openai/gpt-5-nano", {
+  model: phaseo("openai/gpt-5-nano", {
     temperature: 0.2,
     topP: 0.9,
     maxTokens: 300,

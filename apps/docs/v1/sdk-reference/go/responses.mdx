@@ -11,10 +11,10 @@ Use the wrapper method:
 import (
   "context"
   "fmt"
-  aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
 )
 
-client := aistats.New(apiKey, "https://api.phaseo.app/v1")
+client := phaseo.New(apiKey, "https://api.phaseo.ai/v1")
 input := map[string]interface{}{
   "role": "user",
   "content": []map[string]interface{}{
@@ -24,7 +24,7 @@ input := map[string]interface{}{
     },
   },
 }
-resp, err := client.GenerateResponse(context.Background(), aistats.ResponsesRequest{
+resp, err := client.GenerateResponse(context.Background(), phaseo.ResponsesRequest{
   Model: "openai/gpt-5-nano",
   Input: &input,
 })

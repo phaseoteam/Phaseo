@@ -1,6 +1,6 @@
 ---
 title: "Java SDK (preview)"
-description: "Experimental Java client for the AI Stats Gateway."
+description: "Experimental Java client for the Phaseo Gateway."
 ---
 
 <Note type="warning">
@@ -9,15 +9,15 @@ description: "Experimental Java client for the AI Stats Gateway."
 
 The Java SDK now includes a lightweight handwritten wrapper on top of the generated client:
 
-- `ai.stats.sdk.AIStats` exposes high-level helpers for chat, responses, Anthropic messages, images, embeddings, moderations, speech/transcription/translation, batches, files, video, models/providers/endpoints/organisations/pricing, API-key discovery and lifecycle mutations, workspace/current-key lifecycle helpers, pricing calculation, activity/credits/analytics, generation lookup, lifecycle validation, async-job websocket URLs through both direct helpers and `client.asyncJobs.websocketUrl(...)`, and devtools-aware telemetry.
-- `ai.stats.gen.Client` and `ai.stats.gen.Operations` remain available underneath for full low-level operation coverage where needed.
+- `app.phaseo.sdk.Phaseo` exposes high-level helpers for chat, responses, Anthropic messages, images, embeddings, moderations, speech/transcription/translation, batches, files, video, models/providers/endpoints/organisations/pricing, API-key discovery and lifecycle mutations, workspace/current-key lifecycle helpers, pricing calculation, activity/credits/analytics, generation lookup, lifecycle validation, async-job websocket URLs through both direct helpers and `client.asyncJobs.websocketUrl(...)`, and devtools-aware telemetry.
+- `app.phaseo.gen.Client` and `app.phaseo.gen.Operations` remain available underneath for full low-level operation coverage where needed.
 
 ## Current status
 
 - Preview only (not yet published to Maven Central).
 - Source lives in `packages/sdk/sdk-java`.
 - Generated low-level code lives in `packages/sdk/sdk-java/src/gen`.
-- Handwritten wrapper code lives in `packages/sdk/sdk-java/src/ai/stats/sdk`.
+- Handwritten wrapper code lives in `packages/sdk/sdk-java/src/app/phaseo/sdk`.
 
 ## Next steps
 

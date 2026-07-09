@@ -94,7 +94,7 @@ describe("handleModels", () => {
         });
         fetchCatalogueMock.mockResolvedValue([buildCatalogueModel()]);
         fetchGatewayContextMock.mockResolvedValue({
-            resolvedModel: "ai-stats/free",
+            resolvedModel: "phaseo/free",
             providers: [],
             pricing: {},
         });
@@ -433,7 +433,7 @@ describe("handleModels", () => {
             }),
         ]);
         fetchGatewayContextMock.mockResolvedValue({
-            resolvedModel: "ai-stats/free",
+            resolvedModel: "phaseo/free",
             providers: [
                 {
                     providerId: "openai",
@@ -471,8 +471,8 @@ describe("handleModels", () => {
             total: 2,
             models: [
                 {
-                    model_id: "ai-stats/free",
-                    name: "AI Stats Free Router",
+                    model_id: "phaseo/free",
+                    name: "Phaseo Free Router",
                     providers: [
                         {
                             api_provider_id: "openai",
@@ -514,7 +514,7 @@ describe("handleModels", () => {
 
     it("skips the free router model when endpoint filters exclude text surfaces", async () => {
         fetchGatewayContextMock.mockResolvedValue({
-            resolvedModel: "ai-stats/free",
+            resolvedModel: "phaseo/free",
             providers: [
                 {
                     providerId: "openai",

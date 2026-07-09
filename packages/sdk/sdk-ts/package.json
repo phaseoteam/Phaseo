@@ -1,6 +1,6 @@
 {
-	"name": "@ai-stats/sdk",
-	"description": "AI Stats Gateway SDK for TypeScript/JavaScript",
+	"name": "@phaseo/sdk",
+	"description": "Phaseo Gateway SDK for TypeScript/JavaScript",
 	"version": "2.0.5",
 	"type": "module",
 	"private": false,
@@ -63,7 +63,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/AI-Stats/AI-Stats.git"
+		"url": "git+https://github.com/phaseoteam/Phaseo.git"
 	},
 	"publishConfig": {
 		"access": "public"

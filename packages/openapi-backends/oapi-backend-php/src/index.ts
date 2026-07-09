@@ -6,7 +6,7 @@ import type {
 	IRModel,
 	IROperation,
 	IRSchema
-} from "@ai-stats/oapi-core";
+} from "@phaseo/oapi-core";
 
 export const backendPhp: Backend = {
 	id: "php",
@@ -26,7 +26,7 @@ function renderClient(): string {
 		"<?php",
 		"declare(strict_types=1);",
 		"",
-		"namespace AIStats\\Gen;",
+		"namespace Phaseo\\Gen;",
 		"",
 		"class RequestException extends \\RuntimeException",
 		"{",
@@ -106,7 +106,7 @@ function renderClient(): string {
 		"\t\tcurl_close($ch);",
 		"\t\tif ($response === false) {",
 		"\t\t\t$hint = $errno === 60",
-		"\t\t\t\t? \" TLS verification failed. Configure curl.cainfo/openssl.cafile or set AI_STATS_CA_BUNDLE to a valid CA bundle path.\"",
+		"\t\t\t\t? \" TLS verification failed. Configure curl.cainfo/openssl.cafile or set PHASEO_CA_BUNDLE to a valid CA bundle path.\"",
 		"\t\t\t\t: \"\";",
 		"\t\t\tthrow new \\RuntimeException(\"Request transport failed (cURL errno {$errno}): {$error}.{$hint}\");",
 		"\t\t}",
@@ -138,7 +138,7 @@ function renderClient(): string {
 		"\t\t}",
 		"",
 		"\t\t$candidates = [];",
-		"\t\t$envCandidate = getenv(\"AI_STATS_CA_BUNDLE\");",
+		"\t\t$envCandidate = getenv(\"PHASEO_CA_BUNDLE\");",
 		"\t\tif (is_string($envCandidate) && trim($envCandidate) !== \"\") {",
 		"\t\t\t$candidates[] = $envCandidate;",
 		"\t\t}",
@@ -183,7 +183,7 @@ function renderModels(models: IRModel[]): string {
 		"<?php",
 		"declare(strict_types=1);",
 		"",
-		"namespace AIStats\\Gen;",
+		"namespace Phaseo\\Gen;",
 		""
 	];
 	for (const model of models) {
@@ -215,7 +215,7 @@ function renderOperations(operations: IROperation[]): string {
 		"<?php",
 		"declare(strict_types=1);",
 		"",
-		"namespace AIStats\\Gen;",
+		"namespace Phaseo\\Gen;",
 		""
 	];
 	for (const operation of operations) {

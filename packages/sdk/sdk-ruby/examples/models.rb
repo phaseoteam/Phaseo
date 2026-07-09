@@ -1,9 +1,9 @@
 require_relative '../lib/index'
 
-api_key = ENV['AI_STATS_API_KEY']
-raise 'Set AI_STATS_API_KEY' unless api_key
+api_key = ENV['PHASEO_API_KEY']
+raise 'Set PHASEO_API_KEY' unless api_key
 
-client = AIStatsSdk::AIStats.new(api_key: api_key)
+client = PhaseoSdk::Phaseo.new(api_key: api_key)
 resp = client.list_models(
   provider: "anthropic",
   provider_status: "beta,not_ready",

@@ -3,7 +3,7 @@ require_relative "../lib/index"
 
 class BatchesTest < Minitest::Test
   def test_create_batch_returns_payload
-    client = AIStatsSdk::AIStats.new(
+    client = PhaseoSdk::Phaseo.new(
       api_key: "test",
       enable_deprecation_warnings: false
     )
@@ -43,7 +43,7 @@ class BatchesTest < Minitest::Test
   end
 
   def test_retrieve_batch_returns_payload
-    client = AIStatsSdk::AIStats.new(
+    client = PhaseoSdk::Phaseo.new(
       api_key: "test",
       enable_deprecation_warnings: false
     )
@@ -75,7 +75,7 @@ class BatchesTest < Minitest::Test
   end
 
   def test_cancel_batch_returns_payload
-    client = AIStatsSdk::AIStats.new(
+    client = PhaseoSdk::Phaseo.new(
       api_key: "test",
       enable_deprecation_warnings: false
     )
@@ -91,31 +91,31 @@ class BatchesTest < Minitest::Test
     assert_equal "batch_123", response["id"]
     assert_equal "cancelling", response["status"]
     assert_equal(
-      "wss://api.phaseo.app/v1/async/batch/batch_123/ws?interval_ms=1500&close_on_terminal=false",
+      "wss://api.phaseo.ai/v1/async/batch/batch_123/ws?interval_ms=1500&close_on_terminal=false",
       client.batch_websocket_url("batch_123", interval_ms: 1500, close_on_terminal: false)
     )
     assert_equal(
-      "wss://api.phaseo.app/v1/async/video/video%20123/ws?interval_ms=1500&close_on_terminal=false",
+      "wss://api.phaseo.ai/v1/async/video/video%20123/ws?interval_ms=1500&close_on_terminal=false",
       client.get_async_job_websocket_url("video", "video 123", interval_ms: 1500, close_on_terminal: false)
     )
     assert_equal [["POST", "/batches/batch_123/cancel", nil, nil, nil]], calls
   end
 
   def test_cancel_batch_surfaces_request_errors
-    client = AIStatsSdk::AIStats.new(
+    client = PhaseoSdk::Phaseo.new(
       api_key: "test",
       enable_deprecation_warnings: false
     )
 
     client.raw_client.define_singleton_method(:request) do |**_args|
-      raise AiStats::Gen::RequestError.new(
+      raise Phaseo::Gen::RequestError.new(
         status_code: 404,
         status_message: "Not Found",
         response_body: "{\"error\":\"not found\"}"
       )
     end
 
-    error = assert_raises(AiStats::Gen::RequestError) do
+    error = assert_raises(Phaseo::Gen::RequestError) do
       client.cancel_batch("batch_missing_123")
     end
 

@@ -2,7 +2,7 @@ from typing import Any
 
 import pytest
 
-from ai_stats import AIStats
+from phaseo import Phaseo
 from gen import models
 from gen import operations as ops
 
@@ -33,7 +33,7 @@ def test_chat_completions_returns_payload(monkeypatch):
 
     monkeypatch.setattr(ops, "createChatCompletion", fake_create_chat_completion)
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     response = client.chat.completions.create(
         {"model": payload["model"], "messages": [{"role": "user", "content": "hi"}]}
     )
@@ -49,7 +49,7 @@ def test_chat_completions_returns_payload(monkeypatch):
 
 
 def test_stream_chat_parses_text_and_usage(monkeypatch):
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
 
     def fake_stream_text(request):
         assert request["model"] == "openai/gpt-5-nano"
@@ -76,7 +76,7 @@ def test_stream_chat_parses_text_and_usage(monkeypatch):
 
 
 def test_stream_responses_parses_text_and_usage(monkeypatch):
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
 
     def fake_stream_response(request):
         assert request["model"] == "openai/gpt-5-nano"
@@ -98,7 +98,7 @@ def test_stream_responses_parses_text_and_usage(monkeypatch):
 
 
 def test_stream_message_parses_text_and_usage(monkeypatch):
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
 
     def fake_stream_messages(request):
         assert request["model"] == "anthropic/claude-sonnet-4.5"
@@ -130,7 +130,7 @@ def test_chat_completions_propagates_errors(monkeypatch):
 
     monkeypatch.setattr(ops, "createChatCompletion", fake_create_chat_completion)
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     with pytest.raises(Boom):
         client.chat.completions.create(
             {"model": "openai/gpt-5-nano", "messages": [{"role": "user", "content": "hi"}]}
@@ -159,7 +159,7 @@ def test_non_active_status_blocks_request_dispatch(monkeypatch):
         }
 
     monkeypatch.setattr(ops, "createResponse", fake_create_response)
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     monkeypatch.setattr(client, "request", fake_request)
 
     with pytest.raises(ValueError, match="not active for inference"):
@@ -187,7 +187,7 @@ def test_warnings_as_errors_blocks_request_for_retired_models(monkeypatch):
         }
 
     monkeypatch.setattr(ops, "createResponse", fake_create_response)
-    client = AIStats(
+    client = Phaseo(
         api_key="sk_test_123",
         base_url="https://example.test",
         warnings_as_errors=True,
@@ -220,7 +220,7 @@ def test_can_disable_deprecation_warnings(monkeypatch):
         }
 
     monkeypatch.setattr(ops, "createResponse", fake_create_response)
-    client = AIStats(
+    client = Phaseo(
         api_key="sk_test_123",
         base_url="https://example.test",
         enable_deprecation_warnings=False,
@@ -242,7 +242,7 @@ def test_cancel_batch_uses_generated_operation(monkeypatch):
 
     monkeypatch.setattr(ops, "cancelBatch", fake_cancel_batch)
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     response = client.cancel_batch("batch_123")
 
     assert response["id"] == "batch_123"
@@ -251,7 +251,7 @@ def test_cancel_batch_uses_generated_operation(monkeypatch):
 
 
 def test_batches_resource_cancel_uses_parent_helper(monkeypatch):
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     monkeypatch.setattr(client, "cancel_batch", lambda batch_id: {"id": batch_id, "status": "cancelling"})
 
     assert client.batches.cancel("batch_456") == {"id": "batch_456", "status": "cancelling"}
@@ -281,7 +281,7 @@ def test_list_batches_uses_owned_batch_collection(monkeypatch):
             "has_more": False,
         }
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     monkeypatch.setattr(client, "request", fake_request)
 
     response = client.list_batches({"status": "in_progress", "limit": 2})
@@ -314,7 +314,7 @@ def test_async_generated_model_annotations_preserve_response_shapes():
 
 
 def test_batches_resource_list_uses_parent_helper(monkeypatch):
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     monkeypatch.setattr(client, "list_batches", lambda params=None: {"object": "list", "data": [], "params": params})
 
     assert client.batches.list({"status": "completed"}) == {
@@ -350,7 +350,7 @@ def test_list_batch_models_uses_batch_model_capability_endpoint(monkeypatch):
             ],
         }
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     monkeypatch.setattr(client, "request", fake_request)
 
     response = client.list_batch_models()
@@ -379,7 +379,7 @@ def test_generated_batch_model_operations_use_model_capability_paths():
 
 
 def test_batches_resource_list_models_uses_parent_helper(monkeypatch):
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     monkeypatch.setattr(client, "list_batch_models", lambda: {"object": "list", "data": [{"model": "openai/gpt-5-mini"}]})
 
     assert client.batches.list_models() == {
@@ -429,7 +429,7 @@ def test_batch_helpers_preserve_gateway_metadata(monkeypatch):
     monkeypatch.setattr(ops, "createBatch", fake_create_batch)
     monkeypatch.setattr(ops, "retrieveBatch", fake_retrieve_batch)
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     created = client.create_batch({
         "input_file_id": "file_123",
         "endpoint": "/v1/responses",
@@ -489,7 +489,7 @@ def test_get_video_download_url_sends_request_body(monkeypatch):
             "expires_at": 1_800_000_000,
         }
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     monkeypatch.setattr(client, "request", fake_request)
 
     response = client.get_video_download_url(
@@ -556,7 +556,7 @@ def test_video_helpers_preserve_gateway_metadata(monkeypatch):
     monkeypatch.setattr(ops, "createVideo", fake_create_video)
     monkeypatch.setattr(ops, "getVideo", fake_get_video)
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test", enable_deprecation_warnings=False)
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test", enable_deprecation_warnings=False)
     monkeypatch.setattr(
         client,
         "request",
@@ -637,7 +637,7 @@ def test_list_videos_uses_generated_operation(monkeypatch):
 
     monkeypatch.setattr(ops, "listVideos", fake_list_videos)
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     response = client.list_videos({"status": "queued,completed", "limit": 2})
 
     assert response["object"] == "list"
@@ -648,7 +648,7 @@ def test_list_videos_uses_generated_operation(monkeypatch):
 
 
 def test_videos_resource_list_uses_parent_helper(monkeypatch):
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     monkeypatch.setattr(
         client,
         "list_videos",
@@ -688,7 +688,7 @@ def test_list_video_models_uses_video_model_capability_endpoint(monkeypatch):
             ],
         }
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     monkeypatch.setattr(client, "request", fake_request)
 
     response = client.list_video_models()
@@ -707,7 +707,7 @@ def test_generated_video_model_operations_include_alias(monkeypatch):
         captured.append((method, path))
         return {"object": "list", "data": [{"model": "openai/sora"}]}
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     monkeypatch.setattr(client, "request", fake_request)
 
     assert ops.listVideoModels(client)["object"] == "list"
@@ -719,7 +719,7 @@ def test_generated_video_model_operations_include_alias(monkeypatch):
 
 
 def test_videos_resource_list_models_uses_parent_helper(monkeypatch):
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     monkeypatch.setattr(client, "list_video_models", lambda: {"object": "list", "data": [{"model": "openai/sora"}]})
 
     assert client.videos.list_models() == {
@@ -742,9 +742,9 @@ def test_get_file_content_downloads_bytes(monkeypatch):
         captured.append((url, headers or {}, timeout))
         return FakeResponse(b'{"ok":true}\n')
 
-    monkeypatch.setattr("ai_stats.httpx.get", fake_get)
+    monkeypatch.setattr("phaseo.httpx.get", fake_get)
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test", timeout=12.5)
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test", timeout=12.5)
     content = client.get_file_content("file_123")
 
     assert content == b'{"ok":true}\n'
@@ -753,7 +753,7 @@ def test_get_file_content_downloads_bytes(monkeypatch):
             "https://example.test/files/file_123/content",
             {
                 "Authorization": "Bearer sk_test_123",
-                "User-Agent": "ai-stats-python",
+                "User-Agent": "phaseo-python",
             },
             12.5,
         )
@@ -761,7 +761,7 @@ def test_get_file_content_downloads_bytes(monkeypatch):
 
 
 def test_files_resource_content_uses_parent_helper(monkeypatch):
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     monkeypatch.setattr(client, "get_file_content", lambda file_id: f"content:{file_id}".encode("utf-8"))
 
     assert client.files.content("file_456") == b"content:file_456"
@@ -786,7 +786,7 @@ def test_get_generation_uses_generated_operation(monkeypatch):
 
     monkeypatch.setattr(ops, "getGeneration", fake_get_generation)
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     response = client.get_generation("gen_123")
 
     assert response["id"] == "gen_123"
@@ -810,7 +810,7 @@ def test_list_endpoints_uses_generated_operation(monkeypatch):
 
     monkeypatch.setattr(ops, "listEndpoints", fake_list_endpoints)
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     response = client.list_endpoints()
 
     assert captured == ["listEndpoints"]
@@ -840,7 +840,7 @@ def test_list_organisations_uses_generated_operation(monkeypatch):
 
     monkeypatch.setattr(ops, "listOrganisations", fake_list_organisations)
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     response = client.list_organisations({"limit": "2", "offset": "3"})
 
     assert captured == [{"query": {"limit": "2", "offset": "3"}}]
@@ -866,7 +866,7 @@ def test_list_team_models_uses_generated_operation(monkeypatch):
 
     monkeypatch.setattr(ops, "listTeamModels", fake_list_team_models)
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     response = client.list_team_models({"limit": "2", "endpoints": "responses"})
 
     assert captured == [{"query": {"limit": "2", "endpoints": "responses"}}]
@@ -902,7 +902,7 @@ def test_list_pricing_models_uses_generated_operation(monkeypatch):
 
     monkeypatch.setattr(ops, "listPricingModels", fake_list_pricing_models)
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     response = client.list_pricing_models({"provider": "openai"})
 
     assert captured == [{"query": {"provider": "openai"}}]
@@ -925,7 +925,7 @@ def test_calculate_pricing_uses_generated_operation(monkeypatch):
 
     monkeypatch.setattr(ops, "calculatePricing", fake_calculate_pricing)
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     response = client.calculate_pricing({
         "provider": "openai",
         "model": "openai/gpt-5-mini",
@@ -960,7 +960,7 @@ def test_list_api_keys_uses_generated_operation(monkeypatch):
 
     monkeypatch.setattr(ops, "listApiKeys", fake_list_api_keys)
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     response = client.list_api_keys({"disabled": "true", "limit": "2"})
 
     assert captured == [{"query": {"disabled": "true", "limit": "2"}}]
@@ -983,7 +983,7 @@ def test_get_api_key_uses_generated_operation(monkeypatch):
 
     monkeypatch.setattr(ops, "getApiKey", fake_get_api_key)
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     response = client.get_api_key("key_123")
 
     assert captured == [{"path": {"id": "key_123"}}]
@@ -1006,7 +1006,7 @@ def test_list_workspaces_uses_generated_operation(monkeypatch):
 
     monkeypatch.setattr(ops, "listWorkspaces", fake_list_workspaces)
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     response = client.list_workspaces({"limit": "2", "offset": "3"})
 
     assert captured == [{"query": {"limit": "2", "offset": "3"}}]
@@ -1029,7 +1029,7 @@ def test_get_workspace_uses_generated_operation(monkeypatch):
 
     monkeypatch.setattr(ops, "getWorkspace", fake_get_workspace)
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     response = client.get_workspace("ws_123")
 
     assert captured == [{"path": {"id": "ws_123"}}]
@@ -1052,7 +1052,7 @@ def test_create_workspace_uses_generated_operation(monkeypatch):
 
     monkeypatch.setattr(ops, "createWorkspace", fake_create_workspace)
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     response = client.create_workspace({"name": "Sandbox Workspace", "slug": "sandbox"})
 
     assert captured == [{"body": {"name": "Sandbox Workspace", "slug": "sandbox"}}]
@@ -1076,7 +1076,7 @@ def test_update_workspace_uses_generated_operation(monkeypatch):
 
     monkeypatch.setattr(ops, "updateWorkspace", fake_update_workspace)
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     response = client.update_workspace("ws_123", {"name": "Renamed Workspace", "archived": True})
 
     assert captured == [{
@@ -1101,7 +1101,7 @@ def test_delete_workspace_uses_generated_operation(monkeypatch):
 
     monkeypatch.setattr(ops, "deleteWorkspace", fake_delete_workspace)
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     response = client.delete_workspace("ws_123")
 
     assert captured == [{"path": {"id": "ws_123"}}]
@@ -1157,7 +1157,7 @@ def test_provider_and_usage_helpers_use_generated_operations(monkeypatch):
     monkeypatch.setattr(ops, "getActivity", fake_get_activity)
     monkeypatch.setattr(ops, "getActivityAlias", fake_get_analytics)
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     providers = client.list_providers({"limit": "2"})
     credits = client.get_credits({"team_id": "team_123"})
     activity = client.get_activity({"days": "30"})
@@ -1183,14 +1183,14 @@ def test_get_current_api_key_uses_generated_operation(monkeypatch):
         return {
             "data": {
                 "id": "key_123",
-                "prefix": "aistats_v1_sk_test",
+                "prefix": "phaseo_v1_sk_test",
                 "status": "active",
             }
         }
 
     monkeypatch.setattr(ops, "getCurrentApiKey", fake_get_current_api_key)
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     response = client.get_current_api_key()
 
     assert captured == ["getCurrentApiKey"]
@@ -1230,7 +1230,7 @@ def test_get_models_preserves_preview_only_and_coming_soon_provider_availability
 
     monkeypatch.setattr(ops, "listModels", fake_list_models)
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     response = client.get_models({"availability": "all"})
 
     assert captured == [{"availability": "all"}]
@@ -1252,7 +1252,7 @@ def test_get_models_forwards_provider_availability_filters(monkeypatch):
 
     monkeypatch.setattr(ops, "listModels", fake_list_models)
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     response = client.get_models({
         "provider_availability_status": ["coming_soon", "inactive"],
         "provider_availability_reason": ["preview_only", "provider_not_ready"],
@@ -1277,7 +1277,7 @@ def test_get_models_forwards_provider_and_capability_status_filters(monkeypatch)
 
     monkeypatch.setattr(ops, "listModels", fake_list_models)
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     response = client.get_models({
         "provider_status": ["beta", "alpha"],
         "capability_status": ["coming_soon", "internal_testing", "disabled"],
@@ -1302,7 +1302,7 @@ def test_get_models_forwards_provider_and_model_routing_status_filters(monkeypat
 
     monkeypatch.setattr(ops, "listModels", fake_list_models)
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     response = client.get_models({
         "provider_routing_status": ["deranked_lvl1", "disabled"],
         "model_routing_status": ["active", "deranked_lvl2"],
@@ -1325,7 +1325,7 @@ def test_get_health_uses_generated_operation(monkeypatch):
             "timestamp": "2026-05-05T12:00:00.000Z",
         }
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     monkeypatch.setattr(client, "request", fake_request)
     response = client.get_health()
 
@@ -1357,7 +1357,7 @@ def test_api_key_mutation_helpers_use_generated_operations(monkeypatch):
     monkeypatch.setattr(ops, "updateApiKey", fake_update_api_key)
     monkeypatch.setattr(ops, "deleteApiKey", fake_delete_api_key)
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
     created = client.create_api_key({"name": "Admin Key", "scopes": ["gateway:read"]})
     updated = client.update_api_key("key_123", {"name": "Renamed Key", "disabled": True})
     deleted = client.delete_api_key("key_123")
@@ -1403,7 +1403,7 @@ def test_provisioning_key_aliases_delegate_to_api_key_helpers(monkeypatch):
     monkeypatch.setattr(ops, "updateApiKey", fake_update_api_key)
     monkeypatch.setattr(ops, "deleteApiKey", fake_delete_api_key)
 
-    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    client = Phaseo(api_key="sk_test_123", base_url="https://example.test")
 
     listed = client.list_provisioning_keys({"limit": "1"})
     created = client.create_provisioning_key({"name": "Agent Key"})

@@ -3,7 +3,7 @@
     {
       "releases": [
         {
-          "name": "@ai-stats/ai-sdk-provider",
+          "name": "@phaseo/ai-sdk-provider",
           "type": "minor"
         }
       ],
@@ -13,43 +13,43 @@
     {
       "releases": [
         {
-          "name": "@ai-stats/gateway-api",
+          "name": "@phaseo/gateway-api",
           "type": "major"
         },
         {
-          "name": "@ai-stats/sdk",
+          "name": "@phaseo/sdk",
           "type": "major"
         },
         {
-          "name": "@ai-stats/py-sdk",
+          "name": "@phaseo/py-sdk",
           "type": "major"
         },
         {
-          "name": "@ai-stats/go-sdk",
+          "name": "@phaseo/go-sdk",
           "type": "major"
         },
         {
-          "name": "@ai-stats/csharp-sdk",
+          "name": "@phaseo/csharp-sdk",
           "type": "major"
         },
         {
-          "name": "@ai-stats/php-sdk",
+          "name": "@phaseo/php-sdk",
           "type": "major"
         },
         {
-          "name": "@ai-stats/ruby-sdk",
+          "name": "@phaseo/ruby-sdk",
           "type": "major"
         },
         {
-          "name": "@ai-stats/java-sdk",
+          "name": "@phaseo/java-sdk",
           "type": "major"
         },
         {
-          "name": "@ai-stats/rust-sdk",
+          "name": "@phaseo/rust-sdk",
           "type": "major"
         },
         {
-          "name": "@ai-stats/cpp-sdk",
+          "name": "@phaseo/cpp-sdk",
           "type": "major"
         }
       ],
@@ -59,11 +59,11 @@
     {
       "releases": [
         {
-          "name": "@ai-stats/gateway-api",
+          "name": "@phaseo/gateway-api",
           "type": "patch"
         },
         {
-          "name": "@ai-stats/docs",
+          "name": "@phaseo/docs",
           "type": "patch"
         }
       ],
@@ -73,15 +73,15 @@
     {
       "releases": [
         {
-          "name": "@ai-stats/web",
+          "name": "@phaseo/web",
           "type": "major"
         },
         {
-          "name": "@ai-stats/docs",
+          "name": "@phaseo/docs",
           "type": "major"
         },
         {
-          "name": "@ai-stats/ai-sdk-provider",
+          "name": "@phaseo/ai-sdk-provider",
           "type": "major"
         }
       ],
@@ -91,27 +91,27 @@
     {
       "releases": [
         {
-          "name": "@ai-stats/sdk",
+          "name": "@phaseo/sdk",
           "type": "patch"
         },
         {
-          "name": "@ai-stats/py-sdk",
+          "name": "@phaseo/py-sdk",
           "type": "patch"
         },
         {
-          "name": "@ai-stats/go-sdk",
+          "name": "@phaseo/go-sdk",
           "type": "patch"
         },
         {
-          "name": "@ai-stats/csharp-sdk",
+          "name": "@phaseo/csharp-sdk",
           "type": "patch"
         },
         {
-          "name": "@ai-stats/php-sdk",
+          "name": "@phaseo/php-sdk",
           "type": "patch"
         },
         {
-          "name": "@ai-stats/ruby-sdk",
+          "name": "@phaseo/ruby-sdk",
           "type": "patch"
         }
       ],
@@ -121,11 +121,11 @@
     {
       "releases": [
         {
-          "name": "@ai-stats/sdk",
+          "name": "@phaseo/sdk",
           "type": "minor"
         },
         {
-          "name": "@ai-stats/py-sdk",
+          "name": "@phaseo/py-sdk",
           "type": "minor"
         }
       ],
@@ -135,31 +135,31 @@
     {
       "releases": [
         {
-          "name": "@ai-stats/cpp-sdk",
+          "name": "@phaseo/cpp-sdk",
           "type": "minor"
         },
         {
-          "name": "@ai-stats/csharp-sdk",
+          "name": "@phaseo/csharp-sdk",
           "type": "minor"
         },
         {
-          "name": "@ai-stats/go-sdk",
+          "name": "@phaseo/go-sdk",
           "type": "minor"
         },
         {
-          "name": "@ai-stats/java-sdk",
+          "name": "@phaseo/java-sdk",
           "type": "minor"
         },
         {
-          "name": "@ai-stats/php-sdk",
+          "name": "@phaseo/php-sdk",
           "type": "minor"
         },
         {
-          "name": "@ai-stats/ruby-sdk",
+          "name": "@phaseo/ruby-sdk",
           "type": "minor"
         },
         {
-          "name": "@ai-stats/rust-sdk",
+          "name": "@phaseo/rust-sdk",
           "type": "minor"
         }
       ],
@@ -169,7 +169,7 @@
   ],
   "releases": [
     {
-      "name": "@ai-stats/ai-sdk-provider",
+      "name": "@phaseo/ai-sdk-provider",
       "type": "major",
       "oldVersion": "0.1.0",
       "changesets": [
@@ -179,7 +179,7 @@
       "newVersion": "1.0.0"
     },
     {
-      "name": "@ai-stats/gateway-api",
+      "name": "@phaseo/gateway-api",
       "type": "major",
       "oldVersion": "0.2.0",
       "changesets": [
@@ -189,7 +189,7 @@
       "newVersion": "1.0.0"
     },
     {
-      "name": "@ai-stats/sdk",
+      "name": "@phaseo/sdk",
       "type": "major",
       "oldVersion": "0.2.1-alpha.0",
       "changesets": [
@@ -200,7 +200,7 @@
       "newVersion": "1.0.0"
     },
     {
-      "name": "@ai-stats/py-sdk",
+      "name": "@phaseo/py-sdk",
       "type": "major",
       "oldVersion": "0.2.1-alpha.0",
       "changesets": [
@@ -211,7 +211,7 @@
       "newVersion": "1.0.0"
     },
     {
-      "name": "@ai-stats/go-sdk",
+      "name": "@phaseo/go-sdk",
       "type": "major",
       "oldVersion": "0.2.1-alpha.0",
       "changesets": [
@@ -222,7 +222,7 @@
       "newVersion": "1.0.0"
     },
     {
-      "name": "@ai-stats/csharp-sdk",
+      "name": "@phaseo/csharp-sdk",
       "type": "major",
       "oldVersion": "0.2.1-alpha.0",
       "changesets": [
@@ -233,7 +233,7 @@
       "newVersion": "1.0.0"
     },
     {
-      "name": "@ai-stats/php-sdk",
+      "name": "@phaseo/php-sdk",
       "type": "major",
       "oldVersion": "0.2.1-alpha.0",
       "changesets": [
@@ -244,7 +244,7 @@
       "newVersion": "1.0.0"
     },
     {
-      "name": "@ai-stats/ruby-sdk",
+      "name": "@phaseo/ruby-sdk",
       "type": "major",
       "oldVersion": "0.2.1-alpha.0",
       "changesets": [
@@ -255,7 +255,7 @@
       "newVersion": "1.0.0"
     },
     {
-      "name": "@ai-stats/java-sdk",
+      "name": "@phaseo/java-sdk",
       "type": "major",
       "oldVersion": "0.2.1-alpha.0",
       "changesets": [
@@ -265,7 +265,7 @@
       "newVersion": "1.0.0"
     },
     {
-      "name": "@ai-stats/rust-sdk",
+      "name": "@phaseo/rust-sdk",
       "type": "major",
       "oldVersion": "0.2.1-alpha.0",
       "changesets": [
@@ -275,7 +275,7 @@
       "newVersion": "1.0.0"
     },
     {
-      "name": "@ai-stats/cpp-sdk",
+      "name": "@phaseo/cpp-sdk",
       "type": "major",
       "oldVersion": "0.2.1-alpha.0",
       "changesets": [
@@ -285,7 +285,7 @@
       "newVersion": "1.0.0"
     },
     {
-      "name": "@ai-stats/docs",
+      "name": "@phaseo/docs",
       "type": "major",
       "oldVersion": "0.2.0",
       "changesets": [
@@ -295,7 +295,7 @@
       "newVersion": "1.0.0"
     },
     {
-      "name": "@ai-stats/web",
+      "name": "@phaseo/web",
       "type": "major",
       "oldVersion": "0.1.2",
       "changesets": [
@@ -304,14 +304,14 @@
       "newVersion": "1.0.0"
     },
     {
-      "name": "@ai-stats/devtools",
+      "name": "@phaseo/devtools",
       "type": "patch",
       "oldVersion": "0.2.1-alpha.0",
       "changesets": [],
       "newVersion": "0.2.1"
     },
     {
-      "name": "ai-stats",
+      "name": "phaseo",
       "type": "patch",
       "changesets": [],
       "newVersion": null
@@ -321,34 +321,34 @@
     "mode": "exit",
     "tag": "alpha",
     "initialVersions": {
-      "@ai-stats/gateway-api": "0.2.0",
-      "@ai-stats/docs": "0.2.0",
-      "@ai-stats/web": "0.1.2",
-      "@ai-stats/devtools": "0.1.0",
-      "@ai-stats/devtools-core": "0.1.0",
-      "@ai-stats/devtools-node": "0.1.0",
-      "@ai-stats/csharp-sdk": "0.1.0",
-      "@ai-stats/go-sdk": "0.2.0",
-      "@ai-stats/php-sdk": "0.2.0",
-      "@ai-stats/py-sdk": "0.2.0",
-      "@ai-stats/ruby-sdk": "0.2.0",
-      "@ai-stats/sdk": "0.2.0",
-      "@ai-stats/devtools-viewer": "0.1.0",
-      "@ai-stats/ai-sdk-provider": "0.1.0",
-      "@ai-stats/oapi-backend-cpp": "0.0.0",
-      "@ai-stats/oapi-backend-csharp": "0.0.0",
-      "@ai-stats/oapi-backend-go": "0.0.0",
-      "@ai-stats/oapi-backend-java": "0.0.0",
-      "@ai-stats/oapi-backend-php": "0.0.0",
-      "@ai-stats/oapi-backend-python": "0.0.0",
-      "@ai-stats/oapi-backend-ruby": "0.0.0",
-      "@ai-stats/oapi-backend-rust": "0.0.0",
-      "@ai-stats/oapi-backend-ts": "0.0.0",
-      "@ai-stats/oapi-cli": "0.0.0",
-      "@ai-stats/oapi-core": "0.0.0",
-      "@ai-stats/cpp-sdk": "0.2.1-alpha.0",
-      "@ai-stats/java-sdk": "0.2.1-alpha.0",
-      "@ai-stats/rust-sdk": "0.2.1-alpha.0"
+      "@phaseo/gateway-api": "0.2.0",
+      "@phaseo/docs": "0.2.0",
+      "@phaseo/web": "0.1.2",
+      "@phaseo/devtools": "0.1.0",
+      "@phaseo/devtools-core": "0.1.0",
+      "@phaseo/devtools-node": "0.1.0",
+      "@phaseo/csharp-sdk": "0.1.0",
+      "@phaseo/go-sdk": "0.2.0",
+      "@phaseo/php-sdk": "0.2.0",
+      "@phaseo/py-sdk": "0.2.0",
+      "@phaseo/ruby-sdk": "0.2.0",
+      "@phaseo/sdk": "0.2.0",
+      "@phaseo/devtools-viewer": "0.1.0",
+      "@phaseo/ai-sdk-provider": "0.1.0",
+      "@phaseo/oapi-backend-cpp": "0.0.0",
+      "@phaseo/oapi-backend-csharp": "0.0.0",
+      "@phaseo/oapi-backend-go": "0.0.0",
+      "@phaseo/oapi-backend-java": "0.0.0",
+      "@phaseo/oapi-backend-php": "0.0.0",
+      "@phaseo/oapi-backend-python": "0.0.0",
+      "@phaseo/oapi-backend-ruby": "0.0.0",
+      "@phaseo/oapi-backend-rust": "0.0.0",
+      "@phaseo/oapi-backend-ts": "0.0.0",
+      "@phaseo/oapi-cli": "0.0.0",
+      "@phaseo/oapi-core": "0.0.0",
+      "@phaseo/cpp-sdk": "0.2.1-alpha.0",
+      "@phaseo/java-sdk": "0.2.1-alpha.0",
+      "@phaseo/rust-sdk": "0.2.1-alpha.0"
     },
     "changesets": [
       "ai-sdk-provider-release",

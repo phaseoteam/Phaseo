@@ -41,7 +41,7 @@ export default function Unavailable({ modelId }: UnavailableProps) {
 					</AlertDescription>
 				</Alert>
 				<Link
-					href="https://github.com/AI-Stats/AI-Stats/issues/new/choose"
+					href="https://github.com/phaseoteam/Phaseo/issues/new/choose"
 					className="inline-flex items-center gap-2 text-sm font-medium text-primary underline decoration-transparent hover:decoration-current transition-colors duration-200"
 				>
 					Request provider support on Github

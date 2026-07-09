@@ -65,6 +65,7 @@ const PRESET_CACHE_PREFIX = "gateway:preset";
 const PRESET_TTL = 120;      // 2 minutes
 const CONTEXT_INFLIGHT_MAX_ENTRIES = 512;
 const CONTEXT_KEY_VERSION_L1_TTL_MS = 5_000;
+const FREE_ROUTER_MODEL_ID = "phaseo/free";
 
 const contextInflight = new Map<string, Promise<GatewayContextData>>();
 
@@ -75,9 +76,26 @@ type ProviderScopedModelRow = {
     effective_to: string | null;
 };
 
+type FreeRouterProviderModelRow = {
+    provider_api_model_id: string | null;
+    provider_id: string | null;
+    provider_model_slug: string | null;
+    api_model_id: string | null;
+    model_id?: string | null;
+    routing_status: string | null;
+    input_modalities: unknown;
+    output_modalities: unknown;
+    effective_from: string | null;
+    effective_to: string | null;
+};
+
 function setToArrayOrNull(value: Set<string>): string[] | null {
     const list = Array.from(value).filter(Boolean);
     return list.length ? list : null;
+}
+
+function isFreeRouterModel(model: string): boolean {
+    return model.trim().toLowerCase() === FREE_ROUTER_MODEL_ID;
 }
 
 type ProviderModalitiesRow = {
@@ -546,6 +564,154 @@ async function fetchTestingProviderSnapshots(args: {
     return testingProviders;
 }
 
+async function fetchFreeRouterProviderPool(args: {
+    endpoint: string;
+}): Promise<Pick<GatewayContextData, "providers" | "pricing">> {
+    const supabase = getSupabaseAdmin();
+    const nowMs = Date.now();
+    const { data: rows, error } = await supabase
+        .from("data_api_provider_models")
+        .select(
+            "provider_api_model_id,provider_id,provider_model_slug,api_model_id,model_id,is_active_gateway,routing_status,effective_from,effective_to,input_modalities,output_modalities"
+        )
+        .eq("is_active_gateway", true)
+        .like("api_model_id", "%:free");
+    if (error || !rows?.length) return { providers: [], pricing: {} };
+
+    const inWindowRows = (rows as FreeRouterProviderModelRow[])
+        .filter((row) => typeof row.provider_api_model_id === "string" && row.provider_api_model_id.length > 0)
+        .filter((row) => typeof row.provider_id === "string" && row.provider_id.length > 0)
+        .filter((row) => typeof (row.api_model_id ?? row.model_id) === "string")
+        .filter((row) => isWithinEffectiveWindow(row.effective_from, row.effective_to, nowMs));
+    if (!inWindowRows.length) return { providers: [], pricing: {} };
+
+    const modelIds = Array.from(
+        new Set(
+            inWindowRows
+                .map((row) => row.api_model_id ?? row.model_id ?? null)
+                .filter((modelId): modelId is string => typeof modelId === "string" && modelId.length > 0)
+        )
+    );
+    if (!modelIds.length) return { providers: [], pricing: {} };
+
+    const { data: modelRows, error: modelError } = await supabase
+        .from("data_models")
+        .select("model_id,hidden,status,deprecation_date,retirement_date")
+        .in("model_id", modelIds);
+    if (modelError) return { providers: [], pricing: {} };
+
+    const activeModelIds = new Set(
+        (modelRows ?? [])
+            .filter((row: any) => row?.hidden !== true)
+            .filter((row: any) => normalizeRoutingStatus(row?.status) === "active")
+            .map((row: any) => row?.model_id)
+            .filter((modelId: unknown): modelId is string => typeof modelId === "string" && modelId.length > 0)
+    );
+    if (!activeModelIds.size) return { providers: [], pricing: {} };
+
+    const providerModelIds = Array.from(
+        new Set(
+            inWindowRows
+                .map((row) => row.provider_api_model_id)
+                .filter((id): id is string => typeof id === "string" && id.length > 0)
+        )
+    );
+    const capabilityId = getContextCapabilityCandidates(args.endpoint, FREE_ROUTER_MODEL_ID)[0] ?? args.endpoint;
+    const { data: capabilityRows, error: capabilityError } = await supabase
+        .from("data_api_provider_model_capabilities")
+        .select("provider_api_model_id,params,max_input_tokens,max_output_tokens,status,updated_at,created_at")
+        .eq("capability_id", capabilityId)
+        .in("status", [...ROUTABLE_CAPABILITY_STATUSES])
+        .in("provider_api_model_id", providerModelIds);
+    if (capabilityError) return { providers: [], pricing: {} };
+
+    const capabilityByProviderModel = new Map<string, any>();
+    for (const row of capabilityRows ?? []) {
+        const providerApiModelId = row?.provider_api_model_id;
+        if (typeof providerApiModelId !== "string" || !providerApiModelId.length) continue;
+        capabilityByProviderModel.set(providerApiModelId, row);
+    }
+
+    const providerIds = Array.from(
+        new Set(
+            inWindowRows
+                .map((row) => row.provider_id)
+                .filter((providerId): providerId is string => typeof providerId === "string" && providerId.length > 0)
+        )
+    );
+    const { data: providerRows, error: providerError } = await supabase
+        .from("data_api_providers")
+        .select("api_provider_id,status,routing_status")
+        .in("api_provider_id", providerIds);
+    if (providerError) return { providers: [], pricing: {} };
+
+    const providerStatusById = new Map<string, { status: ProviderRolloutStatus; routingStatus: RoutingStatus }>();
+    for (const row of providerRows ?? []) {
+        const providerId = row?.api_provider_id;
+        if (typeof providerId !== "string" || !providerId.length) continue;
+        providerStatusById.set(providerId, {
+            status: normalizeProviderStatus(row?.status),
+            routingStatus: normalizeRoutingStatus(row?.routing_status),
+        });
+    }
+
+    const providers: GatewayProviderSnapshot[] = [];
+    const pricing: Record<string, any> = {};
+    for (const row of inWindowRows) {
+        const providerApiModelId = row.provider_api_model_id;
+        const providerId = row.provider_id;
+        const apiModelId = row.api_model_id ?? row.model_id ?? null;
+        if (!providerApiModelId || !providerId || !apiModelId || !activeModelIds.has(apiModelId)) continue;
+
+        const capability = capabilityByProviderModel.get(providerApiModelId);
+        if (!capability) continue;
+
+        const providerModelSlug =
+            row.provider_model_slug === null || row.provider_model_slug === undefined
+                ? null
+                : String(row.provider_model_slug);
+        const providerStatus = providerStatusById.get(providerId);
+        const residency = getProviderResidencyMetadata({
+            providerId,
+            providerModelSlug,
+        });
+        const pricingKey = `${providerId}:${apiModelId}`;
+        providers.push({
+            providerId,
+            providerStatus: providerStatus?.status ?? "active",
+            providerRoutingStatus: providerStatus?.routingStatus ?? "active",
+            modelRoutingStatus: normalizeRoutingStatus(row.routing_status),
+            capabilityStatus: normalizeCapabilityStatus(capability.status),
+            residencyMode: residency.residencyMode,
+            executionRegions: residency.executionRegions,
+            dataRegions: residency.dataRegions,
+            zeroDataRetention: residency.zeroDataRetention,
+            supportsEndpoint: true,
+            baseWeight: 1,
+            byokMeta: [],
+            providerModelSlug,
+            apiModelId,
+            pricingKey,
+            capabilityParams: (capability.params && typeof capability.params === "object" ? capability.params : {}) as Record<string, any>,
+            maxInputTokens:
+                capability.max_input_tokens === null || capability.max_input_tokens === undefined
+                    ? null
+                    : Number(capability.max_input_tokens),
+            maxOutputTokens:
+                capability.max_output_tokens === null || capability.max_output_tokens === undefined
+                    ? null
+                    : Number(capability.max_output_tokens),
+        });
+
+        const card = await loadPriceCard(providerId, apiModelId, args.endpoint);
+        if (card) {
+            pricing[pricingKey] = card;
+        }
+    }
+
+    return { providers, pricing };
+}
+
 export async function fetchGatewayContext(args: {
     workspaceId: string;
     model: string;
@@ -728,7 +894,7 @@ export async function fetchGatewayContext(args: {
         // if RPC returned no providers and did not resolve the model, remap via provider_model_slug.
         const noProviders = (parsed.providers ?? []).length === 0;
         const unresolved = (parsed.resolvedModel ?? args.model) === args.model;
-        if (noProviders && unresolved) {
+        if (noProviders && unresolved && !isFreeRouterModel(args.model)) {
             const remappedModel = await resolveProviderScopedModelToApiModel({
                 model: args.model,
                 endpoint: contextCapability,
@@ -736,6 +902,22 @@ export async function fetchGatewayContext(args: {
             if (remappedModel && remappedModel !== args.model) {
                 telemetry.fallbackRemap = true;
                 parsed = await fetchParsedContextMeasured(remappedModel, contextCapability);
+            }
+        }
+        if (noProviders && isFreeRouterModel(args.model)) {
+            const freeRouterPool = await fetchFreeRouterProviderPool({
+                endpoint: contextCapability,
+            });
+            if ((freeRouterPool.providers ?? []).length > 0) {
+                parsed = {
+                    ...parsed,
+                    resolvedModel: FREE_ROUTER_MODEL_ID,
+                    providers: freeRouterPool.providers ?? [],
+                    pricing: {
+                        ...(parsed.pricing ?? {}),
+                        ...(freeRouterPool.pricing ?? {}),
+                    },
+                };
             }
         }
 
@@ -749,7 +931,7 @@ export async function fetchGatewayContext(args: {
         });
 
         const resolvedModelForPricing = parsed.resolvedModel ?? args.model;
-        if ((parsed.providers ?? []).length > 0) {
+        if ((parsed.providers ?? []).length > 0 && !isFreeRouterModel(args.model)) {
             const pricingByProvider: Record<string, any> = {
                 ...(parsed.pricing ?? {}),
             };
@@ -799,10 +981,12 @@ export async function fetchGatewayContext(args: {
 
         telemetry.rpcMs = round3(rpcTotalMs);
         const enrichStartedAt = performance.now();
-        parsed = await backfillProviderModalities({
-            parsed,
-            requestedModel: args.model,
-        });
+        if (!isFreeRouterModel(args.model)) {
+            parsed = await backfillProviderModalities({
+                parsed,
+                requestedModel: args.model,
+            });
+        }
 
         if (args.includeTestingMode) {
             try {
@@ -823,7 +1007,7 @@ export async function fetchGatewayContext(args: {
 
         // Testing-mode enrichment appends providers after initial pricing hydration.
         // Re-run pricing lookup so newly added providers are not dropped as pricing_missing.
-        if ((parsed.providers ?? []).length > 0) {
+        if ((parsed.providers ?? []).length > 0 && !isFreeRouterModel(args.model)) {
             const pricingByProvider: Record<string, any> = {
                 ...(parsed.pricing ?? {}),
             };

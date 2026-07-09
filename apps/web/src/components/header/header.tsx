@@ -11,8 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import HeaderShell from "./HeaderShell";
 
-const releaseMessage = "Introducing AI Stats Gateway";
-const docsLink = "https://docs.ai-stats.phaseo.app/v1";
+const releaseMessage = "Introducing Phaseo Gateway";
+const docsLink = "https://phaseo.app/docs/v1";
 const showHeaderAnnouncement = false;
 
 export default function Header() {
@@ -21,22 +21,25 @@ export default function Header() {
 			<div className="flex min-w-0 flex-1 items-center gap-[var(--site-header-left-gap,1.25rem)] overflow-hidden">
 				<Link
 					href="/"
-					className="flex shrink-0 items-center text-2xl font-semibold tracking-tight"
+					aria-label="Phaseo home"
+					className="inline-flex h-[var(--site-header-control-h,2.25rem)] shrink-0 items-center rounded-lg px-[var(--site-header-nav-px,0.75rem)] transition-colors hover:bg-zinc-100/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:hover:bg-zinc-900/60 dark:focus-visible:ring-zinc-600/50"
 				>
 					<Image
 						src="/wordmark_light.svg"
-						alt="AI Stats"
+						alt="Phaseo"
 						width={154}
 						height={40}
 						className="h-[var(--site-header-logo-height,2.5rem)] w-auto select-none dark:hidden"
+						style={{ width: "auto" }}
 						priority
 					/>
 					<Image
 						src="/wordmark_dark.svg"
-						alt="AI Stats"
+						alt="Phaseo"
 						width={154}
 						height={40}
 						className="hidden h-[var(--site-header-logo-height,2.5rem)] w-auto select-none dark:block"
+						style={{ width: "auto" }}
 						priority
 					/>
 				</Link>

@@ -80,7 +80,7 @@ export default async function ModelDetailShell({
 					name: FREE_ROUTER_NAME,
 					organisation_id: FREE_ROUTER_ORGANISATION_ID,
 					organisation: {
-						name: "AI Stats",
+						name: "Phaseo",
 						country_code: "",
 					},
 					aliases: [],

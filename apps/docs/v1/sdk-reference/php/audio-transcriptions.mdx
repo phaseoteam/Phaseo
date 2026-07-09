@@ -12,9 +12,9 @@ description: "Call /audio/transcriptions with the PHP SDK."
 
 require 'vendor/autoload.php';
 
-use AIStats\Sdk\AIStats;
+use Phaseo\Sdk\Phaseo;
 
-$client = new AIStats(getenv('AI_STATS_API_KEY'));
+$client = new Phaseo(getenv('PHASEO_API_KEY'));
 $response = $client->generateTranscription([
     'model' => 'openai/gpt-4o-transcribe',
     'audio_url' => 'https://example.com/audio.mp3', // or 'audio_b64' for base64 data

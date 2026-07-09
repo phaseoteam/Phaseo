@@ -697,7 +697,7 @@ def print_dashboard():
     
     # Header
     header = Panel.fit(
-        "[bold blue]AI Stats Data Completion Dashboard[/bold blue]\n"
+        "[bold blue]Phaseo Data Completion Dashboard[/bold blue]\n"
         "[dim]Detailed analysis of data completeness across all categories[/dim]",
         border_style="blue"
     )

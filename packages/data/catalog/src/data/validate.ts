@@ -642,7 +642,7 @@ function validateAsyncCapabilityMetadata(args: {
 const MODEL_DATE_FIELDS = ['announced_date', 'release_date', 'deprecation_date', 'retirement_date'];
 const DETAIL_DATE_HINTS = ['date', 'cutoff'];
 const GENERIC_MODEL_DESCRIPTION_FALLBACK =
-    'On AI Stats you can compare providers, pricing, benchmarks, routing support, and availability for this model.';
+    'On Phaseo you can compare providers, pricing, benchmarks, routing support, and availability for this model.';
 
 type ModelEntry = {
     filePath: string;

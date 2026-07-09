@@ -9,10 +9,10 @@ const command = args[0] || "start";
 
 function printHelp() {
   console.log(`
-AI Stats DevTools Viewer
+Phaseo DevTools Viewer
 
 Usage:
-  ai-stats-devtools [command] [options]
+  phaseo-devtools [command] [options]
 
 Commands:
   start              Start the devtools viewer server (default)
@@ -20,17 +20,17 @@ Commands:
 
 Options:
   -p, --port <port>  Port to run the server on (default: 4983)
-  -d, --dir <path>   Path to devtools directory (default: .ai-stats-devtools)
+  -d, --dir <path>   Path to devtools directory (default: .phaseo-devtools)
   -h, --help         Show this help message
 
 Examples:
-  ai-stats-devtools start
-  ai-stats-devtools start -p 3000
-  ai-stats-devtools start -d /path/to/devtools
-  ai-stats-devtools --port 8080 --dir ./my-devtools
+  phaseo-devtools start
+  phaseo-devtools start -p 3000
+  phaseo-devtools start -d /path/to/devtools
+  phaseo-devtools --port 8080 --dir ./my-devtools
 
 Environment Variables:
-  AI_STATS_DEVTOOLS_DIR  Path to devtools directory
+  PHASEO_DEVTOOLS_DIR  Path to devtools directory
   PORT                   Port to run the server on
 `);
 }
@@ -38,7 +38,7 @@ Environment Variables:
 function parseArgs() {
   const config = {
     port: parseInt(process.env.PORT || "4983", 10),
-    directory: process.env.AI_STATS_DEVTOOLS_DIR || ".ai-stats-devtools"
+    directory: process.env.PHASEO_DEVTOOLS_DIR || ".phaseo-devtools"
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -79,7 +79,7 @@ async function main() {
     const config = parseArgs();
 
     // Set environment variables for the server
-    process.env.AI_STATS_DEVTOOLS_DIR = config.directory;
+    process.env.PHASEO_DEVTOOLS_DIR = config.directory;
     process.env.PORT = config.port.toString();
 
     startServer(config.port);
@@ -87,7 +87,7 @@ async function main() {
   }
 
   console.error(`Unknown command: ${command}`);
-  console.error('Run "ai-stats-devtools help" for usage information');
+  console.error('Run "phaseo-devtools help" for usage information');
   process.exit(1);
 }
 

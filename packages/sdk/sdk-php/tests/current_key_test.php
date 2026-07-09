@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . "/../src/index.php";
 
-use AIStats\Sdk\AIStats;
+use Phaseo\Sdk\Phaseo;
 
 function assert_true(bool $condition, string $message): void
 {
@@ -12,7 +12,7 @@ function assert_true(bool $condition, string $message): void
     }
 }
 
-final class FakeCurrentKeyClient extends \AIStats\Gen\Client
+final class FakeCurrentKeyClient extends \Phaseo\Gen\Client
 {
     public array $calls = [];
 
@@ -27,16 +27,16 @@ final class FakeCurrentKeyClient extends \AIStats\Gen\Client
         return [
             "data" => [
                 "id" => "key_123",
-                "prefix" => "aistats_v1_sk_test",
+                "prefix" => "phaseo_v1_sk_test",
                 "status" => "active",
             ],
         ];
     }
 }
 
-$client = new AIStats(
+$client = new Phaseo(
     apiKey: "test",
-    basePath: "https://api.phaseo.app/v1",
+    basePath: "https://api.phaseo.ai/v1",
     enableDeprecationWarnings: false
 );
 

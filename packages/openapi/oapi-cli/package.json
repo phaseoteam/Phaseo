@@ -1,5 +1,5 @@
 {
-	"name": "@ai-stats/oapi-cli",
+	"name": "@phaseo/oapi-cli",
 	"version": "0.0.0",
 	"private": true,
 	"type": "module",
@@ -20,16 +20,16 @@
 		"test": "node --test --loader tsx tests/*.test.ts"
 	},
 	"dependencies": {
-		"@ai-stats/oapi-backend-cpp": "workspace:*",
-		"@ai-stats/oapi-backend-csharp": "workspace:*",
-		"@ai-stats/oapi-backend-ts": "workspace:*",
-		"@ai-stats/oapi-backend-go": "workspace:*",
-		"@ai-stats/oapi-backend-java": "workspace:*",
-		"@ai-stats/oapi-backend-php": "workspace:*",
-		"@ai-stats/oapi-backend-python": "workspace:*",
-		"@ai-stats/oapi-backend-ruby": "workspace:*",
-		"@ai-stats/oapi-backend-rust": "workspace:*",
-		"@ai-stats/oapi-core": "workspace:*"
+		"@phaseo/oapi-backend-cpp": "workspace:*",
+		"@phaseo/oapi-backend-csharp": "workspace:*",
+		"@phaseo/oapi-backend-ts": "workspace:*",
+		"@phaseo/oapi-backend-go": "workspace:*",
+		"@phaseo/oapi-backend-java": "workspace:*",
+		"@phaseo/oapi-backend-php": "workspace:*",
+		"@phaseo/oapi-backend-python": "workspace:*",
+		"@phaseo/oapi-backend-ruby": "workspace:*",
+		"@phaseo/oapi-backend-rust": "workspace:*",
+		"@phaseo/oapi-core": "workspace:*"
 	},
 	"devDependencies": {
 		"@types/node": "^25.6.0",

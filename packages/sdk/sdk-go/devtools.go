@@ -1,4 +1,4 @@
-package aistats
+package phaseo
 
 import (
 	"encoding/json"
@@ -13,7 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	gen "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go/src/gen"
+	gen "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/src/gen"
 )
 
 const goSDKVersion = "2.0.4"
@@ -27,10 +27,10 @@ type DevtoolsConfig struct {
 
 type DevtoolsOption func(*DevtoolsConfig)
 
-func CreateAIStatsDevtools(opts ...DevtoolsOption) DevtoolsConfig {
+func CreatePhaseoDevtools(opts ...DevtoolsOption) DevtoolsConfig {
 	config := DevtoolsConfig{
 		Enabled:        true,
-		Directory:      ".ai-stats-devtools",
+		Directory:      ".phaseo-devtools",
 		CaptureHeaders: false,
 		SaveAssets:     true,
 	}
@@ -43,7 +43,7 @@ func CreateAIStatsDevtools(opts ...DevtoolsOption) DevtoolsConfig {
 }
 
 func WithDevtools(config DevtoolsConfig) Option {
-	return func(c *AIStats) {
+	return func(c *Phaseo) {
 		c.telemetry = newTelemetryRecorder(&config, goSDKVersion)
 	}
 }
@@ -86,7 +86,7 @@ var telemetryCounter uint64
 func newTelemetryRecorder(config *DevtoolsConfig, sdkVersion string) *telemetryRecorder {
 	defaultEnabled := false
 	enabled := defaultEnabled
-	directory := ".ai-stats-devtools"
+	directory := ".phaseo-devtools"
 	captureHeaders := false
 	saveAssets := true
 
@@ -99,10 +99,10 @@ func newTelemetryRecorder(config *DevtoolsConfig, sdkVersion string) *telemetryR
 		saveAssets = config.SaveAssets
 	}
 
-	if raw := strings.TrimSpace(os.Getenv("AI_STATS_DEVTOOLS")); raw != "" {
+	if raw := strings.TrimSpace(os.Getenv("PHASEO_DEVTOOLS")); raw != "" {
 		enabled = parseEnvBool(raw, enabled)
 	}
-	if rawDir := strings.TrimSpace(os.Getenv("AI_STATS_DEVTOOLS_DIR")); rawDir != "" {
+	if rawDir := strings.TrimSpace(os.Getenv("PHASEO_DEVTOOLS_DIR")); rawDir != "" {
 		directory = rawDir
 	}
 

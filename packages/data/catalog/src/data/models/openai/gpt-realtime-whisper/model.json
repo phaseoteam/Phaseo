@@ -44,7 +44,7 @@
     },
     {
       "name": "release_note",
-      "value": "AI Stats inferred the date from first public docs availability on 2026-05-07 because the OpenAI model page does not expose an explicit launch date."
+      "value": "Phaseo inferred the date from first public docs availability on 2026-05-07 because the OpenAI model page does not expose an explicit launch date."
     }
   ],
   "benchmarks": []

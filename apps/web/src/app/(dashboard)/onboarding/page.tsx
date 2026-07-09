@@ -14,7 +14,7 @@ import { createClient } from "@/utils/supabase/server";
 import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 
 export const metadata = {
-	title: "Developer onboarding - AI Stats",
+	title: "Developer onboarding - Phaseo",
 	robots: {
 		index: false,
 		follow: false,

@@ -79,10 +79,10 @@ async function sendSignupWelcomeEmail(args: {
 
 	const from =
 		String(process.env.RESEND_FROM_EMAIL ?? "").trim() ||
-		"AI Stats <noreply@phaseo.app>";
+		"Phaseo <noreply@phaseo.ai>";
 	const subject =
 		String(process.env.RESEND_WELCOME_SUBJECT ?? "").trim() ||
-		"Welcome to AI Stats";
+		"Welcome to Phaseo";
 	const templateId =
 		String(process.env.RESEND_WELCOME_TEMPLATE_ID ?? "").trim() ||
 		"welcome-email";
@@ -90,7 +90,7 @@ async function sendSignupWelcomeEmail(args: {
 	const dashboardUrl =
 		String(
 			process.env.NEXT_PUBLIC_WEBSITE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "",
-		).trim() || "https://www.aistats.com";
+		).trim() || "https://phaseo.app";
 	const getStartedUrl = `${dashboardUrl.replace(/\/+$/, "")}/settings/keys`;
 	const docsUrl = `${dashboardUrl.replace(/\/+$/, "")}/help`;
 	const resend = new Resend(apiKey);
@@ -103,16 +103,16 @@ async function sendSignupWelcomeEmail(args: {
 			variables: {
 				user_first_name: firstName || "",
 				welcome_heading: firstName ? `Welcome, ${firstName}` : "Welcome",
-				app_name: "AI Stats",
+				app_name: "Phaseo",
 				providers_count: 14,
 				models_count: 300,
 				endpoints_count: 9,
-				gateway_base_url: "https://api.ai-stats.io",
+				gateway_base_url: "https://api.phaseo.ai/v1",
 				example_model: "openai/gpt-4.1-mini",
 				dashboard_url: dashboardUrl,
 				quickstart_url: getStartedUrl,
 				docs_url: docsUrl,
-				support_email: "support@aistats.com",
+				support_email: "support@phaseo.ai",
 			},
 		},
 	});

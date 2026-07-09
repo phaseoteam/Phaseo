@@ -1,5 +1,5 @@
 [package]
-name = "ai-stats-rust-sdk"
+name = "phaseo-rust-sdk"
 version = "0.2.1-alpha.0"
 edition = "2021"
 

@@ -1,7 +1,7 @@
 /**
  * OAuth Callback Handler
  *
- * Receives authorization code from AI Stats and exchanges it for tokens
+ * Receives authorization code from Phaseo and exchanges it for tokens
  */
 
 import { NextRequest, NextResponse } from 'next/server';

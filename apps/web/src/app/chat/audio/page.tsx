@@ -5,7 +5,7 @@ import { RoomScaffold } from "@/components/(chat)/RoomScaffold";
 import { AudioRoom } from "@/components/(chat)/rooms/AudioRoom";
 
 export const metadata: Metadata = buildMetadata({
-	title: "Audio Room - AI Stats Chat",
+	title: "Audio Room - Phaseo Chat",
 	description:
 		"Audio workspace for speech synthesis, transcription, and translation.",
 	path: "/chat/audio",

@@ -13,13 +13,13 @@ describe("public video response helper", () => {
 		getBindingsMock.mockReset();
 		getBindingsMock.mockReturnValue({
 			KEY_PEPPER: "test-video-secret",
-			GATEWAY_PUBLIC_BASE_URL: "https://api.phaseo.app",
+			GATEWAY_PUBLIC_BASE_URL: "https://api.phaseo.ai",
 		});
 	});
 
 	it("builds the full completed public status payload with content and signed download access", async () => {
 		const response = await toPublicVideoResponse({
-			requestUrl: "https://api.phaseo.app/v1/videos/G-123",
+			requestUrl: "https://api.phaseo.ai/v1/videos/G-123",
 			id: "G-123",
 			payload: {
 				status: "completed",
@@ -102,7 +102,7 @@ describe("public video response helper", () => {
 			progress: 100,
 			progress_source: "provider",
 			poll_after_seconds: 20,
-			websocket_url: "wss://api.phaseo.app/v1/async/video/G-123/ws",
+			websocket_url: "wss://api.phaseo.ai/v1/async/video/G-123/ws",
 			cancel_url: null,
 			generation_id: "gen_req_123",
 			native_video_id: "provider_video_123",
@@ -114,7 +114,7 @@ describe("public video response helper", () => {
 			seconds: 6,
 			size: "1280x720",
 			audio: true,
-			content_url: "https://api.phaseo.app/v1/videos/G-123/content",
+			content_url: "https://api.phaseo.ai/v1/videos/G-123/content",
 			usage: {
 				input_tokens: 123,
 				cost: 1.23,
@@ -162,8 +162,8 @@ describe("public video response helper", () => {
 			last_webhook_dispatched_at: "2026-05-05T10:05:29.000Z",
 		});
 
-		expect(response.polling_url).toBe("https://api.phaseo.app/v1/videos/G-123");
-		expect(response.content_url).toBe("https://api.phaseo.app/v1/videos/G-123/content");
+		expect(response.polling_url).toBe("https://api.phaseo.ai/v1/videos/G-123");
+		expect(response.content_url).toBe("https://api.phaseo.ai/v1/videos/G-123/content");
 		expect(response.asset).toEqual({
 			id: "ast_123",
 			mime_type: "video/mp4",
@@ -182,7 +182,7 @@ describe("public video response helper", () => {
 				index: 0,
 				mime_type: "video/mp4",
 				bytes_available: true,
-				content_url: "https://api.phaseo.app/v1/videos/G-123/content",
+				content_url: "https://api.phaseo.ai/v1/videos/G-123/content",
 				download_url: expect.stringContaining("/v1/videos/G-123/content?"),
 				expires_at: expect.any(Number),
 			}),
@@ -191,7 +191,7 @@ describe("public video response helper", () => {
 
 	it("shows held reservation estimates before video settlement", async () => {
 		const response = await toPublicVideoResponse({
-			requestUrl: "https://api.phaseo.app/v1/videos/G-hold",
+			requestUrl: "https://api.phaseo.ai/v1/videos/G-hold",
 			id: "G-hold",
 			payload: {
 				status: "processing",
@@ -222,7 +222,7 @@ describe("public video response helper", () => {
 			status: "processing",
 			lifecycle_status: "running",
 			progress: 35,
-			cancel_url: "https://api.phaseo.app/v1/videos/G-hold/cancel",
+			cancel_url: "https://api.phaseo.ai/v1/videos/G-hold/cancel",
 			billing: {
 				currency: "usd",
 				estimated_provider_cost: "0.23",
@@ -244,7 +244,7 @@ describe("public video response helper", () => {
 
 	it("uses stored provider progress when no fresh provider payload is attached", async () => {
 		const response = await toPublicVideoResponse({
-			requestUrl: "https://api.phaseo.app/v1/videos/G-progress",
+			requestUrl: "https://api.phaseo.ai/v1/videos/G-progress",
 			id: "G-progress",
 			payload: {
 				status: "processing",
@@ -275,7 +275,7 @@ describe("public video response helper", () => {
 
 	it("shows completed videos with failed capture as pending billing, not an active estimate", async () => {
 		const response = await toPublicVideoResponse({
-			requestUrl: "https://api.phaseo.app/v1/videos/G-capture-failed",
+			requestUrl: "https://api.phaseo.ai/v1/videos/G-capture-failed",
 			id: "G-capture-failed",
 			payload: {
 				status: "completed",
@@ -320,7 +320,7 @@ describe("public video response helper", () => {
 
 	it("omits cancel urls for active videos whose provider cannot be cancelled", async () => {
 		const response = await toPublicVideoResponse({
-			requestUrl: "https://api.phaseo.app/v1/videos/G-unsupported",
+			requestUrl: "https://api.phaseo.ai/v1/videos/G-unsupported",
 			id: "G-unsupported",
 			payload: {
 				status: "processing",
@@ -350,7 +350,7 @@ describe("public video response helper", () => {
 
 	it("omits signed download fields when output access is bytes-only", async () => {
 		const response = await toPublicVideoResponse({
-			requestUrl: "https://api.phaseo.app/v1/videos/G-456",
+			requestUrl: "https://api.phaseo.ai/v1/videos/G-456",
 			id: "G-456",
 			payload: {
 				status: "completed",
@@ -368,13 +368,13 @@ describe("public video response helper", () => {
 		expect(response.output_access).toBe("bytes");
 		expect(response.lifecycle_status).toBe("completed");
 		expect(response.cancel_url).toBeNull();
-		expect(response.content_url).toBe("https://api.phaseo.app/v1/videos/G-456/content");
+		expect(response.content_url).toBe("https://api.phaseo.ai/v1/videos/G-456/content");
 		expect(response).not.toHaveProperty("download_url");
 		expect(response).not.toHaveProperty("expires_at");
 		expect(response.outputs).toEqual([
 			expect.objectContaining({
 				index: 0,
-				content_url: "https://api.phaseo.app/v1/videos/G-456/content",
+				content_url: "https://api.phaseo.ai/v1/videos/G-456/content",
 			}),
 		]);
 	});

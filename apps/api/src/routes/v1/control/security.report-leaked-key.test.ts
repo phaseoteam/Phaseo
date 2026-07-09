@@ -183,13 +183,13 @@ describe("public leaked key reports", () => {
 	});
 
 	it("auto-revokes a matched gateway key and notifies workspace owners", async () => {
-		const token = "aistats_v1_sk_kid123_supersecret";
+		const token = "phaseo_v1_sk_kid123_supersecret";
 		const hash = createHmac("sha256", "pepper").update("supersecret").digest("hex");
 		state.keysRows.push({
 			id: "key_1",
 			workspace_id: "ws_1",
 			name: "Production Key",
-			prefix: "aistats_v1_sk_kid123",
+			prefix: "phaseo_v1_sk_kid123",
 			status: "active",
 			hash,
 			kid: "kid123",
@@ -248,7 +248,7 @@ describe("public leaked key reports", () => {
 			workspace_id: "ws_1",
 			action_taken: "auto_revoked",
 			report_mode: "auto_revoke",
-			token_prefix: "aistats_v1_sk_kid123",
+			token_prefix: "phaseo_v1_sk_kid123",
 			token_last_four: "cret",
 			comment: "Found [redacted-token] in a public repo",
 		});
@@ -259,7 +259,7 @@ describe("public leaked key reports", () => {
 			workspace_id: "ws_1",
 			payload: expect.objectContaining({
 				workspace_name: "Acme",
-				key_preview: "aistats_v1_sk_kid123...cret",
+				key_preview: "phaseo_v1_sk_kid123...cret",
 				reported_source: "github",
 				auto_revoked: true,
 			}),
@@ -273,13 +273,13 @@ describe("public leaked key reports", () => {
 
 	it("records matched management keys in report-only mode without revoking them", async () => {
 		state.bindings.LEAKED_KEY_REPORT_MODE = "report_only";
-		const token = "aistats_v1_sk_mgmt77_topsecret";
+		const token = "phaseo_v1_sk_mgmt77_topsecret";
 		const hash = createHmac("sha256", "pepper").update("topsecret").digest("hex");
 		state.managementKeysRows.push({
 			id: "mgmt_1",
 			workspace_id: "ws_2",
 			name: "Ops Key",
-			prefix: "aistats_v1_sk_mgmt77",
+			prefix: "phaseo_v1_sk_mgmt77",
 			status: "active",
 			hash,
 			kid: "mgmt77",
@@ -324,6 +324,44 @@ describe("public leaked key reports", () => {
 		});
 	});
 
+	it("matches legacy aistats-prefixed leaked keys", async () => {
+		const token = "aistats_v1_sk_kid123_supersecret";
+		const hash = createHmac("sha256", "pepper").update("supersecret").digest("hex");
+		state.keysRows.push({
+			id: "key_1",
+			workspace_id: "ws_1",
+			name: "Legacy Prefix Key",
+			prefix: "phaseo_v1_sk_kid123",
+			status: "active",
+			hash,
+			kid: "kid123",
+			soft_blocked: false,
+		});
+
+		const { securityRoutes } = await import("./security");
+		const response = await securityRoutes.request("https://example.com/report-leaked-key", {
+			method: "POST",
+			headers: {
+				"content-type": "application/json",
+				"cf-connecting-ip": "203.0.113.15",
+			},
+			body: JSON.stringify({
+				token,
+				source: "github",
+			}),
+		});
+
+		expect(response.status).toBe(202);
+		expect(state.reportInserts[0]).toMatchObject({
+			status: "auto_revoked",
+			matched: true,
+			key_table: "keys",
+			api_key_id: "key_1",
+			token_prefix: "aistats_v1_sk_kid123",
+			token_last_four: "cret",
+		});
+	});
+
 	it("accepts invalid formats without revealing validity", async () => {
 		const { securityRoutes } = await import("./security");
 		const response = await securityRoutes.request("https://example.com/report-leaked-key", {
@@ -352,14 +390,14 @@ describe("public leaked key reports", () => {
 	});
 
 	it("records a processing error and skips notifications when revocation fails", async () => {
-		const token = "aistats_v1_sk_kid123_supersecret";
+		const token = "phaseo_v1_sk_kid123_supersecret";
 		const hash = createHmac("sha256", "pepper").update("supersecret").digest("hex");
 		state.keyUpdateError = { message: "db write failed" };
 		state.keysRows.push({
 			id: "key_1",
 			workspace_id: "ws_1",
 			name: "Production Key",
-			prefix: "aistats_v1_sk_kid123",
+			prefix: "phaseo_v1_sk_kid123",
 			status: "active",
 			hash,
 			kid: "kid123",

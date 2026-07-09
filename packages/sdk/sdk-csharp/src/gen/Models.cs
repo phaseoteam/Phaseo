@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace AiStats.Gen;
+namespace Phaseo.Gen;
 
 public sealed class ActivityEntry
 {

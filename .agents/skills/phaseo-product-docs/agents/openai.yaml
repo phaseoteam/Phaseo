@@ -1,0 +1,4 @@
+interface:
+  display_name: "Phaseo Product Docs"
+  short_description: "Rewrite Phaseo docs in a product-facing voice."
+  default_prompt: "Use $phaseo-product-docs to rewrite this documentation in a product-facing, customer-readable voice."

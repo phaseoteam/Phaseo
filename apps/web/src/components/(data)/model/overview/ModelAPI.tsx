@@ -11,7 +11,7 @@ export default function ModelApiComingSoon() {
 				API Gateway Information Coming Soon
 			</h2>
 			<p className="text-muted-foreground">
-				We&apos;re working on getting the AI Stats Gateway up and running.
+				We&apos;re working on getting the Phaseo Gateway up and running.
 				<br />
 				Stay tuned for updates!
 			</p>

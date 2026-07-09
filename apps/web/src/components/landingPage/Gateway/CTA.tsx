@@ -3,7 +3,7 @@ import { ArrowRight, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const SALES_HREF = "/sign-up";
-const DOCS_HREF = "https://docs.ai-stats.phaseo.app/v1/quickstart";
+const DOCS_HREF = "https://phaseo.app/docs/v1/quickstart";
 
 export function CTA() {
 	return (

@@ -1,17 +1,17 @@
 ---
 title: "Tool Calling (AI SDK)"
-description: "Function/tool calling with Vercel AI SDK and AI Stats provider."
+description: "Function/tool calling with Vercel AI SDK and Phaseo provider."
 ---
 
 Use `tools` in `generateText` for function execution with typed parameters.
 
 ```ts
-import { aiStats } from "@ai-stats/ai-sdk-provider";
+import { phaseo } from "@phaseo/ai-sdk-provider";
 import { generateText } from "ai";
 import { z } from "zod";
 
 const result = await generateText({
-  model: aiStats("openai/gpt-5-nano"),
+  model: phaseo("openai/gpt-5-nano"),
   prompt: "What is 17 + 25? Use the calculator tool.",
   tools: {
     calculator: {

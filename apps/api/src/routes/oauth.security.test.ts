@@ -77,7 +77,7 @@ vi.mock("@/routes/utils", () => ({
 }));
 
 vi.mock("@/lib/oauth/service", () => ({
-	CLI_CLIENT_ID: "aistats_cli",
+	CLI_CLIENT_ID: "phaseo_cli",
 	CLI_DEFAULT_SCOPES: ["openid"],
 	assertRedirectAllowed: vi.fn(() => true),
 	authorizationConsentUrl: vi.fn(() => "https://example.com/consent"),
@@ -97,7 +97,7 @@ vi.mock("@/lib/oauth/service", () => ({
 		state.issuedTokenPairs.push(input);
 		return { access_token: "token" };
 	}),
-	loadOAuthClient: vi.fn(async () => ({ id: "aistats_cli", name: "AI Stats CLI", client_type: "public" })),
+	loadOAuthClient: vi.fn(async () => ({ id: "phaseo_cli", name: "Phaseo CLI", client_type: "public" })),
 	makeAuthCodeExpiry: vi.fn(() => "2026-06-10T16:00:00.000Z"),
 	makeDeviceCodeExpiry: vi.fn(() => "2026-06-10T16:00:00.000Z"),
 	normalizeScopes: vi.fn((raw, fallback) => fallback ?? []),
@@ -106,7 +106,7 @@ vi.mock("@/lib/oauth/service", () => ({
 	revokeToken: vi.fn(async () => undefined),
 	rotateRefreshToken: vi.fn(async () => ({ ok: false, reason: "invalid_grant" })),
 	validateLocalAccessToken: vi.fn(async () => ({ valid: false })),
-	verificationUriFor: vi.fn(() => "https://ai-stats.com/activate"),
+	verificationUriFor: vi.fn(() => "https://phaseo.app/activate"),
 	verifyPkce: vi.fn(async () => true),
 	ensureGrant: vi.fn(async () => undefined),
 	ensureGrants: vi.fn(async () => undefined),
@@ -127,7 +127,7 @@ describe("OAuth route security", () => {
 	it("does not let device-code denial overwrite a code that is no longer pending", async () => {
 		state.deviceRow = {
 			id: "device_1",
-			client_id: "aistats_cli",
+			client_id: "phaseo_cli",
 			scopes: ["openid"],
 			status: "approved",
 			expires_at: FUTURE_EXPIRES_AT,
@@ -153,7 +153,7 @@ describe("OAuth route security", () => {
 	it("does not issue a device token when the approval grant is missing", async () => {
 		state.deviceRow = {
 			id: "device_1",
-			client_id: "aistats_cli",
+			client_id: "phaseo_cli",
 			user_id: "user_1",
 			workspace_id: "ws_1",
 			scopes: ["openid"],
@@ -169,7 +169,7 @@ describe("OAuth route security", () => {
 			body: JSON.stringify({
 				grant_type: "urn:ietf:params:oauth:grant-type:device_code",
 				device_code: "device-code",
-				client_id: "aistats_cli",
+				client_id: "phaseo_cli",
 			}),
 		});
 		const body = await response.json();
@@ -183,7 +183,7 @@ describe("OAuth route security", () => {
 	it("issues a device token when the approved code has an active grant", async () => {
 		state.deviceRow = {
 			id: "device_1",
-			client_id: "aistats_cli",
+			client_id: "phaseo_cli",
 			user_id: "user_1",
 			workspace_id: "ws_1",
 			scopes: ["openid"],
@@ -201,7 +201,7 @@ describe("OAuth route security", () => {
 			body: JSON.stringify({
 				grant_type: "urn:ietf:params:oauth:grant-type:device_code",
 				device_code: "device-code",
-				client_id: "aistats_cli",
+				client_id: "phaseo_cli",
 			}),
 		});
 		const body = await response.json();
@@ -212,7 +212,7 @@ describe("OAuth route security", () => {
 			{
 				userId: "user_1",
 				workspaceId: "ws_1",
-				clientId: "aistats_cli",
+				clientId: "phaseo_cli",
 				scopes: ["openid"],
 			},
 		]);

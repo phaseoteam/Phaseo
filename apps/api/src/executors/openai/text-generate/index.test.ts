@@ -88,7 +88,7 @@ describe("openai text executor HTTP mode", () => {
 		const mapped = JSON.parse(result.mappedRequest || "{}");
 		expect(mapped.type).toBeUndefined();
 		expect(mapped.model).toBe("openai/gpt-5-nano-2025-08-07");
-		expect(mapped.metadata?.aistats_request_id).toBe("req_openai_http_test");
+		expect(mapped.metadata?.phaseo_request_id).toBe("req_openai_http_test");
 		expect(mapped.safety_identifier).toBe("req_openai_http_test");
 		expect(mock.calls[0]?.bodyJson?.store).toBe(false);
 	});
@@ -289,7 +289,7 @@ describe("openai text executor HTTP mode", () => {
 
 		const result = await executor(buildArgs({
 			metadata: {
-				aistats_request_id: "custom_request_id",
+				phaseo_request_id: "custom_request_id",
 				trace_id: "abc123",
 			},
 		}));
@@ -297,7 +297,7 @@ describe("openai text executor HTTP mode", () => {
 
 		expect(result.kind).toBe("completed");
 		expect(mock.calls).toHaveLength(1);
-		expect(mock.calls[0]?.bodyJson?.metadata?.aistats_request_id).toBe("custom_request_id");
+		expect(mock.calls[0]?.bodyJson?.metadata?.phaseo_request_id).toBe("custom_request_id");
 		expect(mock.calls[0]?.bodyJson?.metadata?.trace_id).toBe("abc123");
 		expect(mock.calls[0]?.headers["Idempotency-Key"] ?? mock.calls[0]?.headers["idempotency-key"]).toBe("req_openai_http_test");
 	});

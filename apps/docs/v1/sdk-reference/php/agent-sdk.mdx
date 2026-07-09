@@ -1,12 +1,12 @@
 ---
 title: "Usage"
-description: "Run a minimal local agent loop on top of AI Stats Gateway with the PHP Agent SDK."
+description: "Run a minimal local agent loop on top of Phaseo Gateway with the PHP Agent SDK."
 ---
 
 ## Install
 
 ```bash
-composer require ai-stats/php-sdk ai-stats/agent-sdk-php
+composer require phaseo/php-sdk phaseo/agent-sdk-php
 ```
 
 ## Quickstart
@@ -15,8 +15,8 @@ composer require ai-stats/php-sdk ai-stats/agent-sdk-php
 <?php
 require "vendor/autoload.php";
 
-use AIStats\AgentSdk\AgentDefinition;
-use AIStats\AgentSdk\AgentSdk;
+use Phaseo\AgentSdk\AgentDefinition;
+use Phaseo\AgentSdk\AgentSdk;
 
 $agent = AgentSdk::createAgent(new AgentDefinition(
     id: "quickstart-agent",
@@ -37,7 +37,7 @@ echo $result->output . PHP_EOL;
 - `AgentSdk::createAgent(...)`
 - `AgentSdk::defineTool(...)`
 - `AgentSdk::createGatewayAgentClient(...)`
-- a bounded tool loop over the AI Stats `responses` API
+- a bounded tool loop over the Phaseo `responses` API
 
 ## Related
 

@@ -1,6 +1,6 @@
 ---
 title: "Migration from OpenRouter"
-description: "Move from OpenRouter to AI Stats Gateway with a controlled rollout, explicit parity checks, and minimal request-shape changes."
+description: "Move from OpenRouter to Phaseo Gateway with a controlled rollout, explicit parity checks, and minimal request-shape changes."
 ---
 
 If your app already uses OpenRouter through the OpenAI SDK or direct OpenAI-compatible HTTP calls, the safest migration path is usually:
@@ -13,7 +13,7 @@ If your app already uses OpenRouter through the OpenAI SDK or direct OpenAI-comp
 ## Before you start
 
 - Access to the current OpenRouter integration code and deployment config.
-- `AI_STATS_API_KEY` available in dev, staging, and production.
+- `PHASEO_API_KEY` available in dev, staging, and production.
 - A short list of production model IDs and representative prompts.
 
 ## 1) Inventory current OpenRouter usage
@@ -51,8 +51,8 @@ const response = await before.chat.completions.create({
 import OpenAI from "openai";
 
 const after = new OpenAI({
-  apiKey: process.env.AI_STATS_API_KEY,
-  baseURL: "https://api.phaseo.app/v1",
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.ai/v1",
 });
 
 const response = await after.chat.completions.create({
@@ -72,8 +72,8 @@ curl -s "https://openrouter.ai/api/v1/chat/completions" \
   }'
 
 # After
-curl -s "https://api.phaseo.app/v1/chat/completions" \
-  -H "Authorization: Bearer $AI_STATS_API_KEY" \
+curl -s "https://api.phaseo.ai/v1/chat/completions" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "openai/gpt-4.1-mini",
@@ -88,8 +88,8 @@ Do not assume every previous alias is valid. Query `/v1/models` and verify each 
 
 <CodeGroup>
 ```bash cURL
-curl -s "https://api.phaseo.app/v1/models" \
-  -H "Authorization: Bearer $AI_STATS_API_KEY" | jq '.data[0:10] | map(.id)'
+curl -s "https://api.phaseo.ai/v1/models" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" | jq '.data[0:10] | map(.id)'
 ```
 
 ```typescript TypeScript
@@ -113,8 +113,8 @@ export function resolveModelId(input: string): string {
 
 Use this checklist before shifting meaningful traffic:
 
-- Base URL updated to `https://api.phaseo.app/v1`.
-- `OPENROUTER_API_KEY` replaced with `AI_STATS_API_KEY` in all environments.
+- Base URL updated to `https://api.phaseo.ai/v1`.
+- `OPENROUTER_API_KEY` replaced with `PHASEO_API_KEY` in all environments.
 - All production model IDs verified against `/v1/models`.
 - One non-streaming request validated through `/v1/chat/completions` or `/v1/responses`.
 - One streaming request validated through the same app-level integration path used in production.
@@ -136,11 +136,11 @@ Use a staged rollout: dev first, then a small production slice, then full traffi
 ## Validation commands
 
 ```bash
-curl -s "https://api.phaseo.app/v1/health"
-curl -s "https://api.phaseo.app/v1/models" -H "Authorization: Bearer $AI_STATS_API_KEY"
-curl -s "https://api.phaseo.app/v1/chat/completions" \
+curl -s "https://api.phaseo.ai/v1/health"
+curl -s "https://api.phaseo.ai/v1/models" -H "Authorization: Bearer $PHASEO_API_KEY"
+curl -s "https://api.phaseo.ai/v1/chat/completions" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $AI_STATS_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -d '{"model":"openai/gpt-4.1-mini","messages":[{"role":"user","content":"Say hello"}]}'
 ```
 

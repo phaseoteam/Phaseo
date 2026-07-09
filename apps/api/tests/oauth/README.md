@@ -85,7 +85,7 @@ Interactive shell script for end-to-end testing:
 
 **Run:**
 ```bash
-export API_KEY=aistats_v1_sk_YOUR_KEY
+export API_KEY=phaseo_v1_sk_YOUR_KEY
 export SUPABASE_URL=https://your-project.supabase.co
 ./scripts/test-oauth-flow.sh
 ```
@@ -300,5 +300,5 @@ describe('New OAuth Feature', () => {
 Issues with tests?
 
 - Check logs: `npm run test:oauth -- --reporter=verbose`
-- Discord: [#engineering](https://discord.gg/aistats)
-- Email: dev@aistats.ai
+- Discord: [#engineering](https://discord.gg/aQyywCvgZ5)
+- Email: dev@phaseo.ai

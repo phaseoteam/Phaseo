@@ -124,13 +124,13 @@ function formatMetricValue(metric: Metric, value: number, compact = true): strin
 
 function getProviderFromModelId(id: string): string {
 	const provider = id.includes("/") ? id.split("/")[0] : ""
-	return provider || "ai-stats"
+	return provider || "phaseo"
 }
 
 function formatProviderName(provider: string): string {
 	const normalized = provider.trim().toLowerCase()
 	const known: Record<string, string> = {
-		"ai-stats": "AI Stats",
+		"phaseo": "Phaseo",
 		anthropic: "Anthropic",
 		deepseek: "DeepSeek",
 		google: "Google",

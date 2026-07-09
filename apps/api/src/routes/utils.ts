@@ -17,9 +17,11 @@ type CacheOptions = {
 };
 
 const encoder = new TextEncoder();
-const CACHE_REVALIDATE_HEADER = "x-aistats-cache-revalidate";
+const CACHE_REVALIDATE_HEADER = "x-phaseo-cache-revalidate";
+const LEGACY_CACHE_REVALIDATE_HEADER = "x-aistats-cache-revalidate";
 const CACHE_REVALIDATE_QUERY_PARAM = "cache_revalidate";
-const CACHE_CREATED_AT_HEADER = "x-aistats-cache-created-at";
+const CACHE_CREATED_AT_HEADER = "x-phaseo-cache-created-at";
+const LEGACY_CACHE_CREATED_AT_HEADER = "x-aistats-cache-created-at";
 const REVALIDATION_DEDUPE_WINDOW_MS = 15_000;
 const revalidationLocks = new Map<string, number>();
 
@@ -171,13 +173,14 @@ function timingSafeEqual(a: string, b: string): boolean {
 function isCacheRevalidateAuthorized(req: Request): boolean {
     const bindings = getBindings();
     const configured = [
-        String(bindings.GATEWAY_CONTROL_SECRET ?? "").trim(),
+        String(bindings.PHASEO_CONTROL_SECRET ?? "").trim(),
         String(bindings.GATEWAY_INTERNAL_TEST_TOKEN ?? "").trim(),
     ].filter((value) => value.length > 0);
     if (!configured.length) return false;
 
     const provided = [
         req.headers.get("x-control-secret"),
+        req.headers.get("x-phaseo-internal-token"),
         req.headers.get("x-aistats-internal-token"),
         req.headers.get("x-ai-stats-internal-token"),
         req.headers.get("x-internal-token"),
@@ -195,7 +198,9 @@ function isCacheRevalidateAuthorized(req: Request): boolean {
 }
 
 export function isCacheRevalidateRequested(req: Request): boolean {
-    const headerRequested = isTruthyFlag(req.headers.get(CACHE_REVALIDATE_HEADER));
+    const headerRequested =
+        isTruthyFlag(req.headers.get(CACHE_REVALIDATE_HEADER)) ||
+        isTruthyFlag(req.headers.get(LEGACY_CACHE_REVALIDATE_HEADER));
     const url = new URL(req.url);
     const queryRequested = isTruthyFlag(url.searchParams.get(CACHE_REVALIDATE_QUERY_PARAM));
     if (!headerRequested && !queryRequested) return false;
@@ -247,7 +252,7 @@ function classifyFreshness(cachedAtMs: number | null, options: CacheOptions, now
 
 function decorateCacheOutcome(response: Response, outcome: "HIT" | "MISS" | "STALE" | "REVALIDATED"): Response {
     const headers = new Headers(response.headers);
-    headers.set("X-AIStats-Cache", outcome);
+    headers.set("X-Phaseo-Cache", outcome);
     return new Response(response.body, {
         status: response.status,
         statusText: response.statusText,
@@ -288,7 +293,10 @@ async function readCachedResponseWithMeta(req: Request, options: CacheOptions): 
         const lockKey = await buildRouteLockKey(req, options.scope);
         const cached = await cache.match(cacheKey);
         if (cached) {
-            const cachedAtMs = parseCachedAtMs(cached.headers.get(CACHE_CREATED_AT_HEADER));
+            const cachedAtMs = parseCachedAtMs(
+                cached.headers.get(CACHE_CREATED_AT_HEADER) ??
+                cached.headers.get(LEGACY_CACHE_CREATED_AT_HEADER)
+            );
             const freshness = classifyFreshness(cachedAtMs, options, nowMs);
             if (!freshness) return null;
             const decorated = decorateCacheOutcome(
@@ -376,7 +384,7 @@ export function withCors(
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
         "Access-Control-Allow-Headers":
-            "Authorization,Content-Type,x-title,http-referer,x-app-id,x-app-name,x-gateway-debug,X-AIStats-Strictness,x-aistats-cache-revalidate",
+            "Authorization,Content-Type,x-title,http-referer,x-app-id,x-app-name,x-gateway-debug,x-phaseo-debug,X-Phaseo-Strictness,x-phaseo-cache-revalidate",
         "Access-Control-Max-Age": "86400",
     };
 

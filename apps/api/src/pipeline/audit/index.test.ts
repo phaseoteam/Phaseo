@@ -79,8 +79,8 @@ describe("audit request detail persistence", () => {
 			requestId: "req_success_1",
 			workspaceId: "ws_1",
 			provider: "openai",
-			model: "ai-stats/free",
-			requestedModel: "ai-stats/free",
+			model: "phaseo/free",
+			requestedModel: "phaseo/free",
 			endpoint: "chat.completions",
 			stream: false,
 			byok: false,
@@ -111,7 +111,7 @@ describe("audit request detail persistence", () => {
 		expect(gatewayRequestRows).toHaveLength(1);
 		expect(gatewayRequestRows[0]).toEqual(
 			expect.objectContaining({
-				model_id: "ai-stats/free",
+				model_id: "phaseo/free",
 				provider: "openai",
 				provider_attempts: [
 					expect.objectContaining({
@@ -187,8 +187,8 @@ describe("audit request detail persistence", () => {
 			requestId: "req_failure_1",
 			workspaceId: "ws_2",
 			endpoint: "responses",
-			model: "ai-stats/free",
-			requestedModel: "ai-stats/free",
+			model: "phaseo/free",
+			requestedModel: "phaseo/free",
 			provider: "openai",
 			stream: false,
 			statusCode: 500,
@@ -216,7 +216,7 @@ describe("audit request detail persistence", () => {
 		expect(gatewayRequestRows).toHaveLength(1);
 		expect(gatewayRequestRows[0]).toEqual(
 			expect.objectContaining({
-				model_id: "ai-stats/free",
+				model_id: "phaseo/free",
 				provider: "openai",
 				provider_attempts: [
 					expect.objectContaining({

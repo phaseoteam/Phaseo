@@ -2,7 +2,7 @@ require "json"
 require "net/http"
 require "uri"
 
-module AiStats
+module Phaseo
   module Gen
     class RequestError < StandardError
       attr_reader :status_code, :response_body

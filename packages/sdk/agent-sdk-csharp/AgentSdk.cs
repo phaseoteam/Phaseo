@@ -1,7 +1,7 @@
 using System.Text.Json;
-using AiStatsSdk;
+using PhaseoSdk;
 
-namespace AiStatsAgentSdk;
+namespace PhaseoAgentSdk;
 
 public sealed record ToolCall(string Id, string Name, object? Input);
 
@@ -96,7 +96,7 @@ public sealed record RunOptions
 
 public sealed record GatewayAgentClientOptions
 {
-    public AIStats? Client { get; init; }
+    public PhaseoSdk.Phaseo? Client { get; init; }
     public Dictionary<string, object?>? ClientOptions { get; init; }
     public string? Model { get; init; }
     public string? Preset { get; init; }
@@ -116,10 +116,10 @@ public sealed record GatewayAgentClientOptions
 
 public sealed class GatewayAgentClient : IModelClient
 {
-    private readonly AIStats _client;
+    private readonly PhaseoSdk.Phaseo _client;
     private readonly GatewayAgentClientOptions _options;
 
-    internal GatewayAgentClient(AIStats client, GatewayAgentClientOptions options)
+    internal GatewayAgentClient(PhaseoSdk.Phaseo client, GatewayAgentClientOptions options)
     {
         _client = client;
         _options = options;
@@ -131,7 +131,7 @@ public sealed class GatewayAgentClient : IModelClient
             request.Model,
             _options.Model,
             ToPresetAlias(_options.Preset),
-            "ai-stats/free");
+            "phaseo/free");
 
         var tools = new List<object?>();
         foreach (var tool in request.Tools)
@@ -592,17 +592,17 @@ public static class AgentSdk
             var apiKey = options.ClientOptions is not null &&
                          options.ClientOptions.TryGetValue("apiKey", out var apiKeyValue)
                 ? apiKeyValue?.ToString()
-                : Environment.GetEnvironmentVariable("AI_STATS_API_KEY");
+                : Environment.GetEnvironmentVariable("PHASEO_API_KEY");
             if (string.IsNullOrWhiteSpace(apiKey))
             {
-                throw new InvalidOperationException("AI_STATS_API_KEY is required");
+                throw new InvalidOperationException("PHASEO_API_KEY is required.");
             }
 
             var baseUrl = options.ClientOptions is not null &&
                           options.ClientOptions.TryGetValue("baseUrl", out var baseUrlValue)
                 ? baseUrlValue?.ToString()
-                : Environment.GetEnvironmentVariable("AI_STATS_BASE_URL");
-            client = new AIStats(apiKey: apiKey, basePath: baseUrl ?? "https://api.phaseo.app/v1");
+                : Environment.GetEnvironmentVariable("PHASEO_BASE_URL");
+            client = new PhaseoSdk.Phaseo(apiKey: apiKey, basePath: baseUrl ?? "https://api.phaseo.ai/v1");
         }
 
         return new GatewayAgentClient(client, options);

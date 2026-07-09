@@ -1,8 +1,8 @@
-# Announcements Content
+# Blog Content
 
-Create announcement posts by adding `.mdx` files in this folder.
+Create blog posts by adding `.mdx` files in this folder.
 
-View them in the app at `/announcements`.
+View them in the app at `/blog`.
 
 ## Frontmatter
 
@@ -10,25 +10,25 @@ Each file should start with YAML frontmatter:
 
 ```md
 ---
-title: Your Announcement Title
-description: A short summary shown in announcement cards.
+title: Your Blog Post Title
+description: A short summary shown in blog cards.
 publishedAt: 2026-04-19
 updatedAt: 2026-04-20
-author: AI Stats Team
+author: Phaseo Team
 tags:
   - Release
   - Web
-coverImage: /announcements/your-image.png
+coverImage: /blog-images/your-image.png
 draft: false
 ---
 ```
 
 ## Images
 
-Put images in `apps/web/public/announcements/` and reference them in MDX with:
+Put images in `apps/web/public/blog-images/` and reference them in MDX with:
 
 ```md
-![Alt text](/announcements/your-image.png)
+![Alt text](/blog-images/your-image.png)
 ```
 
 ## React Components In MDX

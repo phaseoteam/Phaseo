@@ -4,11 +4,11 @@ require_relative "../lib/index"
 
 class DevtoolsTest < Minitest::Test
   def test_records_responses_entries
-    Dir.mktmpdir("ai-stats-devtools-ruby-") do |dir|
-      client = AIStatsSdk::AIStats.new(
+    Dir.mktmpdir("phaseo-devtools-ruby-") do |dir|
+      client = PhaseoSdk::Phaseo.new(
         api_key: "test",
         enable_deprecation_warnings: false,
-        devtools: AIStatsSdk::Devtools.create(enabled: true, directory: dir)
+        devtools: PhaseoSdk::Devtools.create(enabled: true, directory: dir)
       )
 
       result = client.send(
@@ -53,21 +53,21 @@ class DevtoolsTest < Minitest::Test
   end
 
   def test_records_structured_error_responses
-    Dir.mktmpdir("ai-stats-devtools-ruby-") do |dir|
-      client = AIStatsSdk::AIStats.new(
+    Dir.mktmpdir("phaseo-devtools-ruby-") do |dir|
+      client = PhaseoSdk::Phaseo.new(
         api_key: "test",
         enable_deprecation_warnings: false,
-        devtools: AIStatsSdk::Devtools.create(enabled: true, directory: dir)
+        devtools: PhaseoSdk::Devtools.create(enabled: true, directory: dir)
       )
 
-      error = assert_raises(AiStats::Gen::RequestError) do
+      error = assert_raises(Phaseo::Gen::RequestError) do
         client.send(
           :with_lifecycle_and_telemetry,
           endpoint: "responses",
           payload: { model: "openai/gpt-5-nano", input: "hi" },
           check_lifecycle: false
         ) do
-          raise AiStats::Gen::RequestError.new(
+          raise Phaseo::Gen::RequestError.new(
             status_code: 429,
             status_message: "Too Many Requests",
             response_body: {
@@ -88,11 +88,11 @@ class DevtoolsTest < Minitest::Test
   end
 
   def test_records_batch_entries
-    Dir.mktmpdir("ai-stats-devtools-ruby-") do |dir|
-      client = AIStatsSdk::AIStats.new(
+    Dir.mktmpdir("phaseo-devtools-ruby-") do |dir|
+      client = PhaseoSdk::Phaseo.new(
         api_key: "test",
         enable_deprecation_warnings: false,
-        devtools: AIStatsSdk::Devtools.create(enabled: true, directory: dir)
+        devtools: PhaseoSdk::Devtools.create(enabled: true, directory: dir)
       )
 
       result = client.send(
@@ -135,11 +135,11 @@ class DevtoolsTest < Minitest::Test
   end
 
   def test_records_generation_lookup_entries
-    Dir.mktmpdir("ai-stats-devtools-ruby-") do |dir|
-      client = AIStatsSdk::AIStats.new(
+    Dir.mktmpdir("phaseo-devtools-ruby-") do |dir|
+      client = PhaseoSdk::Phaseo.new(
         api_key: "test",
         enable_deprecation_warnings: false,
-        devtools: AIStatsSdk::Devtools.create(enabled: true, directory: dir)
+        devtools: PhaseoSdk::Devtools.create(enabled: true, directory: dir)
       )
 
       result = client.send(
@@ -169,11 +169,11 @@ class DevtoolsTest < Minitest::Test
   end
 
   def test_records_health_entries
-    Dir.mktmpdir("ai-stats-devtools-ruby-") do |dir|
-      client = AIStatsSdk::AIStats.new(
+    Dir.mktmpdir("phaseo-devtools-ruby-") do |dir|
+      client = PhaseoSdk::Phaseo.new(
         api_key: "test",
         enable_deprecation_warnings: false,
-        devtools: AIStatsSdk::Devtools.create(enabled: true, directory: dir)
+        devtools: PhaseoSdk::Devtools.create(enabled: true, directory: dir)
       )
 
       client.raw_client.define_singleton_method(:request) do |method:, path:, query: nil, headers: nil, body: nil|
@@ -194,11 +194,11 @@ class DevtoolsTest < Minitest::Test
   end
 
   def test_records_video_lifecycle_entries
-    Dir.mktmpdir("ai-stats-devtools-ruby-") do |dir|
-      client = AIStatsSdk::AIStats.new(
+    Dir.mktmpdir("phaseo-devtools-ruby-") do |dir|
+      client = PhaseoSdk::Phaseo.new(
         api_key: "test",
         enable_deprecation_warnings: false,
-        devtools: AIStatsSdk::Devtools.create(enabled: true, directory: dir)
+        devtools: PhaseoSdk::Devtools.create(enabled: true, directory: dir)
       )
 
       client.send(
@@ -271,11 +271,11 @@ class DevtoolsTest < Minitest::Test
   end
 
   def test_records_control_plane_entries
-    Dir.mktmpdir("ai-stats-devtools-ruby-") do |dir|
-      client = AIStatsSdk::AIStats.new(
+    Dir.mktmpdir("phaseo-devtools-ruby-") do |dir|
+      client = PhaseoSdk::Phaseo.new(
         api_key: "test",
         enable_deprecation_warnings: false,
-        devtools: AIStatsSdk::Devtools.create(enabled: true, directory: dir)
+        devtools: PhaseoSdk::Devtools.create(enabled: true, directory: dir)
       )
 
       client.send(:with_lifecycle_and_telemetry, endpoint: "models.list", payload: { limit: "2" }, check_lifecycle: false) do

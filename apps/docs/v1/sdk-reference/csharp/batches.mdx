@@ -7,7 +7,7 @@ description: "Call /batches with the C# SDK."
 
 ### Example
 ```csharp
-var client = new AIStats(apiKey: apiKey);
+var client = new Phaseo(apiKey: apiKey);
 
 var batch = await client.CreateBatch(new Dictionary<string, object>
 {
@@ -26,7 +26,7 @@ var websocketUrl = client.GetBatchWebSocketUrl((string)batch["id"], intervalMs: 
 - `endpoint` (required): Target endpoint for batch items (e.g., `responses`).
 - `input_file_id` (required): File id uploaded via `/files`.
 - `completion_window`: e.g., `24h`.
-- `session_id`: Optional AI Stats grouping id for logs, sessions, and investigate tooling.
+- `session_id`: Optional Phaseo grouping id for logs, sessions, and investigate tooling.
 - `webhook`: Optional webhook configuration for async lifecycle notifications.
 - `metadata`: Optional object stored with the batch.
 

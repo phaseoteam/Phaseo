@@ -30,8 +30,8 @@ export async function generateMetadata(props: {
 	const description = buildModelPageMetadataDescription({
 		modelDescription,
 		suffix:
-			"View providers, streaming support, request examples, and routing options for this model on AI Stats.",
-		fallback: `${modelName} Gateway support on AI Stats. View providers, streaming support, and routing options for this model.`,
+			"View providers, streaming support, request examples, and routing options for this model on Phaseo.",
+		fallback: `${modelName} Gateway support on Phaseo. View providers, streaming support, and routing options for this model.`,
 	});
 
 	return buildMetadata({
@@ -44,7 +44,7 @@ export async function generateMetadata(props: {
 			`${modelName} gateway`,
 			organisationName ? `${organisationName} AI` : null,
 			"AI gateway",
-			"AI Stats",
+			"Phaseo",
 		].filter(Boolean) as string[],
 	});
 }

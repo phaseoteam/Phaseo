@@ -3,27 +3,43 @@ package tests
 import (
 	"encoding/json"
 	"os"
+	"strconv"
 	"testing"
 
-	gen "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go/src/gen"
+	gen "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/src/gen"
 )
 
 func TestSmokeChat(t *testing.T) {
-	apiKey := os.Getenv("AI_STATS_API_KEY")
+	apiKey := os.Getenv("PHASEO_API_KEY")
 	if apiKey == "" {
-		t.Skip("AI_STATS_API_KEY is required")
+		t.Skip("PHASEO_API_KEY is required")
 	}
-	baseURL := os.Getenv("AI_STATS_BASE_URL")
+	baseURL := os.Getenv("PHASEO_BASE_URL")
 	if baseURL == "" {
-		baseURL = "https://api.phaseo.app/v1"
+		baseURL = "https://api.phaseo.ai/v1"
 	}
 
 	client := gen.NewClient(baseURL)
 	client.Headers["Authorization"] = "Bearer " + apiKey
+	model := os.Getenv("PHASEO_SMOKE_MODEL")
+	if model == "" {
+		model = "openai/gpt-5.4-nano"
+	}
+	input := os.Getenv("PHASEO_SMOKE_INPUT")
+	if input == "" {
+		input = "Hi"
+	}
+	maxOutputTokens := 32
+	if raw := os.Getenv("PHASEO_SMOKE_MAX_OUTPUT_TOKENS"); raw != "" {
+		if parsed, err := strconv.Atoi(raw); err == nil && parsed > 0 {
+			maxOutputTokens = parsed
+		}
+	}
 
 	body := map[string]any{
-		"model": "openai/gpt-5-nano",
-		"input": "Hi",
+		"model":             model,
+		"input":             input,
+		"max_output_tokens": maxOutputTokens,
 	}
 
 	raw, err := client.Request("POST", "/responses", nil, nil, body)

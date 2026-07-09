@@ -99,7 +99,7 @@ const internalTools = [
 		id: "gateway-benchmark",
 		title: "Gateway Benchmark",
 		description:
-			"Run side-by-side public streaming comparisons between AI Stats Gateway and OpenRouter.",
+			"Run side-by-side public streaming comparisons between Phaseo Gateway and OpenRouter.",
 		icon: Gauge,
 		href: "/internal/gateway-benchmark",
 		comingSoon: true,

@@ -1,18 +1,18 @@
-# AI Stats Java SDK
+# Phaseo Java SDK
 
-Official Java SDK for AI Stats Gateway.
+Official Java SDK for Phaseo Gateway.
 
 Maven coordinates:
 
 - Group ID: `app.phaseo`
-- Artifact ID: `ai-stats-sdk`
+- Artifact ID: `phaseo-sdk`
 
 ## Installation
 
 ```xml
 <dependency>
   <groupId>app.phaseo</groupId>
-  <artifactId>ai-stats-sdk</artifactId>
+  <artifactId>phaseo-sdk</artifactId>
   <version>1.1.2</version>
 </dependency>
 ```
@@ -20,13 +20,13 @@ Maven coordinates:
 If you are building from this repository instead:
 
 ```bash
-pnpm --filter @ai-stats/java-sdk run build
+pnpm --filter @phaseo/java-sdk run build
 ```
 
 ## Quick start
 
 ```java
-import ai.stats.sdk.AIStats;
+import app.phaseo.sdk.Phaseo;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.HashMap;
@@ -34,13 +34,13 @@ import java.util.Map;
 
 public class Main {
     public static void main(String[] args) throws Exception {
-        String apiKey = System.getenv("AI_STATS_API_KEY");
-        String baseUrl = System.getenv("AI_STATS_BASE_URL");
+        String apiKey = System.getenv("PHASEO_API_KEY");
+        String baseUrl = System.getenv("PHASEO_BASE_URL");
         if (baseUrl == null || baseUrl.isEmpty()) {
-            baseUrl = "https://api.phaseo.app/v1";
+            baseUrl = "https://api.phaseo.ai/v1";
         }
 
-        AIStats client = new AIStats(apiKey, baseUrl);
+        Phaseo client = new Phaseo(apiKey, baseUrl);
 
         Map<String, Object> payload = new HashMap<>();
         payload.put("model", "google/gemma-3-27b:free");
@@ -109,11 +109,11 @@ System.out.println(resourceSocketUrl);
 
 ## Environment variables
 
-- `AI_STATS_API_KEY` (required unless passed in code)
-- `AI_STATS_BASE_URL` (optional, defaults to `https://api.phaseo.app/v1`)
+- `PHASEO_API_KEY` (required unless passed in code)
+- `PHASEO_BASE_URL` (optional, defaults to `https://api.phaseo.ai/v1`)
 
 ## Regeneration and local checks
 
 - Regenerate generated client: `pnpm openapi:gen:java`
-- Build: `pnpm --filter @ai-stats/java-sdk run build`
-- Test: `pnpm --filter @ai-stats/java-sdk run test`
+- Build: `pnpm --filter @phaseo/java-sdk run build`
+- Test: `pnpm --filter @phaseo/java-sdk run test`

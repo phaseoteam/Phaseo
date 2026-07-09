@@ -1,11 +1,11 @@
 {
-  "name": "@ai-stats/go-sdk",
+  "name": "@phaseo/go-sdk",
   "version": "2.0.4",
   "private": true,
-  "description": "AI Stats Go SDK (preview) - generated client with models wrapper",
+  "description": "Phaseo Go SDK (preview) - generated client with models wrapper",
   "license": "MIT",
   "scripts": {
-    "postinstall": "node ../scripts/postinstall-viewer-prompt.cjs @ai-stats/go-sdk",
+    "postinstall": "node ../scripts/postinstall-viewer-prompt.cjs @phaseo/go-sdk",
     "test": "go test ./...",
     "smoke:chat": "dotenv -e .env.local -- go test ./tests -run TestSmokeChat -v",
     "smoke:responses": "dotenv -e .env.local -- go test ./tests -run TestSmokeChat -v",

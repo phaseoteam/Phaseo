@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * Supported endpoint types across all AI Stats API endpoints
+ * Supported endpoint types across all Phaseo API endpoints
  */
 export const EndpointTypeSchema = z.enum([
   "chat.completions",
@@ -193,7 +193,7 @@ export type DevToolsEntry = z.infer<typeof DevToolsEntrySchema>;
  */
 export const DevToolsConfigSchema = z.object({
   enabled: z.boolean().default(false),
-  directory: z.string().default(".ai-stats-devtools"),
+  directory: z.string().default(".phaseo-devtools"),
   flushIntervalMs: z.number().default(1000),
   maxQueueSize: z.number().default(1000),
   captureHeaders: z.boolean().default(false),

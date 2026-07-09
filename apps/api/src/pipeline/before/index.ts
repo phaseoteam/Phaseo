@@ -159,13 +159,14 @@ export async function beforeRequest(
     if (!j.ok) return j as { ok: false; response: Response };
     let rawBody = j.value;
     const betaCapabilities = normalizeReturnFlag(
+        req.headers.get("x-phaseo-beta-capabilities") ??
         req.headers.get("x-aistats-beta-capabilities") ??
         rawBody?.beta_capabilities ??
         rawBody?.provider_capabilities_beta
     );
     const debugHeaderEnabled = normalizeReturnFlag(
         req.headers.get("x-gateway-debug") ??
-        req.headers.get("x-ai-stats-debug")
+        req.headers.get("x-phaseo-debug")
     ) && isDebugAllowed();
     const debugBodyRaw = rawBody?.debug ?? null;
     const debugEnabled = debugHeaderEnabled || normalizeReturnFlag(debugBodyRaw?.enabled);

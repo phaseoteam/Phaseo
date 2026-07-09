@@ -1,20 +1,20 @@
 {
-	"name": "ai-stats/php-sdk",
-	"description": "AI Stats PHP SDK",
+	"name": "phaseo/sdk",
+	"description": "Phaseo PHP SDK",
 	"type": "library",
 	"license": "MIT",
 	"keywords": ["ai", "sdk", "llm", "gateway"],
-	"homepage": "https://docs.ai-stats.phaseo.app",
+	"homepage": "https://phaseo.app",
 	"authors": [
 		{
-			"name": "AI Stats",
+			"name": "Phaseo",
 			"email": "danielbutler500@gmail.com"
 		}
 	],
 	"support": {
-		"docs": "https://docs.ai-stats.phaseo.app",
-		"issues": "https://github.com/AI-Stats/AI-Stats/issues",
-		"source": "https://github.com/AI-Stats/AI-Stats"
+		"docs": "https://phaseo.app",
+		"issues": "https://github.com/phaseoteam/Phaseo/issues",
+		"source": "https://github.com/phaseoteam/Phaseo"
 	},
 	"require": {
 		"php": ">=8.1",
@@ -23,7 +23,7 @@
 	},
 	"autoload": {
 		"psr-4": {
-			"AIStats\\Sdk\\": "src/"
+			"Phaseo\\Sdk\\": "src/"
 		}
 	},
 	"require-dev": {

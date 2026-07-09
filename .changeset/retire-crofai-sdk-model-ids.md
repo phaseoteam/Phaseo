@@ -1,12 +1,12 @@
 ---
-"@ai-stats/sdk": major
-"@ai-stats/go-sdk": major
-"@ai-stats/py-sdk": major
-"@ai-stats/csharp-sdk": major
-"@ai-stats/java-sdk": major
-"@ai-stats/php-sdk": major
-"@ai-stats/ruby-sdk": major
-"@ai-stats/rust-sdk": major
+"@phaseo/sdk": major
+"@phaseo/go-sdk": major
+"@phaseo/py-sdk": major
+"@phaseo/csharp-sdk": major
+"@phaseo/java-sdk": major
+"@phaseo/php-sdk": major
+"@phaseo/ruby-sdk": major
+"@phaseo/rust-sdk": major
 ---
 
 Refresh generated callable model ID constants from the current OpenAPI snapshot.

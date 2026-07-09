@@ -1,5 +1,5 @@
 export type CompareTarget =
-	| "ai-stats"
+	| "phaseo"
 	| "openrouter"
 	| "llmgateway"
 	| "vercel-ai-gateway";
@@ -110,12 +110,12 @@ export type GatewayStageSummary = {
 	unaccountedHeadersMs: Stats | null;
 };
 
-const DEFAULT_GATEWAY_BASE_URL = "https://api.phaseo.app/v1";
+const DEFAULT_GATEWAY_BASE_URL = "https://api.phaseo.ai/v1";
 const DEFAULT_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 const DEFAULT_LLMGATEWAY_BASE_URL = "https://api.llmgateway.io/v1";
 const DEFAULT_VERCEL_AI_GATEWAY_BASE_URL = "https://ai-gateway.vercel.sh/v1";
 const PROD_ALLOWED_BENCHMARK_HOSTS = new Set([
-	"api.phaseo.app",
+	"api.phaseo.ai",
 	"openrouter.ai",
 	"api.llmgateway.io",
 	"ai-gateway.vercel.sh",
@@ -164,11 +164,11 @@ export function buildCompareHeaders(target: CompareTarget, apiKey: string): Head
 	const headers: Record<string, string> = {
 		Authorization: `Bearer ${apiKey}`,
 		"Content-Type": "application/json",
-		"User-Agent": "ai-stats-internal-gateway-compare/1.0",
+		"User-Agent": "phaseo-internal-gateway-compare/1.0",
 	};
 	if (target === "openrouter") {
-		headers["HTTP-Referer"] = "https://ai-stats.com";
-		headers["X-Title"] = "AI Stats Internal Gateway Compare";
+		headers["HTTP-Referer"] = "https://phaseo.app";
+		headers["X-Title"] = "Phaseo Internal Gateway Compare";
 	}
 	return headers;
 }
@@ -369,13 +369,13 @@ async function traceOne(
 	},
 ): Promise<CompareTraceResult> {
 	const apiKeyByTarget: Record<CompareTarget, string | undefined> = {
-		"ai-stats": keys.gatewayApiKey,
+		"phaseo": keys.gatewayApiKey,
 		openrouter: keys.openRouterApiKey,
 		llmgateway: keys.llmGatewayApiKey,
 		"vercel-ai-gateway": keys.vercelAiGatewayApiKey,
 	};
 	const baseUrlByTarget: Record<CompareTarget, string> = {
-		"ai-stats": args.gatewayBaseUrl || DEFAULT_GATEWAY_BASE_URL,
+		"phaseo": args.gatewayBaseUrl || DEFAULT_GATEWAY_BASE_URL,
 		openrouter: args.openRouterBaseUrl || DEFAULT_OPENROUTER_BASE_URL,
 		llmgateway: args.llmGatewayBaseUrl || DEFAULT_LLMGATEWAY_BASE_URL,
 		"vercel-ai-gateway":
@@ -432,7 +432,7 @@ async function traceOne(
 		}, COMPARE_FETCH_TIMEOUT_MS);
 		headersMs = round3(performance.now() - start);
 		serverTiming =
-			target === "ai-stats"
+			target === "phaseo"
 				? parseServerTiming(response.headers.get("server-timing"))
 				: null;
 
@@ -662,7 +662,7 @@ function summarize(results: CompareTraceResult[], target: CompareTarget): Compar
 		firstContentMs: stats(successes.map((result) => result.firstContentMs)),
 		totalMs: stats(successes.map((result) => result.totalMs)),
 		stageSummary:
-			target === "ai-stats"
+			target === "phaseo"
 				? {
 						beforeMs: stats(successes.map((result) => result.gatewayStageBreakdown?.beforeMs ?? null)),
 						protocolDetectMs: stats(successes.map((result) => result.gatewayStageBreakdown?.protocolDetectMs ?? null)),
@@ -686,7 +686,7 @@ function summarize(results: CompareTraceResult[], target: CompareTarget): Compar
 }
 
 export async function runGatewayCompare(args: CompareArgs) {
-	const gatewayApiKey = process.env.AI_STATS_PERFORMANCE_TEST_KEY ?? "";
+	const gatewayApiKey = process.env.PHASEO_PERFORMANCE_TEST_KEY ?? "";
 	const openRouterApiKey =
 		process.env.PERFORMANCE_KEY_OPENROUTER ??
 		process.env.OPENROUTER_API_KEY ??
@@ -703,10 +703,10 @@ export async function runGatewayCompare(args: CompareArgs) {
 		"";
 	if (!gatewayApiKey || !openRouterApiKey) {
 		throw new Error(
-			"Missing AI_STATS_PERFORMANCE_TEST_KEY or PERFORMANCE_KEY_OPENROUTER in server environment.",
+			"Missing PHASEO_PERFORMANCE_TEST_KEY or PERFORMANCE_KEY_OPENROUTER in server environment.",
 		);
 	}
-	const enabledTargets: CompareTarget[] = ["ai-stats", "openrouter"];
+	const enabledTargets: CompareTarget[] = ["phaseo", "openrouter"];
 	if (llmGatewayApiKey) enabledTargets.push("llmgateway");
 	if (vercelAiGatewayApiKey) enabledTargets.push("vercel-ai-gateway");
 

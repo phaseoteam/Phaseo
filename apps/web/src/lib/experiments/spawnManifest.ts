@@ -49,7 +49,7 @@ export type SpawnManifest = {
 export const SPAWN_MANIFEST: SpawnManifest = {
 	cliBinary: "spawn",
 	runWithoutInstallScriptUrl:
-		"https://raw.githubusercontent.com/AI-Stats/AI-Stats/main/scripts/spawn/bootstrap.sh",
+		"https://raw.githubusercontent.com/phaseoteam/Phaseo/main/scripts/spawn/bootstrap.sh",
 	defaultAgentId: "builder",
 	defaultCloudId: "aws",
 	agents: [

@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 		"AI model geography",
 		"AI hubs",
 		"global AI landscape",
-		"AI Stats",
+		"Phaseo",
 	],
 	alternates: {
 		canonical: "/countries",

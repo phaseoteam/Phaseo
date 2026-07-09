@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 		"ChatGPT Plus pricing",
 		"Claude Pro pricing",
 		"SuperGrok pricing",
-		"AI Stats",
+		"Phaseo",
 	],
 	alternates: {
 		canonical: "/subscription-plans",

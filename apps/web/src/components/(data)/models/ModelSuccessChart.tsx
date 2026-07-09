@@ -27,7 +27,7 @@ import type { ModelSuccessPoint } from "@/lib/fetchers/models/getModelPerformanc
 
 const successChartConfig: ChartConfig = {
 	overall: {
-		label: "AI Stats success rate",
+		label: "Phaseo success rate",
 		color: "hsl(142, 76%, 36%)",
 	},
 	worst: {

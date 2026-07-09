@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { isTokenExpired, refreshAccessToken } from '@/lib/oauth';
 import { getTokens, updateTokens } from '@/lib/session';
 
-const DEFAULT_GATEWAY_ORIGIN = 'https://api.phaseo.app';
+const DEFAULT_GATEWAY_ORIGIN = 'https://api.phaseo.ai';
 const GATEWAY_ORIGIN = (process.env.NEXT_PUBLIC_GATEWAY_URL || DEFAULT_GATEWAY_ORIGIN).replace(/\/+$/, '');
 const GATEWAY_PATH_PREFIX = /\/v1$/i.test(GATEWAY_ORIGIN) ? '' : '/v1';
 
@@ -81,7 +81,7 @@ function copyRequestHeaders(request: NextRequest, accessToken: string): Headers 
     if (value) headers.set(headerName, value);
   }
 
-  const title = process.env.GATEWAY_APP_TITLE || 'AI Stats Gateway Integration Example';
+  const title = process.env.GATEWAY_APP_TITLE || 'Phaseo Gateway Integration Example';
   headers.set('x-title', title);
 
   const referer = process.env.GATEWAY_HTTP_REFERER || process.env.NEXT_PUBLIC_REDIRECT_URI;

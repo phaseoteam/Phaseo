@@ -9,7 +9,7 @@ import {
 export const metadata: Metadata = {
 	title: "Model availability redirect",
 	description:
-		"Redirect route to the model providers page on AI Stats for availability details.",
+		"Redirect route to the model providers page on Phaseo for availability details.",
 	robots: {
 		index: false,
 		follow: false,

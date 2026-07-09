@@ -2,6 +2,7 @@
 
 import { User } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 
 type HeaderUser = {
 	id?: string;
@@ -18,14 +19,49 @@ type HeaderUser = {
 
 interface CurrentUserAvatarProps {
 	user?: HeaderUser;
+	className?: string;
 }
 
-export const CurrentUserAvatar = ({ user }: CurrentUserAvatarProps) => {
+function isHostOrSubdomain(hostname: string, domain: string): boolean {
+	return hostname === domain || hostname.endsWith(`.${domain}`);
+}
+
+function getHighResolutionAvatarUrl(url: string | null) {
+	if (!url) return null;
+
+	try {
+		const parsedUrl = new URL(url);
+		const hostname = parsedUrl.hostname.toLowerCase();
+
+		if (isHostOrSubdomain(hostname, "googleusercontent.com")) {
+			if (parsedUrl.searchParams.has("sz")) {
+				parsedUrl.searchParams.set("sz", "256");
+				return parsedUrl.toString();
+			}
+
+			return url
+				.replace(/=s\d+(?:-c)?$/i, "=s256-c")
+				.replace(/\/s\d+(?:-c)?\//i, "/s256-c/");
+		}
+
+		if (isHostOrSubdomain(hostname, "gravatar.com")) {
+			parsedUrl.searchParams.set("s", "256");
+			return parsedUrl.toString();
+		}
+
+		return url;
+	} catch {
+		return url;
+	}
+}
+
+export const CurrentUserAvatar = ({ user, className }: CurrentUserAvatarProps) => {
 	const profileImage =
 		user?.avatarUrl ??
 		user?.user_metadata?.avatar_url ??
 		user?.user_metadata?.picture ??
 		null;
+	const highResolutionProfileImage = getHighResolutionAvatarUrl(profileImage);
 	const name =
 		user?.displayName ??
 		user?.user_metadata?.full_name ??
@@ -45,10 +81,15 @@ export const CurrentUserAvatar = ({ user }: CurrentUserAvatarProps) => {
 	const avatarAlt = name ? `${name} avatar` : "User avatar";
 
 	return (
-		<Avatar className="h-8 w-8 rounded-full after:border-zinc-200/70 after:mix-blend-normal dark:after:border-zinc-800/70 dark:after:mix-blend-normal">
-			{profileImage && (
+		<Avatar
+			className={cn(
+				"h-8 w-8 rounded-full bg-zinc-100 after:border-zinc-200/70 after:mix-blend-normal dark:bg-zinc-900 dark:after:border-zinc-800/70 dark:after:mix-blend-normal",
+				className,
+			)}
+		>
+			{highResolutionProfileImage && (
 				<AvatarImage
-					src={profileImage}
+					src={highResolutionProfileImage}
 					alt={avatarAlt}
 					className="rounded-full object-cover"
 					referrerPolicy="no-referrer"

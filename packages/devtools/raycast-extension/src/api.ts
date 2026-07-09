@@ -17,7 +17,7 @@ class APIError extends Error {
 function getAPIConfig(): { apiKey: string; apiUrl: string } {
   const preferences = getPreferenceValues<Preferences>();
   const apiKey = preferences.apiKey;
-  const apiUrl = preferences.apiUrl || "https://api.phaseo.app/v1";
+  const apiUrl = preferences.apiUrl || "https://api.phaseo.ai/v1";
 
   if (!apiKey) {
     throw new APIError("API key is required. Please configure it in extension preferences.");

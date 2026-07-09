@@ -13,7 +13,7 @@ export const metadata: Metadata = buildMetadata({
 		"prompt formatting",
 		"system prompts",
 		"AI documentation",
-		"AI Stats tools",
+		"Phaseo tools",
 	],
 });
 

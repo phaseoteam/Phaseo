@@ -167,7 +167,7 @@ describe("handleStreamResponse search observability", () => {
 						output: [
 							{
 								type: "web_search_call",
-								query: "ai stats stream search observability",
+								query: "phaseo stream search observability",
 								status: "completed",
 							},
 							{
@@ -180,7 +180,7 @@ describe("handleStreamResponse search observability", () => {
 										annotations: [
 											{
 												type: "url_citation",
-												title: "AI Stats Docs",
+												title: "Phaseo Docs",
 												url: "https://example.com/docs",
 												quoted_text: "Useful streamed source text",
 											},
@@ -188,7 +188,7 @@ describe("handleStreamResponse search observability", () => {
 									},
 									{
 										type: "web_search_result",
-										title: "AI Stats Docs",
+										title: "Phaseo Docs",
 										url: "https://example.com/docs",
 										text: "Docs summary",
 									},
@@ -233,7 +233,7 @@ describe("handleStreamResponse search observability", () => {
 			results: [
 				{
 					type: "web_search_result",
-					title: "AI Stats Docs",
+					title: "Phaseo Docs",
 					url: "https://example.com/docs",
 					snippet: "Docs summary",
 				},
@@ -241,7 +241,7 @@ describe("handleStreamResponse search observability", () => {
 			citations: [
 				{
 					type: "url_citation",
-					title: "AI Stats Docs",
+					title: "Phaseo Docs",
 					url: "https://example.com/docs",
 					text: "Useful streamed source text",
 				},
@@ -249,7 +249,7 @@ describe("handleStreamResponse search observability", () => {
 			nativeSearches: [
 				{
 					type: "web_search_call",
-					query: "ai stats stream search observability",
+					query: "phaseo stream search observability",
 					status: "completed",
 				},
 			],
@@ -308,13 +308,13 @@ describe("handleStreamResponse search observability", () => {
 					tools: [
 						{
 							type: "function",
-							function: { name: "ai_stats_web_search" },
+							function: { name: "phaseo_web_search" },
 						},
 					],
 				},
 				rawBody: {
 					model: "openai/gpt-5.4",
-					tools: [{ type: "ai-stats:web_search" }],
+					tools: [{ type: "phaseo:web_search" }],
 				},
 				searchObservability: {
 					usedNativeWebSearch: false,
@@ -324,7 +324,7 @@ describe("handleStreamResponse search observability", () => {
 					results: [
 						{
 							type: null,
-							title: "AI Stats Docs",
+							title: "Phaseo Docs",
 							url: "https://example.com/docs",
 							snippet: "Managed summary",
 						},
@@ -332,7 +332,7 @@ describe("handleStreamResponse search observability", () => {
 					citations: [
 						{
 							type: "managed_web_search_result",
-							title: "AI Stats Docs",
+							title: "Phaseo Docs",
 							url: "https://example.com/docs",
 							text: "Managed highlight",
 						},
@@ -341,7 +341,7 @@ describe("handleStreamResponse search observability", () => {
 					managedSearches: [
 						{
 							provider: "exa",
-							query: "ai stats docs",
+							query: "phaseo docs",
 							requestId: "req_exa_stream_1",
 							searchType: "auto",
 							resultCount: 1,
@@ -387,7 +387,7 @@ describe("handleStreamResponse search observability", () => {
 			results: [
 				{
 					type: null,
-					title: "AI Stats Docs",
+					title: "Phaseo Docs",
 					url: "https://example.com/docs",
 					snippet: "Managed summary",
 				},
@@ -395,7 +395,7 @@ describe("handleStreamResponse search observability", () => {
 			citations: [
 				{
 					type: "managed_web_search_result",
-					title: "AI Stats Docs",
+					title: "Phaseo Docs",
 					url: "https://example.com/docs",
 					text: "Managed highlight",
 				},
@@ -404,7 +404,7 @@ describe("handleStreamResponse search observability", () => {
 			managedSearches: [
 				{
 					provider: "exa",
-					query: "ai stats docs",
+					query: "phaseo docs",
 					requestId: "req_exa_stream_1",
 					searchType: "auto",
 					resultCount: 1,

@@ -16,7 +16,7 @@ rootRouter.get(
     withRuntime(async () =>
         json({
             message:
-                "Welcome to the AI Stats Gateway API! Documentation is available at https://docs.ai-stats.phaseo.app",
+                "Welcome to the Phaseo Gateway API! Documentation is available at https://phaseo.app",
             timestamp: new Date().toISOString(),
         })
     )

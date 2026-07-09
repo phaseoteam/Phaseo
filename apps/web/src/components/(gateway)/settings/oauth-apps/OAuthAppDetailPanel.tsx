@@ -277,7 +277,7 @@ export default function OAuthAppDetailPanel({
 						OAuth Credentials
 					</CardTitle>
 					<CardDescription>
-						Use these credentials to integrate with the AI Stats OAuth flow
+						Use these credentials to integrate with the Phaseo OAuth flow
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">

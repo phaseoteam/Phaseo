@@ -41,7 +41,7 @@ describe("account lifecycle Discord webhook helpers", () => {
 			}),
 		).toEqual({
 			content: [
-				"AI Stats account deleted",
+				"Phaseo account deleted",
 				"- event: `account_deleted`",
 				"- user_id: `user_123`",
 				"- email: `d*****@example.com`",
@@ -82,7 +82,7 @@ describe("account lifecycle Discord webhook helpers", () => {
 				},
 				body: JSON.stringify({
 					content: [
-						"AI Stats account deleted",
+						"Phaseo account deleted",
 						"- event: `account_deleted`",
 						"- user_id: `user_123`",
 						"- email: `d*****@example.com`",

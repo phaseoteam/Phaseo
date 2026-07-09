@@ -47,7 +47,7 @@ function RoomSidebarBrand() {
 	const collapsed = sidebarState === "collapsed" && !isMobile;
 	const brandLightSrc = collapsed ? "/logo_light.svg" : "/wordmark_light.svg";
 	const brandDarkSrc = collapsed ? "/logo_dark.svg" : "/wordmark_dark.svg";
-	const brandClassName = collapsed ? "h-7 select-none" : "h-8 select-none";
+	const brandClassName = collapsed ? "h-5 select-none" : "h-6 select-none";
 
 	return (
 		<>
@@ -170,7 +170,7 @@ export function RoomScaffold({ children }: RoomScaffoldProps) {
 			<Sidebar collapsible="icon" className="border-r border-border bg-background">
 				<SidebarHeader className="h-[57px] gap-0 border-b border-border px-0 py-0">
 					<div className="flex h-full w-full items-center gap-2 px-4 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2">
-						<Link href="/" aria-label="AI Stats">
+						<Link href="/" aria-label="Phaseo">
 							<RoomSidebarBrand />
 						</Link>
 					</div>

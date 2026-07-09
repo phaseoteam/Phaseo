@@ -171,7 +171,7 @@ function formatOrgLabel(orgId: string) {
 
 function getOrgId(modelId: string) {
 	const [org] = modelId.split("/");
-	return org || "ai-stats";
+	return org || "phaseo";
 }
 
 function buildModelOptions(models: GatewaySupportedModel[]) {

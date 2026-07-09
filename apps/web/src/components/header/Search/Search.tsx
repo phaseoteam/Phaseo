@@ -384,7 +384,7 @@ function SearchFooter({
 	label: string;
 }) {
 	return (
-		<div className="flex h-7 items-center justify-between border-t border-border/60 px-2.5 text-[11px] text-muted-foreground">
+		<div className="-mx-2 -mb-2 mt-1 flex h-8 items-center justify-between rounded-b-[1.35rem] border-t border-border/60 bg-background px-3 text-[11px] text-muted-foreground">
 			<div className="flex min-w-0 items-center gap-2">
 				<span className="inline-flex items-center gap-1">
 					<Kbd className="size-4 rounded p-0">
@@ -846,10 +846,10 @@ export default function Search({ className }: Props) {
 			>
 				<DialogContent
 					showCloseButton={false}
-					className="top-1/2 flex w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)]! -translate-y-1/2 flex-col gap-1 overflow-hidden rounded-3xl! p-2 sm:top-1/2 sm:w-[34rem] sm:max-w-[34rem]!"
+					className="top-1/2 flex w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)]! -translate-y-1/2 flex-col gap-0 overflow-hidden rounded-3xl! p-2 sm:top-1/2 sm:w-[34rem] sm:max-w-[34rem]!"
 				>
 					<DialogTitle className="sr-only">Search</DialogTitle>
-					<div>
+					<div className="mb-1">
 						<InputGroup className="h-9! bg-input/50">
 							<InputGroupAddon>
 								<SearchIcon className="size-4 shrink-0 opacity-50" />
@@ -858,7 +858,7 @@ export default function Search({ className }: Props) {
 								key={open ? "global-search-open" : "global-search-closed"}
 								onChange={(event) => handleQueryChange(event.currentTarget.value)}
 								onKeyDown={handleSearchKeyDown}
-								placeholder="Search AI Stats..."
+								placeholder="Search Phaseo..."
 								aria-label="Search catalogue"
 								autoFocus
 								className="text-sm"

@@ -1458,7 +1458,7 @@ function main() {
 
   if (shouldSyncDb) {
     execSync(
-      "pnpm --filter @ai-stats/web exec tsx scripts/sync-monitor-history-to-supabase.ts",
+      "pnpm --filter @phaseo/web exec tsx scripts/sync-monitor-history-to-supabase.ts",
       {
         stdio: "inherit",
       }

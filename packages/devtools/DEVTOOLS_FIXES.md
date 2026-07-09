@@ -102,7 +102,7 @@ pnpm run dev
 
 - **UI Dev Server:** http://localhost:4983
 - **API Server:** http://localhost:4984
-- **Sample Data:** `.ai-stats-devtools/` directory
+- **Sample Data:** `.phaseo-devtools/` directory
 
 ### Development Workflow
 
@@ -147,7 +147,7 @@ Get-Process -Id (Get-NetTCPConnection -LocalPort 4984).OwningProcess | Stop-Proc
 ```
 
 **No data showing:**
-- Ensure `.ai-stats-devtools/` directory exists
+- Ensure `.phaseo-devtools/` directory exists
 - Check `generations.jsonl` has valid JSONL content
 - Run the dev script to auto-create sample directory
 

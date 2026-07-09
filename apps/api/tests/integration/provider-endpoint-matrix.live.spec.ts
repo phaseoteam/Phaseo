@@ -575,7 +575,7 @@ async function ensureAudioFixture(): Promise<AudioFixture> {
             const model = selectedModelBySurfaceProvider.get(resultKey("audio_speech", providerId)) ?? chooseModel("audio_speech", providerId, models);
             const body: Record<string, unknown> = {
                 model,
-                input: "hello from ai stats",
+                input: "hello from phaseo",
                 provider: { only: [providerId] },
             };
             const voice = getVoiceForProvider(providerId);

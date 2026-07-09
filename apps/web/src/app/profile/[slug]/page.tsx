@@ -12,7 +12,7 @@ type PageProps = {
 
 export const metadata: Metadata = {
 	title: "Profile",
-	description: "Public AI Stats usage profile.",
+	description: "Public Phaseo usage profile.",
 	robots: {
 		index: false,
 		follow: false,
@@ -30,7 +30,7 @@ function PublicProfileShell({
 				<div className="flex items-center justify-between gap-4">
 					<div>
 						<p className="text-sm font-medium uppercase tracking-[0.18em] text-zinc-400">
-							AI Stats
+							Phaseo
 						</p>
 						<h1 className="mt-2 text-3xl font-semibold tracking-tight text-zinc-950">
 							Shared Profile

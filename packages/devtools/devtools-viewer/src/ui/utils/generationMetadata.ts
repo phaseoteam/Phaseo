@@ -17,7 +17,7 @@ export function getGenerationCorrelationMetadata(entry: DevToolsEntry): {
   return {
     gatewayRequestId: firstNonEmpty(
       entry.metadata?.request_id,
-      responseMetadata.aistats_request_id,
+      responseMetadata.phaseo_request_id,
       response.request_id
     ),
     upstreamRequestId: firstNonEmpty(

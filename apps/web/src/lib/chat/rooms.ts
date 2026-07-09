@@ -287,7 +287,7 @@ export function filterModelsForRoom<T extends ModelWithCapabilities>(
 }
 
 export function getRoomStoragePrefix(roomId: ChatRoomId): string {
-	return `ai-stats-chat-${roomId}`;
+	return `phaseo-chat-${roomId}`;
 }
 
 export function getRoomScopedStorageKey(

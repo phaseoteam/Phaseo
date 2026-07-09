@@ -1,14 +1,14 @@
 import os
 
-from ai_stats import AIStats
+from phaseo import Phaseo
 
 
 def main():
-    api_key = os.environ.get("AI_STATS_API_KEY")
+    api_key = os.environ.get("PHASEO_API_KEY")
     if not api_key:
-        raise RuntimeError("Set AI_STATS_API_KEY")
+        raise RuntimeError("Set PHASEO_API_KEY")
 
-    client = AIStats(api_key=api_key)
+    client = Phaseo(api_key=api_key)
     models = client.get_models(
         {
             "provider": ["anthropic"],

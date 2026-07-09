@@ -8,17 +8,17 @@ description: "Current wrapper methods supported by the preview Go SDK."
 ```go
 import (
   "context"
-  aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
 )
 
-client := aistats.New("<API_KEY>", "https://api.phaseo.app/v1")
+client := phaseo.New("<API_KEY>", "https://api.phaseo.ai/v1")
 ctx := context.Background()
 ```
 
 ## Chat completions
 
 ```go
-chatReq := aistats.ChatCompletionsRequest{
+chatReq := phaseo.ChatCompletionsRequest{
   Model: "openai/gpt-5-nano",
   Messages: []map[string]interface{}{
     {"role": "user", "content": "Hello"},
@@ -36,7 +36,7 @@ input := map[string]interface{}{
     {"type": "input_text", "text": "Reply with: go sdk works"},
   },
 }
-resp, err := client.GenerateResponse(ctx, aistats.ResponsesRequest{
+resp, err := client.GenerateResponse(ctx, phaseo.ResponsesRequest{
   Model: "openai/gpt-5-nano",
   Input: &input,
 })

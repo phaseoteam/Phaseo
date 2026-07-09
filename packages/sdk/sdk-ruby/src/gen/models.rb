@@ -1,4 +1,4 @@
-module AiStats
+module Phaseo
   module Gen
     ActivityEntry = Struct.new(:cost_cents, :endpoint, :latency_ms, :model, :provider, :request_id, :timestamp, :usage, keyword_init: true)
     AnthropicContentBlock = Struct.new(:content, :id, :input, :name, :source, :text, :tool_use_id, :type, keyword_init: true)

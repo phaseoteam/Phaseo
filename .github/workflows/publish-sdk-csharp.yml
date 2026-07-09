@@ -81,8 +81,8 @@ jobs:
 
       - name: Build package
         run: |
-          dotnet test packages/sdk/sdk-csharp/tests/AIStats.Sdk.Tests/AIStats.Sdk.Tests.csproj -c Release
-          dotnet pack packages/sdk/sdk-csharp/AIStats.Sdk.csproj \
+          dotnet test packages/sdk/sdk-csharp/tests/Phaseo.Sdk.Tests/Phaseo.Sdk.Tests.csproj -c Release
+          dotnet pack packages/sdk/sdk-csharp/Phaseo.Sdk.csproj \
             -c Release \
             -o artifacts/csharp \
             /p:Version=${{ steps.version.outputs.value }} \

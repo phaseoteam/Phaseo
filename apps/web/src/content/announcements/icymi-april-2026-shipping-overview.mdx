@@ -1,69 +1,137 @@
 ---
 title: "ICYMI: What We Shipped in April 2026"
-description: From pricing insights to faster model pages, here are the biggest updates we shipped across April 2026.
+description: A plain-English recap of April improvements across pricing, workspaces, model pages, security notices, SDKs, and catalog coverage.
 publishedAt: 2026-04-30
-author: AI Stats Team
+author: Phaseo Team
+category: data
+pinned: false
+coverImage: /blog-images/recap-april-2026.png
 tags:
   - ICYMI
   - Monthly Recap
   - Product
-  - Changelog
+  - Models
 draft: false
 ---
 
-April moved fast, and we shipped a lot.
+April was a heavy shipping month for Phaseo. The product became clearer for people comparing models, checking prices, managing access, and following new releases.
 
-Welcome to the first public **ICYMI**: a quick recap of the biggest updates we shipped between **April 1, 2026** and **April 30, 2026**.
+This recap covers the work that shipped from **1 April 2026** through **30 April 2026**, based on the release history, commit history, and catalog data for the month.
 
-## The Big Drops
+## What Shipped
 
-### Pricing and billing got sharper
+### Pricing became easier to inspect
 
-We upgraded pricing across model pages with clearer pricing history and stronger pricing insights, then closed the month with tighter billing behavior for multimodal usage, non-standard tiers, and unreleased model handling.
+Pricing was one of the biggest April themes. Model pages gained clearer pricing history, pricing labels were refined, missing pricing states were handled more carefully, and discounted provider pricing was corrected.
 
-Try it in product:
+That work matters because model pricing is rarely simple. The same model can be available through multiple providers, regions, billing tiers, and special routes. A good pricing page should not just show a number; it should help users understand which provider route makes sense for the work they are doing.
 
-- [/pricing](/pricing)
-- [/tools/pricing-calculator](/tools/pricing-calculator)
+April also included fixes for aggregate token billing on multimodal models and safer handling when non-standard billing tiers had rule gaps. Those are edge cases, but they are exactly the kind of edge cases that can make a pricing page feel unreliable if they are left unresolved.
 
-### Stronger gateway and SDK surface
+Try the pricing pages here:
 
-April included major gateway and SDK progress: full API rollout work, rerank support, active-model gating, and follow-up SDK model-surface cleanup so newly released models land more cleanly across docs and generated clients.
+- [Explore pricing here](/pricing)
 
-The result is a more consistent experience across docs, API behavior, and SDK clients.
+### Workspaces replaced older team wording
 
-### Model coverage jumped
+April included the move from team wording to workspace wording across the product. Settings gained a workspace management system, workspace lists were fixed, and billing and key flows were stabilised around that model.
 
-We shipped Claude Opus 4.7 compatibility earlier in the month, then finished April with Mistral Medium 3.5, IBM Granite 4.1, GPT-5.5 Cyber withheld tracking, CrofAI discovery coverage, and broader provider mapping refreshes.
+The wording change matters because "workspace" better describes how people actually use the product. A workspace can be a personal project, a company environment, an experiment, or a shared production setup. It is broader and less opinionated than "team."
 
-### Catalog and benchmark updates kept landing
+This also gave the product a clearer foundation for access controls, account settings, billing, and future collaboration features.
 
-We added and enriched support for major models, including Qwen 3.6 35B A3B, Grok 4.3, and other catalog improvements throughout the month, while also adding missing benchmark metadata and introducing a cleaner rank recompute flow before month-end.
+### Model pages loaded with less wasted work
 
-Explore models here:
+Model pages were made faster by reducing the number of separate data requests and by treating fast-changing data differently from slower catalog data. The model calendar also gained release-day drilldowns, and the updates experience got clearer date handling.
 
-- [Explore models here](/models)
+This is the kind of work users feel even if they do not know what changed. Pages open faster, the most relevant information appears sooner, and release history is easier to scan.
+
+We also refined model skeleton states, provider cards, carousel rails, and homepage feeds. Taken together, those changes made model discovery feel more polished and less like a database table wearing a UI.
+
+### The gateway and SDKs covered more use cases
+
+April added rerank support, stronger model access checks across the API and SDKs, broader API compatibility work, and generated SDK updates for new models.
+
+The important part is alignment. When a model is active in the catalog, the API should know about it, the SDKs should expose it correctly, docs should describe it, and the product should avoid sending users toward routes they cannot use.
+
+April also included SDK and docs cleanup for free-model onboarding, migration guides, model IDs, and API metadata. Those changes reduced the gap between browsing the product and building against it.
+
+### Security notices and reliability work shipped alongside features
+
+April included security notice copy, incident-banner updates, signup hardening, cache improvements, CI hardening, release-helper hardening, and fixes for shared preview image URLs.
+
+Security and reliability updates do not need the same tone as feature launches. They need to be clear, factual, and visible enough that users know what happened. April moved that communication into the product and blog surfaces more directly.
+
+## Also Shipped
+
+- The announcements hub and homepage announcement surface went live.
+- The model calendar gained clearer release-day analysis.
+- Provider and app usage metrics were enriched.
+- Compare dashboards and benchmark scoring were refreshed.
+- Model discovery alerts were split and tightened to reduce duplicate noise.
+- Low-balance email wiring and onboarding automation work landed.
+- Several CI and dependency updates kept the release process moving.
+
+## Model Highlights
+
+April was a large catalog month. Claude Opus 4.7 landed with gateway compatibility and benchmark work. GPT Image 2, GPT 5.5, and GPT 5.5 Pro expanded OpenAI coverage. DeepSeek V4 Flash, V4 Pro, and V4 Pro Lightning added a major DeepSeek release set.
+
+The month also brought Qwen 3.6 models, Gemini Deep Research previews, Gemini Embedding 2, Gemini Robotics ER 1.6 Preview, Mistral Medium 3.5, Granite 4.1, Grok 4.3, Hy3 Preview, Wan 2.7 T2V, Music 2.6, and several Xiaomi MiMo V2.5 releases.
+
+Browse the latest release data here:
+
 - [Explore recent updates here](/updates)
 
-### Faster model pages and better updates UX
+## Shipping Snapshot
 
-We improved model page performance by reducing fetch fanout and refining cache behavior, then followed up with other-models carousel improvements, homepage feed iteration, update-card date fixes, and clearer calendar release-day drilldowns.
+The local git history shows **215 commits** during April. Many were dependency, CI, and catalog commits, but the product work centred on pricing, workspaces, model pages, API coverage, security messaging, and a large run of model data updates.
 
-## Under the Hood Hardening
+## Models Released In April 2026
 
-Alongside features, we shipped production hardening across billing, auth, cache, and data paths:
+The catalog includes these models with April 2026 release dates:
 
-- Stripe and credits flow fixes
-- Auth disclosure hardening
-- Supabase/cache egress reductions
-- Free-model gating and pricing-rule corrections
-
-## Late-April Catch-Up
-
-- April 29 added Mistral Medium 3.5, IBM Granite 4.1, benchmark rank recompute support, and additional pricing fixes.
-- April 30 added withheld GPT-5.5 Cyber tracking, missing `investment-banking-modeling` and `expert-swe` benchmark metadata, and final homepage/update-feed fixes.
-- CrofAI pricing and discovery checks were tightened before month-end so new catalog entries behaved more reliably.
+- 1 April: Trinity Large Thinking (`arcee-ai/trinity-large-thinking`)
+- 1 April: Qwen 3.6 Plus (`qwen/qwen3.6-plus`)
+- 1 April: GLM 5V Turbo (`z-ai/glm-5v-turbo`)
+- 2 April: Gemma 4 26B A4B (`google/gemma-4-26b-a4b`)
+- 2 April: Gemma 4 31B (`google/gemma-4-31b`)
+- 3 April: Wan 2.7 T2V (`qwen/wan2.7-t2v`)
+- 7 April: GLM 5.1 (`z-ai/glm-5.1`)
+- 8 April: Muse Spark (`meta/muse-spark`)
+- 8 April: Muse Spark Contemplating (`meta/muse-spark-contemplating`)
+- 11 April: Music 2.6 (`minimax/music-2.6`)
+- 13 April: Kimi K2.6 Code Preview (`moonshotai/kimi-k2.6-code-preview`)
+- 14 April: Gemini Robotics ER 1.6 Preview (`google/gemini-robotics-er-1.6-preview`)
+- 15 April: Gemini 3.1 Flash TTS Preview (`google/gemini-3.1-flash-tts-preview`)
+- 16 April: Claude Opus 4.7 (`anthropic/claude-opus-4.7`)
+- 17 April: Qwen 3.6 35B A3B (`qwen/qwen3.6-35b-a3b`)
+- 17 April: Grok TTS (`x-ai/grok-tts`)
+- 20 April: Kimi K2.6 (`moonshotai/kimi-k2.6`)
+- 20 April: Qwen 3.5 Plus (2026-04-20) (`qwen/qwen3.5-plus-2026-04-20`)
+- 21 April: Gemini Deep Research Max Preview (04-2026) (`google/deep-research-max-preview-04-2026`)
+- 21 April: Gemini Deep Research Preview (04-2026) (`google/deep-research-preview-04-2026`)
+- 21 April: GPT Image 2 (`openai/gpt-image-2`)
+- 22 April: Gemini Embedding 2 (`google/gemini-embedding-2`)
+- 22 April: Qwen 3.6 27B (`qwen/qwen3.6-27b`)
+- 22 April: MiMo V2.5 (`xiaomi/mimo-v2.5`)
+- 22 April: MiMo V2.5 Pro (`xiaomi/mimo-v2.5-pro`)
+- 22 April: MiMo V2.5 TTS (`xiaomi/mimo-v2.5-tts`)
+- 23 April: GPT 5.5 (`openai/gpt-5.5`)
+- 23 April: GPT 5.5 Pro (`openai/gpt-5.5-pro`)
+- 23 April: Hy3 Preview (`tencent/hy3-preview`)
+- 24 April: DeepSeek V4 Flash (`deepseek/deepseek-v4-flash`)
+- 24 April: DeepSeek V4 Pro (`deepseek/deepseek-v4-pro`)
+- 25 April: DeepSeek V4 Pro Lightning (`deepseek/deepseek-v4-pro-lightning`)
+- 28 April: Seed 2.0 Lite (2026-04-28) (`bytedance/seed-2.0-lite-2026-04-28`)
+- 28 April: Seed 2.0 Mini (2026-04-28) (`bytedance/seed-2.0-mini-2026-04-28`)
+- 28 April: Nemotron 3 Nano Omni 30B A3B Reasoning (`nvidia/nemotron-3-nano-omni-30b-a3b-reasoning`)
+- 28 April: Laguna XS.2 (`poolside/laguna-xs.2`)
+- 29 April: Granite 4.1 30B (`ibm/granite-4.1-30b`)
+- 29 April: Granite 4.1 3B (`ibm/granite-4.1-3b`)
+- 29 April: Granite 4.1 8B (`ibm/granite-4.1-8b`)
+- 29 April: Mistral Medium 3.5 (`mistral/mistral-medium-3.5`)
+- 30 April: Grok 4.3 (`x-ai/grok-4.3`)
 
 ## Next Up
 
-We are keeping this as a monthly public format: feature highlights first, then release follow-ups and reliability improvements throughout.
+April left the product in a stronger place for May: clearer pricing, better workspace foundations, more reliable model pages, and a gateway surface ready for larger async and video work.

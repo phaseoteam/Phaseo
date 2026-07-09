@@ -39,29 +39,29 @@ describe("buildServerToolDefinitions", () => {
 	it("supports the composer server tool set", () => {
 		expect(
 			normalizeServerTools([
-				"ai-stats:web_search",
-				"ai-stats:web_fetch",
-				"ai-stats:image_generation",
+				"phaseo:web_search",
+				"phaseo:web_fetch",
+				"phaseo:image_generation",
 				"gateway:datetime",
-				"ai-stats:fusion",
-				"ai-stats:advisor",
-				"ai-stats:subagent",
-				"ai-stats:apply_patch" as never,
+				"phaseo:fusion",
+				"phaseo:advisor",
+				"phaseo:subagent",
+				"phaseo:apply_patch" as never,
 			]),
 		).toEqual([
-			"ai-stats:web_search",
-			"ai-stats:web_fetch",
-			"ai-stats:image_generation",
+			"phaseo:web_search",
+			"phaseo:web_fetch",
+			"phaseo:image_generation",
 			"gateway:datetime",
-			"ai-stats:fusion",
-			"ai-stats:advisor",
-			"ai-stats:subagent",
+			"phaseo:fusion",
+			"phaseo:advisor",
+			"phaseo:subagent",
 		]);
 	});
 
 	it("builds fusion model sets and subagent as its documented tool type", () => {
 		const tools = buildServerToolDefinitions(
-			["ai-stats:fusion", "ai-stats:subagent"],
+			["phaseo:fusion", "phaseo:subagent"],
 			{
 				fusion: {
 					models: [
@@ -86,7 +86,7 @@ describe("buildServerToolDefinitions", () => {
 
 		expect(tools).toEqual([
 			{
-				type: "ai-stats:advisor",
+				type: "phaseo:advisor",
 				parameters: {
 					name: "fusion_1",
 					model: "openai/gpt-5.5",
@@ -96,7 +96,7 @@ describe("buildServerToolDefinitions", () => {
 				},
 			},
 			{
-				type: "ai-stats:advisor",
+				type: "phaseo:advisor",
 				parameters: {
 					name: "fusion_2",
 					model: "anthropic/claude-opus-4.8",
@@ -106,7 +106,7 @@ describe("buildServerToolDefinitions", () => {
 				},
 			},
 			{
-				type: "ai-stats:advisor",
+				type: "phaseo:advisor",
 				parameters: {
 					name: "fusion_judge",
 					model: "google/gemini-3.1-pro",
@@ -116,7 +116,7 @@ describe("buildServerToolDefinitions", () => {
 				},
 			},
 			{
-				type: "ai-stats:subagent",
+				type: "phaseo:subagent",
 				parameters: {
 					model: "openai/gpt-5-nano",
 					instructions: "Return concise findings only.",
@@ -130,7 +130,7 @@ describe("buildServerToolDefinitions", () => {
 	});
 
 	it("builds one advisor tool definition per configured advisor", () => {
-		const tools = buildServerToolDefinitions(["ai-stats:advisor"], {
+		const tools = buildServerToolDefinitions(["phaseo:advisor"], {
 			advisors: [
 				{
 					name: "reviewer",
@@ -148,7 +148,7 @@ describe("buildServerToolDefinitions", () => {
 
 		expect(tools).toEqual([
 			{
-				type: "ai-stats:advisor",
+				type: "phaseo:advisor",
 				parameters: {
 					name: "reviewer",
 					model: "openai/gpt-5.5",
@@ -157,7 +157,7 @@ describe("buildServerToolDefinitions", () => {
 				},
 			},
 			{
-				type: "ai-stats:advisor",
+				type: "phaseo:advisor",
 				parameters: {
 					name: "critic",
 					model: "anthropic/claude-opus-4.8",

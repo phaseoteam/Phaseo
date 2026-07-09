@@ -1,23 +1,23 @@
 ---
 title: "OpenCode"
-description: "Connect OpenCode to the AI Stats Gateway with a custom OpenAI-compatible provider."
+description: "Connect OpenCode to the Phaseo Gateway with a custom OpenAI-compatible provider."
 ---
 
-OpenCode can call AI Stats through a custom OpenAI-compatible provider. Use this setup when you want OpenCode model selection, usage, and routing to go through one AI Stats API key.
+OpenCode can call Phaseo through a custom OpenAI-compatible provider. Use this setup when you want OpenCode model selection, usage, and routing to go through one Phaseo API key.
 
 ## Prerequisites
 
-- An AI Stats API key.
+- A Phaseo API key.
 - OpenCode installed locally.
 
 ## 1) Set your API key
 
 ```bash
-export AI_STATS_API_KEY="your_ai_stats_api_key"
+export PHASEO_API_KEY="your_phaseo_api_key"
 ```
 
 ```powershell
-$env:AI_STATS_API_KEY = "your_ai_stats_api_key"
+$env:PHASEO_API_KEY = "your_phaseo_api_key"
 ```
 
 ## 2) Add an OpenCode provider
@@ -27,14 +27,14 @@ Create or update `opencode.json` in your project, or your global OpenCode config
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "ai-stats/openai/gpt-5.5",
+  "model": "phaseo/openai/gpt-5.5",
   "provider": {
-    "ai-stats": {
+    "phaseo": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "AI Stats",
+      "name": "Phaseo",
       "options": {
-        "baseURL": "https://api.phaseo.app/v1",
-        "apiKey": "{env:AI_STATS_API_KEY}"
+        "baseURL": "https://api.phaseo.ai/v1",
+        "apiKey": "{env:PHASEO_API_KEY}"
       },
       "models": {
         "openai/gpt-5.5": {
@@ -52,18 +52,18 @@ Create or update `opencode.json` in your project, or your global OpenCode config
 }
 ```
 
-Add or remove models from the `models` object to match the AI Stats model ids you want in OpenCode.
+Add or remove models from the `models` object to match the Phaseo model ids you want in OpenCode.
 
 ## 3) Start OpenCode
 
-Restart OpenCode after editing the config, then choose the AI Stats model from `/models`.
+Restart OpenCode after editing the config, then choose the Phaseo model from `/models`.
 
 ## Verification
 
 - Run a small prompt before using file-editing workflows.
 - If a model is rejected, confirm the exact id with the [Models endpoint](../../api-reference/endpoint/models.mdx).
-- If authentication fails, confirm `AI_STATS_API_KEY` is set in the same shell that starts OpenCode.
+- If authentication fails, confirm `PHASEO_API_KEY` is set in the same shell that starts OpenCode.
 
 ## Add docs context
 
-To let OpenCode read AI Stats docs during a session, add the [Docs MCP](./docs-mcp.mdx) server as well.
+To let OpenCode read Phaseo docs during a session, add the [Docs MCP](./docs-mcp.mdx) server as well.

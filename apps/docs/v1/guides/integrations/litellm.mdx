@@ -1,9 +1,9 @@
 ---
 title: "LiteLLM"
-description: "Use AI Stats behind LiteLLM or route LiteLLM calls through AI Stats."
+description: "Use Phaseo behind LiteLLM or route LiteLLM calls through Phaseo."
 ---
 
-Use LiteLLM when you already rely on its proxy, budgets, or local router, but want AI Stats model coverage, analytics, and server tools behind it.
+Use LiteLLM when you already rely on its proxy, budgets, or local router, but want Phaseo model coverage, analytics, and server tools behind it.
 
 ## Direct Python call
 
@@ -17,15 +17,15 @@ from litellm import completion
 
 response = completion(
     model="openai/openai/gpt-5-nano",
-    api_key=os.environ["AI_STATS_API_KEY"],
-    api_base="https://api.phaseo.app/v1",
+    api_key=os.environ["PHASEO_API_KEY"],
+    api_base="https://api.phaseo.ai/v1",
     messages=[{"role": "user", "content": "Reply with only: ok"}],
 )
 
 print(response.choices[0].message.content)
 ```
 
-LiteLLM commonly uses the `openai/` provider prefix for OpenAI-compatible endpoints. The AI Stats model id remains `openai/gpt-5-nano`, so the LiteLLM model string may look like `openai/openai/gpt-5-nano`.
+LiteLLM commonly uses the `openai/` provider prefix for OpenAI-compatible endpoints. The Phaseo model id remains `openai/gpt-5-nano`, so the LiteLLM model string may look like `openai/openai/gpt-5-nano`.
 
 ## Proxy config
 
@@ -33,20 +33,20 @@ Use a model alias if you do not want application code to include the LiteLLM pro
 
 ```yaml
 model_list:
-  - model_name: ai-stats-gpt-5-nano
+  - model_name: phaseo-gpt-5-nano
     litellm_params:
       model: openai/openai/gpt-5-nano
-      api_key: os.environ/AI_STATS_API_KEY
-      api_base: https://api.phaseo.app/v1
+      api_key: os.environ/PHASEO_API_KEY
+      api_base: https://api.phaseo.ai/v1
 ```
 
-Then call the LiteLLM proxy with `model: "ai-stats-gpt-5-nano"`.
+Then call the LiteLLM proxy with `model: "phaseo-gpt-5-nano"`.
 
 ## Notes
 
 - Prefer LiteLLM aliases for production so model naming stays readable.
-- If you use AI Stats server tools, test the exact LiteLLM route because some proxy layers normalize or drop unknown tool types.
-- For pricing, decide whether your system of record is LiteLLM, AI Stats, or both.
+- If you use Phaseo server tools, test the exact LiteLLM route because some proxy layers normalize or drop unknown tool types.
+- For pricing, decide whether your system of record is LiteLLM, Phaseo, or both.
 
 ## Related
 

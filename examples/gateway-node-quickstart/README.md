@@ -1,4 +1,4 @@
-# AI Stats Gateway Node Quickstart
+# Phaseo Gateway Node Quickstart
 
 A zero-dependency Node.js script that exercises control + generation surfaces on the external gateway.
 
@@ -19,7 +19,7 @@ cd examples/gateway-node-quickstart
 cp .env.example .env.local
 ```
 
-Set `AI_STATS_API_KEY`.
+Set `PHASEO_API_KEY`.
 
 2. Run smoke mode (control routes only):
 

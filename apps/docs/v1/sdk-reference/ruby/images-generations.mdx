@@ -7,9 +7,9 @@ description: "Call /images/generations with the Ruby SDK."
 
 ### Example
 ```ruby
-require 'ai_stats_sdk'
+require 'phaseo_sdk'
 
-client = AIStatsSdk::AIStats.new(api_key: ENV.fetch("AI_STATS_API_KEY"))
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
 image = client.generate_image(
   model: 'openai/gpt-image-1',
   prompt: 'A lighthouse at golden hour',

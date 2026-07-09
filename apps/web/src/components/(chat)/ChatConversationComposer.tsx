@@ -152,7 +152,7 @@ const SERVER_TOOL_COMMANDS = [
 	{
 		id: "server-tool-web-search",
 		label: "Web Search",
-		toolType: "ai-stats:web_search",
+		toolType: "phaseo:web_search",
 		description: "Model-directed web searches",
 		keywords: ["server", "tool", "web", "search", "grounding", "current"],
 		icon: Search,
@@ -160,7 +160,7 @@ const SERVER_TOOL_COMMANDS = [
 	{
 		id: "server-tool-web-fetch",
 		label: "Web Fetch",
-		toolType: "ai-stats:web_fetch",
+		toolType: "phaseo:web_fetch",
 		description: "Fetch and read URLs",
 		keywords: ["server", "tool", "web", "fetch", "url", "page"],
 		icon: FileSearch,
@@ -168,7 +168,7 @@ const SERVER_TOOL_COMMANDS = [
 	{
 		id: "server-tool-image-generation",
 		label: "Image Generation",
-		toolType: "ai-stats:image_generation",
+		toolType: "phaseo:image_generation",
 		description: "Create images mid-request",
 		keywords: ["server", "tool", "image", "generation", "create"],
 		icon: ImagePlus,
@@ -184,7 +184,7 @@ const SERVER_TOOL_COMMANDS = [
 	{
 		id: "server-tool-fusion",
 		label: "Fusion",
-		toolType: "ai-stats:fusion",
+		toolType: "phaseo:fusion",
 		description: "Synthesize multiple model outputs",
 		keywords: ["server", "tool", "fusion", "synthesis", "combine"],
 		icon: Cpu,
@@ -192,7 +192,7 @@ const SERVER_TOOL_COMMANDS = [
 	{
 		id: "server-tool-advisor",
 		label: "Advisor",
-		toolType: "ai-stats:advisor",
+		toolType: "phaseo:advisor",
 		description: "Consult another model",
 		keywords: ["server", "tool", "advisor", "review", "second", "model"],
 		icon: ClipboardCheck,
@@ -200,7 +200,7 @@ const SERVER_TOOL_COMMANDS = [
 	{
 		id: "server-tool-sub-agent",
 		label: "Sub-agent",
-		toolType: "ai-stats:subagent",
+		toolType: "phaseo:subagent",
 		description: "Delegate focused work to another agent",
 		keywords: ["server", "tool", "sub", "agent", "delegate"],
 		icon: Bot,
@@ -216,12 +216,13 @@ const SERVER_TOOL_COMMANDS = [
 
 const SERVER_TOOL_SETTING_LABELS: Record<ChatServerToolType, string> = {
 	"gateway:datetime": "Datetime",
-	"ai-stats:web_search": "Web Search",
-	"ai-stats:web_fetch": "Web Fetch",
-	"ai-stats:advisor": "Advisor",
-	"ai-stats:image_generation": "Image Generation",
-	"ai-stats:fusion": "Fusion",
-	"ai-stats:subagent": "Sub-agent",
+	"phaseo:web_search": "Web Search",
+	"phaseo:web_fetch": "Web Fetch",
+	"phaseo:advisor": "Advisor",
+	"phaseo:image_generation": "Image Generation",
+	"phaseo:apply_patch": "Apply Patch",
+	"phaseo:fusion": "Fusion",
+	"phaseo:subagent": "Sub-agent",
 };
 
 const WEB_SEARCH_ENGINE_OPTIONS = [
@@ -1223,7 +1224,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		],
 		[reasoningOptions],
 	);
-	const advisorEnabled = enabledServerToolSet.has("ai-stats:advisor");
+	const advisorEnabled = enabledServerToolSet.has("phaseo:advisor");
 	const selectedServerToolCommand = selectedServerToolSettings
 		? SERVER_TOOL_COMMANDS.find(
 				(command) => command.toolType === selectedServerToolSettings,
@@ -1608,7 +1609,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 				id: "tools",
 				label: "Tools",
 				description: [
-					enabledServerToolSet.has("ai-stats:web_search")
+					enabledServerToolSet.has("phaseo:web_search")
 						? "Web Search on"
 						: "Web Search off",
 					defaultServerToolsDisabled
@@ -1861,7 +1862,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 						</p>
 					</div>
 				) : null}
-				{toolType === "ai-stats:web_search" ? (
+				{toolType === "phaseo:web_search" ? (
 					<div className="grid gap-2">
 						<div className="grid gap-2 sm:grid-cols-2">
 							{renderSelectField({
@@ -1937,7 +1938,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 										allowedDomains: event.target.value || undefined,
 									})
 								}
-								placeholder="docs.ai-stats.com, github.com"
+								placeholder="docs.phaseo.app, github.com"
 								className="h-8 rounded-lg text-xs"
 							/>
 						</label>
@@ -1978,7 +1979,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 						</div>
 					</div>
 				) : null}
-				{toolType === "ai-stats:web_fetch" ? (
+				{toolType === "phaseo:web_fetch" ? (
 					<div className="grid gap-2">
 						{renderSelectField({
 							label: "Engine",
@@ -2011,7 +2012,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 										allowedDomains: event.target.value || undefined,
 									})
 								}
-								placeholder="docs.ai-stats.com"
+								placeholder="docs.phaseo.app"
 								className="h-8 rounded-lg text-xs"
 							/>
 						</label>
@@ -2030,7 +2031,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 						</label>
 					</div>
 				) : null}
-				{toolType === "ai-stats:image_generation" ? (
+				{toolType === "phaseo:image_generation" ? (
 					<div className="grid gap-2">
 						<ComposerModelSelectField
 							label="Image model"
@@ -2103,7 +2104,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 						</label>
 					</div>
 				) : null}
-				{toolType === "ai-stats:advisor" ? (
+				{toolType === "phaseo:advisor" ? (
 					<>
 						<div className="flex flex-wrap items-center gap-1 rounded-xl border border-border bg-muted/50 p-1">
 							<div className="flex min-w-0 flex-1 flex-wrap gap-1">
@@ -2260,7 +2261,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 						</label>
 					</>
 				) : null}
-				{toolType === "ai-stats:fusion" ? (
+				{toolType === "phaseo:fusion" ? (
 					<div className="grid gap-2">
 						<div className="rounded-xl border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
 							<span className="block font-medium text-foreground">
@@ -2340,7 +2341,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 						</div>
 					</div>
 				) : null}
-				{toolType === "ai-stats:subagent" ? (
+				{toolType === "phaseo:subagent" ? (
 					<>
 						<div className="grid gap-2 sm:grid-cols-2">
 							<ComposerModelSelectField

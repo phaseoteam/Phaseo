@@ -12,7 +12,7 @@ import { json } from "@/routes/utils";
 
 export const DEFAULT_SCOPE = "openid email profile gateway:access";
 export const BASE62 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-export const KEY_PREFIX = "aistats_v1_sk_";
+export const KEY_PREFIX = "phaseo_v1_sk_";
 export const encoder = new TextEncoder();
 
 export const exchangeSchema = z.object({
@@ -123,7 +123,7 @@ export async function resolveOAuthApp(args: { clientId?: string | null; redirect
 				{
 					ok: false,
 					error: "third_party_oauth_disabled",
-					message: "OAuth client management is coming soon. The AI Stats CLI is available during the private OAuth beta.",
+					message: "OAuth client management is coming soon. The Phaseo CLI is available during the private OAuth beta.",
 				},
 				403,
 				{ "Cache-Control": "no-store" },

@@ -28,7 +28,7 @@ export default function OAuthAppsPanel({
 					<EmptyTitle>No OAuth apps yet</EmptyTitle>
 					<EmptyDescription>
 						Create your first OAuth app to enable third-party integrations with
-						your AI Stats account.
+						your Phaseo account.
 					</EmptyDescription>
 				</EmptyHeader>
 			</Empty>

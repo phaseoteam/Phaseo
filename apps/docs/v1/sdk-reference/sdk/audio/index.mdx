@@ -1,19 +1,19 @@
 ---
 title: "TTS / STT (AI SDK)"
-description: "Speech-to-text (STT) and text-to-speech (TTS) with AI Stats provider models."
+description: "Speech-to-text (STT) and text-to-speech (TTS) with Phaseo provider models."
 ---
 
 Use `experimental_transcribe` with `transcriptionModel`, and `experimental_generateSpeech` with `speechModel`.
 
 ```ts
 import { readFileSync, writeFileSync } from "node:fs";
-import { aiStats } from "@ai-stats/ai-sdk-provider";
+import { phaseo } from "@phaseo/ai-sdk-provider";
 import { experimental_generateSpeech, experimental_transcribe } from "ai";
 
 const audioInput = readFileSync("./audio.mp3");
 
 const transcription = await experimental_transcribe({
-  model: aiStats.transcriptionModel("openai/whisper-1"),
+  model: phaseo.transcriptionModel("openai/whisper-1"),
   audioData: new Blob([audioInput], { type: "audio/mpeg" }),
 });
 
@@ -21,8 +21,8 @@ console.log(transcription.text);
 console.log(transcription.providerMetadata);
 
 const speech = await experimental_generateSpeech({
-  model: aiStats.speechModel("openai/tts-1"),
-  text: "Hello from AI Stats audio.",
+  model: phaseo.speechModel("openai/tts-1"),
+  text: "Hello from Phaseo audio.",
   voice: "alloy",
   outputFormat: "mp3",
 });

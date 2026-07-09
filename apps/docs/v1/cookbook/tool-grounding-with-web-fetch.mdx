@@ -1,13 +1,13 @@
 ---
 title: "Ground follow-up extraction with web fetch"
-description: "Use `ai-stats:web_fetch` to pull bounded page text into the tool loop for deterministic follow-up extraction and review."
+description: "Use `phaseo:web_fetch` to pull bounded page text into the tool loop for deterministic follow-up extraction and review."
 ---
 
 Use this recipe when a workflow needs one page fetched and turned into bounded text before the model performs extraction, summarization, or classification.
 
-## 1. Use `ai-stats:web_fetch` for one-page grounding
+## 1. Use `phaseo:web_fetch` for one-page grounding
 
-`ai-stats:web_fetch` is a gateway-managed server tool.
+`phaseo:web_fetch` is a gateway-managed server tool.
 
 Use it when you need:
 
@@ -22,7 +22,7 @@ This is a better fit than broad search when you already know the URL.
 
 Typical pattern:
 
-1. ask the model to call `ai-stats:web_fetch`
+1. ask the model to call `phaseo:web_fetch`
 2. let the gateway fetch and normalize the page
 3. let the model continue with extraction against the returned text
 
@@ -60,7 +60,7 @@ Use that view to confirm the model grounded on the page you expected.
 
 ## 5. Know the tool limits
 
-`ai-stats:web_fetch` is intentionally bounded.
+`phaseo:web_fetch` is intentionally bounded.
 
 It is good for:
 

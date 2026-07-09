@@ -3,9 +3,9 @@ title: "Fusion Server Tool"
 description: "Use several advisor models and an optional judge for one answer."
 ---
 
-Use Fusion when one answer benefits from several model perspectives. In the Playground, Fusion configures multiple named `ai-stats:advisor` tools for analysis and an optional judge model for synthesis guidance.
+Use Fusion when one answer benefits from several model perspectives. In the Playground, Fusion configures multiple named `phaseo:advisor` tools for analysis and an optional judge model for synthesis guidance.
 
-Fusion is a convenience workflow built on Advisor. There is no separate `ai-stats:fusion` API tool type; API clients can create the same behavior by adding multiple named Advisor tools.
+Fusion is a convenience workflow built on Advisor. There is no separate `phaseo:fusion` API tool type; API clients can create the same behavior by adding multiple named Advisor tools.
 
 ## Playground setup
 
@@ -23,7 +23,7 @@ The main model sees those named advisors during the same tool loop and can use t
 {
   "tools": [
     {
-      "type": "ai-stats:advisor",
+      "type": "phaseo:advisor",
       "parameters": {
         "name": "fusion_analysis_1",
         "model": "anthropic/claude-opus-4-8",
@@ -33,7 +33,7 @@ The main model sees those named advisors during the same tool loop and can use t
       }
     },
     {
-      "type": "ai-stats:advisor",
+      "type": "phaseo:advisor",
       "parameters": {
         "name": "fusion_analysis_2",
         "model": "openai/gpt-5",
@@ -43,7 +43,7 @@ The main model sees those named advisors during the same tool loop and can use t
       }
     },
     {
-      "type": "ai-stats:advisor",
+      "type": "phaseo:advisor",
       "parameters": {
         "name": "fusion_judge",
         "model": "google/gemini-pro-latest",

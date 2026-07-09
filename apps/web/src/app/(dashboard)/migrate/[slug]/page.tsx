@@ -21,7 +21,7 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
 		return buildMetadata({
 			title: "AI Gateway Migration Guide",
 			description:
-				"Step-by-step migration guidance for moving from existing AI providers and gateways to AI Stats Gateway.",
+				"Step-by-step migration guidance for moving from existing AI providers and gateways to Phaseo Gateway.",
 			path,
 		});
 	}

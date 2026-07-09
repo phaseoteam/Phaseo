@@ -75,7 +75,7 @@ export default function RevokeDialog({
 					<DialogTitle>Revoke Access?</DialogTitle>
 					<DialogDescription>
 						This will immediately prevent <strong>{appName}</strong> from
-						accessing your AI Stats account. Any active tokens will be
+						accessing your Phaseo account. Any active tokens will be
 						invalidated.
 					</DialogDescription>
 				</DialogHeader>

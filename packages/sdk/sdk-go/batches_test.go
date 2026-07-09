@@ -1,4 +1,4 @@
-package aistats
+package phaseo
 
 import (
 	"context"
@@ -139,7 +139,7 @@ func TestCancelBatchReturnsPayload(t *testing.T) {
 
 func TestGetBatchWebSocketURLBuildsExpectedURL(t *testing.T) {
 	closeOnTerminal := false
-	client := New("test", "https://api.phaseo.app/v1/", WithDeprecationWarnings(false))
+	client := New("test", "https://api.phaseo.ai/v1/", WithDeprecationWarnings(false))
 
 	url, err := client.GetBatchWebSocketURL("batch_123", &AsyncJobWebSocketOptions{
 		IntervalMS:      1500,
@@ -149,7 +149,7 @@ func TestGetBatchWebSocketURLBuildsExpectedURL(t *testing.T) {
 		t.Fatalf("GetBatchWebSocketURL failed: %v", err)
 	}
 
-	expected := "wss://api.phaseo.app/v1/async/batch/batch_123/ws?close_on_terminal=false&interval_ms=1500"
+	expected := "wss://api.phaseo.ai/v1/async/batch/batch_123/ws?close_on_terminal=false&interval_ms=1500"
 	if url != expected {
 		t.Fatalf("unexpected websocket URL: %q", url)
 	}
@@ -157,7 +157,7 @@ func TestGetBatchWebSocketURLBuildsExpectedURL(t *testing.T) {
 
 func TestGetAsyncJobWebSocketURLBuildsExpectedURL(t *testing.T) {
 	closeOnTerminal := false
-	client := New("test", "https://api.phaseo.app/v1/", WithDeprecationWarnings(false))
+	client := New("test", "https://api.phaseo.ai/v1/", WithDeprecationWarnings(false))
 
 	url, err := client.GetAsyncJobWebSocketURL("video", "video 123", &AsyncJobWebSocketOptions{
 		IntervalMS:      1500,
@@ -167,7 +167,7 @@ func TestGetAsyncJobWebSocketURLBuildsExpectedURL(t *testing.T) {
 		t.Fatalf("GetAsyncJobWebSocketURL failed: %v", err)
 	}
 
-	expected := "wss://api.phaseo.app/v1/async/video/video%20123/ws?close_on_terminal=false&interval_ms=1500"
+	expected := "wss://api.phaseo.ai/v1/async/video/video%20123/ws?close_on_terminal=false&interval_ms=1500"
 	if url != expected {
 		t.Fatalf("unexpected websocket URL: %q", url)
 	}

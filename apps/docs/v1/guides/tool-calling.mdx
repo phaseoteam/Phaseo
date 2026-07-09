@@ -14,7 +14,7 @@ The Gateway supports tool payloads across these text endpoints:
 ## Request
 
 ```bash
-curl https://api.phaseo.app/v1/chat/completions \
+curl https://api.phaseo.ai/v1/chat/completions \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -82,11 +82,11 @@ Run your tool, then send the tool result back in the next request so the assista
 The gateway currently exposes these built-in server tools:
 
 - `gateway:datetime`
-- `ai-stats:web_search`
-- `ai-stats:web_fetch`
-- `ai-stats:advisor`
-- `ai-stats:image_generation`
-- `ai-stats:apply_patch`
+- `phaseo:web_search`
+- `phaseo:web_fetch`
+- `phaseo:advisor`
+- `phaseo:image_generation`
+- `phaseo:apply_patch`
 
 This tool runs on the gateway side (no client-side executor required). The gateway rewrites it into an upstream tool/function call, executes it, and feeds the tool result back into the model loop.
 
@@ -120,7 +120,7 @@ Notes:
 {
   "tools": [
     {
-      "type": "ai-stats:web_search",
+      "type": "phaseo:web_search",
       "parameters": {
         "engine": "exa",
         "max_results": 5,
@@ -139,7 +139,7 @@ Notes:
 
 - The model supplies the search query when it calls the tool.
 - `engine: "auto"` resolves to managed Exa search. `engine: "exa"`, `engine: "parallel"`, and `engine: "firecrawl"` run managed gateway search when the matching provider key is configured.
-- `engine: "native"` on `ai-stats:web_search` is converted to the provider-native web search tool for the request surface, such as OpenAI `web_search_preview` or Anthropic `web_search_20250305`.
+- `engine: "native"` on `phaseo:web_search` is converted to the provider-native web search tool for the request surface, such as OpenAI `web_search_preview` or Anthropic `web_search_20250305`.
 - `max_results` caps each search call; `max_total_results` caps cumulative results across the server-tool loop.
 - Managed search supports `allowed_domains` / `excluded_domains`, `search_context_size`, and `max_characters` where the selected engine exposes matching controls.
 - Usage includes `usage.server_tool_use.web_search_requests`, `usage.server_tool_use.web_search_results`, and `usage.server_tool_use.web_search_extra_results`.
@@ -151,7 +151,7 @@ Notes:
 {
   "tools": [
     {
-      "type": "ai-stats:web_fetch",
+      "type": "phaseo:web_fetch",
       "parameters": {
         "engine": "direct",
         "max_chars": 12000,
@@ -183,7 +183,7 @@ Native Anthropic fetch example:
 {
   "tools": [
     {
-      "type": "ai-stats:web_fetch",
+      "type": "phaseo:web_fetch",
       "parameters": {
         "engine": "native",
         "max_content_tokens": 9000,
@@ -191,7 +191,7 @@ Native Anthropic fetch example:
       }
     }
   ],
-  "tool_choice": "ai-stats:web_fetch"
+  "tool_choice": "phaseo:web_fetch"
 }
 ```
 
@@ -201,7 +201,7 @@ Native Anthropic fetch example:
 {
   "tools": [
     {
-      "type": "ai-stats:advisor",
+      "type": "phaseo:advisor",
       "parameters": {
         "name": "reviewer",
         "model": "claude-opus-4-8",
@@ -213,13 +213,13 @@ Native Anthropic fetch example:
       }
     }
   ],
-  "tool_choice": "ai-stats:advisor"
+  "tool_choice": "phaseo:advisor"
 }
 ```
 
 Notes:
 
-- Advisor is gateway-managed and works across supported text models. The calling model receives an `ai_stats_advisor` tool, or a named variant such as `ai_stats_advisor_reviewer`, and the gateway executes the Advisor request.
+- Advisor is gateway-managed and works across supported text models. The calling model receives an `phaseo_advisor` tool, or a named variant such as `phaseo_advisor_reviewer`, and the gateway executes the Advisor request.
 - `parameters.name` is optional. Use unique names to expose multiple advisors; names may contain letters, numbers, spaces, underscores, and dashes.
 - `parameters.model` pins the Advisor model. If omitted, the tool call can provide `model`; otherwise the gateway falls back to the outer request model.
 - `parameters.forward_transcript` defaults to `false`. Set it to `true` when the Advisor should receive the current conversation transcript.
@@ -232,7 +232,7 @@ Notes:
 {
   "tools": [
     {
-      "type": "ai-stats:image_generation",
+      "type": "phaseo:image_generation",
       "parameters": {
         "model": "openai/gpt-image-2",
         "quality": "high",
@@ -247,7 +247,7 @@ Notes:
 Notes:
 
 - The model supplies the image `prompt` when it calls the tool. `description` is also accepted as a prompt alias.
-- `parameters.model` pins the image model. If omitted, the tool call can provide `model`; otherwise AI Stats uses the default image model.
+- `parameters.model` pins the image model. If omitted, the tool call can provide `model`; otherwise Phaseo uses the default image model.
 - The tool result contains either `imageUrl` or base64 image data, depending on the provider response.
 - Usage includes `usage.server_tool_use.image_generation_requests`; image-model token usage is merged into the parent request.
 
@@ -257,7 +257,7 @@ Notes:
 {
   "tools": [
     {
-      "type": "ai-stats:apply_patch"
+      "type": "phaseo:apply_patch"
     }
   ],
   "tool_choice": "auto"
@@ -266,8 +266,8 @@ Notes:
 
 Notes:
 
-- `ai-stats:apply_patch` is supported on the Responses API.
-- AI Stats validates patch operations and returns them in the tool result. Your client decides whether to apply or reject the patch.
+- `phaseo:apply_patch` is supported on the Responses API.
+- Phaseo validates patch operations and returns them in the tool result. Your client decides whether to apply or reject the patch.
 - Supported operation types are `create_file`, `update_file`, and `delete_file`.
 - Usage includes `usage.server_tool_use.apply_patch_requests`.
 

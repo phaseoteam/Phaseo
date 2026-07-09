@@ -21,13 +21,13 @@ const authRoutes = [
 	{
 		name: "plain sign-up",
 		path: "/sign-up",
-		heading: "Welcome to AI Stats",
+		heading: "Welcome to Phaseo",
 		button: "Sign up with email",
 	},
 	{
 		name: "sign-up with returnUrl",
 		path: "/sign-up?returnUrl=%2Fsettings%2Fbeta",
-		heading: "Welcome to AI Stats",
+		heading: "Welcome to Phaseo",
 		button: "Sign up with email",
 	},
 ] as const;

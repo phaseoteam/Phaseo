@@ -1724,7 +1724,7 @@ function Overview({ data }: { data: ObservabilityData }) {
 				</ChartCard>
 				<ChartCard
 					title="Usage type"
-					subtitle="Daily AI Stats Credits versus BYOK spend."
+					subtitle="Daily Phaseo Credits versus BYOK spend."
 				>
 					<StackedTimeSeriesAreaChart
 						data={data.charts.usageTypeCost}

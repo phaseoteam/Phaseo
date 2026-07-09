@@ -1,9 +1,9 @@
 ---
 title: "LangChain"
-description: "Use LangChain with AI Stats through the OpenAI-compatible chat API."
+description: "Use LangChain with Phaseo through the OpenAI-compatible chat API."
 ---
 
-Use this guide when you want LangChain chains, agents, or LangGraph workflows to call models through AI Stats.
+Use this guide when you want LangChain chains, agents, or LangGraph workflows to call models through Phaseo.
 
 ## Install
 
@@ -19,8 +19,8 @@ from langchain_openai import ChatOpenAI
 
 llm = ChatOpenAI(
     model="openai/gpt-5-nano",
-    api_key=os.environ["AI_STATS_API_KEY"],
-    base_url="https://api.phaseo.app/v1",
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.ai/v1",
 )
 
 result = llm.invoke("Write one sentence about routing reliability.")
@@ -39,8 +39,8 @@ def call_model(state):
 
 ## Notes
 
-- LangChain's OpenAI-compatible path targets Chat Completions. Use AI Stats features that are available on `/v1/chat/completions`.
-- If you need Responses-only server tools such as `ai-stats:apply_patch`, call AI Stats directly or use the OpenAI SDK guide.
+- LangChain's OpenAI-compatible path targets Chat Completions. Use Phaseo features that are available on `/v1/chat/completions`.
+- If you need Responses-only server tools such as `phaseo:apply_patch`, call Phaseo directly or use the OpenAI SDK guide.
 - For tracing, pair this with [Observability](./observability.mdx).
 
 ## Related

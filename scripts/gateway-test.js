@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 "use strict";
 
-const DEFAULT_BASE_URL = process.env.AI_STATS_BASE_URL
+const DEFAULT_BASE_URL = process.env.PHASEO_BASE_URL
     || process.env.GATEWAY_BASE_URL
     || "http://localhost:8787";
 
-const DEFAULT_API_KEY = process.env.AI_STATS_API_KEY
+const DEFAULT_API_KEY = process.env.PHASEO_API_KEY
     || process.env.GATEWAY_API_KEY
     || "";
 
@@ -630,7 +630,7 @@ async function main() {
         return;
     }
     if (!args.apiKey) {
-        console.error("Missing API key. Set AI_STATS_API_KEY or pass --api-key.");
+        console.error("Missing API key. Set PHASEO_API_KEY or pass --api-key.");
         process.exit(1);
     }
 

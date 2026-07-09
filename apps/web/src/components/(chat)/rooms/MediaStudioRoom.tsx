@@ -915,7 +915,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 	const composerModelLogoId =
 		composerSelectedModel?.organisationId?.trim() ||
 		composerSelectedModel?.providerId ||
-		(activeModelId.split("/")[0] || "ai-stats");
+		(activeModelId.split("/")[0] || "phaseo");
 	const composerModelLabel =
 		(activeModelId &&
 			(modelSettings.modelDisplayNameById[activeModelId] ||

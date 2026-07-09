@@ -254,19 +254,19 @@ export function collectUnsupportedRoutingFields(body: any): Array<{
 			field: "data_collection",
 			aliases: ["data_collection", "dataCollection"],
 			message:
-				"Routing by provider data-collection policy is not yet backed by provider metadata in AI Stats Gateway.",
+				"Routing by provider data-collection policy is not yet backed by provider metadata in Phaseo Gateway.",
 		},
 		{
 			field: "enforce_distillable_text",
 			aliases: ["enforce_distillable_text", "enforceDistillableText"],
 			message:
-				"Routing by distillable-text policy is not yet backed by provider metadata in AI Stats Gateway.",
+				"Routing by distillable-text policy is not yet backed by provider metadata in Phaseo Gateway.",
 		},
 		{
 			field: "quantizations",
 			aliases: ["quantizations"],
 			message:
-				"Routing by quantization is not yet backed by provider metadata in AI Stats Gateway.",
+				"Routing by quantization is not yet backed by provider metadata in Phaseo Gateway.",
 		},
 	];
 

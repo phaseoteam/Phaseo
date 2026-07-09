@@ -2,20 +2,22 @@
 title: "Security Notice: Third-Party Breach (April 19, 2026)"
 description: Incident response update following Vercel's April 19, 2026 security bulletin, including mitigation actions and customer guidance.
 publishedAt: 2026-04-21T12:00:00Z
-author: AI Stats Team
+author: Phaseo Team
+category: announcements
+pinned: false
 tags:
   - Security
   - Incident Response
   - Key Rotation
-draft: false
+draft: true
 ---
 
 ## Summary
 
-Following Vercel's security bulletin published on **April 19, 2026**, we initiated incident-response procedures across AI Stats.
-As part of that response, we rotated AI Stats internal platform secrets and credentials, invalidated prior internal values, and verified key-handling paths across gateway services.
+Following Vercel's security bulletin published on **April 19, 2026**, we initiated incident-response procedures across Phaseo.
+As part of that response, we rotated Phaseo internal platform secrets and credentials, invalidated prior internal values, and verified key-handling paths across gateway services.
 
-As of **April 21, 2026**, we have no evidence of unauthorized access to AI Stats user data.
+As of **April 21, 2026**, we have no evidence of unauthorized access to Phaseo user data.
 Customer-managed API keys were not rotated by us. We recommend that all customers rotate their API keys for safety as a precaution.
 
 ## Official Bulletin
@@ -28,9 +30,9 @@ Key points reported by Vercel include:
 - No reported evidence that sensitive environment variable values were accessed.
 - No reported evidence of compromise to npm packages published by Vercel.
 
-## Actions Taken by AI Stats
+## Actions Taken by Phaseo
 
-- Rotated AI Stats internal platform secrets and credentials.
+- Rotated Phaseo internal platform secrets and credentials.
 - Invalidated superseded key material and completed control checks.
 - Reinforced key-management defaults and operational safeguards.
 - Reviewed service activity and logs for suspicious behavior.
@@ -38,7 +40,7 @@ Key points reported by Vercel include:
 
 ## Required Customer Actions
 
-1. Rotate your AI Stats API keys in [/settings/keys](/settings/keys).
+1. Rotate your Phaseo API keys in [/settings/keys](/settings/keys).
 2. Update application, worker, and CI/CD secrets to the new values.
 3. Confirm traffic on the new keys.
 4. Revoke old keys after cutover.

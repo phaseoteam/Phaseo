@@ -20,7 +20,7 @@ export function RankingsHeader() {
                 </div>
             </div>
             <p className="text-sm text-muted-foreground">
-                Aggregated data from AI Stats Gateway. Updated every 5 minutes. All metrics are privacy-preserving aggregations across teams.
+                Aggregated data from Phaseo Gateway. Updated every 5 minutes. All metrics are privacy-preserving aggregations across teams.
             </p>
         </div>
     );

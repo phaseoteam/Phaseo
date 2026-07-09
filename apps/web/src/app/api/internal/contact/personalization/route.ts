@@ -4,12 +4,14 @@ import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 
 export type ContactPersonalizationData = {
 	defaultInternalId: string;
+	isAuthenticated: boolean;
 	tierLabel: string;
 	userEmail: string | null;
 };
 
 const EMPTY_CONTACT_PERSONALIZATION: ContactPersonalizationData = {
 	defaultInternalId: "",
+	isAuthenticated: false,
 	tierLabel: "",
 	userEmail: null,
 };
@@ -23,6 +25,7 @@ export async function GET() {
 
 	const result: ContactPersonalizationData = {
 		...EMPTY_CONTACT_PERSONALIZATION,
+		isAuthenticated: Boolean(user),
 		userEmail: user?.email ?? null,
 	};
 
@@ -44,6 +47,7 @@ export async function GET() {
 
 		return NextResponse.json({
 			defaultInternalId: teamResult?.slug ?? workspaceId,
+			isAuthenticated: result.isAuthenticated,
 			tierLabel: lastMonthUsd >= 10000 ? "Enterprise" : "Basic",
 			userEmail: result.userEmail,
 		} satisfies ContactPersonalizationData);

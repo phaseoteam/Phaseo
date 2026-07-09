@@ -29,13 +29,13 @@ export async function generateMetadata(props: {
 		return buildMetadata({
 			title: "AI Subscription Plan Details",
 			description:
-				"Explore AI subscription plans and pricing for leading AI tools on AI Stats, including model access, usage limits, feature differences, and practical upgrade paths.",
+				"Explore AI subscription plans and pricing for leading AI tools on Phaseo, including model access, usage limits, feature differences, and practical upgrade paths.",
 			path,
 			keywords: [
 				"AI subscription plan",
 				"AI pricing",
 				"LLM subscription",
-				"AI Stats",
+				"Phaseo",
 			],
 			imagePath,
 		});
@@ -62,7 +62,7 @@ export async function generateMetadata(props: {
 	}
 
 	const descriptionParts = [
-		`${plan.name} subscription from ${providerName} on AI Stats.`,
+		`${plan.name} subscription from ${providerName} on Phaseo.`,
 		plan.description
 			? plan.description.length > 180
 				? `${plan.description.slice(0, 177)}…`
@@ -82,7 +82,7 @@ export async function generateMetadata(props: {
 			providerName,
 			"AI subscription plan",
 			"AI pricing",
-			"AI Stats",
+			"Phaseo",
 		],
 		imagePath,
 	});
