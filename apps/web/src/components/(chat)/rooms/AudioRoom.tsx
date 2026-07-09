@@ -1734,7 +1734,6 @@ export function AudioRoom({
 			let payload: any = null;
 			let audioSrc: string | undefined;
 			let text: string | undefined;
-			let metrics: AudioEntryMetrics | undefined;
 			const normalizedContentType = contentType.toLowerCase();
 			const isJsonLike =
 				normalizedContentType.includes("application/json") ||
@@ -1814,7 +1813,7 @@ export function AudioRoom({
 				audioSrc = await blobToDataUrl(blob);
 			}
 			const elapsedMs = Math.max(0, Math.round(performance.now() - requestStartedAt));
-			metrics = extractMetricsFromRaw(payload, elapsedMs);
+			const metrics = extractMetricsFromRaw(payload, elapsedMs);
 			if (pendingEntryId) {
 				removeEntry(pendingEntryId);
 			}
@@ -1896,10 +1895,10 @@ export function AudioRoom({
 							</span>
 						</SidebarMenuButton>
 						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<SidebarMenuAction showOnHover>
+							<DropdownMenuTrigger render={<SidebarMenuAction showOnHover />}>
+
 									<MoreHorizontal className="h-4 w-4" />
-								</SidebarMenuAction>
+
 							</DropdownMenuTrigger>
 							<DropdownMenuContent side="right">
 								<DropdownMenuItem

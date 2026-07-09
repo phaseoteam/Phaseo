@@ -435,16 +435,15 @@ function FirstPromptCodeBlock({
 					})}
 					{variant === "beta" ? (
 						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<button
+							<DropdownMenuTrigger render={<button
 									type="button"
 									className={cn(
 										"inline-flex items-center gap-1.25 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors",
 										!PRIMARY_SNIPPET_ID_SET.has(snippetId)
 											? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950"
 											: "border-zinc-200/80 bg-white text-zinc-600 hover:border-zinc-300 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600 dark:hover:text-zinc-100"
-									)}
-								>
+									)} />}>
+
 									{selectedMoreSnippet ? (
 										<>
 											<SnippetIcon
@@ -457,7 +456,7 @@ function FirstPromptCodeBlock({
 										"More"
 									)}
 									<ChevronDown className="h-3.5 w-3.5" />
-								</button>
+
 							</DropdownMenuTrigger>
 							<DropdownMenuContent align="start" className="min-w-40">
 								{MORE_SNIPPETS.map((snippet) => (

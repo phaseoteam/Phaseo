@@ -6510,6 +6510,7 @@ components:
         - fiction-live-bench
         - figqa
         - financeagent-v1.1
+        - financeagent-v2
         - finsearchcomp
         - finsearchcomp-t2-t3
         - finsearchcomp-t3
@@ -6602,6 +6603,7 @@ components:
         - ivebench-instruction-following-vs-runway-aleph
         - ivebench-overall-vs-kling-o1
         - ivebench-overall-vs-runway-aleph
+        - jobbench
         - korbench
         - lbpp-(v2)
         - legal-agent-benchmark
@@ -8186,8 +8188,6 @@ components:
         - deepseek/deepseek-v4-pro-lightning
         - eleven-labs/eleven-flash-v2
         - eleven-labs/eleven-flash-v2.5
-        - eleven-labs/eleven-monolingual-v1
-        - eleven-labs/eleven-multilingual-v1
         - eleven-labs/eleven-multilingual-v2
         - eleven-labs/eleven-turbo-v2
         - eleven-labs/eleven-turbo-v2.5
@@ -8235,10 +8235,12 @@ components:
         - inclusionai/ring-flash-2.0
         - inflection/inflection-3-pi
         - inflection/inflection-3-productivity
+        - kwaipilot/kat-coder-air-v2.5
         - kwaipilot/kat-coder-exp-72b-1010
         - kwaipilot/kat-coder-pro
         - kwaipilot/kat-coder-pro-v1
         - kwaipilot/kat-coder-pro-v2
+        - kwaipilot/kat-coder-pro-v2.5
         - liquid-ai/lfm-2-24b-a2b
         - meituan/longcat-2.0
         - meta/llama-3-70b
@@ -8397,7 +8399,6 @@ components:
         - openai/whisper-1
         - poolside/laguna-m.1:free
         - poolside/laguna-xs-2.1:free
-        - poolside/laguna-xs.2:free
         - qwen/qvq-max
         - qwen/qwen-3.6-plus
         - qwen/qwen-flash
@@ -8505,6 +8506,7 @@ components:
         - spacex-ai/grok-4.20-beta-0309
         - spacex-ai/grok-4.20-multi-agent-beta-0309
         - spacex-ai/grok-4.3
+        - spacex-ai/grok-4.5
         - spacex-ai/grok-build-0.1
         - spacex-ai/grok-code-fast-1
         - spacex-ai/grok-imagine-image

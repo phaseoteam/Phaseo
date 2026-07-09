@@ -196,11 +196,18 @@
         "status": "active",
         "params": [
           {
+            "param_id": "max_output_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Responses API field."
+          },
+          {
             "param_id": "max_tokens",
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,
-            "notes": null
+            "notes": "Chat Completions API field."
           },
           {
             "param_id": "temperature",
@@ -210,7 +217,35 @@
             "notes": null
           },
           {
-            "param_id": "top_p",
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "stream",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "reasoning_split",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "AION API Reference lists reasoning_effort as Aion 2.0-only; Aion 3.0 support is limited to reasoning_split."
+          },
+          {
+            "param_id": "metadata",
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,
@@ -239,11 +274,18 @@
         "status": "active",
         "params": [
           {
+            "param_id": "max_output_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Responses API field."
+          },
+          {
             "param_id": "max_tokens",
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,
-            "notes": null
+            "notes": "Chat Completions API field."
           },
           {
             "param_id": "temperature",
@@ -253,7 +295,35 @@
             "notes": null
           },
           {
-            "param_id": "top_p",
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "stream",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "reasoning_split",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "AION API Reference lists reasoning_effort as Aion 2.0-only; Aion 3.0 Mini support is limited to reasoning_split."
+          },
+          {
+            "param_id": "metadata",
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,

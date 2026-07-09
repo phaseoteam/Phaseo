@@ -161,19 +161,18 @@ export default function CreateManagementKeyDialog({
 					<form onSubmit={onCreate} className="space-y-4">
 						{workspaces && workspaces.length > 1 ? (
 							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button
+								<DropdownMenuTrigger render={<Button
 										variant="outline"
 										size="sm"
-										className="w-full flex items-center justify-between"
-									>
+										className="w-full flex items-center justify-between" />}>
+
 										<span>
 											{workspaces.find(
 												(workspace) => workspace.id === selectedWorkspaceId
 											)?.name || "Personal"}
 										</span>
 										<ChevronDown className="ml-2 h-4 w-4" />
-									</Button>
+
 								</DropdownMenuTrigger>
 								<DropdownMenuContent
 									side="bottom"

@@ -7,6 +7,7 @@ export type SiteNotice = {
 	audience: SiteNoticeAudience;
 	tone: SiteNoticeTone;
 	message: string;
+	showTiming?: boolean;
 	cta?: {
 		label: string;
 		href: string;
@@ -19,6 +20,16 @@ export const VERCEL_SECURITY_NOTICE_HREF =
 	"/announcements/security-notice-key-rotation-vercel-2026-04-19";
 
 export const SITE_NOTICES: SiteNotice[] = [
+	{
+		id: "maintenance-2026-07-09",
+		enabled: true,
+		audience: "all",
+		tone: "warning",
+		message:
+			"Maintenance is in progress. Some features may be temporarily unavailable. Please try again shortly if something is not working.",
+		showTiming: true,
+		endsAt: "2026-07-09T16:00:00.000Z",
+	},
 	{
 		id: "vercel-april-2026-security-incident",
 		enabled: true,

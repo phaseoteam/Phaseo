@@ -64,17 +64,16 @@ export default function ManagementKeyLimitsItem({ k }: any) {
 
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
-			<DropdownMenuItem asChild>
-				<button
+			<DropdownMenuItem render={<button
 					className="w-full text-left flex items-center gap-2"
 					onClick={(e) => {
 						e.preventDefault();
 						setTimeout(() => setOpen(true), 0);
-					}}
-				>
+					}} />}>
+
 					<Settings className="mr-2" />
 					Limits
-				</button>
+
 			</DropdownMenuItem>
 			<DialogContent>
 				<DialogHeader>

@@ -61,6 +61,26 @@ export function applyReasoningParams(args: {
 	const reasoning = args.ir.reasoning;
 	if (!reasoning) return;
 
+	if (args.providerId === "meta") {
+		const rawEffort =
+			typeof reasoning.effort === "string"
+				? reasoning.effort
+				: reasoning.enabled === false
+					? "minimal"
+					: reasoning.enabled === true
+						? "medium"
+						: undefined;
+		const effort = rawEffort === "none"
+			? "minimal"
+			: rawEffort === "max"
+				? "xhigh"
+				: rawEffort;
+		if (effort !== undefined && args.request.reasoning_effort == null) {
+			args.request.reasoning_effort = effort;
+		}
+		return;
+	}
+
 	const config = resolveReasoningConfig(args.providerId);
 	if (!config) return;
 

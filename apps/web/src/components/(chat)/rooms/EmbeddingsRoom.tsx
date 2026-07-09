@@ -1094,10 +1094,10 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 							</span>
 						</SidebarMenuButton>
 						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<SidebarMenuAction showOnHover>
+							<DropdownMenuTrigger render={<SidebarMenuAction showOnHover />}>
+
 									<MoreHorizontal className="h-4 w-4" />
-								</SidebarMenuAction>
+
 							</DropdownMenuTrigger>
 							<DropdownMenuContent side="right">
 								<DropdownMenuItem

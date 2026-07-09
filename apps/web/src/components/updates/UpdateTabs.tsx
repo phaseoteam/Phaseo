@@ -125,21 +125,21 @@ export default function UpdateTabs() {
 			{/* Mobile */}
 			<div className="mb-4 mt-6 md:hidden">
 				<DropdownMenu>
-					<DropdownMenuTrigger asChild>
-						<Button className="group flex w-full items-center justify-between rounded border bg-background p-2 text-base text-foreground">
+					<DropdownMenuTrigger render={<Button className="group flex w-full items-center justify-between rounded border bg-background p-2 text-base text-foreground" />}>
+
 							{activeTab.label}
 							<ChevronDown className="ml-2 h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
-						</Button>
+
 					</DropdownMenuTrigger>
 					<DropdownMenuContent
 						align="start"
-						className="w-(--radix-popper-anchor-width)"
+						className="w-(--anchor-width)"
 					>
 						{tabs.map((tab) => (
-							<DropdownMenuItem key={tab.category} asChild>
-								<Link href={tab.href} prefetch={false}>
+							<DropdownMenuItem key={tab.category}  render={<Link href={tab.href} prefetch={false} />}>
+
 									{tab.label}
-								</Link>
+
 							</DropdownMenuItem>
 						))}
 					</DropdownMenuContent>

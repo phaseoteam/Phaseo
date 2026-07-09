@@ -6,7 +6,9 @@
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { internalVideoWebhookRoutes } from "./video-webhooks";
+import { internalCacheRoutes } from "./cache";
 
 export const internalRouter = new Hono<Env>();
 
+internalRouter.route("/cache", internalCacheRoutes);
 internalRouter.route("/video-webhooks", internalVideoWebhookRoutes);

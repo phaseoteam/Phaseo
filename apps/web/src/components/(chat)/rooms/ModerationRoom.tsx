@@ -1186,10 +1186,10 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 							</span>
 						</SidebarMenuButton>
 						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<SidebarMenuAction showOnHover>
+							<DropdownMenuTrigger render={<SidebarMenuAction showOnHover />}>
+
 									<MoreHorizontal className="h-4 w-4" />
-								</SidebarMenuAction>
+
 							</DropdownMenuTrigger>
 							<DropdownMenuContent side="right">
 								<DropdownMenuItem
@@ -1697,18 +1697,17 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 															</p>
 															{showCategoryViewSelector ? (
 																<DropdownMenu>
-																	<DropdownMenuTrigger asChild>
-																		<Button
+																	<DropdownMenuTrigger render={<Button
 																			type="button"
 																			variant="ghost"
-																			className="h-6 px-1 text-xs font-medium text-muted-foreground hover:text-foreground"
-																		>
+																			className="h-6 px-1 text-xs font-medium text-muted-foreground hover:text-foreground" />}>
+
 																			{selectedCategoryView === "combined"
 																				? "All"
 																				: selectedCategoryView === "text"
 																					? "Text Only"
 																					: "Image Only"}
-																		</Button>
+
 																	</DropdownMenuTrigger>
 																	<DropdownMenuContent align="end" className="w-28">
 																		<DropdownMenuItem

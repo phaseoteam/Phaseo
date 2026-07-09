@@ -59,19 +59,18 @@ export default function DeleteManagementKeyItem({
 	return (
 		<Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
 			{trigger ? (
-				<DropdownMenuItem asChild>
-					<div
+				<DropdownMenuItem render={<div
 						role="button"
 						tabIndex={0}
 						className="w-full text-left flex items-center gap-2 text-red-600"
 						onClick={(e) => {
 							e.preventDefault();
 							setTimeout(() => setDialogOpen(true), 0);
-						}}
-					>
+						}} />}>
+
 						<Trash2 className="mr-2" />
 						Delete
-					</div>
+
 				</DropdownMenuItem>
 			) : null}
 

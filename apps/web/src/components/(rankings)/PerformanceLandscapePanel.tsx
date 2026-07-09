@@ -86,16 +86,15 @@ export function PerformanceLandscapePanel({
 		<div className="flex shrink-0 items-center gap-2">
 			{availableRanges.length > 1 ? (
 				<DropdownMenu>
-					<DropdownMenuTrigger asChild>
-						<Button
+					<DropdownMenuTrigger render={<Button
 							type="button"
 							variant="outline"
 							size="sm"
-							className="h-9 w-32 justify-between rounded-lg px-4 font-normal text-muted-foreground"
-						>
+							className="h-9 w-32 justify-between rounded-lg px-4 font-normal text-muted-foreground" />}>
+
 							{rangeLabel(range)}
 							<ChevronDown className="ml-2 h-4 w-4 opacity-60" />
-						</Button>
+
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="end" className="min-w-32">
 						{RANGE_OPTIONS.map((option) => (
@@ -117,16 +116,15 @@ export function PerformanceLandscapePanel({
 				</DropdownMenu>
 			) : null}
 			<DropdownMenu>
-				<DropdownMenuTrigger asChild>
-					<Button
+				<DropdownMenuTrigger render={<Button
 						type="button"
 						variant="outline"
 						size="sm"
-						className="h-9 w-36 justify-between rounded-lg px-4 font-normal text-muted-foreground"
-					>
+						className="h-9 w-36 justify-between rounded-lg px-4 font-normal text-muted-foreground" />}>
+
 						{modeLabel(mode)}
 						<ChevronDown className="ml-2 h-4 w-4 opacity-60" />
-					</Button>
+
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className="min-w-36">
 					{MODE_OPTIONS.map((option) => (

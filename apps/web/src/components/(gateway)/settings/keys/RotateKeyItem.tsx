@@ -128,16 +128,15 @@ export default function RotateKeyItem({
 			}}
 		>
 			{trigger ? (
-				<DropdownMenuItem asChild>
-					<div
+				<DropdownMenuItem render={<div
 						className="w-full text-left flex items-center gap-2"
 						onClick={() => {
 							setTimeout(() => setOpen(true), 0);
-						}}
-					>
+						}} />}>
+
 						<RefreshCw className="mr-2 h-4 w-4" />
 						Rotate
-					</div>
+
 				</DropdownMenuItem>
 			) : null}
 			<DialogContent>

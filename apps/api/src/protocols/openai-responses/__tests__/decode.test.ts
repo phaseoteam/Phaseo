@@ -507,6 +507,19 @@ describe("decodeOpenAIResponsesRequest", () => {
 		});
 	});
 
+	it("should ignore unsupported top-level reasoning_effort", () => {
+		const request = {
+			model: "meta/muse-spark-1.1",
+			input: "Solve this problem",
+			reasoning_effort: "xhigh",
+		};
+
+		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
+
+		expect(ir.reasoning).toBeUndefined();
+		expect(ir.vendor?.meta).toBeUndefined();
+	});
+
 	it("should omit empty reasoning object", () => {
 		const request = {
 			model: "gpt-4",

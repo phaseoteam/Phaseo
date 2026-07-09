@@ -193,11 +193,11 @@ export default function ModelEditDialog({ modelId, tab }: ModelEditDialogProps) 
           <>
             <div className="flex items-center gap-2">
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-48 justify-between">
+                <DropdownMenuTrigger render={<Button variant="outline" className="w-48 justify-between" />}>
+
                     {TAB_LABELS[currentTab as keyof typeof TAB_LABELS]}
                     <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
-                  </Button>
+
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-48">
                   {Object.entries(TAB_LABELS).map(([value, label]) => (

@@ -145,17 +145,16 @@ export default function CreateTeamInviteDialog({
 							</div>
 						) : (
 							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button
+								<DropdownMenuTrigger render={<Button
 										variant="outline"
-										className="w-full justify-between"
-									>
+										className="w-full justify-between" />}>
+
 										{selectedTeam
 											? teams.find(
 													(x) => x.id === selectedTeam
 											  )?.name
 											: "Select a workspace"}
-									</Button>
+
 								</DropdownMenuTrigger>
 								<DropdownMenuContent>
 									{teams.map((t) => (
@@ -174,15 +173,14 @@ export default function CreateTeamInviteDialog({
 							Role for invitees
 						</label>
 						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button
+							<DropdownMenuTrigger render={<Button
 									variant="outline"
-									className="w-full justify-between"
-								>
+									className="w-full justify-between" />}>
+
 									{role === "admin"
 										? "Admin"
 										: "Member"}
-								</Button>
+
 							</DropdownMenuTrigger>
 							<DropdownMenuContent align="start">
 								<DropdownMenuItem
