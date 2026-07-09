@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { enrichSuccessPayload, formatClientPayload } from "./payload";
+import { enrichSuccessPayload, extractFinishReason, formatClientPayload } from "./payload";
 
 describe("enrichSuccessPayload model selection", () => {
 	it("backfills assistant phase from IR when raw output message omits it", async () => {
@@ -516,5 +516,26 @@ describe("enrichSuccessPayload model selection", () => {
 				arguments: "{\"timezones\":[\"UTC\"]}",
 			},
 		]);
+	});
+
+	it("treats named Responses tool_call output as tool-call completion", () => {
+		expect(extractFinishReason({
+			status: "completed",
+			output: [{
+				type: "tool_call",
+				id: "call_datetime",
+				name: "gateway_datetime",
+				arguments: "{\"timezones\":[\"UTC\"]}",
+			}],
+		})).toBe("tool_calls");
+
+		expect(extractFinishReason({
+			status: "completed",
+			output: [{
+				type: "tool_call",
+				id: "placeholder",
+				name: "tool_call",
+			}],
+		})).toBe("stop");
 	});
 });

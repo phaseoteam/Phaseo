@@ -69,8 +69,7 @@ export function ChatRoomSwitcher() {
 				{collapsed ? (
 					<Tooltip>
 						<TooltipTrigger asChild>
-							<DropdownMenuTrigger asChild>
-								<Button
+							<DropdownMenuTrigger render={<Button
 									variant="ghost"
 									className={cn(
 										"h-8 gap-0 px-2 text-sm font-medium",
@@ -78,8 +77,8 @@ export function ChatRoomSwitcher() {
 											? "w-8 justify-center px-0"
 											: "w-full justify-between px-2",
 									)}
-									aria-label={activeRoom.label}
-								>
+									aria-label={activeRoom.label} />}>
+
 									<span className="inline-flex items-center gap-2">
 										<ActiveIcon className="h-4 w-4 shrink-0" />
 										{!collapsed ? activeRoom.label : null}
@@ -87,7 +86,7 @@ export function ChatRoomSwitcher() {
 									{!collapsed ? (
 										<ChevronsUpDown className="h-4 w-4 text-muted-foreground" />
 									) : null}
-								</Button>
+
 							</DropdownMenuTrigger>
 						</TooltipTrigger>
 						<TooltipContent side="right" align="center" sideOffset={10}>
@@ -95,8 +94,7 @@ export function ChatRoomSwitcher() {
 						</TooltipContent>
 					</Tooltip>
 				) : (
-					<DropdownMenuTrigger asChild>
-						<Button
+					<DropdownMenuTrigger render={<Button
 							variant="ghost"
 							className={cn(
 								"h-8 gap-0 px-2 text-sm font-medium",
@@ -104,8 +102,8 @@ export function ChatRoomSwitcher() {
 									? "w-8 justify-center px-0"
 									: "w-full justify-between px-2",
 							)}
-							aria-label={activeRoom.label}
-						>
+							aria-label={activeRoom.label} />}>
+
 							<span className="inline-flex items-center gap-2">
 								<ActiveIcon className="h-4 w-4 shrink-0" />
 								{!collapsed ? activeRoom.label : null}
@@ -113,7 +111,7 @@ export function ChatRoomSwitcher() {
 							{!collapsed ? (
 								<ChevronsUpDown className="h-4 w-4 text-muted-foreground" />
 							) : null}
-						</Button>
+
 					</DropdownMenuTrigger>
 				)}
 				<DropdownMenuContent
@@ -149,13 +147,12 @@ export function ChatRoomSwitcher() {
 						return (
 							<DropdownMenuItem
 								key={room.id}
-								asChild
 								className={cn(active ? "bg-muted" : "")}
-							>
-								<Link href={room.route} className="flex items-center gap-2">
+							 render={<Link href={room.route} className="flex items-center gap-2" />}>
+
 									<Icon className="h-4 w-4" />
 									<span>{room.label}</span>
-								</Link>
+
 							</DropdownMenuItem>
 						);
 					})}

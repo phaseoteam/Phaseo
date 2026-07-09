@@ -1,0 +1,45 @@
+{
+  "key": "atlascloud:kwaipilot/kat-coder-air-v2.5:text.generate",
+  "api_provider_id": "atlascloud",
+  "provider_slug": "atlascloud",
+  "api_model_id": "kwaipilot/kat-coder-air-v2.5",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.15,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "AtlasCloud public LLM listing shows Kat Coder Air V2.5 input pricing at $0.15 per 1M tokens.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-08T00:00:00Z"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.03,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "StreamLake-backed provider payload lists Kat Coder Air V2.5 input_cache_read pricing at $0.03 per 1M tokens.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-08T00:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.6,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "AtlasCloud public LLM listing shows Kat Coder Air V2.5 output pricing at $0.60 per 1M tokens.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-08T00:00:00Z"
+    }
+  ]
+}

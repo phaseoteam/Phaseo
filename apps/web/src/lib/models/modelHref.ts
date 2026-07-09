@@ -1,28 +1,51 @@
-export function getModelRouteSlug(modelId: string, organisationId: string) {
-	const normalizedModelId = modelId.trim();
-	const normalizedOrganisationId = organisationId.trim();
+type ModelRouteParts = {
+	organisationId: string;
+	routeSlug: string;
+};
 
-	if (!normalizedModelId || !normalizedOrganisationId) return "";
+function getModelRouteParts(
+	modelId?: string | null,
+	organisationId?: string | null,
+): ModelRouteParts | null {
+	const normalizedModelId = String(modelId ?? "").trim();
+	const normalizedOrganisationId = String(organisationId ?? "").trim();
+
+	if (!normalizedModelId) return null;
 
 	const [firstSegment, ...restSegments] = normalizedModelId.split("/");
-	if (
-		restSegments.length > 0 &&
-		firstSegment.toLowerCase() === normalizedOrganisationId.toLowerCase()
-	) {
-		return restSegments.join("/");
+	if (firstSegment && restSegments.length > 0) {
+		const routeSlug = restSegments.join("/").trim();
+		if (!routeSlug) return null;
+		return {
+			organisationId: firstSegment,
+			routeSlug,
+		};
 	}
 
-	return normalizedModelId;
+	if (!normalizedOrganisationId) return null;
+
+	return {
+		organisationId: normalizedOrganisationId,
+		routeSlug: normalizedModelId,
+	};
+}
+
+export function getModelRouteSlug(
+	modelId: string,
+	organisationId?: string | null,
+) {
+	const routeParts = getModelRouteParts(modelId, organisationId);
+	if (!routeParts) return "";
+
+	return routeParts.routeSlug;
 }
 
 export function getModelDetailsHref(
 	organisationId?: string | null,
-	modelId?: string | null
+	modelId?: string | null,
 ) {
-	if (!organisationId || !modelId) return null;
+	const routeParts = getModelRouteParts(modelId, organisationId);
+	if (!routeParts) return null;
 
-	const routeSlug = getModelRouteSlug(modelId, organisationId);
-	if (!routeSlug) return null;
-
-	return `/models/${encodeURIComponent(organisationId)}/${encodeURIComponent(routeSlug)}`;
+	return `/models/${encodeURIComponent(routeParts.organisationId)}/${encodeURIComponent(routeParts.routeSlug)}`;
 }

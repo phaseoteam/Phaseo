@@ -1,0 +1,62 @@
+{
+  "model_id": "spacex-ai/grok-0",
+  "organisation_id": "spacex-ai",
+  "name": "Grok 0",
+  "status": "Retired",
+  "previous_model_id": null,
+  "description": "Grok 0 is a text-to-speech model from SpaceXAI. It accepts text inputs and produces text outputs.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "spacex-ai/grok-0",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://x.ai/news/grok"
+    }
+  ],
+  "details": [
+    {
+      "name": "parameter_count",
+      "value": 314000000000
+    }
+  ],
+  "benchmarks": [
+    {
+      "benchmark_id": "gsm8k",
+      "score": 56.8,
+      "is_self_reported": true,
+      "other_info": "8 Shot",
+      "source_link": "https://x.ai/news/grok",
+      "rank": 57
+    },
+    {
+      "benchmark_id": "humaneval",
+      "score": 39.7,
+      "is_self_reported": true,
+      "other_info": "0 Shot",
+      "source_link": "https://x.ai/news/grok",
+      "rank": 83
+    },
+    {
+      "benchmark_id": "math",
+      "score": 15.4,
+      "is_self_reported": true,
+      "other_info": "4 Shot",
+      "source_link": "https://x.ai/news/grok",
+      "rank": 81
+    },
+    {
+      "benchmark_id": "mmlu",
+      "score": 65.7,
+      "is_self_reported": true,
+      "other_info": "5 Shot",
+      "source_link": "https://x.ai/news/grok",
+      "rank": 124
+    }
+  ]
+}

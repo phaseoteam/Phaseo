@@ -201,11 +201,14 @@ async function purgeGatewayCatalogueCache(tags: string[]): Promise<GatewayCacheP
 
 async function runAdminAction(
 	label: string,
-	fn: () => Promise<void> | void
+	fn: () => Promise<CacheOpResult | void> | CacheOpResult | void
 ): Promise<CacheOpResult> {
 	try {
 		await requireAdmin();
-		await fn();
+		const result = await fn();
+		if (result && typeof result === "object" && "ok" in result && "message" in result) {
+			return result;
+		}
 		return { ok: true, message: `${label} cache revalidated.` };
 	} catch (error) {
 		return {
@@ -229,8 +232,7 @@ export async function revalidateModelsGlobalDataAction(): Promise<CacheOpResult>
 }
 
 export async function revalidatePublicModelCatalogueAction(): Promise<CacheOpResult> {
-	try {
-		await requireAdmin();
+	return runAdminAction("Public catalogue", async () => {
 		expirePublicModelCatalogueCache();
 		for (const tag of APP_FRONTEND_TAGS) {
 			revalidateTag(tag, EXPIRE_NOW);
@@ -243,15 +245,7 @@ export async function revalidatePublicModelCatalogueAction(): Promise<CacheOpRes
 				? `Public catalogue cache revalidated. ${gatewayPurge.message}`
 				: `Public catalogue website cache revalidated. ${gatewayPurge.message}`,
 		};
-	} catch (error) {
-		return {
-			ok: false,
-			message:
-				error instanceof Error
-					? `Public catalogue failed: ${error.message}`
-					: "Public catalogue failed.",
-		};
-	}
+	});
 }
 
 export async function revalidateProvidersGlobalApiAction(): Promise<CacheOpResult> {

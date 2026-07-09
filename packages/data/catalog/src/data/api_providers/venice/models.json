@@ -1341,8 +1341,8 @@
     ]
   },
   {
-    "api_model_id": "x-ai/grok-4.1-fast",
-    "provider_api_model_id": "venice:x-ai/grok-4.1-fast",
+    "api_model_id": "spacex-ai/grok-4.1-fast",
+    "provider_api_model_id": "venice:spacex-ai/grok-4.1-fast",
     "provider_model_slug": "grok-41-fast",
     "internal_model_id": "",
     "is_active_gateway": true,
@@ -1362,10 +1362,10 @@
     ]
   },
   {
-    "api_model_id": "x-ai/grok-4.20-beta-0309",
-    "provider_api_model_id": "venice:x-ai/grok-4.20-beta-0309",
+    "api_model_id": "spacex-ai/grok-4.20-beta-0309",
+    "provider_api_model_id": "venice:spacex-ai/grok-4.20-beta-0309",
     "provider_model_slug": "grok-4-20-beta",
-    "internal_model_id": "x-ai/grok-4.20",
+    "internal_model_id": "spacex-ai/grok-4.20",
     "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": null,
@@ -1383,10 +1383,10 @@
     ]
   },
   {
-    "api_model_id": "x-ai/grok-4.20-multi-agent-beta-0309",
-    "provider_api_model_id": "venice:x-ai/grok-4.20-multi-agent-beta-0309",
+    "api_model_id": "spacex-ai/grok-4.20-multi-agent-beta-0309",
+    "provider_api_model_id": "venice:spacex-ai/grok-4.20-multi-agent-beta-0309",
     "provider_model_slug": "grok-4-20-multi-agent-beta",
-    "internal_model_id": "x-ai/grok-4.20-multi-agent-beta",
+    "internal_model_id": "spacex-ai/grok-4.20-multi-agent-beta",
     "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": null,
@@ -1404,10 +1404,10 @@
     ]
   },
   {
-    "api_model_id": "x-ai/grok-code-fast-1",
-    "provider_api_model_id": "venice:x-ai/grok-code-fast-1",
+    "api_model_id": "spacex-ai/grok-code-fast-1",
+    "provider_api_model_id": "venice:spacex-ai/grok-code-fast-1",
     "provider_model_slug": "grok-code-fast-1",
-    "internal_model_id": "x-ai/grok-code-fast-1",
+    "internal_model_id": "spacex-ai/grok-code-fast-1",
     "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -1698,10 +1698,10 @@
     ]
   },
   {
-    "api_model_id": "x-ai/grok-4.3",
-    "provider_api_model_id": "venice:x-ai/grok-4.3",
+    "api_model_id": "spacex-ai/grok-4.3",
+    "provider_api_model_id": "venice:spacex-ai/grok-4.3",
     "provider_model_slug": "grok-4-3",
-    "internal_model_id": "x-ai/grok-4.3",
+    "internal_model_id": "spacex-ai/grok-4.3",
     "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -1719,10 +1719,10 @@
     ]
   },
   {
-    "api_model_id": "x-ai/grok-build-0.1",
-    "provider_api_model_id": "venice:x-ai/grok-build-0.1",
+    "api_model_id": "spacex-ai/grok-build-0.1",
+    "provider_api_model_id": "venice:spacex-ai/grok-build-0.1",
     "provider_model_slug": "grok-build-0-1",
-    "internal_model_id": "x-ai/grok-build-0.1",
+    "internal_model_id": "spacex-ai/grok-build-0.1",
     "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",

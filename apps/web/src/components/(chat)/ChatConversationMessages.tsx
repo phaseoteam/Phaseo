@@ -132,7 +132,29 @@ function formatGenerationDuration(value: unknown): string | null {
 	if (seconds < 60) {
 		return `${seconds.toFixed(1).replace(/\.0$/, "")} s`;
 	}
-	return `${Math.round(seconds)} s`;
+	const minutes = seconds / 60;
+	if (minutes < 10) {
+		return `${minutes.toFixed(2).replace(/\.?0+$/, "")} min`;
+	}
+	return `${minutes.toFixed(1).replace(/\.0$/, "")} min`;
+}
+
+function formatUsdCost(value: unknown): string | null {
+	const amount =
+		typeof value === "number"
+			? value
+			: typeof value === "string"
+				? Number.parseFloat(value)
+				: NaN;
+	if (!Number.isFinite(amount) || amount < 0) return null;
+	if (amount === 0) return "$0";
+	if (amount >= 0.01) {
+		return `$${amount.toFixed(4).replace(/\.?0+$/, "")}`;
+	}
+	if (amount >= 0.00001) {
+		return `$${amount.toFixed(6).replace(/0+$/, "").replace(/\.$/, "")}`;
+	}
+	return `$${amount.toFixed(9).replace(/0+$/, "").replace(/\.$/, "")}`;
 }
 
 function formatMessageSentAt(value: string): string | null {
@@ -359,35 +381,38 @@ export function ChatConversationMessages({
 		null;
 	const pricing = (usage as any)?.pricing_breakdown ?? null;
 	const costUsdStr =
-		pricing?.total_usd_str ??
+		(typeof pricing?.total_usd_str === "string"
+			? pricing.total_usd_str
+			: null) ??
+		(typeof pricing?.total_usd === "number"
+			? pricing.total_usd
+			: null) ??
 		(typeof pricing?.total_nanos === "number"
 			? (pricing.total_nanos / 1e9).toFixed(7)
 			: null);
 	const costDisplay =
-		costUsdStr ||
-		(typeof (meta as any)?.total_cost_usd === "string"
+		costUsdStr ??
+		(typeof (meta as any)?.total_cost_usd === "string" ||
+		typeof (meta as any)?.total_cost_usd === "number"
 			? (meta as any).total_cost_usd
 			: null);
-	const costNumber = costDisplay ? Number.parseFloat(costDisplay) : NaN;
-	const costLabel = Number.isFinite(costNumber)
-		? `$${costNumber.toFixed(5)}`
-		: null;
+	const costLabel = formatUsdCost(costDisplay);
 	const latencyMs =
-		(meta as any)?.client?.latencyMs ??
 		(meta as any)?.latency_ms ??
 		(meta as any)?.latencyMs ??
+		(meta as any)?.client?.latencyMs ??
 		null;
 	const generationMs =
-		(meta as any)?.client?.generationMs ??
 		(meta as any)?.generation_ms ??
 		(meta as any)?.generationMs ??
+		(meta as any)?.client?.generationMs ??
 		null;
 	const endToEndMs =
-		(meta as any)?.client?.endToEndMs ??
 		(meta as any)?.end_to_end_ms ??
 		(meta as any)?.endToEndMs ??
 		(meta as any)?.total_ms ??
 		(meta as any)?.totalMs ??
+		(meta as any)?.client?.endToEndMs ??
 		(typeof latencyMs === "number" && typeof generationMs === "number"
 			? latencyMs + generationMs
 			: null);
@@ -397,9 +422,6 @@ export function ChatConversationMessages({
 		(meta as any)?.throughputTokensPerSecond ??
 		(meta as any)?.client?.throughputTokensPerSecond ??
 		null;
-	const latencyDisplay =
-		typeof latencyMs === "number" ? Math.round(latencyMs) : null;
-	const generationDisplay = formatGenerationDuration(generationMs);
 	const endToEndDisplay = formatGenerationDuration(endToEndMs);
 	const throughputDisplay =
 		typeof throughput === "number" ? Math.round(throughput) : null;
@@ -622,26 +644,6 @@ export function ChatConversationMessages({
 				(displayModelId ? modelLinkById[displayModelId] : undefined) ??
 				buildModelLink(displayModelId);
 			const hasModelLink = Boolean(displayModelId && modelLink !== "#");
-			const routingSelectedProvider =
-				(activeMeta?.routing as any)?.selected_provider;
-			let responseProviderId = message.providerId?.trim() || null;
-			if (
-				typeof activeMeta?.provider === "string" &&
-				activeMeta.provider.trim().length > 0
-			) {
-				responseProviderId = activeMeta.provider.trim();
-			} else if (
-				typeof routingSelectedProvider === "string" &&
-				routingSelectedProvider.trim().length > 0
-			) {
-				responseProviderId = routingSelectedProvider.trim();
-			}
-			const responseProviderLabel =
-				message.providerName?.trim() || responseProviderId || null;
-			const responseProviderHref =
-				responseProviderId && responseProviderId !== "auto"
-					? `/api-providers/${encodeURIComponent(responseProviderId)}`
-					: null;
 			const isEditing = editingId === message.id;
 			const userInlineAttachmentPreviews = isUser
 				? getInlineAttachmentPreviewsFromMeta(message.meta)
@@ -725,20 +727,6 @@ export function ChatConversationMessages({
 												</span>
 											</span>
 										)}
-										{responseProviderLabel ? (
-											responseProviderHref ? (
-												<Link
-													href={responseProviderHref}
-													className="pl-6 text-[11px] text-muted-foreground/80 transition-colors hover:text-foreground"
-												>
-													via {responseProviderLabel}
-												</Link>
-											) : (
-												<span className="pl-6 text-[11px] text-muted-foreground/80">
-													via {responseProviderLabel}
-												</span>
-											)
-										) : null}
 									</MessageHeader>
 								)}
 								{showRequestError && messageRequestError ? (
@@ -1141,9 +1129,22 @@ export function ChatConversationMessages({
 										assistantCopied={assistantCopied}
 										costLabel={costLabel}
 										endToEndDisplay={endToEndDisplay}
-										generationDisplay={generationDisplay}
+										endToEndMs={
+											typeof endToEndMs === "number"
+												? endToEndMs
+												: null
+										}
+										generationMs={
+											typeof generationMs === "number"
+												? generationMs
+												: null
+										}
 										isPendingAssistant={isPendingAssistant}
-										latencyDisplay={latencyDisplay}
+										latencyMs={
+											typeof latencyMs === "number"
+												? latencyMs
+												: null
+										}
 										metadataOpen={metadataOpenId === message.id}
 										metadataProviderId={metadataProviderId}
 										metadataProviderLabel={metadataProviderLabel}
@@ -1503,9 +1504,7 @@ export function ChatConversationMessages({
 		onRetryAssistant,
 		onBranchAssistant,
 		onSelectVariant,
-		latencyDisplay,
 		endToEndDisplay,
-		generationDisplay,
 		throughputDisplay,
 		costLabel,
 		totalTokens,

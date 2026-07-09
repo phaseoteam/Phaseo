@@ -58,7 +58,7 @@ const FALLBACK_PROVIDERS: ProviderItem[] = [
 	{ id: "suno", name: "Suno", logoId: "suno" },
 	{ id: "together", name: "Together", logoId: "together" },
 	{ id: "weights-and-biases", name: "Weights & Biases", logoId: "weights-and-biases" },
-	{ id: "x-ai", name: "xAI", logoId: "x-ai" },
+	{ id: "spacex-ai", name: "SpaceXAI", logoId: "spacex-ai" },
 ];
 
 function fmtCompactInt(value: number) {

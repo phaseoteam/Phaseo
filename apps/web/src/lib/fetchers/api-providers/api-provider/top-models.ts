@@ -1,5 +1,6 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { isMissingRelationError } from "./missingRelation";
 
 export type ModelStats = {
     model_id: string;
@@ -27,6 +28,9 @@ export async function getTopModels(
             });
 
         if (error) {
+            if (isMissingRelationError(error)) {
+                return [];
+            }
             console.error("Error fetching top models:", error);
             return [];
         }
@@ -67,6 +71,9 @@ export async function getTopModels(
                 : null,
         }));
     } catch (err) {
+        if (isMissingRelationError(err)) {
+            return [];
+        }
         console.error("Unexpected error fetching top models:", err);
         return [];
     }

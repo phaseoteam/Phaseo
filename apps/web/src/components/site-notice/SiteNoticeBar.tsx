@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { SiteNotice } from "@/lib/siteNotice";
 
 function toneClasses(tone: SiteNotice["tone"]) {
@@ -17,8 +17,46 @@ function toneClasses(tone: SiteNotice["tone"]) {
 	}
 }
 
+function formatRemainingTime(endsAt: Date) {
+	const remainingMs = endsAt.getTime() - Date.now();
+	if (remainingMs <= 0) return "completion time reached";
+
+	const totalMinutes = Math.ceil(remainingMs / 60_000);
+	if (totalMinutes < 60) {
+		return `${totalMinutes} min remaining`;
+	}
+
+	const hours = Math.floor(totalMinutes / 60);
+	const minutes = totalMinutes % 60;
+	const hourLabel = `${hours} ${hours === 1 ? "hr" : "hrs"}`;
+
+	if (minutes === 0) return `${hourLabel} remaining`;
+	return `${hourLabel} ${minutes} min remaining`;
+}
+
+function getTimingLabel(endsAt: string) {
+	const endDate = new Date(endsAt);
+	if (!Number.isFinite(endDate.getTime())) return null;
+
+	const utcTime = new Intl.DateTimeFormat("en-GB", {
+		hour: "2-digit",
+		minute: "2-digit",
+		hour12: false,
+		timeZone: "UTC",
+		timeZoneName: "short",
+	}).format(endDate);
+
+	return `Expected completion ${utcTime} (${formatRemainingTime(
+		endDate
+	)})`;
+}
+
 export default function SiteNoticeBar({ notice }: { notice: SiteNotice }) {
 	const barRef = useRef<HTMLDivElement | null>(null);
+	const shouldShowTiming = Boolean(notice.showTiming && notice.endsAt);
+	const [timingLabel, setTimingLabel] = useState<string | null>(() =>
+		shouldShowTiming && notice.endsAt ? getTimingLabel(notice.endsAt) : null
+	);
 
 	useEffect(() => {
 		const updateNoticeHeight = () => {
@@ -45,6 +83,21 @@ export default function SiteNoticeBar({ notice }: { notice: SiteNotice }) {
 		};
 	}, []);
 
+	useEffect(() => {
+		if (!shouldShowTiming || !notice.endsAt) return;
+
+		const endsAt = notice.endsAt;
+		const updateTimingLabel = () => {
+			setTimingLabel(getTimingLabel(endsAt));
+		};
+
+		const intervalId = window.setInterval(updateTimingLabel, 30_000);
+
+		return () => {
+			window.clearInterval(intervalId);
+		};
+	}, [notice.endsAt, shouldShowTiming]);
+
 	return (
 		<>
 			<div
@@ -53,8 +106,11 @@ export default function SiteNoticeBar({ notice }: { notice: SiteNotice }) {
 					notice.tone
 				)}`}
 			>
-				<div className="mx-auto flex w-full max-w-full items-center justify-center gap-1 text-center text-xs sm:max-w-[640px] md:max-w-[768px] lg:max-w-[1024px] lg:text-sm xl:max-w-[1280px] 2xl:max-w-[1536px]">
+				<div className="mx-auto flex w-full max-w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-xs sm:max-w-[640px] md:max-w-[768px] lg:max-w-[1024px] lg:text-sm xl:max-w-[1280px] 2xl:max-w-[1536px]">
 					<span>{notice.message}</span>
+					{shouldShowTiming && timingLabel ? (
+						<span className="font-semibold">{timingLabel}</span>
+					) : null}
 					{notice.cta ? (
 						<Link
 							href={notice.cta.href}

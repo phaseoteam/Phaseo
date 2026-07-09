@@ -1,0 +1,81 @@
+{
+  "key": "sakana:sakana/fugu-ultra:text.generate",
+  "api_provider_id": "sakana",
+  "provider_slug": "sakana",
+  "api_model_id": "sakana/fugu-ultra",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "fugu-ultra-20260615 prompts <= 272K tokens.",
+      "match": [{ "path": "input_tokens", "op": "lte", "or_group": 1, "and_index": 1, "value": 272000 }],
+      "priority": 100,
+      "effective_from": "2026-06-22T00:00:00Z"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "fugu-ultra-20260615 prompts <= 272K tokens.",
+      "match": [{ "path": "input_tokens", "op": "lte", "or_group": 1, "and_index": 1, "value": 272000 }],
+      "priority": 100,
+      "effective_from": "2026-06-22T00:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 30,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "fugu-ultra-20260615 prompts <= 272K tokens.",
+      "match": [{ "path": "input_tokens", "op": "lte", "or_group": 1, "and_index": 1, "value": 272000 }],
+      "priority": 100,
+      "effective_from": "2026-06-22T00:00:00Z"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 10,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "fugu-ultra-20260615 prompts > 272K tokens.",
+      "match": [{ "path": "input_tokens", "op": "gt", "or_group": 1, "and_index": 1, "value": 272000 }],
+      "priority": 100,
+      "effective_from": "2026-06-22T00:00:00Z"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "fugu-ultra-20260615 prompts > 272K tokens.",
+      "match": [{ "path": "input_tokens", "op": "gt", "or_group": 1, "and_index": 1, "value": 272000 }],
+      "priority": 100,
+      "effective_from": "2026-06-22T00:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 45,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "fugu-ultra-20260615 prompts > 272K tokens.",
+      "match": [{ "path": "input_tokens", "op": "gt", "or_group": 1, "and_index": 1, "value": 272000 }],
+      "priority": 100,
+      "effective_from": "2026-06-22T00:00:00Z"
+    }
+  ]
+}

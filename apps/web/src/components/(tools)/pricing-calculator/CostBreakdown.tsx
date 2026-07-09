@@ -2,77 +2,133 @@
 
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
 import {
 	fmtUSD,
 	formatQuantity,
 	formatMeterName,
+	formatPricingTimeWindow,
+	resolvePricingMeterPrice,
 	type PricingMeter,
 } from "@/components/(data)/model/pricing/pricingHelpers";
+
+type ComparisonPricingModel = {
+	key: string;
+	label: string;
+	modelId?: string;
+	provider: string;
+	pricingPlan: string;
+	meters: PricingMeter[];
+};
 
 interface CostBreakdownProps {
 	meters: PricingMeter[];
 	meterInputs: Record<string, string>;
 	requestMultiplier: number;
+	pricingTimeUtc: string;
+	comparisonModels?: ComparisonPricingModel[];
+}
+
+function calculateLineCost(
+	meter: PricingMeter,
+	meterInputs: Record<string, string>,
+	requestMultiplier: number,
+	pricingTimeUtc: string
+): number {
+	const inputValue = parseFloat(meterInputs[meter.meter] || "0");
+	if (!Number.isFinite(inputValue) || inputValue <= 0) return 0;
+
+	const multipliedValue = inputValue * requestMultiplier;
+	const unitSize = Number(meter.unit_size) > 0 ? Number(meter.unit_size) : 1;
+	const billedUnits = multipliedValue / unitSize;
+	const { pricePerUnit } = resolvePricingMeterPrice(meter, pricingTimeUtc);
+
+	return billedUnits * pricePerUnit;
+}
+
+function formatProviderLabel(providerId: string): string {
+	const known: Record<string, string> = {
+		openai: "OpenAI",
+		anthropic: "Anthropic",
+		google: "Google",
+		"google-ai-studio": "Google AI Studio",
+		"google-vertex": "Google Vertex",
+		"x-ai": "xAI",
+		aws: "AWS",
+		azure: "Azure",
+	};
+
+	if (known[providerId]) {
+		return known[providerId];
+	}
+
+	return providerId
+		.replace(/[-_]+/g, " ")
+		.replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 export function CostBreakdown({
 	meters,
 	meterInputs,
 	requestMultiplier,
+	pricingTimeUtc,
+	comparisonModels,
 }: CostBreakdownProps) {
-	const uniqueMeters = useMemo(() => {
-		const map = new Map<string, PricingMeter>();
+	const activeModels = useMemo(
+		() =>
+			comparisonModels && comparisonModels.length > 0
+				? comparisonModels
+				: [
+						{
+							key: "primary",
+							label: "Selected Model",
+							provider: "selected",
+							pricingPlan: "standard",
+							meters,
+						},
+				  ],
+		[comparisonModels, meters]
+	);
+
+	const activeMeterNames = useMemo(() => {
+		const names = new Set<string>();
 		for (const meter of meters) {
-			if (!map.has(meter.meter)) {
-				map.set(meter.meter, meter);
+			if (parseFloat(meterInputs[meter.meter] || "0") > 0) {
+				names.add(meter.meter);
 			}
 		}
-		return Array.from(map.values());
-	}, [meters]);
+		return Array.from(names).sort((a, b) =>
+			formatMeterName(a).localeCompare(formatMeterName(b))
+		);
+	}, [meterInputs, meters]);
 
-	const calculateLineCost = (meter: PricingMeter): number => {
-		const inputValue = parseFloat(meterInputs[meter.meter] || "0");
-		if (inputValue === 0) return 0;
+	const totalsByModel = useMemo(() => {
+		return new Map(
+			activeModels.map((model) => {
+				const total = model.meters.reduce(
+					(sum, meter) =>
+						sum +
+						calculateLineCost(
+							meter,
+							meterInputs,
+							requestMultiplier,
+							pricingTimeUtc
+						),
+					0
+				);
+				return [model.key, total];
+			})
+		);
+	}, [activeModels, meterInputs, pricingTimeUtc, requestMultiplier]);
 
-		const multipliedValue = inputValue * requestMultiplier;
-		const unitSize = meter.unit_size || 1;
-		const billedUnits = multipliedValue / unitSize;
-		const unitPrice = parseFloat(meter.price_per_unit) || 0;
-
-		return billedUnits * unitPrice;
-	};
-
-	const calculateBilledUnits = (meter: PricingMeter): number => {
-		const inputValue = parseFloat(meterInputs[meter.meter] || "0");
-		if (inputValue === 0) return 0;
-
-		const multipliedValue = inputValue * requestMultiplier;
-		const unitSize = meter.unit_size || 1;
-
-		return multipliedValue / unitSize;
-	};
-
-	const lines = uniqueMeters
-		.map((meter) => ({
-			meter,
-			lineCost: calculateLineCost(meter),
-			inputValue: parseFloat(meterInputs[meter.meter] || "0"),
-			multipliedValue: parseFloat(meterInputs[meter.meter] || "0") * requestMultiplier,
-			billedUnits: calculateBilledUnits(meter),
-			unitPrice: parseFloat(meter.price_per_unit) || 0,
-		}))
-		.filter((line) => line.inputValue > 0);
-
-	const totalCost = lines.reduce((sum, line) => sum + line.lineCost, 0);
-
-	const formatUnits = (value: number): string => {
-		if (!Number.isFinite(value)) return "-";
-		if (Number.isInteger(value)) return value.toLocaleString();
-		return value.toLocaleString(undefined, { maximumFractionDigits: 6 });
-	};
-
-	if (lines.length === 0) {
+	if (activeMeterNames.length === 0) {
 		return null;
 	}
 
@@ -81,53 +137,110 @@ export function CostBreakdown({
 			<CardHeader>
 				<CardTitle>Cost Estimate</CardTitle>
 			</CardHeader>
-			<CardContent>
-				<div className="border-2 border-primary rounded-lg p-6 mb-6">
-					<div className="text-center">
-						<Label className="text-sm text-muted-foreground">
-							Estimated Total Cost
-						</Label>
-						<div className="text-4xl font-bold mt-2">{fmtUSD(totalCost)}</div>
-						<p className="text-xs text-muted-foreground mt-1">
-							Based on your input values
-						</p>
-					</div>
-				</div>
+			<CardContent className="space-y-4">
+				<div className="overflow-x-auto rounded-lg border">
+					<Table>
+						<TableHeader>
+							<TableRow>
+								<TableHead className="sticky left-0 z-10 min-w-[220px] bg-background">
+									Meter
+								</TableHead>
+								{activeModels.map((model) => (
+									<TableHead
+										key={`estimate-head-${model.key}`}
+										className="min-w-[190px]"
+									>
+										<div className="space-y-1">
+											<p className="truncate font-medium">{model.label}</p>
+											<p className="truncate text-xs font-normal text-muted-foreground">
+												{formatProviderLabel(model.provider)} · {model.pricingPlan}
+											</p>
+										</div>
+									</TableHead>
+								))}
+							</TableRow>
+						</TableHeader>
+						<TableBody>
+							<TableRow className="bg-primary/5">
+								<TableCell className="sticky left-0 z-10 bg-primary/5 font-semibold">
+									Estimated total
+								</TableCell>
+								{activeModels.map((model) => (
+									<TableCell
+										key={`estimate-total-${model.key}`}
+										className="font-semibold"
+									>
+										{fmtUSD(totalsByModel.get(model.key) ?? 0)}
+									</TableCell>
+								))}
+							</TableRow>
+							{activeMeterNames.map((meterName) => {
+								const inputValue = parseFloat(meterInputs[meterName] || "0");
+								const multipliedValue = inputValue * requestMultiplier;
 
-				<div className="space-y-4">
-					<h4 className="font-semibold">Breakdown by Meter</h4>
-					{lines.map((line) => (
-						<div
-							key={line.meter.meter}
-							className="border-b pb-3 last:border-b-0"
-						>
-							<div className="flex justify-between items-center mb-2">
-								<div className="font-medium">
-									{formatMeterName(line.meter.meter)}
-								</div>
-								<div className="font-bold">{fmtUSD(line.lineCost)}</div>
-							</div>
-							<div className="text-sm text-muted-foreground space-y-1">
-								<div className="flex justify-between">
-									<span>Input value:</span>
-									<span>{formatQuantity(line.inputValue)}</span>
-								</div>
-								<div className="flex justify-between">
-									<span>x {requestMultiplier} requests:</span>
-									<span>{formatQuantity(line.multipliedValue)}</span>
-								</div>
-								<div className="flex justify-between">
-									<span>Billed units:</span>
-									<span>{formatUnits(line.billedUnits)}</span>
-								</div>
-								<div className="flex justify-between">
-									<span>Unit price:</span>
-									<span>{fmtUSD(line.unitPrice)}</span>
-								</div>
-							</div>
-						</div>
-					))}
+								return (
+									<TableRow key={`estimate-row-${meterName}`}>
+										<TableCell className="sticky left-0 z-10 bg-background">
+											<div className="space-y-1">
+												<p className="font-medium">
+													{formatMeterName(meterName)}
+												</p>
+												<p className="text-xs text-muted-foreground">
+													{formatQuantity(multipliedValue)} total usage
+												</p>
+											</div>
+										</TableCell>
+										{activeModels.map((model) => {
+											const meter =
+												model.meters.find((item) => item.meter === meterName) ??
+												null;
+											if (!meter) {
+												return (
+													<TableCell key={`estimate-${model.key}-${meterName}`}>
+														-
+													</TableCell>
+												);
+											}
+											const resolvedPrice = resolvePricingMeterPrice(
+												meter,
+												pricingTimeUtc
+											);
+											const lineCost = calculateLineCost(
+												meter,
+												meterInputs,
+												requestMultiplier,
+												pricingTimeUtc
+											);
+
+											return (
+												<TableCell key={`estimate-${model.key}-${meterName}`}>
+													<div className="space-y-1">
+														<p className="font-medium">{fmtUSD(lineCost)}</p>
+														<p className="text-xs text-muted-foreground">
+															{fmtUSD(resolvedPrice.pricePerUnit)} /{" "}
+															{meter.unit_size.toLocaleString()} {meter.unit}
+														</p>
+														{resolvedPrice.timeWindow ? (
+															<p className="text-xs text-muted-foreground">
+																{formatPricingTimeWindow(
+																	resolvedPrice.timeWindow
+																)}
+															</p>
+														) : null}
+													</div>
+												</TableCell>
+											);
+										})}
+									</TableRow>
+								);
+							})}
+						</TableBody>
+					</Table>
 				</div>
+				<p className="text-xs text-muted-foreground">
+					Inputs are multiplied by {requestMultiplier.toLocaleString()} request
+					{requestMultiplier === 1 ? "" : "s"} before costs are calculated.
+				</p>
 			</CardContent>
 		</Card>
 	);

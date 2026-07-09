@@ -437,7 +437,7 @@ function resolvePreferredRoute(
 	// Keep Alibaba/Qwen upstream routing simple and stable: always use chat completions.
 	if (isAlibabaCompatProvider(args.providerId)) return "chat";
 
-	// xAI compatibility currently has stricter /responses validation for structured output.
+	// SpaceXAI compatibility currently has stricter /responses validation for structured output.
 	// Route structured requests via chat/completions for better interoperability.
 	if (
 		(args.providerId === "x-ai" || args.providerId === "xai") &&

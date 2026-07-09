@@ -132,6 +132,62 @@ describe("non-text adapter bridge", () => {
 		expect(result.mappedRequest).toContain("\"voice\":\"rachel\"");
 	});
 
+	it("routes canonical SpaceXAI audio.speech through the xAI TTS adapter", async () => {
+		const mock = installFetchMock([
+			{
+				match: (url) => url.includes("/v1/tts"),
+				response: new Response("SPACEXAI_AUDIO", {
+					status: 200,
+					headers: {
+						"Content-Type": "audio/mpeg",
+						"request-id": "xai_tts_req_1",
+					},
+				}),
+			},
+		]);
+
+		const result = await execute({
+			ir: {
+				model: "spacex-ai/grok-tts",
+				input: "Bridge level SpaceXAI TTS check",
+				voice: "eve",
+				responseFormat: "mp3",
+			},
+			requestId: "req_bridge_spacexai_tts_1",
+			workspaceId: "team_test",
+			providerId: "spacex-ai",
+			endpoint: "audio.speech",
+			byokMeta: [],
+			pricingCard: {
+				provider: "spacex-ai",
+				model: "spacex-ai/grok-tts",
+				endpoint: "audio.speech",
+				currency: "USD",
+				rules: [],
+			},
+			meta: {
+				returnUpstreamRequest: true,
+				echoUpstreamRequest: true,
+			},
+		} as any);
+
+		mock.restore();
+
+		expect(mock.calls[0]?.url).toContain("/v1/tts");
+		expect(mock.calls[0]?.bodyJson).toMatchObject({
+			text: "Bridge level SpaceXAI TTS check",
+			voice_id: "eve",
+			output_format: { codec: "mp3" },
+		});
+		expect(result.kind).toBe("completed");
+		const irResult = result.ir as any;
+		expect(irResult?.provider).toBe("spacex-ai");
+		expect(irResult?.audio?.mimeType).toBe("audio/mpeg");
+		expect(irResult?.usage?.input_characters).toBe(
+			"Bridge level SpaceXAI TTS check".length,
+		);
+	});
+
 	it("passes OpenAI video fields through to compat providers and stores the async job id", async () => {
 		let capturedBody: any = null;
 		const mock = installFetchMock([

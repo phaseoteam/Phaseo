@@ -9,7 +9,24 @@ export interface PricingMeter {
     price_per_unit: string;
     currency: string;
     conditions?: any[];
+    billing_timestamp_basis?: PricingTimestampBasis;
+    time_windows?: PricingTimeWindow[];
 }
+
+type PricingTimestampBasis =
+    | "request_start"
+    | "provider_accept"
+    | "completion"
+    | "unknown";
+
+type PricingTimeWindow = {
+    label: string;
+    timezone: "UTC";
+    start_time: string;
+    end_time: string;
+    price_per_unit?: string | number | null;
+    priority?: number | null;
+};
 
 export interface PricingModel {
     provider: string;
@@ -17,6 +34,8 @@ export interface PricingModel {
     api_model_id?: string;
     endpoint: string;
     display_name?: string;
+    release_date?: string | null;
+    announcement_date?: string | null;
     pricing_plan?: string | null;
     meters: PricingMeter[];
 }
@@ -35,9 +54,15 @@ interface PricingRuleRow {
     effective_from: string;
     effective_to: string | null;
     match: any[] | null;
+    billing_timestamp_basis: PricingTimestampBasis | null;
+    time_windows: PricingTimeWindow[] | null;
 }
 
 const MODEL_KEY_BATCH_SIZE = 250;
+const PRICING_RULE_SELECT =
+    "rule_id, model_key, capability_id, pricing_plan, meter, unit, unit_size, price_per_unit, currency, priority, effective_from, effective_to, match, billing_timestamp_basis, time_windows";
+const PRICING_RULE_SELECT_LEGACY =
+    "rule_id, model_key, capability_id, pricing_plan, meter, unit, unit_size, price_per_unit, currency, priority, effective_from, effective_to, match";
 
 function getNormalizedMeterPrice(meter: Pick<PricingMeter, "price_per_unit" | "unit_size">) {
     const rawPrice = Number(meter.price_per_unit ?? 0);
@@ -93,18 +118,35 @@ export default async function getPricingModels(
             return [];
         }
 
-        const { data: capabilities, error: capError } = await supabase
-            .from("data_api_provider_model_capabilities")
-            .select("provider_api_model_id, capability_id, status")
-            .in("provider_api_model_id", providerModelIds)
-            .neq("status", "disabled");
+        const capabilities: Array<{
+            provider_api_model_id: string | null;
+            capability_id: string | null;
+            status: string | null;
+        }> = [];
+        for (let i = 0; i < providerModelIds.length; i += MODEL_KEY_BATCH_SIZE) {
+            const batch = providerModelIds.slice(i, i + MODEL_KEY_BATCH_SIZE);
+            const { data: batchRows, error: capError } = await supabase
+                .from("data_api_provider_model_capabilities")
+                .select("provider_api_model_id, capability_id, status")
+                .in("provider_api_model_id", batch)
+                .neq("status", "disabled");
 
-        if (capError) {
-            console.error("[pricing-models] failed to load provider capabilities", capError);
-            return [];
+            if (capError) {
+                console.error("[pricing-models] failed to load provider capabilities", capError);
+                return [];
+            }
+
+            capabilities.push(...(batchRows ?? []));
         }
 
-        const modelNameMap = new Map<string, string>();
+        const modelMetadataMap = new Map<
+            string,
+            {
+                name?: string | null;
+                release_date?: string | null;
+                announcement_date?: string | null;
+            }
+        >();
         const visibleModelIds = new Set<string>();
         const modelIds = Array.from(
             new Set((providerModels ?? []).map((row) => row.model_id).filter(Boolean))
@@ -113,14 +155,18 @@ export default async function getPricingModels(
             const { data: models } = await applyHiddenFilter(
                 supabase
                     .from("data_models")
-                    .select("model_id, name, hidden")
+                    .select("model_id, name, release_date, announcement_date, hidden")
                     .in("model_id", modelIds),
                 includeHidden
             );
             for (const model of models ?? []) {
                 if (model.model_id) {
                     visibleModelIds.add(model.model_id);
-                    if (model.name) modelNameMap.set(model.model_id, model.name);
+                    modelMetadataMap.set(model.model_id, {
+                        name: model.name,
+                        release_date: model.release_date,
+                        announcement_date: model.announcement_date,
+                    });
                 }
             }
         }
@@ -156,14 +202,31 @@ export default async function getPricingModels(
         const pricingRules: PricingRuleRow[] = [];
         for (let i = 0; i < comboKeys.length; i += MODEL_KEY_BATCH_SIZE) {
             const batch = comboKeys.slice(i, i + MODEL_KEY_BATCH_SIZE);
-            const { data: batchRows, error: prError } = await supabase
+            const pricingResult = await supabase
                 .from("data_api_pricing_rules")
-                .select(
-                    "rule_id, model_key, capability_id, pricing_plan, meter, unit, unit_size, price_per_unit, currency, priority, effective_from, effective_to, match"
-                )
+                .select(PRICING_RULE_SELECT)
                 .in("model_key", batch)
                 .or(activeWindowClause)
                 .order("priority", { ascending: false });
+            let batchRows = pricingResult.data as any[] | null;
+            let prError = pricingResult.error as any;
+
+            if (
+                prError &&
+                (
+                    (prError as { code?: string }).code === "42703" ||
+                    String((prError as { message?: string }).message ?? "").includes("does not exist")
+                )
+            ) {
+                const legacyResult = await supabase
+                    .from("data_api_pricing_rules")
+                    .select(PRICING_RULE_SELECT_LEGACY)
+                    .in("model_key", batch)
+                    .or(activeWindowClause)
+                    .order("priority", { ascending: false });
+                batchRows = legacyResult.data;
+                prError = legacyResult.error;
+            }
 
             if (prError) {
                 console.error("[pricing-models] failed to load pricing rules", prError);
@@ -186,14 +249,17 @@ export default async function getPricingModels(
             const key = `${parsed.provider_id}:${modelId}:${rule.capability_id}:${rule.pricing_plan || "standard"}`;
 
             if (!modelMap.has(key)) {
+                const modelMetadata = combo.model_id
+                    ? modelMetadataMap.get(combo.model_id)
+                    : undefined;
                 modelMap.set(key, {
                     provider: parsed.provider_id,
                     model: modelId,
                     api_model_id: combo.api_model_id ?? parsed.api_model_id,
                     endpoint: rule.capability_id,
-                    display_name: combo.model_id
-                        ? modelNameMap.get(combo.model_id)
-                        : undefined,
+                    display_name: modelMetadata?.name ?? undefined,
+                    release_date: modelMetadata?.release_date ?? null,
+                    announcement_date: modelMetadata?.announcement_date ?? null,
                     pricing_plan: rule.pricing_plan || "standard",
                     meters: [],
                 });
@@ -208,6 +274,8 @@ export default async function getPricingModels(
                 price_per_unit: String(rule.price_per_unit ?? "0"),
                 currency: rule.currency ?? "USD",
                 conditions: rule.match ?? [],
+                billing_timestamp_basis: rule.billing_timestamp_basis ?? "request_start",
+                time_windows: Array.isArray(rule.time_windows) ? rule.time_windows : [],
             };
 
             const existingIndex = model.meters.findIndex(

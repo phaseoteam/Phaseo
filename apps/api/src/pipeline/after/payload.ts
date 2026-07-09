@@ -218,9 +218,14 @@ function sanitizeResponsesOutputItems(outputItems: any[]): any[] {
         if (!item || typeof item !== "object") return true;
         const type = String(item.type ?? "").toLowerCase();
         if (type !== "tool_call") return true;
-        const name = String(item.name ?? item.tool_name ?? item.function?.name ?? "").trim();
-        return name.length > 0 && name !== "tool_call";
+        return readNamedResponsesToolCall(item) !== null;
     });
+}
+
+function readNamedResponsesToolCall(item: any): string | null {
+    const name = String(item?.name ?? item?.tool_name ?? item?.function?.name ?? "").trim();
+    if (!name || name.toLowerCase() === "tool_call") return null;
+    return name;
 }
 
 function resolveClientModel(
@@ -428,7 +433,10 @@ export function extractFinishReason(payload: any): string | null {
             if (Array.isArray(output)) {
                 const hasToolCall = output.some((item: any) => {
                     const type = String(item?.type ?? "").toLowerCase();
-                    return type === "function_call";
+                    return (
+                        type === "function_call" ||
+                        (type === "tool_call" && readNamedResponsesToolCall(item) !== null)
+                    );
                 });
                 if (hasToolCall) return "tool_calls";
             }

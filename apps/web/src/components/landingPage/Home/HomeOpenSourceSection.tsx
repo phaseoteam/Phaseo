@@ -30,7 +30,7 @@ const CTA_TICKER_PROVIDERS = [
 	{ id: "openai", label: "OpenAI" },
 	{ id: "anthropic", label: "Anthropic" },
 	{ id: "google", label: "Google" },
-	{ id: "xai", label: "xAI" },
+	{ id: "xai", label: "SpaceXAI" },
 	{ id: "mistral", label: "Mistral" },
 	{ id: "deepseek", label: "DeepSeek" },
 	{ id: "minimax", label: "MiniMax" },
@@ -67,7 +67,7 @@ const ROTATING_MODEL_IDS = [
 	"openai/gpt-5.5",
 	"anthropic/claude-opus-4.7",
 	"google/gemini-3.1-pro-preview",
-	"x-ai/grok-4.20-beta-0309",
+	"spacex-ai/grok-4.20-beta-0309",
 	"mistral/mistral-medium-3.5",
 ] as const;
 
@@ -435,16 +435,15 @@ function FirstPromptCodeBlock({
 					})}
 					{variant === "beta" ? (
 						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<button
+							<DropdownMenuTrigger render={<button
 									type="button"
 									className={cn(
 										"inline-flex items-center gap-1.25 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors",
 										!PRIMARY_SNIPPET_ID_SET.has(snippetId)
 											? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950"
 											: "border-zinc-200/80 bg-white text-zinc-600 hover:border-zinc-300 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600 dark:hover:text-zinc-100"
-									)}
-								>
+									)} />}>
+
 									{selectedMoreSnippet ? (
 										<>
 											<SnippetIcon
@@ -457,7 +456,7 @@ function FirstPromptCodeBlock({
 										"More"
 									)}
 									<ChevronDown className="h-3.5 w-3.5" />
-								</button>
+
 							</DropdownMenuTrigger>
 							<DropdownMenuContent align="start" className="min-w-40">
 								{MORE_SNIPPETS.map((snippet) => (

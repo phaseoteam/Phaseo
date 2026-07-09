@@ -7,7 +7,7 @@ export const FEATURED_MODEL_IDS = [
 	"anthropic/claude-fable-5",
 	"minimax/minimax-m3",
 	"anthropic/claude-opus-4.8",
-	"x-ai/grok-4.3",
+	"spacex-ai/grok-4.3",
 	"openai/gpt-5.5",
 	"google/gemini-3.1-pro-preview",
 ];
@@ -18,7 +18,7 @@ export const CHAT_DEFAULT_MODEL_IDS = [
 	"anthropic/claude-fable-5",
 	"minimax/minimax-m3",
 	"anthropic/claude-opus-4.8",
-	"x-ai/grok-4.3",
+	"spacex-ai/grok-4.3",
 	"openai/gpt-5.5",
 	"google/gemini-3.1-pro-preview",
 ];

@@ -84,7 +84,6 @@ function addMetaWebSearchTool(request: any, ir: IRChatRequest): void {
 	});
 	request.tools = tools;
 }
-
 /**
  * Transform IR request to OpenAI Responses API format
  *

@@ -27,6 +27,7 @@ import { togetherQuirks } from "../providers/together/quirks";
 import { inceptionQuirks } from "../providers/inception/quirks";
 import { crofAIQuirks } from "../providers/crofai/quirks";
 import { veniceQuirks } from "../providers/venice/quirks";
+import { sakanaQuirks } from "../providers/sakana/quirks";
 import { defaultQuirks } from "./default";
 
 /**
@@ -47,6 +48,7 @@ const PROVIDER_QUIRKS: Record<string, ProviderQuirks> = {
 	"moonshot-ai-turbo": moonshotQuirks,
 	"moonshotai-turbo": moonshotQuirks,
 	xiaomi: xiaomiQuirks,
+	"spacex-ai": xAiQuirks,
 	"x-ai": xAiQuirks,
 	xai: xAiQuirks,
 	groq: groqQuirks,
@@ -65,6 +67,7 @@ const PROVIDER_QUIRKS: Record<string, ProviderQuirks> = {
 	together: togetherQuirks,
 	inception: inceptionQuirks,
 	venice: veniceQuirks,
+	sakana: sakanaQuirks,
 	// Note: Google quirks removed - Google now uses native implementation, not OpenAI-compat
 };
 

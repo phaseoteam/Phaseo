@@ -370,9 +370,9 @@ export const logoManifest = {
 	"weights-and-biases": {
 		color: "/logos/weights-and-biases.svg",
 	},
-	xai: {
-		light: "/logos/xai_light.svg",
-		dark: "/logos/xai_dark.svg",
+	"spacex-ai": {
+		light: "/logos/spacexai_light.svg",
+		dark: "/logos/spacexai_dark.svg",
 	},
 	xiaomi: {
 		color: "/logos/xiaomi.svg",

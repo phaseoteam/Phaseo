@@ -108,9 +108,9 @@ function buildStarterCollections(models: ModelOption[]) {
 			],
 		},
 		{
-			id: "x-ai-grok-4.3",
+			id: "spacex-ai-grok-4.3",
 			matches: [
-				(model) => model.modelId === "x-ai/grok-4.3",
+				(model) => model.modelId === "spacex-ai/grok-4.3",
 				(model) => getSearchText(model).includes("grok 4.3"),
 				(model) => getSearchText(model).includes("grok-4.3"),
 			],

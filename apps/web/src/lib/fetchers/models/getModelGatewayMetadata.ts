@@ -417,6 +417,8 @@ export default async function getModelGatewayMetadata(
     );
 	const providerSelect =
 		"api_provider_id, api_provider_name, provider_family_id, offer_label, offer_scope, link, country_code, status, routing_status, residency_mode, default_execution_regions, default_data_regions, zero_data_retention, residency_source_url, residency_notes, regional_pricing_mode, regional_pricing_uplift_percent, pricing_source_url, regional_pricing_notes, prompt_training_policy, prompt_training_notes, prompt_training_source_url, data_policy_tier, data_policy_confidence, data_policy_contract_mode, data_policy_contract_notes, user_identifier_policy, user_identifier_notes, privacy_policy_url, terms_of_service_url";
+	const providerSelectWithoutDataPolicy =
+		"api_provider_id, api_provider_name, provider_family_id, offer_label, offer_scope, link, country_code, status, routing_status, residency_mode, default_execution_regions, default_data_regions, zero_data_retention, residency_source_url, residency_notes, regional_pricing_mode, regional_pricing_uplift_percent, pricing_source_url, regional_pricing_notes, prompt_training_policy, prompt_training_notes, prompt_training_source_url, user_identifier_policy, user_identifier_notes, privacy_policy_url, terms_of_service_url";
 	const providerSelectLegacy =
 		"api_provider_id, api_provider_name, link, country_code, status, routing_status";
 	let providersData: any[] | null = null;
@@ -433,16 +435,24 @@ export default async function getModelGatewayMetadata(
 					String(res.error.message ?? ""),
 				))
 		) {
-			const legacyRes = await supabase
+			const compatRes = await supabase
 				.from("data_api_providers")
-				.select(providerSelectLegacy)
+				.select(providerSelectWithoutDataPolicy)
 				.in("api_provider_id", providerIds);
-			if (legacyRes.error) {
-				throw new Error(
-					legacyRes.error.message ?? "Failed to load gateway providers",
-				);
+			if (!compatRes.error) {
+				providersData = compatRes.data ?? [];
+			} else {
+				const legacyRes = await supabase
+					.from("data_api_providers")
+					.select(providerSelectLegacy)
+					.in("api_provider_id", providerIds);
+				if (legacyRes.error) {
+					throw new Error(
+						legacyRes.error.message ?? "Failed to load gateway providers",
+					);
+				}
+				providersData = legacyRes.data ?? [];
 			}
-			providersData = legacyRes.data ?? [];
 		} else if (res.error) {
 			throw new Error(res.error.message ?? "Failed to load gateway providers");
 		} else {

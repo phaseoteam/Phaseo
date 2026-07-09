@@ -178,6 +178,8 @@ export type GatewayBindings = {
     OVH_AI_ENDPOINTS_URL?: string;
     RELACE_API_KEY?: string;
     RELACE_BASE_URL?: string;
+    SAKANA_API_KEY?: string;
+    SAKANA_BASE_URL?: string;
     SAMBANOVA_API_KEY?: string;
     SAMBANOVA_BASE_URL?: string;
     SCW_SECRET_KEY?: string;

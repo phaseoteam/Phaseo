@@ -9,15 +9,25 @@ import {
 	InputGroupAddon,
 	InputGroupInput,
 } from "@/components/ui/input-group";
+import { Kbd } from "@/components/ui/kbd";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
-import { ArrowUpRight, Search as SearchIcon, Trophy } from "lucide-react";
-import type { SearchData } from "@/lib/fetchers/search/getSearchData";
+import {
+	ArrowDown,
+	ArrowUp,
+	ArrowUpRight,
+	CornerDownLeft,
+	Search as SearchIcon,
+	Trophy,
+} from "lucide-react";
+import type {
+	CompactSearchData,
+	SearchData,
+} from "@/lib/fetchers/search/getSearchData";
 
 interface Props {
 	className?: string;
-	initialData?: SearchData | null;
 }
 
 type SearchableItem = {
@@ -58,6 +68,12 @@ type SearchResultCategory = {
 	name: "models" | "apiProviders" | "organisations" | "benchmarks";
 	items: SearchableItem[];
 	score: number;
+};
+
+type SelectableSearchRow = {
+	key: string;
+	href: string;
+	listRowIndex?: number;
 };
 
 type IndexedSearchItem<T extends SearchableItem> = {
@@ -134,6 +150,97 @@ function createSearchIndex<T extends SearchableItem>(
 }
 
 let cachedSearchData: SearchData | null = null;
+let searchDataRequest: Promise<SearchData> | null = null;
+
+function isCompactSearchData(value: unknown): value is CompactSearchData {
+	return Boolean(
+		value &&
+			typeof value === "object" &&
+			Array.isArray((value as CompactSearchData).m) &&
+			Array.isArray((value as CompactSearchData).o) &&
+			Array.isArray((value as CompactSearchData).b) &&
+			Array.isArray((value as CompactSearchData).p) &&
+			Array.isArray((value as CompactSearchData).s) &&
+			Array.isArray((value as CompactSearchData).c),
+	);
+}
+
+function expandSearchData(value: SearchData | CompactSearchData): SearchData {
+	if (!isCompactSearchData(value)) return value;
+
+	return {
+		models: value.m.map(([id, title, subtitle, href, logoId, releaseGroupLabel]) => ({
+			id,
+			title,
+			subtitle,
+			href,
+			logoId,
+			releaseGroupLabel,
+		})),
+		organisations: value.o.map(([id, title, subtitle, href, logoId]) => ({
+			id,
+			title,
+			subtitle,
+			href,
+			logoId,
+		})),
+		benchmarks: value.b.map(([id, title, subtitle, href]) => ({
+			id,
+			title,
+			subtitle,
+			href,
+		})),
+		apiProviders: value.p.map(([id, title, subtitle, href, logoId]) => ({
+			id,
+			title,
+			subtitle,
+			href,
+			logoId,
+		})),
+		subscriptionPlans: value.s.map(([id, title, subtitle, href, logoId]) => ({
+			id,
+			title,
+			subtitle,
+			href,
+			logoId,
+		})),
+		countries: value.c.map(([id, title, subtitle, href, flagIso]) => ({
+			id,
+			title,
+			subtitle,
+			href,
+			flagIso,
+		})),
+	};
+}
+
+async function fetchSearchData(): Promise<SearchData> {
+	if (cachedSearchData) return cachedSearchData;
+	if (searchDataRequest) return searchDataRequest;
+
+	searchDataRequest = fetch("/api/frontend/search", {
+		method: "GET",
+		cache: "no-store",
+		credentials: "same-origin",
+	})
+		.then(async (response) => {
+			if (!response.ok) {
+				throw new Error("Failed to load search data");
+			}
+			return expandSearchData(
+				(await response.json()) as SearchData | CompactSearchData,
+			);
+		})
+		.then((data) => {
+			cachedSearchData = data;
+			return data;
+		})
+		.finally(() => {
+			searchDataRequest = null;
+		});
+
+	return searchDataRequest;
+}
 
 function getIndexedMatchScore<T extends SearchableItem>(
 	indexedItem: IndexedSearchItem<T>,
@@ -229,18 +336,29 @@ function SearchBrowseRow({
 	item,
 	showSubtitle = true,
 	onSelect,
+	active = false,
+	rowKey,
+	onActive,
 	type = "default",
 }: {
 	item: SearchableItem;
 	showSubtitle?: boolean;
 	onSelect: (href: string) => void;
+	active?: boolean;
+	rowKey: string;
+	onActive: () => void;
 	type?: "benchmark" | "comparison" | "default";
 }) {
 	return (
 		<button
 			type="button"
+			data-search-row-key={rowKey}
 			onClick={() => onSelect(item.href)}
-			className="flex h-8 w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm outline-hidden transition-colors hover:bg-muted focus-visible:bg-muted"
+			onMouseEnter={onActive}
+			className={cn(
+				"flex h-8 w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm outline-hidden transition-colors hover:bg-muted focus-visible:bg-muted",
+				active && "bg-muted text-foreground",
+			)}
 		>
 			<SearchBrowseIcon item={item} type={type} />
 			<div className="min-w-0 flex flex-1 items-baseline gap-2">
@@ -255,6 +373,39 @@ function SearchBrowseRow({
 			</div>
 			<ArrowUpRight className="size-3.5 shrink-0 text-zinc-400 dark:text-zinc-500" />
 		</button>
+	);
+}
+
+function SearchFooter({
+	count,
+	label,
+}: {
+	count: number;
+	label: string;
+}) {
+	return (
+		<div className="flex h-7 items-center justify-between border-t border-border/60 px-2.5 text-[11px] text-muted-foreground">
+			<div className="flex min-w-0 items-center gap-2">
+				<span className="inline-flex items-center gap-1">
+					<Kbd className="size-4 rounded p-0">
+						<ArrowUp className="size-3" />
+					</Kbd>
+					<Kbd className="size-4 rounded p-0">
+						<ArrowDown className="size-3" />
+					</Kbd>
+					<span>move</span>
+				</span>
+				<span className="inline-flex items-center gap-1">
+					<Kbd className="size-4 rounded p-0">
+						<CornerDownLeft className="size-3" />
+					</Kbd>
+					<span>select</span>
+				</span>
+			</div>
+			<span className="shrink-0 tabular-nums">
+				{count.toLocaleString()} {label}
+			</span>
+		</div>
 	);
 }
 
@@ -344,24 +495,20 @@ function SearchEmptyState({
 	);
 }
 
-export default function Search({ className, initialData = null }: Props) {
+export default function Search({ className }: Props) {
 	const router = useRouter();
 	const listRef = useRef<HTMLDivElement>(null);
 	const queryUpdateTimeoutRef = useRef<number | null>(null);
+	const inputValueRef = useRef("");
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState("");
+	const [activeRowIndex, setActiveRowIndex] = useState(0);
 	const [searchData, setSearchData] = useState<SearchData | null>(
-		initialData ?? cachedSearchData
+		cachedSearchData
 	);
 	const [isLoadingSearchData, setIsLoadingSearchData] = useState(false);
 	const [searchDataError, setSearchDataError] = useState<string | null>(null);
 	const [scrollViewport, setScrollViewport] = useState<HTMLDivElement | null>(null);
-
-	useEffect(() => {
-		if (!initialData) return;
-		cachedSearchData = initialData;
-		setSearchData(initialData);
-	}, [initialData]);
 
 	useEffect(() => {
 		function onKeyDown(event: KeyboardEvent) {
@@ -391,6 +538,7 @@ export default function Search({ className, initialData = null }: Props) {
 				window.clearTimeout(queryUpdateTimeoutRef.current);
 				queryUpdateTimeoutRef.current = null;
 			}
+			inputValueRef.current = "";
 			setQuery("");
 			setIsLoadingSearchData(false);
 			return;
@@ -401,7 +549,27 @@ export default function Search({ className, initialData = null }: Props) {
 
 	useEffect(() => {
 		if (!open || searchData || searchDataError) return;
-		setSearchDataError("Unable to load search data.");
+
+		let cancelled = false;
+		setIsLoadingSearchData(true);
+
+		void fetchSearchData()
+			.then((data) => {
+				if (cancelled) return;
+				setSearchData(data);
+			})
+			.catch(() => {
+				if (cancelled) return;
+				setSearchDataError("Unable to load search data.");
+			})
+			.finally(() => {
+				if (cancelled) return;
+				setIsLoadingSearchData(false);
+			});
+
+		return () => {
+			cancelled = true;
+		};
 	}, [open, searchData, searchDataError]);
 
 	useEffect(() => {
@@ -418,6 +586,8 @@ export default function Search({ className, initialData = null }: Props) {
 	};
 
 	const handleQueryChange = (value: string) => {
+		inputValueRef.current = value;
+
 		if (queryUpdateTimeoutRef.current) {
 			window.clearTimeout(queryUpdateTimeoutRef.current);
 		}
@@ -534,6 +704,31 @@ export default function Search({ className, initialData = null }: Props) {
 		});
 	}, [defaultCategories, hasQuery]);
 
+	const selectableRows = useMemo<SelectableSearchRow[]>(() => {
+		if (hasQuery) {
+			return orderedCategories.flatMap((category) =>
+				category.items.map((item) => ({
+					key: `${category.name}-${item.id}`,
+					href: item.href,
+				})),
+			);
+		}
+
+		return defaultBrowseRows.flatMap((row, listRowIndex) =>
+			row.type === "item"
+				? [
+						{
+							key: row.key,
+							href: row.item.href,
+							listRowIndex,
+						},
+					]
+				: [],
+		);
+	}, [defaultBrowseRows, hasQuery, orderedCategories]);
+
+	const activeRow = selectableRows[activeRowIndex] ?? selectableRows[0] ?? null;
+
 	const defaultBrowseVirtualizer = useVirtualizer({
 		count: defaultBrowseRows.length,
 		getScrollElement: () => scrollViewport,
@@ -550,6 +745,85 @@ export default function Search({ className, initialData = null }: Props) {
 		(total, category) => total + category.items.length,
 		0,
 	);
+	const footerCount = hasQuery
+		? visibleSearchRowCount
+		: selectableRows.length;
+	const footerLabel = hasQuery
+		? footerCount === 1
+			? "result"
+			: "results"
+		: "items";
+
+	useEffect(() => {
+		setActiveRowIndex(0);
+	}, [hasQuery, searchTerm]);
+
+	useEffect(() => {
+		if (activeRowIndex < selectableRows.length) return;
+		setActiveRowIndex(Math.max(0, selectableRows.length - 1));
+	}, [activeRowIndex, selectableRows.length]);
+
+	useEffect(() => {
+		if (!open || !activeRow) return;
+
+		if (!hasQuery && activeRow.listRowIndex != null) {
+			defaultBrowseVirtualizer.scrollToIndex(activeRow.listRowIndex, {
+				align: "auto",
+			});
+			return;
+		}
+
+		Array.from(
+			listRef.current?.querySelectorAll<HTMLElement>("[data-search-row-key]") ??
+				[],
+		)
+			.find((element) => element.dataset.searchRowKey === activeRow.key)
+			?.scrollIntoView({ block: "nearest" });
+	}, [activeRow, defaultBrowseVirtualizer, hasQuery, open]);
+
+	const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+		if (event.key === "Escape") {
+			event.preventDefault();
+			setOpen(false);
+			return;
+		}
+
+		if (event.key === "ArrowDown") {
+			event.preventDefault();
+			setActiveRowIndex((value) =>
+				selectableRows.length === 0
+					? 0
+					: Math.min(value + 1, selectableRows.length - 1),
+			);
+			return;
+		}
+
+		if (event.key === "ArrowUp") {
+			event.preventDefault();
+			setActiveRowIndex((value) => Math.max(value - 1, 0));
+			return;
+		}
+
+		if (event.key === "Enter" && activeRow) {
+			event.preventDefault();
+
+			const nextSearchTerm = inputValueRef.current.trim().toLowerCase();
+			if (nextSearchTerm !== searchTerm) {
+				if (queryUpdateTimeoutRef.current) {
+					window.clearTimeout(queryUpdateTimeoutRef.current);
+					queryUpdateTimeoutRef.current = null;
+				}
+				setQuery(inputValueRef.current);
+				setActiveRowIndex(0);
+				return;
+			}
+
+			handleSelect(activeRow.href);
+		}
+	};
+
+	const getSelectableRowIndex = (key: string) =>
+		selectableRows.findIndex((row) => row.key === key);
 
 	return (
 		<div className={cn("flex items-center", className)}>
@@ -583,11 +857,15 @@ export default function Search({ className, initialData = null }: Props) {
 							<InputGroupInput
 								key={open ? "global-search-open" : "global-search-closed"}
 								onChange={(event) => handleQueryChange(event.currentTarget.value)}
+								onKeyDown={handleSearchKeyDown}
 								placeholder="Search AI Stats..."
 								aria-label="Search catalogue"
 								autoFocus
 								className="text-sm"
 							/>
+							<InputGroupAddon align="inline-end">
+								<Kbd>esc</Kbd>
+							</InputGroupAddon>
 						</InputGroup>
 					</div>
 					<div ref={listRef} className="overflow-hidden outline-none">
@@ -623,9 +901,17 @@ export default function Search({ className, initialData = null }: Props) {
 													{category.items.map((item) => (
 														<SearchBrowseRow
 															key={item.id}
+															rowKey={`${category.name}-${item.id}`}
 															item={item}
 															showSubtitle={categoryConfig.showSubtitle}
 															type={categoryConfig.type}
+															active={activeRow?.key === `${category.name}-${item.id}`}
+															onActive={() => {
+																const nextIndex = getSelectableRowIndex(
+																	`${category.name}-${item.id}`,
+																);
+																if (nextIndex >= 0) setActiveRowIndex(nextIndex);
+															}}
 															onSelect={handleSelect}
 														/>
 													))}
@@ -663,8 +949,14 @@ export default function Search({ className, initialData = null }: Props) {
 													<div className="my-1 h-px bg-border/50" />
 												) : (
 													<SearchBrowseRow
+														rowKey={row.key}
 														item={row.item}
 														showSubtitle={row.showSubtitle}
+														active={activeRow?.key === row.key}
+														onActive={() => {
+															const nextIndex = getSelectableRowIndex(row.key);
+															if (nextIndex >= 0) setActiveRowIndex(nextIndex);
+														}}
 														onSelect={handleSelect}
 													/>
 												)}
@@ -675,6 +967,7 @@ export default function Search({ className, initialData = null }: Props) {
 							)}
 						</ScrollArea>
 					</div>
+					<SearchFooter count={footerCount} label={footerLabel} />
 				</DialogContent>
 			</Dialog>
 		</div>

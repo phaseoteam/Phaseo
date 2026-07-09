@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	ModelSelector,
 	ModelSelectorContent,
@@ -326,6 +326,7 @@ export function ChatHeader({
 		"personalization" | "data-controls" | "shortcuts" | "admin"
 	>("personalization");
 	const [modelSearchValue, setModelSearchValue] = useState("");
+	const modelSearchInputRef = useRef<HTMLInputElement | null>(null);
 	const [quickFilters, setQuickFilters] = useState({
 		free: false,
 		new: false,
@@ -683,6 +684,81 @@ export function ChatHeader({
 			setModelSearchValue("");
 		}
 	};
+	const focusModelSearchInput = useCallback(() => {
+		const input =
+			modelSearchInputRef.current ??
+			document.querySelector<HTMLInputElement>(
+				"[data-chat-model-selector-search='true']",
+			);
+		input?.focus({ preventScroll: true });
+	}, []);
+	const scheduleModelSearchFocus = useCallback(() => {
+		const timeoutIds: number[] = [];
+		let secondFrame: number | null = null;
+		focusModelSearchInput();
+		for (const delay of [0, 25, 75, 150, 250, 400]) {
+			timeoutIds.push(window.setTimeout(focusModelSearchInput, delay));
+		}
+		const firstFrame = requestAnimationFrame(() => {
+			secondFrame = requestAnimationFrame(() => {
+				focusModelSearchInput();
+				for (const delay of [25, 75, 150, 250, 400]) {
+					timeoutIds.push(window.setTimeout(focusModelSearchInput, delay));
+				}
+			});
+		});
+		return () => {
+			cancelAnimationFrame(firstFrame);
+			if (secondFrame !== null) {
+				cancelAnimationFrame(secondFrame);
+			}
+			for (const timeoutId of timeoutIds) {
+				window.clearTimeout(timeoutId);
+			}
+		};
+	}, [focusModelSearchInput]);
+	useEffect(() => {
+		if (!modelPickerOpen) return;
+		return scheduleModelSearchFocus();
+	}, [modelPickerOpen, scheduleModelSearchFocus]);
+	useEffect(() => {
+		if (!modelPickerOpen) return;
+		const handleModelPickerKeyDown = (event: globalThis.KeyboardEvent) => {
+			if (event.isComposing || event.metaKey || event.ctrlKey || event.altKey) {
+				return;
+			}
+			const target = event.target;
+			if (
+				target instanceof HTMLElement &&
+				target.closest("[data-chat-model-selector-search='true']")
+			) {
+				return;
+			}
+			const input =
+				modelSearchInputRef.current ??
+				document.querySelector<HTMLInputElement>(
+					"[data-chat-model-selector-search='true']",
+				);
+			if (!input) return;
+			if (event.key.length === 1) {
+				event.preventDefault();
+				event.stopPropagation();
+				input.focus({ preventScroll: true });
+				setModelSearchValue((value) => `${value}${event.key}`);
+				return;
+			}
+			if (event.key === "Backspace") {
+				event.preventDefault();
+				event.stopPropagation();
+				input.focus({ preventScroll: true });
+				setModelSearchValue((value) => value.slice(0, -1));
+			}
+		};
+		window.addEventListener("keydown", handleModelPickerKeyDown, true);
+		return () => {
+			window.removeEventListener("keydown", handleModelPickerKeyDown, true);
+		};
+	}, [modelPickerOpen]);
 	const handleRemoveModel = (modelId: string) => {
 		onRemoveModel?.(modelId);
 	};
@@ -1197,6 +1273,9 @@ export function ChatHeader({
 						commandProps={{ shouldFilter: false }}
 					>
 						<ModelSelectorInput
+							ref={modelSearchInputRef}
+							data-chat-model-selector-search="true"
+							autoFocus
 							placeholder="Search models..."
 							value={modelSearchValue}
 							onValueChange={setModelSearchValue}
@@ -1294,13 +1373,12 @@ export function ChatHeader({
 					<DropdownMenu>
 						<Tooltip>
 							<TooltipTrigger asChild>
-								<DropdownMenuTrigger asChild>
-									<Button
+								<DropdownMenuTrigger render={<Button
 										variant="outline"
 										size="sm"
 										className="h-8 gap-1.5 rounded-md bg-muted/40 px-2.5 text-xs font-medium shadow-none"
-										aria-label="Response layout"
-									>
+										aria-label="Response layout" />}>
+
 										{responseLayout === "side-by-side" ? (
 											<Columns2 className="h-4 w-4" />
 										) : (
@@ -1312,7 +1390,7 @@ export function ChatHeader({
 												: "Sequential"}
 										</span>
 										<ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-									</Button>
+
 								</DropdownMenuTrigger>
 							</TooltipTrigger>
 							<TooltipContent className="max-w-64 text-left">
@@ -1902,7 +1980,7 @@ export function ChatHeader({
 											</div>
 											{importResult && (
 												<div className={`rounded-lg border px-3 py-3 ${
-													importResult.type === 'success' 
+													importResult.type === 'success'
 														? 'border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200'
 														: importResult.type === 'error'
 														? 'border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200'

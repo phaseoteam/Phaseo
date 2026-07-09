@@ -136,11 +136,10 @@ export default function HeaderClient({
 								Sign Up
 							</Link>
 						</Button>
-						<DropdownMenuTrigger asChild>
-							<Button
+						<DropdownMenuTrigger render={<Button
 								className="h-8 w-8 rounded-l-none border-l border-primary-foreground/25 px-0"
-								aria-label="Open navigation menu"
-							>
+								aria-label="Open navigation menu" />}>
+
 								<ChevronDown
 									className={cn(
 										"size-4 transition-transform duration-150",
@@ -148,7 +147,7 @@ export default function HeaderClient({
 									)}
 									aria-hidden="true"
 								/>
-							</Button>
+
 						</DropdownMenuTrigger>
 					</ButtonGroup>
 					<DropdownMenuContent align="end" className="w-48 rounded-xl p-1">
@@ -158,29 +157,27 @@ export default function HeaderClient({
 							return (
 								<DropdownMenuItem
 									key={href}
-									asChild
 									className={cn(
 										"rounded-md py-2 text-sm",
 										isActive && "font-semibold text-primary"
 									)}
-								>
-									<Link href={href} prefetch={false} className="flex items-center gap-2">
+								 render={<Link href={href} prefetch={false} className="flex items-center gap-2" />}>
+
 										<Icon className="h-4 w-4" />
 										{label}
-									</Link>
+
 								</DropdownMenuItem>
 							);
 						})}
-						<DropdownMenuItem asChild className="rounded-md py-2 text-sm">
-							<Link
+						<DropdownMenuItem className="rounded-md py-2 text-sm" render={<Link
 								href={docsHref}
 								target="_blank"
 								rel="noreferrer"
-								className="flex items-center gap-2"
-							>
+								className="flex items-center gap-2" />}>
+
 								<BookOpenText className="h-4 w-4" />
 								Docs
-							</Link>
+
 						</DropdownMenuItem>
 						<DropdownMenuSeparator />
 						<div className="px-1 py-1">
@@ -222,19 +219,18 @@ export default function HeaderClient({
 
 		return (
 			<DropdownMenu>
-				<DropdownMenuTrigger asChild>
-					<Button
+				<DropdownMenuTrigger render={<Button
 						variant="ghost"
 						size="icon"
 						className="group overflow-hidden"
-						aria-label="Toggle menu"
-					>
+						aria-label="Toggle menu" />}>
+
 						<span className="relative block h-5 w-5 overflow-hidden" aria-hidden="true">
 							<span className="absolute left-0 top-1/2 h-0.5 w-5 origin-center -translate-y-[6px] rounded-full bg-current transition-all duration-200 ease-out group-data-[state=open]:translate-y-0 group-data-[state=open]:rotate-45" />
 							<span className="absolute left-0 top-1/2 h-0.5 w-5 origin-center rounded-full bg-current transition-all duration-200 ease-out group-data-[state=open]:opacity-0" />
 							<span className="absolute left-0 top-1/2 h-0.5 w-5 origin-center translate-y-[6px] rounded-full bg-current transition-all duration-200 ease-out group-data-[state=open]:translate-y-0 group-data-[state=open]:-rotate-45" />
 						</span>
-					</Button>
+
 				</DropdownMenuTrigger>
 					<DropdownMenuContent align="end" className="w-56 rounded-xl p-1">
 						{isLoggedIn && teams.length > 0 && (
@@ -323,16 +319,15 @@ export default function HeaderClient({
 						return (
 							<DropdownMenuItem
 								key={href}
-								asChild
 								className={cn(
 									"rounded-md py-1.5 text-sm",
 									isActive && "font-semibold text-blue-500",
 								)}
-							>
-								<Link href={href} prefetch={false} className="flex items-center gap-2">
+							 render={<Link href={href} prefetch={false} className="flex items-center gap-2" />}>
+
 									<Icon className="h-4 w-4" />
 									<span>{label}</span>
-								</Link>
+
 							</DropdownMenuItem>
 						);
 					})}
@@ -343,73 +338,72 @@ export default function HeaderClient({
 						<>
 							{(userRole === "editor" || userRole === "admin") && (
 								<>
-									<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
-										<Link href="/internal" prefetch={false}>
+									<DropdownMenuItem className="rounded-md py-1.5 text-sm" render={<Link href="/internal" prefetch={false} />}>
+
 											<Lock className="h-4 w-4" />
 											<span>Internal</span>
-										</Link>
+
 									</DropdownMenuItem>
 									<DropdownMenuSeparator />
 								</>
 							)}
 
-							<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
-								<Link href="/experiments" prefetch={false}>
+							<DropdownMenuItem className="rounded-md py-1.5 text-sm" render={<Link href="/experiments" prefetch={false} />}>
+
 									<FlaskConical className="h-4 w-4" />
 									<span>Experiments</span>
-								</Link>
+
 							</DropdownMenuItem>
 
-							<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
-								<Link href="/settings/workspaces/settings" prefetch={false}>
+							<DropdownMenuItem className="rounded-md py-1.5 text-sm" render={<Link href="/settings/workspaces/settings" prefetch={false} />}>
+
 									<Users className="h-4 w-4" />
 									<span>Workspaces</span>
-								</Link>
+
 							</DropdownMenuItem>
 
-								<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
-									<Link href="/settings/account" prefetch={false}>
+								<DropdownMenuItem className="rounded-md py-1.5 text-sm" render={<Link href="/settings/account" prefetch={false} />}>
+
 										<Settings className="h-4 w-4" />
 									<span>Settings</span>
-								</Link>
+
 							</DropdownMenuItem>
 
 							<DropdownMenuSeparator />
 
-							<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
-								<Link
+							<DropdownMenuItem className="rounded-md py-1.5 text-sm" render={<Link
 									href={`/settings/usage?workspace_id=${encodeURIComponent(
 										activeWorkspaceId ?? "",
 									)}`}
-									prefetch={false}
-								>
+									prefetch={false} />}>
+
 									<BarChart2 className="h-4 w-4" />
 									<span>Usage</span>
-								</Link>
+
 							</DropdownMenuItem>
-							<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
-								<Link href="/settings/credits" prefetch={false}>
+							<DropdownMenuItem className="rounded-md py-1.5 text-sm" render={<Link href="/settings/credits" prefetch={false} />}>
+
 									<CreditCard className="h-4 w-4" />
 									<span>Credits</span>
-								</Link>
+
 							</DropdownMenuItem>
-							<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
-								<Link href="/settings/keys" prefetch={false}>
+							<DropdownMenuItem className="rounded-md py-1.5 text-sm" render={<Link href="/settings/keys" prefetch={false} />}>
+
 									<KeyIcon className="h-4 w-4" />
 									<span>Keys</span>
-								</Link>
+
 							</DropdownMenuItem>
-								<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
-									<Link href="/contact" prefetch={false}>
+								<DropdownMenuItem className="rounded-md py-1.5 text-sm" render={<Link href="/contact" prefetch={false} />}>
+
 										<LifeBuoy className="h-4 w-4" />
 										<span>Support</span>
-									</Link>
+
 								</DropdownMenuItem>
-								<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
-									<Link href={docsHref} target="_blank" rel="noreferrer">
+								<DropdownMenuItem className="rounded-md py-1.5 text-sm" render={<Link href={docsHref} target="_blank" rel="noreferrer" />}>
+
 										<BookOpenText className="h-4 w-4" />
 										<span>Docs</span>
-									</Link>
+
 								</DropdownMenuItem>
 
 								<DropdownMenuSeparator />
@@ -462,10 +456,10 @@ export default function HeaderClient({
 						</>
 					) : (
 						<>
-							<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
-								<Link href="/sign-up" prefetch={false}>
+							<DropdownMenuItem className="rounded-md py-1.5 text-sm" render={<Link href="/sign-up" prefetch={false} />}>
+
 									Sign Up
-								</Link>
+
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
 							<div className="px-1 py-1">

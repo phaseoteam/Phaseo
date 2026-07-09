@@ -77,6 +77,10 @@ function isNonTextEndpoint(endpoint: Endpoint): endpoint is NonTextEndpoint {
 		endpoint === "music.generate";
 }
 
+function isXAiProvider(providerId: string): boolean {
+	return providerId === "spacex-ai" || providerId === "x-ai" || providerId === "xai";
+}
+
 function numberOrUndefined(value: unknown): number | undefined {
 	if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
 	return value;
@@ -493,7 +497,7 @@ async function executeProviderEndpoint(
 			if (providerId === "xiaomi") {
 				return xiaomiAudioSpeech.exec(providerArgs);
 			}
-			if (providerId === "x-ai" || providerId === "xai") {
+			if (isXAiProvider(providerId)) {
 				return xAiAudioSpeech.exec(providerArgs);
 			}
 			if (!isOpenAICompatProvider(providerId)) {

@@ -1,0 +1,34 @@
+{
+  "model_id": "microsoft/mai-code-1-flash",
+  "organisation_id": "microsoft",
+  "name": "MAI Code 1 Flash",
+  "status": "Announced",
+  "previous_model_id": null,
+  "description": "MAI Code 1 Flash is Microsoft's inference-efficient agentic coding model, tailored for GitHub Copilot, VS Code, and Microsoft developer workflows. This entry tracks the Build 2026 launch announcement.",
+  "announced_date": "2026-06-02T00:00:00",
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "microsoft/mai-code-1-flash",
+  "family_id": "microsoft/mai",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://microsoft.ai/news/introducingmai-code-1-flash/"
+    }
+  ],
+  "details": [
+    {
+      "name": "parameter_count",
+      "value": 5000000000
+    },
+    {
+      "name": "availability",
+      "value": "Microsoft announced MAI Code 1 Flash as deeply integrated into GitHub Copilot and VS Code rather than as a broadly documented standalone API."
+    }
+  ],
+  "benchmarks": []
+}

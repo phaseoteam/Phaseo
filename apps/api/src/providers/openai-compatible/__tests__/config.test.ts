@@ -26,12 +26,14 @@ describe("resolveOpenAICompatRoute", () => {
 	});
 
 	it("routes xai aliases to responses", () => {
+		expect(resolveOpenAICompatRoute("spacex-ai", "grok-4")).toBe("responses");
 		expect(resolveOpenAICompatRoute("x-ai", "grok-4")).toBe("responses");
 		expect(resolveOpenAICompatRoute("xai", "grok-4")).toBe("responses");
 	});
 
 	it("routes production provider set to expected upstream route", () => {
 		expect(resolveOpenAICompatRoute("openai", "gpt-4.1")).toBe("responses");
+		expect(resolveOpenAICompatRoute("spacex-ai", "grok-4")).toBe("responses");
 		expect(resolveOpenAICompatRoute("x-ai", "grok-4")).toBe("responses");
 		expect(resolveOpenAICompatRoute("xai", "grok-4")).toBe("responses");
 

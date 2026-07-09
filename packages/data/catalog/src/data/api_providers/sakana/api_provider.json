@@ -1,0 +1,19 @@
+{
+  "api_provider_id": "sakana",
+  "api_provider_name": "Sakana AI",
+  "provider_family_id": "sakana",
+  "offer_scope": "global",
+  "description": "Sakana AI provides the Fugu multi-agent orchestration models through an OpenAI-compatible API.",
+  "link": "https://console.sakana.ai/get-started",
+  "zero_data_retention": null,
+  "residency_source_url": null,
+  "residency_notes": "Sakana says Fugu is available outside Japan but not in the EU or EEA.",
+  "prompt_training_policy": "opt_out_available",
+  "prompt_training_notes": "Sakana says usage data may be used to improve Fugu and customers can opt out of training data usage from the console.",
+  "prompt_training_source_url": "https://sakana.ai/fugu/",
+  "privacy_policy_url": "https://console.sakana.ai/privacy-policy",
+  "terms_of_service_url": "https://console.sakana.ai/terms-of-service",
+  "country_code": "JP",
+  "status": "Active",
+  "colour": "#F97316"
+}

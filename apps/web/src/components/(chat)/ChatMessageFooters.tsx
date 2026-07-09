@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { ReactNode } from "react";
 import {
 	ChevronLeft,
 	ChevronRight,
@@ -31,6 +32,90 @@ function formatMetric(
 ) {
 	if (value === null || value === undefined || value === "") return "-";
 	return suffix ? `${value}${suffix}` : `${value}`;
+}
+
+function formatTimingLabel(value: number) {
+	if (!Number.isFinite(value)) return "-";
+	if (value < 1000) return `${Math.max(0, Math.round(value))} ms`;
+	const seconds = value / 1000;
+	if (seconds < 10) {
+		return `${seconds.toFixed(2).replace(/\.?0+$/, "")} s`;
+	}
+	if (seconds < 60) {
+		return `${seconds.toFixed(1).replace(/\.0$/, "")} s`;
+	}
+	const minutes = seconds / 60;
+	if (minutes < 10) {
+		return `${minutes.toFixed(2).replace(/\.?0+$/, "")} min`;
+	}
+	return `${minutes.toFixed(1).replace(/\.0$/, "")} min`;
+}
+
+function MetadataSection({
+	title,
+	children,
+}: {
+	title: string;
+	children: ReactNode;
+}) {
+	return (
+		<section className="grid gap-1.5">
+			<div className="text-xs font-semibold text-foreground">
+				{title}
+			</div>
+			<div className="grid gap-1.5">{children}</div>
+		</section>
+	);
+}
+
+function TimingMetricRow({
+	label,
+	valueMs,
+}: {
+	label: string;
+	valueMs: number | null;
+}) {
+	if (typeof valueMs !== "number" || !Number.isFinite(valueMs)) {
+		return (
+			<MetadataRow label={label}>
+				<span>-</span>
+			</MetadataRow>
+		);
+	}
+	const normalizedValue = Math.max(0, valueMs);
+
+	return (
+		<MetadataRow label={label}>
+			<NumericValue>
+				{formatTimingLabel(normalizedValue)}
+			</NumericValue>
+		</MetadataRow>
+	);
+}
+
+function NumericValue({ children }: { children: ReactNode }) {
+	return (
+		<span className="font-mono tabular-nums">
+			{children}
+		</span>
+	);
+}
+
+function MetadataRow({
+	label,
+	children,
+}: {
+	label: string;
+	children: ReactNode;
+}) {
+	return (
+		<div className="flex items-center justify-between gap-4">
+			<span className="text-muted-foreground">{label}</span>
+			<div className="min-w-0 text-right font-medium text-foreground">
+				{children}
+			</div>
+		</div>
+	);
 }
 
 type UserMessageFooterProps = {
@@ -96,9 +181,10 @@ type AssistantMessageFooterProps = {
 	assistantCopied: boolean;
 	costLabel: string | null;
 	endToEndDisplay: string | null;
-	generationDisplay: string | null;
+	endToEndMs: number | null;
+	generationMs: number | null;
 	isPendingAssistant: boolean;
-	latencyDisplay: number | null;
+	latencyMs: number | null;
 	metadataOpen: boolean;
 	metadataProviderId: string | null;
 	metadataProviderLabel: string | null;
@@ -118,9 +204,10 @@ export function AssistantMessageFooter({
 	assistantCopied,
 	costLabel,
 	endToEndDisplay,
-	generationDisplay,
+	endToEndMs,
+	generationMs,
 	isPendingAssistant,
-	latencyDisplay,
+	latencyMs,
 	metadataOpen,
 	metadataProviderId,
 	metadataProviderLabel,
@@ -139,6 +226,14 @@ export function AssistantMessageFooter({
 		: null;
 	const providerLabel =
 		metadataProviderLabel ?? metadataProviderId ?? "-";
+	const latencyMetricMs =
+		typeof latencyMs === "number" && Number.isFinite(latencyMs)
+			? Math.max(0, latencyMs)
+			: null;
+	const generationMetricMs =
+		typeof generationMs === "number" && Number.isFinite(generationMs)
+			? Math.max(0, generationMs)
+			: null;
 
 	return (
 		<MessageFooter className="mt-0 flex flex-wrap items-center gap-2 px-0 text-xs text-muted-foreground">
@@ -215,78 +310,66 @@ export function AssistantMessageFooter({
 							</TooltipTrigger>
 							<TooltipContent side="top">Metadata</TooltipContent>
 						</Tooltip>
-						<PopoverContent align="start" className="w-72">
+						<PopoverContent
+							align="start"
+							className="w-72 max-w-[calc(100vw-2rem)]"
+						>
 							<div className="grid gap-3 text-sm">
-								<div className="grid gap-1.5">
-									<div className="flex items-center justify-between">
-										<span className="text-muted-foreground">
-											Provider
-										</span>
-										{providerHref && metadataProviderId ? (
-											<Link
-												href={providerHref}
-												className="inline-flex min-w-0 items-center gap-1.5 pl-3 text-right font-medium text-foreground transition-colors hover:text-primary"
-											>
-												<Logo
-													id={metadataProviderId}
-													alt={providerLabel}
-													width={16}
-													height={16}
-													className="shrink-0 rounded-none"
-												/>
-												<span className="truncate">
-													{providerLabel}
-												</span>
-											</Link>
-										) : (
-											<span className="truncate pl-3 text-right">
+								<MetadataRow label="Provider">
+									{providerHref && metadataProviderId ? (
+										<Link
+											href={providerHref}
+											className="inline-flex min-w-0 items-center justify-end gap-1.5 text-right"
+										>
+											<Logo
+												id={metadataProviderId}
+												alt={providerLabel}
+												width={16}
+												height={16}
+												className="shrink-0 rounded-none"
+											/>
+											<span className="truncate">
 												{providerLabel}
 											</span>
-										)}
-									</div>
-									<div className="flex items-center justify-between">
-										<span className="text-muted-foreground">
-											Total tokens
+										</Link>
+									) : (
+										<span className="block truncate">
+											{providerLabel}
 										</span>
-										<span>{formatMetric(totalTokens)}</span>
-									</div>
-									<div className="flex items-center justify-between">
-										<span className="text-muted-foreground">
-											Latency
-										</span>
-										<span>{formatMetric(latencyDisplay, " ms")}</span>
-									</div>
-									<div className="flex items-center justify-between">
-										<span className="text-muted-foreground">
-											Generation
-										</span>
-										<span>
-											{formatMetric(generationDisplay)}
-										</span>
-									</div>
-									<div className="flex items-center justify-between">
-										<span className="text-muted-foreground">
-											End-to-end
-										</span>
-										<span>
+									)}
+								</MetadataRow>
+								<div className="h-px bg-border" />
+								<MetadataSection title="Usage">
+									<MetadataRow label="Total tokens">
+										<NumericValue>
+											{formatMetric(totalTokens)}
+										</NumericValue>
+									</MetadataRow>
+									<MetadataRow label="Total cost">
+										<NumericValue>{costLabel ?? "-"}</NumericValue>
+									</MetadataRow>
+								</MetadataSection>
+								<div className="h-px bg-border" />
+								<MetadataSection title="Timing">
+									<TimingMetricRow
+										label="Latency"
+										valueMs={latencyMetricMs}
+									/>
+									<TimingMetricRow
+										label="Generation time"
+										valueMs={generationMetricMs}
+									/>
+									<MetadataRow label="End-to-end time">
+										<NumericValue>
 											{formatMetric(endToEndDisplay)}
-										</span>
-									</div>
-									<div className="flex items-center justify-between">
-										<span className="text-muted-foreground">
-											Throughput
-										</span>
-										<span>
+										</NumericValue>
+									</MetadataRow>
+									<MetadataRow label="Throughput">
+										<NumericValue>
 											{formatMetric(throughputDisplay, " tps")}
-										</span>
-									</div>
-									<div className="flex items-center justify-between">
-										<span className="text-muted-foreground">
-											Total cost
-										</span>
-										<span>{costLabel ?? "-"}</span>
-									</div>
-								</div>
+										</NumericValue>
+									</MetadataRow>
+								</MetadataSection>
 							</div>
 						</PopoverContent>
 					</Popover>

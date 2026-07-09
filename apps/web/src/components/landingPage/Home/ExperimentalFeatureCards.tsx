@@ -28,7 +28,7 @@ const PROVIDER_SET = [
 	"deepseek",
 	"groq",
 	"mistral",
-	"x-ai",
+	"spacex-ai",
 	"amazon-bedrock",
 ] as const;
 

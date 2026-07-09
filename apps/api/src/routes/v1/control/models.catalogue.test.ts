@@ -408,7 +408,7 @@ describe("fetchCatalogue", () => {
         const responses: Record<string, QueryResult[]> = {
             data_models: [{
                 data: [{
-                    model_id: "x-ai/grok-tts",
+                    model_id: "spacex-ai/grok-tts",
                     name: "Grok TTS",
                     release_date: null,
                     deprecation_date: null,
@@ -424,9 +424,9 @@ describe("fetchCatalogue", () => {
             data_api_provider_models: [{
                 data: [{
                     provider_api_model_id: "pam_voice_1",
-                    provider_id: "x-ai",
-                    api_model_id: "x-ai/grok-tts",
-                    model_id: "x-ai/grok-tts",
+                    provider_id: "spacex-ai",
+                    api_model_id: "spacex-ai/grok-tts",
+                    model_id: "spacex-ai/grok-tts",
                     provider_model_slug: "grok-tts",
                     is_active_gateway: true,
                     routing_status: "active",
@@ -464,8 +464,8 @@ describe("fetchCatalogue", () => {
             data_api_model_aliases: [{ data: [], error: null }],
             data_api_providers: [{
                 data: [{
-                    api_provider_id: "x-ai",
-                    api_provider_name: "xAI",
+                    api_provider_id: "spacex-ai",
+                    api_provider_name: "SpaceXAI",
                     link: null,
                     country_code: null,
                     status: "active",
@@ -489,14 +489,14 @@ describe("fetchCatalogue", () => {
                 type: "enum",
                 values: ["aurora", "cedar", "orion"],
                 default: "aurora",
-                providers: ["x-ai"],
+                providers: ["spacex-ai"],
             },
             response_format: {
                 supported: true,
                 type: "enum",
                 values: ["mp3", "opus", "wav"],
                 default: "mp3",
-                providers: ["x-ai"],
+                providers: ["spacex-ai"],
             },
         });
         expect(models[0]?.providers[0]?.params_detail).toMatchObject({

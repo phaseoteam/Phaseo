@@ -13,17 +13,17 @@ public final class ModelIds {
     /** Model ID: <code>ai21/jamba-mini-2</code>. Model page: https://ai-stats.phaseo.app/models/ai21/jamba-mini-2 */
     public static final String AI21_JAMBA_MINI_2 = "ai21/jamba-mini-2";
 
-    /** Model ID: <code>aion-labs/aion-1.0</code>. Model page: https://ai-stats.phaseo.app/models/aion-labs/aion-1.0 */
-    public static final String AION_LABS_AION_1_0 = "aion-labs/aion-1.0";
-
-    /** Model ID: <code>aion-labs/aion-1.0-mini</code>. Model page: https://ai-stats.phaseo.app/models/aion-labs/aion-1.0-mini */
-    public static final String AION_LABS_AION_1_0_MINI = "aion-labs/aion-1.0-mini";
-
     /** Model ID: <code>aion-labs/aion-2.0</code>. Model page: https://ai-stats.phaseo.app/models/aion-labs/aion-2.0 */
     public static final String AION_LABS_AION_2_0 = "aion-labs/aion-2.0";
 
     /** Model ID: <code>aion-labs/aion-2.5</code>. Model page: https://ai-stats.phaseo.app/models/aion-labs/aion-2.5 */
     public static final String AION_LABS_AION_2_5 = "aion-labs/aion-2.5";
+
+    /** Model ID: <code>aion-labs/aion-3.0</code>. Model page: https://ai-stats.phaseo.app/models/aion-labs/aion-3.0 */
+    public static final String AION_LABS_AION_3_0 = "aion-labs/aion-3.0";
+
+    /** Model ID: <code>aion-labs/aion-3.0-mini</code>. Model page: https://ai-stats.phaseo.app/models/aion-labs/aion-3.0-mini */
+    public static final String AION_LABS_AION_3_0_MINI = "aion-labs/aion-3.0-mini";
 
     /** Model ID: <code>aion-labs/aion-rp-llama-3.1-8b</code>. Model page: https://ai-stats.phaseo.app/models/aion-labs/aion-rp-llama-3.1-8b */
     public static final String AION_LABS_AION_RP_LLAMA_3_1_8B = "aion-labs/aion-rp-llama-3.1-8b";
@@ -364,6 +364,9 @@ public final class ModelIds {
     /** Model ID: <code>inflection/inflection-3-productivity</code>. Model page: https://ai-stats.phaseo.app/models/inflection/inflection-3-productivity */
     public static final String INFLECTION_INFLECTION_3_PRODUCTIVITY = "inflection/inflection-3-productivity";
 
+    /** Model ID: <code>kwaipilot/kat-coder-air-v2.5</code>. Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-air-v2.5 */
+    public static final String KWAIPILOT_KAT_CODER_AIR_V2_5 = "kwaipilot/kat-coder-air-v2.5";
+
     /** Model ID: <code>kwaipilot/kat-coder-exp-72b-1010</code>. Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-exp-72b-1010 */
     public static final String KWAIPILOT_KAT_CODER_EXP_72B_1010 = "kwaipilot/kat-coder-exp-72b-1010";
 
@@ -375,6 +378,9 @@ public final class ModelIds {
 
     /** Model ID: <code>kwaipilot/kat-coder-pro-v2</code>. Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-pro-v2 */
     public static final String KWAIPILOT_KAT_CODER_PRO_V2 = "kwaipilot/kat-coder-pro-v2";
+
+    /** Model ID: <code>kwaipilot/kat-coder-pro-v2.5</code>. Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-pro-v2.5 */
+    public static final String KWAIPILOT_KAT_CODER_PRO_V2_5 = "kwaipilot/kat-coder-pro-v2.5";
 
     /** Model ID: <code>liquid-ai/lfm-2-24b-a2b</code>. Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2-24b-a2b */
     public static final String LIQUID_AI_LFM_2_24B_A2B = "liquid-ai/lfm-2-24b-a2b";
@@ -847,6 +853,9 @@ public final class ModelIds {
     /** Model ID: <code>poolside/laguna-m.1:free</code>. Model page: https://ai-stats.phaseo.app/models/poolside/laguna-m.1%3Afree */
     public static final String POOLSIDE_LAGUNA_M_1_FREE = "poolside/laguna-m.1:free";
 
+    /** Model ID: <code>poolside/laguna-xs-2.1:free</code>. Model page: https://ai-stats.phaseo.app/models/poolside/laguna-xs-2.1%3Afree */
+    public static final String POOLSIDE_LAGUNA_XS_2_1_FREE = "poolside/laguna-xs-2.1:free";
+
     /** Model ID: <code>poolside/laguna-xs.2:free</code>. Model page: https://ai-stats.phaseo.app/models/poolside/laguna-xs.2%3Afree */
     public static final String POOLSIDE_LAGUNA_XS_2_FREE = "poolside/laguna-xs.2:free";
 
@@ -1162,6 +1171,36 @@ public final class ModelIds {
     /** Model ID: <code>qwen/wan2.7-t2v</code>. Model page: https://ai-stats.phaseo.app/models/qwen/wan2.7-t2v */
     public static final String QWEN_WAN2_7_T2V = "qwen/wan2.7-t2v";
 
+    /** Model ID: <code>spacex-ai/grok-4.20-beta-0309</code>. Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-4.20-beta-0309 */
+    public static final String SPACEX_AI_GROK_4_20_BETA_0309 = "spacex-ai/grok-4.20-beta-0309";
+
+    /** Model ID: <code>spacex-ai/grok-4.20-multi-agent-beta-0309</code>. Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-4.20-multi-agent-beta-0309 */
+    public static final String SPACEX_AI_GROK_4_20_MULTI_AGENT_BETA_0309 = "spacex-ai/grok-4.20-multi-agent-beta-0309";
+
+    /** Model ID: <code>spacex-ai/grok-4.3</code>. Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-4.3 */
+    public static final String SPACEX_AI_GROK_4_3 = "spacex-ai/grok-4.3";
+
+    /** Model ID: <code>spacex-ai/grok-4.5</code>. Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-4.5 */
+    public static final String SPACEX_AI_GROK_4_5 = "spacex-ai/grok-4.5";
+
+    /** Model ID: <code>spacex-ai/grok-build-0.1</code>. Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-build-0.1 */
+    public static final String SPACEX_AI_GROK_BUILD_0_1 = "spacex-ai/grok-build-0.1";
+
+    /** Model ID: <code>spacex-ai/grok-code-fast-1</code>. Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-code-fast-1 */
+    public static final String SPACEX_AI_GROK_CODE_FAST_1 = "spacex-ai/grok-code-fast-1";
+
+    /** Model ID: <code>spacex-ai/grok-imagine-image</code>. Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-imagine-image */
+    public static final String SPACEX_AI_GROK_IMAGINE_IMAGE = "spacex-ai/grok-imagine-image";
+
+    /** Model ID: <code>spacex-ai/grok-imagine-image-quality</code>. Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-imagine-image-quality */
+    public static final String SPACEX_AI_GROK_IMAGINE_IMAGE_QUALITY = "spacex-ai/grok-imagine-image-quality";
+
+    /** Model ID: <code>spacex-ai/grok-imagine-video</code>. Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-imagine-video */
+    public static final String SPACEX_AI_GROK_IMAGINE_VIDEO = "spacex-ai/grok-imagine-video";
+
+    /** Model ID: <code>spacex-ai/grok-tts</code>. Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-tts */
+    public static final String SPACEX_AI_GROK_TTS = "spacex-ai/grok-tts";
+
     /** Model ID: <code>stepfun/step-3.5-flash</code>. Model page: https://ai-stats.phaseo.app/models/stepfun/step-3.5-flash */
     public static final String STEPFUN_STEP_3_5_FLASH = "stepfun/step-3.5-flash";
 
@@ -1171,8 +1210,14 @@ public final class ModelIds {
     /** Model ID: <code>tencent/hunyuan-a13b-instruct</code>. Model page: https://ai-stats.phaseo.app/models/tencent/hunyuan-a13b-instruct */
     public static final String TENCENT_HUNYUAN_A13B_INSTRUCT = "tencent/hunyuan-a13b-instruct";
 
+    /** Model ID: <code>tencent/hy3</code>. Model page: https://ai-stats.phaseo.app/models/tencent/hy3 */
+    public static final String TENCENT_HY3 = "tencent/hy3";
+
     /** Model ID: <code>tencent/hy3-preview</code>. Model page: https://ai-stats.phaseo.app/models/tencent/hy3-preview */
     public static final String TENCENT_HY3_PREVIEW = "tencent/hy3-preview";
+
+    /** Model ID: <code>tencent/hy3:free</code>. Model page: https://ai-stats.phaseo.app/models/tencent/hy3%3Afree */
+    public static final String TENCENT_HY3_FREE = "tencent/hy3:free";
 
     /** Model ID: <code>venice/venice-uncensored</code>. Model page: https://ai-stats.phaseo.app/models/venice/venice-uncensored */
     public static final String VENICE_VENICE_UNCENSORED = "venice/venice-uncensored";
@@ -1263,33 +1308,6 @@ public final class ModelIds {
 
     /** Model ID: <code>voyage/voyage-multimodal-3.5</code>. Model page: https://ai-stats.phaseo.app/models/voyage/voyage-multimodal-3.5 */
     public static final String VOYAGE_VOYAGE_MULTIMODAL_3_5 = "voyage/voyage-multimodal-3.5";
-
-    /** Model ID: <code>x-ai/grok-4.20-beta-0309</code>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.20-beta-0309 */
-    public static final String X_AI_GROK_4_20_BETA_0309 = "x-ai/grok-4.20-beta-0309";
-
-    /** Model ID: <code>x-ai/grok-4.20-multi-agent-beta-0309</code>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.20-multi-agent-beta-0309 */
-    public static final String X_AI_GROK_4_20_MULTI_AGENT_BETA_0309 = "x-ai/grok-4.20-multi-agent-beta-0309";
-
-    /** Model ID: <code>x-ai/grok-4.3</code>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.3 */
-    public static final String X_AI_GROK_4_3 = "x-ai/grok-4.3";
-
-    /** Model ID: <code>x-ai/grok-build-0.1</code>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-build-0.1 */
-    public static final String X_AI_GROK_BUILD_0_1 = "x-ai/grok-build-0.1";
-
-    /** Model ID: <code>x-ai/grok-code-fast-1</code>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-code-fast-1 */
-    public static final String X_AI_GROK_CODE_FAST_1 = "x-ai/grok-code-fast-1";
-
-    /** Model ID: <code>x-ai/grok-imagine-image</code>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-imagine-image */
-    public static final String X_AI_GROK_IMAGINE_IMAGE = "x-ai/grok-imagine-image";
-
-    /** Model ID: <code>x-ai/grok-imagine-image-quality</code>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-imagine-image-quality */
-    public static final String X_AI_GROK_IMAGINE_IMAGE_QUALITY = "x-ai/grok-imagine-image-quality";
-
-    /** Model ID: <code>x-ai/grok-imagine-video</code>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-imagine-video */
-    public static final String X_AI_GROK_IMAGINE_VIDEO = "x-ai/grok-imagine-video";
-
-    /** Model ID: <code>x-ai/grok-tts</code>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-tts */
-    public static final String X_AI_GROK_TTS = "x-ai/grok-tts";
 
     /** Model ID: <code>xiaomi/mimo-v2-flash</code>. Model page: https://ai-stats.phaseo.app/models/xiaomi/mimo-v2-flash */
     public static final String XIAOMI_MIMO_V2_FLASH = "xiaomi/mimo-v2-flash";

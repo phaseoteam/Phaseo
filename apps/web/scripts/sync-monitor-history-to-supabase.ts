@@ -56,8 +56,8 @@ function humanizeSlug(value: string | null | undefined) {
 		microsoft: "Microsoft",
 		mistral: "Mistral",
 		openai: "OpenAI",
-		"x-ai": "xAI",
-		xai: "xAI",
+		"x-ai": "SpaceXAI",
+		xai: "SpaceXAI",
 		"z-ai": "Z.ai",
 	};
 

@@ -9,18 +9,18 @@ module AIStatsSdk
     # Model ID: ai21/jamba-mini-2
     # Model page: https://ai-stats.phaseo.app/models/ai21/jamba-mini-2
     AI21_JAMBA_MINI_2 = "ai21/jamba-mini-2"
-    # Model ID: aion-labs/aion-1.0
-    # Model page: https://ai-stats.phaseo.app/models/aion-labs/aion-1.0
-    AION_LABS_AION_1_0 = "aion-labs/aion-1.0"
-    # Model ID: aion-labs/aion-1.0-mini
-    # Model page: https://ai-stats.phaseo.app/models/aion-labs/aion-1.0-mini
-    AION_LABS_AION_1_0_MINI = "aion-labs/aion-1.0-mini"
     # Model ID: aion-labs/aion-2.0
     # Model page: https://ai-stats.phaseo.app/models/aion-labs/aion-2.0
     AION_LABS_AION_2_0 = "aion-labs/aion-2.0"
     # Model ID: aion-labs/aion-2.5
     # Model page: https://ai-stats.phaseo.app/models/aion-labs/aion-2.5
     AION_LABS_AION_2_5 = "aion-labs/aion-2.5"
+    # Model ID: aion-labs/aion-3.0
+    # Model page: https://ai-stats.phaseo.app/models/aion-labs/aion-3.0
+    AION_LABS_AION_3_0 = "aion-labs/aion-3.0"
+    # Model ID: aion-labs/aion-3.0-mini
+    # Model page: https://ai-stats.phaseo.app/models/aion-labs/aion-3.0-mini
+    AION_LABS_AION_3_0_MINI = "aion-labs/aion-3.0-mini"
     # Model ID: aion-labs/aion-rp-llama-3.1-8b
     # Model page: https://ai-stats.phaseo.app/models/aion-labs/aion-rp-llama-3.1-8b
     AION_LABS_AION_RP_LLAMA_3_1_8B = "aion-labs/aion-rp-llama-3.1-8b"
@@ -360,6 +360,9 @@ module AIStatsSdk
     # Model ID: inflection/inflection-3-productivity
     # Model page: https://ai-stats.phaseo.app/models/inflection/inflection-3-productivity
     INFLECTION_INFLECTION_3_PRODUCTIVITY = "inflection/inflection-3-productivity"
+    # Model ID: kwaipilot/kat-coder-air-v2.5
+    # Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-air-v2.5
+    KWAIPILOT_KAT_CODER_AIR_V2_5 = "kwaipilot/kat-coder-air-v2.5"
     # Model ID: kwaipilot/kat-coder-exp-72b-1010
     # Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-exp-72b-1010
     KWAIPILOT_KAT_CODER_EXP_72B_1010 = "kwaipilot/kat-coder-exp-72b-1010"
@@ -372,6 +375,9 @@ module AIStatsSdk
     # Model ID: kwaipilot/kat-coder-pro-v2
     # Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-pro-v2
     KWAIPILOT_KAT_CODER_PRO_V2 = "kwaipilot/kat-coder-pro-v2"
+    # Model ID: kwaipilot/kat-coder-pro-v2.5
+    # Model page: https://ai-stats.phaseo.app/models/kwaipilot/kat-coder-pro-v2.5
+    KWAIPILOT_KAT_CODER_PRO_V2_5 = "kwaipilot/kat-coder-pro-v2.5"
     # Model ID: liquid-ai/lfm-2-24b-a2b
     # Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2-24b-a2b
     LIQUID_AI_LFM_2_24B_A2B = "liquid-ai/lfm-2-24b-a2b"
@@ -843,6 +849,9 @@ module AIStatsSdk
     # Model ID: poolside/laguna-m.1:free
     # Model page: https://ai-stats.phaseo.app/models/poolside/laguna-m.1%3Afree
     POOLSIDE_LAGUNA_M_1_FREE = "poolside/laguna-m.1:free"
+    # Model ID: poolside/laguna-xs-2.1:free
+    # Model page: https://ai-stats.phaseo.app/models/poolside/laguna-xs-2.1%3Afree
+    POOLSIDE_LAGUNA_XS_2_1_FREE = "poolside/laguna-xs-2.1:free"
     # Model ID: poolside/laguna-xs.2:free
     # Model page: https://ai-stats.phaseo.app/models/poolside/laguna-xs.2%3Afree
     POOLSIDE_LAGUNA_XS_2_FREE = "poolside/laguna-xs.2:free"
@@ -1158,6 +1167,36 @@ module AIStatsSdk
     # Model ID: qwen/wan2.7-t2v
     # Model page: https://ai-stats.phaseo.app/models/qwen/wan2.7-t2v
     QWEN_WAN2_7_T2V = "qwen/wan2.7-t2v"
+    # Model ID: spacex-ai/grok-4.20-beta-0309
+    # Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-4.20-beta-0309
+    SPACEX_AI_GROK_4_20_BETA_0309 = "spacex-ai/grok-4.20-beta-0309"
+    # Model ID: spacex-ai/grok-4.20-multi-agent-beta-0309
+    # Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-4.20-multi-agent-beta-0309
+    SPACEX_AI_GROK_4_20_MULTI_AGENT_BETA_0309 = "spacex-ai/grok-4.20-multi-agent-beta-0309"
+    # Model ID: spacex-ai/grok-4.3
+    # Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-4.3
+    SPACEX_AI_GROK_4_3 = "spacex-ai/grok-4.3"
+    # Model ID: spacex-ai/grok-4.5
+    # Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-4.5
+    SPACEX_AI_GROK_4_5 = "spacex-ai/grok-4.5"
+    # Model ID: spacex-ai/grok-build-0.1
+    # Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-build-0.1
+    SPACEX_AI_GROK_BUILD_0_1 = "spacex-ai/grok-build-0.1"
+    # Model ID: spacex-ai/grok-code-fast-1
+    # Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-code-fast-1
+    SPACEX_AI_GROK_CODE_FAST_1 = "spacex-ai/grok-code-fast-1"
+    # Model ID: spacex-ai/grok-imagine-image
+    # Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-imagine-image
+    SPACEX_AI_GROK_IMAGINE_IMAGE = "spacex-ai/grok-imagine-image"
+    # Model ID: spacex-ai/grok-imagine-image-quality
+    # Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-imagine-image-quality
+    SPACEX_AI_GROK_IMAGINE_IMAGE_QUALITY = "spacex-ai/grok-imagine-image-quality"
+    # Model ID: spacex-ai/grok-imagine-video
+    # Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-imagine-video
+    SPACEX_AI_GROK_IMAGINE_VIDEO = "spacex-ai/grok-imagine-video"
+    # Model ID: spacex-ai/grok-tts
+    # Model page: https://ai-stats.phaseo.app/models/spacex-ai/grok-tts
+    SPACEX_AI_GROK_TTS = "spacex-ai/grok-tts"
     # Model ID: stepfun/step-3.5-flash
     # Model page: https://ai-stats.phaseo.app/models/stepfun/step-3.5-flash
     STEPFUN_STEP_3_5_FLASH = "stepfun/step-3.5-flash"
@@ -1167,9 +1206,15 @@ module AIStatsSdk
     # Model ID: tencent/hunyuan-a13b-instruct
     # Model page: https://ai-stats.phaseo.app/models/tencent/hunyuan-a13b-instruct
     TENCENT_HUNYUAN_A13B_INSTRUCT = "tencent/hunyuan-a13b-instruct"
+    # Model ID: tencent/hy3
+    # Model page: https://ai-stats.phaseo.app/models/tencent/hy3
+    TENCENT_HY3 = "tencent/hy3"
     # Model ID: tencent/hy3-preview
     # Model page: https://ai-stats.phaseo.app/models/tencent/hy3-preview
     TENCENT_HY3_PREVIEW = "tencent/hy3-preview"
+    # Model ID: tencent/hy3:free
+    # Model page: https://ai-stats.phaseo.app/models/tencent/hy3%3Afree
+    TENCENT_HY3_FREE = "tencent/hy3:free"
     # Model ID: venice/venice-uncensored
     # Model page: https://ai-stats.phaseo.app/models/venice/venice-uncensored
     VENICE_VENICE_UNCENSORED = "venice/venice-uncensored"
@@ -1260,33 +1305,6 @@ module AIStatsSdk
     # Model ID: voyage/voyage-multimodal-3.5
     # Model page: https://ai-stats.phaseo.app/models/voyage/voyage-multimodal-3.5
     VOYAGE_VOYAGE_MULTIMODAL_3_5 = "voyage/voyage-multimodal-3.5"
-    # Model ID: x-ai/grok-4.20-beta-0309
-    # Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.20-beta-0309
-    X_AI_GROK_4_20_BETA_0309 = "x-ai/grok-4.20-beta-0309"
-    # Model ID: x-ai/grok-4.20-multi-agent-beta-0309
-    # Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.20-multi-agent-beta-0309
-    X_AI_GROK_4_20_MULTI_AGENT_BETA_0309 = "x-ai/grok-4.20-multi-agent-beta-0309"
-    # Model ID: x-ai/grok-4.3
-    # Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.3
-    X_AI_GROK_4_3 = "x-ai/grok-4.3"
-    # Model ID: x-ai/grok-build-0.1
-    # Model page: https://ai-stats.phaseo.app/models/x-ai/grok-build-0.1
-    X_AI_GROK_BUILD_0_1 = "x-ai/grok-build-0.1"
-    # Model ID: x-ai/grok-code-fast-1
-    # Model page: https://ai-stats.phaseo.app/models/x-ai/grok-code-fast-1
-    X_AI_GROK_CODE_FAST_1 = "x-ai/grok-code-fast-1"
-    # Model ID: x-ai/grok-imagine-image
-    # Model page: https://ai-stats.phaseo.app/models/x-ai/grok-imagine-image
-    X_AI_GROK_IMAGINE_IMAGE = "x-ai/grok-imagine-image"
-    # Model ID: x-ai/grok-imagine-image-quality
-    # Model page: https://ai-stats.phaseo.app/models/x-ai/grok-imagine-image-quality
-    X_AI_GROK_IMAGINE_IMAGE_QUALITY = "x-ai/grok-imagine-image-quality"
-    # Model ID: x-ai/grok-imagine-video
-    # Model page: https://ai-stats.phaseo.app/models/x-ai/grok-imagine-video
-    X_AI_GROK_IMAGINE_VIDEO = "x-ai/grok-imagine-video"
-    # Model ID: x-ai/grok-tts
-    # Model page: https://ai-stats.phaseo.app/models/x-ai/grok-tts
-    X_AI_GROK_TTS = "x-ai/grok-tts"
     # Model ID: xiaomi/mimo-v2-flash
     # Model page: https://ai-stats.phaseo.app/models/xiaomi/mimo-v2-flash
     XIAOMI_MIMO_V2_FLASH = "xiaomi/mimo-v2-flash"
@@ -1366,10 +1384,10 @@ module AIStatsSdk
   MODEL_IDS = [
     ModelIds::AI21_JAMBA_LARGE_1_7,
     ModelIds::AI21_JAMBA_MINI_2,
-    ModelIds::AION_LABS_AION_1_0,
-    ModelIds::AION_LABS_AION_1_0_MINI,
     ModelIds::AION_LABS_AION_2_0,
     ModelIds::AION_LABS_AION_2_5,
+    ModelIds::AION_LABS_AION_3_0,
+    ModelIds::AION_LABS_AION_3_0_MINI,
     ModelIds::AION_LABS_AION_RP_LLAMA_3_1_8B,
     ModelIds::ALLENAI_MOLMO_2_8B,
     ModelIds::ALLENAI_OLMO_3_1_32B,
@@ -1483,10 +1501,12 @@ module AIStatsSdk
     ModelIds::INCLUSIONAI_RING_FLASH_2_0,
     ModelIds::INFLECTION_INFLECTION_3_PI,
     ModelIds::INFLECTION_INFLECTION_3_PRODUCTIVITY,
+    ModelIds::KWAIPILOT_KAT_CODER_AIR_V2_5,
     ModelIds::KWAIPILOT_KAT_CODER_EXP_72B_1010,
     ModelIds::KWAIPILOT_KAT_CODER_PRO,
     ModelIds::KWAIPILOT_KAT_CODER_PRO_V1,
     ModelIds::KWAIPILOT_KAT_CODER_PRO_V2,
+    ModelIds::KWAIPILOT_KAT_CODER_PRO_V2_5,
     ModelIds::LIQUID_AI_LFM_2_24B_A2B,
     ModelIds::MEITUAN_LONGCAT_2_0,
     ModelIds::META_LLAMA_3_70B,
@@ -1644,6 +1664,7 @@ module AIStatsSdk
     ModelIds::OPENAI_TEXT_EMBEDDING_ADA_002,
     ModelIds::OPENAI_WHISPER_1,
     ModelIds::POOLSIDE_LAGUNA_M_1_FREE,
+    ModelIds::POOLSIDE_LAGUNA_XS_2_1_FREE,
     ModelIds::POOLSIDE_LAGUNA_XS_2_FREE,
     ModelIds::QWEN_QVQ_MAX,
     ModelIds::QWEN_QWEN_3_6_PLUS,
@@ -1749,10 +1770,22 @@ module AIStatsSdk
     ModelIds::QWEN_TEXT_EMBEDDING_V3,
     ModelIds::QWEN_TEXT_EMBEDDING_V4,
     ModelIds::QWEN_WAN2_7_T2V,
+    ModelIds::SPACEX_AI_GROK_4_20_BETA_0309,
+    ModelIds::SPACEX_AI_GROK_4_20_MULTI_AGENT_BETA_0309,
+    ModelIds::SPACEX_AI_GROK_4_3,
+    ModelIds::SPACEX_AI_GROK_4_5,
+    ModelIds::SPACEX_AI_GROK_BUILD_0_1,
+    ModelIds::SPACEX_AI_GROK_CODE_FAST_1,
+    ModelIds::SPACEX_AI_GROK_IMAGINE_IMAGE,
+    ModelIds::SPACEX_AI_GROK_IMAGINE_IMAGE_QUALITY,
+    ModelIds::SPACEX_AI_GROK_IMAGINE_VIDEO,
+    ModelIds::SPACEX_AI_GROK_TTS,
     ModelIds::STEPFUN_STEP_3_5_FLASH,
     ModelIds::STEPFUN_STEP_3_7_FLASH,
     ModelIds::TENCENT_HUNYUAN_A13B_INSTRUCT,
+    ModelIds::TENCENT_HY3,
     ModelIds::TENCENT_HY3_PREVIEW,
+    ModelIds::TENCENT_HY3_FREE,
     ModelIds::VENICE_VENICE_UNCENSORED,
     ModelIds::VENICE_VENICE_UNCENSORED_1_1,
     ModelIds::VOYAGE_RERANK_1,
@@ -1783,15 +1816,6 @@ module AIStatsSdk
     ModelIds::VOYAGE_VOYAGE_MULTILINGUAL_2,
     ModelIds::VOYAGE_VOYAGE_MULTIMODAL_3,
     ModelIds::VOYAGE_VOYAGE_MULTIMODAL_3_5,
-    ModelIds::X_AI_GROK_4_20_BETA_0309,
-    ModelIds::X_AI_GROK_4_20_MULTI_AGENT_BETA_0309,
-    ModelIds::X_AI_GROK_4_3,
-    ModelIds::X_AI_GROK_BUILD_0_1,
-    ModelIds::X_AI_GROK_CODE_FAST_1,
-    ModelIds::X_AI_GROK_IMAGINE_IMAGE,
-    ModelIds::X_AI_GROK_IMAGINE_IMAGE_QUALITY,
-    ModelIds::X_AI_GROK_IMAGINE_VIDEO,
-    ModelIds::X_AI_GROK_TTS,
     ModelIds::XIAOMI_MIMO_V2_FLASH,
     ModelIds::XIAOMI_MIMO_V2_5,
     ModelIds::XIAOMI_MIMO_V2_5_PRO,

@@ -284,7 +284,7 @@ export default async function TermsPage() {
 					<li>any licences you grant to us under these Terms; and</li>
 					<li>
 						any terms imposed by the underlying third-party model
-						providers (for example, OpenAI, Anthropic, Google, xAI,
+						providers (for example, OpenAI, Anthropic, Google, SpaceXAI,
 						etc.).
 					</li>
 				</ul>

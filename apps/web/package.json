@@ -31,6 +31,7 @@
 		"test": "jest --runInBand"
 	},
 	"dependencies": {
+		"@1password/save-button": "^1.3.0",
 		"@base-ui/react": "^1.3.0",
 		"@dqbd/tiktoken": "^1.0.22",
 		"@flags-sdk/statsig": "^0.2.5",
@@ -58,7 +59,7 @@
 		"@radix-ui/react-select": "^2.2.6",
 		"@radix-ui/react-separator": "^1.1.9",
 		"@radix-ui/react-slider": "^1.3.6",
-		"@radix-ui/react-slot": "^1.2.3",
+		"@radix-ui/react-slot": "^1.3.0",
 		"@radix-ui/react-switch": "^1.3.0",
 		"@radix-ui/react-tabs": "^1.1.13",
 		"@radix-ui/react-toast": "^1.2.7",
@@ -82,8 +83,7 @@
 		"@upstash/ratelimit": "^2.0.6",
 		"@upstash/redis": "^1.38.0",
 		"@vercel/analytics": "^2.0.1",
-		"@vercel/og": "^0.6.4",
-		"@xyflow/react": "^12.10.2",
+		"@xyflow/react": "^12.11.1",
 		"ai": "^6.0.168",
 		"ajv": "^8.20.0",
 		"ajv-formats": "^3.0.1",
@@ -91,7 +91,7 @@
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
 		"cmdk": "^1.1.1",
-		"date-fns": "^4.1.0",
+		"date-fns": "^4.4.0",
 		"drizzle-kit": "^0.31.9",
 		"echarts": "^6.0.0",
 		"echarts-for-react": "^3.0.2",
@@ -119,9 +119,9 @@
 		"posthog-js": "^1.372.10",
 		"posthog-node": "^5.28.0",
 		"radix-ui": "^1.4.3",
-		"react": "19.2.6",
+		"react": "19.2.7",
 		"react-day-picker": "^10.0.1",
-		"react-dom": "19.2.6",
+		"react-dom": "19.2.7",
 		"react-fast-marquee": "^1.6.5",
 		"react-hook-form": "^7.71.1",
 		"react-markdown": "^10.1.0",
@@ -141,7 +141,7 @@
 		"tailwindcss-animate": "^1.0.7",
 		"three": "^0.184.0",
 		"tokenlens": "^1.3.1",
-		"use-stick-to-bottom": "^1.1.3",
+		"use-stick-to-bottom": "^1.1.6",
 		"vaul": "^1.1.2",
 		"ws": "^8.21.0",
 		"zod": "^4.4.3"
@@ -153,7 +153,7 @@
 		"@tailwindcss/postcss": "^4",
 		"@types/jest": "^30.0.0",
 		"@types/node": "^25",
-		"@types/react": "19.2.14",
+		"@types/react": "19.2.17",
 		"@types/react-dom": "19.2.3",
 		"@types/three": "^0.184.0",
 		"baseline-browser-mapping": "^2.9.0",
@@ -170,7 +170,7 @@
 		"wrangler": "^4.94.0"
 	},
 	"overrides": {
-		"@types/react": "19.2.14",
+		"@types/react": "19.2.17",
 		"@types/react-dom": "19.2.3"
 	}
 }

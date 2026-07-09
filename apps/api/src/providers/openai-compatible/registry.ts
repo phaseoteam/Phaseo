@@ -40,6 +40,7 @@ import { CRUSOE_OPENAI_COMPAT_CONFIGS } from "../crusoe/config";
 import { PARASAIL_OPENAI_COMPAT_CONFIGS } from "../parasail/config";
 import { PHALA_OPENAI_COMPAT_CONFIGS } from "../phala/config";
 import { SAMBANOVA_OPENAI_COMPAT_CONFIGS } from "../sambanova/config";
+import { SAKANA_OPENAI_COMPAT_CONFIGS } from "../sakana/config";
 import { SCALEWAY_OPENAI_COMPAT_CONFIGS } from "../scaleway/config";
 import { SILICONFLOW_OPENAI_COMPAT_CONFIGS } from "../siliconflow/config";
 import { WEIGHTS_AND_BIASES_OPENAI_COMPAT_CONFIGS } from "../weights-and-biases/config";
@@ -105,6 +106,7 @@ export const OPENAI_COMPAT_CONFIG = {
 	...PARASAIL_OPENAI_COMPAT_CONFIGS,
 	...PHALA_OPENAI_COMPAT_CONFIGS,
 	...SAMBANOVA_OPENAI_COMPAT_CONFIGS,
+	...SAKANA_OPENAI_COMPAT_CONFIGS,
 	...SCALEWAY_OPENAI_COMPAT_CONFIGS,
 	...SILICONFLOW_OPENAI_COMPAT_CONFIGS,
 	...WEIGHTS_AND_BIASES_OPENAI_COMPAT_CONFIGS,

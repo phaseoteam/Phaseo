@@ -1,0 +1,19 @@
+{
+  "model_id": "spacex-ai/grok-2-image-1212",
+  "organisation_id": "spacex-ai",
+  "name": "Grok 2 Image 1212",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Grok 2 Image 1212 is a text-to-speech model from SpaceXAI.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "spacex-ai/grok-2-image-1212",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

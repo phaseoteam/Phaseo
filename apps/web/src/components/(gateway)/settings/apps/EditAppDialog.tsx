@@ -226,13 +226,12 @@ export default function EditAppDialog({
 						</div>
 						<div>
 							<DropdownMenu modal={false}>
-								<DropdownMenuTrigger asChild>
-									<Button
+								<DropdownMenuTrigger render={<Button
 										id="app-category"
 										type="button"
 										variant="outline"
-										className="h-auto min-h-9 w-full justify-between gap-3 rounded-2xl bg-input/50 px-3 py-2 text-left font-normal"
-									>
+										className="h-auto min-h-9 w-full justify-between gap-3 rounded-2xl bg-input/50 px-3 py-2 text-left font-normal" />}>
+
 										<span className="flex min-w-0 items-center gap-2">
 											<Folder className="size-4 shrink-0 text-muted-foreground" />
 											<span className="truncate text-sm">
@@ -240,7 +239,7 @@ export default function EditAppDialog({
 											</span>
 										</span>
 										<ChevronDown className="size-4 shrink-0 text-muted-foreground" />
-									</Button>
+
 								</DropdownMenuTrigger>
 								<DropdownMenuContent align="start" className="w-72">
 									{APP_CATEGORY_OPTIONS.map((option) => {
