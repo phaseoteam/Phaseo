@@ -298,7 +298,12 @@ export default function ModelPageToc({
 	);
 
 	return (
-		<div className={cn("min-w-0 lg:h-full lg:w-full", className)}>
+		<div
+			className={cn(
+				"min-w-0 lg:sticky lg:top-[calc(var(--site-notice-height,0px)+var(--site-header-height,3.75rem)+4.25rem)] lg:max-h-[calc(100dvh-var(--site-notice-height,0px)-var(--site-header-height,3.75rem)-5.25rem)] lg:w-full lg:self-start lg:overflow-y-auto",
+				className,
+			)}
+		>
 			<div className="lg:hidden">
 				<div id={mobileAnchorId}>{renderMobileSelect("inline")}</div>
 				<div
@@ -316,7 +321,7 @@ export default function ModelPageToc({
 			</div>
 
 			<aside className="hidden h-full min-w-0 lg:block lg:w-full">
-				<div className="sticky top-[calc(var(--site-header-height,3.75rem)+4.25rem)] w-full min-w-0">
+				<div className="w-full min-w-0">
 					<nav className="w-full min-w-0">
 						<div
 							className="relative flex w-full min-w-0 flex-col gap-1"

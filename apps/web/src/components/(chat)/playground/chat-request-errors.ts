@@ -12,6 +12,10 @@ export type ChatErrorPayload = Error & {
 	rawPayload?: Record<string, unknown> | null;
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
 function normalizeErrorDetails(details: unknown) {
 	if (!Array.isArray(details)) return undefined;
 
@@ -49,6 +53,136 @@ function normalizeRoutingDiagnostics(payload: Record<string, unknown>) {
 		return diagnostics as Record<string, unknown>;
 	}
 	return undefined;
+}
+
+function normalizeStatus(value: unknown) {
+	return typeof value === "number" && Number.isFinite(value)
+		? value
+		: undefined;
+}
+
+function firstString(...values: unknown[]) {
+	for (const value of values) {
+		if (typeof value === "string" && value.trim()) {
+			return value.trim();
+		}
+	}
+	return undefined;
+}
+
+function getNestedRecord(
+	payload: Record<string, unknown>,
+	key: string,
+): Record<string, unknown> | undefined {
+	const value = payload[key];
+	return isRecord(value) ? value : undefined;
+}
+
+function buildChatErrorPayload(args: {
+	message: string;
+	status?: number;
+	code?: string;
+	requestId?: string;
+	description?: string;
+	details?: ChatErrorPayload["details"];
+	routingDiagnostics?: Record<string, unknown> | null;
+	rawPayload?: Record<string, unknown> | null;
+}) {
+	const requestError = new Error(args.message) as ChatErrorPayload;
+	if (args.code) requestError.code = args.code;
+	if (args.status != null) requestError.status = args.status;
+	requestError.requestId = args.requestId;
+	requestError.description = args.description;
+	requestError.details = args.details;
+	requestError.routingDiagnostics = args.routingDiagnostics ?? null;
+	requestError.rawPayload = args.rawPayload ?? null;
+	return requestError;
+}
+
+export function createChatStreamTextError(
+	message: string,
+	rawPayload?: Record<string, unknown> | null,
+) {
+	return buildChatErrorPayload({
+		message: message.trim() || "The streamed response failed.",
+		code: "stream_error",
+		rawPayload,
+	});
+}
+
+export function parseChatStreamErrorFrame(
+	payload: unknown,
+	frameEventType?: string | null,
+): ChatErrorPayload | null {
+	if (!isRecord(payload)) return null;
+
+	const response = getNestedRecord(payload, "response");
+	const payloadError = payload.error;
+	const responseError = isRecord(response?.error)
+		? response.error
+		: undefined;
+	const errorObject = isRecord(payloadError)
+		? payloadError
+		: responseError;
+	const objectType = firstString(payload.object);
+	const frameType = firstString(payload.type, frameEventType);
+	const isErrorFrame =
+		frameEventType === "error" ||
+		frameType === "error" ||
+		frameType === "response.failed" ||
+		objectType === "error" ||
+		Boolean(errorObject) ||
+		typeof payloadError === "string";
+
+	if (!isErrorFrame) return null;
+
+	const rawPayload = {
+		...(frameEventType ? { frame_event_type: frameEventType } : {}),
+		...payload,
+	};
+	const message = firstString(
+		errorObject?.message,
+		responseError?.message,
+		payload.message,
+		payload.description,
+		typeof payloadError === "string" ? payloadError : undefined,
+	) ?? "The streamed response failed.";
+	const description = firstString(
+		payload.description,
+		errorObject?.description,
+		responseError?.description,
+	);
+	const code = firstString(
+		errorObject?.code,
+		errorObject?.type,
+		responseError?.code,
+		responseError?.type,
+		payload.code,
+		payload.error_code,
+		typeof payloadError === "string" ? payloadError : undefined,
+		objectType === "error" ? "stream_error" : undefined,
+		frameType === "response.failed" ? "response_failed" : undefined,
+	);
+	const status = normalizeStatus(payload.status) ??
+		normalizeStatus(payload.status_code) ??
+		normalizeStatus(errorObject?.status) ??
+		normalizeStatus(errorObject?.status_code);
+
+	return buildChatErrorPayload({
+		message,
+		status,
+		code,
+		requestId: firstString(
+			payload.request_id,
+			payload.requestId,
+			errorObject?.request_id,
+			response?.id,
+		),
+		description,
+		details: normalizeErrorDetails(payload.details),
+		routingDiagnostics: normalizeRoutingDiagnostics(payload) ?? null,
+		rawPayload,
+	});
 }
 
 export async function parseChatErrorResponse(response: Response) {
@@ -93,13 +227,14 @@ export async function parseChatErrorResponse(response: Response) {
 		if (text) errorMessage = text;
 	}
 
-	const requestError = new Error(errorMessage) as ChatErrorPayload;
-	if (errorCode) requestError.code = errorCode;
-	requestError.status = response.status;
-	requestError.requestId = errorRequestId;
-	requestError.description = errorDescription;
-	requestError.details = errorDetails;
-	requestError.routingDiagnostics = routingDiagnostics ?? null;
-	requestError.rawPayload = rawPayload;
-	return requestError;
+	return buildChatErrorPayload({
+		message: errorMessage,
+		status: response.status,
+		code: errorCode,
+		requestId: errorRequestId,
+		description: errorDescription,
+		details: errorDetails,
+		routingDiagnostics: routingDiagnostics ?? null,
+		rawPayload: rawPayload ?? null,
+	});
 }

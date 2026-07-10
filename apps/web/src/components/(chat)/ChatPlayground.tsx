@@ -91,7 +91,9 @@ import {
 import { useChatAuth } from "@/components/(chat)/playground/use-chat-auth";
 import { useGroupedChatThreads } from "@/components/(chat)/playground/use-grouped-chat-threads";
 import {
+	createChatStreamTextError,
 	parseChatErrorResponse,
+	parseChatStreamErrorFrame,
 	type ChatErrorPayload,
 } from "@/components/(chat)/playground/chat-request-errors";
 import {
@@ -1902,8 +1904,26 @@ function ChatPlaygroundContent({
 						}
 						const data = frameDataLines.join("").trim();
 						if (!data || data === "[DONE]") continue;
+						let parsed: any;
 						try {
-							const parsed = JSON.parse(data);
+							parsed = JSON.parse(data);
+						} catch {
+							if (frameEventType === "error") {
+								throw createChatStreamTextError(data, {
+									frame_event_type: frameEventType,
+									data,
+								});
+							}
+							continue;
+						}
+						const streamError = parseChatStreamErrorFrame(
+							parsed,
+							frameEventType,
+						);
+						if (streamError) {
+							throw streamError;
+						}
+						try {
 								if (parsed?.usage || parsed?.response?.usage) {
 									finalUsage =
 										parsed?.usage ??
