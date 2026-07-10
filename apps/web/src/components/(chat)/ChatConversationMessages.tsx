@@ -450,13 +450,10 @@ export function ChatConversationMessages({
 					(meta as any).routing.selected_provider.trim().length > 0
 				? (meta as any).routing.selected_provider.trim()
 				: metadataMessage?.providerId?.trim() || null;
-	const messageProviderId = metadataMessage?.providerId?.trim() || null;
 	const messageProviderLabel =
 		metadataMessage?.providerName?.trim() || null;
 	const metadataProviderLabel =
-		messageProviderLabel && messageProviderId === metadataProviderId
-			? messageProviderLabel
-			: formatProviderIdLabel(metadataProviderId);
+		formatProviderIdLabel(metadataProviderId) ?? messageProviderLabel;
 	const messages = activeThread?.messages ?? EMPTY_MESSAGES;
 	useEffect(() => {
 		const latestUserMessage = messages
