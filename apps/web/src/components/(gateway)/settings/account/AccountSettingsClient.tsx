@@ -12,10 +12,7 @@ import {
 	readAnalyticsConsent,
 	type AnalyticsConsent,
 } from "@/lib/cookieConsent";
-import {
-	PERSONALIZATION_ACCENT_COLORS,
-	STORAGE_KEYS,
-} from "@/components/(chat)/playground/chat-playground-core";
+import { STORAGE_KEYS } from "@/components/(chat)/playground/chat-playground-core";
 import {
 	OBFUSCATE_INFO_COOKIE,
 	serializeObfuscateInfo,
@@ -128,9 +125,6 @@ export default function AccountSettingsClient({
 	const [analyticsConsent, setAnalyticsConsent] = React.useState<
 		AnalyticsConsent | null
 	>(null);
-	const [chatAccentColor, setChatAccentColor] = React.useState<string>(
-		PERSONALIZATION_ACCENT_COLORS[0]?.value ?? "#111111",
-	);
 	const [chatNotifyOnComplete, setChatNotifyOnComplete] =
 		React.useState<boolean>(false);
 	const applyObfuscationMode = React.useCallback((next: boolean) => {
@@ -161,12 +155,6 @@ export default function AccountSettingsClient({
 		applyObfuscationMode(Boolean(user.obfuscateInfo));
 
 		try {
-			const storedAccent =
-				window.localStorage.getItem(STORAGE_KEYS.personalizationAccent) ??
-				"";
-			if (storedAccent) {
-				setChatAccentColor(storedAccent);
-			}
 			const storedNotify =
 				window.localStorage.getItem(STORAGE_KEYS.notifyOnComplete) ?? "";
 			if (storedNotify === "true") {
@@ -446,48 +434,6 @@ export default function AccountSettingsClient({
 								)}
 								<p className="text-xs text-muted-foreground">
 									Set the project that is shown by default.
-								</p>
-							</div>
-						</div>
-
-						<div className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-start">
-							<Label htmlFor="chatAccent" className="text-sm font-medium sm:pt-2">
-								Chatroom colour
-							</Label>
-							<div className="grid max-w-2xl gap-1.5">
-								<Select
-									value={chatAccentColor}
-									onValueChange={(v) => {
-										setChatAccentColor(v);
-										try {
-											window.localStorage.setItem(
-												STORAGE_KEYS.personalizationAccent,
-												v,
-											);
-										} catch {
-											// Ignore storage access errors.
-										}
-									}}
-								>
-									<SelectTrigger id="chatAccent" className="w-full">
-										<SelectValue placeholder="Select a color" />
-									</SelectTrigger>
-									<SelectContent>
-										{PERSONALIZATION_ACCENT_COLORS.map((color: { label: string; value: string }) => (
-											<SelectItem key={color.value} value={color.value}>
-												<span className="flex items-center gap-2">
-													<span
-														className="h-3 w-3 rounded-full border border-border"
-														style={{ backgroundColor: color.value }}
-													/>
-													{color.label}
-												</span>
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-								<p className="text-xs text-muted-foreground">
-									Applied to the chat playground on this device.
 								</p>
 							</div>
 						</div>
