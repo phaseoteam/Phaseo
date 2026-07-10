@@ -46,6 +46,18 @@ describe("azure config", () => {
 		);
 	});
 
+	it("builds legacy Azure route URLs from a v1 base URL", () => {
+		const url = azureUrl(
+			"openai/deployments/gpt-4o/chat/completions",
+			"2024-10-21",
+			"https://ai-stats-resource.openai.azure.com/openai/v1/",
+		);
+
+		expect(url).toBe(
+			"https://ai-stats-resource.openai.azure.com/openai/deployments/gpt-4o/chat/completions?api-version=2024-10-21",
+		);
+	});
+
 	it("defaults api_version when not configured", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
