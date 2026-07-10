@@ -87,6 +87,10 @@ import { ChatMessagesEmptyState } from "@/components/(chat)/ChatMessagesEmptySta
 import { ChatVirtualMessageList } from "@/components/(chat)/ChatVirtualMessageList";
 import { markChatUserMessageRendered } from "@/components/(chat)/playground/chat-performance";
 import {
+	chatMarkdownPlugins,
+	normalizeChatMarkdown,
+} from "@/components/(chat)/chatMarkdown";
+import {
 	buildModelLink,
 	ensureVariants,
 	extractGeneratedAudioUrl,
@@ -959,7 +963,9 @@ export function ChatConversationMessages({
 													key={event.id}
 													className="prose prose-sm max-w-none text-foreground dark:prose-invert prose-p:my-0"
 												>
-													<Streamdown>{eventText}</Streamdown>
+											<Streamdown plugins={chatMarkdownPlugins}>
+												{normalizeChatMarkdown(eventText)}
+											</Streamdown>
 												</div>
 											);
 										})}
@@ -988,8 +994,8 @@ export function ChatConversationMessages({
 										!showRequestError &&
 										contentWithoutMediaLinks ? (
 											<div className="prose prose-sm max-w-none text-foreground dark:prose-invert prose-p:my-0">
-												<Streamdown>
-													{contentWithoutMediaLinks}
+												<Streamdown plugins={chatMarkdownPlugins}>
+													{normalizeChatMarkdown(contentWithoutMediaLinks)}
 												</Streamdown>
 											</div>
 										) : null}
@@ -1016,8 +1022,8 @@ export function ChatConversationMessages({
 										) : null}
 										{!showRequestError &&
 										contentWithoutMediaLinks ? (
-											<Streamdown>
-												{contentWithoutMediaLinks}
+											<Streamdown plugins={chatMarkdownPlugins}>
+												{normalizeChatMarkdown(contentWithoutMediaLinks)}
 											</Streamdown>
 										) : null}
 									</>
