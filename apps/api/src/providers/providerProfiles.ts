@@ -47,6 +47,9 @@ function openAIReasoningFallback(model: string): TextReasoningEffort[] {
 	if (m.includes("gpt-5.1-codex-max")) {
 		return ["none", "minimal", "low", "medium", "high", "xhigh"];
 	}
+	if (m.includes("gpt-5.6")) {
+		return ["none", "low", "medium", "high", "xhigh", "max"];
+	}
 	if (m.includes("gpt-5.4-pro")) {
 		return ["medium", "high", "xhigh"];
 	}
@@ -73,6 +76,7 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 			paramPolicy: {
 				supportedParams: [
 					"provider_options.openai.context_management",
+					"reasoning.mode",
 				],
 			},
 			normalize: {

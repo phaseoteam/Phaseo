@@ -1028,6 +1028,7 @@ pub struct ReasoningConfig {
 	pub effort: Option<String>,
 	pub enabled: Option<bool>,
 	pub max_tokens: Option<i64>,
+	pub mode: Option<String>,
 	pub summary: Option<String>,
 }
 

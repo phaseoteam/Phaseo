@@ -1176,9 +1176,10 @@ export type CreateAnthropicMessageParams = {
       };
     };
     reasoning?: {
-      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
+      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
       enabled?: boolean;
       max_tokens?: number;
+      mode?: "standard" | "pro";
       summary?: "auto" | "concise" | "detailed";
     };
     session_id?: string;
@@ -2167,9 +2168,10 @@ export type CreateChatCompletionParams = {
       };
     };
     reasoning?: {
-      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
+      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
       enabled?: boolean;
       max_tokens?: number;
+      mode?: "standard" | "pro";
       summary?: "auto" | "concise" | "detailed";
     };
     response_format?:
@@ -3287,9 +3289,10 @@ export type CreateResponseParams = {
       };
     };
     reasoning?: {
-      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
+      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
       enabled?: boolean;
       max_tokens?: number;
+      mode?: "standard" | "pro";
       summary?: "auto" | "concise" | "detailed";
     };
     safety_identifier?: string | null;

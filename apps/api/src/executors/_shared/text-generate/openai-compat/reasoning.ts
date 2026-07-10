@@ -87,6 +87,7 @@ export function applyReasoningParams(args: {
 	const hasAny =
 		reasoning.enabled !== undefined ||
 		reasoning.effort !== undefined ||
+		reasoning.mode !== undefined ||
 		reasoning.summary !== undefined ||
 		reasoning.maxTokens !== undefined;
 	if (!hasAny) return;
@@ -142,6 +143,10 @@ export function applyReasoningParams(args: {
 		target[effortKey] = "none";
 	} else if (enabled === true) {
 		target[effortKey] = "medium";
+	}
+
+	if (typeof reasoning.mode === "string") {
+		target.mode = reasoning.mode;
 	}
 
 	// OpenAI: default summary mode to "auto" only when caller did not provide one.

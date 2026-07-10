@@ -1632,6 +1632,12 @@ const (
 	KnownModelIdOpenaiGpt54Pro KnownModelId = "openai/gpt-5.4-pro"
 	KnownModelIdOpenaiGpt55 KnownModelId = "openai/gpt-5.5"
 	KnownModelIdOpenaiGpt55Pro KnownModelId = "openai/gpt-5.5-pro"
+	KnownModelIdOpenaiGpt56Luna KnownModelId = "openai/gpt-5.6-luna"
+	KnownModelIdOpenaiGpt56LunaPro KnownModelId = "openai/gpt-5.6-luna-pro"
+	KnownModelIdOpenaiGpt56Sol KnownModelId = "openai/gpt-5.6-sol"
+	KnownModelIdOpenaiGpt56SolPro KnownModelId = "openai/gpt-5.6-sol-pro"
+	KnownModelIdOpenaiGpt56Terra KnownModelId = "openai/gpt-5.6-terra"
+	KnownModelIdOpenaiGpt56TerraPro KnownModelId = "openai/gpt-5.6-terra-pro"
 	KnownModelIdOpenaiGptImage1 KnownModelId = "openai/gpt-image-1"
 	KnownModelIdOpenaiGptImage1Mini KnownModelId = "openai/gpt-image-1-mini"
 	KnownModelIdOpenaiGptImage15 KnownModelId = "openai/gpt-image-1.5"
@@ -2172,6 +2178,7 @@ type ReasoningConfig struct {
 	Effort *string `json:"effort,omitempty"`
 	Enabled *bool `json:"enabled,omitempty"`
 	MaxTokens *int `json:"max_tokens,omitempty"`
+	Mode *string `json:"mode,omitempty"`
 	Summary *string `json:"summary,omitempty"`
 }
 

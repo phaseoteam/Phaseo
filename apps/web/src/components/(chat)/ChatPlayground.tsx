@@ -91,7 +91,9 @@ import {
 import { useChatAuth } from "@/components/(chat)/playground/use-chat-auth";
 import { useGroupedChatThreads } from "@/components/(chat)/playground/use-grouped-chat-threads";
 import {
+	createChatStreamTextError,
 	parseChatErrorResponse,
+	parseChatStreamErrorFrame,
 	type ChatErrorPayload,
 } from "@/components/(chat)/playground/chat-request-errors";
 import {
@@ -1850,6 +1852,17 @@ function ChatPlaygroundContent({
 					}
 					await flushPromise;
 				};
+				const throwStreamError = async (
+					streamError: ChatErrorPayload,
+				): Promise<never> => {
+					if (flushTimer != null) {
+						window.clearTimeout(flushTimer);
+						flushTimer = null;
+						pendingMetaPartial = undefined;
+					}
+					await flushPromise;
+					throw streamError;
+				};
 				let reasoningContent = "";
 				const reasoningSummaries: Record<number, string> = {};
 				const buildStreamingMetaPartial = () => {
@@ -1902,8 +1915,28 @@ function ChatPlaygroundContent({
 						}
 						const data = frameDataLines.join("").trim();
 						if (!data || data === "[DONE]") continue;
+						let parsed: any;
 						try {
-							const parsed = JSON.parse(data);
+							parsed = JSON.parse(data);
+						} catch {
+							if (frameEventType === "error") {
+								await throwStreamError(
+									createChatStreamTextError(data, {
+										frame_event_type: frameEventType,
+										data,
+									}),
+								);
+							}
+							continue;
+						}
+						const streamError = parseChatStreamErrorFrame(
+							parsed,
+							frameEventType,
+						);
+						if (streamError) {
+							await throwStreamError(streamError);
+						}
+						try {
 								if (parsed?.usage || parsed?.response?.usage) {
 									finalUsage =
 										parsed?.usage ??

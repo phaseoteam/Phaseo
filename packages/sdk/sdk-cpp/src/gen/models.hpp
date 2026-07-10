@@ -1032,6 +1032,7 @@ struct ReasoningConfig {
 	std::any effort;
 	std::optional<bool> enabled;
 	std::optional<int> max_tokens;
+	std::any mode;
 	std::any summary;
 };
 

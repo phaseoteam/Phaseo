@@ -2,7 +2,7 @@
   "alias_slug": "openai/gpt-sol-latest",
   "resolved_api_model_id": "openai/gpt-5.6-sol",
   "resolved_model_id": "openai/gpt-5.6-sol",
-  "channel": "preview",
+  "channel": "stable",
   "is_enabled": true,
-  "notes": "Preview alias for the latest OpenAI Sol-tier GPT model."
+  "notes": "Alias for the latest OpenAI Sol-tier GPT model."
 }
