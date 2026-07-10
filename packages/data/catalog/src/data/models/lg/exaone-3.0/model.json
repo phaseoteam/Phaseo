@@ -16,19 +16,23 @@
   "family_id": "lg/exaone-3.0",
   "links": [
     {
-      "platform": "paper",
+      "title": "Paper",
+      "kind": "paper",
       "url": "https://arxiv.org/abs/2408.03541"
     },
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://www.lgresearch.ai/blog/view?seq=460"
     },
     {
-      "platform": "repository",
+      "title": "Repository",
+      "kind": "repository",
       "url": "https://github.com/LG-AI-EXAONE/EXAONE-3.0"
     },
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/LGAI-EXAONE/EXAONE-3.0-7.8B-Instruct"
     }
   ],

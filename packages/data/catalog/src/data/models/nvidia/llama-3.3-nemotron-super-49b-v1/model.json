@@ -15,19 +15,23 @@
   "api_model_id": "nvidia/llama-3.3-nemotron-super-49b-v1",
   "links": [
     {
-      "platform": "playground",
+      "title": "Playground",
+      "kind": "playground",
       "url": "https://build.nvidia.com/nvidia/llama-3_3-nemotron-super-49b-v1"
     },
     {
-      "platform": "paper",
+      "title": "Paper",
+      "kind": "paper",
       "url": "https://arxiv.org/abs/2502.00203"
     },
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://build.nvidia.com/nvidia/llama-3_3-nemotron-super-49b-v1/modelcard"
     },
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/nvidia/Llama-3_3-Nemotron-Super-49B-v1"
     }
   ],

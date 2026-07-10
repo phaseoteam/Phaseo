@@ -126,6 +126,8 @@ type DetailsRow = {
 type LinkRow = {
 	id?: string;
 	platform: string;
+	kind?: string;
+	title?: string;
 	url: string;
 };
 
@@ -281,6 +283,8 @@ export default function ModelLegacyEditor({
 									? undefined
 									: row.id,
 							platform: row.platform,
+							kind: row.kind ?? row.platform,
+							title: row.title,
 							url: row.url,
 						})),
 				});

@@ -16,23 +16,28 @@
   "family_id": "sakana/fugu",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://sakana.ai/fugu-release/"
     },
     {
-      "platform": "docs",
+      "title": "Docs",
+      "kind": "docs",
       "url": "https://sakana.ai/fugu/"
     },
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://console.sakana.ai/models"
     },
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://console.sakana.ai/get-started"
     },
     {
-      "platform": "pricing",
+      "title": "Pricing",
+      "kind": "pricing",
       "url": "https://console.sakana.ai/pricing"
     }
   ],

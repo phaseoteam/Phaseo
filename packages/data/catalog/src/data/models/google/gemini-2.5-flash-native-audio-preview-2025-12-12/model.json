@@ -16,11 +16,13 @@
   "family_id": "google/gemini-2.5",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://ai.google.dev/gemini-api/docs/models/gemini-2.5-flash-native-audio-preview-12-2025"
     },
     {
-      "platform": "release_notes",
+      "title": "Release Notes",
+      "kind": "release_notes",
       "url": "https://ai.google.dev/gemini-api/docs/changelog"
     }
   ],

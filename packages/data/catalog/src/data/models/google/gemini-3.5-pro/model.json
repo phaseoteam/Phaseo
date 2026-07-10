@@ -16,11 +16,13 @@
   "family_id": "google/gemini-3.5",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-5/"
     },
     {
-      "platform": "event",
+      "title": "Event",
+      "kind": "event",
       "url": "https://blog.google/innovation-and-ai/technology/developers-tools/google-io-2026-collection/"
     }
   ],

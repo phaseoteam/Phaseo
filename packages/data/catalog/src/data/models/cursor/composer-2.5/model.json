@@ -15,7 +15,8 @@
   "api_model_id": "cursor/composer-2.5",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://cursor.com/blog/composer-2-5"
     }
   ],

@@ -15,7 +15,8 @@
   "api_model_id": "openai/gpt-rosalind",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://openai.com/index/introducing-gpt-rosalind/"
     }
   ],

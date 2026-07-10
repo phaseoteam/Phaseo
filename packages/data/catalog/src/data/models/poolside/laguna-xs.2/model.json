@@ -15,15 +15,18 @@
   "api_model_id": "poolside/laguna-xs.2",
   "links": [
     {
-      "platform": "website",
+      "title": "Website",
+      "kind": "website",
       "url": "https://poolside.ai/models"
     },
     {
-      "platform": "documentation",
+      "title": "Documentation",
+      "kind": "documentation",
       "url": "https://docs.poolside.ai/release-notes/laguna-xs2"
     },
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/poolside/Laguna-XS.2"
     }
   ],

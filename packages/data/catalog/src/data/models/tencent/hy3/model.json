@@ -15,7 +15,8 @@
   "api_model_id": "tencent/hy3:free",
   "links": [
     {
-      "platform": "website",
+      "title": "Website",
+      "kind": "website",
       "url": "https://novita.ai/models"
     }
   ],

@@ -15,7 +15,8 @@
   "api_model_id": "inception/mercury-edit-2",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://www.inceptionlabs.ai/blog/introducing-mercury-2"
     }
   ],

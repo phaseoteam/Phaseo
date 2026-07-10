@@ -15,11 +15,13 @@
   "api_model_id": "cohere/north-mini-code-1-0",
   "links": [
     {
-      "platform": "docs",
+      "title": "Docs",
+      "kind": "docs",
       "url": "https://docs.cohere.com/docs/north-mini-code-1.0"
     },
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/CohereLabs/BLS-Mini-Code-1.0"
     }
   ],

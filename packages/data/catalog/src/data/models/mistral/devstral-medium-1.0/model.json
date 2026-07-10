@@ -15,7 +15,8 @@
   "api_model_id": "mistral/devstral-medium-1.0",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://mistral.ai/news/devstral-2507"
     }
   ],

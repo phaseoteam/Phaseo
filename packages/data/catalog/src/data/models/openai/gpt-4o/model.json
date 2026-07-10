@@ -16,11 +16,13 @@
   "family_id": "openai/gpt-4o",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://platform.openai.com/docs/models/gpt-4o"
     },
     {
-      "platform": "playground",
+      "title": "Playground",
+      "kind": "playground",
       "url": "https://platform.openai.com/playground/prompts?models=gpt-4o-2024-08-06"
     }
   ],

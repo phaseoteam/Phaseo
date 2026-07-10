@@ -15,7 +15,8 @@
   "api_model_id": "windsurf/swe-1.6-fast",
   "links": [
     {
-      "platform": "docs",
+      "title": "Docs",
+      "kind": "docs",
       "url": "https://docs.windsurf.com/windsurf/models"
     }
   ],

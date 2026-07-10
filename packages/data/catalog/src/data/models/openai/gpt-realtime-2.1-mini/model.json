@@ -15,7 +15,8 @@
   "api_model_id": "openai/gpt-realtime-2.1-mini",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://developers.openai.com/api/docs/models/gpt-realtime-2.1-mini"
     }
   ],

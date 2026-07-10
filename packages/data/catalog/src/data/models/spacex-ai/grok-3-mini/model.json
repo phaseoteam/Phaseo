@@ -15,11 +15,13 @@
   "api_model_id": "spacex-ai/grok-3-mini",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://x.ai/api"
     },
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://x.com/xai/status/1913308977477353582"
     }
   ],

@@ -15,12 +15,14 @@
   "api_model_id": "openai/gpt-live-1",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Introducing GPT-Live",
+      "kind": "release",
       "url": "https://openai.com/index/introducing-gpt-live/"
     },
     {
-      "platform": "system_card",
-      "url": "https://deploymentsafety.openai.com/"
+      "title": "GPT-Live System Card",
+      "kind": "system_card",
+      "url": "https://deploymentsafety.openai.com/gpt-live"
     }
   ],
   "details": [

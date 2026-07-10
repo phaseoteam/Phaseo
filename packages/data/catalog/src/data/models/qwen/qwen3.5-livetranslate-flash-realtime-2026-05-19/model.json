@@ -15,7 +15,8 @@
   "api_model_id": "qwen/qwen3.5-livetranslate-flash-realtime-2026-05-19",
   "links": [
     {
-      "platform": "docs",
+      "title": "Docs",
+      "kind": "docs",
       "url": "https://modelstudio.console.alibabacloud.com/ap-southeast-1?tab=doc#/doc/?type=model&url=2840914_2&modelId=qwen3.5-livetranslate-flash-realtime-2026-05-19&serviceSite=international"
     }
   ],

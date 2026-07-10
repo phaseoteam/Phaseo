@@ -15,7 +15,8 @@
   "api_model_id": "deepseek/deepseek-v4-pro-lightning",
   "links": [
     {
-      "platform": "website",
+      "title": "Website",
+      "kind": "website",
       "url": "https://crof.ai/pricing"
     }
   ],

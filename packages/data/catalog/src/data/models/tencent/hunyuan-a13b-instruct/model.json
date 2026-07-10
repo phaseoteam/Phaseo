@@ -15,7 +15,8 @@
   "api_model_id": "tencent/hunyuan-a13b-instruct",
   "links": [
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/tencent/Hunyuan-A13B-Instruct"
     }
   ],

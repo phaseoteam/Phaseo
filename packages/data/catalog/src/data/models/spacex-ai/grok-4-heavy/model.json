@@ -15,7 +15,8 @@
   "api_model_id": "spacex-ai/grok-4-heavy",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://x.ai/news/grok-4"
     }
   ],

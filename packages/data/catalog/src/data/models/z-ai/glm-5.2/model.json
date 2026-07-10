@@ -15,19 +15,23 @@
   "api_model_id": "z-ai/glm-5.2",
   "links": [
     {
-      "platform": "docs",
+      "title": "Docs",
+      "kind": "docs",
       "url": "https://docs.z.ai/guides/llm/glm-5.2"
     },
     {
-      "platform": "docs",
+      "title": "Docs",
+      "kind": "docs",
       "url": "https://docs.z.ai/guides/overview/pricing"
     },
     {
-      "platform": "docs",
+      "title": "Docs",
+      "kind": "docs",
       "url": "https://docs.z.ai/guides/capabilities/thinking-mode"
     },
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://x.com/Zai_org/status/2066938937344495629"
     }
   ],

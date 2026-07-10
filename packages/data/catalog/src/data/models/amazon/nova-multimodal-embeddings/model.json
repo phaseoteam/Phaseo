@@ -15,7 +15,8 @@
   "api_model_id": "amazon/nova-multimodal-embeddings",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://www.aboutamazon.com/news/aws/aws-agentic-ai-amazon-bedrock-nova-models"
     }
   ],

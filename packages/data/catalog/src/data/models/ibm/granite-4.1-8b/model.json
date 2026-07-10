@@ -16,7 +16,8 @@
   "family_id": "ibm/granite-4-1",
   "links": [
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/ibm-granite/granite-4.1-8b"
     }
   ],

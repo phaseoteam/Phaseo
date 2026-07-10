@@ -15,23 +15,28 @@
   "api_model_id": "deepseek/deepseek-v2.5-2024-09-05",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://www.deepseek.com/"
     },
     {
-      "platform": "playground",
+      "title": "Playground",
+      "kind": "playground",
       "url": "https://huggingface.co/deepseek-ai/DeepSeek-V2.5"
     },
     {
-      "platform": "paper",
+      "title": "Paper",
+      "kind": "paper",
       "url": "https://arxiv.org/abs/2405.04434"
     },
     {
-      "platform": "repository",
+      "title": "Repository",
+      "kind": "repository",
       "url": "https://huggingface.co/deepseek-ai/DeepSeek-V2.5"
     },
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/deepseek-ai/DeepSeek-V2.5"
     }
   ],

@@ -15,7 +15,8 @@
   "api_model_id": "mistral/ocr-4",
   "links": [
     {
-      "platform": "docs",
+      "title": "Docs",
+      "kind": "docs",
       "url": "https://docs.mistral.ai/getting-started/models/models_overview/"
     }
   ],

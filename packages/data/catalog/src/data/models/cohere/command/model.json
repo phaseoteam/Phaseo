@@ -15,7 +15,8 @@
   "api_model_id": "cohere/command",
   "links": [
     {
-      "platform": "playground",
+      "title": "Playground",
+      "kind": "playground",
       "url": "https://dashboard.cohere.com/playground/chat"
     }
   ],

@@ -3,6 +3,13 @@ import { cacheLife, cacheTag } from "next/cache";
 import { applyHiddenFilter } from "./visibility";
 import { createAdminClient } from "@/utils/supabase/admin";
 
+export type ModelLink = {
+    url: string;
+    platform?: string | null;
+    kind?: string | null;
+    title?: string | null;
+};
+
 export interface ModelPage {
     model_id: string;
     name: string;
@@ -22,7 +29,7 @@ export interface ModelPage {
     timeline?: any;
     updated_at?: string | null;
     organisation: { name: string, country_code?: string | null };
-    model_links: { url: string; platform: string }[];
+    model_links: ModelLink[];
     model_family?: { display_name: string } | null;
     model_details: { detail_name: string; detail_value: string | number | null }[];
     pricing?: PricingRule[];
@@ -101,7 +108,7 @@ export default async function getModel(
         timeline,
         updated_at,
         organisation: data_organisations!data_models_organisation_id_fkey(name, country_code),
-        model_links: data_model_links(url, platform),
+        model_links: data_model_links(url, platform, kind, title),
         model_family: data_model_families(family_name),
         model_details: data_model_details(detail_name, detail_value),
         benchmark_results: data_benchmark_results (
@@ -298,7 +305,7 @@ export interface ModelOverviewPage {
     family_id?: string | null;
     updated_at?: string | null;
     organisation: { name: string, country_code?: string | null };
-    model_links: { url: string; platform: string }[];
+    model_links: ModelLink[];
     model_family?: { display_name: string } | null;
     model_details: { detail_name: string; detail_value: string | number | null }[];
     pricing?: PricingRule[];
@@ -328,7 +335,7 @@ export async function getModelOverview(
         family_id,
         updated_at,
         organisation: data_organisations!data_models_organisation_id_fkey(name, country_code),
-        model_links: data_model_links(url, platform),
+        model_links: data_model_links(url, platform, kind, title),
         model_family: data_model_families(family_name),
         model_details: data_model_details(detail_name, detail_value)
     `),

@@ -15,11 +15,13 @@
   "api_model_id": "microsoft/phi-mini-moe-instruct",
   "links": [
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/microsoft/Phi-mini-MoE-instruct"
     },
     {
-      "platform": "paper",
+      "title": "Paper",
+      "kind": "paper",
       "url": "https://arxiv.org/abs/2506.18349"
     }
   ],

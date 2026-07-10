@@ -28,15 +28,6 @@ const MODEL_DETAIL_NAME_OPTIONS = [
   "parameter_count",
   "training_tokens",
 ] as const
-const MODEL_LINK_PLATFORM_OPTIONS = [
-  "announcement",
-  "api_reference",
-  "model_card",
-  "paper",
-  "playground",
-  "repository",
-  "weights",
-] as const
 const NUMERIC_ONLY_DETAIL_NAME_OPTIONS = ["parameter_count", "training_tokens"] as const
 
 function normalizeCoreTypes(
@@ -70,17 +61,34 @@ function normalizeModelDetailName(
     : null
 }
 
-function normalizeModelLinkPlatform(
-  value: string | null | undefined
-): (typeof MODEL_LINK_PLATFORM_OPTIONS)[number] | null {
+function normalizeModelLinkKind(value: string | null | undefined): string | null {
   if (!value) return null
-  const normalized = value.trim().toLowerCase()
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_")
+    .replace(/[^a-z0-9_]+/g, "")
+    .replace(/^_+|_+$/g, "")
   if (!normalized) return null
-  return MODEL_LINK_PLATFORM_OPTIONS.includes(
-    normalized as (typeof MODEL_LINK_PLATFORM_OPTIONS)[number]
-  )
-    ? (normalized as (typeof MODEL_LINK_PLATFORM_OPTIONS)[number])
-    : null
+  return normalized.slice(0, 80)
+}
+
+function titleForModelLinkKind(kind: string): string {
+  switch (kind) {
+    case "api_reference":
+      return "API Reference"
+    case "model_card":
+      return "Model Card"
+    default:
+      return kind
+        .replace(/[_-]+/g, " ")
+        .replace(/\b\w/g, (char) => char.toUpperCase())
+  }
+}
+
+function normalizeModelLinkTitle(value: string | null | undefined, kind: string): string {
+  const title = value?.trim()
+  return title || titleForModelLinkKind(kind)
 }
 
 function normalizeModelDetailValue(
@@ -120,7 +128,7 @@ export interface ModelUpdatePayload {
   previous_model_id?: string | null
   family_id?: string | null
   model_details?: Array<{ id?: string; detail_name: string; detail_value: string | number | null }>
-  links?: Array<{ id?: string; platform: string; url: string }>
+  links?: Array<{ id?: string; platform?: string; kind?: string; title?: string; url: string }>
   benchmark_results?: Array<{
     id?: string
     benchmark_id: string
@@ -438,12 +446,14 @@ export async function updateModel(payload: ModelUpdatePayload) {
     if (links.length > 0) {
       const linksToInsert = links
         .map((link) => {
-          const platform = normalizeModelLinkPlatform(link.platform)
+          const kind = normalizeModelLinkKind(link.kind ?? link.platform)
           const url = link.url?.trim() ?? ""
-          if (!platform || !url) return null
+          if (!kind || !url) return null
           return {
             model_id: modelId,
-            platform,
+            platform: kind,
+            kind,
+            title: normalizeModelLinkTitle(link.title, kind),
             url,
             created_at: nowIso,
             updated_at: nowIso,
@@ -454,7 +464,9 @@ export async function updateModel(payload: ModelUpdatePayload) {
             link
           ): link is {
             model_id: string
-            platform: (typeof MODEL_LINK_PLATFORM_OPTIONS)[number]
+            platform: string
+            kind: string
+            title: string
             url: string
             created_at: string
             updated_at: string

@@ -15,7 +15,8 @@
   "api_model_id": "google/gemini-embedding-2-preview",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://blog.google/innovation-and-ai/technology/developers-tools/gemini-embedding-2/"
     }
   ],

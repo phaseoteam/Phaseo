@@ -19,7 +19,8 @@
   "api_model_id": "kwaipilot/kat-coder-pro-v2.5",
   "links": [
     {
-      "platform": "announcement",
+      "title": "KwaiKAT KAT-Coder-Pro V2.5 release post",
+      "kind": "announcement",
       "url": "https://x.com/KwaiAICoder/status/2075430060245631055?s=20"
     }
   ],

@@ -15,11 +15,13 @@
   "api_model_id": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://build.nvidia.com/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
     },
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16"
     }
   ],

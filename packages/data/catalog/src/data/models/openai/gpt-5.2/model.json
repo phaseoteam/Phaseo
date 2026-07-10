@@ -16,7 +16,8 @@
   "family_id": "openai/gpt-5.2",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://openai.com/index/introducing-gpt-5-2/"
     }
   ],

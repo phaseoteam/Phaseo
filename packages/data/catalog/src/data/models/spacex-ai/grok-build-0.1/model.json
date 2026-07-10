@@ -15,7 +15,8 @@
   "api_model_id": "spacex-ai/grok-build-0.1",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://docs.x.ai/developers/models/grok-build-0.1"
     }
   ],

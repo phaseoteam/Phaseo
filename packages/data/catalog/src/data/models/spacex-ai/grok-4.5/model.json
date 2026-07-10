@@ -15,15 +15,18 @@
   "api_model_id": "spacex-ai/grok-4.5",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "Grok 4.5 model documentation",
+      "kind": "api_reference",
       "url": "https://docs.x.ai/developers/models/grok-4.5"
     },
     {
-      "platform": "pricing",
+      "title": "xAI API pricing",
+      "kind": "pricing",
       "url": "https://docs.x.ai/developers/pricing"
     },
     {
-      "platform": "announcement",
+      "title": "Grok 4.5 announcement",
+      "kind": "announcement",
       "url": "https://x.com/elonmusk/status/2071184354756477041"
     }
   ],

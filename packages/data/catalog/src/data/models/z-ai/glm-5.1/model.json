@@ -15,11 +15,13 @@
   "api_model_id": "z-ai/glm-5.1",
   "links": [
     {
-      "platform": "repository",
+      "title": "Repository",
+      "kind": "repository",
       "url": "https://huggingface.co/zai-org/GLM-5.1"
     },
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/zai-org/GLM-5.1"
     }
   ],

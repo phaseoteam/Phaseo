@@ -15,7 +15,8 @@
   "api_model_id": "openai/gpt-image-2",
   "links": [
     {
-      "platform": "pricing",
+      "title": "Pricing",
+      "kind": "pricing",
       "url": "https://developers.openai.com/api/docs/pricing#image-generation"
     }
   ],

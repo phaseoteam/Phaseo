@@ -15,7 +15,8 @@
   "api_model_id": "essential-ai/rnj-1",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://essential.ai/research/rnj-1"
     }
   ],

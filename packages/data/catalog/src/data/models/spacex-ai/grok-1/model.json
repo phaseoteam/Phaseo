@@ -15,15 +15,18 @@
   "api_model_id": "spacex-ai/grok-1",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://x.ai/news/grok"
     },
     {
-      "platform": "repository",
+      "title": "Repository",
+      "kind": "repository",
       "url": "https://github.com/xai-org/grok-1"
     },
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/xai-org/grok-1"
     }
   ],

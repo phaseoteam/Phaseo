@@ -15,19 +15,23 @@
   "api_model_id": "poolside/laguna-m.1",
   "links": [
     {
-      "platform": "website",
+      "title": "Website",
+      "kind": "website",
       "url": "https://poolside.ai/models"
     },
     {
-      "platform": "documentation",
+      "title": "Documentation",
+      "kind": "documentation",
       "url": "https://docs.poolside.ai/release-notes/laguna-m1"
     },
     {
-      "platform": "repository",
+      "title": "Repository",
+      "kind": "repository",
       "url": "https://huggingface.co/poolside/Laguna-M.1"
     },
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://hf.co/collections/poolside/laguna-m1"
     }
   ],

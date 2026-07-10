@@ -15,11 +15,13 @@
   "api_model_id": "spacex-ai/grok-imagine-image-quality",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://x.ai/news/grok-imagine-quality-mode"
     },
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://docs.x.ai/developers/models/grok-imagine-image-quality"
     }
   ],

@@ -15,7 +15,8 @@
   "api_model_id": "moonshotai/moonshot-v1-32k-vision-preview",
   "links": [
     {
-      "platform": "docs",
+      "title": "Docs",
+      "kind": "docs",
       "url": "https://platform.kimi.ai/docs/guide/use-kimi-vision-model"
     }
   ],

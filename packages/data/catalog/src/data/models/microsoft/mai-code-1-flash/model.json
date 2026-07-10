@@ -16,7 +16,8 @@
   "family_id": "microsoft/mai",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://microsoft.ai/news/introducingmai-code-1-flash/"
     }
   ],

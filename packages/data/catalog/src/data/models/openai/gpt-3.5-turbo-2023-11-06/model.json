@@ -16,7 +16,8 @@
   "family_id": "openai/gpt-3",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://platform.openai.com/docs/models/gpt-3-5-turbo"
     }
   ],

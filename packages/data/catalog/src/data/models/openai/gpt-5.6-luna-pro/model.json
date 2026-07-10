@@ -16,16 +16,19 @@
   "family_id": "openai/gpt-5.6",
   "links": [
     {
-      "platform": "announcement",
-      "url": "https://openai.com/index/previewing-gpt-5-6-sol/"
+      "title": "GPT-5.6: Frontier intelligence that scales with your ambition",
+      "kind": "announcement",
+      "url": "https://openai.com/index/gpt-5-6/"
     },
     {
-      "platform": "api_reference",
+      "title": "OpenAI model docs",
+      "kind": "api_reference",
       "url": "https://developers.openai.com/api/docs/models"
     },
     {
-      "platform": "paper",
-      "url": "https://deploymentsafety.openai.com/gpt-5-6-preview"
+      "title": "GPT-5.6 System Card",
+      "kind": "paper",
+      "url": "https://deploymentsafety.openai.com/gpt-5-6"
     }
   ],
   "details": [
