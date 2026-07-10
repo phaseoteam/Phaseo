@@ -335,6 +335,41 @@ describe("openai text executor HTTP mode", () => {
 		expect(mock.calls[0]?.bodyJson?.safety_identifier).toBe("safe_user_123");
 	});
 
+	it("uses workspace id for OpenAI safety identifier even when the request has a user id", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/responses",
+			response: jsonResponse({
+				id: "resp_http_3a",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model: "gpt-5-nano",
+				status: "completed",
+				output: [{
+					type: "message",
+					role: "assistant",
+					content: [{ type: "output_text", text: "ok" }],
+				}],
+				usage: {
+					input_tokens: 2,
+					output_tokens: 1,
+					total_tokens: 3,
+				},
+			}, { status: 200 }),
+		}]);
+
+		const result = await executor({
+			...buildArgs({
+				userId: "user_123",
+			}),
+			workspaceId: "workspace_safety_scope",
+		});
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect(mock.calls).toHaveLength(1);
+		expect(mock.calls[0]?.bodyJson?.safety_identifier).toBe("workspace_safety_scope");
+	});
+
 	it("truncates OpenAI safety identifiers to the upstream limit", async () => {
 		const mock = installFetchMock([{
 			match: (url) => url === "https://api.openai.com/v1/responses",

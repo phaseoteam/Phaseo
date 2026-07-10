@@ -554,14 +554,11 @@ function withOpenAIRequestMetadata(
 	const explicitSafetyIdentifier = typeof ir.safetyIdentifier === "string" && ir.safetyIdentifier.trim().length > 0
 		? ir.safetyIdentifier.trim()
 		: undefined;
-	const userSafetyIdentifier = typeof ir.userId === "string" && ir.userId.trim().length > 0
-		? ir.userId.trim()
-		: undefined;
 	const workspaceSafetyIdentifier = typeof workspaceId === "string" && workspaceId.trim().length > 0
 		? workspaceId.trim()
 		: undefined;
 	const safetyIdentifier = normalizeOpenAISafetyIdentifier(
-		explicitSafetyIdentifier ?? userSafetyIdentifier ?? workspaceSafetyIdentifier,
+		explicitSafetyIdentifier ?? workspaceSafetyIdentifier,
 	);
 	if (!includeMetadata) {
 		delete next.metadata;
