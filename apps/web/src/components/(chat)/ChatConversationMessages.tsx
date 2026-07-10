@@ -107,6 +107,23 @@ const VIRTUAL_MESSAGE_OVERSCAN = 16;
 const ESTIMATED_MESSAGE_HEIGHT = 220;
 const EMPTY_MESSAGES: ChatThread["messages"] = [];
 
+const KNOWN_PROVIDER_LABELS: Record<string, string> = {
+	azure: "Azure",
+	openai: "OpenAI",
+};
+
+function formatProviderIdLabel(providerId: string | null | undefined) {
+	const normalized = String(providerId ?? "").trim();
+	if (!normalized) return null;
+	const known = KNOWN_PROVIDER_LABELS[normalized.toLowerCase()];
+	if (known) return known;
+	return normalized
+		.split(/[-_\s]+/)
+		.filter(Boolean)
+		.map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+		.join(" ");
+}
+
 function GeneratingResponseIndicator() {
 	return (
 		<Marker role="status" aria-live="polite" className="min-h-7">
@@ -433,8 +450,13 @@ export function ChatConversationMessages({
 					(meta as any).routing.selected_provider.trim().length > 0
 				? (meta as any).routing.selected_provider.trim()
 				: metadataMessage?.providerId?.trim() || null;
+	const messageProviderId = metadataMessage?.providerId?.trim() || null;
+	const messageProviderLabel =
+		metadataMessage?.providerName?.trim() || null;
 	const metadataProviderLabel =
-		metadataMessage?.providerName?.trim() || metadataProviderId || null;
+		messageProviderLabel && messageProviderId === metadataProviderId
+			? messageProviderLabel
+			: formatProviderIdLabel(metadataProviderId);
 	const messages = activeThread?.messages ?? EMPTY_MESSAGES;
 	useEffect(() => {
 		const latestUserMessage = messages
