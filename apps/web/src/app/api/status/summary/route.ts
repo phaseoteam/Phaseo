@@ -8,8 +8,8 @@ type StatusState =
 	| "maintenance"
 	| "unknown";
 
-const STATUS_PAGE_HREF = "https://statuspage.incident.io/phaseo";
-const DEFAULT_STATUS_PAGE_URL = "https://statuspage.incident.io/phaseo";
+const STATUS_PAGE_HREF = "https://status.phaseo.app";
+const DEFAULT_STATUS_PAGE_URL = "https://status.phaseo.app";
 const DEFAULT_WIDGET_API_URL =
 	"https://statuspage.incident.io/phaseo/api/v1/summary";
 const STATUS_PAGE_CACHE_TTL_MS = 30_000;

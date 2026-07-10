@@ -26,7 +26,7 @@ type StatusSummary = {
 	}>;
 };
 
-const STATUS_PAGE_HREF = "https://statuspage.incident.io/phaseo";
+const STATUS_PAGE_HREF = "https://status.phaseo.app";
 
 const STATUS_STYLES: Record<StatusState, { dot: string; text: string }> = {
 	operational: {

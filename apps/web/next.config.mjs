@@ -95,7 +95,7 @@ const nextConfig = {
       },
       {
         source: "/status",
-        destination: "https://statuspage.incident.io/phaseo",
+        destination: "https://status.phaseo.app",
         permanent: true,
       },
     ];
