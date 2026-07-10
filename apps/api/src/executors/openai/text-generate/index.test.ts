@@ -303,7 +303,7 @@ describe("openai text executor HTTP mode", () => {
 		expect(mock.calls[0]?.headers["Idempotency-Key"] ?? mock.calls[0]?.headers["idempotency-key"]).toBe("req_openai_http_test");
 	});
 
-	it("does not overwrite caller-provided safety identifier", async () => {
+	it("ignores caller-provided safety identifier and uses workspace id", async () => {
 		const mock = installFetchMock([{
 			match: (url) => url === "https://api.openai.com/v1/responses",
 			response: jsonResponse({
@@ -332,7 +332,7 @@ describe("openai text executor HTTP mode", () => {
 
 		expect(result.kind).toBe("completed");
 		expect(mock.calls).toHaveLength(1);
-		expect(mock.calls[0]?.bodyJson?.safety_identifier).toBe("safe_user_123");
+		expect(mock.calls[0]?.bodyJson?.safety_identifier).toBe("team_test");
 	});
 
 	it("uses workspace id for OpenAI safety identifier even when the request has a user id", async () => {
@@ -392,15 +392,16 @@ describe("openai text executor HTTP mode", () => {
 			}, { status: 200 }),
 		}]);
 
-		const longSafetyIdentifier = `user_${"x".repeat(100)}`;
-		const result = await executor(buildArgs({
-			safetyIdentifier: longSafetyIdentifier,
-		}));
+		const longWorkspaceId = `workspace_${"x".repeat(100)}`;
+		const result = await executor({
+			...buildArgs(),
+			workspaceId: longWorkspaceId,
+		});
 		mock.restore();
 
 		expect(result.kind).toBe("completed");
 		expect(mock.calls).toHaveLength(1);
-		expect(mock.calls[0]?.bodyJson?.safety_identifier).toBe(longSafetyIdentifier.slice(0, 64));
+		expect(mock.calls[0]?.bodyJson?.safety_identifier).toBe(longWorkspaceId.slice(0, 64));
 	});
 
 	it("passes provider_options.openai.context_management to OpenAI responses requests", async () => {

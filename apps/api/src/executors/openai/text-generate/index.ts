@@ -551,15 +551,10 @@ function withOpenAIRequestMetadata(
 	if (providerId !== "openai") return ir;
 	const includeMetadata = options?.includeMetadata !== false;
 	const next: IRChatRequest = { ...ir };
-	const explicitSafetyIdentifier = typeof ir.safetyIdentifier === "string" && ir.safetyIdentifier.trim().length > 0
-		? ir.safetyIdentifier.trim()
-		: undefined;
 	const workspaceSafetyIdentifier = typeof workspaceId === "string" && workspaceId.trim().length > 0
 		? workspaceId.trim()
 		: undefined;
-	const safetyIdentifier = normalizeOpenAISafetyIdentifier(
-		explicitSafetyIdentifier ?? workspaceSafetyIdentifier,
-	);
+	const safetyIdentifier = normalizeOpenAISafetyIdentifier(workspaceSafetyIdentifier);
 	if (!includeMetadata) {
 		delete next.metadata;
 		if (safetyIdentifier) {
