@@ -53,6 +53,12 @@ const OPENAI_REASONING_EFFORT_SUPPORT: Record<string, Set<ReasoningEffort>> = {
 	"gpt-5.4-mini": new Set(["none", "low", "medium", "high", "xhigh"]),
 	"gpt-5.4-nano": new Set(["none", "low", "medium", "high", "xhigh"]),
 	"gpt-5.4-pro": new Set(["medium", "high", "xhigh"]),
+	"gpt-5.6-luna": new Set(["none", "low", "medium", "high", "xhigh", "max"]),
+	"gpt-5.6-luna-pro": new Set(["none", "low", "medium", "high", "xhigh", "max"]),
+	"gpt-5.6-sol": new Set(["none", "low", "medium", "high", "xhigh", "max"]),
+	"gpt-5.6-sol-pro": new Set(["none", "low", "medium", "high", "xhigh", "max"]),
+	"gpt-5.6-terra": new Set(["none", "low", "medium", "high", "xhigh", "max"]),
+	"gpt-5.6-terra-pro": new Set(["none", "low", "medium", "high", "xhigh", "max"]),
 	"o1": new Set(["low", "medium", "high"]),
 	"o1-preview": new Set(["low", "medium", "high"]),
 	"o1-mini": new Set(["low", "medium", "high"]),
@@ -537,6 +543,7 @@ function withOpenAIRequestMetadata(
 	ir: IRChatRequest,
 	providerId: string,
 	requestId: string,
+	workspaceId: string,
 	options?: {
 		includeMetadata?: boolean;
 	},
@@ -544,16 +551,17 @@ function withOpenAIRequestMetadata(
 	if (providerId !== "openai") return ir;
 	const includeMetadata = options?.includeMetadata !== false;
 	const next: IRChatRequest = { ...ir };
-	const explicitSafetyIdentifier = typeof ir.safetyIdentifier === "string" && ir.safetyIdentifier.trim().length > 0
-		? ir.safetyIdentifier.trim()
+	const workspaceSafetyIdentifier = typeof workspaceId === "string" && workspaceId.trim().length > 0
+		? workspaceId.trim()
 		: undefined;
-	const userSafetyIdentifier = typeof ir.userId === "string" && ir.userId.trim().length > 0
-		? ir.userId.trim()
-		: undefined;
-	const safetyIdentifier = explicitSafetyIdentifier ?? userSafetyIdentifier ?? requestId;
+	const safetyIdentifier = normalizeOpenAISafetyIdentifier(workspaceSafetyIdentifier);
 	if (!includeMetadata) {
 		delete next.metadata;
-		next.safetyIdentifier = safetyIdentifier;
+		if (safetyIdentifier) {
+			next.safetyIdentifier = safetyIdentifier;
+		} else {
+			delete next.safetyIdentifier;
+		}
 		return next;
 	}
 
@@ -566,8 +574,18 @@ function withOpenAIRequestMetadata(
 	}
 
 	next.metadata = metadata;
-	next.safetyIdentifier = safetyIdentifier;
+	if (safetyIdentifier) {
+		next.safetyIdentifier = safetyIdentifier;
+	} else {
+		delete next.safetyIdentifier;
+	}
 	return next;
+}
+
+function normalizeOpenAISafetyIdentifier(value: string | undefined): string | undefined {
+	const trimmed = value?.trim();
+	if (!trimmed) return undefined;
+	return trimmed.slice(0, 64);
 }
 
 function openAIRequestHeaders(
@@ -625,6 +643,7 @@ function cherryPickIRParams(
 			if (root === "reasoning") {
 				reasoning ??= {};
 				if (leaf === "effort") reasoning.effort = ir.reasoning?.effort;
+				if (leaf === "mode") reasoning.mode = ir.reasoning?.mode;
 				if (leaf === "summary") reasoning.summary = ir.reasoning?.summary;
 				if (leaf === "enabled") reasoning.enabled = ir.reasoning?.enabled;
 				if (leaf === "maxTokens" || leaf === "max_tokens") reasoning.maxTokens = ir.reasoning?.maxTokens;
@@ -736,6 +755,7 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 		args.ir as IRChatRequest,
 		args.providerId,
 		args.requestId,
+		args.workspaceId,
 		{ includeMetadata: !useNativeChatRoute },
 	);
 	const route = args.providerId === "openai"

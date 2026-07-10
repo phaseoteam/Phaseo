@@ -4003,7 +4003,13 @@ components:
             - medium
             - high
             - xhigh
+            - max
           default: medium
+        mode:
+          type: string
+          enum:
+            - standard
+            - pro
         summary:
           type: string
           enum:

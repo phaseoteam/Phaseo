@@ -1496,9 +1496,11 @@ module Phaseo
     #   @return [Boolean, nil]
     # @!attribute [rw] max_tokens
     #   @return [Integer, nil]
+    # @!attribute [rw] mode
+    #   @return [String, nil]
     # @!attribute [rw] summary
     #   @return [String, nil]
-    ReasoningConfig = Struct.new(:effort, :enabled, :max_tokens, :summary, keyword_init: true)
+    ReasoningConfig = Struct.new(:effort, :enabled, :max_tokens, :mode, :summary, keyword_init: true)
     RerankDocument = Object
     # @!attribute [rw] debug
     #   @return [Hash{String => Object}, nil]

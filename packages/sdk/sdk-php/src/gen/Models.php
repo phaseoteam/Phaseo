@@ -1828,6 +1828,8 @@ class ReasoningConfig
 	/** @var int|null */
 	public $max_tokens;
 	/** @var string|null */
+	public $mode;
+	/** @var string|null */
 	public $summary;
 }
 
