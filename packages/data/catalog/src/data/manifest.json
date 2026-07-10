@@ -777,6 +777,7 @@
       "openai/gpt-image-1",
       "openai/gpt-image-1-mini",
       "openai/gpt-image-1.5",
+      "openai/gpt-live-1",
       "openai/gpt-oss-120b",
       "openai/gpt-oss-20b",
       "openai/gpt-oss-safeguard-120b",

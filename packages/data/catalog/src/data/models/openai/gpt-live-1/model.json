@@ -1,0 +1,69 @@
+{
+  "model_id": "openai/gpt-live-1",
+  "organisation_id": "openai",
+  "name": "GPT Live 1",
+  "status": "Announced",
+  "previous_model_id": "openai/gpt-realtime-2",
+  "description": "GPT Live 1 is a next-generation ChatGPT voice model, previously surfaced as GPT-Bidi-1, designed for bidirectional live audio conversations that can listen and speak at the same time. Public reporting points to a July 8, 2026 rollout, but OpenAI has not published official API documentation, pricing, or a stable provider model identifier.",
+  "announced_date": "2026-07-08T00:00:00",
+  "release_date": "2026-07-08T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,audio",
+  "output_types": "text,audio",
+  "api_model_id": "openai/gpt-live-1",
+  "links": [
+    {
+      "platform": "x",
+      "url": "https://x.com/testingcatalog/status/2074404297618415626"
+    },
+    {
+      "platform": "testingcatalog",
+      "url": "https://www.testingcatalog.com/openai-prepares-major-chatgpt-voice-upgrade-with-gpt-bidi-1/"
+    },
+    {
+      "platform": "testingcatalog",
+      "url": "https://www.testingcatalog.com/openai-prepares-bidirectional-voice-mode-for-rollout-on-chatgpt/"
+    },
+    {
+      "platform": "android_authority",
+      "url": "https://www.androidauthority.com/openai-chatgpt-gpt-bidi-1-leak-3680394/"
+    }
+  ],
+  "details": [
+    {
+      "name": "source_status",
+      "value": "Prepared for a reported July 8, 2026 ChatGPT voice rollout; not confirmed in OpenAI API documentation as of 2026-07-08."
+    },
+    {
+      "name": "reported_release_date",
+      "value": "2026-07-08T00:00:00"
+    },
+    {
+      "name": "availability",
+      "value": "Expected ChatGPT voice rollout. API and AI Stats Gateway availability are not confirmed."
+    },
+    {
+      "name": "reported_previous_name",
+      "value": "GPT Bidi 1"
+    },
+    {
+      "name": "reported_previous_api_id",
+      "value": "gpt-bidi-1"
+    },
+    {
+      "name": "reported_capabilities",
+      "value": "Bidirectional live voice, interruption handling, longer conversational context, and reported real-time translation."
+    },
+    {
+      "name": "reported_tiers",
+      "value": "Instant, Medium, High"
+    }
+  ],
+  "page_notice": {
+    "tone": "warning",
+    "markdown": "GPT Live 1 is prepared for the reported July 8, 2026 ChatGPT voice rollout. OpenAI has not confirmed a stable API model ID, pricing, or AI Stats Gateway availability."
+  },
+  "benchmarks": []
+}
