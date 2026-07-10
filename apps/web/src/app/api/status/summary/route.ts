@@ -419,9 +419,7 @@ async function fetchIncidentStatus(signal: AbortSignal) {
 	};
 	const value = {
 		components: flattenIncidentComponents(summary),
-		href: String(
-			widgetSummary?.page_url ?? pageSummary?.public_url ?? STATUS_PAGE_HREF,
-		),
+		href: STATUS_PAGE_HREF,
 		status: pickIncidentStatus(liveSummary),
 	};
 
