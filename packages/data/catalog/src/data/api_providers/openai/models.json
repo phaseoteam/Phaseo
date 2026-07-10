@@ -5380,6 +5380,48 @@
     ]
   },
   {
+    "api_model_id": "openai/gpt-live-1",
+    "provider_api_model_id": "openai:openai/gpt-live-1",
+    "provider_model_slug": "gpt-live-1",
+    "internal_model_id": "openai/gpt-live-1",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,audio",
+    "output_modalities": "text,audio",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-07-08T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.realtime",
+        "status": "coming_soon",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/gpt-live-1-mini",
+    "provider_api_model_id": "openai:openai/gpt-live-1-mini",
+    "provider_model_slug": "gpt-live-1-mini",
+    "internal_model_id": "openai/gpt-live-1-mini",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,audio",
+    "output_modalities": "text,audio",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-07-08T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.realtime",
+        "status": "coming_soon",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "openai/gpt-realtime",
     "provider_api_model_id": "openai:openai/gpt-realtime",
     "provider_model_slug": "gpt-realtime-2025-08-28",
