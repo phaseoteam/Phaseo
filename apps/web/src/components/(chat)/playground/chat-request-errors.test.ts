@@ -44,6 +44,7 @@ describe("parseChatStreamErrorFrame", () => {
 		const error = parseChatStreamErrorFrame({
 			error: "upstream_error",
 			description: "Provider failed.",
+			generation_id: "gen_123",
 			routing_diagnostics: {
 				finalCandidateCount: 1,
 			},
@@ -52,6 +53,7 @@ describe("parseChatStreamErrorFrame", () => {
 		expect(error).not.toBeNull();
 		expect(error?.message).toBe("Provider failed.");
 		expect(error?.code).toBe("upstream_error");
+		expect(error?.requestId).toBe("gen_123");
 		expect(error?.routingDiagnostics).toEqual({
 			finalCandidateCount: 1,
 		});

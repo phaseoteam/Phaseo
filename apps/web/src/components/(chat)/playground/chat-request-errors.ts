@@ -175,6 +175,8 @@ export function parseChatStreamErrorFrame(
 		requestId: firstString(
 			payload.request_id,
 			payload.requestId,
+			payload.generation_id,
+			payload.generationId,
 			errorObject?.request_id,
 			response?.id,
 		),

@@ -1852,6 +1852,17 @@ function ChatPlaygroundContent({
 					}
 					await flushPromise;
 				};
+				const throwStreamError = async (
+					streamError: ChatErrorPayload,
+				): Promise<never> => {
+					if (flushTimer != null) {
+						window.clearTimeout(flushTimer);
+						flushTimer = null;
+						pendingMetaPartial = undefined;
+					}
+					await flushPromise;
+					throw streamError;
+				};
 				let reasoningContent = "";
 				const reasoningSummaries: Record<number, string> = {};
 				const buildStreamingMetaPartial = () => {
@@ -1909,10 +1920,12 @@ function ChatPlaygroundContent({
 							parsed = JSON.parse(data);
 						} catch {
 							if (frameEventType === "error") {
-								throw createChatStreamTextError(data, {
-									frame_event_type: frameEventType,
-									data,
-								});
+								await throwStreamError(
+									createChatStreamTextError(data, {
+										frame_event_type: frameEventType,
+										data,
+									}),
+								);
 							}
 							continue;
 						}
@@ -1921,7 +1934,7 @@ function ChatPlaygroundContent({
 							frameEventType,
 						);
 						if (streamError) {
-							throw streamError;
+							await throwStreamError(streamError);
 						}
 						try {
 								if (parsed?.usage || parsed?.response?.usage) {
