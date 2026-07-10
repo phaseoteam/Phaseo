@@ -207,37 +207,57 @@ function affectedComponentKey(value: unknown) {
 	return String(id ?? name ?? "").trim() || null;
 }
 
-function affectedComponentStatus(value: unknown) {
-	if (!isRecord(value)) return normalizeStatus(null);
-	return normalizeStatus(
+function affectedComponentStatus(
+	value: unknown,
+	fallback?: { state: StatusState; label: string },
+) {
+	if (!isRecord(value)) return fallback ?? normalizeStatus(null);
+	const status = normalizeStatus(
 		value.current_status ??
 			value.component_status ??
 			value.status ??
 			value.current_worst_impact ??
 			(isRecord(value.component) ? value.component.status : null),
 	);
+	return status.state === "unknown" && fallback ? fallback : status;
 }
 
 function buildAffectedComponentMap(summary: IncidentSummary) {
 	const affected = new Map<string, { state: StatusState; label: string }>();
 
-	const addComponent = (component: unknown) => {
+	const addComponent = (
+		component: unknown,
+		fallback?: { state: StatusState; label: string },
+	) => {
 		const key = affectedComponentKey(component);
 		if (!key) return;
-		affected.set(key, affectedComponentStatus(component));
+		const status = affectedComponentStatus(component, fallback);
+		if (status.state === "unknown") return;
+		affected.set(key, status);
 	};
 
 	for (const component of asArray(summary.affected_components)) {
 		addComponent(component);
 	}
 
-	for (const event of [
-		...asArray(summary.ongoing_incidents),
-		...asArray(summary.in_progress_maintenances),
-	]) {
+	for (const event of asArray(summary.ongoing_incidents)) {
+		if (!isRecord(event)) continue;
+		const eventStatus = normalizeStatus(
+			event.current_worst_impact ?? event.impact ?? event.status,
+		);
+		const fallback =
+			eventStatus.state === "unknown"
+				? normalizeStatus("degraded")
+				: eventStatus;
+		for (const component of asArray(event.affected_components)) {
+			addComponent(component, fallback);
+		}
+	}
+
+	for (const event of asArray(summary.in_progress_maintenances)) {
 		if (!isRecord(event)) continue;
 		for (const component of asArray(event.affected_components)) {
-			addComponent(component);
+			addComponent(component, normalizeStatus("maintenance"));
 		}
 	}
 
@@ -350,9 +370,7 @@ async function fetchIncidentStatus(signal: AbortSignal) {
 	const widgetApiUrl =
 		process.env.STATUS_PAGE_WIDGET_API_URL?.trim() || DEFAULT_WIDGET_API_URL;
 	const statusPageUrl =
-		process.env.STATUS_PAGE_URL?.trim() ||
-		process.env.STATUS_PAGE_SUMMARY_URL?.trim() ||
-		DEFAULT_STATUS_PAGE_URL;
+		process.env.STATUS_PAGE_URL?.trim() || DEFAULT_STATUS_PAGE_URL;
 	const [widgetResult, pageResult] = await Promise.allSettled([
 		fetch(widgetApiUrl, {
 			cache: "no-store",
@@ -373,7 +391,11 @@ async function fetchIncidentStatus(signal: AbortSignal) {
 
 	let pageSummary: IncidentSummary | null = null;
 	if (pageResult.status === "fulfilled" && pageResult.value.ok) {
-		pageSummary = parseIncidentSummaryHtml(await pageResult.value.text());
+		try {
+			pageSummary = parseIncidentSummaryHtml(await pageResult.value.text());
+		} catch {
+			pageSummary = null;
+		}
 	}
 
 	const liveSummary = widgetSummary ?? pageSummary;
