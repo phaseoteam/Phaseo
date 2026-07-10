@@ -1,8 +1,21 @@
 import {
 	extractOutputText,
+	resolveChatReasoningSummary,
 	extractResponseText,
 	extractResponseToolCalls,
 } from "./chatPayload";
+
+describe("resolveChatReasoningSummary", () => {
+	it("uses detailed summaries for OpenAI GPT-5.6 chat models", () => {
+		expect(resolveChatReasoningSummary("openai/gpt-5.6-luna-pro")).toBe(
+			"detailed",
+		);
+	});
+
+	it("keeps auto summaries for other chat models", () => {
+		expect(resolveChatReasoningSummary("openai/gpt-5.4-nano")).toBe("auto");
+	});
+});
 
 describe("extractResponseToolCalls", () => {
 	it("extracts Responses function calls", () => {
