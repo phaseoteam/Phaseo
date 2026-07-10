@@ -10,7 +10,7 @@
   "deprecation_date": null,
   "retirement_date": null,
   "license": "Proprietary",
-  "input_types": "text,audio",
+  "input_types": "text,image,audio",
   "output_types": "text,audio",
   "api_model_id": "openai/gpt-live-1",
   "links": [
