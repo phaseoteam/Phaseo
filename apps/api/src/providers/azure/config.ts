@@ -23,9 +23,10 @@ export function resolveAzureConfig(): AzureOpenAIConfig {
     if (!baseUrl) {
         throw azureConfigError("azure_base_url_missing");
     }
+    const configuredApiVersion = bindings.AZURE_OPENAI_API_VERSION?.trim();
     return {
         baseUrl,
-        apiVersion: bindings.AZURE_OPENAI_API_VERSION ?? "2024-10-21",
+        apiVersion: configuredApiVersion || "2024-10-21",
     };
 }
 
@@ -48,5 +49,14 @@ export function azureUrl(path: string, apiVersion: string, baseUrl?: string): st
     const base = (baseUrl ?? resolveAzureConfig().baseUrl).replace(/\/+$/, "");
     const trimmedPath = path.replace(/^\/+/, "");
     return `${base}/${trimmedPath}?api-version=${encodeURIComponent(apiVersion)}`;
+}
+
+export function azureOpenAIV1Url(path: string, baseUrl?: string): string {
+    const base = (baseUrl ?? resolveAzureConfig().baseUrl).replace(/\/+$/, "");
+    const trimmedPath = path.replace(/^\/+/, "");
+    const v1Base = base.toLowerCase().endsWith("/openai/v1")
+        ? base
+        : `${base}/openai/v1`;
+    return `${v1Base}/${trimmedPath}`;
 }
 
