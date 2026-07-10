@@ -514,10 +514,13 @@ jobs:
                   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
                   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
                   NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+                  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
               if: ${{ env.VERCEL_PROJECT_ID != '' }}
               run: |
                   vercel pull --yes --environment=preview --git-branch="$GITHUB_HEAD_REF" --token=$VERCEL_TOKEN
-                  vercel deploy --yes --archive=tgz --logs --token=$VERCEL_TOKEN
+                  vercel deploy --yes --archive=tgz --logs --token=$VERCEL_TOKEN \
+                    --build-env SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
+                    --env SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY"
 
     deploy:
         runs-on: ubuntu-latest
