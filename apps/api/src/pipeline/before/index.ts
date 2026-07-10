@@ -78,6 +78,15 @@ function hasItems(value: unknown): boolean {
     return Array.isArray(value) && value.length > 0;
 }
 
+function isSyntheticExecutionRequested(req: Request): boolean {
+    const headerValue =
+        req.headers.get("x-phaseo-synthetic-execution") ??
+        req.headers.get("x-phaseo-synthetic-check") ??
+        req.headers.get("x-phaseo-dry-run") ??
+        req.headers.get("x-aistats-synthetic-execution");
+    return normalizeReturnFlag(headerValue);
+}
+
 function classifyWorkspaceProviderFilterFailure(diagnostics: {
     providerAllowlist: string[];
     providerAllowlistConfigured?: boolean;
@@ -171,6 +180,17 @@ export async function beforeRequest(
     const debugBodyRaw = rawBody?.debug ?? null;
     const debugEnabled = debugHeaderEnabled || normalizeReturnFlag(debugBodyRaw?.enabled);
     const testingModeRequested = isTestingModeRequested(req, rawBody);
+    const syntheticExecutionRequested = isSyntheticExecutionRequested(req);
+    if (syntheticExecutionRequested && !internal) {
+        return {
+            ok: false,
+            response: err("unauthorised", {
+                reason: "synthetic_execution_requires_internal_token",
+                request_id: requestId,
+                workspace_id: workspaceId,
+            }),
+        };
+    }
 
     // 3) Zod (route schema: shape depends on request path)
     const v = await timer.span("guardZod", () => guardZod(zodSchema, rawBody, workspaceId, requestId));
@@ -224,7 +244,7 @@ export async function beforeRequest(
             requestId,
             internal,
             testingMode: testingModeEnabled,
-            disableCache: debugEnabled,
+            disableCache: debugEnabled || syntheticExecutionRequested,
         })
     );
     if (!c.ok) return c as { ok: false; response: Response };
@@ -715,6 +735,8 @@ export async function beforeRequest(
         },
         preset: presetInfo,
         internal,
+        syntheticExecution: syntheticExecutionRequested && Boolean(internal),
+        syntheticExecutionRequested,
         // Enrichment data for observability (wide events)
         teamEnrichment: context.teamEnrichment ?? null,
         keyEnrichment: context.keyEnrichment ?? null,

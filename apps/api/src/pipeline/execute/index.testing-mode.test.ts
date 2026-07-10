@@ -158,6 +158,95 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		]);
 	});
 
+	it("builds a synthetic execution result without calling the provider executor", async () => {
+		const candidate = {
+			providerId: "openai",
+			apiModelId: "gpt-5-mini",
+			pricingKey: "openai:gpt-5-mini",
+			pricingCard: {
+				provider: "openai",
+				model: "gpt-5-mini",
+				endpoint: "text.generate",
+				currency: "USD",
+				rules: [{ pricing_plan: "token", price_per_unit: "0.000001" }],
+			},
+			byokMeta: [],
+			providerModelSlug: "gpt-5-mini",
+			capabilityParams: {},
+			maxInputTokens: null,
+			maxOutputTokens: 4096,
+		};
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: [candidate] });
+		rankProvidersMock.mockResolvedValue([{ candidate, health: {} }]);
+
+		const executor = vi.fn().mockResolvedValue({
+			kind: "completed",
+			ir: {},
+			upstream: new Response(JSON.stringify({ ok: true }), { status: 200 }),
+			bill: { cost_cents: 0, currency: "USD" },
+		});
+		resolveProviderExecutorMock.mockReturnValue(executor);
+		const ctx = createCtx({
+			endpoint: "responses",
+			capability: "text.generate",
+			model: "openai/gpt-5-mini",
+			requestedModel: "openai/gpt-5-mini",
+			requestPath: "/v1/responses",
+			protocol: "openai.responses",
+			syntheticExecution: true,
+			body: { model: "openai/gpt-5-mini" },
+			rawBody: { model: "openai/gpt-5-mini" },
+		});
+
+		const result = await doRequestWithIR(
+			ctx,
+			{
+				model: "openai/gpt-5-mini",
+				stream: false,
+				messages: [{ role: "user", content: [{ type: "text", text: "ping" }] }],
+				tools: [],
+			} as any,
+			createTiming(),
+		);
+
+		expect((result as any).ok).toBe(true);
+		const synthetic = (result as any).result.synthetic;
+		expect(synthetic).toMatchObject({
+			object: "phaseo.synthetic_execution",
+			synthetic: true,
+			upstream_request_attempted: false,
+			endpoint: "responses",
+			endpoint_url: "/v1/responses",
+			protocol: "openai.responses",
+			selected_provider: "openai",
+			selected_api_model_id: "gpt-5-mini",
+			checks: expect.objectContaining({
+				routing: "passed",
+				executor_resolution: "passed",
+				ir_normalization: "passed",
+				upstream: "skipped",
+			}),
+			meta: expect.objectContaining({
+				response_cache: "bypassed",
+				billing: "skipped",
+				audit_success_event: "skipped",
+			}),
+		});
+		expect(resolveProviderExecutorMock).toHaveBeenCalledWith("openai", "text.generate");
+		expect(executor).not.toHaveBeenCalled();
+		expect(onCallStartMock).not.toHaveBeenCalled();
+		expect(onCallEndMock).not.toHaveBeenCalled();
+		expect(ctx.providerAttempts).toEqual([
+			expect.objectContaining({
+				attempt_number: 1,
+				provider: "openai",
+				outcome: "success",
+				type: "synthetic",
+				status: 200,
+			}),
+		]);
+	});
+
 	it("still returns pricing guard failure on non-testing traffic when no pricing is preloaded", async () => {
 		const candidate = {
 			providerId: "openai",

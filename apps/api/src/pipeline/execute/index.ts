@@ -37,6 +37,72 @@ export type Bill = {
 	finish_reason?: string | null;
 };
 
+type SupportedIRRequest =
+	| IRChatRequest
+	| IREmbeddingsRequest
+	| IRModerationsRequest
+	| IRRerankRequest
+	| IRImageGenerationRequest
+	| IRAudioSpeechRequest
+	| IRAudioTranscriptionRequest
+	| IRAudioTranslationRequest
+	| IRVideoGenerationRequest
+	| IROcrRequest
+	| IRMusicGenerateRequest;
+
+export type SyntheticExecutionPayload = {
+	object: "phaseo.synthetic_execution";
+	synthetic: true;
+	upstream_request_attempted: false;
+	request_id: string;
+	endpoint: string;
+	endpoint_url: string | null;
+	protocol: string | null;
+	capability: string;
+	model: string;
+	requested_model: string;
+	stream_requested: boolean;
+	selected_provider: string;
+	selected_api_model_id: string | null;
+	selected_provider_model_slug: string | null;
+	pricing_key: string | null;
+	provider_count: number;
+	ranked_providers: Array<{
+		provider: string;
+		api_model_id: string | null;
+		provider_model_slug: string | null;
+		pricing_configured: boolean;
+		key_sources: Array<"gateway" | "byok">;
+	}>;
+	checks: {
+		authentication: "passed";
+		schema_validation: "passed";
+		context_resolution: "passed";
+		guardrails: "passed";
+		routing: "passed";
+		breaker_admission: "passed";
+		pricing: "passed";
+		executor_resolution: "passed";
+		ir_normalization: "passed";
+		upstream: "skipped";
+	};
+	request_summary: {
+		message_count: number | null;
+		tool_count: number;
+		input_modalities: string[];
+		output_modalities: string[];
+		max_output_tokens: number | null;
+		temperature: number | null;
+	};
+	meta: {
+		testing_mode: boolean;
+		response_cache: "bypassed";
+		billing: "skipped";
+		audit_success_event: "skipped";
+	};
+	timing_ms: Record<string, number>;
+};
+
 // NOTE: Legacy RequestResult removed. Use IRRequestResult everywhere.
 
 // ============================================================================
@@ -308,9 +374,312 @@ export type IRRequestResult = {
 	byokKeyId?: string | null;
 	mappedRequest?: string;
 	rawResponse?: any;
+	synthetic?: SyntheticExecutionPayload;
 };
 
 export type RequestResult = IRRequestResult;
+
+function defaultEndpointPath(endpoint: PipelineContext["endpoint"]): string | null {
+	switch (endpoint) {
+		case "responses":
+			return "/v1/responses";
+		case "chat.completions":
+			return "/v1/chat/completions";
+		case "messages":
+			return "/v1/messages";
+		case "embeddings":
+			return "/v1/embeddings";
+		case "moderations":
+			return "/v1/moderations";
+		case "rerank":
+			return "/v1/rerank";
+		default:
+			return null;
+	}
+}
+
+function summarizeIRRequest(ir: SupportedIRRequest): SyntheticExecutionPayload["request_summary"] {
+	const record = ir as Record<string, any>;
+	const messages = Array.isArray(record.messages) ? record.messages : null;
+	const tools = Array.isArray(record.tools) ? record.tools : [];
+	const inputModalities = Array.isArray(record.modalities)
+		? record.modalities.filter((value): value is string => typeof value === "string")
+		: [];
+	const outputModalities = Array.isArray(record.outputModalities)
+		? record.outputModalities.filter((value): value is string => typeof value === "string")
+		: [];
+	const maxOutputTokens = Number(record.maxTokens ?? record.maxOutputTokens);
+	const temperature = Number(record.temperature);
+	return {
+		message_count: messages ? messages.length : null,
+		tool_count: tools.length,
+		input_modalities: inputModalities,
+		output_modalities: outputModalities,
+		max_output_tokens: Number.isFinite(maxOutputTokens) ? maxOutputTokens : null,
+		temperature: Number.isFinite(temperature) ? temperature : null,
+	};
+}
+
+function summarizeRankedProviders(ranked: any[]): SyntheticExecutionPayload["ranked_providers"] {
+	return ranked.map((entry) => {
+		const candidate = entry?.candidate ?? {};
+		const hasByok = Array.isArray(candidate.byokMeta) && candidate.byokMeta.length > 0;
+		return {
+			provider: String(candidate.providerId ?? "unknown"),
+			api_model_id:
+				typeof candidate.apiModelId === "string" && candidate.apiModelId.trim().length > 0
+					? candidate.apiModelId.trim()
+					: null,
+			provider_model_slug:
+				typeof candidate.providerModelSlug === "string" && candidate.providerModelSlug.trim().length > 0
+					? candidate.providerModelSlug.trim()
+					: null,
+			pricing_configured: Boolean(candidate.pricingCard),
+			key_sources: hasByok ? ["gateway", "byok"] : ["gateway"],
+		};
+	});
+}
+
+async function buildSyntheticExecutionResult(args: {
+	ctx: PipelineContext;
+	ir: SupportedIRRequest;
+	timing: PipelineTiming;
+	baseModel: string;
+	ranked: any[];
+}): Promise<Response | { ok: true; result: IRRequestResult }> {
+	const { ctx, ir, timing, baseModel, ranked } = args;
+	const attemptErrors: Array<Record<string, unknown>> = (ctx.attemptErrors ??= []);
+	const rankedProviders = summarizeRankedProviders(ranked);
+
+	for (let index = 0; index < ranked.length; index += 1) {
+		const routed = ranked[index];
+		const candidate = routed?.candidate;
+		if (!candidate) continue;
+		const attemptNumber = index + 1;
+		const attemptStartedAt = performance.now();
+		const candidateApiModelId =
+			typeof candidate.apiModelId === "string" && candidate.apiModelId.trim().length > 0
+				? candidate.apiModelId.trim()
+				: null;
+		const providerModelSlug = typeof candidate.providerModelSlug === "string"
+			? candidate.providerModelSlug.trim()
+			: candidate.providerModelSlug;
+
+		const admission = await timing.timer.span(`synthetic_${attemptNumber}_breaker`, () =>
+			admitThroughBreaker(
+				ctx.endpoint,
+				candidate.providerId,
+				baseModel,
+				ctx.workspaceId,
+				ctx.requestId,
+				routed.health,
+			),
+		);
+		if (admission === "blocked") {
+			attemptErrors.push({
+				provider: candidate.providerId,
+				endpoint: ctx.endpoint,
+				attempt_number: attemptNumber,
+				type: "blocked",
+				synthetic: true,
+			});
+			recordProviderAttempt(ctx, {
+				attempt_number: attemptNumber,
+				provider: candidate.providerId,
+				endpoint: ctx.endpoint,
+				model: baseModel,
+				api_model_id: candidateApiModelId,
+				provider_model_slug: providerModelSlug ?? null,
+				outcome: "blocked",
+				type: "blocked",
+				duration_ms: Math.round(performance.now() - attemptStartedAt),
+				was_probe: false,
+			});
+			continue;
+		}
+
+		let pricingCard = candidate.pricingCard ?? null;
+		if (!pricingCard) {
+			pricingCard = await timing.timer.span(`synthetic_${attemptNumber}_load_pricecard`, () =>
+				loadPriceCard(
+					candidate.providerId,
+					candidateApiModelId ?? baseModel,
+					ctx.capability,
+				),
+			);
+			if (pricingCard) {
+				candidate.pricingCard = pricingCard;
+			}
+		}
+		if (!pricingCard) {
+			attemptErrors.push({
+				provider: candidate.providerId,
+				endpoint: ctx.endpoint,
+				attempt_number: attemptNumber,
+				type: "no_pricing",
+				synthetic: true,
+			});
+			recordProviderAttempt(ctx, {
+				attempt_number: attemptNumber,
+				provider: candidate.providerId,
+				endpoint: ctx.endpoint,
+				model: baseModel,
+				api_model_id: candidateApiModelId,
+				provider_model_slug: providerModelSlug ?? null,
+				outcome: "no_pricing",
+				type: "no_pricing",
+				duration_ms: Math.round(performance.now() - attemptStartedAt),
+				was_probe: admission === "probe",
+			});
+			continue;
+		}
+
+		const executorResolveStart = performance.now();
+		const executor = resolveProviderExecutor(candidate.providerId, ctx.capability);
+		timing.timer.record(
+			`synthetic_${attemptNumber}_resolve_executor`,
+			performance.now() - executorResolveStart,
+		);
+		if (!executor) {
+			attemptErrors.push({
+				provider: candidate.providerId,
+				endpoint: ctx.endpoint,
+				attempt_number: attemptNumber,
+				type: "unsupported_executor",
+				synthetic: true,
+			});
+			recordProviderAttempt(ctx, {
+				attempt_number: attemptNumber,
+				provider: candidate.providerId,
+				endpoint: ctx.endpoint,
+				model: baseModel,
+				api_model_id: candidateApiModelId,
+				provider_model_slug: providerModelSlug ?? null,
+				outcome: "unsupported_executor",
+				type: "unsupported_executor",
+				duration_ms: Math.round(performance.now() - attemptStartedAt),
+				was_probe: admission === "probe",
+			});
+			continue;
+		}
+
+		const normalizedCapability = normalizeCapability(ctx.capability);
+		const isTextGenerate = normalizedCapability === "text.generate";
+		const modelForReasoning = providerModelSlug?.trim() || baseModel;
+		await timing.timer.span(`synthetic_${attemptNumber}_normalize_ir`, () =>
+			isTextGenerate
+				? normalizeIRForProvider(
+					ir as IRChatRequest,
+					candidate.providerId,
+					ctx.protocol as any,
+					{
+						capabilityParams: candidate.capabilityParams,
+						providerMaxOutputTokens: candidate.maxOutputTokens,
+						modelForReasoning,
+					},
+				)
+				: ir,
+		);
+
+		const selectedPricingKey =
+			candidate.pricingKey ??
+			(candidateApiModelId
+				? `${candidate.providerId}:${candidateApiModelId}`
+				: candidate.providerId);
+		const payload: SyntheticExecutionPayload = {
+			object: "phaseo.synthetic_execution",
+			synthetic: true,
+			upstream_request_attempted: false,
+			request_id: ctx.requestId,
+			endpoint: ctx.endpoint,
+			endpoint_url: ctx.requestPath ?? ctx.meta?.requestPath ?? defaultEndpointPath(ctx.endpoint),
+			protocol: ctx.protocol ?? null,
+			capability: ctx.capability,
+			model: ctx.model,
+			requested_model: ctx.requestedModel,
+			stream_requested: Boolean(ctx.stream),
+			selected_provider: candidate.providerId,
+			selected_api_model_id: candidateApiModelId,
+			selected_provider_model_slug: providerModelSlug ?? null,
+			pricing_key: selectedPricingKey,
+			provider_count: ranked.length,
+			ranked_providers: rankedProviders,
+			checks: {
+				authentication: "passed",
+				schema_validation: "passed",
+				context_resolution: "passed",
+				guardrails: "passed",
+				routing: "passed",
+				breaker_admission: "passed",
+				pricing: "passed",
+				executor_resolution: "passed",
+				ir_normalization: "passed",
+				upstream: "skipped",
+			},
+			request_summary: summarizeIRRequest(ir),
+			meta: {
+				testing_mode: Boolean(ctx.testingMode),
+				response_cache: "bypassed",
+				billing: "skipped",
+				audit_success_event: "skipped",
+			},
+			timing_ms: timing.timer.snapshot(),
+		};
+
+		recordProviderAttempt(ctx, {
+			attempt_number: attemptNumber,
+			provider: candidate.providerId,
+			endpoint: ctx.endpoint,
+			model: baseModel,
+			api_model_id: candidateApiModelId,
+			provider_model_slug: providerModelSlug ?? null,
+			outcome: "success",
+			type: "synthetic",
+			duration_ms: Math.round(performance.now() - attemptStartedAt),
+			status: 200,
+			status_text: "Synthetic Execution",
+			response_kind: "completed",
+			was_probe: admission === "probe",
+		});
+
+		return {
+			ok: true,
+			result: {
+				kind: "completed",
+				upstream: new Response(null, {
+					status: 200,
+					statusText: "Synthetic Execution",
+					headers: {
+						"Content-Type": "application/json",
+						"X-Phaseo-Synthetic-Execution": "true",
+						"X-Phaseo-Upstream-Attempted": "false",
+					},
+				}),
+				provider: candidate.providerId,
+				apiModelId: candidateApiModelId,
+				pricingKey: selectedPricingKey,
+				providerModelSlug: providerModelSlug ?? null,
+				generationTimeMs: 0,
+				bill: {
+					cost_cents: 0,
+					currency: pricingCard.currency ?? "USD",
+					usage: {
+						input_tokens: 0,
+						output_tokens: 0,
+						total_tokens: 0,
+					},
+				},
+				keySource: "gateway",
+				synthetic: payload,
+			},
+		};
+	}
+
+	const failureGuard = await timing.timer.span("execute_guard_all_failed", () =>
+		guardAllFailed(ctx, timing),
+	);
+	return (failureGuard as { ok: false; response: Response }).response;
+}
 
 /**
  * Execute request using IR pipeline
@@ -321,18 +690,7 @@ export type RequestResult = IRRequestResult;
  */
 export async function doRequestWithIR(
 	ctx: PipelineContext,
-	ir:
-		| IRChatRequest
-		| IREmbeddingsRequest
-		| IRModerationsRequest
-		| IRRerankRequest
-		| IRImageGenerationRequest
-		| IRAudioSpeechRequest
-		| IRAudioTranscriptionRequest
-		| IRAudioTranslationRequest
-		| IRVideoGenerationRequest
-		| IROcrRequest
-		| IRMusicGenerateRequest,
+	ir: SupportedIRRequest,
 	timing: PipelineTiming,
 ): Promise<Response | { ok: true; result: IRRequestResult }> {
 	const baseModel = getBaseModel(ctx.model);
@@ -389,6 +747,16 @@ export async function doRequestWithIR(
 		rankProviders(candidates, ctx),
 	);
 
+	if (ctx.syntheticExecution) {
+		return buildSyntheticExecutionResult({
+			ctx,
+			ir,
+			timing,
+			baseModel,
+			ranked,
+		});
+	}
+
 	// 3) Try providers in order (failover up to 5)
 	const allowFallbacks = getEffectiveRoutingHints(ctx.body).allowFallbacks;
 	const maxTries = calculateMaxTries(ranked.length, allowFallbacks);
@@ -443,18 +811,7 @@ export async function doRequestWithIR(
 async function attemptProviderWithIR(
 	routed: any, // RoutedCandidate type
 	ctx: PipelineContext,
-	ir:
-		| IRChatRequest
-		| IREmbeddingsRequest
-		| IRModerationsRequest
-		| IRRerankRequest
-		| IRImageGenerationRequest
-		| IRAudioSpeechRequest
-		| IRAudioTranscriptionRequest
-		| IRAudioTranslationRequest
-		| IRVideoGenerationRequest
-		| IROcrRequest
-		| IRMusicGenerateRequest,
+	ir: SupportedIRRequest,
 	timing: PipelineTiming,
 	baseModel: string,
 	allowSingleProviderRetry: boolean,

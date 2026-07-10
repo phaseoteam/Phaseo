@@ -619,6 +619,8 @@ export type PipelineContext = {
         config: PresetConfig;
     } | null;
     internal?: boolean;
+    syntheticExecution?: boolean;
+    syntheticExecutionRequested?: boolean;
     timing?: Record<string, number>;
     timer?: Timer;
     routingDiagnostics?: Record<string, any> | null;

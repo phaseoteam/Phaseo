@@ -622,14 +622,14 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 		const responseCacheEligibility = isResponseCacheEligible({
 			endpoint,
 			stream: requestedStream,
-			debugEnabled: Boolean(pre.ctx.meta?.debug?.enabled),
+			debugEnabled: Boolean(pre.ctx.meta?.debug?.enabled || pre.ctx.syntheticExecution),
 			hasTools: Array.isArray(pre.ctx.body?.tools) && pre.ctx.body.tools.length > 0,
 			serverToolsEnabled: preparedServerTools.config.enabled,
 		});
 		pre.ctx.responseCache = {
 			enabled: false,
 			status: "bypass",
-			reason: responseCacheEligibility.reason,
+			reason: pre.ctx.syntheticExecution ? "synthetic_execution" : responseCacheEligibility.reason,
 			key: null,
 			fingerprint: null,
 			ttlSeconds: null,
@@ -637,7 +637,7 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 		};
 
 		const responseCacheStore = getResponseCache();
-		if (responseCacheEligibility.eligible && responseCacheStore) {
+		if (!pre.ctx.syntheticExecution && responseCacheEligibility.eligible && responseCacheStore) {
 			const presetResponseCaching = pre.ctx.preset?.config?.responseCaching ?? null;
 			const responseCachePolicy = resolveResponseCachePolicy({
 				presetTtlSeconds: presetResponseCaching?.ttlSeconds ?? null,
@@ -712,7 +712,7 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 					});
 				}
 			}
-		} else if (responseCacheEligibility.eligible && !responseCacheStore) {
+		} else if (!pre.ctx.syntheticExecution && responseCacheEligibility.eligible && !responseCacheStore) {
 			pre.ctx.responseCache = {
 				enabled: false,
 				status: "bypass",
@@ -756,6 +756,24 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 				auditFailure,
 				req,
 			});
+		}
+
+		if (exec.result.synthetic) {
+			timing.timer.end("execute_total", "execute_start");
+			const header = timing.timer.header();
+			pre.ctx.timing = timing.timer.snapshot();
+			pre.ctx.timer = timing.timer;
+			const headers = makeHeaders(header || undefined);
+			headers.set("X-Phaseo-Synthetic-Execution", "true");
+			headers.set("X-Phaseo-Upstream-Attempted", "false");
+			return createResponse(
+				{
+					...exec.result.synthetic,
+					timing_ms: timing.timer.snapshot(),
+				},
+				200,
+				headers,
+			);
 		}
 
 		const shouldMaterializeInitialStream = !requestedStream || preparedServerTools.config.enabled;
