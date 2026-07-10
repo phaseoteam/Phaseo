@@ -32,6 +32,12 @@ describe("text provider profiles", () => {
 				model: "gpt-5-nano",
 			}),
 		).toEqual(["minimal", "low", "medium", "high"]);
+		expect(
+			getTextProviderReasoningEffortFallback({
+				providerId: "openai",
+				model: "gpt-5.6-sol-pro",
+			}),
+		).toEqual(["none", "low", "medium", "high", "xhigh", "max"]);
 	});
 
 	it("normalizes service tier aliases by provider", () => {
