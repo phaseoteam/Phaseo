@@ -1285,11 +1285,13 @@ export function ChatHeader({
 								type="button"
 								variant="outline"
 								size="sm"
+								aria-pressed={quickFilters.free}
 								onClick={() => toggleQuickFilter("free")}
 								className={cn(
-									"h-7 rounded-md px-2.5 text-xs",
-									quickFilters.free &&
-										"border-foreground bg-foreground text-background hover:bg-foreground/90 hover:text-background",
+									"h-7 rounded-md px-2.5 text-xs font-medium transition-colors",
+									quickFilters.free
+										? "border-sky-600 bg-sky-600 text-white hover:border-sky-700 hover:bg-sky-700 hover:text-white dark:border-sky-300 dark:bg-sky-300 dark:text-slate-950 dark:hover:border-sky-200 dark:hover:bg-sky-200 dark:hover:text-slate-950"
+										: "border-border bg-transparent text-slate-900 hover:bg-slate-100 hover:text-slate-950 dark:border-white/25 dark:bg-transparent dark:text-slate-100 dark:hover:bg-white/10 dark:hover:text-white",
 								)}
 							>
 								Free
@@ -1298,11 +1300,13 @@ export function ChatHeader({
 								type="button"
 								variant="outline"
 								size="sm"
+								aria-pressed={quickFilters.new}
 								onClick={() => toggleQuickFilter("new")}
 								className={cn(
-									"h-7 rounded-md px-2.5 text-xs",
-									quickFilters.new &&
-										"border-foreground bg-foreground text-background hover:bg-foreground/90 hover:text-background",
+									"h-7 rounded-md px-2.5 text-xs font-medium transition-colors",
+									quickFilters.new
+										? "border-sky-600 bg-sky-600 text-white hover:border-sky-700 hover:bg-sky-700 hover:text-white dark:border-sky-300 dark:bg-sky-300 dark:text-slate-950 dark:hover:border-sky-200 dark:hover:bg-sky-200 dark:hover:text-slate-950"
+										: "border-border bg-transparent text-slate-900 hover:bg-slate-100 hover:text-slate-950 dark:border-white/25 dark:bg-transparent dark:text-slate-100 dark:hover:bg-white/10 dark:hover:text-white",
 								)}
 							>
 								New
