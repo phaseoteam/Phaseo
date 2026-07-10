@@ -478,12 +478,15 @@ export default function ModelsTableDisplay({
 	const [hasInteractedWithStatuses, setHasInteractedWithStatuses] = useState(
 		selectedStatuses.length > 0,
 	);
+	const hasSearchQuery = deferredSearch.trim().length > 0;
 	const effectiveSelectedStatuses = useMemo(
 		() =>
 			!hasInteractedWithStatuses && selectedStatuses.length === 0
-				? ["active"]
+				? hasSearchQuery
+					? []
+					: ["active"]
 				: selectedStatuses,
-		[hasInteractedWithStatuses, selectedStatuses],
+		[hasInteractedWithStatuses, hasSearchQuery, selectedStatuses],
 	);
 	const [selectedEndpoints, setSelectedEndpoints] = useQueryState("endpoints", {
 		defaultValue: [] as string[],
