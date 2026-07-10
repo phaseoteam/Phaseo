@@ -1,0 +1,53 @@
+{
+  "model_id": "openai/gpt-live-1-mini",
+  "organisation_id": "openai",
+  "name": "GPT Live 1 Mini",
+  "status": "Available",
+  "previous_model_id": "openai/gpt-realtime-mini",
+  "description": "GPT Live 1 Mini is OpenAI's smaller GPT-Live voice model for ChatGPT Voice, designed for continuous bidirectional audio conversations with lower-cost default availability for Free users.",
+  "announced_date": "2026-07-08T00:00:00",
+  "release_date": "2026-07-08T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image,audio",
+  "output_types": "text,audio",
+  "api_model_id": "openai/gpt-live-1-mini",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://openai.com/index/introducing-gpt-live/"
+    },
+    {
+      "platform": "system_card",
+      "url": "https://deploymentsafety.openai.com/"
+    }
+  ],
+  "details": [
+    {
+      "name": "source_status",
+      "value": "OpenAI announced GPT-Live-1 mini on July 8, 2026 for ChatGPT Voice. API availability is planned soon but no stable API model documentation or pricing is published yet."
+    },
+    {
+      "name": "chatgpt_availability",
+      "value": "Rolling out globally across iOS, Android, and ChatGPT.com. GPT-Live-1 mini is the default ChatGPT Voice model for Free users."
+    },
+    {
+      "name": "api_availability",
+      "value": "OpenAI says API support is planned soon; provider model ID, pricing, and gateway availability are not confirmed."
+    },
+    {
+      "name": "background_model",
+      "value": "GPT-Live-1 mini uses GPT-5.5 Instant in the background."
+    },
+    {
+      "name": "reported_capabilities",
+      "value": "Full-duplex continuous interaction, interruption handling, better listening during pauses and background noise, live translation, visual answer cards, and delegation to frontier models for search or deeper reasoning."
+    }
+  ],
+  "page_notice": {
+    "tone": "warning",
+    "markdown": "GPT Live 1 Mini is available in ChatGPT Voice for Free users. OpenAI says API support is planned soon, but has not confirmed a stable API model ID, pricing, or AI Stats Gateway availability."
+  },
+  "benchmarks": []
+}
