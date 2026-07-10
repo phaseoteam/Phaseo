@@ -25,6 +25,11 @@ export const coerceResponseText = (value: unknown) => {
     return "";
 };
 
+export const resolveChatReasoningSummary = (modelId: string): "auto" | "detailed" =>
+    modelId.trim().toLowerCase().startsWith("openai/gpt-5.6")
+        ? "detailed"
+        : "auto";
+
 export const extractOutputText = (output: unknown) => {
     if (!Array.isArray(output)) return "";
     const candidates: string[] = [];

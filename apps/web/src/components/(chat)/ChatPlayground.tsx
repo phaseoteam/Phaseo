@@ -45,6 +45,7 @@ import {
 	coerceResponseText,
 	appendImagesToText,
 	extractResponseImages,
+	resolveChatReasoningSummary,
 	extractReasoningText,
 	extractResponseToolCalls,
 	extractResponseText,
@@ -1254,7 +1255,7 @@ function ChatPlaygroundContent({
 			if (endpoint === "responses" && effectiveModelSettings.reasoningEnabled) {
 				requestBody.reasoning = {
 					effort: effectiveModelSettings.reasoningEffort ?? "medium",
-					summary: "auto",
+					summary: resolveChatReasoningSummary(selectedModelId),
 				};
 			}
 
