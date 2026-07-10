@@ -13,7 +13,15 @@
       "currency": "USD",
       "pricing_plan": "batch",
       "note": null,
-      "match": [],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
       "priority": 100,
       "effective_from": "2026-07-09T00:00:00Z"
     },
@@ -25,7 +33,15 @@
       "currency": "USD",
       "pricing_plan": "batch",
       "note": "90% cached input discount from the announced uncached input price.",
-      "match": [],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
       "priority": 100,
       "effective_from": "2026-07-09T00:00:00Z"
     },
@@ -37,7 +53,15 @@
       "currency": "USD",
       "pricing_plan": "batch",
       "note": "1.25x the announced uncached input price for cache writes.",
-      "match": [],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
       "priority": 100,
       "effective_from": "2026-07-09T00:00:00Z"
     },
@@ -49,7 +73,95 @@
       "currency": "USD",
       "pricing_plan": "batch",
       "note": null,
-      "match": [],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-07-09T00:00:00Z"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 5,
+      "currency": "USD",
+      "pricing_plan": "batch",
+      "note": "High Context",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-07-09T00:00:00Z"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.5,
+      "currency": "USD",
+      "pricing_plan": "batch",
+      "note": "High Context",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-07-09T00:00:00Z"
+    },
+    {
+      "meter": "cached_write_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 6.25,
+      "currency": "USD",
+      "pricing_plan": "batch",
+      "note": "High Context",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-07-09T00:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 22.5,
+      "currency": "USD",
+      "pricing_plan": "batch",
+      "note": "High Context",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
       "priority": 100,
       "effective_from": "2026-07-09T00:00:00Z"
     }
