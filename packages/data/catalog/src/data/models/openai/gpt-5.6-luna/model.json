@@ -2,9 +2,9 @@
   "model_id": "openai/gpt-5.6-luna",
   "organisation_id": "openai",
   "name": "GPT 5.6 Luna",
-  "status": "Announced",
+  "status": "Released",
   "previous_model_id": "openai/gpt-5.5",
-  "description": "GPT 5.6 Luna is OpenAI's preview fast and affordable GPT-5.6 model for lower-latency and cost-sensitive workloads.",
+  "description": "GPT 5.6 Luna is OpenAI's fast and affordable GPT-5.6 model for lower-latency and cost-sensitive workloads.",
   "announced_date": "2026-06-26T00:00:00",
   "release_date": "2026-07-09T00:00:00",
   "deprecation_date": null,
@@ -16,14 +16,14 @@
   "family_id": "openai/gpt-5.6",
   "links": [
     {
-      "title": "Previewing GPT-5.6 Sol",
+      "title": "GPT-5.6: Frontier intelligence that scales with your ambition",
       "kind": "announcement",
-      "url": "https://openai.com/index/previewing-gpt-5-6-sol/"
+      "url": "https://openai.com/index/gpt-5-6/"
     },
     {
-      "title": "GPT-5.6 Preview System Card",
+      "title": "GPT-5.6 System Card",
       "kind": "paper",
-      "url": "https://deploymentsafety.openai.com/gpt-5-6-preview"
+      "url": "https://deploymentsafety.openai.com/gpt-5-6"
     },
     {
       "title": "OpenAI GPT-5.6 X release post",
@@ -34,7 +34,7 @@
   "details": [
     {
       "name": "availability",
-      "value": "OpenAI previewed GPT-5.6 Luna on June 26, 2026 and the developer announcement lists the GPT-5.6 series as coming July 9, 2026. Broader ChatGPT, Codex, and API availability is expected after the limited trusted-partner preview."
+      "value": "OpenAI released GPT-5.6 Luna on July 9, 2026 and lists GPT-5.6 as available across ChatGPT, Codex, and the OpenAI API, with rollout continuing globally over the following 24 hours."
     },
     {
       "name": "prompt_caching",
