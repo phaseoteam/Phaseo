@@ -26,7 +26,7 @@ type StatusSummary = {
 	}>;
 };
 
-const STATUS_PAGE_HREF = "https://phaseo.instatus.com/";
+const STATUS_PAGE_HREF = "https://statuspage.incident.io/phaseo";
 
 const STATUS_STYLES: Record<StatusState, { dot: string; text: string }> = {
 	operational: {
@@ -57,15 +57,14 @@ const STATUS_STYLES: Record<StatusState, { dot: string; text: string }> = {
 
 type StatusComponent = NonNullable<StatusSummary["components"]>[number];
 
-const GROUP_ORDER = ["API", "Platform", "Backend", "Third Party", "Other"];
+const GROUP_ORDER = ["API", "Platform", "Other"];
 const COMPONENT_PRIORITY = [
-	"API",
-	"Models API (/v1/api/models)",
-	"Providers",
-	"Platform",
-	"Web App",
-	"Documentation",
-	"Phaseo Backend",
+	"API health (/v1/health)",
+	"Models API (/v1/models)",
+	"Generation API demo",
+	"Homepage",
+	"Documentation homepage",
+	"Docs page",
 ];
 
 function isAffected(component: StatusComponent) {
@@ -73,77 +72,35 @@ function isAffected(component: StatusComponent) {
 }
 
 function statusGroup(component: StatusComponent) {
-	const haystack = `${component.name} ${component.parent ?? ""}`;
-
-	if (haystack.includes("Third Party:")) return "Third Party";
 	if (
-		component.name === "API" ||
-		component.name.startsWith("API ") ||
+		component.name.includes("API") ||
 		component.name.includes("(/v1/") ||
 		component.parent?.startsWith("API")
 	) {
 		return "API";
 	}
 	if (
-		component.name === "Platform" ||
 		component.parent?.startsWith("Platform") ||
-		component.name === "Web App" ||
-		component.name.startsWith("Web App - ") ||
-		component.name.startsWith("Homepage (/)") ||
-		component.name === "Documentation"
+		component.name === "Homepage" ||
+		component.name.startsWith("Homepage") ||
+		component.name === "Documentation homepage" ||
+		component.name === "Docs page"
 	) {
 		return "Platform";
-	}
-	if (
-		component.name.includes("Backend") ||
-		component.parent?.includes("Backend")
-	) {
-		return "Backend";
 	}
 
 	return "Other";
 }
 
 function shortComponentName(component: StatusComponent) {
-	if (component.name.startsWith("Third Party: ")) {
-		return component.name.replace("Third Party: ", "");
-	}
-	if (component.name.startsWith("Provider: ")) {
-		return component.name.replace("Provider: ", "");
-	}
 	return component.name;
 }
 
 function componentPriority(component: StatusComponent) {
 	const exactIndex = COMPONENT_PRIORITY.indexOf(component.name);
-	if (exactIndex >= 0 && !component.name.startsWith("Third Party: ")) {
+	if (exactIndex >= 0) {
 		return exactIndex;
 	}
-
-	if (component.name.includes("Supabase") && component.name.includes("API Gateway")) {
-		return 20;
-	}
-	if (component.name.includes("Supabase") && component.name.includes("Database")) {
-		return 21;
-	}
-	if (component.name.includes("Supabase") && component.name.includes("Auth")) {
-		return 22;
-	}
-	if (
-		component.name.includes("Supabase") &&
-		component.name.includes("Edge Functions")
-	) {
-		return 23;
-	}
-	if (component.name.includes("Stripe")) return 24;
-	if (component.name.includes("Cloudflare")) return 25;
-	if (component.name.includes("Vercel")) return 26;
-
-	if (component.name.startsWith("Provider: OpenAI")) return 30;
-	if (component.name.startsWith("Provider: Anthropic")) return 31;
-	if (component.name.startsWith("Provider: DeepSeek")) return 32;
-	if (component.name.startsWith("Provider: Baseten")) return 33;
-	if (component.name.startsWith("Provider: ")) return 40;
 
 	return 100;
 }

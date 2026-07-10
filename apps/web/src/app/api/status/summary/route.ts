@@ -8,10 +8,19 @@ type StatusState =
 	| "maintenance"
 	| "unknown";
 
-const STATUS_PAGE_HREF = "https://phaseo.instatus.com/";
-const DEFAULT_SUMMARY_URL = "https://phaseo.instatus.com/api/v2/summary.json";
-const DEFAULT_COMPONENTS_URL =
-	"https://phaseo.instatus.com/api/v2/components.json";
+const STATUS_PAGE_HREF = "https://statuspage.incident.io/phaseo";
+const DEFAULT_STATUS_PAGE_URL = "https://statuspage.incident.io/phaseo";
+const DEFAULT_WIDGET_API_URL =
+	"https://statuspage.incident.io/phaseo/api/v1/summary";
+const STATUS_PAGE_CACHE_TTL_MS = 30_000;
+const VISIBLE_COMPONENT_NAMES = new Set([
+	"API health (/v1/health)",
+	"Models API (/v1/models)",
+	"Generation API demo",
+	"Homepage",
+	"Docs page",
+	"Documentation homepage",
+]);
 
 type ComponentStatus = {
 	name: string;
@@ -21,11 +30,47 @@ type ComponentStatus = {
 	parent: string | null;
 };
 
-type InstatusComponent = {
+type IncidentComponent = {
+	component_id?: unknown;
+	data_available_since?: unknown;
+	display_uptime?: unknown;
+	hidden?: unknown;
 	name?: unknown;
 	status?: unknown;
-	children?: InstatusComponent[];
 };
+
+type IncidentSummary = {
+	affected_components?: unknown;
+	components?: Array<{
+		id?: unknown;
+		name?: unknown;
+		status?: unknown;
+		component_status?: unknown;
+	}>;
+	in_progress_maintenances?: unknown;
+	ongoing_incidents?: unknown;
+	page_title?: unknown;
+	page_url?: unknown;
+	public_url?: unknown;
+	scheduled_maintenances?: unknown;
+	structure?: {
+		items?: Array<{
+			component?: unknown;
+			group?: unknown;
+		}>;
+	};
+};
+
+type CachedStatusSummary = {
+	expiresAt: number;
+	value: {
+		components: ComponentStatus[];
+		href: string;
+		status: { state: StatusState; label: string };
+	};
+};
+
+let cachedSummary: CachedStatusSummary | null = null;
 
 function displayComponentName(value: unknown) {
 	return String(value ?? "")
@@ -36,6 +81,21 @@ function displayComponentName(value: unknown) {
 
 function isThirdPartyComponent(component: ComponentStatus) {
 	return `${component.name} ${component.parent ?? ""}`.includes("Third Party:");
+}
+
+function isVisibleComponent(component: ComponentStatus, components: ComponentStatus[]) {
+	if (
+		component.name === "API" &&
+		component.parent === null &&
+		components.some((candidate) => candidate.name.startsWith("API health ("))
+	) {
+		return false;
+	}
+
+	return (
+		VISIBLE_COMPONENT_NAMES.has(component.name) ||
+		component.name.startsWith("Landing page -")
+	);
 }
 
 function normalizeStatus(value: unknown): { state: StatusState; label: string } {
@@ -49,7 +109,8 @@ function normalizeStatus(value: unknown): { state: StatusState; label: string } 
 	if (
 		normalized === "up" ||
 		normalized === "operational" ||
-		normalized === "all_systems_operational"
+		normalized === "all_systems_operational" ||
+		normalized === "ok"
 	) {
 		return { state: "operational", label: "All systems operational" };
 	}
@@ -60,7 +121,9 @@ function normalizeStatus(value: unknown): { state: StatusState; label: string } 
 
 	if (
 		normalized.includes("maintenance") ||
-		normalized === "under_maintenance"
+		normalized === "under_maintenance" ||
+		normalized === "maintenance_in_progress" ||
+		normalized === "maintenance_scheduled"
 	) {
 		return { state: "maintenance", label: "Under maintenance" };
 	}
@@ -68,7 +131,8 @@ function normalizeStatus(value: unknown): { state: StatusState; label: string } 
 	if (
 		normalized.includes("major") ||
 		normalized === "down" ||
-		normalized === "major_outage"
+		normalized === "major_outage" ||
+		normalized === "full_outage"
 	) {
 		return { state: "major_outage", label: "Major outage" };
 	}
@@ -84,80 +148,267 @@ function normalizeStatus(value: unknown): { state: StatusState; label: string } 
 	return { state: "unknown", label: raw };
 }
 
-function pickStatus(payload: unknown) {
-	const data = payload as {
-		page?: { status?: unknown; updated_at?: unknown };
-		status?: { description?: unknown; indicator?: unknown };
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null;
+}
+
+function isIncidentComponent(value: unknown): value is IncidentComponent {
+	return isRecord(value);
+}
+
+function asArray(value: unknown): unknown[] {
+	return Array.isArray(value) ? value : [];
+}
+
+function extractEscapedObject(source: string, marker: string) {
+	const start = source.indexOf(marker);
+	if (start < 0) return null;
+
+	const braceStart = source.indexOf("{", start + marker.length);
+	if (braceStart < 0) return null;
+
+	let depth = 0;
+	for (let index = braceStart; index < source.length; index += 1) {
+		const char = source[index];
+		if (char === "{") {
+			depth += 1;
+			continue;
+		}
+
+		if (char !== "}") continue;
+		depth -= 1;
+		if (depth === 0) return source.slice(braceStart, index + 1);
+	}
+
+	return null;
+}
+
+function parseIncidentSummaryHtml(html: string): IncidentSummary {
+	const rawSummary = extractEscapedObject(html, String.raw`\"summary\":`);
+	if (!rawSummary) {
+		throw new Error("incident_summary_not_found");
+	}
+
+	const decodedSummary = rawSummary.replace(/\\"/g, '"');
+	return JSON.parse(decodedSummary) as IncidentSummary;
+}
+
+function affectedComponentKey(value: unknown) {
+	if (!isRecord(value)) return null;
+	const component = isRecord(value.component) ? value.component : value;
+	const id =
+		component.id ??
+		component.component_id ??
+		component.status_page_component_id ??
+		value.component_id ??
+		value.status_page_component_id;
+	const name = component.name ?? value.name;
+
+	return String(id ?? name ?? "").trim() || null;
+}
+
+function affectedComponentStatus(value: unknown) {
+	if (!isRecord(value)) return normalizeStatus(null);
+	return normalizeStatus(
+		value.current_status ??
+			value.component_status ??
+			value.status ??
+			value.current_worst_impact ??
+			(isRecord(value.component) ? value.component.status : null),
+	);
+}
+
+function buildAffectedComponentMap(summary: IncidentSummary) {
+	const affected = new Map<string, { state: StatusState; label: string }>();
+
+	const addComponent = (component: unknown) => {
+		const key = affectedComponentKey(component);
+		if (!key) return;
+		affected.set(key, affectedComponentStatus(component));
 	};
 
-	const pageStatus = data?.page?.status;
-	if (pageStatus) {
-		return normalizeStatus(pageStatus);
+	for (const component of asArray(summary.affected_components)) {
+		addComponent(component);
 	}
 
-	const statusDescription = data?.status?.description;
-	if (statusDescription) {
-		return normalizeStatus(statusDescription);
+	for (const event of [
+		...asArray(summary.ongoing_incidents),
+		...asArray(summary.in_progress_maintenances),
+	]) {
+		if (!isRecord(event)) continue;
+		for (const component of asArray(event.affected_components)) {
+			addComponent(component);
+		}
 	}
 
-	const statusIndicator = data?.status?.indicator;
-	if (statusIndicator) {
-		return normalizeStatus(statusIndicator);
-	}
-
-	return normalizeStatus(null);
+	return affected;
 }
 
-function withCacheBuster(value: string) {
-	const url = new URL(value);
-	url.searchParams.set("_", Date.now().toString());
-	return url.toString();
+function componentStatus(
+	affected: Map<string, { state: StatusState; label: string }>,
+	componentId: unknown,
+	componentName: unknown,
+) {
+	const id = String(componentId ?? "").trim();
+	const name = displayComponentName(componentName);
+	const status = affected.get(id) ?? affected.get(name);
+	return status ?? normalizeStatus("operational");
 }
 
-function flattenComponents(
-	components: InstatusComponent[] | undefined,
-	parent: string | null = null,
-): ComponentStatus[] {
-	if (!Array.isArray(components)) return [];
+function flattenIncidentComponents(summary: IncidentSummary): ComponentStatus[] {
+	const affected = buildAffectedComponentMap(summary);
+	const components: ComponentStatus[] = [];
 
-	return components.flatMap((component) => {
-		const name = displayComponentName(component?.name);
-		const status = normalizeStatus(component?.status);
-		const current = name
-				? [
-						{
-							name,
-							status: String(component.status ?? ""),
-							state: status.state,
-							label: status.label,
-							parent,
-						},
-					]
-				: [];
-		const childParent = name ? (parent ? `${parent} / ${name}` : name) : parent;
+	for (const item of summary.structure?.items ?? []) {
+		const group = isRecord(item.group) ? item.group : null;
+		if (group && group.hidden !== true) {
+			const parent = displayComponentName(group.name);
+			for (const component of asArray(group.components)) {
+				if (!isIncidentComponent(component)) continue;
+				if (component.hidden === true) continue;
+				const name = displayComponentName(component.name);
+				if (!name) continue;
+				const status = componentStatus(
+					affected,
+					component.component_id,
+					component.name,
+				);
+				components.push({
+					name,
+					status: status.state,
+					state: status.state,
+					label: status.label,
+					parent: parent || null,
+				});
+			}
+			continue;
+		}
 
-		return [
-			...current,
-			...flattenComponents(component?.children, childParent),
-		];
-	});
-}
-
-async function fetchComponents(signal: AbortSignal) {
-	const componentsUrl =
-		process.env.STATUS_PAGE_COMPONENTS_URL?.trim() || DEFAULT_COMPONENTS_URL;
-	const response = await fetch(withCacheBuster(componentsUrl), {
-		cache: "no-store",
-		headers: { accept: "application/json" },
-		signal,
-	});
-
-	if (!response.ok) {
-		throw new Error(`status_components_http_${response.status}`);
+		const component = isIncidentComponent(item.component) ? item.component : null;
+		if (!component || component.hidden === true) continue;
+		const name = displayComponentName(component.name);
+		if (!name) continue;
+		const status = componentStatus(affected, component.component_id, component.name);
+		components.push({
+			name,
+			status: status.state,
+			state: status.state,
+			label: status.label,
+			parent: null,
+		});
 	}
 
-	const payload = (await response.json()) as { components?: InstatusComponent[] };
-	return flattenComponents(payload.components).slice(0, 24);
+	if (components.length > 0) return components.slice(0, 24);
+
+	const fallbackComponents: ComponentStatus[] = [];
+	for (const component of summary.components ?? []) {
+		const name = displayComponentName(component.name);
+		if (!name) continue;
+		const status = componentStatus(affected, component.id, component.name);
+		fallbackComponents.push({
+			name,
+			status: status.state,
+			state: status.state,
+			label: status.label,
+			parent: null,
+		});
+	}
+
+	return fallbackComponents.slice(0, 24);
+}
+
+function pickIncidentStatus(summary: IncidentSummary) {
+	if (asArray(summary.in_progress_maintenances).length > 0) {
+		return normalizeStatus("maintenance");
+	}
+
+	const affectedStatuses = Array.from(buildAffectedComponentMap(summary).values());
+	if (affectedStatuses.length > 0) {
+		const rank: Record<StatusState, number> = {
+			operational: 0,
+			unknown: 1,
+			maintenance: 2,
+			degraded: 3,
+			partial_outage: 4,
+			major_outage: 5,
+		};
+		return affectedStatuses.sort((a, b) => rank[b.state] - rank[a.state])[0];
+	}
+
+	if (asArray(summary.ongoing_incidents).length > 0) {
+		return { state: "degraded" as const, label: "Service issues reported" };
+	}
+
+	return normalizeStatus("operational");
+}
+
+async function fetchIncidentStatus(signal: AbortSignal) {
+	if (cachedSummary && cachedSummary.expiresAt > Date.now()) {
+		return cachedSummary.value;
+	}
+
+	const widgetApiUrl =
+		process.env.STATUS_PAGE_WIDGET_API_URL?.trim() || DEFAULT_WIDGET_API_URL;
+	const statusPageUrl =
+		process.env.STATUS_PAGE_URL?.trim() ||
+		process.env.STATUS_PAGE_SUMMARY_URL?.trim() ||
+		DEFAULT_STATUS_PAGE_URL;
+	const [widgetResult, pageResult] = await Promise.allSettled([
+		fetch(widgetApiUrl, {
+			cache: "no-store",
+			headers: { accept: "application/json" },
+			signal,
+		}),
+		fetch(statusPageUrl, {
+			cache: "no-store",
+			headers: { accept: "text/html" },
+			signal,
+		}),
+	]);
+
+	let widgetSummary: IncidentSummary | null = null;
+	if (widgetResult.status === "fulfilled" && widgetResult.value.ok) {
+		widgetSummary = (await widgetResult.value.json()) as IncidentSummary;
+	}
+
+	let pageSummary: IncidentSummary | null = null;
+	if (pageResult.status === "fulfilled" && pageResult.value.ok) {
+		pageSummary = parseIncidentSummaryHtml(await pageResult.value.text());
+	}
+
+	const liveSummary = widgetSummary ?? pageSummary;
+	const structureSummary = pageSummary ?? widgetSummary;
+	if (!liveSummary || !structureSummary) {
+		throw new Error("status_page_unavailable");
+	}
+
+	const summary: IncidentSummary = {
+		...structureSummary,
+		affected_components:
+			widgetSummary?.affected_components ?? structureSummary.affected_components,
+		in_progress_maintenances:
+			widgetSummary?.in_progress_maintenances ??
+			structureSummary.in_progress_maintenances,
+		ongoing_incidents:
+			widgetSummary?.ongoing_incidents ?? structureSummary.ongoing_incidents,
+		scheduled_maintenances:
+			widgetSummary?.scheduled_maintenances ??
+			structureSummary.scheduled_maintenances,
+	};
+	const value = {
+		components: flattenIncidentComponents(summary),
+		href: String(
+			widgetSummary?.page_url ?? pageSummary?.public_url ?? STATUS_PAGE_HREF,
+		),
+		status: pickIncidentStatus(liveSummary),
+	};
+
+	cachedSummary = {
+		expiresAt: Date.now() + STATUS_PAGE_CACHE_TTL_MS,
+		value,
+	};
+
+	return value;
 }
 
 export async function GET() {
@@ -165,42 +416,11 @@ export async function GET() {
 	const timeout = setTimeout(() => controller.abort(), 3500);
 
 	try {
-		const summaryUrl =
-			process.env.STATUS_PAGE_SUMMARY_URL?.trim() || DEFAULT_SUMMARY_URL;
-		const [summaryResult, componentsResult] = await Promise.allSettled([
-			fetch(withCacheBuster(summaryUrl), {
-				cache: "no-store",
-				headers: { accept: "application/json" },
-				signal: controller.signal,
-			}),
-			fetchComponents(controller.signal),
-		]);
-
-		if (summaryResult.status === "rejected") {
-			throw summaryResult.reason;
-		}
-
-		const response = summaryResult.value;
-
-		if (!response.ok) {
-			throw new Error(`status_summary_http_${response.status}`);
-		}
-
-		const payload = (await response.json()) as unknown;
-		const status = pickStatus(payload);
-		const components =
-			componentsResult.status === "fulfilled"
-				? componentsResult.value
-				: [];
-		const visibleComponents = components.filter(
-			(component) =>
-				!(
-					component.name === "API" &&
-					component.parent === null &&
-					components.some((candidate) =>
-						candidate.name.startsWith("API health ("),
-					)
-				),
+		const { components, href, status } = await fetchIncidentStatus(
+			controller.signal,
+		);
+		const visibleComponents = components.filter((component) =>
+			isVisibleComponent(component, components),
 		);
 		const componentIssues = visibleComponents.filter(
 			(component) =>
@@ -223,9 +443,9 @@ export async function GET() {
 				...status,
 				label,
 				components: visibleComponents,
-				href: STATUS_PAGE_HREF,
+				href,
 			},
-			{ headers: { "cache-control": "no-store" } },
+			{ headers: { "cache-control": "public, max-age=30, s-maxage=30" } },
 		);
 	} catch {
 		return NextResponse.json(
@@ -236,7 +456,7 @@ export async function GET() {
 				components: [],
 				href: STATUS_PAGE_HREF,
 			},
-			{ headers: { "cache-control": "no-store" } },
+			{ headers: { "cache-control": "public, max-age=30, s-maxage=30" } },
 		);
 	} finally {
 		clearTimeout(timeout);

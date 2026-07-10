@@ -93,6 +93,11 @@ const nextConfig = {
         destination: "/how-phaseo-tracks-provider-availability",
         permanent: true,
       },
+      {
+        source: "/status",
+        destination: "https://statuspage.incident.io/phaseo",
+        permanent: true,
+      },
     ];
   },
   async rewrites() {
