@@ -15,7 +15,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-26T00:00:00Z"
+      "effective_from": "2026-07-09T00:00:00Z"
     },
     {
       "meter": "cached_read_text_tokens",
@@ -27,7 +27,7 @@
       "note": "90% cached input discount from the announced uncached input price.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-26T00:00:00Z"
+      "effective_from": "2026-07-09T00:00:00Z"
     },
     {
       "meter": "cached_write_text_tokens",
@@ -39,7 +39,7 @@
       "note": "1.25x the announced uncached input price for cache writes.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-26T00:00:00Z"
+      "effective_from": "2026-07-09T00:00:00Z"
     },
     {
       "meter": "output_text_tokens",
@@ -51,7 +51,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-26T00:00:00Z"
+      "effective_from": "2026-07-09T00:00:00Z"
     }
   ]
 }
