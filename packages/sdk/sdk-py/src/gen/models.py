@@ -922,9 +922,10 @@ class ProvisioningKeyWithValue(TypedDict):
 	status: NotRequired[Literal["active", "disabled", "revoked"]]
 
 class ReasoningConfig(TypedDict):
-	effort: NotRequired[Literal["none", "minimal", "low", "medium", "high", "xhigh"]]
+	effort: NotRequired[Literal["none", "minimal", "low", "medium", "high", "xhigh", "max"]]
 	enabled: NotRequired[bool]
 	max_tokens: NotRequired[int]
+	mode: NotRequired[Literal["standard", "pro"]]
 	summary: NotRequired[Literal["auto", "concise", "detailed"]]
 
 RerankDocument = Union[str, Dict[str, Any]]

@@ -2178,6 +2178,7 @@ type ReasoningConfig struct {
 	Effort *string `json:"effort,omitempty"`
 	Enabled *bool `json:"enabled,omitempty"`
 	MaxTokens *int `json:"max_tokens,omitempty"`
+	Mode *string `json:"mode,omitempty"`
 	Summary *string `json:"summary,omitempty"`
 }
 

@@ -1037,6 +1037,7 @@ public final class Models {
 		public Object effort;
 		public Boolean enabled;
 		public Integer max_tokens;
+		public Object mode;
 		public Object summary;
 	}
 

@@ -2519,6 +2519,9 @@ public sealed class ReasoningConfig
 	[JsonPropertyName("max_tokens")]
 	public int? MaxTokens { get; set; }
 
+	[JsonPropertyName("mode")]
+	public string? Mode { get; set; }
+
 	[JsonPropertyName("summary")]
 	public string? Summary { get; set; }
 
