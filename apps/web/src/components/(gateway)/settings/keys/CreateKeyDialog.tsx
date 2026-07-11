@@ -28,6 +28,7 @@ import {
 	type ApiKeyPresetId,
 } from "@/lib/gateway/secretReveal";
 import { SecretRevealActions } from "./SecretRevealActions";
+import { captureProductEvent } from "@/lib/productAnalytics";
 
 export default function CreateKeyDialog({
 	currentUserId,
@@ -81,6 +82,10 @@ export default function CreateKeyDialog({
 				getApiKeyPreset(selectedPresetId).limits
 			);
 			setPlainKey(res?.plaintext ?? null);
+			captureProductEvent("api_key_created", {
+				preset: selectedPresetId,
+				surface: "settings",
+			});
 		} catch (err: any) {
 			const message =
 				err?.message ?? "Could not create API key right now. Please try again.";

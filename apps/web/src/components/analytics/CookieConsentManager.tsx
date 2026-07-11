@@ -61,9 +61,9 @@ export function CookieConsentManager({
     message: string
     title: string
   } | null>(null)
-  // Load GA with denied-by-default consent mode so we can still verify install
-  // health and collect modeled/cookieless signals until explicit consent.
-  const shouldLoadGa = Boolean(gaMeasurementId)
+  // Do not load third-party analytics until consent is explicit. This keeps
+  // pending and declined visits free of analytics network requests.
+  const shouldLoadGa = Boolean(gaMeasurementId) && consent === "accepted"
 
   useEffect(() => {
     if (consent !== "pending") return
@@ -136,7 +136,7 @@ export function CookieConsentManager({
             function gtag(){window.dataLayer.push(arguments);}
             window.gtag = window.gtag || gtag;
             gtag('js', new Date());
-            gtag('consent', 'default', ${JSON.stringify(GA_DENIED_CONSENT)});
+            gtag('consent', 'default', ${JSON.stringify(GA_GRANTED_CONSENT)});
             gtag('config', '${gaMeasurementId}', { anonymize_ip: true });
           `}</Script>
         </>

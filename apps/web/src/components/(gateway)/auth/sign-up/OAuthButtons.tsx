@@ -4,6 +4,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { handleOAuthRedirect } from "@/app/(auth)/sign-in/actions";
 import { Logo } from "@/components/Logo";
+import { captureProductEvent } from "@/lib/productAnalytics";
 
 type SocialProviderId = "google" | "github" | "gitlab";
 
@@ -56,6 +57,9 @@ export default function OAuthButtons({
 								} catch {
 									// Ignore storage failures; auth still proceeds.
 								}
+								captureProductEvent("account_signup_started", {
+									method: id,
+								});
 							}}
 						>
 							<input type="hidden" name="authFlow" value="signup" />
