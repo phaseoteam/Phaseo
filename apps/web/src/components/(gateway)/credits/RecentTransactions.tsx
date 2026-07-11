@@ -22,6 +22,7 @@ import {
 	DollarSign,
 	Repeat,
 	CreditCard,
+	Gift,
 	Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -231,6 +232,17 @@ function kindBadge(kind?: string | null) {
 			>
 				<Zap className="h-3 w-3" aria-hidden />
 				{label ?? "Promo"}
+			</Badge>
+		);
+
+	if (kind === "goodwill_credit")
+		return (
+			<Badge
+				variant="outline"
+				className={cn(TRANSACTION_CHIP_BASE, TRANSACTION_CHIP_TONES.teal)}
+			>
+				<Gift className="h-3 w-3" aria-hidden />
+				{label ?? "Goodwill Credit"}
 			</Badge>
 		);
 

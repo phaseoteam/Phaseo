@@ -76,6 +76,7 @@ export function getCreditTransactionKindLabel(
 	const normalized = String(kind ?? "").toLowerCase();
 	if (!normalized) return null;
 	if (normalized === "promo_code") return "Promo Credit";
+	if (normalized === "goodwill_credit") return "Goodwill Credit";
 	if (normalized === "top_up_one_off") return "One-Off Top Up";
 	if (normalized === "top_up") return "Top Up";
 	if (normalized === "auto_top_up") return "Auto Top Up";
