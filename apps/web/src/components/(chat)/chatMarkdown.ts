@@ -5,7 +5,7 @@ export const chatMarkdownPlugins = {
 };
 
 function escapeMathPercentages(value: string) {
-	return value.replace(/(^|[^\\])%/g, "$1\\%");
+	return value.replace(/(?<!\\)%/g, "\\%");
 }
 
 function isSingleDollar(value: string, index: number) {
@@ -52,7 +52,7 @@ function escapeCurrencyDollarSigns(value: string) {
 	);
 }
 
-export function normalizeChatMarkdown(value: string) {
+function normalizeMathSegment(value: string) {
 	return escapeCurrencyDollarSigns(value)
 		.replace(/\$\$([\s\S]*?)\$\$/g, (_, math: string) => {
 			return `$$\n${escapeMathPercentages(math).trim()}\n$$`;
@@ -60,4 +60,78 @@ export function normalizeChatMarkdown(value: string) {
 		.replace(/(?<!\$)\$([^$\r\n]+?)\$(?!\$)/g, (_, math: string) => {
 			return `$${escapeMathPercentages(math)}$`;
 		});
+}
+
+function findCodeFenceEnd(
+	value: string,
+	start: number,
+	delimiter: string,
+) {
+	let lineStart = value.indexOf("\n", start + delimiter.length);
+	while (lineStart !== -1) {
+		lineStart += 1;
+		const lineEnd = value.indexOf("\n", lineStart);
+		const line = value.slice(lineStart, lineEnd === -1 ? value.length : lineEnd);
+		if (new RegExp(`^ {0,3}${delimiter[0]}{${delimiter.length},}`).test(line)) {
+			return lineEnd === -1 ? value.length : lineEnd + 1;
+		}
+		lineStart = lineEnd;
+	}
+	return null;
+}
+
+function findInlineCodeEnd(value: string, start: number, delimiter: string) {
+	let index = start + delimiter.length;
+	while (index < value.length) {
+		const closingIndex = value.indexOf(delimiter, index);
+		if (closingIndex === -1 || value.slice(index, closingIndex).includes("\n")) {
+			return null;
+		}
+		const before = value[closingIndex - 1];
+		const after = value[closingIndex + delimiter.length];
+		if (before !== "`" && after !== "`") {
+			return closingIndex + delimiter.length;
+		}
+		index = closingIndex + delimiter.length;
+	}
+	return null;
+}
+
+export function normalizeChatMarkdown(value: string) {
+	let normalized = "";
+	let textStart = 0;
+	let index = 0;
+
+	while (index < value.length) {
+		const character = value[index];
+		if (character !== "`" && character !== "~") {
+			index += 1;
+			continue;
+		}
+
+		let delimiterLength = 1;
+		while (value[index + delimiterLength] === character) {
+			delimiterLength += 1;
+		}
+		const delimiter = character.repeat(delimiterLength);
+		const isFence =
+			delimiterLength >= 3 &&
+			(index === 0 || value[index - 1] === "\n");
+		const codeEnd = isFence
+			? findCodeFenceEnd(value, index, delimiter)
+			: character === "`"
+				? findInlineCodeEnd(value, index, delimiter)
+				: null;
+		if (codeEnd === null) {
+			index += delimiterLength;
+			continue;
+		}
+
+		normalized += normalizeMathSegment(value.slice(textStart, index));
+		normalized += value.slice(index, codeEnd);
+		textStart = codeEnd;
+		index = codeEnd;
+	}
+
+	return normalized + normalizeMathSegment(value.slice(textStart));
 }

@@ -25,6 +25,20 @@ describe("chatMarkdownPlugins", () => {
 		);
 	});
 
+	it("escapes each consecutive percentage sign inside math delimiters", () => {
+		expect(normalizeChatMarkdown("$a%%b$")).toBe("$a\\%\\%b$");
+	});
+
+	it("does not normalize currency or math syntax inside code", () => {
+		expect(
+			normalizeChatMarkdown(
+				"Inline `const price = '$80%$'` and $80%$.\n\n```ts\nconst price = '$80%$';\n```",
+			),
+		).toBe(
+			"Inline `const price = '$80%$'` and $80\\%$.\n\n```ts\nconst price = '$80%$';\n```",
+		);
+	});
+
 	it("preserves dollar-prefixed monetary amounts alongside inline math", () => {
 		expect(
 			normalizeChatMarkdown(
@@ -32,6 +46,12 @@ describe("chatMarkdownPlugins", () => {
 			),
 		).toBe(
 			"The final price is &#36;72, so the discount is &#36;28 = $28\\%$.",
+		);
+	});
+
+	it("preserves multiple plain currency amounts", () => {
+		expect(normalizeChatMarkdown("Prices are $5 and $7.")).toBe(
+			"Prices are &#36;5 and &#36;7.",
 		);
 	});
 

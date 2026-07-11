@@ -2,6 +2,7 @@ import {
 	buildDefaultSystemPrompt,
 	buildServerToolDefinitions,
 	estimatePromptTokenCount,
+	isGeneratedDefaultSystemPrompt,
 	normalizeServerTools,
 } from "./chat-playground-core";
 
@@ -32,6 +33,28 @@ describe("estimatePromptTokenCount", () => {
 		expect(estimatePromptTokenCount("a")).toBe(1);
 		expect(estimatePromptTokenCount("abcd")).toBe(1);
 		expect(estimatePromptTokenCount("abcde")).toBe(2);
+	});
+});
+
+describe("isGeneratedDefaultSystemPrompt", () => {
+	const modelId = "openai/gpt-5.6-luna";
+	const nickname = "Luna";
+	const identity = `You are ${modelId}, known as: ${nickname}, a large language model from openai.`;
+
+	it("recognizes the current compact default prompt", () => {
+		expect(isGeneratedDefaultSystemPrompt(buildDefaultSystemPrompt(modelId, nickname), modelId, nickname)).toBe(true);
+	});
+
+	it("recognizes the prior and legacy formatting suffixes", () => {
+		const previous = `${identity}\n\nFormatting Rules:\n- Do not use \\(...\\) or \\[...\\] delimiters.`;
+		const legacy = `${identity}\n\nFormatting Rules:\n- **For all mathematical expressions, you must use dollar-sign delimiters. Use $...$ for inline math and $$...$$ for block math. Do not use (...) or [...] delimiters.**`;
+
+		expect(isGeneratedDefaultSystemPrompt(previous, modelId, nickname)).toBe(true);
+		expect(isGeneratedDefaultSystemPrompt(legacy, modelId, nickname)).toBe(true);
+	});
+
+	it("does not classify a custom prompt as generated", () => {
+		expect(isGeneratedDefaultSystemPrompt("Always answer in haiku.", modelId, nickname)).toBe(false);
 	});
 });
 

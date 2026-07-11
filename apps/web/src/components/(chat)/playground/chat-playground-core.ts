@@ -348,7 +348,7 @@ export function buildDefaultSystemPrompt(
 const normalizeSystemPromptForComparison = (prompt?: string | null) =>
 	(prompt ?? "").replace(/\r\n/g, "\n").trim();
 
-function isGeneratedDefaultSystemPrompt(
+export function isGeneratedDefaultSystemPrompt(
 	prompt: string | undefined,
 	modelId: string,
 	modelDisplayName?: string,
