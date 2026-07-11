@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Logo } from "@/components/Logo";
 import {
@@ -33,6 +33,7 @@ import {
     MODEL_SELECTOR_FAVORITES_STORAGE_KEY,
     normalizeFavoriteModelId,
 } from "@/components/(chat)/playgroundConfig";
+import { estimatePromptTokenCount } from "@/components/(chat)/playground/chat-playground-core";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -95,6 +96,11 @@ type SamplingNumberKey =
     | "repetitionPenalty"
     | "seed";
 
+type TextSettingKey = "displayName" | "systemPrompt";
+
+const TEXT_SETTING_KEYS: TextSettingKey[] = ["displayName", "systemPrompt"];
+const TEXT_COMMIT_DELAY_MS = 350;
+
 const SAMPLING_NUMBER_KEYS: SamplingNumberKey[] = [
     "temperature",
     "maxOutputTokens",
@@ -127,6 +133,13 @@ function samplingDraftFromSettings(settings: ChatModelSettings) {
         repetitionPenalty: samplingValueToInput(settings.repetitionPenalty),
         seed: samplingValueToInput(settings.seed),
     } satisfies Record<SamplingNumberKey, string>;
+}
+
+function textDraftFromSettings(settings: ChatModelSettings) {
+    return {
+        displayName: settings.displayName ?? "",
+        systemPrompt: settings.systemPrompt ?? "",
+    } satisfies Record<TextSettingKey, string>;
 }
 
 export function ModelSettingsDialog({
@@ -165,8 +178,14 @@ export function ModelSettingsDialog({
     const [samplingDraft, setSamplingDraft] = useState<
         Record<SamplingNumberKey, string>
     >(() => samplingDraftFromSettings(settings));
+    const [textDraft, setTextDraft] = useState<Record<TextSettingKey, string>>(
+        () => textDraftFromSettings(settings)
+    );
     const samplingCommitTimersRef = useRef<
         Partial<Record<SamplingNumberKey, ReturnType<typeof setTimeout>>>
+    >({});
+    const textCommitTimersRef = useRef<
+        Partial<Record<TextSettingKey, ReturnType<typeof setTimeout>>>
     >({});
     const pageTransition = reduceMotion
         ? { duration: 0 }
@@ -212,6 +231,43 @@ export function ModelSettingsDialog({
         },
         [scheduleSamplingCommit]
     );
+    const commitTextDraft = useCallback(
+        (key: TextSettingKey, value: string) => {
+            const timer = textCommitTimersRef.current[key];
+            if (timer) {
+                clearTimeout(timer);
+                delete textCommitTimersRef.current[key];
+            }
+            if ((settings[key] ?? "") === value) return;
+            onUpdate({ [key]: value });
+        },
+        [onUpdate, settings]
+    );
+    const scheduleTextCommit = useCallback(
+        (key: TextSettingKey, value: string) => {
+            const timer = textCommitTimersRef.current[key];
+            if (timer) clearTimeout(timer);
+            textCommitTimersRef.current[key] = setTimeout(() => {
+                startTransition(() => {
+                    commitTextDraft(key, value);
+                });
+            }, TEXT_COMMIT_DELAY_MS);
+        },
+        [commitTextDraft]
+    );
+    const updateTextDraft = useCallback(
+        (key: TextSettingKey, value: string) => {
+            setTextDraft((current) => ({ ...current, [key]: value }));
+            scheduleTextCommit(key, value);
+        },
+        [scheduleTextCommit]
+    );
+    const flushTextDraft = useCallback(
+        (key: TextSettingKey) => {
+            commitTextDraft(key, textDraft[key]);
+        },
+        [commitTextDraft, textDraft]
+    );
     const getSamplingSliderValue = useCallback(
         (key: SamplingNumberKey, fallbackValue: number) => {
             const parsed = Number(samplingDraft[key]);
@@ -237,13 +293,33 @@ export function ModelSettingsDialog({
         settings.seed,
     ]);
     useEffect(() => {
+        for (const key of TEXT_SETTING_KEYS) {
+            const timer = textCommitTimersRef.current[key];
+            if (timer) {
+                clearTimeout(timer);
+                delete textCommitTimersRef.current[key];
+            }
+        }
+        setTextDraft(textDraftFromSettings(settings));
+    }, [selectedModelId, settings.displayName, settings.systemPrompt]);
+    useEffect(() => {
         return () => {
             for (const key of SAMPLING_NUMBER_KEYS) {
                 const timer = samplingCommitTimersRef.current[key];
                 if (timer) clearTimeout(timer);
             }
+
+            for (const key of TEXT_SETTING_KEYS) {
+                const timer = textCommitTimersRef.current[key];
+                if (timer) clearTimeout(timer);
+            }
         };
     }, []);
+    useEffect(() => {
+        if (!open) {
+            for (const key of TEXT_SETTING_KEYS) flushTextDraft(key);
+        }
+    }, [flushTextDraft, open]);
     const filteredProviderOptions = supportedProvidersForModel
         ? providerOptions.filter((provider) =>
               supportedProvidersForModel.includes(provider.id)
@@ -344,8 +420,10 @@ export function ModelSettingsDialog({
     }, [favoriteModelIdSet, filteredModelChoices]);
     const modelPickerHasResults =
         featuredModelChoices.length > 0 || groupedModelChoices.length > 0;
-    const selectedChoice =
-        modelChoices.find((choice) => choice.id === selectedModelId) ?? null;
+    const selectedChoice = useMemo(
+        () => modelChoices.find((choice) => choice.id === selectedModelId) ?? null,
+        [modelChoices, selectedModelId]
+    );
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -531,10 +609,11 @@ export function ModelSettingsDialog({
                                 <Label htmlFor="chat-display-name">Chat display name</Label>
                                 <Input
                                     id="chat-display-name"
-                                    value={settings.displayName ?? ""}
+                                    value={textDraft.displayName}
                                     onChange={(event) =>
-                                        onUpdate({ displayName: event.target.value })
+                                        updateTextDraft("displayName", event.target.value)
                                     }
+                                    onBlur={() => flushTextDraft("displayName")}
                                     placeholder="Optional model alias for this chat"
                                 />
                             </div>
@@ -646,13 +725,19 @@ export function ModelSettingsDialog({
                     </div>
                     <Separator />
                     <div className="grid gap-1.5">
-                        <Label htmlFor="system-prompt">System prompt</Label>
+                        <div className="flex items-center justify-between gap-3">
+                            <Label htmlFor="system-prompt">System prompt</Label>
+                            <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                                ~{estimatePromptTokenCount(settings.systemPrompt).toLocaleString()} tokens
+                            </span>
+                        </div>
                         <Textarea
                             id="system-prompt"
-                            value={settings.systemPrompt ?? ""}
+                            value={textDraft.systemPrompt}
                             onChange={(event) =>
-                                onUpdate({ systemPrompt: event.target.value })
+                                updateTextDraft("systemPrompt", event.target.value)
                             }
+                            onBlur={() => flushTextDraft("systemPrompt")}
                             rows={3}
                         />
                     </div>
