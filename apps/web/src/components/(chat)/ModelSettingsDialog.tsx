@@ -33,6 +33,7 @@ import {
     MODEL_SELECTOR_FAVORITES_STORAGE_KEY,
     normalizeFavoriteModelId,
 } from "@/components/(chat)/playgroundConfig";
+import { estimatePromptTokenCount } from "@/components/(chat)/playground/chat-playground-core";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -646,7 +647,12 @@ export function ModelSettingsDialog({
                     </div>
                     <Separator />
                     <div className="grid gap-1.5">
-                        <Label htmlFor="system-prompt">System prompt</Label>
+                        <div className="flex items-center justify-between gap-3">
+                            <Label htmlFor="system-prompt">System prompt</Label>
+                            <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                                ~{estimatePromptTokenCount(settings.systemPrompt).toLocaleString()} tokens
+                            </span>
+                        </div>
                         <Textarea
                             id="system-prompt"
                             value={settings.systemPrompt ?? ""}

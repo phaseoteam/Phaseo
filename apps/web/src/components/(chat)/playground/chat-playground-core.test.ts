@@ -1,6 +1,7 @@
 import {
 	buildDefaultSystemPrompt,
 	buildServerToolDefinitions,
+	estimatePromptTokenCount,
 	normalizeServerTools,
 } from "./chat-playground-core";
 
@@ -22,6 +23,15 @@ describe("buildDefaultSystemPrompt", () => {
 		);
 		expect(prompt).toContain("no \\(...\\) or \\[...\\].");
 		expect(prompt).not.toContain("Formatting Rules:");
+	});
+});
+
+describe("estimatePromptTokenCount", () => {
+	it("uses a four-character approximation without rounding nonempty prompts to zero", () => {
+		expect(estimatePromptTokenCount("")).toBe(0);
+		expect(estimatePromptTokenCount("a")).toBe(1);
+		expect(estimatePromptTokenCount("abcd")).toBe(1);
+		expect(estimatePromptTokenCount("abcde")).toBe(2);
 	});
 });
 

@@ -16,6 +16,7 @@ import type {
 } from "@/lib/indexeddb/chats";
 
 export const DEFAULT_SERVER_TOOLS: ChatServerToolType[] = ["gateway:datetime"];
+const CHARS_PER_APPROXIMATE_TOKEN = 4;
 const MAX_DATETIME_TIMEZONES = 5;
 const MAX_ADVISOR_TOOLS = 5;
 const TIMEZONE_NAME_PATTERN = /^[A-Za-z0-9_+\-/]+$/;
@@ -38,6 +39,10 @@ export function normalizeServerTools(
 	return Array.from(new Set(serverTools)).filter((toolType) =>
 		SUPPORTED_CHAT_SERVER_TOOLS.has(toolType),
 	);
+}
+
+export function estimatePromptTokenCount(prompt?: string | null) {
+	return Math.ceil((prompt?.length ?? 0) / CHARS_PER_APPROXIMATE_TOKEN);
 }
 
 export const DEFAULT_SETTINGS: ChatSettings = {
