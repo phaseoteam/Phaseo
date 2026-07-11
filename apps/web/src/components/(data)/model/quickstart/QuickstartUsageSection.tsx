@@ -5,12 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import {
 	Check,
 	Copy,
-	Gauge,
-	Layers,
-	Shuffle,
 	TerminalSquare,
 	type LucideIcon,
-	Zap,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -44,6 +40,7 @@ import {
 	getParameterDocsHref,
 	getParameterReference,
 } from "@/lib/parameters/reference";
+import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { cn } from "@/lib/utils";
 
 type LanguageFamilyOption = {
@@ -183,33 +180,13 @@ function getLanguageFamilyVisual(familyId: string): QuickstartVisual {
 }
 
 function getServiceTierVisual(tier: ServiceTierOption["value"]): QuickstartVisual {
-	switch (tier) {
-		case "priority":
-			return {
-				kind: "icon",
-				icon: Zap,
-				className: "text-violet-600 dark:text-violet-300",
-			};
-		case "flex":
-			return {
-				kind: "icon",
-				icon: Shuffle,
-				className: "text-emerald-600 dark:text-emerald-300",
-			};
-		case "batch":
-			return {
-				kind: "icon",
-				icon: Layers,
-				className: "text-orange-600 dark:text-orange-300",
-			};
-		case "standard":
-		default:
-			return {
-				kind: "icon",
-				icon: Gauge,
-				className: "text-muted-foreground",
-			};
-	}
+	const tierMeta = getTierFilterMeta(tier);
+
+	return {
+		kind: "icon",
+		icon: tierMeta.icon,
+		className: tierMeta.iconClassName,
+	};
 }
 
 function OptionVisual({ visual }: { visual: QuickstartVisual }) {

@@ -1,15 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-	Check,
-	ChevronDown,
-	Gift,
-	Gauge,
-	Layers,
-	Shuffle,
-	Zap,
-} from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -17,6 +9,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 
 export default function PricingPlanSelect({
 	value,
@@ -50,19 +43,9 @@ export default function PricingPlanSelect({
 		}
 	};
 	const renderPlanIcon = (plan: string, className: string) => {
-		switch (plan) {
-			case "free":
-				return <Gift className={className} />;
-			case "batch":
-				return <Layers className={className} />;
-			case "flex":
-				return <Shuffle className={className} />;
-			case "priority":
-				return <Zap className={className} />;
-			case "standard":
-			default:
-				return <Gauge className={className} />;
-		}
+		const tierMeta = getTierFilterMeta(plan);
+		const TierIcon = tierMeta.icon;
+		return <TierIcon className={cn(className, tierMeta.iconClassName)} />;
 	};
 	const selectedClassesForPlan = () =>
 		"bg-background text-foreground ring-1 ring-zinc-200 dark:bg-zinc-950 dark:ring-zinc-700";

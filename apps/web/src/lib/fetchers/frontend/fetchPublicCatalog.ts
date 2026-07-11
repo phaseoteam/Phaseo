@@ -57,8 +57,6 @@ import { getCountrySummariesCached } from "@/lib/fetchers/countries/getCountrySu
 import { getCountrySummaryByIsoCached } from "@/lib/fetchers/countries/getCountrySummary";
 import { loadCompareModelsCached } from "@/lib/fetchers/compare/loadCompareModels";
 import { getComparisonModelsCached } from "@/lib/fetchers/compare/getComparisonModels";
-import type { ModelCollection } from "@/lib/fetchers/collections/getCollections";
-import { getModelCollections } from "@/lib/fetchers/collections/getCollections";
 import type { FamilyCard } from "@/lib/fetchers/families/getAllFamilies";
 import { getAllFamiliesCached } from "@/lib/fetchers/families/getAllFamilies";
 import type {
@@ -321,24 +319,6 @@ export async function fetchFrontendModels(): Promise<ModelCard[]> {
 	}
 
 	return getFrontendModelsPayload();
-}
-
-export async function fetchFrontendModelCollections(
-	limit = 10,
-): Promise<ModelCollection[]> {
-	"use cache";
-
-	cacheLife("hours");
-	cacheTag("public-model-catalogue");
-	cacheTag("collections");
-	cacheTag("frontend:model-collections");
-	cacheTag("data:models");
-	cacheTag("data:benchmarks");
-	cacheTag("data:data_api_provider_models");
-	cacheTag("data:data_api_pricing_rules");
-	cacheTag("data:data_api_provider_model_capabilities");
-
-	return getModelCollections(limit);
 }
 
 export type FrontendMonitorModelsResult = {

@@ -100,7 +100,9 @@ function getModelYear(model: ModelsPageModel): string {
 function getCatalogOnlyGatewayStatus(
 	model: ModelCard,
 ): NonNullable<ModelsPageModel["gateway_status"]> {
-	const status = String(model.status ?? "").trim().toLowerCase();
+	const status = String(model.status ?? "")
+		.trim()
+		.toLowerCase();
 	return UPCOMING_CATALOG_STATUS_SET.has(status) ? "coming_soon" : "not_listed";
 }
 
@@ -157,9 +159,7 @@ function normalizeModalityList(values: string[]): string[] {
 	return sortModalityValues(
 		Array.from(
 			new Set(
-				values
-					.map((value) => normalizeModalityKey(value))
-					.filter(Boolean),
+				values.map((value) => normalizeModalityKey(value)).filter(Boolean),
 			),
 		),
 	);
@@ -224,7 +224,9 @@ function summarizeMergedPricingValues(values: string[]): string | null {
 			if (!Number.isFinite(min) || !Number.isFinite(max) || !unit) return null;
 			return { min, max, unit };
 		})
-		.filter((entry): entry is { min: number; max: number; unit: string } => Boolean(entry));
+		.filter((entry): entry is { min: number; max: number; unit: string } =>
+			Boolean(entry),
+		);
 	if (parsed.length === 0) return null;
 	const unit = parsed[0]?.unit ?? null;
 	if (!unit || parsed.some((entry) => entry.unit !== unit)) return null;
@@ -232,7 +234,9 @@ function summarizeMergedPricingValues(values: string[]): string | null {
 	const max = Math.max(...parsed.map((entry) => entry.max));
 	const minText = formatMergedPricingAmount(min);
 	const maxText = formatMergedPricingAmount(max);
-	return min === max ? `${minText} / ${unit}` : `${minText}-${maxText} / ${unit}`;
+	return min === max
+		? `${minText} / ${unit}`
+		: `${minText}-${maxText} / ${unit}`;
 }
 
 function mergePricingDetailRows(
@@ -264,15 +268,17 @@ function mergePricingDetailRows(
 			const uniqueValues = Array.from(new Set(group.values));
 			const summarizedValue = group.variant
 				? uniqueValues.length === 1
-					? uniqueValues[0] ?? null
+					? (uniqueValues[0] ?? null)
 					: summarizeMergedPricingValues(uniqueValues)
 				: uniqueValues.length === 1
-					? uniqueValues[0] ?? null
+					? (uniqueValues[0] ?? null)
 					: pickLowestMergedPricingValue(uniqueValues);
 			const value = summarizedValue ?? uniqueValues[0] ?? null;
 			if (!value) return null;
 			return {
-				label: group.variant ? `${group.baseLabel} (${group.variant})` : group.baseLabel,
+				label: group.variant
+					? `${group.baseLabel} (${group.variant})`
+					: group.baseLabel,
 				value,
 			};
 		})
@@ -308,7 +314,9 @@ function firstNonEmptyString(
 }
 
 function applyApiVariantModelName(baseName: string, modelId: string): string {
-	const normalizedModelId = String(modelId ?? "").trim().toLowerCase();
+	const normalizedModelId = String(modelId ?? "")
+		.trim()
+		.toLowerCase();
 	if (normalizedModelId.endsWith(":free")) {
 		const trimmedName = baseName.trim();
 		if (/\(\s*free\s*\)$/i.test(trimmedName)) {
@@ -383,13 +391,15 @@ function buildOptionCounts(
 		| "gateway_input_modalities"
 		| "gateway_output_modalities"
 		| "gateway_features"
+		| "gateway_tiers"
 		| "gateway_provider_names"
 		| "gateway_execution_regions"
 		| "supported_parameters",
 ): OptionCount[] {
 	const counts = new Map<string, number>();
 	const isModalityField =
-		field === "gateway_input_modalities" || field === "gateway_output_modalities";
+		field === "gateway_input_modalities" ||
+		field === "gateway_output_modalities";
 	for (const model of models) {
 		for (const value of model[field] ?? []) {
 			const normalized = String(value ?? "").trim();
@@ -461,7 +471,9 @@ function buildYearOptions(models: ModelsPageModel[]): OptionCount[] {
 		.sort((a, b) => Number(b.value) - Number(a.value));
 }
 
-function buildModelsFilterFacets(models: ModelsPageModel[]): ModelsFilterFacets {
+function buildModelsFilterFacets(
+	models: ModelsPageModel[],
+): ModelsFilterFacets {
 	const statusCounts: Record<GatewayStatusFilter, number> = {
 		active: 0,
 		coming_soon: 0,
@@ -490,6 +502,7 @@ function buildModelsFilterFacets(models: ModelsPageModel[]): ModelsFilterFacets 
 			MODALITY_FILTER_DISPLAY_ORDER,
 		),
 		featureOptions: buildOptionCounts(models, "gateway_features"),
+		tierOptions: buildOptionCounts(models, "gateway_tiers"),
 		supportedParameterOptions: buildOptionCounts(
 			models,
 			"supported_parameters",
@@ -518,6 +531,7 @@ type GatewaySignals = {
 	inputModalities: Set<string>;
 	outputModalities: Set<string>;
 	features: Set<string>;
+	tiers: Set<string>;
 	contextLengths: Set<number>;
 	supportedParameters: Set<string>;
 	latestApiTimestamp: number | null;
@@ -556,6 +570,7 @@ function createEmptyGatewaySignals(): GatewaySignals {
 		inputModalities: new Set<string>(),
 		outputModalities: new Set<string>(),
 		features: new Set<string>(),
+		tiers: new Set<string>(),
 		contextLengths: new Set<number>(),
 		supportedParameters: new Set<string>(),
 		latestApiTimestamp: null,
@@ -613,7 +628,9 @@ function aggregateGatewaySignals(
 		}
 		if (isActiveProviderStatus(rowGatewayStatus)) {
 			for (const region of row.provider.executionRegions ?? []) {
-				const normalized = String(region ?? "").trim().toLowerCase();
+				const normalized = String(region ?? "")
+					.trim()
+					.toLowerCase();
 				if (normalized) existing.executionRegions.add(normalized);
 			}
 		}
@@ -649,6 +666,10 @@ function aggregateGatewaySignals(
 			const value = String(feature ?? "").trim();
 			if (value) existing.features.add(value);
 		}
+		const tier = String(row.tier ?? "standard")
+			.trim()
+			.toLowerCase();
+		if (tier) existing.tiers.add(tier);
 		const contextLength = Number(row.context ?? 0);
 		if (Number.isFinite(contextLength) && contextLength > 0) {
 			existing.contextLengths.add(contextLength);
@@ -657,16 +678,25 @@ function aggregateGatewaySignals(
 			const value = String(parameter ?? "").trim();
 			if (value) existing.supportedParameters.add(value);
 		}
-		const shouldIncludeProviderPricing = isActiveProviderStatus(rowGatewayStatus);
+		const shouldIncludeProviderPricing =
+			isActiveProviderStatus(rowGatewayStatus);
 		const inputPrice = Number(row.provider.inputPrice);
-		if (shouldIncludeProviderPricing && Number.isFinite(inputPrice) && inputPrice > 0) {
+		if (
+			shouldIncludeProviderPricing &&
+			Number.isFinite(inputPrice) &&
+			inputPrice > 0
+		) {
 			existing.lowestInputPrice =
 				existing.lowestInputPrice === null
 					? inputPrice
 					: Math.min(existing.lowestInputPrice, inputPrice);
 		}
 		const outputPrice = Number(row.provider.outputPrice);
-		if (shouldIncludeProviderPricing && Number.isFinite(outputPrice) && outputPrice > 0) {
+		if (
+			shouldIncludeProviderPricing &&
+			Number.isFinite(outputPrice) &&
+			outputPrice > 0
+		) {
 			existing.lowestOutputPrice =
 				existing.lowestOutputPrice === null
 					? outputPrice
@@ -707,7 +737,8 @@ function aggregateGatewaySignals(
 			}
 		}
 		const fromPrice = Number(row.provider.fromPrice);
-		const fromPriceUnit = String(row.provider.fromPriceUnit ?? "").trim() || null;
+		const fromPriceUnit =
+			String(row.provider.fromPriceUnit ?? "").trim() || null;
 		if (
 			shouldIncludeProviderPricing &&
 			Number.isFinite(fromPrice) &&
@@ -764,14 +795,14 @@ function aggregateGatewaySignals(
 function normalizeStringList(values: string[] | undefined): string[] {
 	return Array.from(
 		new Set(
-			(values ?? [])
-				.map((value) => String(value ?? "").trim())
-				.filter(Boolean),
+			(values ?? []).map((value) => String(value ?? "").trim()).filter(Boolean),
 		),
 	);
 }
 
-function sortApiModelIdsForDisplay(values: Iterable<string> | undefined): string[] {
+function sortApiModelIdsForDisplay(
+	values: Iterable<string> | undefined,
+): string[] {
 	return Array.from(values ?? [])
 		.map((value) => String(value ?? "").trim())
 		.filter(Boolean)
@@ -784,9 +815,13 @@ function sortApiModelIdsForDisplay(values: Iterable<string> | undefined): string
 }
 
 function normalizeModelTailForDedup(modelId: string): string {
-	const trimmed = String(modelId ?? "").trim().toLowerCase();
+	const trimmed = String(modelId ?? "")
+		.trim()
+		.toLowerCase();
 	if (!trimmed) return "";
-	const tail = trimmed.includes("/") ? trimmed.split("/").slice(1).join("/") : trimmed;
+	const tail = trimmed.includes("/")
+		? trimmed.split("/").slice(1).join("/")
+		: trimmed;
 	return tail
 		.replace(/[._/]+/g, "-")
 		.replace(/-\d{4}(?:-\d{2}){2}$/g, "")
@@ -813,7 +848,9 @@ type WeeklyRankingMetrics = {
 };
 
 function normalizeRankingModelKey(value: string): string {
-	return String(value ?? "").trim().toLowerCase();
+	return String(value ?? "")
+		.trim()
+		.toLowerCase();
 }
 
 function buildWeeklyMetricsByModel(
@@ -899,10 +936,7 @@ function resolveCatalogPricingSummary(
 	signals: GatewaySignals | undefined,
 	catalogPricingSummaries: CatalogPricingSummaryByModelId,
 ): CatalogPricingSummary | undefined {
-	const candidates = [
-		modelId,
-		...Array.from(signals?.apiModelIds ?? []),
-	]
+	const candidates = [modelId, ...Array.from(signals?.apiModelIds ?? [])]
 		.map((value) => String(value ?? "").trim())
 		.filter(Boolean);
 
@@ -930,7 +964,12 @@ function withGatewayMetadata(
 		const signals = signalsByModelId.get(modelId);
 		const model = resolveBaseModel(baseModelById, modelId, signals);
 		const weeklyMetrics = resolveModelWeeklyMetrics(
-			model ?? ({ model_id: modelId, name: modelId, organisation_id: "" } as ModelCard),
+			model ??
+				({
+					model_id: modelId,
+					name: modelId,
+					organisation_id: "",
+				} as ModelCard),
 			signals,
 			weeklyMetricsByKey,
 		);
@@ -950,9 +989,9 @@ function withGatewayMetadata(
 				? "active"
 				: hasComingSoonProvider
 					? "coming_soon"
-				: providerCount > 0
-					? "inactive"
-					: "not_listed";
+					: providerCount > 0
+						? "inactive"
+						: "not_listed";
 		const resolvedPrimaryTimestamp = model
 			? (model.primary_timestamp ?? null)
 			: (signals?.latestApiTimestamp ?? null);
@@ -1003,19 +1042,24 @@ function withGatewayMetadata(
 			gateway_endpoints: Array.from(signals?.endpoints ?? []).sort(),
 			gateway_input_modalities: (() => {
 				const gatewayValues = Array.from(signals?.inputModalities ?? []).sort();
-				if (gatewayValues.length > 0) return normalizeModalityList(gatewayValues);
+				if (gatewayValues.length > 0)
+					return normalizeModalityList(gatewayValues);
 				return normalizeModalityList(
 					normalizeStringList(model?.input_types ?? model?.input_modalities),
 				);
 			})(),
 			gateway_output_modalities: (() => {
-				const gatewayValues = Array.from(signals?.outputModalities ?? []).sort();
-				if (gatewayValues.length > 0) return normalizeModalityList(gatewayValues);
+				const gatewayValues = Array.from(
+					signals?.outputModalities ?? [],
+				).sort();
+				if (gatewayValues.length > 0)
+					return normalizeModalityList(gatewayValues);
 				return normalizeModalityList(
 					normalizeStringList(model?.output_types ?? model?.output_modalities),
 				);
 			})(),
 			gateway_features: Array.from(signals?.features ?? []).sort(),
+			gateway_tiers: Array.from(signals?.tiers ?? []).sort(),
 			gateway_provider_names: Array.from(signals?.providerNames ?? []).sort(),
 			gateway_active_provider_names: Array.from(
 				signals?.activeProviderNames ?? [],
@@ -1075,7 +1119,9 @@ function withGatewayMetadata(
 			lowest_from_price:
 				signals?.lowestFromPrice ?? catalogPricing?.lowestFromPrice ?? null,
 			lowest_from_price_unit:
-				signals?.lowestFromPriceUnit ?? catalogPricing?.lowestFromPriceUnit ?? null,
+				signals?.lowestFromPriceUnit ??
+				catalogPricing?.lowestFromPriceUnit ??
+				null,
 			pricing_detail_rows: (() => {
 				const gatewayRows = mergePricingDetailRows(
 					(signals?.pricingDetailRows ?? []).slice(0, 12),
@@ -1095,7 +1141,9 @@ function withGatewayMetadata(
 	const apiBackedTailKeys = new Set<string>();
 	const apiBackedNameDateKeys = new Set<string>();
 	for (const model of enriched) {
-		const org = String(model.organisation_id ?? "").trim().toLowerCase();
+		const org = String(model.organisation_id ?? "")
+			.trim()
+			.toLowerCase();
 		if (!org) continue;
 
 		const tail = normalizeModelTailForDedup(model.model_id);
@@ -1112,7 +1160,9 @@ function withGatewayMetadata(
 			if (!modelId) return false;
 			if (signalsByModelId.has(modelId)) return false;
 
-			const org = String(model.organisation_id ?? "").trim().toLowerCase();
+			const org = String(model.organisation_id ?? "")
+				.trim()
+				.toLowerCase();
 			if (!org) return true;
 
 			const tail = normalizeModelTailForDedup(modelId);
@@ -1237,6 +1287,7 @@ function buildFreeRouterModelsPageEntry(
 		gateway_output_modalities:
 			outputModalities.length > 0 ? outputModalities : ["text"],
 		gateway_features: ["routing", "free"],
+		gateway_tiers: ["free"],
 		gateway_provider_names: [],
 		gateway_active_provider_names: [],
 		gateway_execution_regions: [],
@@ -1267,11 +1318,12 @@ function buildFreeRouterModelsPageEntry(
 }
 
 async function ModelsPageDataSection() {
-	const [allModels, freeRouterOverview, catalogPricingSummaries] = await Promise.all([
-		fetchFrontendModels(),
-		fetchFrontendFreeRouterOverview(),
-		getCatalogPricingSummariesCached(),
-	]);
+	const [allModels, freeRouterOverview, catalogPricingSummaries] =
+		await Promise.all([
+			fetchFrontendModels(),
+			fetchFrontendFreeRouterOverview(),
+			getCatalogPricingSummariesCached(),
+		]);
 	const monitorRows = allModels.flatMap(
 		(model) => model.gateway_monitor_rows ?? [],
 	);

@@ -19,7 +19,7 @@ import {
 	Search,
 	Grid as GridIcon,
 	Table as TableIcon,
-	Layers as LayersIcon,
+	Layers3,
 	SlidersHorizontal,
 	Activity,
 	ArrowDownCircle,
@@ -88,6 +88,7 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { getModalityTone } from "@/lib/models/modalityStyles";
+import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDisplay";
 import type {
 	GatewayStatusFilter,
@@ -109,6 +110,7 @@ type PreparedModel = {
 	inputModalitiesSet: ReadonlySet<string>;
 	outputModalitiesSet: ReadonlySet<string>;
 	featuresSet: ReadonlySet<string>;
+	tiersSet: ReadonlySet<string>;
 	providerNamesSet: ReadonlySet<string>;
 	executionRegionsSet: ReadonlySet<string>;
 	supportedParametersSet: ReadonlySet<string>;
@@ -129,6 +131,7 @@ type FilterDimension =
 	| "inputModalities"
 	| "outputModalities"
 	| "features"
+	| "tiers"
 	| "contextMin"
 	| "supportedParameters"
 	| "providers"
@@ -157,16 +160,7 @@ const SORT_TRIGGER_LABELS: Record<ModelsSortOption, string> = {
 };
 
 const CONTEXT_LENGTH_STOPS = [
-	0,
-	4_000,
-	8_000,
-	16_000,
-	32_000,
-	64_000,
-	128_000,
-	256_000,
-	512_000,
-	1_000_000,
+	0, 4_000, 8_000, 16_000, 32_000, 64_000, 128_000, 256_000, 512_000, 1_000_000,
 ] as const;
 
 const SCROLL_TOP_VISIBILITY_THRESHOLD = 320;
@@ -229,7 +223,9 @@ const endpointOrder = new Map(
 	ENDPOINT_DISPLAY_ORDER.map((value, index) => [value, index] as const),
 );
 
-function normalizeSortOption(value: string | null | undefined): ModelsSortOption {
+function normalizeSortOption(
+	value: string | null | undefined,
+): ModelsSortOption {
 	const normalized = String(value ?? "").trim();
 	if (
 		MODELS_SORT_OPTIONS.includes(
@@ -253,7 +249,11 @@ function parseRegionParam(value: string | null): string[] {
 	return Array.from(
 		new Set(
 			parseCsvParam(value)
-				.map((part) => String(part ?? "").trim().toLowerCase())
+				.map((part) =>
+					String(part ?? "")
+						.trim()
+						.toLowerCase(),
+				)
 				.filter(Boolean),
 		),
 	);
@@ -419,7 +419,9 @@ function compareNullableNumber(
 	return direction === "asc" ? aValue - bValue : bValue - aValue;
 }
 
-function normalizedSet(values: readonly string[] | undefined): ReadonlySet<string> {
+function normalizedSet(
+	values: readonly string[] | undefined,
+): ReadonlySet<string> {
 	const set = new Set<string>();
 	for (const raw of values ?? []) {
 		const value = String(raw ?? "").trim();
@@ -440,7 +442,9 @@ function normalizedModalitySet(
 }
 
 function toTitleCase(value: string): string {
-	const normalized = String(value ?? "").trim().toLowerCase();
+	const normalized = String(value ?? "")
+		.trim()
+		.toLowerCase();
 	if (normalized === "audio_stt") return "Transcription";
 	if (normalized === "audio_tts") return "Speech";
 	if (normalized === "audio_music") return "Music";
@@ -458,7 +462,9 @@ function toTitleCase(value: string): string {
 }
 
 function formatRegionLabel(value: string): string {
-	const normalized = String(value ?? "").trim().toLowerCase();
+	const normalized = String(value ?? "")
+		.trim()
+		.toLowerCase();
 	if (normalized === "us") return "US";
 	if (normalized === "eu") return "EU";
 	if (normalized === "apac") return "APAC";
@@ -569,17 +575,9 @@ function getEndpointIcon(endpoint: string): LucideIcon {
 	return Route;
 }
 
-function FilterLogo({
-	value,
-	label,
-}: {
-	value: string;
-	label: string;
-}) {
+function FilterLogo({ value, label }: { value: string; label: string }) {
 	return (
-		<span
-			className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-border/60 bg-background p-0.5"
-		>
+		<span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-border/60 bg-background p-0.5">
 			<Logo
 				id={value}
 				alt={`${label} logo`}
@@ -656,9 +654,10 @@ function FilterCheckboxList({
 		Number.isFinite(collapsedLimit) &&
 		Number(collapsedLimit) > 0 &&
 		options.length > Number(collapsedLimit);
-	const visibleOptions = canCollapse && !expanded
-		? options.slice(0, Number(collapsedLimit))
-		: options;
+	const visibleOptions =
+		canCollapse && !expanded
+			? options.slice(0, Number(collapsedLimit))
+			: options;
 	const hiddenCount = options.length - visibleOptions.length;
 
 	return (
@@ -693,26 +692,27 @@ function FilterCheckboxList({
 							aria-pressed={checked}
 						>
 							<span className="flex items-center gap-2 min-w-0">
-								{start ?? (Icon ? (
-									tone ? (
-										<span
-											className={cn(
-												"inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-border/60 bg-background text-muted-foreground transition-colors",
-												tone.sidebarIconHoverClassName,
-												checked && tone.sidebarIconSelectedClassName,
-											)}
-										>
-											<Icon className="h-3 w-3" />
-										</span>
-									) : (
-										<Icon
-											className={cn(
-												"h-3.5 w-3.5 shrink-0",
-												checked ? "text-primary" : "text-muted-foreground",
-											)}
-										/>
-									)
-								) : null)}
+								{start ??
+									(Icon ? (
+										tone ? (
+											<span
+												className={cn(
+													"inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-border/60 bg-background text-muted-foreground transition-colors",
+													tone.sidebarIconHoverClassName,
+													checked && tone.sidebarIconSelectedClassName,
+												)}
+											>
+												<Icon className="h-3 w-3" />
+											</span>
+										) : (
+											<Icon
+												className={cn(
+													"h-3.5 w-3.5 shrink-0",
+													checked ? "text-primary" : "text-muted-foreground",
+												)}
+											/>
+										)
+									) : null)}
 								<span className="text-sm truncate">{label}</span>
 							</span>
 							<span
@@ -789,7 +789,9 @@ function filterOutFileModality(options: OptionCount[]): OptionCount[] {
 
 function sortOutputModalityOptions(options: OptionCount[]): OptionCount[] {
 	const order = new Map<string, number>(
-		OUTPUT_MODALITY_DISPLAY_ORDER.map((value, index) => [value, index] as const),
+		OUTPUT_MODALITY_DISPLAY_ORDER.map(
+			(value, index) => [value, index] as const,
+		),
 	);
 	return [...options].sort((a, b) => {
 		const aKey = normalizeModalityFilterValue(a.value);
@@ -856,10 +858,10 @@ function OutputModalityButtonRow({
 					"group h-9 shrink-0 rounded-md px-2 text-sm shadow-none transition-colors",
 					checked
 						? cn(
-							"bg-muted text-foreground hover:bg-muted",
-							tone.badgeClassName,
-							"border-transparent hover:border-transparent",
-						)
+								"bg-muted text-foreground hover:bg-muted",
+								tone.badgeClassName,
+								"border-transparent hover:border-transparent",
+							)
 						: "text-muted-foreground hover:text-foreground",
 				)}
 			>
@@ -869,9 +871,9 @@ function OutputModalityButtonRow({
 						checked
 							? tone.iconClassName
 							: cn(
-								"bg-transparent text-muted-foreground transition-colors",
-								tone.ghostIconHoverClassName,
-							),
+									"bg-transparent text-muted-foreground transition-colors",
+									tone.ghostIconHoverClassName,
+								),
 					)}
 				>
 					<Icon className="h-3.5 w-3.5" />
@@ -896,7 +898,10 @@ function OutputModalityButtonRow({
 			viewportClassName={hasHorizontalOverflow ? "pb-2" : "pb-0"}
 			viewportRef={viewportRef}
 		>
-			<div ref={contentRef} className="flex min-w-max items-center gap-1.5 pr-4">
+			<div
+				ref={contentRef}
+				className="flex min-w-max items-center gap-1.5 pr-4"
+			>
 				{buttons}
 			</div>
 		</ScrollArea>
@@ -911,13 +916,6 @@ export default function ModelsDisplay({
 	const [search, setSearch] = useQueryState("q", qParser);
 	const deferredSearch = useDeferredValue(search ?? "");
 	const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-	const DEFAULT_OPEN_SECTIONS = [
-		"gatewayStatus",
-		"inputModalities",
-	];
-	const [openFilterSections, setOpenFilterSections] = useState<string[]>([
-		...DEFAULT_OPEN_SECTIONS,
-	]);
 	const [selectedStatuses, setSelectedStatuses] = useQueryState("statuses", {
 		defaultValue: [] as string[],
 		parse: parseGatewayStatusParam,
@@ -955,14 +953,16 @@ export default function ModelsDisplay({
 			clearOnDefault: true,
 		},
 	);
-	const [selectedOutputModalities, setSelectedOutputModalities] =
-		useQueryState("outputModalities", {
+	const [selectedOutputModalities, setSelectedOutputModalities] = useQueryState(
+		"outputModalities",
+		{
 			defaultValue: [] as string[],
 			parse: parseModalityParam,
 			serialize: serializeCsvParam,
 			shallow: true,
 			clearOnDefault: true,
-		});
+		},
+	);
 	const [selectedFeatures, setSelectedFeatures] = useQueryState("features", {
 		defaultValue: [] as string[],
 		parse: parseCsvParam,
@@ -970,6 +970,18 @@ export default function ModelsDisplay({
 		shallow: true,
 		clearOnDefault: true,
 	});
+	const [selectedTiers, setSelectedTiers] = useQueryState("tiers", {
+		defaultValue: [] as string[],
+		parse: parseCsvParam,
+		serialize: serializeCsvParam,
+		shallow: true,
+		clearOnDefault: true,
+	});
+	const DEFAULT_OPEN_SECTIONS = ["gatewayStatus", "inputModalities"];
+	const [openFilterSections, setOpenFilterSections] = useState<string[]>(() => [
+		...DEFAULT_OPEN_SECTIONS,
+		...(selectedTiers.length > 0 ? ["tiers"] : []),
+	]);
 	const [selectedContextMin, setSelectedContextMin] = useQueryState(
 		"contextMin",
 		{
@@ -1038,7 +1050,8 @@ export default function ModelsDisplay({
 		const updateVisibility = () => {
 			const scrollY = window.scrollY;
 			const shouldShow = scrollY > SCROLL_TOP_VISIBILITY_THRESHOLD;
-			const shouldShowMobileFab = scrollY > MOBILE_FILTER_FAB_VISIBILITY_THRESHOLD;
+			const shouldShowMobileFab =
+				scrollY > MOBILE_FILTER_FAB_VISIBILITY_THRESHOLD;
 			setShowScrollTopButton((current) =>
 				current === shouldShow ? current : shouldShow,
 			);
@@ -1088,7 +1101,8 @@ export default function ModelsDisplay({
 			const eased = easeInOutCubic(progress);
 			window.scrollTo(0, Math.round(startY * (1 - eased)));
 			if (progress < 1) {
-				scrollTopAnimationFrameRef.current = window.requestAnimationFrame(animate);
+				scrollTopAnimationFrameRef.current =
+					window.requestAnimationFrame(animate);
 				return;
 			}
 			scrollTopAnimationFrameRef.current = null;
@@ -1100,12 +1114,12 @@ export default function ModelsDisplay({
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 	const isTable = pathname?.includes("/models/table");
-	const isCollections = pathname?.includes("/models/collections");
 	const {
 		endpointOptions: baseEndpointOptions,
 		inputModalityOptions: baseInputModalityOptions,
 		outputModalityOptions: baseOutputModalityOptions,
 		featureOptions: baseFeatureOptions,
+		tierOptions: baseTierOptions,
 		supportedParameterOptions: baseSupportedParameterOptions,
 		providerOptions: baseProviderOptions,
 		regionOptions: baseRegionOptions,
@@ -1119,6 +1133,7 @@ export default function ModelsDisplay({
 		selectedInputModalities.length +
 		selectedOutputModalities.length +
 		selectedFeatures.length +
+		selectedTiers.length +
 		(selectedContextMin > 0 ? 1 : 0) +
 		selectedSupportedParameters.length +
 		selectedProviders.length +
@@ -1139,6 +1154,7 @@ export default function ModelsDisplay({
 					normalizedModalitySet(model.gateway_output_modalities),
 				);
 				const features = Array.from(normalizedSet(model.gateway_features));
+				const tiers = Array.from(normalizedSet(model.gateway_tiers));
 				const providerNames = Array.from(
 					normalizedSet(model.gateway_provider_names),
 				);
@@ -1152,9 +1168,9 @@ export default function ModelsDisplay({
 					normalizedSet(model.supported_parameters),
 				);
 				const maxContextLength = Math.max(
-					...((model.context_lengths ?? [])
+					...(model.context_lengths ?? [])
 						.map((value) => Number(value))
-						.filter((value) => Number.isFinite(value) && value > 0)),
+						.filter((value) => Number.isFinite(value) && value > 0),
 				);
 
 				return {
@@ -1164,6 +1180,7 @@ export default function ModelsDisplay({
 					inputModalitiesSet: new Set(inputModalities),
 					outputModalitiesSet: new Set(outputModalities),
 					featuresSet: new Set(features),
+					tiersSet: new Set(tiers),
 					providerNamesSet: new Set(providerNames),
 					executionRegionsSet: new Set(executionRegions),
 					supportedParametersSet: new Set(supportedParameters),
@@ -1255,6 +1272,13 @@ export default function ModelsDisplay({
 				return false;
 			}
 			if (
+				exclude !== "tiers" &&
+				selectedTiers.length > 0 &&
+				!selectedTiers.some((value) => prepared.tiersSet.has(value))
+			) {
+				return false;
+			}
+			if (
 				exclude !== "contextMin" &&
 				selectedContextMin > 0 &&
 				(!prepared.maxContextLength ||
@@ -1274,7 +1298,9 @@ export default function ModelsDisplay({
 			if (
 				exclude !== "providers" &&
 				selectedProviders.length > 0 &&
-				!selectedProviders.every((value) => prepared.providerNamesSet.has(value))
+				!selectedProviders.every((value) =>
+					prepared.providerNamesSet.has(value),
+				)
 			) {
 				return false;
 			}
@@ -1311,6 +1337,7 @@ export default function ModelsDisplay({
 			effectiveSelectedStatuses,
 			selectedEndpoints,
 			selectedFeatures,
+			selectedTiers,
 			selectedInputModalities,
 			selectedOutputModalities,
 			selectedProviders,
@@ -1341,11 +1368,19 @@ export default function ModelsDisplay({
 				case "context_high_to_low":
 					return compareNullableNumber(a.sortContext, b.sortContext, "desc");
 				case "throughput_high_to_low":
-					return compareNullableNumber(a.throughputWeek, b.throughputWeek, "desc");
+					return compareNullableNumber(
+						a.throughputWeek,
+						b.throughputWeek,
+						"desc",
+					);
 				case "latency_low_to_high":
 					return compareNullableNumber(a.latencyWeek, b.latencyWeek, "asc");
 				case "popular_week":
-					return compareNullableNumber(a.popularityWeek, b.popularityWeek, "desc");
+					return compareNullableNumber(
+						a.popularityWeek,
+						b.popularityWeek,
+						"desc",
+					);
 				case "newest":
 				default:
 					return compareByNewest(a, b);
@@ -1412,6 +1447,13 @@ export default function ModelsDisplay({
 				),
 				selectedFeatures,
 			),
+			tierOptions: mergeOptionCounts(
+				baseTierOptions,
+				countPreparedValues(withAllExcept("tiers"), (prepared) =>
+					prepared.tiersSet.values(),
+				),
+				selectedTiers,
+			),
 			supportedParameterOptions: mergeOptionCounts(
 				baseSupportedParameterOptions,
 				countPreparedValues(withAllExcept("supportedParameters"), (prepared) =>
@@ -1457,6 +1499,7 @@ export default function ModelsDisplay({
 		baseProviderOptions,
 		baseRegionOptions,
 		baseSupportedParameterOptions,
+		baseTierOptions,
 		baseYearOptions,
 		matchesPreparedModel,
 		preparedModels,
@@ -1468,6 +1511,7 @@ export default function ModelsDisplay({
 		selectedProviders,
 		selectedRegions,
 		selectedSupportedParameters,
+		selectedTiers,
 		selectedYears,
 	]);
 
@@ -1478,6 +1522,7 @@ export default function ModelsDisplay({
 		setSelectedInputModalities([]);
 		setSelectedOutputModalities([]);
 		setSelectedFeatures([]);
+		setSelectedTiers([]);
 		setSelectedContextMin(0);
 		setSelectedSupportedParameters([]);
 		setSelectedProviders([]);
@@ -1548,6 +1593,7 @@ export default function ModelsDisplay({
 	);
 	const outputModalityOptions = dynamicSidebarCounts.outputModalityOptions;
 	const featureOptions = dynamicSidebarCounts.featureOptions;
+	const tierOptions = dynamicSidebarCounts.tierOptions;
 	const supportedParameterOptions =
 		dynamicSidebarCounts.supportedParameterOptions;
 	const providerOptions = dynamicSidebarCounts.providerOptions;
@@ -1556,14 +1602,20 @@ export default function ModelsDisplay({
 			REGION_DISPLAY_ORDER.map((value, index) => [value, index] as const),
 		);
 		return [...dynamicSidebarCounts.regionOptions].sort((a, b) => {
-			const aKey = String(a.value ?? "").trim().toLowerCase();
-			const bKey = String(b.value ?? "").trim().toLowerCase();
+			const aKey = String(a.value ?? "")
+				.trim()
+				.toLowerCase();
+			const bKey = String(b.value ?? "")
+				.trim()
+				.toLowerCase();
 			const aIndex = order.get(aKey);
 			const bIndex = order.get(bKey);
 			if (aIndex !== undefined && bIndex !== undefined) return aIndex - bIndex;
 			if (aIndex !== undefined) return -1;
 			if (bIndex !== undefined) return 1;
-			return formatRegionLabel(a.value).localeCompare(formatRegionLabel(b.value));
+			return formatRegionLabel(a.value).localeCompare(
+				formatRegionLabel(b.value),
+			);
 		});
 	}, [dynamicSidebarCounts.regionOptions]);
 	const creatorOptions = dynamicSidebarCounts.creatorOptions;
@@ -1585,7 +1637,7 @@ export default function ModelsDisplay({
 			type="button"
 			size="sm"
 			className={cn(
-				"relative h-8 shrink-0 border border-border/70 bg-background text-foreground shadow-xs transition-colors hover:bg-muted/45 dark:border-border/70 dark:bg-background dark:text-foreground dark:hover:bg-muted/25",
+				"relative h-8 shrink-0 rounded-md border border-border/70 bg-background text-foreground shadow-xs transition-colors hover:bg-muted/45 dark:border-border/70 dark:bg-background dark:text-foreground dark:hover:bg-muted/25",
 				compact ? "w-9 px-0" : "gap-1.5",
 			)}
 			onClick={() => setMobileFiltersOpen(true)}
@@ -1621,8 +1673,8 @@ export default function ModelsDisplay({
 						href={buildHref("/models")}
 						prefetch={false}
 						aria-label="Card view"
-						aria-current={!isTable && !isCollections ? "page" : undefined}
-						className={viewSwitcherItemClass(!isTable && !isCollections, true)}
+						aria-current={!isTable ? "page" : undefined}
+						className={viewSwitcherItemClass(!isTable, true)}
 					>
 						<GridIcon className="h-4 w-4" />
 					</Link>
@@ -1645,21 +1697,6 @@ export default function ModelsDisplay({
 					</Link>
 				</TooltipTrigger>
 				<TooltipContent side="top">Table view</TooltipContent>
-			</Tooltip>
-
-			<Tooltip>
-				<TooltipTrigger asChild>
-					<Link
-						href={buildHref("/models/collections")}
-						prefetch={false}
-						aria-label="Collections view"
-						aria-current={isCollections ? "page" : undefined}
-						className={viewSwitcherItemClass(isCollections)}
-					>
-						<LayersIcon className="h-4 w-4" />
-					</Link>
-				</TooltipTrigger>
-				<TooltipContent side="top">Collections</TooltipContent>
 			</Tooltip>
 		</div>
 	);
@@ -1755,6 +1792,38 @@ export default function ModelsDisplay({
 						iconForValue={getModalityIcon}
 						labelForValue={toTitleCase}
 						toneForValue={getModalityTone}
+					/>
+				</AccordionContent>
+			</AccordionItem>
+
+			<AccordionItem value="tiers" className="border-border/70">
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
+					<span className="flex items-center gap-2">
+						<Layers3 className="h-4 w-4 text-muted-foreground" />
+						Tier
+					</span>
+				</AccordionTrigger>
+				<AccordionContent className="pt-1" disableAnimation>
+					<FilterCheckboxList
+						options={tierOptions}
+						selected={selectedTiers}
+						onToggle={(value) =>
+							setSelectedTiers(toggleInList(selectedTiers, value))
+						}
+						labelForValue={toTitleCase}
+						renderStart={({ value, checked }) => {
+							const tierMeta = getTierFilterMeta(value);
+							const TierIcon = tierMeta.icon;
+							return (
+								<TierIcon
+									className={cn(
+										"h-3.5 w-3.5 shrink-0 text-muted-foreground transition-colors",
+										tierMeta.filterIconHoverClassName,
+										checked && tierMeta.iconClassName,
+									)}
+								/>
+							);
+						}}
 					/>
 				</AccordionContent>
 			</AccordionItem>
@@ -1972,15 +2041,13 @@ export default function ModelsDisplay({
 			</aside>
 
 			<section className="min-w-0 flex flex-1 flex-col">
-				<div className="shrink-0 border-b border-border/70 bg-background/95 px-4 pb-1 pt-2.5 backdrop-blur lg:px-8">
+				<div className="z-40 shrink-0 border-b border-border/70 bg-background/95 px-4 pb-1 pt-2.5 backdrop-blur md:sticky md:top-[3.75rem] lg:px-8">
 					<div className="md:hidden space-y-2">
-						<div className="flex items-center gap-2">
-							{showPrimaryHeader ? (
+						{showPrimaryHeader ? (
+							<div className="flex items-center gap-2">
 								<h1 className="font-bold text-xl leading-8">Models</h1>
-							) : (
-								<div />
-							)}
-						</div>
+							</div>
+						) : null}
 
 						<div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
 							{sortSelect("h-8 min-w-0 rounded-md bg-background text-sm")}
@@ -2037,14 +2104,20 @@ export default function ModelsDisplay({
 						</div>
 
 						<div className="lg:hidden">
-							<div className="flex h-8 items-center">
+							<div className="flex h-8 items-center justify-between gap-3">
 								{showPrimaryHeader ? (
 									<h1 className="font-bold text-xl leading-8">Models</h1>
-								) : null}
+								) : (
+									<div />
+								)}
+								<div className="flex shrink-0 items-center justify-end gap-2">
+									{filterButton()}
+									{showPrimaryHeader ? viewSwitcher : null}
+								</div>
 							</div>
-							<div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 lg:grid-cols-[minmax(12rem,15rem)_minmax(18rem,1fr)_auto]">
+							<div className="mt-2 grid grid-cols-[minmax(9rem,12rem)_minmax(0,1fr)] items-center gap-2">
 								{sortSelect("h-8 min-w-0 rounded-md bg-background text-sm")}
-								<div className="relative col-span-full row-start-2 min-w-0 lg:col-span-1 lg:row-start-auto">
+								<div className="relative min-w-0">
 									<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
 									<Input
 										placeholder="Search"
@@ -2057,10 +2130,6 @@ export default function ModelsDisplay({
 										className="h-8 rounded-md border border-border bg-background pl-9 pr-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary w-full"
 										style={{ minWidth: 0 }}
 									/>
-								</div>
-								<div className="flex shrink-0 items-center justify-end gap-2">
-									<div className="lg:hidden">{filterButton(true)}</div>
-									{showPrimaryHeader ? viewSwitcher : null}
 								</div>
 							</div>
 						</div>
@@ -2101,9 +2170,7 @@ export default function ModelsDisplay({
 							<div className="flex items-start justify-between gap-3 pr-4">
 								<div>
 									<DrawerTitle>Filters</DrawerTitle>
-									<DrawerDescription>
-										Refine the models list.
-									</DrawerDescription>
+									<DrawerDescription>Refine the models list.</DrawerDescription>
 								</div>
 								{activeFilterCount > 0 ? (
 									<Button
@@ -2128,35 +2195,33 @@ export default function ModelsDisplay({
 				</Drawer>
 			) : (
 				<Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
-				<SheetContent
-					side="right"
-					className="w-[86vw] max-w-sm gap-0 p-0 lg:hidden"
-				>
-					<SheetHeader className="border-b border-border/70 px-4 py-3 text-left">
-						<div className="flex items-start justify-between gap-3 pr-8">
-							<div>
-								<SheetTitle>Filters</SheetTitle>
-								<SheetDescription>
-									Refine the models list.
-								</SheetDescription>
+					<SheetContent
+						side="right"
+						className="w-[86vw] max-w-sm gap-0 p-0 lg:hidden"
+					>
+						<SheetHeader className="border-b border-border/70 px-4 py-3 text-left">
+							<div className="flex items-start justify-between gap-3 pr-8">
+								<div>
+									<SheetTitle>Filters</SheetTitle>
+									<SheetDescription>Refine the models list.</SheetDescription>
+								</div>
+								{activeFilterCount > 0 ? (
+									<Button
+										type="button"
+										variant="ghost"
+										size="sm"
+										className="h-8 px-2"
+										onClick={resetFilters}
+									>
+										Reset
+									</Button>
+								) : null}
 							</div>
-							{activeFilterCount > 0 ? (
-								<Button
-									type="button"
-									variant="ghost"
-									size="sm"
-									className="h-8 px-2"
-									onClick={resetFilters}
-								>
-									Reset
-								</Button>
-							) : null}
-						</div>
-					</SheetHeader>
-					<ScrollArea className="min-h-0 flex-1 overscroll-y-contain px-4 py-2">
-						<div className="space-y-4 pb-6">{filtersContent}</div>
-					</ScrollArea>
-				</SheetContent>
+						</SheetHeader>
+						<ScrollArea className="min-h-0 flex-1 overscroll-y-contain px-4 py-2">
+							<div className="space-y-4 pb-6">{filtersContent}</div>
+						</ScrollArea>
+					</SheetContent>
 				</Sheet>
 			)}
 

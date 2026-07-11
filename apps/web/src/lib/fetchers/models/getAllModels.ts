@@ -41,13 +41,14 @@ export interface ModelCard {
     primary_timestamp: number | null;
     primary_group_key: string | null;
     model_source?: "api_backed" | "internal_only";
-    gateway_status?: "active" | "inactive" | "not_listed";
+    gateway_status?: "active" | "coming_soon" | "inactive" | "not_listed";
     gateway_provider_count?: number;
     gateway_active_provider_count?: number;
     gateway_endpoints?: string[];
     gateway_input_modalities?: string[];
     gateway_output_modalities?: string[];
     gateway_features?: string[];
+    gateway_tiers?: string[];
     gateway_provider_ids?: string[];
     gateway_provider_names?: string[];
     gateway_active_provider_names?: string[];
@@ -81,6 +82,197 @@ export interface ModelCard {
     model_page_notice?: ModelPageNotice | null;
     gateway_supported_models?: GatewaySupportedModel[];
     gateway_monitor_rows?: MonitorModelData[];
+}
+
+const ACTIVE_GATEWAY_STATUSES = new Set([
+    "active",
+    "deranked_lvl1",
+    "deranked_lvl2",
+    "deranked_lvl3",
+]);
+
+const GATEWAY_STATUS_PRIORITY = [
+    "active",
+    "coming_soon",
+    "deranked_lvl1",
+    "deranked_lvl2",
+    "deranked_lvl3",
+    "inactive",
+    "disabled",
+] as const;
+
+function normalizeGatewayStatus(value: unknown): string {
+    const normalized = String(value ?? "")
+        .trim()
+        .toLowerCase()
+        .replace(/[\s-]+/g, "_");
+    if (!normalized) return "inactive";
+    if (normalized === "not_active") return "inactive";
+    if (normalized === "comingsoon") return "coming_soon";
+    if (normalized === "deranked" || normalized === "de_ranked") {
+        return "deranked_lvl1";
+    }
+    if (normalized === "deranked_lvl_1") return "deranked_lvl1";
+    if (normalized === "deranked_lvl_2") return "deranked_lvl2";
+    if (normalized === "deranked_lvl_3") return "deranked_lvl3";
+    return normalized;
+}
+
+function statusPriority(status: string): number {
+    const index = GATEWAY_STATUS_PRIORITY.indexOf(
+        status as (typeof GATEWAY_STATUS_PRIORITY)[number],
+    );
+    return index === -1 ? GATEWAY_STATUS_PRIORITY.length : index;
+}
+
+function finiteNumbers(values: unknown[], allowZero = true): number[] {
+    return values
+        .map((value) => Number(value))
+        .filter(
+            (value) =>
+                Number.isFinite(value) && (allowZero ? value >= 0 : value > 0),
+        );
+}
+
+function minimum(values: unknown[], allowZero = true): number | null {
+    const numbers = finiteNumbers(values, allowZero);
+    return numbers.length > 0 ? Math.min(...numbers) : null;
+}
+
+function maximum(values: unknown[]): number | null {
+    const numbers = finiteNumbers(values, true);
+    return numbers.length > 0 ? Math.max(...numbers) : null;
+}
+
+function uniqueStrings(values: unknown[]): string[] {
+    return Array.from(
+        new Set(
+            values
+                .map((value) => String(value ?? "").trim())
+                .filter(Boolean),
+        ),
+    ).sort((a, b) => a.localeCompare(b));
+}
+
+export function summarizeMonitorRowsForModel(
+    rows: MonitorModelData[],
+): Partial<ModelCard> {
+    const providerById = new Map<
+        string,
+        { id: string; name: string; status: string; is_active: boolean }
+    >();
+
+    for (const row of rows) {
+        const id = String(row.provider.id ?? "").trim();
+        const name = String(row.provider.name ?? id).trim();
+        if (!id && !name) continue;
+        const status = normalizeGatewayStatus(row.gatewayStatus);
+        const key = id || name.toLowerCase();
+        const existing = providerById.get(key);
+        if (!existing || statusPriority(status) < statusPriority(existing.status)) {
+            providerById.set(key, {
+                id,
+                name,
+                status,
+                is_active: ACTIVE_GATEWAY_STATUSES.has(status),
+            });
+        }
+    }
+
+    const providerDetails = Array.from(providerById.values()).sort((a, b) => {
+        const priorityDifference = statusPriority(a.status) - statusPriority(b.status);
+        return priorityDifference || a.name.localeCompare(b.name);
+    });
+    const activeProviders = providerDetails.filter((provider) => provider.is_active);
+    const hasComingSoonProvider = providerDetails.some(
+        (provider) => provider.status === "coming_soon",
+    );
+    const pricingDetailRows = rows
+        .flatMap((row) => row.provider.pricingDetailRows ?? [])
+        .filter(
+            (row, index, allRows) =>
+                allRows.findIndex(
+                    (candidate) =>
+                        candidate.label === row.label && candidate.value === row.value,
+                ) === index,
+        )
+        .slice(0, 6);
+
+    const standardInputRows = rows.filter(
+        (row) => Number.isFinite(Number(row.provider.standardInputPrice)),
+    );
+    const standardOutputRows = rows.filter(
+        (row) => Number.isFinite(Number(row.provider.standardOutputPrice)),
+    );
+    const lowestStandardInputRow = standardInputRows.sort(
+        (a, b) => Number(a.provider.standardInputPrice) - Number(b.provider.standardInputPrice),
+    )[0];
+    const lowestStandardOutputRow = standardOutputRows.sort(
+        (a, b) => Number(a.provider.standardOutputPrice) - Number(b.provider.standardOutputPrice),
+    )[0];
+    const lowestFromPriceRow = rows
+        .filter((row) => Number.isFinite(Number(row.provider.fromPrice)))
+        .sort((a, b) => Number(a.provider.fromPrice) - Number(b.provider.fromPrice))[0];
+
+    return {
+        gateway_status:
+            activeProviders.length > 0
+                ? "active"
+                : hasComingSoonProvider
+                  ? "coming_soon"
+                  : providerDetails.length > 0
+                    ? "inactive"
+                    : "not_listed",
+        gateway_provider_count: providerDetails.length,
+        gateway_active_provider_count: activeProviders.length,
+        gateway_endpoints: uniqueStrings(rows.map((row) => row.endpoint)),
+        gateway_input_modalities: uniqueStrings(
+            rows.flatMap((row) => row.inputModalities ?? []),
+        ),
+        gateway_output_modalities: uniqueStrings(
+            rows.flatMap((row) => row.outputModalities ?? []),
+        ),
+        gateway_features: uniqueStrings(
+            rows.flatMap((row) => row.provider.features ?? []),
+        ),
+        gateway_tiers: uniqueStrings(rows.map((row) => row.tier)),
+        gateway_provider_ids: uniqueStrings(providerDetails.map((provider) => provider.id)),
+        gateway_provider_names: uniqueStrings(providerDetails.map((provider) => provider.name)),
+        gateway_active_provider_names: uniqueStrings(
+            activeProviders.map((provider) => provider.name),
+        ),
+        gateway_execution_regions: uniqueStrings(
+            rows.flatMap((row) => row.provider.executionRegions ?? []),
+        ),
+        gateway_provider_details: providerDetails,
+        gateway_api_model_ids: uniqueStrings(rows.map((row) => row.apiModelId)),
+        context_lengths: finiteNumbers(rows.map((row) => row.context), false),
+        supported_parameters: uniqueStrings(
+            rows.flatMap((row) => row.supportedParameters ?? []),
+        ),
+        lowest_input_price: minimum(rows.map((row) => row.provider.inputPrice)),
+        lowest_output_price: minimum(rows.map((row) => row.provider.outputPrice)),
+        lowest_standard_input_price: minimum(
+            rows.map((row) => row.provider.standardInputPrice),
+        ),
+        lowest_standard_output_price: minimum(
+            rows.map((row) => row.provider.standardOutputPrice),
+        ),
+        lowest_standard_input_price_label:
+            lowestStandardInputRow?.provider.standardInputPriceLabel ?? null,
+        lowest_standard_input_price_unit:
+            lowestStandardInputRow?.provider.standardInputPriceUnit ?? null,
+        lowest_standard_output_price_label:
+            lowestStandardOutputRow?.provider.standardOutputPriceLabel ?? null,
+        lowest_standard_output_price_unit:
+            lowestStandardOutputRow?.provider.standardOutputPriceUnit ?? null,
+        lowest_from_price: minimum(rows.map((row) => row.provider.fromPrice)),
+        lowest_from_price_unit: lowestFromPriceRow?.provider.fromPriceUnit ?? null,
+        pricing_detail_rows: pricingDetailRows,
+        popularity_tokens_week: maximum(rows.map((row) => row.weeklyTokensModel)),
+        throughput_week: maximum(rows.map((row) => row.weeklyThroughputModel)),
+        latency_week: maximum(rows.map((row) => row.weeklyLatencyModel)),
+    };
 }
 
 type PrimaryDateInfo = {
@@ -422,6 +614,7 @@ export async function getAllModels(
                 ? monitorRowsByModelId.get(modelId) ?? []
                 : [];
             return mapRawToModelCard(raw, {
+                ...summarizeMonitorRowsForModel(gatewayMonitorRows),
                 model_page_notice: resolveModelPageNotice(
                     noticesByApiModelId,
                     raw,
