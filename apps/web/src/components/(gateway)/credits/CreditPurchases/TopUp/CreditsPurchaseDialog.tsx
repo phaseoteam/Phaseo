@@ -25,8 +25,8 @@ import { toast } from "sonner";
 import { loadStripe } from "@stripe/stripe-js";
 import { Spinner } from "@/components/ui/spinner";
 import { ChargeSavedPayment } from "@/app/(dashboard)/settings/credits/actions";
-import posthog from "posthog-js";
 import { isAnalyticsCaptureAllowed } from "@/lib/clientErrorReporting";
+import { captureProductEvent } from "@/lib/productAnalytics";
 
 /* Helpers */
 const formatUSD = (v: number) =>
@@ -48,24 +48,13 @@ function trackFirstPaymentSaveCardClick(payload: {
 		return;
 	}
 
-	const eventPayload = {
-		source: "credits_top_up_dialog",
-		credits_amount_usd: payload.creditsAmountUsd,
-		fee_usd: payload.feeUsd,
-		total_usd: payload.totalUsd,
+	captureProductEvent("first_payment_save_card_click", {
+		amount_usd: payload.creditsAmountUsd,
 		currency: "usd",
-	};
-
-	const gtag = (window as any).gtag;
-	if (typeof gtag === "function") {
-		gtag("event", "first_payment_save_card_click", eventPayload);
-	}
-
-	try {
-		posthog.capture("first_payment_save_card_click", eventPayload);
-	} catch {
-		// no-op; analytics should never block checkout
-	}
+		fee_usd: payload.feeUsd,
+		surface: "credits_top_up_dialog",
+		total_usd: payload.totalUsd,
+	});
 }
 
 export default function CreditsPurchaseDialog({
@@ -212,6 +201,12 @@ export default function CreditsPurchaseDialog({
 				totalUsd: total,
 			});
 		}
+		captureProductEvent("credits_checkout_started", {
+			amount_usd: total,
+			currency: "usd",
+			mode,
+			payment_method: selectedPm === "new" ? "new" : "saved",
+		});
 
 		// Update URL to indicate a payment attempt is in progress so the
 		// parent page can show a processing banner. Use a short unique-ish
@@ -289,6 +284,12 @@ export default function CreditsPurchaseDialog({
 				if (ok) {
 					const status = (data?.status || "").toLowerCase();
 					if (status === "succeeded") {
+						captureProductEvent("credits_payment_succeeded", {
+							amount_usd: total,
+							currency: "usd",
+							mode,
+							payment_method: "saved",
+						});
 						toast.success("Payment successful");
 						onClose();
 						return; // don't fall through

@@ -16,9 +16,14 @@ import {
 	type ClientErrorPayload,
 	isAnalyticsCaptureAllowed,
 } from "@/lib/clientErrorReporting";
+import {
+	PRODUCT_ANALYTICS_EVENT,
+	type ProductAnalyticsPayload,
+} from "@/lib/productAnalytics";
 
 let posthogInitialized = false;
 let listenersBound = false;
+let posthogCaptureEnabled = false;
 
 const RECENT_ERROR_WINDOW_MS = 15000;
 const RECENT_ERROR_MAX = 100;
@@ -89,7 +94,7 @@ function captureToGa(payload: ClientErrorPayload) {
 }
 
 function captureToPosthog(payload: ClientErrorPayload) {
-	if (!posthogInitialized) {
+	if (!posthogCaptureEnabled) {
 		return;
 	}
 
@@ -192,6 +197,19 @@ function bindGlobalErrorListeners() {
 		if (!customEvent.detail) return;
 		captureClientError(customEvent.detail);
 	});
+
+	window.addEventListener(PRODUCT_ANALYTICS_EVENT, (event) => {
+		const payload = (event as CustomEvent<ProductAnalyticsPayload>).detail;
+		if (!payload || !isAnalyticsCaptureAllowed()) return;
+
+		if (typeof window.gtag === "function") {
+			window.gtag("event", payload.event, payload.properties);
+		}
+
+		if (posthogCaptureEnabled) {
+			posthog.capture(payload.event, payload.properties);
+		}
+	});
 }
 
 function initializePosthog() {
@@ -209,7 +227,6 @@ function initializePosthog() {
 		person_profiles: "identified_only",
 		disable_session_recording: true,
 		opt_out_capturing_by_default: true,
-		cookieless_mode: "on_reject",
 		debug: process.env.NODE_ENV === "development",
 	});
 
@@ -222,6 +239,7 @@ function enablePosthog() {
 	}
 
 	initializePosthog();
+	if (posthogCaptureEnabled) return;
 
 	posthog.set_config({
 		autocapture: true,
@@ -233,6 +251,11 @@ function enablePosthog() {
 		disable_session_recording: false,
 	});
 	posthog.opt_in_capturing({ captureEventName: false });
+	posthogCaptureEnabled = true;
+	posthog.capture("$pageview", {
+		$current_url: window.location.href,
+		$pathname: window.location.pathname,
+	});
 }
 
 function disablePosthog() {
@@ -240,14 +263,15 @@ function disablePosthog() {
 		return;
 	}
 
+	posthogCaptureEnabled = false;
 	posthog.set_config({
 		autocapture: false,
 		capture_pageview: false,
 		capture_pageleave: false,
 		disable_session_recording: true,
 	});
-	posthog.opt_out_capturing();
 	posthog.reset();
+	posthog.opt_out_capturing();
 }
 
 function applyPosthogConsent(consent: AnalyticsConsent | null) {

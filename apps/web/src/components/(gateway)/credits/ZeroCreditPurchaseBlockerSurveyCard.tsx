@@ -1,14 +1,13 @@
 "use client";
 
 import * as React from "react";
-import posthog from "posthog-js";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { isAnalyticsCaptureAllowed } from "@/lib/clientErrorReporting";
+import { captureProductEvent } from "@/lib/productAnalytics";
 
 const REASON_OPTIONS = [
 	{ key: "setup_unclear", label: "Setup is unclear" },
@@ -63,15 +62,10 @@ export default function ZeroCreditPurchaseBlockerSurveyCard(props: {
 	}, [props.workspaceId]);
 
 	React.useEffect(() => {
-		if (!cooldownChecked || submitted || !isAnalyticsCaptureAllowed()) return;
-		try {
-			posthog.capture("credits_purchase_blocker_survey_viewed", {
-				surface: "settings_credits_zero_balance",
-				workspace_id: props.workspaceId ?? null,
-			});
-		} catch {
-			// no-op; analytics should never block the credits page
-		}
+		if (!cooldownChecked || submitted) return;
+		captureProductEvent("credits_purchase_blocker_survey_viewed", {
+			surface: "settings_credits_zero_balance",
+		});
 	}, [cooldownChecked, props.workspaceId, submitted]);
 
 	async function handleSubmit() {
@@ -79,18 +73,11 @@ export default function ZeroCreditPurchaseBlockerSurveyCard(props: {
 
 		setIsSubmitting(true);
 		try {
-			try {
-				posthog.capture("credits_purchase_blocker_feedback_submitted", {
-					surface: "settings_credits_zero_balance",
-					workspace_id: props.workspaceId ?? null,
-					reason_key: reasonKey,
-					details: details.trim() || null,
-					has_details: details.trim().length > 0,
-					details_length: details.trim().length,
-				});
-			} catch {
-				// no-op; explicit survey submission should still complete locally
-			}
+			captureProductEvent("credits_purchase_blocker_feedback_submitted", {
+				has_details: details.trim().length > 0,
+				reason_key: reasonKey,
+				surface: "settings_credits_zero_balance",
+			});
 
 			if (typeof window !== "undefined") {
 				window.localStorage.setItem(

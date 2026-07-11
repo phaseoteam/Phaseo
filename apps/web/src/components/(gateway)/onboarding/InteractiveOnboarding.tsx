@@ -30,6 +30,7 @@ import {
 	DrawerTrigger,
 } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
+import { captureProductEvent } from "@/lib/productAnalytics";
 
 export type OnboardingWorkspace = {
 	id: string;
@@ -540,6 +541,10 @@ export default function InteractiveOnboarding({
 			setCreatedPlaintextKey(result.plaintext ?? "");
 			setCreatedKeyPrefix(result.prefix ?? "");
 			if (result.id) setSelectedKeyId(result.id);
+			captureProductEvent("api_key_created", {
+				preset: "development",
+				surface: "onboarding",
+			});
 
 			const nextCompleted = new Set(completedSteps);
 			nextCompleted.add("api-key");
@@ -598,6 +603,11 @@ export default function InteractiveOnboarding({
 						? ["api-key", "models", "request"]
 						: Array.from(completedSteps),
 				status,
+			});
+			captureProductEvent("onboarding_finished", {
+				completed_step_count:
+					status === "completed" ? 3 : completedSteps.size,
+				outcome: status,
 			});
 			toast.success(
 				status === "completed" ? "Onboarding complete" : "Onboarding skipped",
