@@ -9,7 +9,10 @@ describe("buildDefaultSystemPrompt", () => {
 		const prompt = buildDefaultSystemPrompt("openai/gpt-5.6-luna-pro");
 
 		expect(prompt).toContain(
-			"Use dollar-sign delimiters for all mathematical expressions",
+			"Use dollar-sign delimiters only for mathematical expressions that need notation or layout",
+		);
+		expect(prompt).toContain(
+			"Keep ordinary numbers, percentages, and currency as plain text",
 		);
 		expect(prompt).toContain("Put the $$ block-math delimiters on their own lines.");
 		expect(prompt).toContain(

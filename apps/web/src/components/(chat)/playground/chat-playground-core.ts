@@ -318,7 +318,8 @@ const LEGACY_MATH_FORMATTING_RULE =
 	"- **For all mathematical expressions, you must use dollar-sign delimiters. Use $...$ for inline math and $$...$$ for block math. Do not use (...) or [...] delimiters.**";
 
 const MATH_FORMATTING_RULES = [
-	"- Use dollar-sign delimiters for all mathematical expressions: $...$ for inline math and $$...$$ for block math.",
+	"- Use dollar-sign delimiters only for mathematical expressions that need notation or layout: $...$ for inline math and $$...$$ for block math.",
+	"- Keep ordinary numbers, percentages, and currency as plain text (for example: 28%, $28, and $72).",
 	"- Put the $$ block-math delimiters on their own lines.",
 	"- Use valid LaTeX inside delimiters. Escape special characters: write percentages as $80\\%$, never $80%$.",
 	"- Do not use \\(...\\) or \\[...\\] delimiters.",
