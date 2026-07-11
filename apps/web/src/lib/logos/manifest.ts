@@ -26,11 +26,18 @@ export const logoManifest = {
 	"amazon-bedrock": {
 		color: "/logos/amazon-bedrock.svg",
 	},
+	"amazon-bedrock-mantle": {
+		color: "/logos/amazon-bedrock.svg",
+	},
 	aws: {
 		light: "/logos/aws_light.svg",
 		dark: "/logos/aws_dark.svg",
 	},
 	anthropic: {
+		light: "/logos/anthropic_light.svg",
+		dark: "/logos/anthropic_dark.svg",
+	},
+	"anthropic-us": {
 		light: "/logos/anthropic_light.svg",
 		dark: "/logos/anthropic_dark.svg",
 	},
@@ -157,6 +164,9 @@ export const logoManifest = {
 	"google-vertex": {
 		color: "/logos/google-vertex.svg",
 	},
+	"google-vertex-eu": {
+		color: "/logos/google-vertex.svg",
+	},
 	grok: {
 		light: "/logos/grok_light.svg",
 		dark: "/logos/grok_dark.svg",
@@ -257,6 +267,10 @@ export const logoManifest = {
 		light: "/logos/nebius-token-factory_light.svg",
 		dark: "/logos/nebius-token-factory_dark.svg",
 	},
+	"nebius-token-factory-fast": {
+		light: "/logos/nebius-token-factory_light.svg",
+		dark: "/logos/nebius-token-factory_dark.svg",
+	},
 	nextbit: {
 		color: "/logos/nextbit.svg",
 	},
@@ -275,6 +289,10 @@ export const logoManifest = {
 		color: "/logos/nvidia.svg",
 	},
 	openai: {
+		light: "/logos/openai_light.svg",
+		dark: "/logos/openai_dark.svg",
+	},
+	"openai-eu": {
 		light: "/logos/openai_light.svg",
 		dark: "/logos/openai_dark.svg",
 	},
@@ -369,6 +387,10 @@ export const logoManifest = {
 	},
 	"weights-and-biases": {
 		color: "/logos/weights-and-biases.svg",
+	},
+	wafer: {
+		light: "/logos/wafer_light.svg",
+		dark: "/logos/wafer_dark.svg",
 	},
 	"spacex-ai": {
 		light: "/logos/spacexai_light.svg",
