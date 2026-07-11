@@ -873,6 +873,10 @@ function ChatPlaygroundContent({
 					if (thread.id !== nextThread.id) {
 						return thread;
 					}
+					if (thread.messages === nextThread.messages) {
+						threadToPersist = { ...thread, ...nextThread };
+						return threadToPersist;
+					}
 					const currentById = new Map(
 						thread.messages.map((message) => [message.id, message]),
 					);

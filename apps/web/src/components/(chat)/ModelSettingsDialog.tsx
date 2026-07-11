@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Logo } from "@/components/Logo";
 import {
@@ -248,7 +248,9 @@ export function ModelSettingsDialog({
             const timer = textCommitTimersRef.current[key];
             if (timer) clearTimeout(timer);
             textCommitTimersRef.current[key] = setTimeout(() => {
-                commitTextDraft(key, value);
+                startTransition(() => {
+                    commitTextDraft(key, value);
+                });
             }, TEXT_COMMIT_DELAY_MS);
         },
         [commitTextDraft]
@@ -418,8 +420,10 @@ export function ModelSettingsDialog({
     }, [favoriteModelIdSet, filteredModelChoices]);
     const modelPickerHasResults =
         featuredModelChoices.length > 0 || groupedModelChoices.length > 0;
-    const selectedChoice =
-        modelChoices.find((choice) => choice.id === selectedModelId) ?? null;
+    const selectedChoice = useMemo(
+        () => modelChoices.find((choice) => choice.id === selectedModelId) ?? null,
+        [modelChoices, selectedModelId]
+    );
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>

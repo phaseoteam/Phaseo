@@ -1,16 +1,26 @@
 import { useMemo } from "react";
-import type { ChatThread } from "@/lib/indexeddb/chats";
+import type { ChatMessage, ChatThread } from "@/lib/indexeddb/chats";
 import type { GroupedThreads } from "@/components/(chat)/ChatSidebar";
 
+const activityTimeByMessages = new WeakMap<ChatMessage[], number | null>();
+
 export function getChatThreadActivityTime(thread: ChatThread) {
+	const cachedActivityTime = activityTimeByMessages.get(thread.messages);
+	if (cachedActivityTime !== undefined) return cachedActivityTime;
+
 	const messageTimes = thread.messages
 		.map((message) => Date.parse(message.createdAt))
 		.filter(Number.isFinite);
 	if (messageTimes.length > 0) {
-		return Math.max(...messageTimes);
+		const activityTime = Math.max(...messageTimes);
+		activityTimeByMessages.set(thread.messages, activityTime);
+		return activityTime;
 	}
 	const createdMs = Date.parse(thread.createdAt);
-	if (Number.isFinite(createdMs)) return createdMs;
+	if (Number.isFinite(createdMs)) {
+		activityTimeByMessages.set(thread.messages, createdMs);
+		return createdMs;
+	}
 	const updatedMs = Date.parse(thread.updatedAt);
 	return Number.isFinite(updatedMs) ? updatedMs : null;
 }
