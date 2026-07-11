@@ -10,9 +10,14 @@ import {
 	CircleDollarSign,
 	CreditCard,
 	Gauge,
+	Image,
+	ImagePlus,
+	PieChart,
 	ScrollText,
 	Store,
 	Trophy,
+	Users,
+	Wrench,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -39,6 +44,11 @@ const sectionIcons: Record<string, LucideIcon> = {
 	subscriptions: CreditCard,
 	quickstart: Bolt,
 	about: BadgeInfo,
+	"unique-users": Users,
+	"market-share": PieChart,
+	"tool-calls": Wrench,
+	images: Image,
+	"image-output": ImagePlus,
 };
 
 const activeSectionTopOffset = 212;

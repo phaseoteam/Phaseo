@@ -634,8 +634,8 @@ export function UsageStackedBar({
 			<div className="space-y-8 pt-3">
 				<div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
 					<div className="min-w-0 max-w-xl space-y-1">
-						<h3 className="text-xl font-semibold">{leaderboardTitle}</h3>
-						<p className="text-sm text-muted-foreground">
+						<h3 className="text-lg font-semibold lg:text-xl">{leaderboardTitle}</h3>
+						<p className="text-xs text-muted-foreground lg:text-sm">
 							{leaderboardDescription}
 						</p>
 					</div>
@@ -645,7 +645,7 @@ export function UsageStackedBar({
 									type="button"
 									variant="outline"
 									size="sm"
-									className="h-9 w-36 justify-between rounded-lg px-4 font-normal text-muted-foreground" />}>
+									className="h-8 w-32 justify-between rounded-lg px-3 text-xs font-normal text-muted-foreground lg:h-9 lg:w-36 lg:px-4 lg:text-sm" />}>
 
 									{optionLabel(MODEL_FILTER_OPTIONS, modelFilter)}
 									<ChevronDown className="ml-2 h-4 w-4 opacity-60" />
@@ -676,7 +676,7 @@ export function UsageStackedBar({
 									type="button"
 									variant="outline"
 									size="sm"
-									className="h-9 w-32 justify-between rounded-lg px-4 font-normal text-muted-foreground" />}>
+									className="h-8 w-28 justify-between rounded-lg px-3 text-xs font-normal text-muted-foreground lg:h-9 lg:w-32 lg:px-4 lg:text-sm" />}>
 
 									{optionLabel(PERIOD_OPTIONS, leaderboardPeriod)}
 									<ChevronDown className="ml-2 h-4 w-4 opacity-60" />
@@ -731,18 +731,18 @@ export function UsageStackedBar({
 								return (
 									<div
 										key={model}
-										className="grid min-h-16 grid-cols-[2.25rem_2rem_minmax(0,1fr)_auto] items-center gap-3 py-2"
+										className="grid min-h-14 grid-cols-[2rem_1.75rem_minmax(0,1fr)_auto] items-center gap-2 py-1.5 lg:min-h-16 lg:grid-cols-[2.25rem_2rem_minmax(0,1fr)_auto] lg:gap-3 lg:py-2"
 									>
-										<div className="text-base tabular-nums text-muted-foreground">
+										<div className="text-sm tabular-nums text-muted-foreground lg:text-base">
 											{index + 1}.
 										</div>
 										{logoHref ? (
 											<Link
 												href={logoHref}
 												aria-label={`${modelName} organization`}
-												className="flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200/80 bg-transparent dark:border-zinc-800"
+												className="flex h-6 w-6 items-center justify-center rounded-lg border border-zinc-200/80 bg-transparent dark:border-zinc-800 lg:h-7 lg:w-7"
 											>
-												<span className="relative h-4 w-4">
+												<span className="relative h-3 w-3 lg:h-4 lg:w-4">
 													<Logo
 														id={logoId}
 														alt={modelName}
@@ -752,8 +752,8 @@ export function UsageStackedBar({
 												</span>
 											</Link>
 										) : (
-											<span className="flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200/80 bg-transparent dark:border-zinc-800">
-												<span className="relative h-4 w-4">
+											<span className="flex h-6 w-6 items-center justify-center rounded-lg border border-zinc-200/80 bg-transparent dark:border-zinc-800 lg:h-7 lg:w-7">
+												<span className="relative h-3 w-3 lg:h-4 lg:w-4">
 													<Logo
 														id={logoId}
 														alt={modelName}
@@ -767,12 +767,12 @@ export function UsageStackedBar({
 											<div className="min-w-0">
 												<Link
 													href={modelHref}
-													className="block truncate text-base font-semibold underline decoration-transparent underline-offset-2 hover:decoration-current"
+													className="block truncate text-sm font-semibold underline decoration-transparent underline-offset-2 hover:decoration-current lg:text-base"
 												>
 													{modelName}
 												</Link>
 												{organisationId ? (
-													<div className="text-sm text-muted-foreground">
+													<div className="text-xs text-muted-foreground lg:text-sm">
 														by{" "}
 														<Link
 															href={`/organisations/${encodeURIComponent(organisationId)}`}
@@ -785,18 +785,18 @@ export function UsageStackedBar({
 											</div>
 										) : (
 											<div className="min-w-0">
-												<div className="truncate text-base font-semibold">
+												<div className="truncate text-sm font-semibold lg:text-base">
 													{modelName}
 												</div>
 												{organisationId ? (
-													<div className="text-sm text-muted-foreground">
+													<div className="text-xs text-muted-foreground lg:text-sm">
 														by {organisationName}
 													</div>
 												) : null}
 											</div>
 										)}
 										<div className="text-right">
-											<div className="whitespace-nowrap text-sm tabular-nums text-muted-foreground">
+											<div className="whitespace-nowrap text-xs tabular-nums text-muted-foreground lg:text-sm">
 												{formatNumber(entry.current)} {leaderboardUnit}
 											</div>
 											<div className={changeClassName(entry.changePct)}>
