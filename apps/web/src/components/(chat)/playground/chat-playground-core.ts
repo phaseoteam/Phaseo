@@ -317,13 +317,11 @@ function normalizeNickname(nickname?: string | null) {
 const LEGACY_MATH_FORMATTING_RULE =
 	"- **For all mathematical expressions, you must use dollar-sign delimiters. Use $...$ for inline math and $$...$$ for block math. Do not use (...) or [...] delimiters.**";
 
-const MATH_FORMATTING_RULES = [
-	"- Use dollar-sign delimiters only for mathematical expressions that need notation or layout: $...$ for inline math and $$...$$ for block math.",
-	"- Keep ordinary numbers, percentages, and currency as plain text (for example: 28%, $28, and $72).",
-	"- Put the $$ block-math delimiters on their own lines.",
-	"- Use valid LaTeX inside delimiters. Escape special characters: write percentages as $80\\%$, never $80%$.",
-	"- Do not use \\(...\\) or \\[...\\] delimiters.",
-] as const;
+const PREVIOUS_MATH_FORMATTING_RULE =
+	"- Do not use \\(...\\) or \\[...\\] delimiters.";
+
+const COMPACT_FORMATTING_RULE =
+	"Markdown; ```code fences```; `backticks` for code, filenames, paths, and functions. Use $...$ or $$...$$ only for typeset math; put $$ delimiters on their own lines. Keep numbers, percentages, and currency plain. Use valid LaTeX: escape % in math (e.g. $80\\%$); no \\(...\\) or \\[...\\].";
 
 export function buildDefaultSystemPrompt(
 	modelId: string,
@@ -338,11 +336,7 @@ export function buildDefaultSystemPrompt(
 	return [
 		identityLine,
 		"",
-		"Formatting Rules:",
-		"- Use Markdown for lists, tables, and styling.",
-		"- Use ```code fences``` for all code blocks.",
-		"- Format file names, paths, and function names with `inline code` backticks.",
-		...MATH_FORMATTING_RULES,
+		`Formatting: ${COMPACT_FORMATTING_RULE}`,
 	].join("\n");
 }
 
@@ -367,13 +361,15 @@ function isGeneratedDefaultSystemPrompt(
 	const safeModelId = modelId || "AI model";
 	const orgLabel = formatOrgLabel(getOrgId(safeModelId));
 	const generatedPrefix = `You are ${safeModelId}, known as: `;
-	const generatedSuffix = `, a large language model from ${orgLabel}.\n\nFormatting Rules:`;
+	const generatedSuffixes = [
+		`, a large language model from ${orgLabel}.\n\nFormatting:`,
+		`, a large language model from ${orgLabel}.\n\nFormatting Rules:`,
+	];
 	return (
 		normalizedPrompt.startsWith(generatedPrefix) &&
-		normalizedPrompt.includes(generatedSuffix) &&
-		(MATH_FORMATTING_RULES.some((rule) =>
-			normalizedPrompt.endsWith(rule),
-		) ||
+		generatedSuffixes.some((suffix) => normalizedPrompt.includes(suffix)) &&
+		(normalizedPrompt.endsWith(COMPACT_FORMATTING_RULE) ||
+			normalizedPrompt.endsWith(PREVIOUS_MATH_FORMATTING_RULE) ||
 			normalizedPrompt.endsWith(LEGACY_MATH_FORMATTING_RULE))
 	);
 }

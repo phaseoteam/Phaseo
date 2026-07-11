@@ -9,17 +9,19 @@ describe("buildDefaultSystemPrompt", () => {
 		const prompt = buildDefaultSystemPrompt("openai/gpt-5.6-luna-pro");
 
 		expect(prompt).toContain(
-			"Use dollar-sign delimiters only for mathematical expressions that need notation or layout",
+			"Markdown; ```code fences```; `backticks` for code, filenames, paths, and functions.",
 		);
 		expect(prompt).toContain(
-			"Keep ordinary numbers, percentages, and currency as plain text",
+			"Use $...$ or $$...$$ only for typeset math",
 		);
-		expect(prompt).toContain("Put the $$ block-math delimiters on their own lines.");
 		expect(prompt).toContain(
-			"write percentages as $80\\%$, never $80%$.",
+			"Keep numbers, percentages, and currency plain.",
 		);
-		expect(prompt).not.toContain("Write monetary amounts with a currency label");
-		expect(prompt).toContain("Do not use \\(...\\) or \\[...\\] delimiters.");
+		expect(prompt).toContain(
+			"escape % in math (e.g. $80\\%$)",
+		);
+		expect(prompt).toContain("no \\(...\\) or \\[...\\].");
+		expect(prompt).not.toContain("Formatting Rules:");
 	});
 });
 
