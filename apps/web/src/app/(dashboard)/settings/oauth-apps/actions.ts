@@ -3,6 +3,8 @@
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { revalidatePath } from "next/cache";
+import { hashOAuthClientSecret } from "@/lib/keygen";
+import { OAUTH_SCOPE_OPTIONS } from "@/lib/oauth/scopes";
 import {
 	THIRD_PARTY_OAUTH_COMING_SOON_MESSAGE,
 	isThirdPartyOAuthEnabled,
@@ -11,8 +13,9 @@ import {
 /**
  * OAuth App Management Server Actions
  *
- * These actions integrate with Supabase's OAuth 2.1 server to manage OAuth applications.
- * They use the Supabase Admin SDK to create, update, and delete OAuth clients.
+ * These actions are the dashboard's canonical OAuth client management path.
+ * Secrets are generated and hashed server-side here using the same active pepper
+ * configured in the API worker.
  *
  * Architecture:
  * - Supabase OAuth server manages client credentials (opaque storage)
@@ -29,11 +32,22 @@ interface CreateOAuthAppInput {
 	logo_url?: string;
 	privacy_policy_url?: string;
 	terms_of_service_url?: string;
+	allowed_scopes?: string[];
 }
 
 interface OAuthAppResult {
 	data?: any;
 	error?: string;
+}
+
+const SUPPORTED_OAUTH_SCOPES = new Set(OAUTH_SCOPE_OPTIONS.map((option) => option.value));
+
+function validateOAuthScopes(scopes: string[] | undefined): string[] {
+	const normalized = Array.from(new Set((scopes ?? []).map((scope) => String(scope).trim()).filter(Boolean)));
+	if (normalized.length === 0) throw new Error("Choose at least one OAuth scope");
+	const unsupported = normalized.find((scope) => !SUPPORTED_OAUTH_SCOPES.has(scope));
+	if (unsupported) throw new Error(`Unsupported OAuth scope: ${unsupported}`);
+	return normalized;
 }
 
 /**
@@ -68,13 +82,14 @@ export async function createOAuthAppAction(
 		// Verify user is a member of the team
 		const { data: membership } = await supabase
 			.from("workspace_members")
-			.select("workspace_id")
+			.select("role")
 			.eq("workspace_id", input.workspace_id)
 			.eq("user_id", user.id)
-			.single();
+			.in("role", ["owner", "admin"])
+			.maybeSingle();
 
 		if (!membership) {
-			return { error: "You don't have permission to create OAuth apps for this workspace" };
+			return { error: "Workspace owner or admin access is required to create OAuth apps" };
 		}
 
 		// Validate inputs
@@ -98,18 +113,15 @@ export async function createOAuthAppAction(
 			}
 		}
 
-		// Create OAuth client in Supabase using Admin SDK
+		const allowedScopes = validateOAuthScopes(input.allowed_scopes);
 		const adminClient = createAdminClient();
 		const { data: oauthClient, error: clientError } = await (adminClient.auth.admin.oauth as any).createClient({
 			name: input.name,
 			redirect_uris: input.redirect_uris,
 		});
-
-		if (clientError || !oauthClient) {
-			return { error: `Failed to create OAuth client: ${clientError?.message || 'Unknown error'}` };
+		if (clientError || !oauthClient?.client_id || !oauthClient?.client_secret) {
+			return { error: `Failed to create OAuth client: ${clientError?.message || "Unknown error"}` };
 		}
-
-		// Store metadata in our table
 		const { data: metadata, error: metadataError } = await supabase
 			.from("oauth_app_metadata")
 			.insert({
@@ -122,27 +134,21 @@ export async function createOAuthAppAction(
 				logo_url: input.logo_url,
 				privacy_policy_url: input.privacy_policy_url,
 				terms_of_service_url: input.terms_of_service_url,
+				client_type: "confidential",
+				client_secret_hash: hashOAuthClientSecret(oauthClient.client_secret),
+				allowed_scopes: allowedScopes,
 				created_by: user.id,
 				status: "active",
 			})
 			.select()
 			.single();
-
 		if (metadataError) {
-			// Rollback: delete OAuth client if metadata insert failed
 			await (adminClient.auth.admin.oauth as any).deleteClient(oauthClient.client_id);
 			return { error: `Failed to create OAuth app: ${metadataError.message}` };
 		}
 
-		// Return credentials (client_secret only returned once!)
 		revalidatePath("/settings/oauth-apps");
-		return {
-			data: {
-				...metadata,
-				client_secret: oauthClient.client_secret,
-				redirect_uris: input.redirect_uris,
-			},
-		};
+		return { data: { ...metadata, client_secret: oauthClient.client_secret } };
 	} catch (error: any) {
 		console.error("Error creating OAuth app:", error);
 		return { error: error.message || "Failed to create OAuth app" };
@@ -227,6 +233,51 @@ export async function updateOAuthAppAction(
 	}
 }
 
+export async function updateOAuthAppScopesAction(
+	clientId: string,
+	allowedScopes: string[],
+): Promise<OAuthAppResult> {
+	try {
+		if (!isThirdPartyOAuthEnabled()) return { error: THIRD_PARTY_OAUTH_COMING_SOON_MESSAGE };
+		if (!Array.isArray(allowedScopes) || allowedScopes.length === 0) {
+			return { error: "Choose at least one OAuth scope" };
+		}
+		const supabase = await createClient();
+		const { data: { user }, error: userError } = await supabase.auth.getUser();
+		if (userError || !user) return { error: "Unauthorized" };
+		const { data: app } = await supabase
+			.from("oauth_app_metadata")
+			.select("workspace_id")
+			.eq("client_id", clientId)
+			.single();
+		if (!app) return { error: "OAuth app not found" };
+		const { data: membership } = await supabase
+			.from("workspace_members")
+			.select("role")
+			.eq("workspace_id", app.workspace_id)
+			.eq("user_id", user.id)
+			.in("role", ["owner", "admin"])
+			.maybeSingle();
+		if (!membership) return { error: "Workspace owner or admin access is required" };
+
+		const { data: updated, error: updateError } = await supabase
+			.from("oauth_app_metadata")
+			.update({ allowed_scopes: validateOAuthScopes(allowedScopes) })
+			.eq("client_id", clientId)
+			.eq("workspace_id", app.workspace_id)
+			.select()
+			.single();
+		if (updateError) return { error: `Failed to update OAuth app scopes: ${updateError.message}` };
+		revalidatePath("/settings/oauth-apps");
+		revalidatePath(`/settings/oauth-apps/${clientId}`);
+		revalidatePath("/settings/authorized-apps");
+		return { data: updated };
+	} catch (error: any) {
+		console.error("oauth_app_scope_update_failed", error);
+		return { error: error.message || "Failed to update OAuth app scopes" };
+	}
+}
+
 /**
  * Regenerate client secret
  *
@@ -276,22 +327,21 @@ export async function regenerateClientSecretAction(
 			return { error: "You don't have permission to regenerate this secret" };
 		}
 
-		// Regenerate secret using Admin SDK
 		const adminClient = createAdminClient();
 		const { data: newSecret, error: secretError } = await (adminClient.auth.admin.oauth as any).regenerateSecret(clientId);
-
-		if (secretError || !newSecret) {
-			return { error: `Failed to regenerate secret: ${secretError?.message || 'Unknown error'}` };
+		if (secretError || !newSecret?.client_secret) {
+			return { error: `Failed to regenerate secret: ${secretError?.message || "Unknown error"}` };
 		}
+		const { error: hashUpdateError } = await supabase
+			.from("oauth_app_metadata")
+			.update({ client_secret_hash: hashOAuthClientSecret(newSecret.client_secret) })
+			.eq("client_id", clientId)
+			.eq("workspace_id", app.workspace_id);
+		if (hashUpdateError) return { error: `Failed to update OAuth client secret: ${hashUpdateError.message}` };
 
 		revalidatePath("/settings/oauth-apps");
 		revalidatePath(`/settings/oauth-apps/${clientId}`);
-		return {
-			data: {
-				client_id: clientId,
-				client_secret: newSecret.client_secret,
-			},
-		};
+		return { data: { client_id: clientId, client_secret: newSecret.client_secret } };
 	} catch (error: any) {
 		console.error("Error regenerating secret:", error);
 		return { error: error.message || "Failed to regenerate secret" };

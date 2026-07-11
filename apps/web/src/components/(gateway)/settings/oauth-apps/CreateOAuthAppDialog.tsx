@@ -19,6 +19,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Plus, AlertCircle, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
+import OAuthScopeSelector from "./OAuthScopeSelector";
+import { DEFAULT_THIRD_PARTY_OAUTH_SCOPES } from "@/lib/oauth/scopes";
 
 interface CreateOAuthAppDialogProps {
 	currentTeamId: string | null;
@@ -39,6 +41,7 @@ export default function CreateOAuthAppDialog({
 		description: "",
 		homepageUrl: "",
 		redirectUris: "http://localhost:3000/auth/callback",
+		allowedScopes: [...DEFAULT_THIRD_PARTY_OAUTH_SCOPES] as string[],
 	});
 
 	const handleCreate = async () => {
@@ -59,6 +62,7 @@ export default function CreateOAuthAppDialog({
 				homepage_url: formData.homepageUrl || undefined,
 				redirect_uris: formData.redirectUris.split("\n").filter(uri => uri.trim()),
 				workspace_id: currentTeamId!,
+				allowed_scopes: formData.allowedScopes,
 			});
 
 			if (result.error) {
@@ -87,6 +91,7 @@ export default function CreateOAuthAppDialog({
 			description: "",
 			homepageUrl: "",
 			redirectUris: "http://localhost:3000/auth/callback",
+			allowedScopes: [...DEFAULT_THIRD_PARTY_OAUTH_SCOPES] as string[],
 		});
 		setCreatedApp(null);
 		setError(null);
@@ -190,7 +195,7 @@ export default function CreateOAuthAppDialog({
 					Create OAuth App
 				</Button>
 			</DialogTrigger>
-			<DialogContent className="max-w-2xl">
+			<DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
 				<DialogHeader>
 					<DialogTitle>Create OAuth App</DialogTitle>
 					<DialogDescription>
@@ -216,6 +221,17 @@ export default function CreateOAuthAppDialog({
 						<p className="text-xs text-muted-foreground mt-1">
 							A friendly name for your OAuth application
 						</p>
+					</div>
+
+					<div>
+						<Label>Scopes this app may request</Label>
+						<p className="mb-3 text-xs text-muted-foreground">
+							Select the least access your integration needs. Users must still approve any requested permissions during OAuth consent.
+						</p>
+						<OAuthScopeSelector
+							selectedScopes={formData.allowedScopes}
+							onChange={(allowedScopes) => setFormData({ ...formData, allowedScopes })}
+						/>
 					</div>
 
 					<div>
@@ -276,7 +292,7 @@ export default function CreateOAuthAppDialog({
 					</Button>
 					<Button
 						onClick={handleCreate}
-						disabled={loading || !formData.name.trim() || !formData.redirectUris.trim()}
+						disabled={loading || !formData.name.trim() || !formData.redirectUris.trim() || formData.allowedScopes.length === 0}
 					>
 						{loading ? "Creating..." : "Create App"}
 					</Button>

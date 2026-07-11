@@ -8,8 +8,10 @@
 /* eslint-disable @typescript-eslint/ban-types */
 
 type ExtensionPreferences = {
-  /** API Key - Your Phaseo API key from api.phaseo.ai */
+  /** API Key - Your Phaseo API key */
   "apiKey": string,
+  /** Management API Key - Required only for Usage & Credits and Recent Gateway Activity. Create a Raycast-scoped management key in Phaseo Settings. */
+  "managementApiKey"?: string,
   /** API URL - Custom API URL (optional) */
   "apiUrl": string
 }
@@ -24,6 +26,10 @@ declare namespace Preferences {
   export type Organisations = ExtensionPreferences & {}
   /** Preferences accessible in the `providers` command */
   export type Providers = ExtensionPreferences & {}
+  /** Preferences accessible in the `usage-credits` command */
+  export type UsageCredits = ExtensionPreferences & {}
+  /** Preferences accessible in the `recent-activity` command */
+  export type RecentActivity = ExtensionPreferences & {}
 }
 
 declare namespace Arguments {
@@ -33,5 +39,9 @@ declare namespace Arguments {
   export type Organisations = {}
   /** Arguments passed to the `providers` command */
   export type Providers = {}
+  /** Arguments passed to the `usage-credits` command */
+  export type UsageCredits = {}
+  /** Arguments passed to the `recent-activity` command */
+  export type RecentActivity = {}
 }
 

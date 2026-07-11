@@ -1,41 +1,101 @@
 ---
 title: Management API Keys
-description: Create management API keys in the dashboard and use them for elevated administration APIs.
+description: Create scoped management keys for Phaseo control-plane APIs.
 ---
 
-Management API keys are elevated credentials for administration APIs.
+Management API keys are server-side credentials for Phaseo's control plane:
+credits, activity, workspace administration, key management, presets, settings,
+and guardrails. They are not for sending inference requests.
 
-Create and manage management API keys in the Phaseo dashboard only.
+Create them in **Dashboard → Settings → Management Keys**. A secret is shown
+once; store it in your secret manager before closing the dialog.
 
-## Authentication
+## Key types
 
-Management API requests authenticate with a management API key:
+| Credential | Use it for | Controls |
+| --- | --- | --- |
+| Gateway API key | Model and generation requests | Routing policy, budgets, limits, and attached guardrails |
+| Management API key | Control-plane requests | Explicit management capabilities and workspace-role checks |
+| OAuth access token | Delegated control-plane access | The approved OAuth scopes and workspace-role checks |
+
+Management routes accept only `phaseo_v1_mk_<kid>_<secret>`. Gateway API keys
+use `phaseo_v1_sk_<kid>_<secret>` and are inference-only; they cannot access
+control-plane endpoints.
+
+Use management keys only from server-side code:
 
 ```http
-Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
+Authorization: Bearer phaseo_v1_mk_<kid>_<secret>
 ```
 
-Base URL:
+The production base URL is:
 
 ```text
-https://api.phaseo.ai/v1
+https://api.phaseo.app/v1
 ```
 
-## What they are for
+## Choose an access level
 
-- Credits and balance access
-- Activity and reporting access
-- Elevated key-management actions
-- Elevated workspace-management actions
-- Guardrails APIs when they ship
+The dashboard offers explicit templates. Each template expands to the listed
+capabilities when the key is created; Phaseo never stores a wildcard such as
+`all`. A key therefore cannot gain a newly introduced permission implicitly.
 
-## How to get one
+| Template | Grants |
+| --- | --- |
+| **Raycast** | `credits:read`, `activity:read` |
+| **Read** | Every current `*:read` management capability |
+| **Write** | Every current `*:read` and `*:write` capability; no delete access |
+| **All** | Every current read, write, and delete management capability |
 
-Create the key in the Phaseo dashboard under management key settings, then store it in your server-side secret manager.
+Choose **Raycast** for the Phaseo Raycast extension. It can view usage and
+recent activity, but cannot create keys, change settings, or delete resources.
 
-## Notes
+## Capability reference
 
-- Management API keys cannot be created, listed, updated, or deleted through the public API.
-- Do not use management API keys for normal inference traffic.
-- Keep management keys server-side only.
+Use an access template for common cases. Use explicit capabilities when an
+integration needs a smaller, purpose-built grant.
 
+| Area | Read | Write | Delete |
+| --- | --- | --- | --- |
+| Identity and catalogue | `me:read`, `models:read`, `providers:read`, `pricing:read` | — | — |
+| Usage and observability | `credits:read`, `activity:read`, `analytics:read`, `generations:read` | — | — |
+| Workspaces | `workspaces:read` | `workspaces:write` | `workspaces:delete` |
+| Gateway API keys | `keys:read` | `keys:write` | `keys:delete` |
+| Management API keys | `management_keys:read` | `management_keys:write` | `management_keys:delete` |
+| Presets | `presets:read` | `presets:write` | `presets:delete` |
+| Settings | `settings:read` | `settings:write` | — |
+| Guardrails | `guardrails:read` | `guardrails:write` | `guardrails:delete` |
+| OAuth clients | `oauth_clients:read` | `oauth_clients:write` | `oauth_clients:delete` |
+
+`Write` templates include the matching read capabilities so an integration can
+inspect a resource before updating it. `All` includes delete capabilities; use
+it only for trusted administrative automation.
+
+## Scopes and workspace roles
+
+A scope is necessary but not sufficient. Phaseo also verifies the key or OAuth
+principal belongs to the requested workspace and has the required workspace
+role. A scoped key cannot use a capability to access another workspace or
+bypass ownership and administrator checks.
+
+For example, `keys:write` authorizes key-management operations, while the
+workspace role check determines whether the caller may manage keys in that
+workspace.
+
+## Guardrails are different
+
+Guardrails apply to **gateway API keys** and govern inference traffic: routing
+restrictions, budgets, prompt-injection handling, and sensitive-information
+rules. Management-key scopes govern which administration APIs a credential may
+call. They are complementary controls, not substitutes.
+
+See [Roll out guardrails on API keys](../cookbook/guardrails-for-api-keys.mdx)
+for an inference-key guardrail rollout.
+
+## Security and rotation
+
+- Keep management keys out of browsers, desktop logs, source control, and chat.
+- Use one purpose-built key per integration and prefer the narrowest template.
+- Give keys an expiry where the integration does not need indefinite access.
+- Pause or delete unused keys immediately.
+- Rotate a leaked key before investigating the incident further.

@@ -145,11 +145,12 @@ function isInternalRequestAuthorized(req: Request, bindings: ReturnType<typeof g
 /**
  * Parse an API key string in format:
  *   phaseo_v1_sk_<kid>_<secret>
+ *   phaseo_v1_mk_<kid>_<secret>
  *   aistats_v1_sk_<kid>_<secret> (accepted until 2027-01-01T00:00:00Z)
  *
  * - phaseo/aistats = project namespace
  * - v1      = version
- * - k       = key indicator
+ * - sk/mk   = inference or management key indicator
  * - kid     = key ID (public reference)
  * - secret  = user-held secret part
  */
@@ -161,12 +162,17 @@ function parseV2(token: string) {
 
     const [namespace, v, kTag, kid, ...rest] = parts;
     if (namespace !== "phaseo" && namespace !== "aistats") return null;
-    if (v !== "v1" || kTag !== "sk") return null;
+    if (v !== "v1" || (kTag !== "sk" && kTag !== "mk")) return null;
 
     const secret = rest.join("_"); // allow underscores inside secret
     if (!kid || !secret) return null;
 
-    return { kid, namespace, secret };
+    return {
+        kid,
+        namespace,
+        secret,
+        keyType: kTag === "mk" ? "management" as const : "inference" as const,
+    };
 }
 
 function isLegacyKeyNamespaceRetired(namespace: string, nowMs = Date.now()): boolean {
@@ -373,6 +379,9 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
     if (isLegacyKeyNamespaceRetired(parsed.namespace)) {
         return { ok: false, reason: "legacy_key_prefix_retired" };
     }
+    if (parsed.keyType === "management") {
+        return { ok: false, reason: "management_key_not_valid_for_gateway" };
+    }
     if (!isValidKidFormat(parsed.kid)) return { ok: false, reason: "invalid_key_format" };
 
     // 3. Look up key in Supabase.
@@ -539,8 +548,12 @@ export async function authenticateManagement(
 
     const parsed = parseV2(token);
     if (!parsed) return { ok: false, reason: "invalid_key_format" };
-    if (isLegacyKeyNamespaceRetired(parsed.namespace)) {
-        return { ok: false, reason: "legacy_key_prefix_retired" };
+    // Management routes are intentionally strict: `sk` credentials are
+    // inference-only, and management credentials must use the current,
+    // unambiguous Phaseo `mk` format. Do this before any database lookup so an
+    // inference key can never be mistaken for a management key.
+    if (parsed.namespace !== "phaseo" || parsed.keyType !== "management") {
+        return { ok: false, reason: "management_key_required" };
     }
     if (!isValidKidFormat(parsed.kid)) return { ok: false, reason: "invalid_key_format" };
 

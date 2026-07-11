@@ -15,9 +15,40 @@ import {
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Edit2, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
-import { updateManagementKeyAction } from "@/app/(dashboard)/settings/management-api-keys/actions";
+import {
+	updateManagementKeyAction,
+	updateManagementKeyScopesAction,
+	type ManagementKeyTemplate,
+} from "@/app/(dashboard)/settings/management-api-keys/actions";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { MANAGEMENT_KEY_TEMPLATE_SCOPES } from "@/lib/managementKeyScopes";
+
+const KEY_TEMPLATES: Array<{ value: ManagementKeyTemplate; label: string; description: string }> = [
+	{ value: "raycast-readonly", label: "Raycast", description: "Usage, credits, and recent activity only." },
+	{ value: "read-only", label: "Read", description: "All control-plane reads." },
+	{ value: "read-write", label: "Write", description: "Reads and changes, without deletes." },
+	{ value: "full-control", label: "All", description: "All management capabilities." },
+];
+
+function templateForScopes(value: unknown): ManagementKeyTemplate | null {
+	let rawScopes: unknown = value;
+	if (typeof value === "string") {
+		try {
+			rawScopes = JSON.parse(value);
+		} catch {
+			rawScopes = value.split(/[\s,]+/);
+		}
+	}
+	const scopes = Array.isArray(rawScopes) ? rawScopes.map(String).sort() : [];
+	for (const [template, templateScopes] of Object.entries(MANAGEMENT_KEY_TEMPLATE_SCOPES) as Array<[ManagementKeyTemplate, string[]]>) {
+		const expected = [...templateScopes].sort();
+		if (scopes.length === expected.length && scopes.every((scope, index) => scope === expected[index])) {
+			return template;
+		}
+	}
+	return null;
+}
 
 function toDateTimeLocalInput(value: string | null): string {
 	if (!value) return "";
@@ -56,15 +87,25 @@ export default function EditManagementKeyItem({
 		)
 	);
 	const [loading, setLoading] = useState(false);
+	const [template, setTemplate] = useState<ManagementKeyTemplate | null>(
+		templateForScopes(k?.scopes),
+	);
+	const [templateChanged, setTemplateChanged] = useState(false);
 
 	async function onSave(e?: React.FormEvent) {
 		e?.preventDefault();
 		setLoading(true);
-		const promise = updateManagementKeyAction(k.id, {
-			name,
-			paused,
-			expiresAt: toIsoFromDateTimeLocalInput(expiresAtLocal),
-		});
+		const updates = [
+			updateManagementKeyAction(k.id, {
+				name,
+				paused,
+				expiresAt: toIsoFromDateTimeLocalInput(expiresAtLocal),
+			}),
+		];
+		if (templateChanged && template) {
+			updates.push(updateManagementKeyScopesAction(k.id, template));
+		}
+		const promise = Promise.all(updates);
 		try {
 			await toast.promise(promise, {
 				loading: "Saving management API key...",
@@ -105,7 +146,7 @@ export default function EditManagementKeyItem({
 						Edit Management API Key
 					</DialogTitle>
 					<DialogDescription>
-						Update name or pause this elevated-privilege key.
+					Update the lifecycle and access level for this elevated-privilege key.
 					</DialogDescription>
 				</DialogHeader>
 				<form onSubmit={onSave} className="space-y-4">
@@ -114,6 +155,29 @@ export default function EditManagementKeyItem({
 						value={name}
 						onChange={(e) => setName(e.target.value)}
 					/>
+					<div className="space-y-2">
+						<Label>Access level</Label>
+						<div className="grid grid-cols-4 overflow-hidden rounded-md border border-input" role="group" aria-label="Management key access level">
+							{KEY_TEMPLATES.map((option) => (
+								<Button
+									key={option.value}
+									type="button"
+									variant={template === option.value ? "default" : "ghost"}
+									className="rounded-none text-xs"
+									aria-pressed={template === option.value}
+									onClick={() => {
+										setTemplate(option.value);
+										setTemplateChanged(true);
+									}}
+								>
+									{option.label}
+								</Button>
+							))}
+						</div>
+						<p className="text-xs text-muted-foreground">
+							{KEY_TEMPLATES.find((option) => option.value === template)?.description ?? "Custom scopes are preserved until you select a new access level."}
+						</p>
+					</div>
 					<div className="space-y-2">
 						<Label>Expiry</Label>
 						<Input

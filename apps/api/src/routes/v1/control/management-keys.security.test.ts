@@ -61,4 +61,21 @@ describe("management key security", () => {
 		});
 		expect(state.dbTouched).toBe(false);
 	});
+
+	it("rejects unknown templates before reaching the database", async () => {
+		const { managementKeysRoutes } = await import("./management-keys");
+		const response = await managementKeysRoutes.request("https://example.com/", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ name: "Raycast", template: "everything" }),
+		});
+		const body = await response.json();
+
+		expect(response.status).toBe(400);
+		expect(body).toMatchObject({
+			error: "bad_request",
+			message: "Unsupported management key template: everything",
+		});
+		expect(state.dbTouched).toBe(false);
+	});
 });

@@ -24,6 +24,29 @@ import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { SecretRevealActions } from "../keys/SecretRevealActions";
 
+const KEY_TEMPLATES = [
+	{
+		value: "raycast-readonly",
+		label: "Raycast",
+		description: "Usage, credits, and recent gateway activity only.",
+	},
+	{
+		value: "read-only",
+		label: "Read",
+		description: "View all control-plane resources without changing them.",
+	},
+	{
+		value: "read-write",
+		label: "Write",
+		description: "Read and change resources, without delete access.",
+	},
+	{
+		value: "full-control",
+		label: "All",
+		description: "All management API capabilities.",
+	},
+] as const;
+
 function toIsoFromDateTimeLocalInput(value: string): string | null {
 	if (!value) return null;
 	const date = new Date(value);
@@ -53,6 +76,7 @@ export default function CreateManagementKeyDialog({
 	const [open, setOpen] = useState(false);
 	const [name, setName] = useState("");
 	const [expiresAtLocal, setExpiresAtLocal] = useState("");
+	const [template, setTemplate] = useState<(typeof KEY_TEMPLATES)[number]["value"]>("raycast-readonly");
 	const [loading, setLoading] = useState(false);
 	const [plainKey, setPlainKey] = useState<string | null>(null);
 	const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(
@@ -99,7 +123,7 @@ export default function CreateManagementKeyDialog({
 				name,
 				creatorUserId: currentUserId as string,
 				workspaceId: selectedWorkspaceId,
-				scopes: JSON.stringify([]),
+				template,
 				expiresAt,
 			});
 			setPlainKey(res?.plaintext ?? null);
@@ -117,6 +141,7 @@ export default function CreateManagementKeyDialog({
 		setOpen(false);
 		setName("");
 		setExpiresAtLocal("");
+		setTemplate("raycast-readonly");
 		setPlainKey(null);
 	}
 
@@ -149,7 +174,7 @@ export default function CreateManagementKeyDialog({
 						Create Management API Key
 					</DialogTitle>
 					<DialogDescription>
-						Create a new management API key with elevated permissions.
+						Choose the minimum access this management API key needs.
 					</DialogDescription>
 					<DialogDescription className="mt-2 text-sm text-red-600">
 						This key will be shown only <strong>once</strong> and grants
@@ -197,6 +222,33 @@ export default function CreateManagementKeyDialog({
 							onChange={(e) => setName(e.target.value)}
 							placeholder="Key name (e.g. production management)"
 						/>
+						<div className="space-y-2">
+							<label className="text-sm font-medium" htmlFor="management-key-template">
+								Access template
+							</label>
+							<div
+								id="management-key-template"
+								className="grid grid-cols-4 overflow-hidden rounded-md border border-input"
+								role="group"
+								aria-label="Management key access template"
+							>
+								{KEY_TEMPLATES.map((option) => (
+									<Button
+										key={option.value}
+										type="button"
+										variant={template === option.value ? "default" : "ghost"}
+										className="rounded-none text-xs"
+										aria-pressed={template === option.value}
+										onClick={() => setTemplate(option.value)}
+									>
+										{option.label}
+									</Button>
+								))}
+							</div>
+							<p className="text-xs text-muted-foreground">
+								{KEY_TEMPLATES.find((option) => option.value === template)?.description}
+							</p>
+						</div>
 						<div className="space-y-2">
 							<Input
 								type="datetime-local"

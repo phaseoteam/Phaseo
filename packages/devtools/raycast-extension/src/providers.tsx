@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import { useCachedPromise } from "@raycast/utils";
 import {
   List,
   ActionPanel,
@@ -8,7 +9,7 @@ import {
   showToast,
   Toast,
 } from "@raycast/api";
-import { getProviders, APIError } from "./api";
+import { clearAPICache, getProviders } from "./api";
 import type { Provider } from "./types";
 import {
   getProviderURL,
@@ -19,46 +20,35 @@ import {
 } from "./utils";
 
 export default function Command() {
-  const [providers, setProviders] = useState<Provider[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [searchText, setSearchText] = useState("");
-
-  useEffect(() => {
-    async function fetchProviders() {
-      try {
-        setIsLoading(true);
-        const response = await getProviders(250, 0);
-        setProviders(response.providers);
-      } catch (error) {
-        if (error instanceof APIError) {
-          showToast({
-            style: Toast.Style.Failure,
-            title: "Failed to load providers",
-            message: error.message,
-          });
-        } else {
-          showToast({
-            style: Toast.Style.Failure,
-            title: "Failed to load providers",
-            message: "An unknown error occurred",
-          });
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    fetchProviders();
-  }, []);
+  const {
+    data: response,
+    isLoading,
+    revalidate,
+  } = useCachedPromise(getProviders, [250, 0], {
+    keepPreviousData: true,
+    onError: (error) => {
+      showToast({
+        style: Toast.Style.Failure,
+        title: "Failed to load providers",
+        message: error.message,
+      });
+    },
+  });
+  const providers = response?.providers ?? [];
+  const refresh = () => {
+    clearAPICache();
+    void revalidate();
+  };
 
   // Filter providers by search text
   const filteredProviders = providers.filter((provider) =>
-    providerMatchesSearch(provider, searchText)
+    providerMatchesSearch(provider, searchText),
   );
 
   // Sort providers alphabetically by name
   const sortedProviders = [...filteredProviders].sort((a, b) =>
-    getProviderDisplayName(a).localeCompare(getProviderDisplayName(b))
+    getProviderDisplayName(a).localeCompare(getProviderDisplayName(b)),
   );
 
   return (
@@ -78,7 +68,11 @@ export default function Command() {
         <List.Item
           key={provider.api_provider_id}
           title={getProviderDisplayName(provider)}
-          subtitle={provider.description ? truncate(provider.description, 60) : undefined}
+          subtitle={
+            provider.description
+              ? truncate(provider.description, 60)
+              : undefined
+          }
           icon={Icon.Network}
           accessories={[
             {
@@ -111,6 +105,11 @@ export default function Command() {
                 content={provider.api_provider_id}
                 icon={Icon.Clipboard}
                 shortcut={{ modifiers: ["cmd"], key: "c" }}
+              />
+              <Action
+                title="Refresh Providers"
+                icon={Icon.ArrowClockwise}
+                onAction={refresh}
               />
             </ActionPanel>
           }

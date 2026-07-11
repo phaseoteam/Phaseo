@@ -1,13 +1,17 @@
 {
   "$schema": "https://www.raycast.com/schemas/extension.json",
   "name": "phaseo",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "private": true,
   "title": "Phaseo",
   "description": "Browse AI models, organisations, and providers from Phaseo",
   "icon": "icon.png",
   "author": "danielbutler1",
   "license": "MIT",
+  "platforms": [
+    "macOS",
+    "Windows"
+  ],
   "categories": [
     "Developer Tools",
     "Data"
@@ -30,6 +34,18 @@
       "title": "Browse API Providers",
       "description": "View API providers for AI models",
       "mode": "view"
+    },
+    {
+      "name": "usage-credits",
+      "title": "View Usage & Credits",
+      "description": "Check your Phaseo balance and 30-day usage",
+      "mode": "view"
+    },
+    {
+      "name": "recent-activity",
+      "title": "View Recent Gateway Activity",
+      "description": "Browse recent Phaseo gateway requests",
+      "mode": "view"
     }
   ],
   "preferences": [
@@ -38,8 +54,16 @@
       "type": "password",
       "required": true,
       "title": "API Key",
-      "description": "Your Phaseo API key from api.phaseo.ai",
+      "description": "Your Phaseo API key",
       "placeholder": "phaseo_v1_sk_..."
+    },
+    {
+      "name": "managementApiKey",
+      "type": "password",
+      "required": false,
+      "title": "Management API Key",
+      "description": "Required only for Usage & Credits and Recent Gateway Activity. Create a Raycast-scoped management key in Phaseo Settings.",
+      "placeholder": "phaseo_v1_mk_..."
     },
     {
       "name": "apiUrl",
@@ -47,17 +71,17 @@
       "required": false,
       "title": "API URL",
       "description": "Custom API URL (optional)",
-      "default": "https://api.phaseo.ai/v1",
-      "placeholder": "https://api.phaseo.ai/v1"
+      "default": "https://api.phaseo.app/v1",
+      "placeholder": "https://api.phaseo.app/v1"
     }
   ],
   "dependencies": {
-    "@raycast/api": "^1.104.11",
-    "@raycast/utils": "^2.2.5"
+    "@raycast/api": "^1.104.21",
+    "@raycast/utils": "^2.2.7"
   },
   "devDependencies": {
-    "@types/node": "^25.6.0",
-    "@types/react": "^19.2.17",
+    "@types/node": "22.19.17",
+    "@types/react": "19.0.10",
     "eslint": "^10.0.3",
     "prettier": "^3.8.3",
     "typescript": "^6.0.3",
@@ -67,6 +91,7 @@
     "dev": "ray develop",
     "build": "ray build -e dist",
     "lint": "ray lint",
+    "publish": "ray publish",
     "fix-lint": "ray lint --fix"
   }
 }

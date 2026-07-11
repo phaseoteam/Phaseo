@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import { useCachedPromise } from "@raycast/utils";
 import {
   List,
   ActionPanel,
@@ -9,7 +10,7 @@ import {
   showToast,
   Toast,
 } from "@raycast/api";
-import { getModels, APIError } from "./api";
+import { clearAPICache, getModels } from "./api";
 import type { Model } from "./types";
 import {
   formatDate,
@@ -20,47 +21,38 @@ import {
   getModelDisplayName,
   getModelOrganisationName,
   modelMatchesSearch,
-  countryCodeToFlag,
+  formatPricePerMillion,
 } from "./utils";
 
 type SortBy = "release_date" | "organisation" | "status" | "name";
 
 export default function Command() {
-  const [models, setModels] = useState<Model[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [sortBy, setSortBy] = useState<SortBy>("release_date");
   const [searchText, setSearchText] = useState("");
-
-  useEffect(() => {
-    async function fetchModels() {
-      try {
-        setIsLoading(true);
-        const response = await getModels(250, 0); // Fetch more models for better UX
-        setModels(response.models);
-      } catch (error) {
-        if (error instanceof APIError) {
-          showToast({
-            style: Toast.Style.Failure,
-            title: "Failed to load models",
-            message: error.message,
-          });
-        } else {
-          showToast({
-            style: Toast.Style.Failure,
-            title: "Failed to load models",
-            message: "An unknown error occurred",
-          });
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    fetchModels();
-  }, []);
+  const {
+    data: response,
+    isLoading,
+    revalidate,
+  } = useCachedPromise(getModels, [250, 0], {
+    keepPreviousData: true,
+    onError: (error) => {
+      showToast({
+        style: Toast.Style.Failure,
+        title: "Failed to load models",
+        message: error.message,
+      });
+    },
+  });
+  const models = response?.models ?? [];
+  const refresh = () => {
+    clearAPICache();
+    void revalidate();
+  };
 
   // Filter models by search text
-  const filteredModels = models.filter((model) => modelMatchesSearch(model, searchText));
+  const filteredModels = models.filter((model) =>
+    modelMatchesSearch(model, searchText),
+  );
 
   // Sort models
   const sortedModels = [...filteredModels].sort((a, b) => {
@@ -102,7 +94,10 @@ export default function Command() {
           value={sortBy}
           onChange={(value) => setSortBy(value as SortBy)}
         >
-          <List.Dropdown.Item title="Release Date (Newest First)" value="release_date" />
+          <List.Dropdown.Item
+            title="Release Date (Newest First)"
+            value="release_date"
+          />
           <List.Dropdown.Item title="Organisation" value="organisation" />
           <List.Dropdown.Item title="Status" value="status" />
           <List.Dropdown.Item title="Name" value="name" />
@@ -129,7 +124,14 @@ export default function Command() {
               },
             },
             { text: formatDate(model.release_date) },
-            { text: `${model.endpoints?.length || 0} endpoints` },
+            {
+              text:
+                formatPricePerMillion(model.pricing?.prompt) ??
+                `${model.endpoints?.length || 0} endpoints`,
+              tooltip: formatPricePerMillion(model.pricing?.prompt)
+                ? "Input price"
+                : "Supported endpoints",
+            },
           ]}
           actions={
             <ActionPanel>
@@ -148,6 +150,11 @@ export default function Command() {
                 content={model.model_id}
                 icon={Icon.Clipboard}
                 shortcut={{ modifiers: ["cmd"], key: "c" }}
+              />
+              <Action
+                title="Refresh Models"
+                icon={Icon.ArrowClockwise}
+                onAction={refresh}
               />
               {model.organisation_id && (
                 <Action.OpenInBrowser
@@ -173,6 +180,7 @@ function ModelDetail({ model }: { model: Model }) {
 **Organisation:** ${getModelOrganisationName(model)}
 **Status:** ${getStatusText(model.status)}
 **Release Date:** ${formatDate(model.release_date)}
+**Context Window:** ${model.top_provider?.context_length?.toLocaleString() ?? "Unknown"}
 
 ---
 
@@ -190,12 +198,20 @@ ${
   model.providers && model.providers.length > 0
     ? model.providers
         .map((p) => {
-          const paramsText = p.params && p.params.length > 0 ? ` (${p.params.join(", ")})` : "";
+          const paramsText =
+            p.params && p.params.length > 0 ? ` (${p.params.join(", ")})` : "";
           return `- **${p.api_provider_id}**${paramsText}`;
         })
         .join("\n")
     : "_No providers available_"
 }
+
+---
+
+## Pricing
+
+**Input:** ${formatPricePerMillion(model.pricing?.prompt) ?? "Unavailable"}
+**Output:** ${formatPricePerMillion(model.pricing?.completion) ?? "Unavailable"}
 
 ---
 

@@ -3,9 +3,18 @@ import type { Env } from "@/runtime/types";
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
 import { CAPABILITIES, parseStoredScopeList } from "@/lib/authz/capabilities";
+import {
+	isManagementKeyTemplate,
+	MANAGEMENT_KEY_TEMPLATES,
+} from "@/lib/authz/management-key-templates";
 import { json, withRuntime } from "@/routes/utils";
-import { generateGatewayKey, hmacSecret, normalizeScopeInput } from "@/routes/auth.helpers";
+import {
+	generateManagementKey,
+	hmacSecret,
+	normalizeScopeInput,
+} from "@/routes/auth.helpers";
 import { resolveActiveKeyPepper } from "@/lib/security/keyPepper";
+import { enforceWorkspaceKeyLimit } from "./management-helpers";
 import {
 	isResponse,
 	parseOffset,
@@ -69,12 +78,73 @@ function normalizeLimitPatch(body: Record<string, unknown>): Record<string, unkn
 	return patch;
 }
 
+function resolveManagementKeyScopes(body: Record<string, unknown>) {
+	if (body.template !== undefined && body.scopes !== undefined) {
+		return {
+			ok: false as const,
+			message: "Provide either template or scopes, not both",
+		};
+	}
+
+	if (body.template !== undefined) {
+		if (!isManagementKeyTemplate(body.template)) {
+			return {
+				ok: false as const,
+				message: `Unsupported management key template: ${String(body.template)}`,
+			};
+		}
+		const scopes = normalizeScopeInput(MANAGEMENT_KEY_TEMPLATES[body.template].scopes);
+		return scopes.ok ? { ...scopes, template: body.template } : scopes;
+	}
+
+	const scopes = normalizeScopeInput(body.scopes);
+	return scopes.ok ? { ...scopes, template: null } : scopes;
+}
+
 function formatManagementKey(row: ManagementKeyRow) {
 	return {
 		...row,
 		scopes: parseStoredScopeList(row.scopes),
 	};
 }
+
+async function issueManagementKey(args: {
+	workspaceId: string;
+	name: string;
+	scopes: string;
+	expiresAt: string | null;
+	paused: boolean;
+	createdBy: string | null;
+}) {
+	const pepper = resolveActiveKeyPepper(getBindings());
+	if (!pepper) throw new Error("KEY_PEPPER_ACTIVE (or KEY_PEPPER) is not configured");
+
+	await enforceWorkspaceKeyLimit(args.workspaceId);
+	const generated = generateManagementKey();
+	const hash = await hmacSecret(generated.secret, pepper);
+	const { data, error } = await getSupabaseAdmin()
+		.from("management_keys")
+		.insert({
+			workspace_id: args.workspaceId,
+			name: args.name,
+			kid: generated.kid,
+			hash,
+			prefix: generated.prefix,
+			status: args.paused ? "paused" : "active",
+			scopes: args.scopes,
+			expires_at: args.expiresAt,
+			created_by: args.createdBy,
+		})
+		.select(selectColumns())
+		.maybeSingle();
+	if (error) throw new Error(error.message || "Failed to create management key");
+
+	return {
+		...formatManagementKey(data as unknown as ManagementKeyRow),
+		key: generated.plaintext,
+	};
+}
+
 
 async function handleListManagementKeys(req: Request) {
 	const auth = await guardManagementAuth(req, { useKvCache: false });
@@ -114,40 +184,23 @@ async function handleCreateManagementKey(req: Request) {
 	if (!name) return json({ error: "bad_request", message: "name is required" }, 400, { "Cache-Control": "no-store" });
 
 	try {
-		const scopes = normalizeScopeInput(body.scopes);
+		const scopes = resolveManagementKeyScopes(body);
 		if (scopes.ok === false) return json({ error: "bad_request", message: scopes.message }, 400, { "Cache-Control": "no-store" });
 		const expiresAt = parseOptionalExpiry(body.expires_at ?? body.expiresAt);
-		const pepper = resolveActiveKeyPepper(getBindings());
-		if (!pepper) {
-			return json(
-				{ error: "server_misconfig_missing_pepper", message: "KEY_PEPPER_ACTIVE (or KEY_PEPPER) is not configured" },
-				503,
-				{ "Cache-Control": "no-store" },
-			);
-		}
-		const generated = generateGatewayKey();
-		const hash = await hmacSecret(generated.secret, pepper);
-		const { data, error } = await getSupabaseAdmin()
-			.from("management_keys")
-			.insert({
-				workspace_id: auth.value.workspaceId,
-				name,
-				kid: generated.kid,
-				hash,
-				prefix: generated.prefix,
-				status: body.paused === true ? "paused" : "active",
-				scopes: scopes.value,
-				expires_at: expiresAt ?? null,
-				created_by: auth.value.userId ?? null,
-			})
-			.select(selectColumns())
-			.maybeSingle();
-		if (error) throw new Error(error.message || "Failed to create management key");
-		return json({ data: { ...formatManagementKey(data as unknown as ManagementKeyRow), key: generated.plaintext } }, 201, { "Cache-Control": "no-store" });
+		const data = await issueManagementKey({
+			workspaceId: auth.value.workspaceId,
+			name,
+			scopes: scopes.value,
+			expiresAt: expiresAt ?? null,
+			paused: body.paused === true,
+			createdBy: auth.value.userId ?? null,
+		});
+		return json({ data }, 201, { "Cache-Control": "no-store" });
 	} catch (error: any) {
 		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
 	}
 }
+
 
 async function findManagementKey(workspaceId: string, id: string): Promise<ManagementKeyRow | null> {
 	const { data, error } = await getSupabaseAdmin()
@@ -194,7 +247,7 @@ async function handleUpdateManagementKey(req: Request) {
 		const patch: Record<string, unknown> = normalizeLimitPatch(body);
 		if (typeof body.name === "string") patch.name = body.name.trim();
 		if (typeof body.paused === "boolean") patch.status = body.paused ? "paused" : "active";
-		if (body.scopes !== undefined) {
+		if (body.scopes !== undefined || body.template !== undefined) {
 			if (body.scopes === null) {
 				return json(
 					{ error: "bad_request", message: "scopes must be omitted to keep existing scopes or provided as a string or string[]" },
@@ -202,7 +255,7 @@ async function handleUpdateManagementKey(req: Request) {
 					{ "Cache-Control": "no-store" },
 				);
 			}
-			const scopes = normalizeScopeInput(body.scopes);
+			const scopes = resolveManagementKeyScopes(body);
 			if (scopes.ok === false) return json({ error: "bad_request", message: scopes.message }, 400, { "Cache-Control": "no-store" });
 			patch.scopes = scopes.value;
 		}

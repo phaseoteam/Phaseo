@@ -21,6 +21,27 @@ export function makeKeyV2() {
     return { kid, secret, plaintext, prefix };
 }
 
+export function makeManagementKeyV1() {
+    const kid = rand62(12);
+    const secret = rand62(40);
+    const plaintext = `phaseo_v1_mk_${kid}_${secret}`;
+    const prefix = kid.slice(0, 6);
+    return { kid, secret, plaintext, prefix };
+}
+
 export function hmacSecret(secret: string, pepper: string) {
     return crypto.createHmac("sha256", pepper).update(secret).digest("hex");
+}
+
+export function hashOAuthClientSecret(secret: string): string {
+    const pepper = String(
+        process.env.PHASEO_OAUTH_TOKEN_PEPPER ??
+        process.env.KEY_PEPPER_ACTIVE ??
+        process.env.KEY_PEPPER ??
+        "",
+    ).trim();
+    if (!pepper) {
+        throw new Error("PHASEO_OAUTH_TOKEN_PEPPER or KEY_PEPPER_ACTIVE is not set");
+    }
+    return crypto.createHash("sha256").update(`${pepper}:${secret}`).digest("base64url");
 }

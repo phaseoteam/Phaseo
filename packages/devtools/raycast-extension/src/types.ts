@@ -23,11 +23,25 @@ export interface Model {
   input_types: string[];
   output_types: string[];
   providers: ProviderInfo[];
+  pricing?: ModelPricing | null;
+  top_provider?: ModelTopProvider | null;
 }
 
 export interface ProviderInfo {
   api_provider_id: string;
   params: string[];
+}
+
+export interface ModelPricing {
+  prompt?: string | null;
+  completion?: string | null;
+  request?: string | null;
+  image?: string | null;
+}
+
+export interface ModelTopProvider {
+  context_length?: number | null;
+  max_completion_tokens?: number | null;
 }
 
 // Organisation Types
@@ -73,6 +87,39 @@ export interface ProvidersResponse {
   providers: Provider[];
 }
 
+export interface CreditsResponse {
+  ok: true;
+  credits: {
+    remaining: number;
+    balance_nanos: number;
+    reserved_nanos: number;
+    available_nanos: number;
+    thirty_day_usage: number | null;
+    thirty_day_requests: number;
+  };
+}
+
+export interface WorkspaceActivityEntry {
+  request_id: string | null;
+  provider: string | null;
+  model: string | null;
+  endpoint: string | null;
+  usage: Record<string, unknown> | null;
+  cost_cents: number;
+  latency_ms: number | null;
+  timestamp: string | null;
+}
+
+export interface WorkspaceActivityResponse {
+  ok: true;
+  period_days: number;
+  limit: number;
+  offset: number;
+  total: number;
+  total_cost_cents: number;
+  activity: WorkspaceActivityEntry[];
+}
+
 // Filter Types
 export interface ModelFilters {
   endpoints?: string[];
@@ -85,5 +132,6 @@ export interface ModelFilters {
 // Preferences
 export interface Preferences {
   apiKey: string;
+  managementApiKey?: string;
   apiUrl?: string;
 }

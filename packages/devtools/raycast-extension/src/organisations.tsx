@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import { useCachedPromise } from "@raycast/utils";
 import {
   List,
   ActionPanel,
@@ -9,7 +10,7 @@ import {
   Toast,
   Color,
 } from "@raycast/api";
-import { getOrganisations, APIError } from "./api";
+import { clearAPICache, getOrganisations } from "./api";
 import type { Organisation } from "./types";
 import {
   getOrganisationURL,
@@ -20,46 +21,35 @@ import {
 } from "./utils";
 
 export default function Command() {
-  const [organisations, setOrganisations] = useState<Organisation[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [searchText, setSearchText] = useState("");
-
-  useEffect(() => {
-    async function fetchOrganisations() {
-      try {
-        setIsLoading(true);
-        const response = await getOrganisations(250, 0);
-        setOrganisations(response.organisations);
-      } catch (error) {
-        if (error instanceof APIError) {
-          showToast({
-            style: Toast.Style.Failure,
-            title: "Failed to load organisations",
-            message: error.message,
-          });
-        } else {
-          showToast({
-            style: Toast.Style.Failure,
-            title: "Failed to load organisations",
-            message: "An unknown error occurred",
-          });
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    fetchOrganisations();
-  }, []);
+  const {
+    data: response,
+    isLoading,
+    revalidate,
+  } = useCachedPromise(getOrganisations, [250, 0], {
+    keepPreviousData: true,
+    onError: (error) => {
+      showToast({
+        style: Toast.Style.Failure,
+        title: "Failed to load organisations",
+        message: error.message,
+      });
+    },
+  });
+  const organisations = response?.organisations ?? [];
+  const refresh = () => {
+    clearAPICache();
+    void revalidate();
+  };
 
   // Filter organisations by search text
   const filteredOrganisations = organisations.filter((org) =>
-    organisationMatchesSearch(org, searchText)
+    organisationMatchesSearch(org, searchText),
   );
 
   // Sort organisations alphabetically by name
   const sortedOrganisations = [...filteredOrganisations].sort((a, b) =>
-    getOrganisationDisplayName(a).localeCompare(getOrganisationDisplayName(b))
+    getOrganisationDisplayName(a).localeCompare(getOrganisationDisplayName(b)),
   );
 
   return (
@@ -82,7 +72,9 @@ export default function Command() {
           subtitle={org.description ? truncate(org.description, 60) : undefined}
           icon={{
             source: Icon.Building,
-            tintColor: org.colour ? (org.colour as Color.ColorLike) : Color.Blue,
+            tintColor: org.colour
+              ? (org.colour as Color.ColorLike)
+              : Color.Blue,
           }}
           accessories={[
             {
@@ -107,6 +99,11 @@ export default function Command() {
                 content={org.organisation_id}
                 icon={Icon.Clipboard}
                 shortcut={{ modifiers: ["cmd"], key: "c" }}
+              />
+              <Action
+                title="Refresh Organisations"
+                icon={Icon.ArrowClockwise}
+                onAction={refresh}
               />
             </ActionPanel>
           }

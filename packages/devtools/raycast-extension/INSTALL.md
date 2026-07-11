@@ -1,26 +1,9 @@
 # Installation Guide
 
-## Before Installing
-
-### 1. Create Extension Icon
-
-The extension requires an icon file. Create `assets/icon.png` (512x512 pixels) from the Phaseo favicon:
+## Install Dependencies
 
 ```bash
-# Option 1: Using ImageMagick
-convert apps/web/src/app/favicon.ico -resize 512x512 packages/devtools/raycast-extension/assets/icon.png
-
-# Option 2: Manual conversion
-# 1. Open apps/web/src/app/favicon.ico in an image editor
-# 2. Resize to 512x512 pixels
-# 3. Save as packages/devtools/raycast-extension/assets/icon.png
-```
-
-### 2. Install Dependencies
-
-```bash
-cd packages/devtools/raycast-extension
-npm install
+pnpm install
 ```
 
 ## Development
@@ -28,7 +11,7 @@ npm install
 ### Run in Development Mode
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 This will:
@@ -41,7 +24,14 @@ This will:
 1. Open Raycast
 2. Search for "Phaseo"
 3. Press `⌘ + ,` to open preferences
-4. Enter your API key from [api.phaseo.ai](https://api.phaseo.ai)
+4. Enter your API key from [Phaseo](https://phaseo.app)
+
+### Configure a Management API Key (Optional)
+
+The **Usage & Credits** and **Recent Gateway Activity** commands require a
+management API key with the relevant read permissions. Open either command and
+choose **Configure Management Key** when prompted. Keep this key separate from
+your regular gateway API key.
 
 ## Testing
 
@@ -66,7 +56,7 @@ This will:
 ## Building for Production
 
 ```bash
-npm run build
+pnpm run build
 ```
 
 The built extension will be in the `dist/` directory.
@@ -96,8 +86,11 @@ The built extension will be in the `dist/` directory.
 
 ## API Endpoints Used
 
-- `GET /v1/api/models` - List all AI models
+- `GET /v1/models` - List all AI models
 - `GET /v1/organisations` - List all organisations
 - `GET /v1/providers` - List all API providers
+- `GET /v1/credits` - View workspace credits (management API key)
+- `GET /v1/activity` - View workspace activity (management API key)
 
-All endpoints require Bearer authentication with your API key.
+All endpoints require Bearer authentication. Catalogue endpoints use the regular
+API key; account endpoints use the optional management API key.
