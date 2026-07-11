@@ -16,7 +16,10 @@ import {
 	type ModalityLeaderboardEntry,
 	type ModalitySectionData,
 } from "@/components/(rankings)/ModalityLeaderboards";
-import { RankingsSideNav } from "@/components/(rankings)/RankingsSideNav";
+import { RankingsModalityTabs } from "@/components/(rankings)/RankingsModalityTabs";
+import ModelPageToc, {
+	type ModelPageTocItem,
+} from "@/components/(data)/model/ModelPageToc";
 import { ChartSkeleton, ListSkeleton } from "@/components/(rankings)/Skeletons";
 import { InlineInfoTooltip } from "@/components/(rankings)/InlineInfoTooltip";
 import {
@@ -59,6 +62,26 @@ export const RANKING_MODALITIES: RankingModality[] = [
 	"transcription",
 ];
 
+const rankingSectionLabels: Record<RankingModality, string> = {
+	text: "AI Model Rankings",
+	image: "Image Model Rankings",
+	embeddings: "Embedding Model Rankings",
+	rerank: "Rerank Model Rankings",
+	audio: "Audio Model Rankings",
+	video: "Video Model Rankings",
+	speech: "Speech Model Rankings",
+	transcription: "Transcription Model Rankings",
+};
+
+const textRankingTocItems: ModelPageTocItem[] = [
+	{ id: "text", label: "Leaderboard" },
+	{ id: "unique-users", label: "Unique Users" },
+	{ id: "market-share", label: "Market Share" },
+	{ id: "tool-calls", label: "Tool Calls" },
+	{ id: "images", label: "Images" },
+	{ id: "image-output", label: "Image Output" },
+];
+
 export function isRankingModality(value: string): value is RankingModality {
 	return RANKING_MODALITIES.includes(value as RankingModality);
 }
@@ -98,13 +121,22 @@ export default async function RankingsPageContent({
 	modality?: RankingModality;
 }) {
 	const isTextPage = modality === "text";
+	const tocItems = isTextPage
+		? textRankingTocItems
+		: [{ id: modality, label: rankingSectionLabels[modality] }];
 
     return (
         <div className="min-h-screen bg-background text-foreground">
-            <div className="mx-auto max-w-[1680px] px-4 py-8 sm:px-6 lg:px-10">
-                <div className="grid gap-8 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)]">
-                    <RankingsSideNav currentModality={modality} className="lg:col-start-1 lg:h-full" />
-                    <main className="min-w-0 space-y-16 lg:col-start-2">
+            <div className="mx-auto max-w-[1680px] px-4 pb-8 pt-0 sm:px-6 lg:px-10">
+				<div className="sticky top-[calc(var(--site-notice-height,0px)+var(--site-header-height,3.75rem))] z-20 -mx-4 mb-4 border-b border-border/70 bg-background px-4 py-2 sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10">
+					<RankingsModalityTabs currentModality={modality} />
+				</div>
+				<div className="flex flex-col gap-8 lg:flex-row lg:items-start">
+					<ModelPageToc
+						items={tocItems}
+						className="lg:h-full lg:w-max lg:shrink-0"
+					/>
+					<main className="min-w-0 flex-1 space-y-16">
                     <Suspense fallback={<ListSkeleton />}>
                         <ModalityLeaderboardsServer modality={modality} />
                     </Suspense>
@@ -182,8 +214,8 @@ export default async function RankingsPageContent({
                     </>
                     ) : null}
 
-                    </main>
-                </div>
+					</main>
+				</div>
             </div>
         </div>
     );
