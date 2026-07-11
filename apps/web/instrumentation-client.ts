@@ -200,8 +200,15 @@ function bindGlobalErrorListeners() {
 
 	window.addEventListener(PRODUCT_ANALYTICS_EVENT, (event) => {
 		const payload = (event as CustomEvent<ProductAnalyticsPayload>).detail;
-		if (!payload || !posthogCaptureEnabled) return;
-		posthog.capture(payload.event, payload.properties);
+		if (!payload || !isAnalyticsCaptureAllowed()) return;
+
+		if (typeof window.gtag === "function") {
+			window.gtag("event", payload.event, payload.properties);
+		}
+
+		if (posthogCaptureEnabled) {
+			posthog.capture(payload.event, payload.properties);
+		}
 	});
 }
 

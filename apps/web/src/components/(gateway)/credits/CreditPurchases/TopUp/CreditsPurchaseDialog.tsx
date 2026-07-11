@@ -48,19 +48,6 @@ function trackFirstPaymentSaveCardClick(payload: {
 		return;
 	}
 
-	const eventPayload = {
-		source: "credits_top_up_dialog",
-		credits_amount_usd: payload.creditsAmountUsd,
-		fee_usd: payload.feeUsd,
-		total_usd: payload.totalUsd,
-		currency: "usd",
-	};
-
-	const gtag = (window as any).gtag;
-	if (typeof gtag === "function") {
-		gtag("event", "first_payment_save_card_click", eventPayload);
-	}
-
 	captureProductEvent("first_payment_save_card_click", {
 		amount_usd: payload.creditsAmountUsd,
 		currency: "usd",
