@@ -321,6 +321,7 @@ const MATH_FORMATTING_RULES = [
 	"- Use dollar-sign delimiters for all mathematical expressions: $...$ for inline math and $$...$$ for block math.",
 	"- Put the $$ block-math delimiters on their own lines.",
 	"- Use valid LaTeX inside delimiters. Escape special characters: write percentages as $80\\%$, never $80%$.",
+	"- Reserve dollar signs for LaTeX delimiters. Write monetary amounts with a currency label, for example USD 72, never $72.",
 	"- Do not use \\(...\\) or \\[...\\] delimiters.",
 ] as const;
 

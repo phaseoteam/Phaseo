@@ -15,6 +15,9 @@ describe("buildDefaultSystemPrompt", () => {
 		expect(prompt).toContain(
 			"write percentages as $80\\%$, never $80%$.",
 		);
+		expect(prompt).toContain(
+			"Write monetary amounts with a currency label, for example USD 72, never $72.",
+		);
 		expect(prompt).toContain("Do not use \\(...\\) or \\[...\\] delimiters.");
 	});
 });
