@@ -314,6 +314,16 @@ function normalizeNickname(nickname?: string | null) {
 	return nickname.trim();
 }
 
+const LEGACY_MATH_FORMATTING_RULE =
+	"- **For all mathematical expressions, you must use dollar-sign delimiters. Use $...$ for inline math and $$...$$ for block math. Do not use (...) or [...] delimiters.**";
+
+const MATH_FORMATTING_RULES = [
+	"- Use dollar-sign delimiters for all mathematical expressions: $...$ for inline math and $$...$$ for block math.",
+	"- Put the $$ block-math delimiters on their own lines.",
+	"- Use valid LaTeX inside delimiters. Escape special characters: write percentages as $80\\%$, never $80%$.",
+	"- Do not use \\(...\\) or \\[...\\] delimiters.",
+] as const;
+
 export function buildDefaultSystemPrompt(
 	modelId: string,
 	nickname?: string | null,
@@ -331,7 +341,7 @@ export function buildDefaultSystemPrompt(
 		"- Use Markdown for lists, tables, and styling.",
 		"- Use ```code fences``` for all code blocks.",
 		"- Format file names, paths, and function names with `inline code` backticks.",
-		"- **For all mathematical expressions, you must use dollar-sign delimiters. Use $...$ for inline math and $$...$$ for block math. Do not use (...) or [...] delimiters.**",
+		...MATH_FORMATTING_RULES,
 	].join("\n");
 }
 
@@ -360,9 +370,10 @@ function isGeneratedDefaultSystemPrompt(
 	return (
 		normalizedPrompt.startsWith(generatedPrefix) &&
 		normalizedPrompt.includes(generatedSuffix) &&
-		normalizedPrompt.endsWith(
-			"- **For all mathematical expressions, you must use dollar-sign delimiters. Use $...$ for inline math and $$...$$ for block math. Do not use (...) or [...] delimiters.**",
-		)
+		(MATH_FORMATTING_RULES.some((rule) =>
+			normalizedPrompt.endsWith(rule),
+		) ||
+			normalizedPrompt.endsWith(LEGACY_MATH_FORMATTING_RULE))
 	);
 }
 

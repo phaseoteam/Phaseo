@@ -1,7 +1,23 @@
 import {
+	buildDefaultSystemPrompt,
 	buildServerToolDefinitions,
 	normalizeServerTools,
 } from "./chat-playground-core";
+
+describe("buildDefaultSystemPrompt", () => {
+	it("instructs models to produce valid Streamdown-compatible LaTeX", () => {
+		const prompt = buildDefaultSystemPrompt("openai/gpt-5.6-luna-pro");
+
+		expect(prompt).toContain(
+			"Use dollar-sign delimiters for all mathematical expressions",
+		);
+		expect(prompt).toContain("Put the $$ block-math delimiters on their own lines.");
+		expect(prompt).toContain(
+			"write percentages as $80\\%$, never $80%$.",
+		);
+		expect(prompt).toContain("Do not use \\(...\\) or \\[...\\] delimiters.");
+	});
+});
 
 describe("buildServerToolDefinitions", () => {
 	it("caps and validates datetime timezone parameters", () => {
