@@ -184,7 +184,6 @@ function revalidatePublicCataloguePaths(options: RevalidateModelDataTagOptions) 
 	revalidatePath("/models");
 	revalidatePath("/models", "layout");
 	revalidatePath("/models/table");
-	revalidatePath("/models/collections");
 	revalidatePath("/monitor");
 	revalidatePath("/compare");
 	revalidatePath("/pricing");

@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { MODEL_CAPABILITY_OPTIONS } from "@/lib/models/editorOptions"
+import { getTierFilterMeta } from "@/lib/models/tierFilterStyles"
 import { PRICING_METER_OPTIONS } from "@/lib/pricing/meters"
 import { createClient } from "@/utils/supabase/client"
 
@@ -720,11 +721,18 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {PRICING_PLANS.map((plan) => (
-                      <SelectItem key={plan.value} value={plan.value}>
-                        {plan.label}
-                      </SelectItem>
-                    ))}
+                    {PRICING_PLANS.map((plan) => {
+                      const tierMeta = getTierFilterMeta(plan.value)
+                      const TierIcon = tierMeta.icon
+                      return (
+                        <SelectItem key={plan.value} value={plan.value}>
+                          <span className="inline-flex items-center gap-1.5">
+                            <TierIcon className={`h-3.5 w-3.5 shrink-0 ${tierMeta.iconClassName}`} />
+                            <span>{plan.label}</span>
+                          </span>
+                        </SelectItem>
+                      )
+                    })}
                   </SelectContent>
                 </Select>
               </FieldRow>

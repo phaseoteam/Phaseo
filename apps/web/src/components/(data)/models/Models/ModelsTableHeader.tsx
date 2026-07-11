@@ -9,7 +9,6 @@ import {
 	Grid as GridIcon,
 	Table as TableIcon,
 	Filter,
-	Layers as LayersIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +24,8 @@ import {
 	TooltipContent,
 } from "@/components/ui/tooltip";
 import { featureLabels } from "@/lib/config/featureLabels";
+import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
+import { cn } from "@/lib/utils";
 
 interface ModelsTableHeaderProps {
 	allEndpoints: string[];
@@ -35,7 +36,9 @@ interface ModelsTableHeaderProps {
 }
 
 function formatModalityLabel(value: string): string {
-	const normalized = String(value ?? "").trim().toLowerCase();
+	const normalized = String(value ?? "")
+		.trim()
+		.toLowerCase();
 	if (normalized === "audio_stt") return "Transcription";
 	if (normalized === "audio_tts") return "Speech";
 	if (normalized === "audio_music") return "Music";
@@ -54,7 +57,6 @@ export default function ModelsTableHeader({
 }: ModelsTableHeaderProps) {
 	const pathname = usePathname();
 	const isTable = pathname?.includes("/models/table");
-	const isCollections = pathname?.includes("/models/collections");
 
 	const [search, setSearch] = useQueryState("search", {
 		defaultValue: "",
@@ -68,15 +70,17 @@ export default function ModelsTableHeader({
 			defaultValue: [],
 			parse: (value) => (value ? value.split(",") : []),
 			serialize: (value) => value.join(","),
-		}
+		},
 	);
 
-	const [selectedOutputModalities, setSelectedOutputModalities] =
-		useQueryState("outputModalities", {
+	const [selectedOutputModalities, setSelectedOutputModalities] = useQueryState(
+		"outputModalities",
+		{
 			defaultValue: [],
 			parse: (value) => (value ? value.split(",") : []),
 			serialize: (value) => value.join(","),
-		});
+		},
+	);
 
 	const [selectedFeatures, setSelectedFeatures] = useQueryState("features", {
 		defaultValue: [],
@@ -84,14 +88,11 @@ export default function ModelsTableHeader({
 		serialize: (value) => value.join(","),
 	});
 
-	const [selectedEndpoints, setSelectedEndpoints] = useQueryState(
-		"endpoints",
-		{
-			defaultValue: [],
-			parse: (value) => (value ? value.split(",") : []),
-			serialize: (value) => value.join(","),
-		}
-	);
+	const [selectedEndpoints, setSelectedEndpoints] = useQueryState("endpoints", {
+		defaultValue: [],
+		parse: (value) => (value ? value.split(",") : []),
+		serialize: (value) => value.join(","),
+	});
 
 	const [selectedStatuses, setSelectedStatuses] = useQueryState("statuses", {
 		defaultValue: [],
@@ -121,9 +122,7 @@ export default function ModelsTableHeader({
 									<Button
 										size="sm"
 										asChild
-										variant={
-											!isTable ? "default" : "outline"
-										}
+										variant={!isTable ? "default" : "outline"}
 										className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
 									>
 										<Link
@@ -135,9 +134,7 @@ export default function ModelsTableHeader({
 										</Link>
 									</Button>
 								</TooltipTrigger>
-								<TooltipContent side="top">
-									Card view
-								</TooltipContent>
+								<TooltipContent side="top">Card view</TooltipContent>
 							</Tooltip>
 
 							<Tooltip>
@@ -145,9 +142,7 @@ export default function ModelsTableHeader({
 									<Button
 										size="sm"
 										asChild
-										variant={
-											isTable ? "default" : "outline"
-										}
+										variant={isTable ? "default" : "outline"}
 										className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
 									>
 										<Link
@@ -159,35 +154,7 @@ export default function ModelsTableHeader({
 										</Link>
 									</Button>
 								</TooltipTrigger>
-								<TooltipContent side="top">
-									Table view
-								</TooltipContent>
-							</Tooltip>
-
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<Button
-										size="sm"
-										asChild
-										variant={
-											isCollections
-												? "default"
-												: "outline"
-										}
-										className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
-									>
-										<Link
-											href="/models/collections"
-											prefetch={false}
-											aria-label="Collections view"
-										>
-											<LayersIcon className="h-4 w-4" />
-										</Link>
-									</Button>
-								</TooltipTrigger>
-								<TooltipContent side="top">
-									Collections
-								</TooltipContent>
+								<TooltipContent side="top">Table view</TooltipContent>
 							</Tooltip>
 						</div>
 					</div>
@@ -216,11 +183,7 @@ export default function ModelsTableHeader({
 						{/* Endpoint Filter */}
 						<Popover>
 							<PopoverTrigger asChild>
-								<Button
-									variant="outline"
-									size="sm"
-									className="h-8"
-								>
+								<Button variant="outline" size="sm" className="h-8">
 									<Filter className="h-4 w-4 mr-2" />
 									Endpoint
 									{(selectedEndpoints.length > 0 ||
@@ -229,8 +192,7 @@ export default function ModelsTableHeader({
 											variant="secondary"
 											className="ml-2 h-5 px-1.5 text-xs"
 										>
-											{selectedEndpoints.length +
-												selectedStatuses.length}
+											{selectedEndpoints.length + selectedStatuses.length}
 										</Badge>
 									)}
 								</Button>
@@ -238,9 +200,7 @@ export default function ModelsTableHeader({
 							<PopoverContent className="w-56">
 								<div className="space-y-4">
 									<div className="space-y-2">
-										<h4 className="font-medium">
-											Endpoints
-										</h4>
+										<h4 className="font-medium">Endpoints</h4>
 										{allEndpoints.map((endpoint) => (
 											<div
 												key={endpoint}
@@ -248,26 +208,16 @@ export default function ModelsTableHeader({
 											>
 												<Checkbox
 													id={`endpoint-${endpoint}`}
-													checked={selectedEndpoints.includes(
-														endpoint
-													)}
-													onCheckedChange={(
-														checked
-													) => {
+													checked={selectedEndpoints.includes(endpoint)}
+													onCheckedChange={(checked) => {
 														if (checked) {
-															setSelectedEndpoints(
-																[
-																	...selectedEndpoints,
-																	endpoint,
-																]
-															);
+															setSelectedEndpoints([
+																...selectedEndpoints,
+																endpoint,
+															]);
 														} else {
 															setSelectedEndpoints(
-																selectedEndpoints.filter(
-																	(e) =>
-																		e !==
-																		endpoint
-																)
+																selectedEndpoints.filter((e) => e !== endpoint),
 															);
 														}
 													}}
@@ -284,32 +234,19 @@ export default function ModelsTableHeader({
 									<div className="space-y-2">
 										<h4 className="font-medium">Status</h4>
 										{allStatuses.map((status) => (
-											<div
-												key={status}
-												className="flex items-center space-x-2"
-											>
+											<div key={status} className="flex items-center space-x-2">
 												<Checkbox
 													id={`status-${status}`}
-													checked={selectedStatuses.includes(
-														status
-													)}
-													onCheckedChange={(
-														checked
-													) => {
+													checked={selectedStatuses.includes(status)}
+													onCheckedChange={(checked) => {
 														if (checked) {
-															setSelectedStatuses(
-																[
-																	...selectedStatuses,
-																	status,
-																]
-															);
+															setSelectedStatuses([
+																...selectedStatuses,
+																status,
+															]);
 														} else {
 															setSelectedStatuses(
-																selectedStatuses.filter(
-																	(s) =>
-																		s !==
-																		status
-																)
+																selectedStatuses.filter((s) => s !== status),
 															);
 														}
 													}}
@@ -330,16 +267,11 @@ export default function ModelsTableHeader({
 						{/* Modalities Filter */}
 						<Popover>
 							<PopoverTrigger asChild>
-								<Button
-									variant="outline"
-									size="sm"
-									className="h-8"
-								>
+								<Button variant="outline" size="sm" className="h-8">
 									<Filter className="h-4 w-4 mr-2" />
 									Modalities
 									{(selectedInputModalities.length > 0 ||
-										selectedOutputModalities.length >
-											0) && (
+										selectedOutputModalities.length > 0) && (
 										<Badge
 											variant="secondary"
 											className="ml-2 h-5 px-1.5 text-xs"
@@ -353,9 +285,7 @@ export default function ModelsTableHeader({
 							<PopoverContent className="w-56">
 								<div className="space-y-4">
 									<div className="space-y-2">
-										<h4 className="font-medium">
-											Input Modalities
-										</h4>
+										<h4 className="font-medium">Input Modalities</h4>
 										{allModalities.map((modality) => (
 											<div
 												key={`input-${modality}`}
@@ -363,26 +293,18 @@ export default function ModelsTableHeader({
 											>
 												<Checkbox
 													id={`input-modality-${modality}`}
-													checked={selectedInputModalities.includes(
-														modality
-													)}
-													onCheckedChange={(
-														checked
-													) => {
+													checked={selectedInputModalities.includes(modality)}
+													onCheckedChange={(checked) => {
 														if (checked) {
-															setSelectedInputModalities(
-																[
-																	...selectedInputModalities,
-																	modality,
-																]
-															);
+															setSelectedInputModalities([
+																...selectedInputModalities,
+																modality,
+															]);
 														} else {
 															setSelectedInputModalities(
 																selectedInputModalities.filter(
-																	(m) =>
-																		m !==
-																		modality
-																)
+																	(m) => m !== modality,
+																),
 															);
 														}
 													}}
@@ -397,9 +319,7 @@ export default function ModelsTableHeader({
 										))}
 									</div>
 									<div className="space-y-2">
-										<h4 className="font-medium">
-											Output Modalities
-										</h4>
+										<h4 className="font-medium">Output Modalities</h4>
 										{allModalities.map((modality) => (
 											<div
 												key={`output-${modality}`}
@@ -407,26 +327,18 @@ export default function ModelsTableHeader({
 											>
 												<Checkbox
 													id={`output-modality-${modality}`}
-													checked={selectedOutputModalities.includes(
-														modality
-													)}
-													onCheckedChange={(
-														checked
-													) => {
+													checked={selectedOutputModalities.includes(modality)}
+													onCheckedChange={(checked) => {
 														if (checked) {
-															setSelectedOutputModalities(
-																[
-																	...selectedOutputModalities,
-																	modality,
-																]
-															);
+															setSelectedOutputModalities([
+																...selectedOutputModalities,
+																modality,
+															]);
 														} else {
 															setSelectedOutputModalities(
 																selectedOutputModalities.filter(
-																	(m) =>
-																		m !==
-																		modality
-																)
+																	(m) => m !== modality,
+																),
 															);
 														}
 													}}
@@ -447,11 +359,7 @@ export default function ModelsTableHeader({
 						{/* Features Filter */}
 						<Popover>
 							<PopoverTrigger asChild>
-								<Button
-									variant="outline"
-									size="sm"
-									className="h-8"
-								>
+								<Button variant="outline" size="sm" className="h-8">
 									<Filter className="h-4 w-4 mr-2" />
 									Features
 									{selectedFeatures.length > 0 && (
@@ -468,36 +376,21 @@ export default function ModelsTableHeader({
 								<div className="space-y-2">
 									<h4 className="font-medium">Features</h4>
 									{allFeatures.map((feature) => (
-										<div
-											key={feature}
-											className="flex items-center space-x-2"
-										>
+										<div key={feature} className="flex items-center space-x-2">
 											<Checkbox
 												id={`feature-${feature}`}
-												checked={selectedFeatures.includes(
-													feature
-												)}
+												checked={selectedFeatures.includes(feature)}
 												onCheckedChange={(checked) => {
 													if (checked) {
-														setSelectedFeatures([
-															...selectedFeatures,
-															feature,
-														]);
+														setSelectedFeatures([...selectedFeatures, feature]);
 													} else {
 														setSelectedFeatures(
-															selectedFeatures.filter(
-																(f) =>
-																	f !==
-																	feature
-															)
+															selectedFeatures.filter((f) => f !== feature),
 														);
 													}
 												}}
 											/>
-											<label
-												htmlFor={`feature-${feature}`}
-												className="text-sm"
-											>
+											<label htmlFor={`feature-${feature}`} className="text-sm">
 												{featureLabels[feature] ?? feature}
 											</label>
 										</div>
@@ -509,62 +402,57 @@ export default function ModelsTableHeader({
 						{/* Tier Filter */}
 						<Popover>
 							<PopoverTrigger asChild>
-								<Button
-									variant="outline"
-									size="sm"
-									className="h-8"
-								>
+								<Button variant="outline" size="sm" className="h-8">
 									<Filter className="h-4 w-4 mr-2" />
 									Tier
 									{!isDefaultTiers && (
-											<Badge
-												variant="secondary"
-												className="ml-2 h-5 px-1.5 text-xs"
-											>
-												{selectedTiers.length}
-											</Badge>
-										)}
+										<Badge
+											variant="secondary"
+											className="ml-2 h-5 px-1.5 text-xs"
+										>
+											{selectedTiers.length}
+										</Badge>
+									)}
 								</Button>
 							</PopoverTrigger>
 							<PopoverContent className="w-56">
 								<div className="space-y-2">
-									<h4 className="font-medium">
-										Pricing Tiers
-									</h4>
-									{allTiers.map((tier) => (
-										<div
-											key={tier}
-											className="flex items-center space-x-2"
-										>
-											<Checkbox
-												id={`tier-${tier}`}
-												checked={selectedTiers.includes(
-													tier
-												)}
-												onCheckedChange={(checked) => {
-													if (checked) {
-														setSelectedTiers([
-															...selectedTiers,
-															tier,
-														]);
-													} else {
-														setSelectedTiers(
-															selectedTiers.filter(
-																(t) =>
-																	t !== tier
-															)
-														);
-													}
-												}}
-											/>
-											<label
-												htmlFor={`tier-${tier}`}
-												className="text-sm capitalize"
-											>
-												{tier}
-											</label>
-										</div>
-									))}
+									<h4 className="font-medium">Pricing Tiers</h4>
+									{allTiers.map((tier) => {
+										const tierMeta = getTierFilterMeta(tier);
+										const TierIcon = tierMeta.icon;
+										const checked = selectedTiers.includes(tier);
+										return (
+											<div key={tier} className="flex items-center space-x-2">
+												<Checkbox
+													id={`tier-${tier}`}
+													checked={checked}
+													onCheckedChange={(checked) => {
+														if (checked) {
+															setSelectedTiers([...selectedTiers, tier]);
+														} else {
+															setSelectedTiers(
+																selectedTiers.filter((t) => t !== tier),
+															);
+														}
+													}}
+												/>
+												<label
+													htmlFor={`tier-${tier}`}
+													className="group flex cursor-pointer items-center gap-1.5 text-sm capitalize"
+												>
+													<TierIcon
+														className={cn(
+															"h-3.5 w-3.5 shrink-0 text-muted-foreground transition-colors",
+															tierMeta.filterIconHoverClassName,
+															checked && tierMeta.iconClassName,
+														)}
+													/>
+													{tier}
+												</label>
+											</div>
+										);
+									})}
 								</div>
 							</PopoverContent>
 						</Popover>
@@ -604,9 +492,7 @@ export default function ModelsTableHeader({
 									<Button
 										size="sm"
 										asChild
-										variant={
-											!isTable ? "default" : "outline"
-										}
+										variant={!isTable ? "default" : "outline"}
 										className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
 									>
 										<Link
@@ -618,9 +504,7 @@ export default function ModelsTableHeader({
 										</Link>
 									</Button>
 								</TooltipTrigger>
-								<TooltipContent side="top">
-									Card view
-								</TooltipContent>
+								<TooltipContent side="top">Card view</TooltipContent>
 							</Tooltip>
 
 							<Tooltip>
@@ -628,9 +512,7 @@ export default function ModelsTableHeader({
 									<Button
 										size="sm"
 										asChild
-										variant={
-											isTable ? "default" : "outline"
-										}
+										variant={isTable ? "default" : "outline"}
 										className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
 									>
 										<Link
@@ -642,35 +524,7 @@ export default function ModelsTableHeader({
 										</Link>
 									</Button>
 								</TooltipTrigger>
-								<TooltipContent side="top">
-									Table view
-								</TooltipContent>
-							</Tooltip>
-
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<Button
-										size="sm"
-										asChild
-										variant={
-											isCollections
-												? "default"
-												: "outline"
-										}
-										className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
-									>
-										<Link
-											href="/models/collections"
-											prefetch={false}
-											aria-label="Collections view"
-										>
-											<LayersIcon className="h-4 w-4" />
-										</Link>
-									</Button>
-								</TooltipTrigger>
-								<TooltipContent side="top">
-									Collections
-								</TooltipContent>
+								<TooltipContent side="top">Table view</TooltipContent>
 							</Tooltip>
 						</div>
 					</div>

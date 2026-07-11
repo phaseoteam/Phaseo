@@ -23,6 +23,7 @@ import {
 	resolveBenchmarkIsPercentage,
 } from "@/lib/benchmarks/scoreFormat";
 import { cn } from "@/lib/utils";
+import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { ExternalLink, Info, MessageSquare, Plus } from "lucide-react";
 import { ProviderLogo } from "../ProviderLogo";
 import type { CompareGatewayUsageByModel } from "../types";
@@ -907,6 +908,8 @@ export default function DecisionMatrix({
 						prices?.input.price?.pricing_plan ??
 						prices?.output.price?.pricing_plan ??
 						prices?.cached.price?.pricing_plan;
+					const planMeta = plan ? getTierFilterMeta(plan) : null;
+					const PlanIcon = planMeta?.icon ?? null;
 
 					return (
 						<div key={`${model.id}-pricing`} className="px-4">
@@ -958,7 +961,19 @@ export default function DecisionMatrix({
 								</Highlight>
 							</MetricRow>
 							<MetricRow label="Plan">
-								<span className="truncate">{plan ?? "-"}</span>
+								{plan && PlanIcon && planMeta ? (
+									<span className="inline-flex items-center justify-end gap-1.5 truncate capitalize">
+										<PlanIcon
+											className={cn(
+												"h-3.5 w-3.5 shrink-0",
+												planMeta.iconClassName,
+											)}
+										/>
+										<span className="truncate">{plan}</span>
+									</span>
+								) : (
+									"-"
+								)}
 							</MetricRow>
 							<MetricRow label="Source">
 								{sourceLink ? (

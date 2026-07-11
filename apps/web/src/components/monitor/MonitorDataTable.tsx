@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import {
 	Table,
@@ -10,19 +10,12 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
 	HoverCard,
 	HoverCardContent,
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
 import {
 	AlignCenter,
 	AlertTriangle,
@@ -37,8 +30,8 @@ import {
 	Braces,
 	Captions,
 	CheckCircle2,
-	ChevronLeft,
-	ChevronRight,
+	ChevronsUpDown,
+	Clock3,
 	Database,
 	FileDigit,
 	FileUp,
@@ -61,6 +54,9 @@ import { Logo } from "@/components/Logo";
 import Link from "next/link";
 import { useQueryState } from "nuqs";
 import { featureLabels } from "@/lib/config/featureLabels";
+import { getModalityTone } from "@/lib/models/modalityStyles";
+import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
+import { cn } from "@/lib/utils";
 
 const MODALITY_DISPLAY_ORDER = [
 	"text",
@@ -169,13 +165,89 @@ const modalityIcons: Record<string, ModalityConfig> = {
 	},
 };
 
+const modalityDescriptions: Record<
+	string,
+	{ input: string; output: string }
+> = {
+	text: {
+		input: "Accepts text in prompts and request content.",
+		output: "Returns generated text in the model response.",
+	},
+	image: {
+		input: "Accepts images for vision and multimodal understanding.",
+		output: "Can generate or transform image content.",
+	},
+	video: {
+		input: "Accepts video content for analysis or transformation.",
+		output: "Can return generated video content.",
+	},
+	audio: {
+		input: "Accepts audio content for analysis and generation workflows.",
+		output: "Can return generated audio content.",
+	},
+	audio_stt: {
+		input: "Accepts recorded speech for transcription workflows.",
+		output: "Returns transcribed speech as text.",
+	},
+	audio_tts: {
+		input: "Accepts content and controls for speech synthesis.",
+		output: "Returns synthesized speech audio.",
+	},
+	audio_music: {
+		input: "Accepts audio or composition context for music workflows.",
+		output: "Returns generated music or musical audio.",
+	},
+	moderations: {
+		input: "Accepts content for safety and policy classification.",
+		output: "Returns moderation labels and safety results.",
+	},
+	rerank: {
+		input: "Accepts documents and a query for relevance scoring.",
+		output: "Returns results ordered by relevance.",
+	},
+	embeddings: {
+		input: "Accepts content to encode as vector representations.",
+		output: "Returns vector embeddings for the supplied content.",
+	},
+	file: {
+		input: "Accepts uploaded files as request content.",
+		output: "Can return file-based response content.",
+	},
+	multimodal: {
+		input: "Accepts more than one content type in a request.",
+		output: "Can return more than one response content type.",
+	},
+	code: {
+		input: "Accepts source code and code-oriented prompts.",
+		output: "Can return generated or transformed source code.",
+	},
+	function: {
+		input: "Accepts function and tool definitions in requests.",
+		output: "Can return structured function or tool calls.",
+	},
+};
+
+function getModalityDescription(
+	modality: string,
+	type: "input" | "output",
+	label: string,
+): string {
+	return (
+		modalityDescriptions[modality]?.[type] ??
+		(type === "input"
+			? `Accepts ${label.toLowerCase()} as request content.`
+			: `Can return ${label.toLowerCase()} in the model response.`)
+	);
+}
+
 function normalizeModality(value: string): string {
 	const normalized = String(value ?? "")
 		.trim()
 		.toLowerCase()
 		.replace(/[._/-]+/g, " ");
 	if (!normalized) return "";
-	if (normalized.includes("vision") || normalized.includes("image")) return "image";
+	if (normalized.includes("vision") || normalized.includes("image"))
+		return "image";
 	if (normalized.includes("video")) return "video";
 	if (normalized.includes("music")) return "audio_music";
 	if (
@@ -193,10 +265,12 @@ function normalizeModality(value: string): string {
 	) {
 		return "audio_tts";
 	}
-	if (normalized.includes("speech") || normalized.includes("audio")) return "audio";
+	if (normalized.includes("speech") || normalized.includes("audio"))
+		return "audio";
 	if (normalized.includes("moderat")) return "moderations";
 	if (normalized.includes("embedding")) return "embeddings";
-	if (normalized.includes("rerank") || normalized.includes("re rank")) return "rerank";
+	if (normalized.includes("rerank") || normalized.includes("re rank"))
+		return "rerank";
 	if (normalized.includes("text")) return "text";
 	return normalized.replace(/\s+/g, "_");
 }
@@ -247,47 +321,111 @@ function sortModalities(values: string[]): string[] {
 }
 
 const featureIcons = {
-	tools: { icon: Wrench, color: "text-yellow-600" },
-	reasoning: { icon: Brain, color: "text-indigo-600" },
-	structured_outputs: { icon: Braces, color: "text-cyan-600" },
-	caching: { icon: Database, color: "text-emerald-600" },
-	web_search: { icon: Globe, color: "text-blue-500" },
-	moderated: { icon: ShieldAlert, color: "text-red-500" },
-	free: { icon: BadgeCheck, color: "text-emerald-600" },
+	tools: {
+		icon: Wrench,
+		color: "text-yellow-600",
+		darkColor: "dark:text-yellow-300",
+	},
+	reasoning: {
+		icon: Brain,
+		color: "text-indigo-600",
+		darkColor: "dark:text-indigo-300",
+	},
+	structured_outputs: {
+		icon: Braces,
+		color: "text-cyan-600",
+		darkColor: "dark:text-cyan-300",
+	},
+	caching: {
+		icon: Database,
+		color: "text-emerald-600",
+		darkColor: "dark:text-emerald-300",
+	},
+	web_search: {
+		icon: Globe,
+		color: "text-blue-500",
+		darkColor: "dark:text-blue-300",
+	},
+	moderated: {
+		icon: ShieldAlert,
+		color: "text-red-500",
+		darkColor: "dark:text-red-300",
+	},
+	free: {
+		icon: BadgeCheck,
+		color: "text-emerald-600",
+		darkColor: "dark:text-emerald-300",
+	},
+};
+
+const featureDescriptions: Record<string, string> = {
+	tools: "Supports function calls and external tools.",
+	reasoning: "Supports enhanced reasoning workflows.",
+	structured_outputs: "Returns responses constrained to a defined schema.",
+	caching: "Supports prompt and response caching.",
+	web_search: "Can retrieve and ground responses in live web results.",
+	moderated: "Includes provider-side moderation controls.",
+	free: "Available through a free usage tier.",
 };
 
 const statusMetaByKey: Record<
 	string,
 	{ icon: LucideIcon; color: string; label: string }
 > = {
-	active: { icon: CheckCircle2, color: "text-green-600", label: "Active" },
-	inactive: { icon: XCircle, color: "text-zinc-500", label: "Inactive" },
-	not_active: { icon: XCircle, color: "text-zinc-500", label: "Inactive" },
-	not_listed: { icon: XCircle, color: "text-zinc-500", label: "Not Listed" },
+	active: {
+		icon: CheckCircle2,
+		color: "text-green-600 dark:text-green-400",
+		label: "Active",
+	},
 	deranked_lvl1: {
 		icon: AlertTriangle,
-		color: "text-amber-500",
+		color: "text-amber-500 dark:text-amber-400",
 		label: "Deranked Level 1",
 	},
 	deranked_lvl2: {
 		icon: AlertTriangle,
-		color: "text-amber-600",
+		color: "text-amber-600 dark:text-amber-400",
 		label: "Deranked Level 2",
 	},
 	deranked_lvl3: {
 		icon: AlertTriangle,
-		color: "text-red-500",
+		color: "text-red-500 dark:text-red-400",
 		label: "Deranked Level 3",
 	},
-	disabled: { icon: Ban, color: "text-red-600", label: "Disabled" },
+	coming_soon: {
+		icon: Clock3,
+		color: "text-sky-600 dark:text-sky-400",
+		label: "Coming Soon",
+	},
+	inactive: {
+		icon: XCircle,
+		color: "text-zinc-500 dark:text-zinc-400",
+		label: "Not Active",
+	},
+	not_active: {
+		icon: XCircle,
+		color: "text-zinc-500 dark:text-zinc-400",
+		label: "Not Active",
+	},
+	not_listed: {
+		icon: XCircle,
+		color: "text-zinc-500 dark:text-zinc-400",
+		label: "Not Listed",
+	},
+	disabled: {
+		icon: Ban,
+		color: "text-red-600 dark:text-red-400",
+		label: "Disabled",
+	},
 };
 const statusLegendOrder = [
 	"active",
 	"deranked_lvl1",
 	"deranked_lvl2",
 	"deranked_lvl3",
-	"disabled",
+	"coming_soon",
 	"inactive",
+	"disabled",
 ] as const;
 const TABLE_COLUMNS_COUNT = 15;
 const TABLE_LOADING_SKELETON_ROWS = 12;
@@ -303,7 +441,7 @@ const TABLE_COLUMN_WIDTHS = [
 	96, // Tier
 	164, // Input Modalities
 	164, // Output Modalities
-	120, // Features
+	200, // Features — keep capability icons on one line
 	112, // Context
 	112, // Max Output
 	140, // Weekly Tokens
@@ -327,6 +465,7 @@ export interface ModelData {
 		inputPrice: number;
 		outputPrice: number;
 		features: string[];
+		executionRegions?: string[] | null;
 	};
 	endpoint: string;
 	gatewayStatus: string;
@@ -335,6 +474,7 @@ export interface ModelData {
 	context: number; // context window in tokens
 	maxOutput: number; // max output tokens
 	quantization?: string; // quantization level
+	supportedParameters?: string[];
 	tier?: string; // pricing tier
 	added?: string; // date added
 	retired?: string; // when this model is retired
@@ -345,11 +485,15 @@ export interface ModelData {
 interface MonitorDataTableProps {
 	data: ModelData[];
 	loading?: boolean;
+	effectiveStatuses?: string[];
+	stickyHeaderOffset?: number;
 }
 
 export function MonitorDataTable({
 	data,
 	loading = false,
+	effectiveStatuses,
+	stickyHeaderOffset = 60,
 }: MonitorDataTableProps) {
 	const [searchQuery] = useQueryState("search", {
 		defaultValue: "",
@@ -380,6 +524,44 @@ export function MonitorDataTable({
 		parse: (value) => (value ? value.split(",") : []),
 		serialize: (value) => value.join(","),
 	});
+	const [selectedTiers] = useQueryState("tiers", {
+		defaultValue: [],
+		parse: (value) => (value ? value.split(",") : []),
+		serialize: (value) => value.join(","),
+	});
+
+	const [selectedSupportedParameters] = useQueryState("supportedParameters", {
+		defaultValue: [],
+		parse: (value) => (value ? value.split(",") : []),
+		serialize: (value) => value.join(","),
+	});
+
+	const [selectedProviders] = useQueryState("providers", {
+		defaultValue: [],
+		parse: (value) => (value ? value.split(",") : []),
+		serialize: (value) => value.join(","),
+	});
+
+	const [selectedRegions] = useQueryState("regions", {
+		defaultValue: [],
+		parse: (value) => (value ? value.split(",") : []),
+		serialize: (value) => value.join(","),
+	});
+
+	const [selectedCreators] = useQueryState("creators", {
+		defaultValue: [],
+		parse: (value) => (value ? value.split(",") : []),
+		serialize: (value) => value.join(","),
+	});
+
+	const [selectedContextMin] = useQueryState("contextMin", {
+		defaultValue: 0,
+		parse: (value) => {
+			const parsed = Number(value);
+			return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+		},
+		serialize: (value) => String(value),
+	});
 
 	const [selectedEndpoints] = useQueryState("endpoints", {
 		defaultValue: [],
@@ -387,7 +569,7 @@ export function MonitorDataTable({
 		serialize: (value) => value.join(","),
 	});
 
-	const [selectedStatuses] = useQueryState("statuses", {
+	const [urlSelectedStatuses] = useQueryState("statuses", {
 		defaultValue: [],
 		parse: (value) =>
 			value
@@ -397,14 +579,12 @@ export function MonitorDataTable({
 						.filter(Boolean)
 				: [],
 		serialize: (value) =>
-			value.map((part) => normalizeStatusValue(part)).filter(Boolean).join(","),
+			value
+				.map((part) => normalizeStatusValue(part))
+				.filter(Boolean)
+				.join(","),
 	});
-
-	const [selectedTiers] = useQueryState("tiers", {
-		defaultValue: [],
-		parse: (value) => (value ? value.split(",") : []),
-		serialize: (value) => value.join(","),
-	});
+	const selectedStatuses = effectiveStatuses ?? urlSelectedStatuses;
 
 	// Sorting via URL params
 	const [sortField, setSortField] = useQueryState("sort", {
@@ -416,15 +596,6 @@ export function MonitorDataTable({
 		defaultValue: DEFAULT_SORT_DIRECTION,
 		parse: (value) => (value === "asc" ? "asc" : DEFAULT_SORT_DIRECTION),
 		serialize: (value) => value,
-	});
-
-	const [page, setPage] = useQueryState("page", {
-		defaultValue: 1,
-		parse: (value) => {
-			const parsed = Number.parseInt(value || "1", 10);
-			return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
-		},
-		serialize: (value) => String(value),
 	});
 
 	const handleSort = (field: string) => {
@@ -448,11 +619,40 @@ export function MonitorDataTable({
 	};
 
 	const getSortIcon = (field: string) => {
-		if (sortField !== field) return <ArrowUpDown className="h-4 w-4" />;
+		if (sortField !== field) {
+			return (
+				<ChevronsUpDown className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
+			);
+		}
 		return sortDirection === "asc" ? (
-			<ArrowUp className="h-4 w-4" />
+			<ArrowUp className="h-3.5 w-3.5" />
 		) : (
-			<ArrowDown className="h-4 w-4" />
+			<ArrowDown className="h-3.5 w-3.5" />
+		);
+	};
+
+	const renderSortHead = (
+		label: string,
+		field: string,
+		align: "left" | "center" = "left",
+	) => {
+		const isActive = sortField === field;
+		return (
+			<button
+				type="button"
+				onClick={() => handleSort(field)}
+				className={cn(
+					"group inline-flex w-full items-center gap-1.5 text-xs font-medium transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
+					align === "center"
+						? "justify-center text-center"
+						: "justify-start text-left",
+					isActive ? "text-foreground" : "text-muted-foreground",
+				)}
+				aria-label={`Sort models by ${label.toLowerCase()}`}
+			>
+				<span>{label}</span>
+				{getSortIcon(field)}
+			</button>
 		);
 	};
 
@@ -470,14 +670,10 @@ export function MonitorDataTable({
 						return Object.values(value).some((nestedValue) => {
 							if (Array.isArray(nestedValue)) {
 								return nestedValue.some((v) =>
-									String(v)
-										.toLowerCase()
-										.includes(searchLower),
+									String(v).toLowerCase().includes(searchLower),
 								);
 							}
-							return String(nestedValue)
-								.toLowerCase()
-								.includes(searchLower);
+							return String(nestedValue).toLowerCase().includes(searchLower);
 						});
 					}
 					return String(value).toLowerCase().includes(searchLower);
@@ -486,22 +682,20 @@ export function MonitorDataTable({
 			}
 
 			if (yearSelected && yearSelected > 0) {
-				const itemYear = item.added
-					? new Date(item.added).getFullYear()
-					: null;
+				const itemYear = item.added ? new Date(item.added).getFullYear() : null;
 				if (itemYear !== yearSelected) return false;
 			}
 
 			if (selectedInputModalities.length > 0) {
-				const hasAllInputModalities = selectedInputModalities.every(
-					(mod) => item.inputModalities.includes(mod),
+				const hasAllInputModalities = selectedInputModalities.every((mod) =>
+					item.inputModalities.includes(mod),
 				);
 				if (!hasAllInputModalities) return false;
 			}
 
 			if (selectedOutputModalities.length > 0) {
-				const hasAllOutputModalities = selectedOutputModalities.every(
-					(mod) => item.outputModalities.includes(mod),
+				const hasAllOutputModalities = selectedOutputModalities.every((mod) =>
+					item.outputModalities.includes(mod),
 				);
 				if (!hasAllOutputModalities) return false;
 			}
@@ -513,6 +707,50 @@ export function MonitorDataTable({
 				if (!hasAllFeatures) return false;
 			}
 
+			if (selectedTiers.length > 0) {
+				const tier = String(item.tier ?? "standard")
+					.trim()
+					.toLowerCase();
+				if (!selectedTiers.includes(tier)) return false;
+			}
+
+			if (selectedSupportedParameters.length > 0) {
+				const parameters = new Set(item.supportedParameters ?? []);
+				if (
+					!selectedSupportedParameters.every((value) => parameters.has(value))
+				) {
+					return false;
+				}
+			}
+
+			if (
+				selectedProviders.length > 0 &&
+				!selectedProviders.includes(item.provider.id)
+			) {
+				return false;
+			}
+
+			if (selectedRegions.length > 0) {
+				const regions = new Set(
+					(item.provider.executionRegions ?? []).map((value) =>
+						String(value).trim().toLowerCase(),
+					),
+				);
+				if (!selectedRegions.every((value) => regions.has(value))) return false;
+			}
+
+			if (
+				selectedCreators.length > 0 &&
+				(!item.organisationId ||
+					!selectedCreators.includes(item.organisationId))
+			) {
+				return false;
+			}
+
+			if (selectedContextMin > 0 && item.context < selectedContextMin) {
+				return false;
+			}
+
 			if (selectedEndpoints.length > 0) {
 				if (!selectedEndpoints.includes(item.endpoint)) return false;
 			}
@@ -520,11 +758,6 @@ export function MonitorDataTable({
 			if (selectedStatuses.length > 0) {
 				const normalizedStatus = normalizeStatusValue(item.gatewayStatus);
 				if (!selectedStatuses.includes(normalizedStatus)) return false;
-			}
-
-			if (selectedTiers.length > 0) {
-				if (!item.tier || !selectedTiers.includes(item.tier))
-					return false;
 			}
 
 			return true;
@@ -544,9 +777,7 @@ export function MonitorDataTable({
 				if (aHasDate && bHasDate) {
 					const aDate = new Date(a[field]!).getTime();
 					const bDate = new Date(b[field]!).getTime();
-					return sortDirection === "asc"
-						? aDate - bDate
-						: bDate - aDate;
+					return sortDirection === "asc" ? aDate - bDate : bDate - aDate;
 				}
 				if (aHasDate && !bHasDate) return -1;
 				if (!aHasDate && bHasDate) return 1;
@@ -603,9 +834,7 @@ export function MonitorDataTable({
 			if (Array.isArray(bValue)) bValue = bValue.join(",");
 
 			if (typeof aValue === "number" && typeof bValue === "number") {
-				return sortDirection === "asc"
-					? aValue - bValue
-					: bValue - aValue;
+				return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
 			}
 
 			const aStr = String(aValue).toLowerCase();
@@ -621,54 +850,38 @@ export function MonitorDataTable({
 		selectedInputModalities,
 		selectedOutputModalities,
 		selectedFeatures,
+		selectedTiers,
+		selectedSupportedParameters,
+		selectedProviders,
+		selectedRegions,
+		selectedCreators,
+		selectedContextMin,
 		selectedEndpoints,
 		selectedStatuses,
-		selectedTiers,
 		sortField,
 		sortDirection,
 	]);
 
-	const PAGE_SIZE = 250;
 	const totalItems = filteredSortedData.length;
-	const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
-	const safePage = Math.min(page, totalPages);
-
-	const filterKey = [
-		searchQuery,
-		yearSelected,
-		selectedInputModalities.join(","),
-		selectedOutputModalities.join(","),
-		selectedFeatures.join(","),
-		selectedEndpoints.join(","),
-		selectedStatuses.join(","),
-		selectedTiers.join(","),
-		sortField,
-		sortDirection,
-	].join("|");
-	const prevFilterKey = useRef(filterKey);
-
-	useEffect(() => {
-		if (safePage !== page) {
-			setPage(safePage);
-		}
-	}, [page, safePage, setPage]);
-
-	useEffect(() => {
-		if (prevFilterKey.current !== filterKey) {
-			prevFilterKey.current = filterKey;
-			if (page !== 1) {
-				setPage(1);
-			}
-		}
-	}, [filterKey, page, setPage]);
-
-	const pageStart = (safePage - 1) * PAGE_SIZE;
-	const pageData = filteredSortedData.slice(pageStart, pageStart + PAGE_SIZE);
 	const tableContainerRef = useRef<HTMLDivElement | null>(null);
-	const shouldVirtualizeRows = pageData.length > 60;
-	const [scrollMargin, setScrollMargin] = useState(0);
-	const lastNonEmptyVirtualRowsRef = useRef<Array<{ index: number }>>([]);
+	const tableHeaderTrackRef = useRef<HTMLDivElement | null>(null);
+	useEffect(() => {
+		const tableContainer = tableContainerRef.current;
+		const headerTrack = tableHeaderTrackRef.current;
+		if (!tableContainer || !headerTrack) return;
 
+		const syncHeaderScroll = () => {
+			headerTrack.style.transform = `translate3d(${-tableContainer.scrollLeft}px, 0, 0)`;
+		};
+
+		syncHeaderScroll();
+		tableContainer.addEventListener("scroll", syncHeaderScroll, {
+			passive: true,
+		});
+		return () => tableContainer.removeEventListener("scroll", syncHeaderScroll);
+	}, []);
+	const shouldVirtualizeRows = filteredSortedData.length > 60;
+	const [scrollMargin, setScrollMargin] = useState(0);
 	useEffect(() => {
 		if (!shouldVirtualizeRows || typeof window === "undefined") return;
 		const updateScrollMargin = () => {
@@ -679,29 +892,22 @@ export function MonitorDataTable({
 		updateScrollMargin();
 		window.addEventListener("resize", updateScrollMargin);
 		return () => window.removeEventListener("resize", updateScrollMargin);
-	}, [shouldVirtualizeRows, pageData.length]);
+	}, [shouldVirtualizeRows, filteredSortedData.length]);
 
 	const rowVirtualizer = useWindowVirtualizer({
-		count: pageData.length,
+		count: filteredSortedData.length,
 		estimateSize: () => 52,
 		overscan: 20,
 		scrollMargin,
 		enabled: shouldVirtualizeRows,
 	});
 	const virtualRows = rowVirtualizer.getVirtualItems();
-	useEffect(() => {
-		lastNonEmptyVirtualRowsRef.current = [];
-	}, [safePage, pageData.length]);
-	if (virtualRows.length > 0) {
-		lastNonEmptyVirtualRowsRef.current = virtualRows.map((row) => ({
-			index: row.index,
-		}));
-	}
+	const deferredVirtualRows = useDeferredValue(virtualRows);
 	const rowsToRender = shouldVirtualizeRows
-		? (virtualRows.length > 0
-				? virtualRows.map((row) => ({ index: row.index }))
-				: lastNonEmptyVirtualRowsRef.current)
-		: pageData.map((_, index) => ({ index }));
+		? virtualRows.length > 0
+			? virtualRows.map((row) => ({ index: row.index }))
+			: deferredVirtualRows.map((row) => ({ index: row.index }))
+		: filteredSortedData.map((_, index) => ({ index }));
 	const virtualScrollMargin = rowVirtualizer.options.scrollMargin ?? 0;
 	const paddingTop =
 		shouldVirtualizeRows && virtualRows.length > 0
@@ -751,12 +957,13 @@ export function MonitorDataTable({
 						className="min-w-0 flex-1 text-xs font-medium hover:underline underline-offset-2 decoration-[1px]"
 						title={model}
 					>
-						<span className="block cursor-pointer truncate">
-							{model}
-						</span>
+						<span className="block cursor-pointer truncate">{model}</span>
 					</Link>
 				) : (
-					<span className="block min-w-0 flex-1 truncate text-xs font-medium" title={model}>
+					<span
+						className="block min-w-0 flex-1 truncate text-xs font-medium"
+						title={model}
+					>
 						{model}
 					</span>
 				)}
@@ -823,55 +1030,55 @@ export function MonitorDataTable({
 		return price > 0 ? `$${price.toFixed(2)}` : "-";
 	};
 
-	const renderModalities = (
-		modalities: string[],
-		type: "input" | "output",
-	) => {
+	const renderModalities = (modalities: string[], type: "input" | "output") => {
 		const sortedModalities = sortModalities(modalities);
 		return (
-			<div className="flex flex-wrap gap-1 justify-center">
+			<div className="flex min-w-max flex-nowrap justify-center gap-1 whitespace-nowrap">
 				{sortedModalities.map((modality) => {
 					const iconConfig = modalityIcons[modality];
 					if (!iconConfig) return null;
+					const tone = getModalityTone(modality);
+					const description = getModalityDescription(
+						modality,
+						type,
+						iconConfig.label,
+					);
 
 					const IconComponent =
 						type === "input" ? iconConfig.input : iconConfig.output;
 
-					// Convert text color to border/background color
-					const colorMap: Record<string, string> = {
-						"text-blue-600": "border-blue-600 bg-blue-50",
-						"text-purple-600": "border-purple-600 bg-purple-50",
-						"text-green-600": "border-green-600 bg-green-50",
-						"text-orange-600": "border-orange-600 bg-orange-50",
-						"text-red-600": "border-red-600 bg-red-50",
-						"text-pink-600": "border-pink-600 bg-pink-50",
-						"text-rose-600": "border-rose-600 bg-rose-50",
-						"text-fuchsia-600": "border-fuchsia-600 bg-fuchsia-50",
-						"text-gray-600": "border-gray-600 bg-gray-50",
-						"text-indigo-600": "border-indigo-600 bg-indigo-50",
-						"text-cyan-600": "border-cyan-600 bg-cyan-50",
-						"text-yellow-600": "border-yellow-600 bg-yellow-50",
-					};
-
-					const borderClass =
-						colorMap[iconConfig.color] ||
-						"border-gray-600 bg-gray-50";
-
 					return (
-						<Tooltip key={modality}>
-							<TooltipTrigger asChild>
-								<div
-									className={`inline-flex items-center justify-center w-6 h-6 rounded border ${borderClass}`}
+						<HoverCard key={modality} openDelay={160} closeDelay={80}>
+							<HoverCardTrigger asChild>
+								<button
+									type="button"
+									aria-label={`${iconConfig.label} ${type} modality`}
+									className={cn(
+										"group inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]",
+										tone.badgeClassName,
+									)}
 								>
 									<IconComponent
-										className={`h-4 w-4 ${iconConfig.color}`}
+										className={cn(
+											"h-4 w-4 transition-transform group-hover:scale-105",
+											tone.iconClassName,
+										)}
 									/>
-								</div>
-							</TooltipTrigger>
-							<TooltipContent>
-								<p>{iconConfig.label}</p>
-							</TooltipContent>
-						</Tooltip>
+								</button>
+							</HoverCardTrigger>
+							<HoverCardContent
+								align="center"
+								side="top"
+								className="w-72 p-3"
+							>
+								<p className="text-sm font-semibold leading-tight text-foreground">
+									{iconConfig.label} {type === "input" ? "Input" : "Output"}
+								</p>
+								<p className="mt-2 text-[13px] leading-5 text-muted-foreground">
+									{description}
+								</p>
+							</HoverCardContent>
+						</HoverCard>
 					);
 				})}
 			</div>
@@ -880,54 +1087,64 @@ export function MonitorDataTable({
 
 	const renderFeatures = (features: string[]) => {
 		return (
-			<div className="flex flex-wrap gap-1 justify-center">
+			<div className="flex min-w-max flex-nowrap justify-center gap-1 whitespace-nowrap">
 				{features.map((feature) => {
-					const rawKey = feature
-						.trim()
-						.toLowerCase()
-						.replace(/\s+/g, "_");
+					const rawKey = feature.trim().toLowerCase().replace(/\s+/g, "_");
 					const key =
 						rawKey === "native_web_search"
 							? "web_search"
 							: rawKey === "structured_output"
 								? "structured_outputs"
 								: rawKey;
-					const iconConfig =
-						featureIcons[key as keyof typeof featureIcons];
+					const iconConfig = featureIcons[key as keyof typeof featureIcons];
 					if (!iconConfig) return null;
 
 					const IconComponent = iconConfig.icon;
 					if (!IconComponent) return null;
 
-					// Convert text color to border/background color
 					const colorMap: Record<string, string> = {
-						"text-yellow-600": "border-yellow-600 bg-yellow-50",
-						"text-indigo-600": "border-indigo-600 bg-indigo-50",
-						"text-cyan-600": "border-cyan-600 bg-cyan-50",
-						"text-emerald-600": "border-emerald-600 bg-emerald-50",
-						"text-blue-500": "border-blue-500 bg-blue-50",
-						"text-red-500": "border-red-500 bg-red-50",
+						"text-yellow-600":
+							"border-yellow-600 bg-yellow-50 dark:border-yellow-400/50 dark:bg-yellow-950/40",
+						"text-indigo-600":
+							"border-indigo-600 bg-indigo-50 dark:border-indigo-400/50 dark:bg-indigo-950/40",
+						"text-cyan-600":
+							"border-cyan-600 bg-cyan-50 dark:border-cyan-400/50 dark:bg-cyan-950/40",
+						"text-emerald-600":
+							"border-emerald-600 bg-emerald-50 dark:border-emerald-400/50 dark:bg-emerald-950/40",
+						"text-blue-500":
+							"border-blue-500 bg-blue-50 dark:border-blue-400/50 dark:bg-blue-950/40",
+						"text-red-500":
+							"border-red-500 bg-red-50 dark:border-red-400/50 dark:bg-red-950/40",
 					};
 
 					const borderClass =
-						colorMap[iconConfig.color] ||
-						"border-gray-600 bg-gray-50";
+						colorMap[iconConfig.color] || "border-gray-600 bg-gray-50";
 
+					const label = featureLabels[key] ?? feature;
+					const description =
+						featureDescriptions[key] ?? "Supported by this provider.";
 					return (
-						<Tooltip key={feature}>
-							<TooltipTrigger asChild>
-								<div
-									className={`inline-flex items-center justify-center w-6 h-6 rounded border ${borderClass}`}
+						<HoverCard key={feature} openDelay={160} closeDelay={80}>
+							<HoverCardTrigger asChild>
+								<button
+									type="button"
+									aria-label={`Feature: ${label}`}
+									className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border transition-transform hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 ${borderClass}`}
 								>
 									<IconComponent
-										className={`h-4 w-4 ${iconConfig.color}`}
+										className={`h-4 w-4 ${iconConfig.color} ${iconConfig.darkColor}`}
 									/>
-								</div>
-							</TooltipTrigger>
-							<TooltipContent>
-								<p>{featureLabels[key] ?? feature}</p>
-							</TooltipContent>
-						</Tooltip>
+								</button>
+							</HoverCardTrigger>
+							<HoverCardContent align="center" side="top" className="w-72 p-3">
+								<p className="text-sm font-semibold leading-tight text-foreground">
+									{label}
+								</p>
+								<p className="mt-2 text-[13px] leading-5 text-muted-foreground">
+									{description}
+								</p>
+							</HoverCardContent>
+						</HoverCard>
 					);
 				})}
 			</div>
@@ -943,26 +1160,49 @@ export function MonitorDataTable({
 		const endpointLabel = formatEndpoint(endpoint);
 
 		return (
-			<Tooltip>
-				<TooltipTrigger asChild>
-					<div className="inline-flex items-center justify-center w-6 h-6">
+			<HoverCard openDelay={140} closeDelay={80}>
+				<HoverCardTrigger asChild>
+					<button
+						type="button"
+						aria-label={`${label}: ${endpointLabel}`}
+						className="inline-flex h-6 w-6 items-center justify-center rounded-md transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+					>
 						{IconComponent && (
-							<IconComponent
-								className={`h-4 w-4 ${iconConfig.color}`}
-							/>
+							<IconComponent className={`h-4 w-4 ${iconConfig.color}`} />
 						)}
+					</button>
+				</HoverCardTrigger>
+				<HoverCardContent
+					align="center"
+					side="top"
+					className="w-64 p-3 text-xs"
+				>
+					<p className="font-semibold text-foreground">{label}</p>
+					<div className="mt-1.5 space-y-1 text-muted-foreground">
+						<p>
+							Capability:{" "}
+							<span className="font-mono text-foreground">{endpointLabel}</span>
+						</p>
+						<p>Status is capability-specific, not provider-wide.</p>
 					</div>
-				</TooltipTrigger>
-				<TooltipContent className="max-w-xs">
-					<p className="font-medium">{label}</p>
-					<p className="text-muted-foreground">
-						Capability: <span className="font-mono">{endpointLabel}</span>
-					</p>
-					<p className="text-muted-foreground">
-						Status is capability-specific, not provider-wide.
-					</p>
-				</TooltipContent>
-			</Tooltip>
+				</HoverCardContent>
+			</HoverCard>
+		);
+	};
+
+	const renderTier = (tier?: string) => {
+		const normalizedTier = String(tier ?? "standard")
+			.trim()
+			.toLowerCase();
+		const tierMeta = getTierFilterMeta(normalizedTier);
+		const TierIcon = tierMeta.icon;
+		return (
+			<span className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap capitalize">
+				<TierIcon
+					className={cn("h-3.5 w-3.5 shrink-0", tierMeta.iconClassName)}
+				/>
+				<span>{normalizedTier}</span>
+			</span>
 		);
 	};
 
@@ -1078,32 +1318,131 @@ export function MonitorDataTable({
 			</TableRow>
 		));
 
-	const getPaginationRange = (current: number, total: number, delta = 1) => {
-		if (total <= 1) return [1];
-
-		const range: Array<number | "ellipsis"> = [];
-		const left = Math.max(2, current - delta);
-		const right = Math.min(total - 1, current + delta);
-
-		range.push(1);
-		if (left > 2) range.push("ellipsis");
-		for (let page = left; page <= right; page += 1) {
-			range.push(page);
-		}
-		if (right < total - 1) range.push("ellipsis");
-		range.push(total);
-
-		return range;
-	};
-
-	const paginationRange = getPaginationRange(safePage, totalPages, 1);
-
 	return (
-		<TooltipProvider>
-			<div className="space-y-4">
-				{/* Table */}
-				<div ref={tableContainerRef} className="relative overflow-x-auto">
+		<div className="space-y-4">
+			{/* Table */}
+			<div className="relative">
+				<div
+					className="sticky z-30 w-full overflow-hidden bg-background"
+					style={{ top: `${stickyHeaderOffset}px` }}
+				>
+					<div
+						ref={tableHeaderTrackRef}
+						className="will-change-transform"
+						style={{
+							width: `${TABLE_TOTAL_WIDTH}px`,
+							minWidth: `${TABLE_TOTAL_WIDTH}px`,
+						}}
+					>
+						<Table
+							wrapInContainer={false}
+							aria-label="Models table column headers"
+							className="table-fixed w-max bg-background text-xs"
+							style={{
+								width: `${TABLE_TOTAL_WIDTH}px`,
+								minWidth: `${TABLE_TOTAL_WIDTH}px`,
+							}}
+						>
+							<colgroup>
+								{TABLE_COLUMN_WIDTHS.map((width, index) => (
+									<col
+										key={`header-col-${index}`}
+										style={{ width: `${width}px` }}
+									/>
+								))}
+							</colgroup>
+							<TableHeader>
+								<TableRow className="bg-background hover:bg-background">
+							<TableHead className="bg-background min-w-48">
+								{renderSortHead("Model", "model")}
+							</TableHead>
+							<TableHead className="bg-background min-w-32">
+								{renderSortHead("Provider", "provider")}
+							</TableHead>
+							<TableHead className="bg-background min-w-16">
+								<HoverCard openDelay={1000} closeDelay={120}>
+									<HoverCardTrigger asChild>
+										{renderSortHead("Gateway Status", "status")}
+									</HoverCardTrigger>
+									<HoverCardContent align="start" className="w-52 p-3">
+										<div className="space-y-2">
+											<p className="text-[11px] font-medium text-muted-foreground">
+												Status Key
+											</p>
+											<div className="space-y-1.5">
+												{statusLegendOrder.map((statusKey) => {
+													const statusMeta = statusMetaByKey[statusKey];
+													if (!statusMeta) return null;
+													const IconComponent = statusMeta.icon;
+													return (
+														<div
+															key={statusKey}
+															className="flex items-center gap-2 text-xs"
+														>
+															<IconComponent
+																className={`h-3.5 w-3.5 ${statusMeta.color}`}
+															/>
+															<span>{statusMeta.label}</span>
+														</div>
+													);
+												})}
+											</div>
+											<p className="text-[11px] text-muted-foreground">
+												Applies to the row capability.
+											</p>
+										</div>
+									</HoverCardContent>
+								</HoverCard>
+							</TableHead>
+							<TableHead className="bg-background min-w-24 text-center">
+								{renderSortHead("Capability", "endpoint", "center")}
+							</TableHead>
+							<TableHead className="bg-background min-w-20 text-center">
+								{renderSortHead("Input $", "inputPrice", "center")}
+							</TableHead>
+							<TableHead className="bg-background min-w-20 text-center">
+								{renderSortHead("Output $", "outputPrice", "center")}
+							</TableHead>
+							<TableHead className="bg-background min-w-16 text-center">
+								{renderSortHead("Tier", "tier", "center")}
+							</TableHead>
+							<TableHead className="bg-background min-w-32 text-center">
+								<div className="text-xs font-semibold">Input Modalities</div>
+							</TableHead>
+							<TableHead className="bg-background min-w-32 text-center">
+								<div className="text-xs font-semibold">Output Modalities</div>
+							</TableHead>
+							<TableHead className="bg-background min-w-24 text-center">
+								<div className="text-xs font-semibold">Features</div>
+							</TableHead>
+							<TableHead className="bg-background min-w-20 text-center">
+								{renderSortHead("Context", "context", "center")}
+							</TableHead>
+							<TableHead className="bg-background min-w-20 text-center">
+								{renderSortHead("Max Output", "maxOutput", "center")}
+							</TableHead>
+							<TableHead className="bg-background min-w-20 text-center">
+								{renderSortHead("Weekly Tokens", "weeklyTokens", "center")}
+							</TableHead>
+							<TableHead className="bg-background min-w-20 text-center">
+								{renderSortHead("Added", "added", "center")}
+							</TableHead>
+							<TableHead className="bg-background min-w-20 text-center">
+								{renderSortHead("Retired", "retired", "center")}
+							</TableHead>
+								</TableRow>
+							</TableHeader>
+						</Table>
+					</div>
+				</div>
+
+				<div
+					ref={tableContainerRef}
+					className="relative overflow-x-auto overflow-y-clip"
+				>
 					<Table
+						wrapInContainer={false}
+						aria-label="Models table rows"
 						className="table-fixed w-max bg-background text-xs"
 						style={{
 							width: `${TABLE_TOTAL_WIDTH}px`,
@@ -1112,350 +1451,123 @@ export function MonitorDataTable({
 					>
 						<colgroup>
 							{TABLE_COLUMN_WIDTHS.map((width, index) => (
-								<col key={`col-${index}`} style={{ width: `${width}px` }} />
+								<col key={`body-col-${index}`} style={{ width: `${width}px` }} />
 							))}
 						</colgroup>
-						<TableHeader>
-							<TableRow className="bg-background">
-								<TableHead className="bg-background min-w-48">
-									<Button
-										variant="ghost"
-										onClick={() => handleSort("model")}
-										className="h-auto p-0 text-xs font-semibold hover:underline underline-offset-2"
-									>
-										Model {getSortIcon("model")}
-									</Button>
-								</TableHead>
-								<TableHead className="bg-background min-w-32">
-									<Button
-										variant="ghost"
-										onClick={() => handleSort("provider")}
-										className="h-auto p-0 text-xs font-semibold hover:underline underline-offset-2"
-									>
-										Provider {getSortIcon("provider")}
-									</Button>
-								</TableHead>
-								<TableHead className="bg-background min-w-16">
-									<HoverCard openDelay={1000} closeDelay={120}>
-										<HoverCardTrigger asChild>
-											<Button
-												variant="ghost"
-												onClick={() => handleSort("status")}
-												className="h-auto p-0 text-xs font-semibold hover:underline underline-offset-2"
-											>
-												Gateway Status {getSortIcon("status")}
-											</Button>
-										</HoverCardTrigger>
-										<HoverCardContent align="start" className="w-52 p-3">
-											<div className="space-y-2">
-												<p className="text-[11px] font-medium text-muted-foreground">
-													Status Key
-												</p>
-												<div className="space-y-1.5">
-													{statusLegendOrder.map((statusKey) => {
-														const statusMeta = statusMetaByKey[statusKey];
-														if (!statusMeta) return null;
-														const IconComponent = statusMeta.icon;
-														return (
-															<div
-																key={statusKey}
-																className="flex items-center gap-2 text-xs"
-															>
-																<IconComponent
-																	className={`h-3.5 w-3.5 ${statusMeta.color}`}
-																/>
-																<span>{statusMeta.label}</span>
-															</div>
-														);
-													})}
-												</div>
-												<p className="text-[11px] text-muted-foreground">
-													Applies to the row capability.
-												</p>
-											</div>
-										</HoverCardContent>
-									</HoverCard>
-								</TableHead>
-								<TableHead className="bg-background min-w-24 text-center">
-									<Button
-										variant="ghost"
-										onClick={() => handleSort("endpoint")}
-										className="h-auto p-0 text-xs font-semibold hover:underline underline-offset-2"
-									>
-										Capability {getSortIcon("endpoint")}
-									</Button>
-								</TableHead>
-								<TableHead className="bg-background min-w-20 text-center">
-									<Button
-										variant="ghost"
-										onClick={() => handleSort("inputPrice")}
-										className="h-auto p-0 text-xs font-semibold hover:underline underline-offset-2"
-									>
-										Input $ {getSortIcon("inputPrice")}
-									</Button>
-								</TableHead>
-								<TableHead className="bg-background min-w-20 text-center">
-									<Button
-										variant="ghost"
-										onClick={() =>
-											handleSort("outputPrice")
-										}
-										className="h-auto p-0 text-xs font-semibold hover:underline underline-offset-2"
-									>
-										Output $ {getSortIcon("outputPrice")}
-									</Button>
-								</TableHead>
-								<TableHead className="bg-background min-w-16 text-center">
-									<Button
-										variant="ghost"
-										onClick={() => handleSort("tier")}
-										className="h-auto p-0 text-xs font-semibold hover:underline underline-offset-2"
-									>
-										Tier {getSortIcon("tier")}
-									</Button>
-								</TableHead>
-								<TableHead className="bg-background min-w-32 text-center">
-									<div className="text-xs font-semibold">
-										Input Modalities
-									</div>
-								</TableHead>
-								<TableHead className="bg-background min-w-32 text-center">
-									<div className="text-xs font-semibold">
-										Output Modalities
-									</div>
-								</TableHead>
-								<TableHead className="bg-background min-w-24 text-center">
-									<div className="text-xs font-semibold">
-										Features
-									</div>
-								</TableHead>
-								<TableHead className="bg-background min-w-20 text-center">
-									<Button
-										variant="ghost"
-										onClick={() => handleSort("context")}
-										className="h-auto p-0 text-xs font-semibold hover:underline underline-offset-2"
-									>
-										Context {getSortIcon("context")}
-									</Button>
-								</TableHead>
-								<TableHead className="bg-background min-w-20 text-center">
-									<Button
-										variant="ghost"
-										onClick={() => handleSort("maxOutput")}
-										className="h-auto p-0 text-xs font-semibold hover:underline underline-offset-2"
-									>
-										Max Output {getSortIcon("maxOutput")}
-									</Button>
-								</TableHead>
-								<TableHead className="bg-background min-w-20 text-center">
-									<Button
-										variant="ghost"
-										onClick={() =>
-											handleSort("weeklyTokens")
-										}
-										className="h-auto p-0 text-xs font-semibold hover:underline underline-offset-2"
-									>
-										Weekly Tokens {getSortIcon("weeklyTokens")}
-									</Button>
-								</TableHead>
-								<TableHead className="bg-background min-w-20 text-center">
-									<Button
-										variant="ghost"
-										onClick={() => handleSort("added")}
-										className="h-auto p-0 text-xs font-semibold hover:underline underline-offset-2"
-									>
-										Added {getSortIcon("added")}
-									</Button>
-								</TableHead>
-								<TableHead className="bg-background min-w-20 text-center">
-									<Button
-										variant="ghost"
-										onClick={() => handleSort("retired")}
-										className="h-auto p-0 text-xs font-semibold hover:underline underline-offset-2"
-									>
-										Retired {getSortIcon("retired")}
-									</Button>
-								</TableHead>
+					<TableBody className="bg-background">
+						{loading ? (
+							<>{renderLoadingRows()}</>
+						) : filteredSortedData.length === 0 ? (
+							<TableRow>
+								<TableCell
+									colSpan={TABLE_COLUMNS_COUNT}
+									className="text-center py-8"
+								>
+									No models match the current filters
+								</TableCell>
 							</TableRow>
-						</TableHeader>
-						<TableBody className="bg-background">
-							{loading ? (
-								<>{renderLoadingRows()}</>
-							) : filteredSortedData.length === 0 ? (
-								<TableRow>
-									<TableCell
-										colSpan={TABLE_COLUMNS_COUNT}
-										className="text-center py-8"
-									>
-										No models match the current filters
-									</TableCell>
-								</TableRow>
-							) : (
-								<>
-									{paddingTop > 0 ? (
-										<TableRow aria-hidden>
-											<TableCell
-												colSpan={TABLE_COLUMNS_COUNT}
-												style={{ height: `${paddingTop}px` }}
-												className="bg-background p-0"
-											/>
+						) : (
+							<>
+								{paddingTop > 0 ? (
+									<TableRow aria-hidden>
+										<TableCell
+											colSpan={TABLE_COLUMNS_COUNT}
+											style={{ height: `${paddingTop}px` }}
+											className="bg-background p-0"
+										/>
+									</TableRow>
+								) : null}
+								{rowsToRender.map((virtualRowLike) => {
+									const item = filteredSortedData[virtualRowLike.index];
+									if (!item) return null;
+									return (
+										<TableRow key={item.id}>
+											<TableCell className="font-medium">
+												{renderModel(
+													item.model,
+													item.organisationId,
+													item.modelId,
+												)}
+											</TableCell>
+											<TableCell>{renderProvider(item.provider)}</TableCell>
+											<TableCell className="text-center">
+												{renderStatus(item.gatewayStatus, item.endpoint)}
+											</TableCell>
+											<TableCell className="text-center">
+												<span
+													className="block truncate font-mono text-[11px]"
+													title={formatEndpoint(item.endpoint)}
+												>
+													{formatEndpoint(item.endpoint)}
+												</span>
+											</TableCell>
+											<TableCell className="font-mono text-center">
+												{renderPrice(item.provider.inputPrice)}
+											</TableCell>
+											<TableCell className="font-mono text-center">
+												{renderPrice(item.provider.outputPrice)}
+											</TableCell>
+											<TableCell className="text-center">
+												{renderTier(item.tier)}
+											</TableCell>
+											<TableCell className="text-center">
+												{renderModalities(item.inputModalities, "input")}
+											</TableCell>
+											<TableCell className="text-center">
+												{renderModalities(item.outputModalities, "output")}
+											</TableCell>
+											<TableCell className="text-center">
+												{renderFeatures(item.provider.features)}
+											</TableCell>
+											<TableCell className="font-mono text-center">
+												{item.context > 0 ? item.context.toLocaleString() : "-"}
+											</TableCell>
+											<TableCell className="font-mono text-center">
+												{item.maxOutput > 0
+													? item.maxOutput.toLocaleString()
+													: "-"}
+											</TableCell>
+											<TableCell className="font-mono text-center">
+												{formatTokenCount(item.popularityTokensWeek ?? 0)}
+											</TableCell>
+											<TableCell className="text-xs text-center">
+												{item.added ? formatDate(item.added) : "-"}
+											</TableCell>
+											<TableCell className="text-xs text-center">
+												{item.retired ? formatDate(item.retired) : "-"}
+											</TableCell>
 										</TableRow>
-									) : null}
-									{rowsToRender.map((virtualRowLike) => {
-										const item = pageData[virtualRowLike.index];
-										if (!item) return null;
-										return (
-											<TableRow key={item.id}>
-												<TableCell className="font-medium">
-													{renderModel(
-														item.model,
-														item.organisationId,
-														item.modelId,
-													)}
-												</TableCell>
-												<TableCell>{renderProvider(item.provider)}</TableCell>
-												<TableCell className="text-center">
-													{renderStatus(
-														item.gatewayStatus,
-														item.endpoint,
-													)}
-												</TableCell>
-												<TableCell className="text-center">
-													<span
-														className="block truncate font-mono text-[11px]"
-														title={formatEndpoint(item.endpoint)}
-													>
-														{formatEndpoint(item.endpoint)}
-													</span>
-												</TableCell>
-												<TableCell className="font-mono text-center">
-													{renderPrice(item.provider.inputPrice)}
-												</TableCell>
-												<TableCell className="font-mono text-center">
-													{renderPrice(item.provider.outputPrice)}
-												</TableCell>
-												<TableCell className="text-center capitalize">
-													{item.tier || "standard"}
-												</TableCell>
-												<TableCell className="text-center">
-													{renderModalities(item.inputModalities, "input")}
-												</TableCell>
-												<TableCell className="text-center">
-													{renderModalities(item.outputModalities, "output")}
-												</TableCell>
-												<TableCell className="text-center">
-													{renderFeatures(item.provider.features)}
-												</TableCell>
-												<TableCell className="font-mono text-center">
-													{item.context > 0
-														? item.context.toLocaleString()
-														: "-"}
-												</TableCell>
-												<TableCell className="font-mono text-center">
-													{item.maxOutput > 0
-														? item.maxOutput.toLocaleString()
-														: "-"}
-												</TableCell>
-												<TableCell className="font-mono text-center">
-													{formatTokenCount(item.popularityTokensWeek ?? 0)}
-												</TableCell>
-												<TableCell className="text-xs text-center">
-													{item.added ? formatDate(item.added) : "-"}
-												</TableCell>
-												<TableCell className="text-xs text-center">
-													{item.retired ? formatDate(item.retired) : "-"}
-												</TableCell>
-											</TableRow>
-										);
-									})}
-									{paddingBottom > 0 ? (
-										<TableRow aria-hidden>
-											<TableCell
-												colSpan={TABLE_COLUMNS_COUNT}
-												style={{ height: `${paddingBottom}px` }}
-												className="bg-background p-0"
-											/>
-										</TableRow>
-									) : null}
-								</>
-							)}
+									);
+								})}
+								{paddingBottom > 0 ? (
+									<TableRow aria-hidden>
+										<TableCell
+											colSpan={TABLE_COLUMNS_COUNT}
+											style={{ height: `${paddingBottom}px` }}
+											className="bg-background p-0"
+										/>
+									</TableRow>
+								) : null}
+							</>
+						)}
 						</TableBody>
 					</Table>
 				</div>
-
-				{loading ? (
-					<div className="flex flex-wrap items-center justify-between gap-3">
-						<Skeleton className="h-3 w-40" />
-						<div className="flex items-center gap-1">
-							<Skeleton className="h-8 w-8 rounded-md" />
-							<Skeleton className="h-8 w-8 rounded-md" />
-							<Skeleton className="h-8 w-8 rounded-md" />
-							<Skeleton className="h-8 w-8 rounded-md" />
-							<Skeleton className="h-8 w-8 rounded-md" />
-						</div>
-					</div>
-				) : (
-					<div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
-						<div>
-							Showing {totalItems === 0 ? 0 : pageStart + 1}-
-							{Math.min(pageStart + PAGE_SIZE, totalItems)} of{" "}
-							{totalItems}
-						</div>
-						<div className="flex items-center gap-1">
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() => setPage(Math.max(1, safePage - 1))}
-								disabled={safePage <= 1}
-							>
-								<ChevronLeft className="h-4 w-4" />
-							</Button>
-							<div className="flex items-center gap-1">
-								{paginationRange.map((entry, index) => {
-									if (entry === "ellipsis") {
-										return (
-											<span
-												key={`ellipsis-${index}`}
-												className="px-2 text-muted-foreground"
-											>
-												...
-											</span>
-										);
-									}
-									const pageNumber = entry;
-									const isActive = pageNumber === safePage;
-									return (
-										<Button
-											key={pageNumber}
-											variant={
-												isActive ? "default" : "outline"
-											}
-											size="sm"
-											onClick={() => setPage(pageNumber)}
-											disabled={isActive}
-											className="h-8 w-8 px-0"
-										>
-											{pageNumber}
-										</Button>
-									);
-								})}
-							</div>
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() =>
-									setPage(Math.min(totalPages, safePage + 1))
-								}
-								disabled={safePage >= totalPages}
-							>
-								<ChevronRight className="h-4 w-4" />
-							</Button>
-						</div>
-					</div>
-				)}
 			</div>
-		</TooltipProvider>
+
+			{loading ? (
+				<div className="flex items-center gap-3">
+					<Skeleton className="h-3 w-40" />
+				</div>
+			) : (
+				<div className="flex items-center gap-2 text-xs text-muted-foreground">
+					<span className="tabular-nums">
+						{totalItems.toLocaleString()} {totalItems === 1 ? "row" : "rows"}
+					</span>
+					<span aria-hidden>·</span>
+					<span>Visible rows render on demand</span>
+				</div>
+			)}
+		</div>
 	);
 }
-
-

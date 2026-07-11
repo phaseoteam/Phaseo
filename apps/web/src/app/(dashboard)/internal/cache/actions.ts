@@ -224,9 +224,7 @@ async function runAdminAction(
 export async function revalidateModelsGlobalDataAction(): Promise<CacheOpResult> {
 	return runAdminAction("Models (global data)", async () => {
 		revalidateModelDataOnlyTags();
-		revalidateTag("collections", EXPIRE_NOW);
 		revalidatePath("/models");
-		revalidatePath("/models/collections");
 		revalidatePath("/monitor");
 	});
 }
@@ -237,7 +235,6 @@ export async function revalidatePublicModelCatalogueAction(): Promise<CacheOpRes
 		for (const tag of APP_FRONTEND_TAGS) {
 			revalidateTag(tag, EXPIRE_NOW);
 		}
-		revalidateTag("collections", EXPIRE_NOW);
 		const gatewayPurge = await purgeGatewayCatalogueCache(["models"]);
 		return {
 			ok: gatewayPurge.ok,
@@ -251,10 +248,8 @@ export async function revalidatePublicModelCatalogueAction(): Promise<CacheOpRes
 export async function revalidateProvidersGlobalApiAction(): Promise<CacheOpResult> {
 	return runAdminAction("Providers (global API info)", async () => {
 		revalidateProviderDataTags();
-		revalidateTag("collections", EXPIRE_NOW);
 		revalidatePath("/api-providers");
 		revalidatePath("/models");
-		revalidatePath("/models/collections");
 	});
 }
 
@@ -307,9 +302,7 @@ export async function revalidateOrganisationScopeAction(input: {
 export async function revalidateGlobalModelAndProviderAction(): Promise<CacheOpResult> {
 	return runAdminAction("Models + Providers (global)", async () => {
 		revalidateModelDataTags();
-		revalidateTag("collections", EXPIRE_NOW);
 		revalidatePath("/models");
-		revalidatePath("/models/collections");
 		revalidatePath("/api-providers");
 	});
 }
