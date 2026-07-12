@@ -146,7 +146,7 @@ export default function Footer() {
 								style={{ width: "auto" }}
 							/>
 						</Link>
-						<ThemeSelector className="py-1" labelSize="sm" />
+						<FooterStatusIndicator />
 					</div>
 					<FooterLinkList title="Explore" links={productLinks} />
 					<FooterLinkList title="Build" links={developerLinks} />
@@ -161,7 +161,7 @@ export default function Footer() {
 						<p className="font-medium tracking-[0.01em] text-zinc-500 dark:text-zinc-400">
 							&copy; <FooterYearRange startYear={startYear} /> {"\u2022"} Phaseo
 						</p>
-						<FooterStatusIndicator />
+						<ThemeSelector className="py-0" labelSize="sm" />
 					</div>
 					<p className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-1">
 						<span>Spotted a data issue or broken page?</span>
