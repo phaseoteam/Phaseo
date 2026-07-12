@@ -9,7 +9,7 @@
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.071,
+      "price_per_unit": 0.09,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,

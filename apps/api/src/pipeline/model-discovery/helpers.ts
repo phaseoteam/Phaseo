@@ -1,6 +1,7 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { resolveVertexAccessToken } from "@providers/google-vertex/auth";
 import { sendDiscordTextMessage } from "./discord";
+import { normalizeProviderModelPricing } from "./pricing-normalizers";
 import type { ProviderConfig } from "./providers";
 
 type DiscoveryTrigger = "scheduled" | "manual";
@@ -99,6 +100,11 @@ type ConfiguredModelCoverageMonitorSummary = {
 type ConfiguredModelCoverageState = {
 	fingerprint: string | null;
 	fallbackFingerprint: string | null;
+};
+
+export type PricingTableSnapshotState = {
+	providerId: string;
+	fingerprint: string;
 };
 
 type ConfiguredProviderModelRow = {
@@ -266,17 +272,22 @@ export function samplePricingDetailsText(value: unknown): string {
 	return text.length <= MAX_SAMPLE_TEXT_LENGTH ? text : `${text.slice(0, MAX_SAMPLE_TEXT_LENGTH - 3)}...`;
 }
 
-function normalizeProviderApiPricingDetails(providerId: string, pricingDetails: unknown): unknown | null {
-	if (providerId !== "crofai") {
-		return pricingDetails ?? null;
+function normalizeProviderApiPricingDetails(
+	providerId: string,
+	modelDetails: Record<string, unknown> | null,
+	pricingDetails: unknown,
+): unknown | null {
+	const normalized = normalizeProviderModelPricing(providerId, modelDetails);
+	if (normalized) {
+		return {
+			normalized,
+			sourcePricing: normalizeJson(pricingDetails),
+		};
 	}
 
+	if (providerId !== "crofai") return pricingDetails ?? null;
 	const record = asRecord(pricingDetails);
-	if (!record) return pricingDetails ?? null;
-	if ("pricing" in record) {
-		return normalizeJson(record.pricing);
-	}
-	return pricingDetails ?? null;
+	return record?.pricing ? normalizeJson(record.pricing) : pricingDetails ?? null;
 }
 
 export function toNullableInteger(value: unknown): number | null {
@@ -297,7 +308,7 @@ export function extractProviderApiModelSnapshot(
 	modelDetails: Record<string, unknown> | null,
 	pricingDetails: unknown | null
 ): ProviderApiModelSnapshot {
-	const normalizedPricingDetails = normalizeProviderApiPricingDetails(providerId, pricingDetails);
+	const normalizedPricingDetails = normalizeProviderApiPricingDetails(providerId, modelDetails, pricingDetails);
 	if (providerId === "crofai") {
 		return {
 			contextLength: null,
@@ -532,13 +543,14 @@ export function shouldIncludeDiscoveredModel(providerId: string, row: Record<str
 
 export function extractDiscoveredModels(providerId: string, payload: unknown): DiscoveredModel[] {
 	const root = asRecord(payload);
-	if (!root) return [];
+	if (!root && !Array.isArray(payload)) return [];
 
 	const candidateCollections: unknown[] = [
-		root.data,
-		root.models,
-		root.publisherModels,
-		asRecord(root.result)?.models,
+		payload,
+		root?.data,
+		root?.models,
+		root?.publisherModels,
+		asRecord(root?.result)?.models,
 	];
 
 	const output = new Map<string, DiscoveredModel>();
@@ -871,6 +883,43 @@ export async function loadLatestConfiguredCoverageState(source?: string): Promis
 	return null;
 }
 
+export function parsePricingTableStateFromSummary(summary: unknown): PricingTableSnapshotState[] {
+	const summaryRecord = asRecord(summary);
+	const tableMonitor = asRecord(summaryRecord?.pricingTableMonitor);
+	if (!tableMonitor) return [];
+
+	return asArray(tableMonitor.sources)
+		.map((value) => asRecord(value))
+		.filter((value): value is Record<string, unknown> => Boolean(value))
+		.map((value) => ({
+			providerId: canonicalProviderId(typeof value.providerId === "string" ? value.providerId : ""),
+			fingerprint: typeof value.fingerprint === "string" ? value.fingerprint.trim() : "",
+		}))
+		.filter((value) => Boolean(value.providerId) && Boolean(value.fingerprint));
+}
+
+export async function loadLatestPricingTableState(source?: string): Promise<PricingTableSnapshotState[]> {
+	const supabase = getSupabaseAdmin();
+	let query = supabase
+		.from("model_discovery_runs")
+		.select("summary,status,started_at")
+		.in("status", ["completed", "completed_with_errors"])
+		.order("started_at", { ascending: false });
+	const sourceValue = typeof source === "string" ? source.trim() : "";
+	if (sourceValue) query = query.eq("source", sourceValue);
+
+	const { data, error } = await query.limit(100);
+	if (error) throw new Error(error.message || "Failed to load pricing table state");
+	const latestByProvider = new Map<string, PricingTableSnapshotState>();
+	for (const row of data ?? []) {
+		const state = parsePricingTableStateFromSummary((row as Record<string, unknown>).summary);
+		for (const snapshot of state) {
+			if (!latestByProvider.has(snapshot.providerId)) latestByProvider.set(snapshot.providerId, snapshot);
+		}
+	}
+	return [...latestByProvider.values()];
+}
+
 export async function fetchLatestPricingUpdatedAt(): Promise<string | null> {
 	const supabase = getSupabaseAdmin();
 	const { data, error } = await supabase
@@ -1189,24 +1238,27 @@ export function shouldNotifyConfiguredModelCoverage(): boolean {
 	return toBool(readBindingEnv(["CONFIGURED_MODEL_COVERAGE_NOTIFY_ENABLED"]) ?? "false", false);
 }
 
+export function hasDiscordNotifiableChanges(args: {
+	modelChanges: ProviderChange[];
+	configuredModelCoverage: ConfiguredModelCoverageMonitorSummary;
+}): boolean {
+	return args.modelChanges.length > 0 || (
+		shouldNotifyConfiguredModelCoverage() && args.configuredModelCoverage.updatesDetected > 0
+	);
+}
+
 const PRIVATE_MODEL_DISCOVERY_USERNAME = "Phaseo Private Model Discovery";
 const PRIVATE_MODEL_DISCOVERY_AVATAR_URL = "https://phaseo.app/png_logo_dark.png";
 
 export function buildDiscordMessage(args: {
 	modelChanges: ProviderChange[];
-	pricing: PricingMonitorSummary;
-	providerApiPricing: ProviderApiPricingMonitorSummary;
 	configuredModelCoverage: ConfiguredModelCoverageMonitorSummary;
 }): string {
 	const includeConfiguredCoverageNotifications = shouldNotifyConfiguredModelCoverage();
 	const sections: string[] = [];
 	const modelSection = buildModelDiscordSection(args.modelChanges);
-	const pricingSection = buildPricingDiscordSection(args.pricing);
-	const providerApiPricingSection = buildProviderApiPricingDiscordSection(args.providerApiPricing);
 	const configuredModelCoverageSection = buildConfiguredModelCoverageDiscordSection(args.configuredModelCoverage);
 	if (modelSection) sections.push(modelSection);
-	if (pricingSection) sections.push(pricingSection);
-	if (providerApiPricingSection) sections.push(providerApiPricingSection);
 	if (includeConfiguredCoverageNotifications && configuredModelCoverageSection) {
 		sections.push(configuredModelCoverageSection);
 	}
@@ -1217,21 +1269,9 @@ export function buildDiscordMessage(args: {
 
 export async function sendDiscordNotification(args: {
 	modelChanges: ProviderChange[];
-	pricing: PricingMonitorSummary;
-	providerApiPricing: ProviderApiPricingMonitorSummary;
 	configuredModelCoverage: ConfiguredModelCoverageMonitorSummary;
 }): Promise<{ delivered: boolean; skipped: boolean; reason?: string | null }> {
-	const configuredCoverageNotificationsEnabled = shouldNotifyConfiguredModelCoverage();
-	const configuredCoverageUpdatesForNotifications = configuredCoverageNotificationsEnabled
-		? args.configuredModelCoverage.updatesDetected
-		: 0;
-
-	if (
-		args.modelChanges.length === 0 &&
-		args.pricing.updatesDetected === 0 &&
-		args.providerApiPricing.updatesDetected === 0 &&
-		configuredCoverageUpdatesForNotifications === 0
-	) {
+	if (!hasDiscordNotifiableChanges(args)) {
 		return { delivered: false, skipped: true, reason: "no notifiable changes" };
 	}
 	const webhookUrl = readBindingEnv(["DISCORD_WEBHOOK_URL"]);
