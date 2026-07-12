@@ -67,4 +67,16 @@ describe("normalizeProviderModelPricing", () => {
 			},
 		});
 	});
+
+	it("normalizes Nebius Token Factory per-token prices", () => {
+		expect(
+			normalizeProviderModelPricing("nebius-token-factory", {
+				pricing: { prompt: "0.00000015", completion: "0.0000006" },
+			}),
+		).toEqual({
+			currency: "USD",
+			unit: "per_1m_tokens",
+			meters: { input_text_tokens: 0.15, output_text_tokens: 0.6 },
+		});
+	});
 });

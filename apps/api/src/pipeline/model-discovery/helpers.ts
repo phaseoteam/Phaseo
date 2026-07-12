@@ -908,7 +908,7 @@ export async function loadLatestPricingTableState(source?: string): Promise<Pric
 	const sourceValue = typeof source === "string" ? source.trim() : "";
 	if (sourceValue) query = query.eq("source", sourceValue);
 
-	const { data, error } = await query.limit(200);
+	const { data, error } = await query.limit(20);
 	if (error) throw new Error(error.message || "Failed to load pricing table state");
 	for (const row of data ?? []) {
 		const state = parsePricingTableStateFromSummary((row as Record<string, unknown>).summary);
@@ -1235,13 +1235,20 @@ export function shouldNotifyConfiguredModelCoverage(): boolean {
 	return toBool(readBindingEnv(["CONFIGURED_MODEL_COVERAGE_NOTIFY_ENABLED"]) ?? "false", false);
 }
 
+export function hasDiscordNotifiableChanges(args: {
+	modelChanges: ProviderChange[];
+	configuredModelCoverage: ConfiguredModelCoverageMonitorSummary;
+}): boolean {
+	return args.modelChanges.length > 0 || (
+		shouldNotifyConfiguredModelCoverage() && args.configuredModelCoverage.updatesDetected > 0
+	);
+}
+
 const PRIVATE_MODEL_DISCOVERY_USERNAME = "Phaseo Private Model Discovery";
 const PRIVATE_MODEL_DISCOVERY_AVATAR_URL = "https://phaseo.app/png_logo_dark.png";
 
 export function buildDiscordMessage(args: {
 	modelChanges: ProviderChange[];
-	pricing: PricingMonitorSummary;
-	providerApiPricing: ProviderApiPricingMonitorSummary;
 	configuredModelCoverage: ConfiguredModelCoverageMonitorSummary;
 }): string {
 	const includeConfiguredCoverageNotifications = shouldNotifyConfiguredModelCoverage();
@@ -1259,19 +1266,9 @@ export function buildDiscordMessage(args: {
 
 export async function sendDiscordNotification(args: {
 	modelChanges: ProviderChange[];
-	pricing: PricingMonitorSummary;
-	providerApiPricing: ProviderApiPricingMonitorSummary;
 	configuredModelCoverage: ConfiguredModelCoverageMonitorSummary;
 }): Promise<{ delivered: boolean; skipped: boolean; reason?: string | null }> {
-	const configuredCoverageNotificationsEnabled = shouldNotifyConfiguredModelCoverage();
-	const configuredCoverageUpdatesForNotifications = configuredCoverageNotificationsEnabled
-		? args.configuredModelCoverage.updatesDetected
-		: 0;
-
-	if (
-		args.modelChanges.length === 0 &&
-		configuredCoverageUpdatesForNotifications === 0
-	) {
+	if (!hasDiscordNotifiableChanges(args)) {
 		return { delivered: false, skipped: true, reason: "no notifiable changes" };
 	}
 	const webhookUrl = readBindingEnv(["DISCORD_WEBHOOK_URL"]);

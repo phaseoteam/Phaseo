@@ -11,13 +11,13 @@ import {
 	extractProviderApiModelSnapshot,
 	fetchProviderModels,
 	hasProviderApiSnapshotValue,
+	hasDiscordNotifiableChanges,
 	loadConfiguredProviderModelIds,
 	loadLatestConfiguredCoverageState,
 	loadLatestPricingTableState,
 	readBindingEnv,
 	runPricingMonitorCheck,
 	sendDiscordNotification,
-	shouldNotifyConfiguredModelCoverage,
 	shouldRunPricingMonitor,
 	summarizeMissingConfiguredProviderModels,
 	toBool,
@@ -255,7 +255,6 @@ const PROVIDER_API_PRICING_WATCH_PROVIDER_IDS = new Set<string>([
 	"crofai",
 	"deepinfra",
 	"nebius-token-factory",
-	"elevenlabs",
 	"gmicloud",
 	"groq",
 	"inception",
@@ -983,8 +982,6 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			try {
 				notificationSummary = await sendDiscordNotification({
 					modelChanges: changes,
-					pricing: pricingMonitor,
-					providerApiPricing: providerApiPricingMonitor,
 					configuredModelCoverage: configuredModelCoverageNotificationSummary,
 				});
 			} catch (error) {
@@ -993,11 +990,10 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			}
 		}
 
-		const includeConfiguredCoverageNotifications = shouldNotifyConfiguredModelCoverage();
-		const hasNotifiableChanges =
-			changes.length > 0 ||
-			(includeConfiguredCoverageNotifications &&
-				configuredModelCoverageNotificationSummary.updatesDetected > 0);
+		const hasNotifiableChanges = hasDiscordNotifiableChanges({
+			modelChanges: changes,
+			configuredModelCoverage: configuredModelCoverageNotificationSummary,
+		});
 		const requiresNotificationDelivery = shouldNotify && hasNotifiableChanges;
 		const notificationDelivered = !requiresNotificationDelivery || notificationSummary.delivered;
 		const persistenceDeferredReason = !notificationDelivered
@@ -1113,6 +1109,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			Boolean(summary.pricingMonitor.error) ||
 			Boolean(summary.providerApiPricingMonitor.error) ||
 			Boolean(summary.pricingTableMonitor.error) ||
+			summary.pricingTableMonitor.errors.length > 0 ||
 			Boolean(summary.configuredModelCoverageMonitor.error)
 				? "completed_with_errors"
 				: "completed";

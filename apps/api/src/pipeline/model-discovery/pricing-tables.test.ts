@@ -16,12 +16,12 @@ describe("extractPricingTableText", () => {
 
 	it("keeps non-USD pricing tables", () => {
 		const result = extractPricingTableText(`
-			<table><tr><th>Model</th><th>Price</th></tr><tr><td>Example</td><td>?3 / M tokens</td></tr></table>
+			<table><tr><th>Model</th><th>Price</th></tr><tr><td>Example</td><td>\u00A53 / M tokens</td></tr></table>
 		`);
 
 		expect(result).toEqual({
 			tableCount: 1,
-			text: "Model Price Example ?3 / M tokens",
+			text: "Model Price Example \u00A53 / M tokens",
 		});
 	});
 
