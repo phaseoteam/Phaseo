@@ -34,6 +34,7 @@ export async function generateMetadata(props: {
 				"Browse all models available from this API provider on Phaseo, ordered by model release date with announcement-date fallback, plus capability support, pricing visibility, and gateway accessibility.",
 			path,
 			imagePath,
+			robots: { index: false, follow: true },
 		});
 	}
 
@@ -43,6 +44,7 @@ export async function generateMetadata(props: {
 		description: `View all ${providerName} models on Phaseo ordered by release date, with announcement date fallback, gateway accessibility, supported capabilities, and quick visibility into pricing and integration coverage.`,
 		path,
 		imagePath,
+		robots: { index: false, follow: true },
 	});
 }
 

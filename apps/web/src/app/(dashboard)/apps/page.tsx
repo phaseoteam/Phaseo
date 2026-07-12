@@ -9,7 +9,6 @@ import {
 	type TrendingAppData,
 } from "@/lib/fetchers/rankings/getRankingsData";
 import {
-	fetchFrontendAppsIndexability,
 	fetchFrontendAppImageUrls,
 	fetchFrontendPublicAppIds,
 	fetchFrontendTopApps,
@@ -41,26 +40,20 @@ type TrendingPublicApp = {
 	imageUrl?: string | null;
 };
 
-export async function generateMetadata(): Promise<Metadata> {
-	const indexability = await fetchFrontendAppsIndexability();
-
-	return buildMetadata({
-		title: "AI App Rankings: Usage Trends & Top Apps",
-		description:
-			"See the most popular and fastest-growing AI apps on Phaseo Gateway, with leaderboard and token-usage trends.",
-		path: "/apps",
-		keywords: [
-			"AI apps",
-			"AI app rankings",
-			"app leaderboard",
-			"app usage trends",
-			"app trends",
-		],
-		robots: indexability.shouldIndex
-			? { index: true, follow: true }
-			: { index: false, follow: true },
-	});
-}
+export const metadata: Metadata = buildMetadata({
+	title: "AI App Rankings: Usage Trends & Top Apps",
+	description:
+		"See the most popular and fastest-growing AI apps on Phaseo Gateway, with leaderboard and token-usage trends.",
+	path: "/apps",
+	keywords: [
+		"AI apps",
+		"AI app rankings",
+		"app leaderboard",
+		"app usage trends",
+		"app trends",
+	],
+	robots: { index: false, follow: true },
+});
 
 function formatCompactNumber(value: number): string {
 	if (!Number.isFinite(value)) return "0";

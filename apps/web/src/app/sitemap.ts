@@ -10,7 +10,6 @@ import {
 	fetchFrontendCountrySummaries,
 	fetchFrontendMarketplacePresets,
 	fetchFrontendOrganisations,
-	fetchFrontendPublicAppIds,
 	fetchFrontendSubscriptionPlans,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { SITE_URL } from "@/lib/seo";
@@ -46,7 +45,6 @@ const staticRoutes: Array<{
         { path: "/rankings", changeFrequency: "daily", priority: 0.95 },
         { path: "/models", changeFrequency: "weekly", priority: 0.9 },
         { path: "/api-providers", changeFrequency: "weekly", priority: 0.8 },
-        { path: "/apps", changeFrequency: "weekly", priority: 0.75 },
         { path: "/benchmarks", changeFrequency: "weekly", priority: 0.8 },
         { path: "/organisations", changeFrequency: "weekly", priority: 0.75 },
         { path: "/countries", changeFrequency: "weekly", priority: 0.75 },
@@ -95,8 +93,7 @@ const staticRoutes: Array<{
     ];
 
 const PROVIDER_SUFFIXES: RouteSuffix[] = [
-    { suffix: "", changeFrequency: "weekly", priority: 0.75 },
-    { suffix: "/models", changeFrequency: "weekly", priority: 0.65 },
+	{ suffix: "", changeFrequency: "weekly", priority: 0.75 },
 ];
 
 const ORGANISATION_SUFFIXES: RouteSuffix[] = [
@@ -117,10 +114,6 @@ const COUNTRY_SUFFIXES: RouteSuffix[] = [
 
 const MARKETPLACE_PRESET_SUFFIXES: RouteSuffix[] = [
     { suffix: "", changeFrequency: "weekly", priority: 0.55 },
-];
-
-const APP_SUFFIXES: RouteSuffix[] = [
-	{ suffix: "", changeFrequency: "weekly", priority: 0.55 },
 ];
 
 function buildRouteUrl(route: string): string {
@@ -270,7 +263,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		plansResult,
 		countriesResult,
 		marketplacePresetsResult,
-		publicAppsResult,
 		helpCategoryResult,
 		helpArticleResult,
 	] = await Promise.allSettled([
@@ -280,7 +272,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		fetchFrontendSubscriptionPlans(),
 		fetchFrontendCountrySummaries(),
 		fetchFrontendMarketplacePresets(),
-		fetchFrontendPublicAppIds(),
 		getHelpCategoryParams(),
 		getHelpArticleParams(),
 	]);
@@ -338,11 +329,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		).map((preset) => String(preset.id ?? "").trim()),
 		"marketplace preset",
 	);
-	const publicAppIds = normalizeSingleSegmentSlugs(
-		fromSettled(publicAppsResult, "public apps for sitemap", []),
-		"public app",
-	);
-
 	const dynamicItems = [
 		...applySuffixesWithEntries(
 			"/api-providers",
@@ -382,7 +368,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		),
 	];
 
-	const appItems = applySuffixes("/apps", publicAppIds, APP_SUFFIXES, lastModified);
 	const migrationItems = getMigrationPosts().map((post) =>
 		createItem(`/migrate/${post.slug}`, "weekly", 0.6, post.updatedAt || lastModified),
 	);
@@ -433,7 +418,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		...helpCategoryItems,
 		...helpArticleItems,
 		...dynamicItems,
-		...appItems,
 		...migrationItems,
 	];
 }
