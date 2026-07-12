@@ -485,6 +485,7 @@ jobs:
             contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.pull_request.author_association)
         permissions:
             contents: read
+            pull-requests: write
         steps:
             - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
@@ -509,6 +510,7 @@ jobs:
               run: npm install --global vercel@latest
 
             - name: Deploy web to Vercel (preview)
+              id: deploy
               env:
                   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
                   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
@@ -517,7 +519,40 @@ jobs:
               if: ${{ env.VERCEL_PROJECT_ID != '' }}
               run: |
                   vercel pull --yes --environment=preview --git-branch="$GITHUB_HEAD_REF" --token=$VERCEL_TOKEN
-                  vercel deploy --yes --archive=tgz --logs --token=$VERCEL_TOKEN
+                  preview_url="$(vercel deploy --yes --archive=tgz --token=$VERCEL_TOKEN)"
+                  echo "url=$preview_url" >> "$GITHUB_OUTPUT"
+
+            - name: Update pull request preview link
+              uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+              if: ${{ steps.deploy.outputs.url != '' }}
+              env:
+                  PREVIEW_URL: ${{ steps.deploy.outputs.url }}
+              with:
+                  script: |
+                    const marker = '<!-- phaseo-preview -->'
+                    const body = `${marker}\n### Web preview\n\n[Open the latest preview](${process.env.PREVIEW_URL})\n\nCommit: \`${context.sha.slice(0, 7)}\``
+                    const { data: comments } = await github.rest.issues.listComments({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      issue_number: context.issue.number,
+                    })
+                    const existing = comments.find((comment) => comment.body?.includes(marker))
+
+                    if (existing) {
+                      await github.rest.issues.updateComment({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        comment_id: existing.id,
+                        body,
+                      })
+                    } else {
+                      await github.rest.issues.createComment({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: context.issue.number,
+                        body,
+                      })
+                    }
 
     deploy:
         runs-on: ubuntu-latest
