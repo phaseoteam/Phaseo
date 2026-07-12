@@ -147,6 +147,9 @@ export default function Footer() {
 							/>
 						</Link>
 						<FooterStatusIndicator />
+						<div className="md:hidden">
+							<ThemeSelector className="py-0" labelSize="sm" />
+						</div>
 					</div>
 					<FooterLinkList title="Explore" links={productLinks} />
 					<FooterLinkList title="Build" links={developerLinks} />
@@ -161,7 +164,9 @@ export default function Footer() {
 						<p className="font-medium tracking-[0.01em] text-zinc-500 dark:text-zinc-400">
 							&copy; <FooterYearRange startYear={startYear} /> {"\u2022"} Phaseo
 						</p>
-						<ThemeSelector className="py-0" labelSize="sm" />
+						<div className="hidden md:block">
+							<ThemeSelector className="py-0" labelSize="sm" />
+						</div>
 					</div>
 					<p className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-1">
 						<span>Spotted a data issue or broken page?</span>
