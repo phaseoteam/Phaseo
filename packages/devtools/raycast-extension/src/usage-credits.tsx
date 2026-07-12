@@ -71,7 +71,7 @@ export default function Command() {
 | --- | --- | --- | --- |
 | ${formatMoneyFromNanos(credits.balance_nanos)} | ${formatMoneyFromNanos(credits.reserved_nanos)} | ${formatMoneyFromNanos(credits.thirty_day_usage)} | ${credits.thirty_day_requests.toLocaleString()} |
 
-_Balance values are shown in USD. Data is cached locally for 30 seconds; use Refresh for a live value._
+_Balance values are shown in USD. Data is cached locally for 15 minutes; use Refresh for a live value._
 `
     : "# Usage & Credits\n\nLoading your current Phaseo balance...";
 

@@ -15,10 +15,13 @@ const LEGACY_API_URL = "https://api.phaseo.ai/v1";
 const apiCache = new Cache({ namespace: "phaseo-api" });
 
 const CACHE_TTL = {
-  models: 5 * 60 * 1000,
+  // The public catalogue changes infrequently. Cache it locally to keep normal
+  // Raycast browsing from generating repeated API traffic.
+  models: 60 * 60 * 1000,
   catalogue: 60 * 60 * 1000,
-  account: 30 * 1000,
-  analytics: 5 * 60 * 1000,
+  // Management data is workspace-specific, but the extension is a quick-view
+  // surface rather than a live dashboard. Refresh explicitly bypasses this.
+  management: 15 * 60 * 1000,
 } as const;
 
 type CachedResponse<T> = {
@@ -241,7 +244,7 @@ export async function getCredits(): Promise<CreditsResponse> {
   return fetchAPI<CreditsResponse>(
     "/credits",
     undefined,
-    CACHE_TTL.account,
+    CACHE_TTL.management,
     "management",
   );
 }
@@ -254,7 +257,7 @@ export async function getRecentActivity(
   return fetchAPI<WorkspaceActivityResponse>(
     "/activity",
     { days: String(days), limit: String(limit), offset: String(offset) },
-    CACHE_TTL.account,
+    CACHE_TTL.management,
     "management",
   );
 }
@@ -263,7 +266,7 @@ export async function getUsageAnalytics(): Promise<AnalyticsUsageResponse> {
   return fetchAPI<AnalyticsUsageResponse>(
     "/analytics",
     undefined,
-    CACHE_TTL.analytics,
+    CACHE_TTL.management,
     "management",
   );
 }
