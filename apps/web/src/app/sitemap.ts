@@ -9,13 +9,11 @@ import {
 	fetchFrontendBenchmarks,
 	fetchFrontendCountrySummaries,
 	fetchFrontendMarketplacePresets,
-	fetchFrontendModels,
 	fetchFrontendOrganisations,
 	fetchFrontendPublicAppIds,
 	fetchFrontendSubscriptionPlans,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { SITE_URL } from "@/lib/seo";
-import { analyseModelIndexability } from "@/lib/seo/modelIndexability";
 
 // Cache sitemap output at the edge to avoid repeated compute (and Fast Origin Transfer)
 // from crawlers hitting `/sitemap.xml` frequently.
@@ -35,29 +33,6 @@ type RouteSuffix = {
     suffix: string;
     changeFrequency: ChangeFrequency;
     priority: number;
-};
-
-type ModelSitemapSource = {
-	model_id?: string | null;
-	name?: string | null;
-	organisation_id?: string | null;
-	organisation_name?: string | null;
-	status?: string | null;
-	hidden?: boolean | null;
-	release_date?: string | null;
-	updated_at?: string | null;
-	primary_date?: string | null;
-	announcement_date?: string | null;
-	api_model_id?: string | null;
-	gateway_api_model_ids?: string[] | null;
-	input_types?: string[] | null;
-	output_types?: string[] | null;
-	gateway_provider_count?: number | null;
-	gateway_active_provider_count?: number | null;
-	lowest_input_price?: number | null;
-	lowest_output_price?: number | null;
-	context_lengths?: number[] | null;
-	supported_parameters?: string[] | null;
 };
 
 const baseUrl = SITE_URL;
@@ -118,15 +93,6 @@ const staticRoutes: Array<{
         { path: "/privacy", changeFrequency: "yearly", priority: 0.3 },
         { path: "/terms", changeFrequency: "yearly", priority: 0.3 },
     ];
-
-const MODEL_SUFFIXES: RouteSuffix[] = [
-    { suffix: "", changeFrequency: "monthly", priority: 0.78 },
-    { suffix: "/quickstart", changeFrequency: "monthly", priority: 0.65 },
-    { suffix: "/benchmarks", changeFrequency: "monthly", priority: 0.65 },
-    { suffix: "/providers", changeFrequency: "monthly", priority: 0.6 },
-    { suffix: "/family", changeFrequency: "monthly", priority: 0.6 },
-    { suffix: "/performance", changeFrequency: "monthly", priority: 0.6 },
-];
 
 const PROVIDER_SUFFIXES: RouteSuffix[] = [
     { suffix: "", changeFrequency: "weekly", priority: 0.75 },
@@ -206,61 +172,6 @@ function normalizeSingleSegmentSlugs(list?: string[], label?: string): string[] 
 	}
 
 	return [...normalized].sort();
-}
-
-function normalizeModelRouteSlugs(models?: ModelSitemapSource[]): string[] {
-	const normalized = new Set<string>();
-	let dropped = 0;
-
-	(models ?? []).forEach((model) => {
-		const rawModelId = String(model?.model_id ?? "")
-			.trim()
-			.replace(/^\/+|\/+$/g, "");
-		if (!rawModelId) {
-			return;
-		}
-
-		const parts = rawModelId.split("/").filter(Boolean);
-		if (parts.length !== 2) {
-			dropped += 1;
-			return;
-		}
-
-		normalized.add(rawModelId);
-	});
-
-	if (dropped > 0) {
-		console.warn(
-			`[sitemap] dropped ${dropped} malformed model slug(s) that do not match /models/{organisationId}/{modelId}`,
-		);
-	}
-
-	return [...normalized].sort();
-}
-
-function isModelIndexableForSitemap(model: ModelSitemapSource): boolean {
-	return analyseModelIndexability({
-		modelId: model.model_id,
-		name: model.name,
-		organisationId: model.organisation_id,
-		organisationName: model.organisation_name,
-		status: model.status,
-		hidden: model.hidden,
-		releaseDate: model.release_date,
-		announcementDate: model.announcement_date,
-		updatedAt: model.updated_at,
-		primaryDate: model.primary_date,
-		apiModelId: model.api_model_id,
-		apiModelIds: model.gateway_api_model_ids,
-		inputTypes: model.input_types,
-		outputTypes: model.output_types,
-		providerCount: model.gateway_provider_count,
-		activeProviderCount: model.gateway_active_provider_count,
-		lowestInputPrice: model.lowest_input_price,
-		lowestOutputPrice: model.lowest_output_price,
-		contextLengths: model.context_lengths,
-		supportedParameters: model.supported_parameters,
-	}).indexable;
 }
 
 function fromSettled<T>(
@@ -353,7 +264,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 	);
 
 	const [
-		modelsResult,
 		apiProvidersResult,
 		organisationsResult,
 		benchmarksResult,
@@ -364,7 +274,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		helpCategoryResult,
 		helpArticleResult,
 	] = await Promise.allSettled([
-		fetchFrontendModels(),
 		fetchFrontendAPIProviders(),
 		fetchFrontendOrganisations(),
 		fetchFrontendBenchmarks(false),
@@ -376,25 +285,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		getHelpArticleParams(),
 	]);
 
-	const modelsForSitemap = fromSettled(modelsResult, "models for sitemap", []);
-	const indexableModelsForSitemap = modelsForSitemap.filter(
-		isModelIndexableForSitemap,
-	);
-	const modelSlugs = normalizeModelRouteSlugs(indexableModelsForSitemap);
-	const modelEntries = modelSlugs.map((slug) => {
-		const source = indexableModelsForSitemap.find(
-			(model) => String(model.model_id ?? "").trim() === slug,
-		);
-		return {
-			slug,
-			lastModified:
-				resolveLastModified(
-					source?.updated_at,
-					source?.primary_date,
-					source?.announcement_date,
-				) ?? lastModified,
-		};
-	});
 	const providersForSitemap = fromSettled(
 		apiProvidersResult,
 		"api providers for sitemap",
@@ -454,12 +344,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 	);
 
 	const dynamicItems = [
-		...applySuffixesWithEntries(
-			"/models",
-			modelEntries,
-			MODEL_SUFFIXES,
-			lastModified,
-		),
 		...applySuffixesWithEntries(
 			"/api-providers",
 			providerEntries,
