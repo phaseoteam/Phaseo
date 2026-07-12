@@ -23,7 +23,7 @@ type ChangeFrequency = NonNullable<SitemapEntry["changeFrequency"]>;
 
 type SitemapItem = {
     url: string;
-    lastModified: string;
+    lastModified?: string;
     changeFrequency: ChangeFrequency;
     priority: number;
 };
@@ -127,11 +127,11 @@ function createItem(
     route: string,
     changeFrequency: ChangeFrequency,
     priority: number,
-    lastModified: string,
+    lastModified?: string | null,
 ): SitemapItem {
     return {
         url: buildRouteUrl(route),
-        lastModified,
+        ...(lastModified ? { lastModified } : {}),
         changeFrequency,
         priority,
     };
@@ -183,7 +183,7 @@ function applySuffixes(
     prefix: string,
     slugs: string[],
     suffixes: RouteSuffix[],
-    lastModified: string,
+    lastModified?: string | null,
 ): SitemapItem[] {
     if (!slugs.length) {
         return [];
@@ -223,7 +223,6 @@ function applySuffixesWithEntries<T extends { slug: string; lastModified?: strin
 	prefix: string,
 	entries: T[],
 	suffixes: RouteSuffix[],
-	fallbackLastModified: string,
 ): SitemapItem[] {
 	if (!entries.length) {
 		return [];
@@ -240,7 +239,7 @@ function applySuffixesWithEntries<T extends { slug: string; lastModified?: strin
 					route,
 					suffix.changeFrequency,
 					suffix.priority,
-					entry.lastModified ?? fallbackLastModified,
+					entry.lastModified,
 				),
 			);
 		}
@@ -250,10 +249,10 @@ function applySuffixesWithEntries<T extends { slug: string; lastModified?: strin
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-	const lastModified =
-		process.env.NEXT_PUBLIC_DEPLOY_TIME ?? new Date().toISOString();
+	// `lastmod` must describe a content change, not a deployment. Omit it until
+	// a route has a reliable source timestamp rather than sending false freshness.
 	const staticItems = staticRoutes.map((route) =>
-		createItem(route.path, route.changeFrequency, route.priority, lastModified),
+		createItem(route.path, route.changeFrequency, route.priority),
 	);
 
 	const [
@@ -293,8 +292,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		);
 		return {
 			slug,
-			lastModified:
-				resolveLastModified(source?.last_updated_at) ?? lastModified,
+			lastModified: resolveLastModified(source?.last_updated_at),
 		};
 	});
 	const organisationSlugs = normalizeSingleSegmentSlugs(
@@ -334,42 +332,36 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 			"/api-providers",
 			providerEntries,
 			PROVIDER_SUFFIXES,
-			lastModified
 		),
 		...applySuffixes(
 			"/organisations",
 			organisationSlugs,
 			ORGANISATION_SUFFIXES,
-			lastModified
 		),
 		...applySuffixes(
 			"/benchmarks",
 			benchmarkSlugs,
 			BENCHMARK_SUFFIXES,
-			lastModified
 		),
 		...applySuffixes(
 			"/subscription-plans",
 			planSlugs,
 			PLAN_SUFFIXES,
-			lastModified
 		),
 		...applySuffixes(
 			"/countries",
 			countrySlugs,
 			COUNTRY_SUFFIXES,
-			lastModified
 		),
 		...applySuffixes(
 			"/gateway/marketplace",
 			marketplacePresetSlugs,
 			MARKETPLACE_PRESET_SUFFIXES,
-			lastModified
 		),
 	];
 
 	const migrationItems = getMigrationPosts().map((post) =>
-		createItem(`/migrate/${post.slug}`, "weekly", 0.6, post.updatedAt || lastModified),
+		createItem(`/migrate/${post.slug}`, "weekly", 0.6, post.updatedAt),
 	);
 
 	const helpCategoryParams = fromSettled(
@@ -393,7 +385,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 				`/help/${entry.category}`,
 				"weekly",
 				0.55,
-				lastModified,
 			),
 		);
 	const helpArticleItems = helpArticleParams
@@ -409,7 +400,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 				`/help/${entry.category}/${entry.slug}`,
 				"monthly",
 				0.5,
-				lastModified,
 			),
 		);
 
