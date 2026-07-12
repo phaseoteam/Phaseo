@@ -10,7 +10,7 @@ const DEVICE_CODE_TTL_SECONDS = 10 * 60;
 const AUTH_CODE_TTL_SECONDS = 10 * 60;
 const DEFAULT_DEVICE_INTERVAL_SECONDS = 5;
 const DEFAULT_WEB_BASE_URL = "https://phaseo.app";
-const DEFAULT_API_BASE_URL = "https://api.phaseo.ai";
+const DEFAULT_API_BASE_URL = "https://api.phaseo.app";
 const ACCESS_TOKEN_AUDIENCE = "phaseo-api";
 const TRUTHY_VALUES = new Set(["1", "true", "yes", "on"]);
 
@@ -133,15 +133,23 @@ async function sha256Base64Url(value: string): Promise<string> {
 	return base64UrlEncodeBytes(new Uint8Array(digest));
 }
 
-export async function hashOAuthSecret(value: string): Promise<string> {
+function resolveOAuthTokenPeppers(): string[] {
 	const bindings = getBindings();
-	const pepper = String(
-		bindings.PHASEO_OAUTH_TOKEN_PEPPER ??
-			bindings.KEY_PEPPER_ACTIVE ??
-			bindings.KEY_PEPPER ??
-			"",
-	);
-	return sha256Base64Url(`${pepper}:${value}`);
+	const active = String(bindings.PHASEO_OAUTH_TOKEN_PEPPER_ACTIVE ?? "").trim();
+	if (!active) {
+		throw new Error("PHASEO_OAUTH_TOKEN_PEPPER_ACTIVE is not configured");
+	}
+	const previous = String(bindings.PHASEO_OAUTH_TOKEN_PEPPER_PREVIOUS ?? "").trim();
+	return previous && previous !== active ? [active, previous] : [active];
+}
+
+export async function hashOAuthSecret(value: string): Promise<string> {
+	const [active] = resolveOAuthTokenPeppers();
+	return sha256Base64Url(`${active}:${value}`);
+}
+
+export async function hashOAuthSecretCandidates(value: string): Promise<string[]> {
+	return Promise.all(resolveOAuthTokenPeppers().map((pepper) => sha256Base64Url(`${pepper}:${value}`)));
 }
 
 export async function verifyClientSecret(
@@ -151,7 +159,8 @@ export async function verifyClientSecret(
 	if (client.client_type !== "confidential") return true;
 	const normalizedSecret = String(providedSecret ?? "").trim();
 	if (!normalizedSecret || !client.client_secret_hash) return false;
-	return timingSafeEqual(await hashOAuthSecret(normalizedSecret), client.client_secret_hash);
+	const candidates = await hashOAuthSecretCandidates(normalizedSecret);
+	return candidates.some((candidate) => timingSafeEqual(candidate, client.client_secret_hash as string));
 }
 
 export function createUserCode(): string {
@@ -380,8 +389,12 @@ function isCliLoopbackRedirectUri(client: OAuthClient, redirectUri: string): boo
 		const url = new URL(redirectUri);
 		return (
 			url.protocol === "http:" &&
-			(url.hostname === "127.0.0.1" || url.hostname === "localhost" || url.hostname === "::1") &&
-			url.pathname === "/callback"
+			(url.hostname === "127.0.0.1" || url.hostname === "localhost" || url.hostname === "::1" || url.hostname === "[::1]") &&
+			url.pathname === "/callback" &&
+			!url.username &&
+			!url.password &&
+			!url.search &&
+			!url.hash
 		);
 	} catch {
 		return false;
@@ -406,24 +419,55 @@ export async function ensureGrant(args: {
 		.eq("client_id", args.clientId)
 		.eq("workspace_id", args.workspaceId)
 		.maybeSingle();
+	if (existing.error) {
+		throw new Error(existing.error.message || "Failed to load OAuth authorization");
+	}
 
 	if (existing.data?.id) {
-		await supabase
+		const { error } = await supabase
 			.from("oauth_authorizations")
 			.update({ scopes: args.scopes, revoked_at: null })
 			.eq("id", existing.data.id);
+		if (error) throw new Error(error.message || "Failed to update OAuth authorization");
 		return;
 	}
 
-	await supabase.from("oauth_authorizations").insert({
+	const { error } = await supabase.from("oauth_authorizations").insert({
 		user_id: args.userId,
 		client_id: args.clientId,
 		workspace_id: args.workspaceId,
 		scopes: args.scopes,
 	});
+	if (error) throw new Error(error.message || "Failed to create OAuth authorization");
 }
 
-export async function issueTokenPair(input: TokenIssueInput) {
+export async function hasActiveOAuthWorkspaceAccess(args: {
+	userId: string;
+	workspaceId: string;
+	clientId: string;
+}): Promise<boolean> {
+	const supabase = getSupabaseAdmin();
+	const [authorization, membership] = await Promise.all([
+		supabase
+			.from("oauth_authorizations")
+			.select("id, revoked_at")
+			.eq("user_id", args.userId)
+			.eq("workspace_id", args.workspaceId)
+			.eq("client_id", args.clientId)
+			.maybeSingle(),
+		supabase
+			.from("workspace_members")
+			.select("workspace_id")
+			.eq("user_id", args.userId)
+			.eq("workspace_id", args.workspaceId)
+			.maybeSingle(),
+	]);
+	return !authorization.error && !membership.error && Boolean(
+		authorization.data && authorization.data.revoked_at === null && membership.data,
+	);
+}
+
+async function createTokenPairMaterial(input: TokenIssueInput) {
 	const profile =
 		input.email || input.name
 			? { email: input.email ?? null, name: input.name ?? null }
@@ -447,26 +491,36 @@ export async function issueTokenPair(input: TokenIssueInput) {
 	const refreshToken = randomBase64Url(48);
 	const refreshHash = await hashOAuthSecret(refreshToken);
 	const refreshExpiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_SECONDS * 1000).toISOString();
+	return {
+		response: {
+			access_token: accessToken,
+			token_type: "Bearer",
+			expires_in: ACCESS_TOKEN_TTL_SECONDS,
+			refresh_token: refreshToken,
+			scope: input.scopes.join(" "),
+		},
+		refreshHash,
+		refreshExpiresAt,
+	};
+}
+
+export async function issueTokenPair(input: TokenIssueInput) {
+	const material = await createTokenPairMaterial(input);
 	const supabase = getSupabaseAdmin();
 	const { error: refreshInsertError } = await supabase.from("oauth_refresh_tokens").insert({
-		token_hash: refreshHash,
+		token_hash: material.refreshHash,
 		user_id: input.userId,
 		workspace_id: input.workspaceId,
 		client_id: input.clientId,
 		scopes: input.scopes,
-		expires_at: refreshExpiresAt,
+		expires_at: material.refreshExpiresAt,
+		family_id: crypto.randomUUID(),
 	});
 	if (refreshInsertError) {
 		throw new Error(refreshInsertError.message || "Failed to persist OAuth refresh token");
 	}
 
-	return {
-		access_token: accessToken,
-		token_type: "Bearer",
-		expires_in: ACCESS_TOKEN_TTL_SECONDS,
-		refresh_token: refreshToken,
-		scope: input.scopes.join(" "),
-	};
+	return material.response;
 }
 
 export async function rotateRefreshToken(
@@ -476,14 +530,16 @@ export async function rotateRefreshToken(
 	| { ok: true; tokens: Awaited<ReturnType<typeof issueTokenPair>> }
 	| { ok: false; reason: "invalid_client" | "invalid_grant" }
 > {
-	const tokenHash = await hashOAuthSecret(refreshToken);
+	const tokenHashes = await hashOAuthSecretCandidates(refreshToken);
 	const supabase = getSupabaseAdmin();
 	const { data, error } = await supabase
 		.from("oauth_refresh_tokens")
-		.select("id, user_id, workspace_id, client_id, scopes, expires_at, revoked_at")
-		.eq("token_hash", tokenHash)
+		.select("id, token_hash, user_id, workspace_id, client_id, scopes, expires_at, revoked_at")
+		.in("token_hash", tokenHashes)
 		.maybeSingle();
-	if (error || !data || data.revoked_at) return { ok: false, reason: "invalid_grant" };
+	if (error || !data) return { ok: false, reason: "invalid_grant" };
+	const tokenHash = String(data.token_hash ?? "");
+	if (!tokenHash) return { ok: false, reason: "invalid_grant" };
 	if (data.expires_at && Date.parse(String(data.expires_at)) <= Date.now()) {
 		return { ok: false, reason: "invalid_grant" };
 	}
@@ -501,6 +557,15 @@ export async function rotateRefreshToken(
 			return { ok: false, reason: "invalid_client" };
 		}
 	}
+	if (data.revoked_at) {
+		await supabase.rpc("rotate_oauth_refresh_token", {
+			p_current_token_hash: tokenHash,
+			p_next_token_hash: tokenHash,
+			p_next_expires_at: new Date().toISOString(),
+			p_scopes: [],
+		});
+		return { ok: false, reason: "invalid_grant" };
+	}
 	const authorization = await supabase
 		.from("oauth_authorizations")
 		.select("scopes, revoked_at")
@@ -511,30 +576,39 @@ export async function rotateRefreshToken(
 	if (authorization.error || !authorization.data || authorization.data.revoked_at !== null) {
 		return { ok: false, reason: "invalid_grant" };
 	}
-
-	const rotation = await supabase
-		.from("oauth_refresh_tokens")
-		.update({ revoked_at: new Date().toISOString(), last_used_at: new Date().toISOString() })
-		.eq("id", data.id)
-		.is("revoked_at", null)
-		.select("id")
+	const membership = await supabase
+		.from("workspace_members")
+		.select("workspace_id")
+		.eq("user_id", data.user_id)
+		.eq("workspace_id", data.workspace_id)
 		.maybeSingle();
-	if (rotation.error || !rotation.data) {
+	if (membership.error || !membership.data) {
+		return { ok: false, reason: "invalid_grant" };
+	}
+	const scopes = Array.isArray(authorization.data.scopes)
+		? authorization.data.scopes.map(String)
+		: Array.isArray(data.scopes)
+			? data.scopes.map(String)
+			: [];
+	const material = await createTokenPairMaterial({
+		userId: String(data.user_id),
+		workspaceId: String(data.workspace_id),
+		clientId,
+		scopes,
+	});
+	const rotation = await supabase.rpc("rotate_oauth_refresh_token", {
+		p_current_token_hash: tokenHash,
+		p_next_token_hash: material.refreshHash,
+		p_next_expires_at: material.refreshExpiresAt,
+		p_scopes: scopes,
+	});
+	if (rotation.error || rotation.data !== "rotated") {
 		return { ok: false, reason: "invalid_grant" };
 	}
 
 	return {
 		ok: true,
-		tokens: await issueTokenPair({
-		userId: String(data.user_id),
-		workspaceId: String(data.workspace_id),
-		clientId,
-		scopes: Array.isArray(authorization.data.scopes)
-			? authorization.data.scopes.map(String)
-			: Array.isArray(data.scopes)
-				? data.scopes.map(String)
-				: [],
-		}),
+		tokens: material.response,
 	};
 }
 
@@ -562,12 +636,12 @@ export async function ensureGrants(args: {
 }
 
 export async function revokeToken(token: string) {
-	const tokenHash = await hashOAuthSecret(token);
+	const tokenHashes = await hashOAuthSecretCandidates(token);
 	const supabase = getSupabaseAdmin();
 	await supabase
 		.from("oauth_refresh_tokens")
 		.update({ revoked_at: new Date().toISOString() })
-		.eq("token_hash", tokenHash)
+		.in("token_hash", tokenHashes)
 		.is("revoked_at", null);
 }
 

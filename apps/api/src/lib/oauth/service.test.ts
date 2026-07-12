@@ -11,14 +11,22 @@ import {
 	verifyClientSecret,
 } from "./service";
 
+const baseBindings = {
+	SUPABASE_URL: "https://example.supabase.co",
+	SUPABASE_SERVICE_ROLE_KEY: "test-service-role-key",
+	GATEWAY_CACHE: {} as KVNamespace,
+	KEY_PEPPER_ACTIVE: "test-key-pepper",
+	PHASEO_OAUTH_TOKEN_PEPPER_ACTIVE: "test-oauth-pepper",
+};
+
+function replaceRuntime(bindings: Record<string, unknown>) {
+	clearRuntime();
+	configureRuntime(bindings as any);
+}
+
 describe("OAuth service helpers", () => {
 	beforeAll(() => {
-		configureRuntime({
-			SUPABASE_URL: "https://example.supabase.co",
-			SUPABASE_SERVICE_ROLE_KEY: "test-service-role-key",
-			GATEWAY_CACHE: {} as KVNamespace,
-			KEY_PEPPER_ACTIVE: "test-pepper",
-		} as any);
+		configureRuntime(baseBindings as any);
 	});
 
 	afterAll(() => {
@@ -67,8 +75,12 @@ describe("OAuth service helpers", () => {
 
 		expect(assertRedirectAllowed(cliClient, "http://127.0.0.1:8976/callback")).toBe(true);
 		expect(assertRedirectAllowed(cliClient, "http://localhost:8976/callback")).toBe(true);
+		expect(assertRedirectAllowed(cliClient, "http://[::1]:8976/callback")).toBe(true);
 		expect(assertRedirectAllowed(legacyCliClient, "http://127.0.0.1:8976/callback")).toBe(true);
 		expect(assertRedirectAllowed(cliClient, "https://localhost:8976/callback")).toBe(false);
+		expect(assertRedirectAllowed(cliClient, "http://127.0.0.1:8976/callback?next=evil")).toBe(false);
+		expect(assertRedirectAllowed(cliClient, "http://user:pass@127.0.0.1:8976/callback")).toBe(false);
+		expect(assertRedirectAllowed(cliClient, "http://127.0.0.1:8976/callback#fragment")).toBe(false);
 		expect(assertRedirectAllowed(thirdPartyClient, "http://127.0.0.1:8976/callback")).toBe(false);
 	});
 
@@ -98,5 +110,39 @@ describe("OAuth service helpers", () => {
 		await expect(verifyClientSecret(client, secret)).resolves.toBe(true);
 		await expect(verifyClientSecret(client, "wrong-secret")).resolves.toBe(false);
 		await expect(verifyClientSecret(client, null)).resolves.toBe(false);
+	});
+
+	it("keeps OAuth hashes independent from API-key pepper rotation", async () => {
+		replaceRuntime({ ...baseBindings, KEY_PEPPER_ACTIVE: "first-key-pepper" });
+		const before = await hashOAuthSecret("opaque-token");
+		replaceRuntime({ ...baseBindings, KEY_PEPPER_ACTIVE: "rotated-key-pepper" });
+		const after = await hashOAuthSecret("opaque-token");
+		expect(after).toBe(before);
+		replaceRuntime(baseBindings);
+	});
+
+	it("accepts OAuth secrets hashed with the previous OAuth pepper", async () => {
+		replaceRuntime({ ...baseBindings, PHASEO_OAUTH_TOKEN_PEPPER_ACTIVE: "previous-oauth-pepper" });
+		const previousHash = await hashOAuthSecret("confidential-secret");
+		replaceRuntime({
+			...baseBindings,
+			PHASEO_OAUTH_TOKEN_PEPPER_ACTIVE: "active-oauth-pepper",
+			PHASEO_OAUTH_TOKEN_PEPPER_PREVIOUS: "previous-oauth-pepper",
+		});
+		await expect(verifyClientSecret({
+			client_type: "confidential",
+			client_secret_hash: previousHash,
+		}, "confidential-secret")).resolves.toBe(true);
+		expect(await hashOAuthSecret("confidential-secret")).not.toBe(previousHash);
+		replaceRuntime(baseBindings);
+	});
+
+	it("fails closed when the dedicated OAuth active pepper is missing", async () => {
+		replaceRuntime({
+			...baseBindings,
+			PHASEO_OAUTH_TOKEN_PEPPER_ACTIVE: undefined,
+		});
+		await expect(hashOAuthSecret("opaque-token")).rejects.toThrow("PHASEO_OAUTH_TOKEN_PEPPER_ACTIVE is not configured");
+		replaceRuntime(baseBindings);
 	});
 });

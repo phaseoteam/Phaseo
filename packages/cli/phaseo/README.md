@@ -94,6 +94,8 @@ phaseo providers list
 phaseo pricing models
 phaseo credits get
 phaseo activity list --days 7
+phaseo logs list --since 1h --status error --json
+phaseo logs get <request-id> --json
 phaseo generation get --id <request-id>
 phaseo api get /v1/models
 ```

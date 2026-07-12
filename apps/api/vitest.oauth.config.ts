@@ -5,8 +5,9 @@ export default defineConfig({
   test: {
     name: 'oauth',
     include: [
-      'src/lib/oauth/__tests__/**/*.test.ts',
-      'tests/oauth/**/*.test.ts',
+      'src/lib/oauth/**/*.test.ts',
+      'src/routes/oauth*.test.ts',
+      'src/pipeline/before/auth*.test.ts',
     ],
     exclude: [
       '**/node_modules/**',
@@ -39,13 +40,6 @@ export default defineConfig({
     teardownTimeout: 10000,
     isolate: true,
     pool: 'threads',
-    poolOptions: {
-      threads: {
-        singleThread: false,
-        minThreads: 1,
-        maxThreads: 4,
-      },
-    },
     reporters: ['verbose'],
     logHeapUsage: true,
   },
@@ -53,6 +47,7 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@core': path.resolve(__dirname, './src/core'),
+      '@pipeline': path.resolve(__dirname, './src/pipeline'),
       '@protocols': path.resolve(__dirname, './src/protocols'),
     },
   },

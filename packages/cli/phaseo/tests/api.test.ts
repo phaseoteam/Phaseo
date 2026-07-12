@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
 	authorizeUrl,
+	DEFAULT_API_URL,
 	DEFAULT_LOGIN_SCOPES,
 	normalizeApiRoot,
 	oauthUrl,
@@ -10,6 +11,7 @@ import {
 	v1Url,
 } from "../src/api.ts";
 import {
+	buildLogsListPath,
 	helpKeyForCommand,
 	parseArgs,
 	renderVersionText,
@@ -20,6 +22,7 @@ import {
 	renderLoginMenu,
 	renderHelp,
 	windowsBrowserOpenArgs,
+	validateLoopbackRedirectUri,
 } from "../src/index.ts";
 import {
 	compareVersions,
@@ -27,9 +30,15 @@ import {
 	installCommandFor,
 	updateCommandFor,
 } from "../src/release.ts";
+import { sanitizeTerminalText } from "../src/output.ts";
 
 test("normalizes API roots for oauth and v1 endpoints", () => {
+	assert.equal(DEFAULT_API_URL, "https://api.phaseo.app");
 	assert.equal(normalizeApiRoot("https://api.example.com/v1/"), "https://api.example.com");
+	assert.equal(normalizeApiRoot("http://127.0.0.1:8788/v1"), "http://127.0.0.1:8788");
+	assert.equal(normalizeApiRoot("http://[::1]:8788/v1"), "http://[::1]:8788");
+	assert.throws(() => normalizeApiRoot("http://api.example.com"), /must use HTTPS/);
+	assert.throws(() => normalizeApiRoot("file:///tmp/phaseo"), /must use HTTPS/);
 	assert.equal(oauthUrl("https://api.example.com", "/token"), "https://api.example.com/oauth/token");
 	assert.equal(v1Url("https://api.example.com", "/me"), "https://api.example.com/v1/me");
 });
@@ -144,6 +153,35 @@ test("ignores callback hits until an authorization code is present", () => {
 		code: "abc123",
 		state: "state-123",
 	});
+
+	const unrelatedError = new URL("http://127.0.0.1:8976/callback?error=access_denied&state=wrong");
+	assert.deepEqual(inspectCallbackRequest(unrelatedError, "state-123"), {
+		ok: false,
+		pending: true,
+	});
+	const unrelatedCode = new URL("http://127.0.0.1:8976/callback?code=forged&state=wrong");
+	assert.deepEqual(inspectCallbackRequest(unrelatedCode, "state-123"), {
+		ok: false,
+		pending: true,
+	});
+});
+
+test("removes terminal control characters from human-readable errors", () => {
+	assert.equal(sanitizeTerminalText("bad\u001b[31mname\u0007"), "bad [31mname ");
+});
+
+test("only accepts loopback browser callback URLs", () => {
+	assert.equal(
+		validateLoopbackRedirectUri("http://127.0.0.1:8976/callback"),
+		"http://127.0.0.1:8976/callback",
+	);
+	assert.equal(
+		validateLoopbackRedirectUri("http://[::1]:8976/callback"),
+		"http://[::1]:8976/callback",
+	);
+	assert.throws(() => validateLoopbackRedirectUri("https://example.com/callback"), /HTTP loopback/);
+	assert.throws(() => validateLoopbackRedirectUri("http://0.0.0.0:8976/callback"), /HTTP loopback/);
+	assert.throws(() => validateLoopbackRedirectUri("http://127.0.0.1:8976/callback?next=evil"), /HTTP loopback/);
 });
 
 test("resolves help text for command groups and leaf commands", () => {
@@ -152,6 +190,27 @@ test("resolves help text for command groups and leaf commands", () => {
 	assert.match(renderHelp(["keys", "create"]), /phaseo keys create --name <name>/);
 	assert.match(renderHelp(["pricing"]), /phaseo pricing calculate --provider <provider>/);
 	assert.match(renderHelp(["login"]), /--scopes <csv>/);
+	assert.equal(helpKeyForCommand(["logs", "list"]), "logs list");
+	assert.match(renderHelp(["logs", "list"]), /--status <success\|error\|2xx\|4xx\|5xx\|code>/);
+});
+
+test("builds logs list filters for the API", () => {
+	assert.equal(
+		buildLogsListPath({
+			since: "2h",
+			status: "5xx",
+			provider: "openai",
+			model: "gpt-5-mini",
+			endpoint: "/responses",
+			"request-id": "req_1",
+			"key-id": "key_1",
+			"session-id": "session_1",
+			"error-code": "upstream_error",
+			limit: "25",
+			offset: "5",
+		}),
+		"/logs?since=2h&status=5xx&provider=openai&model=gpt-5-mini&endpoint=%2Fresponses&request_id=req_1&key_id=key_1&session_id=session_1&error_code=upstream_error&limit=25&offset=5",
+	);
 });
 
 test("treats short and long root flags as flags instead of commands", () => {

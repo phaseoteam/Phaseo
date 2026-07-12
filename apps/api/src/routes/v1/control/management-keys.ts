@@ -120,7 +120,7 @@ async function handleCreateManagementKey(req: Request) {
 		const pepper = resolveActiveKeyPepper(getBindings());
 		if (!pepper) {
 			return json(
-				{ error: "server_misconfig_missing_pepper", message: "KEY_PEPPER_ACTIVE (or KEY_PEPPER) is not configured" },
+				{ error: "server_misconfig_missing_pepper", message: "KEY_PEPPER_ACTIVE is not configured" },
 				503,
 				{ "Cache-Control": "no-store" },
 			);

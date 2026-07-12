@@ -17,7 +17,7 @@ import {
 	startDeviceLogin,
 } from "./api.js";
 import { clearSession, readSession, writeSession } from "./session.js";
-import { printError, printJson } from "./output.js";
+import { printError, printJson, sanitizeTerminalText } from "./output.js";
 import { CLI_VERSION } from "./generated/meta.js";
 import { getVersionInfo } from "./release.js";
 
@@ -185,6 +185,7 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 			"phaseo pricing --help",
 			"phaseo credits --help",
 			"phaseo activity --help",
+			"phaseo logs --help",
 			"phaseo analytics --help",
 			"phaseo generation --help",
 			"phaseo api --help",
@@ -194,7 +195,7 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 			"  Use --scopes workspaces:read,keys:write,... when a narrower token is preferred.",
 			"",
 			"Environment:",
-			"  PHASEO_API_URL  Override API root, defaults to https://api.phaseo.ai",
+			"  PHASEO_API_URL  Override API root, defaults to https://api.phaseo.app",
 		],
 	},
 	login: {
@@ -332,6 +333,14 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	"credits get": { usage: ["phaseo credits get [--json]"] },
 	activity: { usage: ["phaseo activity list [--days <n>] [--limit <n>] [--offset <n>] [--json]"] },
 	"activity list": { usage: ["phaseo activity list [--days <n>] [--limit <n>] [--offset <n>] [--json]"] },
+	logs: {
+		usage: [
+			"phaseo logs list [--since <15m|1h|7d>] [--from <iso>] [--to <iso>] [--status <success|error|2xx|4xx|5xx|code>] [--provider <id>] [--model <id>] [--endpoint <path>] [--request-id <id>] [--key-id <id>] [--session-id <id>] [--error-code <code>] [--workspace <id>] [--limit <n>] [--offset <n>] [--json]",
+			"phaseo logs get <request-id> [--workspace <id>] [--json]",
+		],
+	},
+	"logs list": { usage: ["phaseo logs list [--since <15m|1h|7d>] [--from <iso>] [--to <iso>] [--status <success|error|2xx|4xx|5xx|code>] [--provider <id>] [--model <id>] [--endpoint <path>] [--request-id <id>] [--key-id <id>] [--session-id <id>] [--error-code <code>] [--workspace <id>] [--limit <n>] [--offset <n>] [--json]"] },
+	"logs get": { usage: ["phaseo logs get <request-id> [--workspace <id>] [--json]"] },
 	analytics: { usage: ["phaseo analytics get [--date YYYY-MM-DD] [--json]"] },
 	"analytics get": { usage: ["phaseo analytics get [--date YYYY-MM-DD] [--json]"] },
 	generation: { usage: ["phaseo generation get --id <request-id> [--json]"] },
@@ -562,21 +571,25 @@ export function inspectCallbackRequest(
 	const errorDescription = requestUrl.searchParams.get("error_description") || undefined;
 	const state = requestUrl.searchParams.get("state") || undefined;
 	const code = requestUrl.searchParams.get("code") || undefined;
+	if ((error || code) && state !== expectedState) {
+		return { ok: false, pending: true };
+	}
 	if (error) {
 		return { ok: false, error, errorDescription, state };
 	}
 	if (!code) {
 		return { ok: false, pending: true };
 	}
-	if (state !== expectedState) {
-		return {
-			ok: false,
-			error: "state_mismatch",
-			errorDescription: `Expected ${expectedState}, got ${state ?? "<none>"}`,
-			state,
-		};
-	}
 	return { ok: true, code, state };
+}
+
+export function validateLoopbackRedirectUri(value: string): string {
+	const url = new URL(value);
+	const loopback = url.hostname === "127.0.0.1" || url.hostname === "::1" || url.hostname === "[::1]" || url.hostname === "localhost";
+	if (url.protocol !== "http:" || !loopback || url.pathname !== "/callback" || url.username || url.password || url.search || url.hash) {
+		throw new Error("Browser redirect URI must be an HTTP loopback /callback URL");
+	}
+	return url.toString();
 }
 
 function openUrl(url: string): boolean {
@@ -692,14 +705,20 @@ function createCallbackServer(args: { redirectUri: string; expectedState: string
 	const port = redirect.port ? Number(redirect.port) : 8976;
 	const callbackPath = redirect.pathname || "/";
 	let settled = false;
+	let activeRedirectUri = redirect.toString();
 	let resolveCallback: (value: CallbackOutcome) => void = () => undefined;
 	const waitForCallback = new Promise<CallbackOutcome>((resolve) => {
 		resolveCallback = resolve;
 	});
+	const timeout = setTimeout(() => {
+		finish({ ok: false, error: "login_timeout", errorDescription: "Browser login timed out after 10 minutes" });
+	}, 10 * 60 * 1000);
+	timeout.unref();
 
 	function finish(value: CallbackOutcome) {
 		if (settled) return;
 		settled = true;
+		clearTimeout(timeout);
 		resolveCallback(value);
 	}
 
@@ -729,9 +748,16 @@ function createCallbackServer(args: { redirectUri: string; expectedState: string
 				server.once("error", reject);
 				server.listen(port, host, () => {
 					server.off("error", reject);
+					const address = server.address();
+					if (address && typeof address === "object") {
+						const active = new URL(redirect);
+						active.port = String(address.port);
+						activeRedirectUri = active.toString();
+					}
 					resolve();
 				});
 			}),
+		getRedirectUri: () => activeRedirectUri,
 		waitForCallback,
 		close: async () =>
 			new Promise<void>((resolve) => {
@@ -783,7 +809,7 @@ async function loginWithDeviceCode(apiRoot: string, flags: Record<string, string
 	}
 
 	const deadline = Date.now() + Number(device.expires_in) * 1000;
-	const intervalMs = Math.max(1, Number(device.interval ?? 5)) * 1000;
+	let intervalMs = Math.max(1, Number(device.interval ?? 5)) * 1000;
 	while (Date.now() < deadline) {
 		await sleep(intervalMs);
 		try {
@@ -792,6 +818,10 @@ async function loginWithDeviceCode(apiRoot: string, flags: Record<string, string
 			return;
 		} catch (error: any) {
 			if (error?.code === "authorization_pending") continue;
+			if (error?.code === "slow_down") {
+				intervalMs += 5_000;
+				continue;
+			}
 			throw error;
 		}
 	}
@@ -799,17 +829,20 @@ async function loginWithDeviceCode(apiRoot: string, flags: Record<string, string
 }
 
 async function loginWithBrowser(apiRoot: string, flags: Record<string, string | boolean>) {
-	const redirectUri = flagString(flags, "redirect-uri") ?? "http://127.0.0.1:8976/callback";
+	const redirectUri = validateLoopbackRedirectUri(
+		flagString(flags, "redirect-uri") ?? "http://127.0.0.1:0/callback",
+	);
 	const state = randomBase64Url(24);
 	const codeVerifier = randomBase64Url(32);
 	const codeChallenge = sha256Base64Url(codeVerifier);
 	const callbackServer = createCallbackServer({ redirectUri, expectedState: state });
 	await callbackServer.start();
 	try {
+		const activeRedirectUri = callbackServer.getRedirectUri();
 		const scope = requestedLoginScope(flags);
 		const authUrl = authorizeUrl(apiRoot, {
 			clientId: "phaseo_cli",
-			redirectUri,
+			redirectUri: activeRedirectUri,
 			scope,
 			state,
 			codeChallenge,
@@ -828,7 +861,7 @@ async function loginWithBrowser(apiRoot: string, flags: Record<string, string | 
 		}
 		const tokens = await exchangeAuthorizationCode(apiRoot, {
 			code: callback.code,
-			redirectUri,
+			redirectUri: activeRedirectUri,
 			codeVerifier,
 		});
 		await completeLogin(apiRoot, tokens, false);
@@ -1425,6 +1458,45 @@ async function activityList(flags: Record<string, string | boolean>) {
 	printList(body.activity ?? [], (item) => `${item.timestamp} ${item.model} ${item.provider} ${item.cost_cents ?? 0}c ${item.request_id}`);
 }
 
+export function buildLogsListPath(flags: Record<string, string | boolean>): string {
+	return appendQuery("/logs", {
+		workspace_id: flagString(flags, "workspace"),
+		since: flagString(flags, "since"),
+		from: flagString(flags, "from"),
+		to: flagString(flags, "to"),
+		status: flagString(flags, "status"),
+		provider: flagString(flags, "provider"),
+		model: flagString(flags, "model"),
+		endpoint: flagString(flags, "endpoint"),
+		request_id: flagString(flags, "request-id"),
+		key_id: flagString(flags, "key-id"),
+		session_id: flagString(flags, "session-id"),
+		error_code: flagString(flags, "error-code"),
+		limit: flagString(flags, "limit"),
+		offset: flagString(flags, "offset"),
+	});
+}
+
+async function logsList(flags: Record<string, string | boolean>) {
+	const body = await request(buildLogsListPath(flags));
+	if (flagBool(flags, "json")) return printJson(body);
+	printList(body.data ?? [], (item) => {
+		const status = item.status_code ?? (item.success ? "success" : "error");
+		return `${item.created_at} ${status} ${item.model_id ?? "unknown"} ${item.provider ?? "unknown"} ${item.latency_ms ?? 0}ms ${item.request_id}`;
+	});
+}
+
+async function logsGet(id: string | undefined, flags: Record<string, string | boolean>) {
+	if (!id) throw new Error("Request id is required");
+	const body = await request(appendQuery(`/logs/${encodeURIComponent(id)}`, {
+		workspace_id: flagString(flags, "workspace"),
+	}));
+	if (flagBool(flags, "json")) return printJson(body);
+	const item = body.data ?? {};
+	const errorMessage = item.error_message ? ` - ${sanitizeTerminalText(String(item.error_message))}` : "";
+	process.stdout.write(`${item.request_id ?? id}\nStatus: ${item.status_code ?? (item.success ? "success" : "error")}\nModel: ${item.model_id ?? "unknown"}\nProvider: ${item.provider ?? "unknown"}\nEndpoint: ${item.endpoint ?? "unknown"}\nLatency: ${item.latency_ms ?? 0}ms\nError: ${item.error_code ?? "none"}${errorMessage}\n`);
+}
+
 async function analyticsGet(flags: Record<string, string | boolean>) {
 	const body = await request(appendQuery("/analytics", { workspace_id: flagString(flags, "workspace"), date: flagString(flags, "date") }));
 	if (flagBool(flags, "json")) return printJson(body);
@@ -1527,6 +1599,8 @@ async function main() {
 		else if (first === "pricing" && second === "calculate") action = pricingCalculate(parsed.flags);
 		else if (first === "credits" && second === "get") action = creditsGet(parsed.flags);
 		else if (first === "activity" && second === "list") action = activityList(parsed.flags);
+		else if (first === "logs" && second === "list") action = logsList(parsed.flags);
+		else if (first === "logs" && second === "get") action = logsGet(third, parsed.flags);
 		else if (first === "analytics" && second === "get") action = analyticsGet(parsed.flags);
 		else if (first === "generation" && second === "get") action = generationGet(parsed.flags);
 		else if (first === "api" && second === "get") action = rawApi("GET", third, parsed.flags);

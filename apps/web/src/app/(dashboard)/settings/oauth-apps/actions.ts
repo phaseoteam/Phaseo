@@ -90,7 +90,8 @@ export async function createOAuthAppAction(
 		for (const uri of input.redirect_uris) {
 			try {
 				const url = new URL(uri);
-				if (url.protocol !== "http:" && url.protocol !== "https:") {
+				const loopback = url.hostname === "127.0.0.1" || url.hostname === "::1" || url.hostname === "[::1]" || url.hostname === "localhost";
+				if (url.username || url.password || url.hash || (url.protocol !== "https:" && !(url.protocol === "http:" && loopback))) {
 					return { error: `Invalid redirect URI: ${uri}` };
 				}
 			} catch {
