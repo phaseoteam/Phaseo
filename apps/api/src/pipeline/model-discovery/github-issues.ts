@@ -1,7 +1,12 @@
 import { readBindingEnv } from "./helpers";
 
-export type UpstreamDiscoveryIssueSource = "provider-api" | "huggingface";
-export type UpstreamDiscoveryIssueAction = "create" | "delete";
+export type UpstreamDiscoveryIssueSource =
+	| "catalog-pricing"
+	| "provider-api"
+	| "provider-pricing-api"
+	| "provider-pricing-table"
+	| "huggingface";
+export type UpstreamDiscoveryIssueAction = "create" | "delete" | "change";
 
 export type UpstreamDiscoveryIssueEntry = {
 	source: UpstreamDiscoveryIssueSource;
@@ -49,7 +54,7 @@ type GitHubIssueClient = {
 
 const DEFAULT_GITHUB_API_BASE_URL = "https://api.github.com";
 const DEFAULT_GITHUB_REQUEST_TIMEOUT_MS = 30_000;
-const DEFAULT_GITHUB_REPOSITORY = "phaseoteam/Phaseo";
+const DEFAULT_GITHUB_REPOSITORY = "AI-Stats/AI-Stats";
 const DEFAULT_GITHUB_USER_AGENT = "phaseo-gateway-model-discovery";
 
 function toBool(value: string | null | undefined, fallback = false): boolean {
@@ -79,11 +84,16 @@ function issueKeyForGroup(input: Pick<GitHubIssueGroup, "source" | "providerId" 
 }
 
 function actionNoun(action: UpstreamDiscoveryIssueAction): string {
+	if (action === "change") return "changes";
 	return action === "create" ? "additions" : "deletions";
 }
 
 function sourceLabel(source: UpstreamDiscoveryIssueSource): string {
-	return source === "huggingface" ? "Hugging Face" : "provider API";
+	if (source === "huggingface") return "Hugging Face";
+	if (source === "catalog-pricing") return "catalog pricing data";
+	if (source === "provider-pricing-api") return "provider pricing API";
+	if (source === "provider-pricing-table") return "provider pricing table";
+	return "provider API";
 }
 
 function formatDateTime(value: string): string {
@@ -95,6 +105,15 @@ function formatDateTime(value: string): string {
 function issueTitleForGroup(group: GitHubIssueGroup): string {
 	if (group.source === "huggingface") {
 		return `[upstream-discovery] Hugging Face: model ${actionNoun(group.action)} for ${group.providerName}`.slice(0, 250);
+	}
+	if (group.source === "provider-pricing-api") {
+		return `[pricing-monitor] ${group.providerName}: pricing API changes`.slice(0, 250);
+	}
+	if (group.source === "catalog-pricing") {
+		return `[pricing-monitor] ${group.providerName}: catalog pricing changes`.slice(0, 250);
+	}
+	if (group.source === "provider-pricing-table") {
+		return `[pricing-monitor] ${group.providerName}: pricing table changes`.slice(0, 250);
 	}
 
 	return `[upstream-discovery] ${group.providerName}: provider model ${actionNoun(group.action)}`.slice(0, 250);
@@ -108,7 +127,7 @@ function formatModelReference(entry: Pick<UpstreamDiscoveryIssueEntry, "modelId"
 }
 
 function formatModelList(entries: UpstreamDiscoveryIssueEntry[]): string[] {
-	return entries.map((entry) => `- ${formatModelReference(entry)}`);
+	return entries.map((entry) => `- ${formatModelReference(entry)}${entry.reason?.trim() ? ` ? ${entry.reason.trim()}` : ""}`);
 }
 
 function buildIssueBody(group: GitHubIssueGroup): string {
@@ -119,7 +138,7 @@ function buildIssueBody(group: GitHubIssueGroup): string {
 		`<!-- ${marker} -->`,
 		`Tracking key: \`${marker}\``,
 		"",
-		`The Cloudflare Worker model discovery cron detected ${sourceLabel(group.source)} model ${actionNoun(group.action)} for ${group.providerName}.`,
+		`The Cloudflare Worker model discovery cron detected ${sourceLabel(group.source)} ${actionNoun(group.action)} for ${group.providerName}.`,
 		"",
 		"## Current signal",
 		`- Source family: ${sourceLabel(group.source)}`,
@@ -129,11 +148,11 @@ function buildIssueBody(group: GitHubIssueGroup): string {
 		`- Detection source: \`${latest?.detectionSource ?? "unknown"}\``,
 		`- Models in this signal: ${group.entries.length}`,
 		"",
-		"## Models in this signal",
+		"## Signals in this change",
 		...formatModelList(group.entries),
 		"",
 		"## Triage notes",
-		"- Check whether each upstream model should be added to Phaseo or mapped to an existing catalog entry.",
+		"- Compare the authoritative provider source with the corresponding Phaseo price card before editing catalogue data.",
 		"- Reuse this issue for repeated signals with the same source family, provider/org, and action type.",
 		"- Close this issue once the upstream signal has been triaged.",
 	].join("\n");
@@ -280,6 +299,71 @@ export function buildProviderIssueEntries(args: {
 	}
 
 	return out;
+}
+
+export function buildProviderPricingIssueEntries(args: {
+	changes: Array<{ providerId: string; providerName: string; samples: string[] }>;
+	detectedAt: string;
+	detectionSource: string;
+}): UpstreamDiscoveryIssueEntry[] {
+	return args.changes.flatMap((change) =>
+		change.samples.map((sample) => {
+			const [modelId, ...reasonParts] = sample.split(" | ");
+			return {
+				source: "provider-pricing-api",
+				providerId: change.providerId,
+				providerName: change.providerName,
+				action: "change",
+				modelId: modelId?.trim() || "Unknown model",
+				detectedAt: args.detectedAt,
+				detectionSource: args.detectionSource,
+				reason: reasonParts.join(" | ").trim() || null,
+			};
+		}),
+	);
+}
+
+export function buildCatalogPricingIssueEntries(args: {
+	changes: Array<{ providerId: string; providerName: string; samples: string[] }>;
+	detectedAt: string;
+	detectionSource: string;
+}): UpstreamDiscoveryIssueEntry[] {
+	return args.changes.flatMap((change) =>
+		change.samples.map((sample) => {
+			const [modelId, ...reasonParts] = sample.split(" | ");
+			return {
+				source: "catalog-pricing" as const,
+				providerId: change.providerId,
+				providerName: change.providerName,
+				action: "change" as const,
+				modelId: modelId?.trim() || "Pricing rule",
+				detectedAt: args.detectedAt,
+				detectionSource: args.detectionSource,
+				reason: reasonParts.join(" | ").trim() || null,
+			};
+		}),
+	);
+}
+
+export function buildPricingTableIssueEntries(args: {
+	changes: Array<{ providerId: string; providerName: string; sourceUrl: string; tableCount: number; pricingSamples: string[] }>;
+	detectedAt: string;
+	detectionSource: string;
+}): UpstreamDiscoveryIssueEntry[] {
+	return args.changes.map((change) => ({
+		source: "provider-pricing-table",
+		providerId: change.providerId,
+		providerName: change.providerName,
+		action: "change",
+		modelId: "Pricing table",
+		modelUrl: change.sourceUrl,
+		detectedAt: args.detectedAt,
+		detectionSource: args.detectionSource,
+		reason: [
+			`${change.tableCount} price-bearing table${change.tableCount === 1 ? "" : "s"} changed`,
+			change.pricingSamples.length > 0 ? `Current source samples: ${change.pricingSamples.slice(0, 4).join(" | ")}` : null,
+		].filter(Boolean).join(". "),
+	}));
 }
 
 export async function syncUpstreamDiscoveryIssues(entries: UpstreamDiscoveryIssueEntry[]): Promise<GitHubIssueSyncSummary> {

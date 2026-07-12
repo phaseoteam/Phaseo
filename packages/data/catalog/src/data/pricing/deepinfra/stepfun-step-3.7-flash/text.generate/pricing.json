@@ -1,18 +1,18 @@
 {
-  "key": "deepinfra:deepseek/deepseek-v4-flash:text.generate",
+  "key": "deepinfra:stepfun/step-3.7-flash:text.generate",
   "api_provider_id": "deepinfra",
   "provider_slug": "deepinfra",
-  "api_model_id": "deepseek/deepseek-v4-flash",
+  "api_model_id": "stepfun/step-3.7-flash",
   "capability_id": "text.generate",
   "rules": [
     {
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.09,
+      "price_per_unit": 0.2,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": null,
+      "note": "From DeepInfra's public /v1/openai/models payload.",
       "match": [],
       "priority": 100
     },
@@ -20,10 +20,10 @@
       "meter": "cached_read_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.018,
+      "price_per_unit": 0.04,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": null,
+      "note": "From DeepInfra's public /v1/openai/models payload.",
       "match": [],
       "priority": 100
     },
@@ -31,10 +31,10 @@
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.18,
+      "price_per_unit": 1.15,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": null,
+      "note": "From DeepInfra's public /v1/openai/models payload.",
       "match": [],
       "priority": 100
     }
