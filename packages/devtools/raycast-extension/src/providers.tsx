@@ -5,6 +5,7 @@ import {
   ActionPanel,
   Action,
   Icon,
+  Keyboard,
   showToast,
   Toast,
 } from "@raycast/api";
@@ -97,7 +98,7 @@ export default function Command() {
                 title="Copy Provider ID"
                 content={provider.api_provider_id}
                 icon={Icon.Clipboard}
-                shortcut={{ modifiers: ["cmd"], key: "c" }}
+                shortcut={Keyboard.Shortcut.Common.Copy}
               />
               <Action
                 title="Refresh Providers"

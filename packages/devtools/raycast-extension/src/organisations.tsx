@@ -5,6 +5,7 @@ import {
   ActionPanel,
   Action,
   Icon,
+  Keyboard,
   showToast,
   Toast,
   Color,
@@ -91,7 +92,7 @@ export default function Command() {
                 title="Copy Organisation ID"
                 content={org.organisation_id}
                 icon={Icon.Clipboard}
-                shortcut={{ modifiers: ["cmd"], key: "c" }}
+                shortcut={Keyboard.Shortcut.Common.Copy}
               />
               <Action
                 title="Refresh Organisations"

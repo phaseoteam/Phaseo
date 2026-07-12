@@ -5,6 +5,7 @@ import {
   ActionPanel,
   Action,
   Icon,
+  Keyboard,
   Color,
   showToast,
   Toast,
@@ -142,7 +143,7 @@ export default function Command() {
                 title="Copy Model ID"
                 content={model.model_id}
                 icon={Icon.Clipboard}
-                shortcut={{ modifiers: ["cmd"], key: "c" }}
+                shortcut={Keyboard.Shortcut.Common.Copy}
               />
               {model.organisation_id && (
                 <Action.OpenInBrowser

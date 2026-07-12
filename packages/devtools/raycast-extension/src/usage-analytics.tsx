@@ -4,6 +4,7 @@ import {
   ActionPanel,
   Color,
   Icon,
+  Keyboard,
   List,
   showToast,
   Toast,
@@ -132,6 +133,7 @@ export default function Command() {
                   title="Copy Model ID"
                   content={entry.modelPermaslug}
                   icon={Icon.Clipboard}
+                  shortcut={Keyboard.Shortcut.Common.Copy}
                 />
                 <Action
                   title="Refresh Usage"
