@@ -27,7 +27,7 @@ describe("extractPricingTableText", () => {
 
 	it("extracts price-bearing content cards without hashing page scripts", () => {
 		const result = extractPriceContentText(`
-			<script>window.dynamic = Date.now()</script>
+			<script>window.dynamic = Date.now()</script >
 			<section><h2>Command A pricing</h2><p>Input $2.50 / 1M tokens</p><p>Output $10 / 1M tokens</p></section>
 		`);
 

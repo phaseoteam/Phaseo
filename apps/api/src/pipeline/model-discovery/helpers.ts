@@ -908,13 +908,16 @@ export async function loadLatestPricingTableState(source?: string): Promise<Pric
 	const sourceValue = typeof source === "string" ? source.trim() : "";
 	if (sourceValue) query = query.eq("source", sourceValue);
 
-	const { data, error } = await query.limit(20);
+	const { data, error } = await query.limit(100);
 	if (error) throw new Error(error.message || "Failed to load pricing table state");
+	const latestByProvider = new Map<string, PricingTableSnapshotState>();
 	for (const row of data ?? []) {
 		const state = parsePricingTableStateFromSummary((row as Record<string, unknown>).summary);
-		if (state.length > 0) return state;
+		for (const snapshot of state) {
+			if (!latestByProvider.has(snapshot.providerId)) latestByProvider.set(snapshot.providerId, snapshot);
+		}
 	}
-	return [];
+	return [...latestByProvider.values()];
 }
 
 export async function fetchLatestPricingUpdatedAt(): Promise<string | null> {
