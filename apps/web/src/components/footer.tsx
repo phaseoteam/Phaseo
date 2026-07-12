@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { FooterStatusIndicator } from "@/components/FooterStatusIndicator";
 import { ThemeSelector } from "@/components/theme-toggle";
+import { Logo } from "@/components/Logo";
 import { FooterYearRange } from "./FooterYearRange";
 
 const startYear = 2025;
@@ -42,20 +43,37 @@ const companyLinks = [
 ];
 
 const communityLinks = [
-	{ href: "https://discord.gg/aQyywCvgZ5", label: "Discord", external: true },
-	{ href: "https://github.com/phaseoteam/Phaseo", label: "GitHub", external: true },
+	{
+		href: "https://discord.gg/aQyywCvgZ5",
+		label: "Discord",
+		logoId: "discord",
+		external: true,
+	},
+	{
+		href: "https://github.com/phaseoteam/Phaseo",
+		label: "GitHub",
+		logoId: "github",
+		external: true,
+	},
 	{
 		href: "https://www.linkedin.com/company/phaseoapp/",
 		label: "LinkedIn",
+		logoId: "linkedin",
 		external: true,
 	},
-	{ href: "https://www.reddit.com/r/Phaseo/", label: "Reddit", external: true },
-	{ href: "https://x.com/phaseoteam", label: "X", external: true },
+	{
+		href: "https://www.reddit.com/r/Phaseo/",
+		label: "Reddit",
+		logoId: "reddit",
+		external: true,
+	},
+	{ href: "https://x.com/phaseoteam", label: "X", logoId: "x", external: true },
 ];
 
 type FooterLink = {
 	href: string;
 	label: string;
+	logoId?: string;
 	external?: boolean;
 };
 
@@ -68,7 +86,7 @@ function FooterLinkList({
 }) {
 	return (
 		<div className="flex flex-col gap-2">
-			<h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">
+			<h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
 				{title}
 			</h3>
 			<ul className="flex flex-wrap gap-x-3 gap-y-1.5 lg:block lg:space-y-1.5">
@@ -79,9 +97,23 @@ function FooterLinkList({
 							prefetch={link.external ? undefined : false}
 							target={link.external ? "_blank" : undefined}
 							rel={link.external ? "noopener noreferrer" : undefined}
-							className="text-sm text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-50"
+							className="group inline-flex items-center text-sm text-zinc-600 hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/70 dark:text-zinc-400 dark:hover:text-zinc-50"
 						>
 							{link.label}
+							{link.logoId ? (
+								<span
+									aria-hidden="true"
+									className="ml-0 inline-flex h-4 w-0 translate-x-1 items-center justify-center overflow-hidden opacity-0 transition-all duration-300 ease-out group-hover:ml-2 group-hover:w-4 group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:ml-2 group-focus-visible:w-4 group-focus-visible:translate-x-0 group-focus-visible:opacity-100 motion-reduce:transition-none"
+								>
+									<Logo
+										id={link.logoId}
+										alt=""
+										width={14}
+										height={14}
+										className="h-3.5 w-3.5 object-contain"
+									/>
+								</span>
+							) : null}
 						</Link>
 					</li>
 				))}
