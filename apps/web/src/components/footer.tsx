@@ -89,7 +89,7 @@ function FooterLinkList({
 			<h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
 				{title}
 			</h3>
-			<ul className="flex flex-wrap gap-x-3 gap-y-1.5 lg:block lg:space-y-1.5">
+			<ul className="space-y-1.5">
 				{links.map((link) => (
 					<li key={`${title}-${link.href}`}>
 						<Link
@@ -99,11 +99,10 @@ function FooterLinkList({
 							rel={link.external ? "noopener noreferrer" : undefined}
 							className="group inline-flex items-center text-sm text-zinc-600 hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/70 dark:text-zinc-400 dark:hover:text-zinc-50"
 						>
-							{link.label}
 							{link.logoId ? (
 								<span
 									aria-hidden="true"
-									className="ml-0 inline-flex h-4 w-0 translate-x-1 items-center justify-center overflow-hidden opacity-0 transition-all duration-300 ease-out group-hover:ml-2 group-hover:w-4 group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:ml-2 group-focus-visible:w-4 group-focus-visible:translate-x-0 group-focus-visible:opacity-100 motion-reduce:transition-none"
+									className="mr-0 hidden h-4 w-0 -translate-x-1 items-center justify-center overflow-hidden opacity-0 transition-all duration-300 ease-out lg:inline-flex group-hover:mr-2 group-hover:w-4 group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:mr-2 group-focus-visible:w-4 group-focus-visible:translate-x-0 group-focus-visible:opacity-100 motion-reduce:transition-none"
 								>
 									<Logo
 										id={link.logoId}
@@ -114,6 +113,7 @@ function FooterLinkList({
 									/>
 								</span>
 							) : null}
+							{link.label}
 						</Link>
 					</li>
 				))}
