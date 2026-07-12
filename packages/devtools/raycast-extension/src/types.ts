@@ -120,6 +120,24 @@ export interface WorkspaceActivityResponse {
   activity: WorkspaceActivityEntry[];
 }
 
+export interface AnalyticsUsageEntry {
+  date: string;
+  model: string;
+  model_permaslug: string;
+  endpoint_id: string;
+  provider_name: string;
+  usage: number;
+  byok_usage_inference: number;
+  requests: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  reasoning_tokens: number;
+}
+
+export interface AnalyticsUsageResponse {
+  data: AnalyticsUsageEntry[];
+}
+
 // Filter Types
 export interface ModelFilters {
   endpoints?: string[];

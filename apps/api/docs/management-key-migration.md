@@ -7,7 +7,7 @@ before deploying this change.
 
 ## Templates
 
-- `raycast-readonly`: `credits:read`, `activity:read`
+- `raycast-readonly`: `credits:read`, `activity:read`, `analytics:read`
 - `read-only`: every current `*:read` management capability
 - `read-write`: every current `*:read` and `*:write` capability
 - `full-control`: every current management capability

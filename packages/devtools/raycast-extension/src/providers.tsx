@@ -5,12 +5,10 @@ import {
   ActionPanel,
   Action,
   Icon,
-  Detail,
   showToast,
   Toast,
 } from "@raycast/api";
 import { clearAPICache, getProviders } from "./api";
-import type { Provider } from "./types";
 import {
   getProviderURL,
   getProviderDisplayName,
@@ -82,10 +80,11 @@ export default function Command() {
           ]}
           actions={
             <ActionPanel>
-              <Action.Push
-                title="View Details"
-                icon={Icon.Eye}
-                target={<ProviderDetail provider={provider} />}
+              <Action.OpenInBrowser
+                title="Open Provider Page"
+                url={getProviderURL(provider.api_provider_id)}
+                icon={Icon.Globe}
+                shortcut={{ modifiers: ["cmd"], key: "o" }}
               />
               {provider.link && (
                 <Action.OpenInBrowser
@@ -94,12 +93,6 @@ export default function Command() {
                   icon={Icon.Book}
                 />
               )}
-              <Action.OpenInBrowser
-                title="Open in Phaseo"
-                url={getProviderURL(provider.api_provider_id)}
-                icon={Icon.Globe}
-                shortcut={{ modifiers: ["cmd"], key: "o" }}
-              />
               <Action.CopyToClipboard
                 title="Copy Provider ID"
                 content={provider.api_provider_id}
@@ -116,56 +109,5 @@ export default function Command() {
         />
       ))}
     </List>
-  );
-}
-
-function ProviderDetail({ provider }: { provider: Provider }) {
-  const markdown = `
-# ${getProviderDisplayName(provider)}
-
-**Provider ID:** \`${provider.api_provider_id}\`
-**Country:** ${countryCodeToFlag(provider.country_code)} ${provider.country_code || "Unknown"}
-
----
-
-## Description
-
-${provider.description || "_No description available_"}
-
----
-
-## Links
-
-${provider.link ? `[Provider Documentation](${provider.link})` : "_No documentation link available_"}
-
-[View on Phaseo](${getProviderURL(provider.api_provider_id)})
-`;
-
-  return (
-    <Detail
-      markdown={markdown}
-      navigationTitle={getProviderDisplayName(provider)}
-      actions={
-        <ActionPanel>
-          {provider.link && (
-            <Action.OpenInBrowser
-              title="Open Provider Docs"
-              url={provider.link}
-              icon={Icon.Book}
-            />
-          )}
-          <Action.OpenInBrowser
-            title="Open in Phaseo"
-            url={getProviderURL(provider.api_provider_id)}
-            icon={Icon.Globe}
-          />
-          <Action.CopyToClipboard
-            title="Copy Provider ID"
-            content={provider.api_provider_id}
-            icon={Icon.Clipboard}
-          />
-        </ActionPanel>
-      }
-    />
   );
 }

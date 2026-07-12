@@ -6,6 +6,7 @@ describe("management key templates", () => {
 		expect(MANAGEMENT_KEY_TEMPLATES["raycast-readonly"].scopes).toEqual([
 			"credits:read",
 			"activity:read",
+			"analytics:read",
 		]);
 		expect(MANAGEMENT_KEY_TEMPLATES["read-only"].scopes.every((scope) => scope.endsWith(":read"))).toBe(true);
 		expect(MANAGEMENT_KEY_TEMPLATES["read-write"].scopes.some((scope) => scope.endsWith(":delete"))).toBe(false);

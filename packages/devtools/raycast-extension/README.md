@@ -1,13 +1,14 @@
 # Phaseo Raycast Extension
 
-Browse AI models, organisations, and API providers directly from Raycast.
+Browse Phaseo models and providers, then check usage and activity directly from Raycast.
 
 ## Features
 
-- **Browse Models**: Search and compare AI models with detailed information
-- **Explore Organisations**: View all AI model organisations
-- **View Providers**: Browse API providers for AI models
+- **Browse Models**: Search models, then press Enter to open the canonical Phaseo model page
+- **Explore Organisations**: Browse model organisations and open their Phaseo pages
+- **View Providers**: Browse API providers and open their Phaseo pages or upstream documentation
 - **Usage & Credits**: Check current balance and recent usage with a management API key
+- **Usage by Model**: See 30-day gateway spend and request volume by model and provider
 - **Recent Gateway Activity**: Browse recent gateway requests with a management API key
 
 ## Setup
@@ -15,7 +16,7 @@ Browse AI models, organisations, and API providers directly from Raycast.
 1. Install the extension in Raycast
 2. Get your API key from [Phaseo](https://phaseo.app)
 3. Configure catalogue commands with your Phaseo API key in preferences
-4. Create a **Raycast** management key in **Phaseo Settings → Management Keys** and add it for Usage & Credits and Recent Gateway Activity
+4. Create a **Raycast** management key in **Phaseo Settings → Management Keys** and add it for Usage & Credits, Usage by Model, and Recent Gateway Activity
 
 ## Development
 

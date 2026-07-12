@@ -10,7 +10,7 @@
 type ExtensionPreferences = {
   /** API Key - Your Phaseo API key */
   "apiKey": string,
-  /** Management API Key - Required only for Usage & Credits and Recent Gateway Activity. Create a Raycast-scoped management key in Phaseo Settings. */
+  /** Management API Key - Required for usage and activity commands. Create a Raycast-scoped management key in Phaseo Settings. */
   "managementApiKey"?: string,
   /** API URL - Custom API URL (optional) */
   "apiUrl": string
@@ -28,6 +28,8 @@ declare namespace Preferences {
   export type Providers = ExtensionPreferences & {}
   /** Preferences accessible in the `usage-credits` command */
   export type UsageCredits = ExtensionPreferences & {}
+  /** Preferences accessible in the `usage-analytics` command */
+  export type UsageAnalytics = ExtensionPreferences & {}
   /** Preferences accessible in the `recent-activity` command */
   export type RecentActivity = ExtensionPreferences & {}
 }
@@ -41,6 +43,8 @@ declare namespace Arguments {
   export type Providers = {}
   /** Arguments passed to the `usage-credits` command */
   export type UsageCredits = {}
+  /** Arguments passed to the `usage-analytics` command */
+  export type UsageAnalytics = {}
   /** Arguments passed to the `recent-activity` command */
   export type RecentActivity = {}
 }

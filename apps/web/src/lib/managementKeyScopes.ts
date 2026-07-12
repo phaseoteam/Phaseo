@@ -9,7 +9,7 @@ export const CONTROL_SCOPES = [
 ] as const;
 
 export const MANAGEMENT_KEY_TEMPLATE_SCOPES: Record<ManagementKeyTemplate, string[]> = {
-	"raycast-readonly": ["credits:read", "activity:read"],
+	"raycast-readonly": ["credits:read", "activity:read", "analytics:read"],
 	"read-only": CONTROL_SCOPES.filter((scope) => scope.endsWith(":read")),
 	"read-write": CONTROL_SCOPES.filter((scope) => /:(read|write)$/.test(scope)),
 	"full-control": [...CONTROL_SCOPES],

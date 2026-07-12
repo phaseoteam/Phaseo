@@ -5,13 +5,11 @@ import {
   ActionPanel,
   Action,
   Icon,
-  Detail,
   showToast,
   Toast,
   Color,
 } from "@raycast/api";
 import { clearAPICache, getOrganisations } from "./api";
-import type { Organisation } from "./types";
 import {
   getOrganisationURL,
   getOrganisationDisplayName,
@@ -84,13 +82,8 @@ export default function Command() {
           ]}
           actions={
             <ActionPanel>
-              <Action.Push
-                title="View Details"
-                icon={Icon.Eye}
-                target={<OrganisationDetail organisation={org} />}
-              />
               <Action.OpenInBrowser
-                title="Open in Phaseo"
+                title="Open Organisation Page"
                 url={getOrganisationURL(org.organisation_id)}
                 icon={Icon.Globe}
               />
@@ -110,45 +103,5 @@ export default function Command() {
         />
       ))}
     </List>
-  );
-}
-
-function OrganisationDetail({ organisation }: { organisation: Organisation }) {
-  const markdown = `
-# ${getOrganisationDisplayName(organisation)}
-
-**Organisation ID:** \`${organisation.organisation_id}\`
-**Country:** ${countryCodeToFlag(organisation.country_code)} ${organisation.country_code || "Unknown"}
-
----
-
-## Description
-
-${organisation.description || "_No description available_"}
-
----
-
-[View on Phaseo](${getOrganisationURL(organisation.organisation_id)})
-`;
-
-  return (
-    <Detail
-      markdown={markdown}
-      navigationTitle={getOrganisationDisplayName(organisation)}
-      actions={
-        <ActionPanel>
-          <Action.OpenInBrowser
-            title="Open in Phaseo"
-            url={getOrganisationURL(organisation.organisation_id)}
-            icon={Icon.Globe}
-          />
-          <Action.CopyToClipboard
-            title="Copy Organisation ID"
-            content={organisation.organisation_id}
-            icon={Icon.Clipboard}
-          />
-        </ActionPanel>
-      }
-    />
   );
 }

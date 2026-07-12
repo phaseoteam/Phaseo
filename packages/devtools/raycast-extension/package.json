@@ -1,10 +1,10 @@
 {
   "$schema": "https://www.raycast.com/schemas/extension.json",
   "name": "phaseo",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "title": "Phaseo",
-  "description": "Browse AI models, organisations, and providers from Phaseo",
+  "description": "Browse Phaseo models and providers, then check usage and activity",
   "icon": "icon.png",
   "author": "danielbutler1",
   "license": "MIT",
@@ -42,6 +42,12 @@
       "mode": "view"
     },
     {
+      "name": "usage-analytics",
+      "title": "View Usage by Model",
+      "description": "See 30-day usage and request volume by model and provider",
+      "mode": "view"
+    },
+    {
       "name": "recent-activity",
       "title": "View Recent Gateway Activity",
       "description": "Browse recent Phaseo gateway requests",
@@ -62,7 +68,7 @@
       "type": "password",
       "required": false,
       "title": "Management API Key",
-      "description": "Required only for Usage & Credits and Recent Gateway Activity. Create a Raycast-scoped management key in Phaseo Settings.",
+      "description": "Required for usage and activity commands. Create a Raycast-scoped management key in Phaseo Settings.",
       "placeholder": "phaseo_v1_mk_..."
     },
     {

@@ -1,6 +1,7 @@
 import { Cache, getPreferenceValues } from "@raycast/api";
 import type {
   CreditsResponse,
+  AnalyticsUsageResponse,
   Preferences,
   ModelsResponse,
   OrganisationsResponse,
@@ -17,6 +18,7 @@ const CACHE_TTL = {
   models: 5 * 60 * 1000,
   catalogue: 60 * 60 * 1000,
   account: 30 * 1000,
+  analytics: 5 * 60 * 1000,
 } as const;
 
 type CachedResponse<T> = {
@@ -163,7 +165,7 @@ async function fetchAPI<T>(
       message?: string;
     } & T;
 
-    if (!data.ok) {
+    if (data.ok === false) {
       throw new APIError(data.message || "API request failed");
     }
 
@@ -253,6 +255,15 @@ export async function getRecentActivity(
     "/activity",
     { days: String(days), limit: String(limit), offset: String(offset) },
     CACHE_TTL.account,
+    "management",
+  );
+}
+
+export async function getUsageAnalytics(): Promise<AnalyticsUsageResponse> {
+  return fetchAPI<AnalyticsUsageResponse>(
+    "/analytics",
+    undefined,
+    CACHE_TTL.analytics,
     "management",
   );
 }

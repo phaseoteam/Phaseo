@@ -25,7 +25,7 @@ import { Switch } from "@/components/ui/switch";
 import { MANAGEMENT_KEY_TEMPLATE_SCOPES } from "@/lib/managementKeyScopes";
 
 const KEY_TEMPLATES: Array<{ value: ManagementKeyTemplate; label: string; description: string }> = [
-	{ value: "raycast-readonly", label: "Raycast", description: "Usage, credits, and recent activity only." },
+	{ value: "raycast-readonly", label: "Raycast", description: "Usage, credits, usage by model, and recent activity only." },
 	{ value: "read-only", label: "Read", description: "All control-plane reads." },
 	{ value: "read-write", label: "Write", description: "Reads and changes, without deletes." },
 	{ value: "full-control", label: "All", description: "All management capabilities." },

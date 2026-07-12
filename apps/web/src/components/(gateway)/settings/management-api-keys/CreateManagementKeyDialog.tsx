@@ -28,7 +28,7 @@ const KEY_TEMPLATES = [
 	{
 		value: "raycast-readonly",
 		label: "Raycast",
-		description: "Usage, credits, and recent gateway activity only.",
+		description: "Usage, credits, usage by model, and recent activity only.",
 	},
 	{
 		value: "read-only",

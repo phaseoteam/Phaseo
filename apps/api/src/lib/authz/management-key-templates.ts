@@ -10,8 +10,12 @@ const CONTROL_READ_WRITE_SCOPES = DEFAULT_MANAGEMENT_KEY_CAPABILITIES.filter(
 export const MANAGEMENT_KEY_TEMPLATES = {
 	"raycast-readonly": {
 		title: "Raycast read-only",
-		description: "View usage, credits, and recent gateway activity.",
-		scopes: [CAPABILITIES.CREDITS_READ, CAPABILITIES.ACTIVITY_READ],
+		description: "View credits, usage by model, and recent gateway activity.",
+		scopes: [
+			CAPABILITIES.CREDITS_READ,
+			CAPABILITIES.ACTIVITY_READ,
+			CAPABILITIES.ANALYTICS_READ,
+	],
 	},
 	"read-only": {
 		title: "Read",

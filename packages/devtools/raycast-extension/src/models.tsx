@@ -6,12 +6,10 @@ import {
   Action,
   Icon,
   Color,
-  Detail,
   showToast,
   Toast,
 } from "@raycast/api";
 import { clearAPICache, getModels } from "./api";
-import type { Model } from "./types";
 import {
   formatDate,
   getModelURL,
@@ -135,13 +133,8 @@ export default function Command() {
           ]}
           actions={
             <ActionPanel>
-              <Action.Push
-                title="View Details"
-                icon={Icon.Eye}
-                target={<ModelDetail model={model} />}
-              />
               <Action.OpenInBrowser
-                title="Open in Phaseo"
+                title="Open Model Page"
                 url={getModelURL(model.model_id)}
                 icon={Icon.Globe}
               />
@@ -151,104 +144,23 @@ export default function Command() {
                 icon={Icon.Clipboard}
                 shortcut={{ modifiers: ["cmd"], key: "c" }}
               />
-              <Action
-                title="Refresh Models"
-                icon={Icon.ArrowClockwise}
-                onAction={refresh}
-              />
               {model.organisation_id && (
                 <Action.OpenInBrowser
-                  title="View Organisation"
+                  title="Open Organisation Page"
                   url={getOrganisationURL(model.organisation_id)}
                   icon={Icon.Building}
                   shortcut={{ modifiers: ["cmd"], key: "o" }}
                 />
               )}
+              <Action
+                title="Refresh Models"
+                icon={Icon.ArrowClockwise}
+                onAction={refresh}
+              />
             </ActionPanel>
           }
         />
       ))}
     </List>
-  );
-}
-
-function ModelDetail({ model }: { model: Model }) {
-  const markdown = `
-# ${getModelDisplayName(model)}
-
-**Model ID:** \`${model.model_id}\`
-**Organisation:** ${getModelOrganisationName(model)}
-**Status:** ${getStatusText(model.status)}
-**Release Date:** ${formatDate(model.release_date)}
-**Context Window:** ${model.top_provider?.context_length?.toLocaleString() ?? "Unknown"}
-
----
-
-## Capabilities
-
-**Input Types:** ${model.input_types?.join(", ") || "None"}
-**Output Types:** ${model.output_types?.join(", ") || "None"}
-**Endpoints:** ${model.endpoints?.join(", ") || "None"}
-
----
-
-## API Providers
-
-${
-  model.providers && model.providers.length > 0
-    ? model.providers
-        .map((p) => {
-          const paramsText =
-            p.params && p.params.length > 0 ? ` (${p.params.join(", ")})` : "";
-          return `- **${p.api_provider_id}**${paramsText}`;
-        })
-        .join("\n")
-    : "_No providers available_"
-}
-
----
-
-## Pricing
-
-**Input:** ${formatPricePerMillion(model.pricing?.prompt) ?? "Unavailable"}
-**Output:** ${formatPricePerMillion(model.pricing?.completion) ?? "Unavailable"}
-
----
-
-## Aliases
-
-${model.aliases && model.aliases.length > 0 ? model.aliases.map((a) => `- \`${a}\``).join("\n") : "_No aliases_"}
-
----
-
-[View on Phaseo](${getModelURL(model.model_id)})
-`;
-
-  return (
-    <Detail
-      markdown={markdown}
-      navigationTitle={getModelDisplayName(model)}
-      actions={
-        <ActionPanel>
-          <Action.OpenInBrowser
-            title="Open in Phaseo"
-            url={getModelURL(model.model_id)}
-            icon={Icon.Globe}
-          />
-          <Action.CopyToClipboard
-            title="Copy Model ID"
-            content={model.model_id}
-            icon={Icon.Clipboard}
-          />
-          {model.organisation_id && (
-            <Action.OpenInBrowser
-              title="View Organisation"
-              url={getOrganisationURL(model.organisation_id)}
-              icon={Icon.Building}
-            />
-          )}
-        </ActionPanel>
-      }
-    />
   );
 }
