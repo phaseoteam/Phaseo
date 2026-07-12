@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import {
@@ -52,15 +53,24 @@ export default async function HomeAnnouncementsSection() {
 				</div>
 
 				{latest.length > 0 ? (
-					<div className="grid grid-cols-1 gap-3">
+					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 						{latest.map((post) => (
 							<Link key={post.slug} href={`/blog/${post.slug}`} className="block">
-								<Card className="gap-0 rounded-[20px] py-0 [--card-spacing:0px] transition hover:-translate-y-0.5 hover:shadow-sm">
+								<Card className="h-full gap-0 overflow-hidden rounded-[20px] py-0 [--card-spacing:0px]">
+									<div className="relative aspect-[16/9] border-b border-zinc-200/80 bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900">
+										<Image
+											src={post.coverImage}
+											alt=""
+											fill
+											sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+											className="object-cover"
+										/>
+									</div>
 									<CardHeader className="space-y-1.5 p-3">
 										<div className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
 											{formatAnnouncementDate(post.publishedAt)}
 										</div>
-										<CardTitle className="text-base leading-snug underline decoration-transparent underline-offset-4 transition hover:decoration-current">
+										<CardTitle className="text-base leading-snug">
 											{post.title}
 										</CardTitle>
 										<CardDescription className="line-clamp-2 text-sm leading-5">
