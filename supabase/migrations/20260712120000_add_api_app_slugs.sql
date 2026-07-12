@@ -25,6 +25,8 @@ $$;
 create or replace function public.assign_api_app_slug()
 returns trigger
 language plpgsql
+security definer
+set search_path = public, pg_temp
 as $$
 declare
   base_slug text;
