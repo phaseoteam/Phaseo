@@ -25,7 +25,7 @@ type StaticSponsor = {
 };
 
 export const metadata = buildMetadata({
-	title: "Contributors & Sponsors",
+	title: "Contribute",
 	description:
 		"Meet the contributors and sponsors supporting Phaseo, browse community profiles and contribution history, and find clear ways to participate, sponsor, or help improve the platform.",
 	path: "/contribute",

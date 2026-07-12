@@ -4,7 +4,7 @@ import CountriesGrid from "@/components/(data)/countries/CountryGrid";
 import { fetchFrontendCountrySummaries } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 
 export const metadata: Metadata = {
-	title: "AI Models By Country - Global Model Landscape",
+	title: "AI by Country",
 	description:
 		"Explore AI organisations and their models grouped by country. See where AI development is concentrated globally and how different regions contribute to the evolving model ecosystem.",
 	keywords: [

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
-	title: "Video Studio - Phaseo Chat",
+	title: "Video Studio",
 	description: "Prompt-first video generation workspace with async polling.",
 	path: "/chat/video",
 	keywords: ["AI video generation", "video studio", "Phaseo chat"],

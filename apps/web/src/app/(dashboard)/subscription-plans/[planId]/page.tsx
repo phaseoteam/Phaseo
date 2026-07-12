@@ -73,7 +73,7 @@ export async function generateMetadata(props: {
 	].filter(Boolean);
 
 	return buildMetadata({
-		title: `${plan.name} – Pricing, Limits & Features`,
+		title: `${plan.name} Plan`,
 		description: descriptionParts.join(" "),
 		path,
 		keywords: [

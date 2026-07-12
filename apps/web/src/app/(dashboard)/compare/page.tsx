@@ -13,7 +13,7 @@ import CompareDashboard from "@/components/(data)/compare/CompareDashboard";
 import type { CompareGatewayUsageByModel } from "@/components/(data)/compare/types";
 
 export const metadata: Metadata = buildMetadata({
-	title: "Compare AI Models Side-by-Side",
+	title: "Compare Models",
 	description:
 		"Stack up to four AI models with benchmarks in common, gateway performance, pricing, context windows, and subscription availability in one shareable view.",
 	path: "/compare",

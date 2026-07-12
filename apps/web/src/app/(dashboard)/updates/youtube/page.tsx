@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
-	title: "YouTube AI Updates – Livestreams, Explainers & Release Breakdowns",
+	title: "AI Video Updates",
 	description:
 		"Browse the latest AI-related YouTube updates tracked by Phaseo. See livestreams, explainers, release breakdowns and analysis videos from top AI channels in one place.",
 	path: "/updates/youtube",

@@ -3,7 +3,7 @@ import { ChatViewportLock } from "@/app/chat/ChatViewportLock";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
-	title: "AI Chat Playground",
+	title: "AI Chat",
 	description:
 		"Chat with gateway models, tune parameters, and compare responses in one playground.",
 	path: "/chat",

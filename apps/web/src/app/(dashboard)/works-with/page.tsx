@@ -7,7 +7,7 @@ import apps from "@/data/works-with-phaseo.json";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata = buildMetadata({
-	title: "Works with Phaseo",
+	title: "Works With",
 	description:
 		"Discover apps and integrations built with the Phaseo Gateway, including production tools, open-source projects, and community launches across different workflows and teams.",
 	path: "/works-with",
