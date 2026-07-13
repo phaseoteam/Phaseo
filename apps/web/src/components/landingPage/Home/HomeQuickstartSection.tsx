@@ -16,9 +16,11 @@ import {
 	MessageSquareText,
 	Mic,
 	Music2,
+	Radio,
 	Sparkles,
 	Subtitles,
 	Video,
+	Workflow,
 } from "lucide-react";
 import NumberFlow from "@number-flow/react";
 import { Logo } from "@/components/Logo";
@@ -84,10 +86,10 @@ const BENEFITS_DEFAULT: Benefit[] = [
 		visual: "models",
 	},
 	{
-		title: "Multimodal Playground",
-		body: "Move between text, images, video, speech, transcription, music, moderation, and embeddings.",
-		href: "/chat",
-		cta: "Try Chat",
+		title: "Every AI workload",
+		body: "Build with text, images, video, audio, realtime, batch, and more through one API.",
+		href: "https://phaseo.app/docs/v1",
+		cta: "Explore Gateway",
 		visual: "modalities",
 	},
 	{
@@ -533,6 +535,8 @@ const MODALITIES = [
 	{ label: "Music", detail: "Generate audio", icon: Music2 },
 	{ label: "Moderation", detail: "Text & images", icon: BadgeCheck },
 	{ label: "Embeddings", detail: "Vector search", icon: Sparkles },
+	{ label: "Realtime", detail: "Live interactions", icon: Radio },
+	{ label: "Batch", detail: "Async processing", icon: Workflow },
 ] as const;
 
 function ModalityTicker({
@@ -550,7 +554,7 @@ function ModalityTicker({
 				className="space-y-1.5 px-0.5 py-1 motion-reduce:[animation:none]"
 				style={{ animation: `modality-ticker ${speed}s linear infinite` }}
 			>
-					{loopedModalities.map((modality, index) => {
+				{loopedModalities.map((modality, index) => {
 						const Icon = modality.icon;
 
 						return (
@@ -569,7 +573,7 @@ function ModalityTicker({
 								</span>
 							</div>
 						);
-					})}
+				})}
 			</div>
 		</div>
 	);
@@ -589,12 +593,12 @@ function ModalitiesVisual() {
 						Supported modes
 					</span>
 					<span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500">
-						{MODALITIES.length} workspaces
+						{MODALITIES.length} workloads
 					</span>
 				</div>
 				<div className="grid grid-cols-2 gap-2">
-					<ModalityTicker modalities={columns[0]} speed={13} />
-					<ModalityTicker modalities={columns[1]} speed={17} />
+					<ModalityTicker modalities={columns[0]} speed={16} />
+					<ModalityTicker modalities={columns[1]} speed={16} />
 				</div>
 			</div>
 		</VisualStage>
