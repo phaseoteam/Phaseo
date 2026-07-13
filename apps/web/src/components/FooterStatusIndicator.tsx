@@ -202,7 +202,7 @@ export function FooterStatusIndicator() {
 
 	return (
 		<span
-			className="group/status relative inline-flex after:absolute after:bottom-full after:left-0 after:h-4 after:w-[min(92vw,32rem)] after:content-['']"
+			className="group/status relative inline-flex after:absolute after:bottom-full after:left-0 after:h-4 after:w-[min(88vw,24rem)] after:content-['']"
 			onPointerEnter={openPopover}
 			onPointerLeave={closePopover}
 			onFocus={openPopover}
@@ -229,7 +229,7 @@ export function FooterStatusIndicator() {
 				<ArrowUpRight className="h-3.5 w-3.5 opacity-55 transition-transform group-hover/status:-translate-y-0.5 group-hover/status:translate-x-0.5 group-hover/status:opacity-100" />
 			</Link>
 			<span
-				className={`absolute bottom-[calc(100%+0.5rem)] left-0 z-50 w-[min(92vw,32rem)] overflow-hidden rounded-xl border border-zinc-200 bg-white text-left shadow-xl shadow-zinc-950/10 dark:border-zinc-800 dark:bg-zinc-950 dark:shadow-black/30 ${
+				className={`absolute bottom-[calc(100%+0.5rem)] left-0 z-50 w-[min(88vw,24rem)] overflow-hidden rounded-xl border border-zinc-200 bg-white text-left shadow-xl shadow-zinc-950/10 dark:border-zinc-800 dark:bg-zinc-950 dark:shadow-black/30 ${
 					open ? "block" : "hidden"
 				}`}
 			>
