@@ -8,16 +8,30 @@ import {
 	type ReactNode,
 } from "react";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import {
+	ArrowRight,
+	AudioLines,
+	BadgeCheck,
+	ImageIcon,
+	MessageSquareText,
+	Mic,
+	Music2,
+	Radio,
+	Sparkles,
+	Subtitles,
+	Video,
+	Workflow,
+} from "lucide-react";
 import NumberFlow from "@number-flow/react";
 import { Logo } from "@/components/Logo";
+import { getModalityTone } from "@/lib/models/modalityStyles";
 
 type Benefit = {
 	title: string;
 	body: string;
 	href: string;
 	cta: string;
-	visual: "models" | "uptime" | "observability" | "database";
+	visual: "models" | "uptime" | "observability" | "database" | "modalities";
 };
 
 type QuickstartVariant = "default" | "beta";
@@ -71,6 +85,13 @@ const BENEFITS_DEFAULT: Benefit[] = [
 		href: "/models",
 		cta: "Browse models",
 		visual: "models",
+	},
+	{
+		title: "Every AI Workload",
+		body: "Build with text, images, video, audio, moderation, embeddings, and more through one API.",
+		href: "https://phaseo.app/docs/v1",
+		cta: "Explore Gateway",
+		visual: "modalities",
 	},
 	{
 		title: "Request Observability",
@@ -506,6 +527,86 @@ function UptimeVisual({ variant = "default" }: { variant?: QuickstartVariant }) 
 	);
 }
 
+const WORKLOADS = [
+	{ label: "Text", detail: "Chat & responses", icon: MessageSquareText, tone: "text" },
+	{ label: "Images", detail: "Generate & edit", icon: ImageIcon, tone: "image" },
+	{ label: "Video", detail: "Prompt to video", icon: Video, tone: "video" },
+	{ label: "Text to Speech", detail: "Natural voice", icon: Mic, tone: "audio_tts" },
+	{ label: "Transcription", detail: "Speech to text", icon: Subtitles, tone: "audio_stt" },
+	{ label: "Music", detail: "Generate audio", icon: Music2, tone: "audio_music" },
+	{ label: "Moderation", detail: "Text & images", icon: BadgeCheck, tone: "moderations" },
+	{ label: "Embeddings", detail: "Vector search", icon: Sparkles, tone: "embeddings" },
+	{ label: "Realtime", detail: "Live interactions", icon: Radio, tone: "rerank" },
+	{ label: "Batch", detail: "Async processing", icon: Workflow, tone: "file" },
+] as const;
+
+function ModalityTicker({
+	workloads,
+	speed,
+}: {
+	workloads: readonly (typeof WORKLOADS)[number][];
+	speed: number;
+}) {
+	const loopedWorkloads = [...workloads, ...workloads];
+
+	return (
+		<div className="h-[150px] overflow-hidden">
+			<div
+				className="space-y-1.5 px-0.5 py-1 motion-reduce:[animation:none]!"
+				style={{ animation: `modality-ticker ${speed}s linear infinite` }}
+			>
+				{loopedWorkloads.map((workload, index) => {
+					const Icon = workload.icon;
+					const tone = getModalityTone(workload.tone);
+
+					return (
+						<div
+							key={`${workload.label}-${index}`}
+							className="flex h-[46px] items-center gap-2 rounded-xl border border-zinc-200/80 bg-white/80 px-2.5 py-2 dark:border-zinc-800/80 dark:bg-zinc-950/80"
+						>
+							<Icon className={`h-3.5 w-3.5 shrink-0 ${tone.iconClassName}`} />
+							<span className="min-w-0 flex-1">
+								<span className="block whitespace-nowrap text-[10px] font-semibold leading-tight text-zinc-950 dark:text-zinc-50">
+									{workload.label}
+								</span>
+								<span className="mt-0.5 block whitespace-nowrap text-[9px] leading-tight text-zinc-500 dark:text-zinc-400">
+									{workload.detail}
+								</span>
+							</span>
+						</div>
+					);
+				})}
+			</div>
+		</div>
+	);
+}
+
+function ModalitiesVisual() {
+	const columns = [
+		WORKLOADS.filter((_, index) => index % 2 === 0),
+		WORKLOADS.filter((_, index) => index % 2 === 1),
+	] as const;
+
+	return (
+		<VisualStage>
+			<div className="w-full max-w-[340px] space-y-2.5">
+				<div className="flex items-center justify-between px-1">
+					<span className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
+						Gateway capabilities
+					</span>
+					<span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500">
+						{WORKLOADS.length} workloads
+					</span>
+				</div>
+				<div className="grid grid-cols-2 gap-2">
+					<ModalityTicker workloads={columns[0]} speed={16} />
+					<ModalityTicker workloads={columns[1]} speed={16} />
+				</div>
+			</div>
+		</VisualStage>
+	);
+}
+
 function ObservabilityVisual() {
 	const requests = [
 		{
@@ -933,6 +1034,8 @@ function BenefitVisual({
 			return <ModelsVisual variant={variant} />;
 		case "uptime":
 			return <UptimeVisual variant={variant} />;
+		case "modalities":
+			return <ModalitiesVisual />;
 		case "observability":
 			return <ObservabilityVisual />;
 		case "database":
@@ -950,7 +1053,7 @@ export default function HomeQuickstartSection({
 
 	return (
 		<div className="mx-auto mt-6 max-w-7xl">
-			<div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+			<div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
 				{benefits.map((benefit) => (
 					<Link
 						key={benefit.title}

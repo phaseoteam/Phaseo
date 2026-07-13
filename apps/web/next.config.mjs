@@ -32,6 +32,9 @@ const nextConfig = {
     ? { allowedDevOrigins: configuredAllowedDevOrigins }
     : {}),
   cacheComponents: true,
+  images: {
+    qualities: [75, 90],
+  },
   env: {
     NEXT_PUBLIC_DEPLOY_TIME:
       process.env.NEXT_PUBLIC_DEPLOY_TIME ?? new Date().toISOString(),

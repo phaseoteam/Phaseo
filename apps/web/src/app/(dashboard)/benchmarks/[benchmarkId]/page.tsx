@@ -100,7 +100,7 @@ export async function generateMetadata(props: {
 	];
 
 	return buildMetadata({
-		title: `${cleanName} - Benchmark Leaderboard & Model Performance`,
+		title: `${cleanName} Benchmark`,
 		description: descriptionParts.filter(Boolean).join(" "),
 		path,
 		keywords: [

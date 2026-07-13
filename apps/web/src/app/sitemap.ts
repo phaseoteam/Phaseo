@@ -9,13 +9,10 @@ import {
 	fetchFrontendBenchmarks,
 	fetchFrontendCountrySummaries,
 	fetchFrontendMarketplacePresets,
-	fetchFrontendModels,
 	fetchFrontendOrganisations,
-	fetchFrontendPublicAppIds,
 	fetchFrontendSubscriptionPlans,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { SITE_URL } from "@/lib/seo";
-import { analyseModelIndexability } from "@/lib/seo/modelIndexability";
 
 // Cache sitemap output at the edge to avoid repeated compute (and Fast Origin Transfer)
 // from crawlers hitting `/sitemap.xml` frequently.
@@ -26,7 +23,7 @@ type ChangeFrequency = NonNullable<SitemapEntry["changeFrequency"]>;
 
 type SitemapItem = {
     url: string;
-    lastModified: string;
+    lastModified?: string;
     changeFrequency: ChangeFrequency;
     priority: number;
 };
@@ -35,29 +32,6 @@ type RouteSuffix = {
     suffix: string;
     changeFrequency: ChangeFrequency;
     priority: number;
-};
-
-type ModelSitemapSource = {
-	model_id?: string | null;
-	name?: string | null;
-	organisation_id?: string | null;
-	organisation_name?: string | null;
-	status?: string | null;
-	hidden?: boolean | null;
-	release_date?: string | null;
-	updated_at?: string | null;
-	primary_date?: string | null;
-	announcement_date?: string | null;
-	api_model_id?: string | null;
-	gateway_api_model_ids?: string[] | null;
-	input_types?: string[] | null;
-	output_types?: string[] | null;
-	gateway_provider_count?: number | null;
-	gateway_active_provider_count?: number | null;
-	lowest_input_price?: number | null;
-	lowest_output_price?: number | null;
-	context_lengths?: number[] | null;
-	supported_parameters?: string[] | null;
 };
 
 const baseUrl = SITE_URL;
@@ -71,7 +45,6 @@ const staticRoutes: Array<{
         { path: "/rankings", changeFrequency: "daily", priority: 0.95 },
         { path: "/models", changeFrequency: "weekly", priority: 0.9 },
         { path: "/api-providers", changeFrequency: "weekly", priority: 0.8 },
-        { path: "/apps", changeFrequency: "weekly", priority: 0.75 },
         { path: "/benchmarks", changeFrequency: "weekly", priority: 0.8 },
         { path: "/organisations", changeFrequency: "weekly", priority: 0.75 },
         { path: "/countries", changeFrequency: "weekly", priority: 0.75 },
@@ -119,18 +92,8 @@ const staticRoutes: Array<{
         { path: "/terms", changeFrequency: "yearly", priority: 0.3 },
     ];
 
-const MODEL_SUFFIXES: RouteSuffix[] = [
-    { suffix: "", changeFrequency: "monthly", priority: 0.78 },
-    { suffix: "/quickstart", changeFrequency: "monthly", priority: 0.65 },
-    { suffix: "/benchmarks", changeFrequency: "monthly", priority: 0.65 },
-    { suffix: "/providers", changeFrequency: "monthly", priority: 0.6 },
-    { suffix: "/family", changeFrequency: "monthly", priority: 0.6 },
-    { suffix: "/performance", changeFrequency: "monthly", priority: 0.6 },
-];
-
 const PROVIDER_SUFFIXES: RouteSuffix[] = [
-    { suffix: "", changeFrequency: "weekly", priority: 0.75 },
-    { suffix: "/models", changeFrequency: "weekly", priority: 0.65 },
+	{ suffix: "", changeFrequency: "weekly", priority: 0.75 },
 ];
 
 const ORGANISATION_SUFFIXES: RouteSuffix[] = [
@@ -153,10 +116,6 @@ const MARKETPLACE_PRESET_SUFFIXES: RouteSuffix[] = [
     { suffix: "", changeFrequency: "weekly", priority: 0.55 },
 ];
 
-const APP_SUFFIXES: RouteSuffix[] = [
-	{ suffix: "", changeFrequency: "weekly", priority: 0.55 },
-];
-
 function buildRouteUrl(route: string): string {
     if (route.startsWith("http")) {
         return route;
@@ -168,11 +127,11 @@ function createItem(
     route: string,
     changeFrequency: ChangeFrequency,
     priority: number,
-    lastModified: string,
+    lastModified?: string | null,
 ): SitemapItem {
     return {
         url: buildRouteUrl(route),
-        lastModified,
+        ...(lastModified ? { lastModified } : {}),
         changeFrequency,
         priority,
     };
@@ -208,61 +167,6 @@ function normalizeSingleSegmentSlugs(list?: string[], label?: string): string[] 
 	return [...normalized].sort();
 }
 
-function normalizeModelRouteSlugs(models?: ModelSitemapSource[]): string[] {
-	const normalized = new Set<string>();
-	let dropped = 0;
-
-	(models ?? []).forEach((model) => {
-		const rawModelId = String(model?.model_id ?? "")
-			.trim()
-			.replace(/^\/+|\/+$/g, "");
-		if (!rawModelId) {
-			return;
-		}
-
-		const parts = rawModelId.split("/").filter(Boolean);
-		if (parts.length !== 2) {
-			dropped += 1;
-			return;
-		}
-
-		normalized.add(rawModelId);
-	});
-
-	if (dropped > 0) {
-		console.warn(
-			`[sitemap] dropped ${dropped} malformed model slug(s) that do not match /models/{organisationId}/{modelId}`,
-		);
-	}
-
-	return [...normalized].sort();
-}
-
-function isModelIndexableForSitemap(model: ModelSitemapSource): boolean {
-	return analyseModelIndexability({
-		modelId: model.model_id,
-		name: model.name,
-		organisationId: model.organisation_id,
-		organisationName: model.organisation_name,
-		status: model.status,
-		hidden: model.hidden,
-		releaseDate: model.release_date,
-		announcementDate: model.announcement_date,
-		updatedAt: model.updated_at,
-		primaryDate: model.primary_date,
-		apiModelId: model.api_model_id,
-		apiModelIds: model.gateway_api_model_ids,
-		inputTypes: model.input_types,
-		outputTypes: model.output_types,
-		providerCount: model.gateway_provider_count,
-		activeProviderCount: model.gateway_active_provider_count,
-		lowestInputPrice: model.lowest_input_price,
-		lowestOutputPrice: model.lowest_output_price,
-		contextLengths: model.context_lengths,
-		supportedParameters: model.supported_parameters,
-	}).indexable;
-}
-
 function fromSettled<T>(
 	result: PromiseSettledResult<T>,
 	label: string,
@@ -279,7 +183,7 @@ function applySuffixes(
     prefix: string,
     slugs: string[],
     suffixes: RouteSuffix[],
-    lastModified: string,
+    lastModified?: string | null,
 ): SitemapItem[] {
     if (!slugs.length) {
         return [];
@@ -319,7 +223,6 @@ function applySuffixesWithEntries<T extends { slug: string; lastModified?: strin
 	prefix: string,
 	entries: T[],
 	suffixes: RouteSuffix[],
-	fallbackLastModified: string,
 ): SitemapItem[] {
 	if (!entries.length) {
 		return [];
@@ -336,7 +239,7 @@ function applySuffixesWithEntries<T extends { slug: string; lastModified?: strin
 					route,
 					suffix.changeFrequency,
 					suffix.priority,
-					entry.lastModified ?? fallbackLastModified,
+					entry.lastModified,
 				),
 			);
 		}
@@ -346,55 +249,32 @@ function applySuffixesWithEntries<T extends { slug: string; lastModified?: strin
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-	const lastModified =
-		process.env.NEXT_PUBLIC_DEPLOY_TIME ?? new Date().toISOString();
+	// `lastmod` must describe a content change, not a deployment. Omit it until
+	// a route has a reliable source timestamp rather than sending false freshness.
 	const staticItems = staticRoutes.map((route) =>
-		createItem(route.path, route.changeFrequency, route.priority, lastModified),
+		createItem(route.path, route.changeFrequency, route.priority),
 	);
 
 	const [
-		modelsResult,
 		apiProvidersResult,
 		organisationsResult,
 		benchmarksResult,
 		plansResult,
 		countriesResult,
 		marketplacePresetsResult,
-		publicAppsResult,
 		helpCategoryResult,
 		helpArticleResult,
 	] = await Promise.allSettled([
-		fetchFrontendModels(),
 		fetchFrontendAPIProviders(),
 		fetchFrontendOrganisations(),
 		fetchFrontendBenchmarks(false),
 		fetchFrontendSubscriptionPlans(),
 		fetchFrontendCountrySummaries(),
 		fetchFrontendMarketplacePresets(),
-		fetchFrontendPublicAppIds(),
 		getHelpCategoryParams(),
 		getHelpArticleParams(),
 	]);
 
-	const modelsForSitemap = fromSettled(modelsResult, "models for sitemap", []);
-	const indexableModelsForSitemap = modelsForSitemap.filter(
-		isModelIndexableForSitemap,
-	);
-	const modelSlugs = normalizeModelRouteSlugs(indexableModelsForSitemap);
-	const modelEntries = modelSlugs.map((slug) => {
-		const source = indexableModelsForSitemap.find(
-			(model) => String(model.model_id ?? "").trim() === slug,
-		);
-		return {
-			slug,
-			lastModified:
-				resolveLastModified(
-					source?.updated_at,
-					source?.primary_date,
-					source?.announcement_date,
-				) ?? lastModified,
-		};
-	});
 	const providersForSitemap = fromSettled(
 		apiProvidersResult,
 		"api providers for sitemap",
@@ -412,8 +292,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		);
 		return {
 			slug,
-			lastModified:
-				resolveLastModified(source?.last_updated_at) ?? lastModified,
+			lastModified: resolveLastModified(source?.last_updated_at),
 		};
 	});
 	const organisationSlugs = normalizeSingleSegmentSlugs(
@@ -448,59 +327,41 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		).map((preset) => String(preset.id ?? "").trim()),
 		"marketplace preset",
 	);
-	const publicAppIds = normalizeSingleSegmentSlugs(
-		fromSettled(publicAppsResult, "public apps for sitemap", []),
-		"public app",
-	);
-
 	const dynamicItems = [
-		...applySuffixesWithEntries(
-			"/models",
-			modelEntries,
-			MODEL_SUFFIXES,
-			lastModified,
-		),
 		...applySuffixesWithEntries(
 			"/api-providers",
 			providerEntries,
 			PROVIDER_SUFFIXES,
-			lastModified
 		),
 		...applySuffixes(
 			"/organisations",
 			organisationSlugs,
 			ORGANISATION_SUFFIXES,
-			lastModified
 		),
 		...applySuffixes(
 			"/benchmarks",
 			benchmarkSlugs,
 			BENCHMARK_SUFFIXES,
-			lastModified
 		),
 		...applySuffixes(
 			"/subscription-plans",
 			planSlugs,
 			PLAN_SUFFIXES,
-			lastModified
 		),
 		...applySuffixes(
 			"/countries",
 			countrySlugs,
 			COUNTRY_SUFFIXES,
-			lastModified
 		),
 		...applySuffixes(
 			"/gateway/marketplace",
 			marketplacePresetSlugs,
 			MARKETPLACE_PRESET_SUFFIXES,
-			lastModified
 		),
 	];
 
-	const appItems = applySuffixes("/apps", publicAppIds, APP_SUFFIXES, lastModified);
 	const migrationItems = getMigrationPosts().map((post) =>
-		createItem(`/migrate/${post.slug}`, "weekly", 0.6, post.updatedAt || lastModified),
+		createItem(`/migrate/${post.slug}`, "weekly", 0.6, post.updatedAt),
 	);
 
 	const helpCategoryParams = fromSettled(
@@ -524,7 +385,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 				`/help/${entry.category}`,
 				"weekly",
 				0.55,
-				lastModified,
 			),
 		);
 	const helpArticleItems = helpArticleParams
@@ -540,7 +400,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 				`/help/${entry.category}/${entry.slug}`,
 				"monthly",
 				0.5,
-				lastModified,
 			),
 		);
 
@@ -549,7 +408,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		...helpCategoryItems,
 		...helpArticleItems,
 		...dynamicItems,
-		...appItems,
 		...migrationItems,
 	];
 }

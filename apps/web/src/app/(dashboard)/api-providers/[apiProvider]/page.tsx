@@ -58,7 +58,7 @@ export async function generateMetadata(props: {
 		.join(" ");
 
 	return buildMetadata({
-		title: `${providerName} - API performance, Latency & Usage analytics`,
+		title: `${providerName} API`,
 		description,
 		path: `/api-providers/${apiProvider}`,
 		keywords: [

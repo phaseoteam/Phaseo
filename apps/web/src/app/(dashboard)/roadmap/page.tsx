@@ -22,7 +22,7 @@ import {
 } from "@/lib/roadmap";
 
 export const metadata: Metadata = {
-	title: "Roadmap - What We're Building Next For Phaseo",
+	title: "Roadmap",
 	description:
 		"Follow the Phaseo roadmap to see what we're building next. Track upcoming features and shipped milestones for the AI model database, gateway, and analytics tools.",
 	keywords: [

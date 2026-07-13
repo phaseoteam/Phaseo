@@ -4,7 +4,7 @@ import { MigrationGuide } from "@/components/(migrate)/MigrationGuide";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
-	title: "Migrate to Phaseo Gateway",
+	title: "Migrate",
 	description:
 		"Interactive migration guide to move from OpenRouter, Vercel AI Gateway, Requesty, LLMGateway, and OpenAI-compatible libraries to Phaseo Gateway.",
 	path: "/migrate",

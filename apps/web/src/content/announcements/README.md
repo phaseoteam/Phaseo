@@ -11,6 +11,7 @@ Each file should start with YAML frontmatter:
 ```md
 ---
 title: Your Blog Post Title
+shortTitle: Optional shorter title for homepage cards.
 description: A short summary shown in blog cards.
 publishedAt: 2026-04-19
 updatedAt: 2026-04-20
