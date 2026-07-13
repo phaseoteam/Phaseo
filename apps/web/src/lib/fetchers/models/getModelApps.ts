@@ -25,11 +25,11 @@ type ModelAppsRollupRpcRow = {
 	last_seen: string | null;
 };
 
-type ModelAppsRequestRow = {
-	id: string | null;
+type ModelAppsDailyRollupRow = {
 	app_id: string | null;
-	success: boolean | null;
-	usage: unknown;
+	requests: number | string | null;
+	success_requests: number | string | null;
+	total_tokens: number | string | null;
 };
 
 type ModelAppMetadataRow = {
@@ -53,31 +53,6 @@ function bigintToDisplayNumber(value: bigint): number {
 	if (value <= BIGINT_ZERO) return 0;
 	if (value > BIGINT_MAX_SAFE) return Number.MAX_SAFE_INTEGER;
 	return Number(value);
-}
-
-function toRecord(value: unknown): Record<string, unknown> | null {
-	if (!value || typeof value !== "object") return null;
-	return value as Record<string, unknown>;
-}
-
-function readUsageInt(usage: Record<string, unknown> | null, key: string): number {
-	if (!usage) return 0;
-	const parsed = Number(usage[key]);
-	return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 0;
-}
-
-function getTotalTokensFromUsage(usageValue: unknown): bigint {
-	const usage = toRecord(usageValue);
-	const directTotal =
-		readUsageInt(usage, "total_tokens") || readUsageInt(usage, "tokens");
-	if (directTotal > 0) return BigInt(directTotal);
-
-	return BigInt(
-		readUsageInt(usage, "input_tokens") +
-			readUsageInt(usage, "output_tokens") +
-			readUsageInt(usage, "prompt_tokens") +
-			readUsageInt(usage, "completion_tokens"),
-	);
 }
 
 function isMissingRelationError(error: unknown): boolean {
@@ -169,7 +144,7 @@ async function fetchModelAppsFromRollupRpc(args: {
 		if (isMissingRelationError(error)) {
 			return null;
 		}
-		console.warn("[model-apps] rpc get_usage_model_apps failed; falling back to row pagination", {
+		console.warn("[model-apps] rpc get_usage_model_apps failed; falling back to daily rollups", {
 			modelId: args.modelId,
 			error,
 		});
@@ -194,59 +169,48 @@ async function fetchModelAppsFromDailyRollupsFallback(args: {
 		string,
 		{ requests: bigint; success: bigint; tokens: bigint }
 	>();
-	const seenRequestIds = new Set<string>();
 
-	const fetchByColumn = async (column: "canonical_model_id" | "model_id") => {
-		for (let offset = 0; ; offset += PAGE_SIZE) {
-			const { data, error } = await args.client
-				.from("gateway_requests")
-				.select("id, app_id, success, usage")
-				.in(column, args.aliases)
-				.not("app_id", "is", null)
-				.order("created_at", { ascending: true })
-				.order("id", { ascending: true })
-				.range(offset, offset + PAGE_SIZE - 1);
+	for (let offset = 0; ; offset += PAGE_SIZE) {
+		const { data, error } = await args.client
+			.from("gateway_usage_rollup_daily_app_model")
+			.select("app_id, requests, success_requests, total_tokens")
+			.in("canonical_model_id", args.aliases)
+			.not("app_id", "is", null)
+			.order("day_bucket", { ascending: true })
+			.order("app_id", { ascending: true })
+			.range(offset, offset + PAGE_SIZE - 1);
 
-			if (error) {
-				if (!isMissingRelationError(error)) {
-					console.warn("[model-apps] failed to load model app usage rows", {
-						modelId: args.modelId,
-						column,
-						error,
-					});
-				}
-				return;
+		if (error) {
+			if (!isMissingRelationError(error)) {
+				console.warn("[model-apps] failed to load model app usage rollups", {
+					modelId: args.modelId,
+					error,
+				});
 			}
-
-			if (!Array.isArray(data) || data.length === 0) break;
-
-			for (const row of data as ModelAppsRequestRow[]) {
-				const requestId = String(row?.id ?? "").trim();
-				if (requestId) {
-					if (seenRequestIds.has(requestId)) continue;
-					seenRequestIds.add(requestId);
-				}
-
-				const appId = String(row?.app_id ?? "").trim();
-				if (!appId) continue;
-
-				const existing = aggregate.get(appId) ?? {
-					requests: BIGINT_ZERO,
-					success: BIGINT_ZERO,
-					tokens: BIGINT_ZERO,
-				};
-				existing.requests += BigInt(1);
-				if (row?.success) existing.success += BigInt(1);
-				existing.tokens += getTotalTokensFromUsage(row?.usage);
-				aggregate.set(appId, existing);
-			}
-
-			if (data.length < PAGE_SIZE) break;
+			return [];
 		}
-	};
 
-	await fetchByColumn("canonical_model_id");
-	await fetchByColumn("model_id");
+		if (!Array.isArray(data) || data.length === 0) break;
+
+		for (const row of data as ModelAppsDailyRollupRow[]) {
+			const appId = String(row?.app_id ?? "").trim();
+			if (!appId) continue;
+
+			const existing = aggregate.get(appId) ?? {
+				requests: BIGINT_ZERO,
+				success: BIGINT_ZERO,
+				tokens: BIGINT_ZERO,
+			};
+			existing.requests += BigInt(Math.max(0, Math.round(toNumber(row?.requests))));
+			existing.success += BigInt(
+				Math.max(0, Math.round(toNumber(row?.success_requests))),
+			);
+			existing.tokens += BigInt(Math.max(0, Math.round(toNumber(row?.total_tokens))));
+			aggregate.set(appId, existing);
+		}
+
+		if (data.length < PAGE_SIZE) break;
+	}
 
 	if (aggregate.size === 0) return [];
 

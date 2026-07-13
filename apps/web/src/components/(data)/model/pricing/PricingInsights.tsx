@@ -215,6 +215,32 @@ function useSortedRows(rows: EffectiveRow[], sortKey: SortKey | null, direction:
 		}
 
 		return [...rows].sort((a, b) => {
+			const sortableValue = (row: EffectiveRow): number | null => {
+				switch (sortKey) {
+					case "input":
+						return row.inputPricePer1M;
+					case "output":
+						return row.outputPricePer1M;
+					case "cacheHitRate":
+						return row.cacheHitRatePct;
+					case "tokenShare":
+						return row.tokenSharePct;
+					default:
+						return null;
+				}
+			};
+
+			if (sortKey !== "provider") {
+				const left = sortableValue(a);
+				const right = sortableValue(b);
+				if (left == null || right == null) {
+					if (left == null && right == null) {
+						return a.providerName.localeCompare(b.providerName);
+					}
+					return left == null ? 1 : -1;
+				}
+			}
+
 			const compareNumber = (left: number | null, right: number | null) => {
 				if (left == null && right == null) return 0;
 				if (left == null) return 1;
