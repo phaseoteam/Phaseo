@@ -523,7 +523,7 @@ jobs:
               if: ${{ env.VERCEL_PROJECT_ID != '' }}
               run: |
                   vercel pull --yes --environment=preview --git-branch="$GITHUB_HEAD_REF" --token=$VERCEL_TOKEN
-                  preview_url="$(vercel deploy --yes --archive=tgz --token=$VERCEL_TOKEN)"
+                  preview_url="$(vercel deploy --yes --force --archive=tgz --token=$VERCEL_TOKEN)"
                   echo "url=$preview_url" >> "$GITHUB_OUTPUT"
 
             - name: Update pull request preview link
