@@ -537,16 +537,27 @@ const MODALITIES = [
 
 function ModalitiesVisual() {
 	const [activeIndex, setActiveIndex] = useState(0);
+	const [isSliding, setIsSliding] = useState(false);
 
 	useEffect(() => {
-		const timer = window.setInterval(() => {
+		if (isSliding) return;
+
+		const timer = window.setTimeout(() => setIsSliding(true), 2400);
+		return () => window.clearTimeout(timer);
+	}, [isSliding]);
+
+	useEffect(() => {
+		if (!isSliding) return;
+
+		const timer = window.setTimeout(() => {
 			setActiveIndex((current) => (current + 1) % MODALITIES.length);
-		}, 2600);
+			setIsSliding(false);
+		}, 480);
 
-		return () => window.clearInterval(timer);
-	}, []);
+		return () => window.clearTimeout(timer);
+	}, [isSliding]);
 
-	const visibleModalities = Array.from({ length: 3 }, (_, index) =>
+	const visibleModalities = Array.from({ length: 4 }, (_, index) =>
 		MODALITIES[(activeIndex + index) % MODALITIES.length],
 	);
 
@@ -561,15 +572,22 @@ function ModalitiesVisual() {
 						{MODALITIES.length} workspaces
 					</span>
 				</div>
-				<div className="space-y-1.5">
-					{visibleModalities.map((modality, index) => {
+				<div className="h-[150px] overflow-hidden">
+					<div
+						className={`space-y-1.5 ${
+							isSliding
+								? "-translate-y-[52px] transition-transform duration-500 ease-in-out"
+								: "translate-y-0"
+						}`}
+					>
+						{visibleModalities.map((modality, index) => {
 						const Icon = modality.icon;
 						const isActive = index === 0;
 
 						return (
 							<div
 								key={modality.label}
-								className={`flex items-center justify-between gap-3 rounded-xl border px-3 py-2 transition-all duration-300 ${
+								className={`flex h-[46px] items-center justify-between gap-3 rounded-xl border px-3 py-2 transition-colors duration-300 ${
 									isActive
 										? "border-zinc-300 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900/70"
 										: "border-zinc-200/80 bg-white/80 dark:border-zinc-800/80 dark:bg-zinc-950/80"
@@ -593,7 +611,8 @@ function ModalitiesVisual() {
 								) : null}
 							</div>
 						);
-					})}
+						})}
+					</div>
 				</div>
 			</div>
 		</VisualStage>
