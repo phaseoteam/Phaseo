@@ -85,6 +85,8 @@ type QuickstartUsageSectionProps = {
 	selectedEndpointLabel: string;
 	selectedEndpointValue: string;
 	endpointOptions: Array<{ value: string; label: string }>;
+	showEndpointControl?: boolean;
+	inlineCopy?: boolean;
 	selectedLanguage: string;
 	selectedLanguageLabel?: string;
 	selectedLanguageFamilyId: string;
@@ -386,6 +388,8 @@ export function QuickstartUsageSection({
 	selectedEndpointLabel,
 	selectedEndpointValue,
 	endpointOptions,
+	showEndpointControl = true,
+	inlineCopy = false,
 	selectedLanguage,
 	selectedLanguageFamilyId,
 	availableLanguageFamilies,
@@ -545,35 +549,37 @@ export function QuickstartUsageSection({
 			<div className="overflow-hidden rounded-xl border border-border/70 bg-card">
 				<div className="flex flex-col gap-2 px-3 py-3">
 					<div className="flex flex-wrap items-center gap-2">
-						<div className="w-full sm:w-28">
-							<Select
-								value={selectedEndpointValue}
-								onValueChange={onSelectEndpoint}
-							>
-								<SelectTrigger className="h-8 w-full rounded-lg bg-muted/60 text-xs">
-									<SelectValue placeholder={selectedEndpointLabel}>
-										{selectedEndpointLabel}
-									</SelectValue>
-								</SelectTrigger>
-								<SelectContent
-									align="start"
-									alignItemWithTrigger={false}
-									className="w-auto min-w-44 rounded-xl"
+						{showEndpointControl ? (
+							<div className="w-full sm:w-28">
+								<Select
+									value={selectedEndpointValue}
+									onValueChange={onSelectEndpoint}
 								>
-									<SelectGroup>
-										<SelectLabel className="text-[11px] tracking-[0.04em] text-muted-foreground">
-											Endpoint
-										</SelectLabel>
-										<SelectSeparator />
-										{endpointOptions.map((option) => (
-											<SelectItem key={option.value} value={option.value}>
-												{option.label}
-											</SelectItem>
-										))}
-									</SelectGroup>
-								</SelectContent>
-							</Select>
-						</div>
+									<SelectTrigger className="h-8 w-full rounded-lg bg-muted/60 text-xs">
+										<SelectValue placeholder={selectedEndpointLabel}>
+											{selectedEndpointLabel}
+										</SelectValue>
+									</SelectTrigger>
+									<SelectContent
+										align="start"
+										alignItemWithTrigger={false}
+										className="w-auto min-w-44 rounded-xl"
+									>
+										<SelectGroup>
+											<SelectLabel className="text-[11px] tracking-[0.04em] text-muted-foreground">
+												Endpoint
+											</SelectLabel>
+											<SelectSeparator />
+											{endpointOptions.map((option) => (
+												<SelectItem key={option.value} value={option.value}>
+													{option.label}
+												</SelectItem>
+											))}
+										</SelectGroup>
+									</SelectContent>
+								</Select>
+							</div>
+						) : null}
 						<div className="w-full sm:w-36">
 							<Select
 								value={selectedLanguageFamilyId}
@@ -641,8 +647,14 @@ export function QuickstartUsageSection({
 								</SelectContent>
 							</Select>
 						</div>
+						{inlineCopy ? (
+							<div className="ml-auto">
+								<MiniCopyButton content={requestExample.code} />
+							</div>
+						) : null}
 					</div>
-					<div className="flex w-full flex-wrap items-center gap-2">
+					{supportsServiceTier || showStreamingControl || !inlineCopy ? (
+						<div className="flex w-full flex-wrap items-center gap-2">
 						{supportsServiceTier ? (
 							<div className="w-full sm:w-32">
 								<Select
@@ -706,10 +718,13 @@ export function QuickstartUsageSection({
 								</span>
 							</div>
 						) : null}
-						<div className="ml-auto">
-							<MiniCopyButton content={requestExample.code} />
+						{!inlineCopy ? (
+							<div className="ml-auto">
+								<MiniCopyButton content={requestExample.code} />
+							</div>
+						) : null}
 						</div>
-					</div>
+					) : null}
 				</div>
 				<Separator />
 				<RequestCodePane code={requestExample.code} lang={requestExample.lang} />

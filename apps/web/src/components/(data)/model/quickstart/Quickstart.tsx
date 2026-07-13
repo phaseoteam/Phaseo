@@ -1753,6 +1753,8 @@ console.log(response);`
 							value: option.value,
 							label: option.label,
 						}))}
+						showEndpointControl={!isModelMetadataQuickstart}
+						inlineCopy={isModelMetadataQuickstart}
 						selectedLanguage={selectedLanguage}
 						selectedLanguageLabel={`${selectedLanguageFamily?.label ?? selectedLanguageLabel} · ${selectedLanguageVariantLabel}`}
 						selectedLanguageFamilyId={selectedLanguageFamily?.id ?? "typescript"}
