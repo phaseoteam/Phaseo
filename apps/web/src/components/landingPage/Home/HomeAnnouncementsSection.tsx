@@ -63,6 +63,7 @@ export default async function HomeAnnouncementsSection() {
 											alt=""
 											fill
 											quality={90}
+											unoptimized={post.coverImage.endsWith(".svg")}
 											sizes="(min-width: 1280px) 25vw, (min-width: 640px) 50vw, 100vw"
 											className="object-cover"
 										/>
@@ -72,7 +73,7 @@ export default async function HomeAnnouncementsSection() {
 											{formatAnnouncementDate(post.publishedAt)}
 										</div>
 										<CardTitle className="text-base leading-snug sm:max-xl:text-sm">
-											{post.title}
+											{post.shortTitle ?? post.title}
 										</CardTitle>
 										<CardDescription className="line-clamp-2 text-sm leading-5 sm:max-xl:text-xs sm:max-xl:leading-4">
 											{post.description}
