@@ -142,7 +142,7 @@ User-created OAuth apps are coming soon. This release keeps OAuth client creatio
 Override behavior when needed:
 
 - `PHASEO_CONFIG_DIR` changes the config/session directory
-- `PHASEO_SESSION_BACKEND=file` forces plain file storage
+- `PHASEO_SESSION_BACKEND=file` explicitly opts into plain-file session storage when an OS credential store is unavailable. This stores refresh tokens on disk and should be used only when you accept that tradeoff.
 - `PHASEO_API_URL` points the CLI at a different API host
 
 ## Local Validation
