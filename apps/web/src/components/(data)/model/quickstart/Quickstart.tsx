@@ -1377,10 +1377,10 @@ puts JSON.pretty_generate(response)`}`;
 });
 
 const response = await fetch(
-  `https://api.phaseo.ai/v1/models?\${query}`,
+  "https://api.phaseo.ai/v1/models?" + query.toString(),
   {
     headers: {
-      Authorization: `Bearer \${process.env.PHASEO_API_KEY}`,
+      Authorization: "Bearer " + process.env.PHASEO_API_KEY,
     },
   },
 );
