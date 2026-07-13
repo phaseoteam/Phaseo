@@ -168,8 +168,11 @@ export default function Footer() {
 						<p className="whitespace-nowrap font-medium tracking-[0.01em] text-zinc-500 dark:text-zinc-400">
 							&copy; <FooterYearRange startYear={startYear} /> {"\u2022"} Phaseo
 						</p>
-						<div className="hidden md:block">
+						<div className="hidden md:block lg:hidden">
 							<ThemeSelector className="py-0" labelSize="sm" showSelectedLabel={false} />
+						</div>
+						<div className="hidden lg:block">
+							<ThemeSelector className="py-0" labelSize="sm" />
 						</div>
 					</div>
 					<p className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-1">
