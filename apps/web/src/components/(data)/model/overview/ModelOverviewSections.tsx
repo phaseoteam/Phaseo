@@ -68,6 +68,7 @@ type ModelOverviewSectionsProps = {
 	showBenchmarks?: boolean;
 	showSubscriptions?: boolean;
 	status?: string | null;
+	isGatewayActive?: boolean;
 	performancePromise?: Promise<ModelPerformanceMetrics | null>;
 	quickstartRequestContext?: QuickstartRequestContext;
 };
@@ -519,12 +520,34 @@ export async function ModelActivitySection({
 export async function ModelQuickstartSection({
 	modelId,
 	includeHidden,
+	isGatewayActive = true,
 	surface = "page",
 	quickstartRequestContext,
 }: ModelSectionSharedProps & {
+	isGatewayActive?: boolean;
 	surface?: ModelSectionSurface;
 	quickstartRequestContext?: QuickstartRequestContext;
 }) {
+	if (!isGatewayActive) {
+		const metadataUrl = `https://api.phaseo.ai/v1/models?model_id=${encodeURIComponent(modelId)}&availability=all`;
+		return (
+			<div className="space-y-3">
+				<p className="text-sm text-muted-foreground">
+					This model is not currently active in the Gateway. You can still retrieve its
+					catalog metadata by querying its model ID.
+				</p>
+				<div className="overflow-x-auto rounded-md border border-border/70 bg-muted/15 p-3">
+					<code className="block min-w-max font-mono text-xs text-foreground">
+						{`curl \"${metadataUrl}\" \\\n  -H \"Authorization: Bearer $PHASEO_API_KEY\"`}
+					</code>
+				</div>
+				<p className="text-xs text-muted-foreground">
+					Model ID: <code className="font-mono text-foreground">{modelId}</code>
+				</p>
+			</div>
+		);
+	}
+
 	const includeInternalProviders = await withOptionalSectionTimeout(
 		isAdminViewer(),
 		false,
@@ -1198,6 +1221,7 @@ export default function ModelOverviewSections({
 	showBenchmarks = true,
 	showSubscriptions = true,
 	status,
+	isGatewayActive = true,
 	performancePromise,
 	quickstartRequestContext,
 }: ModelOverviewSectionsProps) {
@@ -1238,6 +1262,77 @@ export default function ModelOverviewSections({
 								<SectionHeader
 									title="Subscriptions"
 									description="Historical commercial plans and bundled access that listed this model."
+								/>
+								<Suspense fallback={<SubscriptionsSectionSkeleton />}>
+									<ModelSubscriptionsSection
+										modelId={modelId}
+										ownerOrganisationId={model?.organisation_id}
+										ownerOrganisationName={model?.organisation?.name}
+									/>
+								</Suspense>
+							</Section>
+						) : null}
+					</>
+				) : null}
+			</div>
+		);
+	}
+
+	if (!isGatewayActive) {
+		return (
+			<div className="space-y-10">
+				<Section id="providers" showDivider={false}>
+					<SectionHeader
+						title="Providers"
+						description="Provider listings and known route availability for this model."
+					/>
+					<Suspense fallback={<ProvidersSectionSkeleton />}>
+						<ModelProvidersSection modelId={modelId} includeHidden={includeHidden} />
+					</Suspense>
+				</Section>
+				{showBenchmarks ? (
+					<Section id="benchmarks">
+						<SectionHeader
+							title="Benchmarks"
+							description="Headline benchmark standings and comparison context."
+						/>
+						<Suspense fallback={<BenchmarksSectionSkeleton />}>
+							<ModelBenchmarksSection
+								modelId={modelId}
+								includeHidden={includeHidden}
+								hideWhenEmpty
+							/>
+						</Suspense>
+					</Section>
+				) : null}
+				<Section id="quickstart">
+					<SectionHeader
+						title="Model metadata"
+						description="Retrieve catalog metadata for a model that is not currently active in the Gateway."
+					/>
+					<ModelQuickstartSection
+						modelId={modelId}
+						includeHidden={includeHidden}
+						isGatewayActive={false}
+						surface="overview"
+					/>
+				</Section>
+				{hasInternalModelData ? (
+					<>
+						<Section id="about">
+							<SectionHeader
+								title="About"
+								description="Key dates, capabilities, and model metadata."
+							/>
+							<Suspense fallback={<AboutSectionSkeleton />}>
+								<ModelAboutSection model={model!} />
+							</Suspense>
+						</Section>
+						{showSubscriptions ? (
+							<Section id="subscriptions">
+								<SectionHeader
+									title="Subscriptions"
+									description="Commercial plans and bundled access that list this model."
 								/>
 								<Suspense fallback={<SubscriptionsSectionSkeleton />}>
 									<ModelSubscriptionsSection
