@@ -160,7 +160,7 @@ importers:
         version: 0.2.5(@opentelemetry/api@1.9.1)(next@16.2.6(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))
       '@hookform/resolvers':
         specifier: ^5.2.2
-        version: 5.2.2(react-hook-form@7.71.2(react@19.2.7))
+        version: 5.2.2(react-hook-form@7.81.0(react@19.2.7))
       '@next/third-parties':
         specifier: 16.2.6
         version: 16.2.6(next@16.2.6(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)
@@ -429,8 +429,8 @@ importers:
         specifier: ^1.6.5
         version: 1.6.5(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       react-hook-form:
-        specifier: ^7.71.1
-        version: 7.71.2(react@19.2.7)
+        specifier: ^7.81.0
+        version: 7.81.0(react@19.2.7)
       react-markdown:
         specifier: ^10.1.0
         version: 10.1.0(@types/react@19.2.17)(react@19.2.7)
@@ -10137,8 +10137,8 @@ packages:
       react: '>= 16.8.0 || ^18.0.0'
       react-dom: '>= 16.8.0 || ^18.0.0'
 
-  react-hook-form@7.71.2:
-    resolution: {integrity: sha512-1CHvcDYzuRUNOflt4MOq3ZM46AronNJtQ1S7tnX6YN4y72qhgiUItpacZUAQ0TyWYci3yz1X+rXaSxiuEm86PA==}
+  react-hook-form@7.81.0:
+    resolution: {integrity: sha512-ocbmr2p5KBMoAfj4WCUvped33lVi1Kd5DuDUvQDnB6VEAacOjPI/jMbtDdbhco4y9ct4xUuCmMY0b/C9L0QHjw==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       react: ^16.8.0 || ^17 || ^18 || ^19
@@ -12915,10 +12915,10 @@ snapshots:
     dependencies:
       hono: 4.12.27
 
-  '@hookform/resolvers@5.2.2(react-hook-form@7.71.2(react@19.2.7))':
+  '@hookform/resolvers@5.2.2(react-hook-form@7.81.0(react@19.2.7))':
     dependencies:
       '@standard-schema/utils': 0.3.0
-      react-hook-form: 7.71.2(react@19.2.7)
+      react-hook-form: 7.81.0(react@19.2.7)
 
   '@humanfs/core@0.19.2':
     dependencies:
@@ -23244,7 +23244,7 @@ snapshots:
       react: 19.2.7
       react-dom: 19.2.7(react@19.2.7)
 
-  react-hook-form@7.71.2(react@19.2.7):
+  react-hook-form@7.81.0(react@19.2.7):
     dependencies:
       react: 19.2.7
 
