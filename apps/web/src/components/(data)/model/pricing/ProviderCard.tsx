@@ -1977,7 +1977,7 @@ export default function ProviderCard({
 		const interactiveTarget = (event.target as HTMLElement).closest(
 			"a, button, input, select, textarea, [role='button']",
 		);
-		if (interactiveTarget) return;
+		if (interactiveTarget && interactiveTarget !== event.currentTarget) return;
 		toggleExpanded();
 	};
 	const handleSummaryRowKeyDown = (event: React.KeyboardEvent<HTMLTableRowElement>) => {
@@ -1985,7 +1985,7 @@ export default function ProviderCard({
 		const interactiveTarget = (event.target as HTMLElement).closest(
 			"a, button, input, select, textarea, [role='button']",
 		);
-		if (interactiveTarget) return;
+		if (interactiveTarget && interactiveTarget !== event.currentTarget) return;
 		event.preventDefault();
 		toggleExpanded();
 	};
@@ -1995,7 +1995,7 @@ export default function ProviderCard({
 		const interactiveTarget = (event.target as HTMLElement).closest(
 			"a, button, input, select, textarea, [role='button']",
 		);
-		if (interactiveTarget) return;
+		if (interactiveTarget && interactiveTarget !== event.currentTarget) return;
 		const currentOpenProviderId = window[PROVIDER_INSPECTOR_STATE_KEY] ?? null;
 		const hasMountedInspector = Boolean(
 			document.querySelector('[data-slot="provider-inspector-sheet-content"]'),
