@@ -21,7 +21,6 @@ import {
   getModelDisplayName,
   getModelOrganisationName,
   modelMatchesSearch,
-  formatPricePerMillion,
 } from "./utils";
 
 type SortBy = "release_date" | "organisation" | "status" | "name";
@@ -131,14 +130,6 @@ export default function Command() {
               },
             },
             { text: formatDate(model.release_date) },
-            {
-              text:
-                formatPricePerMillion(model.pricing?.prompt) ??
-                `${model.endpoints?.length || 0} endpoints`,
-              tooltip: formatPricePerMillion(model.pricing?.prompt)
-                ? "Input price"
-                : "Supported endpoints",
-            },
           ]}
           actions={
             <ActionPanel>
