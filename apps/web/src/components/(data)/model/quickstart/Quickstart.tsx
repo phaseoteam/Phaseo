@@ -376,7 +376,13 @@ export default function Quickstart({
 
 	const supportedLanguageSet = useMemo(() => {
 		if (isModelMetadataQuickstart) {
-			return new Set<string>(["curl", "typescript-sdk", "python-sdk"]);
+			return new Set<string>([
+				"curl",
+				"typescript-sdk",
+				"node-fetch",
+				"python-sdk",
+				"python-requests",
+			]);
 		}
 		const normalizedEndpoint = normalizeEndpointValue(quickstartEndpoint);
 		const supported = new Set<string>([
@@ -1364,7 +1370,25 @@ end` : `response = client.${
 
 puts JSON.pretty_generate(response)`}`;
 
-	const nodeFetchQuickstart = `// 1) Set your key
+	const nodeFetchQuickstart = isModelMetadataQuickstart
+		? `const query = new URLSearchParams({
+  model_id: "${modelIdentifierInCode}",
+  availability: "all",
+});
+
+const response = await fetch(
+  `https://api.phaseo.ai/v1/models?\${query}`,
+  {
+    headers: {
+      Authorization: `Bearer \${process.env.PHASEO_API_KEY}`,
+    },
+  },
+);
+
+if (!response.ok) throw new Error("Failed to retrieve model metadata");
+
+console.log(await response.json());`
+		: `// 1) Set your key
 const apiKey = process.env.PHASEO_API_KEY;
 
 ${batchEnabled ? `${batchLineCommentTs}
@@ -1465,7 +1489,22 @@ while (true) {
 }
 if (buffer) processLine(buffer.trim());`;
 
-	const pythonRequestsQuickstart = `# Import os and requests libraries
+	const pythonRequestsQuickstart = isModelMetadataQuickstart
+		? `import os
+import requests
+
+response = requests.get(
+    "https://api.phaseo.ai/v1/models",
+    headers={"Authorization": f"Bearer {os.environ['PHASEO_API_KEY']}"},
+    params={
+        "model_id": "${modelIdentifierInCode}",
+        "availability": "all",
+    },
+)
+response.raise_for_status()
+
+print(response.json())`
+		: `# Import os and requests libraries
 import os
 import requests
 
