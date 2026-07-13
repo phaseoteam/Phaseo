@@ -53,7 +53,7 @@ export default async function HomeAnnouncementsSection() {
 				</div>
 
 				{latest.length > 0 ? (
-					<div className="grid grid-cols-1 gap-4 sm:max-xl:mx-auto sm:max-xl:max-w-[38rem] sm:max-xl:gap-3 xl:grid-cols-4">
+					<div className="grid grid-cols-1 gap-4 sm:max-lg:mx-auto sm:max-lg:max-w-[38rem] sm:max-xl:gap-3 lg:max-xl:grid-cols-2 xl:grid-cols-4">
 						{latest.map((post) => (
 							<Link key={post.slug} href={`/blog/${post.slug}`} className="block">
 								<Card className="h-full gap-0 overflow-hidden rounded-[20px] py-0 sm:max-xl:h-auto sm:max-xl:flex-row sm:max-xl:rounded-2xl [--card-spacing:0px]">
