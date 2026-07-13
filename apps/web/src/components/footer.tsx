@@ -152,7 +152,7 @@ export default function Footer() {
 							</div>
 						</div>
 						<div className="md:hidden">
-							<ThemeSelector className="py-0" labelSize="sm" />
+							<ThemeSelector className="py-0" labelSize="sm" showSelectedLabel={false} />
 						</div>
 					</div>
 					<FooterLinkList title="Explore" links={productLinks} />
@@ -164,12 +164,12 @@ export default function Footer() {
 				</div>
 
 				<div className="flex flex-col gap-2 border-t border-zinc-200/80 pt-4 text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 sm:flex-row sm:items-center sm:justify-between">
-					<div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-						<p className="font-medium tracking-[0.01em] text-zinc-500 dark:text-zinc-400">
+					<div className="flex flex-nowrap items-center gap-x-3">
+						<p className="whitespace-nowrap font-medium tracking-[0.01em] text-zinc-500 dark:text-zinc-400">
 							&copy; <FooterYearRange startYear={startYear} /> {"\u2022"} Phaseo
 						</p>
 						<div className="hidden md:block">
-							<ThemeSelector className="py-0" labelSize="sm" />
+							<ThemeSelector className="py-0" labelSize="sm" showSelectedLabel={false} />
 						</div>
 					</div>
 					<p className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-1">
