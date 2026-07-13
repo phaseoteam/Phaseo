@@ -712,6 +712,7 @@ export function QuickstartUsageSection({
 									checked={streamingEnabled}
 									onCheckedChange={onToggleStreaming}
 									disabled={!supportsStreaming}
+									aria-label={supportsStreaming ? "Enable streaming" : "Streaming unavailable"}
 								/>
 								<span className="text-xs font-medium">
 									{supportsStreaming ? "Streaming" : "No stream"}

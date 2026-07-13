@@ -479,7 +479,7 @@ jobs:
         runs-on: ubuntu-latest
         needs: apps
         concurrency:
-            group: deploy-preview-web-${{ github.event.pull_request.number }}
+            group: deploy-preview-web-${{ github.event.pull_request.number || github.ref }}
             cancel-in-progress: true
         if: >
             github.event_name == 'workflow_dispatch' ||

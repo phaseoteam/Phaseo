@@ -456,7 +456,6 @@ export default function ModelActivityChart({
 										<Cell
 											key={`${entry.day}-${series.key}`}
 											fillOpacity={getSeriesOpacity(series.key)}
-											opacity={getSeriesOpacity(series.key)}
 										/>
 									))}
 								</Bar>
@@ -471,10 +470,9 @@ export default function ModelActivityChart({
 							>
 								{chartData.map((entry) => (
 									<Cell
-										key={`${entry.day}-projectedPace`}
-										fillOpacity={hoveredSeriesKey ? INACTIVE_PROJECTED_OPACITY : 1}
-										opacity={hoveredSeriesKey ? INACTIVE_PROJECTED_OPACITY : 1}
-									/>
+											key={`${entry.day}-projectedPace`}
+											fillOpacity={hoveredSeriesKey ? INACTIVE_PROJECTED_OPACITY : 1}
+										/>
 								))}
 							</Bar>
 						</>

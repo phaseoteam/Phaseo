@@ -239,8 +239,14 @@ function SectionHeader({
 function formatCompactUsage(value: number): string {
 	if (!Number.isFinite(value) || value <= 0) return "0";
 	if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(2)}B`;
-	if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(0)}M`;
-	if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
+	if (value >= 1_000_000) {
+		const millions = Math.round(value / 1_000_000);
+		return millions >= 1_000 ? `${(value / 1_000_000_000).toFixed(2)}B` : `${millions}M`;
+	}
+	if (value >= 1_000) {
+		const thousands = Math.round((value / 1_000) * 10) / 10;
+		return thousands >= 1_000 ? "1M" : `${thousands.toFixed(1)}K`;
+	}
 	return Math.round(value).toLocaleString();
 }
 

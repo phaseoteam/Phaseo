@@ -1181,6 +1181,19 @@ function collectDiscountEntriesFromVideo(rows?: ResolutionRow[] | null): ActiveD
 		.filter((entry) => entry.percentOff != null);
 }
 
+function collectDiscountEntriesFromOtherRules(
+	rows?: ReturnType<typeof buildProviderSections>["otherRules"] | null,
+): ActiveDiscountEntry[] {
+	if (!rows?.length) return [];
+	return rows
+		.filter((row) => row.basePrice != null)
+		.map((row) => ({
+			endsAt: row.discountEndsAt ?? null,
+			percentOff: getPercentOff(row.basePrice, row.price),
+		}))
+		.filter((entry) => entry.percentOff != null);
+}
+
 function collectDiscountEntriesFromSections(
 	sections: ReturnType<typeof buildProviderSections>,
 ) {
@@ -1191,11 +1204,13 @@ function collectDiscountEntriesFromSections(
 		...collectDiscountEntriesFromTriple(sections.audioTokens),
 		...collectDiscountEntriesFromTriple(sections.imageTokens),
 		...collectDiscountEntriesFromTriple(sections.videoTokens),
+		...collectDiscountEntriesFromTriple(sections.embeddingTokens),
 		...collectDiscountEntriesFromUsage(imageInputs),
 		...collectDiscountEntriesFromUsage(videoInputs),
 		...collectDiscountEntriesFromImage(sections.imageGen),
 		...collectDiscountEntriesFromVideo(sections.videoGen),
 		...collectDiscountEntriesFromTiers(sections.requests),
+		...collectDiscountEntriesFromOtherRules(sections.otherRules),
 	];
 }
 
@@ -1814,7 +1829,7 @@ export default function ProviderCard({
 				runtimeStats?.latencyMs30m != null
 					? formatLatencySeconds(runtimeStats.latencyMs30m)
 					: "--",
-			valueClassName: selectedPlanTheme.accent,
+			valueClassName: uptimeValueClass(uptimePct),
 		},
 		{
 			key: "throughput",
@@ -1965,6 +1980,15 @@ export default function ProviderCard({
 		if (interactiveTarget) return;
 		toggleExpanded();
 	};
+	const handleSummaryRowKeyDown = (event: React.KeyboardEvent<HTMLTableRowElement>) => {
+		if (event.key !== "Enter" && event.key !== " ") return;
+		const interactiveTarget = (event.target as HTMLElement).closest(
+			"a, button, input, select, textarea, [role='button']",
+		);
+		if (interactiveTarget) return;
+		event.preventDefault();
+		toggleExpanded();
+	};
 	const handleSummaryRowPointerDownCapture = (
 		event: React.PointerEvent<HTMLTableRowElement>,
 	) => {
@@ -2107,7 +2131,12 @@ export default function ProviderCard({
 		capacityMetrics.find((metric) => metric.label === "Max Output")?.value ?? "--";
 	const supportedParameters = buildSupportedParameters(infoScope);
 	const displayProviderModelIds = Array.from(
-		new Set(providerModelSlugs.length > 0 ? providerModelSlugs : providerApiModelIds),
+		new Set(
+			infoScope.map(
+				(providerModel) =>
+					providerModel.provider_model_slug?.trim() || providerModel.model_id?.trim(),
+			),
+		),
 	).filter(
 		(value): value is string => typeof value === "string" && value.trim().length > 0,
 	);
@@ -2413,10 +2442,14 @@ export default function ProviderCard({
 	return (
 		<>
 			<TableRow
+				role="button"
+				tabIndex={0}
 				aria-selected={expanded}
+				aria-expanded={expanded}
 				data-provider-inspector-open={expanded ? "true" : undefined}
 				onPointerDownCapture={handleSummaryRowPointerDownCapture}
 				onClick={handleSummaryRowClick}
+				onKeyDown={handleSummaryRowKeyDown}
 				className={cn(
 					"group cursor-pointer hover:bg-zinc-50/70 dark:hover:bg-zinc-900/30",
 					isLastVisible && "border-b-0",

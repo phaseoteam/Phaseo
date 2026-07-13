@@ -905,7 +905,7 @@ export function RequestsSection({
 	const unitLabels = Array.from(
 		new Set(rows.map((row) => row.unitLabel).filter((label): label is string => Boolean(label))),
 	);
-	const unitLabel = unitLabels.length === 1 ? unitLabels[0] : "Per request";
+	const sharedUnitLabel = unitLabels.length === 1 ? unitLabels[0] : null;
 	const sharedDecimals = rows.reduce(
 		(max, tier) => Math.max(max, countUsdDecimals(tier.price)),
 		0,
@@ -917,7 +917,9 @@ export function RequestsSection({
 		<div className={wrapperClass}>
 			<div className="flex items-center justify-between">
 				<h4 className="text-xs font-semibold tracking-wide text-foreground">{title}</h4>
-				<span className="text-xs text-muted-foreground">{unitLabel}</span>
+				{sharedUnitLabel ? (
+					<span className="text-xs text-muted-foreground">{sharedUnitLabel}</span>
+				) : null}
 			</div>
 			<div className={listClass}>
 				{rows.map((t, i) => (
@@ -933,6 +935,9 @@ export function RequestsSection({
 							)}
 							{t.label && t.label !== "All usage" ? (
 								<span className="text-xs text-muted-foreground">{t.label}</span>
+							) : null}
+							{!sharedUnitLabel && t.unitLabel ? (
+								<span className="text-xs text-muted-foreground">{t.unitLabel}</span>
 							) : null}
 						</div>
 					</div>
@@ -1095,9 +1100,14 @@ export function AdvancedTable({
 								) : null}
 							</div>
 							<div className="flex items-baseline justify-end gap-2 text-right">
-								<span className="text-sm font-medium tabular-nums text-foreground">
-									{fmtUSD(row.price)}
-								</span>
+								{renderComparisonPrices(
+									row.price,
+									row.basePrice,
+									countUsdDecimals(row.price),
+									row.comparisonKind,
+									row.comparisonDirection,
+									comparisonAccent,
+								)}
 								<span className="text-[10px] text-muted-foreground">
 									{formatCompactUnit(row.unitLabel)}
 								</span>
