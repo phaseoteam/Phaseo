@@ -50,7 +50,7 @@ export function LatestModelsCarousel({ cards }: LatestModelsCarouselProps) {
 							hideFooterLink
 							metaPlacement="header"
 							providerDateInline
-							className="h-full rounded-[20px] border-zinc-200 bg-white/90 py-0 shadow-sm ring-1 ring-inset ring-zinc-200/60 dark:border-zinc-800 dark:bg-zinc-950/80 dark:ring-zinc-800/60"
+							className="h-full rounded-[20px] border-zinc-200 bg-white/90 py-0 shadow-sm ring-1 ring-inset ring-zinc-200/60 hover:translate-y-0 hover:shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80 dark:ring-zinc-800/60"
 						/>
 					</MarqueeItem>
 				))}

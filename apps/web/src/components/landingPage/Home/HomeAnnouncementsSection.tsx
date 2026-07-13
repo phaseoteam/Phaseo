@@ -13,7 +13,7 @@ import {
 	getAnnouncementPosts,
 } from "@/lib/content/announcements";
 
-const ANNOUNCEMENT_LIMIT = 3;
+const ANNOUNCEMENT_LIMIT = 4;
 
 export function HomeAnnouncementsSectionFallback() {
 	return (
@@ -53,7 +53,7 @@ export default async function HomeAnnouncementsSection() {
 				</div>
 
 				{latest.length > 0 ? (
-					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
 						{latest.map((post) => (
 							<Link key={post.slug} href={`/blog/${post.slug}`} className="block">
 								<Card className="h-full gap-0 overflow-hidden rounded-[20px] py-0 [--card-spacing:0px]">

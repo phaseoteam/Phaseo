@@ -8,7 +8,18 @@ import {
 	type ReactNode,
 } from "react";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import {
+	ArrowRight,
+	AudioLines,
+	BadgeCheck,
+	ImageIcon,
+	MessageSquareText,
+	Mic,
+	Music2,
+	Sparkles,
+	Subtitles,
+	Video,
+} from "lucide-react";
 import NumberFlow from "@number-flow/react";
 import { Logo } from "@/components/Logo";
 
@@ -17,7 +28,7 @@ type Benefit = {
 	body: string;
 	href: string;
 	cta: string;
-	visual: "models" | "uptime" | "observability" | "database";
+	visual: "models" | "uptime" | "observability" | "database" | "modalities";
 };
 
 type QuickstartVariant = "default" | "beta";
@@ -71,6 +82,13 @@ const BENEFITS_DEFAULT: Benefit[] = [
 		href: "/models",
 		cta: "Browse models",
 		visual: "models",
+	},
+	{
+		title: "Multimodal Playground",
+		body: "Move between text, images, video, speech, transcription, music, moderation, and embeddings.",
+		href: "/chat",
+		cta: "Try Chat",
+		visual: "modalities",
 	},
 	{
 		title: "Request Observability",
@@ -506,6 +524,82 @@ function UptimeVisual({ variant = "default" }: { variant?: QuickstartVariant }) 
 	);
 }
 
+const MODALITIES = [
+	{ label: "Text", detail: "Chat & responses", icon: MessageSquareText },
+	{ label: "Images", detail: "Generate & edit", icon: ImageIcon },
+	{ label: "Video", detail: "Prompt to video", icon: Video },
+	{ label: "Text to Speech", detail: "Natural voice", icon: Mic },
+	{ label: "Transcription", detail: "Speech to text", icon: Subtitles },
+	{ label: "Music", detail: "Generate audio", icon: Music2 },
+	{ label: "Moderation", detail: "Text & images", icon: BadgeCheck },
+	{ label: "Embeddings", detail: "Vector search", icon: Sparkles },
+] as const;
+
+function ModalitiesVisual() {
+	const [activeIndex, setActiveIndex] = useState(0);
+
+	useEffect(() => {
+		const timer = window.setInterval(() => {
+			setActiveIndex((current) => (current + 1) % MODALITIES.length);
+		}, 2600);
+
+		return () => window.clearInterval(timer);
+	}, []);
+
+	const visibleModalities = Array.from({ length: 3 }, (_, index) =>
+		MODALITIES[(activeIndex + index) % MODALITIES.length],
+	);
+
+	return (
+		<VisualStage>
+			<div className="w-full max-w-[260px] space-y-2.5">
+				<div className="flex items-center justify-between px-1">
+					<span className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
+						Supported modes
+					</span>
+					<span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500">
+						{MODALITIES.length} workspaces
+					</span>
+				</div>
+				<div className="space-y-1.5">
+					{visibleModalities.map((modality, index) => {
+						const Icon = modality.icon;
+						const isActive = index === 0;
+
+						return (
+							<div
+								key={modality.label}
+								className={`flex items-center justify-between gap-3 rounded-xl border px-3 py-2 transition-all duration-300 ${
+									isActive
+										? "border-zinc-300 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900/70"
+										: "border-zinc-200/80 bg-white/80 dark:border-zinc-800/80 dark:bg-zinc-950/80"
+								}`}
+							>
+								<span className="flex min-w-0 items-center gap-2">
+									<Icon className="h-3.5 w-3.5 shrink-0 text-zinc-700 dark:text-zinc-300" />
+									<span className="min-w-0">
+										<span className="block truncate text-[11px] font-semibold leading-none text-zinc-950 dark:text-zinc-50">
+											{modality.label}
+										</span>
+										<span className="mt-1 block truncate text-[9px] leading-none text-zinc-500 dark:text-zinc-400">
+											{modality.detail}
+										</span>
+									</span>
+								</span>
+								{isActive ? (
+									<span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[8px] font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+										Ready
+									</span>
+								) : null}
+							</div>
+						);
+					})}
+				</div>
+			</div>
+		</VisualStage>
+	);
+}
+
 function ObservabilityVisual() {
 	const requests = [
 		{
@@ -933,6 +1027,8 @@ function BenefitVisual({
 			return <ModelsVisual variant={variant} />;
 		case "uptime":
 			return <UptimeVisual variant={variant} />;
+		case "modalities":
+			return <ModalitiesVisual />;
 		case "observability":
 			return <ObservabilityVisual />;
 		case "database":
@@ -950,7 +1046,7 @@ export default function HomeQuickstartSection({
 
 	return (
 		<div className="mx-auto mt-6 max-w-7xl">
-			<div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+			<div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
 				{benefits.map((benefit) => (
 					<Link
 						key={benefit.title}

@@ -39,7 +39,7 @@ export default async function HomeModelUpdatesSection() {
 							className="group inline-flex items-center gap-1 text-center text-2xl font-semibold tracking-[-0.04em] text-zinc-950 dark:text-zinc-50 sm:text-3xl"
 						>
 							<span>Latest Models</span>
-							<ChevronRight className="h-5 w-5 shrink-0 translate-y-px" />
+							<ChevronRight className="h-5 w-5 shrink-0 translate-y-px opacity-0 transition-all duration-200 group-hover:translate-x-0.5 group-hover:opacity-100" />
 						</Link>
 					</h2>
 				</div>
