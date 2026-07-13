@@ -23,41 +23,43 @@ export function LatestModelsCarousel({ cards }: LatestModelsCarouselProps) {
 	const canAutoScroll = cards.length > 1 && !prefersReducedMotion;
 
 	return (
-		<Marquee
-			className="py-1"
-			onFocusCapture={() => setIsFocusPaused(true)}
-			onBlurCapture={(event) => {
-				if (!event.currentTarget.contains(event.relatedTarget)) {
-					setIsFocusPaused(false);
-				}
-			}}
-		>
-			<MarqueeFade side="left" className="w-10 sm:w-20" />
-			<MarqueeFade side="right" className="w-10 sm:w-20" />
-			<MarqueeContent
-				autoFill
-				pauseOnHover
-				pauseOnClick={false}
-				play={canAutoScroll && !isFocusPaused && !isUserPaused}
-				speed={18}
+		<div className="relative">
+			<Marquee
+				className="py-1"
+				onFocusCapture={() => setIsFocusPaused(true)}
+				onBlurCapture={(event) => {
+					if (!event.currentTarget.contains(event.relatedTarget)) {
+						setIsFocusPaused(false);
+					}
+				}}
 			>
-				{cards.map((card, index) => (
-					<MarqueeItem
-						key={card.id ? String(card.id) : `card-${index}`}
-						className="w-[17.5rem] sm:w-[19rem]"
-					>
-						<UpdateCard
-							{...card}
-							compact
-							hideBadges
-							hideFooterLink
-							metaPlacement="header"
-							providerDateInline
-							className="h-full rounded-[20px] border-zinc-200 bg-white/90 py-0 shadow-sm ring-1 ring-inset ring-zinc-200/60 hover:translate-y-0 hover:shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80 dark:ring-zinc-800/60"
-						/>
-					</MarqueeItem>
-				))}
-			</MarqueeContent>
+				<MarqueeFade side="left" className="w-10 sm:w-20" />
+				<MarqueeFade side="right" className="w-10 sm:w-20" />
+				<MarqueeContent
+					autoFill
+					pauseOnHover
+					pauseOnClick={false}
+					play={canAutoScroll && !isFocusPaused && !isUserPaused}
+					speed={18}
+				>
+					{cards.map((card, index) => (
+						<MarqueeItem
+							key={card.id ? String(card.id) : `card-${index}`}
+							className="w-[17.5rem] sm:w-[19rem]"
+						>
+							<UpdateCard
+								{...card}
+								compact
+								hideBadges
+								hideFooterLink
+								metaPlacement="header"
+								providerDateInline
+								className="h-full rounded-[20px] border-zinc-200 bg-white/90 py-0 shadow-sm ring-1 ring-inset ring-zinc-200/60 hover:translate-y-0 hover:shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80 dark:ring-zinc-800/60"
+							/>
+						</MarqueeItem>
+					))}
+				</MarqueeContent>
+			</Marquee>
 			{cards.length > 1 && !prefersReducedMotion ? (
 				<button
 					type="button"
@@ -73,6 +75,6 @@ export function LatestModelsCarousel({ cards }: LatestModelsCarouselProps) {
 					)}
 				</button>
 			) : null}
-		</Marquee>
+		</div>
 	);
 }
