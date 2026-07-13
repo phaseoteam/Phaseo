@@ -1977,7 +1977,7 @@ export default function ProviderCard({
 		const interactiveTarget = (event.target as HTMLElement).closest(
 			"a, button, input, select, textarea, [role='button']",
 		);
-		if (interactiveTarget) return;
+		if (interactiveTarget && interactiveTarget !== event.currentTarget) return;
 		toggleExpanded();
 	};
 	const handleSummaryRowKeyDown = (event: React.KeyboardEvent<HTMLTableRowElement>) => {
@@ -1985,7 +1985,7 @@ export default function ProviderCard({
 		const interactiveTarget = (event.target as HTMLElement).closest(
 			"a, button, input, select, textarea, [role='button']",
 		);
-		if (interactiveTarget) return;
+		if (interactiveTarget && interactiveTarget !== event.currentTarget) return;
 		event.preventDefault();
 		toggleExpanded();
 	};
@@ -1995,7 +1995,7 @@ export default function ProviderCard({
 		const interactiveTarget = (event.target as HTMLElement).closest(
 			"a, button, input, select, textarea, [role='button']",
 		);
-		if (interactiveTarget) return;
+		if (interactiveTarget && interactiveTarget !== event.currentTarget) return;
 		const currentOpenProviderId = window[PROVIDER_INSPECTOR_STATE_KEY] ?? null;
 		const hasMountedInspector = Boolean(
 			document.querySelector('[data-slot="provider-inspector-sheet-content"]'),
@@ -2459,12 +2459,13 @@ export default function ProviderCard({
 					{expanded ? (
 						<motion.span
 							aria-hidden="true"
-							layoutId="provider-table-active-indicator"
 							className="absolute inset-y-0 left-0 w-0.5 bg-primary"
+							initial={reduceMotion ? false : { opacity: 0 }}
+							animate={{ opacity: 1 }}
 							transition={
 								reduceMotion
 									? { duration: 0 }
-									: { type: "spring", stiffness: 520, damping: 42, mass: 0.5 }
+									: { duration: 0.12, ease: "easeOut" }
 							}
 						/>
 					) : null}
