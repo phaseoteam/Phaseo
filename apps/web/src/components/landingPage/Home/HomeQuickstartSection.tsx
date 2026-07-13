@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import NumberFlow from "@number-flow/react";
 import { Logo } from "@/components/Logo";
+import { Marquee, MarqueeContent } from "@/components/ui/marquee";
 
 type Benefit = {
 	title: string;
@@ -535,31 +536,53 @@ const MODALITIES = [
 	{ label: "Embeddings", detail: "Vector search", icon: Sparkles },
 ] as const;
 
-function ModalitiesVisual() {
-	const [activeIndex, setActiveIndex] = useState(0);
-	const [isSliding, setIsSliding] = useState(false);
+function ModalityTicker({
+	modalities,
+	speed,
+}: {
+	modalities: readonly (typeof MODALITIES)[number][];
+	speed: number;
+}) {
+	return (
+		<Marquee className="h-[150px]">
+			<MarqueeContent
+				direction="up"
+				speed={speed}
+				pauseOnHover={false}
+				className="h-[150px]"
+			>
+				<div className="space-y-1.5 px-0.5 py-1">
+					{modalities.map((modality) => {
+						const Icon = modality.icon;
 
-	useEffect(() => {
-		if (isSliding) return;
-
-		const timer = window.setTimeout(() => setIsSliding(true), 2400);
-		return () => window.clearTimeout(timer);
-	}, [isSliding]);
-
-	useEffect(() => {
-		if (!isSliding) return;
-
-		const timer = window.setTimeout(() => {
-			setActiveIndex((current) => (current + 1) % MODALITIES.length);
-			setIsSliding(false);
-		}, 480);
-
-		return () => window.clearTimeout(timer);
-	}, [isSliding]);
-
-	const visibleModalities = Array.from({ length: 4 }, (_, index) =>
-		MODALITIES[(activeIndex + index) % MODALITIES.length],
+						return (
+							<div
+								key={modality.label}
+								className="flex h-[46px] items-center gap-2 rounded-xl border border-zinc-200/80 bg-white/80 px-2.5 py-2 dark:border-zinc-800/80 dark:bg-zinc-950/80"
+							>
+								<Icon className="h-3.5 w-3.5 shrink-0 text-zinc-700 dark:text-zinc-300" />
+								<span className="min-w-0">
+									<span className="block truncate text-[10px] font-semibold leading-none text-zinc-950 dark:text-zinc-50">
+										{modality.label}
+									</span>
+									<span className="mt-1 block truncate text-[9px] leading-none text-zinc-500 dark:text-zinc-400">
+										{modality.detail}
+									</span>
+								</span>
+							</div>
+						);
+					})}
+				</div>
+			</MarqueeContent>
+		</Marquee>
 	);
+}
+
+function ModalitiesVisual() {
+	const columns = [
+		MODALITIES.filter((_, index) => index % 2 === 0),
+		MODALITIES.filter((_, index) => index % 2 === 1),
+	] as const;
 
 	return (
 		<VisualStage>
@@ -572,47 +595,9 @@ function ModalitiesVisual() {
 						{MODALITIES.length} workspaces
 					</span>
 				</div>
-				<div className="h-[150px] overflow-hidden">
-					<div
-						className={`space-y-1.5 ${
-							isSliding
-								? "-translate-y-[52px] transition-transform duration-500 ease-in-out"
-								: "translate-y-0"
-						}`}
-					>
-						{visibleModalities.map((modality, index) => {
-						const Icon = modality.icon;
-						const isActive = index === 0;
-
-						return (
-							<div
-								key={modality.label}
-								className={`flex h-[46px] items-center justify-between gap-3 rounded-xl border px-3 py-2 transition-colors duration-300 ${
-									isActive
-										? "border-zinc-300 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900/70"
-										: "border-zinc-200/80 bg-white/80 dark:border-zinc-800/80 dark:bg-zinc-950/80"
-								}`}
-							>
-								<span className="flex min-w-0 items-center gap-2">
-									<Icon className="h-3.5 w-3.5 shrink-0 text-zinc-700 dark:text-zinc-300" />
-									<span className="min-w-0">
-										<span className="block truncate text-[11px] font-semibold leading-none text-zinc-950 dark:text-zinc-50">
-											{modality.label}
-										</span>
-										<span className="mt-1 block truncate text-[9px] leading-none text-zinc-500 dark:text-zinc-400">
-											{modality.detail}
-										</span>
-									</span>
-								</span>
-								{isActive ? (
-									<span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[8px] font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
-										Ready
-									</span>
-								) : null}
-							</div>
-						);
-						})}
-					</div>
+				<div className="grid grid-cols-2 gap-2">
+					<ModalityTicker modalities={columns[0]} speed={13} />
+					<ModalityTicker modalities={columns[1]} speed={17} />
 				</div>
 			</div>
 		</VisualStage>
