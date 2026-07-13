@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useReducedMotion } from "motion/react";
+import { Pause, Play } from "lucide-react";
 import UpdateCard from "@/components/updates/UpdateCard";
 import {
 	Marquee,
@@ -18,6 +19,8 @@ type LatestModelsCarouselProps = {
 export function LatestModelsCarousel({ cards }: LatestModelsCarouselProps) {
 	const prefersReducedMotion = useReducedMotion();
 	const [isFocusPaused, setIsFocusPaused] = useState(false);
+	const [isUserPaused, setIsUserPaused] = useState(false);
+	const canAutoScroll = cards.length > 1 && !prefersReducedMotion;
 
 	return (
 		<Marquee
@@ -35,12 +38,12 @@ export function LatestModelsCarousel({ cards }: LatestModelsCarouselProps) {
 				autoFill
 				pauseOnHover
 				pauseOnClick={false}
-				play={!prefersReducedMotion && !isFocusPaused}
+				play={canAutoScroll && !isFocusPaused && !isUserPaused}
 				speed={18}
 			>
-				{cards.map((card) => (
+				{cards.map((card, index) => (
 					<MarqueeItem
-						key={String(card.id)}
+						key={card.id ? String(card.id) : `card-${index}`}
 						className="w-[17.5rem] sm:w-[19rem]"
 					>
 						<UpdateCard
@@ -55,6 +58,21 @@ export function LatestModelsCarousel({ cards }: LatestModelsCarouselProps) {
 					</MarqueeItem>
 				))}
 			</MarqueeContent>
+			{cards.length > 1 && !prefersReducedMotion ? (
+				<button
+					type="button"
+					aria-pressed={isUserPaused}
+					aria-label={isUserPaused ? "Play latest model updates" : "Pause latest model updates"}
+					onClick={() => setIsUserPaused((paused) => !paused)}
+					className="absolute top-1 right-2 z-20 inline-flex h-7 w-7 items-center justify-center rounded-md border border-zinc-200/80 bg-white/90 text-zinc-500 shadow-sm transition-colors hover:bg-white hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/70 dark:border-zinc-800/80 dark:bg-zinc-950/90 dark:text-zinc-400 dark:hover:bg-zinc-950 dark:hover:text-zinc-50"
+				>
+					{isUserPaused ? (
+						<Play className="h-3.5 w-3.5" aria-hidden="true" />
+					) : (
+						<Pause className="h-3.5 w-3.5" aria-hidden="true" />
+					)}
+				</button>
+			) : null}
 		</Marquee>
 	);
 }

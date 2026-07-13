@@ -552,7 +552,7 @@ function ModalityTicker({
 	return (
 		<div className="h-[150px] overflow-hidden">
 			<div
-				className="space-y-1.5 px-0.5 py-1 motion-reduce:[animation:none]"
+				className="space-y-1.5 px-0.5 py-1 motion-reduce:[animation:none]!"
 				style={{ animation: `modality-ticker ${speed}s linear infinite` }}
 			>
 				{loopedWorkloads.map((workload, index) => {

@@ -38,7 +38,7 @@ begin
     return new;
   end if;
 
-  base_slug := left(public.api_app_slug_base(new.title, new.id), 55);
+  base_slug := trim(both '-' from left(public.api_app_slug_base(new.title, new.id), 55));
   perform pg_advisory_xact_lock(hashtextextended(base_slug, 0));
 
   candidate_slug := base_slug;
@@ -49,7 +49,7 @@ begin
       and app.id is distinct from new.id
   ) loop
     suffix := suffix + 1;
-    candidate_slug := left(base_slug, 64 - length(suffix::text) - 1) || '-' || suffix;
+    candidate_slug := trim(both '-' from left(base_slug, 64 - length(suffix::text) - 1)) || '-' || suffix;
   end loop;
 
   new.slug := candidate_slug;
