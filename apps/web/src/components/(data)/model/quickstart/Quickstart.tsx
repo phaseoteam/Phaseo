@@ -382,6 +382,10 @@ export default function Quickstart({
 				"node-fetch",
 				"python-sdk",
 				"python-requests",
+				"go-sdk",
+				"csharp-sdk",
+				"php-sdk",
+				"ruby-sdk",
 			]);
 		}
 		const normalizedEndpoint = normalizeEndpointValue(quickstartEndpoint);
@@ -1134,7 +1138,35 @@ payload = ${payloadJsonPython}
 ${pythonSdkResponseHandler}`
 					: null;
 
-	const goSdkUsage = normalizedEndpoint === "chat.completions"
+	const goSdkUsage = isModelMetadataQuickstart
+		? `package main
+
+import (
+  "context"
+  "encoding/json"
+  "fmt"
+
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
+)
+
+func main() {
+  client, err := phaseo.NewPhaseoFromEnv()
+  if err != nil {
+    panic(err)
+  }
+
+  models, err := client.GetModels(context.Background(), map[string]string{
+    "model_id": "${modelIdentifierInCode}",
+    "availability": "all",
+  })
+  if err != nil {
+    panic(err)
+  }
+
+  output, _ := json.MarshalIndent(models, "", "  ")
+  fmt.Println(string(output))
+}`
+		: normalizedEndpoint === "chat.completions"
 		? `package main
 
 import (
@@ -1272,7 +1304,23 @@ func main() {
   fmt.Println(string(formatted))`}
 }`;
 
-	const csharpSdkUsage = `using System.Collections.Generic;
+	const csharpSdkUsage = isModelMetadataQuickstart
+		? `using System.Collections.Generic;
+using System.Text.Json;
+using PhaseoSdk;
+
+var client = new Phaseo(Environment.GetEnvironmentVariable("PHASEO_API_KEY"));
+var models = await client.ListModels(new Dictionary<string, string>
+{
+    ["model_id"] = "${modelIdentifierInCode}",
+    ["availability"] = "all",
+});
+
+Console.WriteLine(JsonSerializer.Serialize(models, new JsonSerializerOptions
+{
+    WriteIndented = true,
+}));`
+		: `using System.Collections.Generic;
 using System.Text.Json;
 using PhaseoSdk;
 
@@ -1310,7 +1358,20 @@ Console.WriteLine(JsonSerializer.Serialize(response, new JsonSerializerOptions
     WriteIndented = true
 }));`}`;
 
-	const phpSdkUsage = `<?php
+	const phpSdkUsage = isModelMetadataQuickstart
+		? `<?php
+require 'vendor/autoload.php';
+
+use Phaseo\\Sdk\\Phaseo;
+
+$client = new Phaseo(getenv('PHASEO_API_KEY'));
+$models = $client->listModels([
+    'model_id' => '${modelIdentifierInCode}',
+    'availability' => 'all',
+]);
+
+echo json_encode($models, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), PHP_EOL;`
+		: `<?php
 require 'vendor/autoload.php';
 
 use Phaseo\\Sdk\\Phaseo;
@@ -1343,7 +1404,18 @@ ${shouldStream ? `foreach ($client->${
 
 echo json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), PHP_EOL;`}`;
 
-	const rubySdkUsage = `require "json"
+	const rubySdkUsage = isModelMetadataQuickstart
+		? `require "json"
+require "phaseo_sdk"
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
+models = client.list_models(
+  "model_id" => "${modelIdentifierInCode}",
+  "availability" => "all"
+)
+
+puts JSON.pretty_generate(models)`
+		: `require "json"
 require "phaseo_sdk"
 
 client = PhaseoSdk::Phaseo.new
