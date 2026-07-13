@@ -88,7 +88,7 @@ const BENEFITS_DEFAULT: Benefit[] = [
 	},
 	{
 		title: "Every AI workload",
-		body: "Build with text, images, video, audio, realtime, batch, and more through one API.",
+		body: "Build with text, images, video, audio, moderation, embeddings, and more through one API.",
 		href: "https://phaseo.app/docs/v1",
 		cta: "Explore Gateway",
 		visual: "modalities",
