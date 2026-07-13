@@ -29,6 +29,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { QuickstartRequestContext } from "./requestContext";
 
 interface QuickstartProps {
+	mode?: "generation" | "model-metadata";
 	modelId?: string;
 	aliases?: string[];
 	apiModelIds?: string[];
@@ -181,6 +182,10 @@ const DOCS_BASE_URL = "https://phaseo.app/docs/v1";
 const SERVICE_TIERS_DOCS_HREF = `${DOCS_BASE_URL}/guides/service-tiers`;
 const STREAMING_DOCS_HREF = `${DOCS_BASE_URL}/guides/streaming`;
 const ENDPOINT_DOCS_BY_VALUE: Partial<Record<string, { label: string; href: string }>> = {
+	models: {
+		label: "Model discovery",
+		href: `${DOCS_BASE_URL}/sdk-reference/sdk/get-models`,
+	},
 	responses: {
 		label: "Responses API",
 		href: `${DOCS_BASE_URL}/api-reference/endpoint/responses`,
@@ -290,6 +295,7 @@ const formatEmbeddedObject = (json: string, indentSize: number) => {
 };
 
 export default function Quickstart({
+	mode = "generation",
 	modelId,
 	aliases,
 	apiModelIds,
@@ -303,6 +309,7 @@ export default function Quickstart({
 	showHeader = true,
 	requestContext,
 }: QuickstartProps) {
+	const isModelMetadataQuickstart = mode === "model-metadata";
 	const supportedEndpointValues = useMemo(() => {
 		const normalized = new Set(
 			supportedEndpoints.map((value) => normalizeEndpointValue(value)),
@@ -326,13 +333,17 @@ export default function Quickstart({
 	}, [supportedEndpoints, endpoint]);
 
 	const availableEndpoints = useMemo(() => {
+		if (isModelMetadataQuickstart) {
+			return [{ value: "models", label: "Models" }];
+		}
 		const filtered = ENDPOINT_OPTIONS.filter((option) =>
 			supportedEndpointValues.has(option.value),
 		);
 		return filtered.length > 0 ? filtered : ENDPOINT_OPTIONS;
-	}, [supportedEndpointValues]);
+	}, [isModelMetadataQuickstart, supportedEndpointValues]);
 
 	const defaultEndpoint = useMemo(() => {
+		if (isModelMetadataQuickstart) return "models";
 		return (
 			availableEndpoints.find((e) => e.value === "responses")?.value ||
 			availableEndpoints.find((e) => e.value === "chat.completions")?.value ||
@@ -340,7 +351,7 @@ export default function Quickstart({
 			availableEndpoints[0]?.value ||
 			"chat.completions"
 		);
-	}, [availableEndpoints]);
+	}, [availableEndpoints, isModelMetadataQuickstart]);
 
 	const endpointRoutes = useMemo(
 		() => buildEndpointRoutes(availableEndpoints),
@@ -364,6 +375,9 @@ export default function Quickstart({
 	const quickstartEndpoint = batchEnabled ? "batch.create" : selectedEndpoint;
 
 	const supportedLanguageSet = useMemo(() => {
+		if (isModelMetadataQuickstart) {
+			return new Set<string>(["curl", "typescript-sdk", "python-sdk"]);
+		}
 		const normalizedEndpoint = normalizeEndpointValue(quickstartEndpoint);
 		const supported = new Set<string>([
 			"curl",
@@ -399,7 +413,7 @@ export default function Quickstart({
 			supported.add("anthropic-node");
 		}
 		return supported;
-	}, [quickstartEndpoint]);
+	}, [isModelMetadataQuickstart, quickstartEndpoint]);
 
 	const availableLanguages = useMemo(
 		() =>
@@ -427,13 +441,14 @@ export default function Quickstart({
 		supportedParametersByEndpoint?.[selectedEndpoint] ?? [];
 
 	const supportsServiceTier = useMemo(() => {
+		if (isModelMetadataQuickstart) return false;
 		const normalized = normalizeEndpointValue(selectedEndpoint);
 		return (
 			normalized === "responses" ||
 			normalized === "chat.completions" ||
 			normalized === "messages"
 		);
-	}, [selectedEndpoint]);
+	}, [isModelMetadataQuickstart, selectedEndpoint]);
 
 	const availableLanguageFamilies = useMemo(
 		() =>
@@ -495,6 +510,7 @@ export default function Quickstart({
 	}, [availableLanguages, selectedLanguage, supportedLanguageSet]);
 
 	const supportsStreaming = useMemo(() => {
+		if (isModelMetadataQuickstart) return false;
 		if (batchEnabled) return false;
 		if (!STREAMING_SNIPPET_LANGUAGES.has(selectedLanguage)) return false;
 		const normalized = normalizeEndpointValue(selectedEndpoint);
@@ -508,7 +524,7 @@ export default function Quickstart({
 		}
 		const mapped = capabilityToEndpoints[normalized] ?? [];
 		return mapped.some((value) => STREAMING_PATHS.has(value));
-	}, [batchEnabled, selectedEndpoint, selectedLanguage]);
+	}, [batchEnabled, isModelMetadataQuickstart, selectedEndpoint, selectedLanguage]);
 
 	useEffect(() => {
 		if (!supportsStreaming && streamingEnabled) {
@@ -597,15 +613,19 @@ export default function Quickstart({
 	)
 		? selectedModelIdentifier
 		: model;
-	const endpointPath = resolveGatewayPath(selectedEndpoint);
+	const endpointPath = isModelMetadataQuickstart
+		? "/models"
+		: resolveGatewayPath(selectedEndpoint);
 	const batchEndpointPath = resolveGatewayPath("batch.create");
 	const activeEndpointPath = batchEnabled ? batchEndpointPath : endpointPath;
 	const endpointUrl = `${BASE_URL}${activeEndpointPath}`;
 	const routingPreference = resolveRoutingPreference(requestContext);
-	const requestPayloadBase = applyRoutingPreferenceToPayload(
-		buildExamplePayload(selectedEndpoint, modelIdentifierInCode),
-		routingPreference,
-	);
+	const requestPayloadBase = isModelMetadataQuickstart
+		? {}
+		: applyRoutingPreferenceToPayload(
+				buildExamplePayload(selectedEndpoint, modelIdentifierInCode),
+				routingPreference,
+			);
 	const shouldIncludeServiceTier =
 		supportsServiceTier && selectedServiceTier !== "standard";
 	const requestPayload =
@@ -656,7 +676,13 @@ export default function Quickstart({
 			? "Send a streaming request"
 			: "Send a request";
 	const curlFlags = shouldStream ? "-N -s" : "-s";
-	const curlQuickstart = `# 1) Set your key
+	const curlQuickstart = isModelMetadataQuickstart
+		? `# Get the catalog record, including unavailable models
+curl --get ${endpointUrl} \\
+  -H "Authorization: Bearer $PHASEO_API_KEY" \\
+  --data-urlencode "model_id=${modelIdentifierInCode}" \\
+  --data-urlencode "availability=all"`
+		: `# 1) Set your key
 export PHASEO_API_KEY="phaseo_v1_sk_..."
 
 ${batchEnabled ? `${batchLineCommentPy}
@@ -707,8 +733,20 @@ print(audio)`
 
 print(response)`;
 
-	const typescriptSdkUsage =
-		normalizedEndpoint === "chat.completions"
+	const typescriptSdkUsage = isModelMetadataQuickstart
+		? `import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY,
+});
+
+const models = await client.models.list({
+  model_id: "${modelIdentifierInCode}",
+  availability: "all",
+});
+
+console.log(models);`
+		: normalizedEndpoint === "chat.completions"
 			? shouldStream
 				? `import Phaseo from '@phaseo/sdk';
 
@@ -978,8 +1016,19 @@ result = agent.run(
 puts result.output`
 		: null;
 
-	const pythonSdkUsage =
-		normalizedEndpoint === "chat.completions"
+	const pythonSdkUsage = isModelMetadataQuickstart
+		? `import os
+from phaseo import Phaseo
+
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
+
+models = client.models.list({
+    "model_id": "${modelIdentifierInCode}",
+    "availability": "all",
+})
+
+print(models)`
+		: normalizedEndpoint === "chat.completions"
 			? shouldStream
 				? `import os
 from phaseo import Phaseo
@@ -1669,22 +1718,29 @@ console.log(response);`
 							2
 						</Badge>
 						<div className="space-y-1">
-							<h3 className="text-base font-semibold">Send the request</h3>
+							<h3 className="text-base font-semibold">
+								{isModelMetadataQuickstart
+									? "Retrieve model metadata"
+									: "Send the request"}
+							</h3>
 							<p className="text-sm text-muted-foreground">
-								Choose a supported endpoint, pick a main language, then select
-								the example style you want to copy.
+								{isModelMetadataQuickstart
+									? "Query GET /v1/models by model ID, including records that are not currently routable."
+									: "Choose a supported endpoint, pick a main language, then select the example style you want to copy."}
 							</p>
 						</div>
 					</div>
 
-					<EndpointRoutesTable
-						endpointRoutes={endpointRoutes}
-						selectedEndpoint={selectedEndpoint}
-						showAllEndpointRoutes={showAllEndpointRoutes}
-						onToggleShowAllEndpointRoutes={() =>
-							setShowAllEndpointRoutes((current) => !current)
-						}
-					/>
+					{isModelMetadataQuickstart ? null : (
+						<EndpointRoutesTable
+							endpointRoutes={endpointRoutes}
+							selectedEndpoint={selectedEndpoint}
+							showAllEndpointRoutes={showAllEndpointRoutes}
+							onToggleShowAllEndpointRoutes={() =>
+								setShowAllEndpointRoutes((current) => !current)
+							}
+						/>
+					)}
 
 					<QuickstartUsageSection
 						modelIdentifierInCode={modelIdentifierInCode}
@@ -1703,6 +1759,7 @@ console.log(response);`
 						availableLanguageFamilies={availableLanguageFamilies}
 						secondaryLanguageOptions={secondaryLanguageOptions}
 						supportsStreaming={supportsStreaming}
+						showStreamingControl={!isModelMetadataQuickstart}
 						supportsServiceTier={supportsServiceTier}
 						streamingEnabled={streamingEnabled}
 						selectedServiceTier={selectedServiceTier}

@@ -91,6 +91,7 @@ type QuickstartUsageSectionProps = {
 	availableLanguageFamilies: LanguageFamilyOption[];
 	secondaryLanguageOptions: Array<{ value: string; label: string }>;
 	supportsStreaming: boolean;
+	showStreamingControl?: boolean;
 	supportsServiceTier: boolean;
 	streamingEnabled: boolean;
 	selectedServiceTier: "standard" | "priority" | "flex";
@@ -390,6 +391,7 @@ export function QuickstartUsageSection({
 	availableLanguageFamilies,
 	secondaryLanguageOptions,
 	supportsStreaming,
+	showStreamingControl = true,
 	supportsServiceTier,
 	streamingEnabled,
 	selectedServiceTier,
@@ -692,16 +694,18 @@ export function QuickstartUsageSection({
 								</Select>
 							</div>
 						) : null}
-						<div className="flex h-8 items-center gap-2 rounded-lg border border-border/70 bg-background px-3">
-							<Switch
-								checked={streamingEnabled}
-								onCheckedChange={onToggleStreaming}
-								disabled={!supportsStreaming}
-							/>
-							<span className="text-xs font-medium">
-								{supportsStreaming ? "Streaming" : "No stream"}
-							</span>
-						</div>
+						{showStreamingControl ? (
+							<div className="flex h-8 items-center gap-2 rounded-lg border border-border/70 bg-background px-3">
+								<Switch
+									checked={streamingEnabled}
+									onCheckedChange={onToggleStreaming}
+									disabled={!supportsStreaming}
+								/>
+								<span className="text-xs font-medium">
+									{supportsStreaming ? "Streaming" : "No stream"}
+								</span>
+							</div>
+						) : null}
 						<div className="ml-auto">
 							<MiniCopyButton content={requestExample.code} />
 						</div>
