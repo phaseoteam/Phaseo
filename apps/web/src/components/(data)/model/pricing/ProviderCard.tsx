@@ -2459,13 +2459,13 @@ export default function ProviderCard({
 					{expanded ? (
 						<motion.span
 							aria-hidden="true"
-							layout="position"
-							layoutId="provider-table-active-indicator"
 							className="absolute inset-y-0 left-0 w-0.5 bg-primary"
+							initial={reduceMotion ? false : { opacity: 0 }}
+							animate={{ opacity: 1 }}
 							transition={
 								reduceMotion
 									? { duration: 0 }
-									: { layout: { duration: 0.16, ease: "easeOut" } }
+									: { duration: 0.12, ease: "easeOut" }
 							}
 						/>
 					) : null}
