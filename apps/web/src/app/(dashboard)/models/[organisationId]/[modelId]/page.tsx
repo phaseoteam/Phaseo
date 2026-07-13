@@ -1,5 +1,6 @@
 import {
 	fetchFrontendModelBenchmarkHighlights,
+	fetchFrontendModelGatewayMetadata,
 	fetchFrontendModelOverview,
 	fetchFrontendModelPerformance,
 	fetchFrontendModelSubscriptionPlans,
