@@ -97,7 +97,7 @@ function FooterLinkList({
 							prefetch={link.external ? undefined : false}
 							target={link.external ? "_blank" : undefined}
 							rel={link.external ? "noopener noreferrer" : undefined}
-							className="group inline-flex items-center text-sm text-zinc-600 hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/70 dark:text-zinc-400 dark:hover:text-zinc-50"
+							className={`group inline-flex items-center text-sm text-zinc-600 hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/70 dark:text-zinc-400 dark:hover:text-zinc-50 ${link.logoId ? "lg:w-28" : ""}`}
 						>
 							{link.logoId ? (
 								<span
