@@ -38,6 +38,8 @@ const LOGO_PATHS: Record<string, { light: string; dark: string }> = {
     light: "/logos/spacexai_light.svg",
     dark: "/logos/spacexai_dark.svg",
   },
+  xiaomi: { light: "/logos/xiaomi.svg", dark: "/logos/xiaomi.svg" },
+  zai: { light: "/logos/zai_light.svg", dark: "/logos/zai_dark.svg" },
 };
 
 const LOGO_ALIASES: Record<string, keyof typeof LOGO_PATHS> = {
@@ -45,6 +47,7 @@ const LOGO_ALIASES: Record<string, keyof typeof LOGO_PATHS> = {
   xai: "spacex-ai",
   longcat: "meituan",
   "meituan-longcat": "meituan",
+  "z-ai": "zai",
 };
 
 export function getOrganisationLogo(

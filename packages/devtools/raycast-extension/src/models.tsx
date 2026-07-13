@@ -16,14 +16,12 @@ import {
   formatDate,
   getModelURL,
   getOrganisationURL,
-  getStatusColor,
-  getStatusText,
   getModelDisplayName,
   getModelOrganisationName,
   modelMatchesSearch,
 } from "./utils";
 
-type SortBy = "release_date" | "organisation" | "status" | "name";
+type SortBy = "release_date" | "organisation" | "name";
 
 export default function Command() {
   const [sortBy, setSortBy] = useState<SortBy>("release_date");
@@ -68,12 +66,6 @@ export default function Command() {
         if (aOrg !== bOrg) return aOrg.localeCompare(bOrg);
         return getModelDisplayName(a).localeCompare(getModelDisplayName(b));
       }
-      case "status": {
-        const aStatus = a.status || "unknown";
-        const bStatus = b.status || "unknown";
-        if (aStatus !== bStatus) return aStatus.localeCompare(bStatus);
-        return getModelDisplayName(a).localeCompare(getModelDisplayName(b));
-      }
       case "name": {
         return getModelDisplayName(a).localeCompare(getModelDisplayName(b));
       }
@@ -98,7 +90,6 @@ export default function Command() {
             value="release_date"
           />
           <List.Dropdown.Item title="Organisation" value="organisation" />
-          <List.Dropdown.Item title="Status" value="status" />
           <List.Dropdown.Item title="Name" value="name" />
         </List.Dropdown>
       }
@@ -122,15 +113,7 @@ export default function Command() {
                 Color.SecondaryText) as Color.ColorLike,
             }
           }
-          accessories={[
-            {
-              tag: {
-                value: getStatusText(model.status),
-                color: getStatusColor(model.status) as Color.ColorLike,
-              },
-            },
-            { text: formatDate(model.release_date) },
-          ]}
+          accessories={[{ text: formatDate(model.release_date) }]}
           actions={
             <ActionPanel>
               <Action.OpenInBrowser
