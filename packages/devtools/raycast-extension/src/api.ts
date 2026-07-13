@@ -1,27 +1,12 @@
 import { Cache, getPreferenceValues } from "@raycast/api";
-import type {
-  CreditsResponse,
-  AnalyticsUsageResponse,
-  Preferences,
-  ModelsResponse,
-  OrganisationsResponse,
-  ProvidersResponse,
-  WorkspaceActivityResponse,
-  ModelFilters,
-} from "./types";
+import type { Preferences, ModelsResponse, ModelFilters } from "./types";
 
 const DEFAULT_API_URL = "https://api.phaseo.app/v1";
 const LEGACY_API_URL = "https://api.phaseo.ai/v1";
 const apiCache = new Cache({ namespace: "phaseo-api" });
 
 const CACHE_TTL = {
-  // The public catalogue changes infrequently. Cache it locally to keep normal
-  // Raycast browsing from generating repeated API traffic.
   models: 60 * 60 * 1000,
-  catalogue: 60 * 60 * 1000,
-  // Management data is workspace-specific, but the extension is a quick-view
-  // surface rather than a live dashboard. Refresh explicitly bypasses this.
-  management: 15 * 60 * 1000,
 } as const;
 
 type CachedResponse<T> = {
@@ -51,23 +36,9 @@ export class APIError extends Error {
   }
 }
 
-export class ManagementKeyRequiredError extends APIError {
-  constructor(
-    message = "A management API key is required for this command. Configure it in extension preferences.",
-  ) {
-    super(message);
-    this.name = "ManagementKeyRequiredError";
-  }
-}
-
-type APIKeyType = "gateway" | "management";
-
-function getAPIConfig(keyType: APIKeyType): { apiKey: string; apiUrl: string } {
+function getAPIConfig(): { apiKey: string; apiUrl: string } {
   const preferences = getPreferenceValues<Preferences>();
-  const apiKey =
-    keyType === "management"
-      ? preferences.managementApiKey
-      : preferences.apiKey;
+  const apiKey = preferences.apiKey;
   const configuredApiUrl = preferences.apiUrl?.trim().replace(/\/+$/, "");
   const apiUrl =
     configuredApiUrl === LEGACY_API_URL
@@ -75,18 +46,8 @@ function getAPIConfig(keyType: APIKeyType): { apiKey: string; apiUrl: string } {
       : configuredApiUrl || DEFAULT_API_URL;
 
   if (!apiKey) {
-    if (keyType === "management") {
-      throw new ManagementKeyRequiredError();
-    }
-
     throw new APIError(
       "API key is required. Please configure it in extension preferences.",
-    );
-  }
-
-  if (keyType === "management" && !apiKey.startsWith("phaseo_v1_mk_")) {
-    throw new ManagementKeyRequiredError(
-      "Use a typed management key beginning with phaseo_v1_mk_. Gateway API keys beginning with phaseo_v1_sk_ cannot access these commands.",
     );
   }
 
@@ -97,9 +58,8 @@ async function fetchAPI<T>(
   endpoint: string,
   params?: Record<string, string | string[]>,
   cacheTtlMs = 0,
-  keyType: APIKeyType = "gateway",
 ): Promise<T> {
-  const { apiKey, apiUrl } = getAPIConfig(keyType);
+  const { apiKey, apiUrl } = getAPIConfig();
 
   // Build query string
   const queryParams = new URLSearchParams();
@@ -140,17 +100,13 @@ async function fetchAPI<T>(
     if (!response.ok) {
       if (response.status === 401) {
         throw new APIError(
-          keyType === "management"
-            ? "Invalid management API key. Please check your extension preferences."
-            : "Invalid API key. Please check your extension preferences.",
+          "Invalid API key. Please check your extension preferences.",
           401,
         );
       }
       if (response.status === 403) {
         throw new APIError(
-          keyType === "management"
-            ? "Management API key does not have permission for this command."
-            : "Access forbidden. Please check your API key permissions.",
+          "Access forbidden. Please check your API key permissions.",
           403,
         );
       }
@@ -210,65 +166,6 @@ export async function getModels(
   }
 
   return fetchAPI<ModelsResponse>("/models", params, CACHE_TTL.models);
-}
-
-export async function getOrganisations(
-  limit = 50,
-  offset = 0,
-): Promise<OrganisationsResponse> {
-  const params = {
-    limit: String(limit),
-    offset: String(offset),
-  };
-
-  return fetchAPI<OrganisationsResponse>(
-    "/organisations",
-    params,
-    CACHE_TTL.catalogue,
-  );
-}
-
-export async function getProviders(
-  limit = 50,
-  offset = 0,
-): Promise<ProvidersResponse> {
-  const params = {
-    limit: String(limit),
-    offset: String(offset),
-  };
-
-  return fetchAPI<ProvidersResponse>("/providers", params, CACHE_TTL.catalogue);
-}
-
-export async function getCredits(): Promise<CreditsResponse> {
-  return fetchAPI<CreditsResponse>(
-    "/credits",
-    undefined,
-    CACHE_TTL.management,
-    "management",
-  );
-}
-
-export async function getRecentActivity(
-  days = 7,
-  limit = 50,
-  offset = 0,
-): Promise<WorkspaceActivityResponse> {
-  return fetchAPI<WorkspaceActivityResponse>(
-    "/activity",
-    { days: String(days), limit: String(limit), offset: String(offset) },
-    CACHE_TTL.management,
-    "management",
-  );
-}
-
-export async function getUsageAnalytics(): Promise<AnalyticsUsageResponse> {
-  return fetchAPI<AnalyticsUsageResponse>(
-    "/analytics",
-    undefined,
-    CACHE_TTL.management,
-    "management",
-  );
 }
 
 export function clearAPICache(): void {

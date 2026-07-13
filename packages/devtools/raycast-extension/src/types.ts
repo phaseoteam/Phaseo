@@ -32,6 +32,22 @@ export interface ProviderInfo {
   params: string[];
 }
 
+export interface Organisation {
+  organisation_id: string;
+  name: string | null;
+  country_code: string | null;
+  description: string | null;
+  colour: string | null;
+}
+
+export interface Provider {
+  api_provider_id: string;
+  api_provider_name: string | null;
+  description: string | null;
+  link: string | null;
+  country_code: string | null;
+}
+
 export interface ModelPricing {
   prompt?: string | null;
   completion?: string | null;
@@ -45,23 +61,6 @@ export interface ModelTopProvider {
 }
 
 // Organisation Types
-export interface Organisation {
-  organisation_id: string;
-  name: string | null;
-  country_code: string | null;
-  description: string | null;
-  colour: string | null;
-}
-
-// Provider Types
-export interface Provider {
-  api_provider_id: string;
-  api_provider_name: string | null;
-  description: string | null;
-  link: string | null;
-  country_code: string | null;
-}
-
 // API Response Types
 export interface ModelsResponse {
   ok: boolean;
@@ -69,73 +68,6 @@ export interface ModelsResponse {
   offset: number;
   total: number;
   models: Model[];
-}
-
-export interface OrganisationsResponse {
-  ok: boolean;
-  limit: number;
-  offset: number;
-  total: number;
-  organisations: Organisation[];
-}
-
-export interface ProvidersResponse {
-  ok: boolean;
-  limit: number;
-  offset: number;
-  total: number;
-  providers: Provider[];
-}
-
-export interface CreditsResponse {
-  ok: true;
-  credits: {
-    remaining: number;
-    balance_nanos: number;
-    reserved_nanos: number;
-    available_nanos: number;
-    thirty_day_usage: number | null;
-    thirty_day_requests: number;
-  };
-}
-
-export interface WorkspaceActivityEntry {
-  request_id: string | null;
-  provider: string | null;
-  model: string | null;
-  endpoint: string | null;
-  usage: Record<string, unknown> | null;
-  cost_cents: number;
-  latency_ms: number | null;
-  timestamp: string | null;
-}
-
-export interface WorkspaceActivityResponse {
-  ok: true;
-  period_days: number;
-  limit: number;
-  offset: number;
-  total: number;
-  total_cost_cents: number;
-  activity: WorkspaceActivityEntry[];
-}
-
-export interface AnalyticsUsageEntry {
-  date: string;
-  model: string;
-  model_permaslug: string;
-  endpoint_id: string;
-  provider_name: string;
-  usage: number;
-  byok_usage_inference: number;
-  requests: number;
-  prompt_tokens: number;
-  completion_tokens: number;
-  reasoning_tokens: number;
-}
-
-export interface AnalyticsUsageResponse {
-  data: AnalyticsUsageEntry[];
 }
 
 // Filter Types
@@ -150,6 +82,5 @@ export interface ModelFilters {
 // Preferences
 export interface Preferences {
   apiKey: string;
-  managementApiKey?: string;
   apiUrl?: string;
 }

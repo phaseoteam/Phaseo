@@ -26,11 +26,6 @@ import { SecretRevealActions } from "../keys/SecretRevealActions";
 
 const KEY_TEMPLATES = [
 	{
-		value: "raycast-readonly",
-		label: "Raycast",
-		description: "Usage, credits, usage by model, and recent activity only.",
-	},
-	{
 		value: "read-only",
 		label: "Read",
 		description: "View all control-plane resources without changing them.",
@@ -76,7 +71,7 @@ export default function CreateManagementKeyDialog({
 	const [open, setOpen] = useState(false);
 	const [name, setName] = useState("");
 	const [expiresAtLocal, setExpiresAtLocal] = useState("");
-	const [template, setTemplate] = useState<(typeof KEY_TEMPLATES)[number]["value"]>("raycast-readonly");
+	const [template, setTemplate] = useState<(typeof KEY_TEMPLATES)[number]["value"]>("read-only");
 	const [loading, setLoading] = useState(false);
 	const [plainKey, setPlainKey] = useState<string | null>(null);
 	const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(
@@ -141,7 +136,7 @@ export default function CreateManagementKeyDialog({
 		setOpen(false);
 		setName("");
 		setExpiresAtLocal("");
-		setTemplate("raycast-readonly");
+		setTemplate("read-only");
 		setPlainKey(null);
 	}
 
@@ -228,7 +223,7 @@ export default function CreateManagementKeyDialog({
 							</label>
 							<div
 								id="management-key-template"
-								className="grid grid-cols-4 overflow-hidden rounded-md border border-input"
+								className="grid grid-cols-3 overflow-hidden rounded-md border border-input"
 								role="group"
 								aria-labelledby="management-key-template-label"
 							>

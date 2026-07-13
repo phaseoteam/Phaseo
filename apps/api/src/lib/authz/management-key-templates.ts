@@ -1,4 +1,4 @@
-import { CAPABILITIES, DEFAULT_MANAGEMENT_KEY_CAPABILITIES } from "./capabilities";
+import { DEFAULT_MANAGEMENT_KEY_CAPABILITIES } from "./capabilities";
 
 const CONTROL_READ_SCOPES = DEFAULT_MANAGEMENT_KEY_CAPABILITIES.filter((scope) =>
 	scope.endsWith(":read"),
@@ -8,15 +8,6 @@ const CONTROL_READ_WRITE_SCOPES = DEFAULT_MANAGEMENT_KEY_CAPABILITIES.filter(
 );
 
 export const MANAGEMENT_KEY_TEMPLATES = {
-	"raycast-readonly": {
-		title: "Raycast read-only",
-		description: "View credits, usage by model, and recent gateway activity.",
-		scopes: [
-			CAPABILITIES.CREDITS_READ,
-			CAPABILITIES.ACTIVITY_READ,
-			CAPABILITIES.ANALYTICS_READ,
-	],
-	},
 	"read-only": {
 		title: "Read",
 		description: "View all workspace control-plane resources without changing them.",

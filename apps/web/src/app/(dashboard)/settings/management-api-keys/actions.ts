@@ -31,7 +31,7 @@ export type CreateManagementKeyInput = {
 	name: string;
 	creatorUserId: string;
 	workspaceId: string;
-	template?: "raycast-readonly" | "read-only" | "read-write" | "full-control";
+	template?: "read-only" | "read-write" | "full-control";
 	scopes?: string[];
 	expiresAt?: string | null;
 };

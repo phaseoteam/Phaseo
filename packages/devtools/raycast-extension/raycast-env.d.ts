@@ -10,8 +10,6 @@
 type ExtensionPreferences = {
   /** API Key - Your Phaseo API key */
   "apiKey": string,
-  /** Management API Key - Required for usage and activity commands. Create a Raycast-scoped management key in Phaseo Settings. */
-  "managementApiKey"?: string,
   /** API URL - Custom API URL (optional) */
   "apiUrl": string
 }
@@ -22,30 +20,10 @@ declare type Preferences = ExtensionPreferences
 declare namespace Preferences {
   /** Preferences accessible in the `models` command */
   export type Models = ExtensionPreferences & {}
-  /** Preferences accessible in the `organisations` command */
-  export type Organisations = ExtensionPreferences & {}
-  /** Preferences accessible in the `providers` command */
-  export type Providers = ExtensionPreferences & {}
-  /** Preferences accessible in the `usage-credits` command */
-  export type UsageCredits = ExtensionPreferences & {}
-  /** Preferences accessible in the `usage-analytics` command */
-  export type UsageAnalytics = ExtensionPreferences & {}
-  /** Preferences accessible in the `recent-activity` command */
-  export type RecentActivity = ExtensionPreferences & {}
 }
 
 declare namespace Arguments {
   /** Arguments passed to the `models` command */
   export type Models = {}
-  /** Arguments passed to the `organisations` command */
-  export type Organisations = {}
-  /** Arguments passed to the `providers` command */
-  export type Providers = {}
-  /** Arguments passed to the `usage-credits` command */
-  export type UsageCredits = {}
-  /** Arguments passed to the `usage-analytics` command */
-  export type UsageAnalytics = {}
-  /** Arguments passed to the `recent-activity` command */
-  export type RecentActivity = {}
 }
 

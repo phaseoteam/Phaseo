@@ -10,7 +10,7 @@
 
 - Management API keys now use the dedicated `phaseo_v1_mk_...` format; regular `phaseo_v1_sk_...` keys remain inference-only.
 - Management routes now require typed management keys before any key lookup, preventing gateway keys from being treated as control-plane credentials.
-- Management key creation now offers Raycast, Read, Write, and All access templates that expand to explicit capabilities.
+- Management key creation now offers Read, Write, and All access templates that expand to explicit capabilities.
 - OAuth app owners can manage allowed scopes, while existing user grants remain unchanged until the user approves additional requested scopes.
-- The Phaseo Raycast extension adds cached model, organisation, and provider browsing plus read-only Usage & Credits and Recent Gateway Activity commands.
+- The Phaseo Raycast extension adds a cached, logo-led model browser that opens canonical Phaseo model pages.
 

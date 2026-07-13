@@ -25,7 +25,6 @@ import { Switch } from "@/components/ui/switch";
 import { MANAGEMENT_KEY_TEMPLATE_SCOPES } from "@/lib/managementKeyScopes";
 
 const KEY_TEMPLATES: Array<{ value: ManagementKeyTemplate; label: string; description: string }> = [
-	{ value: "raycast-readonly", label: "Raycast", description: "Usage, credits, usage by model, and recent activity only." },
 	{ value: "read-only", label: "Read", description: "All control-plane reads." },
 	{ value: "read-write", label: "Write", description: "Reads and changes, without deletes." },
 	{ value: "full-control", label: "All", description: "All management capabilities." },
@@ -157,7 +156,7 @@ export default function EditManagementKeyItem({
 					/>
 					<div className="space-y-2">
 						<Label>Access level</Label>
-						<div className="grid grid-cols-4 overflow-hidden rounded-md border border-input" role="group" aria-label="Management key access level">
+		<div className="grid grid-cols-3 overflow-hidden rounded-md border border-input" role="group" aria-label="Management key access level">
 							{KEY_TEMPLATES.map((option) => (
 								<Button
 									key={option.value}

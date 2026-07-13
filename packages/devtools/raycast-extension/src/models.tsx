@@ -11,6 +11,7 @@ import {
   Toast,
 } from "@raycast/api";
 import { clearAPICache, getModels } from "./api";
+import { getOrganisationLogo } from "./logos";
 import {
   formatDate,
   getModelURL,
@@ -115,6 +116,13 @@ export default function Command() {
           key={model.model_id}
           title={getModelDisplayName(model)}
           subtitle={getModelOrganisationName(model)}
+          icon={
+            getOrganisationLogo(model.organisation_id) ?? {
+              source: Icon.Building,
+              tintColor: (model.organisation_colour ??
+                Color.SecondaryText) as Color.ColorLike,
+            }
+          }
           accessories={[
             {
               tag: {
