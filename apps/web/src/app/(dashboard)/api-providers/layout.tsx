@@ -1,9 +1,3 @@
-import type { ReactNode } from "react";
-
-export default function ApiProvidersLayout({
-	children,
-}: {
-	children: ReactNode;
-}) {
+export default function ApiProvidersLayout({ children }: LayoutProps<"/api-providers">) {
 	return children;
 }
