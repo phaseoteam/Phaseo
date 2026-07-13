@@ -59,6 +59,14 @@
 			transform: translateY(calc(-100% - var(--gap)));
 		}
 	}
+	@keyframes modality-ticker {
+		from {
+			transform: translateY(0);
+		}
+		to {
+			transform: translateY(-50%);
+		}
+	}
 	@keyframes shiny-text {
 		0% {
 			background-position: 100% 0;

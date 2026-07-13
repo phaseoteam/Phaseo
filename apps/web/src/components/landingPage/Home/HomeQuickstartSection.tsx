@@ -22,7 +22,6 @@ import {
 } from "lucide-react";
 import NumberFlow from "@number-flow/react";
 import { Logo } from "@/components/Logo";
-import { Marquee, MarqueeContent } from "@/components/ui/marquee";
 
 type Benefit = {
 	title: string;
@@ -543,21 +542,20 @@ function ModalityTicker({
 	modalities: readonly (typeof MODALITIES)[number][];
 	speed: number;
 }) {
+	const loopedModalities = [...modalities, ...modalities];
+
 	return (
-		<Marquee className="h-[150px]">
-			<MarqueeContent
-				direction="up"
-				speed={speed}
-				pauseOnHover={false}
-				className="h-[150px]"
+		<div className="h-[150px] overflow-hidden">
+			<div
+				className="space-y-1.5 px-0.5 py-1 motion-reduce:[animation:none]"
+				style={{ animation: `modality-ticker ${speed}s linear infinite` }}
 			>
-				<div className="space-y-1.5 px-0.5 py-1">
-					{modalities.map((modality) => {
+					{loopedModalities.map((modality, index) => {
 						const Icon = modality.icon;
 
 						return (
 							<div
-								key={modality.label}
+								key={`${modality.label}-${index}`}
 								className="flex h-[46px] items-center gap-2 rounded-xl border border-zinc-200/80 bg-white/80 px-2.5 py-2 dark:border-zinc-800/80 dark:bg-zinc-950/80"
 							>
 								<Icon className="h-3.5 w-3.5 shrink-0 text-zinc-700 dark:text-zinc-300" />
@@ -572,9 +570,8 @@ function ModalityTicker({
 							</div>
 						);
 					})}
-				</div>
-			</MarqueeContent>
-		</Marquee>
+			</div>
+		</div>
 	);
 }
 
