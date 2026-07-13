@@ -658,12 +658,9 @@ export default function PricingInsights({
 				cachedReadInputTokens30d: 0,
 				usageByDay: new Map<string, DailyUsagePoint>(),
 			};
-			const inputTokens = row.inputTextTokens > 0 ? row.inputTextTokens : row.inputTokens;
-			const outputTokens = row.outputTextTokens > 0 ? row.outputTextTokens : row.outputTokens;
-			const cachedReadInputTokens =
-				row.cachedReadTextTokens > 0
-					? row.cachedReadTextTokens
-					: row.cachedReadTokens;
+			const inputTokens = row.inputTextTokens;
+			const outputTokens = row.outputTextTokens;
+			const cachedReadInputTokens = row.cachedReadTextTokens;
 			existing.totalTokens30d += row.totalTokens;
 			existing.inputWeightTokens30d += inputTokens;
 			existing.outputWeightTokens30d += outputTokens;
