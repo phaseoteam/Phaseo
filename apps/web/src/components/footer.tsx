@@ -147,7 +147,9 @@ export default function Footer() {
 									style={{ width: "auto" }}
 								/>
 							</Link>
-							<FooterStatusIndicator />
+							<div className="relative top-px">
+								<FooterStatusIndicator />
+							</div>
 						</div>
 						<div className="md:hidden">
 							<ThemeSelector className="py-0" labelSize="sm" />
