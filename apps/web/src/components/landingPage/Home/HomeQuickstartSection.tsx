@@ -562,14 +562,14 @@ function ModalityTicker({
 					return (
 						<div
 							key={`${workload.label}-${index}`}
-							className={`flex h-[46px] items-center gap-2 rounded-xl border px-2.5 py-2 ${tone.badgeClassName}`}
+							className="flex h-[46px] items-center gap-2 rounded-xl border border-zinc-200/80 bg-white/80 px-2.5 py-2 dark:border-zinc-800/80 dark:bg-zinc-950/80"
 						>
 							<Icon className={`h-3.5 w-3.5 shrink-0 ${tone.iconClassName}`} />
-							<span className="min-w-0">
-								<span className="block whitespace-normal text-[10px] font-semibold leading-tight">
+							<span className="min-w-0 flex-1">
+								<span className="block whitespace-nowrap text-[10px] font-semibold leading-tight text-zinc-950 dark:text-zinc-50">
 									{workload.label}
 								</span>
-								<span className="mt-0.5 block whitespace-normal text-[9px] leading-tight opacity-75">
+								<span className="mt-0.5 block whitespace-nowrap text-[9px] leading-tight text-zinc-500 dark:text-zinc-400">
 									{workload.detail}
 								</span>
 							</span>
@@ -589,10 +589,10 @@ function ModalitiesVisual() {
 
 	return (
 		<VisualStage>
-			<div className="w-full max-w-[260px] space-y-2.5">
+			<div className="w-full max-w-[340px] space-y-2.5">
 				<div className="flex items-center justify-between px-1">
 					<span className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
-						Supported modes
+						Gateway capabilities
 					</span>
 					<span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500">
 						{WORKLOADS.length} workloads
