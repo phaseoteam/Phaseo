@@ -223,14 +223,14 @@ export default function CreateManagementKeyDialog({
 							placeholder="Key name (e.g. production management)"
 						/>
 						<div className="space-y-2">
-							<label className="text-sm font-medium" htmlFor="management-key-template">
+							<label id="management-key-template-label" className="text-sm font-medium">
 								Access template
 							</label>
 							<div
 								id="management-key-template"
 								className="grid grid-cols-4 overflow-hidden rounded-md border border-input"
 								role="group"
-								aria-label="Management key access template"
+								aria-labelledby="management-key-template-label"
 							>
 								{KEY_TEMPLATES.map((option) => (
 									<Button

@@ -78,4 +78,55 @@ describe("management key security", () => {
 		});
 		expect(state.dbTouched).toBe(false);
 	});
+
+	it("requires an explicit template or scope list when creating a management key", async () => {
+		const { managementKeysRoutes } = await import("./management-keys");
+		const response = await managementKeysRoutes.request("https://example.com/", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ name: "Missing scopes" }),
+		});
+		const body = await response.json();
+
+		expect(response.status).toBe(400);
+		expect(body).toMatchObject({
+			error: "bad_request",
+			message: "template or scopes is required when creating a management key",
+		});
+		expect(state.dbTouched).toBe(false);
+	});
+
+	it("rejects an empty scope list when creating a management key", async () => {
+		const { managementKeysRoutes } = await import("./management-keys");
+		const response = await managementKeysRoutes.request("https://example.com/", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ name: "Empty scopes", scopes: [] }),
+		});
+		const body = await response.json();
+
+		expect(response.status).toBe(400);
+		expect(body).toMatchObject({
+			error: "bad_request",
+			message: "At least one management scope is required",
+		});
+		expect(state.dbTouched).toBe(false);
+	});
+
+	it("does not allow a management key to grant capabilities it lacks", async () => {
+		const { managementKeysRoutes } = await import("./management-keys");
+		const response = await managementKeysRoutes.request("https://example.com/", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ name: "Escalation", template: "full-control" }),
+		});
+		const body = await response.json();
+
+		expect(response.status).toBe(403);
+		expect(body).toMatchObject({
+			error: "insufficient_scope",
+			message: expect.stringContaining("Token cannot grant scopes it does not have"),
+		});
+		expect(state.dbTouched).toBe(false);
+	});
 });

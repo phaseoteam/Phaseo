@@ -5,7 +5,12 @@ import { revalidatePath } from "next/cache";
 import { hmacSecret, makeManagementKeyV1 } from "@/lib/keygen";
 import { enforceTeamKeyLimit } from "@/lib/server/teamLimits";
 import { resolveActiveKeyPepper } from "@/lib/server/keyPepper";
-import { managementKeyScopes, type ManagementKeyTemplate } from "@/lib/managementKeyScopes";
+import {
+	CONTROL_SCOPES,
+	MANAGEMENT_KEY_TEMPLATE_SCOPES,
+	managementKeyScopes,
+	type ManagementKeyTemplate,
+} from "@/lib/managementKeyScopes";
 import {
 	requireActingUser,
 	requireAuthenticatedUser,
@@ -75,7 +80,23 @@ export async function createManagementKeyAction(
 	await enforceTeamKeyLimit(supabase as any, workspaceId);
 	const { kid, secret, plaintext, prefix } = makeManagementKeyV1();
 	const hash = hmacSecret(secret, resolveActiveKeyPepper());
-	const resolvedScopes = template ? managementKeyScopes(template) : scopes ?? managementKeyScopes("full-control");
+	if (template !== undefined && scopes !== undefined) {
+		throw new Error("Provide either an access template or explicit scopes, not both");
+	}
+	if (template === undefined && scopes === undefined) {
+		throw new Error("Select an access template or explicit scopes");
+	}
+	if (template !== undefined && !(template in MANAGEMENT_KEY_TEMPLATE_SCOPES)) {
+		throw new Error("Unsupported management key access template");
+	}
+	const resolvedScopes = template ? managementKeyScopes(template) : scopes!;
+	if (resolvedScopes.length === 0) {
+		throw new Error("At least one management scope is required");
+	}
+	const unsupportedScope = resolvedScopes.find((scope) => !CONTROL_SCOPES.includes(scope as (typeof CONTROL_SCOPES)[number]));
+	if (unsupportedScope) {
+		throw new Error(`Unsupported management scope: ${unsupportedScope}`);
+	}
 	const { data, error } = await supabase
 		.from("management_keys")
 		.insert({

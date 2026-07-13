@@ -97,8 +97,50 @@ function resolveManagementKeyScopes(body: Record<string, unknown>) {
 		return scopes.ok ? { ...scopes, template: body.template } : scopes;
 	}
 
+	if (body.scopes === undefined || body.scopes === null) {
+		return {
+			ok: false as const,
+			message: "template or scopes is required when creating a management key",
+		};
+	}
+
 	const scopes = normalizeScopeInput(body.scopes);
-	return scopes.ok ? { ...scopes, template: null } : scopes;
+	if (scopes.ok === false) return scopes;
+	if (parseStoredScopeList(scopes.value).length === 0) {
+		return { ok: false as const, message: "At least one management scope is required" };
+	}
+	return { ...scopes, template: null };
+}
+
+function requireGrantableScopes(
+	auth: {
+		internal?: boolean;
+		authMethod?: "api_key" | "oauth";
+		scopes?: string[];
+		oauthScopes?: string[];
+	},
+	requestedScopes: string,
+): Response | null {
+	if (auth.internal) return null;
+
+	const grantedScopes = new Set(
+		auth.authMethod === "oauth"
+			? (auth.scopes ?? auth.oauthScopes ?? [])
+			: (auth.scopes ?? []),
+	);
+	const ungrantableScopes = parseStoredScopeList(requestedScopes).filter(
+		(scope) => !grantedScopes.has(scope),
+	);
+	if (ungrantableScopes.length === 0) return null;
+
+	return json(
+		{
+			error: "insufficient_scope",
+			message: `Token cannot grant scopes it does not have: ${ungrantableScopes.join(", ")}`,
+		},
+		403,
+		{ "Cache-Control": "no-store" },
+	);
 }
 
 function formatManagementKey(row: ManagementKeyRow) {
@@ -186,6 +228,8 @@ async function handleCreateManagementKey(req: Request) {
 	try {
 		const scopes = resolveManagementKeyScopes(body);
 		if (scopes.ok === false) return json({ error: "bad_request", message: scopes.message }, 400, { "Cache-Control": "no-store" });
+		const grantError = requireGrantableScopes(auth.value, scopes.value);
+		if (grantError) return grantError;
 		const expiresAt = parseOptionalExpiry(body.expires_at ?? body.expiresAt);
 		const data = await issueManagementKey({
 			workspaceId: auth.value.workspaceId,
@@ -257,6 +301,8 @@ async function handleUpdateManagementKey(req: Request) {
 			}
 			const scopes = resolveManagementKeyScopes(body);
 			if (scopes.ok === false) return json({ error: "bad_request", message: scopes.message }, 400, { "Cache-Control": "no-store" });
+			const grantError = requireGrantableScopes(auth.value, scopes.value);
+			if (grantError) return grantError;
 			patch.scopes = scopes.value;
 		}
 		if (typeof body.expires_at !== "undefined" || typeof body.expiresAt !== "undefined") {

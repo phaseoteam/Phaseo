@@ -48,6 +48,7 @@ export function formatMoneyFromCents(cents: number | null | undefined): string {
 export function formatPricePerMillion(
   price: string | null | undefined,
 ): string | null {
+  if (price == null) return null;
   const value = Number(price);
   if (!Number.isFinite(value)) return null;
   return `$${(value * 1_000_000).toFixed(2)}/M`;

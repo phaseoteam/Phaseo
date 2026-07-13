@@ -200,16 +200,17 @@ export async function updateOAuthAppAction(
 			return { error: "OAuth app not found" };
 		}
 
-		// Verify user is a member of the team
+		// Only workspace owners and admins may change an OAuth app's metadata.
 		const { data: membership } = await supabase
 			.from("workspace_members")
-			.select("workspace_id")
+			.select("role")
 			.eq("workspace_id", app.workspace_id)
 			.eq("user_id", user.id)
-			.single();
+			.in("role", ["owner", "admin"])
+			.maybeSingle();
 
 		if (!membership) {
-			return { error: "You don't have permission to update this OAuth app" };
+			return { error: "Workspace owner or admin access is required" };
 		}
 
 		// Update metadata
@@ -315,16 +316,17 @@ export async function regenerateClientSecretAction(
 			return { error: "OAuth app not found" };
 		}
 
-		// Verify user is a member of the team
+		// Rotating a secret invalidates existing integrations, so require an admin role.
 		const { data: membership } = await supabase
 			.from("workspace_members")
-			.select("workspace_id")
+			.select("role")
 			.eq("workspace_id", app.workspace_id)
 			.eq("user_id", user.id)
-			.single();
+			.in("role", ["owner", "admin"])
+			.maybeSingle();
 
 		if (!membership) {
-			return { error: "You don't have permission to regenerate this secret" };
+			return { error: "Workspace owner or admin access is required" };
 		}
 
 		const adminClient = createAdminClient();
@@ -387,16 +389,17 @@ export async function deleteOAuthAppAction(
 			return { error: "OAuth app not found" };
 		}
 
-		// Verify user is a member of the team
+		// Deleting an OAuth app invalidates existing integrations, so require an admin role.
 		const { data: membership } = await supabase
 			.from("workspace_members")
-			.select("workspace_id")
+			.select("role")
 			.eq("workspace_id", app.workspace_id)
 			.eq("user_id", user.id)
-			.single();
+			.in("role", ["owner", "admin"])
+			.maybeSingle();
 
 		if (!membership) {
-			return { error: "You don't have permission to delete this OAuth app" };
+			return { error: "Workspace owner or admin access is required" };
 		}
 
 		// Delete OAuth client from Supabase first
