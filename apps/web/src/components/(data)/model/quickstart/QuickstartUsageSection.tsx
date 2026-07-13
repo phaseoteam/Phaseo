@@ -541,19 +541,23 @@ export function QuickstartUsageSection({
 	return (
 		<div className="space-y-3">
 			<div className="overflow-hidden rounded-xl border border-border/70 bg-card">
-				<div className="flex flex-col gap-3 px-3 py-3 xl:flex-row xl:items-center xl:justify-between">
-					<div className="flex flex-wrap items-center gap-3">
-						<div className="w-full sm:w-[168px]">
+				<div className="flex flex-col gap-2 px-3 py-3">
+					<div className="flex flex-wrap items-center gap-2">
+						<div className="w-full sm:w-28">
 							<Select
 								value={selectedEndpointValue}
 								onValueChange={onSelectEndpoint}
 							>
-								<SelectTrigger className="h-8 rounded-lg text-xs">
+								<SelectTrigger className="h-8 w-full rounded-lg bg-muted/60 text-xs">
 									<SelectValue placeholder={selectedEndpointLabel}>
 										{selectedEndpointLabel}
 									</SelectValue>
 								</SelectTrigger>
-								<SelectContent>
+								<SelectContent
+									align="start"
+									alignItemWithTrigger={false}
+									className="w-auto min-w-44 rounded-xl"
+								>
 									<SelectGroup>
 										<SelectLabel className="text-[11px] tracking-[0.04em] text-muted-foreground">
 											Endpoint
@@ -568,12 +572,12 @@ export function QuickstartUsageSection({
 								</SelectContent>
 							</Select>
 						</div>
-						<div className="w-full sm:w-[140px]">
+						<div className="w-full sm:w-36">
 							<Select
 								value={selectedLanguageFamilyId}
 								onValueChange={onSelectLanguageFamily}
 							>
-								<SelectTrigger className="h-8 rounded-lg text-xs">
+								<SelectTrigger className="h-8 w-full rounded-lg bg-muted/60 text-xs">
 									<SelectValue placeholder="Language">
 										<OptionLabel
 											label={selectedLanguageFamilyLabel}
@@ -581,7 +585,11 @@ export function QuickstartUsageSection({
 										/>
 									</SelectValue>
 								</SelectTrigger>
-								<SelectContent>
+								<SelectContent
+									align="start"
+									alignItemWithTrigger={false}
+									className="w-auto min-w-40 rounded-xl"
+								>
 									<SelectGroup>
 										<SelectLabel className="text-[11px] tracking-[0.04em] text-muted-foreground">
 											Language
@@ -599,9 +607,9 @@ export function QuickstartUsageSection({
 								</SelectContent>
 							</Select>
 						</div>
-						<div className="w-full max-w-full sm:w-fit">
+						<div className="w-full sm:w-44">
 							<Select value={selectedLanguage} onValueChange={onSelectLanguage}>
-								<SelectTrigger className="h-8 w-fit min-w-[168px] max-w-full rounded-lg text-xs">
+								<SelectTrigger className="h-8 w-full rounded-lg bg-muted/60 text-xs">
 									<SelectValue placeholder="Example type">
 										<OptionLabel
 											label={selectedExampleTypeLabel}
@@ -609,7 +617,11 @@ export function QuickstartUsageSection({
 										/>
 									</SelectValue>
 								</SelectTrigger>
-								<SelectContent>
+								<SelectContent
+									align="start"
+									alignItemWithTrigger={false}
+									className="w-auto min-w-56 rounded-xl"
+								>
 									<SelectGroup>
 										<SelectLabel className="text-[11px] tracking-[0.04em] text-muted-foreground">
 											Example type
@@ -628,16 +640,16 @@ export function QuickstartUsageSection({
 							</Select>
 						</div>
 					</div>
-					<div className="flex w-full flex-wrap items-center gap-2.5 xl:w-auto xl:justify-end">
+					<div className="flex w-full flex-wrap items-center gap-2">
 						{supportsServiceTier ? (
-							<div className="w-full sm:w-[148px]">
+							<div className="w-full sm:w-32">
 								<Select
 									value={selectedServiceTier}
 									onValueChange={(value) =>
 										onSelectServiceTier(value as "standard" | "priority" | "flex")
 									}
 								>
-									<SelectTrigger className="h-8 rounded-lg text-xs">
+									<SelectTrigger className="h-8 w-full rounded-lg bg-muted/60 text-xs">
 										<SelectValue placeholder="Service tier">
 											<OptionLabel
 												label={selectedServiceTierLabel}
@@ -645,7 +657,11 @@ export function QuickstartUsageSection({
 											/>
 										</SelectValue>
 									</SelectTrigger>
-									<SelectContent>
+									<SelectContent
+										align="start"
+										alignItemWithTrigger={false}
+										className="w-auto min-w-48 rounded-xl"
+									>
 										<SelectGroup>
 											<SelectLabel className="text-[11px] tracking-[0.04em] text-muted-foreground">
 												Service tier
@@ -676,7 +692,7 @@ export function QuickstartUsageSection({
 								</Select>
 							</div>
 						) : null}
-						<div className="flex items-center gap-2 rounded-lg border border-border/70 bg-muted/20 px-3 py-1.5">
+						<div className="flex h-8 items-center gap-2 rounded-lg border border-border/70 bg-background px-3">
 							<Switch
 								checked={streamingEnabled}
 								onCheckedChange={onToggleStreaming}

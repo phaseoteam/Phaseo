@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQueryState } from "nuqs";
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from "recharts";
 import {
 	ChartContainer,
 	ChartTooltip,
@@ -15,11 +15,17 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { ModelUsageDailyBreakdownRow } from "@/lib/fetchers/models/getModelUsageDailyBreakdown";
 
 type ModelActivityChartProps = {
 	rows: ModelUsageDailyBreakdownRow[];
 	showHeading?: boolean;
+	description?: string;
 };
 
 type ActivityMode = "tokens" | "requests";
@@ -36,17 +42,39 @@ type RequestsActivityShapeProps = {
 };
 
 const TOKEN_SERIES = [
-	{ key: "inputTokens", label: "Input", color: "hsl(199 89% 48%)" },
-	{ key: "reasoningTokens", label: "Reasoning", color: "hsl(38 92% 50%)" },
-	{ key: "outputTokens", label: "Output", color: "hsl(158 64% 42%)" },
+	{
+		key: "inputTokens",
+		label: "Prompt",
+		color: "hsl(199 89% 48%)",
+		description: "Prompt tokens measure input size.",
+	},
+	{
+		key: "reasoningTokens",
+		label: "Reasoning",
+		color: "hsl(38 92% 50%)",
+		description: "Reasoning tokens show internal thinking before a response.",
+	},
+	{
+		key: "outputTokens",
+		label: "Completion",
+		color: "hsl(158 64% 42%)",
+		description: "Completion tokens reflect total output length.",
+	},
 ] as const;
 
 const REQUEST_SERIES = [
-	{ key: "requestCount", label: "Requests", color: "hsl(350 68% 48%)" },
+	{
+		key: "requestCount",
+		label: "Requests",
+		color: "hsl(350 68% 48%)",
+		description: "Requests measure successful gateway calls for this model.",
+	},
 ] as const;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const HISTORY_DAYS = 30;
+const INACTIVE_SERIES_OPACITY = 0.55;
+const INACTIVE_PROJECTED_OPACITY = 0.4;
 
 function formatCompactNumber(value: number): string {
 	if (!Number.isFinite(value)) return "--";
@@ -135,10 +163,12 @@ function RequestsActivityShape({
 export default function ModelActivityChart({
 	rows,
 	showHeading = false,
+	description = "Daily gateway activity over the last 30 days, with current UTC-day pace projection.",
 }: ModelActivityChartProps) {
 	const [modeParam, setModeParam] = useQueryState("activityMetric", {
 		defaultValue: "tokens",
 	});
+	const [hoveredSeriesKey, setHoveredSeriesKey] = useState<string | null>(null);
 	const mode: ActivityMode = modeParam === "requests" ? "requests" : "tokens";
 
 	const { chartData, chartConfig } = useMemo(() => {
@@ -249,6 +279,11 @@ export default function ModelActivityChart({
 	}, [mode, rows]);
 
 	const activeSeries = mode === "tokens" ? TOKEN_SERIES : REQUEST_SERIES;
+	const legendSeries = mode === "tokens" ? TOKEN_SERIES : REQUEST_SERIES;
+	const getSeriesOpacity = (seriesKey: string) =>
+		hoveredSeriesKey && hoveredSeriesKey !== seriesKey
+			? INACTIVE_SERIES_OPACITY
+			: 1;
 
 	return (
 		<div className="space-y-4">
@@ -257,7 +292,7 @@ export default function ModelActivityChart({
 					<div className="space-y-1">
 						<h2 className="text-xl font-semibold tracking-tight">Activity</h2>
 						<p className="text-sm text-muted-foreground">
-							Daily gateway activity over the last 30 days, with current UTC-day pace projection.
+							{description}
 						</p>
 					</div>
 					<Select
@@ -265,9 +300,11 @@ export default function ModelActivityChart({
 						onValueChange={(value) => setModeParam(value as ActivityMode)}
 					>
 						<SelectTrigger className="h-8 w-[140px] rounded-lg text-xs sm:mt-0.5">
-							<SelectValue placeholder="Metric" />
+							<SelectValue placeholder="Metric">
+								{mode === "requests" ? "Requests" : "Tokens"}
+							</SelectValue>
 						</SelectTrigger>
-						<SelectContent>
+						<SelectContent align="end">
 							<SelectItem value="tokens">Tokens</SelectItem>
 							<SelectItem value="requests">Requests</SelectItem>
 						</SelectContent>
@@ -414,7 +451,15 @@ export default function ModelActivityChart({
 											: [0, 0, 0, 0]
 									}
 									isAnimationActive={false}
-								/>
+								>
+									{chartData.map((entry) => (
+										<Cell
+											key={`${entry.day}-${series.key}`}
+											fillOpacity={getSeriesOpacity(series.key)}
+											opacity={getSeriesOpacity(series.key)}
+										/>
+									))}
+								</Bar>
 							))}
 							<Bar
 								dataKey="projectedPace"
@@ -423,7 +468,15 @@ export default function ModelActivityChart({
 								fill="url(#modelActivityProjectedPacePattern)"
 								radius={[4, 4, 0, 0]}
 								isAnimationActive={false}
-							/>
+							>
+								{chartData.map((entry) => (
+									<Cell
+										key={`${entry.day}-projectedPace`}
+										fillOpacity={hoveredSeriesKey ? INACTIVE_PROJECTED_OPACITY : 1}
+										opacity={hoveredSeriesKey ? INACTIVE_PROJECTED_OPACITY : 1}
+									/>
+								))}
+							</Bar>
 						</>
 					) : (
 						<Bar
@@ -436,6 +489,38 @@ export default function ModelActivityChart({
 					)}
 				</BarChart>
 			</ChartContainer>
+			<div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border/60 pt-3 text-xs text-muted-foreground">
+				{legendSeries.map((series) => (
+					<Tooltip key={series.key} delayDuration={120}>
+						<TooltipTrigger asChild>
+							<button
+								type="button"
+								className="flex items-center gap-2 rounded-md px-1 py-0.5 text-left transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+								data-activity-legend-item=""
+								aria-pressed={hoveredSeriesKey === series.key}
+								aria-label={`${series.label}: ${series.description}`}
+								onMouseEnter={() => setHoveredSeriesKey(series.key)}
+								onMouseLeave={() => setHoveredSeriesKey(null)}
+								onFocus={() => setHoveredSeriesKey(series.key)}
+								onBlur={() => setHoveredSeriesKey(null)}
+							>
+								<span
+									className="size-2.5 rounded-full"
+									style={{ backgroundColor: series.color }}
+								/>
+								<span>{series.label}</span>
+							</button>
+						</TooltipTrigger>
+						<TooltipContent
+							side="top"
+							align="center"
+							className="max-w-64 whitespace-normal text-balance text-center leading-5"
+						>
+							{series.description}
+						</TooltipContent>
+					</Tooltip>
+				))}
+			</div>
 		</div>
 	);
 }

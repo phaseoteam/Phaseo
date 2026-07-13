@@ -111,6 +111,10 @@ type RpcProviderHealthMetricsRow = {
 	request_success_pct: number | string | null;
 	avg_latency_ms_30m: number | string | null;
 	avg_throughput_30m: number | string | null;
+	p50_latency_ms_30m?: number | string | null;
+	median_latency_ms_30m?: number | string | null;
+	p50_throughput_30m?: number | string | null;
+	median_throughput_30m?: number | string | null;
 	avg_latency_ms: number | string | null;
 	p50_latency_ms: number | string | null;
 	p95_latency_ms: number | string | null;
@@ -136,14 +140,18 @@ type Aggregate = {
 	healthSuccessful3d: number;
 	latencySum30m: number;
 	latencySamples30m: number;
+	latencyValues30m: number[];
 	throughputSum30m: number;
 	throughputSamples30m: number;
+	throughputValues30m: number[];
 	inputTokens1h: number;
 	outputTokens1h: number;
 	latencySum3d: number;
 	latencySamples3d: number;
+	latencyValues3d: number[];
 	throughputSum3d: number;
 	throughputSamples3d: number;
+	throughputValues3d: number[];
 	cachedReadTokens1h: number;
 	dayRequests: [number, number, number];
 	daySuccessful: [number, number, number];
@@ -161,17 +169,13 @@ const ONE_HOUR_MS = 60 * 60 * 1000;
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-function toNumber(value: unknown): number {
-	const num = Number(value);
-	return Number.isFinite(num) ? num : 0;
-}
-
 function toInt(value: unknown): number {
 	const num = Number(value);
 	return Number.isFinite(num) ? Math.max(0, Math.trunc(num)) : 0;
 }
 
 function toFiniteNumber(value: unknown): number | null {
+	if (value === null || value === undefined || value === "") return null;
 	const parsed = Number(value);
 	return Number.isFinite(parsed) ? parsed : null;
 }
@@ -191,6 +195,19 @@ function toCountRecord(value: unknown): Record<string, number> {
 function average(sum: number, samples: number): number | null {
 	if (!Number.isFinite(sum) || !Number.isFinite(samples) || samples <= 0) return null;
 	return sum / samples;
+}
+
+function median(values: number[]): number | null {
+	const finite = values
+		.filter((value) => Number.isFinite(value))
+		.sort((a, b) => a - b);
+	if (!finite.length) return null;
+	const midpoint = Math.floor(finite.length / 2);
+	if (finite.length % 2 === 1) return finite[midpoint] ?? null;
+	const lower = finite[midpoint - 1];
+	const upper = finite[midpoint];
+	if (lower == null || upper == null) return null;
+	return (lower + upper) / 2;
 }
 
 function toRecord(value: unknown): Record<string, unknown> | null {
@@ -327,14 +344,18 @@ function emptyAggregate(): Aggregate {
 		healthSuccessful3d: 0,
 		latencySum30m: 0,
 		latencySamples30m: 0,
+		latencyValues30m: [],
 		throughputSum30m: 0,
 		throughputSamples30m: 0,
+		throughputValues30m: [],
 		inputTokens1h: 0,
 		outputTokens1h: 0,
 		latencySum3d: 0,
 		latencySamples3d: 0,
+		latencyValues3d: [],
 		throughputSum3d: 0,
 		throughputSamples3d: 0,
+		throughputValues3d: [],
 		cachedReadTokens1h: 0,
 		dayRequests: [0, 0, 0],
 		daySuccessful: [0, 0, 0],
@@ -495,9 +516,13 @@ function mapRpcRuntimeStatsRows(args: {
 			providerId,
 			...(row?.provider_name ? { providerName: row.provider_name } : {}),
 			latencyMs30m:
+				toFiniteNumber(row?.p50_latency_ms_30m) ??
+				toFiniteNumber(row?.median_latency_ms_30m) ??
 				toFiniteNumber(row?.avg_latency_ms_30m) ??
 				toFiniteNumber(row?.avg_latency_ms),
 			throughput30m:
+				toFiniteNumber(row?.p50_throughput_30m) ??
+				toFiniteNumber(row?.median_throughput_30m) ??
 				toFiniteNumber(row?.avg_throughput_30m) ??
 				toFiniteNumber(row?.avg_throughput),
 			uptimePct3d: toFiniteNumber(row?.uptime_pct),
@@ -715,10 +740,10 @@ export async function getModelProviderRuntimeStats(args: {
 			explicitThroughput != null && explicitThroughput > 0
 				? explicitThroughput
 				: generationMs != null &&
-				  generationMs > 0 &&
-				  outputTokens > 0
-				? (outputTokens * 1000) / generationMs
-				: null;
+						generationMs > 0 &&
+						outputTokens > 0
+					? (outputTokens * 1000) / generationMs
+					: null;
 		const success = row.success === true ? 1 : 0;
 
 		aggregate.requests3d += 1;
@@ -727,10 +752,12 @@ export async function getModelProviderRuntimeStats(args: {
 		if (latencyMs != null && latencyMs > 0) {
 			aggregate.latencySum3d += latencyMs;
 			aggregate.latencySamples3d += 1;
+			aggregate.latencyValues3d.push(latencyMs);
 		}
 		if (derivedThroughput != null && derivedThroughput > 0) {
 			aggregate.throughputSum3d += derivedThroughput;
 			aggregate.throughputSamples3d += 1;
+			aggregate.throughputValues3d.push(derivedThroughput);
 		}
 
 		const dayOffset = dayOffsetFromUtcMidnight(nowUtcMidnightMs, createdAt);
@@ -749,10 +776,12 @@ export async function getModelProviderRuntimeStats(args: {
 			if (latencyMs != null && latencyMs > 0) {
 				aggregate.latencySum30m += latencyMs;
 				aggregate.latencySamples30m += 1;
+				aggregate.latencyValues30m.push(latencyMs);
 			}
 			if (derivedThroughput != null && derivedThroughput > 0) {
 				aggregate.throughputSum30m += derivedThroughput;
 				aggregate.throughputSamples30m += 1;
+				aggregate.throughputValues30m.push(derivedThroughput);
 			}
 		}
 		if (createdAtMs >= nowMs - ONE_HOUR_MS) {
@@ -791,9 +820,13 @@ export async function getModelProviderRuntimeStats(args: {
 	for (const providerId of providerIds) {
 		const aggregate = aggregateByProvider.get(providerId) ?? emptyAggregate();
 		const latencyMs30m =
+			median(aggregate.latencyValues30m) ??
+			median(aggregate.latencyValues3d) ??
 			average(aggregate.latencySum30m, aggregate.latencySamples30m) ??
 			average(aggregate.latencySum3d, aggregate.latencySamples3d);
 		const throughput30m =
+			median(aggregate.throughputValues30m) ??
+			median(aggregate.throughputValues3d) ??
 			average(aggregate.throughputSum30m, aggregate.throughputSamples30m) ??
 			average(aggregate.throughputSum3d, aggregate.throughputSamples3d);
 

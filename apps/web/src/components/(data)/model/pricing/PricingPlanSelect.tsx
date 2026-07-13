@@ -47,14 +47,27 @@ export default function PricingPlanSelect({
 		const TierIcon = tierMeta.icon;
 		return <TierIcon className={cn(className, tierMeta.iconClassName)} />;
 	};
-	const selectedClassesForPlan = () =>
-		"bg-background text-foreground ring-1 ring-zinc-200 dark:bg-zinc-950 dark:ring-zinc-700";
+	const selectedClassesForPlan = (plan: string) => {
+		switch (plan) {
+			case "free":
+				return "bg-emerald-50 text-emerald-950 dark:bg-emerald-950/30 dark:text-emerald-100";
+			case "flex":
+				return "bg-sky-50 text-sky-950 dark:bg-sky-950/30 dark:text-sky-100";
+			case "batch":
+				return "bg-orange-50 text-orange-950 dark:bg-orange-950/30 dark:text-orange-100";
+			case "priority":
+				return "bg-violet-50 text-violet-950 dark:bg-violet-950/30 dark:text-violet-100";
+			case "standard":
+			default:
+				return "bg-background text-foreground dark:bg-zinc-950";
+		}
+	};
 	const multiplierClassesForPlan = (plan: string, _selected: boolean) => {
 		switch (plan) {
 			case "batch":
 				return "text-orange-700 dark:text-orange-300";
 			case "flex":
-				return "text-emerald-700 dark:text-emerald-300";
+				return "text-sky-700 dark:text-sky-300";
 			case "priority":
 				return "text-violet-700 dark:text-violet-300";
 			case "free":
@@ -154,8 +167,8 @@ export default function PricingPlanSelect({
             role="tablist"
             aria-label="Pricing plan"
             className={cn(
-				"inline-flex flex-wrap items-center gap-1 rounded-lg border border-zinc-200/80 bg-zinc-50/70 dark:border-zinc-800 dark:bg-zinc-900/40",
-				compact ? "p-0.5" : "p-1",
+				"inline-flex flex-wrap items-center rounded-lg border border-zinc-200/80 bg-zinc-50/70 dark:border-zinc-800 dark:bg-zinc-900/40",
+				compact ? "gap-0.5 p-0.5" : "gap-1 p-1",
 			)}
 		>
 			{plans.map((plan) => {
@@ -171,10 +184,10 @@ export default function PricingPlanSelect({
 						className={cn(
 							"group",
 							compact
-								? "inline-flex h-6 items-center gap-1 rounded-md px-2 text-[11px] font-medium transition-colors"
+								? "inline-flex h-5 items-center gap-0.5 rounded-md px-1.5 text-[10px] font-medium transition-colors"
 								: "inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-colors sm:text-sm",
 							selected
-								? selectedClassesForPlan()
+								? selectedClassesForPlan(plan)
 								: "text-muted-foreground hover:bg-background/80 hover:text-foreground dark:hover:bg-zinc-950/60",
 						)}
 					>
@@ -189,7 +202,7 @@ export default function PricingPlanSelect({
 								className={cn(
 									"font-medium",
 									multiplierClassesForPlan(plan, selected),
-									compact ? "text-[10px]" : "text-[11px]",
+									compact ? "text-[9px]" : "text-[11px]",
 								)}
 							>
 								{metaLabel}
