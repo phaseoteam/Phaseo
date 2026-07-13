@@ -7,14 +7,12 @@ import { ModelBenchmarksGrid } from "./ModelBenchmarksGrid";
 import { ModelBenchmarksTable } from "./ModelBenchmarksTable";
 
 type Props = {
-	modelId: string;
 	highlightCards: ModelBenchmarkHighlight[];
 	benchmarkTableData?: Record<string, ModelBenchmarkResult[]>;
 	mode?: "summary" | "full";
 };
 
 export default function ModelBenchmarks({
-	modelId,
 	highlightCards,
 	benchmarkTableData,
 	mode = "full",
@@ -24,12 +22,6 @@ export default function ModelBenchmarks({
 	return (
 		<div className="space-y-8">
 			<section className="space-y-3">
-				<div>
-					<h2 className="text-xl font-semibold">Highlights</h2>
-					<p className="text-sm text-muted-foreground">
-						Top benchmark results for {modelId}.
-					</p>
-				</div>
 				{highlightCards.length ? (
 					<ModelBenchmarksGrid highlights={highlightCards} />
 				) : (

@@ -224,12 +224,14 @@ function SectionHeader({
 	description,
 }: {
 	title: string;
-	description: string;
+	description?: string;
 }) {
 	return (
-		<div className="space-y-1">
+		<div className={description ? "space-y-1" : undefined}>
 			<h2 className="text-xl font-semibold tracking-tight">{title}</h2>
-			<p className="text-sm text-muted-foreground">{description}</p>
+			{description ? (
+				<p className="text-sm text-muted-foreground">{description}</p>
+			) : null}
 		</div>
 	);
 }
@@ -625,7 +627,6 @@ export async function ModelBenchmarksSection({
 		<>
 			{benchmarkHighlights.length > 0 ? (
 				<ModelBenchmarks
-					modelId={modelId}
 					highlightCards={benchmarkHighlights}
 					mode="summary"
 				/>
@@ -1153,10 +1154,7 @@ export function ModelOverviewSectionsSkeleton() {
 				<PricingSectionSkeleton />
 			</Section>
 			<Section id="benchmarks">
-				<SectionHeader
-					title="Benchmarks"
-					description="Headline benchmark standings and comparison context."
-				/>
+				<SectionHeader title="Benchmarks" />
 				<BenchmarksSectionSkeleton />
 			</Section>
 			<Section id="activity">
@@ -1224,10 +1222,7 @@ export default function ModelOverviewSections({
 			<div className="space-y-10">
 				{showBenchmarks ? (
 					<Section id="benchmarks" showDivider={false}>
-						<SectionHeader
-							title="Benchmarks"
-							description="Historical benchmark standings and comparison context."
-						/>
+						<SectionHeader title="Benchmarks" />
 						<Suspense fallback={<BenchmarksSectionSkeleton />}>
 							<ModelBenchmarksSection
 								modelId={modelId}
@@ -1283,10 +1278,7 @@ export default function ModelOverviewSections({
 				</Section>
 				{showBenchmarks ? (
 					<Section id="benchmarks">
-						<SectionHeader
-							title="Benchmarks"
-							description="Headline benchmark standings and comparison context."
-						/>
+						<SectionHeader title="Benchmarks" />
 						<Suspense fallback={<BenchmarksSectionSkeleton />}>
 							<ModelBenchmarksSection
 								modelId={modelId}
@@ -1378,10 +1370,7 @@ export default function ModelOverviewSections({
 			</Section>
 			{showBenchmarks ? (
 				<Section id="benchmarks">
-					<SectionHeader
-						title="Benchmarks"
-						description="Headline benchmark standings and comparison context."
-					/>
+					<SectionHeader title="Benchmarks" />
 					<Suspense fallback={<BenchmarksSectionSkeleton />}>
 						<ModelBenchmarksSection
 							modelId={modelId}

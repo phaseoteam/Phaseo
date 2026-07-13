@@ -1,7 +1,10 @@
+"use client";
+
 import React from "react";
 import Link from "next/link";
 
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import type { ModelBenchmarkHighlight } from "@/lib/fetchers/models/getModelBenchmarkData";
 
 interface ModelBenchmarksGridProps {
@@ -65,6 +68,8 @@ function ScoreIndicator({
 }
 
 export function ModelBenchmarksGrid({ highlights }: ModelBenchmarksGridProps) {
+	const [showAllOnMobile, setShowAllOnMobile] = React.useState(false);
+
 	if (!highlights.length) {
 		return (
 			<div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
@@ -76,13 +81,15 @@ export function ModelBenchmarksGrid({ highlights }: ModelBenchmarksGridProps) {
 	const sorted = sortHighlights(highlights);
 
 	return (
-		<div className="mb-8 w-full">
+		<div className="mb-8 w-full space-y-3">
 			<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-				{sorted.map((highlight) => {
+				{sorted.map((highlight, index) => {
 					return (
 						<Card
 							key={`${highlight.benchmarkId}`}
-							className="flex min-h-0 flex-col justify-center rounded-lg border border-border/80 bg-card p-3 text-card-foreground shadow-xs"
+							className={`min-h-0 flex-col justify-center rounded-lg border border-border/80 bg-card p-3 text-card-foreground shadow-xs ${
+								index >= 6 && !showAllOnMobile ? "hidden sm:flex" : "flex"
+							}`}
 							style={{ minHeight: 0 }}
 						>
 							<div className="flex flex-col gap-1">
@@ -111,6 +118,17 @@ export function ModelBenchmarksGrid({ highlights }: ModelBenchmarksGridProps) {
 					);
 				})}
 			</div>
+			{sorted.length > 6 ? (
+				<Button
+					type="button"
+					variant="outline"
+					size="sm"
+					className="w-full sm:hidden"
+					onClick={() => setShowAllOnMobile((current) => !current)}
+				>
+					{showAllOnMobile ? "Show less" : `Show ${sorted.length - 6} more`}
+				</Button>
+			) : null}
 		</div>
 	);
 }
