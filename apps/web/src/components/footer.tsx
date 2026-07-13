@@ -150,9 +150,9 @@ export default function Footer() {
 							<div className="relative top-px">
 								<FooterStatusIndicator />
 							</div>
-						</div>
-						<div className="md:hidden">
-							<ThemeSelector className="py-0" labelSize="sm" showSelectedLabel={false} />
+							<div className="md:hidden sm:ml-auto">
+								<ThemeSelector className="py-0" labelSize="sm" showSelectedLabel={false} />
+							</div>
 						</div>
 					</div>
 					<FooterLinkList title="Explore" links={productLinks} />
@@ -175,7 +175,25 @@ export default function Footer() {
 							<ThemeSelector className="py-0" labelSize="sm" />
 						</div>
 					</div>
-					<p className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-1">
+					<p className="hidden shrink-0 items-center gap-x-1.5 text-xs sm:max-md:inline-flex">
+						<span>Report:</span>
+						<Link
+							href="https://github.com/phaseoteam/Phaseo/issues"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-zinc-700 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-zinc-50"
+						>
+							Issue
+						</Link>
+						<span aria-hidden="true">·</span>
+						<Link
+							href="/contact"
+							className="text-zinc-700 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-zinc-50"
+						>
+							Support
+						</Link>
+					</p>
+					<p className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-1 sm:max-md:hidden">
 						<span>Spotted a data issue or broken page?</span>
 						<Link
 							href="https://github.com/phaseoteam/Phaseo/issues"
