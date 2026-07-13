@@ -529,20 +529,24 @@ export async function ModelQuickstartSection({
 	quickstartRequestContext?: QuickstartRequestContext;
 }) {
 	if (!isGatewayActive) {
-		const metadataUrl = `https://api.phaseo.ai/v1/models?model_id=${encodeURIComponent(modelId)}&availability=all`;
 		return (
 			<div className="space-y-3">
 				<p className="text-sm text-muted-foreground">
-					This model is not currently active in the Gateway. You can still retrieve its
-					catalog metadata by querying its model ID.
+					This model is not currently active in the Gateway. Retrieve its catalog record
+					with the model ID below.
 				</p>
-				<div className="overflow-x-auto rounded-md border border-border/70 bg-muted/15 p-3">
-					<code className="block min-w-max font-mono text-xs text-foreground">
-						{`curl \"${metadataUrl}\" \\\n  -H \"Authorization: Bearer $PHASEO_API_KEY\"`}
-					</code>
+				<div className="rounded-md border border-border/70 bg-muted/30 px-3 py-2.5">
+					<pre className="whitespace-pre-wrap break-words font-mono text-xs leading-5 text-foreground">
+						{[
+							"curl --get https://api.phaseo.ai/v1/models \\",
+							'  -H "Authorization: Bearer $PHASEO_API_KEY" \\',
+							`  --data-urlencode "model_id=${modelId}" \\`,
+							'  --data-urlencode "availability=all"',
+						].join("\n")}
+					</pre>
 				</div>
 				<p className="text-xs text-muted-foreground">
-					Model ID: <code className="font-mono text-foreground">{modelId}</code>
+					Model ID <code className="font-mono text-foreground">{modelId}</code>
 				</p>
 			</div>
 		);
