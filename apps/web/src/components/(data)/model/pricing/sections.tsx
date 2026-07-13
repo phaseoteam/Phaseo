@@ -1106,7 +1106,6 @@ export function AdvancedTable({
 									countUsdDecimals(row.price),
 									row.comparisonKind,
 									row.comparisonDirection,
-									comparisonAccent,
 								)}
 								<span className="text-[10px] text-muted-foreground">
 									{formatCompactUnit(row.unitLabel)}
