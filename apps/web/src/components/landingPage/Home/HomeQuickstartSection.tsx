@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import NumberFlow from "@number-flow/react";
 import { Logo } from "@/components/Logo";
+import { getModalityTone } from "@/lib/models/modalityStyles";
 
 type Benefit = {
 	title: string;
@@ -526,27 +527,27 @@ function UptimeVisual({ variant = "default" }: { variant?: QuickstartVariant }) 
 	);
 }
 
-const MODALITIES = [
-	{ label: "Text", detail: "Chat & responses", icon: MessageSquareText },
-	{ label: "Images", detail: "Generate & edit", icon: ImageIcon },
-	{ label: "Video", detail: "Prompt to video", icon: Video },
-	{ label: "Text to Speech", detail: "Natural voice", icon: Mic },
-	{ label: "Transcription", detail: "Speech to text", icon: Subtitles },
-	{ label: "Music", detail: "Generate audio", icon: Music2 },
-	{ label: "Moderation", detail: "Text & images", icon: BadgeCheck },
-	{ label: "Embeddings", detail: "Vector search", icon: Sparkles },
-	{ label: "Realtime", detail: "Live interactions", icon: Radio },
-	{ label: "Batch", detail: "Async processing", icon: Workflow },
+const WORKLOADS = [
+	{ label: "Text", detail: "Chat & responses", icon: MessageSquareText, tone: "text" },
+	{ label: "Images", detail: "Generate & edit", icon: ImageIcon, tone: "image" },
+	{ label: "Video", detail: "Prompt to video", icon: Video, tone: "video" },
+	{ label: "Text to Speech", detail: "Natural voice", icon: Mic, tone: "audio_tts" },
+	{ label: "Transcription", detail: "Speech to text", icon: Subtitles, tone: "audio_stt" },
+	{ label: "Music", detail: "Generate audio", icon: Music2, tone: "audio_music" },
+	{ label: "Moderation", detail: "Text & images", icon: BadgeCheck, tone: "moderations" },
+	{ label: "Embeddings", detail: "Vector search", icon: Sparkles, tone: "embeddings" },
+	{ label: "Realtime", detail: "Live interactions", icon: Radio, tone: "rerank" },
+	{ label: "Batch", detail: "Async processing", icon: Workflow, tone: "file" },
 ] as const;
 
 function ModalityTicker({
-	modalities,
+	workloads,
 	speed,
 }: {
-	modalities: readonly (typeof MODALITIES)[number][];
+	workloads: readonly (typeof WORKLOADS)[number][];
 	speed: number;
 }) {
-	const loopedModalities = [...modalities, ...modalities];
+	const loopedWorkloads = [...workloads, ...workloads];
 
 	return (
 		<div className="h-[150px] overflow-hidden">
@@ -554,25 +555,26 @@ function ModalityTicker({
 				className="space-y-1.5 px-0.5 py-1 motion-reduce:[animation:none]"
 				style={{ animation: `modality-ticker ${speed}s linear infinite` }}
 			>
-				{loopedModalities.map((modality, index) => {
-						const Icon = modality.icon;
+				{loopedWorkloads.map((workload, index) => {
+					const Icon = workload.icon;
+					const tone = getModalityTone(workload.tone);
 
-						return (
-							<div
-								key={`${modality.label}-${index}`}
-								className="flex h-[46px] items-center gap-2 rounded-xl border border-zinc-200/80 bg-white/80 px-2.5 py-2 dark:border-zinc-800/80 dark:bg-zinc-950/80"
-							>
-								<Icon className="h-3.5 w-3.5 shrink-0 text-zinc-700 dark:text-zinc-300" />
-								<span className="min-w-0">
-									<span className="block truncate text-[10px] font-semibold leading-none text-zinc-950 dark:text-zinc-50">
-										{modality.label}
-									</span>
-									<span className="mt-1 block truncate text-[9px] leading-none text-zinc-500 dark:text-zinc-400">
-										{modality.detail}
-									</span>
+					return (
+						<div
+							key={`${workload.label}-${index}`}
+							className={`flex h-[46px] items-center gap-2 rounded-xl border px-2.5 py-2 ${tone.badgeClassName}`}
+						>
+							<Icon className={`h-3.5 w-3.5 shrink-0 ${tone.iconClassName}`} />
+							<span className="min-w-0">
+								<span className="block whitespace-normal text-[10px] font-semibold leading-tight">
+									{workload.label}
 								</span>
-							</div>
-						);
+								<span className="mt-0.5 block whitespace-normal text-[9px] leading-tight opacity-75">
+									{workload.detail}
+								</span>
+							</span>
+						</div>
+					);
 				})}
 			</div>
 		</div>
@@ -581,8 +583,8 @@ function ModalityTicker({
 
 function ModalitiesVisual() {
 	const columns = [
-		MODALITIES.filter((_, index) => index % 2 === 0),
-		MODALITIES.filter((_, index) => index % 2 === 1),
+		WORKLOADS.filter((_, index) => index % 2 === 0),
+		WORKLOADS.filter((_, index) => index % 2 === 1),
 	] as const;
 
 	return (
@@ -593,12 +595,12 @@ function ModalitiesVisual() {
 						Supported modes
 					</span>
 					<span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500">
-						{MODALITIES.length} workloads
+						{WORKLOADS.length} workloads
 					</span>
 				</div>
 				<div className="grid grid-cols-2 gap-2">
-					<ModalityTicker modalities={columns[0]} speed={16} />
-					<ModalityTicker modalities={columns[1]} speed={16} />
+					<ModalityTicker workloads={columns[0]} speed={16} />
+					<ModalityTicker workloads={columns[1]} speed={16} />
 				</div>
 			</div>
 		</VisualStage>
