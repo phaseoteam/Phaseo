@@ -27,8 +27,8 @@ describe("dashboard key generation", () => {
 		delete process.env.KEY_PEPPER;
 		const secret = "client-secret";
 		const expected = crypto
-			.createHash("sha256")
-			.update(`oauth-test-pepper:${secret}`)
+			.createHmac("sha256", "oauth-test-pepper")
+			.update(secret, "utf8")
 			.digest("base64url");
 		expect(hashOAuthClientSecret(secret)).toBe(expected);
 	});

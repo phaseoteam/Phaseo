@@ -128,11 +128,6 @@ export function parseTokenRequestBody(raw: string, contentType: string | null): 
 	return out;
 }
 
-async function sha256Base64Url(value: string): Promise<string> {
-	const digest = await crypto.subtle.digest("SHA-256", encoder.encode(value));
-	return base64UrlEncodeBytes(new Uint8Array(digest));
-}
-
 export async function hashOAuthSecret(value: string): Promise<string> {
 	const bindings = getBindings();
 	const pepper = String(
@@ -141,7 +136,15 @@ export async function hashOAuthSecret(value: string): Promise<string> {
 			bindings.KEY_PEPPER ??
 			"",
 	);
-	return sha256Base64Url(`${pepper}:${value}`);
+	const key = await crypto.subtle.importKey(
+		"raw",
+		encoder.encode(pepper),
+		{ name: "HMAC", hash: "SHA-256" },
+		false,
+		["sign"],
+	);
+	const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(value));
+	return base64UrlEncodeBytes(new Uint8Array(signature));
 }
 
 export async function verifyClientSecret(

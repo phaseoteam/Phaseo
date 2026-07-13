@@ -43,5 +43,5 @@ export function hashOAuthClientSecret(secret: string): string {
     if (!pepper) {
         throw new Error("PHASEO_OAUTH_TOKEN_PEPPER or KEY_PEPPER_ACTIVE is not set");
     }
-    return crypto.createHash("sha256").update(`${pepper}:${secret}`).digest("base64url");
+    return crypto.createHmac("sha256", pepper).update(secret, "utf8").digest("base64url");
 }
