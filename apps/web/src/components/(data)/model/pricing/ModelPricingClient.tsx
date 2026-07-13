@@ -1,6 +1,13 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+    useCallback,
+    useEffect,
+    useLayoutEffect,
+    useMemo,
+    useRef,
+    useState,
+} from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -13,6 +20,11 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+	HoverCard,
+	HoverCardContent,
+	HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import {
 	Table,
 	TableBody,
@@ -94,9 +106,7 @@ function getDisplayedProviderUptime(
 	stats: ProviderRuntimeStatsMap[string] | undefined
 ): number | null {
 	if (!hasProviderUptimeObservation(stats)) return null;
-	const currentDay =
-		stats?.uptimeDaily3d.find((entry) => entry.dayOffset === 0)?.uptimePct ?? null;
-	return currentDay ?? stats?.uptimePct3d ?? null;
+	return stats?.uptimePct3d ?? null;
 }
 
 const DEFAULT_ROUTING_ERROR_RATE = 0;
@@ -235,6 +245,28 @@ function getProviderPromptTrainingPolicy(provider: ProviderPricing): string {
     return normalizeProviderPromptTrainingPolicy(
         override ?? provider.provider.prompt_training_policy ?? null
     );
+}
+
+function UptimeHeaderHoverContent() {
+	return (
+		<div className="space-y-2">
+			<p className="text-sm font-medium text-foreground">3-day uptime</p>
+			<div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-zinc-200 pt-2.5 text-xs text-muted-foreground dark:border-zinc-800">
+				<div className="flex items-center gap-1.5">
+					<span className="h-2 w-2 rounded-full bg-emerald-500" />
+					<span>&gt;99%</span>
+				</div>
+				<div className="flex items-center gap-1.5">
+					<span className="h-2 w-2 rounded-full bg-amber-500" />
+					<span>95-99%</span>
+				</div>
+				<div className="flex items-center gap-1.5">
+					<span className="h-2 w-2 rounded-full bg-red-500" />
+					<span>&lt;95%</span>
+				</div>
+			</div>
+		</div>
+	);
 }
 
 function getIgnoredPrivacyReasons(
@@ -611,6 +643,47 @@ export default function ModelPricingClient({
             return buildProviderTablePriceSummary(sections, "cached").primary !== null;
         });
     }, [visibleProviders]);
+    const providerTableViewportRef = useRef<HTMLDivElement>(null);
+    const [providerTableOverflows, setProviderTableOverflows] = useState<boolean | null>(null);
+    const [providerTableThumbWidth, setProviderTableThumbWidth] = useState<number | null>(null);
+
+    useLayoutEffect(() => {
+        const viewport = providerTableViewportRef.current;
+        if (!viewport) return;
+
+        let frame = 0;
+        const updateOverflow = () => {
+            const next = viewport.scrollWidth > viewport.clientWidth + 1;
+            const nextThumbWidth =
+                next && viewport.scrollWidth > 0
+                    ? Math.max(40, (viewport.clientWidth * viewport.clientWidth) / viewport.scrollWidth)
+                    : null;
+            setProviderTableOverflows((current) =>
+                current === next ? current : next
+            );
+            setProviderTableThumbWidth((current) =>
+                current === nextThumbWidth ? current : nextThumbWidth
+            );
+        };
+        const measure = () => {
+            if (frame) window.cancelAnimationFrame(frame);
+            frame = window.requestAnimationFrame(updateOverflow);
+        };
+
+        updateOverflow();
+        measure();
+        const resizeObserver = new ResizeObserver(measure);
+        resizeObserver.observe(viewport);
+        const content = viewport.querySelector("table") ?? viewport.firstElementChild;
+        if (content) resizeObserver.observe(content);
+        window.addEventListener("resize", measure);
+
+        return () => {
+            if (frame) window.cancelAnimationFrame(frame);
+            resizeObserver.disconnect();
+            window.removeEventListener("resize", measure);
+        };
+    }, [showCacheReadColumn, visibleProviders.length]);
 
     const updateUrlState = useCallback(
         (updates: Record<string, string | null>) => {
@@ -678,12 +751,22 @@ export default function ModelPricingClient({
         [sort, sortDirection, updateUrlState]
     );
 
-    const renderTableSortHead = (
-        label: string,
-        option: Exclude<SortOption, "default">,
-        align: "left" | "right" | "center" = "right"
-    ) => {
+	const renderTableSortHead = (
+		label: string,
+		option: Exclude<SortOption, "default">,
+		align: "left" | "right" = "right"
+	) => {
         const isActive = sort === option;
+		const labelNode = (
+			<span
+				className={cn(
+					option === "uptime" &&
+						"underline decoration-dotted underline-offset-4",
+				)}
+			>
+				{label}
+			</span>
+		);
         const icon = isActive ? (
             sortDirection === "asc" ? (
                 <ArrowUp className="h-3.5 w-3.5" />
@@ -693,9 +776,20 @@ export default function ModelPricingClient({
         ) : (
             <ChevronsUpDown className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
         );
+		const wrapHeader = (button: React.ReactElement) => {
+			if (option !== "uptime") return button;
+			return (
+				<HoverCard openDelay={120} closeDelay={80}>
+					<HoverCardTrigger asChild>{button}</HoverCardTrigger>
+					<HoverCardContent align="end" className="w-72 text-left">
+						<UptimeHeaderHoverContent />
+					</HoverCardContent>
+				</HoverCard>
+			);
+		};
 
         if (align === "left") {
-            return (
+            return wrapHeader(
                 <button
                     type="button"
                     onClick={() => onColumnSortChange(option)}
@@ -705,31 +799,13 @@ export default function ModelPricingClient({
                     )}
                     aria-label={`Sort providers by ${label.toLowerCase()}`}
                 >
-                    <span>{label}</span>
+                    {labelNode}
                     {icon}
                 </button>
             );
         }
 
-        if (align === "center") {
-            return (
-                <button
-                    type="button"
-                    onClick={() => onColumnSortChange(option)}
-                    className={cn(
-                        "group grid w-full grid-cols-[1fr_auto_1fr] items-center text-xs font-medium transition-colors hover:text-foreground",
-                        isActive ? "text-foreground" : "text-muted-foreground"
-                    )}
-                    aria-label={`Sort providers by ${label.toLowerCase()}`}
-                >
-                    <span aria-hidden="true" />
-                    <span className="justify-self-center text-center">{label}</span>
-                    <span className="justify-self-end">{icon}</span>
-                </button>
-            );
-        }
-
-        return (
+        return wrapHeader(
             <button
                 type="button"
                 onClick={() => onColumnSortChange(option)}
@@ -739,8 +815,8 @@ export default function ModelPricingClient({
                 )}
                 aria-label={`Sort providers by ${label.toLowerCase()}`}
             >
-                <span>{label}</span>
                 {icon}
+                {labelNode}
             </button>
         );
     };
@@ -776,16 +852,32 @@ export default function ModelPricingClient({
                 ) : null}
                 {filteredProviders.length > 0 ? (
                     <div className="space-y-2">
-                        <div className="overflow-hidden rounded-sm border border-zinc-200/80 bg-background shadow-sm dark:border-zinc-800">
+                        <div className="overflow-hidden rounded-md border border-zinc-200/80 bg-background dark:border-zinc-800">
                             <ScrollArea
-                                className="w-full"
+                                className={cn(
+                                    "w-full",
+                                    providerTableOverflows === true
+                                        ? "[&_[data-orientation=horizontal]]:h-2 [&_[data-orientation=horizontal]]:border-t-0 [&_[data-orientation=horizontal]_[data-slot=scroll-area-thumb]]:min-w-[var(--provider-table-scrollbar-thumb-width,2.5rem)] [&_[data-orientation=horizontal]_[data-slot=scroll-area-thumb]]:bg-zinc-400/70 [&_[data-orientation=horizontal]_[data-slot=scroll-area-thumb]]:transition-colors hover:[&_[data-orientation=horizontal]_[data-slot=scroll-area-thumb]]:bg-zinc-500/80 focus-within:[&_[data-orientation=horizontal]_[data-slot=scroll-area-thumb]]:bg-zinc-500/80 dark:[&_[data-orientation=horizontal]_[data-slot=scroll-area-thumb]]:bg-zinc-500/80 dark:hover:[&_[data-orientation=horizontal]_[data-slot=scroll-area-thumb]]:bg-zinc-400/90 dark:focus-within:[&_[data-orientation=horizontal]_[data-slot=scroll-area-thumb]]:bg-zinc-400/90"
+                                        : "[&_[data-orientation=horizontal]]:hidden"
+                                )}
+                                keepScrollbarMounted
                                 scrollBarOrientation="horizontal"
+                                style={
+                                    providerTableThumbWidth
+                                        ? ({
+                                              "--provider-table-scrollbar-thumb-width": `${providerTableThumbWidth}px`,
+                                          } as React.CSSProperties)
+                                        : undefined
+                                }
+                                viewportClassName={providerTableOverflows === true ? "pb-1.5" : undefined}
+                                viewportRef={providerTableViewportRef}
                             >
 								<Table
 									className={cn(
 										"table-auto lg:min-w-full",
-										showCacheReadColumn ? "min-w-[984px]" : "min-w-[928px]",
+										showCacheReadColumn ? "min-w-[944px]" : "min-w-[888px]",
 									)}
+									wrapInContainer={false}
 								>
 									<colgroup>
 										<col className="w-72" />
@@ -795,44 +887,43 @@ export default function ModelPricingClient({
 										<col className="w-24" />
 										<col className="w-28" />
 										<col className="w-32" />
-										<col className="w-10" />
 									</colgroup>
 									<TableHeader>
 										<TableRow className="hover:bg-transparent">
-											<TableHead className="min-w-[280px] px-3 whitespace-nowrap">
+											<TableHead className="h-8 min-w-[280px] px-3 whitespace-nowrap">
 												{renderTableSortHead("Provider", "provider", "left")}
 											</TableHead>
-											<TableHead className="w-24 min-w-24 px-2 whitespace-nowrap">
+											<TableHead className="h-8 w-24 min-w-24 pl-2 pr-4 text-right whitespace-nowrap">
 												{renderTableSortHead("Input $/M", "input")}
 											</TableHead>
-											<TableHead className="w-24 min-w-24 px-2 whitespace-nowrap">
+											<TableHead className="h-8 w-24 min-w-24 pl-2 pr-4 text-right whitespace-nowrap">
 												{renderTableSortHead("Output $/M", "output")}
 											</TableHead>
 											{showCacheReadColumn ? (
-												<TableHead className="w-32 min-w-32 px-2 whitespace-nowrap">
+												<TableHead className="h-8 w-32 min-w-32 pl-2 pr-4 text-right whitespace-nowrap">
 													{renderTableSortHead("Cache Read $/M", "cache_read")}
 												</TableHead>
 											) : null}
-											<TableHead className="w-24 min-w-24 px-2 whitespace-nowrap">
+											<TableHead className="h-8 w-24 min-w-24 pl-2 pr-4 text-right whitespace-nowrap">
 												{renderTableSortHead("Latency", "latency")}
 											</TableHead>
-											<TableHead className="w-28 min-w-28 px-2 text-center whitespace-nowrap">
-												{renderTableSortHead("Throughput", "throughput", "center")}
+											<TableHead className="h-8 w-28 min-w-28 pl-2 pr-4 text-right whitespace-nowrap">
+												{renderTableSortHead("Throughput", "throughput")}
 											</TableHead>
-											<TableHead className="w-32 min-w-32 px-2 text-center whitespace-nowrap">
-												{renderTableSortHead("Uptime", "uptime", "center")}
+											<TableHead className="h-8 w-32 min-w-32 pl-2 pr-4 text-right whitespace-nowrap">
+												{renderTableSortHead("Uptime", "uptime")}
 											</TableHead>
-                                            <TableHead className="w-8 px-2" />
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {visibleProviders.map((prov) => (
+                                        {visibleProviders.map((prov, index) => (
                                             <ProviderCard
                                                 key={prov.provider.api_provider_id}
                                                 provider={prov}
                                                 defaultPlan={getProviderDefaultPlan(prov)}
                                                 availablePlans={getProviderAvailablePlans(prov)}
                                                 comparisonProviders={displayProviders}
+                                                navigationProviders={visibleProviders}
                                                 privacyIgnoredReasons={
                                                     ignoredProviderReasons.get(
                                                         prov.provider.api_provider_id
@@ -850,6 +941,7 @@ export default function ModelPricingClient({
                                                     ) ?? null
                                                 }
                                                 showCacheReadColumn={showCacheReadColumn}
+                                                isLastVisible={index === visibleProviders.length - 1}
                                             />
                                         ))}
                                     </TableBody>

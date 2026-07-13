@@ -24,12 +24,14 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { Logo } from "@/components/Logo";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-	buildProviderSections,
-	buildProviderTablePriceSummary,
-	fmtUSD,
-} from "@/components/(data)/model/pricing/pricingHelpers";
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Logo } from "@/components/Logo";
+import { fmtUSD } from "@/components/(data)/model/pricing/pricingHelpers";
 import { assignSeriesColours, keyForSeries } from "@/components/(rankings)/chart-colors";
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import type { ModelPricingHistoryRule } from "@/lib/fetchers/models/getModelPricingHistoryRules";
@@ -50,7 +52,7 @@ type PricingInsightsProps = {
 	usageRows: ModelUsageDailyBreakdownRow[];
 };
 
-type SortKey = "provider" | "input" | "output" | "tokenShare" | "tokens";
+type SortKey = "provider" | "input" | "output" | "cacheHitRate" | "tokenShare";
 type SortDirection = "asc" | "desc";
 
 type EffectiveRow = {
@@ -61,6 +63,7 @@ type EffectiveRow = {
 	color: string;
 	inputPricePer1M: number | null;
 	outputPricePer1M: number | null;
+	cacheHitRatePct: number | null;
 	tokenSharePct: number | null;
 	totalTokens30d: number;
 	inputWeightTokens30d: number;
@@ -81,6 +84,7 @@ type ProviderUsageSummary = {
 	totalTokens30d: number;
 	inputWeightTokens30d: number;
 	outputWeightTokens30d: number;
+	cachedReadInputTokens30d: number;
 	usageByDay: Map<string, DailyUsagePoint>;
 };
 
@@ -106,17 +110,14 @@ const CACHED_WRITE_TEXT_1H_METER_PREFERENCE = [
 	"cached_write_tokens",
 ] as const;
 
-function formatCompactNumber(value: number): string {
-	if (!Number.isFinite(value)) return "--";
-	if (Math.abs(value) >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)}B`;
-	if (Math.abs(value) >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
-	if (Math.abs(value) >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
-	return Math.round(value).toLocaleString();
-}
-
 function formatPercent(value: number | null): string {
 	if (value == null || !Number.isFinite(value)) return "--";
 	return `${value.toFixed(1)}%`;
+}
+
+function formatTokenCount(value: number): string {
+	if (!Number.isFinite(value)) return "--";
+	return `${Math.round(value).toLocaleString()} tokens`;
 }
 
 function formatUsd(value: number | null): string {
@@ -189,36 +190,6 @@ function chooseRuleForTimestamp(
 	return candidates[0] ?? null;
 }
 
-function getFallbackTokenPricePer1M(
-	provider: ProviderPricing,
-	plan: string,
-	direction: "input" | "output",
-): number | null {
-	const sections = buildProviderSections(provider, plan);
-	const summary = buildProviderTablePriceSummary(sections, direction);
-	return summary.primary?.unitShortLabel === "/M" ? summary.primary.price : null;
-}
-
-function getCurrentTokenPricePer1M(args: {
-	provider: ProviderPricing;
-	plan: string;
-	historyRules: ModelPricingHistoryRule[];
-	meterPreference: readonly string[];
-}): number | null {
-	const nowMs = Date.now();
-	const matchingRule = chooseRuleForTimestamp(
-		args.historyRules,
-		args.meterPreference,
-		nowMs,
-	);
-	if (matchingRule) return matchingRule.pricePer1MUnits;
-	return getFallbackTokenPricePer1M(
-		args.provider,
-		args.plan,
-		args.meterPreference === INPUT_METER_PREFERENCE ? "input" : "output",
-	);
-}
-
 function getDefaultDirection(sortKey: SortKey): SortDirection {
 	switch (sortKey) {
 		case "provider":
@@ -226,8 +197,8 @@ function getDefaultDirection(sortKey: SortKey): SortDirection {
 		case "input":
 		case "output":
 			return "asc";
+		case "cacheHitRate":
 		case "tokenShare":
-		case "tokens":
 			return "desc";
 	}
 }
@@ -244,6 +215,32 @@ function useSortedRows(rows: EffectiveRow[], sortKey: SortKey | null, direction:
 		}
 
 		return [...rows].sort((a, b) => {
+			const sortableValue = (row: EffectiveRow): number | null => {
+				switch (sortKey) {
+					case "input":
+						return row.inputPricePer1M;
+					case "output":
+						return row.outputPricePer1M;
+					case "cacheHitRate":
+						return row.cacheHitRatePct;
+					case "tokenShare":
+						return row.tokenSharePct;
+					default:
+						return null;
+				}
+			};
+
+			if (sortKey !== "provider") {
+				const left = sortableValue(a);
+				const right = sortableValue(b);
+				if (left == null || right == null) {
+					if (left == null && right == null) {
+						return a.providerName.localeCompare(b.providerName);
+					}
+					return left == null ? 1 : -1;
+				}
+			}
+
 			const compareNumber = (left: number | null, right: number | null) => {
 				if (left == null && right == null) return 0;
 				if (left == null) return 1;
@@ -262,11 +259,11 @@ function useSortedRows(rows: EffectiveRow[], sortKey: SortKey | null, direction:
 				case "output":
 					result = compareNumber(a.outputPricePer1M, b.outputPricePer1M);
 					break;
+				case "cacheHitRate":
+					result = compareNumber(a.cacheHitRatePct, b.cacheHitRatePct);
+					break;
 				case "tokenShare":
 					result = compareNumber(a.tokenSharePct, b.tokenSharePct);
-					break;
-				case "tokens":
-					result = a.totalTokens30d - b.totalTokens30d;
 					break;
 			}
 
@@ -307,13 +304,22 @@ function SortHead({
 			type="button"
 			onClick={() => onToggle(sortKey)}
 			className={cn(
-				"group inline-flex w-full items-center gap-1.5 text-xs font-medium transition-colors hover:text-foreground",
+				"group inline-flex h-full min-h-8 w-full items-center gap-1.5 leading-none text-xs font-medium transition-colors hover:text-foreground",
 				align === "left" ? "justify-start text-left" : "justify-end text-right",
 				isActive ? "text-foreground" : "text-muted-foreground",
 			)}
 		>
-			<span>{label}</span>
-			{icon}
+			{align === "left" ? (
+				<>
+					<span>{label}</span>
+					{icon}
+				</>
+			) : (
+				<>
+					{icon}
+					<span>{label}</span>
+				</>
+			)}
 		</button>
 	);
 }
@@ -407,6 +413,57 @@ function calculateEffectiveOutputPricePer1M(args: {
 	return outputPrice == null ? null : outputPrice;
 }
 
+function calculateEffectivePriceSummaryForUsage(
+	usage: ProviderUsageSummary,
+	rules: ModelPricingHistoryRule[],
+): {
+	weightedInputPricePer1M: number | null;
+	weightedOutputPricePer1M: number | null;
+	pricedInputTokens: number;
+	pricedOutputTokens: number;
+} {
+	let inputCostUsd = 0;
+	let pricedInputTokens = 0;
+	let outputCostUsd = 0;
+	let pricedOutputTokens = 0;
+
+	for (const point of usage.usageByDay.values()) {
+		const timestampMs = Date.parse(`${point.day}T12:00:00.000Z`);
+		const inputEffectivePrice = calculateEffectiveInputPricePer1M({
+			usage: point,
+			rules,
+			timestampMs,
+		});
+		if (inputEffectivePrice != null && point.inputTokens > 0) {
+			inputCostUsd += inputEffectivePrice * (point.inputTokens / 1_000_000);
+			pricedInputTokens += point.inputTokens;
+		}
+
+		const outputEffectivePrice = calculateEffectiveOutputPricePer1M({
+			usage: point,
+			rules,
+			timestampMs,
+		});
+		if (outputEffectivePrice != null && point.outputTokens > 0) {
+			outputCostUsd += outputEffectivePrice * (point.outputTokens / 1_000_000);
+			pricedOutputTokens += point.outputTokens;
+		}
+	}
+
+	return {
+		weightedInputPricePer1M:
+			pricedInputTokens > 0
+				? inputCostUsd / (pricedInputTokens / 1_000_000)
+				: null,
+		weightedOutputPricePer1M:
+			pricedOutputTokens > 0
+				? outputCostUsd / (pricedOutputTokens / 1_000_000)
+				: null,
+		pricedInputTokens,
+		pricedOutputTokens,
+	};
+}
+
 function buildEffectivePriceHistoryState(args: {
 	rows: EffectiveRow[];
 	usageByProvider: Map<string, ProviderUsageSummary>;
@@ -492,20 +549,6 @@ function HistoryChart({
 	seriesKeys: string[];
 	providerNameBySeries: Map<string, string>;
 }) {
-	const singlePointSeriesKeys = useMemo(() => {
-		const keys = new Set<string>();
-		for (const seriesKey of seriesKeys) {
-			const finitePointCount = chartData.reduce((count, row) => {
-				const value = row[seriesKey];
-				return typeof value === "number" && Number.isFinite(value)
-					? count + 1
-					: count;
-			}, 0);
-			if (finitePointCount === 1) keys.add(seriesKey);
-		}
-		return keys;
-	}, [chartData, seriesKeys]);
-
 	return (
 		<div className="min-w-0 space-y-2 p-4">
 			<h3 className="text-sm font-medium text-foreground">{title}</h3>
@@ -573,17 +616,8 @@ function HistoryChart({
 							dataKey={seriesKey}
 							stroke={`var(--color-${seriesKey})`}
 							strokeWidth={2}
-							dot={
-								singlePointSeriesKeys.has(seriesKey)
-									? {
-											fill: `var(--color-${seriesKey})`,
-											r: 3.5,
-											stroke: `var(--color-${seriesKey})`,
-											strokeWidth: 2,
-										}
-									: false
-							}
-							activeDot={{ r: 3 }}
+							dot={{ r: 3, strokeWidth: 0 }}
+							activeDot={false}
 							connectNulls={false}
 							isAnimationActive={false}
 						/>
@@ -621,11 +655,16 @@ export default function PricingInsights({
 				totalTokens30d: 0,
 				inputWeightTokens30d: 0,
 				outputWeightTokens30d: 0,
+				cachedReadInputTokens30d: 0,
 				usageByDay: new Map<string, DailyUsagePoint>(),
 			};
+			const inputTokens = row.inputTextTokens;
+			const outputTokens = row.outputTextTokens;
+			const cachedReadInputTokens = row.cachedReadTextTokens;
 			existing.totalTokens30d += row.totalTokens;
-			existing.inputWeightTokens30d += row.inputTextTokens > 0 ? row.inputTextTokens : row.inputTokens;
-			existing.outputWeightTokens30d += row.outputTextTokens > 0 ? row.outputTextTokens : row.outputTokens;
+			existing.inputWeightTokens30d += inputTokens;
+			existing.outputWeightTokens30d += outputTokens;
+			existing.cachedReadInputTokens30d += Math.min(cachedReadInputTokens, inputTokens);
 
 			const day = row.dayBucket;
 			if (day) {
@@ -638,12 +677,9 @@ export default function PricingInsights({
 					cachedWriteTextTokens5m: 0,
 					cachedWriteTextTokens1h: 0,
 				};
-				dayPoint.inputTokens += row.inputTextTokens > 0 ? row.inputTextTokens : row.inputTokens;
-				dayPoint.outputTokens += row.outputTextTokens > 0 ? row.outputTextTokens : row.outputTokens;
-				dayPoint.cachedReadTextTokens +=
-					row.cachedReadTextTokens > 0
-						? row.cachedReadTextTokens
-						: row.cachedReadTokens;
+				dayPoint.inputTokens += inputTokens;
+				dayPoint.outputTokens += outputTokens;
+				dayPoint.cachedReadTextTokens += cachedReadInputTokens;
 				dayPoint.cachedWriteTextTokens +=
 					row.cachedWriteTextTokens > 0
 						? row.cachedWriteTextTokens
@@ -678,18 +714,12 @@ export default function PricingInsights({
 				providerFamilyId: provider.provider.provider_family_id ?? null,
 			});
 			const usage = usageByProvider.get(providerId);
-			const inputPricePer1M = getCurrentTokenPricePer1M({
-				provider,
-				plan,
-				historyRules: filteredHistoryRules.filter((rule) => rule.providerId === providerId),
-				meterPreference: INPUT_METER_PREFERENCE,
-			});
-			const outputPricePer1M = getCurrentTokenPricePer1M({
-				provider,
-				plan,
-				historyRules: filteredHistoryRules.filter((rule) => rule.providerId === providerId),
-				meterPreference: OUTPUT_METER_PREFERENCE,
-			});
+			const matchingRules = filteredHistoryRules.filter(
+				(rule) => rule.providerId === providerId,
+			);
+			const effectivePrices = usage
+				? calculateEffectivePriceSummaryForUsage(usage, matchingRules)
+				: null;
 
 			return {
 				providerId,
@@ -697,8 +727,12 @@ export default function PricingInsights({
 				logoProviderId,
 				seriesKey: keyForSeries(providerId),
 				color: providerColours[providerId]?.stroke ?? "hsl(210 70% 55%)",
-				inputPricePer1M,
-				outputPricePer1M,
+				inputPricePer1M: effectivePrices?.weightedInputPricePer1M ?? null,
+				outputPricePer1M: effectivePrices?.weightedOutputPricePer1M ?? null,
+				cacheHitRatePct:
+					usage && usage.inputWeightTokens30d > 0
+						? (usage.cachedReadInputTokens30d / usage.inputWeightTokens30d) * 100
+						: null,
 				tokenSharePct:
 					totalTokensAll > 0 && usage
 						? (usage.totalTokens30d / totalTokensAll) * 100
@@ -708,7 +742,7 @@ export default function PricingInsights({
 				outputWeightTokens30d: usage?.outputWeightTokens30d ?? 0,
 			} satisfies EffectiveRow;
 		});
-	}, [filteredHistoryRules, plan, providerColours, providers, usageByProvider]);
+	}, [filteredHistoryRules, providerColours, providers, usageByProvider]);
 
 	const effectiveSummary = useMemo(() => {
 		let inputCostUsd = 0;
@@ -722,28 +756,21 @@ export default function PricingInsights({
 			const matchingRules = filteredHistoryRules.filter(
 				(rule) => rule.providerId === row.providerId,
 			);
-
-			for (const point of usage.usageByDay.values()) {
-				const timestampMs = Date.parse(`${point.day}T12:00:00.000Z`);
-				const inputEffectivePrice = calculateEffectiveInputPricePer1M({
-					usage: point,
-					rules: matchingRules,
-					timestampMs,
-				});
-				if (inputEffectivePrice != null && point.inputTokens > 0) {
-					inputCostUsd += inputEffectivePrice * (point.inputTokens / 1_000_000);
-					pricedInputTokens += point.inputTokens;
-				}
-
-				const outputEffectivePrice = calculateEffectiveOutputPricePer1M({
-					usage: point,
-					rules: matchingRules,
-					timestampMs,
-				});
-				if (outputEffectivePrice != null && point.outputTokens > 0) {
-					outputCostUsd += outputEffectivePrice * (point.outputTokens / 1_000_000);
-					pricedOutputTokens += point.outputTokens;
-				}
+			const providerEffectiveSummary = calculateEffectivePriceSummaryForUsage(
+				usage,
+				matchingRules,
+			);
+			if (providerEffectiveSummary.weightedInputPricePer1M != null) {
+				inputCostUsd +=
+					providerEffectiveSummary.weightedInputPricePer1M *
+					(providerEffectiveSummary.pricedInputTokens / 1_000_000);
+				pricedInputTokens += providerEffectiveSummary.pricedInputTokens;
+			}
+			if (providerEffectiveSummary.weightedOutputPricePer1M != null) {
+				outputCostUsd +=
+					providerEffectiveSummary.weightedOutputPricePer1M *
+					(providerEffectiveSummary.pricedOutputTokens / 1_000_000);
+				pricedOutputTokens += providerEffectiveSummary.pricedOutputTokens;
 			}
 		}
 
@@ -839,54 +866,49 @@ export default function PricingInsights({
 				</div>
 			) : null}
 
-			<div className="overflow-hidden rounded-lg border border-zinc-200/80 bg-background shadow-sm dark:border-zinc-800">
-				<div className="flex flex-col gap-3 border-b border-border/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-					<div className="space-y-1">
-						<h3 className="text-sm font-medium text-foreground">Effective pricing</h3>
-						<p className="text-xs text-muted-foreground">
-							Weighted by routed usage over the last 30 days.
-						</p>
-					</div>
-					{!showPlanInEffectiveHeader && availablePlans.length > 1 && onPlanChange ? (
-						<PricingPlanSelect
-							value={plan}
-							onChange={onPlanChange}
-							plans={availablePlans}
-							variant="dropdown"
-						/>
-					) : null}
+			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+				<div className="space-y-1">
+					<h3 className="text-sm font-medium text-foreground">Effective pricing</h3>
+					<p className="text-xs text-muted-foreground">
+						Weighted by routed usage over the last 30 days.
+					</p>
 				</div>
+				{!showPlanInEffectiveHeader && availablePlans.length > 1 && onPlanChange ? (
+					<PricingPlanSelect
+						value={plan}
+						onChange={onPlanChange}
+						plans={availablePlans}
+						variant="dropdown"
+					/>
+				) : null}
+			</div>
 
+			<div className="overflow-hidden rounded-lg border border-zinc-200/80 bg-background shadow-sm dark:border-zinc-800">
 				<div className="grid grid-cols-1 divide-y divide-border/60 border-b border-border/70 sm:grid-cols-2 sm:divide-x sm:divide-y-0">
 					<div className="px-4 py-3">
 						<p className="text-xs text-muted-foreground">Weighted input price</p>
 						<p className="mt-1 text-xl font-semibold tabular-nums text-foreground">
 							{formatUsd(effectiveSummary.weightedInputPricePer1M)}
 						</p>
-						<p className="mt-1 text-xs text-muted-foreground">
-							Per 1M tokens across{" "}
-							{formatCompactNumber(effectiveSummary.pricedInputTokens)} input
-							tokens
-						</p>
+						<p className="mt-1 text-xs text-muted-foreground">Per 1M tokens</p>
 					</div>
 					<div className="px-4 py-3">
 						<p className="text-xs text-muted-foreground">Weighted output price</p>
 						<p className="mt-1 text-xl font-semibold tabular-nums text-foreground">
 							{formatUsd(effectiveSummary.weightedOutputPricePer1M)}
 						</p>
-						<p className="mt-1 text-xs text-muted-foreground">
-							Per 1M tokens across{" "}
-							{formatCompactNumber(effectiveSummary.pricedOutputTokens)} output
-							tokens
-						</p>
+						<p className="mt-1 text-xs text-muted-foreground">Per 1M tokens</p>
 					</div>
 				</div>
 
-				<div className="overflow-x-auto border-b border-border/70">
-					<Table className="min-w-[720px]">
+				<ScrollArea
+					className="w-full border-b border-border/70"
+					scrollBarOrientation="horizontal"
+				>
+					<Table className="min-w-[760px]" wrapInContainer={false}>
 						<TableHeader>
 							<TableRow className="hover:bg-transparent">
-								<TableHead className="w-[28%] px-3">
+								<TableHead className="h-8 w-[28%] px-3">
 									<SortHead
 										label="Provider"
 										sortKey="provider"
@@ -896,7 +918,7 @@ export default function PricingInsights({
 										onToggle={handleSortToggle}
 									/>
 								</TableHead>
-								<TableHead className="px-3">
+								<TableHead className="h-8 pl-2 pr-3 text-right">
 									<SortHead
 										label="Input $/M"
 										sortKey="input"
@@ -905,7 +927,7 @@ export default function PricingInsights({
 										onToggle={handleSortToggle}
 									/>
 								</TableHead>
-								<TableHead className="px-3">
+								<TableHead className="h-8 pl-2 pr-3 text-right">
 									<SortHead
 										label="Output $/M"
 										sortKey="output"
@@ -914,19 +936,19 @@ export default function PricingInsights({
 										onToggle={handleSortToggle}
 									/>
 								</TableHead>
-								<TableHead className="px-3">
+								<TableHead className="h-8 pl-2 pr-3 text-right">
 									<SortHead
-										label="Token Share"
-										sortKey="tokenShare"
+										label="Cache hit rate"
+										sortKey="cacheHitRate"
 										activeSortKey={sortKey}
 										direction={sortDirection}
 										onToggle={handleSortToggle}
 									/>
 								</TableHead>
-								<TableHead className="px-3">
+								<TableHead className="h-8 pl-2 pr-3 text-right">
 									<SortHead
-										label="30d Tokens"
-										sortKey="tokens"
+										label="Token Share"
+										sortKey="tokenShare"
 										activeSortKey={sortKey}
 										direction={sortDirection}
 										onToggle={handleSortToggle}
@@ -937,19 +959,19 @@ export default function PricingInsights({
 						<TableBody>
 							{sortedRows.map((row) => (
 								<TableRow key={row.providerId}>
-									<TableCell className="px-3 py-3">
+									<TableCell className="px-3 py-1.5">
 										<Link
 											href={`/api-providers/${row.providerId}`}
 											className="group/provider inline-flex items-center gap-2.5 whitespace-nowrap"
 										>
-											<span className="relative flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-zinc-200/80 bg-background transition-colors group-hover/provider:border-zinc-300 dark:border-zinc-800 dark:group-hover/provider:border-zinc-700">
-												<span className="relative h-4 w-4">
+											<span className="relative flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-zinc-200/80 bg-background transition-colors group-hover/provider:border-zinc-300 dark:border-zinc-800 dark:group-hover/provider:border-zinc-700">
+												<span className="relative h-3.5 w-3.5">
 													<Logo
 														id={row.logoProviderId}
 														alt={`${row.providerName} logo`}
 														className="object-contain"
 														fill
-														sizes="16px"
+														sizes="14px"
 													/>
 												</span>
 											</span>
@@ -958,27 +980,48 @@ export default function PricingInsights({
 											</span>
 										</Link>
 									</TableCell>
-									<TableCell className="px-3 py-3 text-right font-medium tabular-nums text-foreground">
+									<TableCell className="px-3 py-1.5 text-right font-medium tabular-nums text-foreground">
 										{formatUsd(row.inputPricePer1M)}
 									</TableCell>
-									<TableCell className="px-3 py-3 text-right font-medium tabular-nums text-foreground">
+									<TableCell className="px-3 py-1.5 text-right font-medium tabular-nums text-foreground">
 										{formatUsd(row.outputPricePer1M)}
 									</TableCell>
-									<TableCell className="px-3 py-3 text-right tabular-nums">
+									<TableCell className="px-3 py-1.5 text-right tabular-nums">
 										<div className="font-medium text-foreground">
-											{formatPercent(row.tokenSharePct)}
+											{formatPercent(row.cacheHitRatePct)}
 										</div>
 									</TableCell>
-									<TableCell className="px-3 py-3 text-right tabular-nums">
-										<div className="font-medium text-foreground">
-											{formatCompactNumber(row.totalTokens30d)}
-										</div>
+									<TableCell className="px-3 py-1.5 text-right tabular-nums">
+										<Tooltip delayDuration={120}>
+											<TooltipTrigger asChild>
+												<button
+													type="button"
+													className="ml-auto flex items-center justify-end gap-2 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+													aria-label={`Token share ${formatPercent(row.tokenSharePct)} from ${formatTokenCount(row.totalTokens30d)}`}
+												>
+													<div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
+														<div
+															className="h-full rounded-full bg-primary"
+															style={{
+																width: `${Math.max(0, Math.min(100, row.tokenSharePct ?? 0))}%`,
+															}}
+														/>
+													</div>
+													<div className="w-12 font-medium text-foreground">
+														{formatPercent(row.tokenSharePct)}
+													</div>
+												</button>
+											</TooltipTrigger>
+											<TooltipContent side="top" align="end">
+												{formatTokenCount(row.totalTokens30d)}
+											</TooltipContent>
+										</Tooltip>
 									</TableCell>
 								</TableRow>
 							))}
 						</TableBody>
 					</Table>
-				</div>
+				</ScrollArea>
 
 				{inputHistoryState.hasData || outputHistoryState.hasData ? (
 					<div className="grid divide-y divide-border/70 lg:grid-cols-2 lg:divide-x lg:divide-y-0">

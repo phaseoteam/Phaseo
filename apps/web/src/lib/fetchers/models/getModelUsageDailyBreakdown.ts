@@ -127,8 +127,92 @@ function toInt(value: unknown): number {
 }
 
 function toFiniteNumber(value: unknown): number | null {
+	if (value === null || value === undefined || value === "") return null;
 	const parsed = Number(value);
 	return Number.isFinite(parsed) ? parsed : null;
+}
+
+function normalizeId(value: unknown): string | null {
+	const normalized = String(value ?? "").trim();
+	return normalized.length > 0 ? normalized : null;
+}
+
+async function resolveModelUsageAliases(
+	client: ReturnType<typeof createAdminClient>,
+	seedModelIds: string[],
+): Promise<string[]> {
+	const aliases = new Set(seedModelIds.map(normalizeId).filter(Boolean) as string[]);
+	if (aliases.size === 0) return [];
+
+	for (let pass = 0; pass < 2; pass += 1) {
+		const lookupIds = Array.from(aliases);
+		const [
+			providerModelsByModelId,
+			providerModelsByApiModelId,
+			providerModelsBySlug,
+			aliasRowsByApiModelId,
+			aliasRowsBySlug,
+		] = await Promise.all([
+			client
+				.from("data_api_provider_models")
+				.select("model_id, api_model_id, provider_model_slug")
+				.in("model_id", lookupIds),
+			client
+				.from("data_api_provider_models")
+				.select("model_id, api_model_id, provider_model_slug")
+				.in("api_model_id", lookupIds),
+			client
+				.from("data_api_provider_models")
+				.select("model_id, api_model_id, provider_model_slug")
+				.in("provider_model_slug", lookupIds),
+			client
+				.from("data_api_model_aliases")
+				.select("api_model_id, alias_slug")
+				.in("api_model_id", lookupIds),
+			client
+				.from("data_api_model_aliases")
+				.select("api_model_id, alias_slug")
+				.in("alias_slug", lookupIds),
+		]);
+
+		const before = aliases.size;
+		for (const query of [
+			providerModelsByModelId,
+			providerModelsByApiModelId,
+			providerModelsBySlug,
+		]) {
+			if (query.error) {
+				continue;
+			}
+			for (const row of query.data ?? []) {
+				for (const id of [
+					normalizeId(row?.model_id),
+					normalizeId(row?.api_model_id),
+					normalizeId(row?.provider_model_slug),
+				]) {
+					if (id) aliases.add(id);
+				}
+			}
+		}
+
+		for (const query of [aliasRowsByApiModelId, aliasRowsBySlug]) {
+			if (query.error) {
+				continue;
+			}
+			for (const row of query.data ?? []) {
+				for (const id of [
+					normalizeId(row?.api_model_id),
+					normalizeId(row?.alias_slug),
+				]) {
+					if (id) aliases.add(id);
+				}
+			}
+		}
+
+		if (aliases.size === before) break;
+	}
+
+	return Array.from(aliases).sort((a, b) => a.localeCompare(b));
 }
 
 function toIsoDate(value: unknown): string {
@@ -219,9 +303,11 @@ export async function getModelUsageDailyBreakdown(args: {
 	since?: string;
 	until?: string;
 }): Promise<ModelUsageDailyBreakdownRow[]> {
-	const modelIds = Array.from(
-		new Set([args.modelId, ...(args.modelAliases ?? [])].filter(Boolean)),
-	).sort((a, b) => a.localeCompare(b));
+	const client = createAdminClient();
+	const modelIds = await resolveModelUsageAliases(
+		client,
+		[args.modelId, ...(args.modelAliases ?? [])].filter(Boolean),
+	);
 	if (!modelIds.length) return [];
 
 	const days = Math.max(1, Math.min(365, Math.round(args.days ?? 30)));
@@ -234,7 +320,6 @@ export async function getModelUsageDailyBreakdown(args: {
 				)
 			: null;
 
-	const client = createAdminClient();
 	const { data, error } = await client.rpc("get_model_usage_daily_breakdown", {
 		p_model_ids: modelIds,
 		p_provider_ids: providerIds,
@@ -266,6 +351,8 @@ export async function getModelUsageDailyBreakdownCached(args: {
 	cacheLife("hours");
 	cacheTag("data:gateway_usage_rollups");
 	cacheTag("data:gateway_model_usage_daily");
+	cacheTag("data:data_api_provider_models");
+	cacheTag("data:model_aliases");
 	cacheTag(`data:gateway_usage_rollups:model:${args.modelId}`);
 	cacheTag(`data:gateway_model_usage_daily:model:${args.modelId}`);
 	cacheTag(`model:usage-daily:${args.modelId}`);

@@ -7,6 +7,7 @@ import {
 	BadgeAlert,
 	Braces,
 	Captions,
+	ChevronRight,
 	Headphones,
 	ImageIcon,
 	Music4,
@@ -40,7 +41,6 @@ import {
 	fetchFrontendModelUsageDailyBreakdown,
 	fetchFrontendOrganisationModels,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Carousel,
@@ -68,6 +68,7 @@ type ModelOverviewSectionsProps = {
 	showBenchmarks?: boolean;
 	showSubscriptions?: boolean;
 	status?: string | null;
+	isGatewayActive?: boolean;
 	performancePromise?: Promise<ModelPerformanceMetrics | null>;
 	quickstartRequestContext?: QuickstartRequestContext;
 };
@@ -223,14 +224,64 @@ function SectionHeader({
 	description,
 }: {
 	title: string;
-	description: string;
+	description?: string;
 }) {
 	return (
-		<div className="space-y-1">
+		<div className={description ? "space-y-1" : undefined}>
 			<h2 className="text-xl font-semibold tracking-tight">{title}</h2>
-			<p className="text-sm text-muted-foreground">{description}</p>
+			{description ? (
+				<p className="text-sm text-muted-foreground">{description}</p>
+			) : null}
 		</div>
 	);
+}
+
+function formatCompactUsage(value: number): string {
+	if (!Number.isFinite(value) || value <= 0) return "0";
+	if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(2)}B`;
+	if (value >= 1_000_000) {
+		const millions = Math.round(value / 1_000_000);
+		return millions >= 1_000 ? `${(value / 1_000_000_000).toFixed(2)}B` : `${millions}M`;
+	}
+	if (value >= 1_000) {
+		const thousands = Math.round((value / 1_000) * 10) / 10;
+		return thousands >= 1_000 ? "1M" : `${thousands.toFixed(1)}K`;
+	}
+	return Math.round(value).toLocaleString();
+}
+
+function getAppInitial(title: string): string {
+	return title.trim().charAt(0).toUpperCase() || "A";
+}
+
+function getAppHostname(url: string | null): string | null {
+	if (!url) return null;
+	try {
+		const parsed = new URL(url);
+		if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+			return parsed.hostname.replace(/^www\./, "");
+		}
+	} catch {
+		return null;
+	}
+	return null;
+}
+
+function getAppLogoUrl(app: {
+	imageUrl: string | null;
+	url: string | null;
+}): string | undefined {
+	if (app.imageUrl) return app.imageUrl;
+	const hostname = getAppHostname(app.url);
+	if (!hostname) return undefined;
+	return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(hostname)}&sz=64`;
+}
+
+function getAppSubtitle(app: { url: string | null }): string | null {
+	if (app.url) {
+		return getAppHostname(app.url);
+	}
+	return null;
 }
 
 export async function ModelSubscriptionsSection({
@@ -348,30 +399,64 @@ export async function ModelAppsSection({
 		[],
 		"model apps"
 	);
+	const topApps = modelApps.slice(0, 10);
+	const appColumns = [topApps.slice(0, 5), topApps.slice(5, 10)].filter(
+		(column) => column.length > 0,
+	);
 
 	return (
 		<>
-			{modelApps.length > 0 ? (
-				<div className="grid gap-3 md:grid-cols-2">
-					{modelApps.map((app) => (
-						<Link
-							key={app.appId}
-							href={`/apps/${encodeURIComponent(app.appId)}`}
-							className="rounded-lg border border-border/70 px-4 py-3 transition-colors hover:bg-muted/40"
-						>
-							<p className="text-sm font-semibold">{app.title}</p>
-							<p className="text-xs text-muted-foreground">
-								{app.appId}
-							</p>
-							<div className="mt-2 flex flex-wrap items-center gap-2">
-								<Badge variant="outline" className="text-[11px]">
-									{app.totalRequests.toLocaleString()} requests
-								</Badge>
-								<Badge variant="outline" className="text-[11px]">
-									{app.totalTokens.toLocaleString()} tokens
-								</Badge>
-							</div>
-						</Link>
+			{topApps.length > 0 ? (
+				<div className="grid gap-x-16 md:grid-cols-2">
+					{appColumns.map((column, columnIndex) => (
+						<div key={columnIndex}>
+							{column.map((app, itemIndex) => {
+								const rank = columnIndex * 5 + itemIndex + 1;
+								const subtitle = getAppSubtitle(app);
+								const logoUrl = getAppLogoUrl(app);
+								return (
+									<Link
+										key={app.appId}
+										href={`/apps/${encodeURIComponent(app.appId)}`}
+										className="group grid min-h-11 grid-cols-[1.5rem_1.75rem_minmax(0,1fr)_auto] items-center gap-2.5 py-1 transition-colors hover:bg-muted/35"
+									>
+										<span className="text-sm tabular-nums text-muted-foreground">
+											{rank}.
+										</span>
+										<span className="flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted/45">
+											{logoUrl ? (
+												// eslint-disable-next-line @next/next/no-img-element
+												<img
+													src={logoUrl}
+													alt={app.title}
+													className="size-full object-contain"
+												/>
+											) : (
+												<span className="text-[11px] font-semibold text-muted-foreground">
+													{getAppInitial(app.title)}
+												</span>
+											)}
+										</span>
+										<div className="min-w-0">
+											<div className="flex min-w-0 items-center gap-1.5">
+												<p className="truncate text-sm font-semibold text-foreground underline decoration-transparent underline-offset-2 transition-colors group-hover:decoration-current">
+													{app.title}
+												</p>
+												<ChevronRight className="size-3.5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
+											</div>
+											{subtitle ? (
+												<p className="truncate text-xs text-muted-foreground">
+													{subtitle}
+												</p>
+											) : null}
+										</div>
+										<div className="whitespace-nowrap text-right text-sm tabular-nums text-muted-foreground">
+											{formatCompactUsage(app.totalTokens)} tokens
+										</div>
+									</Link>
+								);
+							})}
+						</div>
 					))}
 				</div>
 			) : (
@@ -394,7 +479,10 @@ export async function ModelAppsSection({
 export async function ModelActivitySection({
 	modelId,
 	includeHidden: _includeHidden,
-}: ModelSectionSharedProps) {
+	showHeading = true,
+}: ModelSectionSharedProps & {
+	showHeading?: boolean;
+}) {
 	const usageRows = await withOptionalSectionTimeout(
 		fetchFrontendModelUsageDailyBreakdown({
 			modelId,
@@ -407,19 +495,31 @@ export async function ModelActivitySection({
 	return (
 		<>
 			{usageRows.length > 0 ? (
-				<ModelActivityChart rows={usageRows} showHeading={false} />
+				<ModelActivityChart
+					rows={usageRows}
+					showHeading={showHeading}
+					description="Token volume and request traffic for this model over time."
+				/>
 			) : (
-				<Empty className="rounded-lg border p-8">
-					<EmptyHeader>
-						<EmptyMedia variant="icon">
-							<Activity className="size-5" />
-						</EmptyMedia>
-						<EmptyTitle>No activity yet</EmptyTitle>
-						<EmptyDescription>
-							Usage breakdowns will appear once this model has enough gateway traffic.
-						</EmptyDescription>
-					</EmptyHeader>
-				</Empty>
+				<div className="space-y-4">
+					{showHeading ? (
+						<SectionHeader
+							title="Activity"
+							description="Token volume and request traffic for this model over time."
+						/>
+					) : null}
+					<Empty className="rounded-lg border p-8">
+						<EmptyHeader>
+							<EmptyMedia variant="icon">
+								<Activity className="size-5" />
+							</EmptyMedia>
+							<EmptyTitle>No activity yet</EmptyTitle>
+							<EmptyDescription>
+								Usage breakdowns will appear once this model has enough gateway traffic.
+							</EmptyDescription>
+						</EmptyHeader>
+					</Empty>
+				</div>
 			)}
 		</>
 	);
@@ -428,12 +528,25 @@ export async function ModelActivitySection({
 export async function ModelQuickstartSection({
 	modelId,
 	includeHidden,
+	isGatewayActive = true,
 	surface = "page",
 	quickstartRequestContext,
 }: ModelSectionSharedProps & {
+	isGatewayActive?: boolean;
 	surface?: ModelSectionSurface;
 	quickstartRequestContext?: QuickstartRequestContext;
 }) {
+	if (!isGatewayActive) {
+		return (
+			<Quickstart
+				mode="model-metadata"
+				modelId={modelId}
+				acceptedModelIdentifiers={[modelId]}
+				showHeader={surface !== "overview"}
+			/>
+		);
+	}
+
 	const includeInternalProviders = await withOptionalSectionTimeout(
 		isAdminViewer(),
 		false,
@@ -520,7 +633,6 @@ export async function ModelBenchmarksSection({
 		<>
 			{benchmarkHighlights.length > 0 ? (
 				<ModelBenchmarks
-					modelId={modelId}
 					highlightCards={benchmarkHighlights}
 					mode="summary"
 				/>
@@ -1048,10 +1160,7 @@ export function ModelOverviewSectionsSkeleton() {
 				<PricingSectionSkeleton />
 			</Section>
 			<Section id="benchmarks">
-				<SectionHeader
-					title="Benchmarks"
-					description="Headline benchmark standings and comparison context."
-				/>
+				<SectionHeader title="Benchmarks" />
 				<BenchmarksSectionSkeleton />
 			</Section>
 			<Section id="activity">
@@ -1064,7 +1173,7 @@ export function ModelOverviewSectionsSkeleton() {
 			<Section id="apps">
 				<SectionHeader
 					title="Apps Using This Model"
-					description="Public apps observed in gateway request traffic for this model."
+					description="Public apps observed in gateway usage for this model."
 				/>
 				<AppsSectionSkeleton />
 			</Section>
@@ -1107,6 +1216,7 @@ export default function ModelOverviewSections({
 	showBenchmarks = true,
 	showSubscriptions = true,
 	status,
+	isGatewayActive = true,
 	performancePromise,
 	quickstartRequestContext,
 }: ModelOverviewSectionsProps) {
@@ -1118,10 +1228,7 @@ export default function ModelOverviewSections({
 			<div className="space-y-10">
 				{showBenchmarks ? (
 					<Section id="benchmarks" showDivider={false}>
-						<SectionHeader
-							title="Benchmarks"
-							description="Historical benchmark standings and comparison context."
-						/>
+						<SectionHeader title="Benchmarks" />
 						<Suspense fallback={<BenchmarksSectionSkeleton />}>
 							<ModelBenchmarksSection
 								modelId={modelId}
@@ -1147,6 +1254,74 @@ export default function ModelOverviewSections({
 								<SectionHeader
 									title="Subscriptions"
 									description="Historical commercial plans and bundled access that listed this model."
+								/>
+								<Suspense fallback={<SubscriptionsSectionSkeleton />}>
+									<ModelSubscriptionsSection
+										modelId={modelId}
+										ownerOrganisationId={model?.organisation_id}
+										ownerOrganisationName={model?.organisation?.name}
+									/>
+								</Suspense>
+							</Section>
+						) : null}
+					</>
+				) : null}
+			</div>
+		);
+	}
+
+	if (!isGatewayActive) {
+		return (
+			<div className="space-y-10">
+				<Section id="providers" showDivider={false}>
+					<SectionHeader
+						title="Providers"
+						description="Provider listings and known route availability for this model."
+					/>
+					<Suspense fallback={<ProvidersSectionSkeleton />}>
+						<ModelProvidersSection modelId={modelId} includeHidden={includeHidden} />
+					</Suspense>
+				</Section>
+				{showBenchmarks ? (
+					<Section id="benchmarks">
+						<SectionHeader title="Benchmarks" />
+						<Suspense fallback={<BenchmarksSectionSkeleton />}>
+							<ModelBenchmarksSection
+								modelId={modelId}
+								includeHidden={includeHidden}
+								hideWhenEmpty
+							/>
+						</Suspense>
+					</Section>
+				) : null}
+				<Section id="quickstart">
+					<SectionHeader
+						title="Quickstart"
+						description="Retrieve catalog metadata for this model while it is not active in the Gateway."
+					/>
+					<ModelQuickstartSection
+						modelId={modelId}
+						includeHidden={includeHidden}
+						isGatewayActive={false}
+						surface="overview"
+					/>
+				</Section>
+				{hasInternalModelData ? (
+					<>
+						<Section id="about">
+							<SectionHeader
+								title="About"
+								description="Key dates, capabilities, and model metadata."
+							/>
+							<Suspense fallback={<AboutSectionSkeleton />}>
+								<ModelAboutSection model={model!} />
+							</Suspense>
+						</Section>
+						{showSubscriptions ? (
+							<Section id="subscriptions">
+								<SectionHeader
+									title="Subscriptions"
+									description="Commercial plans and bundled access that list this model."
 								/>
 								<Suspense fallback={<SubscriptionsSectionSkeleton />}>
 									<ModelSubscriptionsSection
@@ -1201,10 +1376,7 @@ export default function ModelOverviewSections({
 			</Section>
 			{showBenchmarks ? (
 				<Section id="benchmarks">
-					<SectionHeader
-						title="Benchmarks"
-						description="Headline benchmark standings and comparison context."
-					/>
+					<SectionHeader title="Benchmarks" />
 					<Suspense fallback={<BenchmarksSectionSkeleton />}>
 						<ModelBenchmarksSection
 							modelId={modelId}
@@ -1215,10 +1387,6 @@ export default function ModelOverviewSections({
 				</Section>
 			) : null}
 			<Section id="activity">
-				<SectionHeader
-					title="Activity"
-					description="Daily gateway activity over the last 30 days, with current UTC-day pace projection."
-				/>
 				<Suspense fallback={<ActivitySectionSkeleton />}>
 					<ModelActivitySection modelId={modelId} includeHidden={includeHidden} />
 				</Suspense>
@@ -1226,7 +1394,7 @@ export default function ModelOverviewSections({
 			<Section id="apps">
 				<SectionHeader
 					title="Apps Using This Model"
-					description="Public apps observed in gateway request traffic for this model."
+					description="Public apps observed in gateway usage for this model."
 				/>
 				<Suspense fallback={<AppsSectionSkeleton />}>
 					<ModelAppsSection modelId={modelId} includeHidden={includeHidden} />

@@ -1,10 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
-import { markdownToPlainText } from "@/lib/models/modelDescription";
 import { cn } from "@/lib/utils";
 import { modelMarkdownComponents } from "./modelMarkdown";
 
@@ -16,21 +15,33 @@ export default function ModelDescriptionPanel({
 	description,
 }: ModelDescriptionPanelProps) {
 	const [expanded, setExpanded] = useState(false);
-	const plainTextDescription = useMemo(
-		() => markdownToPlainText(description) ?? description,
-		[description],
-	);
-	const canExpand = useMemo(() => {
-		const wordCount = plainTextDescription.trim().split(/\s+/).filter(Boolean).length;
-		return plainTextDescription.length > 260 || wordCount > 42;
-	}, [plainTextDescription]);
+	const descriptionRef = useRef<HTMLDivElement>(null);
+	const [canExpand, setCanExpand] = useState(false);
+
+	useEffect(() => {
+		setExpanded(false);
+	}, [description]);
+
+	useEffect(() => {
+		const element = descriptionRef.current;
+		if (!element || expanded) return;
+
+		const updateOverflow = () => {
+			setCanExpand(element.scrollHeight > element.clientHeight + 1);
+		};
+		updateOverflow();
+		const observer = new ResizeObserver(updateOverflow);
+		observer.observe(element);
+		return () => observer.disconnect();
+	}, [description, expanded]);
 
 	return (
 		<div>
 			<div
+				ref={descriptionRef}
 				className={cn(
 					"text-[13px] leading-5 text-muted-foreground md:text-sm",
-					canExpand && !expanded ? "line-clamp-4" : null,
+					!expanded ? "line-clamp-4" : null,
 				)}
 			>
 				<ReactMarkdown

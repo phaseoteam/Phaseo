@@ -1,5 +1,6 @@
 import {
 	fetchFrontendModelBenchmarkHighlights,
+	fetchFrontendModelGatewayMetadata,
 	fetchFrontendModelOverview,
 	fetchFrontendModelPerformance,
 	fetchFrontendModelSubscriptionPlans,
@@ -72,10 +73,12 @@ function getModelPageTocItems({
 	showBenchmarks,
 	showSubscriptions,
 	status,
+	isGatewayActive,
 }: {
 	showBenchmarks: boolean;
 	showSubscriptions: boolean;
 	status?: string | null;
+	isGatewayActive: boolean;
 }): ModelPageTocItem[] {
 	if (status === "Retired") {
 		return baseModelPageTocItems.filter((item) => {
@@ -86,6 +89,12 @@ function getModelPageTocItems({
 	}
 
 	return baseModelPageTocItems.filter((item) => {
+		if (
+			!isGatewayActive &&
+			["performance", "pricing", "activity", "apps", "uptime"].includes(item.id)
+		) {
+			return false;
+		}
 		if (item.id === "benchmarks") return showBenchmarks;
 		if (item.id === "subscriptions") return showSubscriptions;
 		return true;
@@ -157,22 +166,26 @@ export default async function Page({
 		);
 	}
 	const modelPromise = fetchFrontendModelOverview(modelId);
-	const performancePromise = fetchFrontendModelPerformance(modelId, 24).catch(
-		() => null,
-	);
-	const [modelOverview, benchmarkHighlights, subscriptionPlans] =
+	const [modelOverview, benchmarkHighlights, subscriptionPlans, gatewayMetadata] =
 		await Promise.all([
 			modelPromise,
 			fetchFrontendModelBenchmarkHighlights(modelId).catch(() => []),
 			fetchFrontendModelSubscriptionPlans(modelId).catch(() => []),
+			fetchFrontendModelGatewayMetadata(modelId).catch(() => undefined),
 		]);
 	const showBenchmarks = benchmarkHighlights.length > 0;
 	const showSubscriptions = subscriptionPlans.length > 0;
+	const isGatewayActive =
+		gatewayMetadata === undefined || gatewayMetadata.activeProviders.length > 0;
+	const performancePromise = isGatewayActive
+		? fetchFrontendModelPerformance(modelId, 24).catch(() => null)
+		: Promise.resolve(null);
 	const isRetired = modelOverview?.status === "Retired";
 	const modelPageTocItems = getModelPageTocItems({
 		showBenchmarks,
 		showSubscriptions,
 		status: modelOverview?.status,
+		isGatewayActive,
 	});
 	const modelName = modelOverview?.name ?? modelId.split("/").slice(-1)[0] ?? modelId;
 	const organisationName =
@@ -249,6 +262,7 @@ export default async function Page({
 								showBenchmarks={showBenchmarks}
 								showSubscriptions={showSubscriptions}
 								status={modelOverview?.status}
+								isGatewayActive={isGatewayActive}
 								performancePromise={performancePromise}
 								quickstartRequestContext={quickstartRequestContext}
 							/>
