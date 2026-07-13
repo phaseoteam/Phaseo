@@ -269,7 +269,7 @@ function getDataPolicyIcon(state: ProviderDataPolicyTier | "mixed") {
 		case "private":
 			return <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />;
 		case "logs":
-			return <Shield className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400" />;
+			return <ShieldAlert className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400" />;
 		case "trains":
 			return <ShieldAlert className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />;
 		case "mixed":
