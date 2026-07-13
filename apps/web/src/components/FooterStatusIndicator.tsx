@@ -256,7 +256,7 @@ export function FooterStatusIndicator() {
 					{hasComponents ? (
 						groupedComponents.map((group) => (
 							<span key={group.group} className="block">
-								<span className="sticky top-0 z-10 flex items-center justify-between bg-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500 dark:bg-zinc-950 dark:text-zinc-400">
+								<span className="sticky top-0 z-10 flex items-center justify-between bg-white px-3 py-1.5 text-[11px] font-semibold text-zinc-500 dark:bg-zinc-950 dark:text-zinc-400">
 									<span>{group.group}</span>
 									{group.affected ? (
 										<span className="normal-case tracking-normal text-amber-700 dark:text-amber-300">

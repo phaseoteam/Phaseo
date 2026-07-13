@@ -124,7 +124,7 @@ function FooterLinkList({
 
 export default function Footer() {
 	return (
-		<footer className="mt-auto w-full border-t border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+		<footer className="mt-auto w-full overflow-x-clip border-t border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-950">
 			<div className="mx-auto flex w-full max-w-[1280px] flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
 				<div className="grid items-start gap-6 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.3fr)_repeat(4,minmax(0,0.8fr))]">
 					<div className="flex flex-col gap-2 sm:col-span-2 lg:col-span-1">
