@@ -161,7 +161,7 @@
 		"baseline-browser-mapping": "^2.9.0",
 		"dotenv": "^17.4.2",
 		"eslint": "^10.4.0",
-		"eslint-config-next": "16.2.6",
+		"eslint-config-next": "16.2.10",
 		"jest": "^30.4.2",
 		"postcss": "^8",
 		"tailwindcss": "^4",
