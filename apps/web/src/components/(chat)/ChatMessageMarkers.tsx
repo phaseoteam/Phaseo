@@ -356,20 +356,23 @@ function ToolCallMarker({
 
 	return (
 		<div className="max-w-full">
-			<Marker asChild>
-				<button
-					type="button"
-					className={`group/tool-marker w-fit transition-colors ${
-						isFailed
-							? "text-destructive"
-							: "text-muted-foreground hover:text-foreground"
-					}`}
-					aria-expanded={hasDetails ? open : undefined}
-					aria-controls={hasDetails ? detailsId : undefined}
-					onClick={() => {
-						if (hasDetails) setOpen((value) => !value);
-					}}
-				>
+			<Marker
+				render={
+					<button
+						type="button"
+						className={`group/tool-marker w-fit transition-colors ${
+							isFailed
+								? "text-destructive"
+								: "text-muted-foreground hover:text-foreground"
+						}`}
+						aria-expanded={hasDetails ? open : undefined}
+						aria-controls={hasDetails ? detailsId : undefined}
+						onClick={() => {
+							if (hasDetails) setOpen((value) => !value);
+						}}
+					/>
+				}
+			>
 					<MarkerIcon>
 						<Wrench className={iconClassName} />
 					</MarkerIcon>
@@ -397,7 +400,6 @@ function ToolCallMarker({
 							/>
 						) : null}
 					</MarkerContent>
-				</button>
 			</Marker>
 			{open && hasDetails ? (
 				<div
