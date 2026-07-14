@@ -169,6 +169,7 @@ test("ignores callback hits until an authorization code is present", () => {
 
 test("removes terminal control characters from human-readable errors", () => {
 	assert.equal(sanitizeTerminalText("bad\u001b[31mname\u0007"), "bad [31mname ");
+	assert.equal(sanitizeTerminalText("first\n\tsecond\r\nthird"), "first\n\tsecond\r\nthird");
 });
 
 test("only accepts loopback browser callback URLs", () => {

@@ -76,7 +76,7 @@ describe("logs routes", () => {
 	beforeEach(() => {
 		state.guardResult = {
 			ok: true,
-			value: { workspaceId: "ws_1", apiKeyId: "mgmt_1", internal: false },
+			value: { workspaceId: "ws_1", apiKeyId: "mgmt_1", internal: false, scopes: ["activity:read"] },
 		};
 		state.rows = [{
 			request_id: "req_1",
@@ -95,7 +95,7 @@ describe("logs routes", () => {
 		vi.resetModules();
 	});
 
-	it("applies server-side filters and redacts sensitive error text", async () => {
+	it("applies server-side filters without returning untrusted error text", async () => {
 		const { logsRoutes } = await import("./logs");
 		const response = await logsRoutes.request("https://example.com/?since=2h&status=5xx&provider=openai&model=gpt-5-mini&endpoint=/v1/responses&request_id=req_1&key_id=key_1&session_id=session_1&error_code=upstream_error&limit=10&offset=5");
 		const body = await response.json();
@@ -104,7 +104,7 @@ describe("logs routes", () => {
 		expect(body.total).toBe(1);
 		expect(body.limit).toBe(10);
 		expect(body.offset).toBe(5);
-		expect(body.data[0].error_message).toBe("Bearer [REDACTED] [REDACTED_API_KEY] [REDACTED_SECRET] api_key=[REDACTED] https://[REDACTED]@example.com/path?token=[REDACTED]");
+		expect(body.data[0].error_message).toBeUndefined();
 		expect(state.filters).toEqual(expect.arrayContaining([
 			{ method: "eq", column: "workspace_id", value: "ws_1" },
 			{ method: "eq", column: "provider", value: "openai" },
@@ -121,6 +121,8 @@ describe("logs routes", () => {
 		expect(state.selectedFields[0]).not.toContain("*");
 		expect(state.selectedFields[0]).not.toContain("request_payload");
 		expect(state.selectedFields[0]).not.toContain("trace_data");
+		expect(state.selectedFields[0]).not.toContain("error_message");
+		expect(state.selectedFields[0]).not.toContain("session_id");
 	});
 
 	it("rejects invalid time and status filters", async () => {
@@ -140,14 +142,14 @@ describe("logs routes", () => {
 		expect(response.status).toBe(403);
 	});
 
-	it("returns one redacted log by request id", async () => {
+	it("returns one safe log by request id", async () => {
 		const { logsRoutes } = await import("./logs");
 		const response = await logsRoutes.request("https://example.com/req_1");
 		const body = await response.json();
 
 		expect(response.status).toBe(200);
 		expect(body.data.request_id).toBe("req_1");
-		expect(body.data.error_message).toContain("[REDACTED_API_KEY]");
+		expect(body.data.error_message).toBeUndefined();
 		expect(state.filters).toEqual(expect.arrayContaining([
 			{ method: "eq", column: "workspace_id", value: "ws_1" },
 			{ method: "eq", column: "request_id", value: "req_1" },
@@ -166,5 +168,15 @@ describe("logs routes", () => {
 
 		expect(response.status).toBe(403);
 		expect(body.error).toBe("insufficient_scope");
+	});
+
+	it("requires management keys to explicitly carry the activity-read scope", async () => {
+		state.guardResult = {
+			ok: true,
+			value: { workspaceId: "ws_1", apiKeyId: "mgmt_1", internal: false, scopes: [] },
+		};
+		const { logsRoutes } = await import("./logs");
+		const response = await logsRoutes.request("https://example.com/");
+		expect(response.status).toBe(403);
 	});
 });

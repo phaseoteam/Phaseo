@@ -106,7 +106,7 @@ vi.mock("@/lib/oauth/service", () => ({
 	hasActiveOAuthWorkspaceAccess: vi.fn(async () => Boolean(
 		state.authorizationRow && state.authorizationRow.revoked_at == null,
 	)),
-	issueTokenPair: vi.fn(async (input: Record<string, unknown>) => {
+	issueTokenPairForGrant: vi.fn(async (_grant: Record<string, unknown>, input: Record<string, unknown>) => {
 		state.issuedTokenPairs.push(input);
 		return { access_token: "token" };
 	}),

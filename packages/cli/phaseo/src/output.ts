@@ -7,7 +7,7 @@ export function printJson(value: unknown): void {
 }
 
 export function sanitizeTerminalText(value: string): string {
-	return value.replace(/[\u0000-\u001f\u007f-\u009f]/g, " ");
+	return value.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]/g, " ");
 }
 
 export function printError(error: unknown, options: OutputOptions): void {

@@ -23,7 +23,7 @@ import {
 	hashOAuthSecret,
 	hashOAuthSecretCandidates,
 	hasActiveOAuthWorkspaceAccess,
-	issueTokenPair,
+	issueTokenPairForGrant,
 	loadOAuthClient,
 	makeAuthCodeExpiry,
 	makeDeviceCodeExpiry,
@@ -419,26 +419,18 @@ oauthRouter.post(
 			}))) {
 				return oauthError("invalid_grant", "Device authorization is no longer valid");
 			}
-			const consume = await supabase
-				.from("oauth_device_codes")
-				.update({ consumed_at: new Date().toISOString() })
-				.eq("id", data.id)
-				.is("consumed_at", null)
-				.select("id")
-				.maybeSingle();
-			if (consume.error) return oauthError("server_error", consume.error.message, 500);
-			if (!consume.data) return oauthError("invalid_grant", "Device code has already been consumed");
 			try {
-				return json(
-					await issueTokenPair({
-					userId: String(data.user_id),
-					workspaceId: String(data.workspace_id),
-					clientId: String(data.client_id),
-					scopes: Array.isArray(data.scopes) ? data.scopes.map(String) : [],
-					}),
-					200,
-					{ "Cache-Control": "no-store" },
+				const tokens = await issueTokenPairForGrant(
+					{ type: "device_code", id: String(data.id) },
+					{
+						userId: String(data.user_id),
+						workspaceId: String(data.workspace_id),
+						clientId: String(data.client_id),
+						scopes: Array.isArray(data.scopes) ? data.scopes.map(String) : [],
+					},
 				);
+				if (!tokens) return oauthError("invalid_grant", "Device code has already been consumed");
+				return json(tokens, 200, { "Cache-Control": "no-store" });
 			} catch (error) {
 				console.error("oauth_device_token_issue_failed", {
 					clientId: String(data.client_id),
@@ -490,25 +482,17 @@ oauthRouter.post(
 			}))) {
 				return oauthError("invalid_grant", "OAuth workspace access is no longer active");
 			}
-			const consume = await supabase
-				.from("oauth_authorization_codes")
-				.update({ used_at: new Date().toISOString() })
-				.eq("id", data.id)
-				.is("used_at", null)
-				.select("id")
-				.maybeSingle();
-			if (consume.error) return oauthError("server_error", consume.error.message, 500);
-			if (!consume.data) return oauthError("invalid_grant", "Authorization code is invalid or expired");
-			return json(
-				await issueTokenPair({
+			const tokens = await issueTokenPairForGrant(
+				{ type: "authorization_code", id: String(data.id) },
+				{
 					userId: String(data.user_id),
 					workspaceId: String(data.workspace_id),
 					clientId: String(data.client_id),
 					scopes: Array.isArray(data.scopes) ? data.scopes.map(String) : [],
-				}),
-				200,
-				{ "Cache-Control": "no-store" },
+				},
 			);
+			if (!tokens) return oauthError("invalid_grant", "Authorization code is invalid or expired");
+			return json(tokens, 200, { "Cache-Control": "no-store" });
 		}
 
 		if (grantType === "refresh_token") {

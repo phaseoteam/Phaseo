@@ -28,7 +28,6 @@ const LOG_FIELDS = [
 	"status_code",
 	"success",
 	"error_code",
-	"error_message",
 	"latency_ms",
 	"generation_ms",
 	"usage",
@@ -36,7 +35,6 @@ const LOG_FIELDS = [
 	"currency",
 	"pricing_lines",
 	"key_id",
-	"session_id",
 	"auth_method",
 	"oauth_client_id",
 	"stream",
@@ -127,10 +125,8 @@ function redactErrorMessage(value: unknown): string | null {
 }
 
 function formatLog(row: Record<string, unknown>) {
-	return {
-		...row,
-		error_message: redactErrorMessage(row.error_message),
-	};
+	const { error_message: _errorMessage, session_id: _sessionId, ...safeLog } = row;
+	return safeLog;
 }
 
 function applyStatusFilter(query: any, status: string | null): { ok: true; query: any } | { ok: false; response: Response } {
@@ -149,7 +145,7 @@ function applyStatusFilter(query: any, status: string | null): { ok: true; query
 async function authenticateLogsRequest(req: Request, capability: string) {
 	const auth = await guardManagementAuth(req, { useKvCache: false });
 	if (!auth.ok) return { ok: false as const, response: (auth as GuardErr).response };
-	const scopeError = requireCapability(auth.value, capability);
+	const scopeError = requireCapability(auth.value, capability, { requireExplicitNonOAuthScope: true });
 	if (scopeError) return { ok: false as const, response: scopeError };
 	const url = new URL(req.url);
 	const workspace = resolveWorkspace({

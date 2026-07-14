@@ -31,12 +31,16 @@ export function parsePathId(url: URL, collectionName: string): string | null {
 	return decodeURIComponent(candidate).trim() || null;
 }
 
-export function requireCapability(auth: ManagementRouteAuth, scope: string): Response | null {
+export function requireCapability(
+	auth: ManagementRouteAuth,
+	scope: string,
+	options?: { requireExplicitNonOAuthScope?: boolean },
+): Response | null {
 	const grantedScopes =
 		auth.authMethod === "oauth"
 			? (auth.scopes ?? auth.oauthScopes ?? [])
 			: (auth.scopes ?? []);
-	if (auth.authMethod !== "oauth" && grantedScopes.length === 0) {
+	if (auth.authMethod !== "oauth" && grantedScopes.length === 0 && !options?.requireExplicitNonOAuthScope) {
 		return null;
 	}
 	if (!grantedScopes.includes(scope)) {

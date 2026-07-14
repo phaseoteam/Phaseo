@@ -555,6 +555,27 @@ export async function issueTokenPair(input: TokenIssueInput) {
 	return material.response;
 }
 
+export async function issueTokenPairForGrant(
+	grant: { type: "device_code" | "authorization_code"; id: string },
+	input: TokenIssueInput,
+) {
+	const material = await createTokenPairMaterial(input);
+	const { data, error } = await getSupabaseAdmin().rpc("consume_oauth_grant_and_issue_refresh_token", {
+		p_grant_type: grant.type,
+		p_grant_id: grant.id,
+		p_token_hash: material.refreshHash,
+		p_user_id: input.userId,
+		p_workspace_id: input.workspaceId,
+		p_client_id: input.clientId,
+		p_scopes: input.scopes,
+		p_expires_at: material.refreshExpiresAt,
+		p_family_id: crypto.randomUUID(),
+	});
+	if (error) throw new Error(error.message || "Failed to consume OAuth grant and persist refresh token");
+	if (data !== "issued") return null;
+	return material.response;
+}
+
 export async function rotateRefreshToken(
 	refreshToken: string,
 	clientAuth?: { clientId?: string; clientSecret?: string | null },
@@ -590,12 +611,13 @@ export async function rotateRefreshToken(
 		}
 	}
 	if (data.revoked_at) {
-		await supabase.rpc("rotate_oauth_refresh_token", {
+		const replay = await supabase.rpc("rotate_oauth_refresh_token", {
 			p_current_token_hash: tokenHash,
 			p_next_token_hash: tokenHash,
 			p_next_expires_at: new Date().toISOString(),
 			p_scopes: [],
 		});
+		if (replay.error) throw new Error(replay.error.message || "Failed to revoke replayed OAuth token family");
 		return { ok: false, reason: "invalid_grant" };
 	}
 	const authorization = await supabase

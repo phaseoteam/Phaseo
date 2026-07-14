@@ -7,6 +7,7 @@ const state = vi.hoisted(() => ({
 	insertedRefreshTokens: [] as Array<Record<string, unknown>>,
 	refreshInsertError: null as { message?: string } | null,
 	rotationStatus: "invalid" as string,
+	rpcError: null as { message?: string } | null,
 	rpcCalls: [] as Array<{ name: string; args: Record<string, unknown> }>,
 	refreshLookupHashes: [] as string[],
 	authorizationRow: { id: "auth_1", scopes: ["openid"], revoked_at: null } as Record<string, unknown> | null,
@@ -26,7 +27,7 @@ vi.mock("@/runtime/env", () => ({
 		auth: { admin: { getUserById: async () => ({ data: { user: { email: "user@example.com", user_metadata: {} } } }) } },
 		rpc: async (name: string, args: Record<string, unknown>) => {
 			state.rpcCalls.push({ name, args });
-			return { data: state.rotationStatus, error: null };
+			return { data: state.rotationStatus, error: state.rpcError };
 		},
 		from(table: string) {
 			state.fromCalls.push(table);
@@ -151,6 +152,7 @@ describe("OAuth refresh rotation security", () => {
 		state.rotationRow = null;
 		state.refreshInsertError = null;
 		state.rotationStatus = "invalid";
+		state.rpcError = null;
 		state.fromCalls.length = 0;
 		state.insertedRefreshTokens.length = 0;
 		state.rpcCalls.length = 0;
@@ -192,6 +194,14 @@ describe("OAuth refresh rotation security", () => {
 		});
 	});
 
+	it("fails closed when revoking a replayed refresh-token family fails", async () => {
+		state.refreshRow = { ...state.refreshRow!, revoked_at: new Date().toISOString() };
+		state.rpcError = { message: "rotation failed" };
+		const { rotateRefreshToken } = await import("./service");
+
+		await expect(rotateRefreshToken("refresh-token")).rejects.toThrow("rotation failed");
+	});
+
 	it("looks up refresh tokens with active and previous OAuth peppers", async () => {
 		state.rotationStatus = "rotated";
 		const { rotateRefreshToken } = await import("./service");
@@ -219,6 +229,22 @@ describe("OAuth refresh rotation security", () => {
 			}),
 		).rejects.toThrow("insert failed");
 		expect(state.insertedRefreshTokens).toHaveLength(1);
+	});
+
+	it("only returns a token pair after the database atomically consumes its grant", async () => {
+		state.rotationStatus = "issued";
+		const { issueTokenPairForGrant } = await import("./service");
+
+		const result = await issueTokenPairForGrant(
+			{ type: "device_code", id: "00000000-0000-0000-0000-000000000001" },
+			{ userId: "user_1", workspaceId: "ws_1", clientId: "phaseo_cli", scopes: ["openid"] },
+		);
+
+		expect(result?.access_token).toBeTruthy();
+		expect(state.rpcCalls.at(-1)).toMatchObject({
+			name: "consume_oauth_grant_and_issue_refresh_token",
+			args: { p_grant_type: "device_code", p_grant_id: "00000000-0000-0000-0000-000000000001" },
+		});
 	});
 
 	it("fails authorization approval when the grant cannot be persisted", async () => {
