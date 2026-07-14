@@ -2,7 +2,6 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { motion, useReducedMotion } from "motion/react";
 import {
 	AlertTriangle,
 	ArrowUpRight,
@@ -94,7 +93,8 @@ const PROVIDER_SHEET_DOCS = {
 	dataRetention:
 		"https://phaseo.app/docs/v1/cookbook/route-only-to-eu-or-zdr-providers",
 } as const;
-const PROVIDER_INSPECTOR_OPEN_EVENT = "ai-stats-provider-inspector-open";
+export const PROVIDER_INSPECTOR_OPEN_EVENT = "ai-stats-provider-inspector-open";
+export const PROVIDER_INSPECTOR_CLOSE_EVENT = "ai-stats-provider-inspector-close";
 const PROVIDER_INSPECTOR_STATE_KEY = "__aiStatsOpenProviderInspectorId";
 const PROVIDER_INSPECTOR_SUPPRESS_ANIMATION_KEY =
 	"__aiStatsSuppressProviderInspectorAnimationForId";
@@ -1326,7 +1326,6 @@ export default function ProviderCard({
 }) {
 	const [selectedPlan, setSelectedPlan] = useState(defaultPlan);
 	const [expanded, setExpanded] = useState(false);
-	const reduceMotion = useReducedMotion();
 	const [disableInspectorAnimation, setDisableInspectorAnimation] = useState(false);
 	const [copiedInspectorValue, setCopiedInspectorValue] = useState<string | null>(null);
 	const inspectorAnimationResetRef = useRef<number | null>(null);
@@ -2010,6 +2009,11 @@ export default function ProviderCard({
 	const handleInspectorOpenChange = (open: boolean) => {
 		if (!open && expanded) {
 			const closingProviderId = inspectorProviderId;
+			window.dispatchEvent(
+				new CustomEvent(PROVIDER_INSPECTOR_CLOSE_EVENT, {
+					detail: { providerId: closingProviderId },
+				}),
+			);
 			window[PROVIDER_INSPECTOR_RECENTLY_CLOSED_ID_KEY] = closingProviderId;
 			window[PROVIDER_INSPECTOR_RECENTLY_CLOSED_AT_KEY] = Date.now();
 			if (inspectorStateClearRef.current !== null) {
@@ -2446,6 +2450,7 @@ export default function ProviderCard({
 				tabIndex={0}
 				aria-selected={expanded}
 				aria-expanded={expanded}
+				data-provider-inspector-id={inspectorProviderId}
 				data-provider-inspector-open={expanded ? "true" : undefined}
 				onPointerDownCapture={handleSummaryRowPointerDownCapture}
 				onClick={handleSummaryRowClick}
@@ -2456,19 +2461,6 @@ export default function ProviderCard({
 				)}
 			>
 				<TableCell className="relative min-w-[280px] py-1 pl-3 pr-2">
-					{expanded ? (
-						<motion.span
-							aria-hidden="true"
-							className="absolute inset-y-0 left-0 w-0.5 bg-primary"
-							initial={reduceMotion ? false : { opacity: 0 }}
-							animate={{ opacity: 1 }}
-							transition={
-								reduceMotion
-									? { duration: 0 }
-									: { duration: 0.12, ease: "easeOut" }
-							}
-						/>
-					) : null}
 					<div>
 						<div className="flex items-center gap-2.5">
 							<Link

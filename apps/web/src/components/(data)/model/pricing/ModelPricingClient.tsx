@@ -42,7 +42,10 @@ import {
 import { type ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import type { ProviderRuntimeStatsMap } from "@/lib/fetchers/models/getModelProviderRuntimeStats";
 import type { ProviderRoutingStatusMap } from "@/lib/fetchers/models/getModelProviderRoutingHealth";
-import ProviderCard from "@/components/(data)/model/pricing/ProviderCard";
+import ProviderCard, {
+    PROVIDER_INSPECTOR_CLOSE_EVENT,
+    PROVIDER_INSPECTOR_OPEN_EVENT,
+} from "@/components/(data)/model/pricing/ProviderCard";
 import { cn } from "@/lib/utils";
 import { normalizeProviderPromptTrainingPolicy } from "@/lib/providers/promptTrainingPolicy";
 import { mergeProviderPricingOffers } from "@/lib/providers/providerFamilyGroups";
@@ -74,6 +77,12 @@ type SortOption =
     | "latency"
     | "uptime";
 type SortDirection = "asc" | "desc";
+type ProviderTableIndicator = {
+    providerId: string;
+    x: number;
+    y: number;
+    height: number;
+};
 type WorkspacePrivacySettings = {
     isAuthenticated: boolean;
     privacyEnablePaidMayTrain: boolean;
@@ -643,9 +652,98 @@ export default function ModelPricingClient({
             return buildProviderTablePriceSummary(sections, "cached").primary !== null;
         });
     }, [visibleProviders]);
+    const providerTableContainerRef = useRef<HTMLDivElement>(null);
     const providerTableViewportRef = useRef<HTMLDivElement>(null);
     const [providerTableOverflows, setProviderTableOverflows] = useState<boolean | null>(null);
     const [providerTableThumbWidth, setProviderTableThumbWidth] = useState<number | null>(null);
+    const [providerTableIndicator, setProviderTableIndicator] =
+        useState<ProviderTableIndicator | null>(null);
+    const activeProviderIndicatorId = providerTableIndicator?.providerId ?? null;
+
+    const updateProviderTableIndicator = useCallback((providerId: string) => {
+        const container = providerTableContainerRef.current;
+        if (!container) return;
+        const row = Array.from(
+            container.querySelectorAll<HTMLTableRowElement>("[data-provider-inspector-id]")
+        ).find((element) => element.dataset.providerInspectorId === providerId);
+        if (!row) return;
+
+        const containerRect = container.getBoundingClientRect();
+        const rowRect = row.getBoundingClientRect();
+        const next = {
+            providerId,
+            x: rowRect.left - containerRect.left,
+            y: rowRect.top - containerRect.top,
+            height: rowRect.height,
+        };
+        setProviderTableIndicator((current) =>
+            current &&
+            current.providerId === next.providerId &&
+            current.x === next.x &&
+            current.y === next.y &&
+            current.height === next.height
+                ? current
+                : next
+        );
+    }, []);
+
+    useEffect(() => {
+        let frame = 0;
+        const requestIndicatorUpdate = (providerId: string) => {
+            if (frame) window.cancelAnimationFrame(frame);
+            frame = window.requestAnimationFrame(() => {
+                updateProviderTableIndicator(providerId);
+                frame = 0;
+            });
+        };
+        const handleOpen = (event: Event) => {
+            const providerId = (event as CustomEvent<{ providerId?: string }>).detail?.providerId;
+            if (providerId) requestIndicatorUpdate(providerId);
+        };
+        const handleClose = (event: Event) => {
+            const providerId = (event as CustomEvent<{ providerId?: string }>).detail?.providerId;
+            if (!providerId) return;
+            window.requestAnimationFrame(() => {
+                setProviderTableIndicator((current) =>
+                    current?.providerId === providerId ? null : current
+                );
+            });
+        };
+
+        window.addEventListener(PROVIDER_INSPECTOR_OPEN_EVENT, handleOpen);
+        window.addEventListener(PROVIDER_INSPECTOR_CLOSE_EVENT, handleClose);
+        return () => {
+            if (frame) window.cancelAnimationFrame(frame);
+            window.removeEventListener(PROVIDER_INSPECTOR_OPEN_EVENT, handleOpen);
+            window.removeEventListener(PROVIDER_INSPECTOR_CLOSE_EVENT, handleClose);
+        };
+    }, [updateProviderTableIndicator]);
+
+    useLayoutEffect(() => {
+        if (!activeProviderIndicatorId) return;
+        const frame = window.requestAnimationFrame(() => {
+            updateProviderTableIndicator(activeProviderIndicatorId);
+        });
+        return () => window.cancelAnimationFrame(frame);
+    }, [
+        activeProviderIndicatorId,
+        updateProviderTableIndicator,
+        visibleProviders,
+    ]);
+
+    useEffect(() => {
+        const viewport = providerTableViewportRef.current;
+        if (!viewport || !activeProviderIndicatorId) return;
+        const handleScroll = () => {
+            updateProviderTableIndicator(activeProviderIndicatorId);
+        };
+        viewport.addEventListener("scroll", handleScroll, { passive: true });
+        window.addEventListener("resize", handleScroll);
+        return () => {
+            viewport.removeEventListener("scroll", handleScroll);
+            window.removeEventListener("resize", handleScroll);
+        };
+    }, [activeProviderIndicatorId, updateProviderTableIndicator]);
 
     useLayoutEffect(() => {
         const viewport = providerTableViewportRef.current;
@@ -852,7 +950,20 @@ export default function ModelPricingClient({
                 ) : null}
                 {filteredProviders.length > 0 ? (
                     <div className="space-y-2">
-                        <div className="overflow-hidden rounded-md border border-zinc-200/80 bg-background dark:border-zinc-800">
+                        <div
+                            ref={providerTableContainerRef}
+                            className="relative overflow-hidden rounded-md border border-zinc-200/80 bg-background dark:border-zinc-800"
+                        >
+							{providerTableIndicator ? (
+								<span
+									aria-hidden="true"
+									className="pointer-events-none absolute left-0 top-0 z-10 w-0.5 bg-primary will-change-transform transition-transform duration-200 ease-out motion-reduce:transition-none"
+									style={{
+										height: providerTableIndicator.height,
+										transform: `translate3d(${providerTableIndicator.x}px, ${providerTableIndicator.y}px, 0)`,
+									}}
+								/>
+							) : null}
                             <ScrollArea
                                 className={cn(
                                     "w-full",
