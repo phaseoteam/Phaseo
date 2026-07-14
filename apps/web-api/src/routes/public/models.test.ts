@@ -46,6 +46,56 @@ describe("public model routes", () => {
 		expect(invalid.status).toBe(400);
 	});
 
+	it("preserves provider execution regions in gateway monitor rows", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("get_monitor_model_rows")) {
+				return new Response(
+					JSON.stringify([
+						{
+							model_id: "openai/gpt-test",
+							api_model_id: "gpt-test",
+							provider_id: "openai",
+							capability_id: "chat/completions",
+							capability_status: "active",
+							is_active_gateway: true,
+						},
+					]),
+					{ status: 200 },
+				);
+			}
+			if (url.includes("data_api_providers")) {
+				return new Response(
+					JSON.stringify([
+						{ api_provider_id: "openai", default_execution_regions: ["US", "eu"] },
+					]),
+					{ status: 200 },
+				);
+			}
+			return new Response(
+				JSON.stringify([{ model_id: "openai/gpt-test", name: "GPT Test" }]),
+				{ status: 200, headers: { "content-range": "0-0/1" } },
+			);
+		}));
+
+		const response = await app.request(
+			"https://phaseo.app/api/public/models?region-check=1",
+			{},
+			env,
+		);
+
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({
+			models: [
+				{
+					gateway_monitor_rows: [
+						{ provider: { executionRegions: ["us", "eu"] } },
+					],
+				},
+			],
+		});
+	});
+
 	it("applies a distinct cache profile to the catalogue, benchmarks, and performance", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);

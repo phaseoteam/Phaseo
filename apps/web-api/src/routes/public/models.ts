@@ -125,6 +125,25 @@ function numberOrNull(value: unknown): number | null {
 
 type ModelsCatalogueVersion = "v1" | "v2";
 
+async function fetchProviderExecutionRegions(env: Env, providerIds: string[]) {
+	const regionsByProvider = new Map<string, string[]>();
+	if (providerIds.length === 0) return regionsByProvider;
+	const { data, error } = await getDataClient(env)
+		.from("data_api_providers")
+		.select("api_provider_id,default_execution_regions")
+		.in("api_provider_id", providerIds);
+	if (error) throw error;
+	for (const row of (data ?? []) as Record<string, unknown>[]) {
+		const providerId = String(row.api_provider_id ?? "").trim();
+		if (!providerId) continue;
+		const regions = toStringList(row.default_execution_regions)
+			.map((region) => region.toLowerCase())
+			.filter(Boolean);
+		regionsByProvider.set(providerId, [...new Set(regions)]);
+	}
+	return regionsByProvider;
+}
+
 async function fetchGatewayMonitorRows(
 	env: Env,
 	catalogueVersion: ModelsCatalogueVersion = "v1",
@@ -144,6 +163,16 @@ async function fetchGatewayMonitorRows(
 		rows.push(...page.filter((row) => String(row.capability_status ?? "").toLowerCase() !== "internal_testing"));
 		if (page.length < 1000) break;
 	}
+	const providerRegionsById = await fetchProviderExecutionRegions(
+		env,
+		Array.from(
+			new Set(
+				rows
+					.map((row) => String(row.provider_id ?? "").trim())
+					.filter(Boolean),
+			),
+		),
+	);
 
 	const byModelId = new Map<string, Record<string, unknown>[]>();
 	for (const row of rows) {
@@ -175,6 +204,7 @@ async function fetchGatewayMonitorRows(
 				fromPriceUnit: row.from_price_unit ?? null,
 				pricingDetailRows: [],
 				features: gatewayFeatures(params),
+				executionRegions: providerRegionsById.get(providerId) ?? [],
 			},
 			endpoint: capabilityId,
 			gatewayStatus: normaliseGatewayStatus(row.capability_status, row.is_active_gateway),
