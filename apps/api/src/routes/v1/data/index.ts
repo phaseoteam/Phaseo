@@ -18,9 +18,9 @@ import { audioTranscriptionRoutes } from "./audio-transcription";
 import { audioTranslationRoutes } from "./audio-translation";
 import { imagesGenerationsRoutes } from "./images-generations";
 import { imagesEditsRoutes } from "./images-edits";
+import { batchRoutes } from "./batches";
+import { filesRoutes } from "./files";
 import {
-    disabledBatchRoutes,
-    disabledFilesRoutes,
     disabledMusicRoutes,
     disabledVideosRoutes,
 } from "./feature-disabled";
@@ -46,9 +46,9 @@ inferenceRouter.route("/video/generations", disabledVideosRoutes);
 inferenceRouter.route("/ocr", ocrRoutes);
 inferenceRouter.route("/music/generate", disabledMusicRoutes);
 inferenceRouter.route("/music/generations", disabledMusicRoutes);
-inferenceRouter.route("/batch", disabledBatchRoutes);
-inferenceRouter.route("/batches", disabledBatchRoutes);
-inferenceRouter.route("/files", disabledFilesRoutes);
+inferenceRouter.route("/batch", batchRoutes);
+inferenceRouter.route("/batches", batchRoutes);
+inferenceRouter.route("/files", filesRoutes);
 inferenceRouter.route("/async", asyncJobsRoutes);
 
 // Backward-compatible alias for existing imports.

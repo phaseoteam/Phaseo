@@ -23,10 +23,10 @@ export type { AudioTranscriptionResponse } from "./AudioTranscriptionResponse.js
 export type { AudioTranslationRequest } from "./AudioTranslationRequest.js";
 export type { AudioTranslationResponse } from "./AudioTranslationResponse.js";
 export type { BatchBillingSummary } from "./BatchBillingSummary.js";
-export type { BatchInlineRequest } from "./BatchInlineRequest.js";
 export type { BatchProviderCapability } from "./BatchProviderCapability.js";
 export type { BatchRequest } from "./BatchRequest.js";
 export type { BatchRequestCounts } from "./BatchRequestCounts.js";
+export type { BatchRequestItem } from "./BatchRequestItem.js";
 export type { BatchRequestRow } from "./BatchRequestRow.js";
 export type { BatchResponse } from "./BatchResponse.js";
 export type { BenchmarkId } from "./BenchmarkId.js";

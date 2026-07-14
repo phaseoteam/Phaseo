@@ -116,17 +116,19 @@ function resolveTabs(pathname: string): Tab[] | null {
 export default function SettingsTopTabsServer({
 	isEnterpriseInvoiceMode,
 	showBroadcast = true,
+	showWebhooks = true,
 }: {
 	isEnterpriseInvoiceMode?: boolean;
 	showBroadcast?: boolean;
+	showWebhooks?: boolean;
 } = {}) {
 	void isEnterpriseInvoiceMode;
 	const pathname = usePathname() ?? "";
 	const { toggleSidebar } = useSidebar();
 	const tabs = resolveTabs(pathname);
 	const activeNav = React.useMemo(
-		() => getActiveSettingsNav(pathname, { showBroadcast }),
-		[pathname, showBroadcast],
+		() => getActiveSettingsNav(pathname, { showBroadcast, showWebhooks }),
+		[pathname, showBroadcast, showWebhooks],
 	);
 
 	const containerRef = React.useRef<HTMLDivElement | null>(null);
@@ -192,7 +194,7 @@ export default function SettingsTopTabsServer({
 	if (!tabs?.length) {
 		return (
 			<>
-				<SettingsSidebarTrigger showBroadcast={showBroadcast} />
+				<SettingsSidebarTrigger showBroadcast={showBroadcast} showWebhooks={showWebhooks} />
 				<div className="hidden lg:flex items-center border-b border-border text-sm">
 					<span className="px-2 pb-2 font-medium text-muted-foreground">
 						{activeNav?.group.heading ?? "Settings"}

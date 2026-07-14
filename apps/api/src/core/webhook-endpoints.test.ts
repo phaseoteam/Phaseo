@@ -7,6 +7,8 @@ import {
 	generateWebhookSigningSecret,
 	normalizeWebhookEndpointEvents,
 	toPublicWebhookEndpoint,
+	validateWebhookEndpointUrl,
+	validateWebhookEndpointUrlForDelivery,
 } from "./webhook-endpoints";
 
 describe("webhook endpoint helpers", () => {
@@ -16,7 +18,8 @@ describe("webhook endpoint helpers", () => {
 			SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
 			GATEWAY_CACHE: {} as KVNamespace,
 			NODE_ENV: "test",
-			KEY_PEPPER: "test-webhook-encryption-key",
+			ASYNC_WEBHOOK_SECRET_ENCRYPTION_KEY: "test-webhook-encryption-key",
+			ASYNC_WEBHOOK_SECRET_ENCRYPTION_KEY_VERSION: "test-v1",
 		} as any);
 	});
 
@@ -30,7 +33,35 @@ describe("webhook endpoint helpers", () => {
 		const encrypted = await encryptWebhookSecret(secret);
 		expect(encrypted.secretCiphertext).not.toContain(secret);
 		expect(encrypted.secretHash).toHaveLength(64);
+		expect(encrypted.secretKeyVersion).toBe("test-v1");
 		await expect(decryptWebhookSecret(encrypted)).resolves.toBe(secret);
+	});
+
+	it("decrypts existing secrets with a versioned previous key after rotation", async () => {
+		const original = await encryptWebhookSecret("whsec_rotating");
+		clearRuntime();
+		configureRuntime({
+			SUPABASE_URL: "https://example.supabase.co",
+			SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
+			GATEWAY_CACHE: {} as KVNamespace,
+			NODE_ENV: "test",
+			ASYNC_WEBHOOK_SECRET_ENCRYPTION_KEY: "new-key",
+			ASYNC_WEBHOOK_SECRET_ENCRYPTION_KEY_VERSION: "test-v2",
+			ASYNC_WEBHOOK_SECRET_ENCRYPTION_KEY_PREVIOUS: "test-webhook-encryption-key",
+			ASYNC_WEBHOOK_SECRET_ENCRYPTION_KEY_PREVIOUS_VERSION: "test-v1",
+		} as any);
+		await expect(decryptWebhookSecret(original)).resolves.toBe("whsec_rotating");
+	});
+
+	it("refuses to encrypt new secrets without a dedicated key", async () => {
+		clearRuntime();
+		configureRuntime({
+			SUPABASE_URL: "https://example.supabase.co",
+			SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
+			GATEWAY_CACHE: {} as KVNamespace,
+			KEY_PEPPER_ACTIVE: "legacy-only",
+		} as any);
+		await expect(encryptWebhookSecret("whsec_new")).rejects.toThrow("dedicated_webhook_secret_encryption_key_missing");
 	});
 
 	it("normalizes endpoint events and strips secret material from public records", () => {
@@ -54,5 +85,52 @@ describe("webhook endpoint helpers", () => {
 			hasSecret: true,
 		});
 		expect(record).not.toHaveProperty("secret_ciphertext");
+	});
+
+	it("requires managed webhook endpoints to use public https destinations", () => {
+		expect(validateWebhookEndpointUrl("https://example.com/hooks#secret")).toEqual({
+			ok: true,
+			url: "https://example.com/hooks",
+		});
+		expect(validateWebhookEndpointUrl("http://example.com/hooks")).toEqual({
+			ok: false,
+			reason: "webhook_url_must_use_https",
+		});
+		expect(validateWebhookEndpointUrl("https://127.0.0.1/hooks")).toEqual({
+			ok: false,
+			reason: "webhook_url_private_network_not_allowed",
+		});
+		expect(validateWebhookEndpointUrl("https://192.168.1.10/hooks")).toEqual({
+			ok: false,
+			reason: "webhook_url_private_network_not_allowed",
+		});
+		expect(validateWebhookEndpointUrl("https://localhost/hooks")).toEqual({
+			ok: false,
+			reason: "webhook_url_private_network_not_allowed",
+		});
+	});
+
+	it("rejects webhook URLs whose DNS answers resolve to private networks", async () => {
+		await expect(validateWebhookEndpointUrlForDelivery("https://customer.example/hooks", {
+			forceDns: true,
+			resolveAddresses: async () => ["10.0.0.5"],
+		})).resolves.toEqual({
+			ok: false,
+			reason: "webhook_url_private_network_not_allowed",
+		});
+		await expect(validateWebhookEndpointUrlForDelivery("https://customer.example/hooks", {
+			forceDns: true,
+			resolveAddresses: async () => ["203.0.113.10", "2001:4860:4860::8888"],
+		})).resolves.toEqual({
+			ok: true,
+			url: "https://customer.example/hooks",
+		});
+		await expect(validateWebhookEndpointUrlForDelivery("https://customer.example/hooks", {
+			forceDns: true,
+			resolveAddresses: async () => [],
+		})).resolves.toEqual({
+			ok: false,
+			reason: "webhook_url_dns_resolution_failed",
+		});
 	});
 });

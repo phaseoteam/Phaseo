@@ -261,8 +261,18 @@ public final class Operations {
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
+	public static Object listBatchCapabilitiesAlias(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/batch/capabilities";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
 	public static Object listBatchRequests(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/batches/" + (path != null && path.containsKey("batch_id") ? path.get("batch_id") : "") + "/requests";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object listBatchRequestsAlias(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/batch/" + (path != null && path.containsKey("id") ? path.get("id") : "") + "/requests";
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
@@ -351,6 +361,26 @@ public final class Operations {
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
+	public static Object retrieveBatchFile(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/batches/files/" + (path != null && path.containsKey("file_id") ? path.get("file_id") : "");
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object retrieveBatchFileAlias(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/batch/files/" + (path != null && path.containsKey("file_id") ? path.get("file_id") : "");
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object retrieveBatchFileContent(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/batches/files/" + (path != null && path.containsKey("file_id") ? path.get("file_id") : "") + "/content";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object retrieveBatchFileContentAlias(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/batch/files/" + (path != null && path.containsKey("file_id") ? path.get("file_id") : "") + "/content";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
 	public static Object retrieveFile(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/files/" + (path != null && path.containsKey("file_id") ? path.get("file_id") : "");
 		return client.request("GET", resolvedPath, query, headers, body);
@@ -379,6 +409,16 @@ public final class Operations {
 	public static Object updateWorkspace(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/workspaces/" + (path != null && path.containsKey("id") ? path.get("id") : "");
 		return client.request("PATCH", resolvedPath, query, headers, body);
+	}
+
+	public static Object uploadBatchFile(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/batches/files";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
+	public static Object uploadBatchFileAlias(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/batch/files";
+		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
 	public static Object uploadFile(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {

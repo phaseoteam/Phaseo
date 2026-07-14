@@ -307,15 +307,6 @@ module AiStats
     # @!attribute [rw] reason
     #   @return [String, nil]
     BatchBillingSummary = Struct.new(:billed, :charged, :cost_nanos, :cost_usd, :finalized_at, :pricing_breakdown, :reason, keyword_init: true)
-    # @!attribute [rw] body
-    #   @return [Hash{String => Object}]
-    # @!attribute [rw] custom_id
-    #   @return [String, nil]
-    # @!attribute [rw] method
-    #   @return [String, nil]
-    # @!attribute [rw] url
-    #   @return [String, nil]
-    BatchInlineRequest = Struct.new(:body, :custom_id, :method, :url, keyword_init: true)
     # @!attribute [rw] documentation_url
     #   @return [String, nil]
     # @!attribute [rw] gateway_input_modes
@@ -336,22 +327,34 @@ module AiStats
     # @!attribute [rw] debug
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] endpoint
-    #   @return [String]
+    #   @return [String, nil]
     # @!attribute [rw] input_file_id
     #   @return [String, nil]
+    # @!attribute [rw] items
+    #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] max_tokens
+    #   @return [Integer, nil]
     # @!attribute [rw] metadata
     #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] model
+    #   @return [String, nil]
+    # @!attribute [rw] prompts
+    #   @return [Array<String>, nil]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] requests
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] session_id
     #   @return [String, nil]
+    # @!attribute [rw] system
+    #   @return [String, nil]
+    # @!attribute [rw] temperature
+    #   @return [Float, nil]
     # @!attribute [rw] webhook
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] webhook_endpoint_id
     #   @return [String, nil]
-    BatchRequest = Struct.new(:completion_window, :debug, :endpoint, :input_file_id, :metadata, :provider, :requests, :session_id, :webhook, :webhook_endpoint_id, keyword_init: true)
+    BatchRequest = Struct.new(:completion_window, :debug, :endpoint, :input_file_id, :items, :max_tokens, :metadata, :model, :prompts, :provider, :requests, :session_id, :system, :temperature, :webhook, :webhook_endpoint_id, keyword_init: true)
     # @!attribute [rw] completed
     #   @return [Integer, nil]
     # @!attribute [rw] failed
@@ -359,6 +362,15 @@ module AiStats
     # @!attribute [rw] total
     #   @return [Integer, nil]
     BatchRequestCounts = Struct.new(:completed, :failed, :total, keyword_init: true)
+    # @!attribute [rw] body
+    #   @return [Hash{String => Object}]
+    # @!attribute [rw] custom_id
+    #   @return [String, nil]
+    # @!attribute [rw] method
+    #   @return [String, nil]
+    # @!attribute [rw] url
+    #   @return [String, nil]
+    BatchRequestItem = Struct.new(:body, :custom_id, :method, :url, keyword_init: true)
     # @!attribute [rw] completed_at
     #   @return [String, nil]
     # @!attribute [rw] cost_nanos
@@ -512,7 +524,7 @@ module AiStats
     # @!attribute [rw] prompt_cache_key
     #   @return [String, nil]
     # @!attribute [rw] provider
-    #   @return [Hash{String => Object}, nil]
+    #   @return [String, Hash{String => Object}, nil]
     # @!attribute [rw] provider_options
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] reasoning

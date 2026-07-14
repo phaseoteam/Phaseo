@@ -1,4 +1,4 @@
-export interface BatchInlineRequest {
+export interface BatchRequestItem {
   body: {
     [key: string]: unknown;
   };

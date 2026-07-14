@@ -1,14 +1,19 @@
-import { getBindings } from "@/runtime/env";
 import { dispatchAsyncWebhookEventInBackground } from "@core/async-notifications";
 import {
 	listPendingBatchJobs,
-	saveBatchFileMeta,
+	resolveBatchProviderNativeId,
 	saveBatchJobMeta,
-	type BatchJobMeta,
+	updateBatchJobReconciliation,
 	type BatchJobRecord,
 } from "@core/batch-jobs";
-import { finalizeBatchJob } from "@core/batch-finalization";
-import { resolveProviderKey } from "@providers/keys";
+import { finalizeBatchJob, type FinalizeBatchJobResult } from "@core/batch-finalization";
+import { releaseStaleOrphanBatchReservations } from "@core/wallet-reservations";
+import {
+	batchMetaFromProviderPayload,
+	fetchProviderBatchStatus,
+	OPENAI_BATCH_PROVIDER_ID,
+	persistProviderBatchFileOwnership,
+} from "@core/batch-provider-adapters";
 
 export type BatchReconciliationSummary = {
 	startedAt: string;
@@ -22,80 +27,8 @@ export type BatchReconciliationSummary = {
 	jobsErrored: number;
 };
 
-const OPENAI_PROVIDER_ID = "openai";
-const OPENAI_BASE_URL = "https://api.openai.com";
-
-function normalizeText(value: unknown): string | null {
-	if (typeof value !== "string") return null;
-	const trimmed = value.trim();
-	return trimmed.length > 0 ? trimmed : null;
-}
-
-function resolveOpenAiBaseUrl(bindings: Record<string, string | undefined>): string {
-	const base = String(bindings.OPENAI_BASE_URL || OPENAI_BASE_URL).replace(/\/+$/, "");
-	return /\/v1$/i.test(base) ? base : `${base}/v1`;
-}
-
-function batchMetaFromPayload(payload: any, base: BatchJobMeta): BatchJobMeta {
-	const id = normalizeText(payload?.id);
-	return {
-		...base,
-		status: normalizeText(payload?.status) ?? base.status ?? null,
-		model: normalizeText(payload?.model) ?? base.model ?? null,
-		nativeBatchId: id ?? base.nativeBatchId ?? null,
-		endpoint: normalizeText(payload?.endpoint) ?? base.endpoint ?? null,
-		completionWindow: normalizeText(payload?.completion_window) ?? base.completionWindow ?? null,
-		inputFileId: normalizeText(payload?.input_file_id) ?? base.inputFileId ?? null,
-		outputFileId: normalizeText(payload?.output_file_id) ?? base.outputFileId ?? null,
-		errorFileId: normalizeText(payload?.error_file_id) ?? base.errorFileId ?? null,
-		requestCounts:
-			payload?.request_counts && typeof payload.request_counts === "object" && !Array.isArray(payload.request_counts)
-				? {
-					total: typeof payload.request_counts.total === "number" ? payload.request_counts.total : null,
-					completed: typeof payload.request_counts.completed === "number" ? payload.request_counts.completed : null,
-					failed: typeof payload.request_counts.failed === "number" ? payload.request_counts.failed : null,
-				}
-				: base.requestCounts ?? null,
-	};
-}
-
-async function persistBatchFileOwnership(workspaceId: string, payload: any): Promise<void> {
-	const outputFileId = normalizeText(payload?.output_file_id);
-	if (outputFileId) {
-		await saveBatchFileMeta(workspaceId, outputFileId, {
-			provider: OPENAI_PROVIDER_ID,
-			status: "available",
-		});
-	}
-	const errorFileId = normalizeText(payload?.error_file_id);
-	if (errorFileId) {
-		await saveBatchFileMeta(workspaceId, errorFileId, {
-			provider: OPENAI_PROVIDER_ID,
-			status: "available",
-		});
-	}
-}
-
-async function fetchOpenAiBatchStatus(job: BatchJobRecord): Promise<any | null> {
-	const bindings = getBindings() as unknown as Record<string, string | undefined>;
-	const keyInfo = resolveProviderKey(
-		{ providerId: OPENAI_PROVIDER_ID, byokMeta: [] },
-		() => bindings.OPENAI_API_KEY,
-	);
-	const response = await fetch(
-		`${resolveOpenAiBaseUrl(bindings)}/batches/${encodeURIComponent(job.batchId)}`,
-		{
-			method: "GET",
-			headers: {
-				Authorization: `Bearer ${keyInfo.key}`,
-			},
-		},
-	);
-	if (!response.ok) {
-		const preview = await response.text().catch(() => "");
-		throw new Error(`openai_batch_fetch_failed_${response.status}:${preview.slice(0, 200)}`);
-	}
-	return response.json().catch(() => null);
+function nextIsoFromNow(delaySeconds: number): string {
+	return new Date(Date.now() + Math.max(0, Math.trunc(delaySeconds)) * 1_000).toISOString();
 }
 
 function mapTerminalPhase(status: string): "completed" | "failed" | "cancelled" | null {
@@ -113,13 +46,65 @@ function mapTerminalPhase(status: string): "completed" | "failed" | "cancelled" 
 	}
 }
 
+function nextBatchReconcileAt(status: string | null | undefined): string | null {
+	const normalized = String(status ?? "").toLowerCase();
+	if (mapTerminalPhase(normalized)) return null;
+	if (normalized === "finalizing" || normalized === "cancelling") return nextIsoFromNow(2 * 60);
+	if (normalized === "in_progress") return nextIsoFromNow(5 * 60);
+	return nextIsoFromNow(10 * 60);
+}
+
+function nextBatchErrorRetryAt(job: BatchJobRecord): string {
+	const attempts = Math.max(0, Math.min(7, Math.trunc(job.reconcileAttempts ?? 0)));
+	const delaySeconds = Math.min(30 * 60, 2 * 60 * 2 ** attempts);
+	return nextIsoFromNow(delaySeconds);
+}
+
+function reconcileErrorMessage(error: unknown): string {
+	return error instanceof Error ? error.message : String(error);
+}
+
+const STALE_SUBMISSION_SECONDS = 15 * 60;
+
+function isStaleSubmission(job: BatchJobRecord): boolean {
+	const createdAt = Date.parse(job.createdAt ?? "");
+	return Number.isFinite(createdAt) && Date.now() - createdAt >= STALE_SUBMISSION_SECONDS * 1_000;
+}
+
+function isBillingBlockedFinalization(result: FinalizeBatchJobResult): boolean {
+	if (result.billed !== false) return false;
+	return (
+		result.reason === "missing_output_file" ||
+		result.reason === "missing_usage" ||
+		result.reason === "unpriced_successful_responses" ||
+		result.reason === "missing_successful_output_rows" ||
+		result.reason === "successful_output_count_mismatch" ||
+		result.reason === "missing_model" ||
+		result.reason === "price_card_missing"
+		|| result.reason.startsWith("reservation_")
+	);
+}
+
 export async function runBatchReconciliationJob(args?: {
 	limit?: number;
 	concurrency?: number;
+	workerId?: string;
+	leaseSeconds?: number;
+	shardCount?: number;
+	shardIndex?: number;
 }): Promise<BatchReconciliationSummary> {
 	const startedAt = new Date().toISOString();
-	const jobs = await listPendingBatchJobs(args?.limit ?? 100);
-	const maxConcurrency = Math.max(1, Math.min(12, Math.trunc(args?.concurrency ?? 4)));
+	await releaseStaleOrphanBatchReservations({ limit: args?.limit ?? 100 }).catch((error) => {
+		console.error("batch_orphan_reservation_reaper_failed", { error });
+	});
+	const workerId = args?.workerId ?? `batch-reconciler:${startedAt}`;
+	const jobs = await listPendingBatchJobs(args?.limit ?? 100, {
+		workerId,
+		leaseSeconds: args?.leaseSeconds,
+		shardCount: args?.shardCount,
+		shardIndex: args?.shardIndex,
+	});
+	const maxConcurrency = Math.max(1, Math.min(64, Math.trunc(args?.concurrency ?? 4)));
 
 	const aggregates = {
 		jobsPolled: 0,
@@ -140,42 +125,114 @@ export async function runBatchReconciliationJob(args?: {
 			jobsErrored: 0,
 		};
 		try {
-			const payload = await fetchOpenAiBatchStatus(job);
-			if (!payload) return counts;
+			const providerId = job.provider ?? job.meta?.provider ?? OPENAI_BATCH_PROVIDER_ID;
+			const currentStatus = String(job.status ?? job.meta?.status ?? "").toLowerCase();
+			if (currentStatus === "submitting" && !job.nativeId && !job.meta?.nativeBatchId) {
+				if (!isStaleSubmission(job)) {
+					await updateBatchJobReconciliation({
+						workspaceId: job.workspaceId,
+						batchId: job.batchId,
+						nextReconcileAt: nextIsoFromNow(STALE_SUBMISSION_SECONDS),
+						lastError: null,
+					});
+					return counts;
+				}
+				await saveBatchJobMeta(job.workspaceId, job.batchId, {
+					...(job.meta ?? { provider: providerId }),
+					provider: providerId,
+					status: "submission_unknown",
+					reservationStatus: job.meta?.reservationStatus ?? null,
+					billingReason: "manual_recovery_required_provider_id_unknown",
+				});
+				counts.jobsUpdated += 1;
+				counts.jobsErrored += 1;
+				console.error("batch_submission_outcome_unknown", {
+					workspaceId: job.workspaceId,
+					batchId: job.batchId,
+					providerId,
+					requestId: job.requestId,
+					reservationId: job.meta?.reservationId ?? null,
+				});
+				return counts;
+			}
+			const nativeBatchId = resolveBatchProviderNativeId({
+				batchId: job.batchId,
+				nativeId: job.nativeId,
+				meta: job.meta,
+			});
+			const payload = await fetchProviderBatchStatus(providerId, nativeBatchId);
+			if (!payload) {
+				await updateBatchJobReconciliation({
+					workspaceId: job.workspaceId,
+					batchId: job.batchId,
+					nextReconcileAt: nextBatchReconcileAt(job.status ?? job.meta?.status),
+					lastError: null,
+				});
+				return counts;
+			}
 			counts.jobsPolled += 1;
 			const previousStatus = String(job.status ?? job.meta?.status ?? "").toLowerCase();
 			const nextStatus = String(payload?.status ?? job.status ?? "").toLowerCase();
 			await saveBatchJobMeta(
 				job.workspaceId,
 				job.batchId,
-				batchMetaFromPayload(payload, {
-					...(job.meta ?? { provider: OPENAI_PROVIDER_ID }),
-					provider: OPENAI_PROVIDER_ID,
+				batchMetaFromProviderPayload(payload, {
+					...(job.meta ?? { provider: providerId }),
+					provider: providerId,
 				}),
 			);
-			await persistBatchFileOwnership(job.workspaceId, payload);
+			await persistProviderBatchFileOwnership(job.workspaceId, providerId, payload);
 			counts.jobsUpdated += 1;
 			const phase = mapTerminalPhase(nextStatus);
+			let finalization: FinalizeBatchJobResult | null = null;
 			if (phase) {
-				if (nextStatus !== previousStatus) {
-					dispatchAsyncWebhookEventInBackground({
-						workspaceId: job.workspaceId,
-						kind: "batch",
-						internalId: job.batchId,
-						phase,
-					});
-					if (phase === "completed") counts.jobsCompleted += 1;
-					if (phase === "failed") counts.jobsFailed += 1;
-					if (phase === "cancelled") counts.jobsCancelled += 1;
-				}
-				await finalizeBatchJob({
+				finalization = await finalizeBatchJob({
 					workspaceId: job.workspaceId,
 					batchId: job.batchId,
 					status: nextStatus,
 				});
 			}
+			if (finalization && isBillingBlockedFinalization(finalization)) {
+				counts.jobsErrored += 1;
+				await updateBatchJobReconciliation({
+					workspaceId: job.workspaceId,
+					batchId: job.batchId,
+					nextReconcileAt: nextBatchErrorRetryAt(job),
+					lastError: `batch_billing_blocked:${finalization.reason}`,
+				});
+				return counts;
+			}
+			if (phase && nextStatus !== previousStatus) {
+				dispatchAsyncWebhookEventInBackground({
+					workspaceId: job.workspaceId,
+					kind: "batch",
+					internalId: job.batchId,
+					phase,
+				});
+				if (phase === "completed") counts.jobsCompleted += 1;
+				if (phase === "failed") counts.jobsFailed += 1;
+				if (phase === "cancelled") counts.jobsCancelled += 1;
+			}
+			await updateBatchJobReconciliation({
+				workspaceId: job.workspaceId,
+				batchId: job.batchId,
+				nextReconcileAt: nextBatchReconcileAt(nextStatus),
+				lastError: null,
+			});
 		} catch (error) {
 			counts.jobsErrored += 1;
+			await updateBatchJobReconciliation({
+				workspaceId: job.workspaceId,
+				batchId: job.batchId,
+				nextReconcileAt: nextBatchErrorRetryAt(job),
+				lastError: reconcileErrorMessage(error),
+			}).catch((updateError) => {
+				console.error("batch_reconcile_release_failed", {
+					error: updateError,
+					workspaceId: job.workspaceId,
+					batchId: job.batchId,
+				});
+			});
 			console.error("batch_reconcile_job_failed", {
 				error,
 				workspaceId: job.workspaceId,

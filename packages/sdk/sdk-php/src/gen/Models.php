@@ -383,18 +383,6 @@ class BatchBillingSummary
 	public $reason;
 }
 
-class BatchInlineRequest
-{
-	/** @var array<string, mixed> */
-	public $body;
-	/** @var string|null */
-	public $custom_id;
-	/** @var string|null */
-	public $method;
-	/** @var string|null */
-	public $url;
-}
-
 class BatchProviderCapability
 {
 	/** @var string|null */
@@ -419,18 +407,30 @@ class BatchRequest
 	public $completion_window;
 	/** @var array<string, mixed>|null */
 	public $debug;
-	/** @var string */
+	/** @var string|null */
 	public $endpoint;
 	/** @var string|null */
 	public $input_file_id;
+	/** @var array|null */
+	public $items;
+	/** @var int|null */
+	public $max_tokens;
 	/** @var array<string, mixed>|null */
 	public $metadata;
+	/** @var string|null */
+	public $model;
+	/** @var array|null */
+	public $prompts;
 	/** @var array<string, mixed>|null */
 	public $provider;
 	/** @var array|null */
 	public $requests;
 	/** @var string|null */
 	public $session_id;
+	/** @var string|null */
+	public $system;
+	/** @var float|null */
+	public $temperature;
 	/** @var array<string, mixed>|null */
 	public $webhook;
 	/** @var string|null */
@@ -445,6 +445,18 @@ class BatchRequestCounts
 	public $failed;
 	/** @var int|null */
 	public $total;
+}
+
+class BatchRequestItem
+{
+	/** @var array<string, mixed> */
+	public $body;
+	/** @var string|null */
+	public $custom_id;
+	/** @var string|null */
+	public $method;
+	/** @var string|null */
+	public $url;
 }
 
 class BatchRequestRow
@@ -617,7 +629,7 @@ class ChatCompletionsRequest
 	public $presence_penalty;
 	/** @var string|null */
 	public $prompt_cache_key;
-	/** @var array<string, mixed>|null */
+	/** @var string|array<string, mixed>|null */
 	public $provider;
 	/** @var array<string, mixed>|null */
 	public $provider_options;

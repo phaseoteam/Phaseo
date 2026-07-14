@@ -22,6 +22,7 @@
 		"test:live:text-modern": "pnpm exec vitest run tests/integration/text-modern-features.live.spec.ts",
 		"test:live:stream-tools": "pnpm exec vitest run tests/integration/stream-tools.live.spec.ts",
 		"test:live:gpt54-nano-text": "pnpm exec vitest run tests/integration/gpt54-nano-text-surfaces.live.spec.ts",
+		"test:live:batch-providers": "pnpm exec vitest run tests/integration/batch-provider-matrix.live.spec.ts",
 		"test:live:deepseek-v4-flash": "pnpm exec vitest run tests/integration/deepseek-v4-flash-providers.live.spec.ts",
 		"test:live:embeddings-moderation": "pnpm exec vitest run tests/integration/embeddings-moderation.live.spec.ts",
 		"test:live:audio-images": "pnpm exec vitest run tests/integration/audio-images.live.spec.ts",

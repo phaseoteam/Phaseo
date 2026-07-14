@@ -1,8 +1,11 @@
 import { dispatchBackground } from "@/runtime/env";
 import {
+	claimAsyncWebhookDelivery,
+	completeAsyncWebhookDelivery,
 	getAsyncOperation,
 	listAsyncOperations,
 	patchAsyncOperationMeta,
+	releaseAsyncWebhookDeliveryClaim,
 	type AsyncOperationRecord,
 } from "@core/async-operations";
 import {
@@ -13,7 +16,11 @@ import {
 	toPublicVideoProviderId,
 	toPublicVideoStatus,
 } from "@core/video-public";
-import { getWebhookEndpointSigningConfig } from "@core/webhook-endpoints";
+import {
+	getWebhookEndpointSigningConfig,
+	validateWebhookEndpointUrl,
+	validateWebhookEndpointUrlForDelivery,
+} from "@core/webhook-endpoints";
 
 export type SupportedAsyncNotificationKind = "video" | "batch";
 export type AsyncNotificationPhase = "created" | "progress" | "completed" | "failed" | "cancelled";
@@ -200,21 +207,8 @@ type AsyncWebhookRequestResult = {
 };
 
 function resolveWebhookUrl(value: unknown): string | null {
-	const text = normalizeText(value);
-	if (!text) return null;
-	try {
-		const parsed = new URL(text);
-		if (parsed.protocol === "https:") return parsed.toString();
-		if (
-			parsed.protocol === "http:" &&
-			(parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1" || parsed.hostname === "::1")
-		) {
-			return parsed.toString();
-		}
-		return null;
-	} catch {
-		return null;
-	}
+	const validated = validateWebhookEndpointUrl(value);
+	return validated.ok ? validated.url : null;
 }
 
 function normalizeWebhookEvent(kind: SupportedAsyncNotificationKind, value: unknown): AsyncNotificationEventType | null {
@@ -825,6 +819,15 @@ async function sendAsyncWebhookRequest(args: {
 	secret?: string | null;
 	body: string;
 }): Promise<AsyncWebhookRequestResult> {
+	const validatedUrl = await validateWebhookEndpointUrlForDelivery(args.url);
+	if (validatedUrl.ok === false) {
+		return {
+			ok: false,
+			statusCode: null,
+			bodyPreview: null,
+			errorMessage: `Webhook URL rejected: ${validatedUrl.reason}`,
+		};
+	}
 	const headers: Record<string, string> = {
 		"Content-Type": "application/json",
 		"User-Agent": "AI-Stats-Async-Webhook/1.0",
@@ -835,11 +838,20 @@ async function sendAsyncWebhookRequest(args: {
 		headers["x-ai-stats-signature"] = await signWebhook(args.secret, timestamp, args.body);
 	}
 	try {
-		const response = await fetch(args.url, {
+		const response = await fetch(validatedUrl.url, {
 			method: "POST",
 			headers,
 			body: args.body,
+			redirect: "manual",
 		});
+		if (response.status >= 300 && response.status < 400) {
+			return {
+				ok: false,
+				statusCode: response.status,
+				bodyPreview: null,
+				errorMessage: "Webhook redirects are not allowed",
+			};
+		}
 		const preview = await response.text().catch(() => "");
 		if (!response.ok) {
 			return {
@@ -902,7 +914,17 @@ export async function dispatchAsyncWebhookEvent(args: {
 	const deliveryKey = progressBucket != null ? `${specificEvent}:${progressBucket}` : specificEvent;
 	if (!args.force && deliveries[deliveryKey]) return false;
 	if (!args.force && retryQueue[deliveryKey]) return false;
+	const claimToken = crypto.randomUUID();
+	const claimed = await claimAsyncWebhookDelivery({
+		workspaceId: args.workspaceId,
+		kind: args.kind,
+		internalId: args.internalId,
+		deliveryKey,
+		claimToken,
+	});
+	if (!claimed) return false;
 	const payload = {
+		id: `evt_${args.kind}_${args.internalId}_${deliveryKey.replace(/[^a-zA-Z0-9_-]/g, "_")}`,
 		type: specificEvent,
 		created_at: Math.floor(Date.now() / 1000),
 		data: await buildAsyncNotificationData({
@@ -911,7 +933,16 @@ export async function dispatchAsyncWebhookEvent(args: {
 			progress: args.progress ?? null,
 		}),
 	};
-	if (!payload.data) return false;
+	if (!payload.data) {
+		await releaseAsyncWebhookDeliveryClaim({
+			workspaceId: args.workspaceId,
+			kind: args.kind,
+			internalId: args.internalId,
+			deliveryKey,
+			claimToken,
+		}).catch(() => null);
+		return false;
+	}
 	const body = JSON.stringify(payload);
 	const nowIso = new Date().toISOString();
 	const existingRetry = retryQueue[deliveryKey];
@@ -922,6 +953,13 @@ export async function dispatchAsyncWebhookEvent(args: {
 		body,
 	});
 	if (!requestResult.ok) {
+		await releaseAsyncWebhookDeliveryClaim({
+			workspaceId: args.workspaceId,
+			kind: args.kind,
+			internalId: args.internalId,
+			deliveryKey,
+			claimToken,
+		}).catch((error) => console.error("async_user_webhook_claim_release_failed", { error, deliveryKey }));
 		const nextRetryDelayMs = computeRetryDelayMsForAttempt(attemptNumber);
 		const nextRetryAt = nextRetryDelayMs != null
 			? new Date(Date.now() + nextRetryDelayMs).toISOString()
@@ -966,7 +1004,6 @@ export async function dispatchAsyncWebhookEvent(args: {
 			internalId: args.internalId,
 			eventType: specificEvent,
 			status: requestResult.statusCode,
-			bodyPreview: requestResult.bodyPreview,
 			errorMessage: requestResult.errorMessage,
 			attemptNumber,
 			nextRetryAt,
@@ -983,6 +1020,21 @@ export async function dispatchAsyncWebhookEvent(args: {
 			},
 		});
 		return false;
+	}
+	const completedClaim = await completeAsyncWebhookDelivery({
+		workspaceId: args.workspaceId,
+		kind: args.kind,
+		internalId: args.internalId,
+		deliveryKey,
+		claimToken,
+	});
+	if (!completedClaim) {
+		console.error("async_user_webhook_claim_completion_failed", {
+			workspaceId: args.workspaceId,
+			kind: args.kind,
+			internalId: args.internalId,
+			deliveryKey,
+		});
 	}
 	const nextRetryQueue = { ...retryQueue };
 	delete nextRetryQueue[deliveryKey];

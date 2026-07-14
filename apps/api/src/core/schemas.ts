@@ -202,7 +202,7 @@ const BatchWebhookSchema = z.object({
     message: "webhook requires url or endpoint_id",
 });
 
-const BatchInlineRequestSchema = z.object({
+const BatchRequestItemSchema = z.object({
     custom_id: z.string().min(1).optional(),
     customId: z.string().min(1).optional(),
     method: z.string().min(1).optional(),
@@ -210,12 +210,12 @@ const BatchInlineRequestSchema = z.object({
     body: z.record(z.string(), z.any()).optional(),
     request: z.record(z.string(), z.any()).optional(),
 }).refine((value) => Boolean(value.body || value.request), {
-    message: "inline batch request requires body or request",
+    message: "batch request requires body or request",
 });
 
 export const BatchSchema = z.object({
     input_file_id: z.string().min(1).optional(),
-    requests: z.array(BatchInlineRequestSchema).min(1).optional(),
+    requests: z.array(BatchRequestItemSchema).min(1).optional(),
     endpoint: z.string().min(1),
     completion_window: z.string().optional(),
     metadata: z.record(z.string(), z.any()).optional(),

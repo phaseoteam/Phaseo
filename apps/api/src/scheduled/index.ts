@@ -31,6 +31,12 @@ function toInt(value: string | undefined, fallback: number): number {
 	return Math.max(1, Math.floor(parsed));
 }
 
+function toZeroBasedInt(value: string | undefined, fallback: number): number {
+	const parsed = Number(value ?? "");
+	if (!Number.isFinite(parsed)) return fallback;
+	return Math.max(0, Math.floor(parsed));
+}
+
 async function handleModelDiscoveryScheduledEvent(event: ScheduledController, env: GatewayBindings): Promise<void> {
 	if (!toBool(env.MODEL_DISCOVERY_ENABLED, true)) {
 		return;
@@ -59,32 +65,52 @@ async function handleModelDiscoveryScheduledEvent(event: ScheduledController, en
 	}
 }
 
-async function handleVideoReconciliationScheduledEvent(_event: ScheduledController, env: GatewayBindings): Promise<void> {
+async function handleVideoReconciliationScheduledEvent(event: ScheduledController, env: GatewayBindings): Promise<void> {
 	if (!toBool(env.VIDEO_RECONCILIATION_ENABLED, true)) {
 		return;
 	}
 
-	const limit = toInt(env.VIDEO_RECONCILIATION_LIMIT, 100);
-	const concurrency = toInt(env.VIDEO_RECONCILIATION_CONCURRENCY, 4);
+	const limit = toInt(env.VIDEO_RECONCILIATION_LIMIT, 1000);
+	const concurrency = toInt(env.VIDEO_RECONCILIATION_CONCURRENCY, 24);
+	const leaseSeconds = toInt(env.VIDEO_RECONCILIATION_LEASE_SECONDS, 180);
+	const shardCount = toInt(env.VIDEO_RECONCILIATION_SHARD_COUNT, 1);
+	const shardIndex = Math.min(shardCount - 1, toZeroBasedInt(env.VIDEO_RECONCILIATION_SHARD_INDEX, 0));
 	configureRuntime(env);
 	try {
-		const summary = await runVideoReconciliationJob({ limit, concurrency });
+		const summary = await runVideoReconciliationJob({
+			limit,
+			concurrency,
+			leaseSeconds,
+			shardCount,
+			shardIndex,
+			workerId: `scheduled:video:${event.scheduledTime}:shard-${shardIndex}-of-${shardCount}`,
+		});
 		console.log("video_reconciliation_completed", summary);
 	} finally {
 		clearRuntime();
 	}
 }
 
-async function handleBatchReconciliationScheduledEvent(_event: ScheduledController, env: GatewayBindings): Promise<void> {
+async function handleBatchReconciliationScheduledEvent(event: ScheduledController, env: GatewayBindings): Promise<void> {
 	if (!toBool(env.BATCH_RECONCILIATION_ENABLED, true)) {
 		return;
 	}
 
-	const limit = toInt(env.BATCH_RECONCILIATION_LIMIT, 100);
-	const concurrency = toInt(env.BATCH_RECONCILIATION_CONCURRENCY, 4);
+	const limit = toInt(env.BATCH_RECONCILIATION_LIMIT, 500);
+	const concurrency = toInt(env.BATCH_RECONCILIATION_CONCURRENCY, 12);
+	const leaseSeconds = toInt(env.BATCH_RECONCILIATION_LEASE_SECONDS, 300);
+	const shardCount = toInt(env.BATCH_RECONCILIATION_SHARD_COUNT, 1);
+	const shardIndex = Math.min(shardCount - 1, toZeroBasedInt(env.BATCH_RECONCILIATION_SHARD_INDEX, 0));
 	configureRuntime(env);
 	try {
-		const summary = await runBatchReconciliationJob({ limit, concurrency });
+		const summary = await runBatchReconciliationJob({
+			limit,
+			concurrency,
+			leaseSeconds,
+			shardCount,
+			shardIndex,
+			workerId: `scheduled:batch:${event.scheduledTime}:shard-${shardIndex}-of-${shardCount}`,
+		});
 		console.log("batch_reconciliation_completed", summary);
 	} finally {
 		clearRuntime();

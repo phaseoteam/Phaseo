@@ -25,6 +25,7 @@ import { getSettingsSidebar } from "./Sidebar.config";
 export default function SettingsSidebar({
 	children,
 	showBroadcast = true,
+	showWebhooks = true,
 }: {
 	/**
 	 * Optional slot for lightweight, non-blocking sidebar adornments (e.g. alert counts).
@@ -32,10 +33,11 @@ export default function SettingsSidebar({
 	 */
 	children?: ReactNode;
 	showBroadcast?: boolean;
+	showWebhooks?: boolean;
 }) {
 	const pathname = usePathname();
 	const { isMobile, setOpenMobile, toggleSidebar } = useSidebar();
-	const navGroups = getSettingsSidebar({ showBroadcast });
+	const navGroups = getSettingsSidebar({ showBroadcast, showWebhooks });
 
 	function matchScore(item: NavItem) {
 		const path = pathname ?? "";

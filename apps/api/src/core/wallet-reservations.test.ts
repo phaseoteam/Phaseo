@@ -11,7 +11,9 @@ vi.mock("@/runtime/env", () => ({
 import {
 	captureWalletReservation,
 	releaseWalletReservation,
+	releaseStaleOrphanBatchReservations,
 	reserveWalletCredits,
+	settleWalletReservation,
 } from "./wallet-reservations";
 
 describe("wallet reservation RPC compatibility", () => {
@@ -108,5 +110,37 @@ describe("wallet reservation RPC compatibility", () => {
 		expect(rpcMock).toHaveBeenCalledTimes(4);
 		expect(rpcMock.mock.calls[1]?.[1]).toMatchObject({ p_team_id: workspaceId });
 		expect(rpcMock.mock.calls[3]?.[1]).toMatchObject({ p_team_id: workspaceId });
+	});
+
+	it("normalizes current reservation RPC shapes and settles an exact batch cost", async () => {
+		rpcMock
+			.mockResolvedValueOnce({ data: [{ ok: true, applied: true, reason: null, amount_nanos: 500 }], error: null })
+			.mockResolvedValueOnce({ data: [{ ok: true, applied: true, reason: null, amount_nanos: 320 }], error: null });
+		await expect(reserveWalletCredits({
+			workspaceId: "ws_1",
+			reservationId: "batch_hold:req_1",
+			amountNanos: 500,
+		})).resolves.toMatchObject({ status: "held", applied: true });
+		await expect(settleWalletReservation({
+			workspaceId: "ws_1",
+			reservationId: "batch_hold:req_1",
+			actualNanos: 320,
+			settleRefId: "batch_1",
+		})).resolves.toMatchObject({ status: "captured", applied: true, amountNanos: 320 });
+		expect(rpcMock.mock.calls[1]).toEqual(["gateway_wallet_settle_once", {
+			p_workspace_id: "ws_1",
+			p_reservation_id: "batch_hold:req_1",
+			p_actual_nanos: 320,
+			p_settle_ref_id: "batch_1",
+		}]);
+	});
+
+	it("releases stale orphan batch holds through the bounded reaper RPC", async () => {
+		rpcMock.mockResolvedValueOnce({ data: 3, error: null });
+		await expect(releaseStaleOrphanBatchReservations({ olderThanSeconds: 60, limit: 5000 })).resolves.toBe(3);
+		expect(rpcMock).toHaveBeenCalledWith("gateway_wallet_release_stale_orphan_batch_reservations", {
+			p_older_than_seconds: 300,
+			p_limit: 1000,
+		});
 	});
 });

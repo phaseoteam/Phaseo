@@ -5,6 +5,7 @@ import type { StatsigUser } from "@flags-sdk/statsig";
 
 import { getStatsigFlagsAdapter } from "@/lib/statsig/server";
 import {
+	BATCH_API_GATE,
 	NEW_LANDING_PAGE_EXPERIMENT,
 	NEW_LANDING_PAGE_GATE,
 	type GatewayHeroVariant,
@@ -40,4 +41,15 @@ export const gatewayHeroVariantExperiment = statsigAdapter
 	: flag<GatewayHeroVariant>({
 			key: NEW_LANDING_PAGE_EXPERIMENT,
 			decide: () => "classic",
+	});
+
+export const batchApiFlag = statsigAdapter
+	? flag<boolean, StatsigUser>({
+			key: BATCH_API_GATE,
+			identify,
+			adapter: statsigAdapter.featureGate((gate) => gate.value),
+		})
+	: flag<boolean>({
+			key: BATCH_API_GATE,
+			decide: () => false,
 		});

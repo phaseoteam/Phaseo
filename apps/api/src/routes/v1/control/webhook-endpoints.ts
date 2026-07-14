@@ -8,7 +8,9 @@ import {
 	generateWebhookSigningSecret,
 	normalizeWebhookEndpointEvents,
 	toPublicWebhookEndpoint,
+	validateWebhookEndpointUrlForDelivery,
 } from "@core/webhook-endpoints";
+import { getBatchApiFeatureGateName, isBatchApiAccessEnabled } from "@core/feature-flags";
 
 const app = new Hono<Env>();
 const PAGE_SIZE = 100;
@@ -53,6 +55,37 @@ function validationError(message: string, details?: unknown): Response {
 	}, 400);
 }
 
+async function normalizeEndpointUrlOrError(value: unknown): Promise<string | Response> {
+	const validated = await validateWebhookEndpointUrlForDelivery(value);
+	if (validated.ok === false) {
+		return validationError("Invalid webhook endpoint URL.", {
+			reason: validated.reason,
+		});
+	}
+	return validated.url;
+}
+
+async function requireWebhookEndpointAccess(auth: {
+	workspaceId: string;
+	apiKeyId: string;
+	apiKeyRef: string | null;
+	apiKeyKid: string | null;
+	userId: string | null;
+	internal: boolean;
+}): Promise<Response | null> {
+	if (await isBatchApiAccessEnabled(auth as any)) return null;
+	return json({
+		error: "forbidden",
+		reason: "batch_api_feature_flag_disabled",
+		message: "Webhook endpoint settings are currently limited to the enabled Batch API segment.",
+		feature_gate: getBatchApiFeatureGateName(),
+		workspace_id: auth.workspaceId,
+		status_code: 403,
+		error_type: "user",
+		error_origin: "gateway",
+	}, 403);
+}
+
 function notFound(): Response {
 	return json({
 		error: {
@@ -69,6 +102,15 @@ app.use("*", async (c, next) => {
 		if (!auth.ok) {
 			return (auth as GuardErr).response;
 		}
+		const accessDenied = await requireWebhookEndpointAccess({
+			workspaceId: auth.value.workspaceId,
+			apiKeyId: auth.value.apiKeyId,
+			apiKeyRef: auth.value.apiKeyRef,
+			apiKeyKid: auth.value.apiKeyKid,
+			userId: auth.value.userId ?? null,
+			internal: auth.value.internal,
+		});
+		if (accessDenied) return accessDenied;
 		c.set("ctx", {
 			workspaceId: auth.value.workspaceId,
 			userId: auth.value.userId ?? null,
@@ -111,6 +153,8 @@ app.post("/", async (c) => {
 	const body = await c.req.json().catch(() => null);
 	const parsed = createWebhookEndpointSchema.safeParse(body);
 	if (!parsed.success) return validationError("Invalid webhook endpoint payload.", parsed.error.issues);
+	const endpointUrl = await normalizeEndpointUrlOrError(parsed.data.url);
+	if (endpointUrl instanceof Response) return endpointUrl;
 	const signingSecret = generateWebhookSigningSecret();
 	const encrypted = await encryptWebhookSecret(signingSecret);
 	const { data, error } = await getSupabaseAdmin()
@@ -118,11 +162,12 @@ app.post("/", async (c) => {
 		.insert({
 			workspace_id: auth.workspaceId,
 			name: parsed.data.name,
-			url: parsed.data.url,
+			url: endpointUrl,
 			events: normalizeWebhookEndpointEvents(parsed.data.events),
 			secret_ciphertext: encrypted.secretCiphertext,
 			secret_iv: encrypted.secretIv,
 			secret_hash: encrypted.secretHash,
+			secret_key_version: encrypted.secretKeyVersion,
 			created_by: auth.userId,
 		})
 		.select("*")
@@ -159,7 +204,11 @@ app.patch("/:id", async (c) => {
 		updated_at: new Date().toISOString(),
 	};
 	if (parsed.data.name !== undefined) patch.name = parsed.data.name;
-	if (parsed.data.url !== undefined) patch.url = parsed.data.url;
+	if (parsed.data.url !== undefined) {
+		const endpointUrl = await normalizeEndpointUrlOrError(parsed.data.url);
+		if (endpointUrl instanceof Response) return endpointUrl;
+		patch.url = endpointUrl;
+	}
 	if (parsed.data.events !== undefined) patch.events = normalizeWebhookEndpointEvents(parsed.data.events);
 	if (parsed.data.status !== undefined) patch.status = parsed.data.status;
 	const { data, error } = await getSupabaseAdmin()
@@ -186,6 +235,7 @@ app.post("/:id/rotate-secret", async (c) => {
 			secret_ciphertext: encrypted.secretCiphertext,
 			secret_iv: encrypted.secretIv,
 			secret_hash: encrypted.secretHash,
+			secret_key_version: encrypted.secretKeyVersion,
 			updated_at: new Date().toISOString(),
 		})
 		.eq("workspace_id", auth.workspaceId)

@@ -15,6 +15,7 @@ import {
 	User,
 	Users,
 	WalletCards,
+	Webhook,
 	Waypoints,
 	Workflow,
 } from "lucide-react";
@@ -187,6 +188,13 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				badge: "Pre-Release",
 				match: ["/settings/broadcast", "/settings/observability"],
 			},
+			{
+				href: "/settings/webhooks",
+				label: "Webhooks",
+				icon: Webhook,
+				badge: "Beta",
+				match: ["/settings/webhooks"],
+			},
 			{ href: "/settings/sdk", label: "SDKs", icon: Package, match: ["/settings/sdk"] },
 		],
 	},
@@ -198,19 +206,21 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
     // },
 ];
 
-export function getSettingsSidebar(options?: { showBroadcast?: boolean }): NavGroup[] {
+export function getSettingsSidebar(options?: { showBroadcast?: boolean; showWebhooks?: boolean }): NavGroup[] {
 	const showBroadcast = options?.showBroadcast ?? true;
+	const showWebhooks = options?.showWebhooks ?? true;
 	return BASE_SETTINGS_SIDEBAR.map((group) => ({
 		...group,
 		items: group.items.filter((item) =>
-			showBroadcast ? true : item.href !== "/settings/broadcast",
+			(showBroadcast ? true : item.href !== "/settings/broadcast") &&
+			(showWebhooks ? true : item.href !== "/settings/webhooks"),
 		),
 	})).filter((group) => group.items.length > 0);
 }
 
 export function getActiveSettingsNav(
 	pathname: string,
-	options?: { showBroadcast?: boolean },
+	options?: { showBroadcast?: boolean; showWebhooks?: boolean },
 ): ResolvedSettingsNav | null {
 	const navGroups = getSettingsSidebar(options);
 

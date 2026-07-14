@@ -3,44 +3,105 @@ title: "Run async batches with webhooks"
 description: "Create batch jobs, recover with polling, and consume standardized webhook deliveries without losing lifecycle visibility."
 ---
 
-Batch execution is asynchronous and often fan-out heavy. This recipe shows the smallest production-safe loop for creating one batch, tracking it, and reconciling webhook delivery with your own status checks.
+Use this recipe to run a deferred batch job, receive webhook notifications, and keep a polling fallback for recovery. It is designed for workloads where throughput and cost matter more than immediate latency.
 
-## 1. Upload the input file
+AI Stats batch jobs currently support OpenAI, Anthropic, Google Gemini, Mistral, xAI, Groq, and Together AI through the same `/v1/batches` API. Send the model and prompts you want; AI Stats infers the upstream provider, creates files when the provider requires files, and uses inline native batch APIs when the provider supports them. Use `provider` only when you need an advanced routing constraint.
 
-```bash
-curl https://api.phaseo.app/v1/files \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -F "purpose=batch" \
-  -F "file=@requests.jsonl"
-```
-
-Persist the returned `file_id`. The same file id becomes the batch input handle.
-
-## 2. Create the batch
+## 1. Create the batch
 
 ```bash
 curl https://api.phaseo.app/v1/batches \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "input_file_id": "file_123",
-    "endpoint": "/v1/chat/completions",
-    "completion_window": "24h",
+    "model": "openai/gpt-5-mini",
+    "prompts": [
+      "Summarize this record.",
+      "Classify this support ticket."
+    ],
+    "system": "Be concise.",
+    "max_tokens": 256,
     "metadata": {
       "job": "nightly-evals",
       "owner": "ranking-worker"
     },
-    "webhook": {
-      "url": "https://example.com/api/batch-webhook",
-      "events": ["batch.completed", "batch.failed"],
-      "secret": "whsec_your_signing_secret"
-    }
+    "webhook_endpoint_id": "we_123"
   }'
 ```
 
-Store the returned `batch_id` immediately.
+Store the returned `batch_id` immediately. For OpenAI, Groq, and Together, AI Stats converts prompts to provider JSONL, uploads the file, and creates the upstream batch. For Anthropic, Gemini, Mistral, and xAI, AI Stats uses the provider's native inline batch workflow.
 
-## 3. Poll status for control-plane recovery
+You can use structured items when each row needs a stable id or per-row settings:
+
+```bash
+curl https://api.phaseo.app/v1/batches \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4",
+    "items": [
+      {
+        "id": "request-1",
+        "prompt": "Summarize this record.",
+        "max_tokens": 256
+      }
+    ],
+    "webhook_endpoint_id": "we_123"
+  }'
+```
+
+If you already have provider-native request bodies, keep using `requests` as the advanced escape hatch. If you already have a large JSONL file, upload it through `/v1/batches/files?model=...` and then create a batch with `input_file_id`.
+
+## 2. Upload a prebuilt batch file
+
+```bash
+curl "https://api.phaseo.app/v1/batches/files?model=openai/gpt-5-mini" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -F "purpose=batch" \
+  -F "file=@requests.jsonl"
+```
+
+Then pass the returned file id:
+
+```bash
+curl https://api.phaseo.app/v1/batches \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-mini",
+    "input_file_id": "file_123",
+    "webhook_endpoint_id": "we_123"
+  }'
+```
+
+## 3. Use the TypeScript SDK helper
+
+The SDK keeps the create, poll, per-request result, and webhook verification steps together:
+
+```typescript
+import AIStats from "@ai-stats/sdk";
+
+const client = new AIStats({ apiKey: process.env.AI_STATS_API_KEY });
+
+const batch = await client.batches.create({
+  model: "openai/gpt-5-mini",
+  prompts: ["Summarize this record.", "Classify this support ticket."],
+  webhook_endpoint_id: "we_123",
+});
+
+const completed = await client.batches.wait(batch.id!, {
+  intervalMs: 5_000,
+  timeoutMs: 30 * 60_000,
+});
+
+const rows = await client.batches.listRequests(completed.id!, {
+  status: "completed",
+});
+```
+
+Use `client.batches.wait(...)` only after you have persisted the batch id. It polls an existing job; it does not create a replacement job.
+
+## 4. Poll status for recovery
 
 Always keep your own polling path even when webhooks are enabled:
 
@@ -57,7 +118,7 @@ Use the normalized gateway fields when they are present:
 
 That polling loop is your fallback when webhook delivery is delayed or your consumer is temporarily unavailable.
 
-## 4. Cancel stale work when needed
+## 5. Cancel stale work when needed
 
 If the batch is still pending or processing and your application no longer wants the result:
 
@@ -68,7 +129,7 @@ curl -X POST https://api.phaseo.app/v1/batches/BATCH_ID/cancel \
 
 Treat cancellation as another asynchronous state transition. Poll again until the batch reaches its next terminal lifecycle state.
 
-## 5. Consume webhook deliveries
+## 6. Consume webhook deliveries
 
 Gateway-managed async webhook payloads are normalized around:
 
@@ -86,7 +147,24 @@ Your webhook consumer should:
 3. treat retries as normal
 4. fetch the latest batch status when the payload and local state disagree
 
-## 6. Fetch outputs and reconcile failures
+In TypeScript, verify signed webhook deliveries before processing the body:
+
+```typescript
+const body = await request.text();
+const ok = await AIStats.verifyWebhookSignature({
+  body,
+  secret: process.env.AI_STATS_BATCH_WEBHOOK_SECRET!,
+  timestamp: request.headers.get("x-ai-stats-timestamp"),
+  signature: request.headers.get("x-ai-stats-signature"),
+  toleranceSeconds: 300,
+});
+
+if (!ok) {
+  return new Response("Invalid signature", { status: 401 });
+}
+```
+
+## 7. Fetch outputs and reconcile failures
 
 Use the terminal batch object to decide the next step:
 
@@ -100,7 +178,7 @@ Operations should distinguish:
 - cancellation requested by operators or automation
 - webhook delivery failures after the batch itself already finished
 
-## 7. What to monitor
+## 8. What to monitor
 
 - batch `lifecycle_status`
 - provider and request correlation ids

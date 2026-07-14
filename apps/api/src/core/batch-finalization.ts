@@ -2,7 +2,6 @@
 // Why: Batch routes currently persist status changes but never settle wallet billing.
 // How: Reads output JSONL, prices successful responses, applies one idempotent charge, and marks billed.
 
-import { getBindings } from "@/runtime/env";
 import { resolveCapabilityFromEndpoint } from "@/lib/config/capabilityToEndpoints";
 import { pickFirstFiniteNumber, resolveCanonicalTokenUsage } from "@core/usage-normalization";
 import {
@@ -12,14 +11,21 @@ import {
 	setBatchJobStatus,
 	type BatchJobMeta,
 } from "@core/batch-jobs";
+import {
+	resolveBatchPricingModelCandidates,
+	resolveBatchPricingProviderCandidates,
+} from "@core/batch-model-aliases";
 import { saveBatchRequestRows, type BatchRequestRowInput } from "@core/batch-requests";
 import { computeBill } from "@pipeline/pricing/engine";
 import { loadPriceCard } from "@pipeline/pricing/loader";
 import { recordUsageAndCharge } from "@pipeline/pricing/persist";
-import { resolveProviderKey } from "@providers/keys";
+import { settleWalletReservation } from "@core/wallet-reservations";
+import {
+	batchText,
+	fetchProviderBatchOutputEntries,
+	OPENAI_BATCH_PROVIDER_ID,
+} from "@core/batch-provider-adapters";
 
-const OPENAI_PROVIDER_ID = "openai";
-const OPENAI_BASE_URL = "https://api.openai.com";
 const BATCH_CAPTURE_REQUEST_ID_PREFIX = "batch_capture";
 
 type BatchUsageAggregate = {
@@ -42,6 +48,8 @@ type BatchSettlementComputation =
 			reason: string;
 			pricedUsage: Record<string, unknown>;
 			pricingBreakdown: Record<string, unknown>;
+			outputEntries: any[];
+			rowCostsByIndex: Array<number | null>;
 	  }
 	| {
 			ok: false;
@@ -62,14 +70,7 @@ export type FinalizeBatchJobResult = {
 };
 
 function normalizeText(value: unknown): string | null {
-	if (typeof value !== "string") return null;
-	const trimmed = value.trim();
-	return trimmed.length > 0 ? trimmed : null;
-}
-
-function resolveOpenAiBaseUrl(bindings: Record<string, string | undefined>): string {
-	const base = String(bindings.OPENAI_BASE_URL || OPENAI_BASE_URL).replace(/\/+$/, "");
-	return /\/v1$/i.test(base) ? base : `${base}/v1`;
+	return batchText(value);
 }
 
 function normalizeBatchEndpointPath(endpoint: unknown): string | null {
@@ -90,40 +91,9 @@ function resolvePricingCapabilityCandidates(endpoint: unknown): string[] {
 	if (normalizedPath) {
 		candidates.push(resolveCapabilityFromEndpoint(normalizedPath));
 	}
+	candidates.push("text.generate");
 	candidates.push("batch");
 	return [...new Set(candidates.map((value) => value.trim()).filter(Boolean))];
-}
-
-async function fetchOpenAiFileText(fileIdRaw: string): Promise<string> {
-	const fileId = normalizeText(fileIdRaw);
-	if (!fileId) throw new Error("missing_output_file_id");
-	const bindings = getBindings() as unknown as Record<string, string | undefined>;
-	const keyInfo = resolveProviderKey(
-		{ providerId: OPENAI_PROVIDER_ID, byokMeta: [] },
-		() => bindings.OPENAI_API_KEY,
-	);
-	const response = await fetch(
-		`${resolveOpenAiBaseUrl(bindings)}/files/${encodeURIComponent(fileId)}/content`,
-		{
-			method: "GET",
-			headers: {
-				Authorization: `Bearer ${keyInfo.key}`,
-			},
-		},
-	);
-	if (!response.ok) {
-		const preview = await response.text().catch(() => "");
-		throw new Error(`openai_batch_output_fetch_failed_${response.status}:${preview.slice(0, 200)}`);
-	}
-	return response.text();
-}
-
-function parseJsonLines(text: string): any[] {
-	return text
-		.split(/\r?\n/)
-		.map((line) => line.trim())
-		.filter(Boolean)
-		.map((line) => JSON.parse(line));
 }
 
 function createUsageAggregate(): BatchUsageAggregate {
@@ -165,6 +135,7 @@ function addUsageSample(target: BatchUsageAggregate, usageRaw: any): void {
 function buildAggregatePricedUsage(args: {
 	usage: BatchUsageAggregate;
 	costNanos: number;
+	lines?: Record<string, unknown>[];
 }): Record<string, unknown> {
 	const costNanos = Math.max(0, Math.round(args.costNanos));
 	return {
@@ -181,9 +152,41 @@ function buildAggregatePricedUsage(args: {
 			total_usd_str: (costNanos / 1e9).toFixed(9),
 			total_cents: Math.trunc(costNanos / 10_000_000),
 			currency: "USD",
-			lines: [],
+			lines: args.lines ?? [],
 		},
 	};
+}
+
+function mergePricingLines(target: Map<string, Record<string, unknown>>, priced: Record<string, any>): void {
+	const lines = Array.isArray(priced?.pricing?.lines) ? priced.pricing.lines : [];
+	for (const line of lines) {
+		if (!line || typeof line !== "object" || Array.isArray(line)) continue;
+		const dimension = normalizeText(line.dimension);
+		if (!dimension) continue;
+		const unitSize = typeof line.unit_size === "number" ? line.unit_size : null;
+		const unitPriceUsd =
+			typeof line.unit_price_usd === "number" || typeof line.unit_price_usd === "string"
+				? String(line.unit_price_usd)
+				: null;
+		const key = `${dimension}:${unitSize ?? ""}:${unitPriceUsd ?? ""}`;
+		const existing = target.get(key);
+		const quantity = typeof line.quantity === "number" ? line.quantity : 0;
+		const lineNanos = typeof line.line_nanos === "number" ? line.line_nanos : 0;
+		if (existing) {
+			existing.quantity = (typeof existing.quantity === "number" ? existing.quantity : 0) + quantity;
+			existing.line_nanos = (typeof existing.line_nanos === "number" ? existing.line_nanos : 0) + lineNanos;
+			const totalNanos = typeof existing.line_nanos === "number" ? existing.line_nanos : 0;
+			existing.line_cost_usd = totalNanos / 1_000_000_000;
+			continue;
+		}
+		target.set(key, {
+			...line,
+			dimension,
+			quantity,
+			line_nanos: lineNanos,
+			line_cost_usd: lineNanos / 1_000_000_000,
+		});
+	}
 }
 
 function isTerminalBatchStatus(status: string): boolean {
@@ -205,11 +208,20 @@ async function resolveBatchPriceCard(args: {
 	model: string;
 	endpoint: unknown;
 }): Promise<{ capability: string; card: Awaited<ReturnType<typeof loadPriceCard>> } | null> {
+	const models = resolvePricingModelCandidates(args.providerId, args.model);
 	for (const capability of resolvePricingCapabilityCandidates(args.endpoint)) {
-		const card = await loadPriceCard(args.providerId, args.model, capability);
-		if (card) return { capability, card };
+		for (const pricingProvider of resolveBatchPricingProviderCandidates(args.providerId)) {
+			for (const model of models) {
+				const card = await loadPriceCard(pricingProvider, model, capability);
+				if (card) return { capability, card };
+			}
+		}
 	}
 	return null;
+}
+
+function resolvePricingModelCandidates(providerId: string, model: string): string[] {
+	return resolveBatchPricingModelCandidates(providerId, model);
 }
 
 function extractResponseBody(entry: any): any | null {
@@ -234,7 +246,29 @@ function extractErrorBody(entry: any): Record<string, unknown> | null {
 async function computeBatchSettlement(meta: BatchJobMeta, status: string): Promise<BatchSettlementComputation> {
 	const completedCount = meta.requestCounts?.completed ?? null;
 	const outputFileId = normalizeText(meta.outputFileId);
-	if (!outputFileId) {
+	const providerId = normalizeText(meta.provider) ?? OPENAI_BATCH_PROVIDER_ID;
+	const supportsNativeResults =
+		providerId === "anthropic" ||
+		providerId === "google-ai-studio" ||
+		providerId === "x-ai";
+	if (!outputFileId && (completedCount ?? 0) <= 0 && status !== "completed") {
+		return {
+			ok: true,
+			costNanos: 0,
+			costUsd: 0,
+			charged: false,
+			reason: status,
+			pricedUsage: buildAggregatePricedUsage({ usage: createUsageAggregate(), costNanos: 0 }),
+			pricingBreakdown: {
+				total_nanos: 0,
+				total_usd_str: "0.000000000",
+				total_cents: 0,
+			},
+			outputEntries: [],
+			rowCostsByIndex: [],
+		};
+	}
+	if (!outputFileId && !supportsNativeResults) {
 		if (status === "completed") return { ok: false, reason: "missing_output_file" };
 		if ((completedCount ?? 0) > 0) return { ok: false, reason: "missing_output_file" };
 		return {
@@ -249,12 +283,15 @@ async function computeBatchSettlement(meta: BatchJobMeta, status: string): Promi
 				total_usd_str: "0.000000000",
 				total_cents: 0,
 			},
+			outputEntries: [],
+			rowCostsByIndex: [],
 		};
 	}
 
-	const text = await fetchOpenAiFileText(outputFileId);
-	const entries = parseJsonLines(text);
+	const entries = await fetchProviderBatchOutputEntries(meta);
 	const usageAggregate = createUsageAggregate();
+	const pricingLines = new Map<string, Record<string, unknown>>();
+	const rowCostsByIndex: Array<number | null> = [];
 	let totalNanos = 0;
 	let successfulResponses = 0;
 	let pricedResponses = 0;
@@ -272,10 +309,10 @@ async function computeBatchSettlement(meta: BatchJobMeta, status: string): Promi
 			missingUsageResponses += 1;
 			continue;
 		}
-		const model = normalizeText(body.model) ?? normalizeText(meta.model);
+		const model = normalizeText(body.model) ?? normalizeText(body.modelVersion) ?? normalizeText(body.model_version) ?? normalizeText(meta.model);
 		if (!model) return { ok: false, reason: "missing_model" };
 		const priceCard = await resolveBatchPriceCard({
-			providerId: OPENAI_PROVIDER_ID,
+			providerId,
 			model,
 			endpoint: meta.endpoint,
 		});
@@ -291,7 +328,10 @@ async function computeBatchSettlement(meta: BatchJobMeta, status: string): Promi
 			},
 			"batch",
 		);
-		totalNanos += Math.max(0, Number((priced as any)?.pricing?.total_nanos ?? 0) || 0);
+		const rowNanos = Math.max(0, Number((priced as any)?.pricing?.total_nanos ?? 0) || 0);
+		totalNanos += rowNanos;
+		rowCostsByIndex[index] = rowNanos;
+		mergePricingLines(pricingLines, priced);
 		addUsageSample(usageAggregate, usage);
 		pricedResponses += 1;
 	}
@@ -301,6 +341,9 @@ async function computeBatchSettlement(meta: BatchJobMeta, status: string): Promi
 			ok: false,
 			reason: missingUsageResponses > 0 ? "missing_usage" : "unpriced_successful_responses",
 		};
+	}
+	if (completedCount != null && successfulResponses !== completedCount) {
+		return { ok: false, reason: "successful_output_count_mismatch" };
 	}
 
 	if ((completedCount ?? 0) > 0 && successfulResponses === 0) {
@@ -330,7 +373,11 @@ async function computeBatchSettlement(meta: BatchJobMeta, status: string): Promi
 		costUsd: costNanos / 1e9,
 		charged: costNanos > 0,
 		reason,
-		pricedUsage: buildAggregatePricedUsage({ usage: usageAggregate, costNanos }),
+		pricedUsage: buildAggregatePricedUsage({
+			usage: usageAggregate,
+			costNanos,
+			lines: Array.from(pricingLines.values()),
+		}),
 		pricingBreakdown: {
 			total_nanos: costNanos,
 			total_usd_str: (costNanos / 1e9).toFixed(9),
@@ -339,6 +386,8 @@ async function computeBatchSettlement(meta: BatchJobMeta, status: string): Promi
 			failed_requests: meta.requestCounts?.failed ?? null,
 			total_requests: meta.requestCounts?.total ?? null,
 		},
+		outputEntries: entries,
+		rowCostsByIndex,
 	};
 }
 
@@ -357,18 +406,31 @@ export async function finalizeBatchJob(args: FinalizeBatchJobArgs): Promise<Fina
 	const finalizedAt = new Date().toISOString();
 	const alreadyBilled = await isBatchJobBilled(args.workspaceId, args.batchId);
 	if (alreadyBilled) {
-		await setBatchJobStatus(args.workspaceId, args.batchId, status, {
+		const existingLines = Array.isArray((record.meta.pricedUsage as any)?.pricing?.lines)
+			? (record.meta.pricedUsage as any).pricing.lines
+			: [];
+		const metaPatch: Record<string, unknown> = {
 			finalizedAt,
-			billingReason: "already_billed",
-		});
+		};
+		if (existingLines.length === 0) {
+			const settlement = await computeBatchSettlement(record.meta, status).catch(() => null);
+			if (settlement?.ok) {
+				metaPatch.charged = settlement.charged;
+				metaPatch.costNanos = settlement.costNanos;
+				metaPatch.costUsd = settlement.costUsd;
+				metaPatch.billingReason = settlement.reason;
+				metaPatch.pricedUsage = settlement.pricedUsage;
+				metaPatch.pricingBreakdown = settlement.pricingBreakdown;
+			}
+		}
+		await setBatchJobStatus(args.workspaceId, args.batchId, status, metaPatch);
 		return {
 			status,
-			charged: false,
+			charged: Boolean(record.meta.charged),
 			billed: true,
-			reason: "already_billed",
+			reason: record.meta.billingReason ?? "already_billed",
 		};
 	}
-
 	const settlement = await computeBatchSettlement(record.meta, status);
 	if (!settlement.ok) {
 		await setBatchJobStatus(args.workspaceId, args.batchId, status, {
@@ -384,7 +446,22 @@ export async function finalizeBatchJob(args: FinalizeBatchJobArgs): Promise<Fina
 		};
 	}
 
-	if (settlement.costNanos > 0) {
+	if (record.meta.reservationId) {
+		const settled = await settleWalletReservation({
+			workspaceId: args.workspaceId,
+			reservationId: record.meta.reservationId,
+			actualNanos: settlement.costNanos,
+			settleRefId: args.batchId,
+		});
+		if (settled.status !== "captured" || (!settled.applied && !settled.alreadyApplied)) {
+			await setBatchJobStatus(args.workspaceId, args.batchId, status, {
+				finalizedAt,
+				charged: false,
+				billingReason: `reservation_${settled.status}`,
+			});
+			return { status, charged: false, billed: false, reason: `reservation_${settled.status}` };
+		}
+	} else if (settlement.costNanos > 0) {
 		await recordUsageAndCharge({
 			requestId: `${BATCH_CAPTURE_REQUEST_ID_PREFIX}:${args.batchId}`,
 			workspaceId: args.workspaceId,
@@ -401,40 +478,44 @@ export async function finalizeBatchJob(args: FinalizeBatchJobArgs): Promise<Fina
 		pricedUsage: settlement.pricedUsage,
 		pricingBreakdown: settlement.pricingBreakdown,
 	});
-	if (record.meta?.outputFileId) {
-		const text = await fetchOpenAiFileText(record.meta.outputFileId).catch(() => null);
-		if (text) {
-			const rows = parseJsonLines(text).map((entry, index): BatchRequestRowInput => {
-				const body = extractResponseBody(entry);
-				const responseStatus = Number(entry?.response?.status_code ?? entry?.status_code ?? 0);
-				const errorBody = extractErrorBody(entry);
-				return {
-					provider: OPENAI_PROVIDER_ID,
-					nativeBatchId: record.meta?.nativeBatchId ?? args.batchId,
-					customId: extractCustomId(entry, index),
-					requestIndex: index,
-					model: normalizeText(body?.model) ?? normalizeText(record.meta?.model),
-					status: body ? "completed" : errorBody ? "failed" : status,
-					responseStatus: Number.isFinite(responseStatus) && responseStatus > 0 ? responseStatus : null,
-					responseBody: body && typeof body === "object" ? body as Record<string, unknown> : null,
-					errorBody,
-					usage: body?.usage && typeof body.usage === "object" ? body.usage as Record<string, unknown> : null,
-					meta: { finalized_from_output_file: true },
-					completedAt: new Date().toISOString(),
-				};
-			});
-			await saveBatchRequestRows({
+	if (settlement.outputEntries.length > 0) {
+		const completedAt = new Date().toISOString();
+		const providerId = normalizeText(record.meta.provider) ?? OPENAI_BATCH_PROVIDER_ID;
+		const rows = settlement.outputEntries.map((entry, index): BatchRequestRowInput => {
+			const body = extractResponseBody(entry);
+			const responseStatus = Number(entry?.response?.status_code ?? entry?.status_code ?? 0);
+			const errorBody = extractErrorBody(entry);
+			return {
+				provider: providerId,
+				nativeBatchId: record.meta?.nativeBatchId ?? args.batchId,
+				customId: extractCustomId(entry, index),
+				requestIndex: index,
+				model: normalizeText(body?.model) ?? normalizeText(record.meta?.model),
+				status: body ? "completed" : errorBody ? "failed" : status,
+				responseStatus: Number.isFinite(responseStatus) && responseStatus > 0 ? responseStatus : null,
+				responseBody: null,
+				errorBody,
+				usage: body?.usage && typeof body.usage === "object" ? body.usage as Record<string, unknown> : null,
+				costNanos: settlement.rowCostsByIndex[index] ?? null,
+				costUsd:
+					typeof settlement.rowCostsByIndex[index] === "number"
+						? (settlement.rowCostsByIndex[index] as number) / 1_000_000_000
+						: null,
+				meta: { finalized_from_output_file: true, response_body_omitted: true },
+				completedAt,
+			};
+		});
+		await saveBatchRequestRows({
+			workspaceId: args.workspaceId,
+			batchId: args.batchId,
+			rows,
+		}).catch((error) => {
+			console.error("batch_request_rows_finalize_failed", {
+				error,
 				workspaceId: args.workspaceId,
 				batchId: args.batchId,
-				rows,
-			}).catch((error) => {
-				console.error("batch_request_rows_finalize_failed", {
-					error,
-					workspaceId: args.workspaceId,
-					batchId: args.batchId,
-				});
 			});
-		}
+		});
 	}
 	await markBatchJobBilled(args.workspaceId, args.batchId);
 	return {

@@ -1,4 +1,4 @@
-export type BatchInputMode = "file" | "inline";
+export type BatchInputMode = "file" | "requests";
 
 export type BatchProviderCapability = {
 	providerId: string;
@@ -7,46 +7,79 @@ export type BatchProviderCapability = {
 	gatewayInputModes: BatchInputMode[];
 	documentationUrl: string;
 	status: "planned" | "active";
+	supportsMultipleModelsPerBatch?: boolean;
 	notes?: string;
 };
 
 export type BatchInputModeResolution =
 	| { ok: true; mode: BatchInputMode }
-	| { ok: false; reason: "missing_batch_input" | "ambiguous_batch_input" | "invalid_inline_requests" };
+	| { ok: false; reason: "missing_batch_input" | "ambiguous_batch_input" | "invalid_requests" };
 
 export const BATCH_PROVIDER_CAPABILITIES: BatchProviderCapability[] = [
 	{
 		providerId: "openai",
 		displayName: "OpenAI",
 		nativeInputModes: ["file"],
-		gatewayInputModes: ["file", "inline"],
+		gatewayInputModes: ["file", "requests"],
 		documentationUrl: "https://platform.openai.com/docs/guides/batch",
 		status: "active",
-		notes: "Inline gateway requests are converted into a provider batch JSONL file before submission.",
+		notes: "Gateway requests are converted into a provider batch JSONL file before submission.",
 	},
 	{
 		providerId: "anthropic",
 		displayName: "Anthropic",
-		nativeInputModes: ["inline"],
-		gatewayInputModes: ["inline"],
+		nativeInputModes: ["requests"],
+		gatewayInputModes: ["requests"],
 		documentationUrl: "https://docs.anthropic.com/en/docs/build-with-claude/batch-processing",
-		status: "planned",
+		status: "active",
+		supportsMultipleModelsPerBatch: true,
 	},
 	{
-		providerId: "google",
+		providerId: "google-ai-studio",
 		displayName: "Google Gemini",
-		nativeInputModes: ["file", "inline"],
-		gatewayInputModes: ["file", "inline"],
-		documentationUrl: "https://ai.google.dev/gemini-api/docs/batch-mode",
-		status: "planned",
+		nativeInputModes: ["file", "requests"],
+		gatewayInputModes: ["requests"],
+		documentationUrl: "https://ai.google.dev/gemini-api/docs/batch-api",
+		status: "active",
+		notes: "Gemini requests are submitted to the native Batch API. File-backed Gemini batches require Google Files API integration.",
 	},
 	{
 		providerId: "x-ai",
 		displayName: "xAI",
-		nativeInputModes: ["file", "inline"],
-		gatewayInputModes: ["file", "inline"],
-		documentationUrl: "https://docs.x.ai/docs/guides/batch-api",
-		status: "planned",
+		nativeInputModes: ["file", "requests"],
+		gatewayInputModes: ["requests"],
+		documentationUrl: "https://docs.x.ai/developers/advanced-api-usage/batch-api",
+		status: "active",
+		supportsMultipleModelsPerBatch: true,
+		notes: "Requests are submitted through xAI's create-batch and add-requests workflow.",
+	},
+	{
+		providerId: "mistral",
+		displayName: "Mistral",
+		nativeInputModes: ["file", "requests"],
+		gatewayInputModes: ["file", "requests"],
+		documentationUrl: "https://docs.mistral.ai/studio-api/batch-processing",
+		status: "active",
+	},
+	{
+		providerId: "groq",
+		displayName: "Groq",
+		nativeInputModes: ["file"],
+		gatewayInputModes: ["file", "requests"],
+		documentationUrl: "https://console.groq.com/docs/batch",
+		status: "active",
+		supportsMultipleModelsPerBatch: true,
+		notes: "Gateway requests are converted into a provider batch JSONL file before submission.",
+	},
+	{
+		providerId: "together",
+		displayName: "Together AI",
+		nativeInputModes: ["file"],
+		gatewayInputModes: ["file", "requests"],
+		documentationUrl: "https://docs.together.ai/docs/inference/batch/overview",
+		status: "active",
+		supportsMultipleModelsPerBatch: true,
+		notes: "Gateway requests are converted into a provider batch JSONL file before submission.",
 	},
 ];
 
@@ -57,7 +90,100 @@ const CAPABILITIES_BY_PROVIDER = new Map(
 function normalizeProviderId(value: unknown): string | null {
 	if (typeof value !== "string") return null;
 	const trimmed = value.trim().toLowerCase();
+	if (!trimmed) return null;
+	if (trimmed === "google" || trimmed === "gemini") return "google-ai-studio";
+	if (trimmed === "xai") return "x-ai";
+	if (trimmed === "together-ai" || trimmed === "togetherai") return "together";
+	return trimmed;
+}
+
+function normalizeModelId(value: unknown): string | null {
+	if (typeof value !== "string") return null;
+	const trimmed = value.trim();
 	return trimmed.length > 0 ? trimmed : null;
+}
+
+function providerFromModelPrefix(model: string): string | null {
+	const lower = model.toLowerCase();
+	const prefix = lower.includes("/") ? lower.split("/", 1)[0] : null;
+	switch (prefix) {
+		case "openai":
+			return "openai";
+		case "anthropic":
+			return "anthropic";
+		case "google":
+		case "gemini":
+			return "google-ai-studio";
+		case "mistral":
+			return "mistral";
+		case "x-ai":
+		case "xai":
+		case "spacex-ai":
+			return "x-ai";
+		case "groq":
+			return "groq";
+		case "together":
+		case "together-ai":
+			return "together";
+		default:
+			return null;
+	}
+}
+
+export function resolveBatchProvidersFromModel(model: unknown): string[] {
+	const text = normalizeModelId(model);
+	if (!text) return [];
+	const lower = text.toLowerCase();
+	const prefixed = providerFromModelPrefix(lower);
+	if (prefixed) return [prefixed];
+	const slug = lower.startsWith("models/") ? lower.slice("models/".length) : lower;
+	if (
+		slug.startsWith("gpt-") ||
+		slug.startsWith("o1") ||
+		slug.startsWith("o3") ||
+		slug.startsWith("o4") ||
+		slug.startsWith("chatgpt-") ||
+		slug.startsWith("codex-") ||
+		slug.startsWith("computer-use-") ||
+		slug.startsWith("text-embedding-") ||
+		slug.startsWith("whisper-") ||
+		slug.startsWith("omni-moderation")
+	) {
+		return ["openai"];
+	}
+	if (slug.startsWith("claude-")) return ["anthropic"];
+	if (slug.startsWith("gemini-")) return ["google-ai-studio"];
+	if (
+		slug.startsWith("mistral-") ||
+		slug.startsWith("codestral-") ||
+		slug.startsWith("ministral-") ||
+		slug.startsWith("pixtral-") ||
+		slug.startsWith("devstral-") ||
+		slug.startsWith("magistral-") ||
+		slug.startsWith("open-mistral-") ||
+		slug.startsWith("open-mixtral-")
+	) {
+		return ["mistral"];
+	}
+	if (slug.startsWith("grok-")) return ["x-ai"];
+	if (
+		slug.endsWith("-versatile") ||
+		slug.endsWith("-instant") ||
+		slug.includes("-32768") ||
+		slug === "gemma2-9b-it"
+	) {
+		return ["groq"];
+	}
+	if (
+		slug.startsWith("meta-llama/") ||
+		slug.startsWith("mistralai/") ||
+		slug.startsWith("deepseek-ai/") ||
+		slug.startsWith("qwen/") ||
+		slug.includes("-turbo")
+	) {
+		return ["together"];
+	}
+	return [];
 }
 
 function toProviderIds(value: unknown): string[] {
@@ -98,20 +224,38 @@ export function resolveRequestedBatchProviders(provider: unknown): string[] {
 
 export function resolveBatchInputMode(payload: Record<string, unknown>): BatchInputModeResolution {
 	const hasFile = typeof payload.input_file_id === "string" && payload.input_file_id.trim().length > 0;
-	const inlineRequests = Array.isArray(payload.requests) ? payload.requests : null;
-	const hasInlineRequests = Boolean(inlineRequests);
-	if (hasFile && hasInlineRequests) return { ok: false, reason: "ambiguous_batch_input" };
+	const batchRequests = Array.isArray(payload.requests) ? payload.requests : null;
+	const promptRequests = Array.isArray(payload.prompts) ? payload.prompts : null;
+	const itemRequests = Array.isArray(payload.items) ? payload.items : null;
+	const requestSourceCount = [batchRequests, promptRequests, itemRequests].filter(Boolean).length;
+	const hasRequests = requestSourceCount > 0;
+	if (hasFile && hasRequests) return { ok: false, reason: "ambiguous_batch_input" };
+	if (requestSourceCount > 1) return { ok: false, reason: "ambiguous_batch_input" };
 	if (hasFile) return { ok: true, mode: "file" };
-	if (inlineRequests) {
-		return inlineRequests.length > 0
-			? { ok: true, mode: "inline" }
-			: { ok: false, reason: "invalid_inline_requests" };
+	if (batchRequests) {
+		return batchRequests.length > 0
+			? { ok: true, mode: "requests" }
+			: { ok: false, reason: "invalid_requests" };
+	}
+	if (promptRequests) {
+		return promptRequests.length > 0
+			? { ok: true, mode: "requests" }
+			: { ok: false, reason: "invalid_requests" };
+	}
+	if (itemRequests) {
+		return itemRequests.length > 0
+			? { ok: true, mode: "requests" }
+			: { ok: false, reason: "invalid_requests" };
 	}
 	return { ok: false, reason: "missing_batch_input" };
 }
 
 export function getBatchProviderCapability(providerId: string): BatchProviderCapability | null {
 	return CAPABILITIES_BY_PROVIDER.get(providerId.trim().toLowerCase()) ?? null;
+}
+
+export function providerSupportsMultipleModelsPerBatch(providerId: string): boolean {
+	return getBatchProviderCapability(providerId)?.supportsMultipleModelsPerBatch === true;
 }
 
 export function listBatchProviderCapabilities(mode?: BatchInputMode): BatchProviderCapability[] {

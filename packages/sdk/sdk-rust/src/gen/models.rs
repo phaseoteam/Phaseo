@@ -217,13 +217,6 @@ pub struct BatchBillingSummary {
 	pub reason: Option<String>,
 }
 
-pub struct BatchInlineRequest {
-	pub body: HashMap<String, String>,
-	pub custom_id: Option<String>,
-	pub method: Option<String>,
-	pub url: Option<String>,
-}
-
 pub struct BatchProviderCapability {
 	pub documentation_url: Option<String>,
 	pub gateway_input_modes: Option<Vec<String>>,
@@ -237,12 +230,18 @@ pub struct BatchProviderCapability {
 pub struct BatchRequest {
 	pub completion_window: Option<String>,
 	pub debug: Option<HashMap<String, String>>,
-	pub endpoint: String,
+	pub endpoint: Option<String>,
 	pub input_file_id: Option<String>,
+	pub items: Option<Vec<HashMap<String, String>>>,
+	pub max_tokens: Option<i64>,
 	pub metadata: Option<HashMap<String, String>>,
+	pub model: Option<String>,
+	pub prompts: Option<Vec<String>>,
 	pub provider: Option<HashMap<String, String>>,
 	pub requests: Option<Vec<HashMap<String, String>>>,
 	pub session_id: Option<String>,
+	pub system: Option<String>,
+	pub temperature: Option<f64>,
 	pub webhook: Option<HashMap<String, String>>,
 	pub webhook_endpoint_id: Option<String>,
 }
@@ -251,6 +250,13 @@ pub struct BatchRequestCounts {
 	pub completed: Option<i64>,
 	pub failed: Option<i64>,
 	pub total: Option<i64>,
+}
+
+pub struct BatchRequestItem {
+	pub body: HashMap<String, String>,
+	pub custom_id: Option<String>,
+	pub method: Option<String>,
+	pub url: Option<String>,
 }
 
 pub struct BatchRequestRow {
@@ -344,7 +350,7 @@ pub struct ChatCompletionsRequest {
 	pub parallel_tool_calls: Option<bool>,
 	pub presence_penalty: Option<f64>,
 	pub prompt_cache_key: Option<Option<String>>,
-	pub provider: Option<HashMap<String, String>>,
+	pub provider: Option<String>,
 	pub provider_options: Option<HashMap<String, String>>,
 	pub reasoning: Option<HashMap<String, String>>,
 	pub response_format: Option<String>,

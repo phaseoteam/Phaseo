@@ -6,9 +6,11 @@
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { internalModelDiscoveryRoutes } from "./model-discovery";
+import { internalBatchWebhookRoutes } from "./batch-webhooks";
 import { internalVideoWebhookRoutes } from "./video-webhooks";
 
 export const internalRouter = new Hono<Env>();
 
 internalRouter.route("/model-discovery", internalModelDiscoveryRoutes);
+internalRouter.route("/batch-webhooks", internalBatchWebhookRoutes);
 internalRouter.route("/video-webhooks", internalVideoWebhookRoutes);

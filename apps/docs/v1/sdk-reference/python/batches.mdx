@@ -7,10 +7,16 @@ description: "Create and inspect batch jobs with the Python SDK."
 
 ```python
 batch = client.create_batch({
-    "endpoint": "responses",
-    "input_file_id": "file_123",
+    "model": "openai/gpt-5-mini",
+    "prompts": [
+        "Summarize this record.",
+        "Classify this support ticket.",
+    ],
+    "system": "Be concise.",
+    "max_tokens": 256,
     "completion_window": "24h",
     "session_id": "agent-run-42",
+    "webhook_endpoint_id": "we_123",
 })
 
 status = client.get_batch("batch_123")
@@ -23,12 +29,19 @@ print(status)
 
 ### Key parameters
 
-- `endpoint` (required): Target endpoint for batch items such as `responses`.
-- `input_file_id` (required): File id uploaded through the files API.
+- `model`: Model id used to infer the upstream provider. Most callers should not pass `provider`.
+- `prompts`: Simple shorthand for one or more prompt strings.
+- `items`: Structured prompt shorthand with `id` / `custom_id`, `prompt`, `messages`, per-row settings, or an advanced `body`.
+- `requests`: Advanced inline provider-native batch rows.
+- `input_file_id`: Existing file id uploaded through `/batches/files?model=...` for large prebuilt JSONL inputs.
+- `endpoint`: Optional target endpoint for advanced rows. AI Stats chooses a model/provider default when omitted.
 - `completion_window`: Upstream batch completion window such as `24h`.
 - `session_id`: Optional AI Stats grouping id for logs, sessions, and investigate tooling.
+- `webhook_endpoint_id`: Workspace-managed webhook endpoint id configured in the dashboard.
 - `webhook`: Optional webhook configuration for async lifecycle notifications.
 - `metadata`: Optional object persisted with the batch.
+
+Use exactly one input source per batch: `prompts`, `items`, `requests`, or `input_file_id`.
 
 Batch responses also surface gateway observability fields such as `request_id`, `provider`, echoed `session_id` / `webhook`, and terminal `billing` / `pricing_lines` when available.
 

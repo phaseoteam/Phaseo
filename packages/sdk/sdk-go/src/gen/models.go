@@ -215,13 +215,6 @@ type BatchBillingSummary struct {
 	Reason *string `json:"reason,omitempty"`
 }
 
-type BatchInlineRequest struct {
-	Body map[string]interface{} `json:"body"`
-	CustomId *string `json:"custom_id,omitempty"`
-	Method *string `json:"method,omitempty"`
-	Url *string `json:"url,omitempty"`
-}
-
 type BatchProviderCapability struct {
 	DocumentationUrl *string `json:"documentation_url,omitempty"`
 	GatewayInputModes *[]string `json:"gateway_input_modes,omitempty"`
@@ -235,12 +228,18 @@ type BatchProviderCapability struct {
 type BatchRequest struct {
 	CompletionWindow *string `json:"completion_window,omitempty"`
 	Debug *map[string]interface{} `json:"debug,omitempty"`
-	Endpoint string `json:"endpoint"`
+	Endpoint *string `json:"endpoint,omitempty"`
 	InputFileId *string `json:"input_file_id,omitempty"`
+	Items *[]map[string]interface{} `json:"items,omitempty"`
+	MaxTokens *int `json:"max_tokens,omitempty"`
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+	Model *string `json:"model,omitempty"`
+	Prompts *[]string `json:"prompts,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 	Requests *[]map[string]interface{} `json:"requests,omitempty"`
 	SessionId *string `json:"session_id,omitempty"`
+	System *string `json:"system,omitempty"`
+	Temperature *float64 `json:"temperature,omitempty"`
 	Webhook *map[string]interface{} `json:"webhook,omitempty"`
 	WebhookEndpointId *string `json:"webhook_endpoint_id,omitempty"`
 }
@@ -249,6 +248,13 @@ type BatchRequestCounts struct {
 	Completed *int `json:"completed,omitempty"`
 	Failed *int `json:"failed,omitempty"`
 	Total *int `json:"total,omitempty"`
+}
+
+type BatchRequestItem struct {
+	Body map[string]interface{} `json:"body"`
+	CustomId *string `json:"custom_id,omitempty"`
+	Method *string `json:"method,omitempty"`
+	Url *string `json:"url,omitempty"`
 }
 
 type BatchRequestRow struct {
@@ -965,7 +971,7 @@ type ChatCompletionsRequest struct {
 	ParallelToolCalls *bool `json:"parallel_tool_calls,omitempty"`
 	PresencePenalty *float64 `json:"presence_penalty,omitempty"`
 	PromptCacheKey *string `json:"prompt_cache_key,omitempty"`
-	Provider *map[string]interface{} `json:"provider,omitempty"`
+	Provider interface{} `json:"provider,omitempty"`
 	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
 	Reasoning *map[string]interface{} `json:"reasoning,omitempty"`
 	ResponseFormat interface{} `json:"response_format,omitempty"`
@@ -1371,7 +1377,6 @@ const (
 	KnownModelIdDeepseekDeepseekV4ProLightning KnownModelId = "deepseek/deepseek-v4-pro-lightning"
 	KnownModelIdDeepseekDeepseekV4ProPrecision KnownModelId = "deepseek/deepseek-v4-pro-precision"
 	KnownModelIdEssentialAiRnj1 KnownModelId = "essential-ai/rnj-1"
-	KnownModelIdGoogleGemini20FlashLite KnownModelId = "google/gemini-2.0-flash-lite"
 	KnownModelIdGoogleGemini25Flash KnownModelId = "google/gemini-2.5-flash"
 	KnownModelIdGoogleGemini25FlashLite KnownModelId = "google/gemini-2.5-flash-lite"
 	KnownModelIdGoogleGemini25FlashLitePreview20250617 KnownModelId = "google/gemini-2.5-flash-lite-preview-2025-06-17"

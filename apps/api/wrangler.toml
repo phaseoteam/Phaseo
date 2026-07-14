@@ -1,7 +1,7 @@
 name = "ai-stats-gateway"
 main = "src/index.ts"
 compatibility_date = "2025-10-01"
-compatibility_flags = []
+compatibility_flags = ["global_fetch_strictly_public"]
 workers_dev = false
 preview_urls = false
 
@@ -12,7 +12,16 @@ MODEL_DISCOVERY_ENABLED = "true"
 MODEL_DISCOVERY_RETENTION_DAYS = "7"
 MODEL_DISCOVERY_SHARD_SIZE = "20"
 VIDEO_RECONCILIATION_ENABLED = "true"
-VIDEO_RECONCILIATION_LIMIT = "100"
+VIDEO_RECONCILIATION_LIMIT = "1000"
+VIDEO_RECONCILIATION_CONCURRENCY = "24"
+VIDEO_RECONCILIATION_LEASE_SECONDS = "180"
+BATCH_RECONCILIATION_ENABLED = "true"
+BATCH_RECONCILIATION_LIMIT = "500"
+BATCH_RECONCILIATION_CONCURRENCY = "12"
+BATCH_RECONCILIATION_LEASE_SECONDS = "300"
+STATSIG_BATCH_API_GATE = "gateway_batch_api"
+ASYNC_WEBHOOK_SECRET_ENCRYPTION_KEY_VERSION = "v1"
+STATSIG_ENVIRONMENT_TIER = "production"
 EMAIL_OUTBOX_DRAIN_ENABLED = "true"
 EMAIL_OUTBOX_DRAIN_LIMIT = "25"
 VIDEO_API_ENABLED = "true"
@@ -21,7 +30,7 @@ ENTERPRISE_INVOICING_ENABLED = "true"
 GATEWAY_PUBLIC_BASE_URL = "https://api.phaseo.app"
 
 [triggers]
-crons = ["*/5 * * * *"]
+crons = ["* * * * *"]
 
 [placement]
 mode = "smart"

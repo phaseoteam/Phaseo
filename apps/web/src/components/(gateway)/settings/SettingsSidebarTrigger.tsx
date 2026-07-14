@@ -19,12 +19,14 @@ import { getActiveSettingsNav, getSettingsSidebar } from "./Sidebar.config";
 
 export default function SettingsSidebarTrigger({
 	showBroadcast = true,
+	showWebhooks = true,
 }: {
 	showBroadcast?: boolean;
+	showWebhooks?: boolean;
 }) {
 	const pathname = usePathname();
-	const navGroups = getSettingsSidebar({ showBroadcast });
-	const activeNav = getActiveSettingsNav(pathname ?? "", { showBroadcast });
+	const navGroups = getSettingsSidebar({ showBroadcast, showWebhooks });
+	const activeNav = getActiveSettingsNav(pathname ?? "", { showBroadcast, showWebhooks });
 	const activeItem = activeNav?.item ?? null;
 
 	return (

@@ -1106,8 +1106,34 @@ paths:
       operationId: uploadFile
       summary: Upload file
       description: >-
-        Uploads a file for batch processing and returns the upstream file
-        metadata.
+        Compatibility alias for `/batches/files`. Uploads a file for batch
+        processing and returns the upstream file metadata. Pass `model` so AI
+        Stats can infer the upstream provider. Defaults to OpenAI for legacy
+        clients that omit both `model` and `provider`.
+      parameters:
+        - name: model
+          in: query
+          required: false
+          description: Model id used to infer the upstream batch file provider.
+          schema:
+            $ref: '#/components/schemas/ModelId'
+        - name: provider
+          in: query
+          required: false
+          description: Advanced provider override for the upstream file upload.
+          schema:
+            type: string
+            enum:
+              - openai
+              - groq
+              - together
+              - mistral
+        - name: x-ai-stats-provider
+          in: header
+          required: false
+          description: Header alternative to the `provider` query parameter.
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -1236,9 +1262,12 @@ paths:
       operationId: createBatch
       summary: Create batch
       description: >-
-        Creates an async batch job and returns the upstream batch object. The
-        gateway also accepts `session_id` and `webhook` for observability and
-        async notifications.
+        Creates an async batch job and returns the upstream batch object. Batch
+        creation supports OpenAI, Anthropic, Google Gemini, Mistral, xAI, Groq,
+        and Together AI through the requested `model`. The gateway infers the
+        upstream provider from the model and also accepts `session_id` and
+        `webhook` for observability and async notifications. Use `provider` only
+        as an advanced routing constraint.
       requestBody:
         required: true
         content:
@@ -1267,7 +1296,7 @@ paths:
       summary: List batch provider capabilities
       description: >-
         Returns provider-level batch input mode support for file upload and
-        inline batch creation.
+        request-list batch creation.
       responses:
         '200':
           description: Batch provider capability list
@@ -1283,6 +1312,140 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/BatchProviderCapability'
+  /batches/files:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: uploadBatchFile
+      summary: Upload batch file
+      description: >-
+        Uploads a provider file for batch processing and stores ownership in the
+        authenticated workspace. Pass `model` so AI Stats can infer the upstream
+        provider for provider-backed batch inputs. Defaults to OpenAI for legacy
+        clients that omit both `model` and `provider`.
+      parameters:
+        - name: model
+          in: query
+          required: false
+          description: Model id used to infer the upstream batch file provider.
+          schema:
+            $ref: '#/components/schemas/ModelId'
+        - name: provider
+          in: query
+          required: false
+          description: Advanced provider override for the upstream file upload.
+          schema:
+            type: string
+            enum:
+              - openai
+              - groq
+              - together
+              - mistral
+        - name: x-ai-stats-provider
+          in: header
+          required: false
+          description: Header alternative to the `provider` query parameter.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FileUploadRequest'
+      responses:
+        '200':
+          description: Uploaded file metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: Upstream provider error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches/files/{file_id}:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: retrieveBatchFile
+      summary: Retrieve batch file
+      description: >-
+        Retrieves metadata for a batch file that belongs to the authenticated
+        workspace.
+      parameters:
+        - name: file_id
+          in: path
+          required: true
+          description: The ID of the file to retrieve.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: File metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: File not found or not owned by the workspace
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches/files/{file_id}/content:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: retrieveBatchFileContent
+      summary: Retrieve batch file content
+      description: >-
+        Retrieves binary content for a previously uploaded batch file that
+        belongs to the authenticated workspace.
+      parameters:
+        - name: file_id
+          in: path
+          required: true
+          description: The ID of the file to retrieve.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: File content
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /batches/{batch_id}:
     get:
       x-beta: true
@@ -2708,6 +2871,150 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /batch/capabilities:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatchCapabilitiesAlias
+      summary: List batch provider capabilities (alias)
+      description: Alias of /batches/capabilities.
+      responses:
+        '200':
+          description: Batch provider capability list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: list
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BatchProviderCapability'
+  /batch/files:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: uploadBatchFileAlias
+      summary: Upload batch file (alias)
+      description: Alias of /batches/files.
+      parameters:
+        - name: model
+          in: query
+          required: false
+          description: Model id used to infer the upstream batch file provider.
+          schema:
+            $ref: '#/components/schemas/ModelId'
+        - name: provider
+          in: query
+          required: false
+          description: Advanced provider override for the upstream file upload.
+          schema:
+            type: string
+        - name: x-ai-stats-provider
+          in: header
+          required: false
+          description: Header alternative to the `provider` query parameter.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FileUploadRequest'
+      responses:
+        '200':
+          description: Uploaded file metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: Upstream provider error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batch/files/{file_id}:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: retrieveBatchFileAlias
+      summary: Retrieve batch file (alias)
+      description: Alias of /batches/files/{file_id}.
+      parameters:
+        - name: file_id
+          in: path
+          required: true
+          description: The ID of the file to retrieve.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: File metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: File not found or not owned by the workspace
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batch/files/{file_id}/content:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: retrieveBatchFileContentAlias
+      summary: Retrieve batch file content (alias)
+      description: Alias of /batches/files/{file_id}/content.
+      parameters:
+        - name: file_id
+          in: path
+          required: true
+          description: The ID of the file to retrieve.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: File content
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /batch/{id}:
     get:
       x-beta: true
@@ -2729,6 +3036,63 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BatchResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Batch not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batch/{id}/requests:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatchRequestsAlias
+      summary: List batch request rows (alias)
+      description: Alias of /batches/{batch_id}/requests.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Batch request row list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: list
+                  batch_id:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BatchRequestRow'
         '401':
           description: Unauthorized
           content:
@@ -3579,7 +3943,22 @@ components:
         usage:
           type: boolean
         provider:
-          $ref: '#/components/schemas/ProviderRoutingOptions'
+          oneOf:
+            - type: string
+              enum:
+                - openai
+                - anthropic
+                - google-ai-studio
+                - gemini
+                - mistral
+                - x-ai
+                - xai
+                - groq
+                - together
+            - $ref: '#/components/schemas/ProviderRoutingOptions'
+          description: >-
+            Provider selector. Use a string for a single provider, or routing
+            options such as `{ "only": ["groq"] }`.
         provider_options:
           $ref: '#/components/schemas/ProviderOptions'
         user_id:
@@ -5470,21 +5849,53 @@ components:
       additionalProperties: true
     BatchRequest:
       type: object
-      required:
-        - endpoint
       properties:
+        model:
+          type: string
+          description: >-
+            Model id used to infer the upstream batch provider. Request rows may
+            also include body.model; the top-level model is preferred when
+            present.
+        prompts:
+          type: array
+          description: >-
+            Simple prompt shorthand. AI Stats compiles each prompt into the
+            provider-native batch row for the selected model.
+          items:
+            type: string
+        items:
+          type: array
+          description: >-
+            Structured prompt shorthand. Each item may include `id` or
+            `custom_id`, `prompt`, `messages`, `input`, `system`, `max_tokens`,
+            `temperature`, or an advanced `body`.
+          items:
+            type: object
+            additionalProperties: true
+        system:
+          type: string
+          description: Optional system instruction applied to prompt shorthand rows.
+        max_tokens:
+          type: integer
+          description: Optional max token limit applied to prompt shorthand rows.
+        temperature:
+          type: number
+          description: Optional sampling temperature applied to prompt shorthand rows.
         input_file_id:
           type: string
           description: Existing provider file ID for file-upload batch creation.
         requests:
           type: array
           description: >-
-            Inline batch requests. Provide either requests or input_file_id, not
-            both.
+            Advanced batch request rows. Provide exactly one of `prompts`,
+            `items`, `requests`, or `input_file_id`.
           items:
-            $ref: '#/components/schemas/BatchInlineRequest'
+            $ref: '#/components/schemas/BatchRequestItem'
         endpoint:
           type: string
+          description: >-
+            Optional provider endpoint path. AI Stats chooses a default from the
+            model when omitted.
         completion_window:
           type: string
         metadata:
@@ -5518,7 +5929,10 @@ components:
           $ref: '#/components/schemas/DebugOptions'
         provider:
           $ref: '#/components/schemas/ProviderRoutingOptions'
-    BatchInlineRequest:
+          description: >-
+            Advanced routing constraint. Most requests should omit this and rely
+            on model-based provider inference.
+    BatchRequestItem:
       type: object
       required:
         - body
@@ -5552,14 +5966,14 @@ components:
             type: string
             enum:
               - file
-              - inline
+              - requests
         native_input_modes:
           type: array
           items:
             type: string
             enum:
               - file
-              - inline
+              - requests
         documentation_url:
           type: string
           format: uri
@@ -7854,7 +8268,6 @@ components:
         - deepseek/deepseek-v4-pro-lightning
         - deepseek/deepseek-v4-pro-precision
         - essential-ai/rnj-1
-        - google/gemini-2.0-flash-lite
         - google/gemini-2.5-flash
         - google/gemini-2.5-flash-lite
         - google/gemini-2.5-flash-lite-preview-2025-06-17

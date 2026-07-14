@@ -8,6 +8,7 @@ describe("splitGatewayBatchCreatePayload", () => {
 			splitGatewayBatchCreatePayload({
 				input_file_id: "file_123",
 				endpoint: "/v1/responses",
+				model: "openai/gpt-5-mini",
 				completion_window: "24h",
 				session_id: "session_123",
 				webhook: {
@@ -44,7 +45,7 @@ describe("splitGatewayBatchCreatePayload", () => {
 		});
 	});
 
-	it("strips inline requests and preserves webhook endpoint aliases for gateway handling", () => {
+	it("strips batch requests and preserves webhook endpoint aliases for gateway handling", () => {
 		expect(
 			splitGatewayBatchCreatePayload({
 				requests: [
@@ -60,6 +61,24 @@ describe("splitGatewayBatchCreatePayload", () => {
 			upstreamPayload: {
 				endpoint: "/v1/responses",
 			},
+			webhook: {
+				endpoint_id: "we_123",
+			},
+		});
+	});
+
+	it("strips prompt shorthand fields before proxying upstream", () => {
+		expect(
+			splitGatewayBatchCreatePayload({
+				model: "openai/gpt-5-mini",
+				prompts: ["Summarize this record."],
+				system: "Be concise.",
+				max_tokens: 256,
+				temperature: 0.2,
+				webhook_endpoint_id: "we_123",
+			}),
+		).toEqual({
+			upstreamPayload: {},
 			webhook: {
 				endpoint_id: "we_123",
 			},

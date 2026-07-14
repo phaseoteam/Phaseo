@@ -219,13 +219,6 @@ public final class Models {
 		public String reason;
 	}
 
-	public static class BatchInlineRequest {
-		public Object body;
-		public String custom_id;
-		public String method;
-		public String url;
-	}
-
 	public static class BatchProviderCapability {
 		public String documentation_url;
 		public java.util.List<Object> gateway_input_modes;
@@ -241,10 +234,16 @@ public final class Models {
 		public Object debug;
 		public String endpoint;
 		public String input_file_id;
+		public java.util.List<Object> items;
+		public Integer max_tokens;
 		public Object metadata;
+		public String model;
+		public java.util.List<String> prompts;
 		public Object provider;
 		public java.util.List<Object> requests;
 		public String session_id;
+		public String system;
+		public Double temperature;
 		public Object webhook;
 		public String webhook_endpoint_id;
 	}
@@ -253,6 +252,13 @@ public final class Models {
 		public Integer completed;
 		public Integer failed;
 		public Integer total;
+	}
+
+	public static class BatchRequestItem {
+		public Object body;
+		public String custom_id;
+		public String method;
+		public String url;
 	}
 
 	public static class BatchRequestRow {

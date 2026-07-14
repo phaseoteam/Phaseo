@@ -6,11 +6,12 @@ import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { withRuntime } from "../../utils";
 import { authenticate } from "@pipeline/before/auth";
-import type { AuthFailure } from "@pipeline/before/auth";
+import type { AuthFailure, AuthSuccess } from "@pipeline/before/auth";
 import { err } from "@pipeline/before/http";
 import { generatePublicId } from "@pipeline/before/genId";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
+import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "@providers/openai-compatible/config";
 import {
 	buildPublicAsyncWebhook,
 	dispatchAsyncWebhookEventInBackground,
@@ -20,15 +21,20 @@ import {
 import {
 	buildUnsupportedBatchModePayload,
 	listBatchProviderCapabilities,
+	providerSupportsMultipleModelsPerBatch,
 	resolveBatchInputMode,
 	resolveBatchProvidersForMode,
+	resolveBatchProvidersFromModel,
 	resolveRequestedBatchProviders,
 	type BatchInputMode,
 } from "@core/batch-capabilities";
 import {
+	getBatchFileMeta,
 	getBatchJobMeta,
+	resolveBatchProviderNativeId,
 	saveBatchFileMeta,
 	saveBatchJobMeta,
+	setBatchJobStatus,
 	type BatchJobMeta,
 } from "@core/batch-jobs";
 import {
@@ -37,20 +43,34 @@ import {
 	saveBatchRequestRows,
 	type BatchRequestRowInput,
 } from "@core/batch-requests";
+import { toProviderNativeBatchModelId } from "@core/batch-model-aliases";
 import { finalizeBatchJob, type FinalizeBatchJobResult } from "@core/batch-finalization";
+import { reserveBatchCredits } from "@core/batch-reservations";
+import { fetchProviderFileText, parseProviderBatchInputEntries } from "@core/batch-provider-adapters";
+import { releaseWalletReservation } from "@core/wallet-reservations";
+import { getBatchApiFeatureGateName, isBatchApiAccessEnabled } from "@core/feature-flags";
+import { getWebhookEndpointSigningConfig } from "@core/webhook-endpoints";
+import { filesRoutes as batchFilesRoutes } from "./files";
 
 const OPENAI_PROVIDER_ID = "openai";
-const OPENAI_BASE_URL = "https://api.openai.com";
-
-function resolveOpenAiBaseUrl(bindings: Record<string, string | undefined>): string {
-	const base = String(bindings.OPENAI_BASE_URL || OPENAI_BASE_URL).replace(/\/+$/, "");
-	return /\/v1$/i.test(base) ? base : `${base}/v1`;
-}
+const ANTHROPIC_PROVIDER_ID = "anthropic";
+const GOOGLE_AI_STUDIO_PROVIDER_ID = "google-ai-studio";
+const MISTRAL_PROVIDER_ID = "mistral";
+const X_AI_PROVIDER_ID = "x-ai";
+const FILE_BACKED_JSONL_BATCH_PROVIDERS = new Set(["openai", "groq", "together"]);
+const JSON_BATCH_CONTENT_TYPE = "application/json";
+const GATEWAY_BATCH_ID_PREFIX = "batch_";
+const MAX_BATCH_CREATE_BODY_BYTES = 20 * 1024 * 1024;
+const DEFAULT_BATCH_MAX_OUTPUT_TOKENS = 16_384;
 
 function toText(value: unknown): string | null {
 	if (typeof value !== "string") return null;
 	const trimmed = value.trim();
 	return trimmed.length > 0 ? trimmed : null;
+}
+
+function generateGatewayBatchId(): string {
+	return `${GATEWAY_BATCH_ID_PREFIX}${generatePublicId().replace(/^G-/, "")}`;
 }
 
 function toJsonResponse(upstream: Response): Response {
@@ -90,28 +110,60 @@ function jsonPayload(payload: unknown, status = 200): Response {
 function resolveBatchProviderForCurrentAdapter(args: {
 	mode: BatchInputMode;
 	provider: unknown;
+	model?: unknown;
+	modelProviders?: string[];
+	inputFileProvider?: string | null;
 }): { ok: true; providerId: string } | { ok: false; response: Response } {
 	const requestedProviders = resolveRequestedBatchProviders(args.provider);
+	const hasExplicitProvider =
+		typeof args.provider === "string" ||
+		(Boolean(args.provider) && typeof args.provider === "object" && !Array.isArray(args.provider));
+	const inferredModelProviders = [...new Set(args.modelProviders ?? [])];
+	if (!hasExplicitProvider && inferredModelProviders.length > 1) {
+		return {
+			ok: false,
+			response: jsonPayload({
+				error: {
+					type: "not_implemented",
+					reason: "batch_multi_provider_requests_not_supported",
+					message: "Batch requests currently need to resolve to one provider. Submit one batch per provider while multi-provider batch fan-out is being implemented.",
+					input_mode: args.mode,
+					requested_providers: inferredModelProviders,
+				},
+			}, 501),
+		};
+	}
+	const inferredProviders = hasExplicitProvider
+		? requestedProviders
+		: args.inputFileProvider
+			? resolveRequestedBatchProviders(args.inputFileProvider)
+			: inferredModelProviders.length > 0
+				? inferredModelProviders
+				: resolveBatchProvidersFromModel(args.model);
+	const effectiveRequestedProviders = inferredProviders.length > 0 ? inferredProviders : requestedProviders;
 	const providersForMode = resolveBatchProvidersForMode({
 		mode: args.mode,
-		requestedProviders,
+		requestedProviders: effectiveRequestedProviders,
 	});
 	if (providersForMode.length === 0) {
 		return {
 			ok: false,
 			response: jsonPayload(buildUnsupportedBatchModePayload({
 				mode: args.mode,
-				requestedProviders,
+				requestedProviders: effectiveRequestedProviders,
 			}), 400),
 		};
 	}
 	const activeProvidersForMode = resolveBatchProvidersForMode({
 		mode: args.mode,
-		requestedProviders,
+		requestedProviders: effectiveRequestedProviders,
 		activeOnly: true,
 	});
-	const openAi = activeProvidersForMode.find((provider) => provider.providerId === OPENAI_PROVIDER_ID);
-	if (openAi) return { ok: true, providerId: OPENAI_PROVIDER_ID };
+	if (activeProvidersForMode.length > 0) {
+		const openAi = activeProvidersForMode.find((provider) => provider.providerId === OPENAI_PROVIDER_ID);
+		if (!hasExplicitProvider && openAi) return { ok: true, providerId: OPENAI_PROVIDER_ID };
+		return { ok: true, providerId: activeProvidersForMode[0]!.providerId };
+	}
 	return {
 		ok: false,
 		response: jsonPayload({
@@ -120,7 +172,7 @@ function resolveBatchProviderForCurrentAdapter(args: {
 				reason: "batch_provider_adapter_not_ready",
 				message: "This batch input mode is recognised, but the selected provider adapter is not enabled yet.",
 				input_mode: args.mode,
-				requested_providers: requestedProviders,
+				requested_providers: effectiveRequestedProviders,
 				providers: providersForMode.map((provider) => ({
 					id: provider.providerId,
 					name: provider.displayName,
@@ -134,7 +186,7 @@ function resolveBatchProviderForCurrentAdapter(args: {
 	};
 }
 
-type InlineBatchRequest = {
+type NormalizedBatchRequest = {
 	customId: string;
 	method: string;
 	url: string;
@@ -143,15 +195,161 @@ type InlineBatchRequest = {
 	requestBodyHash: string;
 };
 
-async function normalizeInlineBatchRequests(payload: Record<string, unknown>): Promise<InlineBatchRequest[]> {
+function defaultBatchEndpointForProvider(providerId: string): string {
+	if (providerId === ANTHROPIC_PROVIDER_ID) return "/v1/messages";
+	if (providerId === GOOGLE_AI_STUDIO_PROVIDER_ID) return "/v1/generateContent";
+	if (providerId === OPENAI_PROVIDER_ID || providerId === X_AI_PROVIDER_ID) return "/v1/responses";
+	return "/v1/chat/completions";
+}
+
+function resolveBatchEndpoint(providerId: string, payload: Record<string, unknown>): string {
+	return toText(payload.endpoint) ?? defaultBatchEndpointForProvider(providerId);
+}
+
+function providerNativeModelId(providerId: string, model: string): string {
+	return toProviderNativeBatchModelId(providerId, model);
+}
+
+function requestValue(record: Record<string, unknown>, key: string, fallback: unknown): unknown {
+	return record[key] !== undefined ? record[key] : fallback;
+}
+
+function buildMessages(prompt: string, system: string | null): Array<Record<string, string>> {
+	return [
+		...(system ? [{ role: "system", content: system }] : []),
+		{ role: "user", content: prompt },
+	];
+}
+
+function promptTextFromItem(value: unknown): string | null {
+	if (typeof value === "string") return value.trim().length > 0 ? value : null;
+	if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+	const record = value as Record<string, unknown>;
+	return toText(record.prompt) ?? toText(record.input) ?? toText(record.text) ?? toText(record.content);
+}
+
+function promptItemRecord(value: unknown): Record<string, unknown> {
+	return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
+
+function buildBodyFromPromptItem(providerId: string, payload: Record<string, unknown>, raw: unknown): Record<string, unknown> {
+	const record = promptItemRecord(raw);
+	const explicitBody = record.body && typeof record.body === "object" && !Array.isArray(record.body)
+		? record.body as Record<string, unknown>
+		: record.request && typeof record.request === "object" && !Array.isArray(record.request)
+			? record.request as Record<string, unknown>
+			: null;
+	const model = toText(record.model) ?? toText(payload.model);
+	if (!model) throw new Error("missing_model");
+	const nativeModel = providerNativeModelId(providerId, model);
+	if (explicitBody) {
+		return {
+			...explicitBody,
+			model: toText(explicitBody.model) ?? nativeModel,
+		};
+	}
+	const prompt = promptTextFromItem(raw);
+	const messages = Array.isArray(record.messages) ? record.messages : null;
+	if (!prompt && !messages) throw new Error("invalid_prompt_item");
+	const system = toText(record.system) ?? toText(payload.system);
+	const maxTokens = requestValue(record, "max_tokens", payload.max_tokens);
+	const maxOutputTokens = requestValue(record, "max_output_tokens", payload.max_output_tokens);
+	const temperature = requestValue(record, "temperature", payload.temperature);
+	const common = {
+		...(maxTokens !== undefined ? { max_tokens: maxTokens } : {}),
+		...(temperature !== undefined ? { temperature } : {}),
+	};
+	if (providerId === ANTHROPIC_PROVIDER_ID) {
+		return {
+			model: nativeModel,
+			...(system ? { system } : {}),
+			max_tokens: maxTokens ?? 1024,
+			messages: messages ?? [{ role: "user", content: prompt }],
+			...(temperature !== undefined ? { temperature } : {}),
+		};
+	}
+	if (providerId === GOOGLE_AI_STUDIO_PROVIDER_ID) {
+		return {
+			model: nativeModel,
+			generationConfig: {
+				...(maxOutputTokens !== undefined || maxTokens !== undefined
+					? { maxOutputTokens: maxOutputTokens ?? maxTokens }
+					: { maxOutputTokens: DEFAULT_BATCH_MAX_OUTPUT_TOKENS }),
+				...(temperature !== undefined ? { temperature } : {}),
+			},
+			contents: messages
+				? messages
+				: [{ role: "user", parts: [{ text: prompt }] }],
+		};
+	}
+	if (providerId === OPENAI_PROVIDER_ID || providerId === X_AI_PROVIDER_ID) {
+		return {
+			model: nativeModel,
+			...(providerId === OPENAI_PROVIDER_ID
+				? {
+					...(maxOutputTokens !== undefined
+						? { max_output_tokens: maxOutputTokens }
+						: maxTokens !== undefined
+							? { max_output_tokens: maxTokens }
+							: {}),
+					...(temperature !== undefined ? { temperature } : {}),
+				}
+				: common),
+			...(messages ? { input: messages } : { input: prompt }),
+		};
+	}
+	return {
+		model: nativeModel,
+		...common,
+		messages: messages ?? buildMessages(prompt ?? "", system),
+	};
+}
+
+function normalizeRequestBodyForProvider(providerId: string, body: unknown): unknown {
+	if (!body || typeof body !== "object" || Array.isArray(body)) return body;
+	const record = body as Record<string, unknown>;
+	const model = toText(record.model);
+	if (!model) return body;
+	if (providerId === GOOGLE_AI_STUDIO_PROVIDER_ID) {
+		const generationConfig = record.generationConfig && typeof record.generationConfig === "object" && !Array.isArray(record.generationConfig)
+			? record.generationConfig as Record<string, unknown>
+			: record.generation_config && typeof record.generation_config === "object" && !Array.isArray(record.generation_config)
+				? record.generation_config as Record<string, unknown>
+				: {};
+		return {
+			...record,
+			model: providerNativeModelId(providerId, model),
+			generationConfig: {
+				...generationConfig,
+				maxOutputTokens: generationConfig.maxOutputTokens ?? generationConfig.max_output_tokens ?? record.max_output_tokens ?? record.max_tokens ?? DEFAULT_BATCH_MAX_OUTPUT_TOKENS,
+			},
+		};
+	}
+	const usesResponsesLimit = providerId === OPENAI_PROVIDER_ID || providerId === X_AI_PROVIDER_ID;
+	return {
+		...record,
+		model: providerNativeModelId(providerId, model),
+		...(usesResponsesLimit
+			? { max_output_tokens: record.max_output_tokens ?? record.max_tokens ?? DEFAULT_BATCH_MAX_OUTPUT_TOKENS }
+			: { max_tokens: record.max_tokens ?? record.max_output_tokens ?? DEFAULT_BATCH_MAX_OUTPUT_TOKENS }),
+	};
+}
+
+async function normalizeBatchRequests(providerId: string, payload: Record<string, unknown>): Promise<NormalizedBatchRequest[]> {
+	const endpoint = resolveBatchEndpoint(providerId, payload);
 	const requests = Array.isArray(payload.requests) ? payload.requests : [];
-	const endpoint = toText(payload.endpoint);
-	if (!endpoint) throw new Error("missing_endpoint");
-	const out: InlineBatchRequest[] = [];
+	const promptItems = requests.length === 0
+		? Array.isArray(payload.prompts)
+			? payload.prompts
+			: Array.isArray(payload.items)
+				? payload.items
+				: []
+		: [];
+	const out: NormalizedBatchRequest[] = [];
 	for (let index = 0; index < requests.length; index += 1) {
 		const raw = requests[index];
 		if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-			throw new Error("invalid_inline_request");
+			throw new Error("invalid_request");
 		}
 		const record = raw as Record<string, unknown>;
 		const body = record.body && typeof record.body === "object" && !Array.isArray(record.body)
@@ -159,15 +357,31 @@ async function normalizeInlineBatchRequests(payload: Record<string, unknown>): P
 			: record.request && typeof record.request === "object" && !Array.isArray(record.request)
 				? record.request
 				: null;
-		if (!body) throw new Error("invalid_inline_request_body");
+		if (!body) throw new Error("invalid_request_body");
 		const customId = toText(record.custom_id) ?? toText(record.customId) ?? `request-${index + 1}`;
+		const normalizedBody = normalizeRequestBodyForProvider(providerId, body);
 		out.push({
 			customId,
 			method: (toText(record.method) ?? "POST").toUpperCase(),
 			url: toText(record.url) ?? endpoint,
-			body,
+			body: normalizedBody,
 			index,
-			requestBodyHash: await hashBatchRequestBody(body),
+			requestBodyHash: await hashBatchRequestBody(normalizedBody),
+		});
+	}
+	for (let index = 0; index < promptItems.length; index += 1) {
+		const raw = promptItems[index];
+		const record = promptItemRecord(raw);
+		const body = buildBodyFromPromptItem(providerId, payload, raw);
+		const customId = toText(record.custom_id) ?? toText(record.customId) ?? toText(record.id) ?? `request-${index + 1}`;
+		const normalizedBody = normalizeRequestBodyForProvider(providerId, body);
+		out.push({
+			customId,
+			method: (toText(record.method) ?? "POST").toUpperCase(),
+			url: toText(record.url) ?? endpoint,
+			body: normalizedBody,
+			index,
+			requestBodyHash: await hashBatchRequestBody(normalizedBody),
 		});
 	}
 	const seen = new Set<string>();
@@ -178,29 +392,308 @@ async function normalizeInlineBatchRequests(payload: Record<string, unknown>): P
 	return out;
 }
 
-function toOpenAiJsonl(rows: InlineBatchRequest[]): string {
+function toProviderJsonl(providerId: string, rows: NormalizedBatchRequest[]): string {
 	return rows
-		.map((row) => JSON.stringify({
-			custom_id: row.customId,
-			method: row.method,
-			url: row.url,
-			body: row.body,
-		}))
+		.map((row) => {
+			if (providerId === "together" || providerId === MISTRAL_PROVIDER_ID) {
+				return JSON.stringify({
+					custom_id: row.customId,
+					...(row.method !== "POST" ? { method: row.method } : {}),
+					body: row.body,
+				});
+			}
+			return JSON.stringify({
+				custom_id: row.customId,
+				method: row.method,
+				url: row.url,
+				body: row.body,
+			});
+		})
 		.join("\n");
 }
 
-async function uploadOpenAiBatchInputFile(args: {
+function toFiniteNumber(value: unknown): number | null {
+	if (typeof value === "number" && Number.isFinite(value)) return value;
+	if (typeof value === "string" && value.trim()) {
+		const parsed = Number(value);
+		return Number.isFinite(parsed) ? parsed : null;
+	}
+	return null;
+}
+
+function providerCount(value: unknown): number {
+	return toFiniteNumber(value) ?? 0;
+}
+
+function normalizeAnthropicEndedStatus(payload: any): string {
+	const counts = payload?.request_counts && typeof payload.request_counts === "object" ? payload.request_counts : {};
+	const succeeded = providerCount((counts as any).succeeded);
+	const errored = providerCount((counts as any).errored);
+	const canceled = providerCount((counts as any).canceled ?? (counts as any).cancelled);
+	const expired = providerCount((counts as any).expired);
+	if (succeeded > 0) return "completed";
+	if (errored > 0) return "failed";
+	if (expired > 0) return "expired";
+	if (canceled > 0) return "cancelled";
+	return "completed";
+}
+
+function normalizeXAiStateStatus(payload: any): string | null {
+	const state = payload?.state && typeof payload.state === "object" ? payload.state : {};
+	const pending = toFiniteNumber((state as any).num_pending);
+	if (pending != null && pending > 0) return "in_progress";
+	const total = toFiniteNumber((state as any).num_requests);
+	const success = providerCount((state as any).num_success);
+	const error = providerCount((state as any).num_error);
+	const cancelled = providerCount((state as any).num_cancelled ?? (state as any).num_canceled);
+	if (pending != null && pending === 0) {
+		if (success > 0) return "completed";
+		if (error > 0) return "failed";
+		if (cancelled > 0) return "cancelled";
+		return total != null && total === 0 ? "pending" : "completed";
+	}
+	if (total != null) {
+		const settled = success + error + cancelled;
+		if (total > 0 && settled >= total) {
+			if (success > 0) return "completed";
+			if (error > 0) return "failed";
+			if (cancelled > 0) return "cancelled";
+		}
+		if (total > settled) return "in_progress";
+	}
+	return null;
+}
+
+function normalizeProviderStatus(providerId: string, raw: unknown, payload?: any): string | null {
+	const status = toText(raw)?.toLowerCase();
+	if (providerId === MISTRAL_PROVIDER_ID) {
+		switch (status) {
+			case "queued":
+				return "validating";
+			case "running":
+				return "in_progress";
+			case "success":
+				return "completed";
+			case "timeout_exceeded":
+				return "expired";
+			case "cancellation_requested":
+				return "cancelling";
+			case "cancelled":
+				return "cancelled";
+			case "failed":
+				return "failed";
+			default:
+				return status;
+		}
+	}
+	if (providerId === ANTHROPIC_PROVIDER_ID) {
+		switch (status) {
+			case "in_progress":
+				return "in_progress";
+			case "canceling":
+				return "cancelling";
+			case "canceled":
+				return "cancelled";
+			case "ended":
+				return normalizeAnthropicEndedStatus(payload);
+			default:
+				return status;
+		}
+	}
+	if (providerId === GOOGLE_AI_STUDIO_PROVIDER_ID) {
+		const state = status ?? toText(payload?.metadata?.state)?.toLowerCase() ?? toText(payload?.response?.state)?.toLowerCase();
+		switch (state) {
+			case "batch_state_pending":
+			case "job_state_pending":
+				return "pending";
+			case "batch_state_running":
+			case "job_state_running":
+				return "in_progress";
+			case "batch_state_succeeded":
+			case "job_state_succeeded":
+				return "completed";
+			case "batch_state_failed":
+			case "job_state_failed":
+				return "failed";
+			case "batch_state_cancelled":
+			case "job_state_cancelled":
+				return "cancelled";
+			case "batch_state_expired":
+			case "job_state_expired":
+				return "expired";
+			default:
+				if (payload?.done === false) return "in_progress";
+				if (payload?.done === true && payload?.error) return "failed";
+				if (payload?.done === true) return "completed";
+				return state;
+		}
+	}
+	if (providerId === X_AI_PROVIDER_ID) {
+		if (status) return status === "canceled" ? "cancelled" : status;
+		return normalizeXAiStateStatus(payload);
+	}
+	if (status === "canceled") return "cancelled";
+	return status;
+}
+
+function extractProviderBatchId(providerId: string, payload: any): { publicId: string | null; nativeId: string | null } {
+	const native =
+		toText(payload?.native_batch_id) ??
+		toText(payload?.name) ??
+		toText(payload?.batch?.name) ??
+		toText(payload?.response?.name) ??
+		toText(payload?.batch_id) ??
+		toText(payload?.id);
+	if (!native) return { publicId: null, nativeId: null };
+	if (providerId === GOOGLE_AI_STUDIO_PROVIDER_ID && native.includes("/")) {
+		return { publicId: native.split("/").filter(Boolean).pop() ?? native, nativeId: native };
+	}
+	return { publicId: native, nativeId: native };
+}
+
+function normalizeProviderBatchPayload(providerId: string, payload: any): any {
+	if (!payload || typeof payload !== "object" || Array.isArray(payload)) return payload;
+	const ids = extractProviderBatchId(providerId, payload);
+	const status = normalizeProviderStatus(
+		providerId,
+		payload.status ?? payload.processing_status ?? payload.state ?? payload.metadata?.state,
+		payload,
+	);
+	const out: Record<string, unknown> = {
+		...payload,
+		...(ids.publicId ? { id: ids.publicId } : {}),
+		...(ids.nativeId ? { native_batch_id: ids.nativeId } : {}),
+		...(status ? { status } : {}),
+	};
+	if (providerId === MISTRAL_PROVIDER_ID) {
+		const inputFile = Array.isArray(payload.input_files) ? toText(payload.input_files[0]) : null;
+		out.input_file_id = inputFile ?? toText(payload.input_file_id) ?? null;
+		out.output_file_id = toText(payload.output_file) ?? toText(payload.output_file_id) ?? null;
+		out.error_file_id = toText(payload.error_file) ?? toText(payload.error_file_id) ?? null;
+		out.request_counts = {
+			total: toFiniteNumber(payload.total_requests),
+			completed: toFiniteNumber(payload.succeeded_requests ?? payload.completed_requests),
+			failed: toFiniteNumber(payload.failed_requests),
+		};
+	}
+	if (providerId === ANTHROPIC_PROVIDER_ID) {
+		const counts = payload.request_counts && typeof payload.request_counts === "object" ? payload.request_counts : {};
+		const total =
+			(toFiniteNumber((counts as any).processing) ?? 0) +
+			(toFiniteNumber((counts as any).succeeded) ?? 0) +
+			(toFiniteNumber((counts as any).errored) ?? 0) +
+			(toFiniteNumber((counts as any).canceled) ?? 0) +
+			(toFiniteNumber((counts as any).expired) ?? 0);
+		out.request_counts = {
+			total,
+			completed: toFiniteNumber((counts as any).succeeded),
+			failed:
+				(toFiniteNumber((counts as any).errored) ?? 0) +
+				(toFiniteNumber((counts as any).canceled) ?? 0) +
+				(toFiniteNumber((counts as any).expired) ?? 0),
+		};
+	}
+	if (providerId === GOOGLE_AI_STUDIO_PROVIDER_ID) {
+		const batch = payload.response && typeof payload.response === "object" ? payload.response : payload.metadata ?? payload;
+		const stats = batch?.batchStats ?? payload.metadata?.batchStats;
+		out.request_counts = {
+			total: toFiniteNumber(stats?.requestCount),
+			completed: toFiniteNumber(stats?.successfulRequestCount),
+			failed: toFiniteNumber(stats?.failedRequestCount),
+		};
+	}
+	if (providerId === X_AI_PROVIDER_ID) {
+		out.request_counts = {
+			total: toFiniteNumber(payload.state?.num_requests),
+			completed: toFiniteNumber(payload.state?.num_success),
+			failed: toFiniteNumber(payload.state?.num_error),
+		};
+	}
+	return out;
+}
+
+function buildProviderBaseUrl(providerId: string, bindings: Record<string, string | undefined>): string {
+	if (providerId === ANTHROPIC_PROVIDER_ID) return String(bindings.ANTHROPIC_BASE_URL || "https://api.anthropic.com/v1").replace(/\/+$/, "");
+	if (providerId === GOOGLE_AI_STUDIO_PROVIDER_ID) return String(bindings.GOOGLE_AI_STUDIO_BASE_URL || "https://generativelanguage.googleapis.com/v1beta").replace(/\/+$/, "");
+	return "";
+}
+
+async function fetchProviderBatchApi(providerId: string, args: {
+	endpointPath: string;
+	method: string;
+	body?: BodyInit | null;
+	contentType?: string | null;
+}): Promise<Response> {
+	const bindings = getBindings() as unknown as Record<string, string | undefined>;
+	if (providerId === ANTHROPIC_PROVIDER_ID) {
+		const keyInfo = resolveProviderKey(
+			{ providerId, byokMeta: [] },
+			() => bindings.ANTHROPIC_API_KEY,
+		);
+		return fetch(`${buildProviderBaseUrl(providerId, bindings)}${args.endpointPath}`, {
+			method: args.method,
+			headers: {
+				"x-api-key": keyInfo.key,
+				"anthropic-version": "2023-06-01",
+				"Content-Type": args.contentType ?? JSON_BATCH_CONTENT_TYPE,
+			},
+			body: args.body ?? undefined,
+		});
+	}
+	if (providerId === GOOGLE_AI_STUDIO_PROVIDER_ID) {
+		const key = bindings.GOOGLE_AI_STUDIO_API_KEY || bindings.GEMINI_API_KEY;
+		if (!key) {
+			return jsonPayload({ error: { type: "upstream_error", reason: "google_ai_studio_key_missing" } }, 502);
+		}
+		return fetch(`${buildProviderBaseUrl(providerId, bindings)}${args.endpointPath}`, {
+			method: args.method,
+			headers: {
+				"x-goog-api-key": key,
+				"Content-Type": args.contentType ?? JSON_BATCH_CONTENT_TYPE,
+			},
+			body: args.body ?? undefined,
+		});
+	}
+
+	const keyInfo = resolveOpenAICompatKey({ providerId, byokMeta: [] } as any);
+	const headers = new Headers(openAICompatHeaders(providerId, keyInfo.key));
+	if (args.contentType) headers.set("Content-Type", args.contentType);
+	if (!args.contentType) headers.delete("Content-Type");
+	return fetch(openAICompatUrl(providerId, args.endpointPath), {
+		method: args.method,
+		headers,
+		body: args.body ?? undefined,
+	});
+}
+
+async function requireBatchApiAccess(auth: AuthSuccess, requestId: string): Promise<Response | null> {
+	if (await isBatchApiAccessEnabled(auth)) return null;
+	return jsonPayload({
+		error: "forbidden",
+		reason: "batch_api_feature_flag_disabled",
+		message: "The Batch API is currently limited to the enabled Statsig admin segment.",
+		feature_gate: getBatchApiFeatureGateName(),
+		request_id: requestId,
+		workspace_id: auth.workspaceId,
+		status_code: 403,
+		error_type: "user",
+		error_origin: "gateway",
+		generation_id: requestId,
+	}, 403);
+}
+
+async function uploadProviderBatchInputFile(providerId: string, args: {
 	requestId: string;
-	rows: InlineBatchRequest[];
+	rows: NormalizedBatchRequest[];
 }): Promise<{ ok: true; fileId: string; payload: any } | { ok: false; response: Response }> {
 	const form = new FormData();
-	form.append("purpose", "batch");
+	form.append("purpose", providerId === "together" ? "batch-api" : "batch");
 	form.append(
 		"file",
-		new Blob([toOpenAiJsonl(args.rows)], { type: "application/jsonl" }),
+		new Blob([toProviderJsonl(providerId, args.rows)], { type: "application/jsonl" }),
 		`aistats-batch-${args.requestId}.jsonl`,
 	);
-	const upstream = await fetchOpenAiBatches({
+	const upstream = await fetchProviderBatchApi(providerId, {
 		endpointPath: "/files",
 		method: "POST",
 		body: form,
@@ -222,13 +715,215 @@ async function uploadOpenAiBatchInputFile(args: {
 	return { ok: true, fileId, payload: upstreamJson };
 }
 
+function normalizeGeminiModelName(value: unknown): string | null {
+	const model = toText(value);
+	if (!model) return null;
+	return model.startsWith("models/") ? model : `models/${model.split("/").pop() ?? model}`;
+}
+
+function extractBatchModel(payload: Record<string, unknown>, rows: NormalizedBatchRequest[] | null): string | null {
+	return toText(payload.model) ?? toText((rows?.[0]?.body as any)?.model);
+}
+
+function extractRawBatchModel(payload: Record<string, unknown>): string | null {
+	const fromPayload = toText(payload.model);
+	if (fromPayload) return fromPayload;
+	const rows = [
+		...(Array.isArray(payload.requests) ? payload.requests : []),
+		...(Array.isArray(payload.prompts) ? payload.prompts : []),
+		...(Array.isArray(payload.items) ? payload.items : []),
+	];
+	for (const request of rows) {
+		if (!request || typeof request !== "object" || Array.isArray(request)) continue;
+		const rowModel = toText((request as Record<string, unknown>).model);
+		if (rowModel) return rowModel;
+		const body = (request as Record<string, unknown>).body;
+		if (!body || typeof body !== "object" || Array.isArray(body)) continue;
+		const model = toText((body as Record<string, unknown>).model);
+		if (model) return model;
+	}
+	return null;
+}
+
+function extractRawBatchModels(payload: Record<string, unknown>): string[] {
+	const out: string[] = [];
+	const fromPayload = toText(payload.model);
+	if (fromPayload) out.push(fromPayload);
+	const rows = [
+		...(Array.isArray(payload.requests) ? payload.requests : []),
+		...(Array.isArray(payload.prompts) ? payload.prompts : []),
+		...(Array.isArray(payload.items) ? payload.items : []),
+	];
+	for (const request of rows) {
+		if (!request || typeof request !== "object" || Array.isArray(request)) continue;
+		const record = request as Record<string, unknown>;
+		const rowModel = toText(record.model);
+		if (rowModel) out.push(rowModel);
+		const body =
+			record.body && typeof record.body === "object" && !Array.isArray(record.body)
+				? record.body as Record<string, unknown>
+				: record.request && typeof record.request === "object" && !Array.isArray(record.request)
+					? record.request as Record<string, unknown>
+					: null;
+		const bodyModel = toText(body?.model);
+		if (bodyModel) out.push(bodyModel);
+	}
+	return [...new Set(out)];
+}
+
+function resolveBatchProvidersFromModels(models: string[]): string[] {
+	return [...new Set(models.flatMap((model) => resolveBatchProvidersFromModel(model)))];
+}
+
+function validateProviderNativeBatchModelScope(args: {
+	providerId: string;
+	payload: Record<string, unknown>;
+	inputMode: BatchInputMode;
+	requestId: string;
+	workspaceId: string;
+}): Response | null {
+	if (args.inputMode !== "requests") return null;
+	if (providerSupportsMultipleModelsPerBatch(args.providerId)) return null;
+	const rawModels = extractRawBatchModels(args.payload);
+	const nativeModels = [...new Set(rawModels.map((model) => providerNativeModelId(args.providerId, model)))];
+	if (nativeModels.length <= 1) return null;
+	return err("validation_error", {
+		reason: "batch_multiple_models_not_supported",
+		message: "The selected provider does not support multiple models in one native batch. Submit one batch per model.",
+		request_id: args.requestId,
+		workspace_id: args.workspaceId,
+		provider: args.providerId,
+		models: rawModels,
+		native_models: nativeModels,
+	});
+}
+
+function completionWindowToHours(value: unknown): number | null {
+	const text = toText(value);
+	if (!text) return null;
+	const match = text.match(/^(\d+)\s*h(?:ours?)?$/i);
+	if (match) return Number(match[1]);
+	const numeric = Number(text);
+	return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+}
+
+function buildProviderBatchCreate(providerId: string, args: {
+	payload: Record<string, unknown>;
+	upstreamPayload: Record<string, unknown>;
+	inputMode: BatchInputMode;
+	requestRows: NormalizedBatchRequest[] | null;
+}): { endpointPath: string; body: Record<string, unknown>; followup?: { endpointPath: string; body: Record<string, unknown> } } {
+	if (FILE_BACKED_JSONL_BATCH_PROVIDERS.has(providerId)) {
+		return { endpointPath: "/batches", body: args.upstreamPayload };
+	}
+	if (providerId === MISTRAL_PROVIDER_ID) {
+		const model = extractBatchModel(args.payload, args.requestRows);
+		const body: Record<string, unknown> = {
+			endpoint: toText(args.payload.endpoint) ?? "/v1/chat/completions",
+			...(model ? { model: providerNativeModelId(providerId, model) } : {}),
+			...(args.payload.metadata && typeof args.payload.metadata === "object" && !Array.isArray(args.payload.metadata)
+				? { metadata: args.payload.metadata }
+				: {}),
+			...(completionWindowToHours(args.payload.completion_window)
+				? { timeout_hours: completionWindowToHours(args.payload.completion_window) }
+				: {}),
+		};
+		if (args.inputMode === "file") {
+			body.input_files = [toText(args.payload.input_file_id)];
+		} else {
+			body.requests = (args.requestRows ?? []).map((row) => ({
+				custom_id: row.customId,
+				body: row.body,
+			}));
+		}
+		return { endpointPath: "/batch/jobs", body };
+	}
+	if (providerId === ANTHROPIC_PROVIDER_ID) {
+		return {
+			endpointPath: "/messages/batches",
+			body: {
+				requests: (args.requestRows ?? []).map((row) => ({
+					custom_id: row.customId,
+					params: row.body,
+				})),
+			},
+		};
+	}
+	if (providerId === GOOGLE_AI_STUDIO_PROVIDER_ID) {
+		const model = normalizeGeminiModelName(extractBatchModel(args.payload, args.requestRows));
+		if (!model) throw new Error("missing_model");
+		const modelPath = model.split("/").map(encodeURIComponent).join("/");
+		return {
+			endpointPath: `/${modelPath}:batchGenerateContent`,
+			body: {
+				batch: {
+					model,
+					displayName: toText(args.payload.metadata && (args.payload.metadata as any).display_name) ?? `aistats-batch-${Date.now()}`,
+					inputConfig: {
+						requests: {
+							requests: (args.requestRows ?? []).map((row) => ({
+								request: {
+									...(row.body as Record<string, unknown>),
+									model,
+								},
+								metadata: { custom_id: row.customId },
+							})),
+						},
+					},
+				},
+			},
+		};
+	}
+	if (providerId === X_AI_PROVIDER_ID) {
+		return {
+			endpointPath: "/batches",
+			body: {
+				name: toText(args.payload.metadata && (args.payload.metadata as any).name) ?? `aistats-batch-${Date.now()}`,
+			},
+			followup: {
+				endpointPath: "",
+				body: {
+					batch_requests: (args.requestRows ?? []).map((row) => ({
+						batch_request_id: row.customId,
+						batch_request: {
+							responses: row.body,
+						},
+					})),
+				},
+			},
+		};
+	}
+	return { endpointPath: "/batches", body: args.upstreamPayload };
+}
+
+function buildProviderRetrievePath(providerId: string, nativeBatchId: string): string {
+	if (providerId === MISTRAL_PROVIDER_ID) return `/batch/jobs/${encodeURIComponent(nativeBatchId)}`;
+	if (providerId === ANTHROPIC_PROVIDER_ID) return `/messages/batches/${encodeURIComponent(nativeBatchId)}`;
+	if (providerId === GOOGLE_AI_STUDIO_PROVIDER_ID) {
+		const name = nativeBatchId.includes("/") ? nativeBatchId : `batches/${nativeBatchId}`;
+		return `/${name.split("/").map(encodeURIComponent).join("/")}`;
+	}
+	return `/batches/${encodeURIComponent(nativeBatchId)}`;
+}
+
+function buildProviderCancelPath(providerId: string, nativeBatchId: string): string {
+	if (providerId === MISTRAL_PROVIDER_ID) return `/batch/jobs/${encodeURIComponent(nativeBatchId)}/cancel`;
+	if (providerId === ANTHROPIC_PROVIDER_ID) return `/messages/batches/${encodeURIComponent(nativeBatchId)}/cancel`;
+	if (providerId === GOOGLE_AI_STUDIO_PROVIDER_ID) {
+		const name = nativeBatchId.includes("/") ? nativeBatchId : `batches/${nativeBatchId}`;
+		return `/${name.split("/").map(encodeURIComponent).join("/")}:cancel`;
+	}
+	return `/batches/${encodeURIComponent(nativeBatchId)}/cancel`;
+}
+
 function batchMetaFromPayload(payload: any, base: BatchJobMeta): BatchJobMeta {
 	const id = toText(payload?.id);
+	const nativeId = toText(payload?.native_batch_id) ?? id;
 	return {
 		...base,
 		status: toText(payload?.status) ?? base.status ?? null,
 		model: toText(payload?.model) ?? base.model ?? null,
-		nativeBatchId: id ?? base.nativeBatchId ?? null,
+		nativeBatchId: nativeId ?? base.nativeBatchId ?? null,
 		endpoint: toText(payload?.endpoint) ?? base.endpoint ?? null,
 		completionWindow: toText(payload?.completion_window) ?? base.completionWindow ?? null,
 		inputFileId: toText(payload?.input_file_id) ?? base.inputFileId ?? null,
@@ -341,11 +1036,14 @@ function decorateBatchPayload(args: {
 	payload: any;
 	meta: BatchJobMeta | null | undefined;
 	finalization?: FinalizeBatchJobResult | null;
+	publicBatchId?: string | null;
 }): Record<string, unknown> {
 	const out: Record<string, unknown> =
 		args.payload && typeof args.payload === "object" && !Array.isArray(args.payload)
 			? { ...args.payload }
 			: {};
+	const publicBatchId = toText(args.publicBatchId);
+	if (publicBatchId) out.id = publicBatchId;
 	if (args.meta?.requestId) out.request_id = args.meta.requestId;
 	if (args.meta?.provider) out.provider = args.meta.provider;
 	if (args.meta?.sessionId) out.session_id = args.meta.sessionId;
@@ -357,10 +1055,9 @@ function decorateBatchPayload(args: {
 	if (status) {
 		out.lifecycle_status = toAsyncLifecycleStatus(status);
 	}
-	const batchId = toText(out.id) ?? args.meta?.nativeBatchId ?? null;
-	if (batchId) {
-		out.polling_url = buildBatchPollingUrl(args.requestUrl, batchId);
-		out.cancel_url = status && isCancellableBatchStatus(status) ? buildBatchCancelUrl(args.requestUrl, batchId) : null;
+	if (publicBatchId) {
+		out.polling_url = buildBatchPollingUrl(args.requestUrl, publicBatchId);
+		out.cancel_url = status && isCancellableBatchStatus(status) ? buildBatchCancelUrl(args.requestUrl, publicBatchId) : null;
 	}
 	out.pricing_lines = buildBatchPricingLines(args.meta);
 	const billing = buildBatchBilling(args.meta, args.finalization);
@@ -379,8 +1076,15 @@ export function splitGatewayBatchCreatePayload(payload: Record<string, unknown>)
 	delete upstreamPayload.webhook;
 	delete upstreamPayload.webhook_endpoint_id;
 	delete upstreamPayload.requests;
+	delete upstreamPayload.prompts;
+	delete upstreamPayload.items;
+	delete upstreamPayload.system;
+	delete upstreamPayload.max_tokens;
+	delete upstreamPayload.temperature;
 	delete upstreamPayload.session_id;
 	delete upstreamPayload.sessionId;
+	delete upstreamPayload.provider;
+	delete upstreamPayload.model;
 	return {
 		upstreamPayload,
 		webhook:
@@ -392,58 +1096,59 @@ export function splitGatewayBatchCreatePayload(payload: Record<string, unknown>)
 	};
 }
 
-async function persistBatchFileOwnership(workspaceId: string, payload: any): Promise<void> {
+function validateBatchWebhookConfig(args: {
+	webhook: Record<string, unknown> | null;
+	requestId: string;
+	workspaceId: string;
+}): Response | null {
+	if (!args.webhook) return null;
+	const endpointId = toText(args.webhook.endpoint_id) ?? toText(args.webhook.endpointId);
+	if (endpointId) return null;
+	return err("validation_error", {
+		reason: "batch_webhook_endpoint_required",
+		message: "Batch webhooks must use a managed webhook_endpoint_id so the signing secret stays encrypted and rotatable.",
+		request_id: args.requestId,
+		workspace_id: args.workspaceId,
+	});
+}
+
+async function validateBatchWebhookEndpointOwnership(args: {
+	webhook: Record<string, unknown> | null;
+	requestId: string;
+	workspaceId: string;
+}): Promise<Response | null> {
+	if (!args.webhook) return null;
+	const endpointId = toText(args.webhook.endpoint_id) ?? toText(args.webhook.endpointId);
+	if (!endpointId) return null;
+	const endpoint = await getWebhookEndpointSigningConfig({
+		workspaceId: args.workspaceId,
+		endpointId,
+	});
+	if (endpoint) return null;
+	return err("validation_error", {
+		reason: "batch_webhook_endpoint_not_found_or_inactive",
+		message: "The webhook_endpoint_id must reference an active webhook endpoint in this workspace.",
+		request_id: args.requestId,
+		workspace_id: args.workspaceId,
+		webhook_endpoint_id: endpointId,
+	});
+}
+
+async function persistBatchFileOwnership(workspaceId: string, providerId: string, payload: any): Promise<void> {
 	const outputFileId = toText(payload?.output_file_id);
 	if (outputFileId) {
 		await saveBatchFileMeta(workspaceId, outputFileId, {
-			provider: OPENAI_PROVIDER_ID,
+			provider: providerId,
 			status: "available",
 		});
 	}
 	const errorFileId = toText(payload?.error_file_id);
 	if (errorFileId) {
 		await saveBatchFileMeta(workspaceId, errorFileId, {
-			provider: OPENAI_PROVIDER_ID,
+			provider: providerId,
 			status: "available",
 		});
 	}
-}
-
-async function fetchOpenAiBatches(args: {
-	endpointPath: string;
-	method: string;
-	body?: BodyInit | null;
-	contentType?: string | null;
-}): Promise<Response> {
-	const bindings = getBindings() as unknown as Record<string, string | undefined>;
-	let keyInfo: { key: string };
-	try {
-		keyInfo = resolveProviderKey(
-			{ providerId: OPENAI_PROVIDER_ID, byokMeta: [] },
-			() => bindings.OPENAI_API_KEY,
-		);
-	} catch {
-		return new Response(
-			JSON.stringify({
-				error: {
-					type: "upstream_error",
-					reason: "openai_key_missing",
-				},
-			}),
-			{ status: 502, headers: { "Content-Type": "application/json" } },
-		);
-	}
-	const headers = new Headers({
-		Authorization: `Bearer ${keyInfo.key}`,
-	});
-	if (args.contentType) {
-		headers.set("Content-Type", args.contentType);
-	}
-	return fetch(`${resolveOpenAiBaseUrl(bindings)}${args.endpointPath}`, {
-		method: args.method,
-		headers,
-		body: args.body ?? undefined,
-	});
 }
 
 async function handleCreate(req: Request) {
@@ -453,8 +1158,17 @@ async function handleCreate(req: Request) {
 		const reason = (auth as AuthFailure).reason;
 		return err("unauthorised", { reason, request_id: requestId });
 	}
+	const accessDenied = await requireBatchApiAccess(auth, requestId);
+	if (accessDenied) return accessDenied;
 
+	const declaredLength = Number(req.headers.get("content-length") ?? 0);
+	if (Number.isFinite(declaredLength) && declaredLength > MAX_BATCH_CREATE_BODY_BYTES) {
+		return jsonPayload({ error: { type: "validation_error", reason: "batch_body_too_large" } }, 413);
+	}
 	const rawBody = await req.text();
+	if (new TextEncoder().encode(rawBody).byteLength > MAX_BATCH_CREATE_BODY_BYTES) {
+		return jsonPayload({ error: { type: "validation_error", reason: "batch_body_too_large" } }, 413);
+	}
 	let payload: Record<string, unknown>;
 	try {
 		payload = JSON.parse(rawBody);
@@ -465,6 +1179,18 @@ async function handleCreate(req: Request) {
 		});
 	}
 	const { upstreamPayload, webhook } = splitGatewayBatchCreatePayload(payload);
+	const webhookConfigError = validateBatchWebhookConfig({
+		webhook,
+		requestId,
+		workspaceId: auth.workspaceId,
+	});
+	if (webhookConfigError) return webhookConfigError;
+	const webhookEndpointError = await validateBatchWebhookEndpointOwnership({
+		webhook,
+		requestId,
+		workspaceId: auth.workspaceId,
+	});
+	if (webhookEndpointError) return webhookEndpointError;
 	const inputMode = resolveBatchInputMode(payload);
 	if (inputMode.ok === false) {
 		return err("validation_error", {
@@ -473,11 +1199,6 @@ async function handleCreate(req: Request) {
 			workspace_id: auth.workspaceId,
 		});
 	}
-	const providerResolution = resolveBatchProviderForCurrentAdapter({
-		mode: inputMode.mode,
-		provider: payload.provider,
-	});
-	if (providerResolution.ok === false) return providerResolution.response;
 	const normalizedWebhook = webhook ? parseAsyncWebhookConfig("batch", webhook) : null;
 	if (webhook && !normalizedWebhook) {
 		return err("validation_error", {
@@ -486,52 +1207,298 @@ async function handleCreate(req: Request) {
 			workspace_id: auth.workspaceId,
 		});
 	}
-	let inlineRows: InlineBatchRequest[] | null = null;
-	if (inputMode.mode === "inline") {
+	const directInputFileId = inputMode.mode === "file" ? toText(payload.input_file_id) : null;
+	let ownedInputFile: Awaited<ReturnType<typeof getBatchFileMeta>> = null;
+	if (directInputFileId) {
 		try {
-			inlineRows = await normalizeInlineBatchRequests(payload);
+			ownedInputFile = await getBatchFileMeta(auth.workspaceId, directInputFileId);
+		} catch (lookupErr) {
+			console.error("batch_input_file_meta_lookup_failed", {
+				error: lookupErr,
+				workspaceId: auth.workspaceId,
+				fileId: directInputFileId,
+			});
+			return err("gateway_error", {
+				reason: "batch_input_file_lookup_failed",
+				request_id: requestId,
+				workspace_id: auth.workspaceId,
+				file_id: directInputFileId,
+			});
+		}
+		if (!ownedInputFile) {
+			return err("not_found", {
+				reason: "batch_input_file_not_found_or_not_owned",
+				request_id: requestId,
+				workspace_id: auth.workspaceId,
+				file_id: directInputFileId,
+			});
+		}
+	}
+	const providerResolution = resolveBatchProviderForCurrentAdapter({
+		mode: inputMode.mode,
+		provider: payload.provider,
+		model: extractRawBatchModel(payload),
+		modelProviders: resolveBatchProvidersFromModels(extractRawBatchModels(payload)),
+		inputFileProvider: ownedInputFile?.provider ?? null,
+	});
+	if (providerResolution.ok === false) return providerResolution.response;
+	const providerId = providerResolution.providerId;
+	const modelScopeError = validateProviderNativeBatchModelScope({
+		providerId,
+		payload,
+		inputMode: inputMode.mode,
+		requestId,
+		workspaceId: auth.workspaceId,
+	});
+	if (modelScopeError) return modelScopeError;
+	if (ownedInputFile?.provider && ownedInputFile.provider !== providerId) {
+		return err("validation_error", {
+			reason: "batch_input_file_provider_mismatch",
+			request_id: requestId,
+			workspace_id: auth.workspaceId,
+			file_id: directInputFileId,
+			provider: ownedInputFile.provider,
+			requested_provider: providerId,
+		});
+	}
+	let requestRows: NormalizedBatchRequest[] | null = null;
+	if (inputMode.mode === "requests") {
+		try {
+			requestRows = await normalizeBatchRequests(providerId, payload);
 		} catch (error) {
 			return err("validation_error", {
-				reason: error instanceof Error ? error.message : "invalid_inline_requests",
+				reason: error instanceof Error ? error.message : "invalid_requests",
 				request_id: requestId,
 				workspace_id: auth.workspaceId,
 			});
 		}
-		const upload = await uploadOpenAiBatchInputFile({ requestId, rows: inlineRows });
-		if (upload.ok === false) return upload.response;
-		upstreamPayload.input_file_id = upload.fileId;
-		await saveBatchFileMeta(auth.workspaceId, upload.fileId, {
-			provider: OPENAI_PROVIDER_ID,
-			status: "uploaded",
-			purpose: "batch",
-			filename: `aistats-batch-${requestId}.jsonl`,
-			keySource: "gateway",
-			byokKeyId: null,
-		}).catch((lookupErr) => {
-			console.error("batch_inline_input_file_meta_store_failed", {
-				error: lookupErr,
-				workspaceId: auth.workspaceId,
-				fileId: upload.fileId,
+		if (FILE_BACKED_JSONL_BATCH_PROVIDERS.has(providerId)) {
+			const upload = await uploadProviderBatchInputFile(providerId, { requestId, rows: requestRows });
+			if (upload.ok === false) return upload.response;
+			upstreamPayload.input_file_id = upload.fileId;
+			await saveBatchFileMeta(auth.workspaceId, upload.fileId, {
+				provider: providerId,
+				status: "uploaded",
+				purpose: providerId === "together" ? "batch-api" : "batch",
+				filename: `aistats-batch-${requestId}.jsonl`,
+				keySource: "gateway",
+				byokKeyId: null,
+			}).catch((lookupErr) => {
+				console.error("batch_requests_input_file_meta_store_failed", {
+					error: lookupErr,
+					workspaceId: auth.workspaceId,
+					fileId: upload.fileId,
+				});
 			});
+		}
+	}
+	let reservationRequests: Array<{ body: unknown; endpoint?: string | null; method?: string | null }> = (requestRows ?? []).map((row) => ({ body: row.body, endpoint: row.url, method: row.method }));
+	if (inputMode.mode === "file" && directInputFileId) {
+		try {
+			reservationRequests = parseProviderBatchInputEntries(await fetchProviderFileText(providerId, directInputFileId)).map((entry) => ({
+				...entry,
+				endpoint: entry.endpoint ?? toText(payload.endpoint),
+				body:
+					entry.body && typeof entry.body === "object" && !Array.isArray(entry.body) && !toText((entry.body as any).model) && toText(payload.model)
+						? { ...(entry.body as Record<string, unknown>), model: providerNativeModelId(providerId, toText(payload.model)!) }
+						: entry.body,
+			}));
+		} catch (error) {
+			return err("validation_error", {
+				reason: "batch_input_file_not_priceable",
+				message: "The input file could not be parsed and priced safely before provider submission.",
+				request_id: requestId,
+				workspace_id: auth.workspaceId,
+				provider: providerId,
+			});
+		}
+	}
+	let reservation: Awaited<ReturnType<typeof reserveBatchCredits>>;
+	try {
+		reservation = await reserveBatchCredits({
+			workspaceId: auth.workspaceId,
+			requestId,
+			providerId,
+			requests: reservationRequests,
+		});
+	} catch (error) {
+		await releaseWalletReservation({
+			workspaceId: auth.workspaceId,
+			reservationId: `batch_hold:${requestId}`,
+			releaseRefId: requestId,
+		}).catch(() => null);
+		return err("validation_error", {
+			reason: error instanceof Error ? error.message : "batch_reservation_failed",
+			request_id: requestId,
+			workspace_id: auth.workspaceId,
+			provider: providerId,
 		});
 	}
-	const upstreamBody = JSON.stringify(upstreamPayload);
-
-	const upstream = await fetchOpenAiBatches({
-		endpointPath: "/batches",
-		method: "POST",
-		body: upstreamBody,
-		contentType: req.headers.get("content-type") ?? "application/json",
+	if (!reservation.held) {
+		return jsonPayload({
+			error: {
+				type: "insufficient_funds",
+				reason: reservation.status,
+				message: "Unable to reserve the maximum quoted batch cost before provider submission.",
+				reserved_nanos: reservation.reservedNanos,
+			},
+		}, 402);
+	}
+	const batchId = generateGatewayBatchId();
+	if (!toText(upstreamPayload.endpoint)) {
+		upstreamPayload.endpoint = resolveBatchEndpoint(providerId, payload);
+	}
+	let providerCreate: ReturnType<typeof buildProviderBatchCreate>;
+	try {
+		providerCreate = buildProviderBatchCreate(providerId, {
+			payload,
+			upstreamPayload,
+			inputMode: inputMode.mode,
+			requestRows,
+		});
+	} catch (error) {
+		await releaseWalletReservation({
+			workspaceId: auth.workspaceId,
+			reservationId: reservation.reservationId,
+			releaseRefId: requestId,
+		}).catch(() => null);
+		return err("validation_error", {
+			reason: error instanceof Error ? error.message : "invalid_batch_provider_payload",
+			request_id: requestId,
+			workspace_id: auth.workspaceId,
+			provider: providerId,
+		});
+	}
+	const submissionMeta = batchMetaFromPayload(null, {
+		provider: providerId,
+		requestId,
+		sessionId:
+			typeof payload?.session_id === "string"
+				? payload.session_id
+				: typeof payload?.sessionId === "string"
+					? payload.sessionId
+					: null,
+		model: toText(payload.model),
+		status: "submitting",
+		nativeBatchId: null,
+		endpoint: toText(payload.endpoint) ?? resolveBatchEndpoint(providerId, payload),
+		completionWindow: toText(payload.completion_window),
+		inputFileId: toText(upstreamPayload.input_file_id) ?? toText(payload.input_file_id),
+		inputMode: inputMode.mode,
+		webhook: normalizedWebhook,
+		keySource: "gateway",
+		byokKeyId: null,
+		reservationId: reservation.reservationId,
+		reservedNanos: reservation.reservedNanos,
+		reservationStatus: reservation.status,
 	});
-	const upstreamJson = await parseUpstreamJson(upstream);
+	try {
+		await saveBatchJobMeta(auth.workspaceId, batchId, submissionMeta);
+	} catch (lookupErr) {
+		await releaseWalletReservation({
+			workspaceId: auth.workspaceId,
+			reservationId: reservation.reservationId,
+			releaseRefId: requestId,
+		}).catch(() => null);
+		console.error("batch_submission_intent_store_failed", {
+			error: lookupErr,
+			workspaceId: auth.workspaceId,
+			batchId,
+			providerId,
+		});
+		return jsonPayload({ error: { type: "gateway_error", reason: "batch_submission_persistence_failed" } }, 503);
+	}
+
+	let upstream: Response;
+	try {
+		upstream = await fetchProviderBatchApi(providerId, {
+			endpointPath: providerCreate.endpointPath,
+			method: "POST",
+			body: JSON.stringify(providerCreate.body),
+			contentType: JSON_BATCH_CONTENT_TYPE,
+		});
+	} catch (error) {
+		await releaseWalletReservation({
+			workspaceId: auth.workspaceId,
+			reservationId: reservation.reservationId,
+			releaseRefId: requestId,
+		}).catch(() => null);
+		await setBatchJobStatus(auth.workspaceId, batchId, "failed", {
+			reservationStatus: "released",
+			submissionError: "batch_provider_create_failed",
+		}).catch(() => null);
+		return jsonPayload({ error: { type: "upstream_error", reason: "batch_provider_create_failed" } }, 502);
+	}
+	let upstreamJson = normalizeProviderBatchPayload(providerId, await parseUpstreamJson(upstream));
+	if (!upstream.ok) {
+		await releaseWalletReservation({
+			workspaceId: auth.workspaceId,
+			reservationId: reservation.reservationId,
+			releaseRefId: requestId,
+		}).catch(() => null);
+		await setBatchJobStatus(auth.workspaceId, batchId, "failed", {
+			reservationStatus: "released",
+			submissionError: `batch_provider_create_rejected_${upstream.status}`,
+		}).catch(() => null);
+	}
+
+	if (upstream.ok && providerId === X_AI_PROVIDER_ID && providerCreate.followup && upstreamJson) {
+		const nativeId = extractProviderBatchId(providerId, upstreamJson).nativeId;
+		if (nativeId) {
+			const followup = await fetchProviderBatchApi(providerId, {
+				endpointPath: `/batches/${encodeURIComponent(nativeId)}/requests`,
+				method: "POST",
+				body: JSON.stringify(providerCreate.followup.body),
+				contentType: JSON_BATCH_CONTENT_TYPE,
+			}).catch(() => null);
+			if (!followup?.ok) {
+				await fetchProviderBatchApi(providerId, {
+					endpointPath: buildProviderCancelPath(providerId, nativeId),
+					method: "POST",
+					contentType: JSON_BATCH_CONTENT_TYPE,
+					body: "{}",
+				}).catch(() => null);
+				await setBatchJobStatus(auth.workspaceId, batchId, "failed", {
+					reservationStatus: "released",
+					nativeBatchId: nativeId,
+					submissionError: "x_ai_batch_requests_failed",
+				}).catch(() => null);
+				await releaseWalletReservation({
+					workspaceId: auth.workspaceId,
+					reservationId: reservation.reservationId,
+					releaseRefId: requestId,
+				}).catch(() => null);
+				return followup
+					? toJsonResponse(followup)
+					: jsonPayload({ error: { type: "upstream_error", reason: "x-ai_batch_requests_failed" } }, 502);
+			}
+			const refreshed = await fetchProviderBatchApi(providerId, {
+				endpointPath: `/batches/${encodeURIComponent(nativeId)}`,
+				method: "GET",
+			}).catch(() => null);
+			if (refreshed?.ok) upstreamJson = normalizeProviderBatchPayload(providerId, await parseUpstreamJson(refreshed)) ?? upstreamJson;
+		}
+	}
 
 	if (upstream.ok) {
-		const batchId = toText(upstreamJson?.id);
+		const nativeBatchId = toText(upstreamJson?.native_batch_id) ?? toText(upstreamJson?.id);
+		if (!nativeBatchId) {
+			await releaseWalletReservation({
+				workspaceId: auth.workspaceId,
+				reservationId: reservation.reservationId,
+				releaseRefId: requestId,
+			}).catch(() => null);
+			await setBatchJobStatus(auth.workspaceId, batchId, "failed", {
+				reservationStatus: "released",
+				submissionError: "batch_create_missing_native_id",
+			}).catch(() => null);
+			return jsonPayload({ error: { type: "upstream_error", reason: "batch_create_missing_native_id" } }, 502);
+		}
 		const keySource = "gateway" as const;
 		let persistedMeta: BatchJobMeta | null = null;
 		if (batchId) {
 			persistedMeta = batchMetaFromPayload(upstreamJson, {
-				provider: OPENAI_PROVIDER_ID,
+				provider: providerId,
 				requestId,
 				sessionId:
 					typeof payload?.session_id === "string"
@@ -541,7 +1508,7 @@ async function handleCreate(req: Request) {
 							: null,
 				model: toText(payload.model),
 				status: toText(upstreamJson?.status) ?? "validating",
-				nativeBatchId: batchId,
+				nativeBatchId: nativeBatchId,
 				endpoint: toText(payload.endpoint),
 				completionWindow: toText(payload.completion_window),
 				inputFileId: toText(upstreamPayload.input_file_id) ?? toText(payload.input_file_id),
@@ -549,19 +1516,48 @@ async function handleCreate(req: Request) {
 				webhook: normalizedWebhook,
 				keySource,
 				byokKeyId: null,
+				reservationId: reservation.reservationId,
+				reservedNanos: reservation.reservedNanos,
+				reservationStatus: reservation.status,
 			});
-			await saveBatchJobMeta(auth.workspaceId, batchId, persistedMeta).catch((lookupErr) => {
+			try {
+				await saveBatchJobMeta(auth.workspaceId, batchId, persistedMeta);
+			} catch (lookupErr) {
+				const cancelled = await fetchProviderBatchApi(providerId, {
+					endpointPath: buildProviderCancelPath(providerId, nativeBatchId),
+					method: "POST",
+					contentType: JSON_BATCH_CONTENT_TYPE,
+					body: "{}",
+				}).then((response) => response.ok).catch(() => false);
+				await releaseWalletReservation({
+					workspaceId: auth.workspaceId,
+					reservationId: reservation.reservationId,
+					releaseRefId: requestId,
+				}).catch(() => null);
 				console.error("batch_job_meta_store_failed", {
 					error: lookupErr,
 					workspaceId: auth.workspaceId,
 					batchId,
+					nativeBatchId,
+					providerId,
+					cancelled,
 				});
-			});
+				return jsonPayload({
+					error: {
+						type: "gateway_error",
+						reason: "batch_persistence_failed",
+						message: "The provider accepted the batch, but the gateway could not persist ownership. Cancellation was requested and the batch was not returned as successfully created.",
+						provider: providerId,
+						provider_batch_id: nativeBatchId,
+						cancellation_requested: cancelled,
+					},
+				}, 502);
+			}
 		}
-		if (batchId && inlineRows?.length) {
-			const requestRows: BatchRequestRowInput[] = inlineRows.map((row) => ({
-				provider: OPENAI_PROVIDER_ID,
-				nativeBatchId: batchId,
+		if (batchId && requestRows?.length) {
+			const batchRequestRows: BatchRequestRowInput[] = requestRows.map((row) => ({
+				provider: providerId,
+				nativeBatchId: nativeBatchId ?? batchId,
 				customId: row.customId,
 				requestIndex: row.index,
 				method: row.method,
@@ -570,13 +1566,13 @@ async function handleCreate(req: Request) {
 				status: "queued",
 				requestBodyHash: row.requestBodyHash,
 				meta: {
-					input_mode: "inline",
+					input_mode: "requests",
 				},
 			}));
 			await saveBatchRequestRows({
 				workspaceId: auth.workspaceId,
 				batchId,
-				rows: requestRows,
+				rows: batchRequestRows,
 			}).catch((lookupErr) => {
 				console.error("batch_request_rows_store_failed", {
 					error: lookupErr,
@@ -589,7 +1585,7 @@ async function handleCreate(req: Request) {
 		const inputFileId = toText(payload.input_file_id);
 		if (inputFileId) {
 			await saveBatchFileMeta(auth.workspaceId, inputFileId, {
-				provider: OPENAI_PROVIDER_ID,
+				provider: providerId,
 				status: "uploaded",
 				keySource,
 				byokKeyId: null,
@@ -601,7 +1597,7 @@ async function handleCreate(req: Request) {
 				});
 			});
 		}
-		await persistBatchFileOwnership(auth.workspaceId, upstreamJson).catch((lookupErr) => {
+		await persistBatchFileOwnership(auth.workspaceId, providerId, upstreamJson).catch((lookupErr) => {
 			console.error("batch_output_file_meta_store_failed", {
 				error: lookupErr,
 				workspaceId: auth.workspaceId,
@@ -620,6 +1616,7 @@ async function handleCreate(req: Request) {
 				requestUrl: req.url,
 				payload: upstreamJson,
 				meta: persistedMeta,
+				publicBatchId: batchId,
 			}));
 		}
 	}
@@ -634,6 +1631,8 @@ async function handleRetrieve(req: Request, id: string) {
 		const reason = (auth as AuthFailure).reason;
 		return err("unauthorised", { reason, request_id: requestId });
 	}
+	const accessDenied = await requireBatchApiAccess(auth, requestId);
+	if (accessDenied) return accessDenied;
 	const batchId = String(id ?? "").trim();
 	if (!batchId) {
 		return err("validation_error", { reason: "missing_batch_id", request_id: requestId, workspace_id: auth.workspaceId });
@@ -657,11 +1656,13 @@ async function handleRetrieve(req: Request, id: string) {
 		});
 	}
 
-	const upstream = await fetchOpenAiBatches({
-		endpointPath: `/batches/${encodeURIComponent(batchId)}`,
+	const nativeBatchId = resolveBatchProviderNativeId({ batchId, meta });
+	const providerId = meta.provider || OPENAI_PROVIDER_ID;
+	const upstream = await fetchProviderBatchApi(providerId, {
+		endpointPath: buildProviderRetrievePath(providerId, nativeBatchId),
 		method: "GET",
 	});
-	const upstreamJson = await parseUpstreamJson(upstream);
+	const upstreamJson = normalizeProviderBatchPayload(providerId, await parseUpstreamJson(upstream));
 	let refreshedMeta = meta;
 	let finalization: FinalizeBatchJobResult | null = null;
 
@@ -669,7 +1670,7 @@ async function handleRetrieve(req: Request, id: string) {
 		const previousStatus = String(meta.status ?? "").toLowerCase();
 		refreshedMeta = batchMetaFromPayload(upstreamJson, {
 			...meta,
-			provider: OPENAI_PROVIDER_ID,
+			provider: providerId,
 		});
 		await saveBatchJobMeta(auth.workspaceId, batchId, refreshedMeta).catch((lookupErr) => {
 			console.error("batch_job_meta_refresh_failed", {
@@ -678,7 +1679,7 @@ async function handleRetrieve(req: Request, id: string) {
 				batchId,
 			});
 		});
-		await persistBatchFileOwnership(auth.workspaceId, upstreamJson).catch((lookupErr) => {
+		await persistBatchFileOwnership(auth.workspaceId, providerId, upstreamJson).catch((lookupErr) => {
 			console.error("batch_output_file_meta_store_failed", {
 				error: lookupErr,
 				workspaceId: auth.workspaceId,
@@ -686,30 +1687,6 @@ async function handleRetrieve(req: Request, id: string) {
 			});
 		});
 		const nextStatus = String(upstreamJson?.status ?? meta.status ?? "").toLowerCase();
-		if (nextStatus !== previousStatus) {
-			if (nextStatus === "completed") {
-				dispatchAsyncWebhookEventInBackground({
-					workspaceId: auth.workspaceId,
-					kind: "batch",
-					internalId: batchId,
-					phase: "completed",
-				});
-			} else if (nextStatus === "failed" || nextStatus === "expired") {
-				dispatchAsyncWebhookEventInBackground({
-					workspaceId: auth.workspaceId,
-					kind: "batch",
-					internalId: batchId,
-					phase: "failed",
-				});
-			} else if (nextStatus === "cancelled" || nextStatus === "canceled") {
-				dispatchAsyncWebhookEventInBackground({
-					workspaceId: auth.workspaceId,
-					kind: "batch",
-					internalId: batchId,
-					phase: "cancelled",
-				});
-			}
-		}
 		if (nextStatus === "completed" || nextStatus === "failed" || nextStatus === "expired" || nextStatus === "cancelled" || nextStatus === "canceled") {
 			finalization = await finalizeBatchJob({
 				workspaceId: auth.workspaceId,
@@ -725,12 +1702,28 @@ async function handleRetrieve(req: Request, id: string) {
 				return null;
 			});
 		}
+		if (nextStatus !== previousStatus && finalization?.billed === true) {
+			const phase = nextStatus === "completed"
+				? "completed"
+				: nextStatus === "failed" || nextStatus === "expired"
+					? "failed"
+					: nextStatus === "cancelled" || nextStatus === "canceled"
+						? "cancelled"
+						: null;
+			if (phase) dispatchAsyncWebhookEventInBackground({
+				workspaceId: auth.workspaceId,
+				kind: "batch",
+				internalId: batchId,
+				phase,
+			});
+		}
 		const persistedMeta = await getBatchJobMeta(auth.workspaceId, batchId).catch(() => refreshedMeta);
 		return toDecoratedJsonResponse(upstream, decorateBatchPayload({
 			requestUrl: req.url,
 			payload: upstreamJson,
 			meta: persistedMeta ?? refreshedMeta,
 			finalization,
+			publicBatchId: batchId,
 		}));
 	}
 
@@ -744,6 +1737,8 @@ async function handleCancel(req: Request, id: string) {
 		const reason = (auth as AuthFailure).reason;
 		return err("unauthorised", { reason, request_id: requestId });
 	}
+	const accessDenied = await requireBatchApiAccess(auth, requestId);
+	if (accessDenied) return accessDenied;
 	const batchId = String(id ?? "").trim();
 	if (!batchId) {
 		return err("validation_error", { reason: "missing_batch_id", request_id: requestId, workspace_id: auth.workspaceId });
@@ -759,20 +1754,22 @@ async function handleCancel(req: Request, id: string) {
 		});
 	}
 
-	const upstream = await fetchOpenAiBatches({
-		endpointPath: `/batches/${encodeURIComponent(batchId)}/cancel`,
+	const nativeBatchId = resolveBatchProviderNativeId({ batchId, meta });
+	const providerId = meta.provider || OPENAI_PROVIDER_ID;
+	const upstream = await fetchProviderBatchApi(providerId, {
+		endpointPath: buildProviderCancelPath(providerId, nativeBatchId),
 		method: "POST",
-		contentType: "application/json",
+		contentType: JSON_BATCH_CONTENT_TYPE,
 		body: "{}",
 	});
-	const upstreamJson = await parseUpstreamJson(upstream);
+	const upstreamJson = normalizeProviderBatchPayload(providerId, await parseUpstreamJson(upstream));
 	let refreshedMeta = meta;
 	let finalization: FinalizeBatchJobResult | null = null;
 
 	if (upstream.ok && upstreamJson) {
 		refreshedMeta = batchMetaFromPayload(upstreamJson, {
 			...meta,
-			provider: OPENAI_PROVIDER_ID,
+			provider: providerId,
 			status: "cancelling",
 		});
 		await saveBatchJobMeta(auth.workspaceId, batchId, refreshedMeta).catch((lookupErr) => {
@@ -783,14 +1780,6 @@ async function handleCancel(req: Request, id: string) {
 			});
 		});
 		const nextStatus = String(upstreamJson?.status ?? "").toLowerCase();
-		if (nextStatus === "cancelled" || nextStatus === "canceled") {
-			dispatchAsyncWebhookEventInBackground({
-				workspaceId: auth.workspaceId,
-				kind: "batch",
-				internalId: batchId,
-				phase: "cancelled",
-			});
-		}
 		if (nextStatus === "cancelled" || nextStatus === "canceled") {
 			finalization = await finalizeBatchJob({
 				workspaceId: auth.workspaceId,
@@ -806,19 +1795,36 @@ async function handleCancel(req: Request, id: string) {
 				return null;
 			});
 		}
+		if ((nextStatus === "cancelled" || nextStatus === "canceled") && finalization?.billed === true) {
+			dispatchAsyncWebhookEventInBackground({
+				workspaceId: auth.workspaceId,
+				kind: "batch",
+				internalId: batchId,
+				phase: "cancelled",
+			});
+		}
 		const persistedMeta = await getBatchJobMeta(auth.workspaceId, batchId).catch(() => refreshedMeta);
 		return toDecoratedJsonResponse(upstream, decorateBatchPayload({
 			requestUrl: req.url,
 			payload: upstreamJson,
 			meta: persistedMeta ?? refreshedMeta,
 			finalization,
+			publicBatchId: batchId,
 		}));
 	}
 
 	return toJsonResponse(upstream);
 }
 
-async function handleCapabilities(_req: Request) {
+async function handleCapabilities(req: Request) {
+	const requestId = generatePublicId();
+	const auth = await authenticate(req);
+	if (!auth.ok) {
+		const reason = (auth as AuthFailure).reason;
+		return err("unauthorised", { reason, request_id: requestId });
+	}
+	const accessDenied = await requireBatchApiAccess(auth, requestId);
+	if (accessDenied) return accessDenied;
 	return jsonPayload({
 		object: "list",
 		data: listBatchProviderCapabilities().map((provider) => ({
@@ -840,6 +1846,8 @@ async function handleListRequests(req: Request, id: string) {
 		const reason = (auth as AuthFailure).reason;
 		return err("unauthorised", { reason, request_id: requestId });
 	}
+	const accessDenied = await requireBatchApiAccess(auth, requestId);
+	if (accessDenied) return accessDenied;
 	const batchId = String(id ?? "").trim();
 	if (!batchId) {
 		return err("validation_error", { reason: "missing_batch_id", request_id: requestId, workspace_id: auth.workspaceId });
@@ -876,7 +1884,7 @@ async function handleListRequests(req: Request, id: string) {
 			status: row.status,
 			request_body_hash: row.requestBodyHash,
 			response_status: row.responseStatus,
-			response_body: row.responseBody,
+			response_body: null,
 			error_body: row.errorBody,
 			usage: row.usage,
 			cost_nanos: row.costNanos,
@@ -893,6 +1901,7 @@ export const batchRoutes = new Hono<Env>();
 
 batchRoutes.post("/", withRuntime(handleCreate));
 batchRoutes.get("/capabilities", withRuntime(handleCapabilities));
+batchRoutes.route("/files", batchFilesRoutes);
 batchRoutes.get("/:id/requests", withRuntime((req) => handleListRequests(req, (req as any).param?.("id") ?? req.url.split("/").slice(-2, -1)[0] ?? "")));
 batchRoutes.get("/:id", withRuntime((req) => handleRetrieve(req, (req as any).param?.("id") ?? req.url.split("/").pop() ?? "")));
 batchRoutes.post("/:id/cancel", withRuntime((req) => handleCancel(req, (req as any).param?.("id") ?? req.url.split("/").slice(-2, -1)[0] ?? "")));

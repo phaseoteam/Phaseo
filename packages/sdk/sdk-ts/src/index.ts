@@ -159,6 +159,31 @@ export type AsyncJobWebSocketOptions = {
   intervalMs?: number;
   closeOnTerminal?: boolean;
 };
+export type BatchRequestRowsResponse = Awaited<ReturnType<typeof ops.listBatchRequests>>;
+export type BatchTerminalStatus = "completed" | "failed" | "cancelled" | "expired";
+export type BatchProviderSelector = string | NonNullable<BatchRequest["provider"]>;
+export type BatchCreateRequest = Omit<BatchRequest, "provider"> & {
+  provider?: BatchProviderSelector;
+};
+export type BatchWaitOptions = {
+  intervalMs?: number;
+  timeoutMs?: number;
+  signal?: AbortSignal;
+  terminalStatuses?: BatchTerminalStatus[];
+  onPoll?: (batch: BatchResponse) => void | Promise<void>;
+};
+export type BatchRequestListOptions = {
+  limit?: number;
+  offset?: number;
+  status?: string;
+};
+export type WebhookVerificationInput = {
+  body: string | Uint8Array | ArrayBuffer;
+  secret: string;
+  signature: string | null | undefined;
+  timestamp?: string | number | null;
+  toleranceSeconds?: number;
+};
 
 type ChatMessageInput =
   | { role: "system"; content: string | MessageContentPartInput[]; name?: string }
@@ -258,11 +283,20 @@ export class AIStats {
   };
 
   readonly batches = {
-    create: async (req: BatchRequest): Promise<BatchResponse> => this.createBatch(req),
+    create: async (req: BatchCreateRequest): Promise<BatchResponse> => this.createBatch(req),
     get: async (batchId: string): Promise<BatchResponse> => this.getBatch(batchId),
     cancel: async (batchId: string): Promise<BatchResponse> => this.cancelBatch(batchId),
+    listRequests: async (batchId: string, options: BatchRequestListOptions = {}): Promise<BatchRequestRowsResponse> =>
+      this.listBatchRequests(batchId, options),
+    wait: async (batchId: string, options: BatchWaitOptions = {}): Promise<BatchResponse> =>
+      this.waitForBatch(batchId, options),
     websocketUrl: (batchId: string, options: AsyncJobWebSocketOptions = {}): string =>
       this.getAsyncJobWebSocketUrl("batch", batchId, options),
+  };
+
+  readonly webhooks = {
+    verifySignature: async (input: WebhookVerificationInput): Promise<boolean> =>
+      AIStats.verifyWebhookSignature(input),
   };
 
   readonly videos = {
@@ -653,10 +687,10 @@ export class AIStats {
     );
   }
 
-  createBatch(req: BatchRequest): Promise<BatchResponse> {
+  createBatch(req: BatchCreateRequest): Promise<BatchResponse> {
     return this.telemetry.wrap(
       "batches.create",
-      () => ops.createBatch(this.client, { body: req }),
+      () => ops.createBatch(this.client, { body: req as BatchRequest }),
       () => req,
       extractBatchMetadata
     );
@@ -680,6 +714,67 @@ export class AIStats {
     );
   }
 
+  listBatchRequests(batchId: string, options: BatchRequestListOptions = {}): Promise<BatchRequestRowsResponse> {
+    return this.telemetry.wrap(
+      "batches.requests",
+      () => ops.listBatchRequests(this.client, {
+        path: { batch_id: batchId },
+        query: {
+          ...(options.limit !== undefined ? { limit: options.limit } : {}),
+          ...(options.offset !== undefined ? { offset: options.offset } : {}),
+          ...(options.status !== undefined ? { status: options.status } : {}),
+        },
+      }),
+      () => ({ batch_id: batchId, ...options })
+    );
+  }
+
+  async waitForBatch(batchId: string, options: BatchWaitOptions = {}): Promise<BatchResponse> {
+    const normalizedId = asTrimmedString(batchId);
+    if (!normalizedId) throw new Error("batchId is required");
+    const intervalMs = Math.max(250, Math.trunc(options.intervalMs ?? 5_000));
+    const timeoutMs = Math.max(1, Math.trunc(options.timeoutMs ?? 30 * 60_000));
+    const terminalStatuses = new Set(
+      (options.terminalStatuses ?? ["completed", "failed", "cancelled", "expired"])
+        .map((status) => normalizeBatchStatus(status))
+        .filter((status): status is BatchTerminalStatus => Boolean(status))
+    );
+    if (terminalStatuses.size === 0) {
+      throw new Error("At least one terminal batch status is required");
+    }
+    const startedAt = Date.now();
+    while (true) {
+      throwIfAborted(options.signal);
+      const batch = await this.getBatch(normalizedId);
+      await options.onPoll?.(batch);
+      const status = normalizeBatchStatus(batch.status);
+      if (status && terminalStatuses.has(status)) return batch;
+      if (Date.now() - startedAt >= timeoutMs) {
+        throw new Error(`Timed out waiting for batch ${normalizedId}`);
+      }
+      await sleep(Math.min(intervalMs, Math.max(1, timeoutMs - (Date.now() - startedAt))), options.signal);
+    }
+  }
+
+  static async verifyWebhookSignature(input: WebhookVerificationInput): Promise<boolean> {
+    const secret = asTrimmedString(input.secret);
+    const provided = asTrimmedString(input.signature);
+    if (!secret || !provided) return false;
+    if (input.timestamp !== undefined && input.timestamp !== null && input.toleranceSeconds !== undefined) {
+      const timestamp = Number(input.timestamp);
+      if (!Number.isFinite(timestamp)) return false;
+      const ageSeconds = Math.abs(Date.now() / 1000 - timestamp);
+      if (ageSeconds > Math.max(0, input.toleranceSeconds)) return false;
+    }
+    const body = await bodyToString(input.body);
+    const signedBody =
+      input.timestamp !== undefined && input.timestamp !== null
+        ? `${String(input.timestamp)}.${body}`
+        : body;
+    const expected = await signHexSha256(secret, signedBody);
+    return parseWebhookSignatureCandidates(provided).some((candidate) => timingSafeEqual(candidate, expected));
+  }
+
   listFiles(): Promise<FileListResponse> {
     return this.telemetry.wrap(
       "files.list",
@@ -691,13 +786,24 @@ export class AIStats {
   getFile(fileId: string): Promise<FileObject> {
     return this.telemetry.wrap(
       "files.retrieve",
-      () => ops.retrieveFile(this.client, { path: { file_id: fileId } as any }),
+      async () => {
+        const url = new URL(`batches/files/${encodeURIComponent(fileId)}`, `${this.basePath}/`);
+        const res = await this.fetchImpl(url.toString(), {
+          method: "GET",
+          headers: this.headers,
+        });
+        if (!res.ok) {
+          const text = await res.text();
+          throw createHttpError(res, text);
+        }
+        return (await res.json()) as FileObject;
+      },
       () => ({ file_id: fileId })
     );
   }
 
   async getFileContent(fileId: string): Promise<Uint8Array> {
-    const url = new URL(`files/${encodeURIComponent(fileId)}/content`, `${this.basePath}/`);
+    const url = new URL(`batches/files/${encodeURIComponent(fileId)}/content`, `${this.basePath}/`);
     const res = await this.fetchImpl(url.toString(), {
       method: "GET",
       headers: this.headers,
@@ -709,7 +815,7 @@ export class AIStats {
     return new Uint8Array(await res.arrayBuffer());
   }
 
-  async uploadFile(params: { purpose?: string; file: Blob | File | BufferSource | string }): Promise<FileObject> {
+  async uploadFile(params: { purpose?: string; model?: string; provider?: string; file: Blob | File | BufferSource | string }): Promise<FileObject> {
     return this.telemetry.wrap(
       "files.upload",
       async () => {
@@ -718,7 +824,14 @@ export class AIStats {
         if (params.purpose) {
           form.append("purpose", params.purpose);
         }
-        const res = await fetch(`${this.basePath}/files`, {
+        const url = new URL("batches/files", `${this.basePath}/`);
+        if (params.model) {
+          url.searchParams.set("model", params.model);
+        }
+        if (params.provider) {
+          url.searchParams.set("provider", params.provider);
+        }
+        const res = await this.fetchImpl(url.toString(), {
           method: "POST",
           headers: this.headers,
           body: form
@@ -729,7 +842,7 @@ export class AIStats {
         }
         return (await res.json()) as FileObject;
       },
-      () => ({ purpose: params.purpose, file: "[File]" })
+      () => ({ purpose: params.purpose, model: params.model, provider: params.provider, file: "[File]" })
     );
   }
 
@@ -964,6 +1077,95 @@ export class AIStats {
       extractGatewayMetadata
     );
   }
+}
+
+function normalizeBatchStatus(value: unknown): BatchTerminalStatus | null {
+  const normalized = asTrimmedString(value)?.toLowerCase();
+  if (!normalized) return null;
+  if (normalized === "canceled") return "cancelled";
+  if (
+    normalized === "completed" ||
+    normalized === "failed" ||
+    normalized === "cancelled" ||
+    normalized === "expired"
+  ) {
+    return normalized;
+  }
+  return null;
+}
+
+function throwIfAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) {
+    throw new DOMException("The operation was aborted.", "AbortError");
+  }
+}
+
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException("The operation was aborted.", "AbortError"));
+      return;
+    }
+    const timeout = setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    const onAbort = () => {
+      clearTimeout(timeout);
+      reject(new DOMException("The operation was aborted.", "AbortError"));
+    };
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
+async function bodyToString(body: string | Uint8Array | ArrayBuffer): Promise<string> {
+  if (typeof body === "string") return body;
+  if (body instanceof Uint8Array) return new TextDecoder().decode(body);
+  return new TextDecoder().decode(new Uint8Array(body));
+}
+
+function parseWebhookSignatureCandidates(header: string): string[] {
+  return header
+    .split(/\s+/)
+    .flatMap((part) => part.split(";"))
+    .flatMap((part) => part.split(","))
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => {
+      const lower = part.toLowerCase();
+      if (lower.startsWith("sha256=")) return part.slice(7).trim();
+      if (lower.startsWith("v1=")) return part.slice(3).trim();
+      return part;
+    })
+    .filter((part) => part.length > 8);
+}
+
+async function signHexSha256(secret: string, message: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(message));
+  return Array.from(new Uint8Array(signature))
+    .map((value) => value.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function timingSafeEqual(a: string, b: string): boolean {
+  const left = a.toLowerCase();
+  const right = b.toLowerCase();
+  const len = Math.max(left.length, right.length);
+  let diff = left.length === right.length ? 0 : 1;
+  for (let i = 0; i < len; i += 1) {
+    const ca = i < left.length ? left.charCodeAt(i) : 0;
+    const cb = i < right.length ? right.charCodeAt(i) : 0;
+    diff |= ca ^ cb;
+  }
+  return diff === 0;
 }
 
 function normalizeMessage(msg: ChatMessageInput): ChatMessage {

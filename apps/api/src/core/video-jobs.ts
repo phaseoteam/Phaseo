@@ -3,14 +3,15 @@
 // How: Persist metadata and billed markers in the async-operations DB table.
 
 import {
+	claimAsyncOperationsForReconciliation,
 	findAsyncOperationByNativeId,
 	getAsyncOperation,
 	isAsyncOperationBilled as isAsyncOperationBilledInDb,
-	listAsyncOperations,
 	listTeamAsyncOperations,
 	markAsyncOperationBilled as markAsyncOperationBilledInDb,
 	patchAsyncOperationMeta,
 	setAsyncOperationStatus,
+	updateAsyncOperationReconciliation,
 	upsertAsyncOperation,
 } from "@core/async-operations";
 
@@ -78,9 +79,34 @@ export type VideoJobRecord = {
 	status: string | null;
 	billedAt: string | null;
 	meta: VideoJobMeta | null;
+	nextReconcileAt: string | null;
+	reconcileAttempts: number;
 	updatedAt: string | null;
 	createdAt: string | null;
 };
+
+const VIDEO_RECONCILE_STATUSES = [
+	null,
+	"queued",
+	"pending",
+	"in_progress",
+	"processing",
+	"running",
+	"completed",
+	"failed",
+];
+
+function nextIsoFromNow(delaySeconds: number): string {
+	return new Date(Date.now() + Math.max(0, Math.trunc(delaySeconds)) * 1_000).toISOString();
+}
+
+function initialVideoReconcileAt(status: string): string | null {
+	const normalized = status.toLowerCase();
+	if (normalized === "completed" || normalized === "failed" || normalized === "cancelled" || normalized === "expired") {
+		return null;
+	}
+	return nextIsoFromNow(45);
+}
 
 function parseVideoJobMeta(value: unknown): VideoJobMeta | null {
 	if (!value || typeof value !== "object" || Array.isArray(value)) return null;
@@ -228,6 +254,8 @@ function toVideoJobRecord(record: Awaited<ReturnType<typeof getAsyncOperation>>)
 		status: record.status,
 		billedAt: record.billedAt,
 		meta: mergeDbVideoMeta(record),
+		nextReconcileAt: record.nextReconcileAt,
+		reconcileAttempts: record.reconcileAttempts,
 		updatedAt: record.updatedAt,
 		createdAt: record.createdAt,
 	};
@@ -255,6 +283,7 @@ export async function saveVideoJobMeta(
 		model: payload.model ?? null,
 		status,
 		meta: payload as unknown as Record<string, unknown>,
+		nextReconcileAt: initialVideoReconcileAt(status),
 	});
 	if (payload.webhook && (status === "queued" || status === "pending" || status === "in_progress")) {
 		void import("@core/video-user-webhooks")
@@ -300,16 +329,30 @@ export async function findVideoJobRecordByNativeId(
 		status: dbRecord.status,
 		billedAt: dbRecord.billedAt,
 		meta: mergeDbVideoMeta(dbRecord),
+		nextReconcileAt: dbRecord.nextReconcileAt,
+		reconcileAttempts: dbRecord.reconcileAttempts,
 		updatedAt: dbRecord.updatedAt,
 		createdAt: dbRecord.createdAt,
 	};
 }
 
-export async function listPendingVideoJobs(limit = 100): Promise<VideoJobRecord[]> {
-	const records = await listAsyncOperations({
+export async function listPendingVideoJobs(
+	limit = 100,
+	options?: {
+		workerId?: string;
+		leaseSeconds?: number;
+		shardCount?: number;
+		shardIndex?: number;
+	},
+): Promise<VideoJobRecord[]> {
+	const records = await claimAsyncOperationsForReconciliation({
 		kind: "video",
 		limit,
-		unbilledOnly: true,
+		statuses: VIDEO_RECONCILE_STATUSES,
+		workerId: options?.workerId,
+		leaseSeconds: options?.leaseSeconds,
+		shardCount: options?.shardCount,
+		shardIndex: options?.shardIndex,
 	});
 	return records
 		.map((record) => ({
@@ -324,6 +367,8 @@ export async function listPendingVideoJobs(limit = 100): Promise<VideoJobRecord[
 			status: record.status,
 			billedAt: record.billedAt,
 			meta: mergeDbVideoMeta(record),
+			nextReconcileAt: record.nextReconcileAt,
+			reconcileAttempts: record.reconcileAttempts,
 			updatedAt: record.updatedAt,
 			createdAt: record.createdAt,
 		}))
@@ -364,6 +409,8 @@ export async function listTeamVideoJobs(args: {
 		status: record.status,
 		billedAt: record.billedAt,
 		meta: mergeDbVideoMeta(record),
+		nextReconcileAt: record.nextReconcileAt,
+		reconcileAttempts: record.reconcileAttempts,
 		updatedAt: record.updatedAt,
 		createdAt: record.createdAt,
 	}));
@@ -381,6 +428,7 @@ export async function setVideoJobStatus(
 		internalId: videoId,
 		status,
 		metaPatch,
+		nextReconcileAt: initialVideoReconcileAt(status),
 	});
 }
 
@@ -410,5 +458,21 @@ export async function patchVideoJobMeta(
 		kind: "video",
 		internalId: videoId,
 		metaPatch,
+	});
+}
+
+export async function updateVideoJobReconciliation(args: {
+	workspaceId: string;
+	videoId: string;
+	nextReconcileAt?: string | null;
+	lastError?: string | null;
+}): Promise<void> {
+	if (!args.workspaceId || !args.videoId) return;
+	await updateAsyncOperationReconciliation({
+		workspaceId: args.workspaceId,
+		kind: "video",
+		internalId: args.videoId,
+		nextReconcileAt: args.nextReconcileAt,
+		lastError: args.lastError,
 	});
 }

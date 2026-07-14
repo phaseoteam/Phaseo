@@ -525,22 +525,6 @@ public sealed class BatchBillingSummary
 
 }
 
-public sealed class BatchInlineRequest
-{
-	[JsonPropertyName("body")]
-	public Dictionary<string, object> Body { get; set; }
-
-	[JsonPropertyName("custom_id")]
-	public string? CustomId { get; set; }
-
-	[JsonPropertyName("method")]
-	public string? Method { get; set; }
-
-	[JsonPropertyName("url")]
-	public string? Url { get; set; }
-
-}
-
 public sealed class BatchProviderCapability
 {
 	[JsonPropertyName("documentation_url")]
@@ -575,13 +559,25 @@ public sealed class BatchRequest
 	public Dictionary<string, object>? Debug { get; set; }
 
 	[JsonPropertyName("endpoint")]
-	public string Endpoint { get; set; }
+	public string? Endpoint { get; set; }
 
 	[JsonPropertyName("input_file_id")]
 	public string? InputFileId { get; set; }
 
+	[JsonPropertyName("items")]
+	public List<Dictionary<string, object>>? Items { get; set; }
+
+	[JsonPropertyName("max_tokens")]
+	public int? MaxTokens { get; set; }
+
 	[JsonPropertyName("metadata")]
 	public Dictionary<string, object>? Metadata { get; set; }
+
+	[JsonPropertyName("model")]
+	public string? Model { get; set; }
+
+	[JsonPropertyName("prompts")]
+	public List<string>? Prompts { get; set; }
 
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
@@ -591,6 +587,12 @@ public sealed class BatchRequest
 
 	[JsonPropertyName("session_id")]
 	public string? SessionId { get; set; }
+
+	[JsonPropertyName("system")]
+	public string? System { get; set; }
+
+	[JsonPropertyName("temperature")]
+	public double? Temperature { get; set; }
 
 	[JsonPropertyName("webhook")]
 	public Dictionary<string, object>? Webhook { get; set; }
@@ -610,6 +612,22 @@ public sealed class BatchRequestCounts
 
 	[JsonPropertyName("total")]
 	public int? Total { get; set; }
+
+}
+
+public sealed class BatchRequestItem
+{
+	[JsonPropertyName("body")]
+	public Dictionary<string, object> Body { get; set; }
+
+	[JsonPropertyName("custom_id")]
+	public string? CustomId { get; set; }
+
+	[JsonPropertyName("method")]
+	public string? Method { get; set; }
+
+	[JsonPropertyName("url")]
+	public string? Url { get; set; }
 
 }
 
@@ -857,7 +875,7 @@ public sealed class ChatCompletionsRequest
 	public string? PromptCacheKey { get; set; }
 
 	[JsonPropertyName("provider")]
-	public Dictionary<string, object>? Provider { get; set; }
+	public object? Provider { get; set; }
 
 	[JsonPropertyName("provider_options")]
 	public Dictionary<string, object>? ProviderOptions { get; set; }

@@ -23,6 +23,18 @@ export type WebhookEndpointSigningConfig = {
 	events: string[];
 };
 
+export type WebhookEndpointUrlValidation =
+	| { ok: true; url: string }
+	| {
+			ok: false;
+			reason:
+				| "webhook_url_required"
+				| "webhook_url_invalid"
+				| "webhook_url_must_use_https"
+				| "webhook_url_private_network_not_allowed"
+				| "webhook_url_dns_resolution_failed";
+	  };
+
 const DEFAULT_WEBHOOK_EVENTS = [
 	"video.completed",
 	"video.failed",
@@ -36,6 +48,133 @@ function normalizeText(value: unknown): string | null {
 	if (typeof value !== "string") return null;
 	const trimmed = value.trim();
 	return trimmed.length > 0 ? trimmed : null;
+}
+
+function normalizeHostname(value: string): string {
+	return value.trim().toLowerCase().replace(/^\[/, "").replace(/\]$/, "");
+}
+
+function isPrivateIpv4(hostname: string): boolean {
+	const octets = hostname.split(".");
+	if (octets.length !== 4) return false;
+	const parts = octets.map((part) => {
+		if (!/^\d+$/.test(part)) return Number.NaN;
+		const value = Number(part);
+		return Number.isInteger(value) && value >= 0 && value <= 255 ? value : Number.NaN;
+	});
+	if (parts.some((part) => Number.isNaN(part))) return false;
+	const [a, b] = parts;
+	return (
+		a === 0 ||
+		a === 10 ||
+		(a === 100 && b >= 64 && b <= 127) ||
+		a === 127 ||
+		(a === 169 && b === 254) ||
+		(a === 172 && b >= 16 && b <= 31) ||
+		(a === 192 && b === 0) ||
+		(a === 192 && b === 168) ||
+		(a === 198 && (b === 18 || b === 19)) ||
+		a >= 224
+	);
+}
+
+function isPrivateIpv6(hostnameRaw: string): boolean {
+	const hostname = normalizeHostname(hostnameRaw);
+	if (!hostname) return true;
+	if (hostname === "::" || hostname === "::1") return true;
+	if (hostname.startsWith("fc") || hostname.startsWith("fd")) return true;
+	if (hostname.startsWith("fe8") || hostname.startsWith("fe9") || hostname.startsWith("fea") || hostname.startsWith("feb")) return true;
+	if (hostname.startsWith("ff")) return true;
+	const mappedIpv4 = hostname.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/i)?.[1];
+	return mappedIpv4 ? isPrivateIpv4(mappedIpv4) : false;
+}
+
+function isPrivateOrLocalhostLiteral(hostnameRaw: string): boolean {
+	const hostname = normalizeHostname(hostnameRaw);
+	if (!hostname) return true;
+	if (hostname === "localhost" || hostname.endsWith(".localhost")) return true;
+	if (isPrivateIpv4(hostname)) return true;
+	if (isPrivateIpv6(hostname)) return true;
+	return false;
+}
+
+function isIpLiteral(hostnameRaw: string): boolean {
+	const hostname = normalizeHostname(hostnameRaw);
+	return isPrivateIpv4(hostname) || /^\d+\.\d+\.\d+\.\d+$/.test(hostname) || hostname.includes(":");
+}
+
+export function validateWebhookEndpointUrl(value: unknown): WebhookEndpointUrlValidation {
+	const text = normalizeText(value);
+	if (!text) return { ok: false, reason: "webhook_url_required" };
+	let parsed: URL;
+	try {
+		parsed = new URL(text);
+	} catch {
+		return { ok: false, reason: "webhook_url_invalid" };
+	}
+	if (parsed.protocol !== "https:") {
+		return { ok: false, reason: "webhook_url_must_use_https" };
+	}
+	if (isPrivateOrLocalhostLiteral(parsed.hostname)) {
+		return { ok: false, reason: "webhook_url_private_network_not_allowed" };
+	}
+	parsed.hash = "";
+	return { ok: true, url: parsed.toString() };
+}
+
+type DnsResolver = (hostname: string) => Promise<string[]>;
+
+async function resolveWebhookDnsAddresses(hostname: string): Promise<string[]> {
+	const out = new Set<string>();
+	for (const type of ["A", "AAAA"] as const) {
+		const url = new URL("https://cloudflare-dns.com/dns-query");
+		url.searchParams.set("name", hostname);
+		url.searchParams.set("type", type);
+		const response = await fetch(url.toString(), {
+			headers: { Accept: "application/dns-json" },
+		});
+		if (!response.ok) throw new Error(`webhook_dns_${type.toLowerCase()}_${response.status}`);
+		const payload = await response.json().catch(() => null) as { Answer?: Array<{ data?: unknown }> } | null;
+		for (const answer of Array.isArray(payload?.Answer) ? payload.Answer : []) {
+			const data = normalizeText(answer.data);
+			if (data && (/^\d+\.\d+\.\d+\.\d+$/.test(data) || data.includes(":"))) {
+				out.add(data);
+			}
+		}
+	}
+	return [...out];
+}
+
+function shouldSkipDnsPreflight(): boolean {
+	return process.env.NODE_ENV === "test";
+}
+
+export async function validateWebhookEndpointUrlForDelivery(
+	value: unknown,
+	options?: {
+		resolveAddresses?: DnsResolver;
+		forceDns?: boolean;
+	},
+): Promise<WebhookEndpointUrlValidation> {
+	const validated = validateWebhookEndpointUrl(value);
+	if (!validated.ok) return validated;
+	const hostname = new URL(validated.url).hostname;
+	if (isIpLiteral(hostname)) return validated;
+	if (!options?.forceDns && shouldSkipDnsPreflight()) return validated;
+	const resolveAddresses = options?.resolveAddresses ?? resolveWebhookDnsAddresses;
+	let addresses: string[];
+	try {
+		addresses = await resolveAddresses(hostname);
+	} catch {
+		return { ok: false, reason: "webhook_url_dns_resolution_failed" };
+	}
+	if (addresses.length === 0) {
+		return { ok: false, reason: "webhook_url_dns_resolution_failed" };
+	}
+	if (addresses.some((address) => isPrivateOrLocalhostLiteral(address))) {
+		return { ok: false, reason: "webhook_url_private_network_not_allowed" };
+	}
+	return validated;
 }
 
 function bytesToBase64(bytes: Uint8Array): string {
@@ -59,25 +198,39 @@ function randomToken(bytes = 32): string {
 	return bytesToBase64(buffer).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
-function resolveWebhookEncryptionMaterial(): string {
+type WebhookEncryptionMaterial = { version: string; material: string };
+
+function resolveActiveWebhookEncryptionMaterial(): WebhookEncryptionMaterial {
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
-	const secret =
-		normalizeText(bindings.ASYNC_WEBHOOK_SECRET_ENCRYPTION_KEY) ??
-		normalizeText(bindings.WEBHOOK_SECRET_ENCRYPTION_KEY) ??
-		normalizeText(bindings.KEY_PEPPER_ACTIVE) ??
-		normalizeText(bindings.KEY_PEPPER);
-	if (!secret) throw new Error("webhook_secret_encryption_key_missing");
-	return secret;
+	const material = normalizeText(bindings.ASYNC_WEBHOOK_SECRET_ENCRYPTION_KEY) ?? normalizeText(bindings.WEBHOOK_SECRET_ENCRYPTION_KEY);
+	if (!material) throw new Error("dedicated_webhook_secret_encryption_key_missing");
+	return {
+		version: normalizeText(bindings.ASYNC_WEBHOOK_SECRET_ENCRYPTION_KEY_VERSION) ?? "v1",
+		material,
+	};
 }
 
-async function importAesKey(): Promise<CryptoKey> {
-	const material = resolveWebhookEncryptionMaterial();
+function resolveWebhookDecryptionMaterials(preferredVersion?: string | null): WebhookEncryptionMaterial[] {
+	const bindings = getBindings() as unknown as Record<string, string | undefined>;
+	const out: WebhookEncryptionMaterial[] = [];
+	const active = normalizeText(bindings.ASYNC_WEBHOOK_SECRET_ENCRYPTION_KEY) ?? normalizeText(bindings.WEBHOOK_SECRET_ENCRYPTION_KEY);
+	if (active) out.push({ version: normalizeText(bindings.ASYNC_WEBHOOK_SECRET_ENCRYPTION_KEY_VERSION) ?? "v1", material: active });
+	const previous = normalizeText(bindings.ASYNC_WEBHOOK_SECRET_ENCRYPTION_KEY_PREVIOUS);
+	if (previous) out.push({ version: normalizeText(bindings.ASYNC_WEBHOOK_SECRET_ENCRYPTION_KEY_PREVIOUS_VERSION) ?? "previous", material: previous });
+	const legacy = normalizeText(bindings.KEY_PEPPER_ACTIVE) ?? normalizeText(bindings.KEY_PEPPER);
+	if (legacy) out.push({ version: "legacy-key-pepper", material: legacy });
+	const unique = out.filter((entry, index, values) => values.findIndex((candidate) => candidate.version === entry.version && candidate.material === entry.material) === index);
+	if (!preferredVersion) return unique;
+	return [...unique.filter((entry) => entry.version === preferredVersion), ...unique.filter((entry) => entry.version !== preferredVersion)];
+}
+
+async function importAesKey(material: string): Promise<CryptoKey> {
 	const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(material));
 	return crypto.subtle.importKey("raw", digest, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
 }
 
 async function hmacSecret(secret: string): Promise<string> {
-	const material = resolveWebhookEncryptionMaterial();
+	const material = resolveActiveWebhookEncryptionMaterial().material;
 	const key = await crypto.subtle.importKey(
 		"raw",
 		new TextEncoder().encode(material),
@@ -93,31 +246,43 @@ export async function encryptWebhookSecret(secret: string): Promise<{
 	secretCiphertext: string;
 	secretIv: string;
 	secretHash: string;
+	secretKeyVersion: string;
 }> {
+	const encryption = resolveActiveWebhookEncryptionMaterial();
 	const iv = new Uint8Array(12);
 	crypto.getRandomValues(iv);
 	const ciphertext = await crypto.subtle.encrypt(
 		{ name: "AES-GCM", iv },
-		await importAesKey(),
+		await importAesKey(encryption.material),
 		new TextEncoder().encode(secret),
 	);
 	return {
 		secretCiphertext: bytesToBase64(new Uint8Array(ciphertext)),
 		secretIv: bytesToBase64(iv),
 		secretHash: await hmacSecret(secret),
+		secretKeyVersion: encryption.version,
 	};
 }
 
 export async function decryptWebhookSecret(args: {
 	secretCiphertext: string;
 	secretIv: string;
+	secretKeyVersion?: string | null;
 }): Promise<string> {
-	const plaintext = await crypto.subtle.decrypt(
-		{ name: "AES-GCM", iv: base64ToBytes(args.secretIv) },
-		await importAesKey(),
-		base64ToBytes(args.secretCiphertext),
-	);
-	return new TextDecoder().decode(plaintext);
+	let lastError: unknown = null;
+	for (const candidate of resolveWebhookDecryptionMaterials(args.secretKeyVersion)) {
+		try {
+			const plaintext = await crypto.subtle.decrypt(
+				{ name: "AES-GCM", iv: base64ToBytes(args.secretIv) },
+				await importAesKey(candidate.material),
+				base64ToBytes(args.secretCiphertext),
+			);
+			return new TextDecoder().decode(plaintext);
+		} catch (error) {
+			lastError = error;
+		}
+	}
+	throw lastError ?? new Error("webhook_secret_decryption_key_missing");
 }
 
 export function generateWebhookSigningSecret(): string {
@@ -156,19 +321,22 @@ export async function getWebhookEndpointSigningConfig(args: {
 	if (!args.workspaceId || !endpointId) return null;
 	const { data, error } = await getSupabaseAdmin()
 		.from("gateway_webhook_endpoints")
-		.select("id, workspace_id, url, status, events, secret_ciphertext, secret_iv")
+		.select("id, workspace_id, url, status, events, secret_ciphertext, secret_iv, secret_key_version")
 		.eq("workspace_id", args.workspaceId)
 		.eq("id", endpointId)
 		.maybeSingle();
 	if (error) throw new Error(error.message ?? "Failed to load webhook endpoint");
 	if (!data || String((data as any).status ?? "") !== "active") return null;
+	const validatedUrl = await validateWebhookEndpointUrlForDelivery((data as any).url);
+	if (!validatedUrl.ok) return null;
 	const secret = await decryptWebhookSecret({
 		secretCiphertext: String((data as any).secret_ciphertext ?? ""),
 		secretIv: String((data as any).secret_iv ?? ""),
+		secretKeyVersion: normalizeText((data as any).secret_key_version),
 	});
 	return {
 		id: String((data as any).id ?? ""),
-		url: String((data as any).url ?? ""),
+		url: validatedUrl.url,
 		secret,
 		events: normalizeWebhookEndpointEvents((data as any).events),
 	};

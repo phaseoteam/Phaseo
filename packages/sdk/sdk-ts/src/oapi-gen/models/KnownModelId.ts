@@ -74,7 +74,6 @@ export type KnownModelId =
   | "deepseek/deepseek-v4-pro-lightning"
   | "deepseek/deepseek-v4-pro-precision"
   | "essential-ai/rnj-1"
-  | "google/gemini-2.0-flash-lite"
   | "google/gemini-2.5-flash"
   | "google/gemini-2.5-flash-lite"
   | "google/gemini-2.5-flash-lite-preview-2025-06-17"

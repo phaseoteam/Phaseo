@@ -221,13 +221,6 @@ struct BatchBillingSummary {
 	std::string reason;
 };
 
-struct BatchInlineRequest {
-	std::map<std::string, std::any> body;
-	std::string custom_id;
-	std::string method;
-	std::string url;
-};
-
 struct BatchProviderCapability {
 	std::string documentation_url;
 	std::vector<std::any> gateway_input_modes;
@@ -243,10 +236,16 @@ struct BatchRequest {
 	std::map<std::string, std::any> debug;
 	std::string endpoint;
 	std::string input_file_id;
+	std::vector<std::map<std::string, std::any>> items;
+	std::optional<int> max_tokens;
 	std::map<std::string, std::any> metadata;
+	std::string model;
+	std::vector<std::string> prompts;
 	std::map<std::string, std::any> provider;
 	std::vector<std::map<std::string, std::any>> requests;
 	std::string session_id;
+	std::string system;
+	std::optional<double> temperature;
 	std::map<std::string, std::any> webhook;
 	std::string webhook_endpoint_id;
 };
@@ -255,6 +254,13 @@ struct BatchRequestCounts {
 	std::optional<int> completed;
 	std::optional<int> failed;
 	std::optional<int> total;
+};
+
+struct BatchRequestItem {
+	std::map<std::string, std::any> body;
+	std::string custom_id;
+	std::string method;
+	std::string url;
 };
 
 struct BatchRequestRow {
@@ -348,7 +354,7 @@ struct ChatCompletionsRequest {
 	std::optional<bool> parallel_tool_calls;
 	std::optional<double> presence_penalty;
 	std::optional<std::string> prompt_cache_key;
-	std::map<std::string, std::any> provider;
+	std::any provider;
 	std::map<std::string, std::any> provider_options;
 	std::map<std::string, std::any> reasoning;
 	std::any response_format;

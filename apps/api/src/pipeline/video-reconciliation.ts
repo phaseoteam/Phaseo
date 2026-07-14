@@ -4,7 +4,7 @@
 
 import { fetchVideoProviderStatus } from "@core/video-reconciliation";
 import { finalizeVideoJob } from "@core/video-finalization";
-import { listPendingVideoJobs } from "@core/video-jobs";
+import { listPendingVideoJobs, updateVideoJobReconciliation, type VideoJobRecord } from "@core/video-jobs";
 import { buildVideoPricingRequestOptions } from "@core/video-request-options";
 import { dispatchVideoWebhookEventInBackground } from "@core/video-user-webhooks";
 
@@ -20,13 +20,52 @@ export type VideoReconciliationSummary = {
 	jobsErrored: number;
 };
 
+function nextIsoFromNow(delaySeconds: number): string {
+	return new Date(Date.now() + Math.max(0, Math.trunc(delaySeconds)) * 1_000).toISOString();
+}
+
+function terminalVideoStatus(status: string | null | undefined): boolean {
+	const normalized = String(status ?? "").toLowerCase();
+	return normalized === "completed" || normalized === "failed" || normalized === "cancelled" || normalized === "expired";
+}
+
+function nextVideoReconcileAt(status: string | null | undefined, progress?: number | null): string | null {
+	const normalized = String(status ?? "").toLowerCase();
+	if (terminalVideoStatus(normalized)) return null;
+	if (normalized === "in_progress" || normalized === "processing" || normalized === "running") {
+		const nearCompletion = typeof progress === "number" && progress >= 0.8;
+		return nextIsoFromNow(nearCompletion ? 15 : 30);
+	}
+	return nextIsoFromNow(60);
+}
+
+function nextVideoErrorRetryAt(job: VideoJobRecord): string {
+	const attempts = Math.max(0, Math.min(7, Math.trunc(job.reconcileAttempts ?? 0)));
+	const delaySeconds = Math.min(30 * 60, 60 * 2 ** attempts);
+	return nextIsoFromNow(delaySeconds);
+}
+
+function reconcileErrorMessage(error: unknown): string {
+	return error instanceof Error ? error.message : String(error);
+}
+
 export async function runVideoReconciliationJob(args?: {
 	limit?: number;
 	concurrency?: number;
+	workerId?: string;
+	leaseSeconds?: number;
+	shardCount?: number;
+	shardIndex?: number;
 }): Promise<VideoReconciliationSummary> {
 	const startedAt = new Date().toISOString();
-	const jobs = await listPendingVideoJobs(args?.limit ?? 100);
-	const maxConcurrency = Math.max(1, Math.min(12, Math.trunc(args?.concurrency ?? 4)));
+	const workerId = args?.workerId ?? `video-reconciler:${startedAt}`;
+	const jobs = await listPendingVideoJobs(args?.limit ?? 100, {
+		workerId,
+		leaseSeconds: args?.leaseSeconds,
+		shardCount: args?.shardCount,
+		shardIndex: args?.shardIndex,
+	});
+	const maxConcurrency = Math.max(1, Math.min(64, Math.trunc(args?.concurrency ?? 4)));
 
 	const processJob = async (job: Awaited<ReturnType<typeof listPendingVideoJobs>>[number]) => {
 		const counts = {
@@ -62,6 +101,12 @@ export async function runVideoReconciliationJob(args?: {
 					videoId: job.videoId,
 					eventType: "video.completed",
 				});
+				await updateVideoJobReconciliation({
+					workspaceId: job.workspaceId,
+					videoId: job.videoId,
+					nextReconcileAt: null,
+					lastError: null,
+				});
 				counts.jobsUpdated += 1;
 				counts.jobsCompleted += 1;
 				if (finalized.charged) counts.jobsCharged += 1;
@@ -90,6 +135,12 @@ export async function runVideoReconciliationJob(args?: {
 					videoId: job.videoId,
 					eventType: "video.failed",
 				});
+				await updateVideoJobReconciliation({
+					workspaceId: job.workspaceId,
+					videoId: job.videoId,
+					nextReconcileAt: null,
+					lastError: null,
+				});
 				counts.jobsUpdated += 1;
 				counts.jobsFailed += 1;
 				if (finalized.charged) counts.jobsCharged += 1;
@@ -97,7 +148,15 @@ export async function runVideoReconciliationJob(args?: {
 			}
 
 			const polled = await fetchVideoProviderStatus(job);
-			if (!polled) return counts;
+			if (!polled) {
+				await updateVideoJobReconciliation({
+					workspaceId: job.workspaceId,
+					videoId: job.videoId,
+					nextReconcileAt: nextVideoReconcileAt(job.status),
+					lastError: null,
+				});
+				return counts;
+			}
 			counts.jobsPolled += 1;
 			if (polled.status === "in_progress" && typeof polled.progress === "number") {
 				dispatchVideoWebhookEventInBackground({
@@ -136,6 +195,12 @@ export async function runVideoReconciliationJob(args?: {
 					eventType: "video.failed",
 				});
 			}
+			await updateVideoJobReconciliation({
+				workspaceId: job.workspaceId,
+				videoId: job.videoId,
+				nextReconcileAt: nextVideoReconcileAt(finalized.status, polled.progress),
+				lastError: null,
+			});
 
 			counts.jobsUpdated += 1;
 			if (finalized.status === "completed") counts.jobsCompleted += 1;
@@ -143,6 +208,18 @@ export async function runVideoReconciliationJob(args?: {
 			if (finalized.charged) counts.jobsCharged += 1;
 		} catch (error) {
 			counts.jobsErrored += 1;
+			await updateVideoJobReconciliation({
+				workspaceId: job.workspaceId,
+				videoId: job.videoId,
+				nextReconcileAt: nextVideoErrorRetryAt(job),
+				lastError: reconcileErrorMessage(error),
+			}).catch((updateError) => {
+				console.error("video_reconcile_release_failed", {
+					error: updateError,
+					workspaceId: job.workspaceId,
+					videoId: job.videoId,
+				});
+			});
 			console.error("video_reconcile_job_failed", {
 				error,
 				workspaceId: job.workspaceId,

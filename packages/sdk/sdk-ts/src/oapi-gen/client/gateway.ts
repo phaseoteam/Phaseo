@@ -495,11 +495,17 @@ export type CreateBatchParams = {
       trace?: boolean;
       trace_level?: "summary" | "full";
     };
-    endpoint: string;
+    endpoint?: string;
     input_file_id?: string;
+    items?: {
+      [key: string]: unknown;
+    }[];
+    max_tokens?: number;
     metadata?: {
       [key: string]: unknown;
     };
+    model?: string;
+    prompts?: string[];
     provider?: {
       allow_fallbacks?: boolean | null;
       data_collection?: "allow" | "deny" | null;
@@ -546,6 +552,8 @@ export type CreateBatchParams = {
       url?: string;
     }[];
     session_id?: string;
+    system?: string;
+    temperature?: number;
     webhook?: {
       endpoint_id?: string;
       events?: string[];
@@ -557,7 +565,7 @@ export type CreateBatchParams = {
 };
 
 /**
- * Creates an async batch job and returns the upstream batch object. The gateway also accepts `session_id` and `webhook` for observability and async notifications.
+ * Creates an async batch job and returns the upstream batch object. Batch creation supports OpenAI, Anthropic, Google Gemini, Mistral, xAI, Groq, and Together AI through the requested `model`. The gateway infers the upstream provider from the model and also accepts `session_id` and `webhook` for observability and async notifications. Use `provider` only as an advanced routing constraint.
  */
 export async function createBatch(
   client: Client,
@@ -683,11 +691,17 @@ export type CreateBatchAliasParams = {
       trace?: boolean;
       trace_level?: "summary" | "full";
     };
-    endpoint: string;
+    endpoint?: string;
     input_file_id?: string;
+    items?: {
+      [key: string]: unknown;
+    }[];
+    max_tokens?: number;
     metadata?: {
       [key: string]: unknown;
     };
+    model?: string;
+    prompts?: string[];
     provider?: {
       allow_fallbacks?: boolean | null;
       data_collection?: "allow" | "deny" | null;
@@ -734,6 +748,8 @@ export type CreateBatchAliasParams = {
       url?: string;
     }[];
     session_id?: string;
+    system?: string;
+    temperature?: number;
     webhook?: {
       endpoint_id?: string;
       events?: string[];
@@ -970,43 +986,53 @@ export type CreateChatCompletionParams = {
     parallel_tool_calls?: boolean;
     presence_penalty?: number;
     prompt_cache_key?: string | null;
-    provider?: {
-      allow_fallbacks?: boolean | null;
-      data_collection?: "allow" | "deny" | null;
-      enforce_distillable_text?: boolean | null;
-      ignore?: string[];
-      include_alpha?: boolean;
-      max_price?: {
-        audio?: number | string;
-        completion?: number | string;
-        image?: number | string;
-        prompt?: number | string;
-        request?: number | string;
-      };
-      only?: string[];
-      order?: string[];
-      preferred_max_latency?:
-        | number
-        | {
-            [key: string]: number;
+    provider?:
+      | "openai"
+      | "anthropic"
+      | "google-ai-studio"
+      | "gemini"
+      | "mistral"
+      | "x-ai"
+      | "xai"
+      | "groq"
+      | "together"
+      | {
+          allow_fallbacks?: boolean | null;
+          data_collection?: "allow" | "deny" | null;
+          enforce_distillable_text?: boolean | null;
+          ignore?: string[];
+          include_alpha?: boolean;
+          max_price?: {
+            audio?: number | string;
+            completion?: number | string;
+            image?: number | string;
+            prompt?: number | string;
+            request?: number | string;
           };
-      preferred_min_throughput?:
-        | number
-        | {
-            [key: string]: number;
-          };
-      quantizations?: string[] | null;
-      require_parameters?: boolean | null;
-      require_zero_data_retention?: boolean | null;
-      required_data_region?: string | null;
-      required_execution_region?: string | null;
-      sort?:
-        | string
-        | {
-            [key: string]: unknown;
-          };
-      zdr?: boolean | null;
-    };
+          only?: string[];
+          order?: string[];
+          preferred_max_latency?:
+            | number
+            | {
+                [key: string]: number;
+              };
+          preferred_min_throughput?:
+            | number
+            | {
+                [key: string]: number;
+              };
+          quantizations?: string[] | null;
+          require_parameters?: boolean | null;
+          require_zero_data_retention?: boolean | null;
+          required_data_region?: string | null;
+          required_execution_region?: string | null;
+          sort?:
+            | string
+            | {
+                [key: string]: unknown;
+              };
+          zdr?: boolean | null;
+        };
     provider_options?: {
       anthropic?: {
         cache_control?: {
@@ -4436,7 +4462,7 @@ export type ListBatchCapabilitiesParams = {
 };
 
 /**
- * Returns provider-level batch input mode support for file upload and inline batch creation.
+ * Returns provider-level batch input mode support for file upload and request-list batch creation.
  */
 export async function listBatchCapabilities(
   client: Client,
@@ -4444,10 +4470,10 @@ export async function listBatchCapabilities(
 ): Promise<{
   data?: {
     documentation_url?: string;
-    gateway_input_modes?: "file" | "inline"[];
+    gateway_input_modes?: "file" | "requests"[];
     id?: string;
     name?: string;
-    native_input_modes?: "file" | "inline"[];
+    native_input_modes?: "file" | "requests"[];
     notes?: string | null;
     status?: "active" | "planned";
   }[];
@@ -4458,10 +4484,57 @@ export async function listBatchCapabilities(
   return client.request<{
     data?: {
       documentation_url?: string;
-      gateway_input_modes?: "file" | "inline"[];
+      gateway_input_modes?: "file" | "requests"[];
       id?: string;
       name?: string;
-      native_input_modes?: "file" | "inline"[];
+      native_input_modes?: "file" | "requests"[];
+      notes?: string | null;
+      status?: "active" | "planned";
+    }[];
+    object?: string;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ListBatchCapabilitiesAliasParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Alias of /batches/capabilities.
+ */
+export async function listBatchCapabilitiesAlias(
+  client: Client,
+  args: ListBatchCapabilitiesAliasParams = {},
+): Promise<{
+  data?: {
+    documentation_url?: string;
+    gateway_input_modes?: "file" | "requests"[];
+    id?: string;
+    name?: string;
+    native_input_modes?: "file" | "requests"[];
+    notes?: string | null;
+    status?: "active" | "planned";
+  }[];
+  object?: string;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/batch/capabilities";
+  return client.request<{
+    data?: {
+      documentation_url?: string;
+      gateway_input_modes?: "file" | "requests"[];
+      id?: string;
+      name?: string;
+      native_input_modes?: "file" | "requests"[];
       notes?: string | null;
       status?: "active" | "planned";
     }[];
@@ -4530,6 +4603,103 @@ export async function listBatchRequests(
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = `/batches/${encodeURIComponent(String(path?.batch_id))}/requests`;
+  return client.request<{
+    batch_id?: string;
+    data?: {
+      completed_at?: string | null;
+      cost_nanos?: number | null;
+      cost_usd?: number | null;
+      created_at?: string | null;
+      custom_id?: string;
+      endpoint?: string | null;
+      error_body?: {
+        [key: string]: unknown;
+      } | null;
+      id?: string;
+      meta?: {
+        [key: string]: unknown;
+      };
+      method?: string | null;
+      model?: string | null;
+      native_batch_id?: string | null;
+      provider?: string;
+      request_body_hash?: string | null;
+      request_index?: number;
+      response_body?: {
+        [key: string]: unknown;
+      } | null;
+      response_status?: number | null;
+      status?: string;
+      updated_at?: string | null;
+      usage?: {
+        [key: string]: unknown;
+      } | null;
+    }[];
+    object?: string;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ListBatchRequestsAliasParams = {
+  path?: {
+    id: string;
+  };
+  query?: {
+    limit?: number;
+    offset?: number;
+    status?: string;
+  };
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Alias of /batches/{batch_id}/requests.
+ */
+export async function listBatchRequestsAlias(
+  client: Client,
+  args: ListBatchRequestsAliasParams = {},
+): Promise<{
+  batch_id?: string;
+  data?: {
+    completed_at?: string | null;
+    cost_nanos?: number | null;
+    cost_usd?: number | null;
+    created_at?: string | null;
+    custom_id?: string;
+    endpoint?: string | null;
+    error_body?: {
+      [key: string]: unknown;
+    } | null;
+    id?: string;
+    meta?: {
+      [key: string]: unknown;
+    };
+    method?: string | null;
+    model?: string | null;
+    native_batch_id?: string | null;
+    provider?: string;
+    request_body_hash?: string | null;
+    request_index?: number;
+    response_body?: {
+      [key: string]: unknown;
+    } | null;
+    response_status?: number | null;
+    status?: string;
+    updated_at?: string | null;
+    usage?: {
+      [key: string]: unknown;
+    } | null;
+  }[];
+  object?: string;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/batch/${encodeURIComponent(String(path?.id))}/requests`;
   return client.request<{
     batch_id?: string;
     data?: {
@@ -6211,6 +6381,150 @@ export async function retrieveBatchAlias(
   });
 }
 
+export type RetrieveBatchFileParams = {
+  path?: {
+    file_id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Retrieves metadata for a batch file that belongs to the authenticated workspace.
+ */
+export async function retrieveBatchFile(
+  client: Client,
+  args: RetrieveBatchFileParams = {},
+): Promise<{
+  bytes?: number;
+  created_at?: number;
+  filename?: string;
+  id?: string;
+  object?: string;
+  purpose?: string;
+  status?: string;
+  status_details?: {};
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/batches/files/${encodeURIComponent(String(path?.file_id))}`;
+  return client.request<{
+    bytes?: number;
+    created_at?: number;
+    filename?: string;
+    id?: string;
+    object?: string;
+    purpose?: string;
+    status?: string;
+    status_details?: {};
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type RetrieveBatchFileAliasParams = {
+  path?: {
+    file_id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Alias of /batches/files/{file_id}.
+ */
+export async function retrieveBatchFileAlias(
+  client: Client,
+  args: RetrieveBatchFileAliasParams = {},
+): Promise<{
+  bytes?: number;
+  created_at?: number;
+  filename?: string;
+  id?: string;
+  object?: string;
+  purpose?: string;
+  status?: string;
+  status_details?: {};
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/batch/files/${encodeURIComponent(String(path?.file_id))}`;
+  return client.request<{
+    bytes?: number;
+    created_at?: number;
+    filename?: string;
+    id?: string;
+    object?: string;
+    purpose?: string;
+    status?: string;
+    status_details?: {};
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type RetrieveBatchFileContentParams = {
+  path?: {
+    file_id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Retrieves binary content for a previously uploaded batch file that belongs to the authenticated workspace.
+ */
+export async function retrieveBatchFileContent(
+  client: Client,
+  args: RetrieveBatchFileContentParams = {},
+): Promise<Blob> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/batches/files/${encodeURIComponent(String(path?.file_id))}/content`;
+  return client.request<Blob>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type RetrieveBatchFileContentAliasParams = {
+  path?: {
+    file_id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Alias of /batches/files/{file_id}/content.
+ */
+export async function retrieveBatchFileContentAlias(
+  client: Client,
+  args: RetrieveBatchFileContentAliasParams = {},
+): Promise<Blob> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/batch/files/${encodeURIComponent(String(path?.file_id))}/content`;
+  return client.request<Blob>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type RetrieveFileParams = {
   path?: {
     file_id: string;
@@ -6403,10 +6717,15 @@ export async function updateWorkspace(
   });
 }
 
-export type UploadFileParams = {
+export type UploadBatchFileParams = {
   path?: Record<string, never>;
-  query?: Record<string, never>;
-  headers?: Record<string, never>;
+  query?: {
+    model?: string;
+    provider?: "openai" | "groq" | "together" | "mistral";
+  };
+  headers?: {
+    "x-ai-stats-provider"?: string;
+  };
   body?: {
     file: Blob;
     purpose: string;
@@ -6414,7 +6733,109 @@ export type UploadFileParams = {
 };
 
 /**
- * Uploads a file for batch processing and returns the upstream file metadata.
+ * Uploads a provider file for batch processing and stores ownership in the authenticated workspace. Pass `model` so AI Stats can infer the upstream provider for provider-backed batch inputs. Defaults to OpenAI for legacy clients that omit both `model` and `provider`.
+ */
+export async function uploadBatchFile(
+  client: Client,
+  args: UploadBatchFileParams = {},
+): Promise<{
+  bytes?: number;
+  created_at?: number;
+  filename?: string;
+  id?: string;
+  object?: string;
+  purpose?: string;
+  status?: string;
+  status_details?: {};
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/batches/files";
+  return client.request<{
+    bytes?: number;
+    created_at?: number;
+    filename?: string;
+    id?: string;
+    object?: string;
+    purpose?: string;
+    status?: string;
+    status_details?: {};
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type UploadBatchFileAliasParams = {
+  path?: Record<string, never>;
+  query?: {
+    model?: string;
+    provider?: string;
+  };
+  headers?: {
+    "x-ai-stats-provider"?: string;
+  };
+  body?: {
+    file: Blob;
+    purpose: string;
+  };
+};
+
+/**
+ * Alias of /batches/files.
+ */
+export async function uploadBatchFileAlias(
+  client: Client,
+  args: UploadBatchFileAliasParams = {},
+): Promise<{
+  bytes?: number;
+  created_at?: number;
+  filename?: string;
+  id?: string;
+  object?: string;
+  purpose?: string;
+  status?: string;
+  status_details?: {};
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/batch/files";
+  return client.request<{
+    bytes?: number;
+    created_at?: number;
+    filename?: string;
+    id?: string;
+    object?: string;
+    purpose?: string;
+    status?: string;
+    status_details?: {};
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type UploadFileParams = {
+  path?: Record<string, never>;
+  query?: {
+    model?: string;
+    provider?: "openai" | "groq" | "together" | "mistral";
+  };
+  headers?: {
+    "x-ai-stats-provider"?: string;
+  };
+  body?: {
+    file: Blob;
+    purpose: string;
+  };
+};
+
+/**
+ * Compatibility alias for `/batches/files`. Uploads a file for batch processing and returns the upstream file metadata. Pass `model` so AI Stats can infer the upstream provider. Defaults to OpenAI for legacy clients that omit both `model` and `provider`.
  */
 export async function uploadFile(
   client: Client,

@@ -37,7 +37,11 @@ export type BinaryResult = {
 
 export type GatewayResult = JsonResult | BinaryResult;
 
-export const GATEWAY_URL = process.env.GATEWAY_URL ?? "http://127.0.0.1:8787/v1";
+export const GATEWAY_URL =
+    process.env.GATEWAY_URL ??
+    process.env.AI_STATS_BASE_URL ??
+    process.env.OPENAI_GATEWAY_URL ??
+    "http://127.0.0.1:8787/v1";
 export const GATEWAY_API_KEY = resolveGatewayApiKeyFromEnv(process.env);
 export const LIVE_RUN = (process.env.LIVE_RUN ?? "").trim() === "1";
 export const INTERNAL_TEST_TOKEN =
@@ -81,7 +85,9 @@ export function getHeaders(contentType = "application/json"): Record<string, str
 
 export function requireGatewayApiKey() {
     if (!GATEWAY_API_KEY) {
-        throw new Error("GATEWAY_API_KEY is required for live gateway tests");
+        throw new Error(
+            "A gateway API key is required for live gateway tests. Set GATEWAY_API_KEY, AI_STATS_PERFORMANCE_TEST_KEY, AI_STATS_API_KEY, OPENAI_GATEWAY_API_KEY, PLAYGROUND_GATEWAY_KEY, or PLAYGROUND_KEY.",
+        );
     }
 }
 

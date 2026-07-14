@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Suspense } from "react";
 import NoFooterStyle from "@/components/layout/NoFooterStyle";
+import { batchApiFlag } from "@/lib/flags";
 
 export const metadata = {
 	title: "Settings",
@@ -42,6 +43,7 @@ export default async function SettingsLayout({
 	const userId = authData.user?.id ?? null;
 	const workspaceId = await getWorkspaceIdFromCookie();
 	let showBroadcast = false;
+	let showWebhooks = false;
 	let isEnterpriseInvoiceMode = false;
 	if (userId && workspaceId) {
 		const { data: membership } = await supabase
@@ -61,6 +63,7 @@ export default async function SettingsLayout({
 		const billingMode = String(teamRow?.billing_mode ?? "wallet").toLowerCase();
 		isEnterpriseInvoiceMode = tier === "enterprise" && billingMode === "invoice";
 	}
+	showWebhooks = await batchApiFlag();
 
 	return (
 		<>
@@ -72,7 +75,7 @@ export default async function SettingsLayout({
 					// Keep desktop sidebar fixed under sticky chrome (notice + header).
 					className="top-[calc(var(--site-header-height,4rem)+var(--site-notice-height,0px))] bottom-0 h-auto bg-white dark:bg-zinc-950"
 				>
-					<SettingsSidebar showBroadcast={showBroadcast} />
+					<SettingsSidebar showBroadcast={showBroadcast} showWebhooks={showWebhooks} />
 				</Sidebar>
 				<SidebarInset className="bg-white dark:bg-zinc-950 flex flex-1 min-h-0 flex-col">
 					<div className="container mx-auto flex w-full flex-col gap-3 px-2 py-4">
@@ -80,6 +83,8 @@ export default async function SettingsLayout({
 							<div className="mt-2.5">
 								<SettingsTopTabsServer
 									isEnterpriseInvoiceMode={isEnterpriseInvoiceMode}
+									showBroadcast={showBroadcast}
+									showWebhooks={showWebhooks}
 								/>
 							</div>
 						</div>

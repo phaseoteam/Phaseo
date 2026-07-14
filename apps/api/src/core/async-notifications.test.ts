@@ -23,16 +23,12 @@ describe("parseAsyncWebhookConfig", () => {
 		});
 	});
 
-	it("allows localhost http callbacks for development", () => {
+	it("rejects localhost callbacks to avoid private-network webhook delivery", () => {
 		expect(
 			parseAsyncWebhookConfig("video", {
 				url: "http://localhost:4010/webhooks/video",
 			}),
-		).toEqual({
-			url: "http://localhost:4010/webhooks/video",
-			secret: null,
-			events: ["job.completed", "job.failed", "job.cancelled"],
-		});
+		).toBeNull();
 	});
 
 	it("accepts workspace-managed webhook endpoint references", () => {

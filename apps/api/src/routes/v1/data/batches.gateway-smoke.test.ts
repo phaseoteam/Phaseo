@@ -14,6 +14,7 @@ const state = vi.hoisted(() => ({
 	fileMeta: new Map<string, Record<string, unknown>>(),
 	webhookEvents: [] as Array<Record<string, unknown>>,
 	finalizeCalls: [] as Array<Record<string, unknown>>,
+	timeline: [] as string[],
 	fetchCalls: [] as Array<{
 		url: string;
 		method: string;
@@ -27,6 +28,7 @@ function resetState() {
 	state.fileMeta.clear();
 	state.webhookEvents = [];
 	state.finalizeCalls = [];
+	state.timeline = [];
 	state.fetchCalls = [];
 }
 
@@ -66,6 +68,7 @@ vi.mock("@providers/keys", () => ({
 vi.mock("@core/async-notifications", () => ({
 	dispatchAsyncWebhookEventInBackground: vi.fn((payload: Record<string, unknown>) => {
 		state.webhookEvents.push(payload);
+		state.timeline.push(`webhook:${String(payload.phase)}`);
 	}),
 	parseAsyncWebhookConfig: vi.fn((_kind: string, webhook: Record<string, unknown>) => webhook),
 	toAsyncLifecycleStatus: vi.fn((status: string) => {
@@ -110,9 +113,18 @@ vi.mock("@core/async-notifications", () => ({
 vi.mock("@core/batch-jobs", () => ({
 	saveBatchJobMeta: vi.fn(async (workspaceId: string, batchId: string, meta: Record<string, unknown>) => {
 		state.batchMeta.set(batchKey(workspaceId, batchId), { ...meta });
+		state.timeline.push(`persist:${String(meta.status)}`);
 	}),
 	getBatchJobMeta: vi.fn(async (workspaceId: string, batchId: string) => {
 		return state.batchMeta.get(batchKey(workspaceId, batchId)) ?? null;
+	}),
+	resolveBatchProviderNativeId: vi.fn((args: { batchId: string; nativeId?: string | null; meta?: Record<string, unknown> | null }) => {
+		const nativeId = typeof args.nativeId === "string" && args.nativeId.trim() ? args.nativeId.trim() : null;
+		const nativeBatchId =
+			typeof args.meta?.nativeBatchId === "string" && args.meta.nativeBatchId.trim()
+				? args.meta.nativeBatchId.trim()
+				: null;
+		return nativeId ?? nativeBatchId ?? args.batchId;
 	}),
 	saveBatchFileMeta: vi.fn(async (workspaceId: string, fileId: string, meta: Record<string, unknown>) => {
 		state.fileMeta.set(fileKey(workspaceId, fileId), { ...meta });
@@ -125,6 +137,7 @@ vi.mock("@core/batch-jobs", () => ({
 vi.mock("@core/batch-finalization", () => ({
 	finalizeBatchJob: vi.fn(async (args: Record<string, unknown>) => {
 		state.finalizeCalls.push(args);
+		state.timeline.push(`finalize:${String(args.status)}`);
 		return {
 			status: String(args.status ?? ""),
 			charged: false,
@@ -132,6 +145,22 @@ vi.mock("@core/batch-finalization", () => ({
 			reason: "test",
 		};
 	}),
+}));
+
+vi.mock("@core/batch-reservations", () => ({
+	reserveBatchCredits: vi.fn(async ({ requestId }: { requestId: string }) => {
+		state.timeline.push("reserve:held");
+		return {
+			reservationId: `batch_hold:${requestId}`,
+			reservedNanos: 1_000_000_000,
+			status: "held",
+			held: true,
+		};
+	}),
+}));
+
+vi.mock("@core/wallet-reservations", () => ({
+	releaseWalletReservation: vi.fn(async () => ({ status: "released", applied: true })),
 }));
 
 vi.mock("../../utils", () => ({
@@ -169,8 +198,12 @@ describe("mounted batch gateway smoke flows", () => {
 						bytes: 19,
 					});
 				}
+				if (url === "https://api.openai.example/v1/files/file_input_123/content" && method === "GET") {
+					return new Response(JSON.stringify({ body: { model: "gpt-4.1-mini", max_output_tokens: 16 } }), { status: 200 });
+				}
 
 				if (url === "https://api.openai.example/v1/batches" && method === "POST") {
+					state.timeline.push("provider:create");
 					return jsonResponse({
 						id: "batch_123",
 						object: "batch",
@@ -182,6 +215,7 @@ describe("mounted batch gateway smoke flows", () => {
 				}
 
 				if (url === "https://api.openai.example/v1/batches/batch_123" && method === "GET") {
+					state.timeline.push("provider:retrieve");
 					return jsonResponse({
 						id: "batch_123",
 						object: "batch",
@@ -235,7 +269,7 @@ describe("mounted batch gateway smoke flows", () => {
 		uploadBody.set("purpose", "batch");
 		uploadBody.set("file", new Blob(['{"ok":true}\n'], { type: "application/jsonl" }), "batch-input.jsonl");
 
-		const uploadResponse = await app.request("https://example.com/v1/files", {
+		const uploadResponse = await app.request("https://example.com/v1/batches/files", {
 			method: "POST",
 			body: uploadBody,
 		});
@@ -256,27 +290,31 @@ describe("mounted batch gateway smoke flows", () => {
 			}),
 		});
 		expect(createResponse.status).toBe(200);
-		expect(await createResponse.json()).toMatchObject({
-			id: "batch_123",
+		const createPayload = await createResponse.json() as any;
+		const publicBatchId = String(createPayload.id);
+		expect(createPayload).toMatchObject({
+			id: expect.stringMatching(/^batch_[A-Z0-9]{26}$/),
+			native_batch_id: "batch_123",
 			status: "queued",
 			lifecycle_status: "pending",
-			polling_url: "https://example.com/v1/batches/batch_123",
-			cancel_url: "https://example.com/v1/batches/batch_123/cancel",
+			polling_url: `https://example.com/v1/batches/${publicBatchId}`,
+			cancel_url: `https://example.com/v1/batches/${publicBatchId}/cancel`,
 			request_id: expect.any(String),
 			provider: "openai",
 			session_id: "session_smoke_success",
 			pricing_lines: [],
 		});
 
-		const retrieveResponse = await app.request("https://example.com/v1/batches/batch_123", {
+		const retrieveResponse = await app.request(`https://example.com/v1/batches/${publicBatchId}`, {
 			method: "GET",
 		});
 		expect(retrieveResponse.status).toBe(200);
 		expect(await retrieveResponse.json()).toMatchObject({
-			id: "batch_123",
+			id: publicBatchId,
+			native_batch_id: "batch_123",
 			status: "completed",
 			lifecycle_status: "completed",
-			polling_url: "https://example.com/v1/batches/batch_123",
+			polling_url: `https://example.com/v1/batches/${publicBatchId}`,
 			cancel_url: null,
 			request_id: expect.any(String),
 			provider: "openai",
@@ -293,7 +331,7 @@ describe("mounted batch gateway smoke flows", () => {
 			},
 		});
 
-		const fileResponse = await app.request("https://example.com/v1/files/file_output_123", {
+		const fileResponse = await app.request("https://example.com/v1/batches/files/file_output_123", {
 			method: "GET",
 		});
 		expect(fileResponse.status).toBe(200);
@@ -303,14 +341,14 @@ describe("mounted batch gateway smoke flows", () => {
 			filename: "batch-output.jsonl",
 		});
 
-		const contentResponse = await app.request("https://example.com/v1/files/file_output_123/content", {
+		const contentResponse = await app.request("https://example.com/v1/batches/files/file_output_123/content", {
 			method: "GET",
 		});
 		expect(contentResponse.status).toBe(200);
 		expect(contentResponse.headers.get("content-type")).toBe("application/jsonl");
 		expect(await contentResponse.text()).toContain('"status_code":200');
 
-		expect(state.batchMeta.get(batchKey("ws_batch_smoke", "batch_123"))).toMatchObject({
+		expect(state.batchMeta.get(batchKey("ws_batch_smoke", publicBatchId))).toMatchObject({
 			status: "completed",
 			sessionId: "session_smoke_success",
 			inputFileId: "file_input_123",
@@ -330,25 +368,37 @@ describe("mounted batch gateway smoke flows", () => {
 			{
 				workspaceId: "ws_batch_smoke",
 				kind: "batch",
-				internalId: "batch_123",
+				internalId: publicBatchId,
 				phase: "created",
 			},
 			{
 				workspaceId: "ws_batch_smoke",
 				kind: "batch",
-				internalId: "batch_123",
+				internalId: publicBatchId,
 				phase: "completed",
 			},
 		]);
 		expect(state.finalizeCalls).toEqual([
 			{
 				workspaceId: "ws_batch_smoke",
-				batchId: "batch_123",
+				batchId: publicBatchId,
 				status: "completed",
 			},
 		]);
+		expect(state.timeline).toEqual([
+			"reserve:held",
+			"persist:submitting",
+			"provider:create",
+			"persist:queued",
+			"webhook:created",
+			"provider:retrieve",
+			"persist:completed",
+			"finalize:completed",
+			"webhook:completed",
+		]);
 		expect(state.fetchCalls.map((call) => `${call.method} ${call.url}`)).toEqual([
 			"POST https://api.openai.example/v1/files",
+			"GET https://api.openai.example/v1/files/file_input_123/content",
 			"POST https://api.openai.example/v1/batches",
 			"GET https://api.openai.example/v1/batches/batch_123",
 			"GET https://api.openai.example/v1/files/file_output_123",
@@ -379,6 +429,9 @@ describe("mounted batch gateway smoke flows", () => {
 						status: "uploaded",
 						bytes: 21,
 					});
+				}
+				if (url === "https://api.openai.example/v1/files/file_input_fail_123/content" && method === "GET") {
+					return new Response(JSON.stringify({ body: { model: "gpt-4.1-mini", max_output_tokens: 16 } }), { status: 200 });
 				}
 
 				if (url === "https://api.openai.example/v1/batches" && method === "POST") {
@@ -445,7 +498,7 @@ describe("mounted batch gateway smoke flows", () => {
 		uploadBody.set("purpose", "batch");
 		uploadBody.set("file", new Blob(['{"fail":true}\n'], { type: "application/jsonl" }), "batch-fail-input.jsonl");
 
-		const uploadResponse = await app.request("https://example.com/v1/files", {
+		const uploadResponse = await app.request("https://example.com/v1/batches/files", {
 			method: "POST",
 			body: uploadBody,
 		});
@@ -461,27 +514,31 @@ describe("mounted batch gateway smoke flows", () => {
 			}),
 		});
 		expect(createResponse.status).toBe(200);
-		expect(await createResponse.json()).toMatchObject({
-			id: "batch_fail_123",
+		const createPayload = await createResponse.json() as any;
+		const publicBatchId = String(createPayload.id);
+		expect(createPayload).toMatchObject({
+			id: expect.stringMatching(/^batch_[A-Z0-9]{26}$/),
+			native_batch_id: "batch_fail_123",
 			status: "queued",
 			lifecycle_status: "pending",
-			polling_url: "https://example.com/v1/batches/batch_fail_123",
-			cancel_url: "https://example.com/v1/batches/batch_fail_123/cancel",
+			polling_url: `https://example.com/v1/batches/${publicBatchId}`,
+			cancel_url: `https://example.com/v1/batches/${publicBatchId}/cancel`,
 			request_id: expect.any(String),
 			provider: "openai",
 			session_id: "session_smoke_fail",
 			pricing_lines: [],
 		});
 
-		const retrieveResponse = await app.request("https://example.com/v1/batches/batch_fail_123", {
+		const retrieveResponse = await app.request(`https://example.com/v1/batches/${publicBatchId}`, {
 			method: "GET",
 		});
 		expect(retrieveResponse.status).toBe(200);
 		expect(await retrieveResponse.json()).toMatchObject({
-			id: "batch_fail_123",
+			id: publicBatchId,
+			native_batch_id: "batch_fail_123",
 			status: "failed",
 			lifecycle_status: "failed",
-			polling_url: "https://example.com/v1/batches/batch_fail_123",
+			polling_url: `https://example.com/v1/batches/${publicBatchId}`,
 			cancel_url: null,
 			request_id: expect.any(String),
 			provider: "openai",
@@ -494,7 +551,7 @@ describe("mounted batch gateway smoke flows", () => {
 			},
 		});
 
-		const fileResponse = await app.request("https://example.com/v1/files/file_error_fail_123", {
+		const fileResponse = await app.request("https://example.com/v1/batches/files/file_error_fail_123", {
 			method: "GET",
 		});
 		expect(fileResponse.status).toBe(200);
@@ -503,13 +560,13 @@ describe("mounted batch gateway smoke flows", () => {
 			filename: "batch-error.jsonl",
 		});
 
-		const contentResponse = await app.request("https://example.com/v1/files/file_error_fail_123/content", {
+		const contentResponse = await app.request("https://example.com/v1/batches/files/file_error_fail_123/content", {
 			method: "GET",
 		});
 		expect(contentResponse.status).toBe(200);
 		expect(await contentResponse.text()).toContain("synthetic batch failure");
 
-		expect(state.batchMeta.get(batchKey("ws_batch_smoke", "batch_fail_123"))).toMatchObject({
+		expect(state.batchMeta.get(batchKey("ws_batch_smoke", publicBatchId))).toMatchObject({
 			status: "failed",
 			sessionId: "session_smoke_fail",
 			errorFileId: "file_error_fail_123",
@@ -528,25 +585,26 @@ describe("mounted batch gateway smoke flows", () => {
 			{
 				workspaceId: "ws_batch_smoke",
 				kind: "batch",
-				internalId: "batch_fail_123",
+				internalId: publicBatchId,
 				phase: "created",
 			},
 			{
 				workspaceId: "ws_batch_smoke",
 				kind: "batch",
-				internalId: "batch_fail_123",
+				internalId: publicBatchId,
 				phase: "failed",
 			},
 		]);
 		expect(state.finalizeCalls).toEqual([
 			{
 				workspaceId: "ws_batch_smoke",
-				batchId: "batch_fail_123",
+				batchId: publicBatchId,
 				status: "failed",
 			},
 		]);
 		expect(state.fetchCalls.map((call) => `${call.method} ${call.url}`)).toEqual([
 			"POST https://api.openai.example/v1/files",
+			"GET https://api.openai.example/v1/files/file_input_fail_123/content",
 			"POST https://api.openai.example/v1/batches",
 			"GET https://api.openai.example/v1/batches/batch_fail_123",
 			"GET https://api.openai.example/v1/files/file_error_fail_123",

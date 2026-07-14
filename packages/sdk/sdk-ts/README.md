@@ -57,6 +57,8 @@ Compatibility guide: [COMPAT_GUIDE.md](./COMPAT_GUIDE.md)
 - `client.getHealth()`
 - `client.models.getDeprecationInfo(modelId)`
 - `client.models.validate(modelId)`
+- `client.batches.create(...)`, `client.batches.wait(id)`, `client.batches.listRequests(id)`, and `client.batches.cancel(id)` for async batch jobs
+- `client.webhooks.verifySignature(...)` or `AIStats.verifyWebhookSignature(...)` for signed async webhook deliveries
 
 Model discovery supports the public `/gateway/models` filters, including `provider`, `provider_status`, `provider_routing_status`, `model_routing_status`, `capability_status`, `provider_availability_status`, `provider_availability_reason`, `status`, `organisation`, `endpoints`, `input_types`, `output_types`, `params`, `availability`, `limit`, and `offset`.
 
@@ -86,6 +88,48 @@ const videoSocketUrl = client.videos.websocketUrl("video_123", {
 });
 
 const genericSocketUrl = client.getAsyncJobWebSocketUrl("video", "video_123");
+```
+
+## Batch jobs
+
+Use batch helpers when you want deferred execution with polling and webhooks. Batch jobs support OpenAI, Anthropic, Google Gemini, Mistral, xAI, Groq, and Together AI through the requested `model`; `provider` is only needed as an advanced routing constraint.
+
+```ts
+const batch = await client.batches.create({
+  model: "openai/gpt-5-mini",
+  prompts: [
+    "Summarize this record.",
+    "Classify this support ticket.",
+  ],
+  system: "Be concise.",
+  max_tokens: 256,
+  completion_window: "24h",
+  webhook_endpoint_id: "we_123",
+});
+
+const completed = await client.batches.wait(batch.id!, {
+  intervalMs: 5000,
+  timeoutMs: 30 * 60 * 1000,
+});
+
+const rows = await client.batches.listRequests(completed.id!, {
+  status: "completed",
+});
+```
+
+For large prebuilt JSONL inputs, upload with `client.uploadFile({ model, purpose: "batch", file })` and create the batch with `input_file_id`. The default path above lets AI Stats create provider files or inline requests for you.
+
+Webhook consumers can verify AI Stats signatures before processing the payload:
+
+```ts
+const body = await request.text();
+const verified = await AIStats.verifyWebhookSignature({
+  body,
+  secret: process.env.AI_STATS_BATCH_WEBHOOK_SECRET!,
+  timestamp: request.headers.get("x-ai-stats-timestamp"),
+  signature: request.headers.get("x-ai-stats-signature"),
+  toleranceSeconds: 300,
+});
 ```
 
 ## Free and paid models

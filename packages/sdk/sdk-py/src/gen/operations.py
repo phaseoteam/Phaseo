@@ -667,6 +667,19 @@ def listBatchCapabilities(
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
+def listBatchCapabilitiesAlias(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Dict[str, Any]:
+	path = path or {}
+	resolved_path = "/batch/capabilities"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
 def listBatchRequests(
 	client: Client,
 	*,
@@ -677,6 +690,19 @@ def listBatchRequests(
 ) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = f"/batches/{path.get("batch_id", "")}/requests"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
+def listBatchRequestsAlias(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Dict[str, Any]:
+	path = path or {}
+	resolved_path = f"/batch/{path.get("id", "")}/requests"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -901,6 +927,58 @@ def retrieveBatchAlias(
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
+def retrieveBatchFile(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Dict[str, Any]:
+	path = path or {}
+	resolved_path = f"/batches/files/{path.get("file_id", "")}"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
+def retrieveBatchFileAlias(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Dict[str, Any]:
+	path = path or {}
+	resolved_path = f"/batch/files/{path.get("file_id", "")}"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
+def retrieveBatchFileContent(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Any:
+	path = path or {}
+	resolved_path = f"/batches/files/{path.get("file_id", "")}/content"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
+def retrieveBatchFileContentAlias(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Any:
+	path = path or {}
+	resolved_path = f"/batch/files/{path.get("file_id", "")}/content"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
 def retrieveFile(
 	client: Client,
 	*,
@@ -979,6 +1057,32 @@ def updateWorkspace(
 	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
 
 
+def uploadBatchFile(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Dict[str, Any]:
+	path = path or {}
+	resolved_path = "/batches/files"
+	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
+
+
+def uploadBatchFileAlias(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Dict[str, Any]:
+	path = path or {}
+	resolved_path = "/batch/files"
+	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
+
+
 def uploadFile(
 	client: Client,
 	*,
@@ -992,4 +1096,4 @@ def uploadFile(
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
-operations___all__ = ["calculatePricing", "cancelBatch", "cancelBatchAlias", "cancelVideo", "cancelVideoAlias", "createAnthropicMessage", "createApiKey", "createBatch", "createBatchAlias", "createChatCompletion", "createEmbedding", "createImage", "createImageEdit", "createModeration", "createOcr", "createRerank", "createResponse", "createSpeech", "createTranscription", "createTranslation", "createVideo", "createVideoAlias", "createVideoDownloadUrl", "createVideoDownloadUrlAlias", "createWebhookEndpoint", "createWorkspace", "deleteApiKey", "deleteVideo", "deleteVideoAlias", "deleteWebhookEndpoint", "deleteWorkspace", "generateMusic", "generateMusicAlias", "getActivity", "getActivityAlias", "getApiKey", "getCredits", "getCurrentApiKey", "getGeneration", "getHealth", "getMusicGeneration", "getMusicGenerationAlias", "getProviderDerankStatus", "getVideo", "getVideoAlias", "getVideoContent", "getVideoContentAlias", "getWebhookEndpoint", "getWorkspace", "listApiKeys", "listBatchCapabilities", "listBatchRequests", "listDataModels", "listEndpoints", "listFiles", "listModels", "listOrganisations", "listPricingModels", "listProviders", "listTeamModels", "listVideoModels", "listVideoModelsAlias", "listVideos", "listVideosAlias", "listWebhookEndpoints", "listWorkspaces", "openResponsesWebSocket", "retrieveBatch", "retrieveBatchAlias", "retrieveFile", "retrieveFileContent", "rotateWebhookEndpointSecret", "updateApiKey", "updateWebhookEndpoint", "updateWorkspace", "uploadFile"]
+operations___all__ = ["calculatePricing", "cancelBatch", "cancelBatchAlias", "cancelVideo", "cancelVideoAlias", "createAnthropicMessage", "createApiKey", "createBatch", "createBatchAlias", "createChatCompletion", "createEmbedding", "createImage", "createImageEdit", "createModeration", "createOcr", "createRerank", "createResponse", "createSpeech", "createTranscription", "createTranslation", "createVideo", "createVideoAlias", "createVideoDownloadUrl", "createVideoDownloadUrlAlias", "createWebhookEndpoint", "createWorkspace", "deleteApiKey", "deleteVideo", "deleteVideoAlias", "deleteWebhookEndpoint", "deleteWorkspace", "generateMusic", "generateMusicAlias", "getActivity", "getActivityAlias", "getApiKey", "getCredits", "getCurrentApiKey", "getGeneration", "getHealth", "getMusicGeneration", "getMusicGenerationAlias", "getProviderDerankStatus", "getVideo", "getVideoAlias", "getVideoContent", "getVideoContentAlias", "getWebhookEndpoint", "getWorkspace", "listApiKeys", "listBatchCapabilities", "listBatchCapabilitiesAlias", "listBatchRequests", "listBatchRequestsAlias", "listDataModels", "listEndpoints", "listFiles", "listModels", "listOrganisations", "listPricingModels", "listProviders", "listTeamModels", "listVideoModels", "listVideoModelsAlias", "listVideos", "listVideosAlias", "listWebhookEndpoints", "listWorkspaces", "openResponsesWebSocket", "retrieveBatch", "retrieveBatchAlias", "retrieveBatchFile", "retrieveBatchFileAlias", "retrieveBatchFileContent", "retrieveBatchFileContentAlias", "retrieveFile", "retrieveFileContent", "rotateWebhookEndpointSecret", "updateApiKey", "updateWebhookEndpoint", "updateWorkspace", "uploadBatchFile", "uploadBatchFileAlias", "uploadFile"]
