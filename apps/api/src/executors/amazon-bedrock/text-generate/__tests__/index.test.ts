@@ -159,7 +159,7 @@ describe("amazon-bedrock text executor", () => {
 			onRequest: (call) => {
 				expect(call.bodyJson?.model).toBe("openai.gpt-oss-20b-1:0");
 				expect(call.bodyJson?.messages?.[0]?.role).toBe("user");
-				expect(call.bodyJson?.stream).toBe(true);
+				expect(call.bodyJson?.stream).toBe(false);
 			},
 			response: jsonResponse({
 				id: "chatcmpl_bedrock",
@@ -201,7 +201,7 @@ describe("amazon-bedrock text executor", () => {
 			onRequest: (call) => {
 				expect(call.bodyJson?.model).toBe("anthropic.claude-sonnet-5-v1:0");
 				expect(call.bodyJson?.messages?.[0]?.role).toBe("user");
-				expect(call.bodyJson?.stream).toBe(true);
+				expect(call.bodyJson?.stream).toBe(false);
 			},
 			response: jsonResponse({
 				id: "chatcmpl_bedrock_mantle",

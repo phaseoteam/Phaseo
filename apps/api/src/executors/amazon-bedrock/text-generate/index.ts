@@ -182,9 +182,10 @@ async function executeBedrockOpenAI(
 	}
 
 	const json: any = await res.json().catch(() => null);
+	const providerId = args.providerId || "amazon-bedrock";
 	const ir = route === "responses"
-		? openAIResponsesToIR(json ?? {}, args.requestId, model, args.providerId)
-		: openAIChatToIR(json ?? {}, args.requestId, model, args.providerId);
+		? openAIResponsesToIR(json ?? {}, args.requestId, model, providerId)
+		: openAIChatToIR(json ?? {}, args.requestId, model, providerId);
 	const usageMeters = normalizeTextUsageForPricing(json?.usage ?? ir?.usage);
 	if (usageMeters) {
 		bill.usage = usageMeters;

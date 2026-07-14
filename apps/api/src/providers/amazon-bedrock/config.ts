@@ -7,6 +7,6 @@ export const AMAZON_BEDROCK_OPENAI_COMPAT_CONFIGS = {
 		baseUrlEnv: "AMAZON_BEDROCK_BASE_URL",
 		apiKeyEnv: "AMAZON_BEDROCK_API_KEY",
 		pathPrefix: "/v1",
-		supportsResponses: true,
+		supportsResponses: false,
 	},
 } satisfies Record<string, OpenAICompatConfig>;
