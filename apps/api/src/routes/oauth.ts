@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin } from "@/runtime/env";
 import { ALL_SUPPORTED_SCOPES } from "@/lib/authz/capabilities";
+import { checkOAuthRateLimit } from "@/lib/oauth/rateLimit";
 import { json, withRuntime } from "@/routes/utils";
 import {
 	CLI_CLIENT_ID,
@@ -20,7 +21,9 @@ import {
 	getLocalJwks,
 	getSupabaseActor,
 	hashOAuthSecret,
-	issueTokenPair,
+	hashOAuthSecretCandidates,
+	hasActiveOAuthWorkspaceAccess,
+	issueTokenPairForGrant,
 	loadOAuthClient,
 	makeAuthCodeExpiry,
 	makeDeviceCodeExpiry,
@@ -48,8 +51,12 @@ async function readBody(req: Request): Promise<Record<string, unknown>> {
 	return parseTokenRequestBody(text, req.headers.get("content-type"));
 }
 
-function oauthError(error: string, description: string, status = 400) {
-	return json({ error, error_description: description }, status, { "Cache-Control": "no-store" });
+function oauthError(error: string, description: string, status = 400, headers: Record<string, string> = {}) {
+	return json({ error, error_description: description }, status, { "Cache-Control": "no-store", ...headers });
+}
+
+function rateLimitError(error = "temporarily_unavailable") {
+	return oauthError(error, "Too many OAuth requests; retry later", error === "slow_down" ? 400 : 429, { "Retry-After": "60" });
 }
 
 function normalizeWorkspaceIds(raw: unknown): string[] {
@@ -112,6 +119,7 @@ oauthRouter.post(
 		}
 
 		const clientId = String(body.client_id ?? CLI_CLIENT_ID).trim();
+		if (!(await checkOAuthRateLimit(req, "strict", "device-code"))) return rateLimitError();
 		const client = await loadOAuthClient(clientId);
 		if (!client || client.client_type !== "public") {
 			return oauthError("invalid_client", "Unknown or unsupported OAuth client", 401);
@@ -163,6 +171,7 @@ oauthRouter.get(
 		const responseType = url.searchParams.get("response_type")?.trim() ?? "code";
 		const codeChallenge = url.searchParams.get("code_challenge")?.trim() ?? "";
 		const codeChallengeMethod = url.searchParams.get("code_challenge_method")?.trim() ?? "S256";
+		if (!(await checkOAuthRateLimit(req, "token", "authorize"))) return rateLimitError();
 
 		if (responseType !== "code") {
 			return oauthError("unsupported_response_type", "Only response_type=code is supported");
@@ -195,6 +204,7 @@ oauthRouter.post(
 	withRuntime(async (req) => {
 		const actor = await requireSupabaseActor(req);
 		if (!actor) return oauthError("access_denied", "User session is required", 401);
+		if (!(await checkOAuthRateLimit(req, "token", `authorize-approve:${actor.userId}`))) return rateLimitError();
 
 		let body: Record<string, unknown>;
 		try {
@@ -272,6 +282,7 @@ oauthRouter.post(
 	withRuntime(async (req) => {
 		const actor = await requireSupabaseActor(req);
 		if (!actor) return oauthError("access_denied", "User session is required", 401);
+		if (!(await checkOAuthRateLimit(req, "strict", `device-activate:${actor.userId}`))) return rateLimitError();
 
 		let body: Record<string, unknown>;
 		try {
@@ -289,7 +300,7 @@ oauthRouter.post(
 		const { data: device, error } = await supabase
 			.from("oauth_device_codes")
 			.select("id, client_id, scopes, status, expires_at")
-			.eq("user_code_hash", await hashOAuthSecret(userCode))
+			.in("user_code_hash", await hashOAuthSecretCandidates(userCode))
 			.maybeSingle();
 		if (error) return oauthError("server_error", error.message, 500);
 		if (!device || Date.parse(String(device.expires_at)) <= Date.now()) {
@@ -372,6 +383,9 @@ oauthRouter.post(
 			return oauthError("invalid_request", "Request body must be JSON or form encoded");
 		}
 		const grantType = String(body.grant_type ?? "").trim();
+		if (!(await checkOAuthRateLimit(req, "token", grantType || "unknown-grant"))) {
+			return rateLimitError(grantType === "urn:ietf:params:oauth:grant-type:device_code" ? "slow_down" : undefined);
+		}
 		const supabase = getSupabaseAdmin();
 
 		if (grantType === "urn:ietf:params:oauth:grant-type:device_code") {
@@ -381,7 +395,7 @@ oauthRouter.post(
 			const { data, error } = await supabase
 				.from("oauth_device_codes")
 				.select("id, client_id, user_id, workspace_id, scopes, status, expires_at, consumed_at")
-				.eq("device_code_hash", await hashOAuthSecret(deviceCode))
+				.in("device_code_hash", await hashOAuthSecretCandidates(deviceCode))
 				.eq("client_id", clientId)
 				.maybeSingle();
 			if (error) return oauthError("server_error", error.message, 500);
@@ -389,38 +403,41 @@ oauthRouter.post(
 				return oauthError("expired_token", "Device code has expired");
 			}
 			if (data.status === "denied") return oauthError("access_denied", "The user denied this device request");
-			if (data.status !== "approved") return oauthError("authorization_pending", "Authorization is still pending");
+			if (data.status !== "approved") {
+				const poll = await supabase.rpc("enforce_oauth_device_poll_interval", { p_device_id: data.id });
+				if (poll.error) return oauthError("server_error", poll.error.message, 500);
+				if (poll.data === "slow_down") {
+					return oauthError("slow_down", "Device token polling is too frequent", 400);
+				}
+				return oauthError("authorization_pending", "Authorization is still pending");
+			}
 			if (data.consumed_at) return oauthError("invalid_grant", "Device code has already been consumed");
-			const authorization = await supabase
-				.from("oauth_authorizations")
-				.select("id, revoked_at")
-				.eq("user_id", data.user_id)
-				.eq("workspace_id", data.workspace_id)
-				.eq("client_id", data.client_id)
-				.maybeSingle();
-			if (authorization.error) return oauthError("server_error", authorization.error.message, 500);
-			if (!authorization.data || authorization.data.revoked_at !== null) {
+			if (!(await hasActiveOAuthWorkspaceAccess({
+				userId: String(data.user_id),
+				workspaceId: String(data.workspace_id),
+				clientId: String(data.client_id),
+			}))) {
 				return oauthError("invalid_grant", "Device authorization is no longer valid");
 			}
-			const consume = await supabase
-				.from("oauth_device_codes")
-				.update({ consumed_at: new Date().toISOString() })
-				.eq("id", data.id)
-				.is("consumed_at", null)
-				.select("id")
-				.maybeSingle();
-			if (consume.error) return oauthError("server_error", consume.error.message, 500);
-			if (!consume.data) return oauthError("invalid_grant", "Device code has already been consumed");
-			return json(
-				await issueTokenPair({
-					userId: String(data.user_id),
-					workspaceId: String(data.workspace_id),
+			try {
+				const tokens = await issueTokenPairForGrant(
+					{ type: "device_code", id: String(data.id) },
+					{
+						userId: String(data.user_id),
+						workspaceId: String(data.workspace_id),
+						clientId: String(data.client_id),
+						scopes: Array.isArray(data.scopes) ? data.scopes.map(String) : [],
+					},
+				);
+				if (!tokens) return oauthError("invalid_grant", "Device code has already been consumed");
+				return json(tokens, 200, { "Cache-Control": "no-store" });
+			} catch (error) {
+				console.error("oauth_device_token_issue_failed", {
 					clientId: String(data.client_id),
-					scopes: Array.isArray(data.scopes) ? data.scopes.map(String) : [],
-				}),
-				200,
-				{ "Cache-Control": "no-store" },
-			);
+					message: error instanceof Error ? error.message : String(error),
+				});
+				return oauthError("server_error", "Failed to issue OAuth token", 500);
+			}
 		}
 
 		if (grantType === "authorization_code") {
@@ -441,7 +458,7 @@ oauthRouter.post(
 			const { data, error } = await supabase
 				.from("oauth_authorization_codes")
 				.select("id, client_id, user_id, workspace_id, redirect_uri, scopes, code_challenge, code_challenge_method, expires_at, used_at")
-				.eq("code_hash", await hashOAuthSecret(code))
+				.in("code_hash", await hashOAuthSecretCandidates(code))
 				.eq("client_id", client.id)
 				.maybeSingle();
 			if (error) return oauthError("server_error", error.message, 500);
@@ -458,25 +475,24 @@ oauthRouter.post(
 			}))) {
 				return oauthError("invalid_grant", "PKCE verification failed");
 			}
-			const consume = await supabase
-				.from("oauth_authorization_codes")
-				.update({ used_at: new Date().toISOString() })
-				.eq("id", data.id)
-				.is("used_at", null)
-				.select("id")
-				.maybeSingle();
-			if (consume.error) return oauthError("server_error", consume.error.message, 500);
-			if (!consume.data) return oauthError("invalid_grant", "Authorization code is invalid or expired");
-			return json(
-				await issueTokenPair({
+			if (!(await hasActiveOAuthWorkspaceAccess({
+				userId: String(data.user_id),
+				workspaceId: String(data.workspace_id),
+				clientId: String(data.client_id),
+			}))) {
+				return oauthError("invalid_grant", "OAuth workspace access is no longer active");
+			}
+			const tokens = await issueTokenPairForGrant(
+				{ type: "authorization_code", id: String(data.id) },
+				{
 					userId: String(data.user_id),
 					workspaceId: String(data.workspace_id),
 					clientId: String(data.client_id),
 					scopes: Array.isArray(data.scopes) ? data.scopes.map(String) : [],
-				}),
-				200,
-				{ "Cache-Control": "no-store" },
+				},
 			);
+			if (!tokens) return oauthError("invalid_grant", "Authorization code is invalid or expired");
+			return json(tokens, 200, { "Cache-Control": "no-store" });
 		}
 
 		if (grantType === "refresh_token") {
@@ -504,6 +520,7 @@ oauthRouter.post(
 oauthRouter.post(
 	"/revoke",
 	withRuntime(async (req) => {
+		if (!(await checkOAuthRateLimit(req, "token", "revoke"))) return rateLimitError();
 		let body: Record<string, unknown>;
 		try {
 			body = await readBody(req);
@@ -524,6 +541,13 @@ oauthRouter.get(
 		const validation = await validateLocalAccessToken(token);
 		if (!validation.valid || !validation.claims) {
 			return oauthError("invalid_token", validation.error ?? "Invalid access token", 401);
+		}
+		if (!(await hasActiveOAuthWorkspaceAccess({
+			userId: String(validation.claims.user_id),
+			workspaceId: String(validation.claims.workspace_id),
+			clientId: String(validation.claims.client_id),
+		}))) {
+			return oauthError("invalid_token", "OAuth workspace access is no longer active", 401);
 		}
 		const scopes = claimsScopes(validation.claims);
 		return json(

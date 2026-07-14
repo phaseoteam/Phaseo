@@ -652,21 +652,16 @@ async function authenticateOAuth(req: Request, token: string, options: Authentic
     const useKvCache = options.useKvCache ?? true;
 
     try {
-        const { validateLocalAccessToken } = await import("@/lib/oauth/service");
+        const { hasActiveOAuthWorkspaceAccess, validateLocalAccessToken } = await import("@/lib/oauth/service");
         const localValidation = await validateLocalAccessToken(token);
         if (localValidation.valid && localValidation.claims) {
             const claims = localValidation.claims;
             const supabase = getSupabaseAdmin();
-            const { data: authorization, error: authError } = await supabase
-                .from("oauth_authorizations")
-                .select("revoked_at")
-                .eq("user_id", claims.user_id)
-                .eq("client_id", claims.client_id)
-                .eq("workspace_id", claims.workspace_id)
-                .maybeSingle();
-
-            if (authError) return { ok: false, reason: "oauth_db_error" };
-            if (!authorization || authorization.revoked_at !== null) {
+            if (!(await hasActiveOAuthWorkspaceAccess({
+                userId: claims.user_id,
+                clientId: claims.client_id,
+                workspaceId: claims.workspace_id,
+            }))) {
                 return { ok: false, reason: "oauth_authorization_revoked" };
             }
 
@@ -759,23 +754,14 @@ async function authenticateOAuth(req: Request, token: string, options: Authentic
 
         const claims = validation.claims;
 
-        // Check if authorization is revoked in database
+        // Check that both the authorization and workspace membership remain active.
         const supabase = getSupabaseAdmin();
-        const { data: authorization, error: authError } = await supabase
-            .from("oauth_authorizations")
-            .select("revoked_at")
-            .eq("user_id", claims.user_id)
-            .eq("client_id", claims.client_id)
-            .eq("workspace_id", claims.workspace_id)
-            .maybeSingle();
-
-        if (authError) {
-            console.error("Error checking OAuth authorization:", authError);
-            return { ok: false, reason: "oauth_db_error" };
-        }
-
-        // If no authorization found or it's revoked, reject
-        if (!authorization || authorization.revoked_at !== null) {
+        const { hasActiveOAuthWorkspaceAccess } = await import("@/lib/oauth/service");
+        if (!(await hasActiveOAuthWorkspaceAccess({
+            userId: claims.user_id,
+            clientId: claims.client_id,
+            workspaceId: claims.workspace_id,
+        }))) {
             return { ok: false, reason: "oauth_authorization_revoked" };
         }
 

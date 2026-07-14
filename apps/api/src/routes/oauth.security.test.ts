@@ -7,6 +7,7 @@ const state = vi.hoisted(() => ({
 	updatePayloads: [] as Array<Record<string, unknown>>,
 	updateFilters: [] as Array<Array<{ column: string; value: unknown }>>,
 	issuedTokenPairs: [] as Array<Record<string, unknown>>,
+	pollStatus: "ok" as string,
 }));
 
 const FUTURE_EXPIRES_AT = "2999-01-01T00:00:00.000Z";
@@ -22,7 +23,9 @@ function json(body: unknown, status = 200, headers: Record<string, string> = {})
 }
 
 vi.mock("@/runtime/env", () => ({
+	getBindings: () => ({}),
 	getSupabaseAdmin: () => ({
+		rpc: async () => ({ data: state.pollStatus, error: null }),
 		from(table: string) {
 			if (table === "oauth_authorizations") {
 				return {
@@ -40,6 +43,12 @@ vi.mock("@/runtime/env", () => ({
 			if (table !== "oauth_device_codes") throw new Error(`Unexpected table: ${table}`);
 			return {
 				select: () => ({
+					in: () => ({
+						eq: () => ({
+							maybeSingle: async () => ({ data: state.deviceRow, error: null }),
+						}),
+						maybeSingle: async () => ({ data: state.deviceRow, error: null }),
+					}),
 					eq: () => ({
 						eq: () => ({
 							maybeSingle: async () => ({ data: state.deviceRow, error: null }),
@@ -93,7 +102,11 @@ vi.mock("@/lib/oauth/service", () => ({
 	getLocalJwks: vi.fn(async () => ({ keys: [] })),
 	getSupabaseActor: vi.fn(async () => ({ userId: "user_1" })),
 	hashOAuthSecret: vi.fn(async (value: string) => `hash:${value}`),
-	issueTokenPair: vi.fn(async (input: Record<string, unknown>) => {
+	hashOAuthSecretCandidates: vi.fn(async (value: string) => [`hash:${value}`]),
+	hasActiveOAuthWorkspaceAccess: vi.fn(async () => Boolean(
+		state.authorizationRow && state.authorizationRow.revoked_at == null,
+	)),
+	issueTokenPairForGrant: vi.fn(async (_grant: Record<string, unknown>, input: Record<string, unknown>) => {
 		state.issuedTokenPairs.push(input);
 		return { access_token: "token" };
 	}),
@@ -121,6 +134,7 @@ describe("OAuth route security", () => {
 		state.updatePayloads.length = 0;
 		state.updateFilters.length = 0;
 		state.issuedTokenPairs.length = 0;
+		state.pollStatus = "ok";
 		vi.resetModules();
 	});
 
@@ -148,6 +162,30 @@ describe("OAuth route security", () => {
 		expect(body).toMatchObject({ error: "invalid_grant" });
 		expect(state.updatePayloads).toEqual([]);
 		expect(state.updateFilters).toEqual([]);
+	});
+
+	it("returns slow_down when the atomic device poll check rejects the cadence", async () => {
+		state.deviceRow = {
+			id: "device_1",
+			client_id: "phaseo_cli",
+			status: "pending",
+			expires_at: FUTURE_EXPIRES_AT,
+		};
+		state.pollStatus = "slow_down";
+
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/token", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				grant_type: "urn:ietf:params:oauth:grant-type:device_code",
+				client_id: "phaseo_cli",
+				device_code: "device-code",
+			}),
+		});
+
+		expect(response.status).toBe(400);
+		expect(await response.json()).toMatchObject({ error: "slow_down" });
 	});
 
 	it("does not issue a device token when the approval grant is missing", async () => {

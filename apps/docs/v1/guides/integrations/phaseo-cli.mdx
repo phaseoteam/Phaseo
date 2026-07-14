@@ -124,7 +124,7 @@ env:
 
 ## Security model
 
-- CLI sessions prefer OS-backed secure storage where available.
+- CLI sessions require OS-backed secure storage by default. Set `PHASEO_SESSION_BACKEND=file` only as an explicit opt-in when an OS credential store is unavailable; it stores refresh tokens in a permission-restricted plaintext file.
 - `phaseo logout` revokes the stored refresh token before clearing local state.
 - Management keys require explicit capabilities.
 - Regular inference keys rely on guardrails, routing policies, and workspace settings rather than a separate scope model.

@@ -53,7 +53,6 @@ function resolveSeed(): string {
 	const seed = String(
 		process.env.CHAT_ROUTE_KEY_SEED ??
 			process.env.KEY_PEPPER_ACTIVE ??
-			process.env.KEY_PEPPER ??
 			"",
 	).trim();
 	if (!seed) {

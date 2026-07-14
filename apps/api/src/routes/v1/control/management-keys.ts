@@ -159,7 +159,7 @@ async function issueManagementKey(args: {
 	createdBy: string | null;
 }) {
 	const pepper = resolveActiveKeyPepper(getBindings());
-	if (!pepper) throw new Error("KEY_PEPPER_ACTIVE (or KEY_PEPPER) is not configured");
+	if (!pepper) throw new Error("KEY_PEPPER_ACTIVE is not configured");
 
 	await enforceWorkspaceKeyLimit(args.workspaceId);
 	const generated = generateManagementKey();
@@ -241,6 +241,13 @@ async function handleCreateManagementKey(req: Request) {
 		});
 		return json({ data }, 201, { "Cache-Control": "no-store" });
 	} catch (error: any) {
+		if (String(error?.message ?? "").includes("KEY_PEPPER_ACTIVE is not configured")) {
+			return json(
+				{ error: "server_misconfig_missing_pepper", message: "KEY_PEPPER_ACTIVE is not configured" },
+				503,
+				{ "Cache-Control": "no-store" },
+			);
+		}
 		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
 	}
 }

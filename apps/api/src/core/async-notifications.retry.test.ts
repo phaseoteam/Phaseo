@@ -20,7 +20,7 @@ vi.mock("@/runtime/env", () => ({
 	dispatchBackground: (promise: Promise<unknown>) => promise,
 	getBindings: () => ({
 		VIDEO_DOWNLOAD_SIGNING_SECRET: "test-video-download-secret",
-		KEY_PEPPER: "test-key-pepper",
+		KEY_PEPPER_ACTIVE: "test-key-pepper",
 		GATEWAY_PUBLIC_BASE_URL: "https://api.phaseo.ai",
 		ASYNC_WEBHOOK_DELIVERY_TIMEOUT_MS: "1000",
 	}),

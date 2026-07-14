@@ -19,7 +19,7 @@ describe("video-public helpers", () => {
 	beforeEach(() => {
 		getBindingsMock.mockReset();
 		getBindingsMock.mockReturnValue({
-			KEY_PEPPER: "test-secret",
+	KEY_PEPPER_ACTIVE: "test-secret",
 			GATEWAY_PUBLIC_BASE_URL: "https://api.phaseo.ai",
 		});
 	});

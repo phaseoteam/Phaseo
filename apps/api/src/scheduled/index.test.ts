@@ -7,10 +7,12 @@ const runBatchReconciliationJobMock = vi.fn();
 const runVideoReconciliationJobMock = vi.fn();
 const drainEmailOutboxMock = vi.fn();
 const runModelDiscoveryJobMock = vi.fn();
+const oauthCleanupRpcMock = vi.fn();
 
 vi.mock("@/runtime/env", () => ({
 	clearRuntime: (...args: unknown[]) => clearRuntimeMock(...args),
 	configureRuntime: (...args: unknown[]) => configureRuntimeMock(...args),
+	getSupabaseAdmin: () => ({ rpc: (...args: unknown[]) => oauthCleanupRpcMock(...args) }),
 }));
 
 vi.mock("@/core/async-notifications", () => ({
@@ -55,6 +57,8 @@ describe("handleScheduledEvent", () => {
 		runVideoReconciliationJobMock.mockReset();
 		drainEmailOutboxMock.mockReset();
 		runModelDiscoveryJobMock.mockReset();
+		oauthCleanupRpcMock.mockReset();
+		oauthCleanupRpcMock.mockResolvedValue({ error: null });
 		runAsyncWebhookRetriesJobMock.mockResolvedValue({
 			startedAt: "2026-06-10T00:05:00.000Z",
 			finishedAt: "2026-06-10T00:05:01.000Z",
@@ -84,6 +88,7 @@ describe("handleScheduledEvent", () => {
 		});
 		expect(configureRuntimeMock).toHaveBeenCalledWith(env);
 		expect(clearRuntimeMock).toHaveBeenCalled();
+		expect(oauthCleanupRpcMock).toHaveBeenCalledWith("cleanup_expired_oauth_artifacts");
 		expect(runModelDiscoveryJobMock).not.toHaveBeenCalled();
 	});
 

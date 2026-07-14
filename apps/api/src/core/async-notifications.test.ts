@@ -264,7 +264,7 @@ describe("buildAsyncNotificationData", () => {
 			GATEWAY_CACHE: {} as KVNamespace,
 			NODE_ENV: "test",
 			GATEWAY_PUBLIC_BASE_URL: "https://api.phaseo.ai",
-			KEY_PEPPER: "test-video-secret",
+			KEY_PEPPER_ACTIVE: "test-video-secret",
 		} as any);
 	});
 
