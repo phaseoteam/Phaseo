@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import {
+	Suspense,
+	use,
 	useCallback,
 	useDeferredValue,
 	useEffect,
@@ -13,6 +15,7 @@ import {
 import { usePathname, useSearchParams } from "next/navigation";
 import { debounce, useQueryState } from "nuqs";
 import { ModelsGrid } from "./ModelsGrid";
+import { ModelsGridSkeleton } from "./ModelsPageSkeleton";
 import { Logo } from "@/components/Logo";
 import { Input } from "@/components/ui/input";
 import {
@@ -57,7 +60,7 @@ import {
 	sortParser,
 	type ModelsSortOption,
 } from "@/app/(dashboard)/models/search-params";
-import { featureLabels } from "@/lib/config/featureLabels";
+import { featureLabels, featureOrder } from "@/lib/config/featureLabels";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
 	Accordion,
@@ -93,15 +96,28 @@ import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDispl
 import type {
 	GatewayStatusFilter,
 	ModelsFilterFacets,
+	ModelsPageData,
 	ModelsPageModel,
 	OptionCount,
 } from "./modelsDisplay.types";
 
 interface ModelsDisplayProps {
-	models: ModelsPageModel[];
-	facets: ModelsFilterFacets;
+	dataPromise: Promise<ModelsPageData>;
 	showPrimaryHeader?: boolean;
 }
+
+const EMPTY_MODELS_FILTER_FACETS: ModelsFilterFacets = {
+	statusCounts: { active: 0, coming_soon: 0, not_active: 0 },
+	endpointOptions: [],
+	inputModalityOptions: [],
+	outputModalityOptions: [],
+	featureOptions: [],
+	supportedParameterOptions: [],
+	providerOptions: [],
+	regionOptions: [],
+	creatorOptions: [],
+	yearOptions: [],
+};
 
 type PreparedModel = {
 	model: ModelsPageModel;
@@ -218,6 +234,30 @@ const ENDPOINT_LABELS: Record<string, string> = {
 	"audio/translations": "Translation",
 	"video/generations": "Video Generation",
 };
+
+const KNOWN_GATEWAY_STATUS_FILTER_VALUES = [
+	"active",
+	"coming_soon",
+	"not_active",
+] as const;
+const KNOWN_INPUT_MODALITY_FILTER_VALUES = [
+	"text",
+	"image",
+	"video",
+	"audio",
+] as const;
+const KNOWN_OUTPUT_MODALITY_FILTER_VALUES = [
+	"text",
+	"image",
+	"video",
+	"audio",
+	"audio_tts",
+	"audio_stt",
+	"embeddings",
+	"moderations",
+	"rerank",
+	"audio_music",
+] as const;
 
 const endpointOrder = new Map(
 	ENDPOINT_DISPLAY_ORDER.map((value, index) => [value, index] as const),
@@ -626,8 +666,40 @@ function ModelsEmptyState({
 	);
 }
 
+function ModelsDataHydrator({
+	dataPromise,
+	onData,
+}: {
+	dataPromise: Promise<ModelsPageData>;
+	onData: (data: ModelsPageData) => void;
+}) {
+	const data = use(dataPromise);
+
+	useEffect(() => {
+		onData(data);
+	}, [data, onData]);
+
+	return null;
+}
+
+function PendingCount({ className }: { className?: string }) {
+	return (
+		<span
+			aria-label="Loading count"
+			className={cn(
+				"inline-flex w-[3ch] shrink-0 justify-end text-[11px] tabular-nums text-muted-foreground/45",
+				className,
+			)}
+		>
+			—
+		</span>
+	);
+}
+
 function FilterCheckboxList({
 	options,
+	isLoading = false,
+	loadingValues,
 	selected,
 	onToggle,
 	labelForValue,
@@ -637,6 +709,8 @@ function FilterCheckboxList({
 	collapsedLimit,
 }: {
 	options: OptionCount[];
+	isLoading?: boolean;
+	loadingValues?: readonly string[];
 	selected: string[];
 	onToggle: (value: string) => void;
 	labelForValue?: (value: string) => string;
@@ -650,6 +724,44 @@ function FilterCheckboxList({
 	collapsedLimit?: number;
 }) {
 	const [expanded, setExpanded] = useState(false);
+	if (isLoading) {
+		if (!loadingValues || loadingValues.length === 0) return null;
+		return (
+			<div className="space-y-1.5">
+				{loadingValues.map((value) => {
+					const label = labelForValue ? labelForValue(value) : toTitleCase(value);
+					const Icon = iconForValue?.(value);
+					const tone = toneForValue?.(value);
+					return (
+						<div
+							key={value}
+							className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5"
+						>
+							<span className="flex min-w-0 items-center gap-2">
+								{Icon ? (
+									tone ? (
+										<span
+											className={cn(
+												"inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-border/60 bg-background text-muted-foreground",
+												tone.sidebarIconHoverClassName,
+											)}
+										>
+											<Icon className="h-3 w-3" />
+										</span>
+									) : (
+										<Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+									)
+								) : null}
+								<span className="truncate text-sm">{label}</span>
+							</span>
+							<PendingCount />
+						</div>
+					);
+				})}
+			</div>
+		);
+	}
+
 	const canCollapse =
 		Number.isFinite(collapsedLimit) &&
 		Number(collapsedLimit) > 0 &&
@@ -807,10 +919,14 @@ function sortOutputModalityOptions(options: OptionCount[]): OptionCount[] {
 
 function OutputModalityButtonRow({
 	options,
+	isLoading = false,
+	loadingValues,
 	selected,
 	onToggle,
 }: {
 	options: OptionCount[];
+	isLoading?: boolean;
+	loadingValues?: readonly string[];
 	selected: string[];
 	onToggle: (value: string) => void;
 }) {
@@ -839,9 +955,12 @@ function OutputModalityButtonRow({
 		};
 	}, [options]);
 
-	if (options.length === 0) return null;
+	const displayOptions = isLoading
+		? (loadingValues ?? []).map((value) => ({ value, count: 0 }))
+		: options;
+	if (displayOptions.length === 0) return null;
 
-	const buttons = sortOutputModalityOptions(options).map((option) => {
+	const buttons = sortOutputModalityOptions(displayOptions).map((option) => {
 		const checked = selected.includes(option.value);
 		const Icon = getModalityIcon(option.value);
 		const tone = getModalityTone(option.value);
@@ -853,6 +972,7 @@ function OutputModalityButtonRow({
 				variant="ghost"
 				size="sm"
 				onClick={() => onToggle(option.value)}
+				disabled={isLoading}
 				aria-pressed={checked}
 				className={cn(
 					"group h-9 shrink-0 rounded-md px-2 text-sm shadow-none transition-colors",
@@ -879,14 +999,18 @@ function OutputModalityButtonRow({
 					<Icon className="h-3.5 w-3.5" />
 				</span>
 				<span>{toTitleCase(option.value)}</span>
-				<span
-					className={cn(
-						"inline-flex min-w-5 items-center justify-center px-1 text-[11px] font-medium leading-none tabular-nums",
-						checked ? "text-current" : "text-muted-foreground",
-					)}
-				>
-					{option.count}
-				</span>
+				{isLoading ? (
+					<PendingCount className="px-1" />
+				) : (
+					<span
+						className={cn(
+							"inline-flex min-w-5 items-center justify-center px-1 text-[11px] font-medium leading-none tabular-nums",
+							checked ? "text-current" : "text-muted-foreground",
+						)}
+					>
+						{option.count}
+					</span>
+				)}
 			</Button>
 		);
 	});
@@ -909,10 +1033,18 @@ function OutputModalityButtonRow({
 }
 
 export default function ModelsDisplay({
-	models,
-	facets,
+	dataPromise,
 	showPrimaryHeader = true,
 }: ModelsDisplayProps) {
+	const [modelsPageData, setModelsPageData] = useState<ModelsPageData | null>(
+		null,
+	);
+	const isLoadingModels = modelsPageData === null;
+	const models = modelsPageData?.models ?? [];
+	const facets = modelsPageData?.facets ?? EMPTY_MODELS_FILTER_FACETS;
+	const handleModelsPageData = useCallback((data: ModelsPageData) => {
+		setModelsPageData((current) => (current === data ? current : data));
+	}, []);
 	const [search, setSearch] = useQueryState("q", qParser);
 	const deferredSearch = useDeferredValue(search ?? "");
 	const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -1752,6 +1884,8 @@ export default function ModelsDisplay({
 				<AccordionContent className="pt-1" disableAnimation>
 					<FilterCheckboxList
 						options={gatewayStatusOptions}
+						isLoading={isLoadingModels}
+						loadingValues={KNOWN_GATEWAY_STATUS_FILTER_VALUES}
 						selected={effectiveSelectedStatuses}
 						onToggle={(value) => {
 							setHasInteractedWithStatuses(true);
@@ -1783,6 +1917,8 @@ export default function ModelsDisplay({
 				<AccordionContent className="pt-1" disableAnimation>
 					<FilterCheckboxList
 						options={inputModalityOptions}
+						isLoading={isLoadingModels}
+						loadingValues={KNOWN_INPUT_MODALITY_FILTER_VALUES}
 						selected={selectedInputModalities}
 						onToggle={(value) =>
 							setSelectedInputModalities(
@@ -1892,6 +2028,7 @@ export default function ModelsDisplay({
 				<AccordionContent className="pt-1" disableAnimation>
 					<FilterCheckboxList
 						options={supportedParameterOptions}
+						isLoading={isLoadingModels}
 						selected={selectedSupportedParameters}
 						onToggle={(value) =>
 							setSelectedSupportedParameters(
@@ -1914,6 +2051,7 @@ export default function ModelsDisplay({
 				<AccordionContent className="pt-1" disableAnimation>
 					<FilterCheckboxList
 						options={providerOptions}
+						isLoading={isLoadingModels}
 						selected={selectedProviders}
 						onToggle={(value) =>
 							setSelectedProviders(toggleInList(selectedProviders, value))
@@ -1937,6 +2075,8 @@ export default function ModelsDisplay({
 				<AccordionContent className="pt-1" disableAnimation>
 					<FilterCheckboxList
 						options={regionOptions}
+						isLoading={isLoadingModels}
+						loadingValues={REGION_DISPLAY_ORDER}
 						selected={selectedRegions}
 						onToggle={(value) =>
 							setSelectedRegions(toggleInList(selectedRegions, value))
@@ -1956,6 +2096,7 @@ export default function ModelsDisplay({
 				<AccordionContent className="pt-1" disableAnimation>
 					<FilterCheckboxList
 						options={creatorOptions}
+						isLoading={isLoadingModels}
 						selected={selectedCreators}
 						onToggle={(value) =>
 							setSelectedCreators(toggleInList(selectedCreators, value))
@@ -1979,6 +2120,8 @@ export default function ModelsDisplay({
 				<AccordionContent className="pt-1" disableAnimation>
 					<FilterCheckboxList
 						options={featureOptions}
+						isLoading={isLoadingModels}
+						loadingValues={featureOrder}
 						selected={selectedFeatures}
 						onToggle={(value) =>
 							setSelectedFeatures(toggleInList(selectedFeatures, value))
@@ -1998,6 +2141,8 @@ export default function ModelsDisplay({
 				<AccordionContent className="pt-1" disableAnimation>
 					<FilterCheckboxList
 						options={endpointOptions}
+						isLoading={isLoadingModels}
+						loadingValues={ENDPOINT_DISPLAY_ORDER}
 						selected={selectedEndpoints}
 						onToggle={(value) =>
 							setSelectedEndpoints(toggleInList(selectedEndpoints, value))
@@ -2019,6 +2164,7 @@ export default function ModelsDisplay({
 				<AccordionContent className="pt-1" disableAnimation>
 					<FilterCheckboxList
 						options={yearOptions}
+						isLoading={isLoadingModels}
 						selected={selectedYears}
 						onToggle={(value) =>
 							setSelectedYears(toggleInList(selectedYears, value))
@@ -2032,6 +2178,12 @@ export default function ModelsDisplay({
 
 	return (
 		<div className="flex w-full flex-1">
+			<Suspense fallback={null}>
+				<ModelsDataHydrator
+					dataPromise={dataPromise}
+					onData={handleModelsPageData}
+				/>
+			</Suspense>
 			<aside className="hidden lg:block w-[20rem] shrink-0 border-r border-border/70 bg-background/95 [&_[data-slot=separator]]:-mx-4">
 				<div className="sticky top-16 flex h-[calc(100dvh-4rem)] min-h-0 flex-col">
 					<ScrollArea className="min-h-0 flex-1 overscroll-y-contain [&>[data-orientation=vertical]]:opacity-0 [&>[data-orientation=vertical]]:transition-opacity [&>[data-orientation=vertical]]:duration-150 hover:[&>[data-orientation=vertical]]:opacity-100 focus-within:[&>[data-orientation=vertical]]:opacity-100">
@@ -2138,6 +2290,8 @@ export default function ModelsDisplay({
 					<div className="mt-1.5">
 						<OutputModalityButtonRow
 							options={outputModalityOptions}
+							isLoading={isLoadingModels}
+							loadingValues={KNOWN_OUTPUT_MODALITY_FILTER_VALUES}
 							selected={selectedOutputModalities}
 							onToggle={(value) =>
 								setSelectedOutputModalities(
@@ -2149,7 +2303,9 @@ export default function ModelsDisplay({
 				</div>
 
 				<div className="w-full px-4 pt-1 pb-5 lg:px-8 lg:pt-1 lg:pb-6">
-					{filteredModels.length > 0 ? (
+					{isLoadingModels ? (
+						<ModelsGridSkeleton />
+					) : filteredModels.length > 0 ? (
 						<ModelsGrid
 							filteredModels={filteredModels}
 							showOrganisationPrefix

@@ -3,9 +3,13 @@ import "server-only";
 import { flag } from "flags/next";
 import type { StatsigUser } from "@flags-sdk/statsig";
 
-import { getStatsigFlagsAdapter } from "@/lib/statsig/server";
+import {
+	getServerStatsigUser,
+	getStatsigFlagsAdapter,
+} from "@/lib/statsig/server";
 import {
 	BATCH_API_GATE,
+	MODELS_CATALOGUE_V2_BETA_KEY,
 	NEW_LANDING_PAGE_EXPERIMENT,
 	NEW_LANDING_PAGE_GATE,
 	type GatewayHeroVariant,
@@ -14,6 +18,21 @@ import {
 import { identify } from "./identify";
 
 const statsigAdapter = getStatsigFlagsAdapter();
+
+export const modelsCatalogueV2Flag = flag<boolean>({
+	key: MODELS_CATALOGUE_V2_BETA_KEY,
+	description: "Use the parallel V2 models catalogue tables.",
+	defaultValue: false,
+	decide: async () => {
+		const user = await getServerStatsigUser();
+		const custom = user.custom as Record<string, unknown> | undefined;
+		const enabledKeys = custom?.betaFeatureKeys;
+		return (
+			Array.isArray(enabledKeys) &&
+			enabledKeys.includes(MODELS_CATALOGUE_V2_BETA_KEY)
+		);
+	},
+});
 
 export const gatewayNewHeroFlag = statsigAdapter
 	? flag<boolean, StatsigUser>({

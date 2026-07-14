@@ -472,6 +472,34 @@ importers:
         specifier: ^4.94.0
         version: 4.94.0(@cloudflare/workers-types@4.20260523.1)
 
+  apps/web-api:
+    dependencies:
+      '@supabase/supabase-js':
+        specifier: ^2.106.2
+        version: 2.106.2
+      hono:
+        specifier: ^4.12.27
+        version: 4.12.27
+    devDependencies:
+      '@cloudflare/workers-types':
+        specifier: ^4.20260523.1
+        version: 4.20260523.1
+      eslint:
+        specifier: ^10.4.0
+        version: 10.4.0(jiti@2.7.0)
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      typescript-eslint:
+        specifier: 8.58.1
+        version: 8.58.1(eslint@10.4.0(jiti@2.7.0))(typescript@6.0.3)
+      vitest:
+        specifier: ^4.1.7
+        version: 4.1.7(@opentelemetry/api@1.9.1)(@types/node@25.9.1)(@vitest/coverage-v8@4.1.7)(vite@8.0.14(@types/node@25.9.1)(esbuild@0.25.12)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
+      wrangler:
+        specifier: ^4.94.0
+        version: 4.94.0(@cloudflare/workers-types@4.20260523.1)
+
   packages/cli/phaseo:
     devDependencies:
       '@types/node':

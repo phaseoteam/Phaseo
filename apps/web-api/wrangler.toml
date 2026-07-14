@@ -1,0 +1,36 @@
+name = "phaseo-web-api"
+main = "src/index.ts"
+compatibility_date = "2026-05-28"
+workers_dev = false
+preview_urls = false
+
+# Workers Cache is checked before this Worker executes. Public responses opt in
+# through their Cache-Control headers; account routes remain private/no-store.
+[cache]
+enabled = true
+
+[vars]
+ENV = "production"
+
+# PR previews deploy this separately named Worker to the account's workers.dev
+# subdomain. It deliberately has no phaseo.app route, so it cannot intercept
+# production traffic.
+[env.staging]
+workers_dev = true
+preview_urls = true
+routes = []
+
+[env.staging.vars]
+ENV = "staging"
+
+# phaseo.app remains served by Vercel. The initial production rollout intercepts
+# only model catalogue requests; every other web path and API remains on Vercel.
+[[routes]]
+pattern = "phaseo.app/api/public/models*"
+zone_name = "phaseo.app"
+
+[observability]
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = true

@@ -118,7 +118,7 @@ export function FooterStatusIndicator() {
 	useEffect(() => {
 		let active = true;
 
-		void fetch("/api/status/summary", { cache: "no-store" })
+		void fetch("/api/public/status")
 			.then((response) => response.json() as Promise<StatusSummary>)
 			.then((summary) => {
 				if (!active) return;

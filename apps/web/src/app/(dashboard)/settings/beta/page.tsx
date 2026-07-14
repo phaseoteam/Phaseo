@@ -3,9 +3,16 @@ import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHead
 import BetaSettingsClient from "@/components/(gateway)/settings/beta/BetaSettingsClient";
 import { WEB_BETA_FEATURES } from "@/lib/statsig/shared";
 import { fetchSettingsBetaInitialData } from "@/lib/fetchers/internal/fetchSettingsBetaInitialData";
+import { isAdminViewer } from "@/lib/auth/getViewerRole";
 
 export default async function BetaSettingsPage() {
-	const initialData = await fetchSettingsBetaInitialData();
+	const [initialData, isAdmin] = await Promise.all([
+		fetchSettingsBetaInitialData(),
+		isAdminViewer(),
+	]);
+	const visibleFeatures = WEB_BETA_FEATURES.filter(
+		(feature) => !feature.adminOnly || isAdmin,
+	);
 
 	if (!initialData.signedIn) {
 		return (
@@ -29,14 +36,14 @@ export default async function BetaSettingsPage() {
 				description="Preview and experiment controls for the web UI."
 				meta={<Badge variant="outline">Beta</Badge>}
 			/>
-			{WEB_BETA_FEATURES.length === 0 ? (
+			{visibleFeatures.length === 0 ? (
 				<div className="rounded-lg border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
 					There are currently no web beta features to opt into.
 				</div>
 			) : (
 				<BetaSettingsClient
 					initialProfile={initialData.profile}
-					features={WEB_BETA_FEATURES}
+					features={visibleFeatures}
 				/>
 			)}
 		</div>

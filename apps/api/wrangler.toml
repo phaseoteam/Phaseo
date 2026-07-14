@@ -29,6 +29,35 @@ PRICING_MONITOR_ENABLED = "true"
 ENTERPRISE_INVOICING_ENABLED = "true"
 GATEWAY_PUBLIC_BASE_URL = "https://api.phaseo.app"
 
+# PR previews deploy a distinct Worker on workers.dev. It must not inherit the
+# custom domain, scheduler, or cache namespace used by the production gateway.
+[env.staging]
+workers_dev = true
+preview_urls = true
+routes = []
+
+[env.staging.vars]
+ENV = "staging"
+SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
+MODEL_DISCOVERY_RETENTION_DAYS = "7"
+MODEL_DISCOVERY_SHARD_SIZE = "15"
+MODEL_DISCOVERY_ISSUE_SYNC_ENABLED = "false"
+VIDEO_RECONCILIATION_ENABLED = "false"
+VIDEO_RECONCILIATION_LIMIT = "100"
+EMAIL_OUTBOX_DRAIN_ENABLED = "false"
+EMAIL_OUTBOX_DRAIN_LIMIT = "25"
+VIDEO_API_ENABLED = "true"
+PRICING_MONITOR_ENABLED = "false"
+ENTERPRISE_INVOICING_ENABLED = "false"
+GATEWAY_PUBLIC_BASE_URL = "https://phaseo-gateway-staging.danielbutler500.workers.dev"
+
+[env.staging.triggers]
+crons = []
+
+[[env.staging.kv_namespaces]]
+binding = "GATEWAY_CACHE"
+id = "4ffdeda1a87c45b38c697f78232526be"
+
 [triggers]
 crons = ["* * * * *"]
 
