@@ -1,5 +1,3 @@
-import type { ReactNode } from "react";
-
-export default function RankingsLayout({ children }: { children: ReactNode }) {
+export default function RankingsLayout({ children }: LayoutProps<"/rankings">) {
 	return children;
 }

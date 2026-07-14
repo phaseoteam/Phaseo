@@ -1,9 +1,5 @@
-import type { ReactNode } from "react";
-
 export default function SubscriptionPlansLayout({
 	children,
-}: {
-	children: ReactNode;
-}) {
+}: LayoutProps<"/subscription-plans">) {
 	return children;
 }
