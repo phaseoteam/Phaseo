@@ -21,15 +21,13 @@ describe("dashboard key generation", () => {
 		expect(key.prefix).toBe(key.kid.slice(0, 6));
 	});
 
-	it("matches the gateway OAuth client-secret hash format", () => {
+	it("uses a salted memory-hard OAuth client-secret hash", async () => {
 		process.env.PHASEO_OAUTH_TOKEN_PEPPER = "oauth-test-pepper";
 		delete process.env.KEY_PEPPER_ACTIVE;
 		delete process.env.KEY_PEPPER;
 		const secret = "client-secret";
-		const expected = crypto
-			.createHmac("sha256", "oauth-test-pepper")
-			.update(secret, "utf8")
-			.digest("base64url");
-		expect(hashOAuthClientSecret(secret)).toBe(expected);
+		await expect(hashOAuthClientSecret(secret)).resolves.toMatch(
+			/^pbkdf2-sha256\$600000\$[^$]+\$[^$]+$/,
+		);
 	});
 });

@@ -135,7 +135,7 @@ export async function createOAuthAppAction(
 				privacy_policy_url: input.privacy_policy_url,
 				terms_of_service_url: input.terms_of_service_url,
 				client_type: "confidential",
-				client_secret_hash: hashOAuthClientSecret(oauthClient.client_secret),
+				client_secret_hash: await hashOAuthClientSecret(oauthClient.client_secret),
 				allowed_scopes: allowedScopes,
 				created_by: user.id,
 				status: "active",
@@ -336,7 +336,7 @@ export async function regenerateClientSecretAction(
 		}
 		const { error: hashUpdateError } = await supabase
 			.from("oauth_app_metadata")
-			.update({ client_secret_hash: hashOAuthClientSecret(newSecret.client_secret) })
+			.update({ client_secret_hash: await hashOAuthClientSecret(newSecret.client_secret) })
 			.eq("client_id", clientId)
 			.eq("workspace_id", app.workspace_id);
 		if (hashUpdateError) return { error: `Failed to update OAuth client secret: ${hashUpdateError.message}` };

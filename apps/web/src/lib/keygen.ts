@@ -33,7 +33,7 @@ export function hmacSecret(secret: string, pepper: string) {
     return crypto.createHmac("sha256", pepper).update(secret).digest("hex");
 }
 
-export function hashOAuthClientSecret(secret: string): string {
+export async function hashOAuthClientSecret(secret: string): Promise<string> {
     const pepper = String(
         process.env.PHASEO_OAUTH_TOKEN_PEPPER ??
         process.env.KEY_PEPPER_ACTIVE ??
@@ -43,5 +43,13 @@ export function hashOAuthClientSecret(secret: string): string {
     if (!pepper) {
         throw new Error("PHASEO_OAUTH_TOKEN_PEPPER or KEY_PEPPER_ACTIVE is not set");
     }
-    return crypto.createHmac("sha256", pepper).update(secret, "utf8").digest("base64url");
+    const iterations = 600_000;
+    const salt = crypto.randomBytes(16).toString("base64url");
+    const hash = await new Promise<Buffer>((resolve, reject) => {
+        crypto.pbkdf2(secret, `${pepper}:${salt}`, iterations, 32, "sha256", (error, derivedKey) => {
+            if (error) reject(error);
+            else resolve(derivedKey);
+        });
+    });
+    return `pbkdf2-sha256$${iterations}$${salt}$${hash.toString("base64url")}`;
 }
