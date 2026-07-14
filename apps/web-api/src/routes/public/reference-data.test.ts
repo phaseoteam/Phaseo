@@ -25,9 +25,9 @@ describe("public reference-data routes", () => {
 		}));
 
 		const [organisations, benchmarks, providers] = await Promise.all([
-			app.request("https://phaseo.app/api/public/organisations", {}, env),
-			app.request("https://phaseo.app/api/public/benchmarks?sort=coverage", {}, env),
-			app.request("https://phaseo.app/api/public/api-providers", {}, env),
+			app.request("https://phaseo.app/api/_web/organisations", {}, env),
+			app.request("https://phaseo.app/api/_web/benchmarks?sort=coverage", {}, env),
+			app.request("https://phaseo.app/api/_web/api-providers", {}, env),
 		]);
 
 		for (const response of [organisations, benchmarks, providers]) {

@@ -1,9 +1,8 @@
 "use client";
 
-import { ReactNode } from "react";
 import UpdateTabs from "@/components/updates/UpdateTabs";
 
-export default function UpdatesLayout({ children }: { children: ReactNode }) {
+export default function UpdatesLayout({ children }: LayoutProps<"/updates">) {
 	return (
 		<main className="flex min-h-screen flex-col">
 			<div className="container mx-auto flex-1 px-4 py-4">

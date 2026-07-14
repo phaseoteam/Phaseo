@@ -107,7 +107,7 @@ async function fetchModelsFromWebApi(
 	const versionQuery =
 		catalogueVersion === "v2" ? "&catalogue_version=v2" : "";
 	const firstResponse = await fetch(
-		`${apiOrigin}/api/public/models?limit=${pageSize}&offset=0${versionQuery}`,
+		`${apiOrigin}/api/_web/models?limit=${pageSize}&offset=0${versionQuery}`,
 		{ cache: "no-store" },
 	);
 	if (!firstResponse.ok) {
@@ -122,7 +122,7 @@ async function fetchModelsFromWebApi(
 	const laterPages = await Promise.all(
 		pageOffsets.map(async (offset) => {
 			const response = await fetch(
-				`${apiOrigin}/api/public/models?limit=${pageSize}&offset=${offset}${versionQuery}`,
+				`${apiOrigin}/api/_web/models?limit=${pageSize}&offset=${offset}${versionQuery}`,
 				{ cache: "no-store" },
 			);
 			if (!response.ok) {

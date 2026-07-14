@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ComponentProps } from "react";
 import type { Components } from "react-markdown";
 
 const KNOWN_INTERNAL_ROOTS = new Set([
@@ -57,7 +58,7 @@ export const modelMarkdownComponents: Components = {
 		if (typeof normalizedHref === "string" && normalizedHref.startsWith("/")) {
 			return (
 				<Link href={normalizedHref} className={className}>
-					{children}
+					{children as ComponentProps<typeof Link>["children"]}
 				</Link>
 			);
 		}

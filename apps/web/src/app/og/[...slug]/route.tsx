@@ -136,12 +136,14 @@ export async function GET(
 	return new ImageResponse(
 		(
 			<div
-				tw="h-full w-full text-slate-900"
 				style={{
 					display: "flex",
+					height: "100%",
+					width: "100%",
 					padding: "56px 64px 48px",
 					position: "relative",
 					fontSize: 48,
+					color: "#0f172a",
 					background: "#ffffff",
 					fontFamily:
 						"system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
@@ -149,8 +151,13 @@ export async function GET(
 			>
 				{/* MAIN COLUMN */}
 				<div
-					tw="w-full h-full"
-					style={{ display: "flex", flexDirection: "column", zIndex: 1 }}
+					style={{
+						display: "flex",
+						width: "100%",
+						height: "100%",
+						flexDirection: "column",
+						zIndex: 1,
+					}}
 				>
 					<div
 						style={{
@@ -180,7 +187,6 @@ export async function GET(
 
 					{/* TITLE / SUBTITLE / STATS */}
 					<div
-						tw="mt-10 flex-1"
 						style={{
 							display: "flex",
 							flexDirection: "column",
@@ -189,11 +195,12 @@ export async function GET(
 						}}
 					>
 						<div
-							tw="leading-[1.05] tracking-tight max-w-[900px] mb-4"
 							style={{
 								display: "flex",
 								maxWidth: "900px",
 								marginBottom: 16,
+								lineHeight: 1.05,
+								letterSpacing: "-0.025em",
 								fontSize: titleFontSize,
 								color: "#020617",
 							}}
@@ -203,7 +210,6 @@ export async function GET(
 
 						{payload.subtitle ? (
 							<div
-								tw="text-2xl text-slate-500 max-w-[900px] mb-10"
 								style={{
 									display: "flex",
 									maxWidth: "900px",
@@ -217,13 +223,11 @@ export async function GET(
 
 						{stats.length > 0 ? (
 							<div
-								tw="flex flex-wrap"
 								style={{ display: "flex", flexWrap: "wrap" }}
 							>
 								{stats.map((stat, index) => (
 									<div
 										key={stat.label}
-										tw="flex flex-col min-w-[180px] mr-10"
 										style={{
 											display: "flex",
 											flexDirection: "column",
@@ -235,26 +239,31 @@ export async function GET(
 										}}
 									>
 										<div
-											tw="text-[11px] uppercase text-slate-400"
-											style={{ display: "flex" }}
+											style={{
+												display: "flex",
+												fontSize: 11,
+												textTransform: "uppercase",
+												color: "#94a3b8",
+											}}
 										>
 											{stat.label}
 										</div>
 										<div
-											tw="mt-2 text-2xl"
 											style={{
 												display: "flex",
 												marginTop: 8,
+												fontSize: 24,
 											}}
 										>
 											{stat.value}
 										</div>
 										{stat.helper ? (
 											<div
-												tw="mt-1 text-xs text-slate-500"
 												style={{
 													display: "flex",
 													marginTop: 4,
+													fontSize: 12,
+													color: "#64748b",
 												}}
 											>
 												{stat.helper}

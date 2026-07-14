@@ -1,5 +1,3 @@
-import type { ReactNode } from "react";
-
-export default function FamiliesLayout({ children }: { children: ReactNode }) {
+export default function FamiliesLayout({ children }: LayoutProps<"/families">) {
 	return children;
 }
