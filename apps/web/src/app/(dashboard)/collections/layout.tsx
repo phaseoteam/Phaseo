@@ -1,5 +1,3 @@
-import type { ReactNode } from "react";
-
-export default function CollectionsLayout({ children }: { children: ReactNode }) {
-	return children;
+export default function CollectionsLayout({ children }: LayoutProps<"/collections">) {
+	return <>{children}</>;
 }
