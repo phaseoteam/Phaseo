@@ -233,7 +233,7 @@ export default function MyStatsig({
 	return (
 		<StatsigProvider client={client}>
 			<StatsigUserSync />
-			{children}
+			{children as React.ComponentProps<typeof StatsigProvider>["children"]}
 		</StatsigProvider>
 	);
 }
