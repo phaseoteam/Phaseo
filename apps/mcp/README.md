@@ -19,11 +19,15 @@ The initial authenticated tool set is:
 - `api_key_create` — requires `keys:write` and an owner/admin role. The caller
   must explicitly set `confirm: true`; the new secret is returned exactly once.
 
-The OAuth client used by an MCP host must be registered with Phaseo and request
-at least `openid profile email me:read keys:read keys:write`. A production
-ChatGPT app additionally needs Phaseo's OAuth client-registration flow enabled
-for the host callback URLs. Do not use a Management API key as the MCP bearer
-token: it cannot authenticate ordinary `/v1/models` or `/v1/keys` requests.
+When `PHASEO_THIRD_PARTY_OAUTH_ENABLED=true`, Phaseo advertises a dynamic client
+registration endpoint from its OAuth metadata. A compatible MCP host can then
+register its own callback URI, request only the scopes it needs, and send the
+resulting Phaseo access token to this Worker. The initial registration allowlist
+is deliberately narrow: identity, model catalogue, workspace read, and API-key
+read/write scopes only.
+
+Do not use a Management API key as the MCP bearer token: it cannot authenticate
+ordinary `/v1/models` or `/v1/keys` requests.
 
 ## Run locally
 
@@ -40,7 +44,7 @@ Deploy with `pnpm --filter @phaseo/mcp exec wrangler deploy`. The generated
 `workers.dev` URL is suitable for MCP Inspector testing. Attach
 `mcp.phaseo.app` only after the preview is validated.
 
-Before enabling a public ChatGPT app, configure Phaseo OAuth dynamic client
-registration (or a Cloudflare OAuth-provider adapter) so the host's callback
-URLs can be registered safely. Do not deploy write tools until that flow,
-consent screen, and audit logging are reviewed.
+Before enabling a public ChatGPT app, set
+`PHASEO_THIRD_PARTY_OAUTH_ENABLED=true` in the API Worker and validate the
+complete authorization-code flow with MCP Inspector. Do not deploy write tools
+until the consent screen and audit logging are reviewed.
