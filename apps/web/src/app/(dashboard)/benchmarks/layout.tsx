@@ -1,5 +1,3 @@
-import type { ReactNode } from "react";
-
-export default function BenchmarksLayout({ children }: { children: ReactNode }) {
+export default function BenchmarksLayout({ children }: LayoutProps<"/benchmarks">) {
 	return children;
 }
