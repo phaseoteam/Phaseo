@@ -1,0 +1,14 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "phaseo-mcp",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-05-28",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "PHASEO_API_BASE_URL": "https://api.phaseo.app"
+  }
+}

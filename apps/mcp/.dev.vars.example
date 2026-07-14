@@ -1,0 +1,4 @@
+# A dedicated Phaseo key with models:read, providers:read, and pricing:read only.
+PHASEO_API_TOKEN="replace-with-read-only-phaseo-api-key"
+# Optional when testing against a local or preview gateway.
+# PHASEO_API_BASE_URL="http://127.0.0.1:8787"

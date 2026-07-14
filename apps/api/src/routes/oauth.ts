@@ -671,8 +671,38 @@ oauthRouter.get(
 			200,
 			{ "Cache-Control": "public, max-age=300" },
 			),
+	),
+);
+
+// MCP clients discover OAuth authorization servers through RFC 8414 metadata,
+// rather than OpenID Connect discovery. Keep both documents aligned because
+// Phaseo supports OIDC identity scopes and MCP's OAuth 2.1 authorization flow.
+oauthRouter.get(
+	"/.well-known/oauth-authorization-server",
+	withRuntime(async () =>
+		json(
+			{
+				issuer: getIssuer(),
+				authorization_endpoint: `${getApiBaseUrl()}/oauth/authorize`,
+				token_endpoint: `${getApiBaseUrl()}/oauth/token`,
+				device_authorization_endpoint: `${getApiBaseUrl()}/oauth/device/code`,
+				revocation_endpoint: `${getApiBaseUrl()}/oauth/revoke`,
+				userinfo_endpoint: `${getApiBaseUrl()}/oauth/userinfo`,
+				jwks_uri: `${getApiBaseUrl()}/oauth/.well-known/jwks.json`,
+				response_types_supported: ["code"],
+				grant_types_supported: [
+					"authorization_code",
+					"refresh_token",
+					"urn:ietf:params:oauth:grant-type:device_code",
+				],
+				code_challenge_methods_supported: ["S256"],
+				scopes_supported: [...ALL_SUPPORTED_SCOPES],
+			},
+			200,
+			{ "Cache-Control": "public, max-age=300" },
 		),
-	);
+	),
+);
 
 oauthRouter.get(
 	"/.well-known/jwks.json",

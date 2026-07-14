@@ -1,0 +1,23 @@
+{
+  "name": "@phaseo/mcp",
+	"version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "build": "wrangler deploy --dry-run",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "agents": "^0.17.3",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260523.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.7",
+    "wrangler": "^4.94.0"
+  }
+}
