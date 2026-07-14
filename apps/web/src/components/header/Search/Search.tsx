@@ -218,7 +218,7 @@ async function fetchSearchData(): Promise<SearchData> {
 	if (cachedSearchData) return cachedSearchData;
 	if (searchDataRequest) return searchDataRequest;
 
-	searchDataRequest = fetch("/api/_web/search", {
+	searchDataRequest = fetch("/api/frontend/search", {
 		method: "GET",
 		cache: "no-store",
 		credentials: "same-origin",

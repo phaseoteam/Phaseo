@@ -32,8 +32,8 @@ describe("public model routes", () => {
 		vi.stubGlobal("fetch", fetchMock);
 
 		const [v2, invalid] = await Promise.all([
-			app.request("https://phaseo.app/api/_web/models?catalogue_version=v2", {}, env),
-			app.request("https://phaseo.app/api/_web/models?catalogue_version=v3", {}, env),
+			app.request("https://phaseo.app/api/public/models?catalogue_version=v2", {}, env),
+			app.request("https://phaseo.app/api/public/models?catalogue_version=v3", {}, env),
 		]);
 
 		expect(v2.status).toBe(200);
@@ -79,7 +79,7 @@ describe("public model routes", () => {
 		}));
 
 		const response = await app.request(
-			"https://phaseo.app/api/_web/models?region-check=1",
+			"https://phaseo.app/api/public/models?region-check=1",
 			{},
 			env,
 		);
@@ -112,9 +112,9 @@ describe("public model routes", () => {
 		}));
 
 		const [catalogue, benchmarks, performance] = await Promise.all([
-			app.request("https://phaseo.app/api/_web/models", {}, env),
-			app.request("https://phaseo.app/api/_web/models/openai%2Fgpt-test/benchmarks", {}, env),
-			app.request("https://phaseo.app/api/_web/models/openai%2Fgpt-test/performance", {}, env),
+			app.request("https://phaseo.app/api/public/models", {}, env),
+			app.request("https://phaseo.app/api/public/models/openai%2Fgpt-test/benchmarks", {}, env),
+			app.request("https://phaseo.app/api/public/models/openai%2Fgpt-test/performance", {}, env),
 		]);
 
 		expect(catalogue.status).toBe(200);

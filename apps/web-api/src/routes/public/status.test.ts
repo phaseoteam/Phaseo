@@ -5,14 +5,14 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("GET /api/_web/status", () => {
+describe("GET /api/public/status", () => {
   it("returns an anonymous, edge-cacheable status summary", async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({ page: { status: "operational" } }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ components: [{ name: "Models API (/v1/api/models)", status: "up" }] }), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
 
-    const response = await app.request("https://phaseo.app/api/_web/status", {}, { ENV: "development" });
+    const response = await app.request("https://phaseo.app/api/public/status", {}, { ENV: "development" });
 
     expect(response.status).toBe(200);
 		expect(response.headers.get("cache-control")).toBe("public, max-age=60, s-maxage=30, stale-while-revalidate=60");
