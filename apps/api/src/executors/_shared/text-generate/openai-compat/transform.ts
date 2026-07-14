@@ -63,7 +63,7 @@ function readExecutableResponseToolCall(item: any): { id: string | null; name: s
 }
 
 function usesOpenAIResponsesShape(providerId?: string): boolean {
-	return providerId === "openai" || providerId === "meta";
+	return providerId === "openai" || providerId === "meta" || providerId === "amazon-bedrock";
 }
 
 function addMetaWebSearchTool(request: any, ir: IRChatRequest): void {

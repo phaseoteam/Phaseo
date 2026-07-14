@@ -29037,16 +29037,16 @@
         "model_key": "crofai:crofai/greg-2-ultra:text.generate"
       }
     },
-    "../../packages/data/catalog/src/data/api_providers/amazon-bedrock-mantle/api_provider.json": {
-      "hash": "f17a11da6f853ff4fd8e42a99ac0e5cb",
+    "../../packages/data/catalog/src/data/api_providers/amazon-bedrock/api_provider.json": {
+      "hash": "58cbab47258b7a103713f90900b51b12",
       "meta": {
-        "api_provider_id": "amazon-bedrock-mantle"
+        "api_provider_id": "amazon-bedrock"
       }
     },
-    "../../packages/data/catalog/src/data/api_providers/amazon-bedrock-mantle/models.json": {
-      "hash": "473ab746a8325eba30c46f99e06b0a07",
+    "../../packages/data/catalog/src/data/api_providers/amazon-bedrock/models.json": {
+      "hash": "5fce86e1523a5b24b30713ac271e2db7",
       "meta": {
-        "api_provider_id": "amazon-bedrock-mantle",
+        "api_provider_id": "amazon-bedrock",
         "kind": "provider_models",
         "linked_model_ids": [
           "anthropic/claude-sonnet-5",

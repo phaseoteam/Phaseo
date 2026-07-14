@@ -370,43 +370,18 @@ function geminiJson(tool = false) {
     };
 }
 
-function bedrockJson(tool = false) {
-    return {
-        output: {
-            message: {
-                content: tool
-                    ? [{
-                        toolUse: {
-                            toolUseId: "tool_1",
-                            name: "get_weather",
-                            input: { city: "SF" },
-                        },
-                    }]
-                    : [{ text: "Hello world" }],
-            },
-        },
-        stopReason: tool ? "tool_use" : "end_turn",
-        usage: {
-            inputTokens: tool ? 8 : 4,
-            outputTokens: tool ? 4 : 2,
-            totalTokens: tool ? 12 : 6,
-        },
-    };
-}
-
 type UpstreamKind =
     | "openai-chat"
     | "openai-responses"
     | "openai-legacy-completions"
     | "anthropic"
     | "google-gemini"
-    | "bedrock-converse"
     | "vertex-openapi-chat";
 
 function resolveUpstreamKind(providerId: string, model: string): UpstreamKind {
     if (providerId === "anthropic") return "anthropic";
     if (providerId === "google-ai-studio") return "google-gemini";
-    if (providerId === "amazon-bedrock") return "bedrock-converse";
+    if (providerId === "amazon-bedrock") return "openai-chat";
     if (providerId === "google-vertex") return "vertex-openapi-chat";
 
     if (providerId === "x-ai" || providerId === "xai") return "openai-responses";
@@ -430,8 +405,6 @@ function expectedNativeResponseId(kind: UpstreamKind): string {
             return "msg_mock";
         case "google-gemini":
             return "gemini_mock";
-        case "bedrock-converse":
-            return "bedrock_req_mock";
         default:
             return "chatcmpl_mock";
     }
@@ -525,9 +498,6 @@ async function executeExecutorScenario(args: {
                 if (upstreamKind === "google-gemini") {
                     return url.includes(":generateContent");
                 }
-                if (upstreamKind === "bedrock-converse") {
-                    return url.includes("/model/") && url.includes("/converse");
-                }
                 if (upstreamKind === "vertex-openapi-chat") {
                     return url.includes("/endpoints/openapi/chat/completions");
                 }
@@ -576,11 +546,6 @@ async function executeExecutorScenario(args: {
                 if (upstreamKind === "google-gemini") {
                     return jsonResponse(geminiJson(Boolean(args.tool)));
                 }
-                if (upstreamKind === "bedrock-converse") {
-                    return jsonResponse(bedrockJson(Boolean(args.tool)), {
-                        headers: { "x-request-id": "bedrock_req_mock" },
-                    });
-                }
                 if (upstreamKind === "vertex-openapi-chat") {
                     return jsonResponse(openAiChatJson(Boolean(args.tool)));
                 }
@@ -598,10 +563,6 @@ async function executeExecutorScenario(args: {
                 }
                 if (upstreamKind === "google-gemini") {
                     expect(Array.isArray(call.bodyJson?.contents)).toBe(true);
-                    return;
-                }
-                if (upstreamKind === "bedrock-converse") {
-                    expect(Array.isArray(call.bodyJson?.messages)).toBe(true);
                     return;
                 }
                 if (upstreamKind === "vertex-openapi-chat") {
