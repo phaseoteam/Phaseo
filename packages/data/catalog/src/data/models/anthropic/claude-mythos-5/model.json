@@ -2,7 +2,7 @@
   "model_id": "anthropic/claude-mythos-5",
   "organisation_id": "anthropic",
   "name": "Claude Mythos 5",
-  "status": "Withheld",
+  "status": "Limited Access",
   "previous_model_id": "anthropic/claude-mythos-preview",
   "description": "Claude Mythos 5 is Anthropic's limited-availability Mythos-class model and the direct successor to [Claude Mythos Preview](/anthropic/claude-mythos-preview). It is the same underlying model as [Claude Fable 5](/anthropic/claude-fable-5), but offered through Project Glasswing and related trusted-access programs with safeguards lifted in specific high-risk domains, making it Anthropic's restricted frontier track for the hardest long-horizon coding, cyber-defense, and research workflows.",
   "announced_date": "2026-06-09T00:00:00",
@@ -20,19 +20,23 @@
   },
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://www.anthropic.com/news/claude-fable-5-mythos-5"
     },
     {
-      "platform": "docs",
+      "title": "Docs",
+      "kind": "docs",
       "url": "https://platform.claude.com/docs/en/about-claude/models/introducing-claude-fable-5-and-claude-mythos-5"
     },
     {
-      "platform": "website",
+      "title": "Website",
+      "kind": "website",
       "url": "https://www.anthropic.com/claude/mythos"
     },
     {
-      "platform": "model_card",
+      "title": "Model Card",
+      "kind": "model_card",
       "url": "https://www-cdn.anthropic.com/d00db56fa754a1b115b6dd7cb2e3c342ee809620.pdf"
     }
   ],
@@ -81,7 +85,7 @@
     },
     {
       "benchmark_id": "frontiercode-diamond",
-      "score": 24.0,
+      "score": 24,
       "is_self_reported": true,
       "other_info": "High effort; Anthropic Mythos-class FrontierCode compute-scaling chart",
       "source_link": "https://www-cdn.anthropic.com/d00db56fa754a1b115b6dd7cb2e3c342ee809620.pdf",

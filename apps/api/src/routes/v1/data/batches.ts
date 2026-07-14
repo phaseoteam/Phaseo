@@ -107,6 +107,27 @@ function jsonPayload(payload: unknown, status = 200): Response {
 	});
 }
 
+function batchAsyncPersistenceFailureResponse(args: {
+	message: string;
+	batchId: string;
+	nativeBatchId?: string | null;
+	status?: string | null;
+	reservationId?: string | null;
+	reservationStatus?: string | null;
+}): Response {
+	return jsonPayload({
+		error: {
+			type: "async_job_persistence_failed",
+			message: args.message,
+			batch_id: args.batchId,
+			native_batch_id: args.nativeBatchId ?? args.batchId,
+			status: args.status ?? null,
+			reservation_id: args.reservationId ?? null,
+			reservation_status: args.reservationStatus ?? null,
+		},
+	}, 502);
+}
+
 function resolveBatchProviderForCurrentAdapter(args: {
 	mode: BatchInputMode;
 	provider: unknown;
@@ -1542,16 +1563,14 @@ async function handleCreate(req: Request) {
 					providerId,
 					cancelled,
 				});
-				return jsonPayload({
-					error: {
-						type: "gateway_error",
-						reason: "batch_persistence_failed",
-						message: "The provider accepted the batch, but the gateway could not persist ownership. Cancellation was requested and the batch was not returned as successfully created.",
-						provider: providerId,
-						provider_batch_id: nativeBatchId,
-						cancellation_requested: cancelled,
-					},
-				}, 502);
+				return batchAsyncPersistenceFailureResponse({
+					message: `The provider accepted the batch, but Phaseo could not persist ownership metadata. Provider cancellation was ${cancelled ? "requested" : "not confirmed"}.`,
+					batchId,
+					nativeBatchId,
+					status: toText(upstreamJson?.status),
+					reservationId: reservation.reservationId,
+					reservationStatus: reservation.status,
+				});
 			}
 		}
 		if (batchId && requestRows?.length) {
@@ -1672,13 +1691,25 @@ async function handleRetrieve(req: Request, id: string) {
 			...meta,
 			provider: providerId,
 		});
-		await saveBatchJobMeta(auth.workspaceId, batchId, refreshedMeta).catch((lookupErr) => {
+		const persistenceFailure = await saveBatchJobMeta(auth.workspaceId, batchId, refreshedMeta)
+			.then(() => null)
+			.catch((lookupErr) => {
 			console.error("batch_job_meta_refresh_failed", {
 				error: lookupErr,
 				workspaceId: auth.workspaceId,
 				batchId,
+				status: toText(upstreamJson?.status),
+			});
+			return batchAsyncPersistenceFailureResponse({
+				message: "Batch status was refreshed upstream, but Phaseo could not persist the refreshed gateway metadata.",
+				batchId,
+				nativeBatchId: meta.nativeBatchId ?? batchId,
+				status: toText(upstreamJson?.status),
+				reservationId: meta.reservationId ?? null,
+				reservationStatus: meta.reservationStatus ?? null,
 			});
 		});
+		if (persistenceFailure) return persistenceFailure;
 		await persistBatchFileOwnership(auth.workspaceId, providerId, upstreamJson).catch((lookupErr) => {
 			console.error("batch_output_file_meta_store_failed", {
 				error: lookupErr,
@@ -1772,13 +1803,25 @@ async function handleCancel(req: Request, id: string) {
 			provider: providerId,
 			status: "cancelling",
 		});
-		await saveBatchJobMeta(auth.workspaceId, batchId, refreshedMeta).catch((lookupErr) => {
+		const persistenceFailure = await saveBatchJobMeta(auth.workspaceId, batchId, refreshedMeta)
+			.then(() => null)
+			.catch((lookupErr) => {
 			console.error("batch_job_meta_cancel_refresh_failed", {
 				error: lookupErr,
 				workspaceId: auth.workspaceId,
 				batchId,
+				status: toText(upstreamJson?.status),
+			});
+			return batchAsyncPersistenceFailureResponse({
+				message: "Batch cancellation was accepted upstream, but Phaseo could not persist the refreshed gateway metadata.",
+				batchId,
+				nativeBatchId: meta.nativeBatchId ?? batchId,
+				status: toText(upstreamJson?.status),
+				reservationId: meta.reservationId ?? null,
+				reservationStatus: meta.reservationStatus ?? null,
 			});
 		});
+		if (persistenceFailure) return persistenceFailure;
 		const nextStatus = String(upstreamJson?.status ?? "").toLowerCase();
 		if (nextStatus === "cancelled" || nextStatus === "canceled") {
 			finalization = await finalizeBatchJob({

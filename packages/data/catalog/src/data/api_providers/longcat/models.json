@@ -4,13 +4,34 @@
     "provider_api_model_id": "longcat:meituan/longcat-2.0-preview",
     "provider_model_slug": "LongCat-2.0-Preview",
     "internal_model_id": "meituan/longcat-2.0-preview",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": 1048576,
     "max_output_tokens": null,
     "effective_from": "2026-03-12T16:00:00",
+    "effective_to": "2026-06-29T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "disabled",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meituan/longcat-2.0",
+    "provider_api_model_id": "longcat:meituan/longcat-2.0",
+    "provider_model_slug": "LongCat-2.0",
+    "internal_model_id": "meituan/longcat-2.0",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-29T00:00:00",
     "effective_to": null,
     "capabilities": [
       {

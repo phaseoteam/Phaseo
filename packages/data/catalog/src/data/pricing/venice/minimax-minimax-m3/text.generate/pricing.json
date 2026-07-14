@@ -12,10 +12,23 @@
       "price_per_unit": 0.3,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Venice public models API returned this pricing metadata on 2026-06-01.",
+      "note": "Venice public models API returned the retired minimax-m3 slug pricing metadata on 2026-06-01.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-01T00:00:00Z"
+      "effective_from": "2026-06-01T00:00:00Z",
+      "effective_to": "2026-06-12T00:00:00Z"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.3,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Venice public models API and pricing page list MiniMax M3 Preview (Beta), id minimax-m3-preview, at this rate as of 2026-07-01.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-12T00:00:00Z"
     },
     {
       "meter": "cached_read_text_tokens",
@@ -24,10 +37,23 @@
       "price_per_unit": 0.06,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Venice public models API returned this pricing metadata on 2026-06-01.",
+      "note": "Venice public models API returned the retired minimax-m3 slug pricing metadata on 2026-06-01.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-01T00:00:00Z"
+      "effective_from": "2026-06-01T00:00:00Z",
+      "effective_to": "2026-06-12T00:00:00Z"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.06,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Venice public models API and pricing page list MiniMax M3 Preview (Beta), id minimax-m3-preview, at this rate as of 2026-07-01.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-12T00:00:00Z"
     },
     {
       "meter": "output_text_tokens",
@@ -36,10 +62,23 @@
       "price_per_unit": 1.2,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Venice public models API returned this pricing metadata on 2026-06-01.",
+      "note": "Venice public models API returned the retired minimax-m3 slug pricing metadata on 2026-06-01.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-01T00:00:00Z"
+      "effective_from": "2026-06-01T00:00:00Z",
+      "effective_to": "2026-06-12T00:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.2,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Venice public models API and pricing page list MiniMax M3 Preview (Beta), id minimax-m3-preview, at this rate as of 2026-07-01.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-12T00:00:00Z"
     }
   ]
 }

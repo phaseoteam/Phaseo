@@ -15,7 +15,8 @@
   "api_model_id": "meta/muse-spark",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://about.fb.com/news/2026/04/introducing-muse-spark-meta-superintelligence-labs/"
     }
   ],

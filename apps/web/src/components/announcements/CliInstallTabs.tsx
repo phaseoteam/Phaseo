@@ -1,14 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { SquareTerminal } from "lucide-react";
 import { CopyButton } from "@/components/ui/copy-button";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 type PackageManager = "npm" | "pnpm" | "yarn" | "bun";
 type CommandMode = "install" | "update";
@@ -24,7 +19,7 @@ function commandFor(packageName: string, packageManager: PackageManager, mode: C
 }
 
 export default function CliInstallTabs({
-	packageName = "@ai-stats/cli",
+	packageName = "@phaseo/cli",
 	mode = "install",
 	title,
 }: {
@@ -39,41 +34,48 @@ export default function CliInstallTabs({
 	);
 
 	return (
-		<div className="my-6 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-950">
-			<div className="flex flex-col gap-3 border-b border-zinc-200 px-4 py-4 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-between">
-				<div>
-					<p className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
-						{title ?? (mode === "install" ? "Install the CLI" : "Update the CLI")}
-					</p>
-					<p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-						Choose your package manager, then copy the command.
-					</p>
-				</div>
-				<div className="w-full sm:w-44">
-					<Select value={packageManager} onValueChange={(value) => setPackageManager(value as PackageManager)}>
-						<SelectTrigger className="w-full">
-							<SelectValue placeholder="Package manager" />
-						</SelectTrigger>
-						<SelectContent>
-							{PACKAGE_MANAGERS.map((entry) => (
-								<SelectItem key={entry} value={entry}>
-									{entry}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-				</div>
+		<div className="my-6">
+			<div className="mb-3">
+				<p className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
+					{title ?? (mode === "install" ? "Install the CLI" : "Update the CLI")}
+				</p>
+				<p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+					Choose your package manager, then copy the command.
+				</p>
 			</div>
-			<div className="flex items-start justify-between gap-3 bg-zinc-950 px-4 py-4 text-sm text-zinc-100">
-				<code className="min-w-0 flex-1 overflow-x-auto whitespace-pre-wrap break-all font-mono">
+			<div className="overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 text-sm text-zinc-950 shadow-xs dark:border-zinc-800 dark:bg-zinc-900/70 dark:text-zinc-100">
+				<div className="flex items-center justify-between gap-3 border-b border-zinc-200 px-4 py-2 dark:border-zinc-800">
+					<div className="flex min-w-0 items-center gap-1.5">
+						<span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+							<SquareTerminal className="size-3.5" aria-hidden="true" />
+						</span>
+						<div className="flex min-w-0 items-center gap-1">
+							{PACKAGE_MANAGERS.map((entry) => (
+								<button
+									key={entry}
+									type="button"
+									className={cn(
+										"rounded-md px-2 py-1 text-xs font-medium text-zinc-600 transition hover:bg-zinc-200 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100",
+										entry === packageManager &&
+											"bg-white text-zinc-950 shadow-xs ring-1 ring-zinc-200 dark:bg-zinc-950 dark:text-zinc-50 dark:ring-zinc-700"
+									)}
+									onClick={() => setPackageManager(entry)}
+								>
+									{entry}
+								</button>
+							))}
+						</div>
+					</div>
+					<CopyButton
+						content={command}
+						variant="ghost"
+						className="text-zinc-500 hover:bg-zinc-200 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
+						aria-label={`Copy ${packageManager} ${mode} command`}
+					/>
+				</div>
+				<code className="block min-w-0 overflow-x-auto whitespace-pre-wrap break-all px-4 py-4 font-mono">
 					{command}
 				</code>
-				<CopyButton
-					content={command}
-					variant="outline"
-					className="border-zinc-700 bg-zinc-900 text-zinc-100 hover:bg-zinc-800"
-					aria-label={`Copy ${packageManager} ${mode} command`}
-				/>
 			</div>
 		</div>
 	);

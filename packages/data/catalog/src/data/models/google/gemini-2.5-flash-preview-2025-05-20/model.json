@@ -7,8 +7,8 @@
   "description": "Gemini 2.5 Flash Preview (2025-05-20) is Google's GA high-efficiency multimodal model optimized for low-latency, high-volume workloads. This entry tracks a preview release and capabilities may change before general availability.",
   "announced_date": "2025-05-20T00:00:00",
   "release_date": "2025-05-20T00:00:00",
-  "deprecation_date": "2025-06-15T00:00:00",
-  "retirement_date": "2025-07-15T00:00:00",
+  "deprecation_date": "2025-11-04T00:00:00",
+  "retirement_date": "2025-11-18T00:00:00",
   "license": "Proprietary",
   "input_types": "text,image,video,audio",
   "output_types": "text",
@@ -16,11 +16,13 @@
   "family_id": "google/gemini-2.5",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://ai.google.dev/gemini-api/docs/models#gemini-2.5-flash-preview"
     },
     {
-      "platform": "playground",
+      "title": "Playground",
+      "kind": "playground",
       "url": "https://aistudio.google.com/?model=gemini-2.5-flash-preview-05-20"
     }
   ],

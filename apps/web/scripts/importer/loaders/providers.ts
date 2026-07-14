@@ -591,6 +591,44 @@ function resolveTouchedModelIds(
     return Array.from(resolved);
 }
 
+function resolveProviderSourceModelId(
+    apiModelId: string,
+    internalModelId: string,
+    lookups: {
+        knownModelIds: Set<string>;
+        apiToModelId: Map<string, string>;
+        normalizedModelIdToModelId: Map<string, string>;
+    }
+): string | null {
+    return (
+        (internalModelId && lookups.knownModelIds.has(internalModelId)
+            ? internalModelId
+            : "") ||
+        lookups.apiToModelId.get(apiModelId) ||
+        lookups.normalizedModelIdToModelId.get(
+            normalizeModelIdForMatch(apiModelId)
+        ) ||
+        (lookups.knownModelIds.has(apiModelId) ? apiModelId : "") ||
+        null
+    );
+}
+
+function matchesModelFilter(
+    modelFilter: string | null,
+    apiModelId: string,
+    internalModelId: string,
+    resolvedModelId: string | null,
+): boolean {
+    if (!modelFilter) return true;
+    const filter = modelFilter.trim();
+    if (!filter) return true;
+    return (
+        apiModelId === filter ||
+        internalModelId === filter ||
+        resolvedModelId === filter
+    );
+}
+
 export async function loadProviders(
     tracker: ChangeTracker,
     opts?: { modelId?: string | null }
@@ -629,6 +667,9 @@ export async function loadProviders(
         api_model_id: string;
         model_id: string | null;
         provider_model_slug: string | null;
+        prompt_training_policy_override: string | null;
+        prompt_training_override_notes: string | null;
+        prompt_training_override_source_url: string | null;
         internal_model_id: string | null;
         is_active_gateway: boolean;
         input_modalities: string[] | null;
@@ -795,17 +836,26 @@ export async function loadProviders(
                         ? model.internal_model_id.trim()
                         : "";
                 if (!model?.provider_api_model_id || !apiModelId) continue;
-                if (modelFilter && apiModelId !== modelFilter) continue;
 
-                const resolvedModelId =
-                    (internalModelId && knownModelIds.has(internalModelId)
-                        ? internalModelId
-                        : "") ||
-                    apiToModelId.get(apiModelId) ||
-                    normalizedModelIdToModelId.get(
-                        normalizeModelIdForMatch(apiModelId)
-                    ) ||
-                    (knownModelIds.has(apiModelId) ? apiModelId : "");
+                const resolvedModelId = resolveProviderSourceModelId(
+                    apiModelId,
+                    internalModelId,
+                    {
+                        knownModelIds,
+                        apiToModelId,
+                        normalizedModelIdToModelId,
+                    }
+                );
+                if (
+                    !matchesModelFilter(
+                        modelFilter,
+                        apiModelId,
+                        internalModelId,
+                        resolvedModelId,
+                    )
+                ) {
+                    continue;
+                }
 
                 const hasResolvedModelId = Boolean(resolvedModelId);
                 if (!hasResolvedModelId) {
@@ -830,7 +880,7 @@ export async function loadProviders(
                 const effectiveInternalModelId =
                     (hasValidInternalModelId ? internalModelId : "") ||
                     (hasResolvedModelId ? resolvedModelId : null);
-                if (shouldTouchProviderModels && hasResolvedModelId) {
+                if (shouldTouchProviderModels && resolvedModelId) {
                     touchedModelIds.add(resolvedModelId);
                 }
                 const provider_api_model_id = model.provider_api_model_id;
@@ -841,6 +891,9 @@ export async function loadProviders(
                     api_model_id: apiModelId,
                     model_id: hasResolvedModelId ? resolvedModelId : null,
                     provider_model_slug: model.provider_model_slug ?? null,
+                    prompt_training_policy_override: model.prompt_training_policy_override ?? null,
+                    prompt_training_override_notes: model.prompt_training_override_notes ?? null,
+                    prompt_training_override_source_url: model.prompt_training_override_source_url ?? null,
                     internal_model_id: effectiveInternalModelId,
                     is_active_gateway: !!model.is_active_gateway,
                     input_modalities: toTextArray(model.input_modalities),

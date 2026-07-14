@@ -4,9 +4,10 @@ import React from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Calendar, Activity } from "lucide-react";
+import { ExternalLink, Calendar, Activity, AlertTriangle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import RevokeDialog from "./RevokeDialog";
+import { oauthScopeLabel } from "@/lib/oauth/scopes";
 
 interface AuthorizationCardProps {
 	authorization: any;
@@ -14,12 +15,9 @@ interface AuthorizationCardProps {
 }
 
 export default function AuthorizationCard({ authorization }: AuthorizationCardProps) {
-	const scopeLabels: Record<string, string> = {
-		openid: "Identity",
-		email: "Email",
-		profile: "Profile",
-		"gateway:access": "API Gateway Access",
-	};
+	const additionalScopes = Array.isArray(authorization.additional_scopes)
+		? authorization.additional_scopes.filter((scope: unknown): scope is string => typeof scope === "string")
+		: [];
 
 	return (
 		<Card>
@@ -69,13 +67,34 @@ export default function AuthorizationCard({ authorization }: AuthorizationCardPr
 				<div>
 					<div className="text-sm font-medium mb-2">Permissions</div>
 					<div className="flex flex-wrap gap-2">
-						{(authorization.scopes || []).map((scope: string) => (
+						{(Array.isArray(authorization.scopes) ? authorization.scopes : []).map((scope: string) => (
 							<Badge key={scope} variant="secondary" className="text-xs">
-								{scopeLabels[scope] || scope}
+								{oauthScopeLabel(scope)}
 							</Badge>
 						))}
 					</div>
 				</div>
+
+				{additionalScopes.length > 0 ? (
+					<div className="rounded-md border border-amber-300 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/30">
+						<div className="flex items-start gap-2">
+							<AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-700 dark:text-amber-300" />
+							<div className="space-y-2">
+								<div className="text-sm font-medium text-amber-900 dark:text-amber-100">Additional permissions available</div>
+								<p className="text-xs text-amber-800 dark:text-amber-200">
+									This app can now request more permissions. Your existing access has not changed; review and approve any new request in the OAuth consent screen, or revoke this authorization to decline access.
+								</p>
+								<div className="flex flex-wrap gap-2">
+									{additionalScopes.map((scope) => (
+										<Badge key={scope} variant="outline" className="border-amber-300 bg-transparent text-xs text-amber-900 dark:border-amber-800 dark:text-amber-100">
+											{oauthScopeLabel(scope)}
+										</Badge>
+									))}
+								</div>
+							</div>
+						</div>
+					</div>
+				) : null}
 
 				{/* Team */}
 				<div>

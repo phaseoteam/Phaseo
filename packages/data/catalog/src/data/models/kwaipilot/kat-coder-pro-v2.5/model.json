@@ -1,0 +1,38 @@
+{
+  "model_id": "kwaipilot/kat-coder-pro-v2.5",
+  "organisation_id": "kwaipilot",
+  "name": "KAT-Coder-Pro V2.5",
+  "status": "Available",
+  "previous_model_id": "kwaipilot/kat-coder-pro-v2",
+  "description": "KAT-Coder-Pro V2.5 is a high-end coding agent model in KwaiKAT's KAT-Coder series, built for complex software engineering, repository-scale tasks, and autonomous development workflows.",
+  "announced_date": "2026-07-10T00:00:00",
+  "release_date": "2026-07-10T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": [
+    "text"
+  ],
+  "output_types": [
+    "text"
+  ],
+  "api_model_id": "kwaipilot/kat-coder-pro-v2.5",
+  "links": [
+    {
+      "title": "KwaiKAT KAT-Coder-Pro V2.5 release post",
+      "kind": "announcement",
+      "url": "https://x.com/KwaiAICoder/status/2075430060245631055?s=20"
+    }
+  ],
+  "details": [
+    {
+      "name": "api_model_id",
+      "value": "kwaipilot/kat-coder-pro-v2.5"
+    },
+    {
+      "name": "upstream_discovery",
+      "value": "AI Stats provider discovery detected AtlasCloud adding kwaipilot/kat-coder-pro-v2.5 on 2026-07-08."
+    }
+  ],
+  "benchmarks": []
+}

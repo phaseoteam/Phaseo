@@ -27,7 +27,7 @@ export function requireLiveEnv(name: string): string {
 
 function gatewayKeyKid(): string {
 	const match = GATEWAY_API_KEY.match(/^aistats_v1_sk_([^_]+)_/);
-	if (!match?.[1]) throw new Error("Expected structured AI Stats API key");
+	if (!match?.[1]) throw new Error("Expected structured Phaseo API key");
 	return match[1];
 }
 

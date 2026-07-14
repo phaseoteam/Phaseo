@@ -1,11 +1,11 @@
 ---
 title: "Migrating from Helicone AI Gateway"
-description: "Step-by-step guide to migrate your Helicone AI Gateway integration to AI Stats Gateway."
+description: "Step-by-step guide to migrate your Helicone AI Gateway integration to Phaseo Gateway."
 ---
 
 # Migrating from Helicone AI Gateway
 
-This guide helps migrate from Helicone's gateway to AI Stats.
+This guide helps migrate from Helicone's gateway to Phaseo.
 
 ## Overview
 
@@ -17,7 +17,7 @@ Both provide AI API proxying with observability. Migration involves:
 
 ## Prerequisites
 
--   AI Stats account
+-   Phaseo account
 -   Helicone setup
 
 ## Migration Steps
@@ -38,10 +38,10 @@ curl https://oai.helicone.ai/v1/chat/completions \
     "messages": [{"role": "user", "content": "Hello!"}]
   }'
 
-# After (AI Stats)
+# After (Phaseo)
 
-curl https://api.phaseo.app/v1/chat/completions \
- -H "Authorization: Bearer your-ai-stats-key" \
+curl https://api.phaseo.ai/v1/chat/completions \
+ -H "Authorization: Bearer your-phaseo-key" \
  -H "Content-Type: application/json" \
  -d '{
 "model": "gpt-4",
@@ -54,8 +54,8 @@ curl https://api.phaseo.app/v1/chat/completions \
 import openai
 
 client = openai.OpenAI(
-    api_key="your-ai-stats-key",
-    base_url="https://api.phaseo.app/v1"
+    api_key="your-phaseo-key",
+    base_url="https://api.phaseo.ai/v1"
 )
 
 response = client.chat.completions.create(
@@ -68,8 +68,8 @@ response = client.chat.completions.create(
 import OpenAI from "openai";
 
 const client = new OpenAI({
-	apiKey: "your-ai-stats-key",
-	baseURL: "https://api.phaseo.app/v1",
+	apiKey: "your-phaseo-key",
+	baseURL: "https://api.phaseo.ai/v1",
 });
 
 const response = await client.chat.completions.create({
@@ -88,7 +88,7 @@ Remove Helicone-specific headers.
 
 ### 3. Observability
 
-AI Stats provides analytics. Migrate monitoring accordingly.
+Phaseo provides analytics. Migrate monitoring accordingly.
 
 ### 4. Test
 
@@ -101,4 +101,4 @@ Ensure requests work.
 
 ## Next Steps
 
--   Set up AI Stats analytics.
+-   Set up Phaseo analytics.

@@ -21,7 +21,7 @@ export function GetStartedSection() {
 					</Button>
 					<Button asChild variant="outline" size="lg">
 						<Link
-							href="https://github.com/AI-Stats/AI-Stats"
+							href="https://github.com/phaseoteam/Phaseo"
 							target="_blank"
 							rel="noreferrer"
 						>

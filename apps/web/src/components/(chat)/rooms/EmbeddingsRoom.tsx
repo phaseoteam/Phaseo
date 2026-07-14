@@ -477,7 +477,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 	const composerModelLogoId =
 		composerSelectedModel?.organisationId?.trim() ||
 		composerSelectedModel?.providerId ||
-		(modelId.split("/")[0] || "ai-stats");
+		(modelId.split("/")[0] || "phaseo");
 	const composerModelLabel =
 		(modelId &&
 			(modelSettings.modelDisplayNameById[modelId] ||
@@ -1094,10 +1094,10 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 							</span>
 						</SidebarMenuButton>
 						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<SidebarMenuAction showOnHover>
+							<DropdownMenuTrigger render={<SidebarMenuAction showOnHover />}>
+
 									<MoreHorizontal className="h-4 w-4" />
-								</SidebarMenuAction>
+
 							</DropdownMenuTrigger>
 							<DropdownMenuContent side="right">
 								<DropdownMenuItem
@@ -1344,7 +1344,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 							const logoId =
 								resolvedModel?.organisationId?.trim() ||
 								resolvedModel?.providerId ||
-								"ai-stats";
+								"phaseo";
 							const logoAlt =
 								resolvedModel?.organisationName ||
 								resolvedModel?.providerName ||

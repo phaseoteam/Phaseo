@@ -1,0 +1,145 @@
+{
+  "model_id": "spacex-ai/grok-3",
+  "organisation_id": "spacex-ai",
+  "name": "Grok 3",
+  "status": "Retired",
+  "previous_model_id": "spacex-ai/grok-3-beta-2025-02-19",
+  "description": "Grok 3 is the latest model from SpaceXAI. It's their flagship model that excels at enterprise use cases like data extraction, coding, and text summarization.",
+  "announced_date": "2025-04-18T00:00:00",
+  "release_date": "2025-04-18T00:00:00",
+  "deprecation_date": "2026-05-06T00:00:00",
+  "retirement_date": "2026-05-15T19:00:00",
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "spacex-ai/grok-3",
+  "links": [
+    {
+      "title": "API Reference",
+      "kind": "api_reference",
+      "url": "https://x.ai/api"
+    },
+    {
+      "title": "Announcement",
+      "kind": "announcement",
+      "url": "https://x.com/xai/status/1913308977477353582"
+    },
+    {
+      "title": "Deprecation",
+      "kind": "deprecation",
+      "url": "https://docs.x.ai/developers/migration/may-15-retirement"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 131072
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2024-11-17T00:00:00"
+    },
+    {
+      "name": "output_context_length",
+      "value": 8000
+    }
+  ],
+  "benchmarks": [
+    {
+      "benchmark_id": "ai2-sciarena",
+      "score": 1024.23,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://sciarena.allen.ai/",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "aime-2024",
+      "score": 60,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://docs.x.ai/docs/models",
+      "rank": 88
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 57.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://docs.x.ai/docs/models",
+      "rank": 166
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 5.5,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://arcprize.org/leaderboard",
+      "rank": 84
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 79.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://docs.x.ai/docs/models",
+      "rank": 62
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 83.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://docs.x.ai/docs/models",
+      "rank": 32
+    },
+    {
+      "benchmark_id": "simplebench",
+      "score": 36.1,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://simple-bench.com/index.html",
+      "rank": 26
+    },
+    {
+      "benchmark_id": "aime-2024",
+      "score": 93.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-3",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 93.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-3",
+      "rank": 35
+    },
+    {
+      "benchmark_id": "gpqa",
+      "score": 84.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-3",
+      "rank": 34
+    },
+    {
+      "benchmark_id": "livecodebench",
+      "score": 79.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-3",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 78,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/blog/grok-3",
+      "rank": 33
+    }
+  ]
+}

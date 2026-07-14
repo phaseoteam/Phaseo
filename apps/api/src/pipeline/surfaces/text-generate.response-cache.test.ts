@@ -182,7 +182,7 @@ describe("runTextGeneratePipeline response cache", () => {
 		await Promise.all(pendingBackground);
 
 		expect(response.status).toBe(200);
-		expect(response.headers.get("X-AI-Stats-Response-Cache")).toBe("hit");
+		expect(response.headers.get("X-Phaseo-Response-Cache")).toBe("hit");
 		expect(await response.json()).toEqual({
 			id: "resp_cached",
 			object: "response",

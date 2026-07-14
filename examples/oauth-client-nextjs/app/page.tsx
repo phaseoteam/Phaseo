@@ -10,13 +10,13 @@ export default async function HomePage() {
   return (
     <main className="screen centered">
       <section className="card">
-        <h1>AI Stats Gateway OAuth Example</h1>
+        <h1>Phaseo Gateway OAuth Example</h1>
         <p className="muted">
           Sign in to access a complete gateway workbench with model discovery, Responses API chat, and multi-surface endpoint testing.
         </p>
 
         <a href="/api/auth/start" className="button link-button">
-          Sign in with AI Stats
+          Sign in with Phaseo
         </a>
 
         <ul className="checklist">

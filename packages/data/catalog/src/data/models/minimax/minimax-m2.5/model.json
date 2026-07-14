@@ -15,7 +15,8 @@
   "api_model_id": "minimax/minimax-m2.5",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://www.minimax.io/news/minimax-m25"
     }
   ],

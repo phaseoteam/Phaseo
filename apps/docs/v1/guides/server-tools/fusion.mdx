@@ -1,0 +1,90 @@
+---
+title: "Fusion Server Tool"
+description: "Use several advisor models and an optional judge for one answer."
+---
+
+Use Fusion when one answer benefits from several model perspectives. In the Playground, Fusion configures multiple named `phaseo:advisor` tools for analysis and an optional judge model for synthesis guidance.
+
+Fusion is a convenience workflow built on Advisor. There is no separate `phaseo:fusion` API tool type; API clients can create the same behavior by adding multiple named Advisor tools.
+
+## Playground setup
+
+In the Playground server-tools menu, Fusion lets you choose:
+
+- analysis models that independently inspect the request
+- an optional judge model that compares the analysis outputs
+- a max tool-call limit for the Fusion advisor tools
+
+The main model sees those named advisors during the same tool loop and can use their outputs before writing the final response.
+
+## Equivalent API shape
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:advisor",
+      "parameters": {
+        "name": "fusion_analysis_1",
+        "model": "anthropic/claude-opus-4-8",
+        "instructions": "Analyze the user's request independently. Return concise findings, assumptions, caveats, and the answer direction you recommend for synthesis.",
+        "max_uses": 1,
+        "max_completion_tokens": 1400
+      }
+    },
+    {
+      "type": "phaseo:advisor",
+      "parameters": {
+        "name": "fusion_analysis_2",
+        "model": "openai/gpt-5",
+        "instructions": "Analyze the user's request independently. Return concise findings, assumptions, caveats, and the answer direction you recommend for synthesis.",
+        "max_uses": 1,
+        "max_completion_tokens": 1400
+      }
+    },
+    {
+      "type": "phaseo:advisor",
+      "parameters": {
+        "name": "fusion_judge",
+        "model": "google/gemini-pro-latest",
+        "instructions": "Compare the fusion analysis outputs, identify the strongest answer, and return concise guidance for the final response.",
+        "max_uses": 1,
+        "max_completion_tokens": 1400
+      }
+    }
+  ]
+}
+```
+
+## When to use Fusion
+
+Use Fusion for:
+
+- planning decisions where a second or third model may catch missing assumptions
+- research synthesis where models may weigh evidence differently
+- code or architecture reviews where you want independent critique
+- high-value responses where a little extra latency is acceptable
+
+Use a single Advisor instead when you only need one review pass.
+
+## Usage and pricing
+
+Fusion uses Advisor calls under the hood. Each analysis or judge call increments:
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "advisor_requests": 3
+    }
+  }
+}
+```
+
+The advisor models' tokens are included in total usage and can be priced at each selected advisor model's rates. Server-tool pricing can also use `server_tool_advisor_requests`.
+
+## Related
+
+- [Advisor](./advisor)
+- [Subagent](./subagent)
+- [Server Tools](./index)

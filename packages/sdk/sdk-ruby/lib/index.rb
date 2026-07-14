@@ -4,12 +4,12 @@ require "fileutils"
 require "securerandom"
 require "cgi"
 require "uri"
-require_relative "ai_stats_sdk/model_ids"
+require_relative "phaseo_sdk/model_ids"
 require_relative "gen/client"
 require_relative "gen/models"
 require_relative "gen/operations"
 
-module AIStatsSdk
+module PhaseoSdk
   class AsyncJobsResource
     def initialize(parent)
       @parent = parent
@@ -27,7 +27,7 @@ module AIStatsSdk
 
   # Thin wrapper around the in-house generated Ruby SDK.
   # Regenerate with: `pnpm openapi:gen:ruby`
-  class AIStats
+  class Phaseo
     ACTIVE_MODEL_SOURCE_STATUSES = %w[active available].freeze
     INACTIVE_MODEL_SOURCE_STATUSES = %w[
       deprecated
@@ -51,17 +51,17 @@ module AIStatsSdk
 
     def initialize(
       api_key: nil,
-      base_path: "https://api.phaseo.app/v1",
+      base_path: "https://api.phaseo.ai/v1",
       enable_deprecation_warnings: true,
       warnings_as_errors: false,
       logger: nil,
       lifecycle_resolver: nil,
       devtools: nil
     )
-      api_key ||= ENV["AI_STATS_API_KEY"]
-      raise ArgumentError, "Missing API key. Pass api_key or set AI_STATS_API_KEY." if api_key.to_s.empty?
+      api_key ||= ENV["PHASEO_API_KEY"]
+      raise ArgumentError, "Missing API key. Pass api_key or set PHASEO_API_KEY." if api_key.to_s.empty?
 
-      @raw_client = AiStats::Gen::Client.new(
+      @raw_client = ::Phaseo::Gen::Client.new(
         base_url: base_path,
         headers: { "Authorization" => "Bearer #{api_key}" }
       )
@@ -98,7 +98,7 @@ module AIStatsSdk
 
     def generate_text(payload)
       with_lifecycle_and_telemetry(endpoint: "chat.completions", payload: payload, check_lifecycle: true) do
-        AiStats::Gen::Operations.createChatCompletion(@raw_client, body: payload)
+        ::Phaseo::Gen::Operations.createChatCompletion(@raw_client, body: payload)
       end
     end
 
@@ -108,7 +108,7 @@ module AIStatsSdk
 
     def generate_response(payload)
       with_lifecycle_and_telemetry(endpoint: "responses", payload: payload, check_lifecycle: true) do
-        AiStats::Gen::Operations.createResponse(@raw_client, body: payload)
+        ::Phaseo::Gen::Operations.createResponse(@raw_client, body: payload)
       end
     end
 
@@ -118,13 +118,13 @@ module AIStatsSdk
 
     def create_anthropic_message(payload)
       with_lifecycle_and_telemetry(endpoint: "messages", payload: payload, check_lifecycle: true) do
-        AiStats::Gen::Operations.createAnthropicMessage(@raw_client, body: payload)
+        ::Phaseo::Gen::Operations.createAnthropicMessage(@raw_client, body: payload)
       end
     end
 
     def generate_image(payload)
       with_lifecycle_and_telemetry(endpoint: "images.generations", payload: payload, check_lifecycle: true) do
-        AiStats::Gen::Operations.createImage(@raw_client, body: payload)
+        ::Phaseo::Gen::Operations.createImage(@raw_client, body: payload)
       end
     end
 
@@ -134,7 +134,7 @@ module AIStatsSdk
 
     def generate_video(payload)
       with_lifecycle_and_telemetry(endpoint: "video.generations", payload: payload, check_lifecycle: true) do
-        AiStats::Gen::Operations.createVideo(@raw_client, body: payload)
+        ::Phaseo::Gen::Operations.createVideo(@raw_client, body: payload)
       end
     end
 
@@ -144,37 +144,37 @@ module AIStatsSdk
 
     def get_video(video_id)
       with_lifecycle_and_telemetry(endpoint: "video.retrieve", payload: { "video_id" => video_id }, check_lifecycle: false) do
-        AiStats::Gen::Operations.getVideo(@raw_client, path: { "video_id" => video_id })
+        ::Phaseo::Gen::Operations.getVideo(@raw_client, path: { "video_id" => video_id })
       end
     end
 
     def cancel_video(video_id)
       with_lifecycle_and_telemetry(endpoint: "video.cancel", payload: { "video_id" => video_id }, check_lifecycle: false) do
-        AiStats::Gen::Operations.cancelVideo(@raw_client, path: { "video_id" => video_id })
+        ::Phaseo::Gen::Operations.cancelVideo(@raw_client, path: { "video_id" => video_id })
       end
     end
 
     def delete_video(video_id)
       with_lifecycle_and_telemetry(endpoint: "video.delete", payload: { "video_id" => video_id }, check_lifecycle: false) do
-        AiStats::Gen::Operations.deleteVideo(@raw_client, path: { "video_id" => video_id })
+        ::Phaseo::Gen::Operations.deleteVideo(@raw_client, path: { "video_id" => video_id })
       end
     end
 
     def list_video_models
       with_lifecycle_and_telemetry(endpoint: "video.models", payload: nil, check_lifecycle: false) do
-        AiStats::Gen::Operations.listVideoModels(@raw_client)
+        ::Phaseo::Gen::Operations.listVideoModels(@raw_client)
       end
     end
 
     def list_videos(options = {})
       with_lifecycle_and_telemetry(endpoint: "video.list", payload: options, check_lifecycle: false) do
-        AiStats::Gen::Operations.listVideos(@raw_client, query: options)
+        ::Phaseo::Gen::Operations.listVideos(@raw_client, query: options)
       end
     end
 
     def generate_image_edit(payload)
       with_lifecycle_and_telemetry(endpoint: "images.edits", payload: payload, check_lifecycle: true) do
-        AiStats::Gen::Operations.createImageEdit(@raw_client, body: payload)
+        ::Phaseo::Gen::Operations.createImageEdit(@raw_client, body: payload)
       end
     end
 
@@ -184,7 +184,7 @@ module AIStatsSdk
 
     def generate_embedding(payload)
       with_lifecycle_and_telemetry(endpoint: "embeddings", payload: payload, check_lifecycle: true) do
-        AiStats::Gen::Operations.createEmbedding(@raw_client, body: payload)
+        ::Phaseo::Gen::Operations.createEmbedding(@raw_client, body: payload)
       end
     end
 
@@ -194,7 +194,7 @@ module AIStatsSdk
 
     def generate_moderation(payload)
       with_lifecycle_and_telemetry(endpoint: "moderations", payload: payload, check_lifecycle: true) do
-        AiStats::Gen::Operations.createModeration(@raw_client, body: payload)
+        ::Phaseo::Gen::Operations.createModeration(@raw_client, body: payload)
       end
     end
 
@@ -204,7 +204,7 @@ module AIStatsSdk
 
     def generate_speech(payload)
       with_lifecycle_and_telemetry(endpoint: "audio.speech", payload: payload, check_lifecycle: true) do
-        AiStats::Gen::Operations.createSpeech(@raw_client, body: payload)
+        ::Phaseo::Gen::Operations.createSpeech(@raw_client, body: payload)
       end
     end
 
@@ -214,7 +214,7 @@ module AIStatsSdk
 
     def generate_transcription(payload)
       with_lifecycle_and_telemetry(endpoint: "audio.transcriptions", payload: payload, check_lifecycle: true) do
-        AiStats::Gen::Operations.createTranscription(@raw_client, body: payload)
+        ::Phaseo::Gen::Operations.createTranscription(@raw_client, body: payload)
       end
     end
 
@@ -224,7 +224,7 @@ module AIStatsSdk
 
     def generate_translation(payload)
       with_lifecycle_and_telemetry(endpoint: "audio.translations", payload: payload, check_lifecycle: true) do
-        AiStats::Gen::Operations.createTranslation(@raw_client, body: payload)
+        ::Phaseo::Gen::Operations.createTranslation(@raw_client, body: payload)
       end
     end
 
@@ -234,19 +234,19 @@ module AIStatsSdk
 
     def create_batch(payload)
       with_lifecycle_and_telemetry(endpoint: "batches.create", payload: payload, check_lifecycle: true) do
-        AiStats::Gen::Operations.createBatch(@raw_client, body: payload)
+        ::Phaseo::Gen::Operations.createBatch(@raw_client, body: payload)
       end
     end
 
     def retrieve_batch(batch_id)
       with_lifecycle_and_telemetry(endpoint: "batches.retrieve", payload: { "batch_id" => batch_id }, check_lifecycle: false) do
-        AiStats::Gen::Operations.retrieveBatch(@raw_client, path: { "batch_id" => batch_id })
+        ::Phaseo::Gen::Operations.retrieveBatch(@raw_client, path: { "batch_id" => batch_id })
       end
     end
 
     def cancel_batch(batch_id)
       with_lifecycle_and_telemetry(endpoint: "batches.cancel", payload: { "batch_id" => batch_id }, check_lifecycle: false) do
-        AiStats::Gen::Operations.cancelBatch(@raw_client, path: { "batch_id" => batch_id })
+        ::Phaseo::Gen::Operations.cancelBatch(@raw_client, path: { "batch_id" => batch_id })
       end
     end
 
@@ -282,13 +282,13 @@ module AIStatsSdk
 
     def list_files(options = {})
       with_lifecycle_and_telemetry(endpoint: "files.list", payload: options, check_lifecycle: false) do
-        AiStats::Gen::Operations.listFiles(@raw_client, query: options)
+        ::Phaseo::Gen::Operations.listFiles(@raw_client, query: options)
       end
     end
 
     def retrieve_file(file_id)
       with_lifecycle_and_telemetry(endpoint: "files.retrieve", payload: { "file_id" => file_id }, check_lifecycle: false) do
-        AiStats::Gen::Operations.retrieveFile(@raw_client, path: { "file_id" => file_id })
+        ::Phaseo::Gen::Operations.retrieveFile(@raw_client, path: { "file_id" => file_id })
       end
     end
 
@@ -316,115 +316,115 @@ module AIStatsSdk
 
     def upload_file(payload)
       with_lifecycle_and_telemetry(endpoint: "files.upload", payload: payload, check_lifecycle: false) do
-        AiStats::Gen::Operations.uploadFile(@raw_client, body: payload)
+        ::Phaseo::Gen::Operations.uploadFile(@raw_client, body: payload)
       end
     end
 
     def list_models(options = {})
       with_lifecycle_and_telemetry(endpoint: "models.list", payload: options, check_lifecycle: false) do
-        AiStats::Gen::Operations.listModels(@raw_client, query: options)
+        ::Phaseo::Gen::Operations.listModels(@raw_client, query: options)
       end
     end
 
     def list_providers(options = {})
       with_lifecycle_and_telemetry(endpoint: "providers", payload: options, check_lifecycle: false) do
-        AiStats::Gen::Operations.listProviders(@raw_client, query: options)
+        ::Phaseo::Gen::Operations.listProviders(@raw_client, query: options)
       end
     end
 
     def get_analytics(options = {})
       with_lifecycle_and_telemetry(endpoint: "analytics", payload: options, check_lifecycle: false) do
-        AiStats::Gen::Operations.getActivityAlias(@raw_client, query: options)
+        ::Phaseo::Gen::Operations.getActivityAlias(@raw_client, query: options)
       end
     end
 
     def get_credits(options = {})
       with_lifecycle_and_telemetry(endpoint: "credits", payload: options, check_lifecycle: false) do
-        AiStats::Gen::Operations.getCredits(@raw_client, query: options)
+        ::Phaseo::Gen::Operations.getCredits(@raw_client, query: options)
       end
     end
 
     def get_activity(options = {})
       with_lifecycle_and_telemetry(endpoint: "activity", payload: options, check_lifecycle: false) do
-        AiStats::Gen::Operations.getActivity(@raw_client, query: options)
+        ::Phaseo::Gen::Operations.getActivity(@raw_client, query: options)
       end
     end
 
     def get_generation(generation_id)
       with_lifecycle_and_telemetry(endpoint: "generations.retrieve", payload: { "id" => generation_id }, check_lifecycle: false) do
-        AiStats::Gen::Operations.getGeneration(@raw_client, query: { "id" => generation_id })
+        ::Phaseo::Gen::Operations.getGeneration(@raw_client, query: { "id" => generation_id })
       end
     end
 
     def list_endpoints
       with_lifecycle_and_telemetry(endpoint: "endpoints.list", payload: {}, check_lifecycle: false) do
-        AiStats::Gen::Operations.listEndpoints(@raw_client)
+        ::Phaseo::Gen::Operations.listEndpoints(@raw_client)
       end
     end
 
     def list_organisations(options = {})
       with_lifecycle_and_telemetry(endpoint: "organisations.list", payload: options, check_lifecycle: false) do
-        AiStats::Gen::Operations.listOrganisations(@raw_client, query: options)
+        ::Phaseo::Gen::Operations.listOrganisations(@raw_client, query: options)
       end
     end
 
     def list_pricing_models(options = {})
       with_lifecycle_and_telemetry(endpoint: "pricing.models", payload: options, check_lifecycle: false) do
-        AiStats::Gen::Operations.listPricingModels(@raw_client, query: options)
+        ::Phaseo::Gen::Operations.listPricingModels(@raw_client, query: options)
       end
     end
 
     def calculate_pricing(payload)
       with_lifecycle_and_telemetry(endpoint: "pricing.calculate", payload: payload, check_lifecycle: false) do
-        AiStats::Gen::Operations.calculatePricing(@raw_client, body: payload)
+        ::Phaseo::Gen::Operations.calculatePricing(@raw_client, body: payload)
       end
     end
 
     def list_api_keys(options = {})
       with_lifecycle_and_telemetry(endpoint: "provisioning.keys.list", payload: options, check_lifecycle: false) do
-        AiStats::Gen::Operations.listApiKeys(@raw_client, query: options)
+        ::Phaseo::Gen::Operations.listApiKeys(@raw_client, query: options)
       end
     end
 
     def create_api_key(payload)
       with_lifecycle_and_telemetry(endpoint: "provisioning.keys.create", payload: payload, check_lifecycle: false) do
-        AiStats::Gen::Operations.createApiKey(@raw_client, body: payload)
+        ::Phaseo::Gen::Operations.createApiKey(@raw_client, body: payload)
       end
     end
 
     def get_api_key(id)
       with_lifecycle_and_telemetry(endpoint: "provisioning.keys.get", payload: { "id" => id }, check_lifecycle: false) do
-        AiStats::Gen::Operations.getApiKey(@raw_client, path: { "id" => id })
+        ::Phaseo::Gen::Operations.getApiKey(@raw_client, path: { "id" => id })
       end
     end
 
     def update_api_key(id, payload)
       with_lifecycle_and_telemetry(endpoint: "provisioning.keys.update", payload: { "id" => id, "body" => payload }, check_lifecycle: false) do
-        AiStats::Gen::Operations.updateApiKey(@raw_client, path: { "id" => id }, body: payload)
+        ::Phaseo::Gen::Operations.updateApiKey(@raw_client, path: { "id" => id }, body: payload)
       end
     end
 
     def delete_api_key(id)
       with_lifecycle_and_telemetry(endpoint: "provisioning.keys.delete", payload: { "id" => id }, check_lifecycle: false) do
-        AiStats::Gen::Operations.deleteApiKey(@raw_client, path: { "id" => id })
+        ::Phaseo::Gen::Operations.deleteApiKey(@raw_client, path: { "id" => id })
       end
     end
 
     def list_workspaces(options = {})
       with_lifecycle_and_telemetry(endpoint: "provisioning.workspaces.list", payload: options, check_lifecycle: false) do
-        AiStats::Gen::Operations.listWorkspaces(@raw_client, query: options)
+        ::Phaseo::Gen::Operations.listWorkspaces(@raw_client, query: options)
       end
     end
 
     def get_workspace(id)
       with_lifecycle_and_telemetry(endpoint: "provisioning.workspaces.get", payload: { "id" => id }, check_lifecycle: false) do
-        AiStats::Gen::Operations.getWorkspace(@raw_client, path: { "id" => id })
+        ::Phaseo::Gen::Operations.getWorkspace(@raw_client, path: { "id" => id })
       end
     end
 
     def create_workspace(payload)
       with_lifecycle_and_telemetry(endpoint: "provisioning.workspaces.create", payload: payload, check_lifecycle: false) do
-        AiStats::Gen::Operations.createWorkspace(@raw_client, body: payload)
+        ::Phaseo::Gen::Operations.createWorkspace(@raw_client, body: payload)
       end
     end
 
@@ -434,19 +434,19 @@ module AIStatsSdk
         payload: { "id" => id, **payload },
         check_lifecycle: false
       ) do
-        AiStats::Gen::Operations.updateWorkspace(@raw_client, path: { "id" => id }, body: payload)
+        ::Phaseo::Gen::Operations.updateWorkspace(@raw_client, path: { "id" => id }, body: payload)
       end
     end
 
     def delete_workspace(id)
       with_lifecycle_and_telemetry(endpoint: "provisioning.workspaces.delete", payload: { "id" => id }, check_lifecycle: false) do
-        AiStats::Gen::Operations.deleteWorkspace(@raw_client, path: { "id" => id })
+        ::Phaseo::Gen::Operations.deleteWorkspace(@raw_client, path: { "id" => id })
       end
     end
 
     def get_current_api_key
       with_lifecycle_and_telemetry(endpoint: "key.current", payload: {}, check_lifecycle: false) do
-        AiStats::Gen::Operations.getCurrentApiKey(@raw_client)
+        ::Phaseo::Gen::Operations.getCurrentApiKey(@raw_client)
       end
     end
 
@@ -540,7 +540,7 @@ module AIStatsSdk
     end
 
     def fetch_model_lifecycle(model_id)
-      response = AiStats::Gen::Operations.listModels(
+      response = ::Phaseo::Gen::Operations.listModels(
         @raw_client,
         query: { "model_id" => model_id, "limit" => "1" }
       )
@@ -614,13 +614,13 @@ module AIStatsSdk
     def build_lifecycle_message(status, model_id, deprecation_date, retirement_date, replacement_model_id)
       replacement = replacement_model_id ? %( Use "#{replacement_model_id}" instead.) : ""
       if status == "retired"
-        return %[ [ai-stats] Model "#{model_id}" is retired as of #{retirement_date}.#{replacement} ].strip if retirement_date
-        return %[ [ai-stats] Model "#{model_id}" is retired.#{replacement} ].strip
+        return %[ [phaseo] Model "#{model_id}" is retired as of #{retirement_date}.#{replacement} ].strip if retirement_date
+        return %[ [phaseo] Model "#{model_id}" is retired.#{replacement} ].strip
       end
       if status == "deprecated"
-        return %[ [ai-stats] Model "#{model_id}" is deprecated and scheduled for retirement on #{retirement_date}.#{replacement} ].strip if retirement_date
-        return %[ [ai-stats] Model "#{model_id}" has been deprecated since #{deprecation_date}.#{replacement} ].strip if deprecation_date
-        return %[ [ai-stats] Model "#{model_id}" is deprecated.#{replacement} ].strip
+        return %[ [phaseo] Model "#{model_id}" is deprecated and scheduled for retirement on #{retirement_date}.#{replacement} ].strip if retirement_date
+        return %[ [phaseo] Model "#{model_id}" has been deprecated since #{deprecation_date}.#{replacement} ].strip if deprecation_date
+        return %[ [phaseo] Model "#{model_id}" is deprecated.#{replacement} ].strip
       end
       ""
     end
@@ -653,12 +653,12 @@ module AIStatsSdk
         return info[:message] if as_trimmed_string(info[:message])
         return fallback if as_trimmed_string(fallback)
 
-        return %[ [ai-stats] Model "#{info[:model_id]}" is not active for inference. ].strip
+        return %[ [phaseo] Model "#{info[:model_id]}" is not active for inference. ].strip
       end
 
       source_status = normalize_source_status(info[:source_status]) || "unknown"
       replacement = info[:replacement_model_id] ? %( Use "#{info[:replacement_model_id]}" instead.) : ""
-      %[ [ai-stats] Model "#{info[:model_id]}" is not active for inference (status: #{source_status}).#{replacement} ].strip
+      %[ [phaseo] Model "#{info[:model_id]}" is not active for inference (status: #{source_status}).#{replacement} ].strip
     end
 
     def extract_model_id(payload)
@@ -729,15 +729,15 @@ module AIStatsSdk
     def initialize(config = nil, sdk_version = "2.0.4")
       config ||= {}
       enabled = config.fetch(:enabled, false)
-      directory = config.fetch(:directory, ".ai-stats-devtools")
-      directory = ".ai-stats-devtools" if directory.to_s.strip.empty?
+      directory = config.fetch(:directory, ".phaseo-devtools")
+      directory = ".phaseo-devtools" if directory.to_s.strip.empty?
 
-      env_enabled = ENV["AI_STATS_DEVTOOLS"]
+      env_enabled = ENV["PHASEO_DEVTOOLS"] || ENV["PHASEO_DEVTOOLS"]
       unless env_enabled.to_s.strip.empty?
         enabled = %w[1 true yes on].include?(env_enabled.to_s.strip.downcase)
       end
 
-      env_directory = ENV["AI_STATS_DEVTOOLS_DIR"]
+      env_directory = ENV["PHASEO_DEVTOOLS_DIR"] || ENV["PHASEO_DEVTOOLS_DIR"]
       directory = env_directory.to_s.strip unless env_directory.to_s.strip.empty?
 
       @enabled = enabled
@@ -874,7 +874,7 @@ module AIStatsSdk
     end
 
     def extract_error_response(error)
-      if error.is_a?(AiStats::Gen::RequestError)
+      if error.is_a?(::Phaseo::Gen::RequestError)
         parsed = normalize_hash(error.response_body)
         return parsed if parsed
         return {
@@ -891,7 +891,7 @@ module AIStatsSdk
     end
 
     def extract_error_status_code(error)
-      return error.status_code if error.is_a?(AiStats::Gen::RequestError)
+      return error.status_code if error.is_a?(::Phaseo::Gen::RequestError)
       return error.status_code if error.respond_to?(:status_code)
       nil
     end

@@ -3,13 +3,13 @@ title: "Responses"
 description: "Call the Responses API with the TypeScript SDK."
 ---
 
-**Method**: `client.generateResponse()` (stream with `client.streamResponse()`).
+**Method**: `client.generateResponse()` (stream parsed chunks with `client.streamResponses()`).
 
 ### Example
 ```typescript
 const resp = await client.generateResponse({
   model: "openai/gpt-4.1",
-  input: [{ role: "user", content: [{ type: "output_text", text: "Summarise this text" }] }],
+  input: [{ role: "user", content: [{ type: "input_text", text: "Summarise this text" }] }],
   temperature: 0.7,
   stream: false,
 });
@@ -17,12 +17,12 @@ const resp = await client.generateResponse({
 
 ### Streaming
 ```typescript
-for await (const line of client.streamResponse({
+for await (const chunk of client.streamResponses({
   model: "openai/gpt-4.1",
-  input: [{ role: "user", content: [{ type: "output_text", text: "Stream this" }] }],
+  input: [{ role: "user", content: [{ type: "input_text", text: "Stream this" }] }],
   stream: true,
 })) {
-  console.log(line);
+  if (chunk.text) process.stdout.write(chunk.text);
 }
 ```
 

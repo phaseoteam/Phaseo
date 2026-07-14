@@ -17,9 +17,9 @@ Claude Opus 4.7 introduces request-shape changes that can hard-fail old 4.6 patt
 - Thinking content is omitted by default unless you explicitly opt in
 - Updated tokenizer behavior can increase token usage vs Opus 4.6
 
-## AI Stats gateway compatibility behavior
+## Phaseo gateway compatibility behavior
 
-To reduce migration breakage, AI Stats accepts legacy Opus 4.6 fields for Opus 4.7 and normalizes them before sending upstream:
+To reduce migration breakage, Phaseo accepts legacy Opus 4.6 fields for Opus 4.7 and normalizes them before sending upstream:
 
 - `temperature`, `top_p`, and `top_k` are accepted but stripped
 - legacy thinking budgets are not forwarded
@@ -63,7 +63,7 @@ If you use reasoning controls, retest with:
 - `output_config.effort = "high"` as baseline
 - `output_config.effort = "xhigh"` for hardest coding/agentic paths
 
-If you call AI Stats through OpenAI-style payloads, `reasoning.effort` maps to this same `output_config.effort` value for Opus 4.7.
+If you call Phaseo through OpenAI-style payloads, `reasoning.effort` maps to this same `output_config.effort` value for Opus 4.7.
 
 ### 5. Recheck token ceilings
 

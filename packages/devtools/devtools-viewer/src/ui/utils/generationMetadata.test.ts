@@ -60,7 +60,7 @@ describe("generationMetadata", () => {
     const entry = makeEntry({
       request: { session_id: "session_request", file_id: "file_123" },
       response: {
-        metadata: { aistats_request_id: "req_gateway" },
+        metadata: { phaseo_request_id: "req_gateway" },
         request_id: "req_response",
         upstreamRequestId: "upstream_response",
         id: "native_response",

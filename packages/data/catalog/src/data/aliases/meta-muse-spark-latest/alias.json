@@ -1,0 +1,8 @@
+{
+  "alias_slug": "meta/muse-spark-latest",
+  "resolved_model_id": "meta/muse-spark-1.1",
+  "resolved_api_model_id": "meta/muse-spark-1.1",
+  "channel": "preview",
+  "is_enabled": true,
+  "notes": "Points to Muse Spark 1.1. Gateway availability is paused while Meta Model API access is location-restricted for AI Stats."
+}

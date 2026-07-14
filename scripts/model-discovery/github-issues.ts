@@ -47,6 +47,7 @@ type GitHubIssue = {
     state: string;
     title?: string;
     body?: string;
+    labels?: Array<string | { name?: string | null }>;
 };
 
 type GitHubSearchResponse = {
@@ -66,14 +67,15 @@ type GitHubIssueSyncOptions = {
 type GitHubIssueClient = {
     getIssue(issueNumber: number): Promise<GitHubIssue | null>;
     searchOpenIssue(query: string): Promise<GitHubIssue | null>;
-    createIssue(input: { title: string; body: string }): Promise<GitHubIssue>;
-    updateIssue(issueNumber: number, input: { title?: string; body?: string }): Promise<GitHubIssue>;
+    createIssue(input: { title: string; body: string; labels?: string[] }): Promise<GitHubIssue>;
+    updateIssue(issueNumber: number, input: { title?: string; body?: string; labels?: string[] }): Promise<GitHubIssue>;
     createComment(issueNumber: number, body: string): Promise<void>;
 };
 
 const MAX_RECENT_EVENTS = 20;
 const DEFAULT_GITHUB_API_BASE_URL = "https://api.github.com";
 const DEFAULT_GITHUB_REQUEST_TIMEOUT_MS = 30_000;
+const MANAGED_ISSUE_LABEL = "phaseo-upstream-discovery";
 
 function nowIso(): string {
     return new Date().toISOString();
@@ -172,7 +174,7 @@ function issueKeyForGroup(input: Pick<UpstreamDiscoveryIssueEntry, "source" | "p
 }
 
 function markerForKey(key: string): string {
-    return `ai-stats-upstream-discovery:${key}`;
+    return `phaseo-upstream-discovery:${key}`;
 }
 
 function legacyProviderIssueKeyForGroup(input: Pick<UpstreamDiscoveryIssueEntry, "providerId" | "action">): string {
@@ -181,7 +183,7 @@ ${input.action}`).toString("base64url");
 }
 
 function legacyMarkerForKey(key: string): string {
-    return `ai-stats-model-discovery:${key}`;
+    return `phaseo-model-discovery:${key}`;
 }
 
 function actionNoun(action: UpstreamDiscoveryIssueAction): string {
@@ -207,6 +209,35 @@ function issueTitleForGroup(group: UpstreamIssueGroup): string {
     }
 
     return `[upstream-discovery] ${group.providerName}: provider model ${actionNoun(group.action)}`.slice(0, 250);
+}
+
+function hasManagedIssueLabel(issue: Pick<GitHubIssue, "labels">): boolean {
+    return (
+        issue.labels?.some((label) =>
+            typeof label === "string"
+                ? label === MANAGED_ISSUE_LABEL
+                : trimOrNull(label?.name) === MANAGED_ISSUE_LABEL
+        ) ?? false
+    );
+}
+
+function issueContainsAnyMarker(issue: Pick<GitHubIssue, "title" | "body">, markers: string[]): boolean {
+    const haystacks = [issue.body ?? "", issue.title ?? ""];
+    return markers.some((marker) => haystacks.some((value) => value.includes(marker)));
+}
+
+function mergeManagedIssueLabels(issue: Pick<GitHubIssue, "labels">): string[] {
+    const labels = new Set<string>();
+    for (const label of issue.labels ?? []) {
+        const normalized = trimOrNull(typeof label === "string" ? label : label?.name);
+        if (normalized) labels.add(normalized);
+    }
+    labels.add(MANAGED_ISSUE_LABEL);
+    return Array.from(labels);
+}
+
+function isTrustedManagedIssue(issue: GitHubIssue | null, markers: string[]): issue is GitHubIssue {
+    return !!issue && issue.state === "open" && hasManagedIssueLabel(issue) && issueContainsAnyMarker(issue, markers);
 }
 
 function formatDateTime(value: string): string {
@@ -263,8 +294,7 @@ function buildIssueBody(args: {
         latestEvent?.runUrl ? `- ${latestEvent.runUrl}` : "- Not available",
         "",
         "## Triage notes",
-        "- Check whether each upstream model should be added to AI Stats or mapped to an existing catalog entry.",
-        "- Unknown upstream models are intentionally included for triage instead of being filtered out.",
+        "- Check whether each upstream model should be added to Phaseo or mapped to an existing catalog entry.",
         "- Reuse this issue for repeated signals with the same source, provider/org, and action type.",
         "- Close this issue once the upstream signal has been triaged.",
     ].join("\n");
@@ -405,19 +435,31 @@ async function findOpenIssue(args: {
     legacyKey?: string;
     existingRecord?: UpstreamIssueRecord;
 }): Promise<GitHubIssue | null> {
+    const markers = [markerForKey(args.key)];
+    if (args.legacyKey) {
+        markers.push(legacyMarkerForKey(args.legacyKey));
+    }
+
     const issueNumber = args.existingRecord?.issueNumber;
     if (typeof issueNumber === "number") {
         const issue = await args.client.getIssue(issueNumber);
-        if (issue?.state === "open") return issue;
+        if (isTrustedManagedIssue(issue, markers)) return issue;
     }
 
-    const marker = markerForKey(args.key);
-    const currentIssue = await args.client.searchOpenIssue(`repo:${args.repository} is:issue is:open "${marker}"`);
-    if (currentIssue) return currentIssue;
+    const marker = markers[0]!;
+    const currentCandidate = await args.client.searchOpenIssue(
+        `repo:${args.repository} is:issue is:open in:body label:${MANAGED_ISSUE_LABEL} "${marker}"`
+    );
+    const currentIssue = currentCandidate ? await args.client.getIssue(currentCandidate.number) : null;
+    if (isTrustedManagedIssue(currentIssue, [marker])) return currentIssue;
 
     if (args.legacyKey) {
         const legacyMarker = legacyMarkerForKey(args.legacyKey);
-        return await args.client.searchOpenIssue(`repo:${args.repository} is:issue is:open "${legacyMarker}"`);
+        const legacyCandidate = await args.client.searchOpenIssue(
+            `repo:${args.repository} is:issue is:open in:body label:${MANAGED_ISSUE_LABEL} "${legacyMarker}"`
+        );
+        const legacyIssue = legacyCandidate ? await args.client.getIssue(legacyCandidate.number) : null;
+        if (isTrustedManagedIssue(legacyIssue, [legacyMarker])) return legacyIssue;
     }
 
     return null;
@@ -429,9 +471,13 @@ function shouldSkipForEnv(source: UpstreamDiscoveryIssueSource, logger: Pick<Con
         return true;
     }
 
-    if (source === "huggingface" && process.env.MODEL_DISCOVERY_HF_GITHUB_ISSUES === "false") {
-        logger.log("[model-discovery] Hugging Face GitHub issue sync disabled by MODEL_DISCOVERY_HF_GITHUB_ISSUES=false.");
-        return true;
+    if (source === "huggingface") {
+        if (process.env.MODEL_DISCOVERY_HF_GITHUB_ISSUES !== "true") {
+            logger.log(
+                "[model-discovery] Hugging Face GitHub issue sync disabled unless MODEL_DISCOVERY_HF_GITHUB_ISSUES=true."
+            );
+            return true;
+        }
     }
 
     return false;
@@ -563,7 +609,11 @@ export async function syncUpstreamDiscoveryIssues(
         const existingIssue = await findOpenIssue({ client, repository, key: group.key, legacyKey, existingRecord });
 
         if (existingIssue) {
-            const issue = await client.updateIssue(existingIssue.number, { title, body });
+            const issue = await client.updateIssue(existingIssue.number, {
+                title,
+                body,
+                labels: mergeManagedIssueLabels(existingIssue),
+            });
             await client.createComment(issue.number, buildIssueComment(group, events));
             state.issues[group.key] = {
                 issueNumber: issue.number,
@@ -577,7 +627,7 @@ export async function syncUpstreamDiscoveryIssues(
             continue;
         }
 
-        const issue = await client.createIssue({ title, body });
+        const issue = await client.createIssue({ title, body, labels: [MANAGED_ISSUE_LABEL] });
         state.issues[group.key] = {
             issueNumber: issue.number,
             issueUrl: issue.html_url,
@@ -610,10 +660,12 @@ export async function syncProviderChangeIssues(
     options: GitHubIssueSyncOptions & { knownModelIdsByProvider?: Map<string, Set<string>> }
 ): Promise<{ created: number; updated: number; skipped: boolean }> {
     if (options.knownModelIdsByProvider) {
-        const logger = options.logger ?? console;
-        logger.warn(
-            "[model-discovery] knownModelIdsByProvider is ignored for private upstream issue sync so unknown upstream models create triage issues."
-        );
+        entries = entries.filter((entry) => {
+            const normalized = normalizeEntry(entry);
+            if (normalized.source !== "provider-api") return true;
+            const allowlist = options.knownModelIdsByProvider?.get(normalized.providerId);
+            return allowlist?.has(normalized.modelId) ?? false;
+        });
     }
 
     return await syncUpstreamDiscoveryIssues(entries.map(normalizeEntry), options);
@@ -623,6 +675,8 @@ export const testingExports = {
     buildIssueBody,
     buildIssueComment,
     groupUpstreamIssueEntries,
+    hasManagedIssueLabel,
+    isTrustedManagedIssue,
     issueKeyForGroup,
     issueTitleForGroup,
     legacyMarkerForKey,

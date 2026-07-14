@@ -34,7 +34,7 @@ export async function generateMetadata(props: {
 			modelDescription,
 			suffix:
 				"Run multimodal playground tests across text, image, video, audio, embeddings, and moderation workflows.",
-			fallback: `Run multimodal playground tests for ${modelName} on AI Stats, including text, image, video, audio, embeddings, and moderation workflows.`,
+			fallback: `Run multimodal playground tests for ${modelName} on Phaseo, including text, image, video, audio, embeddings, and moderation workflows.`,
 		}),
 		path,
 		keywords: [
@@ -43,7 +43,7 @@ export async function generateMetadata(props: {
 			`${modelName} quick test`,
 			organisationName ? `${organisationName} AI` : null,
 			"AI model playground",
-			"AI Stats chat",
+			"Phaseo chat",
 		].filter(Boolean) as string[],
 		imagePath,
 	});

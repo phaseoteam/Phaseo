@@ -439,6 +439,10 @@ begin
       m.routing_status as model_status,
       m.input_modalities,
       m.output_modalities,
+      p.prompt_training_policy,
+      p.data_policy_tier,
+      p.data_policy_confidence,
+      p.data_policy_contract_mode,
       c.status as capability_status,
       c.params as capability_params,
       c.max_input_tokens,
@@ -446,6 +450,8 @@ begin
     from public.data_api_provider_models m
     join public.data_models dm
       on dm.model_id = coalesce(m.model_id, m.api_model_id)
+    join public.data_api_providers p
+      on p.api_provider_id = m.provider_id
     join public.data_api_provider_model_capabilities c
       on c.provider_api_model_id = m.provider_api_model_id
     where m.api_model_id = resolved_model
@@ -470,6 +476,10 @@ begin
           'model_status', pr.model_status,
           'input_modalities', pr.input_modalities,
           'output_modalities', pr.output_modalities,
+          'prompt_training_policy', coalesce(pr.prompt_training_policy, 'unknown'),
+          'data_policy_tier', coalesce(pr.data_policy_tier, 'unknown'),
+          'data_policy_confidence', coalesce(pr.data_policy_confidence, 'unknown'),
+          'data_policy_contract_mode', coalesce(pr.data_policy_contract_mode, 'none'),
           'capability_status', pr.capability_status,
           'capability_params', coalesce(pr.capability_params, '{}'::jsonb),
           'max_input_tokens', pr.max_input_tokens,
@@ -524,7 +534,9 @@ begin
                   'price_per_unit', r.price_per_unit,
                   'currency', r.currency,
                   'match', r.match,
-                  'priority', r.priority
+                  'priority', r.priority,
+                  'billing_timestamp_basis', coalesce(r.billing_timestamp_basis, 'request_start'),
+                  'time_windows', coalesce(r.time_windows, '[]'::jsonb)
                 )
                 order by r.priority desc, coalesce(r.effective_from, now() at time zone 'utc') desc
               ) as items,

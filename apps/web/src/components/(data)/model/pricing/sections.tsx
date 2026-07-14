@@ -3,14 +3,6 @@
 import React from "react";
 import { ArrowDownRight, ArrowUpRight, CalendarClock, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
 import type {
 	PriceComparisonDirection,
 	PriceComparisonKind,
@@ -24,7 +16,7 @@ import type {
 } from "./pricingHelpers";
 import { fmtUSD } from "./pricingHelpers";
 
-type PricingComparisonAccent = "batch" | null;
+type PricingComparisonAccent = "batch" | "flex" | "free" | "priority" | null;
 
 function renderComparisonToneClass(
 	kind?: PriceComparisonKind | null,
@@ -33,6 +25,15 @@ function renderComparisonToneClass(
 ) {
 	if (accent === "batch") {
 		return "text-xs font-semibold text-orange-700 tabular-nums dark:text-orange-300";
+	}
+	if (accent === "flex") {
+		return "text-xs font-semibold text-sky-700 tabular-nums dark:text-sky-300";
+	}
+	if (accent === "free") {
+		return "text-xs font-semibold text-emerald-700 tabular-nums dark:text-emerald-300";
+	}
+	if (accent === "priority") {
+		return "text-xs font-semibold text-violet-700 tabular-nums dark:text-violet-300";
 	}
 	if (kind === "discount" || direction === "cheaper") {
 		return "text-xs font-semibold text-emerald-600 tabular-nums";
@@ -410,11 +411,9 @@ export function TokenTripleSection({
 
 export function ImageGenSection({
 	rows,
-	vertical = false,
 	comparisonAccent = null,
 }: {
 	rows?: QualityRow[];
-	vertical?: boolean;
 	comparisonAccent?: PricingComparisonAccent;
 }) {
 	if (!rows || !rows.length) return null;
@@ -423,36 +422,62 @@ export function ImageGenSection({
 		quality: row.quality.charAt(0).toUpperCase() + row.quality.slice(1),
 		items: row.items,
 	}));
+	const labels = Array.from(
+		new Set(
+			qualityRows.flatMap((row) =>
+				row.items.map((item) => item.label || "Any size"),
+			),
+		),
+	).sort(compareResolutionLabels);
 	const sharedDecimals = qualityRows.reduce(
 		(max, row) => Math.max(max, ...row.items.map((item) => countUsdDecimals(item.price))),
 		0,
 	);
-	const columnsWrapClass = vertical
-		? "grid grid-cols-1 gap-1"
-		: "grid grid-cols-2 gap-x-3 gap-y-2 sm:flex sm:w-full sm:min-w-max sm:gap-0 sm:divide-x sm:divide-zinc-200/70 sm:dark:divide-zinc-800";
-	const columnClass = vertical
-		? "min-w-0 rounded-md border border-zinc-200/70 px-1 py-1 dark:border-zinc-800"
-		: "min-w-0 space-y-0.5 px-1 py-1 sm:min-w-[220px] sm:flex-1 sm:px-3 sm:py-2";
-	const wrapperClass = vertical ? "space-y-1" : "space-y-1.5";
-	const innerStackClass = vertical ? "space-y-0.5" : "space-y-1";
+	const itemsByQualityAndLabel = new Map(
+		qualityRows.map((row) => [
+			row.quality,
+			new Map(
+				row.items.map((item) => [item.label || "Any size", item] as const),
+			),
+		] as const),
+	);
 
 	return (
-		<div className={wrapperClass}>
+		<div className="space-y-1.5">
 			<div className="flex items-center justify-between">
-				<h4 className="text-xs font-semibold tracking-wide text-foreground">Image Quality</h4>
-				<span className="text-xs text-muted-foreground">Per image</span>
+				<h4 className="text-[11px] font-medium text-muted-foreground">Image Output</h4>
+				<span className="text-[10px] text-muted-foreground">Per image</span>
 			</div>
-					<div className={vertical ? "" : "w-full overflow-visible sm:overflow-x-auto"}>
-						<div className={columnsWrapClass}>
-							{qualityRows.map((row, rowIndex) => (
-								<div key={`${row.quality}-${rowIndex}`} className={columnClass}>
-									<div className="text-xs text-muted-foreground">{row.quality}</div>
-									<div className={innerStackClass}>
-									{row.items.map((item, itemIndex) => {
-									const label = item.label || "Any resolution";
-									return (
-										<div key={`${row.quality}-${label}-${itemIndex}`} className="space-y-0.5">
-											<div className="flex items-baseline gap-1">
+			<div className="overflow-x-auto">
+				<div
+					className="grid min-w-[400px] border-t border-zinc-200/70 text-xs dark:border-zinc-800"
+					style={{
+						gridTemplateColumns: `minmax(88px, 1.2fr) repeat(${qualityRows.length}, minmax(0, 1fr))`,
+					}}
+				>
+					<div className="px-2 py-1.5 text-[10px] text-muted-foreground">Size</div>
+					{qualityRows.map((row) => (
+						<div
+							key={row.quality}
+							className="border-l border-zinc-200/70 px-2 py-1.5 text-[10px] text-muted-foreground dark:border-zinc-800"
+						>
+							{row.quality}
+						</div>
+					))}
+					{labels.map((label) => (
+						<React.Fragment key={label}>
+							<div className="border-t border-zinc-200/70 px-2 py-1.5 text-[10px] text-muted-foreground dark:border-zinc-800">
+								{label}
+							</div>
+							{qualityRows.map((row) => {
+								const item = itemsByQualityAndLabel.get(row.quality)?.get(label);
+								return (
+									<div
+										key={`${row.quality}-${label}`}
+										className="border-l border-t border-zinc-200/70 px-2 py-1.5 dark:border-zinc-800"
+									>
+										{item ? (
+											<div className="flex flex-wrap items-baseline gap-1">
 												{renderComparisonPrices(
 													item.price,
 													item.basePrice,
@@ -461,13 +486,14 @@ export function ImageGenSection({
 													item.comparisonDirection,
 													comparisonAccent,
 												)}
-												<span className="text-xs text-muted-foreground">{label}</span>
 											</div>
-										</div>
-									);
-								})}
-							</div>
-						</div>
+										) : (
+											<span className="text-muted-foreground">--</span>
+										)}
+									</div>
+								);
+							})}
+						</React.Fragment>
 					))}
 				</div>
 			</div>
@@ -608,9 +634,16 @@ export function VideoGenSection({
 		if (!uniqueUnits.length) return null;
 		return uniqueUnits.join(" / ");
 	};
+	const videoUnitSummary = unitSummaryForItems(items);
 
 	return (
 		<div className={wrapperClass}>
+			<div className="flex items-center justify-between">
+				<h4 className="text-[11px] font-medium text-muted-foreground">Video Output</h4>
+				{videoUnitSummary ? (
+					<span className="text-[10px] text-muted-foreground">{videoUnitSummary}</span>
+				) : null}
+			</div>
 				{showAudioVariants ? (
 						<div className={vertical ? "" : "w-full overflow-visible sm:overflow-x-auto"}>
 							{(() => {
@@ -713,43 +746,37 @@ export function VideoGenSection({
 						})()}
 						</div>
 				) : (
-					<div className={vertical ? "" : "w-full overflow-visible sm:overflow-x-auto"}>
-						<div className={columnsWrapClass}>
-							{(() => {
-								const sortedItems = [...items].sort((a, b) => {
-									const byResolution = compareResolutionLabels(a.resolution, b.resolution);
-									if (byResolution !== 0) return byResolution;
-									return a.price - b.price;
-								});
-								const unitSummary = unitSummaryForItems(sortedItems);
-								return (
-									<div className={resolutionColumnClass}>
-										<div className={itemStackClass}>
-											{sortedItems.map((item, index) => (
-												<div key={`${item.unit}-${item.resolution}-${item.price}-${index}`} className="space-y-0.5">
-													<div className="flex items-baseline gap-1">
-													{renderComparisonPrices(
-														item.price,
-														item.basePrice,
-														sharedDecimals,
-														item.comparisonKind,
-														item.comparisonDirection,
-														comparisonAccent,
-													)}
-														<span className="text-xs text-muted-foreground">{item.resolution}</span>
-													</div>
-												</div>
-											))}
-										</div>
-										{unitSummary ? (
-											<div className="pt-0.5 text-[11px] text-muted-foreground">{unitSummary}</div>
-										) : null}
+					<div className="grid w-fit min-w-[220px] grid-cols-[minmax(112px,1fr)_auto] border-t border-zinc-200/70 text-xs dark:border-zinc-800">
+						<div className="py-1.5 text-[10px] text-muted-foreground">Resolution</div>
+						<div className="py-1.5 text-right text-[10px] text-muted-foreground">Price</div>
+						{[...items]
+							.sort((a, b) => {
+								const byResolution = compareResolutionLabels(a.resolution, b.resolution);
+								if (byResolution !== 0) return byResolution;
+								return a.price - b.price;
+							})
+							.map((item, index) => (
+								<div
+									key={`${item.unit}-${item.resolution}-${item.price}-${index}`}
+									className="contents"
+								>
+									<span className="border-t border-zinc-200/70 py-1.5 text-[11px] text-muted-foreground dark:border-zinc-800">
+										{item.resolution}
+									</span>
+									<div className="flex items-baseline justify-end gap-1.5 border-t border-zinc-200/70 py-1.5 dark:border-zinc-800">
+										{renderComparisonPrices(
+											item.price,
+											item.basePrice,
+											sharedDecimals,
+											item.comparisonKind,
+											item.comparisonDirection,
+											comparisonAccent,
+										)}
 									</div>
-								);
-							})()}
+								</div>
+							))}
 					</div>
-				</div>
-			)}
+				)}
 		</div>
 	);
 }
@@ -865,14 +892,20 @@ export function CacheWriteSection({
 
 export function RequestsSection({
 	rows,
+	title = "Requests",
 	compact = false,
 	comparisonAccent = null,
 }: {
 	rows?: TokenTier[];
+	title?: string;
 	compact?: boolean;
 	comparisonAccent?: PricingComparisonAccent;
 }) {
 	if (!rows?.length) return null;
+	const unitLabels = Array.from(
+		new Set(rows.map((row) => row.unitLabel).filter((label): label is string => Boolean(label))),
+	);
+	const sharedUnitLabel = unitLabels.length === 1 ? unitLabels[0] : null;
 	const sharedDecimals = rows.reduce(
 		(max, tier) => Math.max(max, countUsdDecimals(tier.price)),
 		0,
@@ -883,8 +916,10 @@ export function RequestsSection({
 	return (
 		<div className={wrapperClass}>
 			<div className="flex items-center justify-between">
-				<h4 className="text-xs font-semibold tracking-wide text-foreground">Requests</h4>
-				<span className="text-xs text-muted-foreground">Per request</span>
+				<h4 className="text-xs font-semibold tracking-wide text-foreground">{title}</h4>
+				{sharedUnitLabel ? (
+					<span className="text-xs text-muted-foreground">{sharedUnitLabel}</span>
+				) : null}
 			</div>
 			<div className={listClass}>
 				{rows.map((t, i) => (
@@ -898,7 +933,12 @@ export function RequestsSection({
 								t.comparisonDirection,
 								comparisonAccent,
 							)}
-							<span className="text-xs text-muted-foreground">{t.label || "All usage"}</span>
+							{t.label && t.label !== "All usage" ? (
+								<span className="text-xs text-muted-foreground">{t.label}</span>
+							) : null}
+							{!sharedUnitLabel && t.unitLabel ? (
+								<span className="text-xs text-muted-foreground">{t.unitLabel}</span>
+							) : null}
 						</div>
 					</div>
 				))}
@@ -1018,55 +1058,63 @@ export function AdvancedTable({
 	rows: ProviderSections["otherRules"];
 }) {
 	if (!rows.length) return null;
+	const formatMeterName = (meter: string) =>
+		meter
+			.replace(/[_-]+/g, " ")
+			.replace(/\b\w/g, (letter) => letter.toUpperCase());
+	const formatCompactUnit = (unit: string) =>
+		unit
+			.replace(/^Per\s+/i, "/ ")
+			.replace(/1,000/g, "1K");
+	const formatConditions = (conditions: ProviderSections["otherRules"][number]["conditions"]) => {
+		if (!conditions?.length) return null;
+		return conditions
+			.map((condition) => {
+				const value = Array.isArray(condition.value)
+					? condition.value.join(", ")
+					: String(condition.value);
+				return `${condition.path.replace(/^.*\./, "").replace(/_/g, " ")}: ${value}`;
+			})
+			.join(" · ");
+	};
 
 	return (
 		<div className="space-y-1.5">
-			<details className="rounded-lg border border-zinc-200/70 bg-background dark:border-zinc-800">
-				<summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5">
-					<span className="text-xs font-semibold tracking-wide text-foreground">
-						Advanced & Conditional Pricing
-					</span>
-					<span className="text-xs text-muted-foreground">Show/Hide</span>
-				</summary>
-				<div className="px-3 pb-3">
-					<div className="overflow-x-auto rounded-md border border-zinc-200/80 bg-background dark:border-zinc-800">
-						<Table>
-							<TableHeader>
-								<TableRow>
-									<TableHead>Meter</TableHead>
-									<TableHead>Unit</TableHead>
-									<TableHead>Price</TableHead>
-									<TableHead>Conditions</TableHead>
-									<TableHead>Rule</TableHead>
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{rows.map((r, i) => (
-									<TableRow key={i}>
-										<TableCell className="text-xs">{r.meter}</TableCell>
-										<TableCell className="text-xs">{r.unitLabel}</TableCell>
-										<TableCell className="tabular-nums text-xs">{fmtUSD(r.price)}</TableCell>
-										<TableCell className="text-xs text-muted-foreground">
-											{r.conditions?.length
-												? r.conditions.map((c, j) => (
-														<span key={j} className="mr-2 inline-block">
-															{`${c.path} ${c.op} ${
-																Array.isArray(c.value)
-																	? JSON.stringify(c.value)
-																	: String(c.value)
-															}`}
-														</span>
-												  ))
-												: "--"}
-										</TableCell>
-										<TableCell className="text-xs text-muted-foreground">{r.ruleId || "--"}</TableCell>
-									</TableRow>
-								))}
-							</TableBody>
-						</Table>
-					</div>
-				</div>
-			</details>
+			<h4 className="text-xs font-semibold tracking-wide text-foreground">Other meters</h4>
+			<div className="space-y-2">
+				{rows.map((row, index) => {
+					const conditions = formatConditions(row.conditions);
+					return (
+						<div
+							key={`${row.meter}-${row.ruleId ?? index}`}
+							className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-4"
+						>
+							<div className="min-w-0">
+								<div className="text-[11px] text-muted-foreground">
+									{formatMeterName(row.meter)}
+								</div>
+								{conditions ? (
+									<div className="mt-0.5 truncate text-[10px] text-muted-foreground">
+										{conditions}
+									</div>
+								) : null}
+							</div>
+							<div className="flex items-baseline justify-end gap-2 text-right">
+								{renderComparisonPrices(
+									row.price,
+									row.basePrice,
+									countUsdDecimals(row.price),
+									row.comparisonKind,
+									row.comparisonDirection,
+								)}
+								<span className="text-[10px] text-muted-foreground">
+									{formatCompactUnit(row.unitLabel)}
+								</span>
+							</div>
+						</div>
+					);
+				})}
+			</div>
 		</div>
 	);
 }

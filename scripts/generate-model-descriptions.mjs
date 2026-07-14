@@ -12,8 +12,8 @@ const ORGANISATIONS_ROOT = path.join(
 );
 const OPENROUTER_MODELS_URL =
 	"https://openrouter.ai/api/v1/models?output_modalities=all";
-const LEGACY_AI_STATS_FALLBACK =
-	"On AI Stats you can compare providers, pricing, benchmarks, routing support, and availability for this model.";
+const LEGACY_PHASEO_FALLBACK =
+	"On Phaseo you can compare providers, pricing, benchmarks, routing support, and availability for this model.";
 
 function normalizeWhitespace(value) {
 	return String(value ?? "")
@@ -83,7 +83,7 @@ function normalizeModality(value) {
 	if (!normalized) return "";
 	if (normalized.includes("embedding")) return "embeddings";
 	if (normalized.includes("moderation")) return "moderations";
-	if (normalized.includes("music")) return "audio_music";
+	if (normalized.includes("music")) return "music";
 	if (
 		normalized.includes("transcrib") ||
 		normalized.includes("speech_to_text") ||
@@ -112,7 +112,7 @@ function formatModality(value) {
 			return "audio";
 		case "audio_tts":
 			return "text";
-		case "audio_music":
+		case "music":
 			return "audio";
 		case "embeddings":
 			return "embeddings";
@@ -319,7 +319,9 @@ function buildMeta(model, organisationNames) {
 				inputSet.has("audio_stt") ||
 				has("transcribe", "transcription", "stt", "asr")),
 		isMusic:
-			(outputSet.has("audio") || outputSet.has("audio_music")) &&
+			(outputSet.has("audio") ||
+				outputSet.has("music") ||
+				outputSet.has("audio_music")) &&
 			has("music", "lyria", "suno"),
 		isImage:
 			outputSet.has("image") ||
@@ -370,8 +372,8 @@ function cleanOpenRouterDescription(description, targetName) {
 		normalized = `${targetName}${normalized.slice(isIndex)}`;
 	}
 
-	if (normalized.includes(LEGACY_AI_STATS_FALLBACK)) {
-		normalized = normalized.replace(LEGACY_AI_STATS_FALLBACK, "").trim();
+	if (normalized.includes(LEGACY_PHASEO_FALLBACK)) {
+		normalized = normalized.replace(LEGACY_PHASEO_FALLBACK, "").trim();
 	}
 
 	return trimSentenceBoundary(ensureSentence(normalized));
@@ -720,7 +722,7 @@ function insertDescription(model, description) {
 async function loadOpenRouterModels() {
 	const response = await fetch(OPENROUTER_MODELS_URL, {
 		headers: {
-			"User-Agent": "ai-stats-model-description-sync/1.0",
+			"User-Agent": "phaseo-model-description-sync/1.0",
 		},
 	});
 	if (!response.ok) {
@@ -761,7 +763,7 @@ async function main() {
 			ensureSentence(normalizeAscii(description)),
 		);
 
-		if (!finalDescription || finalDescription === "." || finalDescription === LEGACY_AI_STATS_FALLBACK) {
+		if (!finalDescription || finalDescription === "." || finalDescription === LEGACY_PHASEO_FALLBACK) {
 			missing.push(meta.modelId);
 			continue;
 		}

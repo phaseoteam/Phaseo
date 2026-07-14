@@ -293,7 +293,7 @@ export function buildUnsupportedBatchModePayload(args: {
 		error: {
 			type: "validation_error",
 			reason: "batch_input_mode_not_supported",
-			message: `No requested batch provider supports ${args.mode} batch input through AI Stats yet.`,
+			message: `No requested batch provider supports ${args.mode} batch input through Phaseo yet.`,
 			input_mode: args.mode,
 			requested_providers: args.requestedProviders,
 			providers: providers.map((capability) => ({

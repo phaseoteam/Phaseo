@@ -3,7 +3,7 @@ import type { ExecutorExecuteArgs } from "@executors/types";
 import { executeOpenAICompat } from "../index";
 import { installFetchMock, jsonResponse } from "../../../../../../tests/helpers/mock-fetch";
 import { sseResponse } from "../../../../../../tests/helpers/sse";
-import { setupTestRuntime, teardownTestRuntime } from "../../../../../../tests/helpers/runtime";
+import { setupRuntimeFromEnv, setupTestRuntime, teardownTestRuntime } from "../../../../../../tests/helpers/runtime";
 
 vi.mock("@supabase/supabase-js", () => ({
 	createClient: () => ({}),
@@ -113,6 +113,190 @@ describe("executeOpenAICompat", () => {
 		expect(mock.calls).toHaveLength(1);
 		expect(mock.calls[0]?.url).toBe(ALIBABA_CHAT_URL);
 		expect(capturedBody?.stream).toBe(true);
+	});
+
+	it("reports Meta native web search usage as billable web search requests", async () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			META_MODEL_API_KEY: "test-meta-key",
+		} as any);
+
+		const args = buildArgs();
+		args.providerId = "meta";
+		args.endpoint = "responses";
+		args.protocol = "openai.responses";
+		args.providerModelSlug = "muse-spark-1.1";
+		args.ir = {
+			model: "meta/muse-spark-1.1",
+			stream: false,
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "Find the latest Meta Model API news." }],
+			}],
+			previousResponseId: "resp_previous_meta",
+			reasoning: {
+				effort: "high",
+			},
+			webSearchOptions: {
+				search_context_size: "high",
+			},
+		} as any;
+
+		let capturedBody: any = null;
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.llama.com/compat/v1/responses",
+			response: sseResponse([{
+				response: {
+					id: "resp_meta_search",
+					object: "response",
+					created_at: 1783612800,
+					model: "muse-spark-1.1",
+					status: "completed",
+					output: [{
+						type: "message",
+						role: "assistant",
+						content: [{
+							type: "output_text",
+							text: "Muse Spark 1.1 is available through the Meta Model API.",
+						}],
+					}],
+					usage: {
+						prompt_tokens: 20,
+						completion_tokens: 12,
+						total_tokens: 28,
+						completion_tokens_details: {
+							reasoning_tokens: 4,
+						},
+						server_tool_use: {
+							web_search_requests: 2,
+						},
+					},
+				},
+			}]),
+			onRequest: (call) => {
+				capturedBody = call.bodyJson;
+			},
+		}]);
+
+		let result!: Awaited<ReturnType<typeof executeOpenAICompat>>;
+		try {
+			result = await executeOpenAICompat(args);
+		} finally {
+			mock.restore();
+			teardownTestRuntime();
+			setupTestRuntime();
+		}
+
+		expect(result.kind).toBe("completed");
+		expect(mock.calls).toHaveLength(1);
+		expect(mock.calls[0]?.headers.Authorization).toBe("Bearer test-meta-key");
+		expect(capturedBody?.input).toBeDefined();
+		expect(capturedBody?.input_items).toBeUndefined();
+		expect(capturedBody?.web_search_options).toEqual({
+			search_context_size: "high",
+		});
+		expect(capturedBody?.previous_response_id).toBe("resp_previous_meta");
+		expect(capturedBody?.reasoning_effort).toBe("high");
+		expect(capturedBody?.reasoning).toBeUndefined();
+		expect(capturedBody?.tools).toEqual([{
+			type: "web_search_preview",
+			search_context_size: "high",
+		}]);
+		expect(result.bill.usage).toMatchObject({
+			input_text_tokens: 20,
+			output_text_tokens: 12,
+			reasoning_tokens: 4,
+			native_web_search_requests: 2,
+		});
+	});
+
+	it("routes Poolside responses-surface continuations through chat completions payloads", async () => {
+		const args = buildArgs();
+		args.providerId = "poolside";
+		args.endpoint = "responses";
+		args.protocol = "openai.responses";
+		args.providerModelSlug = "laguna-xs-2.1";
+		args.ir = {
+			...args.ir,
+			model: "poolside/laguna-xs-2.1:free",
+			stream: false,
+			messages: [
+				{ role: "user", content: [{ type: "text", text: "What is the time?" }] },
+				{
+					role: "assistant",
+					content: [],
+					toolCalls: [{
+						id: "call_datetime",
+						name: "gateway_datetime",
+						arguments: "{}",
+					}],
+				},
+				{
+					role: "tool",
+					toolResults: [{
+						toolCallId: "call_datetime",
+						content: "{\"timezones\":[{\"timezone\":\"UTC\",\"datetime\":\"2026-07-06T15:25:15.298+00:00\"}]}",
+					}],
+				},
+			],
+			tools: [{
+				name: "gateway_datetime",
+				parameters: { type: "object" },
+			}],
+		};
+
+		let capturedBody: any = null;
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.poolside.example/v1/chat/completions",
+			response: jsonResponse({
+				id: "chatcmpl_laguna_final",
+				object: "chat.completion",
+				created: 1778073915,
+				model: "laguna-xs-2.1",
+				choices: [{
+					index: 0,
+					message: { role: "assistant", content: "It is 15:25 UTC." },
+					finish_reason: "stop",
+				}],
+				usage: { prompt_tokens: 10, completion_tokens: 6, total_tokens: 16 },
+			}),
+			onRequest: (call) => {
+				capturedBody = call.bodyJson;
+			},
+		}]);
+
+		const result = await executeOpenAICompat(args);
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect(mock.calls).toHaveLength(1);
+		expect(mock.calls[0]?.url).toBe("https://api.poolside.example/v1/chat/completions");
+		expect(capturedBody?.input).toBeUndefined();
+		expect(capturedBody?.messages).toEqual([
+			{
+				role: "user",
+				content: "What is the time?",
+			},
+			{
+				role: "assistant",
+				content: null,
+				tool_calls: [{
+					id: "call_datetime",
+					type: "function",
+					function: {
+						name: "gateway_datetime",
+						arguments: "{}",
+					},
+				}],
+			},
+			{
+				role: "tool",
+				tool_call_id: "call_datetime",
+				content: "{\"timezones\":[{\"timezone\":\"UTC\",\"datetime\":\"2026-07-06T15:25:15.298+00:00\"}]}",
+			},
+		]);
+		expect(capturedBody?.stream).toBe(true);
+		expect(capturedBody?.stream_options?.include_usage).toBe(true);
 	});
 
 	it("routes alibaba-cloud omni models to chat completions", async () => {

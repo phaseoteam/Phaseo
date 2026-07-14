@@ -1,0 +1,24 @@
+{
+  "model_id": "bytedance/seedream-2.0-mini",
+  "organisation_id": "bytedance",
+  "name": "Seedream 2.0 Mini",
+  "status": "Rumoured",
+  "previous_model_id": null,
+  "description": "Seedream 2.0 Mini is a prepared ByteDance/BytePlus image generation model entry for a compact Seedream variant. It is held as rumoured until BytePlus publishes a ModelArk documentation page or provider model endpoint.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "image",
+  "api_model_id": "bytedance/seedream-2.0-mini",
+  "links": [],
+  "details": [
+    {
+      "name": "source_status",
+      "value": "Prepared for BytePlus support; official public ModelArk documentation not found as of 2026-06-30."
+    }
+  ],
+  "benchmarks": []
+}

@@ -28,6 +28,27 @@ type GatewayRequestStatsRow = {
 	generation_ms: number | null;
 	throughput: number | null;
 	usage: unknown;
+	provider_attempts?: unknown;
+};
+
+type GatewayProviderAttemptStatsRow = {
+	provider: string | null;
+	success: boolean | null;
+	status_code: number | null;
+	error_code: string | null;
+};
+
+type AggregateMetrics = {
+	totalRequests: number;
+	successfulRequests: number;
+	healthRequests: number;
+	healthSuccessfulRequests: number;
+	latencySum: number;
+	latencySamples: number;
+	generationSum: number;
+	generationSamples: number;
+	throughputSum: number;
+	throughputSamples: number;
 };
 
 export type ModelPerformancePoint = {
@@ -43,6 +64,7 @@ export type ModelSuccessPoint = {
 	bucket: string;
 	overallSuccessPct: number | null;
 	worstProviderSuccessPct: number | null;
+	providerCount?: number;
 	requests: number;
 };
 
@@ -152,13 +174,42 @@ export async function getModelPerformanceMetrics(
 	console.log(`[perf] summary reqs=${reqs} success=${success} hourly=${hourlyCnt} providers=${providerCnt}`);
 
 	const summary = mapSummary(last24);
-	const prevSummary = mapSummary(payload.prev_24h);
-	const hourly = (payload.hourly_24h ?? []).map(mapHourlyPoint);
-	const successSeries = (payload.hourly_24h ?? []).map(mapSuccessPoint);
+	const aliasBackfill = await getAliasBackfilledPerformance({
+		client,
+		modelId,
+		windowHours: hours,
+	});
+	const useAliasBackfill =
+		aliasBackfill != null &&
+		aliasBackfill.summary.totalRequests > summary.totalRequests &&
+		aliasBackfill.summary.totalRequests > 0;
+	const prevSummary = useAliasBackfill
+		? aliasBackfill.prevSummary
+		: mapSummary(payload.prev_24h);
+	const hourly = useAliasBackfill
+		? aliasBackfill.hourly
+		: (payload.hourly_24h ?? []).map(mapHourlyPoint);
+	const providerPerformance = useAliasBackfill
+		? aliasBackfill.providerPerformance
+		: (payload.provider_uptime_24h ?? []).map(mapProviderPerformance);
+	const providerTelemetryCount = providerPerformance.filter(
+		(provider) => provider.requests > 0 && provider.uptimePct != null,
+	).length;
+	const attemptBackfilledSuccessSeries = useAliasBackfill
+		? null
+		: await getAttemptBackfilledSuccessSeries({
+				client,
+				modelId,
+				windowHours: SUCCESS_WINDOW_HOURS,
+			});
+	const successSeries = useAliasBackfill
+		? aliasBackfill.successSeries
+		: (attemptBackfilledSuccessSeries ??
+			(payload.hourly_24h ?? []).map((point) =>
+					mapSuccessPoint(point, providerTelemetryCount),
+				));
 	const timeOfDay = (payload.time_of_day_5d ?? []).map(mapTimeOfDayPoint);
-	const providerPerformance = (payload.provider_uptime_24h ?? []).map(
-		mapProviderPerformance
-	);
+	const effectiveSummary = useAliasBackfill ? aliasBackfill.summary : summary;
 	const preferredProviders = providerPerformance
 		.map((provider) => provider.provider)
 		.filter((provider): provider is string => Boolean(provider))
@@ -168,7 +219,7 @@ export async function getModelPerformanceMetrics(
 		modelId,
 		preferredProviders,
 	);
-	const dataRange = mapDataRange(payload.hourly_24h);
+	const dataRange = useAliasBackfill ? mapDataRange(hourly) : mapDataRange(payload.hourly_24h);
 	const cumulativeTokens = toNumber(payload.cumulative_tokens?.total_tokens);
 	const releaseDate = payload.cumulative_tokens?.release_date ?? null;
 
@@ -178,7 +229,7 @@ export async function getModelPerformanceMetrics(
 	void mapDur;
 
 	return {
-		summary,
+		summary: effectiveSummary,
 		prevSummary,
 		hourly,
 		successSeries,
@@ -199,12 +250,22 @@ export async function getModelPerformanceActivitySnapshot(
 	void includeHidden;
 
 	const payload = await fetchPerformanceOverviewPayload(client, modelId);
-	const providerPerformance = (payload.provider_uptime_24h ?? []).map(
-		mapProviderPerformance,
-	);
+	const summary = mapSummary(payload.last_24h);
+	const aliasBackfill = await getAliasBackfilledPerformance({
+		client,
+		modelId,
+		windowHours: SUCCESS_WINDOW_HOURS,
+	});
+	const useAliasBackfill =
+		aliasBackfill != null &&
+		aliasBackfill.summary.totalRequests > summary.totalRequests &&
+		aliasBackfill.summary.totalRequests > 0;
+	const providerPerformance = useAliasBackfill
+		? aliasBackfill.providerPerformance
+		: (payload.provider_uptime_24h ?? []).map(mapProviderPerformance);
 
 	return {
-		summary: mapSummary(payload.last_24h),
+		summary: useAliasBackfill ? aliasBackfill.summary : summary,
 		providerPerformance,
 		cumulativeTokens: toNumber(payload.cumulative_tokens?.total_tokens),
 	};
@@ -326,6 +387,105 @@ function classifyRequestHealthImpact(row: GatewayRequestStatsRow):
 	return "failure";
 }
 
+function classifyAttemptHealthImpact(
+	row: GatewayProviderAttemptStatsRow,
+): "success" | "failure" | "neutral" {
+	const statusCode = Number(row.status_code ?? 0);
+	if (row.success === true) return "success";
+	if (statusCode >= 200 && statusCode < 300) return "success";
+	if (statusCode === 429) return "neutral";
+	if (isRateLimitSignal(row.error_code)) return "neutral";
+
+	const normalizedError = normalizeHealthSignal(row.error_code);
+	if (
+		normalizedError.includes("abort") ||
+		normalizedError.includes("cancel") ||
+		normalizedError.includes("client_closed")
+	) {
+		return "neutral";
+	}
+
+	return "failure";
+}
+
+function normalizeProviderAttemptRecord(
+	value: unknown,
+): GatewayProviderAttemptStatsRow | null {
+	const record = toRecord(value);
+	if (!record) return null;
+
+	const provider = String(record.provider ?? "").trim();
+	if (!provider) return null;
+
+	const status = toFiniteNumber(record.status ?? record.status_code);
+	const outcome = normalizeHealthSignal(record.outcome ?? record.type ?? record.reason);
+	const success =
+		outcome === "success" ||
+		(status != null && status >= 200 && status < 300);
+	const errorCode =
+		[
+			record.upstream_error_code,
+			record.error_code,
+			record.outcome,
+			record.type,
+			record.reason,
+			record.status_text,
+			record.upstream_error_message,
+			record.upstream_error_description,
+		]
+			.map((candidate) => String(candidate ?? "").trim())
+			.find(Boolean) ?? null;
+
+	return {
+		provider,
+		success,
+		status_code: status != null ? Math.trunc(status) : null,
+		error_code: errorCode,
+	};
+}
+
+function getProviderAttemptRows(
+	row: GatewayRequestStatsRow,
+): GatewayProviderAttemptStatsRow[] {
+	const attempts = Array.isArray(row.provider_attempts)
+		? row.provider_attempts
+				.map(normalizeProviderAttemptRecord)
+				.filter((attempt): attempt is GatewayProviderAttemptStatsRow => attempt != null)
+		: [];
+
+	if (attempts.length > 0) return attempts;
+
+	const provider = String(row.provider ?? "").trim();
+	if (!provider) return [];
+
+	return [
+		{
+			provider,
+			success: row.success,
+			status_code: row.status_code,
+			error_code: row.error_code,
+		},
+	];
+}
+
+function accumulateAttemptHealth(
+	target: AggregateMetrics,
+	attempt: GatewayProviderAttemptStatsRow,
+) {
+	target.totalRequests += 1;
+	if (attempt.success === true) {
+		target.successfulRequests += 1;
+	}
+
+	const healthImpact = classifyAttemptHealthImpact(attempt);
+	if (healthImpact !== "neutral") {
+		target.healthRequests += 1;
+		if (healthImpact === "success") {
+			target.healthSuccessfulRequests += 1;
+		}
+	}
+}
+
 function mapSummary(value: any): ModelPerformanceSummary {
 	return {
 		avgThroughput: toNumber(value?.avg_throughput),
@@ -348,11 +508,13 @@ function mapHourlyPoint(value: any): ModelPerformancePoint {
 	};
 }
 
-function mapSuccessPoint(value: any): ModelSuccessPoint {
+function mapSuccessPoint(value: any, providerCount = 0): ModelSuccessPoint {
 	return {
 		bucket: value?.bucket ?? "",
 		overallSuccessPct: toNumber(value?.success_pct),
-		worstProviderSuccessPct: toNumber(value?.worst_provider_success_pct),
+		worstProviderSuccessPct:
+			providerCount > 1 ? toNumber(value?.worst_provider_success_pct) : null,
+		providerCount,
 		requests: Number(value?.requests ?? 0),
 	};
 }
@@ -396,6 +558,129 @@ function mapDataRange(hourly: any[] | undefined): ModelPerformanceRange {
 	return {
 		start: hourly[0]?.bucket ?? "",
 		end: hourly[hourly.length - 1]?.bucket ?? "",
+	};
+}
+
+function toUtcBucketKey(input: Date | string, bucketMinutes: number): string {
+	const date = typeof input === "string" ? new Date(input) : input;
+	if (!Number.isFinite(date.getTime())) return "";
+	const clampedMinutes = Math.max(1, bucketMinutes);
+	const bucketMinute = Math.floor(date.getUTCMinutes() / clampedMinutes) * clampedMinutes;
+	return new Date(
+		Date.UTC(
+			date.getUTCFullYear(),
+			date.getUTCMonth(),
+			date.getUTCDate(),
+			date.getUTCHours(),
+			bucketMinute,
+		),
+	)
+		.toISOString()
+		.replace(".000Z", "");
+}
+
+function buildUtcBucketSeries(args: {
+	start: Date;
+	end: Date;
+	bucketMinutes: number;
+}): string[] {
+	const bucketMs = Math.max(1, args.bucketMinutes) * 60 * 1000;
+	const startBucket = toUtcBucketKey(args.start, args.bucketMinutes);
+	const endBucket = toUtcBucketKey(args.end, args.bucketMinutes);
+	const startMs = new Date(startBucket).getTime();
+	const endMs = new Date(endBucket).getTime();
+	if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || startMs > endMs) {
+		return [];
+	}
+
+	const buckets: string[] = [];
+	for (let cursor = startMs; cursor <= endMs; cursor += bucketMs) {
+		buckets.push(new Date(cursor).toISOString().replace(".000Z", ""));
+	}
+	return buckets;
+}
+
+function emptyAggregateMetrics(): AggregateMetrics {
+	return {
+		totalRequests: 0,
+		successfulRequests: 0,
+		healthRequests: 0,
+		healthSuccessfulRequests: 0,
+		latencySum: 0,
+		latencySamples: 0,
+		generationSum: 0,
+		generationSamples: 0,
+		throughputSum: 0,
+		throughputSamples: 0,
+	};
+}
+
+function getDerivedThroughput(row: GatewayRequestStatsRow): number | null {
+	const explicitThroughput = toFiniteNumber(row.throughput);
+	if (explicitThroughput != null && explicitThroughput > 0) return explicitThroughput;
+
+	const generationMs = toFiniteNumber(row.generation_ms);
+	const outputTokens = extractOutputTokensFromUsage(row.usage) ?? 0;
+	if (generationMs != null && generationMs > 0 && outputTokens > 0) {
+		return (outputTokens * 1000) / generationMs;
+	}
+
+	return null;
+}
+
+function accumulateMetrics(target: AggregateMetrics, row: GatewayRequestStatsRow) {
+	target.totalRequests += 1;
+	if (row.success === true) {
+		target.successfulRequests += 1;
+	}
+
+	const healthImpact = classifyRequestHealthImpact(row);
+	if (healthImpact !== "neutral") {
+		target.healthRequests += 1;
+		if (healthImpact === "success") {
+			target.healthSuccessfulRequests += 1;
+		}
+	}
+
+	if (row.success !== true) return;
+
+	const latencyMs = toFiniteNumber(row.latency_ms);
+	if (latencyMs != null && latencyMs > 0) {
+		target.latencySum += latencyMs;
+		target.latencySamples += 1;
+	}
+
+	const generationMs = toFiniteNumber(row.generation_ms);
+	if (generationMs != null && generationMs > 0) {
+		target.generationSum += generationMs;
+		target.generationSamples += 1;
+	}
+
+	const throughput = getDerivedThroughput(row);
+	if (throughput != null && throughput > 0) {
+		target.throughputSum += throughput;
+		target.throughputSamples += 1;
+	}
+}
+
+function aggregateToSummary(aggregate: AggregateMetrics): ModelPerformanceSummary {
+	return {
+		avgThroughput:
+			aggregate.throughputSamples > 0
+				? aggregate.throughputSum / aggregate.throughputSamples
+				: null,
+		avgLatencyMs:
+			aggregate.latencySamples > 0 ? aggregate.latencySum / aggregate.latencySamples : null,
+		avgGenerationMs:
+			aggregate.generationSamples > 0
+				? aggregate.generationSum / aggregate.generationSamples
+				: null,
+		uptimePct:
+			aggregate.healthRequests > 0
+				? (aggregate.healthSuccessfulRequests / aggregate.healthRequests) * 100
+				: null,
+		totalRequests: aggregate.totalRequests,
+		successfulRequests: aggregate.successfulRequests,
 	};
 }
 
@@ -469,7 +754,7 @@ async function fetchGatewayRequestStatsRows(args: {
 		let query = args.client
 			.from("gateway_requests")
 			.select(
-				"provider, success, status_code, error_code, created_at, latency_ms, generation_ms, throughput, usage",
+				"provider, success, status_code, error_code, created_at, latency_ms, generation_ms, throughput, usage, provider_attempts",
 			)
 			.in("model_id", args.modelIds)
 			.gte("created_at", args.fromIso)
@@ -491,6 +776,340 @@ async function fetchGatewayRequestStatsRows(args: {
 	}
 
 	return rows;
+}
+
+function buildSuccessSeriesFromRequestRows(args: {
+	rows: GatewayRequestStatsRow[];
+	start: Date;
+	end: Date;
+	bucketMinutes: number;
+}): ModelSuccessPoint[] {
+	const hourlyAggregates = new Map<string, AggregateMetrics>();
+	const hourlyProviderAggregates = new Map<string, Map<string, AggregateMetrics>>();
+
+	for (const row of args.rows) {
+		const createdAt = new Date(String(row.created_at ?? ""));
+		if (!Number.isFinite(createdAt.getTime())) continue;
+
+		const bucket = toUtcBucketKey(createdAt, args.bucketMinutes);
+		if (!bucket) continue;
+
+		const hourlyAggregate = hourlyAggregates.get(bucket) ?? emptyAggregateMetrics();
+		accumulateMetrics(hourlyAggregate, row);
+		hourlyAggregates.set(bucket, hourlyAggregate);
+
+		for (const attempt of getProviderAttemptRows(row)) {
+			const providerId = String(attempt.provider ?? "").trim();
+			if (!providerId) continue;
+
+			const byProvider =
+				hourlyProviderAggregates.get(bucket) ?? new Map<string, AggregateMetrics>();
+			const providerAggregate =
+				byProvider.get(providerId) ?? emptyAggregateMetrics();
+			accumulateAttemptHealth(providerAggregate, attempt);
+			byProvider.set(providerId, providerAggregate);
+			hourlyProviderAggregates.set(bucket, byProvider);
+		}
+	}
+
+	return buildUtcBucketSeries({
+		start: args.start,
+		end: args.end,
+		bucketMinutes: args.bucketMinutes,
+	}).map((bucket) => {
+		const aggregate = hourlyAggregates.get(bucket) ?? emptyAggregateMetrics();
+		const providerMetrics = hourlyProviderAggregates.get(bucket);
+		const providerUptimes = providerMetrics
+			? Array.from(providerMetrics.values())
+					.map((value) =>
+						value.healthRequests > 0
+							? (value.healthSuccessfulRequests / value.healthRequests) * 100
+							: null,
+					)
+					.filter((value): value is number => value != null)
+			: [];
+		const providerCount = providerUptimes.length;
+
+		return {
+			bucket,
+			overallSuccessPct:
+				aggregate.healthRequests > 0
+					? (aggregate.healthSuccessfulRequests / aggregate.healthRequests) * 100
+					: null,
+			worstProviderSuccessPct:
+				providerCount > 1 ? Math.min(...providerUptimes) : null,
+			providerCount,
+			requests: aggregate.totalRequests,
+		};
+	});
+}
+
+async function getAttemptBackfilledSuccessSeries(args: {
+	client: ReturnType<typeof createAdminClient>;
+	modelId: string;
+	windowHours: number;
+}): Promise<ModelSuccessPoint[] | null> {
+	const aliases = await getModelAliases(args.client, args.modelId);
+	const effectiveWindowHours = Math.max(1, Math.min(24 * 30, Math.round(args.windowHours)));
+	const now = new Date();
+	const start = new Date(now.getTime() - effectiveWindowHours * 60 * 60 * 1000);
+	const rows = await fetchGatewayRequestStatsRows({
+		client: args.client,
+		modelIds: aliases,
+		fromIso: start.toISOString(),
+		toIso: now.toISOString(),
+	});
+
+	if (!rows.length) return null;
+
+	return buildSuccessSeriesFromRequestRows({
+		rows,
+		start,
+		end: now,
+		bucketMinutes: SUCCESS_BUCKET_MINUTES,
+	});
+}
+
+async function getAliasBackfilledPerformance(args: {
+	client: ReturnType<typeof createAdminClient>;
+	modelId: string;
+	windowHours: number;
+}): Promise<{
+	summary: ModelPerformanceSummary;
+	prevSummary: ModelPerformanceSummary;
+	hourly: ModelPerformancePoint[];
+	successSeries: ModelSuccessPoint[];
+	providerPerformance: ModelProviderPerformance[];
+} | null> {
+	const aliases = await getModelAliases(args.client, args.modelId);
+	if (aliases.length <= 1 || aliases.every((alias) => alias === args.modelId)) {
+		return null;
+	}
+
+	const effectiveWindowHours = Math.max(1, Math.min(24 * 30, Math.round(args.windowHours)));
+	const now = new Date();
+	const currentWindowStart = new Date(now.getTime() - effectiveWindowHours * 60 * 60 * 1000);
+	const previousWindowStart = new Date(
+		currentWindowStart.getTime() - effectiveWindowHours * 60 * 60 * 1000,
+	);
+	const hourlyBucketMinutes = 60;
+	const providerBucketMinutes = PROVIDER_UPTIME_BUCKET_HOURS * 60;
+
+	const rows = await fetchGatewayRequestStatsRows({
+		client: args.client,
+		modelIds: aliases,
+		fromIso: previousWindowStart.toISOString(),
+		toIso: now.toISOString(),
+	});
+
+	if (!rows.length) return null;
+
+	const summaryAggregate = emptyAggregateMetrics();
+	const prevSummaryAggregate = emptyAggregateMetrics();
+	const hourlyAggregates = new Map<string, AggregateMetrics>();
+	const hourlyProviderAggregates = new Map<string, Map<string, AggregateMetrics>>();
+	const providerAggregates = new Map<string, AggregateMetrics>();
+	const providerUptimeAggregates = new Map<string, Map<string, AggregateMetrics>>();
+	const providerIds = new Set<string>();
+
+	for (const row of rows) {
+		const createdAt = new Date(String(row.created_at ?? ""));
+		if (!Number.isFinite(createdAt.getTime())) continue;
+		const createdAtMs = createdAt.getTime();
+		const inCurrentWindow =
+			createdAtMs >= currentWindowStart.getTime() && createdAtMs <= now.getTime();
+		const inPreviousWindow =
+			createdAtMs >= previousWindowStart.getTime() &&
+			createdAtMs < currentWindowStart.getTime();
+
+		if (inPreviousWindow) {
+			accumulateMetrics(prevSummaryAggregate, row);
+		}
+
+		if (!inCurrentWindow) continue;
+
+		accumulateMetrics(summaryAggregate, row);
+
+		const hourlyBucket = toUtcBucketKey(createdAt, hourlyBucketMinutes);
+		if (hourlyBucket) {
+			const hourlyAggregate = hourlyAggregates.get(hourlyBucket) ?? emptyAggregateMetrics();
+			accumulateMetrics(hourlyAggregate, row);
+			hourlyAggregates.set(hourlyBucket, hourlyAggregate);
+
+			for (const attempt of getProviderAttemptRows(row)) {
+				const providerId = String(attempt.provider ?? "").trim();
+				if (!providerId) continue;
+				const byProvider =
+					hourlyProviderAggregates.get(hourlyBucket) ?? new Map<string, AggregateMetrics>();
+				const providerHourlyAggregate =
+					byProvider.get(providerId) ?? emptyAggregateMetrics();
+				accumulateAttemptHealth(providerHourlyAggregate, attempt);
+				byProvider.set(providerId, providerHourlyAggregate);
+				hourlyProviderAggregates.set(hourlyBucket, byProvider);
+			}
+		}
+
+		const providerId = String(row.provider ?? "").trim();
+		if (!providerId) continue;
+		providerIds.add(providerId);
+
+		const providerAggregate = providerAggregates.get(providerId) ?? emptyAggregateMetrics();
+		accumulateMetrics(providerAggregate, row);
+		providerAggregates.set(providerId, providerAggregate);
+
+		const providerBucket = toUtcBucketKey(createdAt, providerBucketMinutes);
+		if (providerBucket) {
+			const byBucket =
+				providerUptimeAggregates.get(providerId) ?? new Map<string, AggregateMetrics>();
+			const providerBucketAggregate =
+				byBucket.get(providerBucket) ?? emptyAggregateMetrics();
+			accumulateMetrics(providerBucketAggregate, row);
+			byBucket.set(providerBucket, providerBucketAggregate);
+			providerUptimeAggregates.set(providerId, byBucket);
+		}
+	}
+
+	const providerMeta = new Map<string, { name: string; color: string | null }>();
+	if (providerIds.size > 0) {
+		const { data } = await args.client
+			.from("data_api_providers")
+			.select("api_provider_id, api_provider_name, colour")
+			.in("api_provider_id", Array.from(providerIds));
+		for (const row of data ?? []) {
+			const providerId = String(row?.api_provider_id ?? "").trim();
+			if (!providerId) continue;
+			providerMeta.set(providerId, {
+				name: String(row?.api_provider_name ?? providerId).trim() || providerId,
+				color:
+					typeof row?.colour === "string" && row.colour.trim().length > 0
+						? row.colour.trim()
+						: null,
+			});
+		}
+	}
+
+	const hourlyBuckets = buildUtcBucketSeries({
+		start: currentWindowStart,
+		end: now,
+		bucketMinutes: hourlyBucketMinutes,
+	});
+
+	const hourly = hourlyBuckets.map((bucket) => {
+		const aggregate = hourlyAggregates.get(bucket) ?? emptyAggregateMetrics();
+		return {
+			bucket,
+			avgThroughput:
+				aggregate.throughputSamples > 0
+					? aggregate.throughputSum / aggregate.throughputSamples
+					: null,
+			avgLatencyMs:
+				aggregate.latencySamples > 0 ? aggregate.latencySum / aggregate.latencySamples : null,
+			avgGenerationMs:
+				aggregate.generationSamples > 0
+					? aggregate.generationSum / aggregate.generationSamples
+					: null,
+			requests: aggregate.totalRequests,
+			successPct:
+				aggregate.healthRequests > 0
+					? (aggregate.healthSuccessfulRequests / aggregate.healthRequests) * 100
+					: null,
+		};
+	});
+
+	const successSeries = hourlyBuckets.map((bucket) => {
+		const aggregate = hourlyAggregates.get(bucket) ?? emptyAggregateMetrics();
+		const providerMetrics = hourlyProviderAggregates.get(bucket);
+		const providerUptimes = providerMetrics
+			? Array.from(providerMetrics.values())
+					.map((value) =>
+						value.healthRequests > 0
+							? (value.healthSuccessfulRequests / value.healthRequests) * 100
+							: null,
+					)
+					.filter((value): value is number => value != null)
+			: [];
+		const providerCount = providerUptimes.length;
+		return {
+			bucket,
+			overallSuccessPct:
+				aggregate.healthRequests > 0
+					? (aggregate.healthSuccessfulRequests / aggregate.healthRequests) * 100
+					: null,
+			worstProviderSuccessPct:
+				providerCount > 1 ? Math.min(...providerUptimes) : null,
+			providerCount,
+			requests: aggregate.totalRequests,
+		};
+	});
+
+	const providerBuckets = buildUtcBucketSeries({
+		start: currentWindowStart,
+		end: now,
+		bucketMinutes: providerBucketMinutes,
+	});
+
+	const providerPerformance = Array.from(providerAggregates.entries())
+		.map(([providerId, aggregate]) => {
+			const meta = providerMeta.get(providerId);
+			const bucketMap = providerUptimeAggregates.get(providerId);
+			return {
+				provider: providerId,
+				providerName: meta?.name ?? providerId,
+				providerColor: meta?.color ?? null,
+				avgThroughput:
+					aggregate.throughputSamples > 0
+						? aggregate.throughputSum / aggregate.throughputSamples
+						: null,
+				avgLatencyMs:
+					aggregate.latencySamples > 0
+						? aggregate.latencySum / aggregate.latencySamples
+						: null,
+				avgGenerationMs:
+					aggregate.generationSamples > 0
+						? aggregate.generationSum / aggregate.generationSamples
+						: null,
+				requests: aggregate.totalRequests,
+				uptimePct:
+					aggregate.healthRequests > 0
+						? (aggregate.healthSuccessfulRequests / aggregate.healthRequests) * 100
+						: null,
+				uptimeBuckets: providerBuckets.map((bucket, index) => {
+					const providerAggregateForBucket =
+						bucketMap?.get(bucket) ?? emptyAggregateMetrics();
+					const start = bucket;
+					const end =
+						providerBuckets[index + 1] ??
+						new Date(
+							new Date(bucket).getTime() + providerBucketMinutes * 60 * 1000,
+						)
+							.toISOString()
+							.replace(".000Z", "");
+					return {
+						start,
+						end,
+						successPct:
+							providerAggregateForBucket.healthRequests > 0
+								? (providerAggregateForBucket.healthSuccessfulRequests /
+										providerAggregateForBucket.healthRequests) *
+									100
+								: null,
+					};
+				}),
+			};
+		})
+		.sort((a, b) => b.requests - a.requests || a.providerName.localeCompare(b.providerName));
+
+	if (summaryAggregate.totalRequests <= 0 && providerPerformance.length <= 0) {
+		return null;
+	}
+
+	return {
+		summary: aggregateToSummary(summaryAggregate),
+		prevSummary: aggregateToSummary(prevSummaryAggregate),
+		hourly,
+		successSeries,
+		providerPerformance,
+	};
 }
 
 async function getProviderDailySeries7d(
@@ -549,11 +1168,9 @@ async function getProviderDailySeries7d(
 			const derivedThroughput =
 				explicitThroughput != null && explicitThroughput > 0
 					? explicitThroughput
-					: generationMs != null &&
-					  generationMs > 0 &&
-					  outputTokens > 0
-					? (outputTokens * 1000) / generationMs
-					: null;
+					: generationMs != null && generationMs > 0 && outputTokens > 0
+						? (outputTokens * 1000) / generationMs
+						: null;
 			const healthImpact = classifyRequestHealthImpact(row);
 
 			const key = `${provider}::${day}`;

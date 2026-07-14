@@ -1,0 +1,31 @@
+{
+  "key": "siliconflow:tencent/hy3:free:text.generate",
+  "api_provider_id": "siliconflow",
+  "provider_slug": "siliconflow",
+  "api_model_id": "tencent/hy3:free",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0,
+      "currency": "USD",
+      "pricing_plan": "free",
+      "note": "SiliconFlow dashboard lists final tencent/Hy3 input tokens at $0 per K tokens.",
+      "match": [],
+      "priority": 100
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0,
+      "currency": "USD",
+      "pricing_plan": "free",
+      "note": "SiliconFlow dashboard lists final tencent/Hy3 output tokens at $0 per K tokens.",
+      "match": [],
+      "priority": 100
+    }
+  ]
+}

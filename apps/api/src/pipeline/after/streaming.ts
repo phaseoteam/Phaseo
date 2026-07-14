@@ -84,6 +84,28 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
         return null;
     };
 
+    const recordCompletionTiming = () => {
+        if (
+            ctx.meta.preserve_stream_timing &&
+            typeof ctx.meta.latency_ms === "number" &&
+            typeof ctx.meta.generation_ms === "number" &&
+            typeof ctx.meta.end_to_end_ms === "number"
+        ) {
+            return;
+        }
+        const nowMs = Date.now();
+        const nowPerf = performance.now();
+        const requestStartMs = resolveRequestStartMs();
+        ctx.meta.end_to_end_ms = requestStartMs !== null
+            ? Math.max(0, Math.round(nowMs - requestStartMs))
+            : Math.max(0, Math.round(nowPerf - tStart));
+        ctx.meta.generation_ms = firstFrameAtMs !== null
+            ? Math.max(0, Math.round(nowMs - firstFrameAtMs))
+            : firstFrameAt !== null
+                ? Math.max(0, Math.round(nowPerf - firstFrameAt))
+                : 0;
+    };
+
     // Write one SSE JSON object as "event: X\ndata: {...}\n\n" (event optional)
     const writeJson = async (obj: unknown, eventName?: string | null) => {
         if (downstreamClosed) return;
@@ -112,12 +134,7 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
             });
         }
 
-        if (typeof ctx.meta.generation_ms !== "number") {
-            const requestStartMs = resolveRequestStartMs();
-            ctx.meta.generation_ms = requestStartMs !== null
-                ? Math.max(0, Math.round(Date.now() - requestStartMs))
-                : Math.max(0, Math.round(performance.now() - tStart));
-        }
+        recordCompletionTiming();
         dispatchBackground(
             Promise.resolve(
                 onFinalUsage(usage, {
@@ -196,14 +213,16 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                         // For streamed responses, latency means upstream request start -> first frame
                         // emitted back to the client. Provider adapters may record earlier upstream
                         // timings, so overwrite here with the actual downstream first-frame timing.
-                        const requestStartMs = resolveRequestStartMs();
-                        if (requestStartMs !== null) {
-                            ctx.meta.latency_ms = Math.max(
-                                0,
-                                Math.round(firstFrameAtMs - requestStartMs),
-                            );
-                        } else {
-                            ctx.meta.latency_ms = Math.max(0, Math.round(firstFrameAt - tStart));
+                        if (!ctx.meta.preserve_stream_timing) {
+                            const requestStartMs = resolveRequestStartMs();
+                            if (requestStartMs !== null) {
+                                ctx.meta.latency_ms = Math.max(
+                                    0,
+                                    Math.round(firstFrameAtMs - requestStartMs),
+                                );
+                            } else {
+                                ctx.meta.latency_ms = Math.max(0, Math.round(firstFrameAt - tStart));
+                            }
                         }
                     }
 
@@ -255,18 +274,18 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                     const fallbackTerminal =
                         !terminalByEvents &&
                         !sawFinalUsage &&
-                        (json?.object === "chat.completion" || json?.object === "response");
+                        (
+                            json?.object === "chat.completion" ||
+                            json?.response?.object === "chat.completion" ||
+                            (json?.object === "response" && json?.status === "completed") ||
+                            (json?.response?.object === "response" && json?.response?.status === "completed")
+                        );
 
                     const isFinalSnapshot = !sawFinalUsage && (terminalByEvents || fallbackTerminal);
 
                     if (isFinalSnapshot) {
                         sawFinalUsage = true;
-                        if (typeof ctx.meta.generation_ms !== "number") {
-                            const requestStartMs = resolveRequestStartMs();
-                            ctx.meta.generation_ms = requestStartMs !== null
-                                ? Math.max(0, Math.round(Date.now() - requestStartMs))
-                                : Math.max(0, Math.round(performance.now() - tStart));
-                        }
+                        recordCompletionTiming();
                     }
 
                     const shouldReencode =

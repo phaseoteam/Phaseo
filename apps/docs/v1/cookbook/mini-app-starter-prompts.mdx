@@ -1,6 +1,6 @@
 ---
 title: "Mini App Starter Prompts"
-description: "Copyable prompts for coding agents to build small AI Stats apps with raw HTTP, SDKs, or agent runtimes."
+description: "Copyable prompts for coding agents to build small Phaseo apps with raw HTTP, SDKs, or agent runtimes."
 ---
 
 Use this page when you want to hand a coding agent one concrete prompt that produces a small, working app shape instead of a vague integration plan.
@@ -13,7 +13,7 @@ These prompts are written to be outcome-focused and implementation-specific so t
 
 <Steps>
   <Step title="Pick the integration surface">
-    Choose the prompt that matches how you want the app to call AI Stats:
+    Choose the prompt that matches how you want the app to call Phaseo:
 
     - raw HTTP
     - one official SDK
@@ -33,19 +33,19 @@ These prompts are written to be outcome-focused and implementation-specific so t
 <AccordionGroup>
   <Accordion title="Raw HTTP mini app" icon="globe">
     <Prompt
-      description="Build a small app that uses **raw HTTP** against AI Stats instead of an SDK."
+      description="Build a small app that uses **raw HTTP** against Phaseo instead of an SDK."
       icon="globe"
       actions={["copy", "cursor"]}
     >
-{`You are implementing a small production-style demo app with AI Stats Gateway.
+{`You are implementing a small production-style demo app with Phaseo Gateway.
 
 Build a [FRAMEWORK] mini app for [APP IDEA].
 
 Requirements:
-- Use raw HTTP requests, not an AI Stats SDK.
-- Use the AI Stats endpoint [ENDPOINT].
+- Use raw HTTP requests, not A Phaseo SDK.
+- Use the Phaseo endpoint [ENDPOINT].
 - Use model [MODEL].
-- Read the API key from an environment variable named AI_STATS_API_KEY.
+- Read the API key from an environment variable named PHASEO_API_KEY.
 - Keep the app intentionally small: one main page, one server route or handler, and minimal styling.
 - Show the user input, the request submission state, the model output, and any gateway error state.
 - Add one example request payload in comments or docs so the integration is easy to audit later.
@@ -60,7 +60,7 @@ Implementation details:
 Deliverables:
 - The app code.
 - A short README section explaining how to run it.
-- A .env.example entry for AI_STATS_API_KEY.
+- A .env.example entry for PHASEO_API_KEY.
 
 Verification:
 - Run the local app if possible.
@@ -75,15 +75,15 @@ Verification:
       icon="file-code-2"
       actions={["copy", "cursor"]}
     >
-{`You are building a small app on top of the AI Stats TypeScript SDK.
+{`You are building a small app on top of the Phaseo TypeScript SDK.
 
 Create a [FRAMEWORK] mini app for [APP IDEA].
 
 Requirements:
-- Use @ai-stats/sdk.
+- Use @phaseo/sdk.
 - Use model [MODEL].
 - Prefer the responses API unless there is a strong reason to use another endpoint.
-- Read the API key from AI_STATS_API_KEY.
+- Read the API key from PHASEO_API_KEY.
 - Keep the code compact and understandable for a first integration.
 - Show loading, success, and failure states in the UI.
 
@@ -111,20 +111,20 @@ Verification:
       icon="snake"
       actions={["copy", "cursor"]}
     >
-{`You are implementing a small AI-powered Python app with AI Stats Gateway.
+{`You are implementing a small AI-powered Python app with Phaseo Gateway.
 
 Build a [PYTHON FRAMEWORK OR APP TYPE] app for [APP IDEA].
 
 Requirements:
-- Use the official Python SDK ai_stats.
+- Use the official Python SDK phaseo.
 - Use model [MODEL].
-- Read credentials from AI_STATS_API_KEY.
+- Read credentials from PHASEO_API_KEY.
 - Keep the code small enough for a new team member to understand quickly.
 - Include one user input path and one model output path.
 - Include clean error handling for invalid input and upstream gateway failures.
 
 Implementation details:
-- Prefer one integration module that owns the AI Stats client creation.
+- Prefer one integration module that owns the Phaseo client creation.
 - Use the SDK response shape directly rather than wrapping it in unnecessary abstractions.
 - If structured output is useful for the app, use it and validate the returned shape.
 - Add a short README section with install and run steps.
@@ -143,18 +143,18 @@ Verification:
 
   <Accordion title="Vercel AI SDK mini app" icon="sparkles">
     <Prompt
-      description="Build a small app using **AI Stats through the Vercel AI SDK**."
+      description="Build a small app using **Phaseo through the Vercel AI SDK**."
       icon="sparkles"
       actions={["copy", "cursor"]}
     >
-{`You are building a mini app that uses AI Stats through the Vercel AI SDK provider.
+{`You are building a mini app that uses Phaseo through the Vercel AI SDK provider.
 
 Create a [FRAMEWORK] app for [APP IDEA].
 
 Requirements:
-- Use the AI Stats Vercel AI SDK provider.
+- Use the Phaseo Vercel AI SDK provider.
 - Use model [MODEL].
-- Read the AI Stats API key from AI_STATS_API_KEY.
+- Read the Phaseo API key from PHASEO_API_KEY.
 - Keep the UX lightweight and oriented around one clear user task.
 - Support streamed output if the app is chat-like; otherwise explain why non-streaming is simpler here.
 
@@ -178,20 +178,20 @@ Verification:
 
   <Accordion title="Agent SDK mini app" icon="bot">
     <Prompt
-      description="Build a small app with the **AI Stats Agent SDK** and one bounded tool loop."
+      description="Build a small app with the **Phaseo Agent SDK** and one bounded tool loop."
       icon="bot"
       actions={["copy", "cursor"]}
     >
-{`You are building a small agentic app on top of AI Stats Gateway.
+{`You are building a small agentic app on top of Phaseo Gateway.
 
-Create a [LANGUAGE] mini app for [APP IDEA] using the AI Stats Agent SDK.
+Create a [LANGUAGE] mini app for [APP IDEA] using the Phaseo Agent SDK.
 
 Requirements:
-- Use the AI Stats Agent SDK for [LANGUAGE].
+- Use the Phaseo Agent SDK for [LANGUAGE].
 - Use model [MODEL].
 - Include one or two deterministic local tools only.
 - Keep the tool loop bounded and easy to debug.
-- Read the API key from AI_STATS_API_KEY.
+- Read the API key from PHASEO_API_KEY.
 - Show the final output and, where appropriate, the tool activity or intermediate reasoning state.
 
 Implementation details:

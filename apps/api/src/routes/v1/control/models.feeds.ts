@@ -91,7 +91,7 @@ function buildRssXml(options: FeedResponseOptions): string {
         `<link>${escapeXml(feedUrl)}</link>`,
         `<description>${escapeXml(options.description)}</description>`,
         `<lastBuildDate>${escapeXml(new Date(updatedIso).toUTCString())}</lastBuildDate>`,
-        "<generator>AI Stats Gateway API</generator>",
+        "<generator>Phaseo Gateway API</generator>",
         itemsXml,
         "</channel>",
         "</rss>",

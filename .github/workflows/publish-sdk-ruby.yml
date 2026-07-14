@@ -24,14 +24,14 @@ jobs:
             exit 1
           fi
 
-      - name: Create GitHub App token (AI Stats Bot)
+      - name: Create GitHub App token (Phaseo Bot)
         id: app-token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
         with:
-          app-id: ${{ secrets.AI_STATS_APP_ID }}
-          private-key: ${{ secrets.AI_STATS_APP_PRIVATE_KEY }}
+          client-id: ${{ secrets.PHASEO_APP_CLIENT_ID }}
+          private-key: ${{ secrets.PHASEO_APP_PRIVATE_KEY }}
 
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -43,7 +43,7 @@ jobs:
           package-manager-cache: false
 
       - name: Setup Ruby
-        uses: ruby/setup-ruby@afeafc3d1ab54a631816aba4c914a0081c12ff2f
+        uses: ruby/setup-ruby@d45b1a4e94b71acab930e56e79c6aa188764e7f9
         with:
           ruby-version: "3.2"
 
@@ -106,13 +106,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ruby -e "f='packages/sdk/sdk-ruby/lib/ai_stats_sdk/version.rb'; s=File.read(f); s=s.gsub(/VERSION\\s*=\\s*\"[^\"]+\"/, 'VERSION = \"' + ENV.fetch('VERSION') + '\"'); File.write(f,s)"
+          ruby -e "f='packages/sdk/sdk-ruby/lib/phaseo_sdk/version.rb'; s=File.read(f); s=s.gsub(/VERSION\\s*=\\s*\"[^\"]+\"/, 'VERSION = \"' + ENV.fetch('VERSION') + '\"'); File.write(f,s)"
 
       - name: Build gem
         working-directory: packages/sdk/sdk-ruby
         run: |
           ruby tests/lifecycle_test.rb
-          gem build ai_stats_sdk.gemspec
+          gem build phaseo_sdk.gemspec
 
       - name: Create and push SDK tag
         env:
@@ -149,4 +149,4 @@ jobs:
           :rubygems_api_key: ${RUBYGEMS_API_KEY}
           EOF
           chmod 0600 ~/.gem/credentials
-          gem push packages/sdk/sdk-ruby/ai_stats_sdk-${{ steps.version.outputs.value }}.gem
+          gem push packages/sdk/sdk-ruby/phaseo_sdk-${{ steps.version.outputs.value }}.gem

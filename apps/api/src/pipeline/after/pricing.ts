@@ -13,29 +13,24 @@ import { stripUsagePricing } from "../usage";
 import { buildImagePricingRequestOptions } from "@core/image-request-options";
 import { normalizeTextServiceTier, readRequestedServiceTier } from "@core/serviceTiers";
 
-function normalizeObservedServiceTier(usage: any): string {
-    const observedValues = [usage?.service_tier, usage?.serviceTier];
-    for (const value of observedValues) {
-        if (typeof value !== "string") continue;
-        const raw = value.trim().toLowerCase();
-        if (!raw) continue;
-        if (raw === "default") return "standard";
-        const normalized = normalizeTextServiceTier(raw);
-        if (normalized) return normalized;
+function normalizeObservedServiceTier(value: unknown): string {
+    if (typeof value === "string" && value.trim().toLowerCase() === "default") {
+        return "standard";
     }
-    return "";
+    return normalizeTextServiceTier(value) ?? "";
 }
 
-function normalizeRequestedServiceTier(body: any): string {
+function normalizePricingServiceTier(body: any, usage: any): string {
+    const observedTier =
+        normalizeObservedServiceTier(usage?.service_tier) ||
+        normalizeObservedServiceTier(usage?.serviceTier);
+    if (observedTier) return observedTier;
+
     return normalizeTextServiceTier(readRequestedServiceTier(body).value) ?? "";
 }
 
-function resolvePricingServiceTier(body: any, usage: any): string {
-    return normalizeObservedServiceTier(usage) || normalizeRequestedServiceTier(body);
-}
-
 function derivePricingPlan(body: any, usage: any): string {
-    const tier = resolvePricingServiceTier(body, usage);
+    const tier = normalizePricingServiceTier(body, usage);
 
     if (tier === "priority") return "priority";
     if (tier === "batch") return "batch";
@@ -51,13 +46,38 @@ function buildTrustedPricingRequestOptions(body: any, usage: any, pricingPlan: s
         pricing_plan: pricingPlan,
     };
 
-    const serviceTier = resolvePricingServiceTier(body, usage);
+    const serviceTier = normalizePricingServiceTier(body, usage);
     if (serviceTier) {
         options.service_tier = serviceTier;
         options.serviceTier = serviceTier;
     }
 
     return options;
+}
+
+function attachBillingTimestamps(
+    options: Record<string, unknown>,
+    meta?: PipelineContext["meta"] | null,
+): Record<string, unknown> {
+    const completedAtMs = meta?.completedAtMs ?? Date.now();
+    if (!meta) {
+        return {
+            ...options,
+            request_started_at: completedAtMs,
+            startedAtMs: completedAtMs,
+            completed_at: completedAtMs,
+            completedAtMs,
+        };
+    }
+    return {
+        ...options,
+        request_started_at: meta.startedAtMs,
+        startedAtMs: meta.startedAtMs,
+        provider_accepted_at: meta.upstreamStartMs,
+        upstreamStartMs: meta.upstreamStartMs,
+        completed_at: completedAtMs,
+        completedAtMs,
+    };
 }
 
 export async function loadProviderPricing(
@@ -103,7 +123,8 @@ export function calculatePricing(
     usage: any,
     card: PriceCard | null,
     body: any,
-    _tier?: string | null
+    _tier?: string | null,
+    meta?: PipelineContext["meta"] | null
 ): {
     pricedUsage: any;
     totalCents: number;
@@ -119,7 +140,10 @@ export function calculatePricing(
     if (card) {
         try {
             const pricingPlan = derivePricingPlan(body, usage);
-            const requestOptions = buildTrustedPricingRequestOptions(body, usage, pricingPlan);
+            const requestOptions = attachBillingTimestamps(
+                buildTrustedPricingRequestOptions(body, usage, pricingPlan),
+                meta,
+            );
 
             // Step 1: Calculate base pricing (provider costs)
             pricedUsage = computeBill(usageMeters ?? {}, card, requestOptions, pricingPlan);

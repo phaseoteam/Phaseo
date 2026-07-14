@@ -3,6 +3,7 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { getTopApps } from "./top-apps";
+import { isMissingRelationError } from "./missingRelation";
 
 const DEFAULT_DAYS = 30;
 const DEFAULT_TOP_APPS = 20;
@@ -120,6 +121,15 @@ async function fetchProviderAppRollupRows(
 		if (error) {
 			hadError = true;
 			hitPageCap = false;
+			if (isMissingRelationError(error)) {
+				logUsageFetch("provider_app_rollup_missing_relation", {
+					providerId: apiProviderId,
+					filteredAppIds: Array.isArray(appIds) ? appIds.length : null,
+					pagesFetched,
+					rows: rows.length,
+				});
+				break;
+			}
 			console.error("Error loading provider app rollup rows for chart:", error);
 			break;
 		}

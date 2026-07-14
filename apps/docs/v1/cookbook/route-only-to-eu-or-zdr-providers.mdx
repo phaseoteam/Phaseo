@@ -17,7 +17,7 @@ Set the provider requirements directly on the request body.
 
 <CodeGroup>
 ```bash cURL
-curl https://api.phaseo.app/v1/responses \
+curl https://api.phaseo.ai/v1/responses \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -32,9 +32,9 @@ curl https://api.phaseo.app/v1/responses \
 ```
 
 ```typescript TypeScript SDK
-import AIStats from "@ai-stats/sdk";
+import Phaseo from "@phaseo/sdk";
 
-const client = new AIStats({ apiKey: process.env.AI_STATS_API_KEY! });
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
   model: "google/gemini-3.1-flash-lite",
@@ -50,9 +50,9 @@ console.log(response.output_text);
 ```
 
 ```python Python SDK
-from ai_stats import AIStats
+from phaseo import Phaseo
 
-client = AIStats(api_key="YOUR_API_KEY")
+client = Phaseo(api_key="YOUR_API_KEY")
 
 response = client.generate_response(
     {

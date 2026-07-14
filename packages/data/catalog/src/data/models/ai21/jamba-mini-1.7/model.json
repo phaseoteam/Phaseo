@@ -16,19 +16,23 @@
   "family_id": "ai21/jamba-1.7",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://docs.ai21.com/reference/jamba-1-6-api-ref"
     },
     {
-      "platform": "playground",
+      "title": "Playground",
+      "kind": "playground",
       "url": "https://studio.ai21.com/"
     },
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://docs.ai21.com/changelog"
     },
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/ai21labs/AI21-Jamba-Mini-1.7"
     }
   ],

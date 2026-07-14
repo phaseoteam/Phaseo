@@ -6,12 +6,12 @@ import { METHODOLOGY_ENTRIES } from "@/lib/content/methodology";
 import { Separator } from "@/components/ui/separator";
 
 export const metadata: Metadata = buildMetadata({
-	title: "AI Stats Methodology",
+	title: "Methodology",
 	description:
-		"Source-of-truth methodology pages covering how AI Stats calculates pricing, measures latency and throughput, normalises benchmarks, and tracks provider availability.",
+		"Source-of-truth methodology pages covering how Phaseo calculates pricing, measures latency and throughput, normalises benchmarks, and tracks provider availability.",
 	path: "/methodology",
 	keywords: [
-		"AI Stats methodology",
+		"Phaseo methodology",
 		"AI model pricing methodology",
 		"AI benchmark methodology",
 		"provider availability methodology",
@@ -26,7 +26,7 @@ export default function MethodologyIndexPage() {
 					Methodology
 				</div>
 				<h1 className="max-w-3xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-					How AI Stats measures what it publishes
+					How Phaseo measures what it publishes
 				</h1>
 				<p className="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
 					Four reference pages covering how pricing, performance, benchmarks,

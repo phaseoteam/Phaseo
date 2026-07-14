@@ -27,9 +27,9 @@ type ModelAppsRollupRpcRow = {
 
 type ModelAppsDailyRollupRow = {
 	app_id: string | null;
-	requests: number | string | bigint | null;
-	success_requests: number | string | bigint | null;
-	total_tokens: number | string | bigint | null;
+	requests: number | string | null;
+	success_requests: number | string | null;
+	total_tokens: number | string | null;
 };
 
 type ModelAppMetadataRow = {
@@ -49,28 +49,20 @@ function toNumber(value: unknown): number {
 	return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function toBigInt(value: unknown): bigint {
-	if (typeof value === "bigint") return value;
-	if (typeof value === "number") {
-		if (!Number.isFinite(value)) return BIGINT_ZERO;
-		return BigInt(Math.trunc(value));
-	}
-	if (typeof value === "string") {
-		const trimmed = value.trim();
-		if (!trimmed) return BIGINT_ZERO;
-		try {
-			return BigInt(trimmed);
-		} catch {
-			return BIGINT_ZERO;
-		}
-	}
-	return BIGINT_ZERO;
-}
-
 function bigintToDisplayNumber(value: bigint): number {
 	if (value <= BIGINT_ZERO) return 0;
 	if (value > BIGINT_MAX_SAFE) return Number.MAX_SAFE_INTEGER;
 	return Number(value);
+}
+
+function isMissingRelationError(error: unknown): boolean {
+	const text = String((error as { message?: unknown })?.message ?? "").toLowerCase();
+	return (
+		text.includes("does not exist") ||
+		text.includes("could not find table") ||
+		text.includes("could not find the table") ||
+		text.includes("relation")
+	);
 }
 
 async function getModelAliases(client: ReturnType<typeof createAdminClient>, modelId: string): Promise<string[]> {
@@ -149,7 +141,10 @@ async function fetchModelAppsFromRollupRpc(args: {
 	});
 
 	if (error) {
-		console.warn("[model-apps] rpc get_usage_model_apps failed; falling back to row pagination", {
+		if (isMissingRelationError(error)) {
+			return null;
+		}
+		console.warn("[model-apps] rpc get_usage_model_apps failed; falling back to daily rollups", {
 			modelId: args.modelId,
 			error,
 		});
@@ -178,18 +173,20 @@ async function fetchModelAppsFromDailyRollupsFallback(args: {
 	for (let offset = 0; ; offset += PAGE_SIZE) {
 		const { data, error } = await args.client
 			.from("gateway_usage_rollup_daily_app_model")
-			.select("day_bucket, canonical_model_id, app_id, requests, success_requests, total_tokens")
+			.select("app_id, requests, success_requests, total_tokens")
 			.in("canonical_model_id", args.aliases)
+			.not("app_id", "is", null)
 			.order("day_bucket", { ascending: true })
 			.order("app_id", { ascending: true })
-			.order("canonical_model_id", { ascending: true })
 			.range(offset, offset + PAGE_SIZE - 1);
 
 		if (error) {
-			console.warn("[model-apps] failed to load model app rollups", {
-				modelId: args.modelId,
-				error,
-			});
+			if (!isMissingRelationError(error)) {
+				console.warn("[model-apps] failed to load model app usage rollups", {
+					modelId: args.modelId,
+					error,
+				});
+			}
 			return [];
 		}
 
@@ -198,14 +195,17 @@ async function fetchModelAppsFromDailyRollupsFallback(args: {
 		for (const row of data as ModelAppsDailyRollupRow[]) {
 			const appId = String(row?.app_id ?? "").trim();
 			if (!appId) continue;
+
 			const existing = aggregate.get(appId) ?? {
 				requests: BIGINT_ZERO,
 				success: BIGINT_ZERO,
 				tokens: BIGINT_ZERO,
 			};
-			existing.requests += toBigInt(row?.requests);
-			existing.success += toBigInt(row?.success_requests);
-			existing.tokens += toBigInt(row?.total_tokens);
+			existing.requests += BigInt(Math.max(0, Math.round(toNumber(row?.requests))));
+			existing.success += BigInt(
+				Math.max(0, Math.round(toNumber(row?.success_requests))),
+			);
+			existing.tokens += BigInt(Math.max(0, Math.round(toNumber(row?.total_tokens))));
 			aggregate.set(appId, existing);
 		}
 

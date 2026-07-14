@@ -1,4 +1,4 @@
-module AiStats
+module Phaseo
   module Gen
     ActivityEntry = Struct.new(:cost_cents, :endpoint, :latency_ms, :model, :provider, :request_id, :timestamp, :usage, keyword_init: true)
     AnthropicContentBlock = Struct.new(:content, :id, :input, :name, :source, :text, :tool_use_id, :type, keyword_init: true)
@@ -55,7 +55,7 @@ module AiStats
     ProvisioningKey = Struct.new(:created_at, :id, :last_used_at, :name, :prefix, :scopes, :status, keyword_init: true)
     ProvisioningKeyDetail = Struct.new(:created_at, :created_by, :id, :last_used_at, :name, :prefix, :scopes, :soft_blocked, :status, :team_id, keyword_init: true)
     ProvisioningKeyWithValue = Struct.new(:created_at, :id, :key, :name, :prefix, :scopes, :status, keyword_init: true)
-    ReasoningConfig = Struct.new(:effort, :summary, keyword_init: true)
+    ReasoningConfig = Struct.new(:effort, :mode, :summary, keyword_init: true)
     ResponsesRequest = Struct.new(:background, :conversation, :include, :input, :input_items, :instructions, :max_output_tokens, :max_tool_calls, :meta, :metadata, :model, :parallel_tool_calls, :previous_response_id, :prompt, :prompt_cache_key, :prompt_cache_retention, :provider, :reasoning, :safety_identifier, :service_tier, :store, :stream, :stream_options, :temperature, :text, :tool_choice, :tools, :top_logprobs, :top_p, :truncation, :usage, :user, keyword_init: true)
     ResponsesResponse = Struct.new(:content, :created, :id, :model, :object, :role, :stop_reason, :type, :usage, keyword_init: true)
     TextContentPart = Struct.new(:text, :type, keyword_init: true)

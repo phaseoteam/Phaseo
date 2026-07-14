@@ -1,12 +1,15 @@
 {
-  "name": "@ai-stats/devtools-viewer",
-  "description": "Web-based viewer for AI Stats DevTools telemetry",
+  "name": "@phaseo/devtools-viewer",
+  "description": "Web-based viewer for Phaseo DevTools telemetry",
   "version": "0.2.1",
   "type": "module",
   "private": false,
   "license": "MIT",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "bin": {
-    "ai-stats-devtools": "./dist/cli/index.js"
+    "phaseo-devtools": "./dist/cli/index.js"
   },
   "main": "./dist/server/index.js",
   "types": "./dist/server/index.d.ts",
@@ -22,7 +25,7 @@
     "build:ui": "vite build",
     "build": "pnpm run build:ui && pnpm run build:server",
     "prepublishOnly": "pnpm run build",
-    "dev:server": "pnpm exec tsx watch src/server/index.ts -- --start --port 4984 --dir ../../../.ai-stats-devtools",
+    "dev:server": "pnpm exec tsx watch src/server/index.ts -- --start --port 4984 --dir ../../../.phaseo-devtools",
     "dev:ui": "pnpm exec wait-on tcp:4984 && vite --port 4983",
     "dev": "node dev-start.mjs",
     "dev:old": "concurrently \"pnpm run dev:server\" \"pnpm run dev:ui\"",
@@ -30,27 +33,28 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@hono/node-server": "^1.19.14",
+    "@hono/node-server": "^2.0.4",
     "@radix-ui/react-select": "^2.2.6",
     "@tanstack/react-query": "^5.100.14",
     "clsx": "^2.1.1",
-    "hono": "^4.12.18",
+    "hono": "^4.12.27",
     "lucide-react": "^1.17.0",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "recharts": "^3.8.1",
     "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.2",
     "@types/node": "^25.6.0",
-    "@types/react": "^19.2.14",
+    "@types/react": "^19.2.17",
     "@types/react-dom": "^19.0.3",
-    "@vitejs/plugin-react": "^6.0.1",
-    "autoprefixer": "^10.4.27",
-    "concurrently": "^9.1.2",
+    "@vitejs/plugin-react": "^6.0.3",
+    "autoprefixer": "^10.5.2",
+    "concurrently": "^10.0.3",
     "postcss": "^8.5.14",
     "rimraf": "^6.0.0",
-    "tailwindcss": "^3.4.18",
+    "tailwindcss": "^4.3.2",
     "tsx": "^4.7.0",
     "typescript": "^6.0.3",
     "vite": "^8.0.14",
@@ -59,7 +63,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/AI-Stats/AI-Stats"
+    "url": "https://github.com/phaseoteam/Phaseo"
   },
   "publishConfig": {
     "access": "public"

@@ -18,7 +18,7 @@ export default function Page(props: {
 	searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
 	return (
-		<div className="space-y-6">
+		<div className="space-y-4">
 			<Suspense fallback={<SettingsSectionFallback />}>
 				<CreditsSettingsContent searchParams={props.searchParams} />
 			</Suspense>
@@ -43,7 +43,7 @@ async function CreditsSettingsContent(props: {
 
 	return (
 		<div
-			className="space-y-6"
+			className="space-y-4"
 			data-obfuscate-pii={initialData.obfuscateInfo ? "true" : "false"}
 			data-obfuscation-sync="true"
 		>
@@ -60,18 +60,18 @@ async function CreditsSettingsContent(props: {
 				refreshAriaLabel="refresh balance"
 			/>
 
-			<div className="space-y-6">
-				<Card>
+			<div className="space-y-4">
+				<Card size="sm" className="py-0">
 					<CardContent className="p-0">
 						<div className="grid grid-cols-1 md:grid-cols-2">
-							<div className="p-6">
+							<div className="p-4 md:p-5">
 								<BuyCreditsClient
 									wallet={initialData.wallet}
 									stripeInfo={initialData.stripeInfo}
 									embedded
 								/>
 							</div>
-							<div className="border-t md:border-t-0 md:border-l p-6">
+							<div className="border-t p-4 md:border-t-0 md:border-l md:p-5">
 								<AutoTopUpClient
 									wallet={initialData.wallet}
 									stripeInfo={initialData.stripeInfo}

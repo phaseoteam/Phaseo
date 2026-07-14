@@ -80,7 +80,7 @@ function buildQuickComparisons(models: ExtendedModel[]): QuickComparison[] {
 	const topTwo = byRelease.slice(0, 2);
 	const crossProvider = pickLatestAcrossProviders(models, 4);
 
-	const bigProviders = ["openai", "anthropic", "google", "x-ai"];
+	const bigProviders = ["openai", "anthropic", "google", "spacex-ai"];
 	const bigFour = bigProviders
 		.map((providerId) => pickLatestFromProvider(models, providerId))
 		.filter(Boolean) as ExtendedModel[];

@@ -73,7 +73,7 @@ type LiveCompareEvent =
 			message: string;
 	  };
 
-      const DEFAULT_GATEWAY_BASE_URL = "https://api.phaseo.app/v1";
+      const DEFAULT_GATEWAY_BASE_URL = "https://api.phaseo.ai/v1";
       const DEFAULT_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
       const DEFAULT_LLMGATEWAY_BASE_URL = "https://api.llmgateway.io/v1";
       const DEFAULT_VERCEL_AI_GATEWAY_BASE_URL = "https://ai-gateway.vercel.sh/v1";
@@ -154,7 +154,7 @@ async function streamTarget(
         send: (event: LiveCompareEvent) => void,
 ) {
         const apiKey =
-                     target === "ai-stats"
+                     target === "phaseo"
                              ? keys.gatewayApiKey
                              : target === "openrouter"
                                      ? keys.openRouterApiKey
@@ -162,7 +162,7 @@ async function streamTarget(
                                              ? keys.llmGatewayApiKey
                                              : keys.vercelAiGatewayApiKey;
              const baseUrl = normalizeCompareBaseUrl(
-                     target === "ai-stats"
+                     target === "phaseo"
                              ? args.gatewayBaseUrl || DEFAULT_GATEWAY_BASE_URL
                              : target === "openrouter"
                                      ? args.openRouterBaseUrl || DEFAULT_OPENROUTER_BASE_URL
@@ -310,7 +310,7 @@ export async function POST(req: Request) {
 		);
 	}
 
-	const gatewayApiKey = process.env.AI_STATS_PERFORMANCE_TEST_KEY ?? "";
+	const gatewayApiKey = process.env.PHASEO_PERFORMANCE_TEST_KEY ?? "";
         const openRouterApiKey =
                 process.env.PERFORMANCE_KEY_OPENROUTER ??
                 process.env.OPENROUTER_API_KEY ??
@@ -327,7 +327,7 @@ export async function POST(req: Request) {
 	if (!gatewayApiKey || !openRouterApiKey) {
 		return NextResponse.json(
 			{
-				error: "Missing AI_STATS_PERFORMANCE_TEST_KEY or PERFORMANCE_KEY_OPENROUTER in server environment.",
+				error: "Missing PHASEO_PERFORMANCE_TEST_KEY or PERFORMANCE_KEY_OPENROUTER in server environment.",
 			},
 			{ status: 500 },
 		);
@@ -337,7 +337,7 @@ export async function POST(req: Request) {
                 start(controller) {
                         const encoder = new TextEncoder();
                         let closed = false;
-                            const targets: CompareTarget[] = ["ai-stats", "openrouter"];
+                            const targets: CompareTarget[] = ["phaseo", "openrouter"];
                             if (llmGatewayApiKey) {
                                     targets.push("llmgateway");
                             }

@@ -53,12 +53,12 @@ const DEFAULT_ROUTES = [
     "/api/pricing/models",
     "/sitemap.xml",
     "/robots.txt",
-    "/.well-known/ai-stats-home.md?path=/",
+    "/.well-known/phaseo-home.md?path=/",
     "/og/models/openai/gpt-4o",
 ];
 
 const DEFAULT_HEADERS = {
-    "user-agent": "ai-stats-fot-probe/1.0",
+    "user-agent": "phaseo-fot-probe/1.0",
     accept: "*/*",
     "accept-encoding": "br, gzip, deflate",
     connection: "close",
@@ -66,7 +66,7 @@ const DEFAULT_HEADERS = {
 
 function printUsage() {
     console.log(`Usage:
-  pnpm --filter @ai-stats/web measure:fot -- --base=https://example.com --repeat=2 --output=tmp/fot.csv
+  pnpm --filter @phaseo/web measure:fot -- --base=https://example.com --repeat=2 --output=tmp/fot.csv
 
 Options:
   --base=<url>             Base URL. Defaults to FOT_BASE_URL or http://localhost:3100.

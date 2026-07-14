@@ -15,7 +15,8 @@
   "api_model_id": "inclusionai/ring-1t-2.5",
   "links": [
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/inclusionAI/Ring-1T-2.5-FP8"
     }
   ],

@@ -1,0 +1,159 @@
+---
+title: "Phaseo CLI"
+description: "Install the official Phaseo CLI, sign in with browser OAuth or device code, and manage keys, guardrails, and workspaces from the terminal."
+---
+
+The Phaseo CLI gives you a first-party terminal workflow for the Phaseo control plane.
+
+Use it when you want to:
+
+- sign in as a real Phaseo user from a local shell, remote shell, or agent runtime
+- create and rotate API keys or management keys
+- manage workspaces, presets, settings, and guardrails
+- use first-party CLI OAuth while user-owned OAuth apps remain in private testing
+- inspect models, providers, pricing, credits, activity, analytics, and generations
+
+## Install
+
+<CodeGroup>
+
+```bash title="npm"
+npm install -g @phaseo/cli
+```
+
+```bash title="pnpm"
+pnpm add -g @phaseo/cli
+```
+
+```bash title="yarn"
+yarn global add @phaseo/cli
+```
+
+```bash title="bun"
+bun add -g @phaseo/cli
+```
+
+</CodeGroup>
+
+## Check the installed version
+
+```bash
+phaseo --version
+phaseo version
+phaseo version --json
+```
+
+- `phaseo --version` prints the installed version.
+- `phaseo version` prints the version plus the recommended update command for the current package manager.
+- interactive runs also show an update hint when a newer published version is available.
+
+The older `phaseo` command remains available as a compatibility alias.
+
+## Sign in
+
+Start with:
+
+```bash
+phaseo login
+```
+
+The CLI supports two first-party flows:
+
+- **Sign in with Phaseo**: browser OAuth with authorization code + PKCE
+- **Sign in with Device Code**: best for SSH, CI, headless shells, and agent environments
+
+You can force either path:
+
+```bash
+phaseo login --browser
+phaseo login --device-code
+```
+
+Remote and non-interactive environments automatically prefer device code.
+
+## Confirm who you are
+
+```bash
+phaseo whoami
+phaseo whoami --json
+```
+
+This returns your current Phaseo user, scopes, active workspace, and available workspaces.
+
+## Create keys
+
+```bash
+phaseo keys create --name "Local CLI Key"
+phaseo keys create --name "Agent Sandbox Key" --json
+phaseo keys current
+```
+
+Use `--json` when an agent or automation needs the raw created key once.
+
+## Manage workspaces and guardrails
+
+```bash
+phaseo workspaces list
+phaseo workspaces members <workspace-id-or-slug>
+
+phaseo guardrails list
+phaseo guardrails create --name "Production Safety" --body-json '{"enabled":true}'
+```
+
+The CLI is intended to cover the useful parts of the Phaseo dashboard and management APIs from the terminal.
+
+## OAuth apps
+
+User-created OAuth apps are coming soon. This release keeps OAuth client creation in private testing while the first-party Phaseo CLI uses the shared OAuth/OIDC foundation for browser sign-in, device code, token refresh, revoke, userinfo, and JWKS/discovery flows.
+
+Self-hosted or preview deployments keep third-party OAuth disabled unless `PHASEO_THIRD_PARTY_OAUTH_ENABLED` is set to a truthy value. Accepted truthy values are `1`, `true`, `yes`, and `on`, matched case-insensitively after trimming whitespace. Leave the variable unset while validating the first-party CLI path; enabling it exposes user-created OAuth app management and should only be paired with reviewed redirect URI, consent, client-secret, and workspace authorization configuration.
+
+```bash title=".env"
+PHASEO_THIRD_PARTY_OAUTH_ENABLED=true
+```
+
+```bash title="Docker"
+docker run -e PHASEO_THIRD_PARTY_OAUTH_ENABLED=true phaseo
+```
+
+```yaml title="Kubernetes"
+env:
+  - name: PHASEO_THIRD_PARTY_OAUTH_ENABLED
+    value: "true"
+```
+
+## Security model
+
+- CLI sessions prefer OS-backed secure storage where available.
+- `phaseo logout` revokes the stored refresh token before clearing local state.
+- Management keys require explicit capabilities.
+- Regular inference keys rely on guardrails, routing policies, and workspace settings rather than a separate scope model.
+
+## Update
+
+<CodeGroup>
+
+```bash title="npm"
+npm install -g @phaseo/cli@latest
+```
+
+```bash title="pnpm"
+pnpm add -g @phaseo/cli@latest
+```
+
+```bash title="yarn"
+yarn global add @phaseo/cli@latest
+```
+
+```bash title="bun"
+bun add -g @phaseo/cli@latest
+```
+
+</CodeGroup>
+
+## Next steps
+
+- [Management API keys](../../developers/management-api-keys)
+- [Authentication](../../developers/authentication)
+- [Codex](./codex)
+- [Claude Code](./claude-code)

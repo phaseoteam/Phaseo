@@ -21,6 +21,7 @@ import {
 	type LucideIcon,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { normalizeMonitorHistoryLinkHref } from "@/lib/monitor/urlSafety";
 import {
 	Command,
 	CommandEmpty,
@@ -39,7 +40,7 @@ import { loadMonitorHistoryPageAction } from "@/app/(dashboard)/monitor/actions"
 import { resolveLogo } from "@/lib/logos";
 
 const DEFAULT_NOW = Date.now();
-const GITHUB_REPO = "https://github.com/AI-Stats/AI-Stats";
+const GITHUB_REPO = "https://github.com/phaseoteam/Phaseo";
 const DEFAULT_VISIBLE_COMMITS = 18;
 const LOAD_MORE_COMMITS = 18;
 const INITIAL_COMBOBOX_OPTIONS = 80;
@@ -58,8 +59,8 @@ const PROVIDER_NAME_OVERRIDES: Record<string, string> = {
 	microsoft: "Microsoft",
 	mistral: "Mistral",
 	openai: "OpenAI",
-	"x-ai": "xAI",
-	xai: "xAI",
+	"spacex-ai": "SpaceXAI",
+	xai: "SpaceXAI",
 	"z-ai": "Z.ai",
 };
 
@@ -396,8 +397,7 @@ function renderMonitorLinkValue(
 	value: unknown,
 	variant: "current" | "previous" = "current",
 ) {
-	if (value == null) return null;
-	const href = String(value).trim();
+	const href = normalizeMonitorHistoryLinkHref(value);
 	if (!href) return null;
 	return (
 		<a

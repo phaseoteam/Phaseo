@@ -5,7 +5,7 @@ const blockedProviderIds = new Set([
 	"openrouter",
 	"huggingface",
 	"hugging-face",
-	"ai-stats",
+	"phaseo",
 ]);
 
 export const excludedProviderLogos: string[] = [
@@ -19,7 +19,7 @@ export const excludedProviderLogos: string[] = [
 	"reddit",
 	"grok",
 	"openrouter",
-	"ai-stats",
+	"phaseo",
 	"/social/hugging_face.svg",
 ];
 

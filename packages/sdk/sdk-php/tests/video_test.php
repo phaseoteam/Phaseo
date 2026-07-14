@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . "/../src/index.php";
 
-use AIStats\Sdk\AIStats;
+use Phaseo\Sdk\Phaseo;
 
 function assert_true(bool $condition, string $message): void
 {
@@ -12,7 +12,7 @@ function assert_true(bool $condition, string $message): void
     }
 }
 
-final class FakeVideoClient extends \AIStats\Gen\Client
+final class FakeVideoClient extends \Phaseo\Gen\Client
 {
     public array $rawCalls = [];
     public array $calls = [];
@@ -31,7 +31,7 @@ final class FakeVideoClient extends \AIStats\Gen\Client
     public function request(string $method, string $path, ?array $query = null, ?array $headers = null, $body = null)
     {
         $this->calls[] = [$method, $path, $query, $headers, $body];
-        if ($method === "GET" && $path === "/gateway/models") {
+        if ($method === "GET" && $path === "/models") {
             return [
                 "models" => [
                     [
@@ -105,9 +105,9 @@ final class FakeVideoClient extends \AIStats\Gen\Client
     }
 }
 
-$client = new AIStats(
+$client = new Phaseo(
     apiKey: "test",
-    basePath: "https://api.phaseo.app/v1",
+    basePath: "https://api.phaseo.ai/v1",
     enableDeprecationWarnings: false
 );
 
@@ -158,7 +158,7 @@ assert_true(($models["data"][0]["id"] ?? null) === "google/veo-3", "expected vid
 $list = $client->listVideos(["status" => "queued,completed", "limit" => "2"]);
 assert_true(($list["data"][1]["id"] ?? null) === "video_456", "expected second video id in list");
 assert_true(
-    $client->getVideoWebSocketUrl("video_123", 900) === "wss://api.phaseo.app/v1/async/video/video_123/ws?interval_ms=900",
+    $client->getVideoWebSocketUrl("video_123", 900) === "wss://api.phaseo.ai/v1/async/video/video_123/ws?interval_ms=900",
     "expected video websocket URL"
 );
 

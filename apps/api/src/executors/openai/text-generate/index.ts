@@ -53,6 +53,12 @@ const OPENAI_REASONING_EFFORT_SUPPORT: Record<string, Set<ReasoningEffort>> = {
 	"gpt-5.4-mini": new Set(["none", "low", "medium", "high", "xhigh"]),
 	"gpt-5.4-nano": new Set(["none", "low", "medium", "high", "xhigh"]),
 	"gpt-5.4-pro": new Set(["medium", "high", "xhigh"]),
+	"gpt-5.6-luna": new Set(["none", "low", "medium", "high", "xhigh", "max"]),
+	"gpt-5.6-luna-pro": new Set(["none", "low", "medium", "high", "xhigh", "max"]),
+	"gpt-5.6-sol": new Set(["none", "low", "medium", "high", "xhigh", "max"]),
+	"gpt-5.6-sol-pro": new Set(["none", "low", "medium", "high", "xhigh", "max"]),
+	"gpt-5.6-terra": new Set(["none", "low", "medium", "high", "xhigh", "max"]),
+	"gpt-5.6-terra-pro": new Set(["none", "low", "medium", "high", "xhigh", "max"]),
 	"o1": new Set(["low", "medium", "high"]),
 	"o1-preview": new Set(["low", "medium", "high"]),
 	"o1-mini": new Set(["low", "medium", "high"]),
@@ -66,7 +72,7 @@ const OPENAI_WEBSOCKET_RECOVERABLE_ERRORS = new Set([
 ]);
 const OPENAI_WEBSOCKET_MAX_RECONNECTS = 1;
 const OPENAI_WEBSOCKET_HANDSHAKE_MAX_RETRIES = 1;
-const OPENAI_INTERNAL_REQUEST_ID_METADATA_KEY = "aistats_request_id";
+const OPENAI_INTERNAL_REQUEST_ID_METADATA_KEY = "phaseo_request_id";
 
 function buildOpenAIResponsesWebSocketUrl(providerId: string): string {
 	// Cloudflare Workers WebSocket fetch upgrade expects https:// URL.
@@ -403,6 +409,36 @@ function normalizeModelName(model?: string | null): string {
 	return parts[parts.length - 1] || value;
 }
 
+function normalizeOpenAIGpt56ProModelSlug(model?: string | null): {
+	model: string | null;
+	proMode: boolean;
+} {
+	const normalized = normalizeModelName(model);
+	if (!normalized) return { model: model ?? null, proMode: false };
+	const match = normalized.match(/^(gpt-5\.6-(?:sol|terra|luna))-pro$/i);
+	if (!match) return { model: model ?? null, proMode: false };
+	return { model: match[1].toLowerCase(), proMode: true };
+}
+
+function withOpenAIProReasoningMode(
+	ir: IRChatRequest,
+	providerId: string,
+	modelForRouting: string | null | undefined,
+): IRChatRequest {
+	if (providerId !== "openai") return ir;
+	const routed = normalizeOpenAIGpt56ProModelSlug(modelForRouting);
+	const requested = normalizeOpenAIGpt56ProModelSlug(ir.model);
+	if (!routed.proMode && !requested.proMode) return ir;
+
+	return {
+		...ir,
+		reasoning: {
+			...(ir.reasoning ?? {}),
+			mode: "pro",
+		},
+	};
+}
+
 function getSupportedEfforts(model: string): ReasoningEffort[] {
 	const normalized = normalizeModelName(model);
 	if (normalized in OPENAI_REASONING_EFFORT_SUPPORT) {
@@ -507,6 +543,7 @@ function withOpenAIRequestMetadata(
 	ir: IRChatRequest,
 	providerId: string,
 	requestId: string,
+	workspaceId: string,
 	options?: {
 		includeMetadata?: boolean;
 	},
@@ -514,16 +551,17 @@ function withOpenAIRequestMetadata(
 	if (providerId !== "openai") return ir;
 	const includeMetadata = options?.includeMetadata !== false;
 	const next: IRChatRequest = { ...ir };
-	const explicitSafetyIdentifier = typeof ir.safetyIdentifier === "string" && ir.safetyIdentifier.trim().length > 0
-		? ir.safetyIdentifier.trim()
+	const workspaceSafetyIdentifier = typeof workspaceId === "string" && workspaceId.trim().length > 0
+		? workspaceId.trim()
 		: undefined;
-	const userSafetyIdentifier = typeof ir.userId === "string" && ir.userId.trim().length > 0
-		? ir.userId.trim()
-		: undefined;
-	const safetyIdentifier = explicitSafetyIdentifier ?? userSafetyIdentifier ?? requestId;
+	const safetyIdentifier = normalizeOpenAISafetyIdentifier(workspaceSafetyIdentifier);
 	if (!includeMetadata) {
 		delete next.metadata;
-		next.safetyIdentifier = safetyIdentifier;
+		if (safetyIdentifier) {
+			next.safetyIdentifier = safetyIdentifier;
+		} else {
+			delete next.safetyIdentifier;
+		}
 		return next;
 	}
 
@@ -536,8 +574,18 @@ function withOpenAIRequestMetadata(
 	}
 
 	next.metadata = metadata;
-	next.safetyIdentifier = safetyIdentifier;
+	if (safetyIdentifier) {
+		next.safetyIdentifier = safetyIdentifier;
+	} else {
+		delete next.safetyIdentifier;
+	}
 	return next;
+}
+
+function normalizeOpenAISafetyIdentifier(value: string | undefined): string | undefined {
+	const trimmed = value?.trim();
+	if (!trimmed) return undefined;
+	return trimmed.slice(0, 64);
 }
 
 function openAIRequestHeaders(
@@ -595,6 +643,7 @@ function cherryPickIRParams(
 			if (root === "reasoning") {
 				reasoning ??= {};
 				if (leaf === "effort") reasoning.effort = ir.reasoning?.effort;
+				if (leaf === "mode") reasoning.mode = ir.reasoning?.mode;
 				if (leaf === "summary") reasoning.summary = ir.reasoning?.summary;
 				if (leaf === "enabled") reasoning.enabled = ir.reasoning?.enabled;
 				if (leaf === "maxTokens" || leaf === "max_tokens") reasoning.maxTokens = ir.reasoning?.maxTokens;
@@ -695,7 +744,9 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 		byokMeta: args.byokMeta,
 	} as any);
 
-	const modelForRouting = args.providerModelSlug ?? (args.ir as IRChatRequest).model;
+	const requestedRoutingModel = args.providerModelSlug ?? (args.ir as IRChatRequest).model;
+	const normalizedRoutingModel = normalizeOpenAIGpt56ProModelSlug(requestedRoutingModel);
+	const modelForRouting = normalizedRoutingModel.model ?? requestedRoutingModel;
 	const useNativeChatRoute =
 		args.providerId === "openai" &&
 		args.protocol === "openai.chat.completions" &&
@@ -704,6 +755,7 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 		args.ir as IRChatRequest,
 		args.providerId,
 		args.requestId,
+		args.workspaceId,
 		{ includeMetadata: !useNativeChatRoute },
 	);
 	const route = args.providerId === "openai"
@@ -841,9 +893,14 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 }
 
 export const executor: ProviderExecutor = async (execArgs: ExecutorExecuteArgs) => {
-	const normalized = withNormalizedReasoning(
+	const proModeIr = withOpenAIProReasoningMode(
 		execArgs.ir as IRChatRequest,
+		execArgs.providerId,
 		execArgs.providerModelSlug ?? (execArgs.ir as IRChatRequest).model,
+	);
+	const normalized = withNormalizedReasoning(
+		proModeIr,
+		execArgs.providerModelSlug ?? proModeIr.model,
 		execArgs.capabilityParams,
 	);
 	const processed = cherryPickIRParams(normalized, execArgs.capabilityParams);

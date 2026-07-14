@@ -1,9 +1,9 @@
 ---
 title: "Repository Structure"
-description: "Understand how the AI Stats repository is organized - where to find data, documentation, and configuration files."
+description: "Understand how the Phaseo repository is organized - where to find data, documentation, and configuration files."
 ---
 
-Before contributing to AI Stats, it's important to understand the **layout of the repository**.  
+Before contributing to Phaseo, it's important to understand the **layout of the repository**.
 The project is designed for clarity and scalability - separating data, documentation, and app logic so you can easily find what you need.
 
 ---
@@ -13,10 +13,10 @@ The project is designed for clarity and scalability - separating data, documenta
 Here's what the root directory of the repository looks like:
 
 ```bash
-AI-Stats/
+Phaseo/
 +-- apps/
-¦   +-- web/ # The main AI Stats Next.js website (contains data)
-¦   +-- api/ # The AI Stats Gateway API (Hono/Cloudflare Workers)
+¦   +-- web/ # The main Phaseo Next.js website (contains data)
+¦   +-- api/ # The Phaseo Gateway API (Hono/Cloudflare Workers)
 ¦   +-- docs/ # The Mintlify-powered documentation site
 ¦
 +-- packages/ # SDKs and shared tooling
@@ -29,7 +29,7 @@ AI-Stats/
 ¦   +-- sdk-java/
 ¦   +-- sdk-rust/
 ¦   +-- sdk-cpp/
-¦   +-- ai-sdk-ai-stats/
+¦   +-- ai-sdk-phaseo/
 ¦
 +-- scripts/ # Automation scripts and utilities
 +-- .changeset/ # Release metadata
@@ -42,59 +42,59 @@ AI-Stats/
 
 ## Data folders
 
-AI Stats stores its structured data in **JSON files** under the `/packages/data/catalog/src/data` directory.  
+Phaseo stores its structured data in **JSON files** under the `/packages/data/catalog/src/data` directory.
 These files act as the source of truth for models, benchmarks, and pricing.
 
 ### `/packages/data/catalog/src/data/models`
 
-Contains one JSON file per model.  
+Contains one JSON file per model.
 Each file describes the model's metadata, pricing, benchmarks, and capabilities.
 
-Example:  
+Example:
 `/packages/data/catalog/src/data/models/openai/gpt-5-2025-08-07/model.json`
 
 ---
 
 ### `/packages/data/catalog/src/data/organisations`
 
-Describes companies or research groups behind models.  
+Describes companies or research groups behind models.
 Each JSON file includes name, description, founding date, website, and country.
 
-Example:  
+Example:
 `/packages/data/catalog/src/data/organisations/openai.json`
 
 ---
 
 ### `/packages/data/catalog/src/data/benchmarks`
 
-Contains benchmark metadata and aggregated results across models.  
+Contains benchmark metadata and aggregated results across models.
 Each benchmark has an ID, name, description, category, and metrics.
 
-Example:  
+Example:
 `/packages/data/catalog/src/data/benchmarks/mmlu.json`
 
 ---
 
 ### `/packages/data/catalog/src/data/api_providers`
 
-Lists all supported API providers with their supported models.  
+Lists all supported API providers with their supported models.
 This links to both models and organisations.
 
-Example:  
+Example:
 `/packages/data/catalog/src/data/api_providers/openai.json`
 
 ---
 
 ### `/packages/data/catalog/src/data/pricing`
 
-Tracks historical pricing data over time for trend analysis.  
+Tracks historical pricing data over time for trend analysis.
 Files are timestamped and often aggregated by provider.
 
 ---
 
 ## Documentation folders
 
-Documentation is written in **MDX** and lives in `/apps/docs/v1/`.  
+Documentation is written in **MDX** and lives in `/apps/docs/v1/`.
 Each folder maps directly to a group in the Mintlify configuration.
 
 | Folder                        | Purpose                                                 |
@@ -111,7 +111,7 @@ Each folder maps directly to a group in the Mintlify configuration.
 
 | Path         | Description                                                                                       |
 | ------------ | ------------------------------------------------------------------------------------------------- |
-| `/apps/web`  | Main AI Stats website, built with Next.js 15 and TailwindCSS. Reads canonical data from `packages/data/catalog/src/data`. |
+| `/apps/web`  | Main Phaseo website, built with Next.js 15 and TailwindCSS. Reads canonical data from `packages/data/catalog/src/data`. |
 | `/apps/api`  | The API Gateway - routes, caching, and model proxy logic.                                         |
 | `/apps/docs` | The Mintlify documentation project you're reading now.                                           |
 
@@ -121,7 +121,7 @@ Each app runs independently but shares types and configuration through `/package
 
 ## SDK packages
 
-The `/packages` directory contains SDKs for various programming languages to interact with the AI Stats API.
+The `/packages` directory contains SDKs for various programming languages to interact with the Phaseo API.
 
 | SDK          | Description                                      |
 | ------------ | ------------------------------------------------ |
@@ -134,13 +134,13 @@ The `/packages` directory contains SDKs for various programming languages to int
 | `sdk-java`   | Java SDK.                                        |
 | `sdk-rust`   | Rust SDK.                                        |
 | `sdk-cpp`    | C++ SDK.                                         |
-| `ai-sdk-ai-stats` | Vercel AI SDK provider.                      |
+| `ai-sdk-phaseo` | Vercel AI SDK provider.                      |
 
 ---
 
 ## Automation and scripts
 
-AI Stats uses automation to keep data up to date:
+Phaseo uses automation to keep data up to date:
 
 -   **Importers** - pull new data from sources like Hugging Face or provider APIs.
 -   **Watchers** - run on a schedule (via GitHub Actions) to detect and commit updates.

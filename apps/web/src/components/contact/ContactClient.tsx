@@ -1,29 +1,21 @@
-﻿"use client";
+"use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import type { ComponentType, FormEvent } from "react";
+import type { ComponentType } from "react";
+import { useQueryState } from "nuqs";
 import {
-	BookOpen,
+	ArrowRight,
 	ArrowUpRight,
+	BookOpen,
 	Bug,
+	CheckCircle2,
+	Inbox,
 	LifeBuoy,
 	LineChart,
 	Sparkles,
-	Inbox,
 } from "lucide-react";
-import {
-	Card,
-	CardContent,
-	CardHeader,
-	CardTitle,
-	CardDescription,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
 	Select,
@@ -32,26 +24,20 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Logo } from "@/components/Logo";
-import { toast } from "sonner";
-
-const ISSUE_AREAS = [
-	{ value: "web", label: "Web app" },
-	{ value: "gateway", label: "Gateway" },
-	{ value: "sdk", label: "SDKs" },
-	{ value: "rest", label: "REST API" },
-	{ value: "billing", label: "Billing & payments" },
-	{ value: "data", label: "Data / rankings" },
-	{ value: "docs", label: "Docs" },
-	{ value: "other", label: "Other" },
-];
 
 type ContactMethod = {
 	key: string;
 	title: string;
 	description: string;
 	href: string;
-	badge?: string;
+	cta: string;
 	external?: boolean;
 	icon?: ComponentType<{ className?: string }>;
 	logoId?: string;
@@ -62,48 +48,42 @@ type IssueOption = {
 	label: string;
 	helper: string;
 	recommendationKey: string;
-	icon?: ComponentType<{ className?: string }>;
+	icon: ComponentType<{ className?: string }>;
 };
 
 const METHODS: ContactMethod[] = [
 	{
 		key: "support",
-		title: "Talk to a human",
-		description: "Private support request. You get a direct reply from the founder.",
+		title: "Private support ticket",
+		description: "Best for account, billing, data, or implementation issues.",
 		href: "#support-form",
-		badge: "Founder",
+		cta: "Create ticket",
 		icon: Inbox,
 	},
 	{
 		key: "github",
 		title: "GitHub",
-		description: "Bug reports, feature requests, and public tracking.",
+		description: "Best for reproducible bugs, feature requests, and public tracking.",
 		href: "/github",
+		cta: "Open GitHub",
 		external: true,
 		logoId: "github",
 	},
 	{
 		key: "discord",
 		title: "Discord",
-		description: "Quick answers from the community.",
+		description: "Best for quick setup questions and lightweight community feedback.",
 		href: "/discord",
-		badge: "Fast",
+		cta: "Join Discord",
 		logoId: "discord",
 	},
 	{
 		key: "docs",
 		title: "Docs",
-		description: "Guides, API reference, and quick starts.",
+		description: "Best for gateway guides, SDK examples, model references, and quick starts.",
 		href: "/docs",
+		cta: "Read docs",
 		icon: BookOpen,
-	},
-	{
-		key: "x",
-		title: "X (Twitter)",
-		description: "Product updates and release notes.",
-		href: "/x",
-		external: true,
-		logoId: "x",
 	},
 ];
 
@@ -112,14 +92,15 @@ const ISSUE_OPTIONS: IssueOption[] = [
 		value: "billing",
 		label: "Billing or account issue",
 		helper:
-			"Use the support form so we can handle sensitive details privately with a direct human reply.",
+			"Create a private support ticket and we will reply to the email address you provide.",
 		recommendationKey: "support",
 		icon: Inbox,
 	},
 	{
 		value: "bug",
 		label: "Bug or outage",
-		helper: "File a GitHub issue with steps to reproduce and screenshots.",
+		helper:
+			"Use GitHub when the issue is reproducible and useful for other users to track.",
 		recommendationKey: "github",
 		icon: Bug,
 	},
@@ -127,59 +108,314 @@ const ISSUE_OPTIONS: IssueOption[] = [
 		value: "data",
 		label: "Data or metrics issue",
 		helper:
-			"Use the support form and share request IDs or examples for a direct human review.",
+			"Create a private ticket with model IDs, provider names, URLs, and timestamps.",
 		recommendationKey: "support",
 		icon: LineChart,
 	},
 	{
 		value: "docs",
 		label: "Docs or integration question",
-		helper: "Check the docs first, then submit a request if something is missing.",
+		helper:
+			"Start with the docs. If the answer is missing, send a ticket with the exact page.",
 		recommendationKey: "docs",
 		icon: BookOpen,
 	},
 	{
 		value: "feature",
 		label: "Feature request",
-		helper: "Open a GitHub issue with the workflow you want to unlock.",
+		helper:
+			"Open a GitHub issue with the workflow, expected behavior, and why it matters.",
 		recommendationKey: "github",
 		icon: Sparkles,
 	},
 	{
 		value: "general",
 		label: "General question",
-		helper: "Submit the support form to get a direct human response.",
+		helper:
+			"Create a private support ticket and include enough context for a direct reply.",
 		recommendationKey: "support",
 		icon: LifeBuoy,
 	},
 	{
 		value: "community",
 		label: "Community or quick feedback",
-		helper: "Jump into Discord for fast answers from the community.",
+		helper:
+			"Use Discord when you want a lightweight answer or discussion with other users.",
 		recommendationKey: "discord",
 		icon: LifeBuoy,
 	},
 ];
+const ISSUE_VALUES = new Set(ISSUE_OPTIONS.map((option) => option.value));
 
-const MAX_ATTACHMENTS = 3;
+const TAWK_PROPERTY_ID = process.env.NEXT_PUBLIC_TAWK_PROPERTY_ID ?? "";
+const TAWK_WIDGET_ID = process.env.NEXT_PUBLIC_TAWK_WIDGET_ID ?? "default";
+
+type TawkApi = {
+	hideWidget?: () => void;
+	maximize?: () => void;
+	onChatMinimized?: () => void;
+	onLoad?: () => void;
+	setAttributes?: (
+		attributes: Record<string, string>,
+		callback?: (error?: unknown) => void
+	) => void;
+	showWidget?: () => void;
+};
+
+declare global {
+	interface Window {
+		Tawk_API?: TawkApi;
+		Tawk_LoadStart?: Date;
+	}
+}
 
 type ContactClientProps = {
 	isOpen?: boolean;
+	isAuthenticated?: boolean;
+	londonTimeLabel?: string;
 	statusLabel?: string;
 	statusTone?: string;
 	waitText?: string;
-	londonLabel?: string;
 	userEmail?: string | null;
 	tierLabel?: string;
 	defaultInternalId?: string;
 };
 
+function MethodIcon({ method }: { method: ContactMethod }) {
+	const Icon = method.icon ?? ArrowUpRight;
+
+	if (method.logoId) {
+		return (
+			<Logo
+				id={method.logoId}
+				alt={method.title}
+				width={18}
+				height={18}
+				className="size-[18px]"
+			/>
+		);
+	}
+
+	return <Icon className="size-4" />;
+}
+
+function SupportTimeHint({ londonTimeLabel }: { londonTimeLabel?: string }) {
+	const [now, setNow] = useState<Date | null>(null);
+
+	useEffect(() => {
+		const update = () => setNow(new Date());
+		update();
+		const interval = window.setInterval(update, 60_000);
+		return () => window.clearInterval(interval);
+	}, []);
+
+	const localTimeLabel = useMemo(() => {
+		if (!now) return null;
+		return new Intl.DateTimeFormat(undefined, {
+			hour: "2-digit",
+			minute: "2-digit",
+			timeZoneName: "short",
+		}).format(now);
+	}, [now]);
+
+	const liveLondonTimeLabel = useMemo(() => {
+		if (!now) return londonTimeLabel || "Europe/London";
+		return new Intl.DateTimeFormat("en-GB", {
+			hour: "2-digit",
+			minute: "2-digit",
+			timeZone: "Europe/London",
+			timeZoneName: "short",
+		}).format(now);
+	}, [londonTimeLabel, now]);
+
+	return (
+		<Tooltip>
+			<TooltipTrigger asChild>
+				<span className="inline-flex w-fit items-center rounded-full border border-border/60 px-2.5 py-1 text-xs font-medium text-muted-foreground">
+					Your time {localTimeLabel ?? "checking..."}
+				</span>
+			</TooltipTrigger>
+			<TooltipContent>
+				Phaseo support time: {liveLondonTimeLabel}
+			</TooltipContent>
+		</Tooltip>
+	);
+}
+
+function TawkSupportLauncher({
+	defaultInternalId,
+	issueLabel,
+	supportIsOpen,
+	tierLabel,
+	userEmail,
+}: {
+	defaultInternalId?: string;
+	issueLabel?: string;
+	supportIsOpen: boolean;
+	tierLabel?: string;
+	userEmail?: string | null;
+}) {
+	const [chatStatus, setChatStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+	const isConfigured = Boolean(TAWK_PROPERTY_ID);
+	const canStartChat = isConfigured && supportIsOpen;
+	const directChatHref = isConfigured
+		? `https://tawk.to/chat/${TAWK_PROPERTY_ID}/${TAWK_WIDGET_ID}`
+		: "";
+	const emailHref = useMemo(() => {
+		const subject = issueLabel
+			? `[Phaseo Support] ${issueLabel}`
+			: "[Phaseo Support] Support request";
+		const body = [
+			"Hi Phaseo team,",
+			"",
+			"I need help with:",
+			"",
+			"Summary:",
+			"",
+			"Details:",
+			"",
+			"Useful context:",
+			`- Issue type: ${issueLabel ?? "Not selected"}`,
+			`- Account email: ${userEmail ?? ""}`,
+			`- Workspace: ${defaultInternalId ?? ""}`,
+			`- Plan: ${tierLabel ?? ""}`,
+			"- Page URL:",
+			"- Request ID:",
+			"- Model ID / provider:",
+			"- Time observed:",
+			"",
+			"Attachments/screenshots:",
+			"",
+		].join("\n");
+
+		return `mailto:support@phaseo.ai?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+	}, [defaultInternalId, issueLabel, tierLabel, userEmail]);
+	const openChat = () => {
+		if (!canStartChat) return;
+
+		const setVisitorAttributes = () => {
+			const attributes: Record<string, string> = {};
+			if (userEmail) attributes.email = userEmail;
+			if (defaultInternalId) attributes.workspace = defaultInternalId;
+			if (tierLabel) attributes.plan = tierLabel;
+			if (issueLabel) attributes.issue_type = issueLabel;
+
+			if (Object.keys(attributes).length > 0) {
+				window.Tawk_API?.setAttributes?.(attributes);
+			}
+		};
+
+		const showChat = () => {
+			setVisitorAttributes();
+			window.Tawk_API?.showWidget?.();
+			window.Tawk_API?.maximize?.();
+			setChatStatus("ready");
+		};
+
+		if (window.Tawk_API?.maximize) {
+			showChat();
+			return;
+		}
+
+		setChatStatus("loading");
+		window.Tawk_API = window.Tawk_API ?? {};
+		window.Tawk_API.onLoad = showChat;
+		window.Tawk_API.onChatMinimized = () => {
+			window.Tawk_API?.hideWidget?.();
+		};
+		window.Tawk_LoadStart = new Date();
+
+		if (!document.getElementById("phaseo-tawk-widget")) {
+			const script = document.createElement("script");
+			const firstScript = document.getElementsByTagName("script")[0];
+			script.id = "phaseo-tawk-widget";
+			script.async = true;
+			script.src = `https://embed.tawk.to/${TAWK_PROPERTY_ID}/${TAWK_WIDGET_ID}`;
+			script.charset = "UTF-8";
+			script.setAttribute("crossorigin", "*");
+			script.onerror = () => setChatStatus("error");
+			firstScript.parentNode?.insertBefore(script, firstScript);
+		}
+
+		window.setTimeout(() => {
+			if (!window.Tawk_API?.maximize) {
+				setChatStatus("error");
+			}
+		}, 12_000);
+	};
+
+	return (
+		<div className="rounded-2xl border border-border/60 px-4 py-4">
+			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+				<div>
+					<p className="text-sm font-medium">Live chat or email</p>
+					<p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
+						Start a live chat from this page, or open a prefilled email with
+						the context we need.
+					</p>
+					{userEmail ? (
+						<p className="mt-2 text-xs text-muted-foreground">
+							Signed in as {userEmail}
+						</p>
+					) : null}
+					{isConfigured ? null : (
+						<p className="mt-2 text-xs text-muted-foreground">
+							Live chat needs `NEXT_PUBLIC_TAWK_PROPERTY_ID` before it can load.
+						</p>
+					)}
+					{isConfigured && !supportIsOpen ? (
+						<p className="mt-2 text-xs text-muted-foreground">
+							Live chat is available during support hours. Email is still open.
+						</p>
+					) : null}
+				</div>
+				<div className="flex flex-col gap-2 sm:min-w-52">
+					{isConfigured ? (
+						<Button
+							type="button"
+							className="w-full"
+							disabled={!canStartChat || chatStatus === "loading"}
+							onClick={openChat}
+						>
+							{!supportIsOpen
+								? "Live chat offline"
+								: chatStatus === "loading"
+									? "Loading chat..."
+									: "Start live chat"}
+							<ArrowUpRight className="size-4" />
+						</Button>
+					) : (
+						<Button type="button" className="w-full" disabled>
+							Live chat unavailable
+							<ArrowUpRight className="size-4" />
+						</Button>
+					)}
+					<Button asChild type="button" variant="outline" className="w-full">
+						<a href={emailHref}>
+							Send email
+							<ArrowRight className="size-4" />
+						</a>
+					</Button>
+					{chatStatus === "error" ? (
+						<Button asChild type="button" variant="ghost" className="w-full">
+							<a href={directChatHref} target="_blank" rel="noreferrer">
+								Open chat in new tab
+								<ArrowUpRight className="size-4" />
+							</a>
+						</Button>
+					) : null}
+				</div>
+			</div>
+		</div>
+	);
+}
+
 export function ContactClient({
 	isOpen,
+	londonTimeLabel,
 	statusLabel,
 	statusTone,
 	waitText,
-	londonLabel,
 	userEmail,
 	tierLabel,
 	defaultInternalId,
@@ -187,16 +423,15 @@ export function ContactClient({
 	const resolvedStatusLabel = statusLabel ?? "Support";
 	const resolvedStatusTone = statusTone ?? "bg-amber-500 ring-amber-400/60";
 	const resolvedWaitText = waitText ?? "Support replies resume soon.";
-	const resolvedLondonLabel = londonLabel ?? "";
 	const statusDotClass =
 		resolvedStatusTone
 			.split(" ")
 			.find((value) => value.startsWith("bg-")) ?? "bg-muted-foreground";
 
-	const [issueValue, setIssueValue] = useState<string>("");
-	const [issueArea, setIssueArea] = useState<string>("");
-	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [errorMessage, setErrorMessage] = useState<string>("");
+	const [issueParam, setIssueParam] = useQueryState("support", {
+		defaultValue: "",
+	});
+	const issueValue = ISSUE_VALUES.has(issueParam) ? issueParam : "";
 
 	const selectedIssue = useMemo(
 		() => ISSUE_OPTIONS.find((option) => option.value === issueValue),
@@ -211,339 +446,200 @@ export function ContactClient({
 		);
 	}, [selectedIssue]);
 
-	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-		event.preventDefault();
-		setIsSubmitting(true);
-		setErrorMessage("");
-
-		const form = event.currentTarget;
-		const formData = new FormData(form);
-		const email = String(formData.get("email") ?? "").trim();
-		const issueLabel =
-			ISSUE_OPTIONS.find((option) => option.value === issueValue)?.label ??
-			issueValue;
-		const issueAreaLabel =
-			ISSUE_AREAS.find((area) => area.value === issueArea)?.label ??
-			issueArea;
-
-		const contactMethods = [{ type: "email", value: email }];
-
-		formData.set("issueType", issueLabel);
-		formData.set("issueArea", issueAreaLabel);
-		if (tierLabel) {
-			formData.set("customerType", tierLabel);
-		}
-		if (defaultInternalId) {
-			formData.set("internalId", defaultInternalId);
-		}
-		formData.set("contactMethods", JSON.stringify(contactMethods));
-
-		try {
-			const sendPromise = (async () => {
-				const response = await fetch("/api/contact", {
-					method: "POST",
-					body: formData,
-				});
-				const payload = (await response.json().catch(() => null)) as
-					| { error?: string }
-					| null;
-
-				if (!response.ok) {
-					throw new Error(payload?.error ?? "Something went wrong");
-				}
-
-				return true;
-			})();
-
-			const ok = await toast.promise(sendPromise, {
-				loading: "Sending request...",
-				success: "Request sent. You will get a direct human reply by email.",
-				error: (err) =>
-					err instanceof Error ? err.message : "Unable to submit request",
-			});
-
-			if (ok) {
-				form.reset();
-				setIssueValue("");
-				setIssueArea("");
-			}
-		} catch (error) {
-			setErrorMessage(
-				error instanceof Error ? error.message : "Unable to submit request"
-			);
-		} finally {
-			setIsSubmitting(false);
-		}
-	};
+	const showTicketForm = recommendedMethod?.key === "support";
+	const otherMethods = useMemo(
+		() => METHODS.filter((method) => method.key !== recommendedMethod?.key),
+		[recommendedMethod]
+	);
 
 	return (
-		<div className="container mx-auto space-y-8 px-4 py-10 sm:px-6 lg:px-8">
-			<div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-				<div className="max-w-2xl space-y-2">
-					<Badge variant="secondary" className="w-fit">
-						Talk to a human
-					</Badge>
-					<h1 className="text-3xl font-semibold">Contact</h1>
-					<p className="text-muted-foreground max-w-2xl">
-						Tell us what you need and we will route you to the fastest channel.
-						If you use the support form, your request goes directly to me, the
-						founder, for a human response.
+		<TooltipProvider>
+			<div className="container mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+			<header className="grid gap-8 border-b border-border/60 pb-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-end">
+				<div className="max-w-3xl space-y-4">
+					<h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+						Contact Phaseo support
+					</h1>
+					<p className="max-w-2xl text-base leading-7 text-muted-foreground">
+						Tell us what you need, and we will route you to the right place.
+						Private account issues become support tickets. Public bugs, feature
+						requests, and quick questions go to the channel that fits.
 					</p>
 				</div>
-				<div className="w-full rounded-xl border border-border/60 bg-card/70 px-4 py-3 text-sm text-muted-foreground lg:ml-auto lg:max-w-sm">
-					<Badge variant="outline" className="gap-2 border-border/60">
-						<span className={cn("h-2 w-2 rounded-full", statusDotClass)} />
+
+				<div className="rounded-2xl border border-border/60 px-4 py-3 text-sm">
+					<div className="flex items-center gap-2 font-medium text-foreground">
+						<span className="relative flex size-2.5">
+							<span
+								className={cn(
+									"absolute inline-flex size-full animate-ping rounded-full opacity-60",
+									statusDotClass
+								)}
+							/>
+							<span
+								className={cn("relative inline-flex size-2.5 rounded-full", statusDotClass)}
+							/>
+						</span>
 						Support {resolvedStatusLabel}
-					</Badge>
-					<div className="mt-3 space-y-1.5">
-						<p className="leading-6 text-foreground/80">{resolvedWaitText}</p>
-						<p className="text-xs text-muted-foreground">
-							London time: {resolvedLondonLabel}
-						</p>
+					</div>
+					<p className="mt-3 leading-6 text-muted-foreground">
+						{resolvedWaitText}
+					</p>
+					<div className="mt-3">
+						<SupportTimeHint londonTimeLabel={londonTimeLabel} />
 					</div>
 				</div>
-			</div>
+			</header>
 
-			<Card className="border border-border/60">
-				<CardHeader className="pb-4">
-					<CardTitle className="text-base">Choose a channel</CardTitle>
-					<CardDescription>
-						Pick the fastest way to get help. The support form always gets a
-						human response.
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
-					<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-						{METHODS.map((method) => {
-							const Icon = method.icon ?? ArrowUpRight;
-							const isRecommended =
-								recommendedMethod?.key === method.key;
-							return (
-								<Card
-									key={method.key}
-									className={cn(
-										"relative overflow-hidden border bg-card p-4 transition hover:border-primary/30",
-										isRecommended
-											? "border-primary/40 ring-1 ring-primary/20"
-											: "border-border/60"
-									)
-								}
-								>
-									<div className="flex items-start gap-3">
-										<div className="mt-1 rounded-lg bg-primary/10 p-2 text-primary">
-											{method.logoId ? (
-												<Logo
-													id={method.logoId}
-													alt={method.title}
-													width={16}
-													height={16}
-													className="h-4 w-4"
-												/>
-											) : (
-												<Icon className="h-4 w-4" />
-											)}
-										</div>
-										<div className="min-w-0 flex-1">
-											<div className="flex items-center gap-2">
-												<h3 className="font-medium text-sm">
-													{method.title}
-												</h3>
-												{method.badge ? (
-													<Badge variant="secondary" className="text-[10px]">
-														{method.badge}
-													</Badge>
-												) : null}
-												{isRecommended ? (
-													<Badge variant="outline" className="text-[10px]">
-														Recommended
-													</Badge>
-												) : null}
-											</div>
-											<p className="text-sm text-muted-foreground mt-1">
-												{method.description}
+			<main id="support-form" className="scroll-mt-24 space-y-8 py-8">
+				<section aria-labelledby="support-router-title" className="space-y-5">
+					<div>
+						<p className="mb-2 text-xs font-medium text-muted-foreground">
+							Step 1
+						</p>
+						<h2 id="support-router-title" className="text-xl font-semibold">
+							What do you need help with?
+						</h2>
+						<p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+							Pick the closest option and we will show the next step below.
+						</p>
+
+						<div className="mt-5 max-w-xl">
+							<Select
+								value={issueValue}
+								onValueChange={(value) => {
+									void setIssueParam(value);
+								}}
+							>
+								<SelectTrigger className="h-11 w-full rounded-2xl px-4">
+									{selectedIssue ? (
+										<span>{selectedIssue.label}</span>
+									) : (
+										<SelectValue placeholder="Choose an issue type" />
+									)}
+								</SelectTrigger>
+								<SelectContent>
+									{ISSUE_OPTIONS.map((option) => (
+										<SelectItem key={option.value} value={option.value}>
+											{option.label}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+					</div>
+				</section>
+
+				{selectedIssue && recommendedMethod ? (
+					<>
+						<section className="border-t border-border/60 pt-6">
+						<div className="space-y-6">
+							<div className="space-y-4">
+								<p className="text-xs font-medium text-muted-foreground">
+									Step 2
+								</p>
+								<div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+									<div className="flex min-w-0 flex-col gap-3 sm:flex-row">
+										<span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-muted/60 text-foreground">
+											<MethodIcon method={recommendedMethod} />
+										</span>
+										<div className="min-w-0 space-y-1">
+											<p className="flex min-w-0 flex-wrap items-center gap-2 text-sm font-medium">
+												<CheckCircle2 className="size-4 shrink-0 text-emerald-500" />
+												<span className="min-w-0 break-words">
+													Recommended: {recommendedMethod.title}
+												</span>
+											</p>
+											<p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+												{selectedIssue.helper}
 											</p>
 										</div>
 									</div>
-									<Link
-										href={method.href}
-										className={cn(
-											"absolute inset-0 rounded-lg",
-											"focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-										)}
-										{...(method.external
-											? { target: "_blank", rel: "noreferrer" }
-											: {})}
-									/>
-								</Card>
-							);
-						})}
+
+									{showTicketForm ? null : (
+										<Button asChild className="w-full sm:w-auto">
+											<Link
+												href={recommendedMethod.href}
+												{...(recommendedMethod.external
+													? { target: "_blank", rel: "noreferrer" }
+													: {})}
+											>
+												{recommendedMethod.cta}
+												<ArrowUpRight className="size-4" />
+											</Link>
+										</Button>
+									)}
+								</div>
+							</div>
+
+							{showTicketForm ? (
+								<TawkSupportLauncher
+											defaultInternalId={defaultInternalId}
+											issueLabel={selectedIssue.label}
+											supportIsOpen={Boolean(isOpen)}
+											tierLabel={tierLabel}
+											userEmail={userEmail}
+										/>
+							) : (
+								<div className="rounded-2xl border border-border/60 px-4 py-4">
+									<p className="text-sm font-medium">
+										Prefer a private reply?
+									</p>
+									<p className="mt-1 text-sm leading-6 text-muted-foreground">
+										If this includes account details, billing information, request
+										IDs, or screenshots, choose a private support ticket instead.
+									</p>
+									<Button
+										type="button"
+										variant="outline"
+										className="mt-4"
+										onClick={() => void setIssueParam("general")}
+									>
+										Switch to private ticket
+										<ArrowRight className="size-4" />
+									</Button>
+								</div>
+								)}
+							</div>
+						</section>
+
+				<section className="border-t border-border/60 pt-6">
+					<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+						<div>
+							<h2 className="text-sm font-medium">Other support methods</h2>
+							<p className="mt-1 text-sm text-muted-foreground">
+								Use another channel if it fits your issue better.
+							</p>
+						</div>
 					</div>
-				</CardContent>
-			</Card>
-
-			<Card className="border border-border/60">
-				<CardHeader className="pb-4">
-					<CardTitle className="text-base">
-						What do you need help with?
-					</CardTitle>
-					<CardDescription>
-						Select an issue type and we will highlight the best path.
-					</CardDescription>
-				</CardHeader>
-				<CardContent className="space-y-4">
-					<div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-						<Select value={issueValue} onValueChange={setIssueValue}>
-							<SelectTrigger className="w-full">
-								<SelectValue placeholder="Choose an issue type" />
-							</SelectTrigger>
-							<SelectContent>
-								{ISSUE_OPTIONS.map((option) => (
-									<SelectItem key={option.value} value={option.value}>
-										<div className="flex items-center gap-2">
-											{option.icon ? (
-												<option.icon className="h-4 w-4 text-muted-foreground" />
-											) : null}
-											<span>{option.label}</span>
-										</div>
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-
-						{recommendedMethod ? (
-							<Button asChild className="sm:w-auto">
-								<Link
-									href={recommendedMethod.href}
-									{...(recommendedMethod.external
-										? { target: "_blank", rel: "noreferrer" }
-										: {})}
-								>
-									Go to {recommendedMethod.title}
-								</Link>
-							</Button>
-						) : (
-							<Button disabled className="sm:w-auto">
-								Select to continue
-							</Button>
-						)}
-					</div>
-
-					{selectedIssue ? (
-						<div className="rounded-lg border border-border/60 bg-muted/30 px-4 py-3 text-sm">
-							<p className="font-medium text-foreground">
-								Recommended: {recommendedMethod?.title ?? "Choose a channel"}
-							</p>
-							<p className="text-muted-foreground">
-								{selectedIssue.helper}
-							</p>
-						</div>
-					) : null}
-				</CardContent>
-			</Card>
-
-			<Card className="border border-border/60" id="support-form">
-				<CardHeader className="pb-4">
-					<CardTitle className="text-base">Talk to a human</CardTitle>
-					<CardDescription>
-						You will get a direct human response from me by email. I usually
-						reply within 30 minutes when I am available, and I will always
-						follow up as soon as possible.
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
-					<form className="space-y-6" onSubmit={handleSubmit}>
-						<div className="grid gap-4 sm:grid-cols-2">
-							<div className="space-y-2">
-								<Label htmlFor="name">Name</Label>
-								<Input id="name" name="name" placeholder="Your name" />
-							</div>
-							<div className="space-y-2">
-								<Label htmlFor="email">Email</Label>
-								<Input
-									id="email"
-									name="email"
-									type="email"
-									placeholder="name@domain.com"
-									defaultValue={userEmail ?? ""}
-									required
-								/>
-							</div>
-						</div>
-
-						<div className="grid gap-4 sm:grid-cols-2">
-							<div className="space-y-2">
-								<Label>Issue area</Label>
-								<Select value={issueArea} onValueChange={setIssueArea}>
-									<SelectTrigger>
-										<SelectValue placeholder="Where is the issue?" />
-									</SelectTrigger>
-									<SelectContent>
-										{ISSUE_AREAS.map((area) => (
-											<SelectItem key={area.value} value={area.value}>
-												{area.label}
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-							</div>
-							<div className="space-y-2">
-								<Label htmlFor="subject">Short summary</Label>
-								<Input
-									id="subject"
-									name="subject"
-									placeholder="One-line summary"
-								/>
-							</div>
-						</div>
-
-						<div className="space-y-2">
-							<Label htmlFor="details">Details</Label>
-							<Textarea
-								id="details"
-								name="details"
-								placeholder="What happened? Steps to reproduce?"
-								required
-								rows={6}
-							/>
-						</div>
-
-						<div className="space-y-2">
-							<Label htmlFor="references">Reference info</Label>
-							<Textarea
-								id="references"
-								name="references"
-								placeholder="Request IDs, model IDs, URLs, timestamps"
-								rows={3}
-							/>
-						</div>
-
-						<div className="space-y-2">
-							<Label htmlFor="attachments">Attachments (images only)</Label>
-							<Input
-								id="attachments"
-								name="attachments"
-								type="file"
-								accept="image/*"
-								multiple
-							/>
-							<p className="text-xs text-muted-foreground">
-								Up to {MAX_ATTACHMENTS} images. 5MB per file.
-							</p>
-						</div>
-
-						<div className="flex flex-wrap items-center gap-3">
-							<Button type="submit" disabled={isSubmitting}>
-								{isSubmitting ? "Submitting..." : "Submit request"}
-							</Button>
-							{errorMessage ? (
-								<span className="text-sm text-red-500">
-									{errorMessage}
+					<div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+						{otherMethods.map((method) => (
+							<Link
+								key={method.key}
+								href={method.href}
+								className="group flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-border/60 px-3 py-3 text-sm transition-colors hover:border-border hover:bg-muted/35"
+								{...(method.external ? { target: "_blank", rel: "noreferrer" } : {})}
+							>
+								<span className="flex min-w-0 items-center gap-3">
+									<span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-muted/60 text-foreground">
+										<MethodIcon method={method} />
+									</span>
+									<span className="min-w-0">
+										<span className="block break-words font-medium">{method.title}</span>
+										<span className="block break-words text-xs leading-5 text-muted-foreground">
+											{method.description}
+										</span>
+									</span>
 								</span>
-							) : null}
-						</div>
-					</form>
-				</CardContent>
-			</Card>
-		</div>
+								<ArrowUpRight className="size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
+							</Link>
+						))}
+					</div>
+				</section>
+					</>
+				) : null}
+			</main>
+			</div>
+		</TooltipProvider>
 	);
 }

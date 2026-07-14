@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 
+const CHAT_ISSUE_RATE_LIMIT_FALLBACK_RETRY_AFTER_SECONDS = 60 * 60;
+
 type IncomingErrorDetail = {
 	message?: unknown;
 	path?: unknown;
@@ -21,6 +23,12 @@ type IncomingChatIssueError = {
 	timestamp?: unknown;
 };
 
+type ChatIssueRateLimitRow = {
+	allowed?: unknown;
+	remaining?: unknown;
+	retry_after_seconds?: unknown;
+};
+
 function asString(value: unknown): string | null {
 	if (typeof value !== "string") return null;
 	const trimmed = value.trim();
@@ -29,6 +37,10 @@ function asString(value: unknown): string | null {
 
 function asNumber(value: unknown): number | null {
 	return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function asInteger(value: unknown): number | null {
+	return typeof value === "number" && Number.isInteger(value) ? value : null;
 }
 
 function asObject(value: unknown): Record<string, unknown> | null {
@@ -140,16 +152,91 @@ function buildPrefilledIssueUrl(repo: string, title: string, body: string): stri
 	return `https://github.com/${repo}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
 }
 
+function buildIssueFingerprint(error: {
+	status: number | null;
+	errorCode: string | null;
+	requestId: string | null;
+	description: string | null;
+	modelId: string;
+	providerId: string | null;
+	endpoint: string;
+}): string {
+	return [
+		error.modelId,
+		error.providerId ?? "auto",
+		error.endpoint,
+		error.status ?? "unknown",
+		error.errorCode ?? "unknown",
+		error.requestId ?? error.description ?? "unknown",
+	]
+		.join("|")
+		.slice(0, 500);
+}
+
+function normalizeRateLimitRow(data: unknown): {
+	allowed: boolean;
+	remaining: number;
+	retryAfterSeconds: number | null;
+} | null {
+	const row = Array.isArray(data) ? data[0] : data;
+	const object = asObject(row) as ChatIssueRateLimitRow | null;
+	if (!object || typeof object.allowed !== "boolean") return null;
+
+	return {
+		allowed: object.allowed,
+		remaining: Math.max(0, asInteger(object.remaining) ?? 0),
+		retryAfterSeconds:
+			asInteger(object.retry_after_seconds) ??
+			asInteger((object as Record<string, unknown>).retryAfterSeconds),
+	};
+}
+
+async function reserveAutomaticIssueReport(args: {
+	supabase: Awaited<ReturnType<typeof createClient>>;
+	error: {
+		status: number | null;
+		errorCode: string | null;
+		requestId: string | null;
+		description: string | null;
+		modelId: string;
+		providerId: string | null;
+		endpoint: string;
+	};
+}): Promise<{
+	allowed: boolean;
+	remaining: number;
+	retryAfterSeconds: number | null;
+}> {
+	const { data, error } = await args.supabase.rpc(
+		"reserve_chat_issue_report",
+		{
+			p_issue_fingerprint: buildIssueFingerprint(args.error),
+			p_model_id: args.error.modelId,
+			p_request_id: args.error.requestId,
+		},
+	);
+
+	if (error) {
+		console.error("[chat-issues] issue report rate limit check failed", error);
+		return {
+			allowed: false,
+			remaining: 0,
+			retryAfterSeconds: CHAT_ISSUE_RATE_LIMIT_FALLBACK_RETRY_AFTER_SECONDS,
+		};
+	}
+
+	return normalizeRateLimitRow(data) ?? {
+		allowed: false,
+		remaining: 0,
+		retryAfterSeconds: CHAT_ISSUE_RATE_LIMIT_FALLBACK_RETRY_AFTER_SECONDS,
+	};
+}
+
 export async function POST(req: Request) {
 	const supabase = await createClient();
 	const {
 		data: { user },
-		error: authError,
 	} = await supabase.auth.getUser();
-
-	if (authError || !user?.id) {
-		return NextResponse.json({ error: "Authentication required" }, { status: 401 });
-	}
 
 	let payload: Record<string, unknown>;
 	try {
@@ -180,25 +267,39 @@ export async function POST(req: Request) {
 	};
 
 	const repo =
-		asString(process.env.GITHUB_REPOSITORY) ?? "AI-Stats/AI-Stats";
+		asString(process.env.GITHUB_REPOSITORY) ?? "phaseoteam/Phaseo";
 	const title = buildIssueTitle(normalizedError);
 	const body = buildIssueBody({
 		error: normalizedError,
 		threadTitle: asString(payload.threadTitle),
 		pageUrl: asString(payload.pageUrl),
 		notes: asString(payload.notes),
-		userEmail: asString(user.email),
+		userEmail: asString(user?.email),
 	});
 	const fallbackUrl = buildPrefilledIssueUrl(repo, title, body);
 	const token =
 		asString(process.env.GITHUB_TOKEN) ??
 		asString(process.env.GH_TOKEN);
 
-	if (!token) {
+	if (!token || !user?.id) {
 		return NextResponse.json({
 			ok: true,
 			created: false,
 			issueUrl: fallbackUrl,
+		});
+	}
+
+	const rateLimit = await reserveAutomaticIssueReport({
+		supabase,
+		error: normalizedError,
+	});
+	if (!rateLimit.allowed) {
+		return NextResponse.json({
+			ok: true,
+			created: false,
+			issueUrl: fallbackUrl,
+			rateLimited: true,
+			retryAfterSeconds: rateLimit.retryAfterSeconds,
 		});
 	}
 
@@ -209,7 +310,7 @@ export async function POST(req: Request) {
 				Authorization: `Bearer ${token}`,
 				Accept: "application/vnd.github+json",
 				"Content-Type": "application/json",
-				"User-Agent": "AI-Stats-Chat-Issue-Reporter",
+				"User-Agent": "Phaseo-Chat-Issue-Reporter",
 				"X-GitHub-Api-Version": "2022-11-28",
 			},
 			body: JSON.stringify({

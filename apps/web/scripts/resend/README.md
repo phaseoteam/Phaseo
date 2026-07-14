@@ -3,7 +3,7 @@
 Provision onboarding, checkout recovery, and low-balance alert automations:
 
 ```bash
-pnpm --filter @ai-stats/web resend:provision:onboarding
+pnpm --filter @phaseo/web resend:provision:onboarding
 ```
 
 ## Required
@@ -12,9 +12,9 @@ pnpm --filter @ai-stats/web resend:provision:onboarding
 
 ## Optional
 
-- `RESEND_FROM_EMAIL` (default: `AI Stats <noreply@phaseo.app>`)
-- `RESEND_ONBOARDING_REPLY_TO_EMAIL` (default: `daniel@phaseo.app`)
-- `RESEND_ONBOARDING_DASHBOARD_URL` (default: `NEXT_PUBLIC_WEBSITE_URL` then `https://www.aistats.com`)
+- `RESEND_FROM_EMAIL` (default: `Phaseo <noreply@phaseo.ai>`)
+- `RESEND_ONBOARDING_REPLY_TO_EMAIL` (default: `daniel@phaseo.ai`)
+- `RESEND_ONBOARDING_DASHBOARD_URL` (default: `NEXT_PUBLIC_WEBSITE_URL` then `https://phaseo.app`)
 - `RESEND_ONBOARDING_PURCHASE_WINDOW` (default: `3 days`)
 - `RESEND_CHECKOUT_ABANDONED_TIMEOUT` (default: `24 hours`)
 - `RESEND_ONBOARDING_AUTOMATION_STATUS` (`enabled` or `disabled`, default: `enabled`)

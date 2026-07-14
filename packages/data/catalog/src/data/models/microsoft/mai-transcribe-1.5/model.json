@@ -1,0 +1,31 @@
+{
+  "model_id": "microsoft/mai-transcribe-1.5",
+  "organisation_id": "microsoft",
+  "name": "MAI Transcribe 1.5",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "MAI Transcribe 1.5 is Microsoft's speech-to-text model for production transcription workflows. Microsoft announced broad language support, domain-specific terminology handling, and general availability in Microsoft Foundry and MAI Playground at Build 2026.",
+  "announced_date": "2026-06-02T00:00:00",
+  "release_date": "2026-06-02T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "audio",
+  "output_types": "text",
+  "api_model_id": "microsoft/mai-transcribe-1.5",
+  "family_id": "microsoft/mai",
+  "links": [
+    {
+      "title": "Announcement",
+      "kind": "announcement",
+      "url": "https://microsoft.ai/news/mai-transcribe-1-5more-accurate-context-aware-and-built-for-production/"
+    }
+  ],
+  "details": [
+    {
+      "name": "supported_languages",
+      "value": 43
+    }
+  ],
+  "benchmarks": []
+}

@@ -1,18 +1,18 @@
 ---
 title: "Usage"
-description: "Run a minimal local agent loop on top of AI Stats Gateway with the Python Agent SDK."
+description: "Run a minimal local agent loop on top of Phaseo Gateway with the Python Agent SDK."
 ---
 
 ## Install
 
 ```bash
-pip install ai-stats-py-sdk ai-stats-agent-sdk
+pip install phaseo phaseo-agent-sdk
 ```
 
 ## Quickstart
 
 ```python
-from ai_stats_agent import create_agent, create_gateway_agent_client
+from phaseo_agent import create_agent, create_gateway_agent_client
 
 agent = create_agent({
     "id": "quickstart-agent",
@@ -33,7 +33,7 @@ print(result.output)
 - `create_agent(...)`
 - `define_tool(...)`
 - `create_gateway_agent_client(...)`
-- a bounded tool loop over the AI Stats `responses` API
+- a bounded tool loop over the Phaseo `responses` API
 
 ## Related
 

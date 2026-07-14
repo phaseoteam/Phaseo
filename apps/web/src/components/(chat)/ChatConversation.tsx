@@ -2,43 +2,77 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { MessageScroller } from "@shadcn/react/message-scroller";
 import { ChatConversationComposer } from "@/components/(chat)/ChatConversationComposer";
 import { ChatConversationMessages } from "@/components/(chat)/ChatConversationMessages";
 import type { ChatRequestErrorDetails } from "@/components/(chat)/ChatRequestErrorNotice";
-import type { ChatSettings, ChatThread } from "@/lib/indexeddb/chats";
-import { Square } from "lucide-react";
+import type {
+	ChatServerToolConfigs,
+	ChatServerToolType,
+	ChatSettings,
+	ChatThread,
+} from "@/lib/indexeddb/chats";
+import { ArrowDown } from "lucide-react";
 import {
+	DEFAULT_CHAT_PLACEHOLDER,
 	REASONING_OPTIONS,
 	extensionForAudioMimeType,
 	extractClipboardFiles,
 	getRandomPlaceholder,
 	getSupportedRecordingMimeType,
-	sanitizeAttachmentMediaUrl,
 } from "./chatConversationHelpers";
+import { startChatSendPerformanceRun } from "@/components/(chat)/playground/chat-performance";
+import type {
+	ChatResponseLayout,
+	ModelOption,
+} from "@/components/(chat)/playground/chat-playground-core";
 
 export type ChatSendPayload = {
 	content: string;
 	attachments: File[];
 	webSearchEnabled: boolean;
 	apiServerToolsEnabled: boolean;
+	serverTools: ChatServerToolType[];
+	serverToolConfigs: ChatServerToolConfigs;
+	performanceRunId?: string | null;
 };
+
+type QueuedChatPrompt = Omit<ChatSendPayload, "performanceRunId"> & {
+	id: string;
+	threadId: string;
+};
+
+const RECORDING_WAVEFORM_BAR_COUNT = 96;
+const DEFAULT_RECORDING_WAVEFORM = Array.from(
+	{ length: RECORDING_WAVEFORM_BAR_COUNT },
+	() => 4,
+);
+
+function formatRecordingFilename(date = new Date()) {
+	const [day = "", time = ""] = date.toISOString().split("T");
+	const normalizedTime = time.slice(0, 8).replace(/:/g, "-");
+	return `Voice note ${day} ${normalizedTime}`;
+}
 
 type ChatConversationProps = {
 	activeThread: ChatThread | null;
 	isSending: boolean;
 	isAuthenticated: boolean;
+	temporaryMode?: boolean;
 	mode?: "classic" | "unified";
 	webSearchEnabled?: boolean;
 	onWebSearchEnabledChange?: (enabled: boolean) => void;
 	apiServerToolsEnabled?: boolean;
-	onApiServerToolsEnabledChange?: (enabled: boolean) => void;
+	serverTools?: ChatServerToolType[];
+	onServerToolsChange?: (tools: ChatServerToolType[]) => void;
+	serverToolConfigs?: ChatServerToolConfigs;
+	onServerToolConfigsChange?: (configs: ChatServerToolConfigs) => void;
 	reasoningEnabled?: boolean;
 	reasoningEffort?: ChatSettings["reasoningEffort"];
 	onReasoningEnabledChange?: (enabled: boolean) => void;
 	onReasoningEffortChange?: (effort: NonNullable<ChatSettings["reasoningEffort"]>) => void;
 	presetPrompt?: string;
-	onSend: (payload: ChatSendPayload) => void;
+	onSend: (payload: ChatSendPayload) => boolean | Promise<boolean>;
 	onEditMessage: (messageId: string, content: string) => void;
 	onRetryAssistant: (messageId: string) => void;
 	onBranchAssistant: (messageId: string) => void;
@@ -48,28 +82,40 @@ type ChatConversationProps = {
 	modelOrgIdById: Record<string, string>;
 	modelLinkById: Record<string, string>;
 	accentColor: string;
-	selectedOrgId: string;
 	selectedModelId: string;
 	selectedModelLabel: string;
 	selectedModelCount?: number;
 	selectedModelsHint?: string;
-	onOpenModelPicker: () => void;
+	selectedModelIds: string[];
+	modelOptions: ModelOption[];
+	onToggleModel: (modelId: string) => void;
+	onAddModelSet: (modelIds: string[]) => void;
 	onAudioAttachmentRequirementChange?: (requiresAudioInput: boolean) => void;
 	requestError?: ChatRequestErrorDetails | null;
-	onDismissRequestError?: () => void;
+	responseLayout?: ChatResponseLayout;
 };
 
 type SendGateType = "auth";
+
+function shouldFocusComposerAfterThreadChange() {
+	if (typeof window === "undefined") return false;
+	if (typeof window.matchMedia !== "function") return true;
+	return window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+}
 
 export function ChatConversation({
 	activeThread,
 	isSending,
 	isAuthenticated,
+	temporaryMode = false,
 	mode = "classic",
 	webSearchEnabled = false,
 	onWebSearchEnabledChange,
 	apiServerToolsEnabled = false,
-	onApiServerToolsEnabledChange,
+	serverTools = [],
+	onServerToolsChange,
+	serverToolConfigs = {},
+	onServerToolConfigsChange,
 	reasoningEnabled = false,
 	reasoningEffort = "medium",
 	onReasoningEnabledChange,
@@ -85,15 +131,17 @@ export function ChatConversation({
 	modelOrgIdById,
 	modelLinkById,
 	accentColor,
-	selectedOrgId,
 	selectedModelId,
 	selectedModelLabel,
 	selectedModelCount = selectedModelId ? 1 : 0,
 	selectedModelsHint,
-	onOpenModelPicker,
+	selectedModelIds,
+	modelOptions,
+	onToggleModel,
+	onAddModelSet,
 	onAudioAttachmentRequirementChange,
 	requestError = null,
-	onDismissRequestError,
+	responseLayout = "sequential",
 }: ChatConversationProps) {
 	const isUnified = mode === "unified";
 	const [composer, setComposer] = useState("");
@@ -101,82 +149,75 @@ export function ChatConversation({
 	const [editingValue, setEditingValue] = useState("");
 	const [metadataOpenId, setMetadataOpenId] = useState<string | null>(null);
 	const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-	const scrollAreaRef = useRef<HTMLDivElement | null>(null);
+	const scrollViewportRef = useRef<HTMLDivElement | null>(null);
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
 	const audioInputRef = useRef<HTMLInputElement | null>(null);
 	const [attachments, setAttachments] = useState<File[]>([]);
+	const [queuedPrompts, setQueuedPrompts] = useState<QueuedChatPrompt[]>([]);
+	const [editingQueuedPromptIndex, setEditingQueuedPromptIndex] = useState<
+		number | null
+	>(null);
 	const [recordingSupported, setRecordingSupported] = useState(false);
 	const [isRecording, setIsRecording] = useState(false);
 	const [isStartingRecording, setIsStartingRecording] = useState(false);
+	const [recordingWaveformBars, setRecordingWaveformBars] = useState<number[]>(
+		DEFAULT_RECORDING_WAVEFORM,
+	);
+	const [recordingDurationMs, setRecordingDurationMs] = useState(0);
 	const [reasoningPickerOpen, setReasoningPickerOpen] = useState(false);
 	const [sendGateType, setSendGateType] = useState<SendGateType | null>(null);
 	const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 	const mediaStreamRef = useRef<MediaStream | null>(null);
+	const audioContextRef = useRef<AudioContext | null>(null);
+	const waveformAnimationRef = useRef<number | null>(null);
+	const waveformLastUpdateRef = useRef(0);
+	const recordingStartedAtRef = useRef(0);
+	const recordingTimerRef = useRef<number | null>(null);
 	const recordingChunksRef = useRef<Blob[]>([]);
 	const appliedPresetRef = useRef<string | null>(null);
 
-	const placeholder = useMemo(() => {
-		return getRandomPlaceholder();
-	}, [activeThread?.id]);
+	const [placeholder, setPlaceholder] = useState<string>(
+		DEFAULT_CHAT_PLACEHOLDER,
+	);
+
+	useEffect(() => {
+		setPlaceholder(getRandomPlaceholder());
+	}, []);
+
+	useEffect(() => {
+		setRecordingSupported(
+			typeof MediaRecorder !== "undefined" &&
+				typeof navigator.mediaDevices?.getUserMedia === "function",
+		);
+	}, []);
 	const reasoningSelection: NonNullable<ChatSettings["reasoningEffort"]> =
 		reasoningEffort ?? "medium";
 	const attachmentPreviewUrls = useMemo(
 		() =>
 			attachments.map((file) =>
-				file.type.startsWith("image/")
+				file.type.startsWith("image/") || file.type.startsWith("audio/")
 					? URL.createObjectURL(file)
 					: null,
 			),
 		[attachments],
 	);
 
-	const latestMessageContent =
-		activeThread?.messages[activeThread.messages.length - 1]?.content ?? "";
+	const activeThreadId = activeThread?.id ?? null;
 	const lastMessageId =
 		activeThread?.messages[activeThread.messages.length - 1]?.id ?? null;
-
-	useEffect(() => {
-		const root = scrollAreaRef.current;
-		if (!root) return;
-		const viewport = root.querySelector(
-			"[data-radix-scroll-area-viewport]",
-		) as HTMLDivElement | null;
-		if (!viewport) return;
-		requestAnimationFrame(() => {
-			viewport.scrollTop = viewport.scrollHeight;
-		});
-	}, [activeThread?.id, activeThread?.messages.length, latestMessageContent]);
-
-	useEffect(() => {
-		const textarea = textareaRef.current;
-		if (!textarea) return;
-		requestAnimationFrame(() => {
-			textarea.focus();
-		});
-	}, [activeThread?.id]);
 
 	useEffect(() => {
 		const raf = requestAnimationFrame(() => {
 			setComposer("");
 			setAttachments([]);
+			setQueuedPrompts([]);
+			setEditingQueuedPromptIndex(null);
+			if (shouldFocusComposerAfterThreadChange()) {
+				textareaRef.current?.focus();
+			}
 		});
 		return () => cancelAnimationFrame(raf);
-	}, [activeThread?.id]);
-
-	useEffect(() => {
-		const supported =
-			typeof navigator !== "undefined" &&
-			typeof window !== "undefined" &&
-			typeof MediaRecorder !== "undefined" &&
-			typeof navigator.mediaDevices?.getUserMedia === "function";
-		setRecordingSupported(supported);
-	}, []);
-
-	useEffect(() => {
-		if (isAuthenticated && sendGateType === "auth") {
-			setSendGateType(null);
-		}
-	}, [isAuthenticated, sendGateType]);
+	}, [activeThreadId]);
 
 	useEffect(() => {
 		const requiresAudioInput = attachments.some((attachment) =>
@@ -184,6 +225,79 @@ export function ChatConversation({
 		);
 		onAudioAttachmentRequirementChange?.(requiresAudioInput);
 	}, [attachments, onAudioAttachmentRequirementChange]);
+
+	const stopWaveformAnalysis = useCallback(() => {
+		if (waveformAnimationRef.current !== null) {
+			cancelAnimationFrame(waveformAnimationRef.current);
+			waveformAnimationRef.current = null;
+		}
+		void audioContextRef.current?.close().catch(() => undefined);
+		audioContextRef.current = null;
+		waveformLastUpdateRef.current = 0;
+		setRecordingWaveformBars(DEFAULT_RECORDING_WAVEFORM);
+	}, []);
+
+	const stopRecordingTimer = useCallback(() => {
+		if (recordingTimerRef.current !== null) {
+			window.clearInterval(recordingTimerRef.current);
+			recordingTimerRef.current = null;
+		}
+		recordingStartedAtRef.current = 0;
+		setRecordingDurationMs(0);
+	}, []);
+
+	const startRecordingTimer = useCallback(() => {
+		stopRecordingTimer();
+		recordingStartedAtRef.current = performance.now();
+		setRecordingDurationMs(0);
+		recordingTimerRef.current = window.setInterval(() => {
+			setRecordingDurationMs(performance.now() - recordingStartedAtRef.current);
+		}, 200);
+	}, [stopRecordingTimer]);
+
+	const startWaveformAnalysis = useCallback(
+		(stream: MediaStream) => {
+			stopWaveformAnalysis();
+			const AudioContextConstructor =
+				window.AudioContext ??
+				(window as typeof window & { webkitAudioContext?: typeof AudioContext })
+					.webkitAudioContext;
+			if (!AudioContextConstructor) return;
+
+			try {
+				const audioContext = new AudioContextConstructor();
+				const analyser = audioContext.createAnalyser();
+				analyser.fftSize = 512;
+				analyser.smoothingTimeConstant = 0.72;
+				audioContext.createMediaStreamSource(stream).connect(analyser);
+				audioContextRef.current = audioContext;
+
+				const samples = new Uint8Array(analyser.fftSize);
+				const tick = (timestamp: number) => {
+					analyser.getByteTimeDomainData(samples);
+					if (timestamp - waveformLastUpdateRef.current >= 58) {
+						let total = 0;
+						for (const sample of samples) {
+							const centered = (sample - 128) / 128;
+							total += centered * centered;
+						}
+						const rms = Math.sqrt(total / samples.length);
+						const nextHeight = Math.max(4, Math.min(30, 4 + rms * 96));
+						setRecordingWaveformBars((prev) => [
+							...prev.slice(1),
+							Math.round(nextHeight),
+						]);
+						waveformLastUpdateRef.current = timestamp;
+					}
+					waveformAnimationRef.current = requestAnimationFrame(tick);
+				};
+				waveformAnimationRef.current = requestAnimationFrame(tick);
+			} catch (error) {
+				console.error("Audio waveform analysis failed", error);
+			}
+		},
+		[stopWaveformAnalysis],
+	);
 
 	const stopRecording = useCallback(() => {
 		const recorder = mediaRecorderRef.current;
@@ -196,9 +310,11 @@ export function ChatConversation({
 			}
 			mediaStreamRef.current = null;
 		}
+		stopWaveformAnalysis();
+		stopRecordingTimer();
 		setIsRecording(false);
 		setIsStartingRecording(false);
-	}, []);
+	}, [stopRecordingTimer, stopWaveformAnalysis]);
 
 	const startRecording = useCallback(async () => {
 		if (!recordingSupported) return;
@@ -208,6 +324,8 @@ export function ChatConversation({
 				audio: true,
 			});
 			mediaStreamRef.current = stream;
+			startRecordingTimer();
+			startWaveformAnalysis(stream);
 			recordingChunksRef.current = [];
 			const mimeType = getSupportedRecordingMimeType();
 			const recorder = mimeType
@@ -230,7 +348,7 @@ export function ChatConversation({
 					const extension = extensionForAudioMimeType(fallbackType);
 					const file = new File(
 						[audioBlob],
-						`recording-${Date.now()}.${extension}`,
+						`${formatRecordingFilename()}.${extension}`,
 						{ type: fallbackType },
 					);
 					setAttachments((prev) => prev.concat(file));
@@ -241,16 +359,29 @@ export function ChatConversation({
 					}
 					mediaStreamRef.current = null;
 				}
+				stopWaveformAnalysis();
+				stopRecordingTimer();
 				setIsRecording(false);
 			};
 			recorder.start(200);
 			setIsRecording(true);
-		} catch {
+		} catch (error) {
+			console.error("Audio recording failed", error);
+			setRecordingSupported(false);
+			stopWaveformAnalysis();
+			stopRecordingTimer();
+			audioInputRef.current?.click();
 			setIsRecording(false);
 		} finally {
 			setIsStartingRecording(false);
 		}
-	}, [recordingSupported]);
+	}, [
+		recordingSupported,
+		startRecordingTimer,
+		startWaveformAnalysis,
+		stopRecordingTimer,
+		stopWaveformAnalysis,
+	]);
 
 	useEffect(() => {
 		return () => {
@@ -263,8 +394,10 @@ export function ChatConversation({
 					track.stop();
 				}
 			}
+			stopWaveformAnalysis();
+			stopRecordingTimer();
 		};
-	}, []);
+	}, [stopRecordingTimer, stopWaveformAnalysis]);
 
 	useEffect(() => {
 		return () => {
@@ -288,7 +421,8 @@ export function ChatConversation({
 					'[data-state="open"][role="dialog"],' +
 						' [data-state="open"][role="menu"],' +
 						' [data-state="open"][role="listbox"],' +
-						' [data-state="open"][data-radix-popper-content-wrapper]',
+						' [data-state="open"][data-radix-popper-content-wrapper],' +
+						' [data-slot="dialog-content"]',
 				),
 			);
 			if (overlayOpen) return;
@@ -314,7 +448,8 @@ export function ChatConversation({
 					'[data-state="open"][role="dialog"],' +
 						' [data-state="open"][role="menu"],' +
 						' [data-state="open"][role="listbox"],' +
-						' [data-state="open"][data-radix-popper-content-wrapper]',
+						' [data-state="open"][data-radix-popper-content-wrapper],' +
+						' [data-slot="dialog-content"]',
 				),
 			);
 			if (overlayOpen) return;
@@ -409,24 +544,168 @@ export function ChatConversation({
 		});
 	}, []);
 
+	const buildQueuedPrompt = useCallback(
+		(content: string, queuedAttachments: File[]): QueuedChatPrompt | null => {
+			if (!activeThreadId) return null;
+			return {
+				id: crypto.randomUUID(),
+				threadId: activeThreadId,
+				content,
+				attachments: queuedAttachments,
+				webSearchEnabled: isUnified ? webSearchEnabled : false,
+				apiServerToolsEnabled: isUnified ? apiServerToolsEnabled : false,
+				serverTools: isUnified ? serverTools : [],
+				serverToolConfigs: isUnified ? serverToolConfigs : {},
+			};
+		},
+		[
+			activeThreadId,
+			apiServerToolsEnabled,
+			isUnified,
+			serverToolConfigs,
+			serverTools,
+			webSearchEnabled,
+		],
+	);
+
+	const sendPrompt = useCallback(
+		async (prompt: QueuedChatPrompt) => {
+			const performanceRunId = startChatSendPerformanceRun({
+				contentLength: prompt.content.length,
+				attachmentCount: prompt.attachments.length,
+			});
+			try {
+				return await onSend({
+					content: prompt.content,
+					attachments: prompt.attachments,
+					webSearchEnabled: prompt.webSearchEnabled,
+					apiServerToolsEnabled: prompt.apiServerToolsEnabled,
+					serverTools: prompt.serverTools,
+					serverToolConfigs: prompt.serverToolConfigs,
+					performanceRunId,
+				});
+			} catch {
+				return false;
+			}
+		},
+		[onSend],
+	);
+
+	const queueDrainInFlightRef = useRef(false);
+
+	useEffect(() => {
+		if (isSending) {
+			queueDrainInFlightRef.current = false;
+			return;
+		}
+		if (
+			queueDrainInFlightRef.current ||
+			!activeThreadId ||
+			queuedPrompts.length === 0 ||
+			(editingQueuedPromptIndex !== null && editingQueuedPromptIndex <= 0)
+		) {
+			return;
+		}
+		const nextPrompt = queuedPrompts[0];
+		if (!nextPrompt || nextPrompt.threadId !== activeThreadId) return;
+		queueDrainInFlightRef.current = true;
+		queueMicrotask(() => {
+			void (async () => {
+				const accepted = await sendPrompt(nextPrompt);
+				if (!accepted) {
+					queueDrainInFlightRef.current = false;
+					return;
+				}
+				setQueuedPrompts((prev) =>
+					prev[0]?.id === nextPrompt.id
+						? prev.slice(1)
+						: prev.filter((prompt) => prompt.id !== nextPrompt.id),
+				);
+				setEditingQueuedPromptIndex((prev) =>
+					prev === null ? null : Math.max(0, prev - 1),
+				);
+			})();
+		});
+	}, [
+		activeThreadId,
+		editingQueuedPromptIndex,
+		isSending,
+		queuedPrompts,
+		sendPrompt,
+	]);
+
 	const handleSubmit = () => {
-		if (isSending) return;
 		const text = composer.trim();
 		if (!text && attachments.length === 0) return;
+		const hasSelectedModel =
+			selectedModelIds.length > 0 ||
+			selectedModelCount > 0 ||
+			Boolean(selectedModelId);
+		if (!hasSelectedModel) return;
 		if (!isAuthenticated) {
 			setSendGateType("auth");
 			return;
 		}
 		setSendGateType(null);
-		onSend({
-			content: text,
-			attachments,
-			webSearchEnabled: isUnified ? webSearchEnabled : false,
-			apiServerToolsEnabled: isUnified ? apiServerToolsEnabled : false,
-		});
+		const nextPrompt = buildQueuedPrompt(text, attachments);
+		if (!nextPrompt) return;
+		if (isSending) {
+			setQueuedPrompts((prev) => {
+				if (editingQueuedPromptIndex === null) {
+					return [...prev, nextPrompt];
+				}
+				const next = [...prev];
+				next.splice(
+					Math.min(editingQueuedPromptIndex, next.length),
+					0,
+					nextPrompt,
+				);
+				return next;
+			});
+		} else {
+			void sendPrompt(nextPrompt);
+		}
+		setEditingQueuedPromptIndex(null);
 		setComposer("");
 		setAttachments([]);
 	};
+
+	const handleEditQueuedPrompt = (id: string) => {
+		const promptIndex = queuedPrompts.findIndex((prompt) => prompt.id === id);
+		if (promptIndex === -1) return;
+		const prompt = queuedPrompts[promptIndex];
+		setQueuedPrompts((prev) =>
+			prev.filter((candidate) => candidate.id !== id),
+		);
+		setComposer(prompt.content);
+		setAttachments(prompt.attachments);
+		setEditingQueuedPromptIndex(promptIndex);
+		requestAnimationFrame(() => {
+			textareaRef.current?.focus();
+		});
+	};
+
+	const handleReorderQueuedPrompt = useCallback(
+		(activeId: string, targetId: string) => {
+			setQueuedPrompts((prev) => {
+				const activeIndex = prev.findIndex((prompt) => prompt.id === activeId);
+				const targetIndex = prev.findIndex((prompt) => prompt.id === targetId);
+				if (
+					activeIndex === -1 ||
+					targetIndex === -1 ||
+					activeIndex === targetIndex
+				) {
+					return prev;
+				}
+				const next = [...prev];
+				const [activePrompt] = next.splice(activeIndex, 1);
+				if (!activePrompt) return prev;
+				next.splice(targetIndex, 0, activePrompt);
+				return next;
+			});
+		},
+		[],
+	);
 
 	const handleFileSelect = (event: ChangeEvent<HTMLInputElement>) => {
 		const files = Array.from(event.target.files ?? []);
@@ -446,65 +725,85 @@ export function ChatConversation({
 			return;
 		}
 		void startRecording();
-	}, [isRecording, isStartingRecording, startRecording, stopRecording]);
+	}, [
+		isRecording,
+		isStartingRecording,
+		recordingSupported,
+		startRecording,
+		stopRecording,
+	]);
+	const effectiveSendGateType =
+		isAuthenticated && sendGateType === "auth" ? null : sendGateType;
+	const hasNoMessages = (activeThread?.messages.length ?? 0) === 0;
+	const promptHistory = useMemo(
+		() =>
+			(activeThread?.messages ?? [])
+				.filter((message) => message.role === "user" && message.content.trim())
+				.map((message) => message.content),
+		[activeThread?.messages],
+	);
 
 	return (
 		<main className="flex min-h-0 flex-1 flex-col overflow-hidden">
-			<ScrollArea className="flex-1 overscroll-contain" ref={scrollAreaRef}>
-				<div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-6 md:px-8">
-					{isRecording ? (
-						<div className="sticky top-2 z-10 mx-auto w-full max-w-md rounded-2xl border border-border bg-background/92 px-4 py-3 shadow-sm backdrop-blur">
-							<div className="flex items-center gap-3">
-								<button
-									type="button"
-									onClick={toggleRecording}
-									disabled={isStartingRecording}
-									aria-label="Stop recording"
-									className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-destructive/30 bg-destructive/10 text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-								>
-									<span className="pointer-events-none absolute inset-0 rounded-full bg-destructive/10 animate-pulse" />
-									<span className="pointer-events-none relative inline-flex h-9 w-9 items-center justify-center rounded-full bg-destructive/20">
-										<Square className="h-4 w-4 fill-current" />
-									</span>
-								</button>
-								<div className="min-w-0">
-									<p className="text-sm font-medium">Listening...</p>
-									<p className="text-xs text-muted-foreground">
-										Speak now, then stop to attach the clip.
-									</p>
-								</div>
-							</div>
-						</div>
-					) : null}
-					<ChatConversationMessages
-						activeThread={activeThread}
-						isSending={isSending}
-						lastMessageId={lastMessageId}
-						editingId={editingId}
-						editingValue={editingValue}
-						metadataOpenId={metadataOpenId}
-						onMetadataOpenIdChange={setMetadataOpenId}
-						onEditingIdChange={setEditingId}
-						onEditingValueChange={setEditingValue}
-						orgNameById={orgNameById}
-						modelDisplayNameById={modelDisplayNameById}
-						modelOrgIdById={modelOrgIdById}
-						modelLinkById={modelLinkById}
-						accentColor={accentColor}
-						onEditMessage={onEditMessage}
-						onRetryAssistant={onRetryAssistant}
-						onBranchAssistant={onBranchAssistant}
-						onSelectVariant={onSelectVariant}
-						onCopy={handleCopy}
-						requestError={requestError}
-						onDismissRequestError={onDismissRequestError}
-					/>
-				</div>
-			</ScrollArea>
+			<MessageScroller.Provider
+				autoScroll
+				defaultScrollPosition="end"
+				scrollEdgeThreshold={48}
+				scrollMargin={24}
+			>
+				<MessageScroller.Root className="relative flex min-h-0 flex-1 overflow-hidden overscroll-contain">
+					<MessageScroller.Viewport
+						ref={scrollViewportRef}
+						className="h-full w-full overflow-y-auto overscroll-contain"
+					>
+						<MessageScroller.Content
+							className={`mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-6 md:px-8 ${hasNoMessages ? "min-h-full" : ""}`}
+						>
+							<ChatConversationMessages
+								activeThread={activeThread}
+								isSending={isSending}
+								lastMessageId={lastMessageId}
+								editingId={editingId}
+								editingValue={editingValue}
+								metadataOpenId={metadataOpenId}
+								onMetadataOpenIdChange={setMetadataOpenId}
+								onEditingIdChange={setEditingId}
+								onEditingValueChange={setEditingValue}
+								orgNameById={orgNameById}
+								modelDisplayNameById={modelDisplayNameById}
+								modelOrgIdById={modelOrgIdById}
+								modelLinkById={modelLinkById}
+								accentColor={accentColor}
+								onEditMessage={onEditMessage}
+								onRetryAssistant={onRetryAssistant}
+								onBranchAssistant={onBranchAssistant}
+								onSelectVariant={onSelectVariant}
+								onCopy={handleCopy}
+								requestError={requestError}
+								scrollViewportRef={scrollViewportRef}
+								responseLayout={responseLayout}
+								modelOrderIds={selectedModelIds}
+								modelOptions={modelOptions}
+								selectedModelIds={selectedModelIds}
+								onAddModelSet={onAddModelSet}
+								temporaryMode={temporaryMode}
+							/>
+						</MessageScroller.Content>
+					</MessageScroller.Viewport>
+					<MessageScroller.Button
+						aria-label="Scroll to latest message"
+						className="absolute bottom-4 left-1/2 z-20 inline-flex h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-sm transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[active=false]:pointer-events-none data-[active=false]:opacity-0"
+						direction="end"
+					>
+						<ArrowDown className="h-4 w-4" />
+					</MessageScroller.Button>
+				</MessageScroller.Root>
+			</MessageScroller.Provider>
 			<ChatConversationComposer
-				sendGateType={sendGateType}
+				sendGateType={effectiveSendGateType}
 				isSending={isSending}
 				composer={composer}
+				promptHistory={promptHistory}
 				attachments={attachments}
 				attachmentPreviewUrls={attachmentPreviewUrls}
 				placeholder={placeholder}
@@ -512,11 +811,14 @@ export function ChatConversation({
 				fileInputRef={fileInputRef}
 				audioInputRef={audioInputRef}
 				isUnified={isUnified}
+				accentColor={accentColor}
 				webSearchEnabled={webSearchEnabled}
 				onWebSearchEnabledChange={onWebSearchEnabledChange}
-				apiServerToolsEnabled={apiServerToolsEnabled}
-				onApiServerToolsEnabledChange={onApiServerToolsEnabledChange}
-				showEvaluationPrompts={(activeThread?.messages.length ?? 0) === 0}
+				serverTools={serverTools}
+				onServerToolsChange={onServerToolsChange}
+				serverToolConfigs={serverToolConfigs}
+				onServerToolConfigsChange={onServerToolConfigsChange}
+				showEvaluationPrompts={hasNoMessages}
 				reasoningEnabled={reasoningEnabled}
 				reasoningPickerOpen={reasoningPickerOpen}
 				onReasoningPickerOpenChange={setReasoningPickerOpen}
@@ -525,15 +827,30 @@ export function ChatConversation({
 				onReasoningSelection={applyReasoningSelection}
 				selectedModelCount={selectedModelCount}
 				selectedModelsHint={selectedModelsHint}
+				selectedModelIds={selectedModelIds}
 				selectedModelId={selectedModelId}
 				selectedModelLabel={selectedModelLabel}
-				selectedOrgId={selectedOrgId}
+				modelOptions={modelOptions}
 				isRecording={isRecording}
+				recordingWaveformBars={recordingWaveformBars}
+				recordingDurationMs={recordingDurationMs}
 				isStartingRecording={isStartingRecording}
 				recordingSupported={recordingSupported}
 				onToggleRecording={toggleRecording}
-				onOpenModelPicker={onOpenModelPicker}
+				onToggleModel={onToggleModel}
 				onSubmit={handleSubmit}
+				queuedPrompts={queuedPrompts.map((prompt) => ({
+					id: prompt.id,
+					content: prompt.content,
+					attachmentCount: prompt.attachments.length,
+				}))}
+				onRemoveQueuedPrompt={(id) =>
+					setQueuedPrompts((prev) =>
+						prev.filter((prompt) => prompt.id !== id),
+					)
+				}
+				onEditQueuedPrompt={handleEditQueuedPrompt}
+				onReorderQueuedPrompt={handleReorderQueuedPrompt}
 				onSelectEvaluationPrompt={handleSelectEvaluationPrompt}
 				onComposerChange={setComposer}
 				onRemoveAttachment={(index) =>

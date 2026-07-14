@@ -14,8 +14,8 @@ export type VerifyAsyncWebhookSignatureOptions = {
 };
 
 const DEFAULT_TOLERANCE_SECONDS = 300;
-const SIGNATURE_HEADER = "x-ai-stats-signature";
-const TIMESTAMP_HEADER = "x-ai-stats-timestamp";
+const SIGNATURE_HEADER = "x-phaseo-signature";
+const TIMESTAMP_HEADER = "x-phaseo-timestamp";
 
 function getHeaderValue(headers: AsyncWebhookHeaders, name: string): string | null {
   const lowerName = name.toLowerCase();

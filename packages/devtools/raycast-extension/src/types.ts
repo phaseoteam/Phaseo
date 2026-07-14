@@ -23,6 +23,8 @@ export interface Model {
   input_types: string[];
   output_types: string[];
   providers: ProviderInfo[];
+  pricing?: ModelPricing | null;
+  top_provider?: ModelTopProvider | null;
 }
 
 export interface ProviderInfo {
@@ -30,7 +32,6 @@ export interface ProviderInfo {
   params: string[];
 }
 
-// Organisation Types
 export interface Organisation {
   organisation_id: string;
   name: string | null;
@@ -39,7 +40,6 @@ export interface Organisation {
   colour: string | null;
 }
 
-// Provider Types
 export interface Provider {
   api_provider_id: string;
   api_provider_name: string | null;
@@ -48,6 +48,19 @@ export interface Provider {
   country_code: string | null;
 }
 
+export interface ModelPricing {
+  prompt?: string | null;
+  completion?: string | null;
+  request?: string | null;
+  image?: string | null;
+}
+
+export interface ModelTopProvider {
+  context_length?: number | null;
+  max_completion_tokens?: number | null;
+}
+
+// Organisation Types
 // API Response Types
 export interface ModelsResponse {
   ok: boolean;
@@ -55,22 +68,6 @@ export interface ModelsResponse {
   offset: number;
   total: number;
   models: Model[];
-}
-
-export interface OrganisationsResponse {
-  ok: boolean;
-  limit: number;
-  offset: number;
-  total: number;
-  organisations: Organisation[];
-}
-
-export interface ProvidersResponse {
-  ok: boolean;
-  limit: number;
-  offset: number;
-  total: number;
-  providers: Provider[];
 }
 
 // Filter Types

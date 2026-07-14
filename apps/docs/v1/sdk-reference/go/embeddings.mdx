@@ -11,10 +11,10 @@ Use the wrapper method:
 import (
   "context"
   "fmt"
-  aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
 )
 
-client := aistats.New(apiKey, "https://api.phaseo.app/v1")
+client := phaseo.New(apiKey, "https://api.phaseo.ai/v1")
 resp, err := client.GenerateEmbedding(context.Background(), map[string]interface{}{
   "model": "openai/text-embedding-3-large",
   "input": "sample text",

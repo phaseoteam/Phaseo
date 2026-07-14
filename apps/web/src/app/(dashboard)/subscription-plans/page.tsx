@@ -4,7 +4,7 @@ import { fetchFrontendSubscriptionPlans } from "@/lib/fetchers/frontend/fetchPub
 import SubscriptionPlansDisplay from "@/components/(data)/subscription-plans/SubscriptionPlansDisplay";
 
 export const metadata: Metadata = {
-	title: "AI Subscription Plans – Compare Pricing & Features",
+	title: "AI Plans",
 	description:
 		"Explore a comprehensive directory of AI subscription plans like ChatGPT Plus, Claude Pro, SuperGrok and more. Compare pricing, features, model access and limits across leading AI providers to find the right plan for your needs.",
 	keywords: [
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 		"ChatGPT Plus pricing",
 		"Claude Pro pricing",
 		"SuperGrok pricing",
-		"AI Stats",
+		"Phaseo",
 	],
 	alternates: {
 		canonical: "/subscription-plans",

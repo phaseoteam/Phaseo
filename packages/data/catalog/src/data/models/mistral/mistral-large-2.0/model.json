@@ -15,19 +15,23 @@
   "api_model_id": "mistral/mistral-large-2.0",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://docs.mistral.ai/"
     },
     {
-      "platform": "playground",
+      "title": "Playground",
+      "kind": "playground",
       "url": "https://chat.mistral.ai/"
     },
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://mistral.ai/news/mistral-large-2407/"
     },
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/mistralai/Mistral-Large-Instruct-2407"
     }
   ],

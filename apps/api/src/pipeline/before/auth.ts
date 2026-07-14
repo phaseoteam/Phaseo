@@ -130,6 +130,7 @@ function isInternalRequestAuthorized(req: Request, bindings: ReturnType<typeof g
     // Require high entropy to avoid accidental weak config.
     if (!configuredToken || configuredToken.length < 128) return false;
     const providedToken = String(
+        req.headers.get("x-phaseo-internal-token") ??
         req.headers.get("x-aistats-internal-token") ??
         req.headers.get("x-ai-stats-internal-token") ??
         req.headers.get("x-internal-token") ??
@@ -143,26 +144,39 @@ function isInternalRequestAuthorized(req: Request, bindings: ReturnType<typeof g
 
 /**
  * Parse an API key string in format:
- *   aistats_v1_sk_<kid>_<secret>
+ *   phaseo_v1_sk_<kid>_<secret>
+ *   phaseo_v1_mk_<kid>_<secret>
+ *   aistats_v1_sk_<kid>_<secret> (accepted until 2027-01-01T00:00:00Z)
  *
- * - aistats = project namespace
+ * - phaseo/aistats = project namespace
  * - v1      = version
- * - k       = key indicator
+ * - sk/mk   = inference or management key indicator
  * - kid     = key ID (public reference)
  * - secret  = user-held secret part
  */
+const LEGACY_AISTATS_KEY_CUTOFF_MS = Date.UTC(2027, 0, 1);
+
 function parseV2(token: string) {
-    if (!token.startsWith("aistats_")) return null;
     const parts = token.split("_");
     if (parts.length < 5) return null;
 
-    const [_, v, kTag, kid, ...rest] = parts;
-    if (v !== "v1" || kTag !== "sk") return null;
+    const [namespace, v, kTag, kid, ...rest] = parts;
+    if (namespace !== "phaseo" && namespace !== "aistats") return null;
+    if (v !== "v1" || (kTag !== "sk" && kTag !== "mk")) return null;
 
     const secret = rest.join("_"); // allow underscores inside secret
     if (!kid || !secret) return null;
 
-    return { kid, secret };
+    return {
+        kid,
+        namespace,
+        secret,
+        keyType: kTag === "mk" ? "management" as const : "inference" as const,
+    };
+}
+
+function isLegacyKeyNamespaceRetired(namespace: string, nowMs = Date.now()): boolean {
+    return namespace === "aistats" && nowMs >= LEGACY_AISTATS_KEY_CUTOFF_MS;
 }
 
 /* -------------------- main -------------------- */
@@ -327,7 +341,8 @@ async function cacheKey(kid: string, row: KeyRow) {
  * Authenticate an incoming request using an Authorization: Bearer header.
  *
  * Supports both:
- * - API Keys: aistats_v1_sk_{kid}_{secret} (HMAC validation)
+ * - API Keys: phaseo_v1_sk_{kid}_{secret}, or aistats_v1_sk_{kid}_{secret}
+ *   until 2027-01-01T00:00:00Z (HMAC validation)
  * - OAuth JWT: Bearer {jwt_token} (JWT signature validation)
  *
  * Steps:
@@ -361,6 +376,12 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
     // 2. Parse structured token.
     const parsed = parseV2(token);
     if (!parsed) return { ok: false, reason: "invalid_key_format" };
+    if (isLegacyKeyNamespaceRetired(parsed.namespace)) {
+        return { ok: false, reason: "legacy_key_prefix_retired" };
+    }
+    if (parsed.keyType === "management") {
+        return { ok: false, reason: "management_key_not_valid_for_gateway" };
+    }
     if (!isValidKidFormat(parsed.kid)) return { ok: false, reason: "invalid_key_format" };
 
     // 3. Look up key in Supabase.
@@ -527,6 +548,13 @@ export async function authenticateManagement(
 
     const parsed = parseV2(token);
     if (!parsed) return { ok: false, reason: "invalid_key_format" };
+    // Management routes are intentionally strict: `sk` credentials are
+    // inference-only, and management credentials must use the current,
+    // unambiguous Phaseo `mk` format. Do this before any database lookup so an
+    // inference key can never be mistaken for a management key.
+    if (parsed.namespace !== "phaseo" || parsed.keyType !== "management") {
+        return { ok: false, reason: "management_key_required" };
+    }
     if (!isValidKidFormat(parsed.kid)) return { ok: false, reason: "invalid_key_format" };
 
     const bindings = getBindings();
@@ -796,7 +824,7 @@ async function authenticateOAuth(req: Request, token: string, options: Authentic
  * Check if token looks like a JWT (3 dot-separated parts)
  */
 function isJWTFormat(token: string): boolean {
-    return token.split(".").length === 3 && !token.startsWith("aistats_");
+    return token.split(".").length === 3 && !token.startsWith("aistats_") && !token.startsWith("phaseo_");
 }
 
 function tryDecodeJwtPayload(token: string): Record<string, any> | null {

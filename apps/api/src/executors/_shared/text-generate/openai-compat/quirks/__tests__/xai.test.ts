@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
+import { getProviderQuirks } from "../index";
 import { xAiQuirks } from "../../providers/x-ai/quirks";
 
-describe("xAI quirks", () => {
+describe("SpaceXAI quirks", () => {
+	it("registers xAI quirks for the canonical SpaceXAI provider id", () => {
+		expect(getProviderQuirks("spacex-ai")).toBe(xAiQuirks);
+		expect(getProviderQuirks("x-ai")).toBe(xAiQuirks);
+		expect(getProviderQuirks("xai")).toBe(xAiQuirks);
+	});
+
 	describe("transformRequest", () => {
 		it("downgrades json_schema and strips unsupported fields for reasoning models", () => {
 			const request: Record<string, any> = {
@@ -63,7 +70,6 @@ describe("xAI quirks", () => {
 	describe("normalizeResponse", () => {
 		it("maps usage detail keys and fills totals plus requests", () => {
 			const response: Record<string, any> = {
-				service_tier: "default",
 				usage: {
 					prompt_tokens: 10,
 					completion_tokens: 5,
@@ -80,7 +86,6 @@ describe("xAI quirks", () => {
 			expect(response.usage.input_tokens_details).toEqual({ cached_tokens: 2 });
 			expect(response.usage.output_tokens_details).toEqual({ reasoning_tokens: 1 });
 			expect(response.usage.requests).toBe(1);
-			expect(response.usage.service_tier).toBe("standard");
 		});
 
 		it("preserves explicit usage.requests", () => {
@@ -95,30 +100,6 @@ describe("xAI quirks", () => {
 			xAiQuirks.normalizeResponse?.({ response, ir: {} as any });
 
 			expect(response.usage.requests).toBe(7);
-		});
-	});
-
-	describe("transformStreamChunk", () => {
-		it("moves top-level response service tier into usage for streamed responses", () => {
-			const chunk: Record<string, any> = {
-				response: {
-					id: "resp_xai_stream",
-					service_tier: "default",
-					usage: {
-						input_tokens: 3,
-						output_tokens: 2,
-						total_tokens: 5,
-					},
-				},
-			};
-
-			xAiQuirks.transformStreamChunk?.({
-				chunk,
-				accumulated: {},
-			});
-
-			expect(chunk.response.usage.service_tier).toBe("standard");
-			expect(chunk.response.usage.serviceTier).toBe("standard");
 		});
 	});
 });

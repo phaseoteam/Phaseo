@@ -38,7 +38,7 @@ export function WhyWeWinSection() {
 			<div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
 				<div className="space-y-6">
 					<h2 className="text-3xl font-semibold text-zinc-900 dark:text-zinc-100">
-						Why teams choose the AI Stats Gateway
+						Why teams choose the Phaseo Gateway
 					</h2>
 					<p className="text-base text-zinc-600 dark:text-zinc-300">
 						We deliver an open-source routing, telemetry, and

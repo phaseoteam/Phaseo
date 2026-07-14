@@ -15,19 +15,23 @@
   "api_model_id": "mistral/codestral-2024-05-29",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://docs.mistral.ai/api/"
     },
     {
-      "platform": "playground",
+      "title": "Playground",
+      "kind": "playground",
       "url": "https://chat.mistral.ai/"
     },
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://mistral.ai/news/codestral/"
     },
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/mistralai/Codestral-22B-v0.1"
     }
   ],

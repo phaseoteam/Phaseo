@@ -6,10 +6,10 @@ description: "How to initialize and use the Java SDK wrapper."
 ## Setup
 
 ```java
-import ai.stats.sdk.AIStats;
+import app.phaseo.sdk.Phaseo;
 
-String apiKey = System.getenv("AI_STATS_API_KEY");
-AIStats client = new AIStats(apiKey);
+String apiKey = System.getenv("PHASEO_API_KEY");
+Phaseo client = new Phaseo(apiKey);
 ```
 
 ## Pattern
@@ -31,6 +31,6 @@ Wrapper methods return parsed JSON nodes for most JSON endpoints, and byte array
 
 ## Recommended
 
-- Use `ai.stats.sdk.AIStats` for the common gateway surfaces first.
-- Drop to `ai.stats.gen.Client` and `ai.stats.gen.Operations` only when you need a lower-level operation that has not been promoted to the wrapper yet.
+- Use `app.phaseo.sdk.Phaseo` for the common gateway surfaces first.
+- Drop to `app.phaseo.gen.Client` and `app.phaseo.gen.Operations` only when you need a lower-level operation that has not been promoted to the wrapper yet.
 - Start from the endpoint-specific examples in this section for the current wrapper method names.

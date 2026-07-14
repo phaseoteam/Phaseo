@@ -1,11 +1,11 @@
 ---
 title: "Pricing & Performance"
-description: "Understand how model pricing and performance are measured, compared, and normalised across providers on AI Stats."
+description: "Understand how model pricing and performance are measured, compared, and normalised across providers on Phaseo."
 ---
 
-AI Stats helps you make informed decisions about which models to use by providing **transparent pricing and performance metrics** for every model and provider.
+Phaseo helps you make informed decisions about which models to use by providing **transparent pricing and performance metrics** for every model and provider.
 
-This page explains how AI Stats calculates, standardises, and presents cost and speed data — allowing you to identify the **best value** models for your use case.
+This page explains how Phaseo calculates, standardises, and presents cost and speed data — allowing you to identify the **best value** models for your use case.
 
 ---
 
@@ -17,14 +17,14 @@ When choosing a model, you’re balancing **three key factors**:
 2. ⚙️ **Performance** — how fast and efficient the model is.
 3. 🧠 **Quality** — how well it performs on benchmarks.
 
-AI Stats gives you clear, comparable metrics for the first two, and links them with benchmark data to help you find the **sweet spot between cost, speed, and intelligence**.
+Phaseo gives you clear, comparable metrics for the first two, and links them with benchmark data to help you find the **sweet spot between cost, speed, and intelligence**.
 
 ---
 
 ## Pricing structure
 
 Pricing varies depending on the **provider**, **model type**, and **usage mode**.  
-AI Stats normalises all prices to **USD per 1,000 tokens** (for text models) or the equivalent unit for other modalities.
+Phaseo normalises all prices to **USD per 1,000 tokens** (for text models) or the equivalent unit for other modalities.
 
 | Type             | Unit                | Example                             |
 | ---------------- | ------------------- | ----------------------------------- |
@@ -52,13 +52,13 @@ Example:
 | Gemini 1.5 Pro    | $0.00125                | $0.005                   |
 | Mistral Large     | $0.002                  | $0.006                   |
 
-AI Stats displays both prices for full transparency and allows filtering or sorting by either.
+Phaseo displays both prices for full transparency and allows filtering or sorting by either.
 
 ---
 
 ## Cost per request (E2E)
 
-AI Stats also computes an **estimated cost per complete request**, which factors in:
+Phaseo also computes an **estimated cost per complete request**, which factors in:
 
 -   The **average number of input tokens** per request.
 -   The **average model output length**.
@@ -70,7 +70,7 @@ This gives a more realistic “per-call” cost when comparing across models and
 
 ## Measuring performance
 
-AI Stats tracks three main performance metrics for every model and provider:
+Phaseo tracks three main performance metrics for every model and provider:
 
 | Metric                 | Description                                                                                        | Example             |
 | ---------------------- | -------------------------------------------------------------------------------------------------- | ------------------- |
@@ -84,7 +84,7 @@ Together, these metrics reflect **responsiveness and efficiency** — critical f
 
 ## How we measure it
 
-AI Stats uses **standardised benchmarking scripts** to gather real-world performance data for each model and provider.
+Phaseo uses **standardised benchmarking scripts** to gather real-world performance data for each model and provider.
 
 Each test includes:
 
@@ -92,7 +92,7 @@ Each test includes:
 -   Averaged results across multiple time periods.
 -   Measurements from different regions when applicable.
 
-For transparency, raw performance data is often available through the open [Performance Dataset](https://github.com/AI-Stats/AI-Stats) and the catalog endpoints documented in the AI Stats Gateway API reference.
+For transparency, raw performance data is often available through the open [Performance Dataset](https://github.com/phaseoteam/Phaseo) and the catalog endpoints documented in the Phaseo Gateway API reference.
 
 ---
 
@@ -105,7 +105,7 @@ For transparency, raw performance data is often available through the open [Perf
 | **Batch processing**             | Balance throughput and cost — consider cheaper models with slightly higher latency. |
 | **Real-time streaming**          | Requires providers that support streaming APIs and sub-second TTFT.                 |
 
-Use AI Stats’ performance charts to visualise these trade-offs interactively.
+Use Phaseo’ performance charts to visualise these trade-offs interactively.
 
 ---
 
@@ -128,7 +128,7 @@ Use AI Stats’ performance charts to visualise these trade-offs interactively.
 
 ## Cost-to-performance ratio
 
-AI Stats calculates a **cost-to-performance ratio (CPR)** — a derived metric that helps identify the most efficient models.
+Phaseo calculates a **cost-to-performance ratio (CPR)** — a derived metric that helps identify the most efficient models.
 
 Formula:
 
@@ -182,7 +182,7 @@ All submissions are reviewed before being included in the live dataset.
 
 ## Next steps
 
-Now that you understand how pricing and performance are measured, you can explore how to integrate models programmatically via the AI Stats Gateway.
+Now that you understand how pricing and performance are measured, you can explore how to integrate models programmatically via the Phaseo Gateway.
 
 <Card
 	title="Integrate with the Gateway"
@@ -190,5 +190,5 @@ Now that you understand how pricing and performance are measured, you can explor
 	href="../developers/integrating-with-the-gateway.mdx"
 	horizontal
 >
-	Learn how to build using the AI Stats Gateway API.
+	Learn how to build using the Phaseo Gateway API.
 </Card>

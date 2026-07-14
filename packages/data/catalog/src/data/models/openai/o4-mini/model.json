@@ -2,13 +2,13 @@
   "model_id": "openai/o4-mini",
   "organisation_id": "openai",
   "name": "o4 Mini",
-  "status": "Available",
+  "status": "Deprecated",
   "previous_model_id": "openai/o3-mini-2025-01-30",
   "description": "o4 Mini is a compact reasoning model in the o-series, optimized for fast, cost-efficient performance while retaining strong multimodal and agentic capabilities.",
   "announced_date": "2025-04-16T00:00:00",
   "release_date": "2025-04-16T00:00:00",
-  "deprecation_date": null,
-  "retirement_date": null,
+  "deprecation_date": "2026-04-22T00:00:00",
+  "retirement_date": "2026-10-23T00:00:00",
   "license": "Proprietary",
   "input_types": "image,text",
   "output_types": "text",
@@ -16,19 +16,23 @@
   "family_id": "openai/o4",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://platform.openai.com/docs/models/o4-mini"
     },
     {
-      "platform": "playground",
+      "title": "Playground",
+      "kind": "playground",
       "url": "https://platform.openai.com/playground/prompts?models=o4-mini"
     },
     {
-      "platform": "paper",
+      "title": "Paper",
+      "kind": "paper",
       "url": "https://cdn.openai.com/pdf/2221c875-02dc-4789-800b-e7758f3722c1/o3-and-o4-mini-system-card.pdf"
     },
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://openai.com/index/introducing-o3-and-o4-mini/"
     }
   ],

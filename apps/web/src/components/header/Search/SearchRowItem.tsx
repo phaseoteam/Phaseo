@@ -4,7 +4,7 @@ import { Logo } from "@/components/Logo";
 import {
 	CommandItem,
 } from "@/components/ui/command";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Trophy } from "lucide-react";
 
 interface SearchRowItemProps {
 	id: string;
@@ -15,9 +15,10 @@ interface SearchRowItemProps {
 	flagIso?: string;
 	leftLogoId?: string;
 	rightLogoId?: string;
-	keywords: string[];
+	keywords?: string[];
 	onSelect: (href: string) => void;
 	type?: "benchmark" | "comparison" | "default";
+	showSubtitle?: boolean;
 }
 
 export function SearchRowItem({
@@ -31,9 +32,10 @@ export function SearchRowItem({
 	keywords,
 	onSelect,
 	type = "default",
+	showSubtitle = true,
 }: SearchRowItemProps) {
-	const commandKeywords = keywords.filter(Boolean);
-	const commandValue = [title, subtitle ?? "", href, ...commandKeywords]
+	const commandKeywords = keywords?.filter(Boolean) ?? [];
+	const commandValue = [title, href]
 		.filter(Boolean)
 		.join(" ");
 
@@ -42,7 +44,7 @@ export function SearchRowItem({
 			value={commandValue}
 			keywords={commandKeywords}
 			onSelect={() => onSelect(href)}
-			className="flex items-center gap-3 rounded-xl px-3 py-2.5"
+			className="flex min-h-8 items-center gap-2 rounded-lg px-2 py-1.5"
 		>
 			<SearchRowIcon
 				logoId={logoId}
@@ -52,17 +54,17 @@ export function SearchRowItem({
 				title={title}
 				type={type}
 			/>
-			<div className="min-w-0 flex flex-1 flex-col gap-0.5">
+			<div className="min-w-0 flex flex-1 items-baseline gap-2">
 				<span className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">
 					{title}
 				</span>
-				{subtitle ? (
-					<span className="truncate text-xs text-zinc-500 dark:text-zinc-400">
+				{showSubtitle && subtitle ? (
+					<span className="min-w-0 truncate text-xs text-zinc-500 dark:text-zinc-400">
 						{subtitle}
 					</span>
 				) : null}
 			</div>
-			<ArrowUpRight className="size-4 shrink-0 text-zinc-400 dark:text-zinc-500" />
+			<ArrowUpRight className="size-3.5 shrink-0 text-zinc-400 dark:text-zinc-500" />
 		</CommandItem>
 	);
 }
@@ -83,19 +85,23 @@ function SearchRowIcon({
 	type?: "benchmark" | "comparison" | "default";
 }) {
 	if (type === "benchmark") {
-		return null;
+		return (
+			<div className="flex size-5 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
+				<Trophy className="size-3" />
+			</div>
+		);
 	}
 
 	if (type === "comparison" && leftLogoId && rightLogoId) {
 		return (
-			<div className="flex shrink-0 items-center gap-1.5">
-				<div className="relative flex h-6 w-6 items-center justify-center rounded-md border border-zinc-200 dark:border-zinc-800">
-					<div className="relative h-4 w-4">
+			<div className="flex shrink-0 items-center gap-1">
+				<div className="relative flex size-5 items-center justify-center rounded-md border border-zinc-200 dark:border-zinc-800">
+					<div className="relative size-3.5">
 						<Logo id={leftLogoId} alt={`${leftLogoId} logo`} className="object-contain" fill />
 					</div>
 				</div>
-				<div className="relative flex h-6 w-6 items-center justify-center rounded-md border border-zinc-200 dark:border-zinc-800">
-					<div className="relative h-4 w-4">
+				<div className="relative flex size-5 items-center justify-center rounded-md border border-zinc-200 dark:border-zinc-800">
+					<div className="relative size-3.5">
 						<Logo id={rightLogoId} alt={`${rightLogoId} logo`} className="object-contain" fill />
 					</div>
 				</div>
@@ -105,7 +111,7 @@ function SearchRowIcon({
 
 	if (flagIso) {
 		return (
-			<div className="relative aspect-4/3 h-6 overflow-hidden rounded-md border border-zinc-200 dark:border-zinc-800">
+			<div className="relative aspect-4/3 h-5 overflow-hidden rounded-md border border-zinc-200 dark:border-zinc-800">
 				<img src={`/flags/${flagIso}.svg`} alt={title} className="h-full w-full rounded-sm object-cover" />
 			</div>
 		);
@@ -113,13 +119,13 @@ function SearchRowIcon({
 
 	if (logoId) {
 		return (
-			<div className="relative flex h-6 w-6 items-center justify-center rounded-md border border-zinc-200 dark:border-zinc-800">
-				<div className="relative h-4 w-4">
+			<div className="relative flex size-5 items-center justify-center rounded-md border border-zinc-200 dark:border-zinc-800">
+				<div className="relative size-3.5">
 					<Logo id={logoId} alt={title} className="object-contain" fill />
 				</div>
 			</div>
 		);
 	}
 
-	return <div className="size-6 shrink-0 rounded-md bg-zinc-200 dark:bg-zinc-700" />;
+	return <div className="size-5 shrink-0 rounded-md bg-zinc-200 dark:bg-zinc-700" />;
 }

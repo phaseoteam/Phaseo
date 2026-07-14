@@ -1,6 +1,5 @@
 "use server"
 
-import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { makeKeyV2, hmacSecret } from '@/lib/keygen';
 import { invalidateGatewayKeyCache } from '@/lib/gateway/invalidateKeyCache';
@@ -28,6 +27,12 @@ export type RotateApiKeyInput = {
     previousKeyExpiresAt?: string | null;
 };
 
+function nonNegativeInteger(value: unknown): number {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed) || parsed <= 0) return 0;
+    return Math.floor(parsed);
+}
+
 function isMissingExpiresAtColumnError(error: unknown): boolean {
     const message = String((error as { message?: unknown } | null)?.message ?? "").toLowerCase();
     return message.includes("expires_at") && message.includes("schema cache");
@@ -37,7 +42,8 @@ export async function createApiKeyAction(
     name: string,
     creatorUserId: string,
     workspaceId: string,
-    scopes: string = '[]' // store JSON string if that's your current pattern
+    scopes: string = '[]', // store JSON string if that's your current pattern
+    limits?: KeyLimitPayload
 ) {
     if (!name) throw new Error('Missing name');
     if (!creatorUserId) throw new Error('Missing creatorUserId');
@@ -64,14 +70,14 @@ export async function createApiKeyAction(
         created_by: creatorUserId,
         // DB constraints: request limit columns are NOT NULL.
         // Use 0 to represent "no request limit".
-        daily_limit_requests: 0,
-        weekly_limit_requests: 0,
-        monthly_limit_requests: 0,
+        daily_limit_requests: nonNegativeInteger(limits?.dailyRequests),
+        weekly_limit_requests: nonNegativeInteger(limits?.weeklyRequests),
+        monthly_limit_requests: nonNegativeInteger(limits?.monthlyRequests),
         // DB constraints: cost limit nanos columns are NOT NULL.
         // Use 0 to represent "no cost limit" (UI can still treat 0 as unlimited).
-        daily_limit_cost_nanos: 0,
-        weekly_limit_cost_nanos: 0,
-        monthly_limit_cost_nanos: 0,
+        daily_limit_cost_nanos: nonNegativeInteger(limits?.dailyCostNanos),
+        weekly_limit_cost_nanos: nonNegativeInteger(limits?.weeklyCostNanos),
+        monthly_limit_cost_nanos: nonNegativeInteger(limits?.monthlyCostNanos),
     };
 
     const { data, error } = await supabase

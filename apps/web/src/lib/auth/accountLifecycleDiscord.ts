@@ -12,11 +12,11 @@ const EVENT_METADATA: Record<
 	{ title: string; timestampLabel: string }
 > = {
 	signup: {
-		title: "New AI Stats signup",
+		title: "New Phaseo signup",
 		timestampLabel: "created_at",
 	},
 	account_deleted: {
-		title: "AI Stats account deleted",
+		title: "Phaseo account deleted",
 		timestampLabel: "deleted_at",
 	},
 };

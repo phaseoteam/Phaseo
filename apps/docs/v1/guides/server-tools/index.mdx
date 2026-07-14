@@ -1,9 +1,9 @@
 ---
 title: "Server Tools"
-description: "Let models call AI Stats-operated tools during a request."
+description: "Let models call Phaseo-operated tools during a request."
 ---
 
-Server tools are tools that AI Stats runs for you during a model request. The model decides when to call them, AI Stats executes the tool server-side, and the tool result is fed back into the model loop.
+Server tools are tools that Phaseo runs for you during a model request. The model decides when to call them, Phaseo executes the tool server-side, and the tool result is fed back into the model loop.
 
 Use server tools when the model needs current time, web context, fetched page text, or a second model's advice without adding your own tool executor.
 
@@ -15,26 +15,27 @@ Server tools are in beta. Request shapes and result payloads may evolve as provi
 
 | Tool | Type | Use it for |
 | --- | --- | --- |
-| Datetime | `gateway:datetime` | Current date and time in a chosen timezone |
-| Web Search | `ai-stats:web_search` | Model-directed web searches during a request |
-| Web Fetch | `ai-stats:web_fetch` | Fetching and extracting text from specific URLs |
-| Advisor | `ai-stats:advisor` | Consulting another model mid-generation |
-| Image Generation | `ai-stats:image_generation` | Creating images from the model tool loop |
-| Apply Patch | `ai-stats:apply_patch` | Returning validated patch operations from Responses |
+| Datetime | `gateway:datetime` | Current date and time in up to 5 timezones |
+| Web Search | `phaseo:web_search` | Model-directed web searches during a request |
+| Web Fetch | `phaseo:web_fetch` | Fetching and extracting text from specific URLs |
+| Advisor | `phaseo:advisor` | Consulting another model mid-generation |
+| Subagent | `phaseo:subagent` | Delegating focused work to a worker model |
+| Fusion | Advisor workflow | Consulting several advisor models and an optional judge |
+| Image Generation | `phaseo:image_generation` | Creating images from the model tool loop |
 
 ## How server tools work
 
 1. Add one or more server tools to the `tools` array.
 2. The model decides whether it needs a tool and emits a tool call.
-3. AI Stats intercepts the server-tool call, executes it, and sends the result back to the model.
+3. Phaseo intercepts the server-tool call, executes it, and sends the result back to the model.
 4. The model continues and writes the final response.
 
-Server tools can be used alongside your own function tools. AI Stats executes only the server tools; your application still handles regular `function` tool calls.
+Server tools can be used alongside your own function tools. Phaseo executes only the server tools; your application still handles regular `function` tool calls.
 
 ## Quick start
 
 ```bash
-curl https://api.phaseo.app/v1/chat/completions \
+curl https://api.phaseo.ai/v1/chat/completions \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -43,8 +44,8 @@ curl https://api.phaseo.app/v1/chat/completions \
       { "role": "user", "content": "What are the latest AI policy updates this week?" }
     ],
     "tools": [
-      { "type": "ai-stats:web_search" },
-      { "type": "gateway:datetime", "parameters": { "timezone": "Europe/London" } }
+      { "type": "phaseo:web_search" },
+      { "type": "gateway:datetime", "parameters": { "timezones": ["Europe/London", "UTC"] } }
     ]
   }'
 ```
@@ -58,7 +59,7 @@ curl https://api.phaseo.app/v1/chat/completions \
     { "role": "user", "content": "Find recent funding news and save the best item." }
   ],
   "tools": [
-    { "type": "ai-stats:web_search", "parameters": { "max_results": 3 } },
+    { "type": "phaseo:web_search", "parameters": { "max_results": 3 } },
     {
       "type": "function",
       "function": {
@@ -78,7 +79,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 }
 ```
 
-If the model calls `ai-stats:web_search`, AI Stats executes that call automatically. If it calls `save_research_item`, your application receives the function call and must return the function result in a follow-up request.
+If the model calls `phaseo:web_search`, Phaseo executes that call automatically. If it calls `save_research_item`, your application receives the function call and must return the function result in a follow-up request.
 
 ## Supported endpoints
 
@@ -88,7 +89,7 @@ Server tools are supported on:
 - `/v1/responses`
 - `/v1/messages`
 
-Streaming requests are supported. For gateway-managed server tools, AI Stats may materialize the upstream tool-call turn, execute the server tool, continue the loop, and emit a synthetic stream for the final response.
+Streaming requests are supported. For gateway-managed server tools, Phaseo may materialize the upstream tool-call turn, execute the server tool, continue the loop, and emit a synthetic stream for the final response.
 
 ## Usage tracking
 
@@ -105,14 +106,14 @@ Server-tool usage is reported in `usage.server_tool_use`:
       "web_search_results": 8,
       "web_fetch_requests": 1,
       "advisor_requests": 1,
-      "image_generation_requests": 1,
-      "apply_patch_requests": 1
+      "subagent_requests": 1,
+      "image_generation_requests": 1
     }
   }
 }
 ```
 
-Pricing can also use server-tool meters such as `server_tool_web_search_requests`, `server_tool_web_search_extra_results`, `server_tool_web_fetch_requests`, `server_tool_advisor_requests`, `server_tool_image_generation_requests`, `server_tool_apply_patch_requests`, `native_web_search_requests`, and `native_web_fetch_requests` when configured on model price cards.
+Pricing can also use server-tool meters such as `server_tool_web_search_requests`, `server_tool_web_search_extra_results`, `server_tool_web_fetch_requests`, `server_tool_advisor_requests`, `server_tool_image_generation_requests`, `native_web_search_requests`, and `native_web_fetch_requests` when configured on model price cards.
 
 ## Tool pages
 
@@ -129,10 +130,13 @@ Pricing can also use server-tool meters such as `server_tool_web_search_requests
   <Card title="Advisor" icon="message-square" href="./advisor">
     Let one model consult another model for guidance mid-generation.
   </Card>
+  <Card title="Subagent" icon="cpu" href="./subagent">
+    Let the model delegate focused tasks to a worker model.
+  </Card>
+  <Card title="Fusion" icon="sparkles" href="./fusion">
+    Let the Playground configure several advisor models for one answer.
+  </Card>
   <Card title="Image Generation" icon="image" href="./image-generation">
     Let the model create images while answering.
-  </Card>
-  <Card title="Apply Patch" icon="file-code" href="./apply-patch">
-    Let the model return patch operations for a client to apply.
   </Card>
 </Columns>

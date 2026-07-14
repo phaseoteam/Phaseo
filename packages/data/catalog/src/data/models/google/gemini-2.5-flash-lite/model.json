@@ -8,7 +8,7 @@
   "announced_date": "2025-07-22T00:00:00",
   "release_date": "2025-07-22T00:00:00",
   "deprecation_date": null,
-  "retirement_date": null,
+  "retirement_date": "2026-10-16T00:00:00",
   "license": "Proprietary",
   "input_types": "text,image,video,audio",
   "output_types": "text",
@@ -16,7 +16,8 @@
   "family_id": "google/gemini-2.5",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://ai.google.dev/gemini-api/docs/models/gemini-v2"
     }
   ],

@@ -120,7 +120,15 @@ export async function GET(request: NextRequest) {
 
 	const usageByKey = new Map<
 		string,
-		{ requests: number; costNanos: number; lastUsedAt: string | null }
+		{
+			dailyRequests: number;
+			weeklyRequests: number;
+			monthlyRequests: number;
+			dailyCostNanos: number;
+			weeklyCostNanos: number;
+			monthlyCostNanos: number;
+			lastUsedAt: string | null;
+		}
 	>();
 	if (initialWorkspaceId) {
 		const dayStart = new Date();
@@ -141,8 +149,12 @@ export async function GET(request: NextRequest) {
 			const keyId = typeof row?.key_id === "string" ? row.key_id : null;
 			if (!keyId) continue;
 			usageByKey.set(keyId, {
-				requests: Number(row?.daily_request_count ?? 0) || 0,
-				costNanos: Number(row?.daily_cost_nanos ?? 0) || 0,
+				dailyRequests: Number(row?.daily_request_count ?? 0) || 0,
+				weeklyRequests: Number(row?.weekly_request_count ?? 0) || 0,
+				monthlyRequests: Number(row?.monthly_request_count ?? 0) || 0,
+				dailyCostNanos: Number(row?.daily_cost_nanos ?? 0) || 0,
+				weeklyCostNanos: Number(row?.weekly_cost_nanos ?? 0) || 0,
+				monthlyCostNanos: Number(row?.monthly_cost_nanos ?? 0) || 0,
 				lastUsedAt:
 					typeof row?.last_used_at === "string" ? row.last_used_at : null,
 			});
@@ -151,14 +163,22 @@ export async function GET(request: NextRequest) {
 
 	const keysArray = (apiKeys ?? []).map((key: any) => {
 		const usage = usageByKey.get(key.id) ?? {
-			requests: 0,
-			costNanos: 0,
+			dailyRequests: 0,
+			weeklyRequests: 0,
+			monthlyRequests: 0,
+			dailyCostNanos: 0,
+			weeklyCostNanos: 0,
+			monthlyCostNanos: 0,
 			lastUsedAt: null,
 		};
 		return {
 			...key,
-			current_usage_daily: usage.requests,
-			current_usage_daily_cost_nanos: usage.costNanos,
+			current_usage_daily: usage.dailyRequests,
+			current_usage_weekly: usage.weeklyRequests,
+			current_usage_monthly: usage.monthlyRequests,
+			current_usage_daily_cost_nanos: usage.dailyCostNanos,
+			current_usage_weekly_cost_nanos: usage.weeklyCostNanos,
+			current_usage_monthly_cost_nanos: usage.monthlyCostNanos,
 			last_used_at:
 				typeof key?.last_used_at === "string" && key.last_used_at.length > 0
 					? key.last_used_at

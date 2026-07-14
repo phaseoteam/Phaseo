@@ -14,7 +14,7 @@ Use this recipe when your application needs the smallest production-safe text-to
 ## 1. Create the job
 
 ```bash
-curl https://api.phaseo.app/v1/videos \
+curl https://api.phaseo.ai/v1/videos \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -32,7 +32,7 @@ The create call returns an async job record immediately. Persist the returned `i
 Poll the status endpoint and respect the gateway guidance where possible.
 
 ```bash
-curl https://api.phaseo.app/v1/videos/VIDEO_ID \
+curl https://api.phaseo.ai/v1/videos/VIDEO_ID \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -58,7 +58,7 @@ When the job completes, choose the retrieval path that matches your app.
 Use content bytes directly:
 
 ```bash
-curl https://api.phaseo.app/v1/videos/VIDEO_ID/content \
+curl https://api.phaseo.ai/v1/videos/VIDEO_ID/content \
   -H "Authorization: Bearer YOUR_API_KEY" \
   --output result.mp4
 ```
@@ -66,7 +66,7 @@ curl https://api.phaseo.app/v1/videos/VIDEO_ID/content \
 Or request a short-lived download URL when your application needs a handoff link:
 
 ```bash
-curl -X POST https://api.phaseo.app/v1/videos/VIDEO_ID/download_url \
+curl -X POST https://api.phaseo.ai/v1/videos/VIDEO_ID/download_url \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 

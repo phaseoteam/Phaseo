@@ -4,7 +4,7 @@ import { permanentRedirect } from "next/navigation";
 export const metadata: Metadata = {
 	title: "Collections redirect",
 	description:
-		"Legacy collections route that permanently redirects to the AI Stats model collections directory.",
+		"Legacy collections route that permanently redirects to the Phaseo model directory.",
 	robots: {
 		index: false,
 		follow: false,
@@ -12,5 +12,5 @@ export const metadata: Metadata = {
 };
 
 export default function CollectionsPage() {
-	permanentRedirect("/models/collections");
+	permanentRedirect("/models");
 }

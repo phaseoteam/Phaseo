@@ -1,7 +1,7 @@
 import type { Model, Organisation, Provider } from "./types";
 
-// Base URL for AI Stats website
-const AI_STATS_BASE_URL = "https://phaseo.app";
+// Base URL for Phaseo website
+const PHASEO_BASE_URL = "https://phaseo.app";
 
 // Date formatting
 export function formatDate(dateString: string | null): string {
@@ -17,6 +17,41 @@ export function formatDate(dateString: string | null): string {
   } catch {
     return "Invalid date";
   }
+}
+
+export function formatDateTime(dateString: string | null): string {
+  if (!dateString) return "Unknown";
+
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return "Unknown";
+
+  return date.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+export function formatMoneyFromNanos(nanos: number | null | undefined): string {
+  const value = Number(nanos ?? 0);
+  if (!Number.isFinite(value)) return "$0.00";
+  return `$${(value / 1_000_000_000).toFixed(2)}`;
+}
+
+export function formatMoneyFromCents(cents: number | null | undefined): string {
+  const value = Number(cents ?? 0);
+  if (!Number.isFinite(value)) return "$0.00";
+  return `$${(value / 100).toFixed(2)}`;
+}
+
+export function formatPricePerMillion(
+  price: string | null | undefined,
+): string | null {
+  if (price == null) return null;
+  const value = Number(price);
+  if (!Number.isFinite(value)) return null;
+  return `$${(value * 1_000_000).toFixed(2)}/M`;
 }
 
 export function formatRelativeDate(dateString: string | null): string {
@@ -41,15 +76,15 @@ export function formatRelativeDate(dateString: string | null): string {
 
 // URL builders
 export function getModelURL(modelId: string): string {
-  return `${AI_STATS_BASE_URL}/models/${modelId}`;
+  return `${PHASEO_BASE_URL}/models/${modelId}`;
 }
 
 export function getOrganisationURL(organisationId: string): string {
-  return `${AI_STATS_BASE_URL}/organisations/${organisationId}`;
+  return `${PHASEO_BASE_URL}/organisations/${organisationId}`;
 }
 
 export function getProviderURL(providerId: string): string {
-  return `${AI_STATS_BASE_URL}/api-providers/${providerId}`;
+  return `${PHASEO_BASE_URL}/api-providers/${providerId}`;
 }
 
 // Country code to flag emoji
@@ -128,7 +163,10 @@ export function getProviderDisplayName(provider: Provider): string {
 }
 
 // Search/filter helpers
-export function matchesSearch(text: string | null, searchText: string): boolean {
+export function matchesSearch(
+  text: string | null,
+  searchText: string,
+): boolean {
   if (!text) return false;
   return text.toLowerCase().includes(searchText.toLowerCase());
 }
@@ -145,15 +183,24 @@ export function modelMatchesSearch(model: Model, searchText: string): boolean {
   if (model.organisation_id?.toLowerCase().includes(searchLower)) return true;
 
   // Search in aliases
-  if (model.aliases?.some((alias) => alias.toLowerCase().includes(searchLower))) return true;
+  if (model.aliases?.some((alias) => alias.toLowerCase().includes(searchLower)))
+    return true;
 
   // Search in endpoints
-  if (model.endpoints?.some((endpoint) => endpoint.toLowerCase().includes(searchLower))) return true;
+  if (
+    model.endpoints?.some((endpoint) =>
+      endpoint.toLowerCase().includes(searchLower),
+    )
+  )
+    return true;
 
   return false;
 }
 
-export function organisationMatchesSearch(org: Organisation, searchText: string): boolean {
+export function organisationMatchesSearch(
+  org: Organisation,
+  searchText: string,
+): boolean {
   if (!searchText) return true;
 
   const searchLower = searchText.toLowerCase();
@@ -165,12 +212,16 @@ export function organisationMatchesSearch(org: Organisation, searchText: string)
   return false;
 }
 
-export function providerMatchesSearch(provider: Provider, searchText: string): boolean {
+export function providerMatchesSearch(
+  provider: Provider,
+  searchText: string,
+): boolean {
   if (!searchText) return true;
 
   const searchLower = searchText.toLowerCase();
 
-  if (provider.api_provider_name?.toLowerCase().includes(searchLower)) return true;
+  if (provider.api_provider_name?.toLowerCase().includes(searchLower))
+    return true;
   if (provider.api_provider_id.toLowerCase().includes(searchLower)) return true;
   if (provider.description?.toLowerCase().includes(searchLower)) return true;
 

@@ -168,6 +168,23 @@ function resolveTouchedModelId(
     );
 }
 
+function matchesModelFilter(
+    rawModelId: string,
+    modelFilter: string | null,
+    lookups: {
+        modelIds: Set<string>;
+        apiToModelId: Map<string, string>;
+        normalizedModelIdToModelId: Map<string, string>;
+    }
+): boolean {
+    if (!modelFilter) return true;
+    const filter = modelFilter.trim();
+    if (!filter) return true;
+    const normalizedRawModelId = rawModelId.trim();
+    if (normalizedRawModelId === filter) return true;
+    return resolveTouchedModelId(normalizedRawModelId, lookups) === filter;
+}
+
 function deepSortObjectKeys(x: any): any {
     if (Array.isArray(x)) {
         // preserve array order (priority often matters)
@@ -181,6 +198,20 @@ function deepSortObjectKeys(x: any): any {
     return x;
 }
 
+function normalizeTimeWindows(value: unknown): PricingTimeWindow[] {
+    if (!Array.isArray(value)) return [];
+    return value.map((rawWindow) => {
+        const window = rawWindow && typeof rawWindow === "object" ? rawWindow as Record<string, any> : {};
+        return {
+            ...window,
+            price_per_unit:
+                window?.price_per_unit === undefined || window?.price_per_unit === null
+                    ? window?.price_per_unit
+                    : String(window.price_per_unit),
+        } as PricingTimeWindow;
+    });
+}
+
 function digestRule(r: any) {
     // Create a stable digest for a rule using canonical fields
     const payload = {
@@ -191,8 +222,10 @@ function digestRule(r: any) {
         effective_from: normalizeTimestamp(r.effective_from),
         effective_to: normalizeTimestamp(r.effective_to),
         conditions: deepSortObjectKeys(r.match ?? []),
+        billing_timestamp_basis: r.billing_timestamp_basis ?? "request_start",
+        time_windows: deepSortObjectKeys(normalizeTimeWindows(r.time_windows)),
     };
-    return createHash("md5").update(JSON.stringify(payload)).digest("hex");
+    return createHash("sha256").update(JSON.stringify(payload)).digest("hex");
 }
 
 type PricingJSON = {
@@ -217,7 +250,24 @@ type PricingJSON = {
         priority?: number;
         effective_from?: string | null;
         effective_to?: string | null;
+        billing_timestamp_basis?: PricingTimestampBasis;
+        time_windows?: PricingTimeWindow[];
     }>;
+};
+
+type PricingTimestampBasis =
+    | "request_start"
+    | "provider_accept"
+    | "completion"
+    | "unknown";
+
+type PricingTimeWindow = {
+    label: string;
+    timezone: "UTC";
+    start_time: string;
+    end_time: string;
+    price_per_unit?: string | null;
+    priority?: number | null;
 };
 
 type PricingMatch = {
@@ -248,6 +298,8 @@ type PricingRuleRow = {
     priority: number;
     effective_from: string | null;
     effective_to: string | null;
+    billing_timestamp_basis: PricingTimestampBasis;
+    time_windows: PricingTimeWindow[];
 };
 
 export async function loadPricing(
@@ -281,7 +333,9 @@ export async function loadPricing(
                 if (!modelIdFromFile) {
                     throw new Error(`pricing.json missing model_id/api_model_id: ${fp}`);
                 }
-                if (modelId && modelIdFromFile !== modelId) continue;
+                if (!matchesModelFilter(modelIdFromFile, modelId, knownModelIds)) {
+                    continue;
+                }
                 scannedFiles += 1;
                 const capability_id = j.capability_id ?? j.endpoint ?? capabilityFallback;
                 const computedKey =
@@ -344,6 +398,8 @@ export async function loadPricing(
                         priority: prio,
                         effective_from: normalizeTimestamp(r.effective_from),
                         effective_to: normalizeTimestamp(r.effective_to),
+                        billing_timestamp_basis: r.billing_timestamp_basis ?? "request_start",
+                        time_windows: normalizeTimeWindows(r.time_windows),
                     });
                 }
 

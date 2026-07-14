@@ -94,7 +94,7 @@ describe("handleModels", () => {
         });
         fetchCatalogueMock.mockResolvedValue([buildCatalogueModel()]);
         fetchGatewayContextMock.mockResolvedValue({
-            resolvedModel: "ai-stats/free",
+            resolvedModel: "phaseo/free",
             providers: [],
             pricing: {},
         });
@@ -184,15 +184,15 @@ describe("handleModels", () => {
     it("returns voice capability metadata through supported parameter detail aliases", async () => {
         fetchCatalogueMock.mockResolvedValue([
             buildCatalogueModel({
-                model_id: "x-ai/grok-tts",
+                model_id: "spacex-ai/grok-tts",
                 name: "Grok TTS",
                 endpoints: ["audio/speech"],
                 input_types: ["text"],
                 output_types: ["audio_tts"],
                 providers: [
                     {
-                        api_provider_id: "x-ai",
-                        api_provider_name: "xAI",
+                        api_provider_id: "spacex-ai",
+                        api_provider_name: "SpaceXAI",
                         is_active_gateway: true,
                         availability_status: "active",
                         availability_reason: "active",
@@ -227,14 +227,14 @@ describe("handleModels", () => {
                         type: "enum",
                         values: ["aurora", "cedar", "orion"],
                         default: "aurora",
-                        providers: ["x-ai"],
+                        providers: ["spacex-ai"],
                     },
                     response_format: {
                         supported: true,
                         type: "enum",
                         values: ["mp3", "opus", "wav"],
                         default: "mp3",
-                        providers: ["x-ai"],
+                        providers: ["spacex-ai"],
                     },
                 },
             }),
@@ -253,7 +253,7 @@ describe("handleModels", () => {
             ok: true,
             models: [
                 {
-                    model_id: "x-ai/grok-tts",
+                    model_id: "spacex-ai/grok-tts",
                     supported_parameters: ["response_format", "voice"],
                     supported_params_detail: {
                         voice: {
@@ -261,7 +261,7 @@ describe("handleModels", () => {
                             type: "enum",
                             values: ["aurora", "cedar", "orion"],
                             default: "aurora",
-                            providers: ["x-ai"],
+                            providers: ["spacex-ai"],
                         },
                     },
                     supported_parameters_detail: {
@@ -270,12 +270,12 @@ describe("handleModels", () => {
                             type: "enum",
                             values: ["aurora", "cedar", "orion"],
                             default: "aurora",
-                            providers: ["x-ai"],
+                            providers: ["spacex-ai"],
                         },
                     },
                     providers: [
                         {
-                            api_provider_id: "x-ai",
+                            api_provider_id: "spacex-ai",
                             params: ["response_format", "voice"],
                             supported_parameters: ["response_format", "voice"],
                             params_detail: {
@@ -433,7 +433,7 @@ describe("handleModels", () => {
             }),
         ]);
         fetchGatewayContextMock.mockResolvedValue({
-            resolvedModel: "ai-stats/free",
+            resolvedModel: "phaseo/free",
             providers: [
                 {
                     providerId: "openai",
@@ -471,8 +471,8 @@ describe("handleModels", () => {
             total: 2,
             models: [
                 {
-                    model_id: "ai-stats/free",
-                    name: "AI Stats Free Router",
+                    model_id: "phaseo/free",
+                    name: "Phaseo Free Router",
                     providers: [
                         {
                             api_provider_id: "openai",
@@ -514,7 +514,7 @@ describe("handleModels", () => {
 
     it("skips the free router model when endpoint filters exclude text surfaces", async () => {
         fetchGatewayContextMock.mockResolvedValue({
-            resolvedModel: "ai-stats/free",
+            resolvedModel: "phaseo/free",
             providers: [
                 {
                     providerId: "openai",

@@ -12,7 +12,10 @@ import { json } from "@/routes/utils";
 
 export const DEFAULT_SCOPE = "openid email profile gateway:access";
 export const BASE62 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-export const KEY_PREFIX = "aistats_v1_sk_";
+export const INFERENCE_KEY_PREFIX = "phaseo_v1_sk_";
+export const MANAGEMENT_KEY_PREFIX = "phaseo_v1_mk_";
+// Kept as an alias while consumers migrate to the explicit inference name.
+export const KEY_PREFIX = INFERENCE_KEY_PREFIX;
 export const encoder = new TextEncoder();
 
 export const exchangeSchema = z.object({
@@ -60,12 +63,20 @@ export function randomBase62(length: number): string {
 	return out;
 }
 
-export function generateGatewayKey() {
+function generateKey(tokenPrefix: string) {
 	const kid = randomBase62(12);
 	const secret = randomBase62(40);
-	const plaintext = `${KEY_PREFIX}${kid}_${secret}`;
+	const plaintext = `${tokenPrefix}${kid}_${secret}`;
 	const prefix = kid.slice(0, 6);
 	return { kid, secret, plaintext, prefix };
+}
+
+export function generateGatewayKey() {
+	return generateKey(INFERENCE_KEY_PREFIX);
+}
+
+export function generateManagementKey() {
+	return generateKey(MANAGEMENT_KEY_PREFIX);
 }
 
 export async function hmacSecret(secret: string, pepper: string): Promise<string> {
@@ -123,7 +134,7 @@ export async function resolveOAuthApp(args: { clientId?: string | null; redirect
 				{
 					ok: false,
 					error: "third_party_oauth_disabled",
-					message: "OAuth client management is coming soon. The AI Stats CLI is available during the private OAuth beta.",
+					message: "OAuth client management is coming soon. The Phaseo CLI is available during the private OAuth beta.",
 				},
 				403,
 				{ "Cache-Control": "no-store" },

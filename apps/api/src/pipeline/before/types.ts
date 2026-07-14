@@ -182,6 +182,20 @@ export type GatewayProviderSnapshot = {
         | "optional"
         | "default"
         | null;
+    promptTrainingPolicy?:
+        | "unknown"
+        | "no_train"
+        | "may_train"
+        | "opt_out_available"
+        | "enterprise_no_train"
+        | null;
+    dataPolicyTier?: "unknown" | "private" | "logs" | "trains" | null;
+    dataPolicyConfidence?: "unknown" | "confirmed" | "maybe" | null;
+    dataPolicyContractMode?:
+        | "none"
+        | "customer_agreement"
+        | "enterprise_agreement"
+        | null;
     supportsEndpoint: boolean;
     baseWeight: number;
     byokMeta: ByokKeyMeta[];
@@ -223,6 +237,10 @@ export type TeamSettings = {
     betaChannelEnabled: boolean | null;
     alphaChannelEnabled?: boolean | null;
     cacheAwareRoutingEnabled?: boolean | null;
+    privacyZdrOnly?: boolean | null;
+    privacyEnablePaidMayTrain?: boolean | null;
+    privacyEnableFreeMayTrain?: boolean | null;
+    privacyEnableInputOutputLogging?: boolean | null;
     defaultPlugins?: NormalizedGatewayPluginConfig[] | null;
     billingMode: "wallet" | "invoice";
 };
@@ -303,6 +321,20 @@ export type ProviderCandidate = {
         | "unsupported"
         | "optional"
         | "default"
+        | null;
+    promptTrainingPolicy?:
+        | "unknown"
+        | "no_train"
+        | "may_train"
+        | "opt_out_available"
+        | "enterprise_no_train"
+        | null;
+    dataPolicyTier?: "unknown" | "private" | "logs" | "trains" | null;
+    dataPolicyConfidence?: "unknown" | "confirmed" | "maybe" | null;
+    dataPolicyContractMode?:
+        | "none"
+        | "customer_agreement"
+        | "enterprise_agreement"
         | null;
     adapter: ProviderAdapter;
     baseWeight: number;

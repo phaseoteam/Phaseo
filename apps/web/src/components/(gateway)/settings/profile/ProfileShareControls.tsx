@@ -53,7 +53,7 @@ export default function ProfileShareControls({ payload }: Props) {
 				<div className="overflow-hidden rounded-[1.25rem] border border-zinc-200 bg-zinc-50 p-2">
 					<img
 						src={shareImageUrl}
-						alt={`${payload.displayName} AI Stats share card`}
+						alt={`${payload.displayName} Phaseo share card`}
 						className="block w-full rounded-[0.9rem]"
 					/>
 				</div>
@@ -62,7 +62,7 @@ export default function ProfileShareControls({ payload }: Props) {
 					<Button asChild variant="outline" className="justify-center rounded-full border-zinc-200">
 						<a
 							href={shareImageUrl}
-							download="ai-stats-profile-share.png"
+							download="phaseo-profile-share.png"
 							target="_blank"
 							rel="noreferrer"
 						>

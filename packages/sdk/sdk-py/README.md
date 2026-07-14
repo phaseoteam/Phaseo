@@ -1,11 +1,11 @@
-# AI Stats Python SDK
+# Phaseo Python SDK
 
-Official Python SDK for AI Stats Gateway.
+Official Python SDK for Phaseo Gateway.
 
 ## Installation
 
 ```bash
-pip install ai-stats-py-sdk
+pip install phaseo
 ```
 
 Requires Python 3.10+.
@@ -13,9 +13,9 @@ Requires Python 3.10+.
 ## Quick start
 
 ```python
-from ai_stats import AIStats
+from phaseo import Phaseo
 
-client = AIStats()  # Uses AI_STATS_API_KEY from environment
+client = Phaseo()  # Uses PHASEO_API_KEY from environment
 
 response = client.responses.create(
     {
@@ -30,23 +30,31 @@ print(response.get("output_text"))
 ## Streaming example
 
 ```python
-from ai_stats import AIStats
+from phaseo import Phaseo
 
-client = AIStats()
+client = Phaseo()
 
-for chunk in client.stream_text(
+response = ""
+for chunk in client.stream_chat(
     {
         "model": "google/gemma-3-27b:free",
         "messages": [{"role": "user", "content": "Stream hi"}],
     }
 ):
-    print(chunk, end="", flush=True)
+    if chunk.get("text"):
+        response += chunk["text"]
+        print(chunk["text"], end="", flush=True)
+
+    if chunk.get("reasoning_tokens"):
+        print("\nReasoning tokens:", chunk["reasoning_tokens"])
 ```
 
 ## Common methods
 
 - `client.responses.create(...)`
 - `client.chat.completions.create(...)`
+- `client.messages.create(...)`
+- `client.stream_chat(...)`, `client.stream_responses(...)`, and `client.stream_message(...)` for parsed streaming chunks with `text`, `usage`, and `reasoning_tokens`
 - `client.models.list(...)`
 - `client.list_organisations(...)` for paginated `/organisations` discovery
 - `client.list_pricing_models(...)` for `/pricing/models` catalogue pricing discovery
@@ -89,8 +97,8 @@ batch = client.batches.create({
     "input_file_id": "file_123",
     "completion_window": "24h",
     "webhook": {
-        "url": "https://example.com/ai-stats/webhooks",
-        "secret": os.environ["AI_STATS_WEBHOOK_SECRET"],
+        "url": "https://example.com/phaseo/webhooks",
+        "secret": os.environ["PHASEO_WEBHOOK_SECRET"],
         "events": ["batch.progress", "batch.completed", "batch.failed"],
     },
 })
@@ -99,8 +107,8 @@ video = client.videos.create({
     "model": "google/veo-3",
     "prompt": "orbital reveal",
     "webhook": {
-        "url": "https://example.com/ai-stats/webhooks",
-        "secret": os.environ["AI_STATS_WEBHOOK_SECRET"],
+        "url": "https://example.com/phaseo/webhooks",
+        "secret": os.environ["PHASEO_WEBHOOK_SECRET"],
         "events": ["video.progress", "video.completed", "video.failed"],
     },
 })
@@ -125,9 +133,9 @@ generic_socket_url = client.get_async_job_websocket_url("video", "video_123")
 ## Model lifecycle warnings
 
 ```python
-from ai_stats import AIStats
+from phaseo import Phaseo
 
-client = AIStats(
+client = Phaseo(
     enable_deprecation_warnings=True,
     warnings_as_errors=False,
     logger=lambda level, message, meta: print(level, message, meta),
@@ -136,17 +144,17 @@ client = AIStats(
 
 ## Environment variables
 
-- `AI_STATS_API_KEY` (required unless passed in code)
-- `AI_STATS_BASE_URL` (optional, defaults to `https://api.phaseo.app/v1`)
+- `PHASEO_API_KEY` (required unless passed in code)
+- `PHASEO_BASE_URL` (optional, defaults to `https://api.phaseo.ai/v1`)
 
 ## Devtools
 
 ```python
-from ai_stats import AIStats, create_ai_stats_devtools
+from phaseo import Phaseo, create_phaseo_devtools
 
-client = AIStats(
-    devtools=create_ai_stats_devtools(
-        directory=".ai-stats-devtools",
+client = Phaseo(
+    devtools=create_phaseo_devtools(
+        directory=".phaseo-devtools",
         capture_headers=False,
     )
 )
@@ -157,5 +165,5 @@ client = AIStats(
 - Regenerate generated client: `pnpm openapi:gen:py`
 - Run tests: `pnpm test:sdk-py`
 - Smoke checks:
-  - `pnpm --filter @ai-stats/py-sdk run smoke:chat`
-  - `pnpm --filter @ai-stats/py-sdk run smoke:responses`
+  - `pnpm --filter @phaseo/py-sdk run smoke:chat`
+  - `pnpm --filter @phaseo/py-sdk run smoke:responses`

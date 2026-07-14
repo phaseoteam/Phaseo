@@ -6,7 +6,7 @@ import { hmacSecret } from "@/lib/keygen";
 import { CHAT_MANAGED_KEY_NAME } from "@/lib/gateway/managed-chat-key";
 import { resolveActiveKeyPepper } from "@/lib/server/keyPepper";
 
-const KEY_PREFIX = "aistats_v1_sk_";
+const KEY_PREFIX = "phaseo_v1_sk_";
 const BASE62 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 const DEFAULT_GATEWAY_API_URL = "http://localhost:8787";
 const FORCE_CHAT_HASH_SYNC_FLAG = "CHAT_ROUTE_FORCE_HASH_SYNC";
@@ -276,13 +276,11 @@ async function ensureManagedGatewayKey(args: {
 
 async function invalidateGatewayKeyCache(keyId: string): Promise<void> {
 	const controlKey = String(
-		process.env.GATEWAY_MANAGEMENT_KEY
-			?? process.env.AI_STATS_MANAGEMENT_KEY
-			?? process.env.GATEWAY_CONTROL_KEY
-			?? process.env.AI_STATS_GATEWAY_KEY
+		process.env.PHASEO_MANAGEMENT_KEY
+			?? process.env.PHASEO_CONTROL_KEY
 			?? "",
 	).trim();
-	const controlSecret = String(process.env.GATEWAY_CONTROL_SECRET ?? "").trim();
+	const controlSecret = String(process.env.PHASEO_CONTROL_SECRET ?? "").trim();
 	if (!controlKey || !controlSecret) return;
 
 	const baseUrl = String(

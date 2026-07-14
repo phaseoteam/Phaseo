@@ -15,7 +15,8 @@
   "api_model_id": "inflection/inflection-3-pi",
   "links": [
     {
-      "platform": "documentation",
+      "title": "Documentation",
+      "kind": "documentation",
       "url": "https://developers.inflection.ai/docs/authentication"
     }
   ],

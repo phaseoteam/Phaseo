@@ -6,9 +6,9 @@ description: "Endpoint-by-endpoint examples using the TypeScript SDK."
 ## Setup
 
 ```typescript
-import AIStats from "@ai-stats/sdk";
+import Phaseo from "@phaseo/sdk";
 
-const client = new AIStats({ apiKey: process.env.AI_STATS_API_KEY! });
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 ```
 
 ## Chat completions
@@ -18,16 +18,16 @@ const completion = await client.generateText({
   model: "openai/gpt-4o-mini",
   messages: [
     { role: "system", content: "You are a helpful assistant." },
-    { role: "user", content: "What is AI Stats?" },
+    { role: "user", content: "What is Phaseo?" },
   ],
   temperature: 0.7,
 });
 
-for await (const line of client.streamText({
+for await (const chunk of client.streamChat({
   model: "openai/gpt-4o-mini",
   messages: [{ role: "user", content: "Tell me a story" }],
 })) {
-  console.log(line);
+  if (chunk.text) process.stdout.write(chunk.text);
 }
 ```
 
@@ -36,15 +36,15 @@ for await (const line of client.streamText({
 ```typescript
 const response = await client.generateResponse({
   model: "openai/gpt-4.1",
-  input: [{ role: "user", content: [{ type: "output_text", text: "Summarise this" }] }],
+  input: [{ role: "user", content: [{ type: "input_text", text: "Summarise this" }] }],
 });
 
-for await (const line of client.streamResponse({
+for await (const chunk of client.streamResponses({
   model: "openai/gpt-4.1",
-  input: [{ role: "user", content: [{ type: "output_text", text: "Stream this" }] }],
+  input: [{ role: "user", content: [{ type: "input_text", text: "Stream this" }] }],
   stream: true,
 })) {
-  console.log(line);
+  if (chunk.text) process.stdout.write(chunk.text);
 }
 ```
 

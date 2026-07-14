@@ -2,7 +2,7 @@
 // Why: Shared types/schemas/utilities used across modules.
 // How: Exposes reusable building blocks for the gateway.
 
-// Intermediate Representation (IR) types for the AI Stats Gateway
+// Intermediate Representation (IR) types for the Phaseo Gateway
 // This IR provides a protocol-agnostic format for chat completions that can:
 // 1. Represent OpenAI Chat Completions, OpenAI Responses API, and Anthropic Messages
 // 2. Handle tool calling across all three protocols
@@ -151,6 +151,7 @@ export type IRToolChoice =
  */
 export type IRReasoning = {
 	effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+	mode?: "standard" | "pro";
 	summary?: "auto" | "concise" | "detailed";
 	enabled?: boolean;
 	maxTokens?: number;

@@ -200,6 +200,109 @@ describe("openAIResponsesToIR", () => {
 			expect(ir.provider).toBe("openai");
 		});
 
+		it("does not map generic Responses tool_call items into executable function calls", () => {
+			const openaiResponse = {
+				id: "resp_tool_call_marker",
+				object: "response",
+				status: "completed",
+				created_at: 1234567890,
+				output: [
+					{
+						type: "function_call",
+						id: "fc_datetime",
+						call_id: "call_datetime",
+						name: "gateway_datetime",
+						arguments: "{\"timezones\":[\"UTC\"]}",
+					},
+					{
+						type: "tool_call",
+						id: "tc_unknown",
+						status: "completed",
+					},
+				],
+			};
+
+			const ir = openAIResponsesToIR(openaiResponse, "req_openai", "gpt-5.4-nano", "openai");
+
+			expect(ir.choices[0]?.message.toolCalls).toEqual([
+				{
+					id: "call_datetime",
+					name: "gateway_datetime",
+					arguments: "{\"timezones\":[\"UTC\"]}",
+				},
+			]);
+		});
+
+		it("maps named provider Responses tool_call items into executable function calls", () => {
+			const openaiResponse = {
+				id: "resp_provider_tool_call",
+				object: "response",
+				status: "completed",
+				created_at: 1234567890,
+				output: [
+					{
+						type: "tool_call",
+						id: "tc_datetime",
+						call_id: "call_datetime",
+						function: {
+							name: "gateway_datetime",
+							arguments: "{\"timezones\":[\"UTC\"]}",
+						},
+					},
+				],
+			};
+
+			const ir = openAIResponsesToIR(openaiResponse, "req_poolside", "laguna-xs-2.1", "poolside");
+
+			expect(ir.choices[0]?.finishReason).toBe("tool_calls");
+			expect(ir.choices[0]?.message.toolCalls).toEqual([
+				{
+					id: "call_datetime",
+					name: "gateway_datetime",
+					arguments: "{\"timezones\":[\"UTC\"]}",
+				},
+			]);
+		});
+
+		it("keeps Responses output items on one IR choice even when output_index differs", () => {
+			const openaiResponse = {
+				id: "resp_laguna_tool",
+				object: "response",
+				status: "completed",
+				created_at: 1234567890,
+				output: [
+					{
+						type: "reasoning",
+						output_index: 0,
+						content: [{ type: "output_text", text: "Need the current time." }],
+					},
+					{
+						type: "function_call",
+						output_index: 1,
+						id: "fc_datetime",
+						call_id: "call_datetime",
+						name: "gateway_datetime",
+						arguments: "{}",
+					},
+				],
+			};
+
+			const ir = openAIResponsesToIR(openaiResponse, "req_laguna", "laguna-xs-2.1", "poolside");
+
+			expect(ir.choices).toHaveLength(1);
+			expect(ir.choices[0]?.finishReason).toBe("tool_calls");
+			expect(ir.choices[0]?.message.content).toEqual([
+				{ type: "reasoning_text", text: "Need the current time." },
+			]);
+			expect(ir.choices[0]?.message.toolCalls).toEqual([
+				{
+					id: "call_datetime",
+					name: "gateway_datetime",
+					arguments: "{}",
+				},
+			]);
+		});
+
 		it("maps cached and multimodal usage details into IR usage", () => {
 			const openaiResponse = {
 				id: "resp_usage",
@@ -415,6 +518,113 @@ describe("irToOpenAIResponses", () => {
 		expect(request.web_search_options).toEqual({
 			search_context_size: "high",
 		});
+	});
+
+	it("enables Meta native web search from web_search_options on responses requests", () => {
+		const request = irToOpenAIResponses({
+			model: "meta/muse-spark-1.1",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "Find the latest news." }],
+			}],
+			stream: false,
+			webSearchOptions: {
+				search_context_size: "high",
+			},
+		} as any, "muse-spark-1.1", "meta");
+
+		expect(request.input).toBeDefined();
+		expect(request.input_items).toBeUndefined();
+		expect(request.web_search_options).toEqual({
+			search_context_size: "high",
+		});
+		expect(request.tools).toEqual([{
+			type: "web_search_preview",
+			search_context_size: "high",
+		}]);
+	});
+
+	it("maps Meta reasoning effort and stateful responses fields", () => {
+		const request = irToOpenAIResponses({
+			model: "meta/muse-spark-1.1",
+			messages: [
+				{
+					role: "developer",
+					content: [{ type: "text", text: "Use terse bullet points." }],
+				},
+				{
+					role: "user",
+					content: [{ type: "text", text: "Plan the migration." }],
+				},
+			],
+			stream: false,
+			previousResponseId: "resp_prev_meta",
+			reasoning: {
+				effort: "xhigh",
+			},
+		} as any, "muse-spark-1.1", "meta");
+
+		expect(request.input).toEqual([
+			{
+				type: "message",
+				role: "developer",
+				content: [{ type: "input_text", text: "Use terse bullet points." }],
+			},
+			{
+				type: "message",
+				role: "user",
+				content: [{ type: "input_text", text: "Plan the migration." }],
+			},
+		]);
+		expect(request.input_items).toBeUndefined();
+		expect(request.previous_response_id).toBe("resp_prev_meta");
+		expect(request.reasoning_effort).toBe("xhigh");
+		expect(request.reasoning).toBeUndefined();
+	});
+
+	it("maps Meta disabled reasoning to minimal effort", () => {
+		const request = irToOpenAIResponses({
+			model: "meta/muse-spark-1.1",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "Answer directly." }],
+			}],
+			stream: false,
+			reasoning: {
+				enabled: false,
+			},
+		} as any, "muse-spark-1.1", "meta");
+
+		expect(request.reasoning_effort).toBe("minimal");
+		expect(request.reasoning).toBeUndefined();
+	});
+
+	it("clamps Meta reasoning effort aliases to the supported range", () => {
+		const minRequest = irToOpenAIResponses({
+			model: "meta/muse-spark-1.1",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "Answer directly." }],
+			}],
+			stream: false,
+			reasoning: {
+				effort: "none",
+			},
+		} as any, "muse-spark-1.1", "meta");
+		const maxRequest = irToOpenAIResponses({
+			model: "meta/muse-spark-1.1",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "Think deeply." }],
+			}],
+			stream: false,
+			reasoning: {
+				effort: "max",
+			},
+		} as any, "muse-spark-1.1", "meta");
+
+		expect(minRequest.reasoning_effort).toBe("minimal");
+		expect(maxRequest.reasoning_effort).toBe("xhigh");
 	});
 
 	it("passes image generation raw request options through to upstream responses requests", () => {

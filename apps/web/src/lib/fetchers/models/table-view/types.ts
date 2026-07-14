@@ -59,11 +59,12 @@ export type MonitorModelTableRow = Pick<
     | "context"
     | "maxOutput"
     | "quantization"
+	| "supportedParameters"
     | "tier"
     | "added"
     | "retired"
 > & {
-    provider: Pick<MonitorModelData["provider"], "name" | "id" | "inputPrice" | "outputPrice" | "features">;
+    provider: Pick<MonitorModelData["provider"], "name" | "id" | "inputPrice" | "outputPrice" | "features" | "executionRegions">;
     popularityTokensWeek?: number;
 };
 

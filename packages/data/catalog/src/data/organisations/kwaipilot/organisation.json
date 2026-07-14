@@ -1,8 +1,21 @@
 {
   "organisation_id": "kwaipilot",
-  "name": "Kwaipilot",
+  "name": "KwaiKAT",
   "country_code": "CN",
-  "description": null,
+  "description": "KwaiKAT is Kuaishou's coding-model team behind the KAT-Coder family. Its public model IDs use the kwaipilot namespace.",
   "colour": null,
-  "organisation_links": []
+  "organisation_links": [
+    {
+      "platform": "x",
+      "url": "https://x.com/KwaiAICoder"
+    },
+    {
+      "platform": "hugging_face",
+      "url": "https://huggingface.co/Kwaipilot"
+    },
+    {
+      "platform": "website",
+      "url": "https://kwaipilot.ai/"
+    }
+  ]
 }

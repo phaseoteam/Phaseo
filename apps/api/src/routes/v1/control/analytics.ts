@@ -149,7 +149,7 @@ function toProviderName(providerId: string): string {
     const exactMap: Record<string, string> = {
         openai: "OpenAI",
         anthropic: "Anthropic",
-        "x-ai": "xAI",
+        "spacex-ai": "SpaceXAI",
         "google-ai-studio": "Google AI Studio",
         "google-vertex": "Google Vertex",
     };

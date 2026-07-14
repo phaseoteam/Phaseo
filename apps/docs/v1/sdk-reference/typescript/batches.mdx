@@ -25,15 +25,14 @@ const websocketUrl = client.batches.websocketUrl(batch.id, { intervalMs: 1500 })
 
 ### Key parameters
 - `model`: Model id used to infer the upstream provider. Most callers should not pass `provider`.
-- `prompts`: Simple shorthand for one or more prompt strings. AI Stats compiles these into provider-native batch rows.
+- `prompts`: Simple shorthand for one or more prompt strings. Phaseo compiles these into provider-native batch rows.
 - `items`: Structured prompt shorthand with `id` / `custom_id`, `prompt`, `messages`, `input`, per-row settings, or an advanced `body`.
 - `requests`: Advanced inline provider-native batch rows.
 - `input_file_id`: Existing file id uploaded via `/batches/files?model=...` for large prebuilt JSONL inputs.
-- `endpoint`: Optional target endpoint for advanced rows. AI Stats chooses a model/provider default when omitted.
+- `endpoint`: Optional target endpoint for advanced rows. Phaseo chooses a model/provider default when omitted.
 - `completion_window`: e.g., `24h`.
-- `session_id`: Optional AI Stats grouping id for logs, sessions, and investigate tooling.
-- `webhook_endpoint_id`: Workspace-managed webhook endpoint id configured in the dashboard.
-- `webhook`: Optional inline webhook configuration for async lifecycle notifications.
+- `session_id`: Optional Phaseo grouping id for logs, sessions, and investigate tooling.
+- `webhook`: Optional webhook configuration for async lifecycle notifications.
 - `metadata`: Optional object stored with the batch.
 - `provider`: Advanced routing constraint. Most requests should omit this and rely on `model`.
 

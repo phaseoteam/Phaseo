@@ -1,4 +1,4 @@
-package aistats
+package phaseo
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	gen "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go/src/gen"
+	gen "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/src/gen"
 )
 
 type operation struct {
@@ -38,10 +38,10 @@ func loadManifest(t *testing.T) manifest {
 		t.Fatalf("parse manifest: %v", err)
 	}
 	if m.ApiKeyEnv == "" {
-		m.ApiKeyEnv = "AI_STATS_API_KEY"
+		m.ApiKeyEnv = "PHASEO_API_KEY"
 	}
 	if m.BaseUrlEnv == "" {
-		m.BaseUrlEnv = "AI_STATS_BASE_URL"
+		m.BaseUrlEnv = "PHASEO_BASE_URL"
 	}
 	return m
 }
@@ -57,7 +57,7 @@ func TestSmokeSuite(t *testing.T) {
 		baseURL = strings.TrimRight(m.DefaultBaseUrl, "/")
 	}
 
-	client := NewAIStats(apiKey, baseURL)
+	client := NewPhaseo(apiKey, baseURL)
 	ctx := context.Background()
 
 	healthOp := m.Operations["health"]

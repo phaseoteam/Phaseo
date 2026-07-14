@@ -1,17 +1,17 @@
 ---
 title: "Structured Output (AI SDK)"
-description: "Generate schema-validated JSON objects with AI Stats and Vercel AI SDK."
+description: "Generate schema-validated JSON objects with Phaseo and Vercel AI SDK."
 ---
 
 Use `generateObject` for typed outputs.
 
 ```ts
-import { aiStats } from "@ai-stats/ai-sdk-provider";
+import { phaseo } from "@phaseo/ai-sdk-provider";
 import { generateObject } from "ai";
 import { z } from "zod";
 
 const { object } = await generateObject({
-  model: aiStats("openai/gpt-5-nano"),
+  model: phaseo("openai/gpt-5-nano"),
   schema: z.object({
     title: z.string(),
     priority: z.enum(["low", "medium", "high"]),

@@ -1,13 +1,13 @@
 ---
 title: "Python SDK Overview"
-description: "Official Python client for the AI Stats Gateway API"
+description: "Official Python client for the Phaseo Gateway API"
 ---
 
 <Note type="warning">
   **SDKs are in very early alpha**: We're working as hard as we can to get them into a stable state. Please bear with us as we iterate rapidly.
 </Note>
 
-The AI Stats Python SDK currently provides a synchronous client for the AI Stats Gateway API.
+The Phaseo Python SDK currently provides a synchronous client for the Phaseo Gateway API.
 
 ## Features
 
@@ -19,9 +19,9 @@ The AI Stats Python SDK currently provides a synchronous client for the AI Stats
 ## Quick example
 
 ```python
-from ai_stats import AIStats
+from phaseo import Phaseo
 
-client = AIStats(api_key="your-api-key")
+client = Phaseo(api_key="your-api-key")
 
 response = client.generate_response(
     {
@@ -35,10 +35,10 @@ print(response.get("id"))
 
 ## What's included
 
--   `AIStats` client
+-   `Phaseo` client
 -   `chat.completions.create(...)` and `responses.create(...)` compatibility helpers
 -   Resource helpers such as `client.batches`, `client.videos`, `client.files`, and `client.async_jobs`
 -   Async-job websocket URL helpers for batch and video lifecycle streams
 -   Model lifecycle helpers such as `get_model_deprecation_info(...)` and `validate_model(...)`
 -   Streaming iterators for text, responses, and messages
--   Generated request/response models in `ai_stats.models`
+-   Generated request/response models in `phaseo.models`

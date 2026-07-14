@@ -14,7 +14,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CopyButton } from "@/components/ui/copy-button";
 import {
 	Select,
 	SelectContent,
@@ -25,6 +24,7 @@ import {
 import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { rotateApiKeyAction } from "@/app/(dashboard)/settings/keys/actions";
+import { SecretRevealActions } from "./SecretRevealActions";
 
 type ExpiryMode = "immediate" | "1h" | "24h" | "7d" | "custom" | "never";
 
@@ -51,8 +51,20 @@ function formatExpiryLabel(iso: string | null | undefined): string {
 	return parsed.toLocaleString();
 }
 
-export default function RotateKeyItem({ k }: { k: any }) {
-	const [open, setOpen] = useState(false);
+export default function RotateKeyItem({
+	k,
+	trigger = true,
+	open: controlledOpen,
+	onOpenChange,
+}: {
+	k: any;
+	trigger?: boolean;
+	open?: boolean;
+	onOpenChange?: (open: boolean) => void;
+}) {
+	const [internalOpen, setInternalOpen] = useState(false);
+	const open = controlledOpen ?? internalOpen;
+	const setOpen = onOpenChange ?? setInternalOpen;
 	const [loading, setLoading] = useState(false);
 	const [newName, setNewName] = useState(String(k?.name ?? ""));
 	const [expiryMode, setExpiryMode] = useState<ExpiryMode>("24h");
@@ -115,18 +127,18 @@ export default function RotateKeyItem({ k }: { k: any }) {
 				if (!next) reset();
 			}}
 		>
-			<DropdownMenuItem asChild>
-				<button
-					className="w-full text-left flex items-center gap-2"
-					onClick={(e) => {
-						e.preventDefault();
-						setTimeout(() => setOpen(true), 0);
-					}}
-				>
-					<RefreshCw className="mr-2 h-4 w-4" />
-					Rotate
-				</button>
-			</DropdownMenuItem>
+			{trigger ? (
+				<DropdownMenuItem render={<div
+						className="w-full text-left flex items-center gap-2"
+						onClick={() => {
+							setTimeout(() => setOpen(true), 0);
+						}} />}>
+
+						<RefreshCw className="mr-2 h-4 w-4" />
+						Rotate
+
+				</DropdownMenuItem>
+			) : null}
 			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>Rotate API key</DialogTitle>
@@ -205,13 +217,12 @@ export default function RotateKeyItem({ k }: { k: any }) {
 						<div className="text-sm text-muted-foreground font-semibold">
 							Store this key now. It will not be shown again.
 						</div>
+						<SecretRevealActions
+							secret={newPlaintext}
+							name={newName || "AI Stats rotated API key"}
+							kind="api-key"
+						/>
 						<DialogFooter>
-							<CopyButton
-								content={newPlaintext}
-								size="default"
-								variant="outline"
-								aria-label="Copy rotated API key"
-							/>
 							<DialogClose asChild>
 								<Button>Done</Button>
 							</DialogClose>

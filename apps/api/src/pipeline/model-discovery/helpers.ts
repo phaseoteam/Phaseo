@@ -1,5 +1,8 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
+import { resolveVertexAccessToken } from "@providers/google-vertex/auth";
 import { sendDiscordTextMessage } from "./discord";
+import { normalizeProviderModelPricing } from "./pricing-normalizers";
+import type { ProviderConfig } from "./providers";
 
 type DiscoveryTrigger = "scheduled" | "manual";
 
@@ -11,22 +14,6 @@ type RunArgs = {
 	shardCount?: number;
 	notify?: boolean;
 	prune?: boolean;
-};
-
-type ProviderConfig = {
-	providerId: string;
-	providerName: string;
-	modelsEndpoint: string;
-	pathPrefix?: string;
-	modelsPath?: string;
-	baseUrlEnv?: string[];
-	apiKeyEnv?: string[];
-	authStyle?: "bearer" | "anthropic" | "google_api_key_query" | "clarifai_key" | "elevenlabs" | "api_key_authorization" | "none";
-	pagination?: {
-		nextPageTokenFields: string[];
-		pageTokenQueryParam: string;
-		maxPages?: number;
-	};
 };
 
 type ProviderChange = {
@@ -115,6 +102,11 @@ type ConfiguredModelCoverageState = {
 	fallbackFingerprint: string | null;
 };
 
+export type PricingTableSnapshotState = {
+	providerId: string;
+	fingerprint: string;
+};
+
 type ConfiguredProviderModelRow = {
 	provider_id: string | null;
 	provider_model_slug: string | null;
@@ -122,7 +114,6 @@ type ConfiguredProviderModelRow = {
 };
 
 const DISCOVERY_TIMEOUT_MS = 30_000;
-const DEFAULT_DISCOVERY_MAX_PAGES = 50;
 const MAX_DISCORD_LINES = 30;
 const MAX_LIST_ITEMS = 8;
 const MAX_SUMMARY_MODEL_SAMPLES = 5;
@@ -134,9 +125,17 @@ const PRICING_KEY_PATTERN = /(price|pricing|cost|billing|currency|rate|meter|uni
 const PRICING_EXTRACTION_MAX_DEPTH = 4;
 const MAX_SAMPLE_TEXT_LENGTH = 180;
 const PROVIDER_ID_ALIASES: Record<string, string> = {
+	"arcee": "arcee-ai",
+	"aionlabs": "aion-labs",
 	"alibaba-cloud": "alibaba",
-	"xai": "x-ai",
+	"liquid": "liquid-ai",
+	"moonshot-ai": "moonshotai",
+	"moonshot-ai-turbo": "moonshotai-turbo",
+	"novitaai": "novita",
+	"xai": "spacex-ai",
 	"atlas-cloud": "atlascloud",
+	"voyageai": "voyage",
+	"zai": "z-ai",
 };
 export function toInt(value: string | undefined, fallback: number): number {
 	const parsed = Number(value ?? "");
@@ -160,7 +159,32 @@ function normalizePathSegment(value: string | undefined): string {
 
 export function resolveProviderModelsEndpoint(provider: ProviderConfig): string {
 	const baseUrlOverride = provider.baseUrlEnv ? readBindingEnv(provider.baseUrlEnv) : null;
-	if (!baseUrlOverride) return provider.modelsEndpoint;
+	if (!baseUrlOverride) {
+		if (!provider.baseUrl) {
+			if (provider.modelsEndpoint) return provider.modelsEndpoint;
+			throw new Error(`${provider.providerId} models endpoint missing`);
+		}
+
+		const parsed = new URL(provider.baseUrl);
+		const basePath = parsed.pathname.replace(/\/+$/, "");
+		const pathPrefix = normalizePathSegment(provider.pathPrefix);
+		const modelsPath = normalizePathSegment(provider.modelsPath ?? "/models");
+		const fullModelsPath = `${pathPrefix}${modelsPath}`;
+
+		if (
+			fullModelsPath &&
+			(basePath === fullModelsPath || basePath.endsWith(fullModelsPath))
+		) {
+			return parsed.toString();
+		}
+		if (pathPrefix && (basePath === pathPrefix || basePath.endsWith(pathPrefix))) {
+			parsed.pathname = `${basePath}${modelsPath}`.replace(/\/{2,}/g, "/");
+			return parsed.toString();
+		}
+
+		parsed.pathname = `${basePath}${fullModelsPath || modelsPath}`.replace(/\/{2,}/g, "/");
+		return parsed.toString();
+	}
 
 	const parsed = new URL(baseUrlOverride);
 	const basePath = parsed.pathname.replace(/\/+$/, "");
@@ -248,17 +272,22 @@ export function samplePricingDetailsText(value: unknown): string {
 	return text.length <= MAX_SAMPLE_TEXT_LENGTH ? text : `${text.slice(0, MAX_SAMPLE_TEXT_LENGTH - 3)}...`;
 }
 
-function normalizeProviderApiPricingDetails(providerId: string, pricingDetails: unknown): unknown | null {
-	if (providerId !== "crofai") {
-		return pricingDetails ?? null;
+function normalizeProviderApiPricingDetails(
+	providerId: string,
+	modelDetails: Record<string, unknown> | null,
+	pricingDetails: unknown,
+): unknown | null {
+	const normalized = normalizeProviderModelPricing(providerId, modelDetails);
+	if (normalized) {
+		return {
+			normalized,
+			sourcePricing: normalizeJson(pricingDetails),
+		};
 	}
 
+	if (providerId !== "crofai") return pricingDetails ?? null;
 	const record = asRecord(pricingDetails);
-	if (!record) return pricingDetails ?? null;
-	if ("pricing" in record) {
-		return normalizeJson(record.pricing);
-	}
-	return pricingDetails ?? null;
+	return record?.pricing ? normalizeJson(record.pricing) : pricingDetails ?? null;
 }
 
 export function toNullableInteger(value: unknown): number | null {
@@ -279,7 +308,7 @@ export function extractProviderApiModelSnapshot(
 	modelDetails: Record<string, unknown> | null,
 	pricingDetails: unknown | null
 ): ProviderApiModelSnapshot {
-	const normalizedPricingDetails = normalizeProviderApiPricingDetails(providerId, pricingDetails);
+	const normalizedPricingDetails = normalizeProviderApiPricingDetails(providerId, modelDetails, pricingDetails);
 	if (providerId === "crofai") {
 		return {
 			contextLength: null,
@@ -502,21 +531,9 @@ export function hasAtlascloudLlmCategory(row: Record<string, unknown>): boolean 
 	return false;
 }
 
-function isTruthyFlag(value: unknown): boolean {
-	if (value === true) return true;
-	if (typeof value === "number") return value === 1;
-	if (typeof value === "string") {
-		return value.trim().toLowerCase() === "true";
-	}
-	return false;
-}
-
 export function shouldIncludeDiscoveredModel(providerId: string, row: Record<string, unknown>): boolean {
 	if (providerId === "atlascloud") {
 		return hasAtlascloudLlmCategory(row);
-	}
-	if (providerId === "fireworks") {
-		return isTruthyFlag(row.supportsServerless ?? row.supports_serverless);
 	}
 	if (providerId === "clarifai") {
 		return typeof row.model_type_id === "string" && row.model_type_id.trim().toLowerCase() === "text-to-text";
@@ -526,11 +543,15 @@ export function shouldIncludeDiscoveredModel(providerId: string, row: Record<str
 
 export function extractDiscoveredModels(providerId: string, payload: unknown): DiscoveredModel[] {
 	const root = asRecord(payload);
-	const candidateCollections: unknown[] = Array.isArray(payload)
-		? [payload]
-		: root
-			? [root.data, root.models, asRecord(root.result)?.models]
-			: [];
+	if (!root && !Array.isArray(payload)) return [];
+
+	const candidateCollections: unknown[] = [
+		payload,
+		root?.data,
+		root?.models,
+		root?.publisherModels,
+		asRecord(root?.result)?.models,
+	];
 
 	const output = new Map<string, DiscoveredModel>();
 
@@ -539,6 +560,18 @@ export function extractDiscoveredModels(providerId: string, payload: unknown): D
 			const row = asRecord(item);
 			if (!row) continue;
 			if (!shouldIncludeDiscoveredModel(providerId, row)) continue;
+			if (providerId === "google-vertex" || providerId === "google-vertex-eu") {
+				const normalized = normalizeGoogleVertexModelId(row);
+				if (!normalized) continue;
+				const modelDetails = normalizeJson(row) as Record<string, unknown>;
+				const pricingDetails = extractPricingDetailsFromValue(modelDetails);
+				output.set(normalized, {
+					id: normalized,
+					modelDetails,
+					pricingDetails,
+				});
+				continue;
+			}
 			const candidates = [row.id, row.model_id, row.name, row.model, row.slug];
 			for (const value of candidates) {
 				if (typeof value !== "string") continue;
@@ -559,12 +592,33 @@ export function extractDiscoveredModels(providerId: string, payload: unknown): D
 	return Array.from(output.values()).sort((a, b) => a.id.localeCompare(b.id));
 }
 
+function normalizeGoogleVertexModelId(row: Record<string, unknown>): string | null {
+	const rawName = typeof row.name === "string" ? row.name.trim() : "";
+	const match = /^publishers\/([^/]+)\/models\/([^/]+)$/i.exec(rawName);
+	if (!match) return null;
+
+	const publisher = match[1]!.toLowerCase();
+	const modelName = match[2]!.trim();
+	if (!modelName) return null;
+
+	const versionId = typeof row.versionId === "string" ? row.versionId.trim() : "";
+	const normalizedVersion = versionId && versionId.toLowerCase() !== "default" ? versionId : "";
+
+	if (publisher === "anthropic") {
+		return normalizedVersion ? `${modelName}@${normalizedVersion}` : modelName;
+	}
+	if (publisher === "google") {
+		return modelName;
+	}
+	return normalizedVersion ? `${publisher}/${modelName}@${normalizedVersion}` : `${publisher}/${modelName}`;
+}
+
 function normalizeProviderResponseErrorDetail(value: unknown): string | null {
 	if (typeof value === "string") {
 		const trimmed = value.trim();
 		return trimmed || null;
 	}
-	if (typeof value === "number" && Number.isFinite(value) && value !== 0) {
+	if (typeof value === "number" && Number.isFinite(value)) {
 		return String(value);
 	}
 	const record = asRecord(value);
@@ -576,7 +630,7 @@ function normalizeProviderResponseErrorDetail(value: unknown): string | null {
 			const trimmed = nested.trim();
 			if (trimmed) return trimmed;
 		}
-		if (typeof nested === "number" && Number.isFinite(nested) && nested !== 0) {
+		if (typeof nested === "number" && Number.isFinite(nested)) {
 			return String(nested);
 		}
 	}
@@ -608,25 +662,60 @@ function extractProviderResponseErrorMessage(payload: unknown): string | null {
 	return message ? `status_code ${statusCode}: ${message}` : `status_code ${statusCode}`;
 }
 
-function readNextPageToken(
-	root: Record<string, unknown> | null,
-	pagination: NonNullable<ProviderConfig["pagination"]>
-): string {
-	if (!root) return "";
-	for (const field of pagination.nextPageTokenFields) {
-		const value = root[field];
-		if (typeof value !== "string") continue;
-		const trimmed = value.trim();
-		if (trimmed) return trimmed;
-	}
-	return "";
-}
-
 export async function fetchProviderModels(provider: ProviderConfig, apiKey?: string | null): Promise<DiscoveredModel[]> {
 	const controller = new AbortController();
 	const timeout = setTimeout(() => controller.abort(), DISCOVERY_TIMEOUT_MS);
 
 	try {
+		if (provider.authStyle === "google_vertex") {
+			if (!apiKey) throw new Error(`${provider.providerId} api key missing`);
+			const accessToken = await resolveVertexAccessToken(apiKey);
+			const publisherUrls = [
+				"https://aiplatform.googleapis.com/v1beta1/publishers/google/models?listAllVersions=true&pageSize=300",
+				"https://aiplatform.googleapis.com/v1beta1/publishers/anthropic/models?listAllVersions=true&pageSize=300",
+			];
+			const publisherModels = await Promise.all(
+				publisherUrls.map(async (initialUrl) => {
+					const rows: unknown[] = [];
+					let nextUrl: string | null = initialUrl;
+
+					while (nextUrl) {
+						const response = await fetch(nextUrl, {
+							method: "GET",
+							headers: {
+								Authorization: `Bearer ${accessToken}`,
+							},
+							signal: controller.signal,
+						});
+						if (!response.ok) {
+							const body = await response.text().catch(() => "");
+							throw new Error(`HTTP ${response.status}${body ? `: ${body.slice(0, 200)}` : ""}`);
+						}
+
+						const payload = await response.json();
+						const root = asRecord(payload);
+						rows.push(...asArray(root?.publisherModels));
+
+						const nextPageToken =
+							typeof root?.nextPageToken === "string" ? root.nextPageToken.trim() : "";
+						if (!nextPageToken) {
+							nextUrl = null;
+							continue;
+						}
+
+						const parsed = new URL(nextUrl);
+						parsed.searchParams.set("pageToken", nextPageToken);
+						nextUrl = parsed.toString();
+					}
+
+					return rows;
+				}),
+			);
+			return extractDiscoveredModels(provider.providerId, {
+				publisherModels: publisherModels.flat(),
+			});
+		}
+
 		const headers: Record<string, string> = {};
 		let url = resolveProviderModelsEndpoint(provider);
 
@@ -664,60 +753,18 @@ export async function fetchProviderModels(provider: ProviderConfig, apiKey?: str
 				break;
 		}
 
-		const output = new Map<string, DiscoveredModel>();
-		const pagination = provider.pagination;
-		const maxPages = pagination?.maxPages ?? DEFAULT_DISCOVERY_MAX_PAGES;
-		const seenPageTokens = new Set<string>();
-		let nextUrl: string | null = url;
-		let pageCount = 0;
-
-		while (nextUrl) {
-			pageCount += 1;
-			if (pagination && pageCount > maxPages) {
-				throw new Error(
-					`${provider.providerName} (${provider.providerId}) model discovery exceeded ${maxPages} pages`
-				);
-			}
-
-			const response = await fetch(nextUrl, { method: "GET", headers, signal: controller.signal });
-			if (!response.ok) {
-				const body = await response.text().catch(() => "");
-				throw new Error(`HTTP ${response.status}${body ? `: ${body.slice(0, 200)}` : ""}`);
-			}
-
-			const payload = await response.json();
-			const providerResponseErrorMessage = extractProviderResponseErrorMessage(payload);
-			if (providerResponseErrorMessage) {
-				throw new Error(`${provider.providerName} (${provider.providerId}) response error: ${providerResponseErrorMessage}`);
-			}
-
-			for (const model of extractDiscoveredModels(provider.providerId, payload)) {
-				output.set(model.id, model);
-			}
-
-			if (!pagination) {
-				nextUrl = null;
-				continue;
-			}
-
-			const nextPageToken = readNextPageToken(asRecord(payload), pagination);
-			if (!nextPageToken) {
-				nextUrl = null;
-				continue;
-			}
-			if (seenPageTokens.has(nextPageToken)) {
-				throw new Error(
-					`${provider.providerName} (${provider.providerId}) model discovery returned repeated page token: ${nextPageToken}`
-				);
-			}
-			seenPageTokens.add(nextPageToken);
-
-			const parsed = new URL(nextUrl);
-			parsed.searchParams.set(pagination.pageTokenQueryParam, nextPageToken);
-			nextUrl = parsed.toString();
+		const response = await fetch(url, { method: "GET", headers, signal: controller.signal });
+		if (!response.ok) {
+			const body = await response.text().catch(() => "");
+			throw new Error(`HTTP ${response.status}${body ? `: ${body.slice(0, 200)}` : ""}`);
 		}
 
-		return Array.from(output.values()).sort((a, b) => a.id.localeCompare(b.id));
+		const payload = await response.json();
+		const providerResponseErrorMessage = extractProviderResponseErrorMessage(payload);
+		if (providerResponseErrorMessage) {
+			throw new Error(`${provider.providerName} (${provider.providerId}) response error: ${providerResponseErrorMessage}`);
+		}
+		return extractDiscoveredModels(provider.providerId, payload);
 	} finally {
 		clearTimeout(timeout);
 	}
@@ -834,6 +881,43 @@ export async function loadLatestConfiguredCoverageState(source?: string): Promis
 		if (state) return state;
 	}
 	return null;
+}
+
+export function parsePricingTableStateFromSummary(summary: unknown): PricingTableSnapshotState[] {
+	const summaryRecord = asRecord(summary);
+	const tableMonitor = asRecord(summaryRecord?.pricingTableMonitor);
+	if (!tableMonitor) return [];
+
+	return asArray(tableMonitor.sources)
+		.map((value) => asRecord(value))
+		.filter((value): value is Record<string, unknown> => Boolean(value))
+		.map((value) => ({
+			providerId: canonicalProviderId(typeof value.providerId === "string" ? value.providerId : ""),
+			fingerprint: typeof value.fingerprint === "string" ? value.fingerprint.trim() : "",
+		}))
+		.filter((value) => Boolean(value.providerId) && Boolean(value.fingerprint));
+}
+
+export async function loadLatestPricingTableState(source?: string): Promise<PricingTableSnapshotState[]> {
+	const supabase = getSupabaseAdmin();
+	let query = supabase
+		.from("model_discovery_runs")
+		.select("summary,status,started_at")
+		.in("status", ["completed", "completed_with_errors"])
+		.order("started_at", { ascending: false });
+	const sourceValue = typeof source === "string" ? source.trim() : "";
+	if (sourceValue) query = query.eq("source", sourceValue);
+
+	const { data, error } = await query.limit(100);
+	if (error) throw new Error(error.message || "Failed to load pricing table state");
+	const latestByProvider = new Map<string, PricingTableSnapshotState>();
+	for (const row of data ?? []) {
+		const state = parsePricingTableStateFromSummary((row as Record<string, unknown>).summary);
+		for (const snapshot of state) {
+			if (!latestByProvider.has(snapshot.providerId)) latestByProvider.set(snapshot.providerId, snapshot);
+		}
+	}
+	return [...latestByProvider.values()];
 }
 
 export async function fetchLatestPricingUpdatedAt(): Promise<string | null> {
@@ -1154,21 +1238,27 @@ export function shouldNotifyConfiguredModelCoverage(): boolean {
 	return toBool(readBindingEnv(["CONFIGURED_MODEL_COVERAGE_NOTIFY_ENABLED"]) ?? "false", false);
 }
 
+export function hasDiscordNotifiableChanges(args: {
+	modelChanges: ProviderChange[];
+	configuredModelCoverage: ConfiguredModelCoverageMonitorSummary;
+}): boolean {
+	return args.modelChanges.length > 0 || (
+		shouldNotifyConfiguredModelCoverage() && args.configuredModelCoverage.updatesDetected > 0
+	);
+}
+
+const PRIVATE_MODEL_DISCOVERY_USERNAME = "Phaseo Private Model Discovery";
+const PRIVATE_MODEL_DISCOVERY_AVATAR_URL = "https://phaseo.app/png_logo_dark.png";
+
 export function buildDiscordMessage(args: {
 	modelChanges: ProviderChange[];
-	pricing: PricingMonitorSummary;
-	providerApiPricing: ProviderApiPricingMonitorSummary;
 	configuredModelCoverage: ConfiguredModelCoverageMonitorSummary;
 }): string {
 	const includeConfiguredCoverageNotifications = shouldNotifyConfiguredModelCoverage();
 	const sections: string[] = [];
 	const modelSection = buildModelDiscordSection(args.modelChanges);
-	const pricingSection = buildPricingDiscordSection(args.pricing);
-	const providerApiPricingSection = buildProviderApiPricingDiscordSection(args.providerApiPricing);
 	const configuredModelCoverageSection = buildConfiguredModelCoverageDiscordSection(args.configuredModelCoverage);
 	if (modelSection) sections.push(modelSection);
-	if (pricingSection) sections.push(pricingSection);
-	if (providerApiPricingSection) sections.push(providerApiPricingSection);
 	if (includeConfiguredCoverageNotifications && configuredModelCoverageSection) {
 		sections.push(configuredModelCoverageSection);
 	}
@@ -1179,21 +1269,9 @@ export function buildDiscordMessage(args: {
 
 export async function sendDiscordNotification(args: {
 	modelChanges: ProviderChange[];
-	pricing: PricingMonitorSummary;
-	providerApiPricing: ProviderApiPricingMonitorSummary;
 	configuredModelCoverage: ConfiguredModelCoverageMonitorSummary;
 }): Promise<{ delivered: boolean; skipped: boolean; reason?: string | null }> {
-	const configuredCoverageNotificationsEnabled = shouldNotifyConfiguredModelCoverage();
-	const configuredCoverageUpdatesForNotifications = configuredCoverageNotificationsEnabled
-		? args.configuredModelCoverage.updatesDetected
-		: 0;
-
-	if (
-		args.modelChanges.length === 0 &&
-		args.pricing.updatesDetected === 0 &&
-		args.providerApiPricing.updatesDetected === 0 &&
-		configuredCoverageUpdatesForNotifications === 0
-	) {
+	if (!hasDiscordNotifiableChanges(args)) {
 		return { delivered: false, skipped: true, reason: "no notifiable changes" };
 	}
 	const webhookUrl = readBindingEnv(["DISCORD_WEBHOOK_URL"]);
@@ -1218,6 +1296,8 @@ export async function sendDiscordNotification(args: {
 		message,
 		roleId: readBindingEnv(["DISCORD_ROLE_ID"]),
 		userId: readBindingEnv(["DISCORD_USER_ID"]),
+		username: PRIVATE_MODEL_DISCOVERY_USERNAME,
+		avatarUrl: PRIVATE_MODEL_DISCOVERY_AVATAR_URL,
 	});
 	return { delivered: true, skipped: false };
 }

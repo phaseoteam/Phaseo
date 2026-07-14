@@ -8,15 +8,15 @@ Use this recipe when a PHP app or admin backend needs quick content review help 
 ## 1. Install the SDKs
 
 ```bash
-composer require ai-stats/php-sdk ai-stats/agent-sdk-php
+composer require phaseo/sdk phaseo/agent-sdk
 ```
 
 ## 2. Define one content lookup tool
 
 ```php
 <?php
-use AIStats\AgentSdk\AgentSdk;
-use AIStats\AgentSdk\Tool;
+use Phaseo\AgentSdk\AgentSdk;
+use Phaseo\AgentSdk\Tool;
 
 $loadDraft = AgentSdk::defineTool(new Tool(
     id: "load-draft",
@@ -30,7 +30,7 @@ $loadDraft = AgentSdk::defineTool(new Tool(
     ],
     execute: static fn (mixed $input, $context) => [
         "slug" => $input["slug"] ?? "homepage",
-        "headline" => "AI Stats makes gateway routing visible.",
+        "headline" => "Phaseo makes gateway routing visible.",
     ]
 ));
 ```
@@ -39,7 +39,7 @@ $loadDraft = AgentSdk::defineTool(new Tool(
 
 ```php
 <?php
-use AIStats\AgentSdk\AgentDefinition;
+use Phaseo\AgentSdk\AgentDefinition;
 
 $agent = AgentSdk::createAgent(new AgentDefinition(
     id: "content-review-agent",

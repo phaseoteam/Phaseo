@@ -13,5 +13,5 @@ return array(
     'GuzzleHttp\\Promise\\' => array($vendorDir . '/guzzlehttp/promises/src'),
     'GuzzleHttp\\' => array($vendorDir . '/guzzlehttp/guzzle/src'),
     'DeepCopy\\' => array($vendorDir . '/myclabs/deep-copy/src/DeepCopy'),
-    'AIStats\\Sdk\\' => array($baseDir . '/src'),
+    'Phaseo\\Sdk\\' => array($baseDir . '/src'),
 );

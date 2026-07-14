@@ -14,7 +14,7 @@ import Link from "next/link";
 
 export default async function Endpoints() {
 	const modelsExample = `curl -s ${BASE_URL}/api/models \\
-  -H "Authorization: Bearer $AI_STATS_API_KEY" | jq '.[0:5]'`;
+  -H "Authorization: Bearer $PHASEO_API_KEY" | jq '.[0:5]'`;
 
 	return (
 		<Card>
@@ -25,7 +25,7 @@ export default async function Endpoints() {
 				<CardDescription>
 					Our main gateway endpoints. See more on the{" "}
 					<Link
-						href="https://docs.ai-stats.phaseo.app/"
+						href="https://phaseo.app/"
 						className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200"
 					>
 						documentation
@@ -119,7 +119,7 @@ export default async function Endpoints() {
 					<h4 className="text-sm font-semibold">Auth</h4>
 					<p className="text-sm text-muted-foreground">
 						Send <code>Authorization: Bearer &lt;your key&gt;</code>{" "}
-						on every request. Keys begin with <code>aistats_</code>.
+						on every request. Keys begin with <code>phaseo_v1_sk_</code>.
 					</p>
 				</div>
 			</CardContent>

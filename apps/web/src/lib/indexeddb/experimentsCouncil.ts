@@ -59,7 +59,8 @@ export type ExperimentsCouncilRunRecord = {
 	runSnapshot: Record<string, unknown> | null;
 };
 
-const DB_NAME = "ai-stats-experiments-council";
+const DB_NAME = "phaseo-experiments-council";
+const LEGACY_DB_NAME = "ai-stats-experiments-council";
 const DB_VERSION = 3;
 
 const PRESETS_STORE = "presets";
@@ -193,8 +194,98 @@ function openDb(): Promise<IDBDatabase> {
 				runStore.createIndex(RUN_REMOTE_ID_INDEX, "remoteRunId", { unique: false });
 			}
 		};
-		request.onsuccess = () => resolve(request.result);
+		request.onsuccess = async () => {
+			const db = request.result;
+			await migrateLegacyExperimentsCouncilDb(db).catch(() => undefined);
+			resolve(db);
+		};
 	});
+}
+
+async function databaseExists(name: string): Promise<boolean> {
+	const factory = window.indexedDB as IDBFactory & {
+		databases?: () => Promise<Array<{ name?: string | null }>>;
+	};
+	if (!factory.databases) return true;
+	const databases = await factory.databases();
+	return databases.some((database) => database.name === name);
+}
+
+function openLegacyDb(): Promise<IDBDatabase | null> {
+	return new Promise((resolve) => {
+		void (async () => {
+			if (!(await databaseExists(LEGACY_DB_NAME).catch(() => true))) {
+				resolve(null);
+				return;
+			}
+			const request = window.indexedDB.open(LEGACY_DB_NAME, DB_VERSION);
+			request.onerror = () => resolve(null);
+			request.onsuccess = () => resolve(request.result);
+		})();
+	});
+}
+
+function readAllFromStore(db: IDBDatabase, storeName: string): Promise<unknown[]> {
+	return new Promise((resolve) => {
+		if (!db.objectStoreNames.contains(storeName)) {
+			resolve([]);
+			return;
+		}
+		const tx = db.transaction(storeName, "readonly");
+		const request = tx.objectStore(storeName).getAll();
+		request.onerror = () => resolve([]);
+		request.onsuccess = () => resolve(Array.isArray(request.result) ? request.result : []);
+	});
+}
+
+function countStoreRecords(db: IDBDatabase, storeName: string): Promise<number> {
+	return new Promise((resolve) => {
+		if (!db.objectStoreNames.contains(storeName)) {
+			resolve(0);
+			return;
+		}
+		const tx = db.transaction(storeName, "readonly");
+		const request = tx.objectStore(storeName).count();
+		request.onerror = () => resolve(0);
+		request.onsuccess = () => resolve(Number(request.result ?? 0));
+	});
+}
+
+function writeAllToStore(db: IDBDatabase, storeName: string, rows: unknown[]): Promise<void> {
+	return new Promise((resolve) => {
+		if (!rows.length || !db.objectStoreNames.contains(storeName)) {
+			resolve();
+			return;
+		}
+		const tx = db.transaction(storeName, "readwrite");
+		const store = tx.objectStore(storeName);
+		for (const row of rows) {
+			store.put(row);
+		}
+		tx.oncomplete = () => resolve();
+		tx.onerror = () => resolve();
+		tx.onabort = () => resolve();
+	});
+}
+
+async function migrateLegacyExperimentsCouncilDb(targetDb: IDBDatabase): Promise<void> {
+	const migrationKey = "phaseo:indexeddb:migrated:experiments-council";
+	if (window.localStorage.getItem(migrationKey) === "1") return;
+	const legacyDb = await openLegacyDb();
+	if (!legacyDb) {
+		window.localStorage.setItem(migrationKey, "1");
+		return;
+	}
+	try {
+		for (const storeName of [PRESETS_STORE, CUSTOM_PRESETS_STORE, RUNS_STORE]) {
+			if ((await countStoreRecords(targetDb, storeName)) > 0) continue;
+			const rows = await readAllFromStore(legacyDb, storeName);
+			await writeAllToStore(targetDb, storeName, rows);
+		}
+		window.localStorage.setItem(migrationKey, "1");
+	} finally {
+		legacyDb.close();
+	}
 }
 
 async function withStore<T>(

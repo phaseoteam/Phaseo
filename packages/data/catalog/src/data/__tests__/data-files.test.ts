@@ -113,7 +113,7 @@ const videoProvidersWithExecutorMetadata = new Set([
   'minimax',
   'openai',
   'runway',
-  'x-ai',
+  'spacex-ai',
 ]);
 
 // Pretty print helpers for CLI-like output ------------------------------

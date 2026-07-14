@@ -17,7 +17,7 @@ jobs:
     name: Agent SDK readiness
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       - name: Setup pnpm
         uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
         with:
@@ -44,9 +44,9 @@ jobs:
     name: Go readiness
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       - name: Setup Go
-        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
         with:
           go-version: "1.23"
       - name: Run tests
@@ -57,16 +57,16 @@ jobs:
     name: C# readiness
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       - name: Setup .NET
-        uses: actions/setup-dotnet@9a946fdbd5fb07b82b2f5a4466058b876ab72bb2
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1
         with:
           dotnet-version: "8.0.x"
       - name: Build and pack
         run: |
-          dotnet test packages/sdk/sdk-csharp/tests/AIStats.Sdk.Tests/AIStats.Sdk.Tests.csproj -c Release
-          dotnet build packages/sdk/sdk-csharp/AIStats.Sdk.csproj -c Release
-          dotnet pack packages/sdk/sdk-csharp/AIStats.Sdk.csproj -c Release -o artifacts/csharp
+          dotnet test packages/sdk/sdk-csharp/tests/Phaseo.Sdk.Tests/Phaseo.Sdk.Tests.csproj -c Release
+          dotnet build packages/sdk/sdk-csharp/Phaseo.Sdk.csproj -c Release
+          dotnet pack packages/sdk/sdk-csharp/Phaseo.Sdk.csproj -c Release -o artifacts/csharp
       - name: Check NuGet trusted publishing user (optional override)
         if: inputs.checkSecrets
         shell: bash
@@ -80,9 +80,9 @@ jobs:
     name: Java readiness
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       - name: Setup Java
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654
+        uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a
         with:
           distribution: "temurin"
           java-version: "17"
@@ -115,9 +115,9 @@ jobs:
     name: PHP readiness
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       - name: Setup PHP
-        uses: shivammathur/setup-php@7c071dfe9dc99bdf297fa79cb49ea005b9fcadbc
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
         with:
           php-version: "8.2"
       - name: Validate composer package
@@ -142,16 +142,16 @@ jobs:
     name: Ruby readiness
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       - name: Setup Ruby
-        uses: ruby/setup-ruby@afeafc3d1ab54a631816aba4c914a0081c12ff2f
+        uses: ruby/setup-ruby@d45b1a4e94b71acab930e56e79c6aa188764e7f9
         with:
           ruby-version: "3.2"
       - name: Build gem
         working-directory: packages/sdk/sdk-ruby
         run: |
           ruby tests/lifecycle_test.rb
-          gem build ai_stats_sdk.gemspec
+          gem build phaseo_sdk.gemspec
       - name: Check RubyGems secret
         if: inputs.checkSecrets
         env:

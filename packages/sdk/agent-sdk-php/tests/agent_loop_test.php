@@ -3,16 +3,16 @@ declare(strict_types=1);
 
 require_once __DIR__ . "/../src/AgentSdk.php";
 
-use AIStats\AgentSdk\Agent;
-use AIStats\AgentSdk\AgentDefinition;
-use AIStats\AgentSdk\AgentSdk;
-use AIStats\AgentSdk\Message;
-use AIStats\AgentSdk\ModelClient;
-use AIStats\AgentSdk\ModelRequest;
-use AIStats\AgentSdk\ModelResponse;
-use AIStats\AgentSdk\RuntimeContext;
-use AIStats\AgentSdk\Tool;
-use AIStats\AgentSdk\ToolCall;
+use Phaseo\AgentSdk\Agent;
+use Phaseo\AgentSdk\AgentDefinition;
+use Phaseo\AgentSdk\AgentSdk;
+use Phaseo\AgentSdk\Message;
+use Phaseo\AgentSdk\ModelClient;
+use Phaseo\AgentSdk\ModelRequest;
+use Phaseo\AgentSdk\ModelResponse;
+use Phaseo\AgentSdk\RuntimeContext;
+use Phaseo\AgentSdk\Tool;
+use Phaseo\AgentSdk\ToolCall;
 
 function assert_true(bool $condition, string $message): void
 {

@@ -124,7 +124,7 @@ export function CompareSection() {
 										Capability
 									</th>
 									<th className="px-6 py-4 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-										AI Stats Gateway
+										Phaseo Gateway
 									</th>
 									<th className="px-6 py-4 text-sm font-semibold text-zinc-600 dark:text-zinc-300">
 										OpenRouter

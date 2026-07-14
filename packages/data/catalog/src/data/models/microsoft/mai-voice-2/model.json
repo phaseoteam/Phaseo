@@ -1,0 +1,31 @@
+{
+  "model_id": "microsoft/mai-voice-2",
+  "organisation_id": "microsoft",
+  "name": "MAI Voice 2",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "MAI Voice 2 is Microsoft's multilingual text-to-speech model for natural spoken output with short-sample voice adaptation. Microsoft positioned the voice family as generally available in Microsoft Foundry and MAI Playground at Build 2026.",
+  "announced_date": "2026-06-02T00:00:00",
+  "release_date": "2026-06-02T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,audio",
+  "output_types": "audio_tts",
+  "api_model_id": "microsoft/mai-voice-2",
+  "family_id": "microsoft/mai",
+  "links": [
+    {
+      "title": "Announcement",
+      "kind": "announcement",
+      "url": "https://microsoft.ai/news/mai-voice-2expressive-speech-in-10-languages/"
+    }
+  ],
+  "details": [
+    {
+      "name": "supported_languages",
+      "value": 15
+    }
+  ],
+  "benchmarks": []
+}

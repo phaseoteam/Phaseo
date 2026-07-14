@@ -1,5 +1,5 @@
 import { createHmac } from "node:crypto";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 type KeyRow = {
     id: string;
@@ -126,11 +126,15 @@ describe("authenticate hot-path caching", () => {
         vi.resetModules();
     });
 
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+
     it("reuses key-version and key-row L1 cache for back-to-back KV-backed auth checks", async () => {
         const kid = "KIDCACHE123";
         const secret = "secret_cache_hit";
         const hash = hashSecret(secret);
-        const token = `aistats_v1_sk_${kid}_${secret}`;
+        const token = `phaseo_v1_sk_${kid}_${secret}`;
         const row: KeyRow = {
             id: "key_1",
             workspace_id: "team_1",
@@ -156,7 +160,7 @@ describe("authenticate hot-path caching", () => {
         const kid = "KIDDBWARM123";
         const secret = "secret_db_path";
         const hash = hashSecret(secret);
-        const token = `aistats_v1_sk_${kid}_${secret}`;
+        const token = `phaseo_v1_sk_${kid}_${secret}`;
         runtime.dbRow.value = {
             id: "key_2",
             workspace_id: "team_2",
@@ -185,7 +189,7 @@ describe("authenticate hot-path caching", () => {
         const kid = "KIDPEPPERROTATE";
         const secret = "secret_prev";
         const hash = createHmac("sha256", runtime.bindings.KEY_PEPPER_PREVIOUS).update(secret).digest("hex");
-        const token = `aistats_v1_sk_${kid}_${secret}`;
+        const token = `phaseo_v1_sk_${kid}_${secret}`;
         runtime.dbRow.value = {
             id: "key_3",
             workspace_id: "team_3",
@@ -208,7 +212,7 @@ describe("authenticate hot-path caching", () => {
         const kid = "KIDEXPIRED001";
         const secret = "secret_expired";
         const hash = hashSecret(secret);
-        const token = `aistats_v1_sk_${kid}_${secret}`;
+        const token = `phaseo_v1_sk_${kid}_${secret}`;
         runtime.dbRow.value = {
             id: "key_4",
             workspace_id: "team_4",
@@ -221,5 +225,56 @@ describe("authenticate hot-path caching", () => {
         const result = await authenticate(buildRequest(token), { useKvCache: false });
 
         expect(result).toEqual({ ok: false, reason: "key_expired" });
+    });
+
+    it("accepts legacy aistats-prefixed keys before the cutoff", async () => {
+        const kid = "KIDLEGACY001";
+        const secret = "secret_legacy";
+        const hash = hashSecret(secret);
+        runtime.dbRow.value = {
+            id: "key_legacy",
+            workspace_id: "team_legacy",
+            status: "active",
+            hash,
+        };
+
+        const { authenticate } = await import("./auth");
+        const result = await authenticate(
+            buildRequest(`aistats_v1_sk_${kid}_${secret}`),
+            { useKvCache: false },
+        );
+
+        expect(result).toMatchObject({
+            ok: true,
+            workspaceId: "team_legacy",
+            apiKeyId: "key_legacy",
+            apiKeyKid: kid,
+        });
+    });
+
+    it("rejects legacy aistats-prefixed keys after the cutoff", async () => {
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date("2027-01-01T00:00:00.000Z"));
+
+        const kid = "KIDLEGACY002";
+        const secret = "secret_legacy";
+        runtime.dbRow.value = {
+            id: "key_legacy",
+            workspace_id: "team_legacy",
+            status: "active",
+            hash: hashSecret(secret),
+        };
+
+        const { authenticate } = await import("./auth");
+        const result = await authenticate(
+            buildRequest(`aistats_v1_sk_${kid}_${secret}`),
+            { useKvCache: false },
+        );
+
+        expect(result).toEqual({
+            ok: false,
+            reason: "legacy_key_prefix_retired",
+        });
+        expect(runtime.maybeSingle).not.toHaveBeenCalled();
     });
 });

@@ -1,48 +1,44 @@
 ---
 title: "Start Here"
-description: "Get your first successful AI Stats API request in under 5 minutes, then choose the right path for SDKs, routing, agents, or production rollout."
+description: "Choose the right Phaseo docs path for your first request, migration, SDK setup, or production rollout."
 ---
 
-Use this page when you want to get moving quickly and do not yet know which part of the docs you need.
+Use this page when you know what you want to build, but not which Phaseo docs page to open first.
 
-You can think of AI Stats in one sentence:
+Phaseo gives you one API for model access, provider routing, pricing, usage tracking, and async AI workflows.
 
-- one API for models, providers, routing, pricing, and async AI workflows
+If you are new to Phaseo, start with one successful request. If you already have an AI integration, jump to the migration or SDK path that matches your app.
 
-## Fastest path
+## First successful request
 
-If you only want the shortest route to first success:
+For a new integration, use this path:
 
 1. Create an API key in the dashboard.
-2. Send one request to a `:free` model.
-3. Confirm the response shape.
-4. Then choose the integration path that matches your app.
-
-<Note>
-Free models can be used with zero deposited credits. Paid models require available wallet balance.
-</Note>
+2. Send one request to a current text model.
+3. Read the model output from the response.
+4. Move into the SDK, routing, or production guide that matches your next step.
 
 ## First request
 
 <CodeGroup>
 ```bash cURL
-curl https://api.phaseo.app/v1/responses \
+curl https://api.phaseo.ai/v1/responses \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "google/gemma-3-27b:free",
+    "model": "openai/gpt-5.6-sol",
     "input": "Reply with: docs ready",
     "temperature": 0
   }'
 ```
 
 ```typescript TypeScript SDK
-import AIStats from "@ai-stats/sdk";
+import Phaseo from "@phaseo/sdk";
 
-const client = new AIStats({ apiKey: process.env.AI_STATS_API_KEY! });
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
-  model: "google/gemma-3-27b:free",
+  model: "openai/gpt-5.6-sol",
   input: "Reply with: docs ready",
   temperature: 0,
 });
@@ -51,13 +47,13 @@ console.log(response.output_text);
 ```
 
 ```python Python SDK
-from ai_stats import AIStats
+from phaseo import Phaseo
 
-client = AIStats(api_key="YOUR_API_KEY")
+client = Phaseo(api_key="YOUR_API_KEY")
 
 response = client.generate_response(
     {
-        "model": "google/gemma-3-27b:free",
+        "model": "openai/gpt-5.6-sol",
         "input": "Reply with: docs ready",
         "temperature": 0,
     }
@@ -67,11 +63,11 @@ print(response.get("output_text"))
 ```
 </CodeGroup>
 
-If that works, go to the [Quickstart](./quickstart) and keep building from there.
+If that works, continue with the [Quickstart](./quickstart) for the full first-request walkthrough.
 
 ---
 
-## Choose your starting point
+## Choose your path
 
 If you already have an integration or toolchain, start from the closest match instead of reading the docs from the top.
 
@@ -92,7 +88,7 @@ If you already have an integration or toolchain, start from the closest match in
 		Start from the Python client if your integration lives in scripts, workers, backends, or notebooks.
 	</Card>
 	<Card title="I'm using the AI SDK" icon="sparkles" href="./sdk-reference/sdk/ai-sdk">
-		Connect Vercel AI SDK apps to AI Stats without rebuilding your prompt or model flow.
+		Connect Vercel AI SDK apps to Phaseo without rebuilding your prompt or model flow.
 	</Card>
 	<Card title="I'm using Codex or Claude Code" icon="bot" href="./guides/integrations/index">
 		Set up the gateway, Docs MCP, and coding-agent integrations from one place.
@@ -104,7 +100,9 @@ If you already have an integration or toolchain, start from the closest match in
 
 ---
 
-## What are you trying to do?
+## Common jobs
+
+Choose the job closest to what you need right now.
 
 <Columns cols={2}>
 	<Card title="Make my first request" icon="rocket" href="./quickstart">
@@ -114,7 +112,7 @@ If you already have an integration or toolchain, start from the closest match in
 		Pick the client SDK that matches your stack and start from real wrapper examples.
 	</Card>
 	<Card title="Connect a coding agent" icon="bot" href="./guides/integrations/index">
-		Set up Codex, Claude Code, OpenCode, or Docs MCP against AI Stats.
+		Set up Codex, Claude Code, OpenCode, or Docs MCP against Phaseo.
 	</Card>
 	<Card title="Migrate an existing integration" icon="arrow-right-left" href="./migration-guides/index">
 		Move from OpenAI, OpenRouter, Anthropic, Vercel, LiteLLM, or another gateway.
@@ -129,7 +127,7 @@ If you already have an integration or toolchain, start from the closest match in
 
 ---
 
-## Most useful pages
+## Core pages
 
 <Columns cols={2}>
 	<Card title="Quickstart" icon="rocket" href="./quickstart">
@@ -156,16 +154,16 @@ If you already have an integration or toolchain, start from the closest match in
 
 ## If you are using agents
 
-AI Stats is set up to work well with coding agents and AI tools, not just humans reading docs in a browser.
+Phaseo is set up to work well with coding agents and AI tools, not just humans reading docs in a browser.
 
 Start here:
 
 <Columns cols={2}>
 	<Card title="Docs MCP" icon="plug-zap" href="./guides/integrations/docs-mcp">
-		Let Codex, Claude Code, Cursor, or VS Code search the live AI Stats docs while they work.
+		Let Codex, Claude Code, Cursor, or VS Code search the live Phaseo docs while they work.
 	</Card>
-	<Card title="skill.md" icon="file-text" href="https://ai-stats.phaseo.app/skill.md">
-		Capability summary for agents that need to understand what AI Stats can do and how requests work.
+	<Card title="skill.md" icon="file-text" href="https://phaseo.app/docs/skill.md">
+		Capability summary for agents that need to understand what Phaseo can do and how requests work.
 	</Card>
 	<Card title="Integrations" icon="plug" href="./guides/integrations/index">
 		Set up coding tools and editor workflows around the gateway.
@@ -185,14 +183,14 @@ Use the data surfaces when you need to choose before you build:
 	<Card
 		title="Browse Models"
 		icon="database"
-		href="https://ai-stats.phaseo.app/models"
+		href="https://phaseo.app/models"
 	>
 		Find models, pricing, context windows, capabilities, and provider offers in one place.
 	</Card>
 	<Card
 		title="Compare Models"
 		icon="diff"
-		href="https://ai-stats.phaseo.app/compare"
+		href="https://phaseo.app/compare"
 	>
 		Compare performance, cost, and metadata side by side before you commit to one route.
 	</Card>

@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace AIStats\Gen;
+namespace Phaseo\Gen;
 
 function calculatePricing(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
@@ -171,13 +171,6 @@ function createVideoDownloadUrlAlias(Client $client, ?array $path = null, ?array
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
-function createWebhookEndpoint(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/webhook-endpoints";
-	return $client->request("POST", $resolvedPath, $query, $headers, $body);
-}
-
 function createWorkspace(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -203,13 +196,6 @@ function deleteVideoAlias(Client $client, ?array $path = null, ?array $query = n
 {
 	$path = $path ?? [];
 	$resolvedPath = "/video/generations/{$path["video_id"]}";
-	return $client->request("DELETE", $resolvedPath, $query, $headers, $body);
-}
-
-function deleteWebhookEndpoint(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/webhook-endpoints/{$path["endpoint_id"]}";
 	return $client->request("DELETE", $resolvedPath, $query, $headers, $body);
 }
 
@@ -332,13 +318,6 @@ function getVideoContentAlias(Client $client, ?array $path = null, ?array $query
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
-function getWebhookEndpoint(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/webhook-endpoints/{$path["endpoint_id"]}";
-	return $client->request("GET", $resolvedPath, $query, $headers, $body);
-}
-
 function getWorkspace(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -364,6 +343,34 @@ function listBatchCapabilitiesAlias(Client $client, ?array $path = null, ?array 
 {
 	$path = $path ?? [];
 	$resolvedPath = "/batch/capabilities";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listBatches(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/batches";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listBatchesAlias(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/batch";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listBatchModels(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/batches/models";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listBatchModelsAlias(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/batch/models";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
@@ -405,7 +412,7 @@ function listFiles(Client $client, ?array $path = null, ?array $query = null, ?a
 function listModels(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
-	$resolvedPath = "/gateway/models";
+	$resolvedPath = "/models";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
@@ -433,7 +440,7 @@ function listProviders(Client $client, ?array $path = null, ?array $query = null
 function listTeamModels(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
-	$resolvedPath = "/gateway/models/me";
+	$resolvedPath = "/models/me";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
@@ -465,13 +472,6 @@ function listVideosAlias(Client $client, ?array $path = null, ?array $query = nu
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
-function listWebhookEndpoints(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/webhook-endpoints";
-	return $client->request("GET", $resolvedPath, $query, $headers, $body);
-}
-
 function listWorkspaces(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -479,10 +479,10 @@ function listWorkspaces(Client $client, ?array $path = null, ?array $query = nul
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
-function openResponsesWebSocket(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+function openAsyncJobWebSocket(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
-	$resolvedPath = "/responses/ws";
+	$resolvedPath = "/async/{$path["kind"]}/{$path["id"]}/ws";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
@@ -542,24 +542,10 @@ function retrieveFileContent(Client $client, ?array $path = null, ?array $query 
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
-function rotateWebhookEndpointSecret(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/webhook-endpoints/{$path["endpoint_id"]}/rotate-secret";
-	return $client->request("POST", $resolvedPath, $query, $headers, $body);
-}
-
 function updateApiKey(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
 	$resolvedPath = "/keys/{$path["id"]}";
-	return $client->request("PATCH", $resolvedPath, $query, $headers, $body);
-}
-
-function updateWebhookEndpoint(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/webhook-endpoints/{$path["endpoint_id"]}";
 	return $client->request("PATCH", $resolvedPath, $query, $headers, $body);
 }
 

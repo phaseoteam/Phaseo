@@ -79,7 +79,7 @@ function validateAzureCredentials(value: string): boolean {
 			if (!deployment || typeof deployment !== "object") return false;
 
 			const modelSlug =
-				deployment.modelSlug ?? deployment.aiStatsModelSlug;
+				deployment.modelSlug ?? deployment.phaseoModelSlug ?? deployment.aiStatsModelSlug;
 			const endpointUrl =
 				deployment.endpointUrl ??
 				deployment.endpoint ??
@@ -260,6 +260,13 @@ export const BYOK_PROVIDER_KEY_SPECS: Record<string, ProviderKeySpec> = {
 		docsUrl: "/api-providers/moonshotai",
 		regex: OPENAI_STYLE_REGEX,
 	},
+	meta: {
+		hint: "Meta Model API key from the Muse Spark get-started flow.",
+		example: "meta-xxxxxxxxxxxxxxxx",
+		docsUrl:
+			"https://developer.meta.com/ai/resources/blog/build-with-muse-spark/#5-get-started",
+		minLength: 16,
+	},
 	novitaai: {
 		hint: "NovitaAI keys are usually OpenAI-style (sk-...).",
 		example: "sk-xxxxxxxx",
@@ -296,8 +303,8 @@ export const BYOK_PROVIDER_KEY_SPECS: Record<string, ProviderKeySpec> = {
 		docsUrl: "https://docs.wandb.ai/inference/api-reference",
 		minLength: 16,
 	},
-	"x-ai": {
-		hint: "xAI keys are commonly xai-... or sk-... style keys.",
+	"spacex-ai": {
+		hint: "SpaceXAI keys are commonly xai-... or sk-... style keys.",
 		example: "xai-xxxxxxxx",
 		docsUrl: "https://console.x.ai/",
 		regex: /^(xai-|sk-)[A-Za-z0-9_-]{16,}$/,

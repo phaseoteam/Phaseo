@@ -16,7 +16,8 @@
   "family_id": "openai/gpt-4o",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://platform.openai.com/docs/models/gpt-4o-audio-preview"
     }
   ],

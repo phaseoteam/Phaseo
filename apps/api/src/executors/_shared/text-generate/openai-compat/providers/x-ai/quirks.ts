@@ -2,12 +2,11 @@
 // Why: Consolidates OpenAI-style quirks across many providers.
 // How: Maps IR to OpenAI formats and normalizes streaming events.
 
-// xAI Provider Quirks
-// Maps xAI usage detail fields into OpenAI-compatible naming.
+// SpaceXAI Provider Quirks
+// Maps SpaceXAI usage detail fields into OpenAI-compatible naming.
 
 import type { ProviderQuirks } from "../../quirks/types";
 import { applyJsonSchemaFallback } from "../../quirks/structured";
-import { normalizeTextServiceTier } from "@core/serviceTiers";
 
 function isReasoningModel(model: unknown): boolean {
 	if (typeof model !== "string") return false;
@@ -16,34 +15,12 @@ function isReasoningModel(model: unknown): boolean {
 	return normalized.includes("reasoning") || normalized.includes("grok-4");
 }
 
-function normalizeXAiServiceTier(value: unknown): string | undefined {
-	if (typeof value !== "string") return undefined;
-	const normalized = value.trim().toLowerCase();
-	if (!normalized) return undefined;
-	if (normalized === "default") return "standard";
-	return normalizeTextServiceTier(normalized) ?? undefined;
-}
-
-function attachServiceTierToUsage(responseLike: any): void {
-	if (!responseLike || typeof responseLike !== "object") return;
-	const observedServiceTier = normalizeXAiServiceTier(
-		responseLike.service_tier ??
-		responseLike.usage?.service_tier ??
-		responseLike.usage?.serviceTier,
-	);
-	if (!observedServiceTier) return;
-	responseLike.usage ??= {};
-	if (typeof responseLike.usage !== "object") return;
-	responseLike.usage.service_tier = observedServiceTier;
-	responseLike.usage.serviceTier = observedServiceTier;
-}
-
 export const xAiQuirks: ProviderQuirks = {
 	transformRequest: ({ request, model }) => {
-		// xAI rejects some OpenAI json_schema forms on compatibility endpoints.
+		// SpaceXAI rejects some OpenAI json_schema forms on compatibility endpoints.
 		applyJsonSchemaFallback(request);
 
-		// xAI reasoning models reject presence_penalty/frequency_penalty/stop.
+		// SpaceXAI reasoning models reject presence_penalty/frequency_penalty/stop.
 		// Keep requests compatible by stripping these upfront.
 		if (isReasoningModel(model ?? request?.model)) {
 			delete request.presence_penalty;
@@ -52,17 +29,11 @@ export const xAiQuirks: ProviderQuirks = {
 		}
 	},
 
-	transformStreamChunk: ({ chunk }) => {
-		attachServiceTierToUsage(chunk);
-		attachServiceTierToUsage(chunk?.response);
-	},
-
 	normalizeResponse: ({ response }) => {
-		attachServiceTierToUsage(response);
 		const usage = response?.usage;
 		if (!usage || typeof usage !== "object") return;
 
-		// xAI uses prompt/completion detail keys; map them to OpenAI-compatible names.
+		// SpaceXAI uses prompt/completion detail keys; map them to OpenAI-compatible names.
 		if (!usage.input_tokens_details && usage.prompt_tokens_details) {
 			usage.input_tokens_details = usage.prompt_tokens_details;
 		}

@@ -1,8 +1,8 @@
 import { describe, expect, expectTypeOf, test, vi } from "vitest";
-import { AIStats } from "../src/index.js";
+import { Phaseo } from "../src/index.js";
 import type { AsyncWebhookPublicState, VideoBillingSummary, VideoStatusResponse } from "../src/index.js";
 
-describe("AIStats video helpers", () => {
+describe("Phaseo video helpers", () => {
   test("VideoStatusResponse exposes normalized async lifecycle fields", () => {
     expectTypeOf<VideoStatusResponse>().toHaveProperty("lifecycle_status").toEqualTypeOf<
       "pending" | "running" | "completed" | "failed" | "cancelled" | "expired" | undefined
@@ -104,7 +104,7 @@ describe("AIStats video helpers", () => {
       throw new Error(`Unexpected fetch: ${method} ${url}`);
     }) as unknown as typeof fetch;
 
-    const client = new AIStats({
+    const client = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -185,7 +185,7 @@ describe("AIStats video helpers", () => {
       );
     }) as unknown as typeof fetch;
 
-    const client = new AIStats({
+    const client = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -220,7 +220,7 @@ describe("AIStats video helpers", () => {
       );
     }) as unknown as typeof fetch;
 
-    const client = new AIStats({
+    const client = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,

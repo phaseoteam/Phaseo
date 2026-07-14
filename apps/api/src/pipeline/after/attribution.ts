@@ -28,10 +28,12 @@ export function readAttributionHeaders(req: Request) {
     const appName = req.headers.get("x-app-name") ?? null;
     const sessionId =
         req.headers.get("x-session-id") ??
+        req.headers.get("x-phaseo-session-id") ??
         req.headers.get("x-aistats-session-id") ??
         null;
     const userId =
         req.headers.get("x-user-id") ??
+        req.headers.get("x-phaseo-user-id") ??
         req.headers.get("x-aistats-user-id") ??
         null;
 

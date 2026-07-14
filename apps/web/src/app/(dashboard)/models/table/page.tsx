@@ -7,7 +7,7 @@ import type { MonitorModelTableRow } from "@/lib/fetchers/models/table-view/type
 export const metadata: Metadata = {
 	title: "Models table view",
 	description:
-		"Internal table layout for browsing AI Stats model records in bulk with dense columns, sortable metadata, and quick cross-provider comparisons.",
+		"Internal table layout for browsing Phaseo model records in bulk with dense columns, sortable metadata, and quick cross-provider comparisons.",
 	robots: {
 		index: false,
 		follow: true,
@@ -93,6 +93,7 @@ function toCompactTableRows(
 				inputPrice: row.provider.inputPrice,
 				outputPrice: row.provider.outputPrice,
 				features: row.provider.features,
+				executionRegions: row.provider.executionRegions,
 			},
 			endpoint: row.endpoint,
 			gatewayStatus: row.gatewayStatus,
@@ -101,6 +102,7 @@ function toCompactTableRows(
 			context: row.context,
 			maxOutput: row.maxOutput,
 			quantization: row.quantization,
+			supportedParameters: row.supportedParameters,
 			tier: row.tier,
 			added: row.added,
 			retired: row.retired,
@@ -115,7 +117,6 @@ export default async function ModelsTablePage() {
 	const monitorResult = await fetchFrontendMonitorModels();
 	const {
 		models: modelData,
-		allTiers,
 		allEndpoints,
 		allModalities,
 		allFeatures,
@@ -135,7 +136,6 @@ export default async function ModelsTablePage() {
 			allEndpoints={allEndpoints}
 			allModalities={allModalities}
 			allFeatures={allFeatures}
-			allTiers={allTiers}
 			allStatuses={allStatuses}
 		/>
 	);

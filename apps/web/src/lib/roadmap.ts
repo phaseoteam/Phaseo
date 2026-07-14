@@ -77,7 +77,7 @@ export const MILESTONES: RoadmapMilestone[] = [
 		status: "In Progress",
 		due: "Apr 2026",
 		description:
-			"More granular privacy and retention controls for teams using AI Stats Gateway.",
+			"More granular privacy and retention controls for teams using Phaseo Gateway.",
 		icon: "BookOpen",
 		href: "/settings/privacy",
 	},

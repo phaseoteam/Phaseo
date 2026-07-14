@@ -308,7 +308,7 @@ function getHeaders(args?: { testingMode?: boolean }): Record<string, string> {
 		headers["x-internal-test-token"] = INTERNAL_TEST_TOKEN;
 	}
 	if (args?.testingMode) {
-		headers["x-ai-stats-testing-mode"] = "1";
+		headers["x-phaseo-testing-mode"] = "1";
 	}
 	return headers;
 }

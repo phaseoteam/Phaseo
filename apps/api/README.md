@@ -1,46 +1,42 @@
-# AI Stats Gateway API
+# Phaseo Gateway API
 
-The **AI Stats Gateway** is the open API layer that connects multiple AI providers under a single unified interface.  
-It’s built on **Cloudflare Workers** with **Hono**, and serves as the backbone of the AI Stats ecosystem.
+The Phaseo Gateway is the API layer that connects multiple AI providers behind one unified interface. It runs on Cloudflare Workers with Hono and powers the Phaseo gateway, routing, pricing, and observability surface.
 
----
+## Purpose
 
-### 💡 Purpose
+The gateway lets developers access models from OpenAI, Anthropic, Google, Mistral, and other providers through one endpoint. It is designed to keep routing, cost visibility, provider behavior, and model metadata predictable across providers.
 
-The gateway exists so developers can access any model — from OpenAI, Anthropic, Google, Mistral, and beyond — through one transparent, open endpoint.  
-No hidden fees, no opaque routing, no lock-in.
+## What It Does
 
----
+- Routes requests across supported providers.
+- Tracks latency, tokens, cost, and request metadata.
+- Syncs events and analytics into Supabase-backed product views.
+- Supports model metadata, pricing, benchmarks, and provider coverage.
+- Exposes OpenAI-compatible endpoints plus Phaseo-specific controls.
 
-### 🧠 What It Does
+## Architecture
 
--   Routes requests to multiple providers seamlessly
--   Tracks latency, tokens, and costs transparently
--   Syncs events and analytics into Supabase
--   Supports metadata and benchmarking for every model
+- Runtime: Cloudflare Workers
+- Framework: Hono and TypeScript
+- Database: Supabase
+- Logging: Axiom
+- Monitoring: server timing, structured events, and dashboards
 
----
+## Useful Links
 
-### ⚙️ Architecture
+- API docs: https://phaseo.app/docs/v1/api-reference/introduction
+- Product: https://phaseo.app
+- GitHub: https://github.com/phaseoteam/Phaseo
+- Support: https://phaseo.app/contact
 
--   **Runtime:** Cloudflare Workers
--   **Framework:** Hono (TypeScript)
--   **Database:** Supabase
--   **Logging:** Axiom
--   **Monitoring:** Server-Timing headers and dashboards
+## Contributing
 
----
+This is the right place to improve routing, pricing, provider adapters, caching, observability, and API behavior.
 
-### 🤝 Contributing
+Common contribution areas:
 
-If you want to help improve routing, pricing, or observability logic — this is the right place.
-
-You can:
-
--   Add new providers or endpoints
--   Optimise performance and caching
--   Improve type safety and structure
--   Expand metadata coverage
-
-> This API is designed for everyone, not just those who can pay.  
-> It’s the open foundation for truly global AI access.
+- Add providers or endpoint coverage.
+- Improve request normalization and response mapping.
+- Tighten type safety and validation.
+- Expand model, provider, and pricing metadata.
+- Improve performance, caching, and reliability.

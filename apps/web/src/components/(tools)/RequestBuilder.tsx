@@ -202,7 +202,7 @@ export default function RequestBuilder({ models }: RequestBuilderProps) {
 		const escapedJson = escapeForSingleQuotedShell(json);
 		return `curl -X POST "${BASE_URL}/chat/completions" \\
   -H "Content-Type: application/json" \\
-  -H "Authorization: Bearer $AI_STATS_API_KEY" \\
+  -H "Authorization: Bearer $PHASEO_API_KEY" \\
   -d '${escapedJson}'`;
 	};
 
@@ -215,7 +215,7 @@ export default function RequestBuilder({ models }: RequestBuilderProps) {
 		return `const response = await fetch("${BASE_URL}/chat/completions", {
     method: "POST",
     headers: {
-        "Authorization": \`Bearer \${process.env.AI_STATS_API_KEY!}\`,
+        "Authorization": \`Bearer \${process.env.PHASEO_API_KEY!}\`,
         "Content-Type": "application/json",
     },
     body: JSON.stringify(
@@ -243,7 +243,7 @@ import requests
 
 url = "${BASE_URL}/chat/completions"
 headers = {
-    "Authorization": f"Bearer {os.environ['AI_STATS_API_KEY']}",
+    "Authorization": f"Bearer {os.environ['PHASEO_API_KEY']}",
     "Content-Type": "application/json",
 }
 data = ${pythonJson}

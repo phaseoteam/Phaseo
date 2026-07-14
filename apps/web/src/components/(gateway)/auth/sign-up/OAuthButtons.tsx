@@ -4,10 +4,12 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { handleOAuthRedirect } from "@/app/(auth)/sign-in/actions";
 import { Logo } from "@/components/Logo";
+import { captureProductEvent } from "@/lib/productAnalytics";
 
 type SocialProviderId = "google" | "github" | "gitlab";
 
 const SOCIAL_PROVIDER_IDS: SocialProviderId[] = ["google", "github", "gitlab"];
+const LAST_AUTH_PROVIDER_STORAGE_KEY = "phaseo:last-auth-provider";
 
 type ProviderMeta = {
 	label: string;
@@ -43,7 +45,23 @@ export default function OAuthButtons({
 				{SOCIAL_PROVIDER_IDS.map((id) => {
 					const meta = META[id];
 					return (
-						<form action={handleOAuthRedirect} key={id}>
+						<form
+							action={handleOAuthRedirect}
+							key={id}
+							onSubmit={() => {
+								try {
+									window.localStorage.setItem(
+										LAST_AUTH_PROVIDER_STORAGE_KEY,
+										id
+									);
+								} catch {
+									// Ignore storage failures; auth still proceeds.
+								}
+								captureProductEvent("account_signup_started", {
+									method: id,
+								});
+							}}
+						>
 							<input type="hidden" name="authFlow" value="signup" />
 							<input type="hidden" name="provider" value={id} />
 							{returnUrl ? (

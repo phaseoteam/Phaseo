@@ -3,6 +3,17 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Logo } from "@/components/Logo";
 import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
 	Dialog,
 	DialogContent,
 	DialogDescription,
@@ -35,7 +46,7 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import { ChevronsUpDown } from "lucide-react";
+import { ChevronsUpDown, RotateCcw } from "lucide-react";
 import type {
 	RoomBaseModelSettings,
 } from "@/components/(chat)/rooms/useRoomModelSettings";
@@ -54,7 +65,7 @@ type RoomModelSettingsShellProps = {
 	}>;
 	selectedModelId?: string | null;
 	onModelChange: (modelId: string) => void;
-	providerOptions: Array<{ id: string; name: string }>;
+	providerOptions: Array<{ id: string; name: string; logoId?: string }>;
 	supportedProvidersForModel?: string[];
 	onUpdateBase: (partial: Partial<RoomBaseModelSettings>) => void;
 	onReset: () => void;
@@ -129,11 +140,19 @@ export function RoomModelSettingsShell({
 }: RoomModelSettingsShellProps) {
 	const [modelPickerOpen, setModelPickerOpen] = useState(false);
 	const [modelSearchValue, setModelSearchValue] = useState("");
+	const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
 	const filteredProviderOptions = supportedProvidersForModel
 		? providerOptions.filter((provider) =>
 				supportedProvidersForModel.includes(provider.id),
 			)
 		: providerOptions;
+	const providerValue = settings.providerId || "auto";
+	const selectedProviderLabel =
+		providerValue === "auto"
+			? "Auto (Gateway)"
+			: (filteredProviderOptions.find(
+					(provider) => provider.id === providerValue,
+				)?.name ?? "Auto (Gateway)");
 	const groupedModelChoices = useMemo(() => {
 		const grouped = new Map<string, typeof modelChoices>();
 		for (const choice of modelChoices) {
@@ -326,15 +345,20 @@ export function RoomModelSettingsShell({
 							<div className="grid gap-1.5">
 								<Label>Provider</Label>
 								<Select
-									value={settings.providerId || "auto"}
+									value={providerValue}
 									onValueChange={(value) => onUpdateBase({ providerId: value })}
 								>
-									<SelectTrigger>
-										<SelectValue placeholder="Auto (Gateway)" />
+									<SelectTrigger className="w-full min-w-0">
+										<SelectValue
+											className="min-w-0"
+											placeholder="Auto (Gateway)"
+										>
+											{selectedProviderLabel}
+										</SelectValue>
 									</SelectTrigger>
-									<SelectContent>
+									<SelectContent className="max-w-[min(var(--anchor-width),calc(100vw-2rem))]">
 										<SelectItem value="auto">
-											<div className="flex items-center gap-2">
+											<div className="flex min-w-0 items-center gap-2">
 												<span className="flex h-4 w-4 shrink-0 items-center justify-center">
 													<svg
 														viewBox="0 0 24 24"
@@ -346,20 +370,20 @@ export function RoomModelSettingsShell({
 														<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
 													</svg>
 												</span>
-												Auto (Gateway)
+												<span className="truncate">Auto (Gateway)</span>
 											</div>
 										</SelectItem>
 										{filteredProviderOptions.map((provider) => (
 											<SelectItem key={provider.id} value={provider.id}>
-												<div className="flex items-center gap-2">
+												<div className="flex min-w-0 items-center gap-2">
 													<Logo
-														id={provider.id}
+														id={provider.logoId ?? provider.id}
 														alt={provider.name}
 														width={16}
 														height={16}
 														className="shrink-0"
 													/>
-													{provider.name}
+													<span className="truncate">{provider.name}</span>
 												</div>
 											</SelectItem>
 										))}
@@ -382,9 +406,37 @@ export function RoomModelSettingsShell({
 						<Separator />
 						{children}
 						<div className="flex justify-end pt-1">
-							<Button variant="outline" onClick={onReset}>
-								Reset model settings
-							</Button>
+							<AlertDialog
+								open={resetConfirmOpen}
+								onOpenChange={setResetConfirmOpen}
+							>
+								<AlertDialogTrigger asChild>
+									<Button variant="outline">
+										<RotateCcw className="h-4 w-4" />
+										Reset model settings
+									</Button>
+								</AlertDialogTrigger>
+								<AlertDialogContent>
+									<AlertDialogHeader>
+										<AlertDialogTitle>Reset model settings?</AlertDialogTitle>
+										<AlertDialogDescription>
+											This will restore this model to its default provider,
+											display name, enabled state, and room parameters.
+										</AlertDialogDescription>
+									</AlertDialogHeader>
+									<AlertDialogFooter>
+										<AlertDialogCancel>Cancel</AlertDialogCancel>
+										<AlertDialogAction
+											onClick={() => {
+												onReset();
+												setResetConfirmOpen(false);
+											}}
+										>
+											Reset settings
+										</AlertDialogAction>
+									</AlertDialogFooter>
+								</AlertDialogContent>
+							</AlertDialog>
 						</div>
 					</div>
 				</DialogContent>

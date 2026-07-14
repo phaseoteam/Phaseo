@@ -98,63 +98,6 @@ describe("resolveStreamForProtocol", () => {
 		expect(output).toContain("\"type\":\"message\"");
 	});
 
-	it("preserves xAI observed service tier on responses stream passthrough", async () => {
-		const upstream = makeSseResponse([
-			{
-				event: "response.created",
-				data: {
-					response: {
-						id: "resp_xai_responses_1",
-						created_at: 1710000010,
-						model: "grok-4.3",
-					},
-				},
-			},
-			{
-				event: "response.completed",
-				data: {
-					response: {
-						id: "resp_xai_responses_1",
-						object: "response",
-						created_at: 1710000010,
-						model: "grok-4.3",
-						status: "completed",
-						service_tier: "default",
-						output: [
-							{
-								type: "message",
-								role: "assistant",
-								content: [{ type: "output_text", text: "ok" }],
-							},
-						],
-						usage: { input_tokens: 3, output_tokens: 2, total_tokens: 5 },
-					},
-				},
-			},
-			"[DONE]",
-		]);
-
-		const stream = resolveStreamForProtocol(
-			upstream,
-			baseArgs({
-				providerId: "x-ai",
-				endpoint: "responses",
-				protocol: "openai.responses",
-				ir: {
-					messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
-					model: "x-ai/grok-4.3",
-					stream: true,
-				},
-			}),
-			"responses",
-		);
-
-		const frames = parseSseJsonFrames(await readStreamText(stream));
-		const completed = frames.find((payload) => payload?.response?.object === "response");
-
-		expect(completed?.response?.usage?.service_tier).toBe("standard");
-	});
-
 	it("converts responses stream to anthropic messages stream for /messages protocol", async () => {
 		const upstream = makeSseResponse([
 			{
@@ -266,9 +209,17 @@ describe("resolveStreamForProtocol", () => {
 				},
 			},
 			{
+				event: "response.reasoning_text.delta",
+				data: {
+					item_id: "rs_fc_1",
+					output_index: 0,
+					delta: "Need a lookup.",
+				},
+			},
+			{
 				event: "response.output_item.added",
 				data: {
-					output_index: 0,
+					output_index: 1,
 					item: {
 						type: "function_call",
 						id: "fc_item_1",
@@ -282,7 +233,7 @@ describe("resolveStreamForProtocol", () => {
 				event: "response.function_call_arguments.delta",
 				data: {
 					item_id: "fc_item_1",
-					output_index: 0,
+					output_index: 1,
 					delta: "{\"city\":\"SF\"}",
 				},
 			},
@@ -290,7 +241,7 @@ describe("resolveStreamForProtocol", () => {
 				event: "response.function_call_arguments.done",
 				data: {
 					item_id: "fc_item_1",
-					output_index: 0,
+					output_index: 1,
 					name: "get_weather",
 					arguments: "{\"city\":\"SF\"}",
 				},
@@ -340,36 +291,108 @@ describe("resolveStreamForProtocol", () => {
 		expect(output).toContain("\"arguments\":\"{\\\"city\\\":\\\"SF\\\"}\"");
 	});
 
-	it("preserves xAI observed service tier when converting responses stream to chat", async () => {
+	it("converts named responses tool_call stream events to chat tool_call deltas", async () => {
 		const upstream = makeSseResponse([
 			{
 				event: "response.created",
 				data: {
 					response: {
-						id: "resp_xai_tier_1",
-						created_at: 1710000009,
-						model: "grok-4.3",
+						id: "resp_tc_1",
+						created_at: 1710000002,
+						model: "test-model",
 					},
+				},
+			},
+			{
+				event: "response.output_item.added",
+				data: {
+					output_index: 0,
+					item: {
+						type: "tool_call",
+						id: "tc_item_1",
+						call_id: "call_weather_1",
+						function: {
+							name: "get_weather",
+							arguments: "",
+						},
+					},
+				},
+			},
+			{
+				event: "response.function_call_arguments.delta",
+				data: {
+					item_id: "tc_item_1",
+					output_index: 0,
+					delta: "{\"city\":\"SF\"}",
+				},
+			},
+			{
+				event: "response.function_call_arguments.done",
+				data: {
+					item_id: "tc_item_1",
+					output_index: 0,
+					name: "get_weather",
+					arguments: "{\"city\":\"SF\"}",
+				},
+			},
+			"[DONE]",
+		]);
+
+		const stream = resolveStreamForProtocol(
+			upstream,
+			baseArgs({
+				endpoint: "chat.completions",
+				protocol: "openai.chat.completions",
+				providerId: "poolside",
+			}),
+			"responses",
+		);
+
+		const output = await readStreamText(stream);
+		const chunks = parseSseJsonFrames(output).filter((payload) => payload?.object === "chat.completion.chunk");
+		const toolChunks = chunks.filter((payload) => Array.isArray(payload?.choices?.[0]?.delta?.tool_calls));
+		expect(toolChunks.length).toBeGreaterThan(0);
+		for (const chunk of toolChunks) {
+			expect(chunk.choices?.[0]?.index).toBe(0);
+			const tc = chunk.choices?.[0]?.delta?.tool_calls?.[0];
+			expect(tc?.id).toBe("call_weather_1");
+			expect(tc?.function?.name).toBe("get_weather");
+		}
+		expect(output).toContain("\"arguments\":\"{\\\"city\\\":\\\"SF\\\"}\"");
+	});
+
+	it("does not convert generic responses tool_call completions to chat tool_call deltas", async () => {
+		const upstream = makeSseResponse([
+			{
+				event: "response.created",
+				data: {
+					response: {
+						id: "resp_fc_shadow",
+						created_at: 1710000002,
+						model: "test-model",
+					},
+				},
+			},
+			{
+				event: "response.function_call_arguments.done",
+				data: {
+					item_id: "fc_shadow",
+					output_index: 0,
+					name: "tool_call",
+					arguments: "{\"timezones\":[\"UTC\"]}",
 				},
 			},
 			{
 				event: "response.completed",
 				data: {
 					response: {
-						id: "resp_xai_tier_1",
+						id: "resp_fc_shadow",
 						object: "response",
-						created_at: 1710000009,
-						model: "grok-4.3",
+						created_at: 1710000002,
+						model: "test-model",
 						status: "completed",
-						service_tier: "default",
-						output: [
-							{
-								type: "message",
-								role: "assistant",
-								content: [{ type: "output_text", text: "ok" }],
-							},
-						],
-						usage: { input_tokens: 3, output_tokens: 2, total_tokens: 5 },
+						output: [],
+						usage: { input_tokens: 2, output_tokens: 1, total_tokens: 3 },
 					},
 				},
 			},
@@ -379,56 +402,6 @@ describe("resolveStreamForProtocol", () => {
 		const stream = resolveStreamForProtocol(
 			upstream,
 			baseArgs({
-				providerId: "x-ai",
-				endpoint: "chat.completions",
-				protocol: "openai.chat.completions",
-				ir: {
-					messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
-					model: "x-ai/grok-4.3",
-					stream: true,
-				},
-			}),
-			"responses",
-		);
-
-		const frames = parseSseJsonFrames(await readStreamText(stream));
-		const finalPayload = frames.find((payload) => payload?.object === "chat.completion");
-
-		expect(finalPayload?.usage?.service_tier).toBe("standard");
-	});
-
-	it("keeps the public model id when converting responses streams back to chat chunks", async () => {
-		const upstream = makeSseResponse([
-			{
-				event: "response.created",
-				data: {
-					response: {
-						id: "resp_public_model_1",
-						created_at: 1710000010,
-						model: "kimi-k2.7-code-highspeed",
-					},
-				},
-			},
-			{
-				event: "response.output_text.delta",
-				data: {
-					output_index: 0,
-					delta: "pong",
-				},
-			},
-			"[DONE]",
-		]);
-
-		const stream = resolveStreamForProtocol(
-			upstream,
-			baseArgs({
-				ir: {
-					messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
-					model: "moonshotai/kimi-k2.7-code",
-					stream: true,
-				},
-				providerId: "moonshotai",
-				providerModelSlug: "kimi-k2.7-code-highspeed",
 				endpoint: "chat.completions",
 				protocol: "openai.chat.completions",
 			}),
@@ -437,53 +410,7 @@ describe("resolveStreamForProtocol", () => {
 
 		const output = await readStreamText(stream);
 		const chunks = parseSseJsonFrames(output).filter((payload) => payload?.object === "chat.completion.chunk");
-		expect(chunks.length).toBeGreaterThan(0);
-		expect(chunks.every((payload) => payload?.model === "moonshotai/kimi-k2.7-code")).toBe(true);
-		expect(output).not.toContain("kimi-k2.7-code-highspeed");
-	});
-
-	it("does not duplicate reasoning_content when chat payloads pass through responses-to-chat", async () => {
-		const upstream = makeSseResponse([
-			{
-				data: {
-					id: "chatcmpl_reasoning_once",
-					object: "chat.completion.chunk",
-					created: 1710000012,
-					model: "deepseek-r1",
-					choices: [{
-						index: 0,
-						delta: {
-							reasoning_content: "think once",
-						},
-						finish_reason: "stop",
-					}],
-					usage: { prompt_tokens: 2, completion_tokens: 1, total_tokens: 3 },
-				},
-			},
-			"[DONE]",
-		]);
-
-		const output = await readStreamText(resolveStreamForProtocol(
-			upstream,
-			baseArgs({
-				providerId: "deepseek",
-				endpoint: "chat.completions",
-				protocol: "openai.chat.completions",
-			}),
-			"responses",
-		));
-		const chunks = parseSseJsonFrames(output).filter((payload) => payload?.object === "chat.completion.chunk");
-		const finalChunk = chunks.at(-1);
-
-		expect(finalChunk?.choices?.[0]?.message?.reasoning_content).toBe("think once");
-		expect(finalChunk?.choices?.[0]?.message?.reasoning_details).toEqual([
-			{
-				id: "req_stream_test-reasoning-0-1",
-				index: 0,
-				type: "text",
-				text: "think once",
-			},
-		]);
+		expect(chunks.some((payload) => Array.isArray(payload?.choices?.[0]?.delta?.tool_calls))).toBe(false);
 	});
 
 	it("emits output_item function-call events when transforming chat stream to responses", async () => {
@@ -549,42 +476,6 @@ describe("resolveStreamForProtocol", () => {
 		expect(output).toContain("event: response.function_call_arguments.delta");
 		expect(output).toContain("event: response.function_call_arguments.done");
 		expect(output).toContain("event: response.output_item.done");
-	});
-
-	it("keeps the public model id in responses stream metadata when upstream chat chunks use a hidden slug", async () => {
-		const upstream = makeSseResponse([
-			{
-				data: {
-					id: "chatcmpl_public_model_1",
-					object: "chat.completion.chunk",
-					created: 1710000011,
-					model: "kimi-k2.7-code-highspeed",
-					choices: [{ index: 0, delta: { content: "pong" }, finish_reason: "stop" }],
-					usage: { prompt_tokens: 2, completion_tokens: 1, total_tokens: 3 },
-				},
-			},
-			"[DONE]",
-		]);
-
-		const stream = resolveStreamForProtocol(
-			upstream,
-			baseArgs({
-				ir: {
-					messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
-					model: "moonshotai/kimi-k2.7-code",
-					stream: true,
-				},
-				providerId: "moonshotai",
-				providerModelSlug: "kimi-k2.7-code-highspeed",
-				endpoint: "responses",
-				protocol: "openai.responses",
-			}),
-			"chat",
-		);
-
-		const output = await readStreamText(stream);
-		expect(output).toContain("\"model\":\"moonshotai/kimi-k2.7-code\"");
-		expect(output).not.toContain("kimi-k2.7-code-highspeed");
 	});
 
 	it("normalizes MiniMax XML interleaving into reasoning + function_call events", async () => {

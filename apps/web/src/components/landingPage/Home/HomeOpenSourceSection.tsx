@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import {
 	ArrowRight,
@@ -26,16 +27,19 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
-const CTA_TICKER_PROVIDERS = [
-	{ id: "openai", label: "OpenAI" },
-	{ id: "anthropic", label: "Anthropic" },
-	{ id: "google", label: "Google" },
-	{ id: "xai", label: "xAI" },
-	{ id: "mistral", label: "Mistral" },
-	{ id: "deepseek", label: "DeepSeek" },
-	{ id: "minimax", label: "MiniMax" },
-	{ id: "zai", label: "Z-AI" },
-	{ id: "moonshotai", label: "Moonshot" },
+const CTA_TICKER_PAIRS = [
+	{
+		explore: { id: "openai", label: "OpenAI" },
+		migration: { id: "openai", label: "OpenAI" },
+	},
+	{
+		explore: { id: "grok", label: "Grok" },
+		migration: { id: "vercel", label: "Vercel" },
+	},
+	{
+		explore: { id: "together", label: "Together" },
+		migration: { id: "openrouter", label: "OpenRouter" },
+	},
 ] as const;
 
 type FirstPromptSnippet = {
@@ -64,24 +68,28 @@ type FirstPromptSnippet = {
 type HomeOpenSourceVariant = "default" | "beta";
 
 const ROTATING_MODEL_IDS = [
-	"openai/gpt-5.5",
-	"anthropic/claude-opus-4.7",
+	"openai/gpt-5.6-sol",
+	"anthropic/claude-fable-5",
 	"google/gemini-3.1-pro-preview",
-	"x-ai/grok-4.20-beta-0309",
-	"mistral/mistral-medium-3.5",
+	"spacex-ai/grok-4.5",
+	"moonshotai/kimi-k2.7-code",
+	"deepseek/deepseek-v4-pro",
+	"minimax/minimax-m3",
 ] as const;
 
 const MODEL_TYPING_IDLE_MS = 1400;
 const MODEL_TYPING_BACKSPACE_MS = 28;
 const MODEL_TYPING_FORWARD_MS = 36;
+const CTA_TICKER_IDLE_MS = 1750;
+const CTA_TICKER_SLIDE_MS = 320;
 
 const FIRST_PROMPT_SNIPPETS: readonly FirstPromptSnippet[] = [
 	{
 		id: "curl",
 		label: "cURL",
 		lang: "bash",
-		code: (modelId) => `curl https://api.phaseo.app/v1/responses \\
-  -H "Authorization: Bearer $AI_STATS_API_KEY" \\
+		code: (modelId) => `curl https://api.phaseo.ai/v1/responses \\
+  -H "Authorization: Bearer $PHASEO_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
     "model": "${modelId}",
@@ -92,10 +100,10 @@ const FIRST_PROMPT_SNIPPETS: readonly FirstPromptSnippet[] = [
 		id: "typescript",
 		label: "TypeScript",
 		lang: "ts",
-		code: (modelId) => `const response = await fetch("https://api.phaseo.app/v1/responses", {
+		code: (modelId) => `const response = await fetch("https://api.phaseo.ai/v1/responses", {
   method: "POST",
   headers: {
-    "Authorization": \`Bearer \${process.env.AI_STATS_API_KEY!}\`,
+    "Authorization": \`Bearer \${process.env.PHASEO_API_KEY!}\`,
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
@@ -115,9 +123,9 @@ console.log(data);`,
 import requests
 
 response = requests.post(
-    "https://api.phaseo.app/v1/responses",
+    "https://api.phaseo.ai/v1/responses",
     headers={
-        "Authorization": f"Bearer {os.environ['AI_STATS_API_KEY']}",
+        "Authorization": f"Bearer {os.environ['PHASEO_API_KEY']}",
         "Content-Type": "application/json",
     },
     json={
@@ -132,10 +140,10 @@ print(response.json())`,
 		id: "javascript",
 		label: "JavaScript",
 		lang: "js",
-		code: (modelId) => `const response = await fetch("https://api.phaseo.app/v1/responses", {
+		code: (modelId) => `const response = await fetch("https://api.phaseo.ai/v1/responses", {
   method: "POST",
   headers: {
-    Authorization: \`Bearer \${process.env.AI_STATS_API_KEY}\`,
+    Authorization: \`Bearer \${process.env.PHASEO_API_KEY}\`,
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
@@ -166,10 +174,10 @@ func main() {
   }\`)
   req, _ := http.NewRequest(
     "POST",
-    "https://api.phaseo.app/v1/responses",
+    "https://api.phaseo.ai/v1/responses",
     bytes.NewBuffer(body),
   )
-  req.Header.Set("Authorization", "Bearer "+os.Getenv("AI_STATS_API_KEY"))
+  req.Header.Set("Authorization", "Bearer "+os.Getenv("PHASEO_API_KEY"))
   req.Header.Set("Content-Type", "application/json")
 
   res, _ := http.DefaultClient.Do(req)
@@ -189,11 +197,11 @@ $payload = json_encode([
   "input" => "Write a one-line welcome message for a new user.",
 ]);
 
-$ch = curl_init("https://api.phaseo.app/v1/responses");
+$ch = curl_init("https://api.phaseo.ai/v1/responses");
 curl_setopt_array($ch, [
   CURLOPT_POST => true,
   CURLOPT_HTTPHEADER => [
-    "Authorization: Bearer " . getenv("AI_STATS_API_KEY"),
+    "Authorization: Bearer " . getenv("PHASEO_API_KEY"),
     "Content-Type: application/json",
   ],
   CURLOPT_POSTFIELDS => $payload,
@@ -215,8 +223,8 @@ curl_close($ch);`,
   """;
 
 var request = java.net.http.HttpRequest.newBuilder()
-  .uri(java.net.URI.create("https://api.phaseo.app/v1/responses"))
-  .header("Authorization", "Bearer " + System.getenv("AI_STATS_API_KEY"))
+  .uri(java.net.URI.create("https://api.phaseo.ai/v1/responses"))
+  .header("Authorization", "Bearer " + System.getenv("PHASEO_API_KEY"))
   .header("Content-Type", "application/json")
   .POST(java.net.http.HttpRequest.BodyPublishers.ofString(body))
   .build();`,
@@ -231,7 +239,7 @@ using System.Text;
 var client = new HttpClient();
 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
     "Bearer",
-    Environment.GetEnvironmentVariable("AI_STATS_API_KEY")
+    Environment.GetEnvironmentVariable("PHASEO_API_KEY")
 );
 
 var body = """
@@ -242,7 +250,7 @@ var body = """
 """;
 
 var response = await client.PostAsync(
-    "https://api.phaseo.app/v1/responses",
+    "https://api.phaseo.ai/v1/responses",
     new StringContent(body, Encoding.UTF8, "application/json")
 );`,
 	},
@@ -291,13 +299,43 @@ function SnippetIcon({ id, active = false }: { id: SnippetId; active?: boolean }
 	return <TerminalSquare className="h-3.5 w-3.5" />;
 }
 
+function getReadableDarkTokenColor(color?: string) {
+	const normalized = color?.trim().toLowerCase();
+	if (!normalized) return "#e4e4e7";
+
+	switch (normalized) {
+		case "#005cc5":
+		case "#032f62":
+		case "#0366d6":
+			return "#60a5fa";
+		case "#6f42c1":
+		case "#5a32a3":
+			return "#a78bfa";
+		case "#22863a":
+		case "#28a745":
+			return "#4ade80";
+		case "#d73a49":
+		case "#cb2431":
+			return "#fb7185";
+		case "#e36209":
+		case "#b31d28":
+			return "#fbbf24";
+		case "#24292e":
+		case "#586069":
+		case "#6a737d":
+			return "#d4d4d8";
+		default:
+			return color ?? "#e4e4e7";
+	}
+}
+
 function getTokenStyle(token: Token): CSSProperties {
 	const light = token.variants.light;
 	const dark = token.variants.dark;
 	const fontStyle = light.fontStyle ?? 0;
 	const style: CSSProperties & Record<string, string | number> = {
-		color: light.color ?? "currentColor",
-		"--token-dark": dark.color ?? light.color ?? "currentColor",
+		"--token-light": light.color ?? "currentColor",
+		"--token-dark": getReadableDarkTokenColor(dark.color ?? light.color),
 	};
 
 	if (fontStyle & 1) style.fontStyle = "italic";
@@ -379,7 +417,7 @@ function FirstPromptCodeBlock({
 	};
 
 	return (
-		<div className="mt-3 overflow-hidden rounded-xl border border-zinc-200/80 bg-zinc-50/60 dark:border-zinc-800 dark:bg-zinc-950/70">
+		<div className="mt-3 overflow-hidden rounded-xl border border-zinc-200/80 bg-zinc-50/60 dark:border-zinc-800 dark:bg-zinc-900/70">
 			<div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200/80 px-3 py-2 dark:border-zinc-800">
 				<div className="flex flex-wrap items-center gap-1.5">
 					{(variant === "beta" ? PRIMARY_SNIPPETS : FIRST_PROMPT_SNIPPETS.slice(0, 3)).map((snippet) => {
@@ -493,7 +531,7 @@ function FirstPromptCodeBlock({
 				</button>
 			</div>
 			{!error && tokens ? (
-				<pre className="overflow-x-auto px-4 py-4 text-[13px] leading-6 text-zinc-900 dark:text-zinc-100">
+				<pre className="overflow-x-auto px-4 py-4 text-[13px] leading-6 text-zinc-900 dark:text-zinc-200">
 					<code>
 						{tokens.map((line: TokenLine, lineIndex: number) => (
 							<span key={lineIndex} className="block min-h-6">
@@ -502,7 +540,7 @@ function FirstPromptCodeBlock({
 										<span
 											key={`${lineIndex}-${tokenIndex}`}
 											style={getTokenStyle(token)}
-											className="dark:[color:var(--token-dark)]"
+											className="[color:var(--token-light)] dark:[color:var(--token-dark)]"
 										>
 											{token.content}
 										</span>
@@ -515,7 +553,7 @@ function FirstPromptCodeBlock({
 					</code>
 				</pre>
 			) : (
-				<pre className="overflow-x-auto px-4 py-4 text-[13px] leading-6 text-zinc-900 dark:text-zinc-100">
+				<pre className="overflow-x-auto px-4 py-4 text-[13px] leading-6 text-zinc-900 dark:text-zinc-200">
 					<code>{activeSnippet.code(modelId)}</code>
 				</pre>
 			)}
@@ -541,6 +579,27 @@ function TickerLogo({
 					className="object-contain object-center"
 				/>
 			</span>
+		</span>
+	);
+}
+
+function PhaseoTickerLogo() {
+	return (
+		<span className="flex h-6 w-6 items-center justify-center rounded-md border border-zinc-200/80 bg-white dark:border-zinc-700 dark:bg-zinc-950">
+			<Image
+				src="/logo_light.svg"
+				alt="Phaseo"
+				width={16}
+				height={16}
+				className="h-4 w-4 dark:hidden"
+			/>
+			<Image
+				src="/logo_dark.svg"
+				alt="Phaseo"
+				width={16}
+				height={16}
+				className="hidden h-4 w-4 dark:block"
+			/>
 		</span>
 	);
 }
@@ -584,9 +643,9 @@ export default function HomeOpenSourceSection({
 }) {
 	const [snippetId, setSnippetId] = useState<SnippetId>("curl");
 	const [modelIndex, setModelIndex] = useState(0);
-	const [ctaTickerIndex, setCtaTickerIndex] = useState(0);
-	const [nextCtaTickerIndex, setNextCtaTickerIndex] = useState<number | null>(null);
-	const [isCtaTickerSliding, setIsCtaTickerSliding] = useState(false);
+	const [modelTickerIndex, setModelTickerIndex] = useState(0);
+	const [nextModelTickerIndex, setNextModelTickerIndex] = useState<number | null>(null);
+	const [isModelTickerSliding, setIsModelTickerSliding] = useState(false);
 	const [displayedModelId, setDisplayedModelId] = useState<string>(
 		ROTATING_MODEL_IDS[0]
 	);
@@ -609,59 +668,64 @@ export default function HomeOpenSourceSection({
 				? displayedModelId
 				: (ROTATING_MODEL_IDS[modelIndex] ?? ROTATING_MODEL_IDS[0])
 			: ROTATING_MODEL_IDS[0];
-	const currentTickerProvider =
-		CTA_TICKER_PROVIDERS[ctaTickerIndex] ?? CTA_TICKER_PROVIDERS[0];
-	const incomingTickerProvider =
-		CTA_TICKER_PROVIDERS[nextCtaTickerIndex ?? ctaTickerIndex] ??
-		CTA_TICKER_PROVIDERS[0];
+	const currentTickerPair =
+		CTA_TICKER_PAIRS[modelTickerIndex] ?? CTA_TICKER_PAIRS[0];
+	const incomingTickerPair =
+		CTA_TICKER_PAIRS[nextModelTickerIndex ?? modelTickerIndex] ??
+		CTA_TICKER_PAIRS[0];
 
 	useEffect(() => {
 		if (variant === "beta") {
 			setModelIndex(0);
-			setCtaTickerIndex(0);
-			setNextCtaTickerIndex(null);
-			setIsCtaTickerSliding(false);
+			setModelTickerIndex(0);
+			setNextModelTickerIndex(null);
+			setIsModelTickerSliding(false);
 			setDisplayedModelId(ROTATING_MODEL_IDS[0]);
 			setModelAnimationPhase("idle");
 			return;
 		}
 
 		setModelIndex(0);
-		setCtaTickerIndex(0);
-		setNextCtaTickerIndex(null);
-		setIsCtaTickerSliding(false);
+		setModelTickerIndex(0);
+		setNextModelTickerIndex(null);
+		setIsModelTickerSliding(false);
 		setDisplayedModelId(ROTATING_MODEL_IDS[0]);
 		setModelAnimationPhase("idle");
 	}, [variant]);
 
 	useEffect(() => {
-		if (variant !== "beta" || isCtaTickerSliding) return;
+		if (isModelTickerSliding) return;
 
 		const timeout = window.setTimeout(() => {
-			setNextCtaTickerIndex(
-				(ctaTickerIndex + 1) % CTA_TICKER_PROVIDERS.length
-			);
-			setIsCtaTickerSliding(true);
-		}, 1750);
+			const nextTickerIndex = (modelTickerIndex + 1) % CTA_TICKER_PAIRS.length;
+			setNextModelTickerIndex(nextTickerIndex);
+			setIsModelTickerSliding(true);
+		}, CTA_TICKER_IDLE_MS);
 
 		return () => {
 			window.clearTimeout(timeout);
 		};
-	}, [ctaTickerIndex, isCtaTickerSliding, variant]);
+	}, [
+		isModelTickerSliding,
+		modelTickerIndex,
+	]);
 
 	useEffect(() => {
-		if (!isCtaTickerSliding || nextCtaTickerIndex === null) return;
+		if (!isModelTickerSliding || nextModelTickerIndex === null) return;
 
 		const timeout = window.setTimeout(() => {
-			setCtaTickerIndex(nextCtaTickerIndex);
-			setNextCtaTickerIndex(null);
-			setIsCtaTickerSliding(false);
-		}, 320);
+			setModelTickerIndex(nextModelTickerIndex);
+			setNextModelTickerIndex(null);
+			setIsModelTickerSliding(false);
+		}, CTA_TICKER_SLIDE_MS);
 
 		return () => {
 			window.clearTimeout(timeout);
 		};
-	}, [isCtaTickerSliding, nextCtaTickerIndex]);
+	}, [
+		isModelTickerSliding,
+		nextModelTickerIndex,
+	]);
 
 	useEffect(() => {
 		if (variant !== "beta") return;
@@ -743,15 +807,15 @@ export default function HomeOpenSourceSection({
 							variant="outline"
 							className="h-10 rounded-xl px-5 text-sm font-semibold"
 						>
-								<Link href={variant === "beta" ? "/models" : "https://docs.ai-stats.phaseo.app/v1/quickstart"}>
+								<Link href={variant === "beta" ? "/models" : "https://phaseo.app/docs/v1/quickstart"}>
 									{variant === "beta" ? (
 										<span className="group inline-flex items-center gap-2">
 											<span>Explore</span>
 											<SharedProviderTicker
-												currentId={currentTickerProvider.id}
-												incomingId={incomingTickerProvider.id}
-												isSliding={isCtaTickerSliding}
-												ariaLabel={`${currentTickerProvider.label} provider`}
+												currentId={currentTickerPair.explore.id}
+												incomingId={incomingTickerPair.explore.id}
+												isSliding={isModelTickerSliding}
+												ariaLabel={`${currentTickerPair.explore.label} provider`}
 											/>
 											<span>Models</span>
 										</span>
@@ -770,7 +834,7 @@ export default function HomeOpenSourceSection({
 							</Link>
 						</Button>
 						<Button asChild variant="outline" className="h-10 rounded-xl px-5 text-sm font-semibold">
-							<Link href="https://github.com/AI-Stats/AI-Stats">
+							<Link href="https://github.com/phaseoteam/Phaseo">
 								<GitHubBrandIcon className="h-4 w-4" />
 								View GitHub
 							</Link>
@@ -779,13 +843,13 @@ export default function HomeOpenSourceSection({
 							<Link href="/migrate">
 								<span className="inline-flex shrink-0 items-center gap-1.25">
 									<SharedProviderTicker
-										currentId={currentTickerProvider.id}
-										incomingId={incomingTickerProvider.id}
-										isSliding={isCtaTickerSliding}
-										ariaLabel={`${currentTickerProvider.label} provider`}
+										currentId={currentTickerPair.migration.id}
+										incomingId={incomingTickerPair.migration.id}
+										isSliding={isModelTickerSliding}
+										ariaLabel={`${currentTickerPair.migration.label} migration source`}
 									/>
 									<ArrowRight className="h-3.25 w-3.25 text-zinc-500/80 dark:text-zinc-400/80" />
-									<TickerLogo id="ai-stats" variant="auto" />
+									<PhaseoTickerLogo />
 								</span>
 								Migration guide
 							</Link>
@@ -801,11 +865,11 @@ export default function HomeOpenSourceSection({
 									Use Chat to test models in the browser and compare outputs with no code.
 								</p>
 							</div>
-							<Button asChild variant="outline" className="h-9 rounded-xl px-4 text-sm font-semibold sm:shrink-0">
+							<Button asChild variant="outline" className="h-8 rounded-xl px-3 text-xs font-semibold sm:shrink-0">
 								<Link href="/chat">
-									<MessageSquare className="h-4 w-4" />
+									<MessageSquare className="h-3.5 w-3.5" />
 									Try Chat
-									<ArrowRight className="h-4 w-4" />
+									<ArrowRight className="h-3.5 w-3.5" />
 								</Link>
 							</Button>
 						</div>

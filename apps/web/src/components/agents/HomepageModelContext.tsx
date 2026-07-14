@@ -50,10 +50,10 @@ export function HomepageModelContext() {
 		modelContext.provideContext({
 			tools: [
 				{
-					name: "get-ai-stats-discovery",
+					name: "get-phaseo-discovery",
 					title: "Get discovery metadata",
 					description:
-						"Return the AI Stats homepage, API catalog, API docs, quickstart docs, and pricing/model URLs for agent use.",
+						"Return the Phaseo homepage, API catalog, API docs, quickstart docs, and pricing/model URLs for agent use.",
 					annotations: { readOnlyHint: true },
 					execute: async () => ({
 						homepageUrl: window.location.origin,
@@ -61,26 +61,26 @@ export function HomepageModelContext() {
 					}),
 				},
 				{
-					name: "open-ai-stats-models",
+					name: "open-phaseo-models",
 					title: "Open models page",
 					description:
-						"Open the public AI Stats models page for browsing the model catalogue.",
+						"Open the public Phaseo models page for browsing the model catalogue.",
 					annotations: { readOnlyHint: true },
 					execute: async () => navigateTo(TOOL_TARGETS.modelsUrl),
 				},
 				{
-					name: "open-ai-stats-api-docs",
+					name: "open-phaseo-api-docs",
 					title: "Open API docs",
 					description:
-						"Open the AI Stats Gateway API reference documentation.",
+						"Open the Phaseo Gateway API reference documentation.",
 					annotations: { readOnlyHint: true },
 					execute: async () => navigateTo(TOOL_TARGETS.apiDocsUrl),
 				},
 				{
-					name: "open-ai-stats-pricing",
+					name: "open-phaseo-pricing",
 					title: "Open pricing",
 					description:
-						"Open the AI Stats pricing page for the gateway and model pricing context.",
+						"Open the Phaseo pricing page for the gateway and model pricing context.",
 					annotations: { readOnlyHint: true },
 					execute: async () => navigateTo(TOOL_TARGETS.pricingUrl),
 				},

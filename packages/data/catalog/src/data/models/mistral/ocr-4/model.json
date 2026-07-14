@@ -1,0 +1,30 @@
+{
+  "model_id": "mistral/ocr-4",
+  "organisation_id": "mistral",
+  "name": "OCR 4",
+  "status": "Available",
+  "previous_model_id": "mistral/ocr-3",
+  "description": "OCR 4 is Mistral's current document understanding model for OCR, extraction, and page-level visual reasoning across PDFs, scans, and screenshots.",
+  "announced_date": "2026-06-30T00:00:00",
+  "release_date": "2026-06-30T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "image,file",
+  "output_types": "text,image",
+  "api_model_id": "mistral/ocr-4",
+  "links": [
+    {
+      "title": "Docs",
+      "kind": "docs",
+      "url": "https://docs.mistral.ai/getting-started/models/models_overview/"
+    }
+  ],
+  "details": [
+    {
+      "name": "availability",
+      "value": "Official Mistral docs list OCR 4 as the current OCR release and keep OCR 3 available for existing integrations."
+    }
+  ],
+  "benchmarks": []
+}

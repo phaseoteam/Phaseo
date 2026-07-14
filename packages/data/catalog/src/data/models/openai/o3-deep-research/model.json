@@ -2,13 +2,13 @@
   "model_id": "openai/o3-deep-research",
   "organisation_id": "openai",
   "name": "o3 Deep Research",
-  "status": "Available",
+  "status": "Deprecated",
   "previous_model_id": null,
   "description": "o3 Deep Research is OpenAI's advanced model for deep research, designed to tackle complex, multi-step research tasks. Note: This model always uses the 'web_search' tool which adds additional cost.",
   "announced_date": "2025-06-26T00:00:00",
   "release_date": "2025-06-26T00:00:00",
-  "deprecation_date": null,
-  "retirement_date": null,
+  "deprecation_date": "2026-04-22T00:00:00",
+  "retirement_date": "2026-07-23T00:00:00",
   "license": "Proprietary",
   "input_types": "text,image",
   "output_types": "text",
@@ -16,11 +16,13 @@
   "family_id": "openai/o3",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://platform.openai.com/docs/models/o3-deep-research"
     },
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://x.com/OpenAIDevs/status/1938286734141493755"
     }
   ],

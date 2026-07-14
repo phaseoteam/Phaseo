@@ -1,21 +1,21 @@
-# @ai-stats/sdk
+# @phaseo/sdk
 
-Official TypeScript and JavaScript SDK for AI Stats Gateway.
+Official TypeScript and JavaScript SDK for Phaseo Gateway.
 
 ## Installation
 
 ```bash
-npm install @ai-stats/sdk
+npm install @phaseo/sdk
 ```
 
 ## Quick start
 
 ```ts
-import AIStats from "@ai-stats/sdk";
+import Phaseo from "@phaseo/sdk";
 
-const client = new AIStats({
-  apiKey: process.env.AI_STATS_API_KEY,
-  // baseUrl: "https://api.phaseo.app/v1",
+const client = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY,
+  // baseUrl: "https://api.phaseo.ai/v1",
 });
 
 const response = await client.responses.create({
@@ -26,16 +26,41 @@ const response = await client.responses.create({
 console.log(response.output_text);
 ```
 
+## Streaming example
+
+```ts
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY,
+});
+
+let response = "";
+for await (const chunk of client.streamChat({
+  model: "google/gemma-3-27b:free",
+  messages: [{ role: "user", content: "Stream hi" }],
+})) {
+  if (chunk.text) {
+    response += chunk.text;
+    process.stdout.write(chunk.text);
+  }
+
+  if (chunk.reasoningTokens) {
+    console.log("\nReasoning tokens:", chunk.reasoningTokens);
+  }
+}
+```
+
 ## Drop-in compatibility
 
 The SDK includes compatibility layers for OpenAI and Anthropic-style clients.
 
 ```ts
-import { OpenAI } from "@ai-stats/sdk/compat/openai";
-import { Anthropic } from "@ai-stats/sdk/compat/anthropic";
+import { OpenAI } from "@phaseo/sdk/compat/openai";
+import { Anthropic } from "@phaseo/sdk/compat/anthropic";
 
-const openai = new OpenAI({ apiKey: process.env.AI_STATS_API_KEY });
-const anthropic = new Anthropic({ apiKey: process.env.AI_STATS_API_KEY });
+const openai = new OpenAI({ apiKey: process.env.PHASEO_API_KEY });
+const anthropic = new Anthropic({ apiKey: process.env.PHASEO_API_KEY });
 ```
 
 Compatibility guide: [COMPAT_GUIDE.md](./COMPAT_GUIDE.md)
@@ -44,6 +69,8 @@ Compatibility guide: [COMPAT_GUIDE.md](./COMPAT_GUIDE.md)
 
 - `client.responses.create(...)`
 - `client.chat.completions.create(...)`
+- `client.messages.create(...)`
+- `client.streamChat(...)`, `client.streamResponses(...)`, and `client.streamMessages(...)` for parsed streaming chunks with `text`, `usage`, and `reasoningTokens`
 - `client.models.list(...)`
 - `client.listOrganisations(...)` for paginated `/organisations` discovery
 - `client.listPricingModels(...)` for `/pricing/models` catalogue pricing discovery
@@ -57,8 +84,8 @@ Compatibility guide: [COMPAT_GUIDE.md](./COMPAT_GUIDE.md)
 - `client.getHealth()`
 - `client.models.getDeprecationInfo(modelId)`
 - `client.models.validate(modelId)`
-- `client.batches.create(...)`, `client.batches.wait(id)`, `client.batches.listRequests(id)`, and `client.batches.cancel(id)` for async batch jobs
-- `client.webhooks.verifySignature(...)` or `AIStats.verifyWebhookSignature(...)` for signed async webhook deliveries
+- `client.ocr.create(...)`, `client.rerank.create(...)`, and `client.music.create(...)` for OCR, rerank, and music generation
+- `client.dataModels.list(...)` for `/data/models`
 
 Model discovery supports the public `/gateway/models` filters, including `provider`, `provider_status`, `provider_routing_status`, `model_routing_status`, `capability_status`, `provider_availability_status`, `provider_availability_reason`, `status`, `organisation`, `endpoints`, `input_types`, `output_types`, `params`, `availability`, `limit`, and `offset`.
 
@@ -79,12 +106,25 @@ const models = await client.models.list({
 Batch and video operations can expose a websocket lifecycle stream at `/v1/async/{kind}/{id}/ws`.
 
 ```ts
-const batchSocketUrl = client.batches.websocketUrl("batch_123", {
-  intervalMs: 1500,
+const batch = await client.batches.create({
+  endpoint: "/v1/responses",
+  input_file_id: "file_123",
+  completion_window: "24h",
+  webhook: {
+    url: "https://example.com/phaseo/webhooks",
+    secret: process.env.PHASEO_WEBHOOK_SECRET,
+    events: ["batch.progress", "batch.completed", "batch.failed"],
+  },
 });
 
-const videoSocketUrl = client.videos.websocketUrl("video_123", {
-  closeOnTerminal: true,
+const video = await client.videos.create({
+  model: "google/veo-3",
+  prompt: "orbital reveal",
+  webhook: {
+    url: "https://example.com/phaseo/webhooks",
+    secret: process.env.PHASEO_WEBHOOK_SECRET,
+    events: ["video.progress", "video.completed", "video.failed"],
+  },
 });
 
 const genericSocketUrl = client.getAsyncJobWebSocketUrl("video", "video_123");
@@ -117,17 +157,17 @@ const rows = await client.batches.listRequests(completed.id!, {
 });
 ```
 
-For large prebuilt JSONL inputs, upload with `client.uploadFile({ model, purpose: "batch", file })` and create the batch with `input_file_id`. The default path above lets AI Stats create provider files or inline requests for you.
+For large prebuilt JSONL inputs, upload with `client.uploadFile({ model, purpose: "batch", file })` and create the batch with `input_file_id`. The default path above lets Phaseo create provider files or inline requests for you.
 
-Webhook consumers can verify AI Stats signatures before processing the payload:
+Webhook consumers can verify Phaseo signatures before processing the payload:
 
 ```ts
 const body = await request.text();
-const verified = await AIStats.verifyWebhookSignature({
+const verified = await Phaseo.verifyWebhookSignature({
   body,
-  secret: process.env.AI_STATS_BATCH_WEBHOOK_SECRET!,
-  timestamp: request.headers.get("x-ai-stats-timestamp"),
-  signature: request.headers.get("x-ai-stats-signature"),
+  secret: process.env.PHASEO_BATCH_WEBHOOK_SECRET!,
+  timestamp: request.headers.get("x-phaseo-timestamp"),
+  signature: request.headers.get("x-phaseo-signature"),
   toleranceSeconds: 300,
 });
 ```
@@ -142,8 +182,8 @@ const verified = await AIStats.verifyWebhookSignature({
 Deprecation warnings are enabled by default.
 
 ```ts
-const client = new AIStats({
-  apiKey: process.env.AI_STATS_API_KEY,
+const client = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY,
   enableDeprecationWarnings: true,
   warningsAsErrors: false,
   logger: (level, message, meta) => {
@@ -154,18 +194,18 @@ const client = new AIStats({
 
 ## Environment variables
 
-- `AI_STATS_API_KEY` (required unless passed in code)
-- `AI_STATS_BASE_URL` (optional, defaults to `https://api.phaseo.app/v1`)
+- `PHASEO_API_KEY` (required unless passed in code)
+- `PHASEO_BASE_URL` (optional, defaults to `https://api.phaseo.ai/v1`)
 
 ## Devtools
 
 ```ts
-import { AIStats, createAIStatsDevtools } from "@ai-stats/sdk";
+import { Phaseo, createPhaseoDevtools } from "@phaseo/sdk";
 
-const client = new AIStats({
-  apiKey: process.env.AI_STATS_API_KEY,
-  devtools: createAIStatsDevtools({
-    directory: ".ai-stats-devtools",
+const client = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY,
+  devtools: createPhaseoDevtools({
+    directory: ".phaseo-devtools",
     captureHeaders: true,
   }),
 });
@@ -174,12 +214,12 @@ const client = new AIStats({
 Viewer:
 
 ```bash
-npx @ai-stats/devtools-viewer
+npx @phaseo/devtools-viewer
 ```
 
 ## Regeneration and local checks
 
 - Regenerate generated client: `pnpm openapi:gen:ts`
-- Run local compatibility tests: `pnpm --filter @ai-stats/sdk test`
-- Build package: `pnpm --filter @ai-stats/sdk build`
-- Run live smoke tests explicitly: `pnpm --filter @ai-stats/sdk test:smoke`
+- Run local compatibility tests: `pnpm --filter @phaseo/sdk test`
+- Build package: `pnpm --filter @phaseo/sdk build`
+- Run live smoke tests explicitly: `pnpm --filter @phaseo/sdk test:smoke`

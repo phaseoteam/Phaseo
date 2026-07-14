@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { backendTs } from "../src/index.js";
-import type { IR } from "@ai-stats/oapi-core";
+import type { IR } from "@phaseo/oapi-core";
 
 test("backend-ts emits stable file set", async () => {
 	const ir: IR = {

@@ -14,6 +14,7 @@ import {
 
 const ProviderRoutingSchema = z.object({
     // Existing gateway routing hints
+    mode: z.string().nullable().optional(),
     order: z.array(z.string()).optional(),
     only: z.array(z.string()).optional(),
     ignore: z.array(z.string()).optional(),
@@ -55,6 +56,9 @@ const ProviderRoutingSchema = z.object({
     preferredMinThroughput: z.union([z.number(), z.record(z.string(), z.number())]).optional(),
     preferred_max_latency: z.union([z.number(), z.record(z.string(), z.number())]).optional(),
     preferredMaxLatency: z.union([z.number(), z.record(z.string(), z.number())]).optional(),
+    diagnostics: z.boolean().nullable().optional(),
+    return_diagnostics: z.boolean().nullable().optional(),
+    returnDiagnostics: z.boolean().nullable().optional(),
 }).passthrough().optional();
 
 const DebugOptionsSchema = z.object({
@@ -231,6 +235,7 @@ export const BatchSchema = z.object({
     debug: DebugOptionsSchema,
     beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
+    routing: ProviderRoutingSchema,
 }).refine((value) => Boolean(value.input_file_id) !== Boolean(value.requests), {
     message: "Provide exactly one of input_file_id or requests.",
 });
@@ -250,6 +255,7 @@ export const ResponsesSchema = z.object({
     previous_response_id: z.string().optional(),
     reasoning: z.object({
         effort: z.enum(["none", "minimal", "low", "medium", "high", "xhigh", "max"]).nullable().optional(),
+        mode: z.enum(["standard", "pro"]).nullable().optional(),
         summary: z.enum(["auto", "concise", "detailed"]).nullable().optional(),
         enabled: z.boolean().nullable().optional(),
         max_tokens: z.number().int().nonnegative().nullable().optional(),
@@ -279,6 +285,7 @@ export const ResponsesSchema = z.object({
     debug: DebugOptionsSchema,
     beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
+    routing: ProviderRoutingSchema,
 }).passthrough().superRefine((obj, ctx) => {
     validateResponsesInputAssistantPhase((obj as any).input, ctx);
 }).transform((obj) => {
@@ -403,6 +410,7 @@ export const EmbeddingsSchema = z.object({
     debug: DebugOptionsSchema,
     beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
+    routing: ProviderRoutingSchema,
 }).transform((obj) => {
     const provider_options = obj.provider_options ?? obj.embedding_options;
     const next: any = {
@@ -499,12 +507,12 @@ const GatewayDatetimeToolSchema = z.object({
 	type: z.literal("gateway:datetime"),
 	parameters: z.object({
 		timezone: z.string().min(1).optional(),
+		timezones: z.array(z.string().min(1)).max(5).optional(),
 	}).optional(),
-	timezone: z.string().min(1).optional(),
 });
 
 const GatewayWebSearchToolSchema = z.object({
-	type: z.enum(["ai-stats:web_search", "gateway:web_search"]),
+	type: z.enum(["phaseo:web_search", "gateway:web_search"]),
 	parameters: z.object({
 		engine: z.enum(["auto", "native", "exa", "firecrawl", "parallel"]).optional(),
 		max_results: z.number().int().positive().max(25).optional(),
@@ -534,7 +542,7 @@ const GatewayWebSearchToolSchema = z.object({
 });
 
 const GatewayWebFetchToolSchema = z.object({
-	type: z.enum(["ai-stats:web_fetch", "gateway:web_fetch"]),
+	type: z.enum(["phaseo:web_fetch", "gateway:web_fetch"]),
 	parameters: z.object({
 		engine: z.enum(["auto", "native", "direct", "exa", "firecrawl", "parallel"]).optional(),
 		max_chars: z.number().int().positive().max(50000).optional(),
@@ -553,7 +561,7 @@ const GatewayWebFetchToolSchema = z.object({
 });
 
 const GatewayAdvisorToolSchema = z.object({
-	type: z.literal("ai-stats:advisor"),
+	type: z.literal("phaseo:advisor"),
 	parameters: z.object({
 		name: z.string().trim().min(1).max(64).regex(/^[A-Za-z0-9 _-]+$/).optional(),
 		model: z.string().min(1).optional(),
@@ -576,8 +584,30 @@ const GatewayAdvisorToolSchema = z.object({
 	temperature: z.number().min(0).max(2).optional(),
 });
 
+const GatewaySubagentToolSchema = z.object({
+	type: z.enum(["phaseo:subagent", "openrouter:subagent"]),
+	parameters: z.object({
+		model: z.string().min(1).optional(),
+		instructions: z.string().min(1).optional(),
+		max_uses: z.number().int().positive().optional(),
+		max_tokens: z.number().int().min(1024).optional(),
+		max_completion_tokens: z.number().int().min(1024).optional(),
+		reasoning: z.record(z.string(), z.unknown()).optional(),
+		temperature: z.number().min(0).max(2).optional(),
+		tools: z.array(z.record(z.string(), z.any())).optional(),
+	}).optional(),
+	model: z.string().min(1).optional(),
+	instructions: z.string().min(1).optional(),
+	max_uses: z.number().int().positive().optional(),
+	max_tokens: z.number().int().min(1024).optional(),
+	max_completion_tokens: z.number().int().min(1024).optional(),
+	reasoning: z.record(z.string(), z.unknown()).optional(),
+	temperature: z.number().min(0).max(2).optional(),
+	tools: z.array(z.record(z.string(), z.any())).optional(),
+});
+
 const GatewayImageGenerationToolSchema = z.object({
-	type: z.literal("ai-stats:image_generation"),
+	type: z.literal("phaseo:image_generation"),
 	parameters: z.object({
 		prompt: z.string().min(1).optional(),
 		description: z.string().min(1).optional(),
@@ -603,11 +633,11 @@ const GatewayImageGenerationToolSchema = z.object({
 });
 
 const GatewayApplyPatchToolSchema = z.object({
-	type: z.literal("ai-stats:apply_patch"),
+	type: z.literal("phaseo:apply_patch"),
 	parameters: z.object({
-		engine: z.enum(["auto", "native", "ai-stats"]).optional(),
+		engine: z.enum(["auto", "native", "phaseo"]).optional(),
 	}).optional(),
-	engine: z.enum(["auto", "native", "ai-stats"]).optional(),
+	engine: z.enum(["auto", "native", "phaseo"]).optional(),
 });
 
 const OpenAINativeWebSearchToolSchema = z.object({
@@ -687,6 +717,7 @@ export const ChatCompletionsSchema = z.object({
     ).min(1),
     reasoning: z.object({
         effort: z.enum(["none", "minimal", "low", "medium", "high", "xhigh", "max"]).optional().default("medium"),
+        mode: z.enum(["standard", "pro"]).optional(),
         summary: z.enum(["auto", "concise", "detailed"]).optional().default("auto"),
         enabled: z.boolean().optional(),
         max_tokens: z.number().int().nonnegative().optional(),
@@ -719,6 +750,7 @@ export const ChatCompletionsSchema = z.object({
 			GatewayWebSearchToolSchema,
 			GatewayWebFetchToolSchema,
 			GatewayAdvisorToolSchema,
+			GatewaySubagentToolSchema,
 			GatewayImageGenerationToolSchema,
 			OpenAINativeWebSearchToolSchema,
 		]),
@@ -745,6 +777,7 @@ export const ChatCompletionsSchema = z.object({
     provider_options: ResponsesProviderOptionsSchema.optional(),
     safety_identifier: z.string().nullable().optional(),
     provider: ProviderRoutingSchema,
+    routing: ProviderRoutingSchema,
 }).passthrough().transform((obj) => {
     return obj;
 });
@@ -844,6 +877,7 @@ export const AnthropicMessagesSchema = z.object({
 		GatewayWebSearchToolSchema,
 		GatewayWebFetchToolSchema,
 		GatewayAdvisorToolSchema,
+		GatewaySubagentToolSchema,
 		GatewayImageGenerationToolSchema,
 		AnthropicNativeWebSearchToolSchema,
 		AnthropicNativeWebFetchToolSchema,
@@ -873,6 +907,7 @@ export const AnthropicMessagesSchema = z.object({
     debug: DebugOptionsSchema,
     beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
+    routing: ProviderRoutingSchema,
 }).passthrough();
 
 export type AnthropicMessagesRequest = z.infer<typeof AnthropicMessagesSchema>;
@@ -895,6 +930,7 @@ export const ImagesGenerationSchema = z.object({
     debug: DebugOptionsSchema,
     beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
+    routing: ProviderRoutingSchema,
 });
 export type ImagesGenerationRequest = z.infer<typeof ImagesGenerationSchema>;
 
@@ -922,6 +958,7 @@ export const ImagesEditSchema = z.object({
     debug: DebugOptionsSchema,
     beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
+    routing: ProviderRoutingSchema,
 });
 export type ImagesEditRequest = z.infer<typeof ImagesEditSchema>;
 
@@ -933,6 +970,7 @@ export const ModerationsSchema = z.object({
     debug: DebugOptionsSchema,
     beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
+    routing: ProviderRoutingSchema,
     input: z.union([
         z.string(),
         z.array(z.string()),
@@ -986,6 +1024,7 @@ export const RerankSchema = z.object({
     debug: DebugOptionsSchema,
     beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
+    routing: ProviderRoutingSchema,
 }).passthrough().transform((obj) => {
     const next: any = { ...obj };
     if (!("top_n" in next) && typeof next.top_k === "number") {
@@ -1037,6 +1076,7 @@ export const AudioSpeechSchema = z.object({
     debug: DebugOptionsSchema,
     beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
+    routing: ProviderRoutingSchema,
 }).superRefine((obj, ctx) => {
     if (obj.stream_format !== undefined) {
         ctx.addIssue({
@@ -1062,6 +1102,7 @@ export const AudioTranscriptionSchema = z.object({
     debug: DebugOptionsSchema,
     beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
+    routing: ProviderRoutingSchema,
 });
 export type AudioTranscriptionRequest = z.infer<typeof AudioTranscriptionSchema>;
 
@@ -1077,6 +1118,7 @@ export const AudioTranslationSchema = z.object({
     debug: DebugOptionsSchema,
     beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
+    routing: ProviderRoutingSchema,
 });
 export type AudioTranslationRequest = z.infer<typeof AudioTranslationSchema>;
 
@@ -1138,6 +1180,7 @@ export const VideoGenerationSchema = z.object({
 	debug: DebugOptionsSchema,
 	beta: BetaOptionsSchema,
 	provider: ProviderRoutingSchema,
+	routing: ProviderRoutingSchema,
 }).strict().superRefine((obj, ctx) => {
 	if (obj.size && (obj.resolution || obj.aspect_ratio)) {
 		ctx.addIssue({
@@ -1158,6 +1201,7 @@ export const OcrSchema = z.object({
     debug: DebugOptionsSchema,
     beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
+    routing: ProviderRoutingSchema,
 });
 export type OcrRequest = z.infer<typeof OcrSchema>;
 
@@ -1168,6 +1212,7 @@ export const MusicGenerateSchema = z.object({
     duration: z.number().int().positive().optional(),
     format: z.enum(["mp3", "wav", "ogg", "aac"]).optional(),
     provider: ProviderRoutingSchema,
+    routing: ProviderRoutingSchema,
     suno: z.object({
         prompt: z.string().optional(),
         style: z.string().optional(),

@@ -7,13 +7,13 @@ description: "Call the Responses API with the Ruby SDK."
 
 ### Example
 ```ruby
-require 'ai_stats_sdk'
+require 'phaseo_sdk'
 
-client = AIStatsSdk::AIStats.new(api_key: ENV.fetch("AI_STATS_API_KEY"))
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
 
 resp = client.create_response(
   "model" => "openai/gpt-4.1",
-  "input" => [{ "role" => "user", "content" => [{ "type" => "output_text", "text" => "Summarise this text" }] }],
+  "input" => [{ "role" => "user", "content" => [{ "type" => "input_text", "text" => "Summarise this text" }] }],
   "temperature" => 0.7
 )
 ```

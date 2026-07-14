@@ -18,6 +18,12 @@ export type ProviderRuntimeStats = {
 		requests: number;
 		successful: number;
 	}>;
+	uptimeHourly3h: Array<{
+		hourOffset: 0 | 1 | 2;
+		uptimePct: number | null;
+		requests: number;
+		successful: number;
+	}>;
 	requests30m: number;
 	requests3d: number;
 	successful3d: number;
@@ -105,6 +111,10 @@ type RpcProviderHealthMetricsRow = {
 	request_success_pct: number | string | null;
 	avg_latency_ms_30m: number | string | null;
 	avg_throughput_30m: number | string | null;
+	p50_latency_ms_30m?: number | string | null;
+	median_latency_ms_30m?: number | string | null;
+	p50_throughput_30m?: number | string | null;
+	median_throughput_30m?: number | string | null;
 	avg_latency_ms: number | string | null;
 	p50_latency_ms: number | string | null;
 	p95_latency_ms: number | string | null;
@@ -130,19 +140,27 @@ type Aggregate = {
 	healthSuccessful3d: number;
 	latencySum30m: number;
 	latencySamples30m: number;
+	latencyValues30m: number[];
 	throughputSum30m: number;
 	throughputSamples30m: number;
+	throughputValues30m: number[];
 	inputTokens1h: number;
 	outputTokens1h: number;
 	latencySum3d: number;
 	latencySamples3d: number;
+	latencyValues3d: number[];
 	throughputSum3d: number;
 	throughputSamples3d: number;
+	throughputValues3d: number[];
 	cachedReadTokens1h: number;
 	dayRequests: [number, number, number];
 	daySuccessful: [number, number, number];
 	dayHealthRequests: [number, number, number];
 	dayHealthSuccessful: [number, number, number];
+	hourRequests: [number, number, number];
+	hourSuccessful: [number, number, number];
+	hourHealthRequests: [number, number, number];
+	hourHealthSuccessful: [number, number, number];
 };
 
 const PAGE_SIZE = 5000;
@@ -151,17 +169,13 @@ const ONE_HOUR_MS = 60 * 60 * 1000;
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-function toNumber(value: unknown): number {
-	const num = Number(value);
-	return Number.isFinite(num) ? num : 0;
-}
-
 function toInt(value: unknown): number {
 	const num = Number(value);
 	return Number.isFinite(num) ? Math.max(0, Math.trunc(num)) : 0;
 }
 
 function toFiniteNumber(value: unknown): number | null {
+	if (value === null || value === undefined || value === "") return null;
 	const parsed = Number(value);
 	return Number.isFinite(parsed) ? parsed : null;
 }
@@ -181,6 +195,19 @@ function toCountRecord(value: unknown): Record<string, number> {
 function average(sum: number, samples: number): number | null {
 	if (!Number.isFinite(sum) || !Number.isFinite(samples) || samples <= 0) return null;
 	return sum / samples;
+}
+
+function median(values: number[]): number | null {
+	const finite = values
+		.filter((value) => Number.isFinite(value))
+		.sort((a, b) => a - b);
+	if (!finite.length) return null;
+	const midpoint = Math.floor(finite.length / 2);
+	if (finite.length % 2 === 1) return finite[midpoint] ?? null;
+	const lower = finite[midpoint - 1];
+	const upper = finite[midpoint];
+	if (lower == null || upper == null) return null;
+	return (lower + upper) / 2;
 }
 
 function toRecord(value: unknown): Record<string, unknown> | null {
@@ -317,19 +344,27 @@ function emptyAggregate(): Aggregate {
 		healthSuccessful3d: 0,
 		latencySum30m: 0,
 		latencySamples30m: 0,
+		latencyValues30m: [],
 		throughputSum30m: 0,
 		throughputSamples30m: 0,
+		throughputValues30m: [],
 		inputTokens1h: 0,
 		outputTokens1h: 0,
 		latencySum3d: 0,
 		latencySamples3d: 0,
+		latencyValues3d: [],
 		throughputSum3d: 0,
 		throughputSamples3d: 0,
+		throughputValues3d: [],
 		cachedReadTokens1h: 0,
 		dayRequests: [0, 0, 0],
 		daySuccessful: [0, 0, 0],
 		dayHealthRequests: [0, 0, 0],
 		dayHealthSuccessful: [0, 0, 0],
+		hourRequests: [0, 0, 0],
+		hourSuccessful: [0, 0, 0],
+		hourHealthRequests: [0, 0, 0],
+		hourHealthSuccessful: [0, 0, 0],
 	};
 }
 
@@ -340,6 +375,18 @@ function dayOffsetFromUtcMidnight(nowUtcMidnightMs: number, bucketDate: Date): 0
 		bucketDate.getUTCDate(),
 	);
 	const offset = Math.floor((nowUtcMidnightMs - bucketUtcMidnightMs) / DAY_MS);
+	if (offset < 0 || offset > 2) return null;
+	return offset as 0 | 1 | 2;
+}
+
+function hourOffsetFromUtcHour(nowUtcHourMs: number, bucketDate: Date): 0 | 1 | 2 | null {
+	const bucketUtcHourMs = Date.UTC(
+		bucketDate.getUTCFullYear(),
+		bucketDate.getUTCMonth(),
+		bucketDate.getUTCDate(),
+		bucketDate.getUTCHours(),
+	);
+	const offset = Math.floor((nowUtcHourMs - bucketUtcHourMs) / ONE_HOUR_MS);
 	if (offset < 0 || offset > 2) return null;
 	return offset as 0 | 1 | 2;
 }
@@ -384,6 +431,12 @@ function mapRpcRuntimeStatsRows(args: {
 	now?: Date;
 }): ProviderRuntimeStatsMap {
 	const now = args.now ?? new Date();
+	const nowUtcHourMs = Date.UTC(
+		now.getUTCFullYear(),
+		now.getUTCMonth(),
+		now.getUTCDate(),
+		now.getUTCHours(),
+	);
 	const nowUtcMidnightMs = Date.UTC(
 		now.getUTCFullYear(),
 		now.getUTCMonth(),
@@ -399,24 +452,63 @@ function mapRpcRuntimeStatsRows(args: {
 	const out: ProviderRuntimeStatsMap = {};
 	for (const providerId of args.providerIds) {
 		const row = byProvider.get(providerId);
+		const uptimeDaily3dTotals = [
+			{ requests: 0, successful: 0, healthRequests: 0, healthSuccessful: 0 },
+			{ requests: 0, successful: 0, healthRequests: 0, healthSuccessful: 0 },
+			{ requests: 0, successful: 0, healthRequests: 0, healthSuccessful: 0 },
+		];
 		const uptimeDaily3d: ProviderRuntimeStats["uptimeDaily3d"] = [
 			{ dayOffset: 0, uptimePct: null, requests: 0, successful: 0 },
 			{ dayOffset: 1, uptimePct: null, requests: 0, successful: 0 },
 			{ dayOffset: 2, uptimePct: null, requests: 0, successful: 0 },
+		];
+		const uptimeHourly3h: ProviderRuntimeStats["uptimeHourly3h"] = [
+			{ hourOffset: 0, uptimePct: null, requests: 0, successful: 0 },
+			{ hourOffset: 1, uptimePct: null, requests: 0, successful: 0 },
+			{ hourOffset: 2, uptimePct: null, requests: 0, successful: 0 },
 		];
 
 		if (row && Array.isArray(row.buckets)) {
 			for (const bucket of row.buckets) {
 				const bucketRecord = toRecord(bucket);
 				const start = new Date(String(bucketRecord?.start ?? ""));
+				if (!Number.isFinite(start.getTime())) continue;
+				const requests = toInt(bucketRecord?.requests);
+				const successful = toInt(bucketRecord?.success_requests);
+				const healthRequests = toInt(bucketRecord?.health_requests);
+				const healthSuccessful = toInt(bucketRecord?.health_success_requests);
 				const dayOffset = dayOffsetFromUtcMidnight(nowUtcMidnightMs, start);
-				if (dayOffset == null) continue;
-				uptimeDaily3d[dayOffset] = {
-					dayOffset,
-					uptimePct: toFiniteNumber(bucketRecord?.uptime_pct),
-					requests: toInt(bucketRecord?.requests),
-					successful: toInt(bucketRecord?.success_requests),
-				};
+				if (dayOffset != null) {
+					uptimeDaily3dTotals[dayOffset]!.requests += requests;
+					uptimeDaily3dTotals[dayOffset]!.successful += successful;
+					uptimeDaily3dTotals[dayOffset]!.healthRequests += healthRequests;
+					uptimeDaily3dTotals[dayOffset]!.healthSuccessful += healthSuccessful;
+				}
+				const hourOffset = hourOffsetFromUtcHour(nowUtcHourMs, start);
+				if (hourOffset != null) {
+					uptimeHourly3h[hourOffset] = {
+						hourOffset,
+						uptimePct:
+							healthRequests > 0
+								? (healthSuccessful / healthRequests) * 100
+								: toFiniteNumber(bucketRecord?.uptime_pct),
+						requests,
+						successful,
+					};
+				}
+			}
+		}
+
+		for (const dayOffset of [0, 1, 2] as const) {
+			const bucket = uptimeDaily3dTotals[dayOffset];
+			uptimeDaily3d[dayOffset] = {
+				dayOffset,
+				uptimePct:
+					bucket.healthRequests > 0
+						? (bucket.healthSuccessful / bucket.healthRequests) * 100
+						: null,
+				requests: bucket.requests,
+				successful: bucket.successful,
 			}
 		}
 
@@ -424,9 +516,13 @@ function mapRpcRuntimeStatsRows(args: {
 			providerId,
 			...(row?.provider_name ? { providerName: row.provider_name } : {}),
 			latencyMs30m:
+				toFiniteNumber(row?.p50_latency_ms_30m) ??
+				toFiniteNumber(row?.median_latency_ms_30m) ??
 				toFiniteNumber(row?.avg_latency_ms_30m) ??
 				toFiniteNumber(row?.avg_latency_ms),
 			throughput30m:
+				toFiniteNumber(row?.p50_throughput_30m) ??
+				toFiniteNumber(row?.median_throughput_30m) ??
 				toFiniteNumber(row?.avg_throughput_30m) ??
 				toFiniteNumber(row?.avg_throughput),
 			uptimePct3d: toFiniteNumber(row?.uptime_pct),
@@ -439,6 +535,7 @@ function mapRpcRuntimeStatsRows(args: {
 				toInt(row?.input_tokens_1h) + toInt(row?.output_tokens_1h),
 			),
 			uptimeDaily3d,
+			uptimeHourly3h,
 			requests30m: toInt(row?.requests_30m),
 			requests3d: toInt(row?.requests),
 			successful3d: toInt(row?.success_requests),
@@ -539,7 +636,7 @@ async function fetchRuntimeStatsViaRpc(args: {
 		p_model_ids: args.modelIds,
 		p_provider_ids: args.providerIds,
 		p_window_days: 3,
-		p_bucket_hours: 24,
+		p_bucket_hours: 1,
 	});
 
 	if (error) {
@@ -576,6 +673,12 @@ export async function getModelProviderRuntimeStats(args: {
 
 	const now = new Date();
 	const nowMs = now.getTime();
+	const nowUtcHourMs = Date.UTC(
+		now.getUTCFullYear(),
+		now.getUTCMonth(),
+		now.getUTCDate(),
+		now.getUTCHours(),
+	);
 	const windowStart3d = new Date(nowMs - THREE_DAYS_MS);
 	const fromIso = windowStart3d.toISOString();
 	const toIso = now.toISOString();
@@ -637,10 +740,10 @@ export async function getModelProviderRuntimeStats(args: {
 			explicitThroughput != null && explicitThroughput > 0
 				? explicitThroughput
 				: generationMs != null &&
-				  generationMs > 0 &&
-				  outputTokens > 0
-				? (outputTokens * 1000) / generationMs
-				: null;
+						generationMs > 0 &&
+						outputTokens > 0
+					? (outputTokens * 1000) / generationMs
+					: null;
 		const success = row.success === true ? 1 : 0;
 
 		aggregate.requests3d += 1;
@@ -649,10 +752,12 @@ export async function getModelProviderRuntimeStats(args: {
 		if (latencyMs != null && latencyMs > 0) {
 			aggregate.latencySum3d += latencyMs;
 			aggregate.latencySamples3d += 1;
+			aggregate.latencyValues3d.push(latencyMs);
 		}
 		if (derivedThroughput != null && derivedThroughput > 0) {
 			aggregate.throughputSum3d += derivedThroughput;
 			aggregate.throughputSamples3d += 1;
+			aggregate.throughputValues3d.push(derivedThroughput);
 		}
 
 		const dayOffset = dayOffsetFromUtcMidnight(nowUtcMidnightMs, createdAt);
@@ -660,16 +765,23 @@ export async function getModelProviderRuntimeStats(args: {
 			aggregate.dayRequests[dayOffset] += 1;
 			aggregate.daySuccessful[dayOffset] += success;
 		}
+		const hourOffset = hourOffsetFromUtcHour(nowUtcHourMs, createdAt);
+		if (hourOffset != null) {
+			aggregate.hourRequests[hourOffset] += 1;
+			aggregate.hourSuccessful[hourOffset] += success;
+		}
 
 		if (createdAtMs >= nowMs - THIRTY_MINUTES_MS) {
 			aggregate.requests30m += 1;
 			if (latencyMs != null && latencyMs > 0) {
 				aggregate.latencySum30m += latencyMs;
 				aggregate.latencySamples30m += 1;
+				aggregate.latencyValues30m.push(latencyMs);
 			}
 			if (derivedThroughput != null && derivedThroughput > 0) {
 				aggregate.throughputSum30m += derivedThroughput;
 				aggregate.throughputSamples30m += 1;
+				aggregate.throughputValues30m.push(derivedThroughput);
 			}
 		}
 		if (createdAtMs >= nowMs - ONE_HOUR_MS) {
@@ -691,6 +803,13 @@ export async function getModelProviderRuntimeStats(args: {
 					aggregate.dayHealthSuccessful[dayOffset] += 1;
 				}
 			}
+			const hourOffset = hourOffsetFromUtcHour(nowUtcHourMs, createdAt);
+			if (hourOffset != null) {
+				aggregate.hourHealthRequests[hourOffset] += 1;
+				if (healthImpact === "success") {
+					aggregate.hourHealthSuccessful[hourOffset] += 1;
+				}
+			}
 		}
 
 		aggregateByProvider.set(providerId, aggregate);
@@ -701,9 +820,13 @@ export async function getModelProviderRuntimeStats(args: {
 	for (const providerId of providerIds) {
 		const aggregate = aggregateByProvider.get(providerId) ?? emptyAggregate();
 		const latencyMs30m =
+			median(aggregate.latencyValues30m) ??
+			median(aggregate.latencyValues3d) ??
 			average(aggregate.latencySum30m, aggregate.latencySamples30m) ??
 			average(aggregate.latencySum3d, aggregate.latencySamples3d);
 		const throughput30m =
+			median(aggregate.throughputValues30m) ??
+			median(aggregate.throughputValues3d) ??
 			average(aggregate.throughputSum30m, aggregate.throughputSamples30m) ??
 			average(aggregate.throughputSum3d, aggregate.throughputSamples3d);
 
@@ -748,6 +871,35 @@ export async function getModelProviderRuntimeStats(args: {
 					uptimePct:
 						aggregate.dayHealthRequests[2] > 0
 							? (aggregate.dayHealthSuccessful[2] / aggregate.dayHealthRequests[2]) * 100
+							: null,
+				},
+			],
+			uptimeHourly3h: [
+				{
+					hourOffset: 0,
+					requests: aggregate.hourRequests[0],
+					successful: aggregate.hourSuccessful[0],
+					uptimePct:
+						aggregate.hourHealthRequests[0] > 0
+							? (aggregate.hourHealthSuccessful[0] / aggregate.hourHealthRequests[0]) * 100
+							: null,
+				},
+				{
+					hourOffset: 1,
+					requests: aggregate.hourRequests[1],
+					successful: aggregate.hourSuccessful[1],
+					uptimePct:
+						aggregate.hourHealthRequests[1] > 0
+							? (aggregate.hourHealthSuccessful[1] / aggregate.hourHealthRequests[1]) * 100
+							: null,
+				},
+				{
+					hourOffset: 2,
+					requests: aggregate.hourRequests[2],
+					successful: aggregate.hourSuccessful[2],
+					uptimePct:
+						aggregate.hourHealthRequests[2] > 0
+							? (aggregate.hourHealthSuccessful[2] / aggregate.hourHealthRequests[2]) * 100
 							: null,
 				},
 			],

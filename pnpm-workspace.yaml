@@ -2,5 +2,19 @@ packages:
   - "apps/*"
   - "packages/*/*"
 
+allowBuilds:
+  core-js: set this to true or false
+  es5-ext: set this to true or false
+  esbuild: set this to true or false
+  keytar: set this to true or false
+  protobufjs: set this to true or false
+  puppeteer: set this to true or false
+  sharp: set this to true or false
+  supabase: set this to true or false
+  unrs-resolver: set this to true or false
+  workerd: set this to true or false
+
 # Hold dependency installs until versions have been available for 7 days.
 minimumReleaseAge: 10080
+minimumReleaseAgeExclude:
+  - "@shadcn/react"

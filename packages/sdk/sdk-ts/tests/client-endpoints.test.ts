@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from "vitest";
-import { AIStats } from "../src/index.js";
+import { Phaseo } from "../src/index.js";
 
-describe("AIStats endpoints discovery helper", () => {
+describe("Phaseo endpoints discovery helper", () => {
   test("calls /endpoints through listEndpoints", async () => {
     const fetchImpl: typeof fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       expect(String(input)).toBe("https://example.test/endpoints");
@@ -22,7 +22,7 @@ describe("AIStats endpoints discovery helper", () => {
       );
     }) as unknown as typeof fetch;
 
-    const client = new AIStats({
+    const client = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -73,7 +73,7 @@ describe("AIStats endpoints discovery helper", () => {
       throw new Error(`Unexpected request: ${method} ${url}`);
     }) as unknown as typeof fetch;
 
-    const client = new AIStats({
+    const client = new Phaseo({
       apiKey: "sk_test_123",
       baseUrl: "https://example.test",
       fetchImpl,
@@ -104,16 +104,6 @@ describe("AIStats endpoints discovery helper", () => {
     ]);
   });
 
-  test("builds a Responses WebSocket URL", () => {
-    const client = new AIStats({
-      apiKey: "sk_test_123",
-      baseUrl: "https://example.test",
-    });
-
-    expect(client.responses.websocketUrl({ model: "openai/gpt-5.4", sessionId: "session_1" })).toBe(
-      "wss://example.test/responses/ws?model=openai%2Fgpt-5.4&session_id=session_1",
-    );
-  });
 });
 
 function jsonResponse(body: unknown) {

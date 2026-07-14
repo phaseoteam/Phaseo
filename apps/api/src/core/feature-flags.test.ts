@@ -75,4 +75,3 @@ describe("batch API feature gate", () => {
 		})).resolves.toBe(false);
 	});
 });
-

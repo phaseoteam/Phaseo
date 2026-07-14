@@ -3,14 +3,14 @@ title: "Batches"
 description: "Call /batches with the Java SDK."
 ---
 
-**Methods**: `AIStats#createBatch(...)`, `AIStats#retrieveBatch(...)`, `AIStats#cancelBatch(...)`, `AIStats#getAsyncJobWebSocketUrl(...)`, `AIStats#getBatchWebSocketUrl(...)`, `client.asyncJobs.websocketUrl(...)`
+**Methods**: `Phaseo#createBatch(...)`, `Phaseo#retrieveBatch(...)`, `Phaseo#cancelBatch(...)`, `Phaseo#getAsyncJobWebSocketUrl(...)`, `Phaseo#getBatchWebSocketUrl(...)`, `client.asyncJobs.websocketUrl(...)`
 
 ```java
-import ai.stats.sdk.AIStats;
+import app.phaseo.sdk.Phaseo;
 import java.util.HashMap;
 import java.util.Map;
 
-AIStats client = new AIStats(apiKey, "https://api.phaseo.app/v1");
+Phaseo client = new Phaseo(apiKey, "https://api.phaseo.ai/v1");
 
 Map<String, Object> request = new HashMap<>();
 request.put("model", "openai/gpt-5-mini");
@@ -38,10 +38,9 @@ System.out.println(websocketUrl);
 - `items`: Structured prompt shorthand with `id` / `custom_id`, `prompt`, `messages`, per-row settings, or an advanced `body`.
 - `requests`: Advanced inline provider-native batch rows.
 - `input_file_id`: Existing file id uploaded through `/batches/files?model=...` for large prebuilt JSONL inputs.
-- `endpoint`: Optional target endpoint for advanced rows. AI Stats chooses a model/provider default when omitted.
+- `endpoint`: Optional target endpoint for advanced rows. Phaseo chooses a model/provider default when omitted.
 - `completion_window`: Upstream batch completion window such as `24h`.
-- `session_id`: Optional AI Stats grouping id for logs, sessions, and investigate tooling.
-- `webhook_endpoint_id`: Workspace-managed webhook endpoint id configured in the dashboard.
+- `session_id`: Optional Phaseo grouping id for logs, sessions, and investigate tooling.
 - `webhook`: Optional webhook configuration for async lifecycle notifications.
 - `metadata`: Optional object persisted with the batch.
 

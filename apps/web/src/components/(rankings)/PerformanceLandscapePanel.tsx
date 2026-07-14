@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { PerformanceData } from "@/lib/fetchers/rankings/getRankingsData";
+import { Button } from "@/components/ui/button";
 import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Check, ChevronDown } from "lucide-react";
 import {
 	PerformanceScatter,
 	type PerformanceMode,
@@ -26,6 +27,14 @@ const MODE_OPTIONS: Array<{ key: PerformanceMode; label: string }> = [
 	{ key: "latency", label: "Latency" },
 ];
 
+function rangeLabel(value: RangeKey) {
+	return RANGE_OPTIONS.find((option) => option.key === value)?.label ?? value;
+}
+
+function modeLabel(value: PerformanceMode) {
+	return MODE_OPTIONS.find((option) => option.key === value)?.label ?? value;
+}
+
 type PerformanceLandscapePanelProps = {
 	data?: PerformanceData[];
 	dataByRange?: Partial<Record<RangeKey, PerformanceData[]>>;
@@ -34,7 +43,6 @@ type PerformanceLandscapePanelProps = {
 	showHeader?: boolean;
 	title?: string;
 	subtitle?: string;
-	icon?: ReactNode;
 };
 
 export function PerformanceLandscapePanel({
@@ -45,7 +53,6 @@ export function PerformanceLandscapePanel({
 	showHeader = false,
 	title,
 	subtitle,
-	icon,
 }: PerformanceLandscapePanelProps) {
 	const resolvedDataByRange = useMemo<Partial<Record<RangeKey, PerformanceData[]>>>(
 		() => dataByRange ?? { "24h": data ?? [] },
@@ -76,55 +83,75 @@ export function PerformanceLandscapePanel({
 
 	const chartData = resolvedDataByRange[range] ?? [];
 	const controls = (
-		<div className="flex items-center gap-2">
+		<div className="flex shrink-0 items-center gap-2">
 			{availableRanges.length > 1 ? (
-				<Select
-					value={range}
-					onValueChange={(value) => setRange(value as RangeKey)}
-				>
-					<SelectTrigger className="h-8 w-[150px]">
-						<SelectValue placeholder="Range" />
-					</SelectTrigger>
-					<SelectContent>
+				<DropdownMenu>
+					<DropdownMenuTrigger render={<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							className="h-9 w-32 justify-between rounded-lg px-4 font-normal text-muted-foreground" />}>
+
+							{rangeLabel(range)}
+							<ChevronDown className="ml-2 h-4 w-4 opacity-60" />
+
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="end" className="min-w-32">
 						{RANGE_OPTIONS.map((option) => (
-							<SelectItem
+							<DropdownMenuItem
 								key={option.key}
-								value={option.key}
 								disabled={!resolvedDataByRange[option.key]?.length}
+								onSelect={() => setRange(option.key)}
+								className="justify-between gap-6"
 							>
-								{option.label}
-							</SelectItem>
+								<span>{option.label}</span>
+								<span className="flex h-4 w-4 items-center justify-center">
+									{range === option.key ? (
+										<Check className="h-4 w-4 text-primary" />
+									) : null}
+								</span>
+							</DropdownMenuItem>
 						))}
-					</SelectContent>
-				</Select>
+					</DropdownMenuContent>
+				</DropdownMenu>
 			) : null}
-			<Select
-				value={mode}
-				onValueChange={(value) => setMode(value as PerformanceMode)}
-			>
-				<SelectTrigger className="h-8 w-[150px]">
-					<SelectValue placeholder="Mode" />
-				</SelectTrigger>
-				<SelectContent>
+			<DropdownMenu>
+				<DropdownMenuTrigger render={<Button
+						type="button"
+						variant="outline"
+						size="sm"
+						className="h-9 w-36 justify-between rounded-lg px-4 font-normal text-muted-foreground" />}>
+
+						{modeLabel(mode)}
+						<ChevronDown className="ml-2 h-4 w-4 opacity-60" />
+
+				</DropdownMenuTrigger>
+				<DropdownMenuContent align="end" className="min-w-36">
 					{MODE_OPTIONS.map((option) => (
-						<SelectItem key={option.key} value={option.key}>
-							{option.label}
-						</SelectItem>
+						<DropdownMenuItem
+							key={option.key}
+							onSelect={() => setMode(option.key)}
+							className="justify-between gap-6"
+						>
+							<span>{option.label}</span>
+							<span className="flex h-4 w-4 items-center justify-center">
+								{mode === option.key ? (
+									<Check className="h-4 w-4 text-primary" />
+								) : null}
+							</span>
+						</DropdownMenuItem>
 					))}
-				</SelectContent>
-			</Select>
+				</DropdownMenuContent>
+			</DropdownMenu>
 		</div>
 	);
 
 	return (
 		<div className="space-y-4">
 			{showHeader ? (
-				<div className="flex items-start justify-between gap-3">
-					<div className="space-y-0.5">
-						<div className="flex items-center gap-2">
-							{icon}
-							{title ? <h2 className="text-xl font-semibold leading-8">{title}</h2> : null}
-						</div>
+				<div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+					<div className="min-w-0 max-w-xl space-y-0.5">
+						{title ? <h2 className="text-xl font-semibold leading-8">{title}</h2> : null}
 						{subtitle ? (
 							<p className="text-sm text-muted-foreground">{subtitle}</p>
 						) : null}

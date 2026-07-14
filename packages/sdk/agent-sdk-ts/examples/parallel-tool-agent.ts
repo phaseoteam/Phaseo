@@ -1,4 +1,4 @@
-import { createAgent, createGatewayAgentClient, defineTool } from "@ai-stats/agent-sdk";
+import { createAgent, createGatewayAgentClient, defineTool } from "@phaseo/agent-sdk";
 
 const fetchDocs = defineTool({
 	id: "fetch-docs",
@@ -35,7 +35,7 @@ const fetchIncidents = defineTool({
 
 const agent = createAgent({
 	id: "parallel-tool-agent",
-	model: "ai-stats/free",
+	model: "phaseo/free",
 	instructions:
 		"Use the available tools to gather context, then return one concise operational summary.",
 	tools: [fetchDocs, fetchStatus, fetchIncidents],
@@ -49,7 +49,7 @@ const result = await agent.run({
 		"Fetch the presets docs, the gateway status component, and the async-jobs incident digest, then summarize the current state.",
 	client: createGatewayAgentClient({
 		clientOptions: {
-			apiKey: process.env.AI_STATS_API_KEY!,
+			apiKey: process.env.PHASEO_API_KEY!,
 		},
 	}),
 	onEvent(event) {

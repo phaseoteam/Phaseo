@@ -1,19 +1,21 @@
 ---
 title: "Authentication"
-description: "Use API keys to authenticate every request to AI Stats Gateway."
+description: "Use API keys to authenticate every request to Phaseo Gateway."
 ---
 
-The Gateway uses bearer tokens for authentication. Every request must include a valid API key issued from your workspace. Keys scope access to specific features, letting you separate environments or team responsibilities.
+Use this reference when you need to send authenticated requests or decide how to store and rotate keys.
+
+Phaseo Gateway uses bearer tokens. Every API request must include a valid key from your workspace.
 
 ---
 
-## API keys
+## Key types
 
--   **API Keys** are scoped to all models and providers available to your organization.
--   **Management API keys** are elevated credentials created in the dashboard and used for administration APIs. See the [Management API Keys](./management-api-keys.mdx) guide for details.
--   **Rotation** is manual today, but you can create a new key at any time without downtime.
+- **Gateway API keys** call model, provider, and generation endpoints available to your workspace.
+- **Management API keys** call administration APIs. See [Management API Keys](./management-api-keys.mdx).
+- **Rotated keys** can be created at any time, then swapped into your app before the old key is removed.
 
-Keys follow the format `aistats_v1_sk_<kid>_<secret>`. Treat them like passwords and avoid storing them in client-side code or public repositories.
+Keys follow the format `phaseo_v1_sk_<kid>_<secret>`. Treat them like passwords and avoid storing them in client-side code or public repositories.
 
 <Note>
 You can call `:free` models without depositing credits. Paid models require available wallet balance.
@@ -21,21 +23,21 @@ You can call `:free` models without depositing credits. Paid models require avai
 
 ---
 
-## Request headers
+## Header format
 
 Include the key in the `Authorization` header on every request:
 
 ```http
-Authorization: Bearer aistats_v1_sk_<kid>_<secret>
+Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
 ```
 
-Most HTTP clients expose a dedicated configuration property. For example, with `fetch`:
+Most HTTP clients let you set this once on the client. For example, with `fetch`:
 
 ```ts
-const response = await fetch("https://api.phaseo.app/v1/chat/completions", {
+const response = await fetch("https://api.phaseo.ai/v1/chat/completions", {
 	method: "POST",
 	headers: {
-		Authorization: `Bearer ${process.env.AI_STATS_API_KEY}`,
+		Authorization: `Bearer ${process.env.PHASEO_API_KEY}`,
 		"Content-Type": "application/json",
 	},
 	body: JSON.stringify({
@@ -53,7 +55,7 @@ const response = await fetch("https://api.phaseo.app/v1/chat/completions", {
 
 ---
 
-## Key management
+## Key handling checklist
 
 | Practice            | Why it matters                                                           |
 | ------------------- | ------------------------------------------------------------------------ |
@@ -64,9 +66,9 @@ const response = await fetch("https://api.phaseo.app/v1/chat/completions", {
 
 ---
 
-## Troubleshooting
+## Common authentication errors
 
--   **401 Unauthorized** -- The key is missing, invalid, or belongs to a disabled workspace.
--   **403 Forbidden** -- The key exists but cannot access the requested provider or model. Check your plan or contact support.
--   **429 Too Many Requests** -- You exceeded a rate limit. See the [Rate limits](./rate-limits.mdx) guide.
--   **5xx errors** -- Retry with exponential backoff and report persistent issues via the support channel.
+- **401 Unauthorized**: the key is missing, invalid, or belongs to a disabled workspace.
+- **403 Forbidden**: the key exists but cannot access the requested provider or model.
+- **429 Too Many Requests**: the key or workspace exceeded a limit. See [Rate limits](./rate-limits.mdx).
+- **5xx errors**: retry with exponential backoff and contact [support](https://phaseo.app/help) if the issue persists.

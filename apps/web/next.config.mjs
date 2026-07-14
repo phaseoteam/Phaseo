@@ -9,10 +9,32 @@ const monorepoRoot = path.join(__dirname, "..", "..");
 // Skip remote font downloads in offline or locked-down environments so builds don't fail.
 process.env.NEXT_FONT_IGNORE_FAILED_DOWNLOADS ||= "true";
 
+const configuredAllowedDevOrigins =
+  process.env.NEXT_ALLOWED_DEV_ORIGINS?.split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean) ?? [];
+
+const mintlifyProxyOrigin = "https://aistats.mintlify.site";
+const docsProxyRewrites = [
+  {
+    source: "/docs",
+    destination: `${mintlifyProxyOrigin}/docs`,
+  },
+  {
+    source: "/docs/:match*",
+    destination: `${mintlifyProxyOrigin}/docs/:match*`,
+  },
+];
+
 /** @type {import("next").NextConfig} */
 const nextConfig = {
-  allowedDevOrigins: ["127.0.0.1"],
+  ...(configuredAllowedDevOrigins.length > 0
+    ? { allowedDevOrigins: configuredAllowedDevOrigins }
+    : {}),
   cacheComponents: true,
+  images: {
+    qualities: [75, 90],
+  },
   env: {
     NEXT_PUBLIC_DEPLOY_TIME:
       process.env.NEXT_PUBLIC_DEPLOY_TIME ?? new Date().toISOString(),
@@ -32,13 +54,52 @@ const nextConfig = {
           {
             key: "Link",
             value:
-              '</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json", <https://docs.ai-stats.phaseo.app/v1/api-reference/introduction>; rel="service-doc"; type="text/html", </.well-known/agent-skills/index.json>; rel="describedby"; type="application/json"',
+              '</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json", <https://phaseo.app/docs/v1/api-reference/introduction>; rel="service-doc"; type="text/html", </.well-known/agent-skills/index.json>; rel="describedby"; type="application/json"',
           },
           {
             key: "Vary",
             value: "Accept",
           },
         ],
+      },
+    ];
+  },
+  async redirects() {
+    return [
+      {
+        source: "/announcements",
+        destination: "/blog",
+        permanent: true,
+      },
+      {
+        source: "/announcements/:slug*",
+        destination: "/blog/:slug*",
+        permanent: true,
+      },
+      {
+        source: "/how-ai-stats-calculates-model-pricing",
+        destination: "/how-phaseo-calculates-model-pricing",
+        permanent: true,
+      },
+      {
+        source: "/how-ai-stats-measures-latency-throughput",
+        destination: "/how-phaseo-measures-latency-throughput",
+        permanent: true,
+      },
+      {
+        source: "/how-ai-stats-normalises-ai-benchmarks",
+        destination: "/how-phaseo-normalises-ai-benchmarks",
+        permanent: true,
+      },
+      {
+        source: "/how-ai-stats-tracks-provider-availability",
+        destination: "/how-phaseo-tracks-provider-availability",
+        permanent: true,
+      },
+      {
+        source: "/status",
+        destination: "https://status.phaseo.app",
+        permanent: true,
       },
     ];
   },
@@ -51,6 +112,7 @@ const nextConfig = {
         },
       ],
       afterFiles: [
+        ...docsProxyRewrites,
         {
           source: "/ingest/static/:path*",
           destination: "https://eu-assets.i.posthog.com/static/:path*",

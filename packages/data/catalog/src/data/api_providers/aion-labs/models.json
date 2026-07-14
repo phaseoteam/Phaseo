@@ -4,14 +4,14 @@
     "provider_api_model_id": "aion-labs:aion-labs/aion-1.0",
     "provider_model_slug": "aion-labs/aion-1.0",
     "internal_model_id": "aion-labs/aion-1.0",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": 131072,
     "max_output_tokens": 32768,
     "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-07-04T00:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
@@ -61,14 +61,14 @@
     "provider_api_model_id": "aion-labs:aion-labs/aion-1.0-mini",
     "provider_model_slug": "aion-labs/aion-1.0-mini",
     "internal_model_id": "aion-labs/aion-1.0-mini",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": 131072,
     "max_output_tokens": 32768,
     "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-07-04T00:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
@@ -182,15 +182,156 @@
     "provider_api_model_id": "aion-labs:aion-labs/aion-3.0",
     "provider_model_slug": "aion-labs/aion-3.0",
     "internal_model_id": "aion-labs/aion-3.0",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 32768,
+    "effective_from": "2026-05-05T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_output_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Responses API field."
+          },
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Chat Completions API field."
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "stream",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "reasoning_split",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "AION API Reference lists reasoning_effort as Aion 2.0-only; Aion 3.0 support is limited to reasoning_split."
+          },
+          {
+            "param_id": "metadata",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "api_model_id": "aion-labs/aion-3.0-mini",
+    "provider_api_model_id": "aion-labs:aion-labs/aion-3.0-mini",
+    "provider_model_slug": "aion-labs/aion-3.0-mini",
+    "internal_model_id": "aion-labs/aion-3.0-mini",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 32768,
+    "effective_from": "2026-05-14T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_output_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Responses API field."
+          },
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Chat Completions API field."
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "stream",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "reasoning_split",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "AION API Reference lists reasoning_effort as Aion 2.0-only; Aion 3.0 Mini support is limited to reasoning_split."
+          },
+          {
+            "param_id": "metadata",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
+      }
+    ]
   },
   {
     "api_model_id": "aion-labs/aion-rp-llama-3.1-8b",

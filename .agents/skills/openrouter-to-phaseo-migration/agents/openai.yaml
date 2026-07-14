@@ -1,0 +1,4 @@
+interface:
+  display_name: "OpenRouter to Phaseo Migration"
+  short_description: "Migrate OpenRouter integrations to Phaseo end-to-end."
+  default_prompt: "Use $openrouter-to-phaseo-migration to migrate this integration fully from OpenRouter to Phaseo."

@@ -1,0 +1,46 @@
+{
+  "model_id": "meta/muse-image",
+  "organisation_id": "meta",
+  "name": "Muse Image",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Muse Image is Meta Superintelligence Labs' first image generation model, built for Meta AI and creative workflows across Meta apps. It supports text and photo-based image generation, editing, and restyling workflows.",
+  "announced_date": "2026-07-07T00:00:00",
+  "release_date": "2026-07-07T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "image",
+  "api_model_id": "meta/muse-image",
+  "links": [
+    {
+      "title": "Announcement",
+      "kind": "announcement",
+      "url": "https://about.fb.com/news/2026/07/introducing-muse-image-meta-ai/"
+    }
+  ],
+  "details": [
+    {
+      "name": "availability",
+      "value": "Available in Meta AI; powers creative experiences on Instagram and WhatsApp, with Facebook, Messenger, and Meta Advantage+ creative support planned."
+    },
+    {
+      "name": "api_availability",
+      "value": "No public Meta API or AI Stats Gateway route has been announced or configured for Muse Image."
+    },
+    {
+      "name": "reasoning_workflow",
+      "value": "Pairs with Muse Spark to plan layouts, use real-time web context, and blend multiple visual references."
+    },
+    {
+      "name": "editing",
+      "value": "Supports direct image edits through markup, sketches, annotations, and conversational refinements."
+    },
+    {
+      "name": "social_context",
+      "value": "Can use @-mentioned Instagram accounts in Meta AI to bring public profile photos into generated images, subject to user controls."
+    }
+  ],
+  "benchmarks": []
+}

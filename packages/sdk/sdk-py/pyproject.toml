@@ -3,15 +3,16 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "ai-stats-py-sdk"
-version = "2.0.4"
-description = "Official AI Stats Gateway SDK for Python."
+name = "phaseo"
+version = "2.0.5"
+description = "Phaseo Gateway SDK for Python."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
-authors = [{ name = "AI Stats", email = "danielbutler500@gmail.com" }]
+authors = [{ name = "Phaseo", email = "danielbutler500@gmail.com" }]
 keywords = ["ai", "sdk", "llm", "gateway"]
 classifiers = [
+	"Development Status :: 5 - Production/Stable",
 	"Programming Language :: Python :: 3",
 	"Programming Language :: Python :: 3 :: Only",
 	"License :: OSI Approved :: MIT License",
@@ -26,15 +27,15 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://ai-stats.phaseo.app"
-Documentation = "https://docs.ai-stats.phaseo.app"
-Repository = "https://github.com/AI-Stats/AI-Stats"
-Issues = "https://github.com/AI-Stats/AI-Stats/issues"
+Homepage = "https://phaseo.app"
+Documentation = "https://phaseo.app"
+Repository = "https://github.com/phaseoteam/Phaseo"
+Issues = "https://github.com/phaseoteam/Phaseo/issues"
 
 [tool.hatch.build.targets.sdist]
 include = [
-	"src/ai_stats",
-	"src/ai_stats_devtools",
+	"src/phaseo",
+	"src/phaseo_devtools",
 	"src/gen",
 	"SKILL.md",
 	"README.md",
@@ -43,14 +44,14 @@ include = [
 
 [tool.hatch.build.targets.wheel]
 packages = [
-	"src/ai_stats",
-	"src/ai_stats_devtools",
+	"src/phaseo",
+	"src/phaseo_devtools",
 	"src/gen",
 ]
 
 [tool.hatch.build.targets.wheel.force-include]
-"SKILL.md" = "ai_stats/SKILL.md"
+"SKILL.md" = "phaseo/SKILL.md"
 
 [tool.hatch.version]
-path = "src/ai_stats/__init__.py"
+path = "src/phaseo/__init__.py"
 

@@ -15,11 +15,13 @@
   "api_model_id": "openai/gpt-realtime-whisper",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://developers.openai.com/api/docs/models/gpt-realtime-whisper"
     },
     {
-      "platform": "guide",
+      "title": "Guide",
+      "kind": "guide",
       "url": "https://developers.openai.com/api/docs/guides/realtime-transcription"
     }
   ],
@@ -42,7 +44,7 @@
     },
     {
       "name": "release_note",
-      "value": "AI Stats inferred the date from first public docs availability on 2026-05-07 because the OpenAI model page does not expose an explicit launch date."
+      "value": "Phaseo inferred the date from first public docs availability on 2026-05-07 because the OpenAI model page does not expose an explicit launch date."
     }
   ],
   "benchmarks": []

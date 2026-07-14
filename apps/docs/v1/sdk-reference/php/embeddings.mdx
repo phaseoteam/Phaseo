@@ -12,9 +12,9 @@ description: "Call /embeddings with the PHP SDK."
 
 require 'vendor/autoload.php';
 
-use AIStats\Sdk\AIStats;
+use Phaseo\Sdk\Phaseo;
 
-$client = new AIStats(getenv('AI_STATS_API_KEY'));
+$client = new Phaseo(getenv('PHASEO_API_KEY'));
 $response = $client->generateEmbedding([
     'model' => 'openai/text-embedding-3-large',
     'input' => 'Sample text',

@@ -15,27 +15,33 @@
   "api_model_id": "qwen/qwq-32b",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://huggingface.co/Qwen/QwQ-32B"
     },
     {
-      "platform": "playground",
+      "title": "Playground",
+      "kind": "playground",
       "url": "https://huggingface.co/playground?modelId=Qwen/QwQ-32B"
     },
     {
-      "platform": "paper",
+      "title": "Paper",
+      "kind": "paper",
       "url": "https://arxiv.org/abs/2412.15115"
     },
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://qwenlm.github.io/blog/qwq-32b/"
     },
     {
-      "platform": "repository",
+      "title": "Repository",
+      "kind": "repository",
       "url": "https://github.com/QwenLM/QwQ"
     },
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/Qwen/QwQ-32B"
     }
   ],

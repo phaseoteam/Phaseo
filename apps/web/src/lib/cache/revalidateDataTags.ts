@@ -1,4 +1,4 @@
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag, updateTag } from "next/cache";
 
 const STALE_WHILE_REVALIDATE = "max" as const;
 const EXPIRE_IMMEDIATELY = { expire: 0 } as const;
@@ -169,7 +169,7 @@ function revalidateTagList(tags: readonly string[]) {
 
 function expireTagList(tags: readonly string[]) {
 	for (const tag of new Set(tags)) {
-		revalidateTag(tag, EXPIRE_IMMEDIATELY);
+		updateTag(tag);
 	}
 }
 
@@ -181,18 +181,10 @@ function revalidatePublicCataloguePaths(options: RevalidateModelDataTagOptions) 
 	revalidatePath("/chat/audio");
 	revalidatePath("/chat/moderation");
 	revalidatePath("/chat/embeddings");
+	revalidatePath("/models");
 	revalidatePath("/models", "layout");
 	revalidatePath("/models/table");
-	revalidatePath("/models/collections");
 	revalidatePath("/monitor");
-	revalidatePath("/api/frontend/models/collections");
-	revalidatePath("/api/frontend/models/monitor");
-	revalidatePath("/api/frontend/models/free-router");
-	revalidatePath("/api/frontend/landing/stats");
-	revalidatePath("/api/frontend/landing/gateway-showcase");
-	revalidatePath("/api/frontend/sign-in/main-models");
-	revalidatePath("/api/frontend/sign-in/supported-models-stats");
-	revalidatePath("/api/frontend/monitor/history");
 	revalidatePath("/compare");
 	revalidatePath("/pricing");
 	revalidatePath("/api-providers", "layout");
@@ -200,77 +192,16 @@ function revalidatePublicCataloguePaths(options: RevalidateModelDataTagOptions) 
 	revalidatePath("/updates");
 	revalidatePath("/updates/models");
 	revalidatePath("/apps");
-	revalidatePath("/api/frontend/search");
-	revalidatePath("/api/frontend/models");
-	revalidatePath("/api/frontend/compare/models");
-	revalidatePath("/api/frontend/compare/models/details");
-	revalidatePath("/api/frontend/models/leaderboard-meta");
-	revalidatePath("/api/frontend/api-providers");
-	revalidatePath("/api/frontend/gateway-models");
-	revalidatePath("/api/frontend/organisations");
-	revalidatePath("/api/frontend/benchmarks");
-	revalidatePath("/api/frontend/families");
-	revalidatePath("/api/frontend/subscription-plans");
-	revalidatePath("/api/frontend/countries");
-	revalidatePath("/api/frontend/apps/public-ids");
-	revalidatePath("/api/frontend/apps/images");
-	revalidatePath("/api/frontend/apps/rankings/top");
-	revalidatePath("/api/frontend/apps/rankings/trending");
-	revalidatePath("/api/frontend/apps/indexability");
-	revalidatePath("/api/frontend/rankings/indexability");
-	revalidatePath("/api/frontend/rankings/performance");
-	revalidatePath("/api/frontend/rankings/market-share");
-	revalidatePath("/api/frontend/rankings/market-share-timeseries");
-	revalidatePath("/api/frontend/rankings/timeseries");
-	revalidatePath("/api/frontend/rankings/model-rankings");
-	revalidatePath("/api/frontend/rankings/model-names");
-	revalidatePath("/api/frontend/rankings/provider-names");
-	revalidatePath("/api/frontend/rankings/provider-meta");
-	revalidatePath("/api/frontend/rankings/organisation-logo-ids");
-	revalidatePath("/api/frontend/pricing/models");
-	revalidatePath("/api/frontend/gateway/marketplace/presets");
-	revalidatePath("/api/frontend/landing/stats");
-	revalidatePath("/api/frontend/landing/gateway-showcase");
-	revalidatePath("/api/frontend/updates/web");
-	revalidatePath("/api/frontend/updates/youtube");
-	revalidatePath("/api/frontend/updates/models");
-	revalidatePath("/api/frontend/updates/cards");
-	revalidatePath("/api/frontend/updates/model-cards");
 	revalidatePath("/sitemap.xml");
 
 	if (options.modelId) {
 		revalidatePath(`/models/${options.modelId}`);
-		revalidatePath(`/api/frontend/models/${options.modelId}/header`);
-		revalidatePath(`/api/frontend/models/${options.modelId}/notice`);
-		revalidatePath(`/api/frontend/models/${options.modelId}/canonical`);
-		revalidatePath(`/api/frontend/models/${options.modelId}/pending-api-release`);
-		revalidatePath(`/api/frontend/models/${options.modelId}/overview`);
-		revalidatePath(`/api/frontend/models/${options.modelId}/pricing`);
-		revalidatePath(`/api/frontend/models/${options.modelId}/pricing-history`);
-		revalidatePath(`/api/frontend/models/${options.modelId}/subscription-plans`);
-		revalidatePath(`/api/frontend/models/${options.modelId}/gateway-metadata`);
-		revalidatePath(`/api/frontend/models/${options.modelId}/timeline`);
-		revalidatePath(`/api/frontend/models/${options.modelId}/apps`);
-		revalidatePath(`/api/frontend/models/${options.modelId}/performance`);
-		revalidatePath(`/api/frontend/models/${options.modelId}/activity`);
-		revalidatePath(`/api/frontend/models/${options.modelId}/token-trajectory`);
-		revalidatePath(`/api/frontend/models/${options.modelId}/realtime-window`);
-		revalidatePath(`/api/frontend/models/${options.modelId}/runtime-stats`);
-		revalidatePath(`/api/frontend/models/${options.modelId}/usage-daily`);
-		revalidatePath(`/api/frontend/models/${options.modelId}/health`);
-		revalidatePath(`/api/frontend/models/${options.modelId}/routing-health`);
-		revalidatePath(`/api/frontend/models/${options.modelId}/benchmark-highlights`);
-		revalidatePath("/api/frontend/compare/models/details");
 	}
 
 	for (const organisationId of options.organisationIds ?? []) {
 		if (!organisationId) continue;
 		revalidatePath(`/organisations/${organisationId}`);
 		revalidatePath(`/organisations/${organisationId}/models`);
-		revalidatePath(`/api/frontend/organisations/${organisationId}/header`);
-		revalidatePath(
-			`/api/frontend/updates/organisations/${organisationId}/releases`,
-		);
 	}
 }
 

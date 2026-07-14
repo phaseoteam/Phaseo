@@ -9,10 +9,10 @@ description: "Create and retrieve batch jobs with the Go SDK wrapper."
 import (
   "context"
   "fmt"
-  aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
 )
 
-client := aistats.New(apiKey, "https://api.phaseo.app/v1")
+client := phaseo.New(apiKey, "https://api.phaseo.ai/v1")
 ctx := context.Background()
 
 created, err := client.CreateBatch(ctx, map[string]interface{}{
@@ -40,7 +40,7 @@ if err != nil {
 
 websocketURL, err := client.GetBatchWebSocketURL(
   fmt.Sprint(created.(map[string]interface{})["id"]),
-  &aistats.AsyncJobWebSocketOptions{IntervalMS: 1500},
+  &phaseo.AsyncJobWebSocketOptions{IntervalMS: 1500},
 )
 if err != nil {
   panic(err)

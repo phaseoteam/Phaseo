@@ -147,6 +147,27 @@
     ]
   },
   {
+    "api_model_id": "anthropic/claude-sonnet-5",
+    "provider_api_model_id": "venice:anthropic/claude-sonnet-5",
+    "provider_model_slug": "claude-sonnet-5",
+    "internal_model_id": "anthropic/claude-sonnet-5",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 128000,
+    "effective_from": "2026-06-30T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "deepseek/deepseek-v3.2",
     "provider_api_model_id": "venice:deepseek/deepseek-v3.2",
     "provider_model_slug": "deepseek-v3.2",
@@ -470,38 +491,109 @@
     ]
   },
   {
-    "api_model_id": "qwen/qwen3.7-plus",
-    "provider_api_model_id": "venice:qwen/qwen3.7-plus",
-    "provider_model_slug": "qwen-3-7-plus",
-    "internal_model_id": "qwen/qwen3.7-plus",
-    "is_active_gateway": true,
-    "quantization_scheme": null,
-    "input_modalities": "text,image,video",
-    "output_modalities": "text",
-    "context_length": 1000000,
-    "max_output_tokens": 65536,
-    "effective_from": "2026-06-08T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "minimax/minimax-m3",
     "provider_api_model_id": "venice:minimax/minimax-m3",
     "provider_model_slug": "minimax-m3",
     "internal_model_id": "minimax/minimax-m3",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
     "context_length": 500000,
     "max_output_tokens": 32768,
     "effective_from": "2026-06-01T00:00:00",
+    "effective_to": "2026-06-12T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "deranked_lvl1",
+        "params": [
+          {
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_k",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "api_model_id": "minimax/minimax-m3",
+    "provider_api_model_id": "venice:minimax/minimax-m3",
+    "provider_model_slug": "minimax-m3-preview",
+    "internal_model_id": "minimax/minimax-m3",
+    "is_active_gateway": true,
+    "quantization_scheme": "fp8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 524288,
+    "max_output_tokens": 65536,
+    "effective_from": "2026-06-12T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -579,6 +671,27 @@
             "notes": null
           }
         ]
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3.7-plus",
+    "provider_api_model_id": "venice:qwen/qwen3.7-plus",
+    "provider_model_slug": "qwen-3-7-plus",
+    "internal_model_id": "qwen/qwen3.7-plus",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 65536,
+    "effective_from": "2026-06-08T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
       }
     ]
   },
@@ -1228,8 +1341,8 @@
     ]
   },
   {
-    "api_model_id": "x-ai/grok-4.1-fast",
-    "provider_api_model_id": "venice:x-ai/grok-4.1-fast",
+    "api_model_id": "spacex-ai/grok-4.1-fast",
+    "provider_api_model_id": "venice:spacex-ai/grok-4.1-fast",
     "provider_model_slug": "grok-41-fast",
     "internal_model_id": "",
     "is_active_gateway": true,
@@ -1249,10 +1362,10 @@
     ]
   },
   {
-    "api_model_id": "x-ai/grok-4.20-beta-0309",
-    "provider_api_model_id": "venice:x-ai/grok-4.20-beta-0309",
+    "api_model_id": "spacex-ai/grok-4.20-beta-0309",
+    "provider_api_model_id": "venice:spacex-ai/grok-4.20-beta-0309",
     "provider_model_slug": "grok-4-20-beta",
-    "internal_model_id": "x-ai/grok-4.20",
+    "internal_model_id": "spacex-ai/grok-4.20",
     "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": null,
@@ -1270,10 +1383,10 @@
     ]
   },
   {
-    "api_model_id": "x-ai/grok-4.20-multi-agent-beta-0309",
-    "provider_api_model_id": "venice:x-ai/grok-4.20-multi-agent-beta-0309",
+    "api_model_id": "spacex-ai/grok-4.20-multi-agent-beta-0309",
+    "provider_api_model_id": "venice:spacex-ai/grok-4.20-multi-agent-beta-0309",
     "provider_model_slug": "grok-4-20-multi-agent-beta",
-    "internal_model_id": "x-ai/grok-4.20-multi-agent-beta",
+    "internal_model_id": "spacex-ai/grok-4.20-multi-agent-beta",
     "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": null,
@@ -1291,10 +1404,10 @@
     ]
   },
   {
-    "api_model_id": "x-ai/grok-code-fast-1",
-    "provider_api_model_id": "venice:x-ai/grok-code-fast-1",
+    "api_model_id": "spacex-ai/grok-code-fast-1",
+    "provider_api_model_id": "venice:spacex-ai/grok-code-fast-1",
     "provider_model_slug": "grok-code-fast-1",
-    "internal_model_id": "x-ai/grok-code-fast-1",
+    "internal_model_id": "spacex-ai/grok-code-fast-1",
     "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -1585,10 +1698,10 @@
     ]
   },
   {
-    "api_model_id": "x-ai/grok-4.3",
-    "provider_api_model_id": "venice:x-ai/grok-4.3",
+    "api_model_id": "spacex-ai/grok-4.3",
+    "provider_api_model_id": "venice:spacex-ai/grok-4.3",
     "provider_model_slug": "grok-4-3",
-    "internal_model_id": "x-ai/grok-4.3",
+    "internal_model_id": "spacex-ai/grok-4.3",
     "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -1606,10 +1719,10 @@
     ]
   },
   {
-    "api_model_id": "x-ai/grok-build-0.1",
-    "provider_api_model_id": "venice:x-ai/grok-build-0.1",
+    "api_model_id": "spacex-ai/grok-build-0.1",
+    "provider_api_model_id": "venice:spacex-ai/grok-build-0.1",
     "provider_model_slug": "grok-build-0-1",
-    "internal_model_id": "x-ai/grok-build-0.1",
+    "internal_model_id": "spacex-ai/grok-build-0.1",
     "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -1707,119 +1820,6 @@
         "capability_id": "text.generate",
         "status": "active",
         "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3.7-plus",
-    "provider_api_model_id": "venice:qwen/qwen3.7-plus",
-    "provider_model_slug": "qwen-3-7-plus",
-    "internal_model_id": "qwen/qwen3.7-plus",
-    "is_active_gateway": true,
-    "quantization_scheme": null,
-    "input_modalities": "text,image,video",
-    "output_modalities": "text",
-    "context_length": 1000000,
-    "max_output_tokens": 65536,
-    "effective_from": "2026-06-08T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "minimax/minimax-m3",
-    "provider_api_model_id": "venice:minimax/minimax-m3",
-    "provider_model_slug": "minimax-m3",
-    "internal_model_id": "minimax/minimax-m3",
-    "is_active_gateway": true,
-    "quantization_scheme": null,
-    "input_modalities": "text,image",
-    "output_modalities": "text",
-    "context_length": 500000,
-    "max_output_tokens": 32768,
-    "effective_from": "2026-06-01T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": [
-          {
-            "param_id": "tools",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "tool_choice",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "reasoning",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "frequency_penalty",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "max_tokens",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "temperature",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "presence_penalty",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "stop",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "top_k",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "top_p",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          }
-        ]
       }
     ]
   },

@@ -1,7 +1,7 @@
 ---
 title: "Introduction To The AI Gateway"
 sidebarTitle: "Introduction"
-description: "Base URL, authentication, and endpoint families for the AI Stats Gateway."
+description: "Base URL, authentication, and endpoint families for the Phaseo Gateway."
 icon: "map"
 ---
 
@@ -10,7 +10,7 @@ icon: "map"
 Production base URL:
 
 ```http
-https://api.phaseo.app/v1
+https://api.phaseo.ai/v1
 ```
 
 All endpoint paths in this reference are relative to that `/v1` base URL.
@@ -20,9 +20,9 @@ All endpoint paths in this reference are relative to that `/v1` base URL.
 Use the OpenAPI file if you want to import the API into Postman, Hoppscotch, or an SDK generator.
 
 <Card
-	title="AI Stats Gateway OpenAPI"
+	title="Phaseo Gateway OpenAPI"
 	icon="list-bullet"
-	href="https://github.com/AI-Stats/AI-Stats/blob/main/apps/docs/openapi/v1/openapi.yaml"
+	href="https://github.com/phaseoteam/Phaseo/blob/main/apps/docs/openapi/v1/openapi.yaml"
 >
 	View the specification file
 </Card>
@@ -32,7 +32,7 @@ Use the OpenAPI file if you want to import the API into Postman, Hoppscotch, or 
 Most endpoints require a standard gateway API key. Management endpoints require a management API key created in the dashboard.
 
 ```http
-Authorization: Bearer aistats_v1_sk_<kid>_<secret>
+Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
 ```
 
 If authentication fails, the API returns `401`.
@@ -48,10 +48,10 @@ If authentication fails, the API returns `401`.
 | `POST /videos`, `GET /videos`, `GET /videos/models`, `GET /videos/{video_id}` | Video jobs and status |
 | `POST /music/generate`, `GET /music/generate/{music_id}` | Music generation jobs |
 | `POST /ocr`, `POST /batches`, `GET /batches`, `GET /batches/{batch_id}`, `POST /files`, `GET /files/{file_id}` | OCR, batches, and files |
-| `GET /gateway/models`, `GET /providers`, `GET /pricing/models`, `POST /pricing/calculate`, `GET /activity` | Discovery, pricing, and activity |
+| `GET /models`, `GET /providers`, `GET /pricing/models`, `POST /pricing/calculate`, `GET /activity` | Discovery, pricing, and activity |
 
 ## Billing and rate limits
 
-- AI Stats does not apply its own rate limits. Limits are enforced by upstream providers.
+- Phaseo does not apply its own rate limits. Limits are enforced by upstream providers.
 - Paid requests require enough wallet balance to pass the preflight credit check.
 - Free models with `:free` do not require deposited credits.

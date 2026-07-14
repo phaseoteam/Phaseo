@@ -11,6 +11,19 @@ const DEFAULT_PASTELS = [
 	"#FBE2B4",
 ];
 
+const MODEL_SERIES_PALETTE = [
+	"#F35DA7",
+	"#18C8B8",
+	"#168CF0",
+	"#FDBB2F",
+	"#FA7048",
+	"#88CC3D",
+	"#9B63E6",
+	"#6867E8",
+	"#2F9563",
+	"#6F8E3A",
+];
+
 const GOLDEN_ANGLE = 137.508;
 
 function hash32(str: string) {
@@ -49,4 +62,21 @@ export function assignSeriesColours(
 	return out;
 }
 
-export { DEFAULT_PASTELS };
+export function assignOrderedSeriesColours(
+	values: string[],
+	palette: string[] = MODEL_SERIES_PALETTE,
+) {
+	const out: Record<string, { fill: string; stroke: string }> = {};
+
+	values.forEach((value, index) => {
+		const fill = palette[index % palette.length];
+		out[value] = {
+			fill,
+			stroke: fill,
+		};
+	});
+
+	return out;
+}
+
+export { DEFAULT_PASTELS, MODEL_SERIES_PALETTE };

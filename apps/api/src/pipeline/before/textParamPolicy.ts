@@ -26,6 +26,7 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			"max_completion_tokens",
 			"max_tokens",
 			"meta",
+			"metadata",
 			"echo_upstream_request",
 			"debug",
 			"presence_penalty",
@@ -49,6 +50,7 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			"image_config",
 			"imageConfig",
 			"thinking",
+			"reasoning_split",
 			"user_id",
 			"user",
 			"service_tier",
@@ -65,6 +67,7 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			"plugins",
 			"trace",
 			"provider",
+			"routing",
 		]),
 		keyToCanonicalParam: {
 			tools: "tools",
@@ -91,8 +94,10 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			top_logprobs: "top_logprobs",
 			presence_penalty: "presence_penalty",
 			frequency_penalty: "frequency_penalty",
+			metadata: "metadata",
 			reasoning: "reasoning",
 			thinking: "reasoning",
+			reasoning_split: "reasoning_split",
 			service_tier: "service_tier",
 			prompt_cache_key: "prompt_cache_key",
 			prompt_cache_retention: "prompt_cache_retention",
@@ -139,6 +144,7 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			"imageConfig",
 			"reasoning",
 			"thinking",
+			"reasoning_split",
 			"safety_identifier",
 			"service_tier",
 			"store",
@@ -161,6 +167,7 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			"echo_upstream_request",
 			"debug",
 			"provider",
+			"routing",
 			"stop",
 			"logit_bias",
 			"logprobs",
@@ -191,8 +198,10 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			top_logprobs: "top_logprobs",
 			presence_penalty: "presence_penalty",
 			frequency_penalty: "frequency_penalty",
+			metadata: "metadata",
 			reasoning: "reasoning",
 			thinking: "reasoning",
+			reasoning_split: "reasoning_split",
 			service_tier: "service_tier",
 			prompt_cache_key: "prompt_cache_key",
 			prompt_cache_retention: "prompt_cache_retention",
@@ -235,6 +244,7 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			"echo_upstream_request",
 			"debug",
 			"provider",
+			"routing",
 		]),
 		keyToCanonicalParam: {
 			tools: "tools",
@@ -251,6 +261,7 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			image_config: "image_config",
 			imageConfig: "image_config",
 			thinking: "reasoning",
+			metadata: "metadata",
 			service_tier: "service_tier",
 			web_search_options: "web_search_options",
 			webSearchOptions: "web_search_options",
@@ -325,5 +336,4 @@ export function resolveProviderParamSupportOverride(
 		paramPathCandidates: candidates,
 	});
 }
-
 

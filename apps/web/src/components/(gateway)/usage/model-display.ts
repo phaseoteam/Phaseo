@@ -111,8 +111,8 @@ function displayOrganisationName(raw: string | null | undefined): string | null 
 		["qwen", "Qwen"],
 		["amazon-bedrock", "Amazon Bedrock"],
 		["alibaba-cloud", "Alibaba Cloud"],
-		["xai", "xAI"],
-		["x-ai", "xAI"],
+		["xai", "SpaceXAI"],
+		["spacex-ai", "SpaceXAI"],
 	]);
 	if (known.has(lower)) return known.get(lower)!;
 	if (value.includes("/")) return null;

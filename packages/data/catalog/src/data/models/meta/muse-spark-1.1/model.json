@@ -1,0 +1,127 @@
+{
+  "model_id": "meta/muse-spark-1.1",
+  "organisation_id": "meta",
+  "name": "Muse Spark 1.1",
+  "status": "Available",
+  "previous_model_id": "meta/muse-spark",
+  "description": "Muse Spark 1.1 is a multimodal reasoning model from Meta Superintelligence Labs built for agentic tasks, with improvements in tool and computer use, coding, long-context work, and multimodal understanding. It supports a 1 million token context window and is available through the Meta Model API public preview.",
+  "announced_date": "2026-07-09T00:00:00",
+  "release_date": "2026-07-09T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image,video,audio",
+  "output_types": "text",
+  "api_model_id": "meta/muse-spark-1.1",
+  "links": [
+    {
+      "title": "Introducing Muse Spark and Meta Model API",
+      "kind": "announcement",
+      "url": "https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/"
+    },
+    {
+      "title": "Build with Muse Spark",
+      "kind": "api_reference",
+      "url": "https://developer.meta.com/ai/resources/blog/build-with-muse-spark/#5-get-started"
+    }
+  ],
+  "details": [
+    {
+      "name": "context_window",
+      "value": "1000000",
+      "unit": "tokens",
+      "source_link": "https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/",
+      "other_info": "Meta says Muse Spark 1.1 can actively manage a 1 million token context window."
+    },
+    {
+      "name": "api_status",
+      "value": "public_preview",
+      "unit": null,
+      "source_link": "https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/",
+      "other_info": "Meta announced public preview access through the Meta Model API."
+    }
+  ],
+  "page_notice": {
+    "tone": "warning",
+    "markdown": "AI Stats is currently unable to offer Muse Spark 1.1 through the Gateway because Meta Model API access is restricted by location. We will make it available as soon as we can."
+  },
+  "benchmarks": [
+    {
+      "benchmark_id": "scale-mcp-atlas",
+      "score": 88.1,
+      "is_self_reported": true,
+      "other_info": "MCP Atlas; scaled tool use",
+      "source_link": "https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/"
+    },
+    {
+      "benchmark_id": "jobbench",
+      "score": 54.7,
+      "is_self_reported": true,
+      "other_info": "Professional tool use",
+      "source_link": "https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/"
+    },
+    {
+      "benchmark_id": "toolathlon",
+      "score": 75.6,
+      "is_self_reported": true,
+      "other_info": "Toolathlon-Verified; personal tool use",
+      "source_link": "https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/"
+    },
+    {
+      "benchmark_id": "os-world",
+      "score": 80.8,
+      "is_self_reported": true,
+      "other_info": "OSWorld-Verified; agentic computer use",
+      "source_link": "https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/"
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 62.1,
+      "is_self_reported": true,
+      "other_info": "With tools; multidisciplinary reasoning",
+      "source_link": "https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/"
+    },
+    {
+      "benchmark_id": "financeagent-v2",
+      "score": 57.2,
+      "is_self_reported": true,
+      "other_info": "Agentic financial analysis",
+      "source_link": "https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/"
+    },
+    {
+      "benchmark_id": "terminal-bench-2.1",
+      "score": 80,
+      "is_self_reported": true,
+      "other_info": "Agentic terminal coding",
+      "source_link": "https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/"
+    },
+    {
+      "benchmark_id": "swe-bench-pro",
+      "score": 61.5,
+      "is_self_reported": true,
+      "other_info": "Diverse software engineering",
+      "source_link": "https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/"
+    },
+    {
+      "benchmark_id": "deepswe",
+      "score": 53.3,
+      "is_self_reported": true,
+      "other_info": "DeepSWE 1.1; long-horizon agentic coding",
+      "source_link": "https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/"
+    },
+    {
+      "benchmark_id": "charxiv-reasoning",
+      "score": 88.4,
+      "is_self_reported": true,
+      "other_info": "Chart QA",
+      "source_link": "https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/"
+    },
+    {
+      "benchmark_id": "babyvision",
+      "score": 76.3,
+      "is_self_reported": true,
+      "other_info": "Visual reasoning",
+      "source_link": "https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/"
+    }
+  ]
+}

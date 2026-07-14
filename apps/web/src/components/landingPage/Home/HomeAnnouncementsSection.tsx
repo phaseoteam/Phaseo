@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import {
@@ -12,18 +13,18 @@ import {
 	getAnnouncementPosts,
 } from "@/lib/content/announcements";
 
-const ANNOUNCEMENT_LIMIT = 3;
+const ANNOUNCEMENT_LIMIT = 4;
 
 export function HomeAnnouncementsSectionFallback() {
 	return (
 		<section className="w-full">
 			<div className="space-y-4">
-				<div className="mx-auto h-7 w-72 animate-pulse rounded bg-zinc-100 dark:bg-zinc-800" />
-				<div className="grid grid-cols-1 gap-4">
+				<div className="mx-auto h-7 w-64 animate-pulse rounded bg-zinc-100 dark:bg-zinc-800" />
+				<div className="grid grid-cols-1 gap-3">
 					{Array.from({ length: ANNOUNCEMENT_LIMIT }).map((_, index) => (
 						<div
 							key={`announcements-fallback-${index}`}
-							className="h-36 animate-pulse rounded-xl border border-zinc-200/80 bg-zinc-50/70 dark:border-zinc-800 dark:bg-zinc-950/70"
+							className="h-28 animate-pulse rounded-[20px] border border-zinc-200/80 bg-zinc-50/70 dark:border-zinc-800 dark:bg-zinc-950/70"
 						/>
 					))}
 				</div>
@@ -42,32 +43,41 @@ export default async function HomeAnnouncementsSection() {
 				<div className="text-center">
 					<h2>
 						<Link
-							href="/announcements"
-							className="group inline-flex items-center gap-1 text-center text-3xl font-semibold tracking-[-0.04em] text-zinc-950 transition-colors hover:text-zinc-700 dark:text-zinc-50 dark:hover:text-zinc-200 sm:text-4xl"
+							href="/blog"
+							className="group inline-flex items-center gap-1 text-center text-2xl font-semibold tracking-[-0.04em] text-zinc-950 transition-colors hover:text-zinc-700 dark:text-zinc-50 dark:hover:text-zinc-200 sm:text-3xl"
 						>
-							<span>Latest Announcements</span>
+							<span>Latest from the Blog</span>
 							<ChevronRight className="h-5 w-5 shrink-0 translate-y-px opacity-0 transition-all duration-200 group-hover:translate-x-0.5 group-hover:opacity-100" />
 						</Link>
 					</h2>
 				</div>
 
 				{latest.length > 0 ? (
-					<div className="grid grid-cols-1 gap-4">
+					<div className="grid grid-cols-1 gap-4 sm:max-lg:mx-auto sm:max-lg:max-w-[38rem] sm:max-xl:gap-3 lg:max-xl:grid-cols-2 xl:grid-cols-4">
 						{latest.map((post) => (
-							<Link key={post.slug} href={`/announcements/${post.slug}`} className="block">
-								<Card className="h-full transition hover:-translate-y-0.5 hover:shadow-md">
-									<CardHeader className="space-y-1.5 p-4 pb-2">
-										<div className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+							<Link key={post.slug} href={`/blog/${post.slug}`} className="block">
+								<Card className="h-full gap-0 overflow-hidden rounded-[20px] py-0 sm:max-xl:h-auto sm:max-xl:flex-row sm:max-xl:rounded-2xl [--card-spacing:0px]">
+									<div className="relative aspect-[16/9] border-b border-zinc-200/80 bg-zinc-100 sm:max-xl:w-40 sm:max-xl:shrink-0 sm:max-xl:self-center sm:max-xl:border-b-0 sm:max-xl:border-r dark:border-zinc-800 dark:bg-zinc-900">
+										<Image
+											src={post.coverImage}
+											alt=""
+											fill
+											quality={90}
+											sizes="(min-width: 1280px) 25vw, (min-width: 640px) 50vw, 100vw"
+											className="object-cover"
+										/>
+									</div>
+									<CardHeader className="space-y-1.5 p-3 sm:max-xl:min-w-0 sm:max-xl:flex-1 sm:max-xl:space-y-1 sm:max-xl:p-2.5">
+										<div className="text-xs font-medium text-zinc-500 sm:max-xl:text-[11px] dark:text-zinc-400">
 											{formatAnnouncementDate(post.publishedAt)}
 										</div>
-										<CardTitle className="text-lg leading-snug underline decoration-transparent underline-offset-4 transition hover:decoration-current">
-											{post.title}
+										<CardTitle className="text-base leading-snug sm:max-xl:text-sm">
+											{post.shortTitle ?? post.title}
 										</CardTitle>
-										<CardDescription className="line-clamp-2 text-sm leading-6">
+										<CardDescription className="line-clamp-2 text-sm leading-5 sm:max-xl:line-clamp-1 sm:max-xl:text-xs sm:max-xl:leading-4">
 											{post.description}
 										</CardDescription>
 									</CardHeader>
-									<CardContent className="p-0" />
 								</Card>
 							</Link>
 						))}
@@ -75,7 +85,7 @@ export default async function HomeAnnouncementsSection() {
 				) : (
 					<Card className="border-dashed">
 						<CardContent className="py-10 text-center text-sm text-zinc-600 dark:text-zinc-400">
-							No announcements published yet.
+							No blog posts published yet.
 						</CardContent>
 					</Card>
 				)}

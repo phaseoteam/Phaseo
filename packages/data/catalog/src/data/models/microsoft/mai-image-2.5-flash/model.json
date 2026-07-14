@@ -1,0 +1,26 @@
+{
+  "model_id": "microsoft/mai-image-2.5-flash",
+  "organisation_id": "microsoft",
+  "name": "MAI Image 2.5 Flash",
+  "status": "Announced",
+  "previous_model_id": null,
+  "description": "MAI Image 2.5 Flash is the ultra-efficient variant of Microsoft's MAI Image 2.5 family for lower-cost text-to-image and image editing workflows. This entry tracks the Build 2026 announcement.",
+  "announced_date": "2026-06-02T00:00:00",
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "image",
+  "api_model_id": "microsoft/mai-image-2.5-flash",
+  "family_id": "microsoft/mai",
+  "links": [
+    {
+      "title": "Announcement",
+      "kind": "announcement",
+      "url": "https://microsoft.ai/news/building-a-hillclimbing-machine-launching-seven-new-mai-models/"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

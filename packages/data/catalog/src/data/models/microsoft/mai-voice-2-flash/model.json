@@ -1,0 +1,26 @@
+{
+  "model_id": "microsoft/mai-voice-2-flash",
+  "organisation_id": "microsoft",
+  "name": "MAI Voice 2 Flash",
+  "status": "Announced",
+  "previous_model_id": null,
+  "description": "MAI Voice 2 Flash is the lower-cost, ultra-efficient variant of Microsoft's MAI Voice 2 text-to-speech family. This entry tracks the Build 2026 announcement ahead of release.",
+  "announced_date": "2026-06-02T00:00:00",
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,audio",
+  "output_types": "audio_tts",
+  "api_model_id": "microsoft/mai-voice-2-flash",
+  "family_id": "microsoft/mai",
+  "links": [
+    {
+      "title": "Announcement",
+      "kind": "announcement",
+      "url": "https://microsoft.ai/news/building-a-hillclimbing-machine-launching-seven-new-mai-models/"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

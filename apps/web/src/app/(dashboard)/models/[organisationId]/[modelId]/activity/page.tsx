@@ -28,7 +28,7 @@ export async function generateMetadata(props: {
 			modelDescription,
 			suffix:
 				"Track recent usage and uptime signals, including request volume, success rates, active providers, and token movement.",
-			fallback: `Track recent usage and uptime signals for ${modelName} on AI Stats, including request volume, success rates, active providers, and token movement.`,
+			fallback: `Track recent usage and uptime signals for ${modelName} on Phaseo, including request volume, success rates, active providers, and token movement.`,
 		}),
 		path,
 		keywords: [
@@ -37,7 +37,7 @@ export async function generateMetadata(props: {
 			`${modelName} usage`,
 			organisationName ? `${organisationName} AI` : null,
 			"AI reliability metrics",
-			"AI Stats",
+			"Phaseo",
 		].filter(Boolean) as string[],
 		imagePath,
 	});

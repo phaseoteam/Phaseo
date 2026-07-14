@@ -8,7 +8,7 @@ class LifecycleTest < Minitest::Test
       warnings << message if level == "warn"
     end
 
-    client = AIStatsSdk::AIStats.new(
+    client = PhaseoSdk::Phaseo.new(
       api_key: "test",
       logger: logger,
       lifecycle_resolver: lambda do |model_id|
@@ -17,7 +17,7 @@ class LifecycleTest < Minitest::Test
           status: "deprecated",
           retirement_date: "2099-01-01T00:00:00Z",
           replacement_model_id: "provider/new-model",
-          message: %[ [ai-stats] Model "#{model_id}" is deprecated and scheduled for retirement on 2099-01-01T00:00:00Z. Use "provider/new-model" instead. ].strip
+          message: %[ [phaseo] Model "#{model_id}" is deprecated and scheduled for retirement on 2099-01-01T00:00:00Z. Use "provider/new-model" instead. ].strip
         }
       end
     )
@@ -34,7 +34,7 @@ class LifecycleTest < Minitest::Test
   end
 
   def test_retired_model_is_blocked_without_warnings_as_errors
-    client = AIStatsSdk::AIStats.new(
+    client = PhaseoSdk::Phaseo.new(
       api_key: "test",
       warnings_as_errors: false,
       lifecycle_resolver: lambda do |model_id|
@@ -42,7 +42,7 @@ class LifecycleTest < Minitest::Test
           model_id: model_id,
           status: "retired",
           retirement_date: "2020-01-01T00:00:00Z",
-          message: %[ [ai-stats] Model "#{model_id}" is retired as of 2020-01-01T00:00:00Z. ].strip
+          message: %[ [phaseo] Model "#{model_id}" is retired as of 2020-01-01T00:00:00Z. ].strip
         }
       end
     )

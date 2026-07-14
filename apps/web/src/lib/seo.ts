@@ -1,5 +1,12 @@
 import type { Metadata, ResolvingMetadata } from "next";
 
+const CANONICAL_SITE_URL = "https://phaseo.app";
+const LOCAL_SITE_URL = "http://localhost:3000";
+const LEGACY_SITE_URLS = new Set([
+	"http://ai-stats.phaseo.app",
+	"https://ai-stats.phaseo.app",
+]);
+
 const configuredSiteUrl =
 	process.env.NEXT_PUBLIC_WEBSITE_URL ?? process.env.WEBSITE_URL;
 
@@ -9,12 +16,24 @@ if (process.env.NODE_ENV === "production" && !configuredSiteUrl) {
 	);
 }
 
-const DEFAULT_SITE_URL = configuredSiteUrl ?? "http://localhost:3000";
+export function resolveSiteUrl(siteUrl: string | undefined): string {
+	const normalizedSiteUrl = siteUrl?.trim().replace(/\/+$/, "");
 
-export const SITE_NAME = "AI Stats";
-export const PREFERRED_SITE_NAME = "AI Stats by Phaseo";
+	if (!normalizedSiteUrl) {
+		return LOCAL_SITE_URL;
+	}
+
+	return LEGACY_SITE_URLS.has(normalizedSiteUrl)
+		? CANONICAL_SITE_URL
+		: normalizedSiteUrl;
+}
+
+const DEFAULT_SITE_URL = resolveSiteUrl(configuredSiteUrl);
+
+export const SITE_NAME = "Phaseo";
+export const PREFERRED_SITE_NAME = "Phaseo";
 export const SITE_ALTERNATE_NAME = SITE_NAME;
-export const SITE_URL = DEFAULT_SITE_URL.replace(/\/+$/, "");
+export const SITE_URL = DEFAULT_SITE_URL;
 export const METADATA_BASE = new URL(SITE_URL);
 
 export interface BuildMetadataOptions {
@@ -87,7 +106,7 @@ export function buildMetadata({
 			images: [imageUrl],
 			...twitterOverrides,
 		},
-		robots: robots ?? { index: true, follow: true },
+		...(robots ? { robots } : {}),
 	};
 }
 

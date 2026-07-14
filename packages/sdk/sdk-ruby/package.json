@@ -1,12 +1,12 @@
 {
-  "name": "@ai-stats/ruby-sdk",
+  "name": "@phaseo/ruby-sdk",
   "version": "2.0.4",
   "private": true,
-  "description": "AI Stats Ruby SDK (preview) - generated client with models wrapper",
+  "description": "Phaseo Ruby SDK (preview) - generated client with models wrapper",
   "license": "MIT",
   "scripts": {
-    "postinstall": "node ../scripts/postinstall-viewer-prompt.cjs @ai-stats/ruby-sdk",
-    "build": "gem build ai_stats_sdk.gemspec",
+    "postinstall": "node ../scripts/postinstall-viewer-prompt.cjs @phaseo/ruby-sdk",
+    "build": "gem build phaseo_sdk.gemspec",
     "test": "ruby tests/lifecycle_test.rb && ruby tests/devtools_test.rb && ruby tests/chat_test.rb && ruby tests/files_test.rb && ruby tests/generation_test.rb && ruby tests/models_test.rb && ruby tests/endpoints_test.rb && ruby tests/organisations_test.rb && ruby tests/pricing_models_test.rb && ruby tests/pricing_calculate_test.rb && ruby tests/provider_ops_test.rb && ruby tests/api_keys_test.rb && ruby tests/api_key_test.rb && ruby tests/api_key_mutations_test.rb && ruby tests/workspaces_test.rb && ruby tests/workspace_mutations_test.rb && ruby tests/current_key_test.rb && ruby tests/health_test.rb && ruby tests/async_jobs_test.rb && ruby tests/video_test.rb && ruby tests/batches_test.rb",
     "smoke:chat": "dotenv -e .env.local -- ruby tests/smoke_chat.rb",
     "smoke:responses": "dotenv -e .env.local -- ruby tests/smoke_responses.rb",

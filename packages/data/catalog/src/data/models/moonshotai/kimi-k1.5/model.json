@@ -15,19 +15,23 @@
   "api_model_id": "moonshotai/kimi-k1.5",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://platform.moonshot.cn/docs/api-reference"
     },
     {
-      "platform": "playground",
+      "title": "Playground",
+      "kind": "playground",
       "url": "https://kimi.ai/"
     },
     {
-      "platform": "paper",
+      "title": "Paper",
+      "kind": "paper",
       "url": "https://arxiv.org/abs/2501.12599"
     },
     {
-      "platform": "repository",
+      "title": "Repository",
+      "kind": "repository",
       "url": "https://github.com/MoonshotAI/Kimi-k1.5"
     }
   ],

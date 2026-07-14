@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
-	title: "AI API Providers: Pricing, Models & Performance",
+	title: "Providers",
 	description:
 		"Compare AI API providers by pricing, model coverage, latency signals, BYOK support and gateway capabilities.",
 	path: "/api-providers",

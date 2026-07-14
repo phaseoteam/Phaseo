@@ -1,6 +1,6 @@
 ---
-"@ai-stats/gateway-api": patch
-"@ai-stats/web": patch
+"@phaseo/gateway-api": patch
+"@phaseo/web": patch
 ---
 
 Hook up the Meituan LongCat provider in scheduled model discovery and catalog data.

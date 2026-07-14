@@ -14,7 +14,7 @@ import { createClient } from "@/utils/supabase/server";
 import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 
 export const metadata = {
-	title: "Developer onboarding - AI Stats",
+	title: "Developer onboarding - Phaseo",
 	robots: {
 		index: false,
 		follow: false,
@@ -28,8 +28,8 @@ const ONBOARDING_MODEL_IDS = [
 	"deepseek/deepseek-v4-pro",
 	"xiaomi/mimo-v2.5-pro",
 	"minimax/minimax-m3",
-	"x-ai/grok-4.3",
-	"x-ai/grok-4",
+	"spacex-ai/grok-4.3",
+	"spacex-ai/grok-4",
 	"z-ai/glm-5.1",
 	"moonshotai/kimi-k2.6",
 	"qwen/qwen3-235b-a22b",
@@ -113,7 +113,7 @@ export default async function OnboardingPage() {
 			.select("workspace_id, role, workspaces(id, name)")
 			.eq("user_id", user.id)
 			.in("role", ["owner", "admin"]),
-		getGatewaySupportedModels(false),
+		getGatewaySupportedModels(false, { availableOnly: true }),
 	]);
 
 	const workspaces: OnboardingWorkspace[] = [];

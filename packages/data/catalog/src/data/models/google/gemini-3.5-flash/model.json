@@ -15,7 +15,8 @@
   "api_model_id": "google/gemini-3.5-flash",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://blog.google/intl/en-africa/products/explore-get-answers/gemini-3-5/"
     }
   ],

@@ -1,16 +1,16 @@
 ---
 title: "Datetime Server Tool"
-description: "Give models the current date and time in a chosen timezone."
+description: "Give models the current date and time in one or more timezones."
 ---
 
 Use `gateway:datetime` when a prompt depends on the current date, day of week, time, or timezone.
 
-The model decides when to call the tool. AI Stats returns the resolved timezone and current timestamp to the model, then the model writes the final answer.
+The model decides when to call the tool. Phaseo returns the resolved timezones and current timestamps to the model, then the model writes the final answer.
 
 ## Quick start
 
 ```bash
-curl https://api.phaseo.app/v1/chat/completions \
+curl https://api.phaseo.ai/v1/chat/completions \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -22,7 +22,7 @@ curl https://api.phaseo.app/v1/chat/completions \
       {
         "type": "gateway:datetime",
         "parameters": {
-          "timezone": "Asia/Tokyo"
+          "timezones": ["Asia/Tokyo", "UTC"]
         }
       }
     ]
@@ -35,20 +35,33 @@ curl https://api.phaseo.app/v1/chat/completions \
 {
   "type": "gateway:datetime",
   "parameters": {
-    "timezone": "Europe/London"
+    "timezones": ["Europe/London", "UTC"]
   }
 }
 ```
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| `timezone` | string | `UTC` | IANA timezone name, such as `Europe/London`, `America/New_York`, or `Asia/Tokyo`. |
-
-`timezone` can also be provided as a top-level shortcut on the tool object.
+| `timezones` | string[] | `["UTC"]` | Up to 5 IANA timezone names to return in one tool call, such as `["Europe/London", "UTC"]`. |
 
 ## Tool result
 
-The tool result includes the current ISO timestamp and the resolved timezone. The model uses that result to answer the user.
+The tool result contains one entry per requested timezone.
+
+```json
+{
+  "timezones": [
+    {
+      "timezone": "Europe/London",
+      "datetime": "2026-07-03T10:00:00.123+01:00"
+    },
+    {
+      "timezone": "UTC",
+      "datetime": "2026-07-03T09:00:00.123+00:00"
+    }
+  ]
+}
+```
 
 ## Usage
 

@@ -23,12 +23,12 @@ import {
 } from "@core/webhook-endpoints";
 
 export type SupportedAsyncNotificationKind = "video" | "batch";
-export type AsyncNotificationPhase = "created" | "progress" | "completed" | "failed" | "cancelled";
+export type AsyncNotificationPhase = "created" | "progress" | "completed" | "failed" | "cancelled" | "expired";
 export type AsyncNotificationEventType =
 	| `job.${AsyncNotificationPhase}`
 	| `video.${AsyncNotificationPhase}`
 	| `batch.${AsyncNotificationPhase}`;
-export type AsyncJobLifecycleStatus = "pending" | "running" | "completed" | "failed" | "cancelled";
+export type AsyncJobLifecycleStatus = "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
 export type AsyncWebhookAttemptStatus = "delivered" | "scheduled_retry" | "failed_permanently";
 export type AsyncWebhookDeliveryAttempt = {
 	id: string;
@@ -640,7 +640,7 @@ function buildBatchCancelUrl(baseUrlOrRequestUrl: string, id: string): string {
 	).toString();
 }
 
-function buildAsyncWebSocketUrl(baseUrlOrRequestUrl: string, kind: SupportedAsyncNotificationKind, id: string): string {
+export function buildAsyncWebSocketUrl(baseUrlOrRequestUrl: string, kind: SupportedAsyncNotificationKind, id: string): string {
 	const url = new URL(
 		`/v1/async/${encodeURIComponent(kind)}/${encodeURIComponent(id)}/ws`,
 		resolveNotificationBaseUrl(baseUrlOrRequestUrl),
@@ -818,6 +818,11 @@ async function sendAsyncWebhookRequest(args: {
 	url: string;
 	secret?: string | null;
 	body: string;
+	eventId: string;
+	eventType: AsyncNotificationEventType;
+	deliveryKey: string;
+	attemptNumber: number;
+	maxAttempts: number;
 }): Promise<AsyncWebhookRequestResult> {
 	const validatedUrl = await validateWebhookEndpointUrlForDelivery(args.url);
 	if (validatedUrl.ok === false) {
@@ -830,12 +835,17 @@ async function sendAsyncWebhookRequest(args: {
 	}
 	const headers: Record<string, string> = {
 		"Content-Type": "application/json",
-		"User-Agent": "AI-Stats-Async-Webhook/1.0",
+		"User-Agent": "Phaseo-Async-Webhook/1.0",
+		"x-phaseo-event-id": args.eventId,
+		"x-phaseo-event-type": args.eventType,
+		"x-phaseo-delivery-key": args.deliveryKey,
+		"x-phaseo-attempt": String(args.attemptNumber),
+		"x-phaseo-max-attempts": String(args.maxAttempts),
 	};
 	if (args.secret) {
 		const timestamp = String(Math.floor(Date.now() / 1000));
-		headers["x-ai-stats-timestamp"] = timestamp;
-		headers["x-ai-stats-signature"] = await signWebhook(args.secret, timestamp, args.body);
+		headers["x-phaseo-timestamp"] = timestamp;
+		headers["x-phaseo-signature"] = await signWebhook(args.secret, timestamp, args.body);
 	}
 	try {
 		const response = await fetch(validatedUrl.url, {
@@ -923,14 +933,21 @@ export async function dispatchAsyncWebhookEvent(args: {
 		claimToken,
 	});
 	if (!claimed) return false;
+	const eventId = `evt_${args.kind}_${args.internalId}_${deliveryKey.replace(/[^a-zA-Z0-9_-]/g, "_")}`;
+	const attemptNumber = Math.max(1, (retryQueue[deliveryKey]?.attemptCount ?? 0) + 1);
 	const payload = {
-		id: `evt_${args.kind}_${args.internalId}_${deliveryKey.replace(/[^a-zA-Z0-9_-]/g, "_")}`,
+		id: eventId,
 		type: specificEvent,
 		created_at: Math.floor(Date.now() / 1000),
+		delivery: {
+			key: deliveryKey,
+			attempt: attemptNumber,
+			max_attempts: MAX_WEBHOOK_ATTEMPTS,
+		},
 		data: await buildAsyncNotificationData({
 			baseUrl: args.baseUrl ?? null,
 			record,
-			progress: args.progress ?? null,
+			progress: progressBucket ?? args.progress ?? null,
 		}),
 	};
 	if (!payload.data) {
@@ -945,12 +962,15 @@ export async function dispatchAsyncWebhookEvent(args: {
 	}
 	const body = JSON.stringify(payload);
 	const nowIso = new Date().toISOString();
-	const existingRetry = retryQueue[deliveryKey];
-	const attemptNumber = Math.max(1, (existingRetry?.attemptCount ?? 0) + 1);
 	const requestResult = await sendAsyncWebhookRequest({
 		url: webhook.url,
 		secret: webhook.secret,
 		body,
+		eventId,
+		eventType: specificEvent,
+		deliveryKey,
+		attemptNumber,
+		maxAttempts: MAX_WEBHOOK_ATTEMPTS,
 	});
 	if (!requestResult.ok) {
 		await releaseAsyncWebhookDeliveryClaim({

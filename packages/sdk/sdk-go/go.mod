@@ -1,3 +1,3 @@
-module github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go
+module github.com/phaseoteam/Phaseo/packages/sdk/sdk-go
 
 go 1.23

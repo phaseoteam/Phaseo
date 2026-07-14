@@ -1,0 +1,107 @@
+---
+title: "Subagent Server Tool"
+description: "Let the main model delegate focused work to a worker model."
+---
+
+Use `phaseo:subagent` when the main model should hand off a self-contained task to a smaller or faster worker model during the same request.
+
+The main model calls the Subagent tool with a task description. Phaseo runs the worker model server-side, returns the worker result as tool context, and lets the main model finish the answer.
+
+## Quick start
+
+```bash
+curl https://api.phaseo.ai/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "Compare these release notes and summarize the breaking changes." }
+    ],
+    "tools": [
+      {
+        "type": "phaseo:subagent",
+        "parameters": {
+          "model": "openai/gpt-5-nano",
+          "instructions": "Return concise findings for the main model. Do not address the end user directly.",
+          "max_uses": 3,
+          "max_completion_tokens": 1200
+        }
+      }
+    ]
+  }'
+```
+
+## Parameters
+
+```json
+{
+  "type": "phaseo:subagent",
+  "parameters": {
+    "model": "openai/gpt-5-nano",
+    "instructions": "You are a fast, focused worker. Complete only the delegated task.",
+    "max_uses": 3,
+    "max_completion_tokens": 1200,
+    "reasoning": { "effort": "low" },
+    "temperature": 0.2
+  }
+}
+```
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `model` | string | `openai/gpt-5-nano` | Worker model to call. |
+| `instructions` | string | focused worker instructions | Extra instructions appended to the default Subagent behavior. |
+| `max_uses` | integer | `10` | Maximum Subagent calls during the server-tool loop. |
+| `max_completion_tokens` | integer | Advisor default | Max output tokens for each worker response. |
+| `max_tokens` | integer | Advisor default | Legacy alias for `max_completion_tokens`. |
+| `reasoning` | object | provider default | Reasoning config forwarded to the worker call when supported. |
+| `temperature` | number | provider default | Sampling temperature for the worker call. |
+
+## Tool-call arguments
+
+The model normally calls Subagent with `task_description`:
+
+```json
+{
+  "task_description": "Extract the three highest-risk migration steps from the supplied plan."
+}
+```
+
+Phaseo also accepts `task`, `prompt`, or `input` as aliases when a model emits a slightly different argument name.
+
+## What the tool returns
+
+Subagent returns JSON as the tool result:
+
+```json
+{
+  "status": "ok",
+  "model": "openai/gpt-5-nano",
+  "result": "The highest-risk steps are schema migration, traffic cutover, and rollback verification."
+}
+```
+
+If the worker request cannot run, Phaseo returns a tool error such as `subagent_invalid_request`, `subagent_max_uses_exceeded`, or `subagent_request_failed`.
+
+## Usage and pricing
+
+Subagent calls increment:
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "subagent_requests": 1
+    }
+  }
+}
+```
+
+The worker model's tokens are included in total usage and can be priced at the selected worker model's rates.
+
+## Related
+
+- [Advisor](./advisor)
+- [Fusion](./fusion)
+- [Server Tools](./index)

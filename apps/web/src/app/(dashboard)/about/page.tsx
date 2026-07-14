@@ -18,11 +18,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
 export const metadata: Metadata = buildMetadata({
-	title: "About AI Stats: Model Database & Gateway",
+	title: "About",
 	description:
-		"Learn what AI Stats does, how the gateway and model directory work together, and where to find updates, pricing, and platform policies.",
+		"Learn what Phaseo does, how the gateway and model directory work together, and where to find updates, pricing, and platform policies.",
 	path: "/about",
-	keywords: ["AI Stats", "about", "AI gateway", "model database", "pricing"],
+	keywords: ["Phaseo", "about", "AI gateway", "model database", "pricing"],
 });
 
 function SectionTitle({
@@ -167,7 +167,7 @@ export default function AboutPage() {
 					</h1>
 
 					<p className="max-w-3xl text-base leading-7 text-muted-foreground">
-						AI Stats is built around practical openness: broad model and provider access, explicit release/deprecation/retirement tracking, and clear observability so teams can run production workloads with low surprise.
+						Phaseo is built around practical openness: broad model and provider access, explicit release/deprecation/retirement tracking, and clear observability so teams can run production workloads with low surprise.
 					</p>
 
 					<div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
@@ -179,12 +179,12 @@ export default function AboutPage() {
 						</Button>
 						<Button asChild variant="outline" className="h-10">
 							<Link href="/pricing">
-								AI Stats Pricing
+								Phaseo Pricing
 								<ArrowRight className="ml-2 h-4 w-4" />
 							</Link>
 						</Button>
 						<Button asChild variant="ghost" className="h-10 sm:px-3">
-							<Link href="https://docs.ai-stats.phaseo.app" target="_blank" rel="noopener noreferrer">
+							<Link href="https://phaseo.app" target="_blank" rel="noopener noreferrer">
 								<BookOpen className="mr-2 h-4 w-4" />
 								Documentation
 							</Link>
@@ -295,7 +295,7 @@ export default function AboutPage() {
 					<SectionTitle
 						eyebrow="Pricing"
 						title="Platform pricing and model pricing are separate surfaces."
-						description="Use AI Stats Pricing for our platform/service pricing, and use the Pricing Calculator for model-level estimation."
+						description="Use Phaseo Pricing for our platform/service pricing, and use the Pricing Calculator for model-level estimation."
 					/>
 
 					<div className="grid gap-4 md:grid-cols-2">
@@ -303,14 +303,14 @@ export default function AboutPage() {
 							<CardHeader className="space-y-2">
 								<div className="flex items-center gap-2 text-sm font-semibold text-foreground">
 									<Wallet className="h-4 w-4" />
-									AI Stats Pricing
+									Phaseo Pricing
 								</div>
 								<p className="text-sm leading-6 text-muted-foreground">
 									See platform pricing details, including credit purchase fee tiers and billing coverage.
 								</p>
 							</CardHeader>
 							<CardContent className="pt-0">
-								<ResourceButton href="/pricing" label="Open AI Stats Pricing" />
+								<ResourceButton href="/pricing" label="Open Phaseo Pricing" />
 							</CardContent>
 						</Card>
 
@@ -391,7 +391,7 @@ export default function AboutPage() {
 							</p>
 						</CardHeader>
 							<CardContent className="grid gap-3">
-								<ResourceButton href="https://docs.ai-stats.phaseo.app/v1/changelog" label="Announcements" external />
+								<ResourceButton href="https://phaseo.app/docs/v1/changelog" label="Announcements" external />
 								<ResourceButton href="/updates/models" label="Model Updates" />
 								<ResourceButton href="/settings/usage" label="Gateway Usage" />
 								<ResourceButton href="/roadmap" label="Roadmap" />
@@ -401,7 +401,7 @@ export default function AboutPage() {
 								<ResourceButton href="/terms" label="Terms" variant="ghost" />
 								<ResourceButton href="/privacy" label="Privacy" variant="ghost" />
 							</div>
-							<ResourceButton href="https://github.com/AI-Stats/AI-Stats" label="GitHub" external variant="ghost" />
+							<ResourceButton href="https://github.com/phaseoteam/Phaseo" label="GitHub" external variant="ghost" />
 						</CardContent>
 					</Card>
 				</section>

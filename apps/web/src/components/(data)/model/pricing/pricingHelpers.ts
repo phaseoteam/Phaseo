@@ -8,7 +8,7 @@ import { getProviderPricingRulesForPlan } from "@/components/(data)/model/pricin
 /* ---------- shared types ---------- */
 export type Direction = "input" | "output" | "cached" | "cachewrite" | "other";
 export type Modality = "text" | "image" | "audio" | "video" | "embeddings" | "multimodal" | "other";
-export type UnitClass = "token" | "pixel" | "image" | "video" | "minute" | "second" | "call" | "character" | "unknown";
+export type UnitClass = "token" | "pixel" | "image" | "video" | "minute" | "second" | "page" | "call" | "character" | "unknown";
 
 export type Condition = { op: string; path: string; value: any; or_group?: number; and_index?: number };
 
@@ -19,6 +19,8 @@ export type TokenTier = {
     per1M: number;
     price: number;
     label: string; // range or condition label
+    meter?: string | null;
+    unitLabel?: string | null;
     basePer1M?: number | null;
     basePrice?: number | null;
     comparisonKind?: PriceComparisonKind | null;
@@ -83,6 +85,7 @@ export type PricingSectionKey =
     | "audioTokens"
     | "videoTokens"
     | "videoGen"
+    | "embeddingTokens"
     | "other";
 
 export type UpcomingPricingChange = {
@@ -105,6 +108,7 @@ export type ProviderSections = {
     imageTokens?: TokenTriple;
     audioTokens?: TokenTriple;
     videoTokens?: TokenTriple;
+    embeddingTokens?: TokenTriple;
     imageGen?: QualityRow[];
     videoGen?: ResolutionRow[];
     mediaInputs?: UsageRow[];                // NEW: input_image, input_video_seconds
@@ -124,6 +128,22 @@ export type ProviderSections = {
     }[];
 };
 
+export type ProviderTablePriceCandidate = {
+    key: string;
+    label: string;
+    price: number;
+    formattedPrice: string;
+    unitLabel: string;
+    unitShortLabel: string;
+};
+
+export type ProviderTablePriceSummary = {
+    primary: ProviderTablePriceCandidate | null;
+    secondary: ProviderTablePriceCandidate | null;
+    extraCount: number;
+    sortValue: number | null;
+};
+
 /* ---------- small utils ---------- */
 export function fmtUSD(n: number, max = 6) {
     if (!isFinite(n)) return "—";
@@ -136,6 +156,53 @@ export function fmtCompact(n: number) {
     if (n >= 1_000) return `${(n / 1_000).toFixed(0)}k`;
     return `${n}`;
 }
+
+function abbreviateUnitCount(value: string) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return value;
+    if (numeric >= 1_000_000) return `${(numeric / 1_000_000).toFixed(numeric % 1_000_000 === 0 ? 0 : 1)}M`;
+    if (numeric >= 1_000) return `${(numeric / 1_000).toFixed(numeric % 1_000 === 0 ? 0 : 1)}K`;
+    return `${numeric}`;
+}
+
+export function formatTableUnitShortLabel(label: string) {
+    const normalized = label.trim().toLowerCase();
+    if (!normalized) return "";
+    if (normalized === "per 1m tokens") return "/M";
+    if (normalized === "per token") return "/token";
+    if (normalized === "per pixel") return "/px";
+    if (normalized === "per image") return "/image";
+    if (normalized === "per video") return "/video";
+    if (normalized === "per second") return "/sec";
+    if (normalized === "per minute") return "/min";
+    if (normalized === "per call") return "/call";
+    if (normalized === "per character") return "/char";
+
+    const match = normalized.match(/^per\s+([0-9.]+)\s+(.+)$/i);
+    if (!match) return label.replace(/^Per\s+/i, "/");
+
+    const [, rawCount, rawUnit] = match;
+    const count = abbreviateUnitCount(rawCount);
+    const unit =
+        rawUnit === "tokens"
+            ? "M"
+            : rawUnit === "seconds"
+                ? "sec"
+                : rawUnit === "minutes"
+                    ? "min"
+                    : rawUnit === "images"
+                        ? "images"
+                        : rawUnit === "pixels"
+                            ? "px"
+                            : rawUnit === "pages"
+                                ? "pages"
+                            : rawUnit === "calls"
+                                ? "calls"
+                                : rawUnit === "characters"
+                                    ? "chars"
+                                    : rawUnit;
+    return `/${count} ${unit}`;
+}
 export function unitLabel(unit: UnitClass, unitSize?: number | null) {
     const u = Number(unitSize ?? 1);
     switch (unit) {
@@ -147,10 +214,17 @@ export function unitLabel(unit: UnitClass, unitSize?: number | null) {
         case "video": return u === 1 ? "Per video" : `Per ${u} videos`;
         case "second": return u === 1 ? "Per second" : `Per ${u} seconds`;
         case "minute": return u === 1 ? "Per minute" : `Per ${u} minutes`;
+        case "page": return u === 1 ? "Per page" : `Per ${u.toLocaleString("en-US")} pages`;
         case "call": return u === 1 ? "Per call" : `Per ${u} calls`;
         case "character": return u === 1 ? "Per character" : `Per ${u} characters`;
         default: return u === 1 ? "Per unit" : `Per ${u} units`;
     }
+}
+
+function requestUnitLabel(unitSize?: number | null) {
+    const size = Number(unitSize ?? 1);
+    if (!Number.isFinite(size) || size <= 1) return "Per request";
+    return `Per ${size.toLocaleString("en-US")} requests`;
 }
 export function perMillionIfTokens(unit: UnitClass, usdPerUnit: number, unitSize?: number | null) {
     if (unit !== "token") return null;
@@ -194,7 +268,8 @@ export function parseMeter(meter?: string, explicitUnit?: string | null): { dir:
                 (u.includes("video") || u.includes("clip")) ? "video" :
                     u.includes("minute") ? "minute" :
                         u.includes("second") ? "second" :
-                            u.includes("character") ? "character" :
+                            u.includes("page") ? "page" :
+                                u.includes("character") ? "character" :
                                 (u.includes("call") || u.includes("request")) ? "call" :
                                     m.includes("token") ? "token" :
                                         m.includes("pixel") ? "pixel" :
@@ -202,7 +277,8 @@ export function parseMeter(meter?: string, explicitUnit?: string | null): { dir:
                                             m.includes("video") ? "video" :
                                                 m.includes("minute") ? "minute" :
                                                     m.includes("second") ? "second" :
-                                                        m.includes("character") ? "character" :
+                                                        m.includes("page") ? "page" :
+                                                            m.includes("character") ? "character" :
                                                             (m.includes("call") || m.includes("request")) ? "call" : "unknown";
 
     return { dir, mod, unit, raw: m };
@@ -211,6 +287,7 @@ export function parseMeter(meter?: string, explicitUnit?: string | null): { dir:
 function endpointToModality(endpoint?: string | null): Modality | null {
     const normalized = String(endpoint ?? "").trim().toLowerCase();
     if (!normalized) return null;
+	if (normalized.includes("embed")) return "embeddings";
     if (normalized.startsWith("text.")) return "text";
     if (
         normalized.startsWith("chat.") ||
@@ -221,8 +298,7 @@ function endpointToModality(endpoint?: string | null): Modality | null {
     }
     if (normalized.startsWith("image.")) return "image";
     if (normalized.startsWith("audio.")) return "audio";
-    if (normalized.startsWith("video.")) return "video";
-    if (normalized.includes("embed")) return "embeddings";
+	if (normalized.startsWith("video.")) return "video";
     return null;
 }
 
@@ -231,10 +307,11 @@ function classifyMeterWithEndpoint(
     explicitUnit?: string | null,
     endpoint?: string | null,
 ): { dir: Direction; mod: Modality; unit: UnitClass; raw: string } {
-    const parsed = parseMeter(meter, explicitUnit);
-    if (parsed.mod !== "other" || parsed.unit !== "token") return parsed;
-    const endpointModality = endpointToModality(endpoint);
-    return endpointModality ? { ...parsed, mod: endpointModality } : parsed;
+	const parsed = parseMeter(meter, explicitUnit);
+	const endpointModality = endpointToModality(endpoint);
+	if (endpointModality === "embeddings") return { ...parsed, mod: endpointModality };
+	if (parsed.mod !== "other" || parsed.unit !== "token") return parsed;
+	return endpointModality ? { ...parsed, mod: endpointModality } : parsed;
 }
 
 export type ConditionLabelPref = { prefer?: string[] }; // e.g. ['cache_ttl','quality','resolution']
@@ -406,8 +483,8 @@ function modalityLabel(mod: Modality): string | null {
     if (mod === "text") return "Text";
     if (mod === "image") return "Image";
     if (mod === "audio") return "Audio";
-    if (mod === "video") return "Video";
-    if (mod === "embeddings") return "Embeddings";
+	if (mod === "video") return "Video";
+	if (mod === "embeddings") return "Embeddings";
     if (mod === "multimodal") return "Multimodal";
     return null;
 }
@@ -435,7 +512,7 @@ function buildUpcomingChangeLabels(
         }))
         : [];
 
-    if (unit === "token" && ["text", "image", "audio", "video"].includes(mod)) {
+    if (unit === "token" && ["text", "image", "audio", "video", "embeddings"].includes(mod)) {
         const modLabel = modalityLabel(mod) ?? "Token";
         const scope =
             cacheWriteTtlLabelFromMeter(rule.meter) ??
@@ -451,6 +528,8 @@ function buildUpcomingChangeLabels(
                     ? "audioTokens"
                     : mod === "video"
                     ? "videoTokens"
+                    : mod === "embeddings"
+                    ? "embeddingTokens"
                     : "other",
             title: `${modLabel} Tokens${directionLabel(dir) ? ` · ${directionLabel(dir)}` : ""}`,
             subtitle: scope === "All usage" ? null : scope,
@@ -930,6 +1009,7 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
     for (const entry of filteredEntries) {
         const r = entry.rule;
         const base = entry.base;
+		const parsedMeter = parseMeter(r.meter || "", r.unit || "");
         const { dir, mod, unit } = classifyMeterWithEndpoint(
             r.meter || "",
             r.unit || "",
@@ -1006,10 +1086,13 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
                 : null;
         const discountEndsAt = hasActiveDiscount && hasFutureEnd ? r.effective_to ?? null : null;
 
-        // 1) token tiles (text/image/audio/video)
-        if (unit === "token" && ["text", "image", "audio", "video"].includes(mod)) {
+        // 1) token tiles (text/image/audio/video/embeddings)
+        if (unit === "token" && ["text", "image", "audio", "video", "embeddings"].includes(mod)) {
             const range = tokenRangeFromConditions(conds);
+			const embeddingSourceLabel =
+				mod === "embeddings" ? modalityLabel(parsedMeter.mod) : null;
             const label =
+				embeddingSourceLabel ??
                 cacheWriteTtlLabelFromMeter(r.meter) ??
                 range ??
                 conciseConditionLabel(conds);  // <-- FIX: show cache_ttl etc. instead of "All usage"
@@ -1054,6 +1137,11 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
                 else if (dir === "cached") out.videoTokens = push(out.videoTokens, "cached");
                 else if (dir === "output") out.videoTokens = push(out.videoTokens, "out");
                 else if (dir === "cachewrite") out.videoTokens = push(out.videoTokens, "write");
+            } else if (mod === "embeddings") {
+                if (dir === "input") out.embeddingTokens = push(out.embeddingTokens, "in");
+                else if (dir === "cached") out.embeddingTokens = push(out.embeddingTokens, "cached");
+                else if (dir === "output") out.embeddingTokens = push(out.embeddingTokens, "out");
+                else if (dir === "cachewrite") out.embeddingTokens = push(out.embeddingTokens, "write");
             }
             continue;
         }
@@ -1149,6 +1237,8 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
                 per1M: 0, // Not applicable for requests
                 price,
                 label,
+                meter: r.meter ?? null,
+                unitLabel: requestUnitLabel(unitSize),
                 basePer1M: null,
                 basePrice: displayBasePrice,
                 comparisonKind,
@@ -1189,6 +1279,7 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
     sortTiers(out.imageTokens);
     sortTiers(out.audioTokens);
     sortTiers(out.videoTokens);
+    sortTiers(out.embeddingTokens);
     out.imageGen?.forEach((q) => q.items.sort((a, b) => a.label.localeCompare(b.label)));
     out.imageGen?.sort((a, b) => {
         const ra = qualityRank(a.quality), rb = qualityRank(b.quality);
@@ -1204,6 +1295,150 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
     return out;
 }
 
+function getActiveTokenTier(tiers?: TokenTier[] | null): TokenTier | null {
+    return tiers?.find((tier) => tier.isCurrent) ?? tiers?.[0] ?? null;
+}
+
+function createTablePriceCandidate(args: {
+    key: string;
+    label: string;
+    price: number;
+    unitLabel: string;
+}): ProviderTablePriceCandidate {
+    return {
+        key: args.key,
+        label: args.label,
+        price: args.price,
+        formattedPrice: fmtUSD(args.price),
+        unitLabel: args.unitLabel,
+        unitShortLabel: formatTableUnitShortLabel(args.unitLabel),
+    };
+}
+
+type ProviderTablePriceDirection = "input" | "output" | "cached";
+
+function getTablePriceCandidates(
+    sections: ProviderSections,
+    direction: ProviderTablePriceDirection,
+): ProviderTablePriceCandidate[] {
+    const candidates: ProviderTablePriceCandidate[] = [];
+    const pushTokenCandidate = (
+        modality: "text" | "audio" | "image" | "video" | "embeddings",
+        tiers?: TokenTier[] | null,
+    ) => {
+        const tier = getActiveTokenTier(tiers);
+        if (!tier) return;
+        candidates.push(
+            createTablePriceCandidate({
+                key: `${direction}-${modality}-tokens`,
+                label: modality,
+                price: tier.per1M,
+                unitLabel: "Per 1M tokens",
+            }),
+        );
+    };
+
+    if (direction === "cached") {
+        pushTokenCandidate("text", sections.textTokens?.cached);
+        pushTokenCandidate("embeddings", sections.embeddingTokens?.cached);
+        pushTokenCandidate("image", sections.imageTokens?.cached);
+        pushTokenCandidate("audio", sections.audioTokens?.cached);
+        pushTokenCandidate("video", sections.videoTokens?.cached);
+    } else if (direction === "input") {
+        pushTokenCandidate("text", sections.textTokens?.in);
+        pushTokenCandidate("embeddings", sections.embeddingTokens?.in);
+
+        const imageInput = sections.mediaInputs
+            ?.filter((row) => row.mod === "image" && row.isCurrent)
+            .sort((a, b) => a.price - b.price)[0];
+        if (imageInput) {
+            candidates.push(
+                createTablePriceCandidate({
+                    key: "input-image",
+                    label: "image",
+                    price: imageInput.price,
+                    unitLabel: imageInput.unitLabel,
+                }),
+            );
+        }
+
+        const videoInput = sections.mediaInputs
+            ?.filter((row) => row.mod === "video" && row.isCurrent)
+            .sort((a, b) => a.price - b.price)[0];
+        if (videoInput) {
+            candidates.push(
+                createTablePriceCandidate({
+                    key: "input-video",
+                    label: "video",
+                    price: videoInput.price,
+                    unitLabel: videoInput.unitLabel,
+                }),
+            );
+        }
+
+        pushTokenCandidate("image", sections.imageTokens?.in);
+        pushTokenCandidate("audio", sections.audioTokens?.in);
+        pushTokenCandidate("video", sections.videoTokens?.in);
+    } else {
+        pushTokenCandidate("text", sections.textTokens?.out);
+        pushTokenCandidate("embeddings", sections.embeddingTokens?.out);
+
+        const imageOutput = sections.imageGen
+            ?.flatMap((row) =>
+                row.items.map((item) => ({
+                    price: item.price,
+                    unitLabel: "Per image",
+                })),
+            )
+            .sort((a, b) => a.price - b.price)[0];
+        if (imageOutput) {
+            candidates.push(
+                createTablePriceCandidate({
+                    key: "output-image",
+                    label: "image",
+                    price: imageOutput.price,
+                    unitLabel: imageOutput.unitLabel,
+                }),
+            );
+        }
+
+        const videoOutput = sections.videoGen
+            ?.slice()
+            .sort((a, b) => a.price - b.price)[0];
+        if (videoOutput) {
+            candidates.push(
+                createTablePriceCandidate({
+                    key: "output-video",
+                    label: "video",
+                    price: videoOutput.price,
+                    unitLabel: videoOutput.unitLabel,
+                }),
+            );
+        }
+
+        pushTokenCandidate("image", sections.imageTokens?.out);
+        pushTokenCandidate("audio", sections.audioTokens?.out);
+        pushTokenCandidate("video", sections.videoTokens?.out);
+    }
+
+    return candidates;
+}
+
+export function buildProviderTablePriceSummary(
+    sections: ProviderSections,
+    direction: ProviderTablePriceDirection,
+): ProviderTablePriceSummary {
+    const candidates = getTablePriceCandidates(sections, direction);
+    const primary = candidates[0] ?? null;
+    const secondary = candidates[1] ?? null;
+    return {
+        primary,
+        secondary,
+        extraCount: Math.max(candidates.length - (secondary ? 2 : primary ? 1 : 0), 0),
+        sortValue: primary?.price ?? null,
+    };
+}
+
 /* ---------- pricing calculator helpers ---------- */
 
 export interface PricingMeter {
@@ -1213,6 +1448,89 @@ export interface PricingMeter {
     price_per_unit: string;
     currency: string;
     conditions?: any[];
+    billing_timestamp_basis?: PricingTimestampBasis;
+    time_windows?: PricingTimeWindow[];
+}
+
+export type PricingTimestampBasis =
+    | "request_start"
+    | "provider_accept"
+    | "completion"
+    | "unknown";
+
+export type PricingTimeWindow = {
+    label: string;
+    timezone: "UTC";
+    start_time: string;
+    end_time: string;
+    price_per_unit?: string | number | null;
+    priority?: number | null;
+};
+
+export type ResolvedPricingMeterPrice = {
+    pricePerUnit: number;
+    pricePerUnitRaw: string;
+    timeWindow: PricingTimeWindow | null;
+};
+
+function parseUtcMinute(value: unknown): number | null {
+    if (typeof value !== "string") return null;
+    const match = value.match(/^([01]\d|2[0-3]):([0-5]\d)$/);
+    if (!match) return null;
+    return Number(match[1]) * 60 + Number(match[2]);
+}
+
+function isMinuteInsideWindow(minute: number, startMinute: number, endMinute: number): boolean {
+    if (startMinute === endMinute) return false;
+    if (startMinute < endMinute) return minute >= startMinute && minute < endMinute;
+    return minute >= startMinute || minute < endMinute;
+}
+
+export function resolvePricingMeterPrice(
+    meter: Pick<PricingMeter, "price_per_unit" | "time_windows">,
+    pricingTimeUtc?: string | null
+): ResolvedPricingMeterPrice {
+    const basePrice = String(meter.price_per_unit ?? "0");
+    const utcMinute = parseUtcMinute(pricingTimeUtc);
+    const windows = Array.isArray(meter.time_windows) ? meter.time_windows : [];
+
+    if (utcMinute !== null && windows.length > 0) {
+        const matched = windows
+            .map((window, index) => ({ window, index }))
+            .filter(({ window }) => {
+                if (!window || window.timezone !== "UTC") return false;
+                if (window.price_per_unit === undefined || window.price_per_unit === null) {
+                    return false;
+                }
+                const startMinute = parseUtcMinute(window.start_time);
+                const endMinute = parseUtcMinute(window.end_time);
+                if (startMinute === null || endMinute === null) return false;
+                return isMinuteInsideWindow(utcMinute, startMinute, endMinute);
+            })
+            .sort((a, b) =>
+                Number(b.window.priority ?? 0) - Number(a.window.priority ?? 0) ||
+                a.index - b.index
+            )[0]?.window ?? null;
+
+        if (matched) {
+            const matchedPrice = String(matched.price_per_unit ?? basePrice);
+            return {
+                pricePerUnit: parseFloat(matchedPrice) || 0,
+                pricePerUnitRaw: matchedPrice,
+                timeWindow: matched,
+            };
+        }
+    }
+
+    return {
+        pricePerUnit: parseFloat(basePrice) || 0,
+        pricePerUnitRaw: basePrice,
+        timeWindow: null,
+    };
+}
+
+export function formatPricingTimeWindow(window: PricingTimeWindow): string {
+    return `${window.label} ${window.start_time}-${window.end_time} UTC`;
 }
 
 /**
@@ -1220,11 +1538,12 @@ export interface PricingMeter {
  */
 export function calculateCost(
     quantity: number,
-    meter: Pick<PricingMeter, 'unit_size' | 'price_per_unit'>
+    meter: Pick<PricingMeter, "unit_size" | "price_per_unit" | "time_windows">,
+    pricingTimeUtc?: string | null
 ): number {
     const unitSize = Number(meter.unit_size) > 0 ? Number(meter.unit_size) : 1;
     const billableUnits = Math.max(0, quantity) / unitSize;
-    const pricePerUnit = parseFloat(meter.price_per_unit) || 0;
+    const { pricePerUnit } = resolvePricingMeterPrice(meter, pricingTimeUtc);
     return billableUnits * pricePerUnit;
 }
 
@@ -1233,9 +1552,10 @@ export function calculateCost(
  */
 export function calculateUnits(
     budget: number,
-    meter: Pick<PricingMeter, 'unit_size' | 'price_per_unit'>
+    meter: Pick<PricingMeter, "unit_size" | "price_per_unit" | "time_windows">,
+    pricingTimeUtc?: string | null
 ): number {
-    const pricePerUnit = parseFloat(meter.price_per_unit);
+    const { pricePerUnit } = resolvePricingMeterPrice(meter, pricingTimeUtc);
     const unitSize = meter.unit_size || 1;
     if (pricePerUnit === 0) return 0;
     return (budget / pricePerUnit) * unitSize;

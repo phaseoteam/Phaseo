@@ -1,6 +1,6 @@
 <?php return array(
     'root' => array(
-        'name' => 'ai-stats/php-sdk',
+        'name' => 'phaseo/php-sdk',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
         'reference' => 'a90e8ff659a28b1ff6950d77f69fcd8da6ab6089',
@@ -10,7 +10,7 @@
         'dev' => true,
     ),
     'versions' => array(
-        'ai-stats/php-sdk' => array(
+        'phaseo/php-sdk' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
             'reference' => 'a90e8ff659a28b1ff6950d77f69fcd8da6ab6089',

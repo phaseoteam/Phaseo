@@ -15,19 +15,23 @@
   "api_model_id": "nvidia/llama-3.1-nemotron-70b-instruct",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-70b-instruct"
     },
     {
-      "platform": "paper",
+      "title": "Paper",
+      "kind": "paper",
       "url": "https://arxiv.org/abs/2410.01257"
     },
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://developer.nvidia.com/blog/advancing-the-accuracy-efficiency-frontier-with-llama-3-1-nemotron-51b/"
     },
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/nvidia/Llama-3.1-Nemotron-70B-Instruct"
     }
   ],

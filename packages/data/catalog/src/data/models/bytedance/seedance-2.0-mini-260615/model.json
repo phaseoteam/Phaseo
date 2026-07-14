@@ -15,7 +15,8 @@
   "api_model_id": "bytedance/seedance-2.0-mini-260615",
   "links": [
     {
-      "platform": "documentation",
+      "title": "Documentation",
+      "kind": "documentation",
       "url": "https://docs.byteplus.com/en/docs/ModelArk/2291680"
     }
   ],

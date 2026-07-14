@@ -1,56 +1,24 @@
 import { afterAll, afterEach, describe, expect, it } from "vitest";
-import { fetchProviderModels, resolveProviderModelsEndpoint } from "./helpers";
+import { buildDiscordMessage, extractDiscoveredModels, extractProviderApiModelSnapshot, fetchProviderModels, resolveProviderModelsEndpoint } from "./helpers";
 import { installFetchMock, jsonResponse } from "../../../tests/helpers/mock-fetch";
 import { setupRuntimeFromEnv, teardownTestRuntime } from "../../../tests/helpers/runtime";
 
 const POOLSIDE_DISCOVERY_PROVIDER = {
 	providerId: "poolside",
 	providerName: "Poolside",
-	modelsEndpoint: "https://inference.poolside.ai/openai/v1/models",
-	pathPrefix: "/openai/v1",
+	modelsEndpoint: "https://inference.poolside.ai/v1/models",
+	pathPrefix: "/v1",
 	baseUrlEnv: ["POOLSIDE_BASE_URL"],
 	apiKeyEnv: ["POOLSIDE_API_KEY"],
 } as const;
 
-const TOGETHER_DISCOVERY_PROVIDER = {
-	providerId: "together",
-	providerName: "Together",
-	modelsEndpoint: "https://api.together.ai/v1/models",
-	apiKeyEnv: ["TOGETHER_API_KEY"],
-} as const;
-
-const LONGCAT_DISCOVERY_PROVIDER = {
-	providerId: "longcat",
-	providerName: "LongCat",
-	modelsEndpoint: "https://api.longcat.chat/openai/v1/models",
-	pathPrefix: "/openai/v1",
-	baseUrlEnv: ["MEITUAN_BASE_URL", "LONGCAT_BASE_URL"],
-	apiKeyEnv: ["MEITUAN_API_KEY", "LONGCAT_API_KEY"],
-} as const;
-
-const FIREWORKS_DISCOVERY_PROVIDER = {
-	providerId: "fireworks",
-	providerName: "Fireworks",
+const GOOGLE_VERTEX_DISCOVERY_PROVIDER = {
+	providerId: "google-vertex",
+	providerName: "Google Vertex",
 	modelsEndpoint:
-		"https://api.fireworks.ai/v1/accounts/fireworks/models?filter=supports_serverless%3Dtrue&pageSize=200",
-	apiKeyEnv: ["FIREWORKS_API_KEY"],
-	pagination: {
-		nextPageTokenFields: ["nextPageToken"],
-		pageTokenQueryParam: "pageToken",
-		maxPages: 50,
-	},
-} as const;
-
-const SNAKE_PAGINATION_PROVIDER = {
-	providerId: "snake-provider",
-	providerName: "Snake Provider",
-	modelsEndpoint: "https://snake-provider.example/v1/models?page_size=200",
-	apiKeyEnv: ["SNAKE_PROVIDER_API_KEY"],
-	pagination: {
-		nextPageTokenFields: ["next_page_token"],
-		pageTokenQueryParam: "page_token",
-		maxPages: 5,
-	},
+		"https://aiplatform.googleapis.com/v1beta1/publishers/google/models?listAllVersions=true&pageSize=300",
+	apiKeyEnv: ["GOOGLE_VERTEX_ACCESS_TOKEN", "GOOGLE_VERTEX_API_KEY"],
+	authStyle: "google_vertex",
 } as const;
 
 afterEach(() => {
@@ -68,17 +36,17 @@ describe("resolveProviderModelsEndpoint", () => {
 		} as any);
 
 		expect(resolveProviderModelsEndpoint(POOLSIDE_DISCOVERY_PROVIDER)).toBe(
-			"https://poolside.example/openai/v1/models",
+			"https://poolside.example/v1/models",
 		);
 	});
 
-	it("appends only /models when the poolside base url override already includes /openai/v1", () => {
+	it("appends only /models when the poolside base url override already includes /v1", () => {
 		setupRuntimeFromEnv({
-			POOLSIDE_BASE_URL: "https://poolside.example/openai/v1",
+			POOLSIDE_BASE_URL: "https://poolside.example/v1",
 		} as any);
 
 		expect(resolveProviderModelsEndpoint(POOLSIDE_DISCOVERY_PROVIDER)).toBe(
-			"https://poolside.example/openai/v1/models",
+			"https://poolside.example/v1/models",
 		);
 	});
 });
@@ -87,12 +55,12 @@ describe("fetchProviderModels", () => {
 	it("uses the resolved poolside models endpoint and extracts standard openai model ids", async () => {
 		setupRuntimeFromEnv({
 			POOLSIDE_API_KEY: "test-poolside-key",
-			POOLSIDE_BASE_URL: "https://poolside.example/openai/v1",
+			POOLSIDE_BASE_URL: "https://poolside.example/v1",
 		} as any);
 
 		const fetchMock = installFetchMock([
 			{
-				match: (url) => url === "https://poolside.example/openai/v1/models",
+				match: (url) => url === "https://poolside.example/v1/models",
 				response: jsonResponse({
 					data: [
 						{ id: "poolside/laguna-m.1", created: 123 },
@@ -116,225 +84,60 @@ describe("fetchProviderModels", () => {
 		}
 	});
 
-	it("extracts Together models from the documented top-level array response", async () => {
-		setupRuntimeFromEnv({
-			TOGETHER_API_KEY: "test-together-key",
-		} as any);
-
-		const fetchMock = installFetchMock([
-			{
-				match: (url) => url === "https://api.together.ai/v1/models",
-				response: jsonResponse([
-					{
-						id: "zai-org/GLM-5.2",
-						object: "model",
-						created: 1718582400,
-						type: "chat",
-						context_length: 262144,
-						pricing: {
-							input: 1.4,
-							output: 4.4,
-							cached_input: 0.26,
-						},
-					},
-					{
-						id: "moonshotai/Kimi-K2.7-Code",
-						object: "model",
-						created: 1718236800,
-						type: "code",
-						context_length: 262144,
-					},
-				]),
-			},
-		]);
-
-		try {
-			const models = await fetchProviderModels(TOGETHER_DISCOVERY_PROVIDER, "test-together-key");
-
-			expect(models.map((model) => model.id)).toEqual([
-				"moonshotai/Kimi-K2.7-Code",
-				"zai-org/GLM-5.2",
-			]);
-			expect(models[1]?.modelDetails.context_length).toBe(262144);
-			expect(models[1]?.pricingDetails).toEqual({
-				pricing: {
-					cached_input: 0.26,
-					input: 1.4,
-					output: 4.4,
-				},
-			});
-			expect(fetchMock.calls).toHaveLength(1);
-			expect(fetchMock.calls[0]?.headers.Authorization).toBe("Bearer test-together-key");
-		} finally {
-			fetchMock.restore();
-		}
-	});
-
-	it("extracts LongCat models from the documented OpenAI list response", async () => {
-		setupRuntimeFromEnv({
-			MEITUAN_API_KEY: "test-meituan-key",
-		} as any);
-
-		const fetchMock = installFetchMock([
-			{
-				match: (url) => url === "https://api.longcat.chat/openai/v1/models",
-				response: jsonResponse({
-					object: "list",
-					data: [
-						{
-							id: "LongCat-2.0-Preview",
-							object: "model",
-							owned_by: "LongCat",
-						},
-					],
-				}),
-			},
-		]);
-
-		try {
-			const models = await fetchProviderModels(LONGCAT_DISCOVERY_PROVIDER, "test-meituan-key");
-
-			expect(models.map((model) => model.id)).toEqual(["LongCat-2.0-Preview"]);
-			expect(models[0]?.modelDetails.owned_by).toBe("LongCat");
-			expect(fetchMock.calls).toHaveLength(1);
-			expect(fetchMock.calls[0]?.headers.Authorization).toBe("Bearer test-meituan-key");
-		} finally {
-			fetchMock.restore();
-		}
-	});
-
-	it("paginates Fireworks serverless model listings via nextPageToken", async () => {
-		setupRuntimeFromEnv({
-			FIREWORKS_API_KEY: "test-fireworks-key",
-		} as any);
-
-		const fetchMock = installFetchMock([
-			{
-				match: (url) =>
-					url ===
-					"https://api.fireworks.ai/v1/accounts/fireworks/models?filter=supports_serverless%3Dtrue&pageSize=200",
-				response: jsonResponse({
-					models: [
-						{
-							name: "accounts/fireworks/models/deepseek-v4-pro",
-							contextLength: 1048576,
-							supportsServerless: true,
-						},
-					],
-					nextPageToken: "page-2",
-				}),
-			},
-			{
-				match: (url) =>
-					url ===
-					"https://api.fireworks.ai/v1/accounts/fireworks/models?filter=supports_serverless%3Dtrue&pageSize=200&pageToken=page-2",
-				response: jsonResponse({
-					models: [
-						{
-							name: "accounts/fireworks/models/glm-5p2",
-							contextLength: 1048576,
-							supportsServerless: true,
-						},
-					],
-				}),
-			},
-		]);
-
-		try {
-			const models = await fetchProviderModels(FIREWORKS_DISCOVERY_PROVIDER, "test-fireworks-key");
-
-			expect(models.map((model) => model.id)).toEqual([
-				"accounts/fireworks/models/deepseek-v4-pro",
-				"accounts/fireworks/models/glm-5p2",
-			]);
-			expect(models[0]?.modelDetails.supportsServerless).toBe(true);
-			expect(fetchMock.calls).toHaveLength(2);
-			expect(fetchMock.calls[0]?.headers.Authorization).toBe("Bearer test-fireworks-key");
-			expect(fetchMock.calls[1]?.headers.Authorization).toBe("Bearer test-fireworks-key");
-		} finally {
-			fetchMock.restore();
-		}
-	});
-
-	it("ignores pagination tokens for providers without pagination config", async () => {
+	it("throws when the provider returns an error envelope in a successful HTTP response", async () => {
 		setupRuntimeFromEnv({
 			POOLSIDE_API_KEY: "test-poolside-key",
+			POOLSIDE_BASE_URL: "https://poolside.example/v1",
 		} as any);
 
 		const fetchMock = installFetchMock([
 			{
-				match: (url) => url === "https://inference.poolside.ai/openai/v1/models",
+				match: (url) => url === "https://poolside.example/v1/models",
 				response: jsonResponse({
-					data: [{ id: "poolside/laguna-m.1", created: 123 }],
-					nextPageToken: "ignored-token",
+					error: {
+						message: "upstream provider reported a failure",
+					},
 				}),
 			},
 		]);
 
 		try {
-			const models = await fetchProviderModels(POOLSIDE_DISCOVERY_PROVIDER, "test-poolside-key");
-
-			expect(models.map((model) => model.id)).toEqual(["poolside/laguna-m.1"]);
-			expect(fetchMock.calls).toHaveLength(1);
+			await expect(fetchProviderModels(POOLSIDE_DISCOVERY_PROVIDER, "test-poolside-key")).rejects.toThrow(
+				"upstream provider reported a failure",
+			);
 		} finally {
 			fetchMock.restore();
 		}
 	});
 
-	it("uses configured snake_case pagination tokens and query params when enabled", async () => {
+	it("merges google and anthropic publisher models for google-vertex discovery", async () => {
 		setupRuntimeFromEnv({
-			SNAKE_PROVIDER_API_KEY: "test-snake-key",
-		} as any);
-
-		const fetchMock = installFetchMock([
-			{
-				match: (url) => url === "https://snake-provider.example/v1/models?page_size=200",
-				response: jsonResponse({
-					data: [{ id: "snake/model-1" }],
-					next_page_token: "page-2",
-				}),
-			},
-			{
-				match: (url) =>
-					url === "https://snake-provider.example/v1/models?page_size=200&page_token=page-2",
-				response: jsonResponse({
-					data: [{ id: "snake/model-2" }],
-				}),
-			},
-		]);
-
-		try {
-			const models = await fetchProviderModels(SNAKE_PAGINATION_PROVIDER, "test-snake-key");
-
-			expect(models.map((model) => model.id)).toEqual(["snake/model-1", "snake/model-2"]);
-			expect(fetchMock.calls).toHaveLength(2);
-			expect(fetchMock.calls[1]?.headers.Authorization).toBe("Bearer test-snake-key");
-		} finally {
-			fetchMock.restore();
-		}
-	});
-
-	it("drops Fireworks models that are not marked serverless even if the upstream route returns them", async () => {
-		setupRuntimeFromEnv({
-			FIREWORKS_API_KEY: "test-fireworks-key",
+			GOOGLE_VERTEX_ACCESS_TOKEN: "test-vertex-token",
 		} as any);
 
 		const fetchMock = installFetchMock([
 			{
 				match: (url) =>
 					url ===
-					"https://api.fireworks.ai/v1/accounts/fireworks/models?filter=supports_serverless%3Dtrue&pageSize=200",
+					"https://aiplatform.googleapis.com/v1beta1/publishers/google/models?listAllVersions=true&pageSize=300",
 				response: jsonResponse({
-					models: [
+					publisherModels: [
 						{
-							name: "accounts/fireworks/models/glm-5p2",
-							contextLength: 1048576,
-							supportsServerless: true,
+							name: "publishers/google/models/gemini-3.5-flash",
+							versionId: "default",
 						},
+					],
+				}),
+			},
+			{
+				match: (url) =>
+					url ===
+					"https://aiplatform.googleapis.com/v1beta1/publishers/anthropic/models?listAllVersions=true&pageSize=300",
+				response: jsonResponse({
+					publisherModels: [
 						{
-							name: "accounts/fireworks/models/non-serverless-leak",
-							contextLength: 32768,
-							supportsServerless: false,
+							name: "publishers/anthropic/models/claude-sonnet-4-6",
+							versionId: "20260219",
 						},
 					],
 				}),
@@ -342,95 +145,73 @@ describe("fetchProviderModels", () => {
 		]);
 
 		try {
-			const models = await fetchProviderModels(FIREWORKS_DISCOVERY_PROVIDER, "test-fireworks-key");
+			const models = await fetchProviderModels(GOOGLE_VERTEX_DISCOVERY_PROVIDER, "test-vertex-token");
 
 			expect(models.map((model) => model.id)).toEqual([
-				"accounts/fireworks/models/glm-5p2",
+				"claude-sonnet-4-6@20260219",
+				"gemini-3.5-flash",
 			]);
-		} finally {
-			fetchMock.restore();
-		}
-	});
-
-	it("accepts Fireworks serverless flags in camelCase and snake_case truthy formats", async () => {
-		setupRuntimeFromEnv({
-			FIREWORKS_API_KEY: "test-fireworks-key",
-		} as any);
-
-		const fetchMock = installFetchMock([
-			{
-				match: (url) =>
-					url ===
-					"https://api.fireworks.ai/v1/accounts/fireworks/models?filter=supports_serverless%3Dtrue&pageSize=200",
-				response: jsonResponse({
-					models: [
-						{
-							name: "accounts/fireworks/models/serverless-bool",
-							supportsServerless: true,
-						},
-						{
-							name: "accounts/fireworks/models/serverless-number",
-							supportsServerless: 1,
-						},
-						{
-							name: "accounts/fireworks/models/serverless-snake",
-							supports_serverless: "true",
-						},
-						{
-							name: "accounts/fireworks/models/non-serverless",
-							supports_serverless: "false",
-						},
-					],
-				}),
-			},
-		]);
-
-		try {
-			const models = await fetchProviderModels(FIREWORKS_DISCOVERY_PROVIDER, "test-fireworks-key");
-
-			expect(models.map((model) => model.id)).toEqual([
-				"accounts/fireworks/models/serverless-bool",
-				"accounts/fireworks/models/serverless-number",
-				"accounts/fireworks/models/serverless-snake",
-			]);
-		} finally {
-			fetchMock.restore();
-		}
-	});
-
-	it("fails Fireworks discovery when the upstream repeats a page token", async () => {
-		setupRuntimeFromEnv({
-			FIREWORKS_API_KEY: "test-fireworks-key",
-		} as any);
-
-		const fetchMock = installFetchMock([
-			{
-				match: (url) =>
-					url ===
-					"https://api.fireworks.ai/v1/accounts/fireworks/models?filter=supports_serverless%3Dtrue&pageSize=200",
-				response: jsonResponse({
-					models: [{ name: "accounts/fireworks/models/page-1", supportsServerless: true }],
-					nextPageToken: "page-2",
-				}),
-			},
-			{
-				match: (url) =>
-					url ===
-					"https://api.fireworks.ai/v1/accounts/fireworks/models?filter=supports_serverless%3Dtrue&pageSize=200&pageToken=page-2",
-				response: jsonResponse({
-					models: [{ name: "accounts/fireworks/models/page-2", supportsServerless: true }],
-					nextPageToken: "page-2",
-				}),
-			},
-		]);
-
-		try {
-			await expect(
-				fetchProviderModels(FIREWORKS_DISCOVERY_PROVIDER, "test-fireworks-key"),
-			).rejects.toThrow("repeated page token: page-2");
 			expect(fetchMock.calls).toHaveLength(2);
+			expect(fetchMock.calls[0]?.headers.Authorization).toBe("Bearer test-vertex-token");
+			expect(fetchMock.calls[1]?.headers.Authorization).toBe("Bearer test-vertex-token");
 		} finally {
 			fetchMock.restore();
 		}
+	});
+});
+
+describe("extractProviderApiModelSnapshot", () => {
+	it("retains media pricing alongside normalized token rates", () => {
+		const snapshot = extractProviderApiModelSnapshot(
+			"deepinfra",
+			{
+				metadata: {
+					pricing: {
+						input_tokens: 0.2,
+						output_tokens: 1,
+						per_image_unit: 0.04,
+					},
+				},
+			},
+			{ metadata: { pricing: { input_tokens: 0.2, output_tokens: 1, per_image_unit: 0.04 } } },
+		);
+
+		expect(snapshot.pricingDetails).toEqual({
+			normalized: {
+				currency: "USD",
+				unit: "per_1m_tokens",
+				meters: { input_text_tokens: 0.2, output_text_tokens: 1 },
+			},
+			sourcePricing: { metadata: { pricing: { input_tokens: 0.2, output_tokens: 1, per_image_unit: 0.04 } } },
+		});
+	});
+});
+
+describe("extractDiscoveredModels", () => {
+	it("extracts model pricing from top-level array responses", () => {
+		const models = extractDiscoveredModels("together", [
+			{
+				id: "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+				pricing: { input: 0.88, output: 0.88 },
+			},
+		]);
+
+		expect(models).toHaveLength(1);
+		expect(models[0]).toMatchObject({
+			id: "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+			pricingDetails: { pricing: { input: 0.88, output: 0.88 } },
+		});
+	});
+});
+
+describe("buildDiscordMessage", () => {
+	it("does not include pricing-only changes", () => {
+		setupRuntimeFromEnv({} as any);
+		expect(buildDiscordMessage({
+			modelChanges: [],
+			pricing: { updatesDetected: 1, providerChanges: [{ providerId: "crofai", updates: 1, samples: ["glm-5.2 | price changed"] }] },
+			providerApiPricing: { updatesDetected: 1, providerChanges: [{ providerId: "deepinfra", updates: 1, samples: ["model | price changed"] }] },
+			configuredModelCoverage: { updatesDetected: 0, providerChanges: [] },
+		} as any)).toBe("");
 	});
 });

@@ -5,9 +5,9 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata = buildMetadata({
 	title: "Privacy Policy",
 	description:
-		"Read how AI Stats collects, processes, stores, and protects personal data across the website, dashboard, and unified API Gateway services, including user controls and retention practices.",
+		"Read how Phaseo collects, processes, stores, and protects personal data across the website, dashboard, and unified API Gateway services, including user controls and retention practices.",
 	path: "/privacy",
-	keywords: ["AI Stats privacy", "privacy policy", "data processing", "API privacy"],
+	keywords: ["Phaseo privacy", "privacy policy", "data processing", "API privacy"],
 });
 
 export default async function PrivacyPage() {
@@ -15,7 +15,7 @@ export default async function PrivacyPage() {
 		<main className="container mx-auto space-y-8 px-4 py-10 text-sm leading-relaxed text-muted-foreground">
 			<header className="space-y-3">
 				<p className="text-xs text-muted-foreground/80">
-					Last updated: 15 November 2025
+					Last updated: 7 July 2026
 				</p>
 				<h1 className="text-3xl font-semibold text-foreground">
 					Privacy Policy
@@ -23,8 +23,8 @@ export default async function PrivacyPage() {
 				<p className="text-foreground/80">
 					This Privacy Policy explains how{" "}
 					<span className="font-medium">Daniel Butler</span> operating
-					under the name <span className="font-medium">AI Stats</span>{" "}
-					( &quot;AI Stats&quot;, &quot;we&quot;, &quot;us&quot; or
+					under the name <span className="font-medium">Phaseo</span>{" "}
+					( &quot;Phaseo&quot;, &quot;we&quot;, &quot;us&quot; or
 					&quot;our&quot;) collects, uses and protects personal data
 					when you use our websites, dashboards and API gateway
 					(together, the &quot;Service&quot;).
@@ -59,16 +59,16 @@ export default async function PrivacyPage() {
 					<span className="font-medium">Daniel Butler</span>, trading
 					as <span className="font-medium">Phaseo</span>, is the
 					&quot;data controller&quot; responsible for personal data
-					collected through AI Stats.
+					collected through Phaseo.
 				</p>
 				<p className="mt-2 text-foreground/80">
 					This Privacy Policy applies when you:
 				</p>
 				<ul className="mt-2 list-disc space-y-1 pl-5 text-foreground/80">
-					<li>browse the AI Stats website or documentation;</li>
-					<li>create and use an AI Stats account;</li>
+					<li>browse the Phaseo website or documentation;</li>
+					<li>create and use A Phaseo account;</li>
 					<li>
-						use the AI Stats Gateway to route requests to
+						use the Phaseo Gateway to route requests to
 						third-party model providers; or
 					</li>
 					<li>
@@ -78,7 +78,7 @@ export default async function PrivacyPage() {
 				</ul>
 				<p className="mt-2 text-foreground/80">
 					Third-party model providers (for example OpenAI, Anthropic,
-					Google, xAI and others) have their own privacy and data
+					Google, SpaceXAI and others) have their own privacy and data
 					handling practices. When we forward your requests to them,
 					they usually act as independent controllers of your data
 					under their own terms and policies. You should review those
@@ -137,7 +137,7 @@ export default async function PrivacyPage() {
 					2.2 Inputs and Outputs sent through the Gateway
 				</h3>
 				<p className="mt-1 text-foreground/80">
-					When you call models via the AI Stats Gateway, you send
+					When you call models via the Phaseo Gateway, you send
 					requests (&quot;Inputs&quot;) and receive responses
 					(&quot;Outputs&quot;). These may include text or other data
 					that could contain personal information, depending on what
@@ -251,7 +251,7 @@ export default async function PrivacyPage() {
 				<p className="mt-1 text-foreground/80">
 					We may use third-party analytics and error tracking tools
 					(for example, Google Analytics, PostHog, or similar
-					services) to help us understand how people use AI Stats and
+					services) to help us understand how people use Phaseo and
 					to identify where the product can be improved.
 				</p>
 				<p className="mt-1 text-foreground/80">
@@ -524,10 +524,10 @@ export default async function PrivacyPage() {
 					account (settings, profile and API keys), or by contacting
 					us at{" "}
 					<a
-						href="mailto:privacy@phaseo.app"
+						href="mailto:privacy@phaseo.ai"
 						className="text-primary underline"
 					>
-						privacy@phaseo.app
+						privacy@phaseo.ai
 					</a>
 					. We may ask you to verify your identity before responding
 					to a request.
@@ -577,10 +577,10 @@ export default async function PrivacyPage() {
 					suspect compromise. If you believe your account has been
 					compromised, please contact us immediately at{" "}
 					<a
-						href="mailto:support@phaseo.app"
+						href="mailto:support@phaseo.ai"
 						className="text-primary underline"
 					>
-						support@phaseo.app
+						support@phaseo.ai
 					</a>
 					.
 				</p>
@@ -638,19 +638,19 @@ export default async function PrivacyPage() {
 					<li>
 						Email:{" "}
 						<a
-							href="mailto:privacy@phaseo.app"
+							href="mailto:privacy@phaseo.ai"
 							className="text-primary underline"
 						>
-							privacy@phaseo.app
+							privacy@phaseo.ai
 						</a>
 					</li>
 					<li>
 						Support:{" "}
 						<a
-							href="mailto:support@phaseo.app"
+							href="mailto:support@phaseo.ai"
 							className="text-primary underline"
 						>
-							support@phaseo.app
+							support@phaseo.ai
 						</a>
 					</li>
 				</ul>

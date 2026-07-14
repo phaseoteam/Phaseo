@@ -16,11 +16,13 @@
   "family_id": "anthropic/claude-2",
   "links": [
     {
-      "platform": "paper",
+      "title": "Paper",
+      "kind": "paper",
       "url": "https://www-cdn.anthropic.com/5c49cc247484cecf107c699baf29250302e5da70/claude-2-model-card.pdf"
     },
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://www.anthropic.com/news/claude-2"
     }
   ],

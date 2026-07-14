@@ -37,7 +37,7 @@ export function RecoveryCodesDisplay({
 		const url = URL.createObjectURL(blob);
 		const anchor = document.createElement("a");
 		anchor.href = url;
-		anchor.download = "aistats-recovery-codes.txt";
+		anchor.download = "phaseo-recovery-codes.txt";
 		anchor.click();
 		URL.revokeObjectURL(url);
 	};

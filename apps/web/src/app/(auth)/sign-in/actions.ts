@@ -1,7 +1,7 @@
 // app/(auth)/sign-in/actions.ts
 "use server";
 
-import { cookies, headers } from "next/headers";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import {
@@ -23,24 +23,6 @@ const OAUTH_PROVIDERS = ["google", "github", "gitlab"] as const;
 type OAuthProvider = (typeof OAUTH_PROVIDERS)[number];
 
 export type { StartSsoInput } from "@/lib/auth/sso";
-
-function getAuthProviderCookieOptions() {
-	return {
-		path: "/",
-		httpOnly: true,
-		secure: process.env.NODE_ENV === "production",
-		sameSite: "lax" as const,
-		maxAge: 60 * 60 * 24 * 180, // 6 months
-	};
-}
-
-async function setAuthProviderCookie(provider: string): Promise<void> {
-	await (await cookies()).set(
-		"auth_provider",
-		provider,
-		getAuthProviderCookieOptions(),
-	);
-}
 
 async function resolveSafeReturnUrl(formData: FormData): Promise<string | undefined> {
 	const fromForm = sanitizeReturnUrl(formData.get("returnUrl"), "/");
@@ -92,8 +74,6 @@ export async function handleOAuthRedirect(formData: FormData) {
 	const safeReturnUrl = await resolveSafeReturnUrl(formData);
 	const redirectTo = await resolveAuthCallbackUrl(safeReturnUrl);
 
-	await setAuthProviderCookie(provider);
-
 	const { data, error } = await supabase.auth.signInWithOAuth({
 		provider: provider as any,
 		options: { redirectTo },
@@ -122,7 +102,6 @@ export async function handlePasswordSignIn(formData: FormData) {
 		);
 	}
 
-	await setAuthProviderCookie("email");
 	let redirectPath = safeReturnUrl ?? "/";
 	let errorRedirectUrl: string | null = null;
 	try {
@@ -171,7 +150,6 @@ export async function startSsoSignIn(input: StartSsoInput) {
 			ReturnType<typeof buildStartSsoRequest>,
 			{ kind: "oauth" }
 		>["params"];
-		await setAuthProviderCookie(provider);
 		let data:
 			| Awaited<ReturnType<typeof supabase.auth.signInWithOAuth>>["data"]
 			| undefined;
@@ -199,7 +177,6 @@ export async function startSsoSignIn(input: StartSsoInput) {
 		return redirect(data.url as any);
 	}
 
-	await setAuthProviderCookie("sso");
 	let data:
 		| Awaited<ReturnType<typeof supabase.auth.signInWithSSO>>["data"]
 		| undefined;

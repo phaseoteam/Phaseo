@@ -3,6 +3,7 @@ import Stripe from "stripe";
 // Why: Centralizes all cost calculations.
 // How: Persists pricing/usage data into storage.
 
+import { invalidateGatewayCreditCache } from "../../core/gateway-credit-cache";
 import { getSupabaseAdmin, ensureRuntimeForBackground } from "../../runtime/env";
 import { enqueueLowBalanceEmail } from "../notifications/low-balance";
 
@@ -187,6 +188,7 @@ export async function recordUsageAndCharge(args: {
             throw new Error(`gateway_charge_not_applied:${chargeResult.status || "unknown"}`);
         }
         if (chargeResult.already_applied) return chargeResult;
+        await invalidateGatewayCreditCache(args.workspaceId);
 
         try {
             await maybeEnqueueLowBalanceAlert(args.workspaceId);

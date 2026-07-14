@@ -2,7 +2,7 @@
   "model_id": "xiaomi/mimo-v2-tts",
   "organisation_id": "xiaomi",
   "name": "MiMo V2 TTS",
-  "status": "Deprecated",
+  "status": "Retired",
   "previous_model_id": null,
   "description": "MiMo V2 TTS is a text-to-speech model from Xiaomi for turning text into spoken audio. It is suited to narration, assistants, and spoken user interfaces.",
   "announced_date": "2026-03-18T00:00:00",

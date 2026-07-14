@@ -16,15 +16,18 @@
   "family_id": "openai/gpt-2",
   "links": [
     {
-      "platform": "paper",
+      "title": "Paper",
+      "kind": "paper",
       "url": "https://arxiv.org/abs/1908.09203"
     },
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://openai.com/index/gpt-2-1-5b-release/"
     },
     {
-      "platform": "repository",
+      "title": "Repository",
+      "kind": "repository",
       "url": "https://github.com/openai/gpt-2"
     }
   ],

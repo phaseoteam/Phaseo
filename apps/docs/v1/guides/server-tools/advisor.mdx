@@ -3,9 +3,9 @@ title: "Advisor Server Tool"
 description: "Let one model consult another model mid-generation."
 ---
 
-Use `ai-stats:advisor` when the main model should be able to ask another model for a review, plan, sanity check, or specialist opinion before it finishes.
+Use `phaseo:advisor` when the main model should be able to ask another model for a review, plan, sanity check, or specialist opinion before it finishes.
 
-The main model calls Advisor like any other tool. AI Stats runs the Advisor model server-side and returns the advice as the tool result. The main model then writes the final response.
+The main model calls Advisor like any other tool. Phaseo runs the Advisor model server-side and returns the advice as the tool result. The main model then writes the final response.
 
 <Note>
 Advisor is gateway-managed across supported text models. It is not converted into Anthropic's native Advisor tool unless the client explicitly sends Anthropic's native tool shape.
@@ -14,7 +14,7 @@ Advisor is gateway-managed across supported text models. It is not converted int
 ## Quick start
 
 ```bash
-curl https://api.phaseo.app/v1/chat/completions \
+curl https://api.phaseo.ai/v1/chat/completions \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -24,7 +24,7 @@ curl https://api.phaseo.app/v1/chat/completions \
     ],
     "tools": [
       {
-        "type": "ai-stats:advisor",
+        "type": "phaseo:advisor",
         "parameters": {
           "model": "anthropic/claude-opus-4-8",
           "max_uses": 1,
@@ -41,20 +41,20 @@ You can pin the Advisor model in the tool definition:
 
 ```json
 {
-  "type": "ai-stats:advisor",
+  "type": "phaseo:advisor",
   "parameters": {
     "model": "anthropic/claude-opus-4-8"
   }
 }
 ```
 
-If `parameters.model` is omitted, the tool call may provide `model`. If neither is set, AI Stats falls back to the outer request model.
+If `parameters.model` is omitted, the tool call may provide `model`. If neither is set, Phaseo falls back to the outer request model.
 
 ## Parameters
 
 ```json
 {
-  "type": "ai-stats:advisor",
+  "type": "phaseo:advisor",
   "parameters": {
     "name": "reviewer",
     "model": "anthropic/claude-opus-4-8",
@@ -99,17 +99,17 @@ If the Advisor definition does not pin a model, the tool call may also include `
 }
 ```
 
-When `forward_transcript` is `true`, AI Stats can execute a transcript-only Advisor call if the model does not supply a prompt.
+When `forward_transcript` is `true`, Phaseo can execute a transcript-only Advisor call if the model does not supply a prompt.
 
 ## Multiple advisors
 
-Add one `ai-stats:advisor` entry per advisor. Each named advisor becomes a distinct internal tool, such as `ai_stats_advisor_security_reviewer` or `ai_stats_advisor_architect`.
+Add one `phaseo:advisor` entry per advisor. Each named advisor becomes a distinct internal tool, such as `phaseo_advisor_security_reviewer` or `phaseo_advisor_architect`.
 
 ```json
 {
   "tools": [
     {
-      "type": "ai-stats:advisor",
+      "type": "phaseo:advisor",
       "parameters": {
         "name": "security-reviewer",
         "model": "anthropic/claude-opus-4-8",
@@ -117,7 +117,7 @@ Add one `ai-stats:advisor` entry per advisor. Each named advisor becomes a disti
       }
     },
     {
-      "type": "ai-stats:advisor",
+      "type": "phaseo:advisor",
       "parameters": {
         "name": "architect",
         "model": "openai/gpt-5",
@@ -128,7 +128,7 @@ Add one `ai-stats:advisor` entry per advisor. Each named advisor becomes a disti
 }
 ```
 
-At most one Advisor entry may omit `name`. If you force `tool_choice: "ai-stats:advisor"` with multiple advisors, AI Stats maps that alias to the first configured Advisor.
+At most one Advisor entry may omit `name`. If you force `tool_choice: "phaseo:advisor"` with multiple advisors, Phaseo maps that alias to the first configured Advisor.
 
 ## What the tool returns
 
@@ -143,7 +143,7 @@ Advisor returns JSON as the tool result:
 }
 ```
 
-If the Advisor request cannot run, AI Stats returns a tool error such as `advisor_invalid_request`, `advisor_max_uses_exceeded`, or `advisor_request_failed`.
+If the Advisor request cannot run, Phaseo returns a tool error such as `advisor_invalid_request`, `advisor_max_uses_exceeded`, or `advisor_request_failed`.
 
 ## Conversation memory
 
@@ -167,12 +167,12 @@ The Advisor model's tokens are included in total usage and can be priced at the 
 
 ## Current limits
 
-- Advisor sub-agent tools are not enabled yet.
 - Advisor advice streaming is not enabled yet.
 - Recursive Advisor calls are blocked by the server-tool loop limits.
 
 ## Related
 
 - [Server Tools](./index)
+- [Subagent](./subagent)
 - [Tool Calling](../tool-calling)
 

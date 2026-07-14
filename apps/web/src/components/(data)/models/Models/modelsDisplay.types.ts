@@ -13,6 +13,7 @@ export type ModelsFilterFacets = {
 	inputModalityOptions: OptionCount[];
 	outputModalityOptions: OptionCount[];
 	featureOptions: OptionCount[];
+	tierOptions: OptionCount[];
 	supportedParameterOptions: OptionCount[];
 	providerOptions: OptionCount[];
 	regionOptions: OptionCount[];
@@ -23,47 +24,48 @@ export type ModelsFilterFacets = {
 export type ModelsPageModel = Omit<
 	Pick<
 		ModelCard,
-	| "model_id"
-	| "name"
-	| "organisation_id"
-	| "organisation_name"
-	| "organisation_colour"
-	| "primary_date"
-	| "primary_timestamp"
-	| "primary_group_key"
-	| "gateway_status"
-	| "gateway_provider_count"
-	| "gateway_active_provider_count"
-	| "gateway_endpoints"
-	| "gateway_input_modalities"
-	| "gateway_output_modalities"
-	| "gateway_features"
-	| "gateway_provider_names"
-	| "gateway_execution_regions"
-	| "gateway_active_provider_names"
-	| "gateway_provider_details"
-	| "gateway_api_model_ids"
-	| "context_lengths"
-	| "supported_parameters"
-	| "lowest_input_price"
-	| "lowest_output_price"
-	| "lowest_standard_input_price"
-	| "lowest_standard_output_price"
-	| "lowest_standard_input_price_label"
-	| "lowest_standard_input_price_unit"
-	| "lowest_standard_output_price_label"
-	| "lowest_standard_output_price_unit"
-	| "lowest_from_price"
-	| "lowest_from_price_unit"
-	| "pricing_detail_rows"
-	| "popularity_tokens_week"
-	| "throughput_week"
-	| "latency_week"
+		| "model_id"
+		| "name"
+		| "organisation_id"
+		| "organisation_name"
+		| "organisation_colour"
+		| "primary_date"
+		| "primary_timestamp"
+		| "primary_group_key"
+		| "gateway_status"
+		| "gateway_provider_count"
+		| "gateway_active_provider_count"
+		| "gateway_endpoints"
+		| "gateway_input_modalities"
+		| "gateway_output_modalities"
+		| "gateway_features"
+		| "gateway_provider_names"
+		| "gateway_execution_regions"
+		| "gateway_active_provider_names"
+		| "gateway_provider_details"
+		| "gateway_api_model_ids"
+		| "context_lengths"
+		| "supported_parameters"
+		| "lowest_input_price"
+		| "lowest_output_price"
+		| "lowest_standard_input_price"
+		| "lowest_standard_output_price"
+		| "lowest_standard_input_price_label"
+		| "lowest_standard_input_price_unit"
+		| "lowest_standard_output_price_label"
+		| "lowest_standard_output_price_unit"
+		| "lowest_from_price"
+		| "lowest_from_price_unit"
+		| "pricing_detail_rows"
+		| "popularity_tokens_week"
+		| "throughput_week"
+		| "latency_week"
 	>,
 	"gateway_status"
 > & {
 	description?: string | null;
 	gateway_status?: "active" | "coming_soon" | "inactive" | "not_listed" | null;
+	gateway_tiers?: string[];
 	router_requests_30d?: number | null;
 	router_spend_nanos_30d?: number | null;
 };

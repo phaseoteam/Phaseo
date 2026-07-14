@@ -519,7 +519,7 @@ async function handleCachedTextResponse(args: {
 	}
 
 	const headers = makeHeaders(timingHeader);
-	headers.set("X-AI-Stats-Response-Cache", "hit");
+	headers.set("X-Phaseo-Response-Cache", "hit");
 	return createResponse(responseBody, record.statusCode, headers);
 }
 
@@ -786,6 +786,14 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 			}
 		}
 
+		const serverToolTrace: Array<{
+			id: string;
+			name: string;
+			arguments?: string;
+			output?: unknown;
+			isError?: boolean;
+		}> = [];
+
 		if (preparedServerTools.config.enabled && exec.result.kind === "completed" && exec.result.ir) {
 			const maxServerToolRounds = 8;
 			let serverToolRounds = 0;
@@ -867,6 +875,22 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 				serverToolUsage.advisorRequests += continuation.usage.advisorRequests ?? 0;
 				serverToolUsage.imageGenerationRequests += continuation.usage.imageGenerationRequests ?? 0;
 				serverToolUsage.applyPatchRequests += continuation.usage.applyPatchRequests ?? 0;
+				const toolCallsById = new Map(
+					(continuation.assistantMessage.toolCalls ?? [])
+						.filter((call) => call.name && call.name !== "tool_call")
+						.map((call) => [call.id, call]),
+				);
+				for (const result of continuation.toolResults) {
+					const call = toolCallsById.get(result.toolCallId);
+					if (!call) continue;
+					serverToolTrace.push({
+						id: call.id,
+						name: call.name,
+						arguments: call.arguments,
+						output: result.content,
+						...(result.isError ? { isError: true } : {}),
+					});
+				}
 				if (continuation.advisorUsage) {
 					aggregateUsage = mergeIRUsageTotals(aggregateUsage, continuation.advisorUsage);
 				}
@@ -1023,6 +1047,32 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 			exec.result.kind === "completed" &&
 			protocolResponse
 		) {
+			const requestStartMs =
+				typeof pre.ctx.meta.upstreamStartMs === "number"
+					? pre.ctx.meta.upstreamStartMs
+					: typeof pre.ctx.meta.startedAtMs === "number"
+						? pre.ctx.meta.startedAtMs
+						: null;
+			const endToEndMs =
+				requestStartMs !== null
+					? Math.max(0, Math.round(Date.now() - requestStartMs))
+					: Math.max(0, Math.round(timing.timer.elapsed("execute_start")));
+			const resultTiming = (exec.result as { timing?: { generationMs?: number } }).timing;
+			const generationMs = Math.max(
+				0,
+				Math.round(
+					typeof resultTiming?.generationMs === "number"
+						? resultTiming.generationMs
+						: typeof exec.result.generationTimeMs === "number"
+							? exec.result.generationTimeMs
+							: 0,
+				),
+			);
+			pre.ctx.meta.end_to_end_ms = endToEndMs;
+			pre.ctx.meta.generation_ms = generationMs;
+			pre.ctx.meta.latency_ms = Math.max(0, endToEndMs - generationMs);
+			pre.ctx.meta.preserve_stream_timing = true;
+
 			const stream = buildSyntheticServerToolStream({
 				protocol,
 				payload: protocolResponse,
@@ -1037,6 +1087,7 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 					typeof (protocolResponse as any)?.created === "number"
 						? (protocolResponse as any).created
 						: null,
+				serverToolTrace,
 			});
 			if (stream) {
 				exec.result.kind = "stream";

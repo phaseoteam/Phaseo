@@ -37,7 +37,7 @@ const providerIds = [
 	"qwen",
 	"suno",
 	"together",
-	"x-ai",
+	"spacex-ai",
 ] as const;
 
 export default function ProviderLogos() {

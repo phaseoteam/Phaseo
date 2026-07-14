@@ -21,7 +21,7 @@ jobs:
         name: Check internal models
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+            - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
               with:
                   fetch-depth: 0
                   persist-credentials: false
@@ -48,7 +48,7 @@ jobs:
 
             - name: Restore internal model state cache
               id: internal-model-state-cache
-              uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae
+              uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
               with:
                   path: scripts/model-discovery/state
                   key: internal-model-state-${{ github.ref_name }}-${{ github.run_id }}
@@ -59,12 +59,12 @@ jobs:
               run: |
                   pnpm exec tsx scripts/model-discovery/run-internal-public.ts \
                     --discord-role-id "1377690778478055584" \
-                    --discord-avatar-url "https://ai-stats.phaseo.app/png_logo_light.png" \
+                    --discord-avatar-url "https://phaseo.app/png_logo_light.png" \
                     --skip-hf
 
             - name: Save internal model state cache
               if: always()
-              uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae
+              uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
               with:
                   path: scripts/model-discovery/state
                   key: ${{ steps.internal-model-state-cache.outputs.cache-primary-key }}

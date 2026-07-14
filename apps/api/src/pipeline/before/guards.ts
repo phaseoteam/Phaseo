@@ -494,6 +494,7 @@ export function makeMeta(input: {
     oauthClientId?: string | null;
     oauthUserId?: string | null;
     returnMeta?: boolean;
+    returnRoutingDiagnostics?: boolean;
     debug?: DebugOptions;
     providerCapabilitiesBeta?: boolean;
     beta?: RequestBetaOptions;
@@ -529,7 +530,7 @@ export function makeMeta(input: {
     const testId = nodeEnv === "test"
         ? normalizeBoundedString(input.req.headers.get("x-test-id"), 128)
         : null;
-    const debugHeader = input.req.headers.get("x-gateway-debug") ?? input.req.headers.get("x-ai-stats-debug");
+    const debugHeader = input.req.headers.get("x-gateway-debug") ?? input.req.headers.get("x-phaseo-debug");
     const debugEnabled = (normalizeReturnFlag(debugHeader) || Boolean(input.debug?.enabled)) && isDebugAllowed();
     const userAgent = input.req.headers.get("user-agent");
     const accept = input.req.headers.get("accept");
@@ -600,6 +601,7 @@ export function makeMeta(input: {
         edgeContinent: edge.continent ?? null,
         edgeAsn: edge.asn ?? null,
         returnMeta: input.returnMeta ?? false,
+        returnRoutingDiagnostics: input.returnRoutingDiagnostics ?? false,
         providerCapabilitiesBeta: input.providerCapabilitiesBeta ?? false,
         beta: input.beta,
     };

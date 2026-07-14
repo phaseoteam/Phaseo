@@ -6,7 +6,7 @@ describe("createGatewayAgentClient", () => {
 	it("serializes assistant tool calls and tool outputs into Responses input items", async () => {
 		const create = vi.fn(async () => ({
 			id: "resp_123",
-			model: "ai-stats/free",
+			model: "phaseo/free",
 			output: [
 				{
 					type: "message",
@@ -88,7 +88,7 @@ describe("createGatewayAgentClient", () => {
 	it("extracts tool calls from Responses function_call items", async () => {
 		const create = vi.fn(async () => ({
 			id: "resp_123",
-			model: "ai-stats/free",
+			model: "phaseo/free",
 			output: [
 				{
 					type: "message",
@@ -129,7 +129,7 @@ describe("createGatewayAgentClient", () => {
 	it("passes gateway-native request defaults through the adapter", async () => {
 		const create = vi.fn(async () => ({
 			id: "resp_456",
-			model: "ai-stats/free",
+			model: "phaseo/free",
 			meta: {
 				throughput_tps: 12.5,
 				routing: {
@@ -260,7 +260,7 @@ describe("createGatewayAgentClient", () => {
 		const create = vi.fn(async () => ({
 			id: "req_123",
 			nativeResponseId: "resp_native_123",
-			model: "ai-stats/free",
+			model: "phaseo/free",
 			output: [
 				{
 					type: "message",
@@ -290,7 +290,7 @@ describe("createGatewayAgentClient", () => {
 	it("merges local runtime tools with gateway-native upstream tools and tool choice", async () => {
 		const create = vi.fn(async () => ({
 			id: "resp_789",
-			model: "ai-stats/free",
+			model: "phaseo/free",
 			output: [
 				{
 					type: "message",
@@ -347,7 +347,7 @@ describe("createGatewayAgentClient", () => {
 	it("passes explicit local tool parameter schemas through to Responses function tools", async () => {
 		const create = vi.fn(async () => ({
 			id: "resp_schema_1",
-			model: "ai-stats/free",
+			model: "phaseo/free",
 			output: [
 				{
 					type: "message",
@@ -411,7 +411,7 @@ describe("createGatewayAgentClient", () => {
 			throw Object.assign(
 				new Error("Request failed: 403 Forbidden"),
 				{
-					name: "AIStatsHttpError",
+					name: "PhaseoHttpError",
 					status: 403,
 					statusText: "Forbidden",
 					headers: {
@@ -481,7 +481,7 @@ describe("createGatewayAgentClient", () => {
 			throw Object.assign(
 				new Error("Request failed: 429 Too Many Requests - try again later"),
 				{
-					name: "AIStatsHttpError",
+					name: "PhaseoHttpError",
 					status: 429,
 					statusText: "Too Many Requests",
 					headers: {

@@ -80,7 +80,15 @@ const MODALITY_OPTIONS = [
 	"audio_music",
 ];
 
-const STATUS_OPTIONS = ["Rumoured", "Announced", "Withheld", "Available", "Deprecated", "Retired"];
+const STATUS_OPTIONS = [
+	"Rumoured",
+	"Announced",
+	"Limited Access",
+	"Withheld",
+	"Available",
+	"Deprecated",
+	"Retired",
+];
 
 const DETAIL_OPTIONS = [
 	"input_context_length",
@@ -142,7 +150,7 @@ export function ComprehensiveModelEditor({
 	const [details, setDetails] = useState<Array<{ name: string; value: string }>>(
 		[]
 	);
-	const [links, setLinks] = useState<Array<{ type: string; url: string }>>([]);
+	const [links, setLinks] = useState<Array<{ type: string; title?: string; url: string }>>([]);
 	const [aliases, setAliases] = useState<
 		Array<{ alias: string; enabled: boolean }>
 	>([]);
@@ -238,8 +246,9 @@ export function ComprehensiveModelEditor({
 					// Populate links (existing data)
 					setLinks(
 						data.links.map((l) => ({
-							type: l.link_type,
-							url: l.link_url,
+							type: l.kind ?? l.platform,
+							title: l.title,
+							url: l.url,
 						}))
 					);
 
@@ -1729,4 +1738,3 @@ export function ComprehensiveModelEditor({
 		</>
 	);
 }
-

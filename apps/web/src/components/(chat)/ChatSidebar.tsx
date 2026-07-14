@@ -1,9 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import type { ReactElement } from "react";
-import { useTheme } from "next-themes";
+import { useEffect, useMemo, useState, type ReactElement } from "react";
 import { Button } from "@/components/ui/button";
+import {
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -13,12 +17,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
 	SidebarContent,
 	SidebarFooter,
 	SidebarGroup,
 	SidebarGroupContent,
-	SidebarGroupLabel,
 	SidebarHeader,
 	SidebarMenu,
 	SidebarMenuAction,
@@ -28,11 +32,19 @@ import {
 	useSidebar,
 } from "@/components/ui/sidebar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { ChatThread } from "@/lib/indexeddb/chats";
+import {
+	getChatThreadActivityDate,
+	getChatThreadActivityTime,
+} from "@/components/(chat)/playground/use-grouped-chat-threads";
+import type { ChatTag, ChatThread } from "@/lib/indexeddb/chats";
 import { ChatRoomSwitcher } from "@/components/(chat)/ChatRoomSwitcher";
+import { ThemeSelector } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
 import {
 	ArrowUpRight,
+	Check,
+	ChevronRight,
+	Coins,
 	Database,
 	Gauge,
 	LogOut,
@@ -43,6 +55,7 @@ import {
 	PinOff,
 	Search,
 	SquarePen,
+	Tag,
 	Trash2,
 	UserRound,
 } from "lucide-react";
@@ -66,7 +79,13 @@ type ChatSidebarProps = {
 	onSelectThread: (thread: ChatThread) => void;
 	onRenameThread: (thread: ChatThread) => void;
 	onPinToggle: (thread: ChatThread) => void;
+	onEditTags: (thread: ChatThread) => void;
+	onEditSelectedTags: (threads: ChatThread[]) => void;
 	onRequestDelete: (thread: ChatThread) => void;
+	onRequestDeleteSelected: (threads: ChatThread[]) => void;
+	tags: ChatTag[];
+	activeTagId: string | null;
+	onTagFilterChange: (tagId: string | null) => void;
 	authUser: {
 		id: string;
 		email: string | null;
@@ -76,6 +95,99 @@ type ChatSidebarProps = {
 	authLoading: boolean;
 	onSignOut: () => void;
 };
+
+type ThreadDateGroup = {
+	key: string;
+	label: string;
+	threads: ChatThread[];
+};
+
+type CreditsBalanceResponse = {
+	initialBalance?: number | null;
+};
+
+function formatCreditsBalance(value: number | null) {
+	if (value === null || !Number.isFinite(value)) return "Credits";
+	return new Intl.NumberFormat("en-US", {
+		style: "currency",
+		currency: "USD",
+		minimumFractionDigits: 2,
+		maximumFractionDigits: 2,
+	}).format(value);
+}
+
+function getOrdinalDay(day: number) {
+	const remainder = day % 100;
+	if (remainder >= 11 && remainder <= 13) return `${day}th`;
+	switch (day % 10) {
+		case 1:
+			return `${day}st`;
+		case 2:
+			return `${day}nd`;
+		case 3:
+			return `${day}rd`;
+		default:
+			return `${day}th`;
+	}
+}
+
+function getThreadDate(thread: ChatThread) {
+	return getChatThreadActivityDate(thread);
+}
+
+function getThreadDateKey(date: Date | null) {
+	if (!date) return "unknown";
+	return [
+		date.getFullYear(),
+		String(date.getMonth() + 1).padStart(2, "0"),
+		String(date.getDate()).padStart(2, "0"),
+	].join("-");
+}
+
+function formatThreadDate(date: Date | null) {
+	if (!date) return "Unknown date";
+	const month = date.toLocaleDateString("en-GB", { month: "long" });
+	return `${getOrdinalDay(date.getDate())} ${month} ${date.getFullYear()}`;
+}
+
+function buildThreadDateGroups(groupedThreads: GroupedThreads) {
+	const groups = new Map<string, ThreadDateGroup>();
+
+	const appendThreads = (threads: ChatThread[], labelOverride?: string) => {
+		for (const thread of threads) {
+			const date = getThreadDate(thread);
+			const key = getThreadDateKey(date);
+			const existing = groups.get(key);
+			if (existing) {
+				existing.threads.push(thread);
+				continue;
+			}
+			groups.set(key, {
+				key,
+				label: labelOverride ?? formatThreadDate(date),
+				threads: [thread],
+			});
+		}
+	};
+
+	appendThreads(groupedThreads.today, "Today");
+	appendThreads(groupedThreads.yesterday, "Yesterday");
+	appendThreads(groupedThreads.week);
+	appendThreads(groupedThreads.month);
+	appendThreads(groupedThreads.older);
+
+	return Array.from(groups.values());
+}
+
+function ThreadDateHeading({ children }: { children: string }) {
+	return (
+		<div className="flex items-center gap-2 px-3 pb-1 pt-2 text-[11px] font-medium text-muted-foreground">
+			<span className="h-px min-w-3 flex-1 bg-border/60" />
+			<span className="shrink-0">{children}</span>
+			<span className="h-px min-w-3 flex-1 bg-border/60" />
+		</div>
+	);
+}
 
 export function ChatSidebar({
 	groupedThreads,
@@ -87,22 +199,29 @@ export function ChatSidebar({
 	onSelectThread,
 	onRenameThread,
 	onPinToggle,
+	onEditTags,
+	onEditSelectedTags,
 	onRequestDelete,
+	onRequestDeleteSelected,
+	tags,
+	activeTagId,
+	onTagFilterChange,
 	authUser,
 	authLoading,
 	onSignOut,
 }: ChatSidebarProps) {
 	const { toggleSidebar, state: sidebarState, isMobile } = useSidebar();
-	const { resolvedTheme } = useTheme();
+	const [tagsOpen, setTagsOpen] = useState(true);
+	const [chatEditMode, setChatEditMode] = useState(false);
+	const [visibleTagCount, setVisibleTagCount] = useState(5);
+	const [selectedThreadIds, setSelectedThreadIds] = useState<Set<string>>(
+		() => new Set(),
+	);
+	const [creditsBalance, setCreditsBalance] = useState<number | null>(null);
+	const [creditsLoading, setCreditsLoading] = useState(false);
 	const collapsed = sidebarState === "collapsed" && !isMobile;
-	const isDarkTheme = resolvedTheme === "dark";
-	const brandSrc = collapsed
-		? isDarkTheme
-			? "/logo_dark.svg"
-			: "/logo_light.svg"
-		: isDarkTheme
-			? "/wordmark_dark.svg"
-			: "/wordmark_light.svg";
+	const brandLightSrc = collapsed ? "/logo_light.svg" : "/wordmark_light.svg";
+	const brandDarkSrc = collapsed ? "/logo_dark.svg" : "/wordmark_dark.svg";
 	const withCollapsedTooltip = (label: string, button: ReactElement) =>
 		collapsed ? (
 			<Tooltip>
@@ -121,23 +240,192 @@ export function ChatSidebar({
 		.join("")
 		.slice(0, 2)
 		.toUpperCase();
+	const creditsLabel = formatCreditsBalance(creditsBalance);
+	const activeTag = tags.find((tag) => tag.id === activeTagId) ?? null;
+	const dateThreadGroups = buildThreadDateGroups(groupedThreads);
+	const tagsByRecentUse = useMemo(() => {
+		const latestUseByTagId = new Map<string, number>();
+		for (const thread of threads) {
+			const timestamp = getChatThreadActivityTime(thread) ?? 0;
+			for (const tag of thread.tags ?? []) {
+				latestUseByTagId.set(
+					tag.id,
+					Math.max(latestUseByTagId.get(tag.id) ?? 0, timestamp),
+				);
+			}
+		}
+		return [...tags].sort((first, second) => {
+			const recentDiff =
+				(latestUseByTagId.get(second.id) ?? 0) -
+				(latestUseByTagId.get(first.id) ?? 0);
+			if (recentDiff !== 0) return recentDiff;
+			return first.name.localeCompare(second.name);
+		});
+	}, [tags, threads]);
+	const visibleTags = tagsByRecentUse.slice(0, visibleTagCount);
+	const canShowMoreTags = visibleTagCount < tagsByRecentUse.length;
+	const selectedThreads = useMemo(
+		() => threads.filter((thread) => selectedThreadIds.has(thread.id)),
+		[threads, selectedThreadIds],
+	);
+	const selectedCount = selectedThreads.length;
+	useEffect(() => {
+		if (!authUser?.id) {
+			setCreditsBalance(null);
+			setCreditsLoading(false);
+			return;
+		}
+
+		let active = true;
+		const controller = new AbortController();
+		const timeoutId = window.setTimeout(() => controller.abort(), 8000);
+		setCreditsLoading(true);
+		fetch("/api/internal/credits/balance", {
+			headers: { accept: "application/json" },
+			signal: controller.signal,
+		})
+			.then(async (response) => {
+				if (!response.ok) throw new Error(`Credits request failed: ${response.status}`);
+				return (await response.json()) as CreditsBalanceResponse;
+			})
+			.then((data) => {
+				if (!active) return;
+				const rawBalance = data.initialBalance;
+				const balance =
+					rawBalance === null || rawBalance === undefined
+						? null
+						: Number(rawBalance);
+				setCreditsBalance(balance !== null && Number.isFinite(balance) ? balance : null);
+			})
+			.catch((error) => {
+				if (active && (error as Error).name !== "AbortError") {
+					setCreditsBalance(null);
+				}
+			})
+			.finally(() => {
+				window.clearTimeout(timeoutId);
+				if (active) {
+					setCreditsLoading(false);
+				}
+			});
+
+		return () => {
+			active = false;
+			window.clearTimeout(timeoutId);
+			controller.abort();
+		};
+	}, [authUser?.id]);
+	const toggleThreadSelection = (threadId: string) => {
+		setSelectedThreadIds((prev) => {
+			const next = new Set(prev);
+			if (next.has(threadId)) {
+				next.delete(threadId);
+			} else {
+				next.add(threadId);
+			}
+			return next;
+		});
+	};
+
+	const renderThreadItem = (thread: ChatThread, pinned = false) => {
+		const selected = selectedThreadIds.has(thread.id);
+		return (
+		<SidebarMenuItem key={thread.id} className="w-full overflow-hidden">
+			<SidebarMenuButton
+				isActive={chatEditMode ? selected : activeId === thread.id}
+				onClick={() =>
+					chatEditMode
+						? toggleThreadSelection(thread.id)
+						: onSelectThread(thread)
+				}
+				className={chatEditMode ? "gap-2" : undefined}
+			>
+				{chatEditMode ? (
+					<span
+						className={cn(
+							"flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors",
+							selected
+								? "border-primary bg-primary text-primary-foreground"
+								: "border-border text-transparent",
+						)}
+					>
+						<Check className="h-3 w-3" />
+					</span>
+				) : null}
+				<span className="w-0 grow overflow-hidden text-ellipsis whitespace-nowrap">
+					{thread.title}
+				</span>
+			</SidebarMenuButton>
+			{chatEditMode ? null : (
+				<DropdownMenu>
+					<DropdownMenuTrigger render={<SidebarMenuAction
+							showOnHover
+							aria-label={`Open actions for ${thread.title}`} />}>
+
+							<MoreHorizontal className="h-4 w-4" />
+
+					</DropdownMenuTrigger>
+					<DropdownMenuContent side="right">
+						<DropdownMenuItem onClick={() => onRenameThread(thread)}>
+							<PencilLine className="mr-2 h-4 w-4" />
+							Rename
+						</DropdownMenuItem>
+						<DropdownMenuItem onClick={() => onPinToggle(thread)}>
+							{pinned ? (
+								<PinOff className="mr-2 h-4 w-4" />
+							) : (
+								<Pin className="mr-2 h-4 w-4" />
+							)}
+							{pinned ? "Unpin" : "Pin"}
+						</DropdownMenuItem>
+						<DropdownMenuItem onClick={() => onEditTags(thread)}>
+							<Tag className="mr-2 h-4 w-4" />
+							Tags
+						</DropdownMenuItem>
+						<DropdownMenuSeparator />
+						<DropdownMenuItem
+							variant="destructive"
+							className="cursor-pointer"
+							onClick={() => onRequestDelete(thread)}
+						>
+							<Trash2 className="mr-2 h-4 w-4" />
+							Delete
+						</DropdownMenuItem>
+					</DropdownMenuContent>
+				</DropdownMenu>
+			)}
+		</SidebarMenuItem>
+		);
+	};
 
 	return (
 		<>
-			<SidebarHeader className="gap-0 px-0 pt-3.5 pb-0">
+			<SidebarHeader className="h-[57px] gap-0 border-b border-border px-0 py-0">
 				<div
 					className={cn(
-						"mb-3.5 flex w-full items-center gap-2 px-2",
-						collapsed ? "justify-center pb-1" : "ml-2",
+						"flex h-full w-full items-center gap-2 px-2",
+						collapsed ? "justify-center" : "ml-2",
 					)}
 				>
-					<Link href="/">
+					<Link href="/" aria-label="Phaseo">
 						<img
-							src={brandSrc}
-							alt="AI Stats"
+							src={brandLightSrc}
+							alt=""
+							aria-hidden="true"
 							className={cn(
 								"select-none",
-								collapsed ? "h-7" : "h-8",
+								collapsed ? "h-5" : "h-6",
+								"block dark:hidden",
+							)}
+						/>
+						<img
+							src={brandDarkSrc}
+							alt=""
+							aria-hidden="true"
+							className={cn(
+								"select-none",
+								collapsed ? "h-5" : "h-6",
+								"hidden dark:block",
 							)}
 						/>
 					</Link>
@@ -151,9 +439,8 @@ export function ChatSidebar({
 						<PanelLeftClose className="h-4 w-4" />
 					</Button>
 				</div>
-				<div className="mb-2 h-px w-full bg-border" />
 			</SidebarHeader>
-			<SidebarContent>
+			<SidebarContent className="gap-0">
 				<ChatRoomSwitcher />
 				<SidebarSeparator className="my-0" />
 				<div className="px-2 py-1.5">
@@ -165,7 +452,7 @@ export function ChatSidebar({
 								"h-8 min-w-0 w-full gap-2 text-sm font-medium",
 								collapsed
 									? "justify-center px-0"
-									: "flex-1 justify-start px-2",
+									: "w-full flex-1 justify-start px-2",
 							)}
 							onClick={onCreateThread}
 							aria-label="New Chat"
@@ -184,7 +471,7 @@ export function ChatSidebar({
 								"h-8 min-w-0 w-full gap-2 text-sm font-medium",
 								collapsed
 									? "justify-center px-0"
-									: "flex-1 justify-start px-2",
+									: "w-full flex-1 justify-start px-2",
 							)}
 							asChild
 							aria-label="Database"
@@ -216,7 +503,7 @@ export function ChatSidebar({
 								"h-8 min-w-0 w-full gap-2 text-sm font-medium",
 								collapsed
 									? "justify-center px-0"
-									: "flex-1 justify-start px-2",
+									: "w-full flex-1 justify-start px-2",
 							)}
 							onClick={onSearch}
 							aria-label="Search Chats"
@@ -230,444 +517,163 @@ export function ChatSidebar({
 				</div>
 				<SidebarSeparator className="my-0" />
 				<ScrollArea className="h-full group-data-[collapsible=icon]:hidden">
-					<SidebarGroup className="pt-0 px-2 pb-2">
-						<SidebarGroupLabel>Chats</SidebarGroupLabel>
+					<SidebarGroup className="px-2 pb-2 pt-1">
+						{tags.length > 0 ? (
+							<Collapsible
+								open={tagsOpen}
+								onOpenChange={setTagsOpen}
+								className="border-b border-border/70 pb-1"
+							>
+								<div className="flex h-7 items-center gap-2 px-3">
+									<CollapsibleTrigger asChild>
+										<button
+											type="button"
+											className="flex h-7 min-w-0 flex-1 items-center justify-between rounded-md text-[13px] font-semibold leading-none text-foreground/80 outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+										>
+											<span className="truncate">Tags</span>
+											<ChevronRight
+												className={cn(
+													"h-3.5 w-3.5 shrink-0 transition-transform",
+													tagsOpen && "rotate-90",
+												)}
+											/>
+										</button>
+									</CollapsibleTrigger>
+									{activeTag ? (
+										<Button
+											type="button"
+											variant="ghost"
+											size="sm"
+											className="h-6 px-1.5 text-xs text-muted-foreground"
+											onClick={() => onTagFilterChange(null)}
+										>
+											All
+										</Button>
+									) : null}
+								</div>
+								<CollapsibleContent>
+									<SidebarMenu className="gap-0.5 pb-1 pt-0.5">
+										{visibleTags.map((tag) => {
+											const selected = activeTagId === tag.id;
+											return (
+												<SidebarMenuItem key={tag.id}>
+													<SidebarMenuButton
+														isActive={selected}
+														onClick={() =>
+															onTagFilterChange(selected ? null : tag.id)
+														}
+														className="h-8 px-3"
+													>
+														<span
+															className="h-2.5 w-2.5 shrink-0 rounded-full"
+															style={{ backgroundColor: tag.color }}
+														/>
+														<span className="w-0 grow overflow-hidden text-ellipsis whitespace-nowrap">
+															{tag.name}
+														</span>
+													</SidebarMenuButton>
+												</SidebarMenuItem>
+											);
+										})}
+										{canShowMoreTags ? (
+											<div className="flex justify-center pt-0.5">
+												<Button
+													type="button"
+													variant="ghost"
+													size="sm"
+													className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+													onClick={() =>
+														setVisibleTagCount((count) => count + 5)
+													}
+												>
+													Show more
+												</Button>
+											</div>
+										) : null}
+									</SidebarMenu>
+								</CollapsibleContent>
+							</Collapsible>
+						) : null}
+						<div className="mt-1 flex h-7 items-center gap-2 px-3">
+							<div className="min-w-0 flex-1 text-[13px] font-semibold leading-none text-foreground/80">
+								{activeTag ? (
+									<span className="flex min-w-0 items-center gap-1.5">
+										<span
+											className="h-2 w-2 shrink-0 rounded-full"
+											style={{ backgroundColor: activeTag.color }}
+										/>
+										<span className="truncate">{activeTag.name}</span>
+									</span>
+								) : (
+									"Chats"
+								)}
+							</div>
+							{threads.length > 0 ? (
+								<Button
+									type="button"
+									variant="ghost"
+									size="sm"
+									className="h-6 px-1.5 text-xs text-muted-foreground hover:text-foreground"
+									onClick={() => {
+										setChatEditMode((open) => !open);
+										setSelectedThreadIds(new Set());
+									}}
+								>
+									{chatEditMode ? "Done" : "Edit"}
+								</Button>
+							) : null}
+						</div>
+						{chatEditMode ? (
+							<div className="mx-2 mb-1 grid h-8 grid-cols-2 items-center gap-1 rounded-md border border-border/70 bg-muted/25 p-0.5">
+								<Button
+									type="button"
+									variant="ghost"
+									size="sm"
+									className="h-7 w-full px-1.5 text-xs"
+									disabled={selectedCount === 0}
+									onClick={() => onEditSelectedTags(selectedThreads)}
+								>
+									<Tag className="mr-1 h-3.5 w-3.5" />
+									Tags
+								</Button>
+								<Button
+									type="button"
+									variant="destructive"
+									size="sm"
+									className="h-7 w-full px-1.5 text-xs"
+									disabled={selectedCount === 0}
+									onClick={() => onRequestDeleteSelected(selectedThreads)}
+								>
+									<Trash2 className="mr-1 h-3.5 w-3.5" />
+									Delete
+								</Button>
+							</div>
+						) : null}
 						<SidebarGroupContent className="overflow-hidden">
 							<SidebarMenu>
 								{groupedThreads.pinned.length > 0 && (
-									<div>
-										<p className="px-2 pb-2 pt-3 text-xs font-semibold uppercase text-muted-foreground">
+									<div className="pb-1">
+										<p className="px-3 pb-1.5 pt-2 text-xs font-semibold text-muted-foreground">
 											Pinned
 										</p>
-										{groupedThreads.pinned.map((thread) => (
-											<SidebarMenuItem
-												key={thread.id}
-												className="w-full overflow-hidden"
-											>
-												<SidebarMenuButton
-													isActive={
-														activeId === thread.id
-													}
-													onClick={() =>
-														onSelectThread(thread)
-													}
-												>
-													<span className="w-0 grow overflow-hidden text-ellipsis whitespace-nowrap">
-														{thread.title}
-													</span>
-												</SidebarMenuButton>
-												<DropdownMenu>
-													<DropdownMenuTrigger
-														asChild
-													>
-														<SidebarMenuAction
-															showOnHover
-														>
-															<MoreHorizontal className="h-4 w-4" />
-														</SidebarMenuAction>
-													</DropdownMenuTrigger>
-													<DropdownMenuContent side="right">
-														<DropdownMenuItem
-															onClick={() =>
-																onRenameThread(
-																	thread
-																)
-															}
-														>
-															<PencilLine className="mr-2 h-4 w-4" />
-															Rename
-														</DropdownMenuItem>
-														<DropdownMenuItem
-															onClick={() =>
-																onPinToggle(
-																	thread
-																)
-															}
-														>
-															<PinOff className="mr-2 h-4 w-4" />
-															Unpin
-														</DropdownMenuItem>
-														<DropdownMenuSeparator />
-														<DropdownMenuItem
-															onClick={() =>
-																onRequestDelete(
-																	thread
-																)
-															}
-															className="group text-foreground focus:text-destructive data-highlighted:text-destructive"
-														>
-															<Trash2 className="mr-2 h-4 w-4 text-muted-foreground group-data-highlighted:text-destructive" />
-															Delete
-														</DropdownMenuItem>
-													</DropdownMenuContent>
-												</DropdownMenu>
-											</SidebarMenuItem>
-										))}
-									</div>
-								)}
-								{groupedThreads.today.length > 0 && (
-									<div>
-										<p className="px-2 pb-2 pt-3 text-xs font-semibold uppercase text-muted-foreground">
-											Today
-										</p>
-										{groupedThreads.today.map((thread) => (
-											<SidebarMenuItem
-												key={thread.id}
-												className="w-full overflow-hidden"
-											>
-												<SidebarMenuButton
-													isActive={
-														activeId === thread.id
-													}
-													onClick={() =>
-														onSelectThread(thread)
-													}
-												>
-													<span className="w-0 grow overflow-hidden text-ellipsis whitespace-nowrap">
-														{thread.title}
-													</span>
-												</SidebarMenuButton>
-												<DropdownMenu>
-													<DropdownMenuTrigger
-														asChild
-													>
-														<SidebarMenuAction
-															showOnHover
-														>
-															<MoreHorizontal className="h-4 w-4" />
-														</SidebarMenuAction>
-													</DropdownMenuTrigger>
-													<DropdownMenuContent side="right">
-														<DropdownMenuItem
-															onClick={() =>
-																onRenameThread(
-																	thread
-																)
-															}
-														>
-															<PencilLine className="mr-2 h-4 w-4" />
-															Rename
-														</DropdownMenuItem>
-														<DropdownMenuItem
-															onClick={() =>
-																onPinToggle(
-																	thread
-																)
-															}
-														>
-															<Pin className="mr-2 h-4 w-4" />
-															Pin
-														</DropdownMenuItem>
-														<DropdownMenuSeparator />
-														<DropdownMenuItem
-															onClick={() =>
-																onRequestDelete(
-																	thread
-																)
-															}
-															className="group text-foreground focus:text-destructive data-highlighted:text-destructive"
-														>
-															<Trash2 className="mr-2 h-4 w-4 text-muted-foreground group-data-highlighted:text-destructive" />
-															Delete
-														</DropdownMenuItem>
-													</DropdownMenuContent>
-												</DropdownMenu>
-											</SidebarMenuItem>
-										))}
-									</div>
-								)}
-								{groupedThreads.yesterday.length > 0 && (
-									<div>
-										<p className="px-2 pb-2 pt-3 text-xs font-semibold uppercase text-muted-foreground">
-											Yesterday
-										</p>
-										{groupedThreads.yesterday.map(
-											(thread) => (
-												<SidebarMenuItem
-													key={thread.id}
-													className="w-full overflow-hidden"
-												>
-													<SidebarMenuButton
-														isActive={
-															activeId ===
-															thread.id
-														}
-														onClick={() =>
-															onSelectThread(
-																thread
-															)
-														}
-													>
-														<span className="w-0 grow overflow-hidden text-ellipsis whitespace-nowrap">
-															{thread.title}
-														</span>
-													</SidebarMenuButton>
-													<DropdownMenu>
-														<DropdownMenuTrigger
-															asChild
-														>
-															<SidebarMenuAction
-																showOnHover
-															>
-																<MoreHorizontal className="h-4 w-4" />
-															</SidebarMenuAction>
-														</DropdownMenuTrigger>
-														<DropdownMenuContent side="right">
-															<DropdownMenuItem
-																onClick={() =>
-																	onRenameThread(
-																		thread
-																	)
-																}
-															>
-																<PencilLine className="mr-2 h-4 w-4" />
-																Rename
-															</DropdownMenuItem>
-															<DropdownMenuItem
-																onClick={() =>
-																	onPinToggle(
-																		thread
-																	)
-																}
-															>
-																<Pin className="mr-2 h-4 w-4" />
-																Pin
-															</DropdownMenuItem>
-															<DropdownMenuSeparator />
-															<DropdownMenuItem
-																onClick={() =>
-																	onRequestDelete(
-																		thread
-																	)
-																}
-																className="group text-foreground focus:text-destructive data-highlighted:text-destructive"
-															>
-																<Trash2 className="mr-2 h-4 w-4 text-muted-foreground group-data-highlighted:text-destructive" />
-																Delete
-															</DropdownMenuItem>
-														</DropdownMenuContent>
-													</DropdownMenu>
-												</SidebarMenuItem>
-											)
+										{groupedThreads.pinned.map((thread) =>
+											renderThreadItem(thread, true),
 										)}
 									</div>
 								)}
-								{groupedThreads.week.length > 0 && (
-									<div>
-										<p className="px-2 pb-2 pt-3 text-xs font-semibold uppercase text-muted-foreground">
-											This week
-										</p>
-										{groupedThreads.week.map((thread) => (
-											<SidebarMenuItem
-												key={thread.id}
-												className="w-full overflow-hidden"
-											>
-												<SidebarMenuButton
-													isActive={
-														activeId === thread.id
-													}
-													onClick={() =>
-														onSelectThread(thread)
-													}
-												>
-													<span className="w-0 grow overflow-hidden text-ellipsis whitespace-nowrap">
-														{thread.title}
-													</span>
-												</SidebarMenuButton>
-												<DropdownMenu>
-													<DropdownMenuTrigger
-														asChild
-													>
-														<SidebarMenuAction
-															showOnHover
-														>
-															<MoreHorizontal className="h-4 w-4" />
-														</SidebarMenuAction>
-													</DropdownMenuTrigger>
-													<DropdownMenuContent side="right">
-														<DropdownMenuItem
-															onClick={() =>
-																onRenameThread(
-																	thread
-																)
-															}
-														>
-															<PencilLine className="mr-2 h-4 w-4" />
-															Rename
-														</DropdownMenuItem>
-														<DropdownMenuItem
-															onClick={() =>
-																onPinToggle(
-																	thread
-																)
-															}
-														>
-															<Pin className="mr-2 h-4 w-4" />
-															Pin
-														</DropdownMenuItem>
-														<DropdownMenuSeparator />
-														<DropdownMenuItem
-															onClick={() =>
-																onRequestDelete(
-																	thread
-																)
-															}
-															className="group text-foreground focus:text-destructive data-highlighted:text-destructive"
-														>
-															<Trash2 className="mr-2 h-4 w-4 text-muted-foreground group-data-highlighted:text-destructive" />
-															Delete
-														</DropdownMenuItem>
-													</DropdownMenuContent>
-												</DropdownMenu>
-											</SidebarMenuItem>
-										))}
+								{dateThreadGroups.map((group) => (
+									<div key={group.key} className="pb-1">
+										<ThreadDateHeading>
+											{group.label}
+										</ThreadDateHeading>
+										{group.threads.map((thread) =>
+											renderThreadItem(thread),
+										)}
 									</div>
-								)}
-								{groupedThreads.month.length > 0 && (
-									<div>
-										<p className="px-2 pb-2 pt-3 text-xs font-semibold uppercase text-muted-foreground">
-											This month
-										</p>
-										{groupedThreads.month.map((thread) => (
-											<SidebarMenuItem
-												key={thread.id}
-												className="w-full overflow-hidden"
-											>
-												<SidebarMenuButton
-													isActive={
-														activeId === thread.id
-													}
-													onClick={() =>
-														onSelectThread(thread)
-													}
-												>
-													<span className="w-0 grow overflow-hidden text-ellipsis whitespace-nowrap">
-														{thread.title}
-													</span>
-												</SidebarMenuButton>
-												<DropdownMenu>
-													<DropdownMenuTrigger
-														asChild
-													>
-														<SidebarMenuAction
-															showOnHover
-														>
-															<MoreHorizontal className="h-4 w-4" />
-														</SidebarMenuAction>
-													</DropdownMenuTrigger>
-													<DropdownMenuContent side="right">
-														<DropdownMenuItem
-															onClick={() =>
-																onRenameThread(
-																	thread
-																)
-															}
-														>
-															<PencilLine className="mr-2 h-4 w-4" />
-															Rename
-														</DropdownMenuItem>
-														<DropdownMenuItem
-															onClick={() =>
-																onPinToggle(
-																	thread
-																)
-															}
-														>
-															<Pin className="mr-2 h-4 w-4" />
-															Pin
-														</DropdownMenuItem>
-														<DropdownMenuSeparator />
-														<DropdownMenuItem
-															onClick={() =>
-																onRequestDelete(
-																	thread
-																)
-															}
-															className="group text-foreground focus:text-destructive data-highlighted:text-destructive"
-														>
-															<Trash2 className="mr-2 h-4 w-4 text-muted-foreground group-data-highlighted:text-destructive" />
-															Delete
-														</DropdownMenuItem>
-													</DropdownMenuContent>
-												</DropdownMenu>
-											</SidebarMenuItem>
-										))}
-									</div>
-								)}
-								{groupedThreads.older.length > 0 && (
-									<div>
-										<p className="px-2 pb-2 pt-3 text-xs font-semibold uppercase text-muted-foreground">
-											Older
-										</p>
-										{groupedThreads.older.map((thread) => (
-											<SidebarMenuItem
-												key={thread.id}
-												className="w-full overflow-hidden"
-											>
-												<SidebarMenuButton
-													isActive={
-														activeId === thread.id
-													}
-													onClick={() =>
-														onSelectThread(thread)
-													}
-												>
-													<span className="w-0 grow overflow-hidden text-ellipsis whitespace-nowrap">
-														{thread.title}
-													</span>
-												</SidebarMenuButton>
-												<DropdownMenu>
-													<DropdownMenuTrigger
-														asChild
-													>
-														<SidebarMenuAction
-															showOnHover
-														>
-															<MoreHorizontal className="h-4 w-4" />
-														</SidebarMenuAction>
-													</DropdownMenuTrigger>
-													<DropdownMenuContent side="right">
-														<DropdownMenuItem
-															onClick={() =>
-																onRenameThread(
-																	thread
-																)
-															}
-														>
-															<PencilLine className="mr-2 h-4 w-4" />
-															Rename
-														</DropdownMenuItem>
-														<DropdownMenuItem
-															onClick={() =>
-																onPinToggle(
-																	thread
-																)
-															}
-														>
-															<Pin className="mr-2 h-4 w-4" />
-															Pin
-														</DropdownMenuItem>
-														<DropdownMenuSeparator />
-														<DropdownMenuItem
-															onClick={() =>
-																onRequestDelete(
-																	thread
-																)
-															}
-															className="group text-foreground focus:text-destructive data-highlighted:text-destructive"
-														>
-															<Trash2 className="mr-2 h-4 w-4 text-muted-foreground group-data-highlighted:text-destructive" />
-															Delete
-														</DropdownMenuItem>
-													</DropdownMenuContent>
-												</DropdownMenu>
-											</SidebarMenuItem>
-										))}
-									</div>
-								)}
+								))}
 								{threads.length === 0 && (
 									<p className="px-2 py-4 text-xs text-muted-foreground">
-										No chats yet.
+										{activeTagId ? "No chats with this tag." : "No chats yet."}
 									</p>
 								)}
 							</SidebarMenu>
@@ -677,17 +683,17 @@ export function ChatSidebar({
 			</SidebarContent>
 			<SidebarFooter className="border-t border-border px-3 py-3">
 				{authUser ? (
-					<div className="grid gap-3">
+					<div className="grid gap-2">
 						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button
+							<DropdownMenuTrigger render={<Button
 									variant="ghost"
 									className={cn(
-										"w-full gap-3",
+										"h-auto min-h-14 w-full touch-manipulation items-center gap-3 rounded-2xl py-2 active:bg-muted data-open:bg-muted",
 										collapsed ? "justify-center px-0" : "justify-start",
 									)}
-								>
-									<Avatar className="h-8 w-8 rounded-lg border border-zinc-200/70 dark:border-zinc-800/70">
+									aria-label="Open account menu" />}>
+
+									<Avatar className="pointer-events-none h-8 w-8 rounded-lg border border-zinc-200/70 dark:border-zinc-800/70">
 										{authUser.avatarUrl && (
 											<AvatarImage
 												src={authUser.avatarUrl}
@@ -701,15 +707,20 @@ export function ChatSidebar({
 									</Avatar>
 									<div
 										className={cn(
-											"flex min-w-0 flex-col items-start",
+											"pointer-events-none flex min-w-0 flex-col items-start text-left",
 											collapsed && "hidden",
 										)}
 									>
 										<span className="truncate text-sm font-medium">
 											{firstName}
 										</span>
+										<span className="truncate text-[11px] font-normal text-muted-foreground">
+											{temporaryMode
+												? "Temporary chat is active."
+												: "All data is stored locally."}
+										</span>
 									</div>
-								</Button>
+
 							</DropdownMenuTrigger>
 							<DropdownMenuContent
 								side={collapsed ? "right" : "top"}
@@ -717,18 +728,38 @@ export function ChatSidebar({
 								sideOffset={8}
 								className="w-56 z-[90]"
 							>
-								<DropdownMenuItem asChild>
-									<Link href="/settings/account">
+								<DropdownMenuItem render={<Link href="/settings/account" />}>
+
 										<UserRound className="mr-2 h-4 w-4" />
 										Account
-									</Link>
+
 								</DropdownMenuItem>
-								<DropdownMenuItem asChild>
-								<Link href="/gateway/usage">
+								<DropdownMenuItem render={<Link href="/gateway/usage" />}>
+
 										<Gauge className="mr-2 h-4 w-4" />
 										Usage
-									</Link>
+
 								</DropdownMenuItem>
+								<DropdownMenuItem render={<Link
+										href="/settings/credits"
+										aria-label={`Credits balance: ${creditsLabel}`} />}>
+
+										<Coins className="mr-2 h-4 w-4" />
+										<span>Credits</span>
+										{creditsLoading ? (
+											<Skeleton className="ml-auto h-3.5 w-16 rounded-sm" />
+										) : (
+											<span className="ml-auto font-mono text-xs tabular-nums text-muted-foreground">
+												{creditsLabel}
+											</span>
+										)}
+
+								</DropdownMenuItem>
+								<DropdownMenuSeparator />
+								<div className="flex min-h-10 items-center justify-between gap-3 px-2 py-1.5">
+									<span className="text-sm">Theme</span>
+									<ThemeSelector className="shrink-0" showSelectedLabel={false} />
+								</div>
 								<DropdownMenuSeparator />
 								<DropdownMenuItem onClick={onSignOut}>
 									<LogOut className="mr-2 h-4 w-4" />
@@ -736,15 +767,9 @@ export function ChatSidebar({
 								</DropdownMenuItem>
 							</DropdownMenuContent>
 						</DropdownMenu>
-						{!temporaryMode && !collapsed && (
-							<p className="text-[11px] text-muted-foreground">
-								All data is stored locally in your browser.
-							</p>
-						)}
 						{temporaryMode && !collapsed && (
 							<p className="text-[11px] text-muted-foreground">
-								Temporary chat is active. Messages will not be
-								saved.
+								Messages will not be saved.
 							</p>
 						)}
 					</div>

@@ -573,7 +573,7 @@ describe("Agent SDK runtime loop", () => {
 				model: "openai/gpt-5.4",
 				usage: { input_tokens: 12, output_tokens: 8 },
 				responseMeta: {
-					routing: { target: "ai-stats/free" },
+					routing: { target: "phaseo/free" },
 				},
 			})),
 		};
@@ -600,7 +600,7 @@ describe("Agent SDK runtime loop", () => {
 				requestId: "req_meta_1",
 				nativeResponseId: "resp_native_1",
 				responseMeta: {
-					routing: { target: "ai-stats/free" },
+					routing: { target: "phaseo/free" },
 				},
 			}),
 		);
@@ -613,7 +613,7 @@ describe("Agent SDK runtime loop", () => {
 	});
 
 	it("captures agent runs in devtools-compatible JSONL", async () => {
-		const directory = `.ai-stats-agent-devtools-test-${randomUUID()}`;
+		const directory = `.phaseo-agent-devtools-test-${randomUUID()}`;
 		const client = {
 			generate: vi.fn(async () => ({
 				message: {
@@ -630,7 +630,7 @@ describe("Agent SDK runtime loop", () => {
 		try {
 			const agent = createAgent({
 				id: "devtools-agent",
-				model: "ai-stats/free",
+				model: "phaseo/free",
 			});
 
 			await agent.run({
@@ -652,7 +652,7 @@ describe("Agent SDK runtime loop", () => {
 				request: {
 					agent_id: "devtools-agent",
 					input: "Capture this run",
-					model: "ai-stats/free",
+					model: "phaseo/free",
 				},
 				metadata: {
 					sdk: "typescript",
@@ -747,7 +747,7 @@ describe("Agent SDK runtime loop", () => {
 		await agent.run({
 			input: "Use the override path",
 			client,
-			model: "ai-stats/premium",
+			model: "phaseo/premium",
 			toolExecution: {
 				toolConcurrency: 2,
 			},
@@ -758,7 +758,7 @@ describe("Agent SDK runtime loop", () => {
 			},
 		});
 
-		expect(requestedModels).toEqual(["ai-stats/premium"]);
+		expect(requestedModels).toEqual(["phaseo/premium"]);
 		expect(toolStarts).toEqual(["first", "second"]);
 		expect(toolFinishes).toEqual(["first", "second"]);
 		expect(maxConcurrentTools).toBe(2);

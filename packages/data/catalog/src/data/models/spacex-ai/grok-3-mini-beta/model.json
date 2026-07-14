@@ -1,0 +1,175 @@
+{
+  "model_id": "spacex-ai/grok-3-mini-beta",
+  "organisation_id": "spacex-ai",
+  "name": "Grok 3 Mini Beta",
+  "status": "Deprecated",
+  "previous_model_id": "spacex-ai/grok-2-mini-2024-08-13",
+  "description": "Grok 3 Mini Beta is a lightweight, smaller thinking model. Unlike traditional models that generate answers immediately, Grok 3 Mini thinks before responding.",
+  "announced_date": "2025-02-19T00:00:00",
+  "release_date": "2025-02-19T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "spacex-ai/grok-3-mini-beta",
+  "links": [
+    {
+      "title": "Announcement",
+      "kind": "announcement",
+      "url": "https://x.ai/news/grok-3"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 131072
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2024-11-17T00:00:00"
+    },
+    {
+      "name": "output_context_length",
+      "value": 8000
+    }
+  ],
+  "benchmarks": [
+    {
+      "benchmark_id": "aime-2024",
+      "score": 95.8,
+      "is_self_reported": true,
+      "other_info": "Think, Cons@64",
+      "source_link": "https://x.ai/news/grok-3",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "aime-2024",
+      "score": 89.5,
+      "is_self_reported": true,
+      "other_info": "Think",
+      "source_link": "https://x.ai/news/grok-3",
+      "rank": 23
+    },
+    {
+      "benchmark_id": "aime-2024",
+      "score": 39.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/news/grok-3",
+      "rank": 98
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 90.8,
+      "is_self_reported": true,
+      "other_info": "Think, Cons@64",
+      "source_link": "https://x.ai/news/grok-3",
+      "rank": 55
+    },
+    {
+      "benchmark_id": "aime-2025",
+      "score": 82,
+      "is_self_reported": true,
+      "other_info": "Think",
+      "source_link": "https://x.ai/news/grok-3",
+      "rank": 87
+    },
+    {
+      "benchmark_id": "eqbench",
+      "score": 984.7,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://eqbench.com",
+      "rank": 25
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 84,
+      "is_self_reported": true,
+      "other_info": "Think, Cons@64",
+      "source_link": "https://x.ai/news/grok-3",
+      "rank": 40
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 84,
+      "is_self_reported": true,
+      "other_info": "Reasoning",
+      "source_link": "https://x.ai/news/grok-3",
+      "rank": 39
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 80.3,
+      "is_self_reported": true,
+      "other_info": "Think",
+      "source_link": "https://x.ai/news/grok-3",
+      "rank": 57
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 66.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/news/grok-3",
+      "rank": 107
+    },
+    {
+      "benchmark_id": "lmarena-text",
+      "score": 1355,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://lmarena.ai/leaderboard/text",
+      "rank": 32
+    },
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 78.9,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/news/grok-3",
+      "rank": 56
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 69.4,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/news/grok-3",
+      "rank": 76
+    },
+    {
+      "benchmark_id": "simpleqa",
+      "score": 21.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://x.ai/news/grok-3",
+      "rank": 72
+    },
+    {
+      "benchmark_id": "confabulations",
+      "score": 10.8,
+      "is_self_reported": false,
+      "other_info": "High reasoning; Confab 6.9%; non-response 14.7%",
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 59
+    },
+    {
+      "benchmark_id": "confabulations",
+      "score": 14.04,
+      "is_self_reported": false,
+      "other_info": "Low reasoning; Confab 10.9%; non-response 17.2%",
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 46
+    },
+    {
+      "benchmark_id": "elimination-game",
+      "score": 5.529,
+      "is_self_reported": false,
+      "other_info": "High reasoning; sigma 0.216; games 511; avg points 0.597",
+      "source_link": "https://github.com/lechmazur/elimination_game",
+      "rank": 6
+    }
+  ]
+}

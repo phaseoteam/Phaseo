@@ -1,9 +1,18 @@
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it, beforeEach, vi } from "vitest";
-import type { PriceCard } from "../pricing";
+import type { PriceCard, PriceRule } from "../pricing";
 import { calculatePricing, loadProviderPricing } from "./pricing";
 import { shapeUsageForClient } from "../usage";
 
 const loadPriceCardMock = vi.hoisted(() => vi.fn());
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(__dirname, "../../../../..");
+const deepSeekV4ProPricingPath = path.join(
+	repoRoot,
+	"packages/data/catalog/src/data/pricing/deepseek/deepseek-deepseek-v4-pro/text.generate/pricing.json",
+);
 
 vi.mock("../pricing", async () => {
 	const actual = await vi.importActual<typeof import("../pricing")>("../pricing");
@@ -73,6 +82,74 @@ const TTS_CARD: PriceCard = {
 		},
 	],
 };
+
+function loadActiveCatalogPriceCard(pricingPath: string, nowIso = "2026-07-01T00:00:00.000Z"): PriceCard {
+	const raw = JSON.parse(fs.readFileSync(pricingPath, "utf8"));
+	const rules = raw.rules
+		.filter((rule: Record<string, unknown>) => {
+			const effectiveFrom = typeof rule.effective_from === "string" ? rule.effective_from : null;
+			const effectiveTo = typeof rule.effective_to === "string" ? rule.effective_to : null;
+			return (!effectiveFrom || effectiveFrom <= nowIso) && (!effectiveTo || effectiveTo > nowIso);
+		})
+		.map((rule: Record<string, unknown>): PriceRule => ({
+			id: `${String(raw.api_provider_id)}:${String(raw.api_model_id)}:${String(rule.pricing_plan)}:${String(rule.meter)}`,
+			pricing_plan: String(rule.pricing_plan),
+			meter: rule.meter as PriceRule["meter"],
+			unit: String(rule.unit),
+			unit_size: Number(rule.unit_size),
+			price_per_unit: String(rule.price_per_unit),
+			currency: String(rule.currency),
+			match: Array.isArray(rule.match) ? rule.match as PriceRule["match"] : [],
+			priority: Number(rule.priority ?? 0),
+			billing_timestamp_basis: rule.billing_timestamp_basis as PriceRule["billing_timestamp_basis"],
+			time_windows: Array.isArray(rule.time_windows)
+				? rule.time_windows as PriceRule["time_windows"]
+				: undefined,
+		}));
+
+	return {
+		provider: String(raw.api_provider_id),
+		model: String(raw.api_model_id),
+		endpoint: String(raw.capability_id),
+		effective_from: raw.effective_from ?? null,
+		effective_to: raw.effective_to ?? null,
+		currency: "USD",
+		version: null,
+		rules,
+	};
+}
+
+function activateDeepSeekV4ProPeakWindows(card: PriceCard): PriceCard {
+	const peakPricesByMeter: Record<string, string> = {
+		input_text_tokens: "0.87",
+		cached_read_text_tokens: "0.00725",
+		output_text_tokens: "1.74",
+	};
+
+	return {
+		...card,
+		rules: card.rules.map((rule) => ({
+			...rule,
+			billing_timestamp_basis: "provider_accept",
+			time_windows: [
+				{
+					label: "peak",
+					timezone: "UTC",
+					start_time: "01:00",
+					end_time: "04:00",
+					price_per_unit: peakPricesByMeter[rule.meter],
+				},
+				{
+					label: "peak",
+					timezone: "UTC",
+					start_time: "06:00",
+					end_time: "10:00",
+					price_per_unit: peakPricesByMeter[rule.meter],
+				},
+			],
+		})),
+	};
+}
 
 describe("after/pricing calculatePricing", () => {
 	beforeEach(() => {
@@ -145,6 +222,125 @@ describe("after/pricing calculatePricing", () => {
 		]);
 	});
 
+	it("uses upstream start time for provider-accept pricing windows", () => {
+		const upstreamWindowCard: PriceCard = {
+			...TTS_CARD,
+			provider: "deepseek",
+			model: "deepseek/deepseek-v4-pro",
+			endpoint: "text.generate",
+			rules: [
+				{
+					meter: "input_text_tokens",
+					unit: "token",
+					unit_size: 1_000_000,
+					price_per_unit: "1",
+					currency: "USD",
+					pricing_plan: "standard",
+					note: null,
+					match: [],
+					priority: 100,
+					billing_timestamp_basis: "provider_accept",
+					time_windows: [
+						{
+							label: "upstream-peak",
+							timezone: "UTC",
+							start_time: "06:00",
+							end_time: "10:00",
+							price_per_unit: "3",
+						},
+					],
+				},
+			],
+		};
+
+		const result = calculatePricing(
+			{ input_text_tokens: 1_000_000 },
+			upstreamWindowCard,
+			{},
+			null,
+			{
+				startedAtMs: Date.parse("2026-07-20T05:30:00Z"),
+				upstreamStartMs: Date.parse("2026-07-20T06:30:00Z"),
+				completedAtMs: Date.parse("2026-07-20T11:30:00Z"),
+			} as any,
+		);
+
+		expect(result.totalNanos).toBe(3_000_000_000);
+		expect(result.totalCents).toBe(300);
+		expect(result.pricedUsage?.pricing?.lines?.[0]).toMatchObject({
+			unit_price_usd: "3.000000000",
+			billing_timestamp_basis: "provider_accept",
+			billing_timestamp_basis_configured: "provider_accept",
+			pricing_time_window: {
+				label: "upstream-peak",
+				timezone: "UTC",
+				start_time: "06:00",
+				end_time: "10:00",
+			},
+		});
+	});
+
+	it("applies DeepSeek V4 Pro peak pricing from gateway upstream-start metadata", () => {
+		const card = activateDeepSeekV4ProPeakWindows(
+			loadActiveCatalogPriceCard(deepSeekV4ProPricingPath),
+		);
+
+		const result = calculatePricing(
+			{
+				input_text_tokens: 1_000_000,
+				cached_read_text_tokens: 1_000_000,
+				output_text_tokens: 1_000_000,
+			},
+			card,
+			{},
+			null,
+			{
+				startedAtMs: Date.parse("2026-07-20T05:30:00Z"),
+				upstreamStartMs: Date.parse("2026-07-20T06:30:00Z"),
+				completedAtMs: Date.parse("2026-07-20T11:30:00Z"),
+			} as any,
+		);
+
+		expect(result.totalNanos).toBe(2_617_250_000);
+		expect(result.totalCents).toBe(261);
+		expect(result.pricedUsage?.pricing?.total_usd_str).toBe("2.61725");
+		expect(result.pricedUsage?.pricing?.lines).toEqual([
+			expect.objectContaining({
+				dimension: "input_text_tokens",
+				unit_price_usd: "0.870000000",
+				billing_timestamp_basis: "provider_accept",
+				pricing_time_window: {
+					label: "peak",
+					timezone: "UTC",
+					start_time: "06:00",
+					end_time: "10:00",
+				},
+			}),
+			expect.objectContaining({
+				dimension: "cached_read_text_tokens",
+				unit_price_usd: "0.007250000",
+				billing_timestamp_basis: "provider_accept",
+				pricing_time_window: {
+					label: "peak",
+					timezone: "UTC",
+					start_time: "06:00",
+					end_time: "10:00",
+				},
+			}),
+			expect.objectContaining({
+				dimension: "output_text_tokens",
+				unit_price_usd: "1.740000000",
+				billing_timestamp_basis: "provider_accept",
+				pricing_time_window: {
+					label: "peak",
+					timezone: "UTC",
+					start_time: "06:00",
+					end_time: "10:00",
+				},
+			}),
+		]);
+	});
+
 	it("uses the request service tier for pricing when usage does not echo it", () => {
 		const priorityCard: PriceCard = {
 			...TTS_CARD,
@@ -184,100 +380,6 @@ describe("after/pricing calculatePricing", () => {
 		);
 
 		expect(result.totalNanos).toBe(12_000_000_000);
-	});
-
-	it("uses Moonshot K2.7 Code HighSpeed pricing for priority service tier", () => {
-		const moonshotCard: PriceCard = {
-			...TTS_CARD,
-			provider: "moonshotai",
-			model: "moonshotai/kimi-k2.7-code",
-			endpoint: "text.generate",
-			rules: [
-				{
-					meter: "input_text_tokens",
-					unit: "token",
-					unit_size: 1_000_000,
-					price_per_unit: "0.95",
-					currency: "USD",
-					pricing_plan: "standard",
-					note: null,
-					match: [],
-					priority: 100,
-				},
-				{
-					meter: "cached_read_text_tokens",
-					unit: "token",
-					unit_size: 1_000_000,
-					price_per_unit: "0.19",
-					currency: "USD",
-					pricing_plan: "standard",
-					note: null,
-					match: [],
-					priority: 100,
-				},
-				{
-					meter: "output_text_tokens",
-					unit: "token",
-					unit_size: 1_000_000,
-					price_per_unit: "4",
-					currency: "USD",
-					pricing_plan: "standard",
-					note: null,
-					match: [],
-					priority: 100,
-				},
-				{
-					meter: "input_text_tokens",
-					unit: "token",
-					unit_size: 1_000_000,
-					price_per_unit: "1.9",
-					currency: "USD",
-					pricing_plan: "priority",
-					note: null,
-					match: [],
-					priority: 100,
-				},
-				{
-					meter: "cached_read_text_tokens",
-					unit: "token",
-					unit_size: 1_000_000,
-					price_per_unit: "0.38",
-					currency: "USD",
-					pricing_plan: "priority",
-					note: null,
-					match: [],
-					priority: 100,
-				},
-				{
-					meter: "output_text_tokens",
-					unit: "token",
-					unit_size: 1_000_000,
-					price_per_unit: "8",
-					currency: "USD",
-					pricing_plan: "priority",
-					note: null,
-					match: [],
-					priority: 100,
-				},
-			],
-		};
-
-		const result = calculatePricing(
-			{
-				input_text_tokens: 1_000_000,
-				cached_read_text_tokens: 1_000_000,
-				output_text_tokens: 1_000_000,
-			},
-			moonshotCard,
-			{ service_tier: "priority" },
-		);
-
-		expect(result.totalNanos).toBe(10_280_000_000);
-		expect(result.pricedUsage?.pricing?.lines?.map((line: any) => line.unit_price_usd)).toEqual([
-			"1.900000000",
-			"0.380000000",
-			"8.000000000",
-		]);
 	});
 
 	it("uses standard pricing for explicit standard service tier", () => {
@@ -363,11 +465,11 @@ describe("after/pricing calculatePricing", () => {
 		expect(result.totalNanos).toBe(12_000_000_000);
 	});
 
-	it("prefers an observed standard tier over a conflicting priority request tier", () => {
+	it("prefers an observed default service tier over a conflicting priority request tier", () => {
 		const priorityCard: PriceCard = {
 			...TTS_CARD,
-			provider: "x-ai",
-			model: "x-ai/grok-4.3",
+			provider: "venice",
+			model: "anthropic/claude-opus-4.8",
 			endpoint: "text.generate",
 			rules: [
 				{

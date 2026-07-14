@@ -1,6 +1,7 @@
 import { readAnalyticsConsent } from "@/lib/cookieConsent";
 
-export const CLIENT_ERROR_EVENT = "ai-stats:client-error";
+export const CLIENT_ERROR_EVENT = "phaseo:client-error";
+export const LEGACY_CLIENT_ERROR_EVENT = "ai-stats:client-error";
 
 export type ClientErrorPayload = {
 	source:
@@ -25,6 +26,11 @@ export function reportClientError(payload: ClientErrorPayload) {
 
 	window.dispatchEvent(
 		new CustomEvent<ClientErrorPayload>(CLIENT_ERROR_EVENT, {
+			detail: payload,
+		})
+	);
+	window.dispatchEvent(
+		new CustomEvent<ClientErrorPayload>(LEGACY_CLIENT_ERROR_EVENT, {
 			detail: payload,
 		})
 	);

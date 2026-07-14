@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-namespace ai_stats::gen {
+namespace phaseo::gen {
 struct ActivityEntry {
 	double byok_usage_inference;
 	int completion_tokens;
@@ -172,6 +172,56 @@ struct ApiKeyWithValueResponse {
 	std::map<std::string, std::any> data;
 };
 
+struct AsyncJobWebSocketClientEvent {
+	std::any type;
+};
+
+struct AsyncJobWebSocketServerEvent {
+	std::optional<std::any> data;
+	std::any type;
+};
+
+struct AsyncJobWebSocketUpgradeRequiredResponse {
+	std::map<std::string, std::any> error;
+};
+
+struct AsyncWebhookDeliveryAttempt {
+	std::optional<int> attempt_number;
+	std::optional<std::string> delivered_at;
+	std::string delivery_key;
+	std::optional<std::string> error_message;
+	std::string event_type;
+	std::string id;
+	std::optional<int> max_attempts;
+	std::optional<std::string> next_retry_at;
+	std::optional<std::string> response_body_preview;
+	std::optional<int> response_status;
+	std::any status;
+	std::string tried_at;
+};
+
+struct AsyncWebhookDeliverySummary {
+	std::vector<std::string> delivered_event_types;
+	std::optional<int> delivered_events;
+	std::optional<std::string> last_attempt_at;
+	std::optional<std::any> last_attempt_status;
+	std::optional<std::string> last_delivered_at;
+	std::optional<std::string> last_error_message;
+	std::optional<std::string> last_failure_at;
+	std::optional<int> last_response_status;
+	std::optional<std::string> next_retry_at;
+	std::optional<int> pending_retries;
+	std::optional<int> total_attempts;
+};
+
+struct AsyncWebhookPublicState {
+	std::vector<std::map<std::string, std::any>> attempts;
+	std::map<std::string, std::any> delivery;
+	std::vector<std::string> events;
+	std::optional<bool> has_secret;
+	std::optional<std::string> url;
+};
+
 struct AudioContentPart {
 	std::map<std::string, std::any> input_audio;
 	std::any type;
@@ -216,9 +266,58 @@ struct BatchBillingSummary {
 	std::optional<bool> charged;
 	std::optional<int> cost_nanos;
 	std::optional<double> cost_usd;
-	std::string finalized_at;
+	std::string currency;
+	std::optional<int> estimated_nanos;
+	std::optional<std::string> estimated_provider_cost;
+	std::optional<std::string> estimated_user_cost;
+	std::optional<int> estimation_sample_size;
+	std::optional<int> estimation_total_rows;
+	std::optional<bool> estimation_truncated;
+	std::optional<std::string> finalized_at;
 	std::map<std::string, std::any> pricing_breakdown;
 	std::string reason;
+	std::optional<std::string> reservation_id;
+	std::optional<std::string> reservation_status;
+	std::optional<int> reserved_nanos;
+	std::optional<std::string> settled_provider_cost;
+	std::optional<std::string> settled_user_cost;
+	std::any state;
+	std::optional<int> total_nanos;
+};
+
+struct BatchListResponse {
+	std::vector<std::map<std::string, std::any>> data;
+	std::optional<std::string> first_id;
+	std::optional<bool> has_more;
+	std::optional<std::string> last_id;
+	std::string object;
+};
+
+struct BatchModelCapability {
+	std::vector<std::string> input_types;
+	std::string model;
+	std::string name;
+	std::vector<std::string> output_types;
+	std::map<std::string, std::any> pricing;
+	std::vector<std::map<std::string, std::any>> providers;
+	std::string status;
+	std::vector<std::string> supported_parameters;
+	std::map<std::string, std::any> supported_parameters_detail;
+	std::vector<std::string> supported_params;
+	std::map<std::string, std::any> supported_params_detail;
+};
+
+struct BatchModelProviderCapability {
+	std::string id;
+	std::vector<std::string> supported_parameters;
+	std::map<std::string, std::any> supported_parameters_detail;
+	std::vector<std::string> supported_params;
+	std::map<std::string, std::any> supported_params_detail;
+};
+
+struct BatchModelsResponse {
+	std::vector<std::map<std::string, std::any>> data;
+	std::string object;
 };
 
 struct BatchProviderCapability {
@@ -288,6 +387,7 @@ struct BatchRequestRow {
 
 struct BatchResponse {
 	std::map<std::string, std::any> billing;
+	std::optional<std::string> cancel_url;
 	std::optional<int> cancelled_at;
 	std::optional<int> cancelling_at;
 	std::optional<int> completed_at;
@@ -299,20 +399,30 @@ struct BatchResponse {
 	std::optional<int> expired_at;
 	std::optional<int> expires_at;
 	std::optional<int> failed_at;
+	std::optional<std::string> finalized_at;
 	std::optional<int> finalizing_at;
 	std::string id;
 	std::optional<int> in_progress_at;
 	std::string input_file_id;
+	std::optional<std::string> last_webhook_dispatched_at;
+	std::optional<double> last_webhook_progress;
+	std::optional<std::string> last_webhook_progress_at;
+	std::any lifecycle_status;
 	std::map<std::string, std::any> metadata;
+	std::optional<std::string> native_batch_id;
+	std::optional<std::string> next_webhook_retry_at;
 	std::string object;
 	std::string output_file_id;
+	std::string polling_url;
 	std::vector<std::map<std::string, std::any>> pricing_lines;
+	std::optional<int> progress;
 	std::string provider;
 	std::map<std::string, std::any> request_counts;
 	std::string request_id;
 	std::string session_id;
 	std::string status;
 	std::map<std::string, std::any> webhook;
+	std::string websocket_url;
 };
 
 using BenchmarkId = std::any;
@@ -763,7 +873,9 @@ struct Model {
 	std::optional<std::string> retirement_date;
 	std::optional<std::string> status;
 	std::vector<std::string> supported_parameters;
+	std::map<std::string, std::any> supported_parameters_detail;
 	std::vector<std::string> supported_params;
+	std::map<std::string, std::any> supported_params_detail;
 	std::map<std::string, std::any> top_provider;
 	std::optional<std::string> top_provider_id;
 };
@@ -797,8 +909,11 @@ struct ModelProviderAvailability {
 	bool is_active_gateway;
 	std::any model_routing_status;
 	std::vector<std::string> params;
+	std::map<std::string, std::any> params_detail;
 	std::any provider_routing_status;
 	std::any provider_status;
+	std::vector<std::string> supported_parameters;
+	std::map<std::string, std::any> supported_parameters_detail;
 };
 
 struct ModelsPrivacyScopeNotImplementedResponse {
@@ -961,14 +1076,11 @@ struct ProvisioningKeyWithValue {
 	std::any status;
 };
 
-struct RealtimeNotImplementedResponse {
-	std::map<std::string, std::any> error;
-};
-
 struct ReasoningConfig {
 	std::any effort;
 	std::optional<bool> enabled;
 	std::optional<int> max_tokens;
+	std::any mode;
 	std::any summary;
 };
 
@@ -1091,31 +1203,13 @@ struct ResponsesResponse {
 	std::map<std::string, std::any> usage;
 };
 
-struct ResponsesWebSocketCreateEvent {
-	std::any input;
-	std::string model;
-	std::optional<std::string> previous_response_id;
-	std::optional<bool> store;
-	std::any tool_choice;
-	std::vector<std::map<std::string, std::any>> tools;
-	std::any type;
-};
-
-struct ResponsesWebSocketServerEvent {
-	std::map<std::string, std::any> error;
-	std::map<std::string, std::any> response;
-	std::optional<int> status;
-	std::string type;
-};
-
-struct ResponsesWebSocketUpgradeRequiredResponse {
-	std::map<std::string, std::any> error;
-};
-
 struct ServerToolUsage {
 	std::optional<int> datetime_requests;
 	std::optional<int> web_fetch_requests;
 	std::optional<int> web_search_requests;
+};
+
+struct SupportedParameterDetails {
 };
 
 struct TextContentPart {
@@ -1149,6 +1243,24 @@ struct Usage {
 	std::optional<int> prompt_tokens;
 	std::map<std::string, std::any> server_tool_use;
 	std::optional<int> total_tokens;
+};
+
+struct VideoBillingSummary {
+	std::optional<bool> billable;
+	std::string billed_at;
+	std::optional<std::string> charge_reason;
+	std::optional<bool> charged;
+	std::string currency;
+	std::optional<int> estimated_nanos;
+	std::optional<std::string> estimated_provider_cost;
+	std::optional<std::string> estimated_user_cost;
+	std::optional<std::string> reservation_id;
+	std::optional<std::string> reservation_status;
+	std::optional<int> reserved_nanos;
+	std::optional<std::string> settled_provider_cost;
+	std::optional<std::string> settled_user_cost;
+	std::any state;
+	std::optional<int> total_nanos;
 };
 
 struct VideoContentPart {
@@ -1188,6 +1300,7 @@ struct VideoGenerationResponse {
 	std::optional<std::map<std::string, std::any>> asset;
 	std::optional<bool> audio;
 	std::map<std::string, std::any> billing;
+	std::optional<std::string> cancel_url;
 	std::optional<std::any> completed_at;
 	std::string content_url;
 	std::any created_at;
@@ -1196,7 +1309,13 @@ struct VideoGenerationResponse {
 	std::optional<int> expires_at;
 	std::optional<std::string> generation_id;
 	std::string id;
+	std::optional<std::string> last_webhook_dispatched_at;
+	std::optional<double> last_webhook_progress;
+	std::optional<std::string> last_webhook_progress_at;
+	std::any lifecycle_status;
 	std::string model;
+	std::optional<std::string> native_video_id;
+	std::optional<std::string> next_webhook_retry_at;
 	std::string object;
 	std::any output_access;
 	std::vector<std::map<std::string, std::any>> outputs;
@@ -1212,6 +1331,8 @@ struct VideoGenerationResponse {
 	std::optional<std::any> started_at;
 	std::any status;
 	std::map<std::string, std::any> usage;
+	std::map<std::string, std::any> webhook;
+	std::string websocket_url;
 };
 
 struct VideoInputReference {
@@ -1219,6 +1340,41 @@ struct VideoInputReference {
 	std::string reference_type;
 	std::any role;
 	std::any type;
+};
+
+struct VideoListResponse {
+	std::vector<std::map<std::string, std::any>> data;
+	std::optional<std::string> first_id;
+	std::optional<bool> has_more;
+	std::optional<std::string> last_id;
+	std::string object;
+};
+
+struct VideoModelCapability {
+	std::vector<std::string> input_types;
+	std::string model;
+	std::string name;
+	std::vector<std::string> output_types;
+	std::map<std::string, std::any> pricing;
+	std::vector<std::map<std::string, std::any>> providers;
+	std::string status;
+	std::vector<std::string> supported_parameters;
+	std::map<std::string, std::any> supported_parameters_detail;
+	std::vector<std::string> supported_params;
+	std::map<std::string, std::any> supported_params_detail;
+};
+
+struct VideoModelProviderCapability {
+	std::string id;
+	std::vector<std::string> supported_parameters;
+	std::map<std::string, std::any> supported_parameters_detail;
+	std::vector<std::string> supported_params;
+	std::map<std::string, std::any> supported_params_detail;
+};
+
+struct VideoModelsResponse {
+	std::vector<std::map<std::string, std::any>> data;
+	std::string object;
 };
 
 struct VideoOutput {
@@ -1232,48 +1388,6 @@ struct VideoOutput {
 
 struct VideoOutputConfig {
 	std::any access;
-};
-
-struct WebhookEndpoint {
-	std::optional<std::string> createdAt;
-	std::optional<std::string> createdBy;
-	std::optional<std::string> deletedAt;
-	std::vector<std::string> events;
-	std::optional<bool> hasSecret;
-	std::string id;
-	std::string name;
-	std::any status;
-	std::optional<std::string> updatedAt;
-	std::string url;
-	std::string workspaceId;
-};
-
-struct WebhookEndpointCreateRequest {
-	std::vector<std::string> events;
-	std::string name;
-	std::string url;
-};
-
-struct WebhookEndpointCreateResponse {
-	std::optional<std::string> createdAt;
-	std::optional<std::string> createdBy;
-	std::optional<std::string> deletedAt;
-	std::vector<std::string> events;
-	std::optional<bool> hasSecret;
-	std::string id;
-	std::string name;
-	std::string signing_secret;
-	std::any status;
-	std::optional<std::string> updatedAt;
-	std::string url;
-	std::string workspaceId;
-};
-
-struct WebhookEndpointUpdateRequest {
-	std::vector<std::string> events;
-	std::string name;
-	std::any status;
-	std::string url;
 };
 
 struct Workspace {
@@ -1325,4 +1439,4 @@ struct WorkspaceUpdateRequest {
 	std::string slug;
 };
 
-} // namespace ai_stats::gen
+} // namespace phaseo::gen

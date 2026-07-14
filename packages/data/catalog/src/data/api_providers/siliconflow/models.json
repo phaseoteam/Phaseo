@@ -1071,6 +1071,27 @@
     ]
   },
   {
+    "api_model_id": "tencent/hy3:free",
+    "provider_api_model_id": "siliconflow:tencent/hy3:free",
+    "provider_model_slug": "tencent/Hy3",
+    "internal_model_id": "tencent/hy3",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
+    "effective_from": "2026-07-06T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "tencent/hy3-preview",
     "provider_api_model_id": "siliconflow:tencent/hy3-preview",
     "provider_model_slug": "tencent/Hy3-preview",
@@ -1229,6 +1250,48 @@
     "context_length": 205000,
     "max_output_tokens": 131000,
     "effective_from": "2026-04-28T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "moonshotai/kimi-k2.7-code",
+    "provider_api_model_id": "siliconflow:moonshotai/kimi-k2.7-code",
+    "provider_model_slug": "moonshotai/Kimi-K2.7-Code",
+    "internal_model_id": "moonshotai/kimi-k2.7-code",
+    "is_active_gateway": false,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
+    "effective_from": "2026-06-12T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "z-ai/glm-5.2",
+    "provider_api_model_id": "siliconflow:z-ai/glm-5.2",
+    "provider_model_slug": "zai-org/GLM-5.2",
+    "internal_model_id": "z-ai/glm-5.2",
+    "is_active_gateway": false,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": 262144,
+    "effective_from": "2026-06-16T00:00:00",
     "effective_to": null,
     "capabilities": [
       {

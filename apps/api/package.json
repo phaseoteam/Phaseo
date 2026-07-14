@@ -1,5 +1,5 @@
 {
-	"name": "@ai-stats/gateway-api",
+	"name": "@phaseo/gateway-api",
 	"version": "1.1.0",
 	"private": true,
 	"type": "module",
@@ -49,9 +49,9 @@
 		"@supabase/supabase-js": "^2.106.2",
 		"@upstash/redis": "^1.38.0",
 		"@visulima/tabular": "^3.1.0",
-		"hono": "^4.12.18",
-		"ink": "^7.0.0",
-		"react": "^19.2.5",
+		"hono": "^4.12.27",
+		"ink": "^7.1.0",
+		"react": "^19.2.7",
 		"stripe": "^22.1.0",
 		"zod": "^4.4.3"
 	},

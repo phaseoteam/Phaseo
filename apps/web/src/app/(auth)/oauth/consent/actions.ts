@@ -128,7 +128,7 @@ export async function approveAuthorizationAction(
 			return { error: "The active team must also be selected for authorization" };
 		}
 
-		const isBuiltInFirstPartyClient = resolvedClientId === "aistats_cli";
+		const isBuiltInFirstPartyClient = resolvedClientId === "phaseo_cli";
 
 		// Verify user is a member of every selected team
 		const { data: memberships, error: membershipError } = await supabase

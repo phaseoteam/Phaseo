@@ -34,10 +34,10 @@ export async function generateMetadata({
 		return buildMetadata({
 			title: `${isoParam || "Unknown"} - AI Country View`,
 			description:
-				"This country view is still filling in. As AI Stats expands coverage, this page will include local organisations, model catalogues, provider footprints, and release activity trends.",
+				"This country view is still filling in. As Phaseo expands coverage, this page will include local organisations, model catalogues, provider footprints, and release activity trends.",
 			path,
 			keywords: [
-				"AI Stats",
+				"Phaseo",
 				"countries",
 				"AI country view",
 				"AI organisations",
@@ -49,11 +49,11 @@ export async function generateMetadata({
 	const countryName = country.countryName;
 
 	return buildMetadata({
-		title: `${countryName} - AI Organisations & Models`,
-		description: `Explore AI organisations and models tracked in ${countryName} on AI Stats. See which providers and model families originate from this country and how its AI ecosystem is evolving.`,
+		title: `${countryName} AI Models`,
+		description: `Explore AI organisations and models tracked in ${countryName} on Phaseo. See which providers and model families originate from this country and how its AI ecosystem is evolving.`,
 		path,
 		keywords: [
-			"AI Stats",
+			"Phaseo",
 			"countries",
 			countryName,
 			`AI in ${countryName}`,

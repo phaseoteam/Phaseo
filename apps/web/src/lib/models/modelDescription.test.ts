@@ -61,7 +61,7 @@ describe("modelDescription", () => {
 			modelDescription:
 				"Alpha 1 is an AI model from Acme with strong text and image reasoning for product, research, and coding workflows.",
 			suffix:
-				"Track latency, uptime, provider coverage, and request quality signals on AI Stats.",
+				"Track latency, uptime, provider coverage, and request quality signals on Phaseo.",
 			fallback: "Fallback description.",
 			maxLength: 140,
 		});

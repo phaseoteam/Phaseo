@@ -3,7 +3,7 @@ require_relative "../lib/index"
 
 class GenerationTest < Minitest::Test
   def test_get_generation_returns_payload
-    client = AIStatsSdk::AIStats.new(
+    client = PhaseoSdk::Phaseo.new(
       api_key: "test",
       enable_deprecation_warnings: false
     )

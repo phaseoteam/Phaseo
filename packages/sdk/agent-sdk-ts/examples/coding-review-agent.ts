@@ -2,7 +2,7 @@ import {
 	createAgent,
 	createGatewayAgentClient,
 	defineTool,
-} from "@ai-stats/agent-sdk";
+} from "@phaseo/agent-sdk";
 
 type CodeReviewPlan = {
 	risk: "low" | "medium" | "high";
@@ -37,7 +37,7 @@ const lookupFailingChecks = defineTool({
 
 const codingReviewAgent = createAgent<string, CodeReviewPlan>({
 	id: "coding-review-agent",
-	model: "ai-stats/free",
+	model: "phaseo/free",
 	instructions:
 		"Use the available tools to inspect the coding task, then return a strict JSON review plan with risk, summary, recommendedActions, and needsApproval.",
 	tools: [lookupDiffSummary, lookupFailingChecks],
@@ -56,7 +56,7 @@ const codingReviewAgent = createAgent<string, CodeReviewPlan>({
 async function main() {
 	const client = createGatewayAgentClient({
 		clientOptions: {
-			apiKey: process.env.AI_STATS_API_KEY!,
+			apiKey: process.env.PHASEO_API_KEY!,
 		},
 		responseFormat: {
 			type: "json_schema",

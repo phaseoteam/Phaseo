@@ -19,7 +19,7 @@ jobs:
             exit 1
           fi
 
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
           fetch-depth: 0
 
@@ -41,7 +41,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          split_repo="${PHP_SDK_SPLIT_REPO:-AI-Stats/ai-stats-php-sdk}"
+          split_repo="${PHP_SDK_SPLIT_REPO:-phaseoteam/phaseo-php-sdk}"
           split_remote_url="https://x-access-token:${PHP_SDK_SPLIT_REPO_TOKEN}@github.com/${split_repo}.git"
 
           git remote add split "$split_remote_url"

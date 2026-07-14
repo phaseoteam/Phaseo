@@ -1,6 +1,6 @@
 require_relative "client"
 
-module AiStats
+module Phaseo
   module Gen
     module Operations
       def self.calculatePricing(client, path: nil, query: nil, headers: nil, body: nil)
@@ -147,12 +147,6 @@ module AiStats
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
-      def self.createWebhookEndpoint(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/webhook-endpoints"
-        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
       def self.createWorkspace(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/workspaces"
@@ -174,12 +168,6 @@ module AiStats
       def self.deleteVideoAlias(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/video/generations/#{path["video_id"]}"
-        client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
-      def self.deleteWebhookEndpoint(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/webhook-endpoints/#{path["endpoint_id"]}"
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -285,12 +273,6 @@ module AiStats
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
-      def self.getWebhookEndpoint(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/webhook-endpoints/#{path["endpoint_id"]}"
-        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
       def self.getWorkspace(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/workspaces/#{path["id"]}"
@@ -312,6 +294,30 @@ module AiStats
       def self.listBatchCapabilitiesAlias(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/batch/capabilities"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.listBatches(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/batches"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.listBatchesAlias(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/batch"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.listBatchModels(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/batches/models"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.listBatchModelsAlias(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/batch/models"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -347,7 +353,7 @@ module AiStats
 
       def self.listModels(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
-        resolved_path = "/gateway/models"
+        resolved_path = "/models"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -371,7 +377,7 @@ module AiStats
 
       def self.listTeamModels(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
-        resolved_path = "/gateway/models/me"
+        resolved_path = "/models/me"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -399,21 +405,15 @@ module AiStats
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
-      def self.listWebhookEndpoints(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/webhook-endpoints"
-        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
       def self.listWorkspaces(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/workspaces"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
-      def self.openResponsesWebSocket(client, path: nil, query: nil, headers: nil, body: nil)
+      def self.openAsyncJobWebSocket(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
-        resolved_path = "/responses/ws"
+        resolved_path = "/async/#{path["kind"]}/#{path["id"]}/ws"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -465,21 +465,9 @@ module AiStats
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
-      def self.rotateWebhookEndpointSecret(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/webhook-endpoints/#{path["endpoint_id"]}/rotate-secret"
-        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
       def self.updateApiKey(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/keys/#{path["id"]}"
-        client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
-      def self.updateWebhookEndpoint(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/webhook-endpoints/#{path["endpoint_id"]}"
         client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
       end
 

@@ -531,6 +531,34 @@ describe("validateCapabilities", () => {
 		}
 	});
 
+	it("tracks responses reasoning.effort for Meta reasoning support", () => {
+		const result = validateCapabilities({
+			endpoint: "responses",
+			rawBody: {
+				model: "meta/muse-spark-1.1",
+				input: "hello",
+				reasoning: { effort: "xhigh" },
+			},
+			body: {
+				model: "meta/muse-spark-1.1",
+				input: "hello",
+				reasoning: { effort: "xhigh" },
+			},
+			requestId: "req_meta_reasoning_effort",
+			workspaceId: "team_test",
+			providers: [
+				provider("meta", { "reasoning.effort": {} }, 1_000_000),
+			],
+			model: "meta/muse-spark-1.1",
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.requestedParams).toEqual(["reasoning.effort"]);
+			expect(result.providers.map((p: any) => p.providerId)).toEqual(["meta"]);
+		}
+	});
+
 	it("keeps reasoning requests when provider metadata is partial", async () => {
 		const pass = validateCapabilities({
 			endpoint: "responses",
@@ -664,6 +692,149 @@ describe("validateCapabilities", () => {
 				provider("openai", { max_tokens: {} }, 4096),
 			],
 			model: "openai/gpt-4.1-mini",
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.providers.map((p: any) => p.providerId)).toEqual(["openai"]);
+		}
+	});
+
+	it("hard-filters providers when routing.require_parameters is enabled", () => {
+		const result = validateCapabilities({
+			endpoint: "chat.completions",
+			rawBody: {
+				model: "openai/gpt-4o-mini",
+				messages: [{ role: "user", content: "hello" }],
+				temperature: 0.2,
+				max_tokens: 32,
+				routing: {
+					require_parameters: true,
+				},
+			},
+			body: {
+				model: "openai/gpt-4o-mini",
+				messages: [{ role: "user", content: "hello" }],
+				temperature: 0.2,
+				max_tokens: 32,
+				routing: {
+					require_parameters: true,
+				},
+			},
+			requestId: "req_require_params",
+			workspaceId: "team_test",
+			providers: [
+				provider("openai", { temperature: {}, max_tokens: {} }, 4096),
+				provider("anthropic", { max_tokens: {} }, 4096),
+			],
+			model: "openai/gpt-4o-mini",
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.providers.map((p: any) => p.providerId)).toEqual(["openai"]);
+		}
+	});
+
+	it("accepts the first-class routing object as a gateway field", () => {
+		const result = validateCapabilities({
+			endpoint: "responses",
+			rawBody: {
+				model: "openai/gpt-4o-mini",
+				input: "hello",
+				routing: {
+					mode: "latency",
+				},
+			},
+			body: {
+				model: "openai/gpt-4o-mini",
+				input: "hello",
+				routing: {
+					mode: "latency",
+				},
+			},
+			requestId: "req_gateway_routing_field",
+			workspaceId: "team_test",
+			providers: [provider("openai", { tools: {} }, 4096)],
+			model: "openai/gpt-4o-mini",
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.requestedParams).toEqual([]);
+		}
+	});
+
+	it("filters providers that do not support response_format", () => {
+		const result = validateCapabilities({
+			endpoint: "chat.completions",
+			rawBody: {
+				model: "openai/gpt-4o-mini",
+				messages: [{ role: "user", content: "hello" }],
+				response_format: { type: "json_object" },
+			},
+			body: {
+				model: "openai/gpt-4o-mini",
+				messages: [{ role: "user", content: "hello" }],
+				response_format: { type: "json_object" },
+			},
+			requestId: "req_response_format_filter",
+			workspaceId: "team_test",
+			providers: [
+				provider("openai", { response_format: {} }, 4096),
+				provider("anthropic", { tools: {} }, 4096),
+			],
+			model: "openai/gpt-4o-mini",
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.providers.map((p: any) => p.providerId)).toEqual(["openai"]);
+		}
+	});
+
+	it("filters providers that do not support structured outputs", () => {
+		const result = validateCapabilities({
+			endpoint: "responses",
+			rawBody: {
+				model: "openai/gpt-4o-mini",
+				input: "hello",
+				response_format: {
+					type: "json_schema",
+					json_schema: {
+						name: "payload",
+						schema: {
+							type: "object",
+							properties: {
+								ok: { type: "boolean" },
+							},
+						},
+					},
+				},
+			},
+			body: {
+				model: "openai/gpt-4o-mini",
+				input: "hello",
+				response_format: {
+					type: "json_schema",
+					json_schema: {
+						name: "payload",
+						schema: {
+							type: "object",
+							properties: {
+								ok: { type: "boolean" },
+							},
+						},
+					},
+				},
+			},
+			requestId: "req_structured_outputs_filter",
+			workspaceId: "team_test",
+			providers: [
+				provider("openai", { structured_outputs: {} }, 4096),
+				provider("anthropic", { response_format: {} }, 4096),
+			],
+			model: "openai/gpt-4o-mini",
 		});
 
 		expect(result.ok).toBe(true);

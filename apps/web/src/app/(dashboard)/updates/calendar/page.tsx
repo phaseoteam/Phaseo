@@ -6,7 +6,7 @@ import { buildMetadata } from "@/lib/seo";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = buildMetadata({
-	title: "AI Model Release Calendar - Announcements & Lifecycle Changes",
+	title: "AI Release Calendar",
 	description:
 		"Visualise every model announcement, release and lifecycle change in one calendar. Explore what happened on any day and see how the AI model ecosystem is evolving over time.",
 	path: "/updates/calendar",
@@ -16,7 +16,7 @@ export const metadata: Metadata = buildMetadata({
 		"LLM releases",
 		"AI changelog",
 		"model lifecycle",
-		"AI Stats",
+		"Phaseo",
 	],
 });
 

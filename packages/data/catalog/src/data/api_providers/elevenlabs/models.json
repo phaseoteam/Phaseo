@@ -13,5 +13,203 @@
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
+  },
+  {
+    "api_model_id": "eleven-labs/eleven-english-sts-v2",
+    "provider_api_model_id": "elevenlabs:eleven-labs/eleven-english-sts-v2",
+    "provider_model_slug": "eleven_english_sts_v2",
+    "internal_model_id": "eleven-labs/eleven-english-sts-v2",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "audio",
+    "output_modalities": "audio",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-18T00:00:00",
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "eleven-labs/eleven-flash-v2",
+    "provider_api_model_id": "elevenlabs:eleven-labs/eleven-flash-v2",
+    "provider_model_slug": "eleven_flash_v2",
+    "internal_model_id": "eleven-labs/eleven-flash-v2",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "audio_tts",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-18T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.speech",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "eleven-labs/eleven-flash-v2.5",
+    "provider_api_model_id": "elevenlabs:eleven-labs/eleven-flash-v2.5",
+    "provider_model_slug": "eleven_flash_v2_5",
+    "internal_model_id": "eleven-labs/eleven-flash-v2.5",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "audio_tts",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-18T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.speech",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "eleven-labs/eleven-monolingual-v1",
+    "provider_api_model_id": "elevenlabs:eleven-labs/eleven-monolingual-v1",
+    "provider_model_slug": "eleven_monolingual_v1",
+    "internal_model_id": "eleven-labs/eleven-monolingual-v1",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "audio_tts",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-18T00:00:00",
+    "effective_to": "2026-07-09T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "audio.speech",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "eleven-labs/eleven-multilingual-sts-v2",
+    "provider_api_model_id": "elevenlabs:eleven-labs/eleven-multilingual-sts-v2",
+    "provider_model_slug": "eleven_multilingual_sts_v2",
+    "internal_model_id": "eleven-labs/eleven-multilingual-sts-v2",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "audio",
+    "output_modalities": "audio",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-18T00:00:00",
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "eleven-labs/eleven-multilingual-v1",
+    "provider_api_model_id": "elevenlabs:eleven-labs/eleven-multilingual-v1",
+    "provider_model_slug": "eleven_multilingual_v1",
+    "internal_model_id": "eleven-labs/eleven-multilingual-v1",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "audio_tts",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-18T00:00:00",
+    "effective_to": "2026-07-09T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "audio.speech",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "eleven-labs/eleven-multilingual-v2",
+    "provider_api_model_id": "elevenlabs:eleven-labs/eleven-multilingual-v2",
+    "provider_model_slug": "eleven_multilingual_v2",
+    "internal_model_id": "eleven-labs/eleven-multilingual-v2",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "audio_tts",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-18T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.speech",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "eleven-labs/eleven-turbo-v2",
+    "provider_api_model_id": "elevenlabs:eleven-labs/eleven-turbo-v2",
+    "provider_model_slug": "eleven_turbo_v2",
+    "internal_model_id": "eleven-labs/eleven-turbo-v2",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "audio_tts",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-18T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.speech",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "eleven-labs/eleven-turbo-v2.5",
+    "provider_api_model_id": "elevenlabs:eleven-labs/eleven-turbo-v2.5",
+    "provider_model_slug": "eleven_turbo_v2_5",
+    "internal_model_id": "eleven-labs/eleven-turbo-v2.5",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "audio_tts",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-18T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.speech",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "eleven-labs/eleven-v3",
+    "provider_api_model_id": "elevenlabs:eleven-labs/eleven-v3",
+    "provider_model_slug": "eleven_v3",
+    "internal_model_id": "eleven-labs/eleven-v3",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "audio_tts",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-18T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.speech",
+        "status": "active",
+        "params": []
+      }
+    ]
   }
 ]

@@ -1,5 +1,5 @@
 {
-	"name": "@ai-stats/oapi-cli",
+	"name": "@phaseo/oapi-cli",
 	"version": "0.0.0",
 	"private": true,
 	"type": "module",
@@ -20,8 +20,8 @@
 		"test": "node --test --loader tsx tests/*.test.ts"
 	},
 	"dependencies": {
-		"@ai-stats/oapi-backend-ts": "workspace:*",
-		"@ai-stats/oapi-core": "workspace:*"
+		"@phaseo/oapi-backend-ts": "workspace:*",
+		"@phaseo/oapi-core": "workspace:*"
 	},
 	"devDependencies": {
 		"@types/node": "^25.0.2",

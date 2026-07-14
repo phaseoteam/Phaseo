@@ -53,6 +53,10 @@ describe("OAuth service helpers", () => {
 
 	it("allows first-party CLI loopback redirects for PKCE login", () => {
 		const cliClient = {
+			id: "phaseo_cli",
+			redirect_uris: [],
+		} as any;
+		const legacyCliClient = {
 			id: "aistats_cli",
 			redirect_uris: [],
 		} as any;
@@ -63,6 +67,7 @@ describe("OAuth service helpers", () => {
 
 		expect(assertRedirectAllowed(cliClient, "http://127.0.0.1:8976/callback")).toBe(true);
 		expect(assertRedirectAllowed(cliClient, "http://localhost:8976/callback")).toBe(true);
+		expect(assertRedirectAllowed(legacyCliClient, "http://127.0.0.1:8976/callback")).toBe(true);
 		expect(assertRedirectAllowed(cliClient, "https://localhost:8976/callback")).toBe(false);
 		expect(assertRedirectAllowed(thirdPartyClient, "http://127.0.0.1:8976/callback")).toBe(false);
 	});

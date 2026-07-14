@@ -81,13 +81,13 @@ function createPre() {
 			rawBody: {
 				model: "openai/gpt-5.4-nano",
 				messages: [{ role: "user", content: "What time is it?" }],
-				tools: [{ type: "gateway:datetime", parameters: { timezone: "UTC" } }],
+				tools: [{ type: "gateway:datetime", parameters: { timezones: ["UTC"] } }],
 				tool_choice: "gateway:datetime",
 			},
 			body: {
 				model: "openai/gpt-5.4-nano",
 				messages: [{ role: "user", content: "What time is it?" }],
-				tools: [{ type: "gateway:datetime", parameters: { timezone: "UTC" } }],
+				tools: [{ type: "gateway:datetime", parameters: { timezones: ["UTC"] } }],
 				tool_choice: "gateway:datetime",
 			},
 			model: "openai/gpt-5.4-nano",
@@ -158,7 +158,7 @@ describe("runTextGeneratePipeline server tools", () => {
 			body,
 			config: {
 				enabled: true,
-				datetimeDefaultTimezone: "UTC",
+				datetimeDefaultTimezones: ["UTC"],
 				webSearchEnabled: false,
 				webSearchMaxResults: 5,
 				webSearchIncludeText: false,
@@ -203,7 +203,7 @@ describe("runTextGeneratePipeline server tools", () => {
 								{
 									id: "call_datetime",
 									name: "gateway_datetime",
-									arguments: "{\"timezone\":\"UTC\"}",
+									arguments: "{\"timezones\":[\"UTC\"]}",
 								},
 							],
 						},
@@ -236,14 +236,14 @@ describe("runTextGeneratePipeline server tools", () => {
 						{
 							id: "call_datetime",
 							name: "gateway_datetime",
-							arguments: "{\"timezone\":\"UTC\"}",
+							arguments: "{\"timezones\":[\"UTC\"]}",
 						},
 					],
 				},
 				toolResults: [
 					{
 						toolCallId: "call_datetime",
-						content: "{\"datetime\":\"2026-05-09T12:00:00.000+00:00\",\"timezone\":\"UTC\"}",
+						content: "{\"timezones\":[{\"timezone\":\"UTC\",\"datetime\":\"2026-05-09T12:00:00.000+00:00\"}]}",
 					},
 				],
 				usage: {
@@ -422,7 +422,7 @@ describe("runTextGeneratePipeline server tools", () => {
 								{
 									id: "call_datetime",
 									name: "gateway_datetime",
-									arguments: "{\"timezone\":\"UTC\"}",
+									arguments: "{\"timezones\":[\"UTC\"]}",
 								},
 							],
 						},
@@ -444,14 +444,14 @@ describe("runTextGeneratePipeline server tools", () => {
 						{
 							id: "call_datetime",
 							name: "gateway_datetime",
-							arguments: "{\"timezone\":\"UTC\"}",
+							arguments: "{\"timezones\":[\"UTC\"]}",
 						},
 					],
 				},
 				toolResults: [
 					{
 						toolCallId: "call_datetime",
-						content: "{\"datetime\":\"2026-05-09T12:00:00.000+00:00\",\"timezone\":\"UTC\"}",
+						content: "{\"timezones\":[{\"timezone\":\"UTC\",\"datetime\":\"2026-05-09T12:00:00.000+00:00\"}]}",
 					},
 				],
 				usage: {
@@ -547,6 +547,12 @@ describe("runTextGeneratePipeline server tools", () => {
 			requestId: "req_server_tools",
 			model: "openai/gpt-5.4-nano-2026-03-17",
 			created: 1778073808,
+			serverToolTrace: [{
+				id: "call_datetime",
+				name: "gateway_datetime",
+				arguments: "{\"timezones\":[\"UTC\"]}",
+				output: "{\"timezones\":[{\"timezone\":\"UTC\",\"datetime\":\"2026-05-09T12:00:00.000+00:00\"}]}",
+			}],
 		});
 
 		const finalizeArgs = finalizeRequestMock.mock.calls[0]?.[0];
@@ -590,7 +596,7 @@ describe("runTextGeneratePipeline server tools", () => {
 							toolCalls: [
 								{
 									id: "call_web_search",
-									name: "ai_stats_web_search",
+									name: "phaseo_web_search",
 									arguments:
 										'{"query":"latest gateway reliability patterns","max_results":2,"include_text":true}',
 								},
@@ -624,7 +630,7 @@ describe("runTextGeneratePipeline server tools", () => {
 					toolCalls: [
 						{
 							id: "call_web_search",
-							name: "ai_stats_web_search",
+							name: "phaseo_web_search",
 							arguments:
 								'{"query":"latest gateway reliability patterns","max_results":2,"include_text":true}',
 						},
@@ -754,18 +760,18 @@ describe("runTextGeneratePipeline server tools", () => {
 		const args = createArgs();
 		args.pre.ctx.body.tools = [
 			{
-				type: "ai-stats:web_search",
+				type: "phaseo:web_search",
 				parameters: { max_results: 2, include_text: true },
 			},
 		];
 		args.pre.ctx.rawBody.tools = [
 			{
-				type: "ai-stats:web_search",
+				type: "phaseo:web_search",
 				parameters: { max_results: 2, include_text: true },
 			},
 		];
-		args.pre.ctx.body.tool_choice = "ai-stats:web_search";
-		args.pre.ctx.rawBody.tool_choice = "ai-stats:web_search";
+		args.pre.ctx.body.tool_choice = "phaseo:web_search";
+		args.pre.ctx.rawBody.tool_choice = "phaseo:web_search";
 
 		const response = await runTextGeneratePipeline(args);
 
@@ -826,7 +832,7 @@ describe("runTextGeneratePipeline server tools", () => {
 		expect(followUpRequest.messages).toHaveLength(3);
 		expect(followUpRequest.messages[1]).toMatchObject({
 			role: "assistant",
-			toolCalls: [{ id: "call_web_search", name: "ai_stats_web_search" }],
+			toolCalls: [{ id: "call_web_search", name: "phaseo_web_search" }],
 		});
 		expect(followUpRequest.messages[2]).toMatchObject({
 			role: "tool",
@@ -855,7 +861,7 @@ describe("runTextGeneratePipeline server tools", () => {
 							toolCalls: [
 								{
 									id: "call_web_fetch",
-									name: "ai_stats_web_fetch",
+									name: "phaseo_web_fetch",
 									arguments:
 										'{"url":"https://example.com/spec","max_chars":4000}',
 								},
@@ -878,7 +884,7 @@ describe("runTextGeneratePipeline server tools", () => {
 					toolCalls: [
 						{
 							id: "call_web_fetch",
-							name: "ai_stats_web_fetch",
+							name: "phaseo_web_fetch",
 							arguments:
 								'{"url":"https://example.com/spec","max_chars":4000}',
 						},
@@ -993,18 +999,18 @@ describe("runTextGeneratePipeline server tools", () => {
 		const args = createArgs({ stream: true });
 		args.pre.ctx.body.tools = [
 			{
-				type: "ai-stats:web_fetch",
+				type: "phaseo:web_fetch",
 				parameters: { max_chars: 4000 },
 			},
 		];
 		args.pre.ctx.rawBody.tools = [
 			{
-				type: "ai-stats:web_fetch",
+				type: "phaseo:web_fetch",
 				parameters: { max_chars: 4000 },
 			},
 		];
-		args.pre.ctx.body.tool_choice = "ai-stats:web_fetch";
-		args.pre.ctx.rawBody.tool_choice = "ai-stats:web_fetch";
+		args.pre.ctx.body.tool_choice = "phaseo:web_fetch";
+		args.pre.ctx.rawBody.tool_choice = "phaseo:web_fetch";
 
 		const response = await runTextGeneratePipeline(args);
 
@@ -1027,6 +1033,12 @@ describe("runTextGeneratePipeline server tools", () => {
 			requestId: "req_server_tools",
 			model: "openai/gpt-5.4-nano-2026-03-17",
 			created: 1778073808,
+			serverToolTrace: [{
+				id: "call_web_fetch",
+				name: "ai_stats_web_fetch",
+				arguments: "{\"url\":\"https://example.com/spec\",\"max_chars\":4000}",
+				output: "{\"provider\":\"fetch\",\"url\":\"https://example.com/spec\",\"final_url\":\"https://example.com/spec\",\"status\":200,\"content_type\":\"text/html\",\"title\":\"Gateway Spec\",\"text\":\"Grounded specification text\",\"truncated\":false,\"returned_chars\":27}",
+			}],
 		});
 
 		expect(attachServerToolUsageMock).toHaveBeenCalledWith(

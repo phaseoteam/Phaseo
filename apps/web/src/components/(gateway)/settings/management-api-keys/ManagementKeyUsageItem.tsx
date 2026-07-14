@@ -27,17 +27,16 @@ export default function ManagementKeyUsageItem({ k }: any) {
 
 	return (
 		<>
-			<DropdownMenuItem asChild>
-				<button
+			<DropdownMenuItem render={<button
 					className="w-full text-left flex items-center gap-2"
 					onClick={(e) => {
 						e.preventDefault();
 						setTimeout(() => setOpen(true), 0);
-					}}
-				>
+					}} />}>
+
 					<BarChart3 className="mr-2" />
 					Usage
-				</button>
+
 			</DropdownMenuItem>
 			<Dialog open={open} onOpenChange={setOpen}>
 				<DialogContent>

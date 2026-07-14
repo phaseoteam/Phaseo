@@ -15,7 +15,7 @@
   "prompt_training_notes": "CrofAI publicly states that prompts and responses are not stored and are not used for training AI models.",
   "prompt_training_source_url": "https://crof.ai/privacy",
   "user_identifier_policy": "sent",
-  "user_identifier_notes": "AI Stats may send this provider a provider-facing pseudonymous user identifier when the upstream API supports it.",
+  "user_identifier_notes": "Phaseo may send this provider a provider-facing pseudonymous user identifier when the upstream API supports it.",
   "privacy_policy_url": "https://crof.ai/privacy",
   "terms_of_service_url": "https://crof.ai/tos",
   "regional_pricing_mode": "same_as_global",

@@ -22,7 +22,7 @@ export interface SessionData {
 // Session configuration
 const sessionOptions = {
   password: process.env.SESSION_SECRET!,
-  cookieName: 'aistats_session',
+  cookieName: 'phaseo_session',
   cookieOptions: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,

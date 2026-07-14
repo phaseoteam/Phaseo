@@ -1,0 +1,39 @@
+{
+  "model_id": "spacex-ai/grok-build-0.1",
+  "organisation_id": "spacex-ai",
+  "name": "Grok Build 0.1",
+  "status": "Available",
+  "previous_model_id": "spacex-ai/grok-code-fast-1",
+  "description": "Grok Build 0.1 is SpaceXAI's fast coding model for agentic software engineering workflows. It supports text and image inputs with text outputs, tool use, structured outputs, and reasoning.",
+  "announced_date": "2026-05-15T00:00:00",
+  "release_date": "2026-05-15T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "spacex-ai/grok-build-0.1",
+  "links": [
+    {
+      "title": "API Reference",
+      "kind": "api_reference",
+      "url": "https://docs.x.ai/developers/models/grok-build-0.1"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 256000
+    }
+  ],
+  "benchmarks": [
+    {
+      "benchmark_id": "deepswe",
+      "score": 13,
+      "is_self_reported": false,
+      "other_info": "mini-swe-agent; 13% +/-2%; avg cost $6.60; avg time 44m; out tok 52k",
+      "source_link": "https://deepswe.datacurve.ai/",
+      "rank": 13
+    }
+  ]
+}

@@ -18,10 +18,15 @@ import {
 	fetchFrontendModelLeaderboardMetaByIds,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { buildMetadata } from "@/lib/seo";
+import { permanentRedirect } from "next/navigation";
 
 type PageProps = {
 	params: Promise<{ appId: string }>;
 };
+
+function getAppPath(slug: string): string {
+	return `/apps/${encodeURIComponent(slug)}`;
+}
 
 function toNumber(value: unknown): number {
 	const parsed = Number(value);
@@ -79,13 +84,13 @@ function getModelLookupVariants(modelId: string): string[] {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
 	const { appId } = await params;
 	const app = await fetchFrontendAppDetails(appId);
-	const path = `/apps/${encodeURIComponent(appId)}`;
+	const path = app ? getAppPath(app.slug) : `/apps/${encodeURIComponent(appId)}`;
 
 	if (!app) {
 		return buildMetadata({
 			title: "AI App Usage Overview",
 			description:
-				"Usage analytics for applications powered by AI Stats Gateway, including request volume, token usage, and top models over the last four weeks.",
+				"Usage analytics for applications powered by Phaseo Gateway, including request volume, token usage, and top models over the last four weeks.",
 			path,
 		});
 	}
@@ -102,7 +107,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 			app.title,
 			`${app.title} AI app`,
 			"AI app analytics",
-			"AI Stats app profile",
+			"Phaseo app profile",
 		],
 	});
 }
@@ -126,7 +131,11 @@ export default async function Page({ params }: PageProps) {
 		);
 	}
 
-	const rows4w = await fetchFrontendAppUsage(appId, "4w");
+	if (app.slug !== appId) {
+		permanentRedirect(getAppPath(app.slug));
+	}
+
+	const rows4w = await fetchFrontendAppUsage(app.id, "4w");
 	const successful4w = rows4w.filter(isSuccessful);
 
 	const rawModelIds = Array.from(
@@ -155,7 +164,7 @@ export default async function Page({ params }: PageProps) {
 
 	if (apiLookupIds.length > 0) {
 		const providerModels = await fetchFrontendAppProviderModelMappings(
-			appId,
+			app.id,
 			apiLookupIds,
 			normalizedProviderIds,
 		);

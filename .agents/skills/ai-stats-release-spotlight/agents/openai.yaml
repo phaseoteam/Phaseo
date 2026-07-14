@@ -1,4 +1,0 @@
-interface:
-  display_name: "AI Stats Release Spotlight"
-  short_description: "Write AI Stats monthly release spotlights"
-  default_prompt: "Use $ai-stats-release-spotlight to draft a monthly AI Stats release spotlight from merged work and changelogs."

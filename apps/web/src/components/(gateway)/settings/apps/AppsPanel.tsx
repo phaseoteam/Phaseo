@@ -1,21 +1,23 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { CopyButton } from "@/components/ui/copy-button";
+import Link from "next/link";
 import {
 	BarChart2,
 	Blocks,
-	ChevronDown,
+	Copy,
 	Globe,
 	Lock,
+	Merge,
 	MoreHorizontal,
+	Pencil,
+	Power,
+	PowerOff,
 } from "lucide-react";
-import Link from "next/link";
 import { toast } from "sonner";
 import { updateAppAction } from "@/app/(dashboard)/settings/apps/actions";
-import EditAppDialog from "./EditAppDialog";
-import MergeAppDialog from "./MergeAppDialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -23,22 +25,35 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-	Collapsible,
-	CollapsibleContent,
-	CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import {
 	Empty,
 	EmptyDescription,
 	EmptyHeader,
 	EmptyMedia,
 	EmptyTitle,
 } from "@/components/ui/empty";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
+import {
+	type AppCategory,
+	getAppCategoryLabel,
+	parseAppCategories,
+} from "@/lib/appCategories";
+import { APP_CATEGORY_VISUALS } from "./appCategoryVisuals";
+import EditAppDialog from "./EditAppDialog";
+import MergeAppDialog from "./MergeAppDialog";
 
 type AppItem = {
 	id: string;
 	title: string;
 	app_key: string;
+	category: string | null;
+	docs_url: string | null;
 	url: string | null;
 	image_url: string | null;
 	is_public: boolean;
@@ -54,19 +69,93 @@ function formatDate(value: string | null) {
 	return date.toLocaleDateString();
 }
 
+function getAttributionHeaders(app: AppItem) {
+	const displayUrl = app.url && app.url !== "about:blank";
+	const attributionUrl = displayUrl ? app.url : "https://your-app.example";
+	return `x-title: ${app.title}\nhttp-referer: ${attributionUrl}`;
+}
+
+function AppAvatar({ app }: { app: AppItem }) {
+	const imageLetter = app.title?.trim()?.[0]?.toUpperCase() ?? "A";
+
+	return (
+		<div className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-lg border border-border/70 bg-muted/40">
+			{app.image_url ? (
+				<img
+					src={app.image_url}
+					alt={app.title}
+					className="size-full object-cover"
+				/>
+			) : (
+				<span className="text-xs font-semibold text-muted-foreground">
+					{imageLetter}
+				</span>
+			)}
+		</div>
+	);
+}
+
+function StatusBadge({ active }: { active: boolean }) {
+	return (
+		<Badge
+			variant="outline"
+			className={
+				active
+					? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+					: "border-border bg-muted/50 text-muted-foreground"
+			}
+		>
+			{active ? "Active" : "Inactive"}
+		</Badge>
+	);
+}
+
+function CategoryBadge({ category }: { category: AppCategory }) {
+	const label = getAppCategoryLabel(category);
+
+	if (!label) return null;
+
+	const visuals = APP_CATEGORY_VISUALS[category];
+	const Icon = visuals.Icon;
+
+	return (
+		<Badge
+			variant="outline"
+			className={`h-5 rounded-lg px-1.5 text-[11px] font-medium ${visuals.badgeClassName}`}
+		>
+			<Icon className="size-3" />
+			{label}
+		</Badge>
+	);
+}
+
+function CategoryBadges({ category }: { category: string | null }) {
+	const categories = parseAppCategories(category);
+
+	if (categories.length === 0) {
+		return (
+			<span className="text-xs text-muted-foreground">No category set</span>
+		);
+	}
+
+	return (
+		<div className="flex flex-wrap gap-1">
+			{categories.map((category) => (
+				<CategoryBadge key={category} category={category} />
+			))}
+		</div>
+	);
+}
+
 export default function AppsPanel({ apps }: { apps: AppItem[] }) {
 	const [items, setItems] = useState<AppItem[]>(apps);
 	const [pending, setPending] = useState<Record<string, boolean>>({});
-	const [openAttribution, setOpenAttribution] = useState<
-		Record<string, boolean>
-	>({});
 	const [editAppId, setEditAppId] = useState<string | null>(null);
 	const [mergeAppId, setMergeAppId] = useState<string | null>(null);
 
 	useEffect(() => {
 		setItems(apps);
 		setPending({});
-		setOpenAttribution({});
 		setEditAppId(null);
 		setMergeAppId(null);
 	}, [apps]);
@@ -78,6 +167,9 @@ export default function AppsPanel({ apps }: { apps: AppItem[] }) {
 			return bTime - aTime;
 		});
 	}, [items]);
+
+	const editApp = sortedApps.find((app) => app.id === editAppId) ?? null;
+	const mergeApp = sortedApps.find((app) => app.id === mergeAppId) ?? null;
 
 	const setBusy = (id: string, value: boolean) => {
 		setPending((prev) => ({ ...prev, [id]: value }));
@@ -98,7 +190,7 @@ export default function AppsPanel({ apps }: { apps: AppItem[] }) {
 	const handleToggle = async (
 		app: AppItem,
 		field: "is_public" | "is_active",
-		value: boolean,
+		value: boolean
 	) => {
 		setBusy(app.id, true);
 		try {
@@ -113,6 +205,65 @@ export default function AppsPanel({ apps }: { apps: AppItem[] }) {
 		}
 	};
 
+	const renderActions = (app: AppItem) => {
+		const isBusy = pending[app.id];
+		const canMerge = sortedApps.length > 1;
+		const attributionHeaders = getAttributionHeaders(app);
+
+		return (
+			<DropdownMenu>
+				<DropdownMenuTrigger render={<Button
+						variant="ghost"
+						size="icon-sm"
+						aria-label={`Manage ${app.title}`} />}>
+
+						<MoreHorizontal className="size-4" />
+
+				</DropdownMenuTrigger>
+				<DropdownMenuContent align="end" className="w-44">
+					<DropdownMenuItem
+						onClick={() => {
+							navigator.clipboard
+								.writeText(attributionHeaders)
+								.then(() => toast.success("Attribution headers copied"))
+								.catch(() => toast.error("Failed to copy headers"));
+						}}
+					>
+						<Copy className="mr-2 size-4" />
+						Copy headers
+					</DropdownMenuItem>
+					<DropdownMenuItem onClick={() => setEditAppId(app.id)}>
+						<Pencil className="mr-2 size-4" />
+						Edit
+					</DropdownMenuItem>
+					<DropdownMenuItem
+						disabled={!canMerge}
+						onClick={() => {
+							if (!canMerge) return;
+							setMergeAppId(app.id);
+						}}
+					>
+						<Merge className="mr-2 size-4" />
+						Merge
+					</DropdownMenuItem>
+					<DropdownMenuItem
+						disabled={isBusy}
+						onClick={() => {
+							handleToggle(app, "is_active", !app.is_active);
+						}}
+					>
+						{app.is_active ? (
+							<PowerOff className="mr-2 size-4" />
+						) : (
+							<Power className="mr-2 size-4" />
+						)}
+						{app.is_active ? "Disable" : "Enable"}
+					</DropdownMenuItem>
+				</DropdownMenuContent>
+			</DropdownMenu>
+		);
+	};
+
 	if (!sortedApps.length) {
 		return (
 			<Empty className="rounded-xl border border-dashed border-border/80 p-8">
@@ -122,7 +273,8 @@ export default function AppsPanel({ apps }: { apps: AppItem[] }) {
 					</EmptyMedia>
 					<EmptyTitle>No apps found</EmptyTitle>
 					<EmptyDescription>
-						App attribution records will appear here after your requests include app headers.
+						App attribution records will appear here after your requests include
+						app headers.
 					</EmptyDescription>
 				</EmptyHeader>
 			</Empty>
@@ -130,225 +282,217 @@ export default function AppsPanel({ apps }: { apps: AppItem[] }) {
 	}
 
 	return (
-		<div className="grid gap-4 md:grid-cols-2">
-			{sortedApps.map((app) => {
-				const isBusy = pending[app.id];
-				const imageLetter = app.title?.trim()?.[0]?.toUpperCase() ?? "A";
-				const displayUrl = app.url && app.url !== "about:blank";
-				const attributionUrl = displayUrl
-					? app.url
-					: "https://your-app.example";
-				const headerBlock = `x-title: ${app.title}\nhttp-referer: ${attributionUrl}`;
-				const attributionOpen = Boolean(openAttribution[app.id]);
-				const canMerge = sortedApps.length > 1;
+		<>
+			<div className="overflow-hidden rounded-lg border border-border/60 bg-card">
+				<div className="hidden lg:block">
+					<Table className="min-w-[820px] table-fixed text-sm [&_tr:last-child]:border-b-0 [&_td]:px-4 [&_th]:px-4">
+						<TableHeader className="bg-muted/30">
+							<TableRow>
+								<TableHead className="w-[38%]">App</TableHead>
+								<TableHead className="w-[12%]">Status</TableHead>
+								<TableHead className="w-[14%]">Visibility</TableHead>
+								<TableHead className="w-[14%]">Last Seen</TableHead>
+								<TableHead className="w-[14%]">Created</TableHead>
+								<TableHead className="w-[8%] text-right" />
+							</TableRow>
+						</TableHeader>
+						<TableBody>
+							{sortedApps.map((app) => {
+								const displayUrl = app.url && app.url !== "about:blank";
+								const isBusy = pending[app.id];
 
-				return (
-					<div
-						key={app.id}
-						className="rounded-2xl border border-border/60 bg-white/80 p-5 shadow-sm dark:bg-zinc-950"
-					>
-						<div className="flex flex-wrap items-start justify-between gap-6">
-							<div className="flex min-w-0 items-start gap-4">
-								<div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl border border-border/60 bg-muted/40">
-									{app.image_url ? (
-										<img
-											src={app.image_url}
-											alt={app.title}
-											className="h-full w-full object-cover"
-										/>
-									) : (
-										<div className="flex h-full w-full items-center justify-center text-sm font-semibold text-muted-foreground">
-											{imageLetter}
-										</div>
-									)}
-								</div>
-								<div className="min-w-0 space-y-3">
-									<div className="flex flex-wrap items-center gap-2">
-										<h3 className="text-base font-semibold">
-											{displayUrl ? (
-												<Link
-													href={app.url ?? "#"}
-													target="_blank"
-													rel="noreferrer"
-													className="underline decoration-transparent hover:decoration-current transition-colors duration-200"
-												>
-													{app.title}
-												</Link>
-											) : (
-												app.title
-											)}
-										</h3>
-									</div>
-									<div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-										<span>Last seen: {formatDate(app.last_seen)}</span>
-										<span>Created: {formatDate(app.created_at)}</span>
-									</div>
-									{!displayUrl ? (
-										<p className="text-xs text-muted-foreground">
-											No public URL set
-										</p>
-									) : null}
-								</div>
-							</div>
-
-							<div className="flex flex-wrap items-center gap-2">
-								<Button
-									asChild
-									size="sm"
-									variant="outline"
-									className="h-7 px-2 text-xs"
-								>
-									<Link
-										href={`/apps/${encodeURIComponent(app.id)}`}
-										className="inline-flex items-center gap-1"
-									>
-										<BarChart2 className="h-3 w-3" />
-										Stats
-									</Link>
-								</Button>
-								<Button
-									type="button"
-									size="sm"
-									variant="outline"
-									className="h-7 px-2 text-xs"
-									disabled={isBusy}
-									onClick={() =>
-										handleToggle(app, "is_public", !app.is_public)
-									}
-								>
-									{app.is_public ? (
-										<Globe className="mr-1 h-3 w-3" />
-									) : (
-										<Lock className="mr-1 h-3 w-3" />
-									)}
-									{app.is_public ? "Public" : "Private"}
-								</Button>
-								<DropdownMenu>
-									<DropdownMenuTrigger asChild>
-										<Button
-											variant="outline"
-											size="sm"
-											className="h-7 px-2 text-xs"
-										>
-											<MoreHorizontal className="h-3 w-3" />
-											Manage
-										</Button>
-									</DropdownMenuTrigger>
-									<DropdownMenuContent align="end">
-										<DropdownMenuItem
-											onSelect={(event) => {
-												event.preventDefault();
-												setEditAppId(app.id);
-											}}
-										>
-											Edit
-										</DropdownMenuItem>
-										<DropdownMenuItem
-											disabled={!canMerge}
-											onSelect={(event) => {
-												event.preventDefault();
-												if (!canMerge) return;
-												setMergeAppId(app.id);
-											}}
-										>
-											Merge
-										</DropdownMenuItem>
-									</DropdownMenuContent>
-								</DropdownMenu>
-								<EditAppDialog
-									app={app}
-									disabled={isBusy}
-									onUpdated={(updates) => updateLocal(app.id, updates)}
-									open={editAppId === app.id}
-									onOpenChange={(open) =>
-										setEditAppId(open ? app.id : null)
-									}
-									hideTrigger
-								/>
-								<MergeAppDialog
-									app={app}
-									apps={sortedApps}
-									disabled={isBusy}
-									onMerged={() => removeLocal(app.id)}
-									open={mergeAppId === app.id}
-									onOpenChange={(open) =>
-										setMergeAppId(open ? app.id : null)
-									}
-									hideTrigger
-								/>
-							</div>
-						</div>
-						<Collapsible
-							open={attributionOpen}
-							onOpenChange={(open) =>
-								setOpenAttribution((prev) => ({
-									...prev,
-									[app.id]: open,
-								}))
-							}
-							className="mt-4"
-						>
-							<div className="flex flex-wrap items-center justify-between gap-3">
-								<CollapsibleTrigger asChild>
-									<Button
-										variant="ghost"
-										size="sm"
-										className="gap-2 text-xs text-muted-foreground"
-									>
-										Request attribution headers
-										<ChevronDown
-											className={`h-4 w-4 transition-transform ${
-												attributionOpen ? "rotate-180" : ""
-											}`}
-										/>
-									</Button>
-								</CollapsibleTrigger>
-							</div>
-							<CollapsibleContent>
-								<div className="mt-3 rounded-xl border border-border/60 bg-muted/30 p-4">
-									<div className="flex flex-wrap items-center justify-between gap-3">
-										<p className="text-xs text-muted-foreground">
-											Include these headers to attribute requests to this app.
-										</p>
-										<div className="flex items-center gap-2 rounded-lg border border-border/60 bg-background px-3 py-1.5 text-xs font-mono">
-											<span className="text-muted-foreground">
-												Copy headers
-											</span>
-											<CopyButton
-												content={headerBlock}
-												size="sm"
+								return (
+									<TableRow key={app.id}>
+										<TableCell className="py-3">
+											<div className="flex min-w-0 items-center gap-3">
+												<AppAvatar app={app} />
+												<div className="min-w-0">
+													<div className="truncate font-medium">
+														{displayUrl ? (
+															<Link
+																href={app.url ?? "#"}
+																target="_blank"
+																rel="noreferrer"
+																className="underline decoration-transparent underline-offset-4 transition-colors hover:decoration-current"
+															>
+																{app.title}
+															</Link>
+														) : (
+															app.title
+														)}
+													</div>
+													<div className="truncate text-xs text-muted-foreground">
+														{displayUrl ? app.url : "No public URL set"}
+													</div>
+													<div className="mt-1">
+														<CategoryBadges category={app.category} />
+													</div>
+												</div>
+											</div>
+										</TableCell>
+										<TableCell>
+											<StatusBadge active={app.is_active} />
+										</TableCell>
+										<TableCell>
+											<Button
+												type="button"
+												size="xs"
 												variant="outline"
-												aria-label="Copy attribution headers"
-											/>
+												disabled={isBusy}
+												onClick={() =>
+													handleToggle(app, "is_public", !app.is_public)
+												}
+												aria-label={`Make ${app.title} ${
+													app.is_public ? "private" : "public"
+												}`}
+											>
+												{app.is_public ? (
+													<Globe className="size-3" />
+												) : (
+													<Lock className="size-3" />
+												)}
+												{app.is_public ? "Public" : "Private"}
+											</Button>
+										</TableCell>
+										<TableCell className="text-xs text-muted-foreground">
+											{formatDate(app.last_seen)}
+										</TableCell>
+										<TableCell className="text-xs text-muted-foreground">
+											{formatDate(app.created_at)}
+										</TableCell>
+										<TableCell className="text-right">
+											<div className="flex items-center justify-end gap-1">
+												<Button
+													asChild
+													size="icon-sm"
+													variant="ghost"
+													aria-label={`View stats for ${app.title}`}
+												>
+													<Link href={`/apps/${encodeURIComponent(app.id)}`}>
+														<BarChart2 className="size-4" />
+													</Link>
+												</Button>
+												{renderActions(app)}
+											</div>
+										</TableCell>
+									</TableRow>
+								);
+							})}
+						</TableBody>
+					</Table>
+				</div>
+
+				<div className="divide-y divide-border/60 lg:hidden">
+					{sortedApps.map((app) => {
+						const displayUrl = app.url && app.url !== "about:blank";
+						const isBusy = pending[app.id];
+
+						return (
+							<div key={app.id} className="space-y-3 p-3">
+								<div className="flex items-start justify-between gap-3">
+									<div className="flex min-w-0 items-center gap-3">
+										<AppAvatar app={app} />
+										<div className="min-w-0">
+											<div className="truncate font-medium">
+												{displayUrl ? (
+													<Link
+														href={app.url ?? "#"}
+														target="_blank"
+														rel="noreferrer"
+														className="underline decoration-transparent underline-offset-4 transition-colors hover:decoration-current"
+													>
+														{app.title}
+													</Link>
+												) : (
+													app.title
+												)}
+											</div>
+											<div className="truncate text-xs text-muted-foreground">
+												{displayUrl ? app.url : "No public URL set"}
+											</div>
+											<div className="mt-1">
+												<CategoryBadges category={app.category} />
+											</div>
 										</div>
 									</div>
-									<div className="mt-3 space-y-1 text-xs">
-										<div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-background/80 px-3 py-2 font-mono">
-											<span>x-title: {app.title}</span>
-											<CopyButton
-												content={`x-title: ${app.title}`}
-												size="sm"
-												variant="ghost"
-												aria-label="Copy x-title header"
-											/>
-										</div>
-										<div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-background/80 px-3 py-2 font-mono">
-											<span>http-referer: {attributionUrl}</span>
-											<CopyButton
-												content={`http-referer: ${attributionUrl}`}
-												size="sm"
-												variant="ghost"
-												aria-label="Copy http-referer header"
-											/>
-										</div>
+									{renderActions(app)}
+								</div>
+
+								<div className="flex flex-wrap items-center gap-2">
+									<StatusBadge active={app.is_active} />
+									<Button
+										type="button"
+										size="xs"
+										variant="outline"
+										disabled={isBusy}
+										onClick={() =>
+											handleToggle(app, "is_public", !app.is_public)
+										}
+										aria-label={`Make ${app.title} ${
+											app.is_public ? "private" : "public"
+										}`}
+									>
+										{app.is_public ? (
+											<Globe className="size-3" />
+										) : (
+											<Lock className="size-3" />
+										)}
+										{app.is_public ? "Public" : "Private"}
+									</Button>
+									<Button
+										asChild
+										size="xs"
+										variant="outline"
+										aria-label={`View stats for ${app.title}`}
+									>
+										<Link href={`/apps/${encodeURIComponent(app.id)}`}>
+											<BarChart2 className="size-3" />
+											Stats
+										</Link>
+									</Button>
+								</div>
+
+								<div className="grid grid-cols-2 gap-3 text-xs">
+									<div>
+										<div className="text-muted-foreground">Last Seen</div>
+										<div>{formatDate(app.last_seen)}</div>
+									</div>
+									<div>
+										<div className="text-muted-foreground">Created</div>
+										<div>{formatDate(app.created_at)}</div>
 									</div>
 								</div>
-							</CollapsibleContent>
-						</Collapsible>
-					</div>
-				);
-			})}
-		</div>
+							</div>
+						);
+					})}
+				</div>
+			</div>
+
+			{editApp ? (
+				<EditAppDialog
+					app={editApp}
+					disabled={pending[editApp.id]}
+					onUpdated={(updates) => updateLocal(editApp.id, updates)}
+					open
+					onOpenChange={(open) => {
+						if (!open) setEditAppId(null);
+					}}
+					hideTrigger
+				/>
+			) : null}
+			{mergeApp ? (
+				<MergeAppDialog
+					app={mergeApp}
+					apps={sortedApps}
+					disabled={pending[mergeApp.id]}
+					onMerged={() => removeLocal(mergeApp.id)}
+					open
+					onOpenChange={(open) => {
+						if (!open) setMergeAppId(null);
+					}}
+					hideTrigger
+				/>
+			) : null}
+		</>
 	);
 }
-

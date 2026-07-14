@@ -99,7 +99,7 @@ function normalizeEnvValue(value: string | undefined): string {
 
 function looksLikeGatewayAuthToken(token: string): boolean {
     if (!token) return false;
-    if (token.startsWith("aistats_v1_sk_")) return true;
+    if (token.startsWith("phaseo_v1_sk_")) return true;
     return token.split(".").length === 3;
 }
 
@@ -117,7 +117,7 @@ function resolveGatewayApiKey(): string {
 
     const kid = normalizeEnvValue(process.env.PLAYGROUND_GATEWAY_KEY_KID);
     if (!kid) return playgroundSecret;
-    return `aistats_v1_sk_${kid}_${playgroundSecret}`;
+    return `phaseo_v1_sk_${kid}_${playgroundSecret}`;
 }
 
 function loadLocalEnv(apiRoot: string) {
@@ -221,9 +221,9 @@ function printSuiteList() {
     }
     console.log("");
     console.log("Examples:");
-    console.log("  pnpm --filter @ai-stats/gateway-api test:live:targeted -- --suite gpt54-nano-text");
-    console.log("  pnpm --filter @ai-stats/gateway-api test:live:targeted -- --suite embeddings-moderation,audio-images");
-    console.log("  pnpm --filter @ai-stats/gateway-api test:live:targeted -- --from deepseek-v4-flash");
+    console.log("  pnpm --filter @phaseo/gateway-api test:live:targeted -- --suite gpt54-nano-text");
+    console.log("  pnpm --filter @phaseo/gateway-api test:live:targeted -- --suite embeddings-moderation,audio-images");
+    console.log("  pnpm --filter @phaseo/gateway-api test:live:targeted -- --from deepseek-v4-flash");
 }
 
 function runPnpmScript(cwd: string, script: string, extraEnv: Record<string, string>): Promise<number> {

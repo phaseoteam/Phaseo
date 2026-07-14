@@ -26,12 +26,14 @@ describe("resolveOpenAICompatRoute", () => {
 	});
 
 	it("routes xai aliases to responses", () => {
+		expect(resolveOpenAICompatRoute("spacex-ai", "grok-4")).toBe("responses");
 		expect(resolveOpenAICompatRoute("x-ai", "grok-4")).toBe("responses");
 		expect(resolveOpenAICompatRoute("xai", "grok-4")).toBe("responses");
 	});
 
 	it("routes production provider set to expected upstream route", () => {
 		expect(resolveOpenAICompatRoute("openai", "gpt-4.1")).toBe("responses");
+		expect(resolveOpenAICompatRoute("spacex-ai", "grok-4")).toBe("responses");
 		expect(resolveOpenAICompatRoute("x-ai", "grok-4")).toBe("responses");
 		expect(resolveOpenAICompatRoute("xai", "grok-4")).toBe("responses");
 
@@ -58,6 +60,7 @@ describe("resolveOpenAICompatRoute", () => {
 		expect(resolveOpenAICompatRoute("zai", "glm-4.6")).toBe("chat");
 		expect(resolveOpenAICompatRoute("xiaomi", "MiMo-7B-RL")).toBe("chat");
 		expect(resolveOpenAICompatRoute("mistral", "mistral-large-latest")).toBe("chat");
+		expect(resolveOpenAICompatRoute("meta", "muse-spark-1.1")).toBe("chat");
 		expect(resolveOpenAICompatRoute("moonshot-ai", "kimi-k2")).toBe("chat");
 		expect(resolveOpenAICompatRoute("novitaai", "deepseek/deepseek-r1-turbo")).toBe("chat");
 		expect(resolveOpenAICompatRoute("ovhcloud", "Qwen3-32B")).toBe("chat");
@@ -206,7 +209,7 @@ describe("openAICompatUrl", () => {
 	it("builds longcat chat-completions endpoint with /openai/v1 prefix", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
-			MEITUAN_API_KEY: "test-meituan-key",
+			LONGCAT_API_KEY: "test-longcat-key",
 		} as any);
 
 		expect(openAICompatUrl("longcat", "/chat/completions")).toBe(
@@ -397,6 +400,17 @@ describe("openAICompatUrl", () => {
 		);
 	});
 
+	it("builds meta model api chat-completions endpoint with /compat/v1 prefix", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			META_MODEL_API_KEY: "test-meta-key",
+		} as any);
+
+		expect(openAICompatUrl("meta", "/chat/completions")).toBe(
+			"https://api.llama.com/compat/v1/chat/completions",
+		);
+	});
+
 	it("builds poolside chat-completions endpoint with /openai/v1 prefix", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
@@ -455,7 +469,7 @@ describe("openAICompatUrl", () => {
 		} as any);
 
 		expect(openAICompatUrl("together", "/chat/completions")).toBe(
-			"https://api.together.ai/v1/chat/completions",
+			"https://api.together.xyz/v1/chat/completions",
 		);
 	});
 
@@ -651,10 +665,10 @@ describe("resolveOpenAICompatKey", () => {
 		expect(voyageAiResolved.source).toBe("gateway");
 	});
 
-	it("uses ARCEE_API_KEY for arcee-ai", () => {
+	it("accepts ARCEE_AI_API_KEY for arcee-ai", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
-			ARCEE_API_KEY: "test-arcee-key",
+			ARCEE_AI_API_KEY: "test-arcee-ai-key",
 		} as any);
 
 		const resolved = resolveOpenAICompatKey({
@@ -662,14 +676,30 @@ describe("resolveOpenAICompatKey", () => {
 			byokMeta: [],
 		} as any);
 
-		expect(resolved.key).toBe("test-arcee-key");
+		expect(resolved.key).toBe("test-arcee-ai-key");
 		expect(resolved.source).toBe("gateway");
 	});
 
-	it("uses GMI_API_KEY for gmicloud", () => {
+	it("prefers ARCEE_AI_API_KEY over ARCEE_API_KEY for arcee-ai", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
-			GMI_API_KEY: "test-gmi-key",
+			ARCEE_AI_API_KEY: "test-arcee-ai-key-primary",
+			ARCEE_API_KEY: "test-arcee-key-fallback",
+		} as any);
+
+		const resolved = resolveOpenAICompatKey({
+			providerId: "arcee-ai",
+			byokMeta: [],
+		} as any);
+
+		expect(resolved.key).toBe("test-arcee-ai-key-primary");
+		expect(resolved.source).toBe("gateway");
+	});
+
+	it("accepts GMI_CLOUD_API_KEY fallback for gmicloud", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			GMI_CLOUD_API_KEY: "test-gmi-cloud-key",
 		} as any);
 
 		const resolved = resolveOpenAICompatKey({
@@ -677,7 +707,23 @@ describe("resolveOpenAICompatKey", () => {
 			byokMeta: [],
 		} as any);
 
-		expect(resolved.key).toBe("test-gmi-key");
+		expect(resolved.key).toBe("test-gmi-cloud-key");
+		expect(resolved.source).toBe("gateway");
+	});
+
+	it("prefers GMI_API_KEY over GMI_CLOUD_API_KEY for gmicloud", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			GMI_API_KEY: "test-gmi-key-primary",
+			GMI_CLOUD_API_KEY: "test-gmi-cloud-key-fallback",
+		} as any);
+
+		const resolved = resolveOpenAICompatKey({
+			providerId: "gmicloud",
+			byokMeta: [],
+		} as any);
+
+		expect(resolved.key).toBe("test-gmi-key-primary");
 		expect(resolved.source).toBe("gateway");
 	});
 
@@ -711,49 +757,33 @@ describe("resolveOpenAICompatKey", () => {
 		expect(resolved.source).toBe("gateway");
 	});
 
-	it("uses MEITUAN_API_KEY for longcat", () => {
+	it("uses META_MODEL_API_KEY for meta", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
-			MEITUAN_API_KEY: "test-meituan-key",
+			META_MODEL_API_KEY: "test-meta-key",
 		} as any);
 
 		const resolved = resolveOpenAICompatKey({
-			providerId: "longcat",
+			providerId: "meta",
 			byokMeta: [],
 		} as any);
 
-		expect(resolved.key).toBe("test-meituan-key");
+		expect(resolved.key).toBe("test-meta-key");
 		expect(resolved.source).toBe("gateway");
 	});
 
-	it("falls back to LONGCAT_API_KEY for longcat", () => {
+	it("accepts LLAMA_API_KEY fallback for meta", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
-			LONGCAT_API_KEY: "test-longcat-key",
+			LLAMA_API_KEY: "test-llama-key",
 		} as any);
 
 		const resolved = resolveOpenAICompatKey({
-			providerId: "longcat",
+			providerId: "meta",
 			byokMeta: [],
 		} as any);
 
-		expect(resolved.key).toBe("test-longcat-key");
-		expect(resolved.source).toBe("gateway");
-	});
-
-	it("prefers MEITUAN_API_KEY over LONGCAT_API_KEY for longcat", () => {
-		teardownTestRuntime();
-		setupRuntimeFromEnv({
-			MEITUAN_API_KEY: "test-meituan-key",
-			LONGCAT_API_KEY: "test-longcat-key",
-		} as any);
-
-		const resolved = resolveOpenAICompatKey({
-			providerId: "longcat",
-			byokMeta: [],
-		} as any);
-
-		expect(resolved.key).toBe("test-meituan-key");
+		expect(resolved.key).toBe("test-llama-key");
 		expect(resolved.source).toBe("gateway");
 	});
 
@@ -768,10 +798,10 @@ describe("resolveOpenAICompatKey", () => {
 		);
 	});
 
-	it("uses CROFAI_API_KEY for crofai", () => {
+	it("accepts CROF_AI_API_KEY fallback for crofai", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
-			CROFAI_API_KEY: "test-crof-key",
+			CROF_AI_API_KEY: "test-crof-key-fallback",
 		} as any);
 
 		const resolved = resolveOpenAICompatKey({
@@ -779,14 +809,30 @@ describe("resolveOpenAICompatKey", () => {
 			byokMeta: [],
 		} as any);
 
-		expect(resolved.key).toBe("test-crof-key");
+		expect(resolved.key).toBe("test-crof-key-fallback");
 		expect(resolved.source).toBe("gateway");
 	});
 
-	it("uses NEBIUS_API_KEY for Nebius providers", () => {
+	it("prefers CROFAI_API_KEY over CROF_AI_API_KEY for crofai", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
-			NEBIUS_API_KEY: "test-nebius-key",
+			CROFAI_API_KEY: "test-crof-key-primary",
+			CROF_AI_API_KEY: "test-crof-key-fallback",
+		} as any);
+
+		const resolved = resolveOpenAICompatKey({
+			providerId: "crofai",
+			byokMeta: [],
+		} as any);
+
+		expect(resolved.key).toBe("test-crof-key-primary");
+		expect(resolved.source).toBe("gateway");
+	});
+
+	it("accepts NEBIUS_TOKEN_FACTORY_API_KEY fallback for Nebius providers", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			NEBIUS_TOKEN_FACTORY_API_KEY: "test-nebius-token-factory-key",
 		} as any);
 
 		const resolved = resolveOpenAICompatKey({
@@ -794,7 +840,23 @@ describe("resolveOpenAICompatKey", () => {
 			byokMeta: [],
 		} as any);
 
-		expect(resolved.key).toBe("test-nebius-key");
+		expect(resolved.key).toBe("test-nebius-token-factory-key");
+		expect(resolved.source).toBe("gateway");
+	});
+
+	it("prefers NEBIUS_API_KEY over NEBIUS_TOKEN_FACTORY_API_KEY", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			NEBIUS_API_KEY: "test-nebius-key-primary",
+			NEBIUS_TOKEN_FACTORY_API_KEY: "test-nebius-token-factory-key-fallback",
+		} as any);
+
+		const resolved = resolveOpenAICompatKey({
+			providerId: "nebius-token-factory-us-central-1",
+			byokMeta: [],
+		} as any);
+
+		expect(resolved.key).toBe("test-nebius-key-primary");
 		expect(resolved.source).toBe("gateway");
 	});
 

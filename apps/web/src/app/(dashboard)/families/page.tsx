@@ -8,15 +8,15 @@ import type { FamilyCard } from "@/lib/fetchers/families/getAllFamilies";
 import { fetchFrontendFamilies } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 
 export const metadata: Metadata = {
-	title: "AI Model Families - Track Related AI Model Releases",
+	title: "Model Families",
 	description:
-		"Explore AI model families to compare related releases, providers, capabilities, and evolution timelines in one place across the AI Stats model directory.",
+		"Explore AI model families to compare related releases, providers, capabilities, and evolution timelines in one place across the Phaseo model directory.",
 	keywords: [
 		"AI model families",
 		"model families",
 		"AI model variants",
 		"AI providers",
-		"AI Stats",
+		"Phaseo",
 	],
 	alternates: {
 		canonical: "/families",

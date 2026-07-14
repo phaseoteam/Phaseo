@@ -60,9 +60,9 @@ describe("getVideoContentHandler upstream error normalization", () => {
 		vi.restoreAllMocks();
 	});
 
-	it("normalizes xAI content status fetch failures instead of proxying raw upstream JSON", async () => {
+	it("normalizes SpaceXAI content status fetch failures instead of proxying raw upstream JSON", async () => {
 		const response = await getVideoContentHandler(
-			new Request("https://api.phaseo.app/v1/videos/video_xai_content_error/content"),
+			new Request("https://api.phaseo.ai/v1/videos/video_xai_content_error/content"),
 		);
 
 		expect(response.status).toBe(502);
@@ -91,7 +91,7 @@ describe("getVideoContentHandler upstream error normalization", () => {
 		});
 	});
 
-	it("normalizes xAI media download failures after a completed status poll", async () => {
+	it("normalizes SpaceXAI media download failures after a completed status poll", async () => {
 		vi.mocked(videoHelpers.fetchXAiVideoStatus).mockImplementationOnce(async () =>
 			new Response(
 				JSON.stringify({
@@ -131,7 +131,7 @@ describe("getVideoContentHandler upstream error normalization", () => {
 		);
 
 		const response = await getVideoContentHandler(
-			new Request("https://api.phaseo.app/v1/videos/video_xai_content_error/content"),
+			new Request("https://api.phaseo.ai/v1/videos/video_xai_content_error/content"),
 		);
 
 		expect(response.status).toBe(502);

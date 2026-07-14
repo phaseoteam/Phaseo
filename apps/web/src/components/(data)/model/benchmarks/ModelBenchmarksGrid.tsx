@@ -1,46 +1,75 @@
+"use client";
+
 import React from "react";
 import Link from "next/link";
 
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import type { ModelBenchmarkHighlight } from "@/lib/fetchers/models/getModelBenchmarkData";
 
 interface ModelBenchmarksGridProps {
 	highlights: ModelBenchmarkHighlight[];
 }
 
-function getRankBadgeClasses(rank: number | null | undefined) {
-	if (typeof rank !== "number" || rank <= 0) {
-		return "bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300";
-	}
-
-	if (rank === 1) return "bg-yellow-400 text-yellow-900";
-	if (rank === 2) return "bg-gray-300 text-gray-800";
-	if (rank === 3) return "bg-amber-700 text-amber-100";
-
-	return "bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300";
-}
-
 function sortHighlights(highlights: ModelBenchmarkHighlight[]) {
 	return [...highlights].sort((a, b) => {
-		const nameA = (a.benchmarkName || "").toLowerCase();
-		const nameB = (b.benchmarkName || "").toLowerCase();
-		const nameCompare = nameA.localeCompare(nameB);
-		if (nameCompare !== 0) return nameCompare;
-
-		// Fallback to rank (ascending), then totalModels (descending) to keep a deterministic order
-		const rankA = a.rank ?? Number.POSITIVE_INFINITY;
-		const rankB = b.rank ?? Number.POSITIVE_INFINITY;
-		if (rankA !== rankB) return rankA - rankB;
-
 		const totalA = a.totalModels ?? -1;
 		const totalB = b.totalModels ?? -1;
 		if (totalA !== totalB) return totalB - totalA;
 
-		return 0;
+		const nameA = (a.benchmarkName || "").toLowerCase();
+		const nameB = (b.benchmarkName || "").toLowerCase();
+		return nameA.localeCompare(nameB);
 	});
 }
 
+function clampScore(value: number | null | undefined): number {
+	if (typeof value !== "number" || !Number.isFinite(value)) return 0;
+	return Math.min(100, Math.max(0, value));
+}
+
+function ScoreIndicator({
+	score,
+	isPercentage,
+	label,
+}: {
+	score: number | null;
+	isPercentage: boolean;
+	label: string;
+}) {
+	if (!isPercentage || score == null) {
+		return (
+			<span
+				className="h-2.5 w-2.5 rounded-full bg-muted-foreground/45"
+				title={`${label} score recorded`}
+				aria-label={`${label} score recorded`}
+			/>
+		);
+	}
+
+	const normalizedScore = clampScore(score);
+
+	return (
+		<span
+			className="relative h-5 w-5 shrink-0 rounded-full"
+			style={{
+				background: `conic-gradient(var(--primary) ${normalizedScore}%, var(--muted) 0)`,
+			}}
+			title={`${label}: ${normalizedScore.toFixed(
+				normalizedScore % 1 === 0 ? 0 : 1
+			)}%`}
+			aria-label={`${label}: ${normalizedScore.toFixed(
+				normalizedScore % 1 === 0 ? 0 : 1
+			)}%`}
+		>
+			<span className="absolute inset-[4px] rounded-full bg-card" />
+		</span>
+	);
+}
+
 export function ModelBenchmarksGrid({ highlights }: ModelBenchmarksGridProps) {
+	const [showAllOnMobile, setShowAllOnMobile] = React.useState(false);
+
 	if (!highlights.length) {
 		return (
 			<div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
@@ -52,19 +81,19 @@ export function ModelBenchmarksGrid({ highlights }: ModelBenchmarksGridProps) {
 	const sorted = sortHighlights(highlights);
 
 	return (
-		<div className="mb-8 w-full">
+		<div className="mb-8 w-full space-y-3">
 			<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-				{sorted.map((highlight) => {
-					const rankClass = getRankBadgeClasses(highlight.rank);
-
+				{sorted.map((highlight, index) => {
 					return (
 						<Card
 							key={`${highlight.benchmarkId}`}
-							className="flex min-h-0 flex-col justify-center rounded-lg border border-gray-200 border-b-2 border-b-gray-300 bg-white p-3 dark:border-gray-700 dark:border-b-gray-600"
+							className={`min-h-0 flex-col justify-center rounded-lg border border-border/80 bg-card p-3 text-card-foreground shadow-xs ${
+								index >= 6 && !showAllOnMobile ? "hidden sm:flex" : "flex"
+							}`}
 							style={{ minHeight: 0 }}
 						>
 							<div className="flex flex-col gap-1">
-								<div className="truncate text-xs font-semibold leading-tight text-zinc-800 dark:text-zinc-100">
+								<div className="truncate text-xs font-semibold leading-tight text-card-foreground">
 									<Link
 										href={`/benchmarks/${highlight.benchmarkId}`}
 									>
@@ -74,27 +103,32 @@ export function ModelBenchmarksGrid({ highlights }: ModelBenchmarksGridProps) {
 										</span>
 									</Link>
 								</div>
-								<div className="flex items-center justify-between font-mono text-base">
-									<span>{highlight.scoreDisplay}</span>
-									<span
-										className={`ml-2 min-w-12 rounded px-2 py-0.5 text-center text-xs font-bold ${rankClass}`}
-										title={
-											typeof highlight.totalModels ===
-											"number"
-												? `Rank among ${highlight.totalModels} models`
-												: undefined
-										}
-									>
-										{highlight.rank != null
-											? `#${highlight.rank}`
-											: "-"}
+								<div className="flex items-center justify-between font-mono text-base text-foreground">
+									<span className="truncate text-sm text-muted-foreground">
+										{highlight.scoreDisplay}
 									</span>
+									<ScoreIndicator
+										score={highlight.score}
+										isPercentage={highlight.isPercentage}
+										label={highlight.benchmarkName}
+									/>
 								</div>
 							</div>
 						</Card>
 					);
 				})}
 			</div>
+			{sorted.length > 6 ? (
+				<Button
+					type="button"
+					variant="outline"
+					size="sm"
+					className="w-full sm:hidden"
+					onClick={() => setShowAllOnMobile((current) => !current)}
+				>
+					{showAllOnMobile ? "Show less" : `Show ${sorted.length - 6} more`}
+				</Button>
+			) : null}
 		</div>
 	);
 }

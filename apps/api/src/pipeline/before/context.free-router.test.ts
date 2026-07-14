@@ -11,7 +11,7 @@ const runtime = vi.hoisted(() => {
         data: [
             {
                 workspace_id: "team_free",
-                resolved_model: "ai-stats/free",
+                resolved_model: "phaseo/free",
                 key_ok: { ok: true, reason: null },
                 key_limit_ok: { ok: true, reason: null },
                 credit_ok: { ok: true, reason: null },
@@ -251,13 +251,14 @@ describe("fetchGatewayContext free router", () => {
         const { fetchGatewayContext } = await import("./context");
         const context = await fetchGatewayContext({
             workspaceId: "team_free",
-            model: "ai-stats/free",
+            model: "phaseo/free",
             endpoint: "text.generate",
             apiKeyId: "key_free",
             disableCache: true,
+            includeTestingMode: true,
         });
 
-        expect(context.resolvedModel).toBe("ai-stats/free");
+        expect(context.resolvedModel).toBe("phaseo/free");
         expect(context.providers).toHaveLength(3);
         expect(context.providers).toEqual(
             expect.arrayContaining([

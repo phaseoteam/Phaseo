@@ -15,15 +15,18 @@
   "api_model_id": "nex-agi/nex-n2-pro",
   "links": [
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/nex-agi/Nex-N2-Pro"
     },
     {
-      "platform": "github",
+      "title": "Github",
+      "kind": "github",
       "url": "https://github.com/nex-agi"
     },
     {
-      "platform": "website",
+      "title": "Website",
+      "kind": "website",
       "url": "https://nex-agi.com"
     }
   ],

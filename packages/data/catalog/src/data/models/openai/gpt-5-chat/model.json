@@ -2,13 +2,13 @@
   "model_id": "openai/gpt-5-chat",
   "organisation_id": "openai",
   "name": "GPT 5 Chat",
-  "status": "Available",
+  "status": "Deprecated",
   "previous_model_id": "openai/chatgpt-4o-2024-05-13",
   "description": "GPT 5 Chat is designed for advanced, natural, multimodal, and context-aware conversations for enterprise applications. It supports up to 400K of input context for long documents, codebases, and agent workflows.",
   "announced_date": "2025-08-07T00:00:00",
   "release_date": "2025-08-07T00:00:00",
-  "deprecation_date": null,
-  "retirement_date": null,
+  "deprecation_date": "2026-04-22T00:00:00",
+  "retirement_date": "2026-07-23T00:00:00",
   "license": "Proprietary",
   "input_types": "text,image",
   "output_types": "text",
@@ -16,19 +16,23 @@
   "family_id": "openai/gpt-5",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://platform.openai.com/docs/models/gpt-5-chat-latest"
     },
     {
-      "platform": "playground",
+      "title": "Playground",
+      "kind": "playground",
       "url": "https://platform.openai.com/chat/edit?models=gpt-5-chat-latest"
     },
     {
-      "platform": "paper",
+      "title": "Paper",
+      "kind": "paper",
       "url": "https://cdn.openai.com/pdf/8124a3ce-ab78-4f06-96eb-49ea29ffb52f/gpt5-system-card-aug7.pdf"
     },
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://openai.com/index/introducing-gpt-5/"
     }
   ],

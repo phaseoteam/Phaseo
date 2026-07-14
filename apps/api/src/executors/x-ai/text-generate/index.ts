@@ -1,6 +1,6 @@
 // Purpose: Executor for x-ai / text-generate.
 // Why: Isolates provider-specific behavior per capability.
-// How: Transforms IR to xAI Responses API and normalizes usage.
+// How: Transforms IR to SpaceXAI Responses API and normalizes usage.
 
 import type { IRChatRequest } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult, Bill, ProviderExecutor } from "@executors/types";
@@ -16,7 +16,6 @@ import {
 import { openAICompatHeaders, openAICompatUrl } from "@providers/openai-compatible/config";
 import { resolveProviderKey } from "@providers/keys";
 import { upstreamTestHeaders } from "@providers/shared/testing";
-import { normalizeTextServiceTier } from "@core/serviceTiers";
 import { getBindings } from "@/runtime/env";
 
 import { cherryPickIRParams, resolveXAiModelForRequest, withNormalizedReasoning } from "./reasoning";
@@ -59,7 +58,7 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 			model: modelForRouting,
 		});
 	}
-	// Enforce non-persistent storage semantics for xAI requests.
+	// Enforce non-persistent storage semantics for SpaceXAI requests.
 	requestPayload.store = false;
 
 	const captureRequest = Boolean(
@@ -171,10 +170,7 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 		return {
 			kind: "stream",
 			stream,
-			usageFinalizer: async () => {
-				// Stream pricing reads the observed xAI tier from transformed stream-frame usage.
-				return null;
-			},
+			usageFinalizer: async () => null,
 			bill,
 			upstream: res,
 			keySource: keyInfo.source,
@@ -216,17 +212,6 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 			output_text_tokens: 0,
 			total_tokens: 0,
 		};
-	const observedServiceTierRaw =
-		(rawResponse as any)?.service_tier ?? (rawResponse as any)?.usage?.service_tier ?? null;
-	const observedServiceTier =
-		typeof observedServiceTierRaw === "string" &&
-		observedServiceTierRaw.trim().toLowerCase() === "default"
-			? "standard"
-			: normalizeTextServiceTier(observedServiceTierRaw);
-	if (observedServiceTier) {
-		(usageMeters as Record<string, any>).service_tier = observedServiceTier;
-		(usageMeters as Record<string, any>).serviceTier = observedServiceTier;
-	}
 	bill.usage = usageMeters;
 
 	return {

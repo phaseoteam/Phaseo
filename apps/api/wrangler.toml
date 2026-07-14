@@ -1,4 +1,4 @@
-name = "ai-stats-gateway"
+name = "phaseo-gateway"
 main = "src/index.ts"
 compatibility_date = "2025-10-01"
 compatibility_flags = ["global_fetch_strictly_public"]

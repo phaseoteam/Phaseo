@@ -8,8 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { handleEmailSignup } from "@/app/(auth)/sign-up/actions";
 import { Check, Eye, EyeOff, X } from "lucide-react";
+import { captureProductEvent } from "@/lib/productAnalytics";
 
 const SYMBOL_REGEX = /[!@#$%^&*()_+\-=[\]{};':"|<>?,./`~]/;
+const LAST_AUTH_PROVIDER_STORAGE_KEY = "phaseo:last-auth-provider";
 
 type PasswordChecks = {
 	hasLower: boolean;
@@ -84,6 +86,12 @@ export default function EmailPassword({
 			);
 			return;
 		}
+		try {
+			window.localStorage.setItem(LAST_AUTH_PROVIDER_STORAGE_KEY, "email");
+		} catch {
+			// Ignore storage failures; auth still proceeds.
+		}
+		captureProductEvent("account_signup_started", { method: "email" });
 		setFormError(null);
 	};
 
@@ -115,7 +123,7 @@ export default function EmailPassword({
 						id="email"
 						name="email"
 						type="email"
-						placeholder="ai-stats@example.com"
+						placeholder="phaseo@example.com"
 						value={email}
 						onChange={(event) => setEmail(event.target.value)}
 						required

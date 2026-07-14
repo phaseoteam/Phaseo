@@ -5,9 +5,9 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata = buildMetadata({
 	title: "Terms of Service",
 	description:
-		"Review the AI Stats Terms of Service governing access to the model directory, dashboard features, billing behavior, and unified API Gateway usage requirements.",
+		"Review the Phaseo Terms of Service governing access to the model directory, dashboard features, billing behavior, and unified API Gateway usage requirements.",
 	path: "/terms",
-	keywords: ["AI Stats terms", "terms of service", "API usage terms", "gateway terms"],
+	keywords: ["Phaseo terms", "terms of service", "API usage terms", "gateway terms"],
 });
 
 export default async function TermsPage() {
@@ -15,21 +15,21 @@ export default async function TermsPage() {
 		<main className="container mx-auto space-y-8 px-4 py-10 text-sm leading-relaxed text-muted-foreground">
 			<header className="space-y-3">
 				<p className="text-xs text-muted-foreground/80">
-					Last updated: 15 November 2025
+					Last updated: 7 July 2026
 				</p>
 				<h1 className="text-3xl font-semibold text-foreground">
 					Terms of Service
 				</h1>
 				<p className="text-sm text-foreground/80">
 					These Terms of Service (&quot;Terms&quot;) govern your use
-					of the AI Stats website, data directory and unified API
+					of the Phaseo website, data directory and unified API
 					gateway (collectively, the &quot;Service&quot;).
 				</p>
 				<p className="text-sm text-foreground/80">
 					The Service is operated by{" "}
 					<span className="font-medium">Daniel Butler</span> operating
-					under the name <span className="font-medium">AI Stats</span>{" "}
-					( &quot;AI Stats&quot;, &quot;we&quot;, &quot;us&quot; or
+					under the name <span className="font-medium">Phaseo</span>{" "}
+					( &quot;Phaseo&quot;, &quot;we&quot;, &quot;us&quot; or
 					&quot;our&quot;).
 				</p>
 				<p className="text-sm text-foreground/80">
@@ -49,7 +49,7 @@ export default async function TermsPage() {
 				>
 					1. Service overview
 				</h2>
-				<p className="mt-2 text-foreground/80">AI Stats provides:</p>
+				<p className="mt-2 text-foreground/80">Phaseo provides:</p>
 				<ul className="mt-2 list-disc space-y-1 pl-5 text-foreground/80">
 					<li>
 						a public directory of AI models, providers, benchmarks,
@@ -127,10 +127,10 @@ export default async function TermsPage() {
 					If you believe your account or keys have been compromised,
 					you must notify us promptly at{" "}
 					<a
-						href="mailto:support@phaseo.app"
+						href="mailto:support@phaseo.ai"
 						className="text-primary underline"
 					>
-						support@phaseo.app
+						support@phaseo.ai
 					</a>
 					. You should also immediately rotate any affected keys in
 					your own systems. We are not responsible for losses arising
@@ -151,7 +151,7 @@ export default async function TermsPage() {
 				</h3>
 				<p className="mt-1 text-foreground/80">
 					Some parts of the Service (such as routing requests through
-					the AI Stats gateway) may require payment via a pre-paid,
+					the Phaseo gateway) may require payment via a pre-paid,
 					deposit-based wallet or credit balance
 					(&quot;Credits&quot;). The applicable pricing will be shown
 					in advance and is currently denominated in{" "}
@@ -233,10 +233,10 @@ export default async function TermsPage() {
 					To request a refund of unused Credits within the 24-hour
 					window, email{" "}
 					<a
-						href="mailto:support@phaseo.app"
+						href="mailto:support@phaseo.ai"
 						className="text-primary underline"
 					>
-						support@phaseo.app
+						support@phaseo.ai
 					</a>
 					. This voluntary policy does not affect any mandatory
 					consumer rights you may have under applicable law.
@@ -284,7 +284,7 @@ export default async function TermsPage() {
 					<li>any licences you grant to us under these Terms; and</li>
 					<li>
 						any terms imposed by the underlying third-party model
-						providers (for example, OpenAI, Anthropic, Google, xAI,
+						providers (for example, OpenAI, Anthropic, Google, SpaceXAI,
 						etc.).
 					</li>
 				</ul>
@@ -427,10 +427,10 @@ export default async function TermsPage() {
 					You may stop using the Service at any time. You can request
 					closure of your account by contacting us at{" "}
 					<a
-						href="mailto:support@phaseo.app"
+						href="mailto:support@phaseo.ai"
 						className="text-primary underline"
 					>
-						support@phaseo.app
+						support@phaseo.ai
 					</a>
 					.
 				</p>
@@ -487,7 +487,7 @@ export default async function TermsPage() {
 					8. Changes to the Service and to these Terms
 				</h2>
 				<p className="mt-2 text-foreground/80">
-					We are constantly improving AI Stats and may change, add or
+					We are constantly improving Phaseo and may change, add or
 					remove features from time to time.
 				</p>
 				<p className="mt-2 text-foreground/80">
@@ -751,10 +751,10 @@ export default async function TermsPage() {
 					<li>
 						Email:{" "}
 						<a
-							href="mailto:support@phaseo.app"
+							href="mailto:support@phaseo.ai"
 							className="text-primary underline"
 						>
-							support@phaseo.app
+							support@phaseo.ai
 						</a>
 					</li>
 				</ul>

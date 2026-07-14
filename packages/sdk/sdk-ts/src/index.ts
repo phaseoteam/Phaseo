@@ -1,9 +1,12 @@
 import type {
+  AnthropicMessagesRequest,
+  AnthropicMessagesResponse,
   AudioSpeechRequest,
   AudioTranscriptionRequest,
   AudioTranscriptionResponse,
   AudioTranslationRequest,
   AudioTranslationResponse,
+  BatchBillingSummary,
   BatchRequest,
   BatchResponse,
   ChatCompletionsRequest,
@@ -19,13 +22,19 @@ import type {
   ModelId as OapiModelId,
   ModerationsRequest,
   ModerationsResponse,
+  MusicGenerateRequest,
+  MusicGenerateResponse,
+  OcrRequest,
+  OcrResponse,
+  RerankRequest,
+  RerankResponse,
   ResponsesRequest,
   ResponsesResponse,
   VideoGenerationRequest,
   VideoGenerationResponse
 } from "./oapi-gen/models/index.js";
 import * as ops from "./oapi-gen/client/index.js";
-import { AIStatsHttpError, Client } from "./runtime/client.js";
+import { PhaseoHttpError, Client } from "./runtime/client.js";
 import {
   TelemetryCapture,
   extractBatchMetadata,
@@ -36,6 +45,7 @@ import {
 } from "./devtools/telemetry.js";
 import type { DevToolsConfig } from "./devtools/core.js";
 import type { KnownModelId as GeneratedKnownModelId } from "./modelIds.js";
+import { verifyAsyncWebhookSignature as verifyWebhookSignatureValue } from "./webhooks.js";
 
 export type KnownModelId = GeneratedKnownModelId;
 export type ModelIdLiteral = KnownModelId;
@@ -43,7 +53,7 @@ export type ModelIdLiteral = KnownModelId;
  * Model identifier in `provider/model` format (for example: `openai/gpt-5.4`).
  *
  * Model page URL pattern:
- * `https://ai-stats.phaseo.app/models/{provider/model}`
+ * `https://phaseo.app/models/{provider/model}`
  */
 // Allow new server-side models before a package release while preserving known-ID autocomplete.
 export type ModelId = KnownModelId | (string & {});
@@ -57,11 +67,12 @@ type Options = {
   devtools?: Partial<DevToolsConfig>;
   enableDeprecationWarnings?: boolean;
   warningsAsErrors?: boolean;
-  logger?: AIStatsLogger;
+  logger?: PhaseoLogger;
 };
 
-export type AIStatsLogLevel = "info" | "warn" | "error";
-export type AIStatsLogger = (level: AIStatsLogLevel, message: string, meta?: Record<string, unknown>) => void;
+export type PhaseoLogLevel = "info" | "warn" | "error";
+export type PhaseoLogger = (level: PhaseoLogLevel, message: string, meta?: Record<string, unknown>) => void;
+export type QueryParamValue = string | number | boolean | readonly (string | number | boolean)[];
 
 export type ModelLifecycleInfo = {
   modelId: string;
@@ -73,6 +84,8 @@ export type ModelLifecycleInfo = {
   message: string | null;
 };
 
+type DataModelLike = DataModel & { id?: string | null };
+
 type MessageContentPartInput = Record<string, unknown> | string;
 export type VideoOutputAccess = "bytes" | "signed_url" | "both";
 export type VideoInputReference = {
@@ -83,6 +96,49 @@ export type VideoInputReference = {
   data?: string;
   mime_type?: string;
   asset_id?: string;
+};
+
+type AsyncWebhookDeliveryAttempt = Record<string, unknown>;
+type AsyncWebhookDeliverySummary = Record<string, unknown>;
+type AsyncWebhookPublicState = Record<string, unknown>;
+type VideoBillingSummary = Record<string, unknown>;
+export type GatewayStreamUsage = Record<string, unknown> & {
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  total_tokens?: number;
+  reasoning_tokens?: number;
+  reasoningTokens?: number;
+  completion_tokens_details?: {
+    reasoning_tokens?: number;
+    [key: string]: unknown;
+  };
+  output_tokens_details?: {
+    reasoning_tokens?: number;
+    [key: string]: unknown;
+  };
+};
+
+export type ChatStreamChunk = Record<string, unknown> & {
+  choices?: Array<{
+    delta?: {
+      content?: string | null;
+      [key: string]: unknown;
+    };
+    [key: string]: unknown;
+  }>;
+  text: string;
+  usage?: GatewayStreamUsage | null;
+  reasoningTokens?: number | null;
+};
+export type ResponseStreamChunk = Record<string, unknown> & {
+  text: string;
+  usage?: GatewayStreamUsage | null;
+  reasoningTokens?: number | null;
+};
+export type MessageStreamChunk = Record<string, unknown> & {
+  text: string;
+  usage?: GatewayStreamUsage | null;
+  reasoningTokens?: number | null;
 };
 
 export type VideoCreateRequest = {
@@ -109,11 +165,17 @@ export type VideoCreateRequest = {
   beta?: Record<string, unknown>;
 };
 
-export type VideoStatusResponse = {
+export type VideoStatusResponse = Omit<
+  VideoGenerationResponse,
+  "id" | "object" | "status" | "polling_url" | "webhook" | "billing" | "asset" | "outputs" | "progress_source"
+> & {
   id: string;
   object: "video";
-  status: "queued" | "in_progress" | "completed" | "failed" | "cancelled";
+  status: "queued" | "processing" | "in_progress" | "completed" | "failed" | "cancelled" | "expired";
+  lifecycle_status?: "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
   polling_url: string;
+  cancel_url?: string | null;
+  websocket_url?: string;
   poll_after_seconds?: number;
   provider?: string | null;
   model?: string | null;
@@ -149,7 +211,13 @@ export type VideoStatusResponse = {
     download_url?: string;
     expires_at?: number | null;
   }>;
-  billing?: Record<string, unknown>;
+  billing?: VideoBillingSummary;
+  webhook?: AsyncWebhookPublicState;
+  native_video_id?: string | null;
+  next_webhook_retry_at?: string | null;
+  last_webhook_progress?: number | null;
+  last_webhook_progress_at?: string | null;
+  last_webhook_dispatched_at?: string | null;
   usage?: Record<string, unknown>;
   error?: unknown;
 };
@@ -196,7 +264,7 @@ export type ChatCompletionsParams = Omit<ChatCompletionsRequest, "model" | "mess
   messages: ChatMessageInput[];
 };
 
-const DEFAULT_BASE_URL = "https://api.phaseo.app/v1";
+const DEFAULT_BASE_URL = "https://api.phaseo.ai/v1";
 
 function trimTrailingSlashes(value: string): string {
   let end = value.length;
@@ -212,6 +280,10 @@ export type {
   AudioTranscriptionResponse,
   AudioTranslationRequest,
   AudioTranslationResponse,
+  AsyncWebhookDeliveryAttempt,
+  AsyncWebhookDeliverySummary,
+  AsyncWebhookPublicState,
+  BatchBillingSummary,
   BatchRequest,
   BatchResponse,
   ChatCompletionsRequest,
@@ -226,23 +298,43 @@ export type {
   ImagesGenerationResponse,
   ModerationsRequest,
   ModerationsResponse,
+  MusicGenerateRequest,
+  MusicGenerateResponse,
+  OcrRequest,
+  OcrResponse,
+  RerankRequest,
+  RerankResponse,
   ResponsesRequest,
   ResponsesResponse,
+  VideoBillingSummary,
   VideoGenerationRequest,
   VideoGenerationResponse
 };
 
 export type ModelListResponse = Awaited<ReturnType<typeof ops.listModels>>;
-export type VideoModelsResponse = { object: "list"; data: Array<Record<string, unknown>> };
-export type VideoListResponse = { object: "list"; data: VideoStatusResponse[] };
+export type BatchListResponse = Awaited<ReturnType<typeof ops.listBatches>>;
+export type BatchModelsResponse = Awaited<ReturnType<typeof ops.listBatchModels>>;
+export type VideoListResponse = {
+  object: "list";
+  data: VideoStatusResponse[];
+  first_id?: string | null;
+  last_id?: string | null;
+  has_more?: boolean;
+};
 export type Healthz200Response = {
   status: string;
 };
 export { ops as operations };
 export { ModelIds, MODEL_IDS, MODEL_ID_SET } from "./modelIds.js";
-export type AIStatsOptions = Options;
+export {
+  computeAsyncWebhookSignature,
+  verifyAsyncWebhookSignature,
+  type AsyncWebhookHeaders,
+  type VerifyAsyncWebhookSignatureOptions
+} from "./webhooks.js";
+export type PhaseoOptions = Options;
 
-export class AIStats {
+export class Phaseo {
   private readonly client: Client;
   private readonly basePath: string;
   private readonly headers: Record<string, string>;
@@ -250,27 +342,36 @@ export class AIStats {
   private readonly fetchImpl: typeof fetch;
   private readonly enableDeprecationWarnings: boolean;
   private readonly warningsAsErrors: boolean;
-  private readonly logger?: AIStatsLogger;
+  private readonly logger?: PhaseoLogger;
   private readonly warnedModels = new Set<string>();
   private readonly modelLifecycleCache = new Map<string, ModelLifecycleInfo | null>();
 
   readonly responses = {
-    create: async (req: ResponsesRequest): Promise<ResponsesResponse | AsyncGenerator<string>> => {
+    create: async (req: ResponsesRequest): Promise<ResponsesResponse | AsyncGenerator<ResponseStreamChunk>> => {
       if ((req as { stream?: boolean }).stream) {
-        return this.streamResponse(req);
+        return this.streamResponses(req);
       }
       return this.generateResponse(req);
-    }
+    },
   };
 
   readonly chat = {
     completions: {
-      create: async (req: ChatCompletionsParams): Promise<ChatCompletionsResponse | AsyncGenerator<string>> => {
+      create: async (req: ChatCompletionsParams): Promise<ChatCompletionsResponse | AsyncGenerator<ChatStreamChunk>> => {
         if ((req as { stream?: boolean }).stream) {
-          return this.streamText(req);
+          return this.streamChat(req);
         }
         return this.generateText(req);
       }
+    }
+  };
+
+  readonly messages = {
+    create: async (req: AnthropicMessagesRequest): Promise<AnthropicMessagesResponse | AsyncGenerator<MessageStreamChunk>> => {
+      if ((req as { stream?: boolean }).stream) {
+        return this.streamMessages(req);
+      }
+      return this.generateMessage(req);
     }
   };
 
@@ -284,19 +385,22 @@ export class AIStats {
 
   readonly batches = {
     create: async (req: BatchCreateRequest): Promise<BatchResponse> => this.createBatch(req),
+    list: async (params: Record<string, unknown> = {}): Promise<BatchListResponse> => this.listBatches(params),
     get: async (batchId: string): Promise<BatchResponse> => this.getBatch(batchId),
     cancel: async (batchId: string): Promise<BatchResponse> => this.cancelBatch(batchId),
     listRequests: async (batchId: string, options: BatchRequestListOptions = {}): Promise<BatchRequestRowsResponse> =>
       this.listBatchRequests(batchId, options),
     wait: async (batchId: string, options: BatchWaitOptions = {}): Promise<BatchResponse> =>
       this.waitForBatch(batchId, options),
+    listModels: async (params: Record<string, unknown> = {}): Promise<BatchModelsResponse> =>
+      this.listBatchModels(params),
     websocketUrl: (batchId: string, options: AsyncJobWebSocketOptions = {}): string =>
       this.getAsyncJobWebSocketUrl("batch", batchId, options),
   };
 
   readonly webhooks = {
     verifySignature: async (input: WebhookVerificationInput): Promise<boolean> =>
-      AIStats.verifyWebhookSignature(input),
+      Phaseo.verifyWebhookSignature(input),
   };
 
   readonly videos = {
@@ -310,9 +414,29 @@ export class AIStats {
     cancel: async (videoId: string): Promise<VideoStatusResponse> => this.cancelVideo(videoId),
     delete: async (videoId: string): Promise<{ id: string; object: "video"; deleted: boolean }> =>
       this.deleteVideo(videoId),
-    listModels: async (): Promise<VideoModelsResponse> => this.listVideoModels(),
     websocketUrl: (videoId: string, options: AsyncJobWebSocketOptions = {}): string =>
       this.getAsyncJobWebSocketUrl("video", videoId, options),
+  };
+
+  readonly music = {
+    create: async (req: MusicGenerateRequest): Promise<MusicGenerateResponse> => this.generateMusic(req),
+    get: async (musicId: string): Promise<MusicGenerateResponse> => this.getMusicGeneration(musicId),
+  };
+
+  readonly ocr = {
+    create: async (req: OcrRequest): Promise<OcrResponse> => this.createOcr(req),
+  };
+
+  readonly rerank = {
+    create: async (req: RerankRequest): Promise<RerankResponse> => this.createRerank(req),
+  };
+
+  readonly providers = {
+    list: async (params: Record<string, unknown> = {}): Promise<unknown> => this.listProviders(params),
+    derankStatus: async (
+      providerId: string,
+      params: Record<string, string | number | boolean> = {},
+    ): Promise<unknown> => this.getProviderDerankStatus(providerId, params),
   };
 
   readonly asyncJobs = {
@@ -335,7 +459,7 @@ export class AIStats {
     this.warningsAsErrors = opts.warningsAsErrors ?? false;
     this.logger = opts.logger;
 
-    this.telemetry = new TelemetryCapture(opts.devtools, "2.0.4");
+    this.telemetry = new TelemetryCapture(opts.devtools, "2.0.5");
 
   }
 
@@ -344,14 +468,20 @@ export class AIStats {
   }
 
   async request(method: string, path: string, options: {
-    query?: Record<string, string | number | boolean>;
+    query?: Record<string, QueryParamValue>;
     headers?: Record<string, string>;
     body?: unknown;
   } = {}): Promise<unknown> {
     const url = new URL(path.replace(/^\/+/, ""), `${this.basePath}/`);
     if (options.query) {
       for (const [key, value] of Object.entries(options.query)) {
-        url.searchParams.set(key, String(value));
+        if (Array.isArray(value)) {
+          for (const item of value) {
+            url.searchParams.append(key, String(item));
+          }
+        } else {
+          url.searchParams.set(key, String(value));
+        }
       }
     }
     const res = await this.fetchImpl(url.toString(), {
@@ -461,13 +591,16 @@ export class AIStats {
     }
 
     try {
-      const payload = await this.request("GET", "/data/models", {
+      const payload = await this.request("GET", "/models", {
         query: { model_id: normalizedModelId, limit: 1 },
       });
       const models = Array.isArray((payload as { models?: unknown }).models)
-        ? ((payload as { models: DataModel[] }).models ?? [])
+        ? ((payload as { models: DataModelLike[] }).models ?? [])
         : [];
-      const model = models.find((entry) => (entry?.model_id ?? "").trim() === normalizedModelId);
+      const model = models.find((entry) => {
+        const candidateId = asTrimmedString(entry?.model_id) ?? asTrimmedString(entry?.id);
+        return candidateId === normalizedModelId;
+      });
       if (!model) {
         this.modelLifecycleCache.set(normalizedModelId, null);
         return null;
@@ -500,8 +633,8 @@ export class AIStats {
     await this.maybeWarnForPayload(payload);
     const body = JSON.stringify(payload);
 
-    const generator = async function* (this: AIStats) {
-      const res = await fetch(`${this.basePath}/chat/completions`, {
+    const generator = async function* (this: Phaseo) {
+      const res = await this.fetchImpl(`${this.basePath}/chat/completions`, {
         method: "POST",
         headers: { ...this.headers, "Content-Type": "application/json" },
         body
@@ -517,6 +650,54 @@ export class AIStats {
 
     yield* this.telemetry.wrapStream(
       "chat.completions",
+      generator(),
+      () => payload
+    );
+  }
+
+  async *streamChat(req: ChatCompletionsParams): AsyncGenerator<ChatStreamChunk> {
+    for await (const line of this.streamText(req)) {
+      const chunk = parseChatStreamLine(line);
+      if (!chunk) continue;
+      yield chunk;
+    }
+  }
+
+  generateMessage(req: AnthropicMessagesRequest): Promise<AnthropicMessagesResponse> {
+    const payload = { ...req, stream: false };
+    return this.withLifecycleGuard(
+      payload,
+      () => this.telemetry.wrap(
+        "messages",
+        () => ops.createAnthropicMessage(this.client, { body: payload }),
+        () => payload,
+        extractChatMetadata
+      )
+    );
+  }
+
+  async *streamMessages(req: AnthropicMessagesRequest): AsyncGenerator<MessageStreamChunk> {
+    const payload = { ...req, stream: true };
+    await this.maybeWarnForPayload(payload);
+
+    const generator = async function* (this: Phaseo) {
+      const res = await this.fetchImpl(`${this.basePath}/messages`, {
+        method: "POST",
+        headers: { ...this.headers, "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok || !res.body) {
+        const text = await res.text();
+        throw createStreamHttpError(res, text);
+      }
+      for await (const line of readSseLines(res)) {
+        const chunk = parseMessageStreamLine(line);
+        if (chunk) yield chunk;
+      }
+    }.bind(this);
+
+    yield* this.telemetry.wrapStream(
+      "messages",
       generator(),
       () => payload
     );
@@ -545,7 +726,7 @@ export class AIStats {
             form.append(key, value as string | Blob);
           }
         });
-        const res = await fetch(`${this.basePath}/images/edits`, {
+        const res = await this.fetchImpl(`${this.basePath}/images/edits`, {
           method: "POST",
           headers: this.headers,
           body: form
@@ -584,7 +765,28 @@ export class AIStats {
     );
   }
 
-  listVideos(params: Record<string, string | number | boolean> = {}): Promise<VideoListResponse> {
+  generateMusic(req: MusicGenerateRequest): Promise<MusicGenerateResponse> {
+    return this.withLifecycleGuard(
+      req,
+      () => this.telemetry.wrap(
+        "music.generations",
+        () => ops.generateMusic(this.client, { body: req }),
+        () => req,
+        extractGatewayMetadata
+      )
+    );
+  }
+
+  getMusicGeneration(musicId: string): Promise<MusicGenerateResponse> {
+    return this.telemetry.wrap(
+      "music.retrieve",
+      () => ops.getMusicGeneration(this.client, { path: { music_id: musicId } as any }) as Promise<MusicGenerateResponse>,
+      () => ({ music_id: musicId }),
+      extractGatewayMetadata
+    );
+  }
+
+  listVideos(params: Record<string, QueryParamValue> = {}): Promise<VideoListResponse> {
     return this.telemetry.wrap(
       "video.list",
       () => ops.listVideos(this.client, { query: params as any }) as Promise<VideoListResponse>,
@@ -634,10 +836,6 @@ export class AIStats {
     return this.request("DELETE", `/videos/${encodeURIComponent(videoId)}`) as Promise<{ id: string; object: "video"; deleted: boolean }>;
   }
 
-  listVideoModels(): Promise<VideoModelsResponse> {
-    return this.request("GET", "/videos/models") as Promise<VideoModelsResponse>;
-  }
-
   generateEmbedding(body: Record<string, unknown>): Promise<unknown> {
     return this.withLifecycleGuard(
       body,
@@ -645,6 +843,30 @@ export class AIStats {
         "embeddings",
         () => ops.createEmbedding(this.client, { body: body as any }),
         () => body
+      )
+    );
+  }
+
+  createOcr(req: OcrRequest): Promise<OcrResponse> {
+    return this.withLifecycleGuard(
+      req,
+      () => this.telemetry.wrap(
+        "ocr",
+        () => ops.createOcr(this.client, { body: req }),
+        () => req,
+        extractGatewayMetadata
+      )
+    );
+  }
+
+  createRerank(req: RerankRequest): Promise<RerankResponse> {
+    return this.withLifecycleGuard(
+      req,
+      () => this.telemetry.wrap(
+        "rerank",
+        () => ops.createRerank(this.client, { body: req }),
+        () => req,
+        extractGatewayMetadata
       )
     );
   }
@@ -665,8 +887,8 @@ export class AIStats {
     const payload = { ...req, stream: true };
     await this.maybeWarnForPayload(payload);
 
-    const generator = async function* (this: AIStats) {
-      const res = await fetch(`${this.basePath}/responses`, {
+    const generator = async function* (this: Phaseo) {
+      const res = await this.fetchImpl(`${this.basePath}/responses`, {
         method: "POST",
         headers: { ...this.headers, "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -685,6 +907,14 @@ export class AIStats {
       generator(),
       () => payload
     );
+  }
+
+  async *streamResponses(req: ResponsesRequest): AsyncGenerator<ResponseStreamChunk> {
+    for await (const line of this.streamResponse(req)) {
+      const chunk = parseResponseStreamLine(line);
+      if (!chunk) continue;
+      yield chunk;
+    }
   }
 
   createBatch(req: BatchCreateRequest): Promise<BatchResponse> {
@@ -739,9 +969,7 @@ export class AIStats {
         .map((status) => normalizeBatchStatus(status))
         .filter((status): status is BatchTerminalStatus => Boolean(status))
     );
-    if (terminalStatuses.size === 0) {
-      throw new Error("At least one terminal batch status is required");
-    }
+    if (terminalStatuses.size === 0) throw new Error("At least one terminal batch status is required");
     const startedAt = Date.now();
     while (true) {
       throwIfAborted(options.signal);
@@ -749,30 +977,40 @@ export class AIStats {
       await options.onPoll?.(batch);
       const status = normalizeBatchStatus(batch.status);
       if (status && terminalStatuses.has(status)) return batch;
-      if (Date.now() - startedAt >= timeoutMs) {
-        throw new Error(`Timed out waiting for batch ${normalizedId}`);
-      }
+      if (Date.now() - startedAt >= timeoutMs) throw new Error(`Timed out waiting for batch ${normalizedId}`);
       await sleep(Math.min(intervalMs, Math.max(1, timeoutMs - (Date.now() - startedAt))), options.signal);
     }
   }
 
   static async verifyWebhookSignature(input: WebhookVerificationInput): Promise<boolean> {
-    const secret = asTrimmedString(input.secret);
-    const provided = asTrimmedString(input.signature);
-    if (!secret || !provided) return false;
-    if (input.timestamp !== undefined && input.timestamp !== null && input.toleranceSeconds !== undefined) {
-      const timestamp = Number(input.timestamp);
-      if (!Number.isFinite(timestamp)) return false;
-      const ageSeconds = Math.abs(Date.now() / 1000 - timestamp);
-      if (ageSeconds > Math.max(0, input.toleranceSeconds)) return false;
-    }
-    const body = await bodyToString(input.body);
-    const signedBody =
-      input.timestamp !== undefined && input.timestamp !== null
-        ? `${String(input.timestamp)}.${body}`
-        : body;
-    const expected = await signHexSha256(secret, signedBody);
-    return parseWebhookSignatureCandidates(provided).some((candidate) => timingSafeEqual(candidate, expected));
+    const timestamp = input.timestamp == null ? null : String(input.timestamp);
+    if (!timestamp || !input.signature) return false;
+    const body = input.body instanceof ArrayBuffer ? new Uint8Array(input.body) : input.body;
+    return verifyWebhookSignatureValue({
+      secret: input.secret,
+      body,
+      headers: {
+        "x-phaseo-timestamp": timestamp,
+        "x-phaseo-signature": input.signature.trim().replace(/^sha256=/i, ""),
+      },
+      toleranceSeconds: input.toleranceSeconds,
+    });
+  }
+
+  listBatches(params: Record<string, unknown> = {}): Promise<BatchListResponse> {
+    return this.telemetry.wrap(
+      "batches.list",
+      () => ops.listBatches(this.client, { query: params as any }),
+      () => params
+    );
+  }
+
+  listBatchModels(params: Record<string, unknown> = {}): Promise<BatchModelsResponse> {
+    return this.telemetry.wrap(
+      "batches.models",
+      () => ops.listBatchModels(this.client, { query: params as any }),
+      () => params
+    );
   }
 
   listFiles(): Promise<FileListResponse> {
@@ -788,10 +1026,7 @@ export class AIStats {
       "files.retrieve",
       async () => {
         const url = new URL(`batches/files/${encodeURIComponent(fileId)}`, `${this.basePath}/`);
-        const res = await this.fetchImpl(url.toString(), {
-          method: "GET",
-          headers: this.headers,
-        });
+        const res = await this.fetchImpl(url.toString(), { method: "GET", headers: this.headers });
         if (!res.ok) {
           const text = await res.text();
           throw createHttpError(res, text);
@@ -815,7 +1050,12 @@ export class AIStats {
     return new Uint8Array(await res.arrayBuffer());
   }
 
-  async uploadFile(params: { purpose?: string; model?: string; provider?: string; file: Blob | File | BufferSource | string }): Promise<FileObject> {
+  async uploadFile(params: {
+    purpose?: string;
+    file: Blob | File | BufferSource | string;
+    model?: string;
+    provider?: string;
+  }): Promise<FileObject> {
     return this.telemetry.wrap(
       "files.upload",
       async () => {
@@ -825,12 +1065,8 @@ export class AIStats {
           form.append("purpose", params.purpose);
         }
         const url = new URL("batches/files", `${this.basePath}/`);
-        if (params.model) {
-          url.searchParams.set("model", params.model);
-        }
-        if (params.provider) {
-          url.searchParams.set("provider", params.provider);
-        }
+        if (params.model) url.searchParams.set("model", params.model);
+        if (params.provider) url.searchParams.set("provider", params.provider);
         const res = await this.fetchImpl(url.toString(), {
           method: "POST",
           headers: this.headers,
@@ -854,19 +1090,25 @@ export class AIStats {
     );
   }
 
-  listTeamModels(params: Record<string, unknown> = {}): Promise<unknown> {
-    return this.telemetry.wrap(
-      "models.team",
-      () => ops.listTeamModels(this.client, { query: params as any }),
-      () => params
-    );
-  }
-
   listProviders(params: Record<string, unknown> = {}): Promise<unknown> {
     return this.telemetry.wrap(
       "providers",
       () => ops.listProviders(this.client, { query: params as any }),
       () => params
+    );
+  }
+
+  getProviderDerankStatus(
+    providerId: string,
+    params: Record<string, string | number | boolean> = {},
+  ): Promise<unknown> {
+    return this.telemetry.wrap(
+      "providers.derank",
+      () => ops.getProviderDerankStatus(this.client, {
+        path: { provider_id: providerId } as any,
+        query: params as any,
+      }),
+      () => ({ provider_id: providerId, ...params })
     );
   }
 
@@ -1027,7 +1269,7 @@ export class AIStats {
     return this.telemetry.wrap(
       "audio.speech",
       async () => {
-        const res = await fetch(`${this.basePath}/audio/speech`, {
+        const res = await this.fetchImpl(`${this.basePath}/audio/speech`, {
           method: "POST",
           headers: { ...this.headers, "Content-Type": "application/json" },
           body: JSON.stringify(body)
@@ -1077,95 +1319,7 @@ export class AIStats {
       extractGatewayMetadata
     );
   }
-}
 
-function normalizeBatchStatus(value: unknown): BatchTerminalStatus | null {
-  const normalized = asTrimmedString(value)?.toLowerCase();
-  if (!normalized) return null;
-  if (normalized === "canceled") return "cancelled";
-  if (
-    normalized === "completed" ||
-    normalized === "failed" ||
-    normalized === "cancelled" ||
-    normalized === "expired"
-  ) {
-    return normalized;
-  }
-  return null;
-}
-
-function throwIfAborted(signal?: AbortSignal): void {
-  if (signal?.aborted) {
-    throw new DOMException("The operation was aborted.", "AbortError");
-  }
-}
-
-function sleep(ms: number, signal?: AbortSignal): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (signal?.aborted) {
-      reject(new DOMException("The operation was aborted.", "AbortError"));
-      return;
-    }
-    const timeout = setTimeout(() => {
-      signal?.removeEventListener("abort", onAbort);
-      resolve();
-    }, ms);
-    const onAbort = () => {
-      clearTimeout(timeout);
-      reject(new DOMException("The operation was aborted.", "AbortError"));
-    };
-    signal?.addEventListener("abort", onAbort, { once: true });
-  });
-}
-
-async function bodyToString(body: string | Uint8Array | ArrayBuffer): Promise<string> {
-  if (typeof body === "string") return body;
-  if (body instanceof Uint8Array) return new TextDecoder().decode(body);
-  return new TextDecoder().decode(new Uint8Array(body));
-}
-
-function parseWebhookSignatureCandidates(header: string): string[] {
-  return header
-    .split(/\s+/)
-    .flatMap((part) => part.split(";"))
-    .flatMap((part) => part.split(","))
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .map((part) => {
-      const lower = part.toLowerCase();
-      if (lower.startsWith("sha256=")) return part.slice(7).trim();
-      if (lower.startsWith("v1=")) return part.slice(3).trim();
-      return part;
-    })
-    .filter((part) => part.length > 8);
-}
-
-async function signHexSha256(secret: string, message: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(message));
-  return Array.from(new Uint8Array(signature))
-    .map((value) => value.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-function timingSafeEqual(a: string, b: string): boolean {
-  const left = a.toLowerCase();
-  const right = b.toLowerCase();
-  const len = Math.max(left.length, right.length);
-  let diff = left.length === right.length ? 0 : 1;
-  for (let i = 0; i < len; i += 1) {
-    const ca = i < left.length ? left.charCodeAt(i) : 0;
-    const cb = i < right.length ? right.charCodeAt(i) : 0;
-    diff |= ca ^ cb;
-  }
-  return diff === 0;
 }
 
 function normalizeMessage(msg: ChatMessageInput): ChatMessage {
@@ -1197,12 +1351,146 @@ async function* readSseLines(res: Response): AsyncGenerator<string> {
   }
 }
 
+function parseChatStreamLine(line: string): ChatStreamChunk | null {
+  const parsed = parseSseJson(line);
+  if (parsed === null) return null;
+  if (!isRecord(parsed)) {
+    return {
+      raw: parsed,
+      text: "",
+      usage: null,
+      reasoningTokens: null
+    };
+  }
+
+  const usage = extractUsage(parsed);
+  return {
+    ...parsed,
+    text: extractChatChunkText(parsed),
+    usage,
+    reasoningTokens: extractReasoningTokens(usage)
+  };
+}
+
+function parseResponseStreamLine(line: string): ResponseStreamChunk | null {
+  const parsed = parseSseJson(line);
+  if (parsed === null) return null;
+  if (!isRecord(parsed)) {
+    return {
+      raw: parsed,
+      text: "",
+      usage: null,
+      reasoningTokens: null
+    };
+  }
+
+  const usage = extractUsage(parsed);
+  return {
+    ...parsed,
+    text: extractResponseChunkText(parsed),
+    usage,
+    reasoningTokens: extractReasoningTokens(usage)
+  };
+}
+
+function parseMessageStreamLine(line: string): MessageStreamChunk | null {
+  const parsed = parseSseJson(line);
+  if (parsed === null) return null;
+  if (!isRecord(parsed)) {
+    return {
+      raw: parsed,
+      text: "",
+      usage: null,
+      reasoningTokens: null
+    };
+  }
+
+  const usage = extractUsage(parsed);
+  return {
+    ...parsed,
+    text: extractMessageChunkText(parsed),
+    usage,
+    reasoningTokens: extractReasoningTokens(usage)
+  };
+}
+
+function parseSseJson(line: string): unknown | null {
+  const data = line.startsWith("data:") ? line.slice(5).trim() : line.trim();
+  if (!data || data === "[DONE]") return null;
+  try {
+    return JSON.parse(data);
+  } catch {
+    return data;
+  }
+}
+
+function extractChatChunkText(chunk: Record<string, unknown>): string {
+  const choices = Array.isArray(chunk.choices) ? chunk.choices : [];
+  return choices
+    .map((choice) => {
+      if (!isRecord(choice) || !isRecord(choice.delta)) return "";
+      const content = choice.delta.content;
+      return typeof content === "string" ? content : "";
+    })
+    .join("");
+}
+
+function extractResponseChunkText(chunk: Record<string, unknown>): string {
+  if (typeof chunk.delta === "string") return chunk.delta;
+  if (typeof chunk.text === "string") return chunk.text;
+  if (typeof chunk.output_text === "string") return chunk.output_text;
+  if (isRecord(chunk.response) && typeof chunk.response.output_text === "string") {
+    return chunk.response.output_text;
+  }
+  return "";
+}
+
+function extractMessageChunkText(chunk: Record<string, unknown>): string {
+  if (isRecord(chunk.delta) && typeof chunk.delta.text === "string") {
+    return chunk.delta.text;
+  }
+  if (typeof chunk.text === "string") return chunk.text;
+  if (isRecord(chunk.content_block) && typeof chunk.content_block.text === "string") {
+    return chunk.content_block.text;
+  }
+  return "";
+}
+
+function extractUsage(chunk: Record<string, unknown>): GatewayStreamUsage | null {
+  if (isRecord(chunk.usage)) return chunk.usage as GatewayStreamUsage;
+  if (isRecord(chunk.response) && isRecord(chunk.response.usage)) {
+    return chunk.response.usage as GatewayStreamUsage;
+  }
+  if (isRecord(chunk.message) && isRecord(chunk.message.usage)) {
+    return chunk.message.usage as GatewayStreamUsage;
+  }
+  return null;
+}
+
+function extractReasoningTokens(usage: GatewayStreamUsage | null): number | null {
+  if (!usage) return null;
+  return (
+    readNumber(usage.reasoningTokens) ??
+    readNumber(usage.reasoning_tokens) ??
+    readNumber(usage.completion_tokens_details?.reasoning_tokens) ??
+    readNumber(usage.output_tokens_details?.reasoning_tokens)
+  );
+}
+
+function readNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
 /**
  * Compatibility layers - Drop-in replacements for OpenAI and Anthropic SDKs
  *
  * Usage:
- *   import { OpenAI } from '@ai-stats/sdk/compat/openai';
- *   import { Anthropic } from '@ai-stats/sdk/compat/anthropic';
+ *   import { OpenAI } from '@phaseo/sdk/compat/openai';
+ *   import { Anthropic } from '@phaseo/sdk/compat/anthropic';
  */
 export { OpenAI } from "./compat/openai.js";
 export { Anthropic } from "./compat/anthropic.js";
@@ -1229,13 +1517,13 @@ export type {
   MessageRole
 } from "./compat/anthropic.js";
 
-export default AIStats;
+export default Phaseo;
 
 function resolveApiKey(explicit?: string): string {
-  const key = explicit ?? readEnv("AI_STATS_API_KEY");
+  const key = explicit ?? readEnv("PHASEO_API_KEY");
   if (!key) {
     throw new Error(
-      "Missing API key. Pass `{ apiKey }` to `new AIStats(...)` or set `AI_STATS_API_KEY`.",
+      "Missing API key. Pass `{ apiKey }` to `new Phaseo(...)` or set `PHASEO_API_KEY`. ",
     );
   }
   return key;
@@ -1248,8 +1536,8 @@ function readEnv(name: string): string | undefined {
   return undefined;
 }
 
-function createHttpError(response: Response, text: string): AIStatsHttpError {
-  return new AIStatsHttpError({
+function createHttpError(response: Response, text: string): PhaseoHttpError {
+  return new PhaseoHttpError({
     status: response.status,
     statusText: response.statusText,
     body: parseResponseBody(text),
@@ -1257,8 +1545,8 @@ function createHttpError(response: Response, text: string): AIStatsHttpError {
   });
 }
 
-function createStreamHttpError(response: Response, text: string): AIStatsHttpError {
-  return new AIStatsHttpError({
+function createStreamHttpError(response: Response, text: string): PhaseoHttpError {
+  return new PhaseoHttpError({
     status: response.status,
     statusText: response.statusText,
     body: parseResponseBody(text),
@@ -1317,11 +1605,14 @@ function extractModelIdFromPayload(payload: unknown): string | null {
 }
 
 function toModelLifecycleInfo(
-  model: DataModel & { lifecycle?: Record<string, unknown> | null },
+  model: DataModelLike & { lifecycle?: Record<string, unknown> | null },
   fallbackModelId: string
 ): ModelLifecycleInfo {
   const lifecycle = (model.lifecycle ?? {}) as Record<string, unknown>;
-  const modelId = asTrimmedString(model.model_id) ?? fallbackModelId;
+  const modelId =
+    asTrimmedString(model.model_id) ??
+    asTrimmedString(model.id) ??
+    fallbackModelId;
   const sourceStatus =
     asTrimmedString(model.status) ??
     asTrimmedString(lifecycle.status) ??
@@ -1386,18 +1677,18 @@ function buildLifecycleMessage(
   const replacement = replacementModelId ? ` Use "${replacementModelId}" instead.` : "";
   if (status === "retired") {
     if (retirementDate) {
-      return `[ai-stats] Model "${modelId}" is retired as of ${retirementDate}.${replacement}`;
+      return `[phaseo] Model "${modelId}" is retired as of ${retirementDate}.${replacement}`;
     }
-    return `[ai-stats] Model "${modelId}" is retired.${replacement}`;
+    return `[phaseo] Model "${modelId}" is retired.${replacement}`;
   }
   if (status === "deprecated") {
     if (retirementDate) {
-      return `[ai-stats] Model "${modelId}" is deprecated and scheduled for retirement on ${retirementDate}.${replacement}`;
+      return `[phaseo] Model "${modelId}" is deprecated and scheduled for retirement on ${retirementDate}.${replacement}`;
     }
     if (deprecationDate) {
-      return `[ai-stats] Model "${modelId}" has been deprecated since ${deprecationDate}.${replacement}`;
+      return `[phaseo] Model "${modelId}" has been deprecated since ${deprecationDate}.${replacement}`;
     }
-    return `[ai-stats] Model "${modelId}" is deprecated.${replacement}`;
+    return `[phaseo] Model "${modelId}" is deprecated.${replacement}`;
   }
   return null;
 }
@@ -1447,13 +1738,39 @@ function buildInactiveModelRequestMessage(info: ModelLifecycleInfo): string {
         info.retirementDate,
         info.replacementModelId
       ) ??
-      `[ai-stats] Model "${info.modelId}" is not active for inference.`
+      `[phaseo] Model "${info.modelId}" is not active for inference.`
     );
   }
 
   const sourceStatus = normalizeSourceStatus(info.sourceStatus) ?? "unknown";
   const replacement = info.replacementModelId ? ` Use "${info.replacementModelId}" instead.` : "";
-  return `[ai-stats] Model "${info.modelId}" is not active for inference (status: ${sourceStatus}).${replacement}`;
+  return `[phaseo] Model "${info.modelId}" is not active for inference (status: ${sourceStatus}).${replacement}`;
+}
+
+function normalizeBatchStatus(value: unknown): BatchTerminalStatus | null {
+  const normalized = asTrimmedString(value)?.toLowerCase();
+  if (!normalized) return null;
+  if (normalized === "canceled") return "cancelled";
+  if (normalized === "completed" || normalized === "failed" || normalized === "cancelled" || normalized === "expired") {
+    return normalized;
+  }
+  return null;
+}
+
+function throwIfAborted(signal?: AbortSignal): void {
+  if (!signal?.aborted) return;
+  throw signal.reason instanceof Error ? signal.reason : new Error("Operation aborted");
+}
+
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    throwIfAborted(signal);
+    const timeout = setTimeout(resolve, ms);
+    signal?.addEventListener("abort", () => {
+      clearTimeout(timeout);
+      reject(signal.reason instanceof Error ? signal.reason : new Error("Operation aborted"));
+    }, { once: true });
+  });
 }
 
 function asTrimmedString(value: unknown): string | null {

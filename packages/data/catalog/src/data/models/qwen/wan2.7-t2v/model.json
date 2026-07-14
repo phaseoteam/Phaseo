@@ -15,11 +15,13 @@
   "api_model_id": "qwen/wan2.7-t2v",
   "links": [
     {
-      "platform": "documentation",
+      "title": "Documentation",
+      "kind": "documentation",
       "url": "https://www.alibabacloud.com/help/en/model-studio/models"
     },
     {
-      "platform": "pricing",
+      "title": "Pricing",
+      "kind": "pricing",
       "url": "https://help.aliyun.com/zh/model-studio/model-pricing"
     }
   ],

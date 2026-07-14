@@ -5,6 +5,7 @@ import { Buffer } from "node:buffer";
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { encryptSecret } from "@/lib/byok/crypto";
+import { canonicalByokProviderId } from "@/lib/byok/providerIds";
 import { validateProviderKeyFormat } from "@/lib/byok/providerKeyValidation";
 import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import {
@@ -28,7 +29,8 @@ export async function createByokKeyAction(
     if (!name) throw new Error("Missing name");
     if (!providerId) throw new Error("Missing providerId");
     if (!value) throw new Error("Missing key value");
-    const formatCheck = validateProviderKeyFormat(providerId, value);
+    const canonicalProviderId = canonicalByokProviderId(providerId);
+    const formatCheck = validateProviderKeyFormat(canonicalProviderId, value);
     if (!formatCheck.ok) {
         throw new Error(formatCheck.message);
     }
@@ -44,7 +46,7 @@ export async function createByokKeyAction(
 
     const basePayload = {
         workspace_id: activeWorkspaceId,
-        provider_id: providerId,
+        provider_id: canonicalProviderId,
         name,
         enabled,
         always_use,
@@ -66,7 +68,7 @@ export async function createByokKeyAction(
         .from("byok_keys")
         .select("id, created_at")
         .eq("workspace_id", activeWorkspaceId)
-        .eq("provider_id", providerId)
+        .eq("provider_id", canonicalProviderId)
         .order("created_at", { ascending: false });
     if (existingError) throw existingError;
 
@@ -87,7 +89,7 @@ export async function createByokKeyAction(
             .from("byok_keys")
             .update({
                 workspace_id: activeWorkspaceId,
-                provider_id: providerId,
+                provider_id: canonicalProviderId,
                 name,
                 enabled,
                 always_use,
@@ -122,7 +124,7 @@ export async function createByokKeyAction(
             .from("byok_keys")
             .select("id")
             .eq("workspace_id", activeWorkspaceId)
-            .eq("provider_id", providerId)
+            .eq("provider_id", canonicalProviderId)
             .order("created_at", { ascending: false })
             .limit(1)
             .maybeSingle();
@@ -134,7 +136,7 @@ export async function createByokKeyAction(
             .from("byok_keys")
             .update({
                 workspace_id: activeWorkspaceId,
-                provider_id: providerId,
+                provider_id: canonicalProviderId,
                 name,
                 enabled,
                 always_use,
@@ -173,7 +175,9 @@ export async function updateByokKeyAction(
     if (!row?.workspace_id) throw new Error("BYOK key not found");
     await requireWorkspaceMembership(supabase, user.id, row.workspace_id, ["owner", "admin"]);
 
+    const canonicalProviderId = canonicalByokProviderId(row.provider_id);
     const patch: any = {};
+    if (canonicalProviderId !== row.provider_id) patch.provider_id = canonicalProviderId;
     if (typeof updates.name === "string") patch.name = updates.name;
     if (typeof updates.enabled === "boolean") patch.enabled = updates.enabled;
     if (typeof updates.always_use === "boolean") patch.always_use = updates.always_use;
@@ -183,7 +187,7 @@ export async function updateByokKeyAction(
         if (!nextValue) {
             throw new Error("Key value cannot be empty");
         }
-        const formatCheck = validateProviderKeyFormat(row.provider_id, nextValue);
+        const formatCheck = validateProviderKeyFormat(canonicalProviderId, nextValue);
         if (!formatCheck.ok) {
             throw new Error(formatCheck.message);
         }

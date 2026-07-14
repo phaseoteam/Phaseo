@@ -55,7 +55,7 @@ function requireEnv(name: string): string {
 
 function parseGatewayKeyKid(value: string): string {
 	const match = value.match(/^aistats_v1_sk_([^_]+)_/);
-	if (!match?.[1]) throw new Error("Expected structured AI Stats API key");
+	if (!match?.[1]) throw new Error("Expected structured Phaseo API key");
 	return match[1];
 }
 
@@ -306,8 +306,8 @@ describeLive("OpenAI GPT-5.4 Nano live batch webhook", () => {
 				const delivered = await pollWebhookDelivery(receiver.uuid, batchId);
 				expect(delivered, `Expected webhook.site to receive batch.completed for ${batchId}`).not.toBeNull();
 				if (!delivered) return;
-				const timestamp = headerValue(delivered.headers, "x-ai-stats-timestamp");
-				const signature = headerValue(delivered.headers, "x-ai-stats-signature");
+				const timestamp = headerValue(delivered.headers, "x-phaseo-timestamp");
+				const signature = headerValue(delivered.headers, "x-phaseo-signature");
 				expect(timestamp).toMatch(/^\d+$/);
 				expect(signature).toBe(
 					await hmacSha256Hex(signingSecret, `${timestamp}.${delivered.content}`),

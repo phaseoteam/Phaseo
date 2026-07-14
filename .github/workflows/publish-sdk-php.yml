@@ -24,14 +24,14 @@ jobs:
             exit 1
           fi
 
-      - name: Create GitHub App token (AI Stats Bot)
+      - name: Create GitHub App token (Phaseo Bot)
         id: app-token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
         with:
-          app-id: ${{ secrets.AI_STATS_APP_ID }}
-          private-key: ${{ secrets.AI_STATS_APP_PRIVATE_KEY }}
+          client-id: ${{ secrets.PHASEO_APP_CLIENT_ID }}
+          private-key: ${{ secrets.PHASEO_APP_PRIVATE_KEY }}
 
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -43,7 +43,7 @@ jobs:
           package-manager-cache: false
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@7c071dfe9dc99bdf297fa79cb49ea005b9fcadbc
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
         with:
           php-version: "8.2"
 
@@ -127,7 +127,7 @@ jobs:
             exit 1
           fi
 
-          split_repo="${PHP_SDK_SPLIT_REPO:-AI-Stats/ai-stats-php-sdk}"
+          split_repo="${PHP_SDK_SPLIT_REPO:-phaseoteam/phaseo-php-sdk}"
           split_repo_url="https://github.com/${split_repo}"
           split_remote_url="https://x-access-token:${PHP_SDK_SPLIT_REPO_TOKEN}@github.com/${split_repo}.git"
 

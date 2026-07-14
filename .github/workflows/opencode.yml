@@ -30,13 +30,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [ "${GITHUB_REPOSITORY_OWNER}" != "AI-Stats" ]; then
+          if [ "${GITHUB_REPOSITORY_OWNER}" != "phaseoteam" ]; then
             echo "::error::This workflow only runs in the canonical repository."
             exit 1
           fi
 
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
           persist-credentials: false
 

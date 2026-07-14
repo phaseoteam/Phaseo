@@ -9,9 +9,9 @@ description: "Current wrapper methods supported by the preview PHP SDK."
 <?php
 require 'vendor/autoload.php';
 
-use AIStats\Sdk\AIStats;
+use Phaseo\Sdk\Phaseo;
 
-$client = new AIStats(getenv('AI_STATS_API_KEY'));
+$client = new Phaseo(getenv('PHASEO_API_KEY'));
 ```
 
 ## Chat completions

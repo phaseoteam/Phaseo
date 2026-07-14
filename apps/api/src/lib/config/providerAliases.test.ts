@@ -5,13 +5,17 @@ describe("normalizeProviderId", () => {
 	it("normalizes ids using strict trim + lowercase", () => {
 		expect(normalizeProviderId("  OPENAI  ")).toBe("openai");
 		expect(normalizeProviderId("Google-AI-Studio")).toBe("google-ai-studio");
-		expect(normalizeProviderId("x-AI")).toBe("x-ai");
+		expect(normalizeProviderId("x-AI")).toBe("spacex-ai");
+		expect(normalizeProviderId("SpaceX-AI")).toBe("spacex-ai");
 		expect(normalizeProviderId("z-ai")).toBe("z-ai");
 	});
 
 	it("maps supported provider aliases onto canonical routing ids", () => {
 		expect(normalizeProviderId("NovitaAI")).toBe("novita");
 		expect(normalizeProviderId("novita-ai")).toBe("novita");
+		expect(normalizeProviderId("spacex-ai")).toBe("spacex-ai");
+		expect(normalizeProviderId("x-ai")).toBe("spacex-ai");
+		expect(normalizeProviderId("xai")).toBe("spacex-ai");
 	});
 
 	it("does not alias display/provider brand names", () => {
@@ -25,7 +29,7 @@ describe("normalizeProviderList", () => {
 	it("normalizes arrays in order", () => {
 		expect(
 			normalizeProviderList(["OpenAI", "Anthropic", "Google-AI-Studio", "x-AI", "z-ai"]),
-		).toEqual(["openai", "anthropic", "google-ai-studio", "x-ai", "z-ai"]);
+		).toEqual(["openai", "anthropic", "google-ai-studio", "spacex-ai", "z-ai"]);
 	});
 
 	it("normalizes aliases within arrays", () => {

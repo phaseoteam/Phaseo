@@ -15,7 +15,8 @@
   "api_model_id": "qwen/qwen3.7-max",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://www.alibabacloud.com/blog/qwen3-7-the-agent-frontier_603154"
     }
   ],

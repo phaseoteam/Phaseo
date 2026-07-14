@@ -50,7 +50,7 @@ def cancelVideo(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Any:
+) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = f"/videos/{path.get("video_id", "")}/cancel"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
@@ -63,7 +63,7 @@ def cancelVideoAlias(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Any:
+) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = f"/video/generations/{path.get("video_id", "")}/cancel"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
@@ -316,19 +316,6 @@ def createVideoDownloadUrlAlias(
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
-def createWebhookEndpoint(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Dict[str, Any]:
-	path = path or {}
-	resolved_path = "/webhook-endpoints"
-	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
-
-
 def createWorkspace(
 	client: Client,
 	*,
@@ -378,19 +365,6 @@ def deleteVideoAlias(
 ) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = f"/video/generations/{path.get("video_id", "")}"
-	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
-
-
-def deleteWebhookEndpoint(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Dict[str, Any]:
-	path = path or {}
-	resolved_path = f"/webhook-endpoints/{path.get("endpoint_id", "")}"
 	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -615,19 +589,6 @@ def getVideoContentAlias(
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
-def getWebhookEndpoint(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Dict[str, Any]:
-	path = path or {}
-	resolved_path = f"/webhook-endpoints/{path.get("endpoint_id", "")}"
-	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
-
-
 def getWorkspace(
 	client: Client,
 	*,
@@ -677,6 +638,58 @@ def listBatchCapabilitiesAlias(
 ) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = "/batch/capabilities"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
+def listBatches(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Dict[str, Any]:
+	path = path or {}
+	resolved_path = "/batches"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
+def listBatchesAlias(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Dict[str, Any]:
+	path = path or {}
+	resolved_path = "/batch"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
+def listBatchModels(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Dict[str, Any]:
+	path = path or {}
+	resolved_path = "/batches/models"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
+def listBatchModelsAlias(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Dict[str, Any]:
+	path = path or {}
+	resolved_path = "/batch/models"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -754,7 +767,7 @@ def listModels(
 	body: Optional[Any] = None,
 ) -> Dict[str, Any]:
 	path = path or {}
-	resolved_path = "/gateway/models"
+	resolved_path = "/models"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -806,7 +819,7 @@ def listTeamModels(
 	body: Optional[Any] = None,
 ) -> Dict[str, Any]:
 	path = path or {}
-	resolved_path = "/gateway/models/me"
+	resolved_path = "/models/me"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -862,19 +875,6 @@ def listVideosAlias(
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
-def listWebhookEndpoints(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Dict[str, Any]:
-	path = path or {}
-	resolved_path = "/webhook-endpoints"
-	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
-
-
 def listWorkspaces(
 	client: Client,
 	*,
@@ -888,7 +888,7 @@ def listWorkspaces(
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
-def openResponsesWebSocket(
+def openAsyncJobWebSocket(
 	client: Client,
 	*,
 	path: Optional[Dict[str, Any]] = None,
@@ -897,7 +897,7 @@ def openResponsesWebSocket(
 	body: Optional[Any] = None,
 ) -> Any:
 	path = path or {}
-	resolved_path = "/responses/ws"
+	resolved_path = f"/async/{path.get("kind", "")}/{path.get("id", "")}/ws"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1005,19 +1005,6 @@ def retrieveFileContent(
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
-def rotateWebhookEndpointSecret(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Dict[str, Any]:
-	path = path or {}
-	resolved_path = f"/webhook-endpoints/{path.get("endpoint_id", "")}/rotate-secret"
-	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
-
-
 def updateApiKey(
 	client: Client,
 	*,
@@ -1028,19 +1015,6 @@ def updateApiKey(
 ) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = f"/keys/{path.get("id", "")}"
-	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
-
-
-def updateWebhookEndpoint(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Dict[str, Any]:
-	path = path or {}
-	resolved_path = f"/webhook-endpoints/{path.get("endpoint_id", "")}"
 	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -1096,4 +1070,4 @@ def uploadFile(
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
-operations___all__ = ["calculatePricing", "cancelBatch", "cancelBatchAlias", "cancelVideo", "cancelVideoAlias", "createAnthropicMessage", "createApiKey", "createBatch", "createBatchAlias", "createChatCompletion", "createEmbedding", "createImage", "createImageEdit", "createModeration", "createOcr", "createRerank", "createResponse", "createSpeech", "createTranscription", "createTranslation", "createVideo", "createVideoAlias", "createVideoDownloadUrl", "createVideoDownloadUrlAlias", "createWebhookEndpoint", "createWorkspace", "deleteApiKey", "deleteVideo", "deleteVideoAlias", "deleteWebhookEndpoint", "deleteWorkspace", "generateMusic", "generateMusicAlias", "getActivity", "getActivityAlias", "getApiKey", "getCredits", "getCurrentApiKey", "getGeneration", "getHealth", "getMusicGeneration", "getMusicGenerationAlias", "getProviderDerankStatus", "getVideo", "getVideoAlias", "getVideoContent", "getVideoContentAlias", "getWebhookEndpoint", "getWorkspace", "listApiKeys", "listBatchCapabilities", "listBatchCapabilitiesAlias", "listBatchRequests", "listBatchRequestsAlias", "listDataModels", "listEndpoints", "listFiles", "listModels", "listOrganisations", "listPricingModels", "listProviders", "listTeamModels", "listVideoModels", "listVideoModelsAlias", "listVideos", "listVideosAlias", "listWebhookEndpoints", "listWorkspaces", "openResponsesWebSocket", "retrieveBatch", "retrieveBatchAlias", "retrieveBatchFile", "retrieveBatchFileAlias", "retrieveBatchFileContent", "retrieveBatchFileContentAlias", "retrieveFile", "retrieveFileContent", "rotateWebhookEndpointSecret", "updateApiKey", "updateWebhookEndpoint", "updateWorkspace", "uploadBatchFile", "uploadBatchFileAlias", "uploadFile"]
+operations___all__ = ["calculatePricing", "cancelBatch", "cancelBatchAlias", "cancelVideo", "cancelVideoAlias", "createAnthropicMessage", "createApiKey", "createBatch", "createBatchAlias", "createChatCompletion", "createEmbedding", "createImage", "createImageEdit", "createModeration", "createOcr", "createRerank", "createResponse", "createSpeech", "createTranscription", "createTranslation", "createVideo", "createVideoAlias", "createVideoDownloadUrl", "createVideoDownloadUrlAlias", "createWorkspace", "deleteApiKey", "deleteVideo", "deleteVideoAlias", "deleteWorkspace", "generateMusic", "generateMusicAlias", "getActivity", "getActivityAlias", "getApiKey", "getCredits", "getCurrentApiKey", "getGeneration", "getHealth", "getMusicGeneration", "getMusicGenerationAlias", "getProviderDerankStatus", "getVideo", "getVideoAlias", "getVideoContent", "getVideoContentAlias", "getWorkspace", "listApiKeys", "listBatchCapabilities", "listBatchCapabilitiesAlias", "listBatches", "listBatchesAlias", "listBatchModels", "listBatchModelsAlias", "listBatchRequests", "listBatchRequestsAlias", "listDataModels", "listEndpoints", "listFiles", "listModels", "listOrganisations", "listPricingModels", "listProviders", "listTeamModels", "listVideoModels", "listVideoModelsAlias", "listVideos", "listVideosAlias", "listWorkspaces", "openAsyncJobWebSocket", "retrieveBatch", "retrieveBatchAlias", "retrieveBatchFile", "retrieveBatchFileAlias", "retrieveBatchFileContent", "retrieveBatchFileContentAlias", "retrieveFile", "retrieveFileContent", "updateApiKey", "updateWorkspace", "uploadBatchFile", "uploadBatchFileAlias", "uploadFile"]

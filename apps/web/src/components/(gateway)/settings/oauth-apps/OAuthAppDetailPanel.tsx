@@ -37,9 +37,13 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import { useRouter } from "next/navigation";
 import RegenerateSecretDialog from "./RegenerateSecretDialog";
 import RedirectUriManager from "./RedirectUriManager";
 import DeleteOAuthAppDialog from "./DeleteOAuthAppDialog";
+import OAuthScopeSelector from "./OAuthScopeSelector";
+import { normalizeOAuthScopes } from "@/lib/oauth/scopes";
+import { updateOAuthAppScopesAction } from "@/app/(dashboard)/settings/oauth-apps/actions";
 
 interface OAuthAppDetailPanelProps {
 	oauthApp: any;
@@ -114,7 +118,10 @@ export default function OAuthAppDetailPanel({
 	userDirectory,
 	currentUserId,
 }: OAuthAppDetailPanelProps) {
+	const router = useRouter();
 	const [copiedId, setCopiedId] = useState(false);
+	const [allowedScopes, setAllowedScopes] = useState(() => normalizeOAuthScopes(oauthApp.allowed_scopes));
+	const [savingScopes, setSavingScopes] = useState(false);
 	const appRedirectUris = parseRedirectUris(oauthApp.redirect_uris);
 	const userDirectoryMap = useMemo(() => {
 		const map = new Map<string, { full_name: string | null; email: string | null }>();
@@ -170,6 +177,20 @@ export default function OAuthAppDetailPanel({
 		setCopiedId(true);
 		toast.success("Client ID copied to clipboard");
 		setTimeout(() => setCopiedId(false), 2000);
+	};
+
+	const saveScopes = async () => {
+		setSavingScopes(true);
+		try {
+			const result = await updateOAuthAppScopesAction(oauthApp.client_id, allowedScopes);
+			if (result.error) throw new Error(result.error);
+			toast.success("OAuth scopes updated");
+			router.refresh();
+		} catch (error: any) {
+			toast.error(error?.message || "Failed to update OAuth scopes");
+		} finally {
+			setSavingScopes(false);
+		}
 	};
 
 	const statusColor = {
@@ -277,7 +298,7 @@ export default function OAuthAppDetailPanel({
 						OAuth Credentials
 					</CardTitle>
 					<CardDescription>
-						Use these credentials to integrate with the AI Stats OAuth flow
+						Use these credentials to integrate with the Phaseo OAuth flow
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
@@ -337,6 +358,30 @@ export default function OAuthAppDetailPanel({
 						clientId={oauthApp.client_id}
 						initialRedirectUris={appRedirectUris}
 					/>
+				</CardContent>
+			</Card>
+
+			{/* Allowed OAuth scopes */}
+			<Card>
+				<CardHeader>
+					<CardTitle className="text-lg">Scopes this app may request</CardTitle>
+					<CardDescription>
+						Choose the maximum permissions this client can ask users to approve.
+					</CardDescription>
+				</CardHeader>
+				<CardContent className="space-y-4">
+					<Alert>
+						<AlertCircle className="h-4 w-4" />
+						<AlertDescription>
+							Changing this list never expands an existing authorization. The app must request a new scope and each user must approve it in the OAuth consent flow.
+						</AlertDescription>
+					</Alert>
+					<OAuthScopeSelector selectedScopes={allowedScopes} onChange={setAllowedScopes} disabled={savingScopes} />
+					<div className="flex justify-end">
+						<Button onClick={saveScopes} disabled={savingScopes || allowedScopes.length === 0}>
+							{savingScopes ? "Saving..." : "Save scopes"}
+						</Button>
+					</div>
 				</CardContent>
 			</Card>
 

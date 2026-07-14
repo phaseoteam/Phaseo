@@ -1,6 +1,6 @@
 ---
 title: "Ruby SDK (preview)"
-description: "Local-preview Ruby wrapper for the AI Stats API."
+description: "Local-preview Ruby wrapper for the Phaseo API."
 ---
 
 <Note type="warning">
@@ -37,8 +37,8 @@ The local wrapper at `packages/sdk/sdk-ruby/lib/index.rb` currently exposes thes
 - `health`, `healthz`
 
 ```ruby
-require 'ai_stats_sdk'
+require 'phaseo_sdk'
 
-client = AIStatsSdk::AIStats.new(api_key: 'YOUR_KEY')
+client = PhaseoSdk::Phaseo.new(api_key: 'YOUR_KEY')
 models = client.list_models(limit: 5)
 ```

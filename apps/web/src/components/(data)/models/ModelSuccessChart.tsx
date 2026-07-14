@@ -27,7 +27,7 @@ import type { ModelSuccessPoint } from "@/lib/fetchers/models/getModelPerformanc
 
 const successChartConfig: ChartConfig = {
 	overall: {
-		label: "AI Stats success rate",
+		label: "Phaseo success rate",
 		color: "hsl(142, 76%, 36%)",
 	},
 	worst: {
@@ -48,23 +48,33 @@ function formatBucketLabel(bucket: string) {
 	});
 }
 
+function getDisplayedUptime(value: number | null | undefined, requests: number) {
+	if (value != null && Number.isFinite(value)) return value;
+	return requests === 0 ? 100 : null;
+}
+
 interface ModelSuccessChartProps {
 	successSeries: ModelSuccessPoint[];
+	showLeastStableProvider?: boolean;
 }
 
 export default function ModelSuccessChart({
 	successSeries,
+	showLeastStableProvider = true,
 }: ModelSuccessChartProps) {
 	const chartData = successSeries.map((point) => ({
 		time: formatBucketLabel(point.bucket),
-		overall: point.overallSuccessPct ?? null,
-		worst: point.worstProviderSuccessPct,
+		overall: getDisplayedUptime(point.overallSuccessPct, point.requests),
+		worst: showLeastStableProvider
+			? getDisplayedUptime(point.worstProviderSuccessPct, point.requests)
+			: null,
 		bucket: point.bucket,
+		requests: point.requests,
 	}));
 
 	if (!chartData.length) {
 		return (
-			<div className="rounded-lg border border-dashed border-gray-300 bg-muted/20 p-6 text-center">
+			<div className="rounded-lg border border-dashed border-border/80 bg-muted/20 p-6 text-center">
 				<Empty>
 					<EmptyHeader>
 						<EmptyMedia variant="icon">
@@ -82,7 +92,7 @@ export default function ModelSuccessChart({
 	}
 
 	return (
-		<div className="rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+		<div className="rounded-lg border border-border/80 bg-card p-6 text-card-foreground shadow-xs">
 			<div className="flex items-center justify-between">
 				<div>
 					<h3 className="text-lg font-semibold text-foreground">
@@ -99,7 +109,8 @@ export default function ModelSuccessChart({
 						<LineChart data={chartData}>
 							<CartesianGrid
 								strokeDasharray="3 3"
-								stroke="rgba(148, 163, 184, 0.2)"
+								stroke="var(--border)"
+								opacity={0.5}
 								vertical={false}
 							/>
 							<XAxis
@@ -108,7 +119,7 @@ export default function ModelSuccessChart({
 								tickLine={false}
 								tick={{
 									fontSize: 12,
-									fill: "hsl(var(--muted-foreground))",
+									fill: "var(--muted-foreground)",
 								}}
 							/>
 							<YAxis
@@ -116,7 +127,7 @@ export default function ModelSuccessChart({
 								tickLine={false}
 								tick={{
 									fontSize: 12,
-									fill: "hsl(var(--muted-foreground))",
+									fill: "var(--muted-foreground)",
 								}}
 								domain={[0, 100]}
 								tickFormatter={(value) =>
@@ -134,7 +145,7 @@ export default function ModelSuccessChart({
 									}
 
 									return (
-										<div className="rounded-lg border border-border bg-background p-3 shadow-lg">
+										<div className="rounded-lg border border-border bg-popover p-3 text-popover-foreground shadow-lg">
 											<p className="text-xs uppercase text-muted-foreground">
 												{payload[0].payload.time}
 											</p>
@@ -173,15 +184,17 @@ export default function ModelSuccessChart({
 									/>
 								)}
 							/>
-							<Line
-								type="monotone"
-								dataKey="worst"
-								stroke="var(--color-worst)"
-								strokeWidth={2}
-								dot={false}
-								strokeDasharray="4 3"
-								connectNulls
-							/>
+							{showLeastStableProvider ? (
+								<Line
+									type="monotone"
+									dataKey="worst"
+									stroke="var(--color-worst)"
+									strokeWidth={2}
+									dot={false}
+									strokeDasharray="4 3"
+									connectNulls
+								/>
+							) : null}
 							<Line
 								type="monotone"
 								dataKey="overall"

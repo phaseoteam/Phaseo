@@ -93,7 +93,7 @@
       "other_info": null
     },
     {
-      "model_id": "x-ai/grok-code-fast-1",
+      "model_id": "spacex-ai/grok-code-fast-1",
       "model_info": "Grok Code Fast 1",
       "rate_limit": "Subject to monthly allowance",
       "other_info": null

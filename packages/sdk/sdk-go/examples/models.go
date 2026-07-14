@@ -8,16 +8,16 @@ import (
 	"fmt"
 	"os"
 
-	aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
+	phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
 )
 
 func main() {
-	apiKey := os.Getenv("AI_STATS_API_KEY")
+	apiKey := os.Getenv("PHASEO_API_KEY")
 	if apiKey == "" {
-		panic("Set AI_STATS_API_KEY")
+		panic("Set PHASEO_API_KEY")
 	}
 
-	client := aistats.NewAIStats(apiKey, "https://api.phaseo.app/v1")
+	client := phaseo.NewPhaseo(apiKey, "https://api.phaseo.ai/v1")
 	resp, err := client.GetModels(context.Background(), map[string]string{
 		"provider": "anthropic",
 		"provider_status": "beta,not_ready",

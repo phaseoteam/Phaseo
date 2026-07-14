@@ -1,20 +1,20 @@
 openapi: 3.0.3
 info:
-  title: AI Stats Gateway API
+  title: Phaseo Gateway API
   description: >-
     A gateway API for accessing various AI models with OpenAI-compatible
     endpoints.
   version: 1.0.0
   contact:
-    name: AI Stats
-    url: https://docs.ai-stats.phaseo.app
+    name: Phaseo
+    url: https://phaseo.app
     email: danielbutler500@gmail.com
 servers:
-  - url: https://api.phaseo.app/v1
+  - url: https://api.phaseo.ai/v1
 security:
   - BearerAuth: []
 paths:
-  /gateway/models:
+  /models:
     get:
       x-beta: true
       tags:
@@ -198,7 +198,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /gateway/models/me:
+  /models/me:
     get:
       x-beta: true
       tags:
@@ -556,56 +556,72 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResponsesResponse'
-  /responses/ws:
+  /async/{kind}/{id}/ws:
     get:
       x-beta: true
       tags:
         - Gateway
-      operationId: openResponsesWebSocket
-      summary: Open Responses websocket session
+      operationId: openAsyncJobWebSocket
+      summary: Open async job websocket
       description: >
-        Opens a persistent websocket session for OpenAI Responses WebSocket
-        mode.
-
-        This route is currently experimental on AI Stats Gateway and is not
-
-        recommended for production workloads.
-
+        Opens a persistent websocket session for owned async batch or video job
+        updates.
 
         WebSocket handshake uses HTTP GET upgrade semantics and returns `101
-        Switching Protocols`
+        Switching Protocols` on success (not `200`). The socket emits a
+        `job.snapshot` immediately after upgrade and subsequent `job.updated`
+        envelopes when the normalized async job payload changes.
 
-        on success (not `200`).
-
-
-        This endpoint is OpenAI-only, requires `openai/<model>` format, and
-        accepts
-
-        `response.create` websocket messages.
-
-        The gateway enforces `store=false`, allows one in-flight response per
-        connection,
-
-        and forwards OpenAI Responses streaming events back to the client.
-
-
-        After upgrade, runtime failures are emitted as websocket `error` events
-
-        (for example `invalid_response_create`, `openai_routing_failed`,
-
-        `response_already_in_flight`, `model_mismatch`, `upstream_websocket_*`)
-
-        rather than additional HTTP response codes.
+        If `close_on_terminal` is enabled, the gateway closes the socket after a
+        terminal `completed`, `failed`, `cancelled`, or `expired` update.
+      parameters:
+        - name: kind
+          in: path
+          required: true
+          description: Async job kind.
+          schema:
+            type: string
+            enum:
+              - batch
+              - video
+        - name: id
+          in: path
+          required: true
+          description: Gateway-owned async job id.
+          schema:
+            type: string
+        - name: interval_ms
+          in: query
+          required: false
+          description: Polling interval used by the websocket recovery loop.
+          schema:
+            type: integer
+            minimum: 1000
+            maximum: 10000
+            default: 2500
+        - name: close_on_terminal
+          in: query
+          required: false
+          description: Close the socket after a terminal lifecycle update.
+          schema:
+            type: boolean
+            default: true
       responses:
         '101':
           description: WebSocket upgrade accepted.
           x-websocket:
             clientEvent:
-              $ref: '#/components/schemas/ResponsesWebSocketCreateEvent'
+              $ref: '#/components/schemas/AsyncJobWebSocketClientEvent'
             serverEvent:
-              $ref: '#/components/schemas/ResponsesWebSocketServerEvent'
+              $ref: '#/components/schemas/AsyncJobWebSocketServerEvent'
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Async job not found or not owned by the caller
           content:
             application/json:
               schema:
@@ -615,13 +631,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ResponsesWebSocketUpgradeRequiredResponse'
-        '501':
-          description: WebSocket mode is temporarily disabled
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RealtimeNotImplementedResponse'
+                $ref: '#/components/schemas/AsyncJobWebSocketUpgradeRequiredResponse'
   /messages:
     post:
       tags:
@@ -840,14 +850,34 @@ paths:
       operationId: listVideos
       summary: List videos
       description: Lists async video generation jobs for the authenticated team.
+      parameters:
+        - name: limit
+          in: query
+          description: >-
+            Maximum number of video jobs to return. Defaults to 50 and caps at
+            200.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+        - name: status
+          in: query
+          description: >-
+            Video lifecycle status filter. Repeat the parameter or provide
+            comma-separated values.
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
       responses:
         '200':
           description: Video list response
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: true
+                $ref: '#/components/schemas/VideoListResponse'
     post:
       x-beta: true
       tags:
@@ -880,21 +910,27 @@ paths:
       description: >-
         Returns DB-backed video model/provider capability metadata for the video
         playground and SDK validation.
+      parameters:
+        - name: params
+          in: query
+          required: false
+          description: >-
+            Optional supported-parameter filter. Repeat the parameter or pass a
+            comma-separated list. Canonical names and aliases are accepted, for
+            example `resolution`, `size`, `duration`, or `duration_seconds`.
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: false
       responses:
         '200':
           description: Video model capability list
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  object:
-                    type: string
-                    example: list
-                  data:
-                    type: array
-                    items:
-                      type: object
+                $ref: '#/components/schemas/VideoModelsResponse'
   /videos/{video_id}:
     get:
       x-beta: true
@@ -950,18 +986,24 @@ paths:
       operationId: cancelVideo
       summary: Cancel video
       description: >-
-        Temporarily disabled while provider-level cancellation support is
-        standardized.
+        Cancels a non-terminal video generation request when the upstream
+        provider supports cancellation.
       parameters:
         - name: video_id
           in: path
           required: true
-          description: The internal AI Stats video job ID (`G-...`).
+          description: The internal Phaseo video job ID (`G-...`).
           schema:
             type: string
       responses:
+        '200':
+          description: Video cancellation response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoGenerationResponse'
         '501':
-          description: Video cancellation is currently disabled
+          description: Video cancellation is not supported for this provider
           content:
             application/json:
               schema:
@@ -1255,6 +1297,55 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
   /batches:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatches
+      summary: List batches
+      description: >-
+        Lists owned async batch jobs for the authenticated workspace from the
+        gateway's persisted async job store.
+      parameters:
+        - name: limit
+          in: query
+          description: >-
+            Maximum number of batch jobs to return. Defaults to 20 and caps at
+            100.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: status
+          in: query
+          description: >-
+            Batch lifecycle status filter. Repeat the parameter, use a
+            comma-separated status value, or use statuses for comma-separated
+            filters.
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: statuses
+          in: query
+          description: Comma-separated lifecycle status filters.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Batch list response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     post:
       x-beta: true
       tags:
@@ -1281,6 +1372,45 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BatchResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches/models:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatchModels
+      summary: List batch model capabilities
+      description: >-
+        Returns DB-backed batch model/provider capability metadata, including
+        supported batch parameters such as allowed input endpoints and
+        completion windows.
+      parameters:
+        - name: params
+          in: query
+          required: false
+          description: >-
+            Optional supported-parameter filter. Repeat the parameter or pass a
+            comma-separated list. Canonical names and aliases are accepted, for
+            example `endpoint`, `request_endpoint`, `completion_window`, or
+            `window`.
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: false
+      responses:
+        '200':
+          description: Batch model capability list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchModelsResponse'
         '401':
           description: Unauthorized
           content:
@@ -1321,9 +1451,9 @@ paths:
       summary: Upload batch file
       description: >-
         Uploads a provider file for batch processing and stores ownership in the
-        authenticated workspace. Pass `model` so AI Stats can infer the upstream
-        provider for provider-backed batch inputs. Defaults to OpenAI for legacy
-        clients that omit both `model` and `provider`.
+        authenticated workspace. Pass `model` so Phaseo can infer the upstream
+        provider. Defaults to OpenAI when both `model` and `provider` are
+        omitted.
       parameters:
         - name: model
           in: query
@@ -1342,7 +1472,7 @@ paths:
               - groq
               - together
               - mistral
-        - name: x-ai-stats-provider
+        - name: x-phaseo-provider
           in: header
           required: false
           description: Header alternative to the `provider` query parameter.
@@ -1381,13 +1511,12 @@ paths:
       operationId: retrieveBatchFile
       summary: Retrieve batch file
       description: >-
-        Retrieves metadata for a batch file that belongs to the authenticated
+        Retrieves metadata for a batch file owned by the authenticated
         workspace.
       parameters:
         - name: file_id
           in: path
           required: true
-          description: The ID of the file to retrieve.
           schema:
             type: string
       responses:
@@ -1416,14 +1545,11 @@ paths:
         - Gateway
       operationId: retrieveBatchFileContent
       summary: Retrieve batch file content
-      description: >-
-        Retrieves binary content for a previously uploaded batch file that
-        belongs to the authenticated workspace.
+      description: Retrieves content for a batch file owned by the authenticated workspace.
       parameters:
         - name: file_id
           in: path
           required: true
-          description: The ID of the file to retrieve.
           schema:
             type: string
       responses:
@@ -1480,6 +1606,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '501':
+          description: Batch status refresh is not supported for this provider
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /batches/{batch_id}/requests:
     get:
       x-beta: true
@@ -1487,7 +1619,7 @@ paths:
         - Gateway
       operationId: listBatchRequests
       summary: List batch request rows
-      description: Lists tracked per-request rows for a batch job.
+      description: Lists tracked per-request rows for an owned batch job.
       parameters:
         - name: batch_id
           in: path
@@ -1559,8 +1691,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: true
+                $ref: '#/components/schemas/BatchResponse'
         '401':
           description: Unauthorized
           content:
@@ -1573,136 +1704,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /webhook-endpoints:
-    get:
-      x-beta: true
-      tags:
-        - Platform
-      operationId: listWebhookEndpoints
-      summary: List webhook endpoints
-      description: Lists workspace-managed async webhook endpoints.
-      responses:
-        '200':
-          description: Webhook endpoint list
+        '501':
+          description: Batch cancellation is not supported for this provider
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  object:
-                    type: string
-                    example: list
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/WebhookEndpoint'
-    post:
-      x-beta: true
-      tags:
-        - Platform
-      operationId: createWebhookEndpoint
-      summary: Create webhook endpoint
-      description: >-
-        Creates a workspace-managed async webhook endpoint and returns the
-        signing secret once.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/WebhookEndpointCreateRequest'
-      responses:
-        '201':
-          description: Created webhook endpoint
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/WebhookEndpointCreateResponse'
-  /webhook-endpoints/{endpoint_id}:
-    get:
-      x-beta: true
-      tags:
-        - Platform
-      operationId: getWebhookEndpoint
-      summary: Get webhook endpoint
-      parameters:
-        - name: endpoint_id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Webhook endpoint
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/WebhookEndpoint'
-    patch:
-      x-beta: true
-      tags:
-        - Platform
-      operationId: updateWebhookEndpoint
-      summary: Update webhook endpoint
-      parameters:
-        - name: endpoint_id
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/WebhookEndpointUpdateRequest'
-      responses:
-        '200':
-          description: Updated webhook endpoint
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/WebhookEndpoint'
-    delete:
-      x-beta: true
-      tags:
-        - Platform
-      operationId: deleteWebhookEndpoint
-      summary: Delete webhook endpoint
-      parameters:
-        - name: endpoint_id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Delete response
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: true
-  /webhook-endpoints/{endpoint_id}/rotate-secret:
-    post:
-      x-beta: true
-      tags:
-        - Platform
-      operationId: rotateWebhookEndpointSecret
-      summary: Rotate webhook endpoint secret
-      parameters:
-        - name: endpoint_id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Webhook endpoint with new signing secret
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/WebhookEndpointCreateResponse'
+                $ref: '#/components/schemas/ErrorResponse'
   /analytics:
     get:
       x-beta: true
@@ -2623,14 +2630,30 @@ paths:
       operationId: listVideosAlias
       summary: List videos (alias)
       description: Alias of /videos.
+      parameters:
+        - name: limit
+          in: query
+          description: >-
+            Maximum number of video jobs to return. Defaults to 50 and caps at
+            200.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+        - name: status
+          in: query
+          description: >-
+            Video lifecycle status filter. Repeat the parameter or provide
+            comma-separated values.
+          schema:
+            type: string
       responses:
         '200':
           description: Video list response
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: true
+                $ref: '#/components/schemas/VideoListResponse'
     post:
       x-beta: true
       tags:
@@ -2665,15 +2688,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  object:
-                    type: string
-                    example: list
-                  data:
-                    type: array
-                    items:
-                      type: object
+                $ref: '#/components/schemas/VideoModelsResponse'
   /video/generations/{video_id}:
     get:
       x-beta: true
@@ -2722,7 +2737,7 @@ paths:
         - Gateway
       operationId: cancelVideoAlias
       summary: Cancel video (alias)
-      description: Alias of /videos/{video_id}/cancel (currently disabled).
+      description: Alias of /videos/{video_id}/cancel.
       parameters:
         - name: video_id
           in: path
@@ -2730,8 +2745,14 @@ paths:
           schema:
             type: string
       responses:
+        '200':
+          description: Video cancellation response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoGenerationResponse'
         '501':
-          description: Video cancellation is currently disabled
+          description: Video cancellation is not supported for this provider
           content:
             application/json:
               schema:
@@ -2845,6 +2866,53 @@ paths:
               schema:
                 $ref: '#/components/schemas/MusicGenerateResponse'
   /batch:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatchesAlias
+      summary: List batches (alias)
+      description: Alias of /batches.
+      parameters:
+        - name: limit
+          in: query
+          description: >-
+            Maximum number of batch jobs to return. Defaults to 20 and caps at
+            100.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: status
+          in: query
+          description: >-
+            Batch lifecycle status filter. Repeat the parameter, use a
+            comma-separated status value, or use statuses for comma-separated
+            filters.
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: statuses
+          in: query
+          description: Comma-separated lifecycle status filters.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Batch list response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     post:
       x-beta: true
       tags:
@@ -2865,6 +2933,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BatchResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batch/models:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatchModelsAlias
+      summary: List batch model capabilities (alias)
+      description: Alias of /batches/models.
+      responses:
+        '200':
+          description: Batch model capability list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchModelsResponse'
         '401':
           description: Unauthorized
           content:
@@ -3048,6 +3137,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '501':
+          description: Batch status refresh is not supported for this provider
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /batch/{id}/requests:
     get:
       x-beta: true
@@ -3125,8 +3220,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: true
+                $ref: '#/components/schemas/BatchResponse'
         '401':
           description: Unauthorized
           content:
@@ -3135,6 +3229,12 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Batch not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '501':
+          description: Batch cancellation is not supported for this provider
           content:
             application/json:
               schema:
@@ -3299,7 +3399,7 @@ paths:
                       $ref: '#/components/schemas/ModelId'
 tags:
   - name: Gateway
-    description: Core AI Stats Gateway operations.
+    description: Core Phaseo Gateway operations.
 components:
   securitySchemes:
     BearerAuth:
@@ -3555,10 +3655,14 @@ components:
           type: array
           items:
             type: string
+        supported_params_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
         supported_parameters:
           type: array
           items:
             type: string
+        supported_parameters_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
         architecture:
           type: object
           properties:
@@ -3778,6 +3882,23 @@ components:
           type: array
           items:
             type: string
+        supported_parameters:
+          type: array
+          description: OpenRouter-compatible alias for params.
+          items:
+            type: string
+        params_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        supported_parameters_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+    SupportedParameterDetails:
+      type: object
+      description: >-
+        Structured constraints and provider support for request parameters,
+        keyed by parameter name.
+      additionalProperties:
+        type: object
+        additionalProperties: true
     DataModelOrganisation:
       type: object
       nullable: true
@@ -3968,11 +4089,10 @@ components:
         service_tier:
           type: string
           enum:
-            - auto
-            - default
-            - flex
             - standard
             - priority
+            - flex
+            - batch
         prompt_cache_key:
           type: string
           nullable: true
@@ -4341,7 +4461,13 @@ components:
             - medium
             - high
             - xhigh
+            - max
           default: medium
+        mode:
+          type: string
+          enum:
+            - standard
+            - pro
         summary:
           type: string
           enum:
@@ -4665,11 +4791,10 @@ components:
         service_tier:
           type: string
           enum:
-            - auto
-            - default
-            - flex
             - standard
             - priority
+            - flex
+            - batch
         store:
           type: boolean
         stream:
@@ -4875,78 +5000,66 @@ components:
             - b64_json
         - required:
             - audio_url
-    ResponsesWebSocketCreateEvent:
+    AsyncJobWebSocketClientEvent:
       type: object
-      description: >
-        Client message for websocket turn creation. Gateway performs lightweight
-        validation (`type` and `model` format) before forwarding to OpenAI;
-        deeper request-shape validation is enforced by upstream.
+      description: Client message for async job websocket sessions.
       required:
         - type
-        - model
       properties:
         type:
           type: string
           enum:
-            - response.create
-        model:
-          type: string
-          description: |
-            OpenAI model id in provider/model format: `openai/<model>`.
-        previous_response_id:
-          type: string
-          nullable: true
-        input:
-          description: New input items for this turn.
-          oneOf:
-            - type: string
-            - type: array
-              items:
-                type: object
-            - type: object
-        tools:
-          type: array
-          items:
-            type: object
-        tool_choice:
-          oneOf:
-            - type: string
-            - type: object
-        store:
-          type: boolean
-          description: Ignored by gateway. Always forced to false on this endpoint.
-      additionalProperties: true
-    ResponsesWebSocketServerEvent:
+            - ping
+            - refresh
+          description: >
+            Send `ping` for a `pong` keepalive response, or `refresh` to force
+            an immediate async job state refresh.
+      additionalProperties: false
+    AsyncJobWebSocketServerEvent:
       type: object
       description: >
-        Streamed websocket event. Mirrors OpenAI Responses event payloads (for
-        example `response.created`, `response.output_text.delta`,
-        `response.completed`, or `error`).
+        Async job websocket envelope. `job.snapshot` is emitted immediately
+        after upgrade, `job.updated` is emitted when the normalized async
+        payload changes, `job.deleted` is emitted when the owned job record
+        disappears, and `pong` replies to client `ping` messages.
+      required:
+        - type
       properties:
         type:
           type: string
-        response:
-          type: object
-        error:
-          type: object
-        status:
-          type: integer
+          enum:
+            - job.snapshot
+            - job.updated
+            - job.deleted
+            - pong
+        data:
+          nullable: true
+          oneOf:
+            - $ref: '#/components/schemas/VideoGenerationResponse'
+            - $ref: '#/components/schemas/BatchResponse'
+            - type: object
+              properties:
+                id:
+                  type: string
+                kind:
+                  type: string
+                  enum:
+                    - batch
+                    - video
+              additionalProperties: true
       additionalProperties: true
-    ResponsesWebSocketUpgradeRequiredResponse:
+    AsyncJobWebSocketUpgradeRequiredResponse:
       type: object
       properties:
         error:
           type: object
           properties:
-            type:
-              type: string
-              example: invalid_request_error
             code:
               type: string
               example: websocket_upgrade_required
             message:
               type: string
-              example: Use WebSocket upgrade for /v1/responses/ws.
+              example: Use WebSocket upgrade for async job updates.
     EmbeddingsMultimodalInput:
       type: object
       description: Google multimodal embeddings extension item.
@@ -5555,14 +5668,157 @@ components:
             url:
               type: string
               format: uri
+              description: >-
+                HTTPS callback URL for gateway-managed webhooks. Literal
+                private, loopback, link-local, and wildcard hosts are rejected;
+                http://localhost, http://127.0.0.1, and http://[::1] are allowed
+                only for local development callbacks.
             secret:
               type: string
             events:
               type: array
+              description: >-
+                Optional event subscriptions. Use generic job.* events or
+                matching video.* events, for example video.progress or
+                video.completed. When omitted, terminal job.* events are used.
+                Include job.progress or video.progress explicitly for progress
+                callbacks. When supplied, at least one event must be valid for
+                video jobs; cross-kind-only or malformed event lists are
+                rejected.
               items:
                 type: string
         provider:
           $ref: '#/components/schemas/ProviderRoutingOptions'
+    AsyncWebhookDeliverySummary:
+      type: object
+      description: >-
+        Public delivery summary for gateway-managed async webhooks. Use this to
+        distinguish job execution state from webhook delivery health.
+      properties:
+        total_attempts:
+          type: integer
+          description: Total delivery attempts recorded for this job.
+        delivered_events:
+          type: integer
+          description: Number of delivery keys that have reached a delivered state.
+        delivered_event_types:
+          type: array
+          description: Delivery keys that have been delivered at least once.
+          items:
+            type: string
+          example:
+            - video.completed
+        pending_retries:
+          type: integer
+          description: Number of delivery keys currently scheduled for retry.
+        next_retry_at:
+          type: string
+          nullable: true
+          description: ISO timestamp for the next scheduled retry, when present.
+        last_attempt_at:
+          type: string
+          nullable: true
+          description: ISO timestamp for the most recent delivery attempt.
+        last_attempt_status:
+          type: string
+          nullable: true
+          enum:
+            - delivered
+            - scheduled_retry
+            - failed_permanently
+          description: Result of the most recent delivery attempt.
+        last_response_status:
+          type: integer
+          nullable: true
+          description: HTTP status returned by the webhook destination, when available.
+        last_delivered_at:
+          type: string
+          nullable: true
+          description: ISO timestamp for the most recent successful delivery.
+        last_failure_at:
+          type: string
+          nullable: true
+          description: ISO timestamp for the most recent failed or retrying attempt.
+        last_error_message:
+          type: string
+          nullable: true
+          description: Most recent delivery error message, when available.
+    AsyncWebhookDeliveryAttempt:
+      type: object
+      description: Recent gateway-managed async webhook delivery attempt.
+      properties:
+        id:
+          type: string
+          description: Stable attempt identifier for audit and debugging.
+        delivery_key:
+          type: string
+          description: Idempotency key for this event delivery.
+          example: video.completed
+        event_type:
+          type: string
+          description: Event type delivered to the webhook destination.
+          example: video.completed
+        status:
+          type: string
+          enum:
+            - delivered
+            - scheduled_retry
+            - failed_permanently
+        attempt_number:
+          type: integer
+          description: One-based attempt number for this delivery key.
+        max_attempts:
+          type: integer
+          description: Maximum attempts before the delivery is marked failed permanently.
+        tried_at:
+          type: string
+          description: ISO timestamp when this attempt was made.
+        delivered_at:
+          type: string
+          nullable: true
+          description: ISO timestamp when this attempt was delivered successfully.
+        next_retry_at:
+          type: string
+          nullable: true
+          description: ISO timestamp for the next retry after this attempt, when scheduled.
+        response_status:
+          type: integer
+          nullable: true
+          description: HTTP status returned by the webhook destination, when available.
+        error_message:
+          type: string
+          nullable: true
+          description: Delivery error message, when available.
+        response_body_preview:
+          type: string
+          nullable: true
+          description: Redacted response body preview from the webhook destination.
+    AsyncWebhookPublicState:
+      type: object
+      description: >-
+        Sanitized async webhook configuration plus delivery state. Secrets are
+        never returned; `has_secret` indicates whether signed deliveries are
+        enabled. Signed deliveries include x-phaseo-signature,
+        x-phaseo-timestamp, x-phaseo-event-id, x-phaseo-event-type,
+        x-phaseo-delivery-key, x-phaseo-attempt, and x-phaseo-max-attempts
+        headers.
+      properties:
+        url:
+          type: string
+          format: uri
+          nullable: true
+        events:
+          type: array
+          items:
+            type: string
+        has_secret:
+          type: boolean
+        delivery:
+          $ref: '#/components/schemas/AsyncWebhookDeliverySummary'
+        attempts:
+          type: array
+          items:
+            $ref: '#/components/schemas/AsyncWebhookDeliveryAttempt'
     VideoGenerationResponse:
       type: object
       properties:
@@ -5570,6 +5826,12 @@ components:
           type: string
         polling_url:
           type: string
+        websocket_url:
+          type: string
+          format: uri
+          description: >-
+            WebSocket URL for subscribing to normalized async job lifecycle
+            updates.
         model:
           type: string
         request_id:
@@ -5585,6 +5847,22 @@ components:
             - failed
             - cancelled
             - expired
+        lifecycle_status:
+          type: string
+          enum:
+            - pending
+            - running
+            - completed
+            - failed
+            - cancelled
+            - expired
+          description: >-
+            Normalized async lifecycle status for polling, websocket, and
+            webhook consumers.
+        cancel_url:
+          type: string
+          format: uri
+          nullable: true
         output_access:
           type: string
           enum:
@@ -5594,6 +5872,12 @@ components:
         generation_id:
           type: string
           nullable: true
+        native_video_id:
+          type: string
+          nullable: true
+          description: >-
+            Provider-native video/job id when it differs from the gateway-owned
+            id.
         created_at:
           oneOf:
             - type: integer
@@ -5661,8 +5945,29 @@ components:
           items:
             $ref: '#/components/schemas/VideoOutput'
         billing:
-          type: object
-          additionalProperties: true
+          $ref: '#/components/schemas/VideoBillingSummary'
+        webhook:
+          $ref: '#/components/schemas/AsyncWebhookPublicState'
+        next_webhook_retry_at:
+          type: string
+          nullable: true
+          description: >-
+            ISO timestamp for the next scheduled user-webhook retry, when
+            queued.
+        last_webhook_progress:
+          type: number
+          nullable: true
+          description: Most recent coarse progress bucket dispatched to webhook consumers.
+        last_webhook_progress_at:
+          type: string
+          nullable: true
+          description: >-
+            ISO timestamp when the most recent webhook progress bucket was
+            dispatched.
+        last_webhook_dispatched_at:
+          type: string
+          nullable: true
+          description: ISO timestamp for the most recent webhook dispatch attempt.
         usage:
           type: object
           properties:
@@ -5730,6 +6035,204 @@ components:
         expires_at:
           type: integer
           description: Unix timestamp (seconds) when this output URL expires.
+    VideoBillingSummary:
+      type: object
+      properties:
+        currency:
+          type: string
+        estimated_provider_cost:
+          type: string
+          nullable: true
+        estimated_user_cost:
+          type: string
+          nullable: true
+        settled_provider_cost:
+          type: string
+          nullable: true
+        settled_user_cost:
+          type: string
+          nullable: true
+        state:
+          type: string
+          enum:
+            - pending
+            - estimated
+            - settled
+            - void
+        billable:
+          type: boolean
+        total_nanos:
+          type: integer
+          nullable: true
+        estimated_nanos:
+          type: integer
+          nullable: true
+        reserved_nanos:
+          type: integer
+          nullable: true
+        reservation_id:
+          type: string
+          nullable: true
+        reservation_status:
+          type: string
+          nullable: true
+        charge_reason:
+          type: string
+          nullable: true
+        charged:
+          type: boolean
+          nullable: true
+        billed_at:
+          type: string
+      additionalProperties: true
+    VideoModelProviderCapability:
+      type: object
+      properties:
+        id:
+          type: string
+        supported_params:
+          type: array
+          items:
+            type: string
+        supported_parameters:
+          type: array
+          description: OpenRouter-compatible alias for supported_params.
+          items:
+            type: string
+        supported_params_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        supported_parameters_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+    VideoModelCapability:
+      type: object
+      properties:
+        model:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        input_types:
+          type: array
+          items:
+            type: string
+        output_types:
+          type: array
+          items:
+            type: string
+        supported_params:
+          type: array
+          items:
+            type: string
+        supported_parameters:
+          type: array
+          description: OpenRouter-compatible alias for supported_params.
+          items:
+            type: string
+        supported_params_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        supported_parameters_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        providers:
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoModelProviderCapability'
+        pricing:
+          type: object
+          additionalProperties: true
+    VideoModelsResponse:
+      type: object
+      properties:
+        object:
+          type: string
+          example: list
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoModelCapability'
+    BatchModelProviderCapability:
+      type: object
+      properties:
+        id:
+          type: string
+        supported_params:
+          type: array
+          items:
+            type: string
+        supported_parameters:
+          type: array
+          description: OpenRouter-compatible alias for supported_params.
+          items:
+            type: string
+        supported_params_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        supported_parameters_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+    BatchModelCapability:
+      type: object
+      properties:
+        model:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        input_types:
+          type: array
+          items:
+            type: string
+        output_types:
+          type: array
+          items:
+            type: string
+        supported_params:
+          type: array
+          items:
+            type: string
+        supported_parameters:
+          type: array
+          description: OpenRouter-compatible alias for supported_params.
+          items:
+            type: string
+        supported_params_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        supported_parameters_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        providers:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchModelProviderCapability'
+        pricing:
+          type: object
+          additionalProperties: true
+    BatchModelsResponse:
+      type: object
+      properties:
+        object:
+          type: string
+          example: list
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchModelCapability'
+    VideoListResponse:
+      type: object
+      properties:
+        object:
+          type: string
+          example: list
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoGenerationResponse'
+        first_id:
+          type: string
+          nullable: true
+        last_id:
+          type: string
+          nullable: true
+        has_more:
+          type: boolean
     VideoDeleteResponse:
       type: object
       properties:
@@ -5854,20 +6357,19 @@ components:
           type: string
           description: >-
             Model id used to infer the upstream batch provider. Request rows may
-            also include body.model; the top-level model is preferred when
-            present.
+            also include body.model; the top-level model is preferred.
         prompts:
           type: array
           description: >-
-            Simple prompt shorthand. AI Stats compiles each prompt into the
+            Simple prompt shorthand. Phaseo compiles each prompt into a
             provider-native batch row for the selected model.
           items:
             type: string
         items:
           type: array
           description: >-
-            Structured prompt shorthand. Each item may include `id` or
-            `custom_id`, `prompt`, `messages`, `input`, `system`, `max_tokens`,
+            Structured prompt shorthand. Items may include `id`, `custom_id`,
+            `prompt`, `messages`, `input`, `system`, `max_tokens`,
             `temperature`, or an advanced `body`.
           items:
             type: object
@@ -5894,7 +6396,7 @@ components:
         endpoint:
           type: string
           description: >-
-            Optional provider endpoint path. AI Stats chooses a default from the
+            Optional provider endpoint path. Phaseo chooses a default from the
             model when omitted.
         completion_window:
           type: string
@@ -5916,10 +6418,23 @@ components:
             url:
               type: string
               format: uri
+              description: >-
+                HTTPS callback URL for gateway-managed webhooks. Literal
+                private, loopback, link-local, and wildcard hosts are rejected;
+                http://localhost, http://127.0.0.1, and http://[::1] are allowed
+                only for local development callbacks.
             secret:
               type: string
             events:
               type: array
+              description: >-
+                Optional event subscriptions. Use generic job.* events or
+                matching batch.* events, for example batch.progress or
+                batch.completed. When omitted, terminal job.* events are used.
+                Include job.progress or batch.progress explicitly for
+                request-count progress callbacks. When supplied, at least one
+                event must be valid for batch jobs; cross-kind-only or malformed
+                event lists are rejected.
               items:
                 type: string
         webhook_endpoint_id:
@@ -5930,8 +6445,8 @@ components:
         provider:
           $ref: '#/components/schemas/ProviderRoutingOptions'
           description: >-
-            Advanced routing constraint. Most requests should omit this and rely
-            on model-based provider inference.
+            Advanced routing constraint. Most requests should rely on
+            model-based provider inference.
     BatchRequestItem:
       type: object
       required:
@@ -5980,76 +6495,6 @@ components:
         notes:
           type: string
           nullable: true
-    BatchResponse:
-      type: object
-      properties:
-        id:
-          type: string
-        object:
-          type: string
-        endpoint:
-          type: string
-        errors:
-          type: object
-        input_file_id:
-          type: string
-        completion_window:
-          type: string
-        status:
-          type: string
-        output_file_id:
-          type: string
-        error_file_id:
-          type: string
-        created_at:
-          type: integer
-        in_progress_at:
-          type: integer
-        expires_at:
-          type: integer
-        finalizing_at:
-          type: integer
-        completed_at:
-          type: integer
-        failed_at:
-          type: integer
-        expired_at:
-          type: integer
-        cancelling_at:
-          type: integer
-        cancelled_at:
-          type: integer
-        request_counts:
-          $ref: '#/components/schemas/BatchRequestCounts'
-        metadata:
-          type: object
-        request_id:
-          type: string
-        provider:
-          type: string
-        session_id:
-          type: string
-        webhook:
-          type: object
-          properties:
-            endpoint_id:
-              type: string
-            url:
-              type: string
-              format: uri
-            secret:
-              type: string
-            events:
-              type: array
-              items:
-                type: string
-        pricing_lines:
-          type: array
-          items:
-            type: object
-            additionalProperties: true
-        billing:
-          $ref: '#/components/schemas/BatchBillingSummary'
     BatchRequestRow:
       type: object
       properties:
@@ -6111,6 +6556,133 @@ components:
         completed_at:
           type: string
           nullable: true
+    BatchResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        native_batch_id:
+          type: string
+          nullable: true
+          description: Provider-native batch id when it differs from the gateway-owned id.
+        object:
+          type: string
+        endpoint:
+          type: string
+        errors:
+          type: object
+        input_file_id:
+          type: string
+        completion_window:
+          type: string
+        status:
+          type: string
+        lifecycle_status:
+          type: string
+          enum:
+            - pending
+            - running
+            - completed
+            - failed
+            - cancelled
+            - expired
+          description: >-
+            Normalized async lifecycle status for polling, websocket, and
+            webhook consumers.
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: >-
+            Coarse batch completion percentage derived from provider request
+            counts when available. Completed batches report 100.
+        polling_url:
+          type: string
+          format: uri
+        websocket_url:
+          type: string
+          format: uri
+          description: >-
+            WebSocket URL for subscribing to normalized async job lifecycle
+            updates.
+        cancel_url:
+          type: string
+          format: uri
+          nullable: true
+        output_file_id:
+          type: string
+        error_file_id:
+          type: string
+        created_at:
+          type: integer
+        in_progress_at:
+          type: integer
+        expires_at:
+          type: integer
+        finalizing_at:
+          type: integer
+        completed_at:
+          type: integer
+        failed_at:
+          type: integer
+        expired_at:
+          type: integer
+        cancelling_at:
+          type: integer
+        cancelled_at:
+          type: integer
+        request_counts:
+          $ref: '#/components/schemas/BatchRequestCounts'
+        metadata:
+          type: object
+        request_id:
+          type: string
+        provider:
+          type: string
+        session_id:
+          type: string
+        webhook:
+          $ref: '#/components/schemas/AsyncWebhookPublicState'
+        next_webhook_retry_at:
+          type: string
+          nullable: true
+        last_webhook_progress:
+          type: number
+          nullable: true
+        last_webhook_progress_at:
+          type: string
+          nullable: true
+        last_webhook_dispatched_at:
+          type: string
+          nullable: true
+        finalized_at:
+          type: string
+          nullable: true
+        pricing_lines:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        billing:
+          $ref: '#/components/schemas/BatchBillingSummary'
+    BatchListResponse:
+      type: object
+      properties:
+        object:
+          type: string
+          example: list
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchResponse'
+        first_id:
+          type: string
+          nullable: true
+        last_id:
+          type: string
+          nullable: true
+        has_more:
+          type: boolean
     BatchRequestCounts:
       type: object
       properties:
@@ -6123,96 +6695,74 @@ components:
     BatchBillingSummary:
       type: object
       properties:
+        currency:
+          type: string
         billed:
           type: boolean
         charged:
           type: boolean
         reason:
           type: string
+        state:
+          type: string
+          enum:
+            - pending
+            - estimated
+            - settled
+            - void
+        reservation_id:
+          type: string
+          nullable: true
+        reservation_status:
+          type: string
+          nullable: true
+        estimated_provider_cost:
+          type: string
+          nullable: true
+        estimated_user_cost:
+          type: string
+          nullable: true
+        settled_provider_cost:
+          type: string
+          nullable: true
+        settled_user_cost:
+          type: string
+          nullable: true
+        estimated_nanos:
+          type: integer
+          nullable: true
+        reserved_nanos:
+          type: integer
+          nullable: true
+        estimation_truncated:
+          type: boolean
+          nullable: true
+          description: >-
+            True when the reservation estimate was scaled from a bounded sample
+            of a larger batch input file.
+        estimation_sample_size:
+          type: integer
+          nullable: true
+          description: Number of input rows priced directly for the reservation estimate.
+        estimation_total_rows:
+          type: integer
+          nullable: true
+          description: Total input rows represented by the reservation estimate.
+        total_nanos:
+          type: integer
+          nullable: true
         cost_nanos:
           type: integer
+          nullable: true
         cost_usd:
           type: number
+          nullable: true
         finalized_at:
           type: string
+          nullable: true
         pricing_breakdown:
           type: object
           additionalProperties: true
-    WebhookEndpoint:
-      type: object
-      properties:
-        id:
-          type: string
-        workspaceId:
-          type: string
-        name:
-          type: string
-        url:
-          type: string
-          format: uri
-        status:
-          type: string
-          enum:
-            - active
-            - disabled
-            - deleted
-        events:
-          type: array
-          items:
-            type: string
-        hasSecret:
-          type: boolean
-        createdBy:
-          type: string
-          nullable: true
-        createdAt:
-          type: string
-          nullable: true
-        updatedAt:
-          type: string
-          nullable: true
-        deletedAt:
-          type: string
-          nullable: true
-    WebhookEndpointCreateRequest:
-      type: object
-      required:
-        - url
-      properties:
-        name:
-          type: string
-        url:
-          type: string
-          format: uri
-        events:
-          type: array
-          items:
-            type: string
-    WebhookEndpointUpdateRequest:
-      type: object
-      properties:
-        name:
-          type: string
-        url:
-          type: string
-          format: uri
-        events:
-          type: array
-          items:
-            type: string
-        status:
-          type: string
-          enum:
-            - active
-            - disabled
-    WebhookEndpointCreateResponse:
-      allOf:
-        - $ref: '#/components/schemas/WebhookEndpoint'
-        - type: object
-          properties:
-            signing_secret:
-              type: string
-              description: Returned once when the endpoint is created or rotated.
     FileUploadRequest:
       type: object
       required:
@@ -6276,6 +6826,7 @@ components:
         - deepseek
         - eleven-labs
         - essential-ai
+        - github
         - google
         - ibm
         - inception
@@ -6290,20 +6841,25 @@ components:
         - mistral
         - moonshotai
         - naver-hyperclova
+        - nex-agi
         - nous
         - nvidia
         - openai
         - perplexity
+        - poe
+        - poolside
         - prime-intellect
         - qwen
         - relace
         - sourceful
+        - spacex-ai
         - stepfun
         - suno
+        - tencent
         - upstage
         - vercel
         - voyage
-        - x-ai
+        - windsurf
         - xiaomi
         - z-ai
     OrganisationIdList:
@@ -6442,6 +6998,7 @@ components:
         - artificial-analysis
         - attaq
         - autologi
+        - automationbench
         - babe
         - babyvision
         - balrog-ai
@@ -6460,9 +7017,11 @@ components:
         - bigcodebench
         - biobench
         - biolp-bench
+        - biomysterybench
         - bird-sql-(dev)
         - bixbench
         - blink
+        - blueprint-bench-2
         - boolq
         - browsecomp
         - browsecomp-long-128k
@@ -6560,6 +7119,7 @@ components:
         - erqa
         - evalplus
         - expert-swe
+        - exploitbench-cap
         - eyepacs-accuracy
         - facts
         - facts-benchmark-suite
@@ -6570,6 +7130,7 @@ components:
         - fiction-live-bench
         - figqa
         - financeagent-v1.1
+        - financeagent-v2
         - finsearchcomp
         - finsearchcomp-t2-t3
         - finsearchcomp-t3
@@ -6583,6 +7144,7 @@ components:
         - flteval-pass-8
         - frames
         - frontier-math
+        - frontiercode-diamond
         - frontiermath
         - frontiersci-olympiad
         - frontiersci-research
@@ -6591,6 +7153,7 @@ components:
         - fullstackbench-zh
         - functionalmath
         - galileo-agent
+        - gdp-pdf
         - gdpval-aa
         - gdpval-mm
         - genebench
@@ -6660,8 +7223,10 @@ components:
         - ivebench-instruction-following-vs-runway-aleph
         - ivebench-overall-vs-kling-o1
         - ivebench-overall-vs-runway-aleph
+        - jobbench
         - korbench
         - lbpp-(v2)
+        - legal-agent-benchmark
         - lingoqa
         - lisanbench
         - livebench
@@ -7296,7 +7861,7 @@ components:
         prefix:
           type: string
           nullable: true
-          example: aistats_v1_sk_abcd1234
+          example: phaseo_v1_sk_abcd1234
         status:
           type: string
           nullable: true
@@ -7367,7 +7932,7 @@ components:
             key:
               type: string
               description: Plaintext API key. Returned only once at creation time.
-              example: aistats_v1_sk_abcd1234_supersecretvalue
+              example: phaseo_v1_sk_abcd1234_supersecretvalue
           additionalProperties: false
     ApiKeyWithValueResponse:
       type: object
@@ -7407,8 +7972,8 @@ components:
         include_byok_in_limit:
           type: boolean
           description: >-
-            Accepted for compatibility. Current AI Stats behavior always
-            excludes BYOK from this limit field.
+            Accepted for compatibility. Current Phaseo behavior always excludes
+            BYOK from this limit field.
         expires_at:
           type: string
           format: date-time
@@ -7443,8 +8008,8 @@ components:
         include_byok_in_limit:
           type: boolean
           description: >-
-            Accepted for compatibility. Current AI Stats behavior always
-            excludes BYOK from this limit field.
+            Accepted for compatibility. Current Phaseo behavior always excludes
+            BYOK from this limit field.
         expires_at:
           type: string
           format: date-time
@@ -7809,29 +8374,6 @@ components:
           enum:
             - access_token_required
           example: access_token_required
-      additionalProperties: false
-    RealtimeNotImplementedResponse:
-      type: object
-      required:
-        - error
-      properties:
-        error:
-          type: object
-          required:
-            - type
-            - code
-            - message
-          properties:
-            type:
-              type: string
-              example: invalid_request_error
-            code:
-              type: string
-              example: responses_websocket_disabled
-            message:
-              type: string
-              example: WebSocket mode is temporarily disabled on /v1/responses/ws.
-          additionalProperties: false
       additionalProperties: false
     NotImplementedResponse:
       type: object
@@ -8198,26 +8740,24 @@ components:
       enum:
         - ai21/jamba-large-1.7
         - ai21/jamba-mini-2
-        - aion-labs/aion-1.0
-        - aion-labs/aion-1.0-mini
         - aion-labs/aion-2.0
         - aion-labs/aion-2.5
+        - aion-labs/aion-3.0
+        - aion-labs/aion-3.0-mini
         - aion-labs/aion-rp-llama-3.1-8b
         - allenai/molmo-2-8b
         - allenai/olmo-3.1-32b
-        - anthropic/claude-3.5-haiku
-        - anthropic/claude-3.7-sonnet
+        - anthropic/claude-fable-5
         - anthropic/claude-haiku-4.5
-        - anthropic/claude-opus-4
         - anthropic/claude-opus-4.1
         - anthropic/claude-opus-4.5
         - anthropic/claude-opus-4.6
         - anthropic/claude-opus-4.7
         - anthropic/claude-opus-4.7-fast
         - anthropic/claude-opus-4.8
-        - anthropic/claude-sonnet-4
         - anthropic/claude-sonnet-4.5
         - anthropic/claude-sonnet-4.6
+        - anthropic/claude-sonnet-5
         - arcee-ai/trinity-large
         - arcee-ai/trinity-large-thinking
         - arcee-ai/trinity-mini
@@ -8227,7 +8767,7 @@ components:
         - baidu/ernie-4.5-vl-28b-a3b
         - baidu/ernie-4.5-vl-28b-a3b-thinking
         - baidu/ernie-4.5-vl-424b-a47b
-        - black-forest-labs/flux-1-dev
+        - black-forest-labs/flux-1-schnell
         - bytedance/seed-1.6
         - bytedance/seed-1.6-250915
         - bytedance/seed-1.6-flash
@@ -8242,10 +8782,10 @@ components:
         - bytedance/seed-translation
         - bytedance/seedance-2.0
         - bytedance/seedance-2.0-fast
-        - crofai/greg
-        - crofai/greg-1
+        - bytedance/seedance-2.0-mini-260615
         - crofai/greg-1-mini
-        - crofai/greg-1-super
+        - crofai/greg-2-super
+        - crofai/greg-2-ultra
         - crofai/greg-rp
         - deepseek/deepseek-ocr
         - deepseek/deepseek-ocr-2
@@ -8266,35 +8806,36 @@ components:
         - deepseek/deepseek-v4-flash
         - deepseek/deepseek-v4-pro
         - deepseek/deepseek-v4-pro-lightning
-        - deepseek/deepseek-v4-pro-precision
+        - eleven-labs/eleven-flash-v2
+        - eleven-labs/eleven-flash-v2.5
+        - eleven-labs/eleven-multilingual-v2
+        - eleven-labs/eleven-turbo-v2
+        - eleven-labs/eleven-turbo-v2.5
+        - eleven-labs/eleven-v3
         - essential-ai/rnj-1
         - google/gemini-2.5-flash
         - google/gemini-2.5-flash-lite
         - google/gemini-2.5-flash-lite-preview-2025-06-17
         - google/gemini-2.5-flash-lite-preview-2025-09-25
+        - google/gemini-2.5-pro
         - google/gemini-3-flash-preview
         - google/gemini-3-pro-image
-        - google/gemini-3-pro-image-preview
         - google/gemini-3.1-flash-image
         - google/gemini-3.1-flash-image-preview
         - google/gemini-3.1-flash-lite
+        - google/gemini-3.1-flash-lite-image
         - google/gemini-3.1-flash-lite-preview
         - google/gemini-3.1-flash-tts-preview
         - google/gemini-3.1-pro-preview
         - google/gemini-3.1-pro-preview-customtools
         - google/gemini-3.5-flash
+        - google/gemini-3.5-pro
         - google/gemini-embedding-001
         - google/gemini-embedding-2
         - google/gemini-embedding-2-preview
         - google/gemini-robotics-er-1.6-preview
-        - google/gemma-3-12b:free
-        - google/gemma-3-1b:free
         - google/gemma-3-27b
-        - google/gemma-3-27b:free
-        - google/gemma-3-4b:free
-        - google/gemma-3n-e2b:free
         - google/gemma-3n-e4b
-        - google/gemma-3n-e4b:free
         - google/gemma-4-26b-a4b
         - google/gemma-4-26b-a4b:free
         - google/gemma-4-31b
@@ -8314,12 +8855,14 @@ components:
         - inclusionai/ring-flash-2.0
         - inflection/inflection-3-pi
         - inflection/inflection-3-productivity
+        - kwaipilot/kat-coder-air-v2.5
         - kwaipilot/kat-coder-exp-72b-1010
         - kwaipilot/kat-coder-pro
         - kwaipilot/kat-coder-pro-v1
         - kwaipilot/kat-coder-pro-v2
+        - kwaipilot/kat-coder-pro-v2.5
         - liquid-ai/lfm-2-24b-a2b
-        - meituan/longcat-flash-cat
+        - meituan/longcat-2.0
         - meta/llama-3-70b
         - meta/llama-3-8b
         - meta/llama-3-8b-lite
@@ -8345,12 +8888,14 @@ components:
         - minimax/minimax-m2.5
         - minimax/minimax-m2.5-highspeed
         - minimax/minimax-m2.7
+        - minimax/minimax-m3
         - minimax/music-2.6
         - minimax/music-2.6-free
         - mistral/codestral-embed
         - mistral/devstral-2
         - mistral/devstral-medium-1.0
         - mistral/devstral-small-1.1
+        - mistral/leanstral-1.5:free
         - mistral/magistral-medium-1.2
         - mistral/ministral-3-14b
         - mistral/ministral-3-3b
@@ -8379,7 +8924,7 @@ components:
         - moonshotai/kimi-k2.5
         - moonshotai/kimi-k2.5-lightning
         - moonshotai/kimi-k2.6
-        - moonshotai/kimi-k2.6-precision
+        - moonshotai/kimi-k2.7-code
         - moonshotai/moonshot-v1-128k
         - moonshotai/moonshot-v1-128k-vision-preview
         - moonshotai/moonshot-v1-32k
@@ -8389,20 +8934,22 @@ components:
         - morph/morph-v3-fast
         - morph/morph-v3-large
         - nex-agi/deepseek-v3.1-nex-n1
+        - nex-agi/nex-n2-pro
         - nous/hermes-3-llama-3.1-405b
         - nousresearch/hermes-3-llama-3.1-405b
         - nousresearch/hermes-3-llama-3.1-70b
         - nousresearch/hermes-4-405b
         - nousresearch/hermes-4-70b
+        - nvidia/cosmos3-super-reasoner
         - nvidia/llama-3.1-nemotron-70b-instruct
         - nvidia/llama-3.1-nemotron-ultra-253b
         - nvidia/llama-3.3-nemotron-super-49b-v1.5
         - nvidia/nemotron-3-nano-30b-a3b
         - nvidia/nemotron-3-nano-omni-30b-a3b-reasoning
         - nvidia/nemotron-3-super-120b-a12b
+        - nvidia/nemotron-3-ultra-550b-a55b
         - nvidia/nvidia-nemotron-3-nano-30b-a3b
         - nvidia/nvidia-nemotron-nano-12b-v2-vl
-        - nvidia/nvidia-nemotron-nano-9b-v2
         - openai/babbage-002
         - openai/chat-latest
         - openai/chatgpt-4o
@@ -8447,6 +8994,12 @@ components:
         - openai/gpt-5.4-pro
         - openai/gpt-5.5
         - openai/gpt-5.5-pro
+        - openai/gpt-5.6-luna
+        - openai/gpt-5.6-luna-pro
+        - openai/gpt-5.6-sol
+        - openai/gpt-5.6-sol-pro
+        - openai/gpt-5.6-terra
+        - openai/gpt-5.6-terra-pro
         - openai/gpt-image-1
         - openai/gpt-image-1-mini
         - openai/gpt-image-1.5
@@ -8470,11 +9023,9 @@ components:
         - openai/text-embedding-3-small
         - openai/text-embedding-ada-002
         - openai/whisper-1
-        - poolside/laguna-m.1
+        - phaseo/free
         - poolside/laguna-m.1:free
-        - poolside/laguna-xs.2
-        - poolside/laguna-xs.2:free
-        - primeintellect/intellect-3
+        - poolside/laguna-xs-2.1:free
         - qwen/qvq-max
         - qwen/qwen-3.6-plus
         - qwen/qwen-flash
@@ -8530,6 +9081,7 @@ components:
         - qwen/qwen3-coder-next
         - qwen/qwen3-coder-plus-2025-07-22
         - qwen/qwen3-coder-plus-2025-09-23
+        - qwen/qwen3-embedding-8b
         - qwen/qwen3-max
         - qwen/qwen3-max-2025-09-23
         - qwen/qwen3-max-2026-01-23
@@ -8555,15 +9107,12 @@ components:
         - qwen/qwen3-vl-flash-2026-01-22
         - qwen/qwen3-vl-plus-2025-09-23
         - qwen/qwen3-vl-plus-2025-12-19
-        - qwen/qwen3.5-0.8b
         - qwen/qwen3.5-122b-a10b
         - qwen/qwen3.5-27b
-        - qwen/qwen3.5-2b
         - qwen/qwen3.5-35b-a3b
         - qwen/qwen3.5-397b-a17b
         - qwen/qwen3.5-4b
         - qwen/qwen3.5-9b
-        - qwen/qwen3.5-9b-chat
         - qwen/qwen3.5-flash
         - qwen/qwen3.5-livetranslate-flash-realtime-2026-05-19
         - qwen/qwen3.5-plus
@@ -8574,14 +9123,29 @@ components:
         - qwen/qwen3.6-plus
         - qwen/qwen3.7-max
         - qwen/qwen3.7-max-2026-05-17
+        - qwen/qwen3.7-plus
+        - qwen/qwen3.7-plus-2026-05-26
         - qwen/qwq-32b
         - qwen/qwq-plus
         - qwen/text-embedding-v3
         - qwen/text-embedding-v4
         - qwen/wan2.7-t2v
+        - spacex-ai/grok-4.20-beta-0309
+        - spacex-ai/grok-4.20-multi-agent-beta-0309
+        - spacex-ai/grok-4.3
+        - spacex-ai/grok-4.5
+        - spacex-ai/grok-build-0.1
+        - spacex-ai/grok-code-fast-1
+        - spacex-ai/grok-imagine-image
+        - spacex-ai/grok-imagine-image-quality
+        - spacex-ai/grok-imagine-video
+        - spacex-ai/grok-tts
         - stepfun/step-3.5-flash
+        - stepfun/step-3.7-flash
         - tencent/hunyuan-a13b-instruct
+        - tencent/hy3
         - tencent/hy3-preview
+        - tencent/hy3:free
         - venice/venice-uncensored
         - venice/venice-uncensored-1.1
         - voyage/rerank-1
@@ -8612,24 +9176,9 @@ components:
         - voyage/voyage-multilingual-2
         - voyage/voyage-multimodal-3
         - voyage/voyage-multimodal-3.5
-        - x-ai/grok-2-vision
-        - x-ai/grok-3-mini
-        - x-ai/grok-4.20-beta-0309
-        - x-ai/grok-4.20-multi-agent-beta-0309
-        - x-ai/grok-4.3
-        - x-ai/grok-build-0.1
-        - x-ai/grok-code-fast-1
-        - x-ai/grok-imagine-image
-        - x-ai/grok-imagine-image-quality
-        - x-ai/grok-imagine-video
-        - x-ai/grok-tts
         - xiaomi/mimo-v2-flash
-        - xiaomi/mimo-v2-omni
-        - xiaomi/mimo-v2-pro
-        - xiaomi/mimo-v2-tts:free
         - xiaomi/mimo-v2.5
         - xiaomi/mimo-v2.5-pro
-        - xiaomi/mimo-v2.5-pro-precision
         - xiaomi/mimo-v2.5-tts:free
         - z-ai/glm-4-32b
         - z-ai/glm-4-7-flash:free
@@ -8647,7 +9196,7 @@ components:
         - z-ai/glm-5-code
         - z-ai/glm-5-turbo
         - z-ai/glm-5.1
-        - z-ai/glm-5.1-precision
+        - z-ai/glm-5.2
         - z-ai/glm-5v-turbo
         - zai-org/glm-4.5-air
         - zai/glm-5

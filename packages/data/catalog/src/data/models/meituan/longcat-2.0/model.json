@@ -1,0 +1,28 @@
+{
+  "model_id": "meituan/longcat-2.0",
+  "organisation_id": "meituan",
+  "name": "LongCat 2.0",
+  "status": "Available",
+  "previous_model_id": "meituan/longcat-2.0-preview",
+  "description": "LongCat 2.0 is Meituan's current LongCat generation model, replacing the earlier LongCat 2.0 Preview provider model ID for general text generation.",
+  "announced_date": null,
+  "release_date": "2026-06-29T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": [
+    "text"
+  ],
+  "output_types": [
+    "text"
+  ],
+  "api_model_id": "meituan/longcat-2.0",
+  "links": [],
+  "details": [
+    {
+      "name": "upstream_discovery",
+      "value": "Phaseo provider discovery detected LongCat-2.0 added and LongCat-2.0-Preview removed on 2026-06-29."
+    }
+  ],
+  "benchmarks": []
+}

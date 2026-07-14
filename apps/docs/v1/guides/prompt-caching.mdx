@@ -25,7 +25,7 @@ Avoid caching content that changes every request, contains short one-off user in
 
 ## Cache controls
 
-AI Stats accepts Anthropic/OpenRouter-style cache controls on supported text content blocks:
+Phaseo accepts an OpenRouter-style top-level `cache_control` hint on Chat Completions, Responses, and Anthropic Messages requests:
 
 ```json
 {
@@ -36,9 +36,22 @@ AI Stats accepts Anthropic/OpenRouter-style cache controls on supported text con
 }
 ```
 
-Use `ttl: "5m"` for short-lived shared context and `ttl: "1h"` when the provider and model support longer-lived prompt cache entries.
+Use `ttl: "5m"` for short-lived shared context and `ttl: "1h"` when the provider and model support longer-lived prompt cache entries. A top-level cache control is treated as an automatic/default cache policy by providers that support it.
 
-You can also apply a default Anthropic cache policy through `provider_options`:
+You can also place `cache_control` directly on supported text, image, tool result, and tool definition blocks for explicit cache breakpoints:
+
+```json
+{
+  "type": "text",
+  "text": "Large stable reference text...",
+  "cache_control": {
+    "type": "ephemeral",
+    "ttl": "1h"
+  }
+}
+```
+
+Provider-specific aliases remain supported. For example, you can apply a default Anthropic cache policy through `provider_options`:
 
 ```json
 {
@@ -69,8 +82,8 @@ Per-block `cache_control` wins over the default policy.
 Use `/v1/chat/completions` when you are using OpenAI-compatible chat clients.
 
 ```bash
-curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer $AI_STATS_API_KEY" \
+curl https://api.phaseo.ai/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "anthropic/claude-sonnet-4",
@@ -93,7 +106,15 @@ curl https://api.phaseo.app/v1/chat/completions \
   }'
 ```
 
-For OpenAI-routed requests, you can also pass OpenAI cache retention options:
+For OpenAI-routed requests, pass OpenAI cache retention options with the OpenAI-compatible top-level field:
+
+```json
+{
+  "prompt_cache_retention": "24h"
+}
+```
+
+The provider-specific alias is also accepted:
 
 ```json
 {
@@ -110,8 +131,8 @@ For OpenAI-routed requests, you can also pass OpenAI cache retention options:
 Use `/v1/responses` for new OpenAI-compatible text integrations and agent flows.
 
 ```bash
-curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer $AI_STATS_API_KEY" \
+curl https://api.phaseo.ai/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "anthropic/claude-sonnet-4",
@@ -151,8 +172,8 @@ When you already have a Google Gemini cached content resource, pass it through `
 Use `/v1/messages` when your client is Anthropic-compatible.
 
 ```bash
-curl https://api.phaseo.app/v1/messages \
-  -H "Authorization: Bearer $AI_STATS_API_KEY" \
+curl https://api.phaseo.ai/v1/messages \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "anthropic/claude-sonnet-4",
@@ -206,12 +227,14 @@ Anthropic Messages supports cache control on:
 
 ## Usage and pricing fields
 
-When a provider returns cache usage, AI Stats normalizes it into common usage fields.
+When a provider returns cache usage, Phaseo normalizes it into common usage fields.
 
 | Field | Meaning |
 | --- | --- |
-| `input_tokens_details.cached_tokens` | Input tokens read from cache. |
-| `output_tokens_details.cached_tokens` | Input tokens written to provider prompt cache. |
+| `input_tokens_details.cached_tokens` | Cached input tokens read from a provider prompt cache. |
+| `output_tokens_details.cached_tokens` | Cached input tokens written to a provider prompt cache. |
+| `cached_read_text_tokens` | Pricing meter for cache reads. This is cached input text reused from a provider cache. |
+| `cached_write_text_tokens` | Pricing meter for cache writes when the provider has one cache-write price. |
 | `cached_write_text_tokens_5m` | Cache write tokens for a 5 minute TTL when the provider reports TTL-specific writes. |
 | `cached_write_text_tokens_1h` | Cache write tokens for a 1 hour TTL when the provider reports TTL-specific writes. |
 

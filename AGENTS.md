@@ -6,11 +6,11 @@
 - Shared tooling lives in `scripts/`, release metadata in `.changeset/`; canonical data/benchmarks sit under `packages/data/catalog/src/data` with Jest cases nearby.
 
 ## Build, Test, and Development Commands
-- Install: `pnpm install` (Node >=20).
-- Dev servers: `pnpm dev` to run everything, or scope with `pnpm --filter @ai-stats/web dev`, `pnpm --filter @ai-stats/gateway-api dev`, `pnpm --filter @ai-stats/docs dev`.
+- Install: `pnpm install` (Node >=22.12.0).
+- Dev servers: `pnpm dev` to run everything, or scope with `pnpm --filter @phaseo/web dev`, `pnpm --filter @phaseo/gateway-api dev`, `pnpm --filter @phaseo/docs dev`.
 - Quality gates: `pnpm lint`, `pnpm typecheck`, `pnpm build`.
 - Data/doc checks: `pnpm validate:data`, `pnpm validate:pricing`, `pnpm validate:gateway`; docs via `pnpm docs:links` then `pnpm docs:build`.
-- Tests: `pnpm --filter @ai-stats/web test`; Python SDK via `pnpm test:sdk-py` (`python -m pytest packages/sdk/sdk-py/tests`); TS SDK local compatibility suite via `pnpm --filter @ai-stats/sdk test` and optional live smoke checks via `pnpm --filter @ai-stats/sdk test:smoke` (full `pnpm test` runs the TS SDK local suite plus pytest).
+- Tests: `pnpm --filter @phaseo/web test`; Python SDK via `pnpm test:sdk-py` (`python -m pytest packages/sdk/sdk-py/tests`); TS SDK local compatibility suite via `pnpm --filter @phaseo/sdk test` and optional live smoke checks via `pnpm --filter @phaseo/sdk test:smoke` (full `pnpm test` runs the TS SDK local suite plus pytest).
 
 ## Safety Notes
 - Avoid bulk repo-wide search/replace or scripted mass edits; use targeted, file-scoped changes only.

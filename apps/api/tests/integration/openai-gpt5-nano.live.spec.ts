@@ -355,7 +355,7 @@ describe("Live OpenAI gpt-5-nano protocols", () => {
             const upstreamRequestRaw = response?.upstream_request;
             if (typeof upstreamRequestRaw === "string" && upstreamRequestRaw.trim().length > 0) {
                 const parsed = JSON.parse(upstreamRequestRaw);
-                expect(parsed?.metadata?.aistats_request_id).toBe(response.id);
+                expect(parsed?.metadata?.phaseo_request_id).toBe(response.id);
                 const upstreamItems = Array.isArray(parsed?.input)
                     ? parsed.input
                     : (Array.isArray(parsed?.input_items) ? parsed.input_items : []);

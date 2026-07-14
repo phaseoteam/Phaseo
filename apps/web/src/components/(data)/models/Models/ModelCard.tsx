@@ -23,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";
+import { getModelDetailsHref } from "@/lib/models/modelHref";
 import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDisplay";
 
 type ModelCardLike = Omit<ModelCardType, "gateway_status"> & {
@@ -433,7 +434,9 @@ function ModelCardImpl({
 	contentPaddingClassName?: string;
 }) {
 	const modelSlug = model.model_id;
-	const modelHref = `/models/${modelSlug}`;
+	const modelHref =
+		getModelDetailsHref(model.organisation_id, model.model_id) ??
+		`/models/${modelSlug}`;
 	const router = useRouter();
 	const apiModelId =
 		model.gateway_api_model_ids

@@ -1,0 +1,38 @@
+{
+  "model_id": "spacex-ai/grok-imagine-video-1.5-preview",
+  "organisation_id": "spacex-ai",
+  "name": "Grok Imagine Video 1.5 Preview",
+  "status": "Retired",
+  "previous_model_id": "spacex-ai/grok-imagine-video",
+  "description": "Grok Imagine Video 1.5 Preview is a preview video generation model from SpaceXAI's Grok Imagine family. It accepts text, image, and video inputs and generates video outputs through the Grok Imagine API.",
+  "announced_date": "2026-05-30T00:00:00",
+  "release_date": "2026-05-30T00:00:00",
+  "deprecation_date": "2026-06-17T00:00:00",
+  "retirement_date": "2026-06-17T00:00:00",
+  "license": "Proprietary",
+  "input_types": "text,image,video",
+  "output_types": "video",
+  "api_model_id": "spacex-ai/grok-imagine-video-1.5-preview",
+  "links": [
+    {
+      "title": "API Reference",
+      "kind": "api_reference",
+      "url": "https://docs.x.ai/developers/models/grok-imagine-video-1.5-preview"
+    }
+  ],
+  "details": [
+    {
+      "name": "api_alias",
+      "value": "grok-imagine-video-1.5-2026-05-30"
+    },
+    {
+      "name": "regions",
+      "value": "us-east-1,eu-west-1"
+    },
+    {
+      "name": "availability",
+      "value": "The upstream SpaceXAI model list now exposes the stable grok-imagine-video-1.5 ID; the preview alias was marked retired from the 2026-06-17 discovery signal."
+    }
+  ],
+  "benchmarks": []
+}

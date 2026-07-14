@@ -15,7 +15,8 @@
   "api_model_id": "nous/nouscoder-14b",
   "links": [
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/NousResearch/NousCoder-14B"
     }
   ],

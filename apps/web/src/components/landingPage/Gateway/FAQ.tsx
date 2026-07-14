@@ -9,7 +9,7 @@ import {
 const FAQS = [
 	{
 		q: "Is Gateway a replacement for the Conduit?",
-		a: "Yes. AI Stats Gateway is the new name and positioning of the Conduit, focused on being the single API for every model while keeping compatibility commitments.",
+		a: "Yes. Phaseo Gateway is the new name and positioning of the Conduit, focused on being the single API for every model while keeping compatibility commitments.",
 	},
 	{
 		q: "Can I bring my existing OpenAI or Anthropic SDK?",

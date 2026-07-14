@@ -1,11 +1,11 @@
 ---
 title: "Migrating from LiteLLM"
-description: "Step-by-step guide to migrate your LiteLLM integration to AI Stats Gateway."
+description: "Step-by-step guide to migrate your LiteLLM integration to Phaseo Gateway."
 ---
 
 # Migrating from LiteLLM
 
-This guide helps migrate from LiteLLM proxy to AI Stats Gateway.
+This guide helps migrate from LiteLLM proxy to Phaseo Gateway.
 
 ## Overview
 
@@ -17,14 +17,14 @@ Both provide unified API access. Migration involves:
 
 ## Prerequisites
 
--   AI Stats account
+-   Phaseo account
 -   LiteLLM setup
 
 ## Migration Steps
 
 ### 1. Update Configuration
 
-Replace LiteLLM URL with AI Stats.
+Replace LiteLLM URL with Phaseo.
 
 <CodeGroup>
 ```bash
@@ -37,10 +37,10 @@ curl http://localhost:8000/v1/chat/completions \
     "messages": [{"role": "user", "content": "Hello!"}]
   }'
 
-# After (AI Stats)
+# After (Phaseo)
 
-curl https://api.phaseo.app/v1/chat/completions \
- -H "Authorization: Bearer your-ai-stats-key" \
+curl https://api.phaseo.ai/v1/chat/completions \
+ -H "Authorization: Bearer your-phaseo-key" \
  -H "Content-Type: application/json" \
  -d '{
 "model": "gpt-4",
@@ -60,8 +60,8 @@ client = openai.OpenAI(
 
 # After
 client = openai.OpenAI(
-    api_key="your-ai-stats-key",
-    base_url="https://api.phaseo.app/v1"
+    api_key="your-phaseo-key",
+    base_url="https://api.phaseo.ai/v1"
 )
 
 response = client.chat.completions.create(
@@ -81,8 +81,8 @@ const client = new OpenAI({
 
 // After
 const client = new OpenAI({
-	apiKey: "your-ai-stats-key",
-	baseURL: "https://api.phaseo.app/v1",
+	apiKey: "your-phaseo-key",
+	baseURL: "https://api.phaseo.ai/v1",
 });
 
 const response = await client.chat.completions.create({
@@ -95,7 +95,7 @@ const response = await client.chat.completions.create({
 
 ### 2. Model Names
 
-LiteLLM uses provider/model format. AI Stats may use different names.
+LiteLLM uses provider/model format. Phaseo may use different names.
 
 Check `/models` for available models.
 
@@ -105,9 +105,9 @@ Run your code to ensure compatibility.
 
 ## Common Issues
 
--   **Model support**: Not all LiteLLM models may be in AI Stats.
+-   **Model support**: Not all LiteLLM models may be in Phaseo.
 -   **Features**: Some LiteLLM features may differ.
 
 ## Next Steps
 
--   Use AI Stats' built-in analytics.
+-   Use Phaseo' built-in analytics.

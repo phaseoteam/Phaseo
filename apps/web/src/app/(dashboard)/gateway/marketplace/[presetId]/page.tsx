@@ -29,7 +29,7 @@ export async function generateMetadata({
 	return buildMetadata({
 		title: "Preset Details - Gateway Marketplace",
 		description:
-			"Review a shared AI Stats Gateway preset, inspect routing and policy configuration details, and copy it into your account to customize for your own workload and team.",
+			"Review a shared Phaseo Gateway preset, inspect routing and policy configuration details, and copy it into your account to customize for your own workload and team.",
 		path: `/gateway/marketplace/${presetId}`,
 	});
 }

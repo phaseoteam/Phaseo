@@ -113,14 +113,6 @@ export default function ModelProviderTrendChart({
 			color: provider.color ?? FALLBACK_PROVIDER_COLORS[index] ?? FALLBACK_PROVIDER_COLORS[0],
 		}));
 
-	if (providers.length === 0) {
-		return (
-			<div className="flex h-full items-center justify-center rounded-md border border-dashed border-border text-xs text-muted-foreground">
-				No provider trend data available.
-			</div>
-		);
-	}
-
 	const providerIdSet = new Set(providers.map((provider) => provider.provider));
 	const filtered = data.filter((point) => providerIdSet.has(point.provider));
 	const sortedDays = Array.from(new Set(filtered.map((point) => point.day))).sort(
@@ -188,6 +180,14 @@ export default function ModelProviderTrendChart({
 			}),
 		[providers, filtered, metricConfig.valueKey, activeRow],
 	);
+
+	if (providers.length === 0) {
+		return (
+			<div className="flex h-full items-center justify-center rounded-md border border-dashed border-border text-xs text-muted-foreground">
+				No provider trend data available.
+			</div>
+		);
+	}
 
 	return (
 		<div className="space-y-3">
@@ -279,10 +279,10 @@ export default function ModelProviderTrendChart({
 							content={() => null}
 							cursor={false}
 						/>
-						{activeIndex != null ? (
+						{isHovering && activeIndex != null ? (
 							<ReferenceLine
 								x={activeIndex}
-								stroke="hsl(var(--muted-foreground))"
+								stroke="var(--muted-foreground)"
 								strokeDasharray="3 4"
 								strokeWidth={1}
 							/>

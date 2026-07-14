@@ -20,9 +20,26 @@ const OUTPUT_DETAILED_METERS = new Set<string>([
     'output_audio_tokens',
     'output_video_tokens',
 ]);
+const REASONING_PARAM_NAMES = new Set<string>(['reasoning', 'reasoning_effort']);
+const KNOWN_REASONING_EFFORTS = new Set<string>([
+    'none',
+    'minimal',
+    'low',
+    'medium',
+    'high',
+    'xhigh',
+    'max',
+]);
 
 const ALLOWED_BILL_MODES = new Set<string>(['all', 'over', 'between']);
+const ALLOWED_BILLING_TIMESTAMP_BASES = new Set<string>([
+    'request_start',
+    'provider_accept',
+    'completion',
+    'unknown',
+]);
 const EXPLICIT_UTC_TIMESTAMP_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
+const UTC_MINUTE_TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 function parseNumericValue(value: unknown): number | undefined {
     if (typeof value === 'number') {
@@ -50,6 +67,8 @@ export function isMajorError(msg: string): boolean {
         /pricing.*non-positive price/i,
         /pricing.*unit_size.*invalid/i,
         /pricing.*bill mode.*invalid/i,
+        /pricing.*billing timestamp basis.*invalid/i,
+        /pricing.*time window/i,
         /pricing.*effective_to.*before.*effective_from/i,
     ];
     return majorPatterns.some((p) => p.test(msg));
@@ -57,6 +76,13 @@ export function isMajorError(msg: string): boolean {
 
 function hasExplicitUtcTimestamp(value: unknown): value is string {
     return typeof value === 'string' && EXPLICIT_UTC_TIMESTAMP_REGEX.test(value);
+}
+
+function parseUtcMinuteTime(value: unknown): number | null {
+    if (typeof value !== 'string') return null;
+    const match = value.match(UTC_MINUTE_TIME_REGEX);
+    if (!match) return null;
+    return Number(match[1]) * 60 + Number(match[2]);
 }
 
 export function checkPricingEntrySafety(p: any): string[] {
@@ -152,6 +178,60 @@ export function checkPricingEntrySafety(p: any): string[] {
                 errs.push(
                     `pricing: bill mode invalid ('${r.bill.mode}') for ${api_provider_id ?? '?'}:${model_id ?? '?'}:${endpoint ?? '?'}` 
                 );
+            }
+            if (
+                r?.billing_timestamp_basis !== undefined &&
+                r?.billing_timestamp_basis !== null &&
+                !ALLOWED_BILLING_TIMESTAMP_BASES.has(String(r.billing_timestamp_basis))
+            ) {
+                errs.push(
+                    `pricing: billing timestamp basis invalid ('${r.billing_timestamp_basis}') for ${api_provider_id ?? '?'}:${model_id ?? '?'}:${endpoint ?? '?'}:${meter}`
+                );
+            }
+            if (r?.time_windows !== undefined) {
+                if (!Array.isArray(r.time_windows)) {
+                    errs.push(
+                        `pricing: time_windows must be an array for ${api_provider_id ?? '?'}:${model_id ?? '?'}:${endpoint ?? '?'}:${meter}`
+                    );
+                } else {
+                    for (const [index, window] of r.time_windows.entries()) {
+                        const label = window?.label;
+                        const timezone = window?.timezone;
+                        const startMinute = parseUtcMinuteTime(window?.start_time);
+                        const endMinute = parseUtcMinuteTime(window?.end_time);
+                        if (typeof label !== 'string' || !label.trim()) {
+                            errs.push(
+                                `pricing: time window ${index} missing label for ${api_provider_id ?? '?'}:${model_id ?? '?'}:${endpoint ?? '?'}:${meter}`
+                            );
+                        }
+                        if (timezone !== 'UTC') {
+                            errs.push(
+                                `pricing: time window ${index} timezone must be UTC for ${api_provider_id ?? '?'}:${model_id ?? '?'}:${endpoint ?? '?'}:${meter}`
+                            );
+                        }
+                        if (startMinute === null || endMinute === null || startMinute === endMinute) {
+                            errs.push(
+                                `pricing: time window ${index} must use HH:mm UTC start/end times for ${api_provider_id ?? '?'}:${model_id ?? '?'}:${endpoint ?? '?'}:${meter}`
+                            );
+                        }
+                        if (window?.price_per_unit !== undefined && window?.price_per_unit !== null) {
+                            const windowPrice = parseNumericValue(window.price_per_unit);
+                            if (windowPrice === undefined || windowPrice < 0) {
+                                errs.push(
+                                    `pricing: time window ${index} invalid price for ${api_provider_id ?? '?'}:${model_id ?? '?'}:${endpoint ?? '?'}:${meter}`
+                                );
+                            }
+                        }
+                        if (window?.priority !== undefined && window?.priority !== null) {
+                            const priority = parseNumericValue(window.priority);
+                            if (priority === undefined || !Number.isInteger(priority)) {
+                                errs.push(
+                                    `pricing: time window ${index} invalid priority for ${api_provider_id ?? '?'}:${model_id ?? '?'}:${endpoint ?? '?'}:${meter}`
+                                );
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -302,6 +382,9 @@ function validateCapabilityParams(
             if (!isJsonLike(entry)) {
                 errors.push(`${label}[${index}] contains non-JSON metadata`);
             }
+            if (paramId && REASONING_PARAM_NAMES.has(paramId)) {
+                errors.push(...validateReasoningEffortValues(entry.values, `${label}[${index}]`));
+            }
         }
         return errors;
     }
@@ -323,6 +406,31 @@ function validateCapabilityParams(
         if (!isJsonLike(detail)) {
             errors.push(`${label}.${paramName} contains non-JSON metadata`);
         }
+        if (REASONING_PARAM_NAMES.has(paramName)) {
+            const detailObject = isPlainObject(detail) ? detail : null;
+            errors.push(
+                ...validateReasoningEffortValues(
+                    detailObject?.values,
+                    `${label}.${paramName}`
+                )
+            );
+        }
+    }
+    return errors;
+}
+
+function validateReasoningEffortValues(value: unknown, label: string): string[] {
+    if (value == null) return [];
+    if (!Array.isArray(value)) {
+        return [`${label}.values must be an array when present`];
+    }
+    const errors: string[] = [];
+    for (const [index, effort] of value.entries()) {
+        if (typeof effort !== 'string' || !KNOWN_REASONING_EFFORTS.has(effort)) {
+            errors.push(
+                `${label}.values[${index}] must be one of ${Array.from(KNOWN_REASONING_EFFORTS).join(', ')}`
+            );
+        }
     }
     return errors;
 }
@@ -337,7 +445,7 @@ const VIDEO_PROVIDERS_WITH_EXECUTOR_METADATA = new Set([
     'openai',
     'atlascloud',
     'runway',
-    'x-ai',
+    'spacex-ai',
 ]);
 
 function isEnabledCapabilityStatus(value: unknown): boolean {
@@ -534,7 +642,7 @@ function validateAsyncCapabilityMetadata(args: {
 const MODEL_DATE_FIELDS = ['announced_date', 'release_date', 'deprecation_date', 'retirement_date'];
 const DETAIL_DATE_HINTS = ['date', 'cutoff'];
 const GENERIC_MODEL_DESCRIPTION_FALLBACK =
-    'On AI Stats you can compare providers, pricing, benchmarks, routing support, and availability for this model.';
+    'On Phaseo you can compare providers, pricing, benchmarks, routing support, and availability for this model.';
 
 type ModelEntry = {
     filePath: string;
@@ -848,6 +956,27 @@ function checkApiProviders(state: ValidationState): string[] {
             errors.push(`API provider ${providerId} has invalid zero_data_retention '${String(data.zero_data_retention)}'`);
         }
         if (
+            data.data_policy_tier !== undefined &&
+            data.data_policy_tier !== null &&
+            !['unknown', 'private', 'logs', 'trains'].includes(String(data.data_policy_tier))
+        ) {
+            errors.push(`API provider ${providerId} has invalid data_policy_tier '${String(data.data_policy_tier)}'`);
+        }
+        if (
+            data.data_policy_confidence !== undefined &&
+            data.data_policy_confidence !== null &&
+            !['unknown', 'confirmed', 'maybe'].includes(String(data.data_policy_confidence))
+        ) {
+            errors.push(`API provider ${providerId} has invalid data_policy_confidence '${String(data.data_policy_confidence)}'`);
+        }
+        if (
+            data.data_policy_contract_mode !== undefined &&
+            data.data_policy_contract_mode !== null &&
+            !['none', 'customer_agreement', 'enterprise_agreement'].includes(String(data.data_policy_contract_mode))
+        ) {
+            errors.push(`API provider ${providerId} has invalid data_policy_contract_mode '${String(data.data_policy_contract_mode)}'`);
+        }
+        if (
             data.regional_pricing_mode !== undefined &&
             data.regional_pricing_mode !== null &&
             !['unknown', 'same_as_global', 'uplift', 'source_region_rates', 'offer_specific'].includes(String(data.regional_pricing_mode))
@@ -873,6 +1002,7 @@ function checkApiProviders(state: ValidationState): string[] {
         for (const key of [
             'prompt_training_notes',
             'prompt_training_source_url',
+            'data_policy_contract_notes',
             'user_identifier_notes',
             'privacy_policy_url',
             'terms_of_service_url',
@@ -1101,8 +1231,16 @@ function checkModelReferences(state: ValidationState): { errors: string[]; warni
         }
         const links = Array.isArray(data.links) ? data.links : [];
         for (const link of links) {
-            if (typeof link?.platform !== 'string' || !link.platform.trim()) {
-                errors.push(`${label} has a link without a platform`);
+            const kind = typeof link?.kind === 'string' && link.kind.trim()
+                ? link.kind.trim()
+                : typeof link?.platform === 'string'
+                    ? link.platform.trim()
+                    : '';
+            if (!kind) {
+                errors.push(`${label} has a link without a kind`);
+            }
+            if (typeof link?.title !== 'string' || !link.title.trim()) {
+                errors.push(`${label} has a link without a title`);
             }
             if (typeof link?.url !== 'string' || !link.url.trim()) {
                 errors.push(`${label} has a link without a url`);

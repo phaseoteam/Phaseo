@@ -125,11 +125,6 @@ pub fn createVideoDownloadUrlAlias<T: Transport>(client: &Client<T>, path: &Hash
 	client.request("POST", &resolved_path, body)
 }
 
-pub fn createWebhookEndpoint<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/webhook-endpoints");
-	client.request("POST", &resolved_path, body)
-}
-
 pub fn createWorkspace<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/workspaces");
 	client.request("POST", &resolved_path, body)
@@ -147,11 +142,6 @@ pub fn deleteVideo<T: Transport>(client: &Client<T>, path: &HashMap<String, Stri
 
 pub fn deleteVideoAlias<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/video/generations/{}", path.get("video_id").cloned().unwrap_or_default());
-	client.request("DELETE", &resolved_path, body)
-}
-
-pub fn deleteWebhookEndpoint<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = format!("/webhook-endpoints/{}", path.get("endpoint_id").cloned().unwrap_or_default());
 	client.request("DELETE", &resolved_path, body)
 }
 
@@ -240,11 +230,6 @@ pub fn getVideoContentAlias<T: Transport>(client: &Client<T>, path: &HashMap<Str
 	client.request("GET", &resolved_path, body)
 }
 
-pub fn getWebhookEndpoint<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = format!("/webhook-endpoints/{}", path.get("endpoint_id").cloned().unwrap_or_default());
-	client.request("GET", &resolved_path, body)
-}
-
 pub fn getWorkspace<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/workspaces/{}", path.get("id").cloned().unwrap_or_default());
 	client.request("GET", &resolved_path, body)
@@ -262,6 +247,26 @@ pub fn listBatchCapabilities<T: Transport>(client: &Client<T>, path: &HashMap<St
 
 pub fn listBatchCapabilitiesAlias<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/batch/capabilities");
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn listBatches<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/batches");
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn listBatchesAlias<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/batch");
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn listBatchModels<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/batches/models");
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn listBatchModelsAlias<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/batch/models");
 	client.request("GET", &resolved_path, body)
 }
 
@@ -291,7 +296,7 @@ pub fn listFiles<T: Transport>(client: &Client<T>, path: &HashMap<String, String
 }
 
 pub fn listModels<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/gateway/models");
+	let resolved_path = String::from("/models");
 	client.request("GET", &resolved_path, body)
 }
 
@@ -311,7 +316,7 @@ pub fn listProviders<T: Transport>(client: &Client<T>, path: &HashMap<String, St
 }
 
 pub fn listTeamModels<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/gateway/models/me");
+	let resolved_path = String::from("/models/me");
 	client.request("GET", &resolved_path, body)
 }
 
@@ -335,18 +340,13 @@ pub fn listVideosAlias<T: Transport>(client: &Client<T>, path: &HashMap<String, 
 	client.request("GET", &resolved_path, body)
 }
 
-pub fn listWebhookEndpoints<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/webhook-endpoints");
-	client.request("GET", &resolved_path, body)
-}
-
 pub fn listWorkspaces<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/workspaces");
 	client.request("GET", &resolved_path, body)
 }
 
-pub fn openResponsesWebSocket<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/responses/ws");
+pub fn openAsyncJobWebSocket<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/async/{}/{}/ws", path.get("kind").cloned().unwrap_or_default(), path.get("id").cloned().unwrap_or_default());
 	client.request("GET", &resolved_path, body)
 }
 
@@ -390,18 +390,8 @@ pub fn retrieveFileContent<T: Transport>(client: &Client<T>, path: &HashMap<Stri
 	client.request("GET", &resolved_path, body)
 }
 
-pub fn rotateWebhookEndpointSecret<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = format!("/webhook-endpoints/{}/rotate-secret", path.get("endpoint_id").cloned().unwrap_or_default());
-	client.request("POST", &resolved_path, body)
-}
-
 pub fn updateApiKey<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/keys/{}", path.get("id").cloned().unwrap_or_default());
-	client.request("PATCH", &resolved_path, body)
-}
-
-pub fn updateWebhookEndpoint<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = format!("/webhook-endpoints/{}", path.get("endpoint_id").cloned().unwrap_or_default());
 	client.request("PATCH", &resolved_path, body)
 }
 

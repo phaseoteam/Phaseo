@@ -37,9 +37,6 @@ function resolveReasoningConfig(providerId?: string): ReasoningConfig | null {
 	if (providerId === "openai") {
 		return { mode: "effort", field: "reasoning" };
 	}
-	if (providerId === "amazon-bedrock") {
-		return { mode: "effort", field: "reasoning" };
-	}
 	// Xiaomi uses a special format: chat_template_kwargs.enable_thinking
 	// This is handled entirely in the Xiaomi provider quirks (providers/xiaomi/quirks.ts)
 	// Do not add a config here - the quirk has full control
@@ -64,12 +61,33 @@ export function applyReasoningParams(args: {
 	const reasoning = args.ir.reasoning;
 	if (!reasoning) return;
 
+	if (args.providerId === "meta") {
+		const rawEffort =
+			typeof reasoning.effort === "string"
+				? reasoning.effort
+				: reasoning.enabled === false
+					? "minimal"
+					: reasoning.enabled === true
+						? "medium"
+						: undefined;
+		const effort = rawEffort === "none"
+			? "minimal"
+			: rawEffort === "max"
+				? "xhigh"
+				: rawEffort;
+		if (effort !== undefined && args.request.reasoning_effort == null) {
+			args.request.reasoning_effort = effort;
+		}
+		return;
+	}
+
 	const config = resolveReasoningConfig(args.providerId);
 	if (!config) return;
 
 	const hasAny =
 		reasoning.enabled !== undefined ||
 		reasoning.effort !== undefined ||
+		reasoning.mode !== undefined ||
 		reasoning.summary !== undefined ||
 		reasoning.maxTokens !== undefined;
 	if (!hasAny) return;
@@ -125,6 +143,10 @@ export function applyReasoningParams(args: {
 		target[effortKey] = "none";
 	} else if (enabled === true) {
 		target[effortKey] = "medium";
+	}
+
+	if (typeof reasoning.mode === "string") {
+		target.mode = reasoning.mode;
 	}
 
 	// OpenAI: default summary mode to "auto" only when caller did not provide one.

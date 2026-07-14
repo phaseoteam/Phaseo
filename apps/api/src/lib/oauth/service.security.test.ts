@@ -53,8 +53,8 @@ vi.mock("@/runtime/env", () => ({
 							eq: () => ({
 								maybeSingle: async () => ({
 									data: {
-										id: "aistats_cli",
-										name: "AI Stats CLI",
+										id: "phaseo_cli",
+										name: "Phaseo CLI",
 										client_type: "public",
 										redirect_uris: [],
 										allowed_scopes: ["openid"],
@@ -96,7 +96,7 @@ describe("OAuth refresh rotation security", () => {
 			id: "refresh_1",
 			user_id: "user_1",
 			workspace_id: "ws_1",
-			client_id: "aistats_cli",
+			client_id: "phaseo_cli",
 			scopes: ["openid"],
 			expires_at: new Date(Date.now() + 60_000).toISOString(),
 			revoked_at: null,
@@ -133,7 +133,7 @@ describe("OAuth refresh rotation security", () => {
 			issueTokenPair({
 				userId: "user_1",
 				workspaceId: "ws_1",
-				clientId: "aistats_cli",
+				clientId: "phaseo_cli",
 				scopes: ["openid"],
 				email: "user@example.com",
 				name: "Test User",

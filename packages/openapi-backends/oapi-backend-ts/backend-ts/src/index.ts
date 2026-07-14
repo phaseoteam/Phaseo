@@ -1,4 +1,4 @@
-import type { Backend, BackendContext, GeneratedFile, IR, IRModel, IROperation, IRSchema } from "@ai-stats/oapi-core";
+import type { Backend, BackendContext, GeneratedFile, IR, IRModel, IROperation, IRSchema } from "@phaseo/oapi-core";
 import { format } from "prettier";
 
 export const backendTs: Backend = {

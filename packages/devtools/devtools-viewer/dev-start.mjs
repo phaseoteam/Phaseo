@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Dev server starter for AI Stats Devtools
+ * Dev server starter for Phaseo Devtools
  * Starts both the API server and UI dev server reliably on all platforms
  */
 
@@ -79,7 +79,7 @@ function waitForPort(port, timeout = MAX_WAIT) {
 }
 
 async function main() {
-  console.log('\n' + colors.cyan + '🚀 Starting AI Stats Devtools Development Environment' + colors.reset + '\n');
+  console.log('\n' + colors.cyan + '🚀 Starting Phaseo Devtools Development Environment' + colors.reset + '\n');
 
   // Check if ports are available
   log(colors.blue, 'CHECK', `Checking if ports ${API_PORT} and ${UI_PORT} are available...`);
@@ -104,7 +104,7 @@ async function main() {
   // Start API server
   log(colors.blue, 'SERVER', `Starting API server on port ${API_PORT}...`);
 
-  const serverArgs = ['exec', 'tsx', 'watch', 'src/server/index.ts', '--', '--start', '--port', String(API_PORT), '--dir', '../../../.ai-stats-devtools'];
+  const serverArgs = ['exec', 'tsx', 'watch', 'src/server/index.ts', '--', '--start', '--port', String(API_PORT), '--dir', '../../../.phaseo-devtools'];
   const serverProcess = spawn('pnpm', serverArgs, {
     stdio: ['ignore', 'pipe', 'pipe'],
     shell: true,

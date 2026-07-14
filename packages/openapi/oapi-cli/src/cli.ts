@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 import path from "node:path";
 import fs from "node:fs/promises";
-import { loadOpenApi, buildIR, stringifyIR } from "@ai-stats/oapi-core";
-import { backendTs } from "@ai-stats/oapi-backend-ts";
-import { backendPython } from "@ai-stats/oapi-backend-python";
-import { backendGo } from "@ai-stats/oapi-backend-go";
-import { backendCsharp } from "@ai-stats/oapi-backend-csharp";
-import { backendRuby } from "@ai-stats/oapi-backend-ruby";
-import { backendPhp } from "@ai-stats/oapi-backend-php";
-import { backendJava } from "@ai-stats/oapi-backend-java";
-import { backendCpp } from "@ai-stats/oapi-backend-cpp";
-import { backendRust } from "@ai-stats/oapi-backend-rust";
+import { loadOpenApi, buildIR, stringifyIR } from "@phaseo/oapi-core";
+import { backendTs } from "@phaseo/oapi-backend-ts";
+import { backendPython } from "@phaseo/oapi-backend-python";
+import { backendGo } from "@phaseo/oapi-backend-go";
+import { backendCsharp } from "@phaseo/oapi-backend-csharp";
+import { backendRuby } from "@phaseo/oapi-backend-ruby";
+import { backendPhp } from "@phaseo/oapi-backend-php";
+import { backendJava } from "@phaseo/oapi-backend-java";
+import { backendCpp } from "@phaseo/oapi-backend-cpp";
+import { backendRust } from "@phaseo/oapi-backend-rust";
 
 const args = process.argv.slice(2);
 const rawCommand = args[0];

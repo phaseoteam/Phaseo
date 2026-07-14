@@ -3,14 +3,14 @@
 require __DIR__ . '/../vendor/autoload.php';
 require __DIR__ . '/../src/index.php';
 
-use AIStats\Sdk\AIStats;
+use Phaseo\Sdk\Phaseo;
 
-$apiKey = getenv('AI_STATS_API_KEY');
+$apiKey = getenv('PHASEO_API_KEY');
 if (!$apiKey) {
-    throw new RuntimeException('Set AI_STATS_API_KEY');
+    throw new RuntimeException('Set PHASEO_API_KEY');
 }
 
-$client = new AIStats($apiKey);
+$client = new Phaseo($apiKey);
 $resp = $client->listModels([
     'provider' => 'anthropic',
     'provider_status' => 'beta,not_ready',

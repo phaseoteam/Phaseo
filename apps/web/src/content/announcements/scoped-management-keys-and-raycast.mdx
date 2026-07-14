@@ -1,0 +1,82 @@
+---
+title: "Scoped management keys and a quicker Raycast view of Phaseo"
+description: "Typed management keys, explicit control-plane scopes, and a Raycast extension for the Phaseo data teams check most often."
+author: Phaseo Team
+category: announcements
+pinned: false
+coverImage: /blog-images/blog-announcement.svg
+tags:
+  - Release
+  - Security
+  - Raycast
+  - Product
+draft: true
+---
+
+Phaseo now has a clearer separation between credentials that send inference
+requests and credentials that manage a workspace.
+
+This release also adds a Raycast extension for the information developers tend
+to check most often: model discovery.
+
+## Management access now has its own key type
+
+Gateway API keys remain `phaseo_v1_sk_...` credentials. They are for inference
+requests and continue to use the key-level policies and guardrails attached to
+them.
+
+Management API keys now use `phaseo_v1_mk_...`. They are for control-plane
+operations such as viewing credits and activity, managing workspace settings,
+or automating key and preset administration. A management key cannot be used
+for gateway inference, and an inference key cannot be used for management
+endpoints.
+
+That split removes an easy-to-make configuration mistake: pasting a regular
+gateway key into an administration integration and expecting it to have
+elevated access.
+
+## Start with the access level, not a blank permissions list
+
+When creating a management key in Settings, choose an access level that fits
+the integration:
+
+- **Read** can inspect the current management surfaces.
+- **Write** adds updates, without delete access.
+- **All** includes the current read, write, and delete capabilities for trusted
+  administrative automation.
+
+Each option expands to an explicit set of capabilities when the key is
+created. New capabilities are never added to an existing key implicitly.
+
+## OAuth apps keep approvals explicit too
+
+OAuth app owners can set the capabilities an app may request. Each user and
+workspace keeps its own approved grant, so changing an app's allowed scopes
+does not silently expand an existing authorization.
+
+If an app starts requesting additional access, the dashboard shows that there
+are unapproved scopes. The user can review and approve them in the normal OAuth
+flow, or leave the existing grant unchanged.
+
+## Raycast starts with a focused model browser
+
+The Phaseo Raycast extension now includes a focused model browser:
+
+- search by model, organisation, or endpoint
+- organisation logos shared with the Phaseo web app
+- direct links to canonical model pages
+- cached catalogue reads to avoid unnecessary API traffic
+
+The extension uses only the regular gateway API key configured in Raycast. It
+does not request a management API key or make changes to a workspace.
+
+## Safer automation without a slower workflow
+
+The intent is not to make automation harder. It is to make its boundary clear:
+use a narrow management key for the control-plane task, a regular gateway key
+for inference, and OAuth when an application needs a user-delegated grant.
+
+That gives teams more confidence to add useful surfaces such as Raycast without
+turning a small read-only integration into an all-access credential.
+
+<GetStartedCta />

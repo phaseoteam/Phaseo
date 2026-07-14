@@ -48,8 +48,8 @@ Use this checklist when a provider already exists in the codebase or catalog pip
 - `pnpm validate:data`
 - `pnpm validate:pricing`
 - `pnpm validate:gateway`
-- `pnpm --filter @ai-stats/gateway-api typecheck`
-- `pnpm --filter @ai-stats/web typecheck`
+- `pnpm --filter @phaseo/gateway-api typecheck`
+- `pnpm --filter @phaseo/web typecheck`
 - relevant provider or routing tests
 - `pnpm exec mintlify validate` in `apps/docs`
 - `pnpm run openapi:gen` if any public contract changed
@@ -104,10 +104,10 @@ Use this checklist when adding a new long-running route such as video, batch, tr
 - targeted route tests for create, retrieve, and failure normalization
 - async reconciliation or polling tests if the endpoint is background-driven
 - ownership and artifact retrieval tests
-- `pnpm --filter @ai-stats/gateway-api typecheck`
+- `pnpm --filter @phaseo/gateway-api typecheck`
 - relevant SDK package tests if helper methods changed
 - `pnpm run openapi:gen` if public contract changed
-- `pnpm --filter @ai-stats/sdk run build` if generated SDKs changed
+- `pnpm --filter @phaseo/sdk run build` if generated SDKs changed
 - `pnpm exec mintlify validate` in `apps/docs`
 
 ## 3) Expose new metadata in logs, jobs, and devtools
@@ -141,8 +141,8 @@ Use this checklist when adding request metadata such as provider attempts, billi
 - targeted API tests for the payload or error shape
 - targeted web tests or `typecheck` for logs, jobs, or investigation UI updates
 - targeted SDK recorder tests where recorder output changed
-- `pnpm --filter @ai-stats/gateway-api typecheck`
-- `pnpm --filter @ai-stats/web typecheck`
+- `pnpm --filter @phaseo/gateway-api typecheck`
+- `pnpm --filter @phaseo/web typecheck`
 - relevant SDK package tests
 - `pnpm run openapi:gen` if public contract changed
 - `pnpm exec mintlify validate` in `apps/docs`
@@ -171,7 +171,7 @@ Pick the smallest bundle that still covers the actual change.
 ### API contract slice
 
 - relevant route or unit tests
-- `pnpm --filter @ai-stats/gateway-api typecheck`
+- `pnpm --filter @phaseo/gateway-api typecheck`
 - `pnpm run openapi:gen`
 - `pnpm exec mintlify validate` in `apps/docs`
 
@@ -184,8 +184,8 @@ Pick the smallest bundle that still covers the actual change.
 ### Web usage or devtools slice
 
 - targeted Jest or Vitest coverage where available
-- `pnpm --filter @ai-stats/web typecheck`
-- `pnpm --filter @ai-stats/devtools-viewer run build` if viewer assets changed
+- `pnpm --filter @phaseo/web typecheck`
+- `pnpm --filter @phaseo/devtools-viewer run build` if viewer assets changed
 
 ## 6) Changelog discipline
 

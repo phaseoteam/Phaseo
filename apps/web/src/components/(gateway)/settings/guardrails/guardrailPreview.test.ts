@@ -8,7 +8,7 @@ import {
 const providers: GuardrailPreviewProvider[] = [
 	{ id: "anthropic", name: "Anthropic" },
 	{ id: "openai", name: "OpenAI" },
-	{ id: "xai", name: "xAI" },
+	{ id: "xai", name: "SpaceXAI" },
 ];
 
 const activeProviderModels: GuardrailPreviewProviderModel[] = [

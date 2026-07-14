@@ -4,13 +4,18 @@ import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { revalidateAppDataTags } from "@/lib/cache/revalidateDataTags";
+import { normalizeAppCategoryCsv } from "@/lib/appCategories";
 import { requireWorkspaceMembership } from "@/utils/serverActionAuth";
 
 const PROTECTED_APP_TITLES = new Set([
-	"ai stats chat",
-	"ai stats playground",
+	"phaseo chat",
+	"phaseo playground",
+	["ai", "stats", "chat"].join(" "),
+	["ai", "stats", "playground"].join(" "),
 ]);
 const PROTECTED_APP_KEY_PREFIXES = [
+	"phaseo-chat",
+	"phaseo-playground",
 	"ai-stats-chat",
 	"aistats-chat",
 	"ai-stats-playground",
@@ -31,12 +36,33 @@ function isProtectedApp(title: string | null, appKey: string | null) {
 	);
 }
 
+function normalizeOptionalHttpUrl(value: string | null | undefined, field: string) {
+	if (value == null) return null;
+	const trimmed = value.trim();
+	if (!trimmed) return null;
+
+	let parsed: URL;
+	try {
+		parsed = new URL(trimmed);
+	} catch {
+		throw new Error(`${field} must be a valid URL`);
+	}
+
+	if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+		throw new Error(`${field} must start with http:// or https://`);
+	}
+
+	return parsed.toString();
+}
+
 type UpdateAppInput = {
 	title?: string;
 	url?: string | null;
+	docs_url?: string | null;
 	image_url?: string | null;
 	is_public?: boolean;
 	is_active?: boolean;
+	category?: string | null;
 };
 
 export async function updateAppAction(appId: string, updates: UpdateAppInput) {
@@ -74,7 +100,7 @@ export async function updateAppAction(appId: string, updates: UpdateAppInput) {
 	await requireWorkspaceMembership(supabase, user.id, existingApp.workspace_id);
 
 	if (isProtectedApp(existingApp.title, existingApp.app_key)) {
-		throw new Error("This app is managed by AI Stats and cannot be edited");
+		throw new Error("This app is managed by Phaseo and cannot be edited");
 	}
 
 	const updateObj: Record<string, unknown> = {};
@@ -96,6 +122,17 @@ export async function updateAppAction(appId: string, updates: UpdateAppInput) {
 		updateObj.url = "about:blank";
 	}
 
+	if (typeof updates.docs_url === "string") {
+		updateObj.docs_url = normalizeOptionalHttpUrl(
+			updates.docs_url,
+			"Docs URL"
+		);
+	}
+
+	if (updates.docs_url === null) {
+		updateObj.docs_url = null;
+	}
+
 	if (typeof updates.image_url === "string") {
 		const trimmed = updates.image_url.trim();
 		updateObj.image_url = trimmed.length > 0 ? trimmed : null;
@@ -111,6 +148,10 @@ export async function updateAppAction(appId: string, updates: UpdateAppInput) {
 
 	if (typeof updates.is_active === "boolean") {
 		updateObj.is_active = updates.is_active;
+	}
+
+	if (Object.prototype.hasOwnProperty.call(updates, "category")) {
+		updateObj.category = normalizeAppCategoryCsv(updates.category);
 	}
 
 	if (Object.keys(updateObj).length === 0) {
@@ -175,7 +216,7 @@ export async function mergeAppsAction(
 	await requireWorkspaceMembership(supabase, user.id, workspaceId);
 
 	if (apps.some((app) => isProtectedApp(app.title, app.app_key))) {
-		throw new Error("AI Stats managed apps cannot be merged");
+		throw new Error("Phaseo managed apps cannot be merged");
 	}
 
 	const admin = createAdminClient();

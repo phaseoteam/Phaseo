@@ -1,8 +1,8 @@
 {
-  "name": "aistats-gateway-node-quickstart",
+  "name": "phaseo-gateway-node-quickstart",
   "version": "1.0.0",
   "private": true,
-  "description": "Node.js quickstart for AI Stats Gateway control + generation surfaces",
+  "description": "Node.js quickstart for Phaseo Gateway control + generation surfaces",
   "type": "module",
   "scripts": {
     "start": "node index.mjs",

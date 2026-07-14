@@ -6,11 +6,44 @@ import {
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import type {
 	ChatMessage,
+	ChatAdvisorServerToolConfig,
 	ChatModelSettings,
+	ChatServerToolConfigs,
+	ChatServerToolType,
 	ChatSettings,
 	ChatThread,
 	UnifiedChatEndpoint,
 } from "@/lib/indexeddb/chats";
+
+export const DEFAULT_SERVER_TOOLS: ChatServerToolType[] = ["gateway:datetime"];
+const CHARS_PER_APPROXIMATE_TOKEN = 4;
+const MAX_DATETIME_TIMEZONES = 5;
+const MAX_ADVISOR_TOOLS = 5;
+const TIMEZONE_NAME_PATTERN = /^[A-Za-z0-9_+\-/]+$/;
+const SUPPORTED_CHAT_SERVER_TOOLS = new Set<ChatServerToolType>([
+	"gateway:datetime",
+	"phaseo:web_search",
+	"phaseo:web_fetch",
+	"phaseo:advisor",
+	"phaseo:image_generation",
+	"phaseo:fusion",
+	"phaseo:subagent",
+]);
+
+export type ChatResponseLayout = "sequential" | "side-by-side";
+
+export function normalizeServerTools(
+	serverTools?: ChatServerToolType[],
+): ChatServerToolType[] {
+	if (serverTools === undefined) return DEFAULT_SERVER_TOOLS;
+	return Array.from(new Set(serverTools)).filter((toolType) =>
+		SUPPORTED_CHAT_SERVER_TOOLS.has(toolType),
+	);
+}
+
+export function estimatePromptTokenCount(prompt?: string | null) {
+	return Math.ceil((prompt?.length ?? 0) / CHARS_PER_APPROXIMATE_TOKEN);
+}
 
 export const DEFAULT_SETTINGS: ChatSettings = {
 	temperature: null,
@@ -30,7 +63,9 @@ export const DEFAULT_SETTINGS: ChatSettings = {
 	reasoningEffort: "medium",
 	endpoint: "responses",
 	webSearchEnabled: false,
-	apiServerToolsEnabled: false,
+	apiServerToolsEnabled: true,
+	serverTools: DEFAULT_SERVER_TOOLS,
+	serverToolConfigs: {},
 	imageOutputEnabled: false,
 	compareMode: false,
 	compareModelIds: [],
@@ -56,6 +91,8 @@ const MODEL_SETTING_KEYS: Array<keyof ChatModelSettings> = [
 	"endpoint",
 	"webSearchEnabled",
 	"apiServerToolsEnabled",
+	"serverTools",
+	"serverToolConfigs",
 	"imageOutputEnabled",
 	"enabled",
 	"displayName",
@@ -76,10 +113,11 @@ const formatSettingValue = (value: unknown, fallback = "Default") => {
 export const getChangedSettings = (
 	settings: ChatSettings,
 	modelId: string,
+	modelDisplayName?: string,
 ): SettingChange[] => {
 	const defaults: ChatSettings = {
 		...DEFAULT_SETTINGS,
-		systemPrompt: buildDefaultSystemPrompt(modelId),
+		systemPrompt: buildDefaultSystemPrompt(modelId, modelDisplayName),
 	};
 	const changes: SettingChange[] = [];
 	const addChange = (label: string, value: string) => {
@@ -146,8 +184,13 @@ export const getChangedSettings = (
 		);
 	}
 	if (
-		(settings.systemPrompt ?? "").trim() !==
-		(defaults.systemPrompt ?? "").trim()
+		normalizeSystemPromptForComparison(settings.systemPrompt) !==
+			normalizeSystemPromptForComparison(defaults.systemPrompt) &&
+		!isGeneratedDefaultSystemPrompt(
+			settings.systemPrompt,
+			modelId,
+			modelDisplayName,
+		)
 	) {
 		addChange("System prompt", "Custom");
 	}
@@ -158,6 +201,7 @@ export function getRoomStorageKeys(roomId: ChatRoomId) {
 	return {
 		apiKey: getRoomScopedStorageKey(roomId, "api-key"),
 		baseUrl: getRoomScopedStorageKey(roomId, "base-url"),
+		apiTarget: getRoomScopedStorageKey(roomId, "api-target"),
 		activeChatId: getRoomScopedStorageKey(roomId, "active-id"),
 		lastModelId: getRoomScopedStorageKey(roomId, "last-model-id"),
 		personalizationName: getRoomScopedStorageKey(roomId, "personal-name"),
@@ -166,10 +210,14 @@ export function getRoomStorageKeys(roomId: ChatRoomId) {
 		personalizationAccent: getRoomScopedStorageKey(roomId, "personal-accent"),
 		notifyOnComplete: getRoomScopedStorageKey(roomId, "notify-on-complete"),
 		debugMode: getRoomScopedStorageKey(roomId, "debug"),
+		responseLayout: getRoomScopedStorageKey(roomId, "response-layout"),
 	};
 }
 
 export const STORAGE_KEYS = getRoomStorageKeys("text");
+
+export type ChatApiTarget = "default" | "public" | "local" | "custom";
+export const LOCAL_CHAT_API_BASE_URL = "http://127.0.0.1:8787/v1";
 
 export const PERSONALIZATION_ACCENT_COLORS: Array<{
 	label: string;
@@ -191,10 +239,10 @@ export const generateId = () => {
 };
 
 export const APP_HEADERS = {
-	"x-app-id": "ai-stats-chat",
-	"x-app-name": "AI Stats Chat",
-	"x-title": "AI Stats Chat",
-	"http-referer": "https://ai-stats.phaseo.app/chat",
+	"x-app-id": "phaseo-chat",
+	"x-app-name": "Phaseo Chat",
+	"x-title": "Phaseo Chat",
+	"http-referer": "https://phaseo.app/chat",
 };
 
 export const TEMP_CHAT_ID = "temp-chat";
@@ -254,7 +302,7 @@ export function normalizeBaseUrl(baseUrl: string) {
 
 export function getOrgId(modelId: string) {
 	const [org] = modelId.split("/");
-	return org || "ai-stats";
+	return org || "phaseo";
 }
 
 export function formatModelLabel(modelId: string) {
@@ -271,6 +319,15 @@ function normalizeNickname(nickname?: string | null) {
 	return nickname.trim();
 }
 
+const LEGACY_MATH_FORMATTING_RULE =
+	"- **For all mathematical expressions, you must use dollar-sign delimiters. Use $...$ for inline math and $$...$$ for block math. Do not use (...) or [...] delimiters.**";
+
+const PREVIOUS_MATH_FORMATTING_RULE =
+	"- Do not use \\(...\\) or \\[...\\] delimiters.";
+
+const COMPACT_FORMATTING_RULE =
+	"Markdown; ```code fences```; `backticks` for code, filenames, paths, and functions. Use $...$ or $$...$$ only for typeset math; put $$ delimiters on their own lines. Keep numbers, percentages, and currency plain. Use valid LaTeX: escape % in math (e.g. $80\\%$); no \\(...\\) or \\[...\\].";
+
 export function buildDefaultSystemPrompt(
 	modelId: string,
 	nickname?: string | null,
@@ -284,12 +341,42 @@ export function buildDefaultSystemPrompt(
 	return [
 		identityLine,
 		"",
-		"Formatting Rules:",
-		"- Use Markdown for lists, tables, and styling.",
-		"- Use ```code fences``` for all code blocks.",
-		"- Format file names, paths, and function names with `inline code` backticks.",
-		"- **For all mathematical expressions, you must use dollar-sign delimiters. Use $...$ for inline math and $$...$$ for block math. Do not use (...) or [...] delimiters.**",
+		`Formatting: ${COMPACT_FORMATTING_RULE}`,
 	].join("\n");
+}
+
+const normalizeSystemPromptForComparison = (prompt?: string | null) =>
+	(prompt ?? "").replace(/\r\n/g, "\n").trim();
+
+export function isGeneratedDefaultSystemPrompt(
+	prompt: string | undefined,
+	modelId: string,
+	modelDisplayName?: string,
+) {
+	const normalizedPrompt = normalizeSystemPromptForComparison(prompt);
+	if (!normalizedPrompt) return false;
+	const exactDefaults = new Set([
+		normalizeSystemPromptForComparison(buildDefaultSystemPrompt(modelId)),
+		normalizeSystemPromptForComparison(
+			buildDefaultSystemPrompt(modelId, modelDisplayName),
+		),
+	]);
+	if (exactDefaults.has(normalizedPrompt)) return true;
+
+	const safeModelId = modelId || "AI model";
+	const orgLabel = formatOrgLabel(getOrgId(safeModelId));
+	const generatedPrefix = `You are ${safeModelId}, known as: `;
+	const generatedSuffixes = [
+		`, a large language model from ${orgLabel}.\n\nFormatting:`,
+		`, a large language model from ${orgLabel}.\n\nFormatting Rules:`,
+	];
+	return (
+		normalizedPrompt.startsWith(generatedPrefix) &&
+		generatedSuffixes.some((suffix) => normalizedPrompt.includes(suffix)) &&
+		(normalizedPrompt.endsWith(COMPACT_FORMATTING_RULE) ||
+			normalizedPrompt.endsWith(PREVIOUS_MATH_FORMATTING_RULE) ||
+			normalizedPrompt.endsWith(LEGACY_MATH_FORMATTING_RULE))
+	);
 }
 
 export function shouldRequestImageModalities(modelId: string) {
@@ -336,6 +423,8 @@ export function getEffectiveModelSettings(
 		endpoint: DEFAULT_SETTINGS.endpoint,
 		webSearchEnabled: DEFAULT_SETTINGS.webSearchEnabled,
 		apiServerToolsEnabled: DEFAULT_SETTINGS.apiServerToolsEnabled,
+		serverTools: DEFAULT_SETTINGS.serverTools,
+		serverToolConfigs: DEFAULT_SETTINGS.serverToolConfigs,
 		imageOutputEnabled: DEFAULT_SETTINGS.imageOutputEnabled,
 		enabled: true,
 		displayName: "",
@@ -349,6 +438,284 @@ export function getEffectiveModelSettings(
 		...globalModelSettings,
 		...modelOverrides,
 	};
+}
+
+export function buildServerToolDefinitions(
+	serverTools?: ChatServerToolType[],
+	serverToolConfigs?: ChatServerToolConfigs,
+	options?: {
+		datetimeTimezone?: string | null;
+		datetimeTimezones?: string[];
+	},
+): Array<Record<string, unknown>> {
+	const parseDomainList = (value?: string) =>
+		(value ?? "")
+			.split(",")
+			.map((domain) => domain.trim())
+			.filter(Boolean);
+	const isSafeTimezoneName = (value: string) =>
+		value.length <= 64 &&
+		TIMEZONE_NAME_PATTERN.test(value) &&
+		!value.includes("..") &&
+		!value.startsWith("/") &&
+		!value.endsWith("/");
+	const setOptionalNumber = (
+		parameters: Record<string, unknown>,
+		key: string,
+		value: number | null | undefined,
+		options?: { min?: number; max?: number },
+	) => {
+		if (typeof value !== "number" || !Number.isFinite(value)) return;
+		const min = options?.min ?? Number.NEGATIVE_INFINITY;
+		const max = options?.max ?? Number.POSITIVE_INFINITY;
+		parameters[key] = Math.max(min, Math.min(max, Math.round(value)));
+	};
+	const withParameters = (
+		type: string,
+		parameters: Record<string, unknown>,
+	) =>
+		Object.keys(parameters).length > 0
+			? { type, parameters }
+			: { type };
+	const buildAdvisorDefinition = (
+		advisor?: ChatAdvisorServerToolConfig,
+		fallbackName?: string,
+	) => {
+		const parameters: Record<string, unknown> = {};
+		const advisorName = advisor?.name?.trim() || fallbackName;
+		if (advisorName) {
+			parameters.name = advisorName;
+		}
+		if (advisor?.model?.trim()) {
+			parameters.model = advisor.model.trim();
+		}
+		if (advisor?.instructions?.trim()) {
+			parameters.instructions = advisor.instructions.trim();
+		}
+		if (advisor?.forwardTranscript !== undefined) {
+			parameters.forward_transcript = advisor.forwardTranscript;
+		}
+		if (typeof advisor?.maxUses === "number" && Number.isFinite(advisor.maxUses)) {
+			parameters.max_uses = Math.max(1, Math.round(advisor.maxUses));
+		}
+		if (
+			typeof advisor?.maxCompletionTokens === "number" &&
+			Number.isFinite(advisor.maxCompletionTokens)
+		) {
+			parameters.max_completion_tokens = Math.max(
+				1,
+				Math.round(advisor.maxCompletionTokens),
+			);
+		}
+		if (
+			typeof advisor?.temperature === "number" &&
+			Number.isFinite(advisor.temperature)
+		) {
+			parameters.temperature = advisor.temperature;
+		}
+		if (advisor?.reasoningEffort && advisor.reasoningEffort !== "none") {
+			parameters.reasoning = { effort: advisor.reasoningEffort };
+		}
+		return withParameters("phaseo:advisor", parameters);
+	};
+
+	return normalizeServerTools(serverTools).flatMap((toolType) => {
+		if (toolType === "gateway:datetime") {
+			const timezones = [
+				...(options?.datetimeTimezones ?? []),
+				options?.datetimeTimezone ?? null,
+				serverToolConfigs?.datetime?.timezone ?? null,
+			].reduce<string[]>((acc, value) => {
+				if (acc.length >= MAX_DATETIME_TIMEZONES) return acc;
+				const timezone = value?.trim();
+				if (
+					timezone &&
+					isSafeTimezoneName(timezone) &&
+					!acc.includes(timezone)
+				) {
+					acc.push(timezone);
+				}
+				return acc;
+			}, []);
+			return timezones.length
+				? { type: toolType, parameters: { timezones } }
+				: { type: toolType };
+		}
+		if (toolType === "phaseo:web_search") {
+			const config = serverToolConfigs?.webSearch;
+			const parameters: Record<string, unknown> = {};
+			if (config?.engine && config.engine !== "auto") {
+				parameters.engine = config.engine;
+			}
+			if (config?.searchContextSize) {
+				parameters.search_context_size = config.searchContextSize;
+			}
+			setOptionalNumber(parameters, "max_results", config?.maxResults, {
+				min: 1,
+				max: 25,
+			});
+			setOptionalNumber(
+				parameters,
+				"max_total_results",
+				config?.maxTotalResults,
+				{ min: 1, max: 100 },
+			);
+			setOptionalNumber(
+				parameters,
+				"max_characters",
+				config?.maxCharacters,
+				{ min: 1, max: 50000 },
+			);
+			const allowedDomains = parseDomainList(config?.allowedDomains);
+			if (allowedDomains.length > 0) {
+				parameters.allowed_domains = allowedDomains;
+			}
+			const excludedDomains = parseDomainList(config?.excludedDomains);
+			if (excludedDomains.length > 0) {
+				parameters.excluded_domains = excludedDomains;
+			}
+			if (config?.includeHighlights !== undefined) {
+				parameters.include_highlights = config.includeHighlights;
+			}
+			if (config?.includeText !== undefined) {
+				parameters.include_text = config.includeText;
+			}
+			return withParameters(toolType, parameters);
+		}
+		if (toolType === "phaseo:web_fetch") {
+			const config = serverToolConfigs?.webFetch;
+			const parameters: Record<string, unknown> = {};
+			if (config?.engine && config.engine !== "auto") {
+				parameters.engine = config.engine;
+			}
+			setOptionalNumber(parameters, "max_chars", config?.maxChars, {
+				min: 1,
+				max: 50000,
+			});
+			const allowedDomains = parseDomainList(config?.allowedDomains);
+			if (allowedDomains.length > 0) {
+				parameters.allowed_domains = allowedDomains;
+			}
+			const blockedDomains = parseDomainList(config?.blockedDomains);
+			if (blockedDomains.length > 0) {
+				parameters.blocked_domains = blockedDomains;
+			}
+			return withParameters(toolType, parameters);
+		}
+		if (toolType === "phaseo:image_generation") {
+			const config = serverToolConfigs?.imageGeneration;
+			const parameters: Record<string, unknown> = {};
+			if (config?.model?.trim()) {
+				parameters.model = config.model.trim();
+			}
+			if (config?.quality && config.quality !== "auto") {
+				parameters.quality = config.quality;
+			}
+			if (config?.size && config.size !== "auto") {
+				parameters.size = config.size;
+			}
+			if (config?.aspectRatio && config.aspectRatio !== "auto") {
+				parameters.aspect_ratio = config.aspectRatio;
+			}
+			if (config?.background && config.background !== "auto") {
+				parameters.background = config.background;
+			}
+			if (config?.outputFormat && config.outputFormat !== "auto") {
+				parameters.output_format = config.outputFormat;
+			}
+			setOptionalNumber(
+				parameters,
+				"output_compression",
+				config?.outputCompression,
+				{ min: 0, max: 100 },
+			);
+			if (config?.moderation && config.moderation !== "auto") {
+				parameters.moderation = config.moderation;
+			}
+			return withParameters(toolType, parameters);
+		}
+		if (toolType === "phaseo:fusion") {
+			const fusion = serverToolConfigs?.fusion;
+			const fusionModels = Array.from(
+				new Set(
+					(fusion?.models ?? [])
+						.map((model) => model.trim())
+						.filter(Boolean),
+				),
+			).slice(0, MAX_ADVISOR_TOOLS);
+			const definitions = fusionModels.map((model, index) =>
+				buildAdvisorDefinition(
+					{
+						name: `fusion_${index + 1}`,
+						model,
+						instructions:
+							"Analyze the user's request independently. Return concise findings, assumptions, caveats, and the answer direction you recommend for synthesis.",
+						maxUses: fusion?.maxUses ?? 8,
+					},
+					`fusion_${index + 1}`,
+				),
+			);
+			if (fusion?.judgeModel?.trim()) {
+				definitions.push(
+					buildAdvisorDefinition(
+						{
+							name: "fusion_judge",
+							model: fusion.judgeModel.trim(),
+							instructions:
+								"Review the analysis model outputs and identify the strongest final answer direction.",
+							maxUses: fusion?.maxUses ?? 8,
+						},
+						"fusion_judge",
+					),
+				);
+			}
+			return definitions;
+		}
+		if (toolType === "phaseo:subagent") {
+			const config = serverToolConfigs?.subagent;
+			const parameters: Record<string, unknown> = {};
+			if (config?.model?.trim()) {
+				parameters.model = config.model.trim();
+			}
+			if (config?.instructions?.trim()) {
+				parameters.instructions = config.instructions.trim();
+			}
+			if (typeof config?.maxUses === "number" && Number.isFinite(config.maxUses)) {
+				parameters.max_uses = Math.max(1, Math.round(config.maxUses));
+			}
+			if (
+				typeof config?.maxCompletionTokens === "number" &&
+				Number.isFinite(config.maxCompletionTokens)
+			) {
+				parameters.max_completion_tokens = Math.max(
+					1024,
+					Math.round(config.maxCompletionTokens),
+				);
+			}
+			if (
+				typeof config?.temperature === "number" &&
+				Number.isFinite(config.temperature)
+			) {
+				parameters.temperature = Math.max(0, Math.min(2, config.temperature));
+			}
+			if (config?.reasoningEffort && config.reasoningEffort !== "none") {
+				parameters.reasoning = { effort: config.reasoningEffort };
+			}
+			return withParameters(toolType, parameters);
+		}
+		if (toolType !== "phaseo:advisor") {
+			return [{ type: toolType }];
+		}
+		const advisors =
+			serverToolConfigs?.advisors && serverToolConfigs.advisors.length > 0
+				? serverToolConfigs.advisors
+				: [serverToolConfigs?.advisor];
+		return advisors
+			.slice(0, MAX_ADVISOR_TOOLS)
+			.map((advisor, index) =>
+				buildAdvisorDefinition(advisor, `advisor_${index + 1}`),
+			);
+	});
 }
 
 export function ensureModelOverridesForIds(

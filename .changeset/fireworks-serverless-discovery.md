@@ -1,6 +1,6 @@
 ---
-"@ai-stats/gateway-api": patch
-"@ai-stats/web": patch
+"@phaseo/gateway-api": patch
+"@phaseo/web": patch
 ---
 
 Refresh Fireworks model discovery and catalog data to use the serverless-only models feed.

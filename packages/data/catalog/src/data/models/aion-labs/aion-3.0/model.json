@@ -2,18 +2,33 @@
   "model_id": "aion-labs/aion-3.0",
   "organisation_id": "aion-labs",
   "name": "Aion 3.0",
-  "status": "Rumoured",
+  "status": "Available",
   "previous_model_id": "aion-labs/aion-2.5",
-  "description": "Aion 3.0 is a variant of DeepSeek V3.2 optimized for immersive roleplaying and storytelling. It accepts text inputs and produces text outputs.",
-  "announced_date": null,
-  "release_date": null,
+  "description": "Aion 3.0 is a multimodal system built on the GLM family of models. It uses multiple specialized models during generation to improve narrative structure, tension, conflict, and mature-theme handling.",
+  "announced_date": "2026-07-07T00:00:00",
+  "release_date": "2026-07-07T00:00:00",
   "deprecation_date": null,
   "retirement_date": null,
   "license": "Proprietary",
   "input_types": "text",
   "output_types": "text",
   "api_model_id": "aion-labs/aion-3.0",
-  "links": [],
-  "details": [],
+  "links": [
+    {
+      "title": "API Reference",
+      "kind": "api_reference",
+      "url": "https://www.aionlabs.ai/docs/models/"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 131072
+    },
+    {
+      "name": "output_context_length",
+      "value": 32768
+    }
+  ],
   "benchmarks": []
 }

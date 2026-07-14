@@ -154,7 +154,7 @@ const ENDPOINT_CONFIGS: EndpointConfig[] = [
 		body: (model) => ({
 			model,
 			voice: resolveSpeechVoiceForModel(model),
-			input: "Welcome to the AI Stats Gateway where latency, uptime, and pricing are always in your control.",
+			input: "Welcome to the Phaseo Gateway where latency, uptime, and pricing are always in your control.",
 			response_format: "mp3",
 		}),
 	},
@@ -168,7 +168,7 @@ const ENDPOINT_CONFIGS: EndpointConfig[] = [
 		body: (model) => ({
 			model,
 			input: [
-				"Route requests across providers with AI Stats.",
+				"Route requests across providers with Phaseo.",
 				"Monitor latency, throughput, and spend in real time.",
 			],
 		}),
@@ -189,51 +189,68 @@ const ENDPOINT_CONFIGS: EndpointConfig[] = [
 
 const FALLBACK_MODELS: Record<EndpointId, string[]> = {
 	completions: [
-		"openai/gpt-4.1-mini",
-		"anthropic/claude-3.5-sonnet",
-		"google-ai-studio/gemini-2.5-flash",
+		"openai/gpt-5.6-sol",
+		"anthropic/claude-fable-5",
+		"google/gemini-3.1-pro-preview",
+		"spacex-ai/grok-4.5",
+		"moonshotai/kimi-k2.7-code",
+		"deepseek/deepseek-v4-pro",
+		"minimax/minimax-m3",
 	],
 	images: [
-		"openai/gpt-image-1",
-		"stability/stable-diffusion-3.5",
-		"google-ai-studio/image-3.0",
+		"openai/gpt-image-2",
+		"openai/gpt-image-1.5",
+		"google/gemini-3.1-flash-image",
 	],
-	video: ["openai/sora-1", "runway/gen-3", "luma/dream-machine"],
+	video: ["openai/sora-2", "openai/sora-2-pro", "google/veo-3.1-preview"],
 	audio: [
-		"openai/gpt-4o-mini-voice",
-		"elevenlabs/voice-v3",
-		"google-ai-studio/audiofx-1",
+		"eleven-labs/eleven-v3",
+		"openai/gpt-4o-mini-tts",
+		"google/gemini-3.1-flash-tts-preview",
 	],
 	embeddings: [
+		"google/gemini-embedding-2",
 		"openai/text-embedding-3-large",
-		"cohere/embed-multilingual-v3.0",
-		"nomic-ai/nomic-embed-text",
+		"qwen/text-embedding-v4",
 	],
 	moderations: [
 		"openai/omni-moderation-latest",
-		"meta/llama-guard-3",
-		"google-ai-studio/safescreen-1",
+		"meta/llama-guard-4-12b",
+		"mistral/mistral-moderation-2",
 	],
 };
 
 const PROMOTED_MODELS: Record<EndpointId, string[]> = {
 	completions: [
-		"openai/gpt-4.1-mini",
-		"anthropic/claude-3.5-sonnet",
-		"mistral/miro-1",
+		"openai/gpt-5.6-sol",
+		"anthropic/claude-fable-5",
+		"google/gemini-3.1-pro-preview",
+		"spacex-ai/grok-4.5",
+		"moonshotai/kimi-k2.7-code",
+		"deepseek/deepseek-v4-pro",
+		"minimax/minimax-m3",
 	],
 	images: [
-		"openai/gpt-image-1",
-		"stability/stable-diffusion-3.5",
-		"runway/gen-2",
+		"openai/gpt-image-2",
+		"openai/gpt-image-1.5",
+		"google/gemini-3.1-flash-image",
 	],
-	video: ["openai/sora-1", "runway/gen-3"],
-	audio: ["openai/gpt-4o-mini-voice", "elevenlabs/voice-v3"],
+	video: ["openai/sora-2", "openai/sora-2-pro", "google/veo-3.1-preview"],
+	audio: [
+		"eleven-labs/eleven-v3",
+		"openai/gpt-4o-mini-tts",
+		"google/gemini-3.1-flash-tts-preview",
+	],
 	embeddings: [
+		"google/gemini-embedding-2",
 		"openai/text-embedding-3-large",
-		"cohere/embed-multilingual-v3.0",
+		"qwen/text-embedding-v4",
 	],
-	moderations: ["openai/omni-moderation-latest"],
+	moderations: [
+		"openai/omni-moderation-latest",
+		"meta/llama-guard-4-12b",
+		"mistral/mistral-moderation-2",
+	],
 };
 
 const OPENAI_CLIENT_METHODS: Record<EndpointId, string> = {
@@ -367,13 +384,13 @@ function buildSnippets(
 	return {
 		curl: `curl -s -X POST "${BASE_URL}${config.path}" \\
   -H "Content-Type: application/json" \\
-  -H "Authorization: Bearer $AI_STATS_API_KEY" \\
+  -H "Authorization: Bearer $PHASEO_API_KEY" \\
   -d '${escapedJson}'`,
 		typescript: `const response = await fetch("${BASE_URL}${config.path}", {
     method: "POST",
     headers: {
         "Content-Type": "application/json",
-        "Authorization": \`Bearer \${process.env.AI_STATS_API_KEY!}\`,
+        "Authorization": \`Bearer \${process.env.PHASEO_API_KEY!}\`,
     },
     body: JSON.stringify(
 ${tsJson}
@@ -399,10 +416,10 @@ response = requests.post(
 
 response.raise_for_status()
 print(response.json())`,
-		"typescript-sdk": `import AIStats from "@ai-stats/sdk";
+		"typescript-sdk": `import Phaseo from "@phaseo/sdk";
 
-const client = new AIStats({
-    apiKey: process.env.AI_STATS_API_KEY ?? "YOUR_API_KEY",
+const client = new Phaseo({
+    apiKey: process.env.PHASEO_API_KEY ?? "YOUR_API_KEY",
 });
 
 const response = await client.${jsMethod}(
@@ -410,10 +427,10 @@ ${tsLiteral}
 );
 
 console.log(response);`,
-		"python-sdk": `from ai_stats import AIStats
+		"python-sdk": `from phaseo import Phaseo
 
 async def main():
-    async with AIStats(api_key="YOUR_API_KEY") as client:
+    async with Phaseo(api_key="YOUR_API_KEY") as client:
         response = await client.${pyMethod}(
 ${pythonLiteral}
         )
@@ -608,7 +625,7 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 										Use a server-side workspace key, then expose it to your
 										runtime as{" "}
 										<code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs dark:bg-slate-900">
-											AI_STATS_API_KEY
+											PHASEO_API_KEY
 										</code>
 										.
 									</p>
@@ -663,15 +680,14 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 								</p>
 							</div>
 							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button
+								<DropdownMenuTrigger render={<Button
 										variant="outline"
 										size="sm"
-										className="flex items-center gap-2"
-									>
+										className="flex items-center gap-2" />}>
+
 										{currentConfig.label}
 										<ChevronDown className="h-4 w-4" />
-									</Button>
+
 								</DropdownMenuTrigger>
 								<DropdownMenuContent align="end">
 									{ENDPOINT_CONFIGS.map((config) => (
@@ -694,12 +710,11 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 						</div>
 						<div className="flex flex-wrap items-center gap-3">
 							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button
+								<DropdownMenuTrigger render={<Button
 										variant="outline"
 										size="sm"
-										className="flex items-center gap-2"
-									>
+										className="flex items-center gap-2" />}>
+
 										<span>
 											{LANGUAGE_LABELS[selectedLanguage]}
 										</span>
@@ -713,7 +728,7 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 											</span>
 										) : null}
 										<ChevronDown className="h-4 w-4" />
-									</Button>
+
 								</DropdownMenuTrigger>
 								<DropdownMenuContent>
 									{LANGUAGE_OPTIONS.map((option) => (
@@ -778,7 +793,7 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 								selectedModels[currentConfig.id] ??
 								availableModels[0] ??
 								baseModels[0] ??
-								"openai/gpt-4.1-mini";
+								"openai/gpt-5.6-sol";
 
 							return (
 								<div className="space-y-3">
@@ -787,15 +802,14 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 											Model
 										</p>
 										<DropdownMenu>
-											<DropdownMenuTrigger asChild>
-												<Button
+											<DropdownMenuTrigger render={<Button
 													variant="outline"
 													size="sm"
-													className="flex items-center gap-2"
-												>
+													className="flex items-center gap-2" />}>
+
 													<span>{activeModel}</span>
 													<ChevronDown className="h-4 w-4" />
-												</Button>
+
 											</DropdownMenuTrigger>
 											<DropdownMenuContent>
 												{availableModels.map(

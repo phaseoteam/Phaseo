@@ -1,5 +1,5 @@
 /**
- * Sanitized async webhook configuration plus delivery state. Secrets are never returned; `has_secret` indicates whether signed deliveries are enabled. Signed deliveries include x-ai-stats-signature, x-ai-stats-timestamp, x-ai-stats-event-id, x-ai-stats-event-type, x-ai-stats-delivery-key, x-ai-stats-attempt, and x-ai-stats-max-attempts headers.
+ * Sanitized async webhook configuration plus delivery state. Secrets are never returned; `has_secret` indicates whether signed deliveries are enabled. Signed deliveries include x-phaseo-signature, x-phaseo-timestamp, x-phaseo-event-id, x-phaseo-event-type, x-phaseo-delivery-key, x-phaseo-attempt, and x-phaseo-max-attempts headers.
  */
 export interface AsyncWebhookPublicState {
   attempts?: {
@@ -33,7 +33,6 @@ export interface AsyncWebhookPublicState {
     pending_retries?: number;
     total_attempts?: number;
   };
-  endpoint_id?: string | null;
   events?: string[];
   has_secret?: boolean;
   url?: string | null;

@@ -13,7 +13,7 @@ export const metadata: Metadata = buildMetadata({
 		"prettify JSON",
 		"API payloads",
 		"AI responses",
-		"AI Stats tools",
+		"Phaseo tools",
 	],
 });
 

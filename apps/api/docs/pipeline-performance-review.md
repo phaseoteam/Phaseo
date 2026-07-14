@@ -1,4 +1,4 @@
-﻿# API Pipeline Performance Review Tracker
+# API Pipeline Performance Review Tracker
 
 Last updated: 2026-03-09
 Status: Remediation in progress
@@ -42,10 +42,10 @@ Capture bottlenecks, performance risks, and other notable issues for each API st
    - Validation: `supabase db push --linked`, `supabase migration list --linked`, non-mutating RPC probe (`missing_team_id`) confirms function availability.
 11. Auth hot path now uses short-lived in-isolate key-row L1 cache to avoid repeated KV/DB lookups on immediate repeat requests.
    - Areas: `apps/api/src/pipeline/before/auth.ts`, `apps/api/src/pipeline/before/auth.cache.test.ts`
-   - Validation: `pnpm --filter @ai-stats/gateway-api test src/pipeline/before/auth.cache.test.ts tests/performance/before-latency.test.ts`
+   - Validation: `pnpm --filter @phaseo/gateway-api test src/pipeline/before/auth.cache.test.ts tests/performance/before-latency.test.ts`
 12. Before-stage context miss path now dedupes concurrent in-flight loads per cache key to prevent thundering-herd duplicate RPC/query work.
    - Areas: `apps/api/src/pipeline/before/context.ts`, `apps/api/src/pipeline/before/context.inflight.test.ts`
-   - Validation: `pnpm --filter @ai-stats/gateway-api test src/pipeline/before/context.inflight.test.ts`
+   - Validation: `pnpm --filter @phaseo/gateway-api test src/pipeline/before/context.inflight.test.ts`
 13. Before-stage provider candidate filtering now enforces pricing coverage preflight (drops unpriced providers and fails fast when none are priceable).
    - Area: `apps/api/src/pipeline/before/index.ts`
    - Outcome: prevents unpriced execution paths from reaching provider attempts.

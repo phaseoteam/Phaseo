@@ -6,7 +6,11 @@ export type PublicGatewayRequestRow = {
 	provider: string | null;
 	success: boolean | null;
 	usage: Record<string, unknown> | null;
+	endpoint?: string | null;
+	cost_nanos?: number | string | null;
 	latency_ms?: number | string | null;
+	generation_ms?: number | string | null;
+	throughput?: number | string | null;
 	model_id?: string | null;
 };
 
@@ -25,7 +29,9 @@ export async function fetchPublicGatewayRequestRows(
 	for (let offset = 0; ; offset += PAGE_SIZE) {
 		let query = supabase
 			.from("gateway_requests")
-			.select("created_at, app_id, provider, success, usage, latency_ms, model_id")
+			.select(
+				"created_at, app_id, provider, success, usage, endpoint, cost_nanos, latency_ms, generation_ms, throughput, model_id",
+			)
 			.gte("created_at", sinceIso)
 			.order("created_at", { ascending: true })
 			.range(offset, offset + PAGE_SIZE - 1);

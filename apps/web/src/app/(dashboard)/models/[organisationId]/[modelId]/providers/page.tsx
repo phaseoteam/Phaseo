@@ -28,7 +28,7 @@ export async function generateMetadata(props: {
 			modelDescription,
 			suffix:
 				"View providers, availability, subscription coverage, and pricing details across supported API endpoints.",
-			fallback: `View providers for ${modelName} on AI Stats, including availability, subscription coverage, and pricing details across supported API endpoints.`,
+			fallback: `View providers for ${modelName} on Phaseo, including availability, subscription coverage, and pricing details across supported API endpoints.`,
 		}),
 		path,
 		keywords: [
@@ -39,7 +39,7 @@ export async function generateMetadata(props: {
 			organisationName ? `${organisationName} AI` : null,
 			"token pricing",
 			"AI billing",
-			"AI Stats",
+			"Phaseo",
 		].filter(Boolean) as string[],
 		imagePath,
 	});

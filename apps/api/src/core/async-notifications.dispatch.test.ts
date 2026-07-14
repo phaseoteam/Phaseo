@@ -153,9 +153,9 @@ describe("async webhook dispatch", () => {
 		expect(init?.redirect).toBe("manual");
 		const headers = init?.headers as Record<string, string>;
 		expect(headers["Content-Type"]).toBe("application/json");
-		expect(headers["User-Agent"]).toBe("AI-Stats-Async-Webhook/1.0");
-		expect(headers["x-ai-stats-timestamp"]).toBe("1781712000");
-		expect(headers["x-ai-stats-signature"]).toBe(
+		expect(headers["User-Agent"]).toBe("Phaseo-Async-Webhook/1.0");
+		expect(headers["x-phaseo-timestamp"]).toBe("1781712000");
+		expect(headers["x-phaseo-signature"]).toBe(
 			await expectedSignature(
 				"whsec_test_secret",
 				"1781712000",
@@ -382,7 +382,7 @@ describe("async webhook dispatch", () => {
 		});
 		const [, init] = vi.mocked(fetch).mock.calls[0]!;
 		const headers = init?.headers as Record<string, string>;
-		expect(headers["x-ai-stats-signature"]).toBe(
+		expect(headers["x-phaseo-signature"]).toBe(
 			await expectedSignature(
 				"whsec_managed",
 				"1781712000",

@@ -15,11 +15,13 @@
   "api_model_id": "nvidia/cosmos3-super-reasoner",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://developer.nvidia.com/blog/develop-physical-ai-reasoning-world-and-action-models-with-nvidia-cosmos-3/"
     },
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://docs.nvidia.com/nim/vision-language-models/1.7.0/examples/cosmos-reason3/api.html"
     }
   ],

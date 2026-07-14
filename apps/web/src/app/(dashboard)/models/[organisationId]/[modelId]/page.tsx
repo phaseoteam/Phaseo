@@ -1,11 +1,19 @@
-import { fetchFrontendModelOverview } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import {
+	fetchFrontendModelBenchmarkHighlights,
+	fetchFrontendModelGatewayMetadata,
+	fetchFrontendModelOverview,
+	fetchFrontendModelPerformance,
+	fetchFrontendModelSubscriptionPlans,
+} from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
 import ModelOverviewSections, {
 	ModelCreatorModelsSection,
 	ModelCreatorModelsSkeleton,
-	ModelOverviewSectionsSkeleton,
 } from "@/components/(data)/model/overview/ModelOverviewSections";
 import ModelDetailShell from "@/components/(data)/model/ModelDetailShell";
+import ModelPageToc, {
+	type ModelPageTocItem,
+} from "@/components/(data)/model/ModelPageToc";
 import type { Metadata } from "next";
 import { absoluteUrl, buildMetadata } from "@/lib/seo";
 import {
@@ -21,33 +29,9 @@ import { isFreeRouterModelId } from "@/lib/models/freeRouter";
 import FreeRouterOverview from "@/components/(data)/model/free-router/FreeRouterOverview";
 import {
 	resolveQuickstartRequestContext,
-	type QuickstartRequestContext,
 	type QuickstartSearchParams,
 } from "@/components/(data)/model/quickstart/requestContext";
-import Script from "next/script";
-
-async function ModelOverviewSectionsContent({
-	modelId,
-	includeHidden,
-	modelPromise,
-	quickstartRequestContext,
-}: {
-	modelId: string;
-	includeHidden: boolean;
-	modelPromise: Promise<ModelOverviewPage | null>;
-	quickstartRequestContext?: QuickstartRequestContext;
-}) {
-	const model = await modelPromise;
-
-	return (
-		<ModelOverviewSections
-			modelId={modelId}
-			model={model}
-			includeHidden={includeHidden}
-			quickstartRequestContext={quickstartRequestContext}
-		/>
-	);
-}
+import { JsonLdScript } from "@/components/seo/JsonLdScript";
 
 async function ModelCreatorModelsSectionContent({
 	modelId,
@@ -72,6 +56,51 @@ async function ModelCreatorModelsSectionContent({
 	);
 }
 
+const baseModelPageTocItems: ModelPageTocItem[] = [
+	{ id: "providers", label: "Providers" },
+	{ id: "performance", label: "Performance" },
+	{ id: "pricing", label: "Pricing" },
+	{ id: "benchmarks", label: "Benchmarks" },
+	{ id: "activity", label: "Activity" },
+	{ id: "apps", label: "Apps" },
+	{ id: "uptime", label: "Uptime" },
+	{ id: "quickstart", label: "Quickstart" },
+	{ id: "about", label: "About" },
+	{ id: "subscriptions", label: "Subscriptions" },
+];
+
+function getModelPageTocItems({
+	showBenchmarks,
+	showSubscriptions,
+	status,
+	isGatewayActive,
+}: {
+	showBenchmarks: boolean;
+	showSubscriptions: boolean;
+	status?: string | null;
+	isGatewayActive: boolean;
+}): ModelPageTocItem[] {
+	if (status === "Retired") {
+		return baseModelPageTocItems.filter((item) => {
+			if (item.id === "benchmarks") return showBenchmarks;
+			if (item.id === "subscriptions") return showSubscriptions;
+			return item.id === "about";
+		});
+	}
+
+	return baseModelPageTocItems.filter((item) => {
+		if (
+			!isGatewayActive &&
+			["performance", "pricing", "activity", "apps", "uptime"].includes(item.id)
+		) {
+			return false;
+		}
+		if (item.id === "benchmarks") return showBenchmarks;
+		if (item.id === "subscriptions") return showSubscriptions;
+		return true;
+	});
+}
+
 export async function generateMetadata(props: {
 	params: Promise<ModelRouteParams>;
 }): Promise<Metadata> {
@@ -82,14 +111,13 @@ export async function generateMetadata(props: {
 	);
 	const path = getModelPath(modelId);
 	const imagePath = `/og/models/${modelId}`;
-
 	return buildMetadata({
 		title: `${modelName} Pricing, Benchmarks, Latency & Providers`,
 		description: buildModelPageMetadataDescription({
 			modelDescription,
 			suffix:
-				"Compare pricing, benchmarks, providers, latency signals, and compatibility details on AI Stats.",
-			fallback: `Compare pricing, benchmarks, providers, latency signals, and compatibility details for ${modelName} on AI Stats.`,
+				"Compare pricing, benchmarks, providers, latency signals, and compatibility details on Phaseo.",
+			fallback: `Compare pricing, benchmarks, providers, latency signals, and compatibility details for ${modelName} on Phaseo.`,
 		}),
 		path,
 		keywords: [
@@ -97,10 +125,14 @@ export async function generateMetadata(props: {
 			`${modelName} benchmarks`,
 			`${modelName} pricing`,
 			organisationName ? `${organisationName} AI` : null,
-			"AI Stats",
+			"Phaseo",
 			"AI model comparison",
 		].filter(Boolean) as string[],
 		imagePath,
+		robots: {
+			index: false,
+			follow: true,
+		},
 	});
 }
 
@@ -134,7 +166,27 @@ export default async function Page({
 		);
 	}
 	const modelPromise = fetchFrontendModelOverview(modelId);
-	const modelOverview = await modelPromise;
+	const [modelOverview, benchmarkHighlights, subscriptionPlans, gatewayMetadata] =
+		await Promise.all([
+			modelPromise,
+			fetchFrontendModelBenchmarkHighlights(modelId).catch(() => []),
+			fetchFrontendModelSubscriptionPlans(modelId).catch(() => []),
+			fetchFrontendModelGatewayMetadata(modelId).catch(() => undefined),
+		]);
+	const showBenchmarks = benchmarkHighlights.length > 0;
+	const showSubscriptions = subscriptionPlans.length > 0;
+	const isGatewayActive =
+		gatewayMetadata === undefined || gatewayMetadata.activeProviders.length > 0;
+	const performancePromise = isGatewayActive
+		? fetchFrontendModelPerformance(modelId, 24).catch(() => null)
+		: Promise.resolve(null);
+	const isRetired = modelOverview?.status === "Retired";
+	const modelPageTocItems = getModelPageTocItems({
+		showBenchmarks,
+		showSubscriptions,
+		status: modelOverview?.status,
+		isGatewayActive,
+	});
 	const modelName = modelOverview?.name ?? modelId.split("/").slice(-1)[0] ?? modelId;
 	const organisationName =
 		modelOverview?.organisation?.name ?? routeParams.organisationId;
@@ -142,7 +194,7 @@ export default async function Page({
 		"@context": "https://schema.org",
 		"@type": "Dataset",
 		name: `${organisationName} ${modelName}`.trim(),
-		description: `AI Stats profile for ${modelName} with pricing, benchmarks, providers, latency signals, and gateway compatibility details.`,
+		description: `Phaseo profile for ${modelName} with pricing, benchmarks, providers, latency signals, and gateway compatibility details.`,
 		url: absoluteUrl(getModelPath(modelId)),
 		creator: {
 			"@type": "Organization",
@@ -187,32 +239,45 @@ export default async function Page({
 
 	return (
 		<>
-			<Script
+			<JsonLdScript
 				id="model-dataset-schema"
-				type="application/ld+json"
-				dangerouslySetInnerHTML={{ __html: JSON.stringify(datasetSchema) }}
+				data={datasetSchema}
 			/>
-			<Script
+			<JsonLdScript
 				id="model-breadcrumb-schema"
-				type="application/ld+json"
-				dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+				data={breadcrumbSchema}
 			/>
 			<ModelDetailShell modelId={modelId} tab="overview" includeHidden={includeHidden}>
-				<Suspense fallback={<ModelOverviewSectionsSkeleton />}>
-					<ModelOverviewSectionsContent
-						modelId={modelId}
-						includeHidden={includeHidden}
-						modelPromise={modelPromise}
-						quickstartRequestContext={quickstartRequestContext}
-					/>
-				</Suspense>
-				<Suspense fallback={<ModelCreatorModelsSkeleton />}>
-					<ModelCreatorModelsSectionContent
-						modelId={modelId}
-						includeHidden={includeHidden}
-						modelPromise={modelPromise}
-					/>
-				</Suspense>
+				<div className="space-y-10">
+					<div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+						<ModelPageToc
+							items={modelPageTocItems}
+							className="lg:h-full lg:w-40 lg:shrink-0 xl:w-44"
+						/>
+						<div className="min-w-0 flex-1 space-y-10">
+							<ModelOverviewSections
+								modelId={modelId}
+								model={modelOverview}
+								includeHidden={includeHidden}
+								showBenchmarks={showBenchmarks}
+								showSubscriptions={showSubscriptions}
+								status={modelOverview?.status}
+								isGatewayActive={isGatewayActive}
+								performancePromise={performancePromise}
+								quickstartRequestContext={quickstartRequestContext}
+							/>
+						</div>
+					</div>
+					{isRetired ? null : (
+						<Suspense fallback={<ModelCreatorModelsSkeleton />}>
+							<ModelCreatorModelsSectionContent
+								modelId={modelId}
+								includeHidden={includeHidden}
+								modelPromise={modelPromise}
+							/>
+						</Suspense>
+					)}
+				</div>
 			</ModelDetailShell>
 		</>
 	);

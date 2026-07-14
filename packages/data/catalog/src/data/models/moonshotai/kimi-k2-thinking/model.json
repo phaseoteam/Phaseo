@@ -16,11 +16,13 @@
   "family_id": "moonshotai/kimi-k2",
   "links": [
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/moonshotai/Kimi-K2-Thinking"
     },
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://x.com/kimi_moonshot/status/1986449512538513505?s=46"
     }
   ],

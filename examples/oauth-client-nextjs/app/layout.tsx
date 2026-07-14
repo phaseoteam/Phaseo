@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { ReactNode } from 'react';
 
 export const metadata: Metadata = {
-  title: 'AI Stats Gateway OAuth Example',
+  title: 'Phaseo Gateway OAuth Example',
   description: 'Complete external gateway integration example with OAuth, model discovery, and Responses API chat.',
 };
 

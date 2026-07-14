@@ -10,7 +10,6 @@ import {
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
-	SelectValue,
 } from "@/components/ui/select";
 import type { APIProviderCard as APIProviderCardType } from "@/lib/fetchers/api-providers/getAllAPIProviders";
 
@@ -24,6 +23,13 @@ type ProviderSortOption =
 	| "daily_tokens_desc"
 	| "total_models_desc"
 	| "free_models_desc";
+
+const SORT_OPTION_LABELS: Record<ProviderSortOption, string> = {
+	daily_tokens_desc: "Daily Tokens",
+	total_models_desc: "Total Models",
+	free_models_desc: "Free Models",
+	a_z: "Name (A-Z)",
+};
 
 function normalizeSortOption(
 	value: string | null | undefined,
@@ -100,39 +106,47 @@ export default function APIProvidersDisplay({
 					<div />
 				)}
 				<div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center lg:w-auto">
-					<div className="flex items-center gap-2 text-sm text-muted-foreground">
-						<ArrowUpDown className="h-4 w-4" />
-						<span className="whitespace-nowrap">Sort:</span>
-					</div>
 					<Select
 						value={sortOption}
 						onValueChange={(value) =>
 							setSort(normalizeSortOption(value))
 						}
 					>
-						<SelectTrigger className="h-10 w-full sm:w-[210px]">
-							<SelectValue placeholder="Sort providers" />
+						<SelectTrigger
+							className="h-9 w-full border border-border/70 bg-background shadow-xs hover:bg-muted/45 dark:border-border/70 dark:bg-background dark:hover:bg-muted/25 sm:w-[11rem]"
+							aria-label="Sort providers"
+						>
+								<span className="flex min-w-0 items-center gap-2">
+								<ArrowUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+								<span className="truncate">{SORT_OPTION_LABELS[sortOption]}</span>
+							</span>
 						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="daily_tokens_desc">
-								Daily Tokens
-							</SelectItem>
-							<SelectItem value="total_models_desc">
-								Total Models
-							</SelectItem>
-							<SelectItem value="free_models_desc">
-								Free Models
-							</SelectItem>
-							<SelectItem value="a_z">A-Z</SelectItem>
+						<SelectContent
+							align="start"
+							alignItemWithTrigger={false}
+							className="!w-max min-w-(--anchor-width) max-w-[calc(100vw-2rem)]"
+						>
+							{(
+								[
+									"daily_tokens_desc",
+									"total_models_desc",
+									"free_models_desc",
+									"a_z",
+								] as ProviderSortOption[]
+							).map((option) => (
+								<SelectItem key={option} value={option}>
+									{SORT_OPTION_LABELS[option]}
+								</SelectItem>
+							))}
 						</SelectContent>
 					</Select>
-					<div className="relative w-full sm:w-[260px]">
+					<div className="relative w-full sm:w-[20rem]">
 						<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 						<Input
 							placeholder="Search providers..."
 							value={search}
 							onChange={(e) => setSearch(e.target.value)}
-							className="h-10 w-full rounded-md border bg-background py-1.5 pl-9 pr-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary"
+							className="h-9 w-full rounded-lg border border-border/70 bg-background py-1.5 pl-9 pr-2 text-sm shadow-xs focus:outline-hidden focus:ring-2 focus:ring-primary"
 							style={{ minWidth: 0 }}
 						/>
 					</div>

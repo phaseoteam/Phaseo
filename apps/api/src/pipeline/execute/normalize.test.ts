@@ -64,6 +64,18 @@ describe("normalizeIRForProvider", () => {
 		expect(normalized.reasoning?.effort).toBe("minimal");
 	});
 
+	it("preserves OpenAI gpt-5.6 max effort before executor mapping", () => {
+		const ir = baseIr({
+			model: "openai/gpt-5.6-sol-pro",
+			reasoning: { effort: "max" },
+		});
+
+		const normalized = normalizeIRForProvider(ir, "openai", "openai.responses", {
+			modelForReasoning: "gpt-5.6-sol-pro",
+		});
+		expect(normalized.reasoning?.effort).toBe("max");
+	});
+
 	it("defaults OpenAI anthropic.messages requests to minimal reasoning", () => {
 		const ir = baseIr({
 			model: "openai/gpt-5-nano",

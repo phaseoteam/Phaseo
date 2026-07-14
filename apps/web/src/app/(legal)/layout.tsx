@@ -15,18 +15,20 @@ export default function LegalLayout({
 						<LegalBackButton />
 						<Link
 							href="/"
-							aria-label="AI Stats home"
+							aria-label="Phaseo home"
 							className="inline-flex items-center transition-opacity hover:opacity-80"
 						>
 							<img
 								src="/wordmark_light.svg"
-								alt="AI Stats"
+								alt="Phaseo"
 								className="h-8 w-auto select-none dark:hidden"
+								style={{ width: "auto" }}
 							/>
 							<img
 								src="/wordmark_dark.svg"
-								alt="AI Stats"
+								alt="Phaseo"
 								className="hidden h-8 w-auto select-none dark:block"
+								style={{ width: "auto" }}
 							/>
 						</Link>
 					</div>

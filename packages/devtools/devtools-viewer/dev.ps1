@@ -1,7 +1,7 @@
-# AI Stats Devtools - Development Script (Windows)
+# Phaseo Devtools - Development Script (Windows)
 # Quick start script for local development
 
-Write-Host "🚀 Starting AI Stats Devtools Development Environment" -ForegroundColor Cyan
+Write-Host "🚀 Starting Phaseo Devtools Development Environment" -ForegroundColor Cyan
 Write-Host ""
 
 # Check if node_modules exists
@@ -11,8 +11,8 @@ if (-not (Test-Path "node_modules")) {
     Write-Host ""
 }
 
-# Check if .ai-stats-devtools directory exists
-$devtoolsDir = "..\..\..\\.ai-stats-devtools"
+# Check if .phaseo-devtools directory exists
+$devtoolsDir = "..\..\..\\.phaseo-devtools"
 if (-not (Test-Path $devtoolsDir)) {
     Write-Host "⚠️  No devtools data directory found at $devtoolsDir" -ForegroundColor Yellow
     Write-Host "📁 Creating sample directory..." -ForegroundColor Yellow

@@ -68,8 +68,20 @@ const buildInitialState = (k: any): FormState => ({
 	monthlyCostUsd: formatUsd(k.monthly_limit_cost_nanos),
 });
 
-export default function KeyLimitsItem({ k }: { k: any }) {
-	const [open, setOpen] = useState(false);
+export default function KeyLimitsItem({
+	k,
+	trigger = true,
+	open: controlledOpen,
+	onOpenChange,
+}: {
+	k: any;
+	trigger?: boolean;
+	open?: boolean;
+	onOpenChange?: (open: boolean) => void;
+}) {
+	const [internalOpen, setInternalOpen] = useState(false);
+	const open = controlledOpen ?? internalOpen;
+	const setOpen = onOpenChange ?? setInternalOpen;
 	const [saving, setSaving] = useState(false);
 	const [form, setForm] = useState<FormState>(() => buildInitialState(k));
 	const isDirty = useMemo(() => {
@@ -148,24 +160,24 @@ export default function KeyLimitsItem({ k }: { k: any }) {
 
 	return (
 		<>
-			<DropdownMenuItem asChild>
-				<button
-					className="w-full text-left flex items-center gap-2"
-					onClick={(e) => {
-						e.preventDefault();
-						setTimeout(() => {
-							resetForm();
-							setOpen(true);
-						}, 0);
-					}}
-				>
-					<SlidersHorizontal className="mr-2" />
-					Limits{" "}
-					<Badge variant="outline" className="ml-2">
-						Beta
-					</Badge>
-				</button>
-			</DropdownMenuItem>
+			{trigger ? (
+				<DropdownMenuItem render={<div
+						className="w-full text-left flex items-center gap-2"
+						onClick={() => {
+							setTimeout(() => {
+								resetForm();
+								setOpen(true);
+							}, 0);
+						}} />}>
+
+						<SlidersHorizontal className="mr-2" />
+						<span>Limits</span>
+						<Badge variant="outline" className="ml-auto">
+							Beta
+						</Badge>
+
+				</DropdownMenuItem>
+			) : null}
 			<Dialog
 				open={open}
 				onOpenChange={(next) => {

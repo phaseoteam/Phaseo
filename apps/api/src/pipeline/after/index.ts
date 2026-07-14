@@ -29,6 +29,10 @@ import {
 import { buildCachedResponseRecord } from "@/core/response-cache";
 import { applyResponsePlugins } from "@/plugins/registry";
 
+function shouldAttachRoutingDiagnostics(ctx: PipelineContext): boolean {
+	return Boolean(ctx.meta?.debug?.enabled || ctx.meta?.returnRoutingDiagnostics);
+}
+
 function decodeBase64ToBytes(value: string): Uint8Array {
 	const binary = atob(value);
 	return Uint8Array.from(binary, (char) => char.charCodeAt(0));
@@ -280,6 +284,19 @@ export function attachGatewaySuccessMeta(args: {
     return payload;
 }
 
+export function attachRoutingDiagnosticsToPayload(args: {
+	ctx: PipelineContext;
+	payload: Record<string, any>;
+}) {
+	if (!shouldAttachRoutingDiagnostics(args.ctx)) {
+		return args.payload;
+	}
+	if ((args.ctx as any).routingDiagnostics) {
+		args.payload.routing_diagnostics = (args.ctx as any).routingDiagnostics;
+	}
+	return args.payload;
+}
+
 export async function finalizeRequest(args: {
     pre: { ok: true; ctx: PipelineContext };
     exec: { ok: true; result: RequestResult };
@@ -412,7 +429,8 @@ async function handleNonStreamResponse(
         shapedUsage,
         card,
         ctx.body,
-        tier
+        tier,
+        ctx.meta
     ));
     const isByok = (result?.keySource ?? ctx.meta.keySource) === "byok";
     const pricedWithByok = await ctx.timer.span("after_apply_byok_fee", () => applyByokServiceFee({
@@ -447,8 +465,14 @@ async function handleNonStreamResponse(
 
     // Update payload with normalized usage
     payload.usage = shapedUsageFinal;
-    const generationMs = ctx.meta.generation_ms ?? result.generationTimeMs ?? null;
+    const generationMs = ctx.meta.generation_ms ?? 0;
     const latencyMs = resolveNonStreamLatencyMs(ctx, generationMs);
+    const endToEndMs =
+        typeof ctx.meta.end_to_end_ms === "number"
+            ? ctx.meta.end_to_end_ms
+            : typeof latencyMs === "number" && typeof generationMs === "number" && generationMs > 0
+                ? latencyMs + generationMs
+                : latencyMs;
     const outputTokens = shapedUsageFinal?.output_tokens ?? shapedUsageFinal?.output_text_tokens ?? 0;
     const throughputTps = generationMs && generationMs > 0
         ? outputTokens / (generationMs / 1000)
@@ -458,6 +482,7 @@ async function handleNonStreamResponse(
         throughput_tps: throughputTps,
         generation_ms: generationMs,
         latency_ms: latencyMs,
+        end_to_end_ms: endToEndMs,
     };
     // Update result billing
     result.bill.cost_cents = totalCentsFinal;
@@ -484,6 +509,12 @@ async function handleNonStreamResponse(
         payload,
         includeMeta,
     });
+    if (responseBody && typeof responseBody === "object" && !Array.isArray(responseBody)) {
+        attachRoutingDiagnosticsToPayload({
+            ctx,
+            payload: responseBody,
+        });
+    }
 
     dispatchNonStreamSuccessSideEffects({
         ctx,
@@ -536,7 +567,7 @@ async function handleNonStreamResponse(
 
     const headers = makeHeaders(timingHeader);
     if (ctx.responseCache?.status === "miss") {
-        headers.set("X-AI-Stats-Response-Cache", "miss");
+        headers.set("X-Phaseo-Response-Cache", "miss");
     }
     const responseStatus = ctx.endpoint === "video.generation" ? 202 : result.upstream.status;
     return ctx.timer.span("after_create_response", () => createResponse(responseBody, responseStatus, headers));

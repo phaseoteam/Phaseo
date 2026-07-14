@@ -3,18 +3,18 @@ import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import apps from "@/data/works-with-ai-stats.json";
+import apps from "@/data/works-with-phaseo.json";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata = buildMetadata({
-	title: "Works with AI Stats",
+	title: "Works With",
 	description:
-		"Discover apps and integrations built with the AI Stats Gateway, including production tools, open-source projects, and community launches across different workflows and teams.",
+		"Discover apps and integrations built with the Phaseo Gateway, including production tools, open-source projects, and community launches across different workflows and teams.",
 	path: "/works-with",
 	keywords: [
-		"AI Stats integrations",
+		"Phaseo integrations",
 		"AI gateway apps",
-		"AI Stats community",
+		"Phaseo community",
 	],
 });
 
@@ -63,21 +63,21 @@ export default function WorksWithPage() {
 			<div className="space-y-4">
 				<div className="flex flex-wrap items-center gap-3">
 					<h1 className="text-3xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
-						Works with AI Stats
+						Works with Phaseo
 					</h1>
 					<Badge variant="outline">Community</Badge>
 				</div>
 				<p className="max-w-3xl text-base text-zinc-600 dark:text-zinc-300">
-					Discover apps, tools, and integrations that use the AI Stats Gateway. Teams can
-					build on top of AI Stats for routing, pricing, and model access, while users bring
-					their own AI Stats API keys.
+					Discover apps, tools, and integrations that use the Phaseo Gateway. Teams can
+					build on top of Phaseo for routing, pricing, and model access, while users bring
+					their own Phaseo API keys.
 				</p>
 				<div className="flex flex-wrap items-center gap-3">
 					<Button asChild>
 						<Link href="#contributing">Submit your app</Link>
 					</Button>
 					<Button variant="outline" asChild>
-						<Link href="/contribute">Contribute to AI Stats</Link>
+						<Link href="/contribute">Contribute to Phaseo</Link>
 					</Button>
 				</div>
 			</div>
@@ -165,15 +165,15 @@ export default function WorksWithPage() {
 				<CardHeader>
 					<CardTitle>Contributing</CardTitle>
 					<CardDescription>
-						Add your app to the Works with AI Stats list by following the steps below.
+						Add your app to the Works with Phaseo list by following the steps below.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-6 text-sm text-zinc-700">
 					<div className="space-y-3">
 						<h3 className="text-base font-semibold text-zinc-900">Requirements</h3>
 						<ul className="list-disc space-y-1 pl-5">
-							<li>Use AI Stats for AI model access.</li>
-							<li>Allow users to bring their own AI Stats API key.</li>
+							<li>Use Phaseo for AI model access.</li>
+							<li>Allow users to bring their own Phaseo API key.</li>
 							<li>Be publicly accessible (or have a public landing page).</li>
 							<li>Have a logo image.</li>
 						</ul>
@@ -185,11 +185,11 @@ export default function WorksWithPage() {
 							<li>Fork this repository.</li>
 							<li>
 								Add your app entry to{" "}
-								<code className="rounded bg-zinc-100 px-1 py-0.5">packages/data/catalog/src/data/works-with-ai-stats.json</code>.
+								<code className="rounded bg-zinc-100 px-1 py-0.5">packages/data/catalog/src/data/works-with-phaseo.json</code>.
 							</li>
 							<li>
 								Add your logo to{" "}
-								<code className="rounded bg-zinc-100 px-1 py-0.5">apps/web/public/works-with-ai-stats/&lt;your-app-name&gt;/logo.png</code>.
+								<code className="rounded bg-zinc-100 px-1 py-0.5">apps/web/public/works-with-phaseo/&lt;your-app-name&gt;/logo.png</code>.
 							</li>
 							<li>Submit a pull request.</li>
 						</ol>
@@ -202,11 +202,11 @@ export default function WorksWithPage() {
   "name": "Your App Name",
   "description": "A brief description of your app (1-2 sentences, max 300 characters)",
   "url": "https://your-app-url.com",
-  "docs": "https://your-app-url.com/docs/ai-stats",
+  "docs": "https://your-app-url.com/docs/phaseo",
   "tags": ["chat"],
   "open_source": "https://github.com/you/your-app",
   "date_added": "2026-01-28",
-  "logo": "/works-with-ai-stats/your-app-name/logo.png"
+  "logo": "/works-with-phaseo/your-app-name/logo.png"
 }`}
 						</pre>
 					</div>

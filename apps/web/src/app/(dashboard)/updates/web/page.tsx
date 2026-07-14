@@ -5,9 +5,9 @@ import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
-	title: "Web AI Updates - Research Drops, Destinations & Data Hubs",
+	title: "AI Web Updates",
 	description:
-		"Track web updates across the AI ecosystem. Discover new research drops, documentation sites, product pages and data hubs surfaced by AI Stats.",
+		"Track web updates across the AI ecosystem. Discover new research drops, documentation sites, product pages and data hubs surfaced by Phaseo.",
 	path: "/updates/web",
 	keywords: [
 		"AI web updates",
@@ -15,7 +15,7 @@ export const metadata: Metadata = buildMetadata({
 		"AI documentation",
 		"AI product launches",
 		"AI data hubs",
-		"AI Stats",
+		"Phaseo",
 	],
 });
 

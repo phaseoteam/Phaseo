@@ -243,8 +243,8 @@ describeLive("Batch provider live matrix", () => {
 				});
 				expect(delivered, `${testCase.provider} should deliver batch.completed`).not.toBeNull();
 				if (!delivered) return;
-				const timestamp = webhookHeader(delivered, "x-ai-stats-timestamp");
-				const signature = webhookHeader(delivered, "x-ai-stats-signature");
+				const timestamp = webhookHeader(delivered, "x-phaseo-timestamp");
+				const signature = webhookHeader(delivered, "x-phaseo-signature");
 				expect(timestamp).toMatch(/^\d+$/);
 				expect(signature).toBe(await hmacSha256Hex(webhookFixture.signingSecret, `${timestamp}.${delivered.content}`));
 				const webhookPayload = JSON.parse(delivered.content);

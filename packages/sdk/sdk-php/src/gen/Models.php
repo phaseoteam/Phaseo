@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace AIStats\Gen;
+namespace Phaseo\Gen;
 
 class ActivityEntry
 {
@@ -299,6 +299,94 @@ class ApiKeyWithValueResponse
 	public $data;
 }
 
+class AsyncJobWebSocketClientEvent
+{
+	/** @var string */
+	public $type;
+}
+
+class AsyncJobWebSocketServerEvent
+{
+	/** @var array<string, mixed>|null */
+	public $data;
+	/** @var string */
+	public $type;
+}
+
+class AsyncJobWebSocketUpgradeRequiredResponse
+{
+	/** @var array<string, mixed>|null */
+	public $error;
+}
+
+class AsyncWebhookDeliveryAttempt
+{
+	/** @var int|null */
+	public $attempt_number;
+	/** @var string|null */
+	public $delivered_at;
+	/** @var string|null */
+	public $delivery_key;
+	/** @var string|null */
+	public $error_message;
+	/** @var string|null */
+	public $event_type;
+	/** @var string|null */
+	public $id;
+	/** @var int|null */
+	public $max_attempts;
+	/** @var string|null */
+	public $next_retry_at;
+	/** @var string|null */
+	public $response_body_preview;
+	/** @var int|null */
+	public $response_status;
+	/** @var string|null */
+	public $status;
+	/** @var string|null */
+	public $tried_at;
+}
+
+class AsyncWebhookDeliverySummary
+{
+	/** @var array|null */
+	public $delivered_event_types;
+	/** @var int|null */
+	public $delivered_events;
+	/** @var string|null */
+	public $last_attempt_at;
+	/** @var string|null */
+	public $last_attempt_status;
+	/** @var string|null */
+	public $last_delivered_at;
+	/** @var string|null */
+	public $last_error_message;
+	/** @var string|null */
+	public $last_failure_at;
+	/** @var int|null */
+	public $last_response_status;
+	/** @var string|null */
+	public $next_retry_at;
+	/** @var int|null */
+	public $pending_retries;
+	/** @var int|null */
+	public $total_attempts;
+}
+
+class AsyncWebhookPublicState
+{
+	/** @var array|null */
+	public $attempts;
+	/** @var array<string, mixed>|null */
+	public $delivery;
+	/** @var array|null */
+	public $events;
+	/** @var bool|null */
+	public $has_secret;
+	/** @var string|null */
+	public $url;
+}
+
 class AudioContentPart
 {
 	/** @var array<string, mixed> */
@@ -376,11 +464,101 @@ class BatchBillingSummary
 	/** @var float|null */
 	public $cost_usd;
 	/** @var string|null */
+	public $currency;
+	/** @var int|null */
+	public $estimated_nanos;
+	/** @var string|null */
+	public $estimated_provider_cost;
+	/** @var string|null */
+	public $estimated_user_cost;
+	/** @var int|null */
+	public $estimation_sample_size;
+	/** @var int|null */
+	public $estimation_total_rows;
+	/** @var bool|null */
+	public $estimation_truncated;
+	/** @var string|null */
 	public $finalized_at;
 	/** @var array<string, mixed>|null */
 	public $pricing_breakdown;
 	/** @var string|null */
 	public $reason;
+	/** @var string|null */
+	public $reservation_id;
+	/** @var string|null */
+	public $reservation_status;
+	/** @var int|null */
+	public $reserved_nanos;
+	/** @var string|null */
+	public $settled_provider_cost;
+	/** @var string|null */
+	public $settled_user_cost;
+	/** @var string|null */
+	public $state;
+	/** @var int|null */
+	public $total_nanos;
+}
+
+class BatchListResponse
+{
+	/** @var array|null */
+	public $data;
+	/** @var string|null */
+	public $first_id;
+	/** @var bool|null */
+	public $has_more;
+	/** @var string|null */
+	public $last_id;
+	/** @var string|null */
+	public $object;
+}
+
+class BatchModelCapability
+{
+	/** @var array|null */
+	public $input_types;
+	/** @var string|null */
+	public $model;
+	/** @var string|null */
+	public $name;
+	/** @var array|null */
+	public $output_types;
+	/** @var array<string, mixed>|null */
+	public $pricing;
+	/** @var array|null */
+	public $providers;
+	/** @var string|null */
+	public $status;
+	/** @var array|null */
+	public $supported_parameters;
+	/** @var array<string, mixed>|null */
+	public $supported_parameters_detail;
+	/** @var array|null */
+	public $supported_params;
+	/** @var array<string, mixed>|null */
+	public $supported_params_detail;
+}
+
+class BatchModelProviderCapability
+{
+	/** @var string|null */
+	public $id;
+	/** @var array|null */
+	public $supported_parameters;
+	/** @var array<string, mixed>|null */
+	public $supported_parameters_detail;
+	/** @var array|null */
+	public $supported_params;
+	/** @var array<string, mixed>|null */
+	public $supported_params_detail;
+}
+
+class BatchModelsResponse
+{
+	/** @var array|null */
+	public $data;
+	/** @var string|null */
+	public $object;
 }
 
 class BatchProviderCapability
@@ -507,6 +685,8 @@ class BatchResponse
 {
 	/** @var array<string, mixed>|null */
 	public $billing;
+	/** @var string|null */
+	public $cancel_url;
 	/** @var int|null */
 	public $cancelled_at;
 	/** @var int|null */
@@ -529,6 +709,8 @@ class BatchResponse
 	public $expires_at;
 	/** @var int|null */
 	public $failed_at;
+	/** @var string|null */
+	public $finalized_at;
 	/** @var int|null */
 	public $finalizing_at;
 	/** @var string|null */
@@ -537,14 +719,30 @@ class BatchResponse
 	public $in_progress_at;
 	/** @var string|null */
 	public $input_file_id;
+	/** @var string|null */
+	public $last_webhook_dispatched_at;
+	/** @var float|null */
+	public $last_webhook_progress;
+	/** @var string|null */
+	public $last_webhook_progress_at;
+	/** @var string|null */
+	public $lifecycle_status;
 	/** @var array<string, mixed>|null */
 	public $metadata;
+	/** @var string|null */
+	public $native_batch_id;
+	/** @var string|null */
+	public $next_webhook_retry_at;
 	/** @var string|null */
 	public $object;
 	/** @var string|null */
 	public $output_file_id;
+	/** @var string|null */
+	public $polling_url;
 	/** @var array|null */
 	public $pricing_lines;
+	/** @var int|null */
+	public $progress;
 	/** @var string|null */
 	public $provider;
 	/** @var array<string, mixed>|null */
@@ -557,6 +755,8 @@ class BatchResponse
 	public $status;
 	/** @var array<string, mixed>|null */
 	public $webhook;
+	/** @var string|null */
+	public $websocket_url;
 }
 
 class BenchmarkId { }
@@ -1351,8 +1551,12 @@ class Model
 	public $status;
 	/** @var array|null */
 	public $supported_parameters;
+	/** @var array<string, mixed>|null */
+	public $supported_parameters_detail;
 	/** @var array|null */
 	public $supported_params;
+	/** @var array<string, mixed>|null */
+	public $supported_params_detail;
 	/** @var array<string, mixed>|null */
 	public $top_provider;
 	/** @var string|null */
@@ -1411,10 +1615,16 @@ class ModelProviderAvailability
 	public $model_routing_status;
 	/** @var array */
 	public $params;
+	/** @var array<string, mixed>|null */
+	public $params_detail;
 	/** @var string */
 	public $provider_routing_status;
 	/** @var string */
 	public $provider_status;
+	/** @var array|null */
+	public $supported_parameters;
+	/** @var array<string, mixed>|null */
+	public $supported_parameters_detail;
 }
 
 class ModelsPrivacyScopeNotImplementedResponse
@@ -1699,12 +1909,6 @@ class ProvisioningKeyWithValue
 	public $status;
 }
 
-class RealtimeNotImplementedResponse
-{
-	/** @var array<string, mixed> */
-	public $error;
-}
-
 class ReasoningConfig
 {
 	/** @var string|null */
@@ -1713,6 +1917,8 @@ class ReasoningConfig
 	public $enabled;
 	/** @var int|null */
 	public $max_tokens;
+	/** @var string|null */
+	public $mode;
 	/** @var string|null */
 	public $summary;
 }
@@ -1931,42 +2137,6 @@ class ResponsesResponse
 	public $usage;
 }
 
-class ResponsesWebSocketCreateEvent
-{
-	/** @var string|array|array<string, mixed>|null */
-	public $input;
-	/** @var string */
-	public $model;
-	/** @var string|null */
-	public $previous_response_id;
-	/** @var bool|null */
-	public $store;
-	/** @var string|array<string, mixed>|null */
-	public $tool_choice;
-	/** @var array|null */
-	public $tools;
-	/** @var string */
-	public $type;
-}
-
-class ResponsesWebSocketServerEvent
-{
-	/** @var array<string, mixed>|null */
-	public $error;
-	/** @var array<string, mixed>|null */
-	public $response;
-	/** @var int|null */
-	public $status;
-	/** @var string|null */
-	public $type;
-}
-
-class ResponsesWebSocketUpgradeRequiredResponse
-{
-	/** @var array<string, mixed>|null */
-	public $error;
-}
-
 class ServerToolUsage
 {
 	/** @var int|null */
@@ -1975,6 +2145,10 @@ class ServerToolUsage
 	public $web_fetch_requests;
 	/** @var int|null */
 	public $web_search_requests;
+}
+
+class SupportedParameterDetails
+{
 }
 
 class TextContentPart
@@ -2027,6 +2201,40 @@ class Usage
 	public $server_tool_use;
 	/** @var int|null */
 	public $total_tokens;
+}
+
+class VideoBillingSummary
+{
+	/** @var bool|null */
+	public $billable;
+	/** @var string|null */
+	public $billed_at;
+	/** @var string|null */
+	public $charge_reason;
+	/** @var bool|null */
+	public $charged;
+	/** @var string|null */
+	public $currency;
+	/** @var int|null */
+	public $estimated_nanos;
+	/** @var string|null */
+	public $estimated_provider_cost;
+	/** @var string|null */
+	public $estimated_user_cost;
+	/** @var string|null */
+	public $reservation_id;
+	/** @var string|null */
+	public $reservation_status;
+	/** @var int|null */
+	public $reserved_nanos;
+	/** @var string|null */
+	public $settled_provider_cost;
+	/** @var string|null */
+	public $settled_user_cost;
+	/** @var string|null */
+	public $state;
+	/** @var int|null */
+	public $total_nanos;
 }
 
 class VideoContentPart
@@ -2097,6 +2305,8 @@ class VideoGenerationResponse
 	public $audio;
 	/** @var array<string, mixed>|null */
 	public $billing;
+	/** @var string|null */
+	public $cancel_url;
 	/** @var int|string|null */
 	public $completed_at;
 	/** @var string|null */
@@ -2114,7 +2324,19 @@ class VideoGenerationResponse
 	/** @var string|null */
 	public $id;
 	/** @var string|null */
+	public $last_webhook_dispatched_at;
+	/** @var float|null */
+	public $last_webhook_progress;
+	/** @var string|null */
+	public $last_webhook_progress_at;
+	/** @var string|null */
+	public $lifecycle_status;
+	/** @var string|null */
 	public $model;
+	/** @var string|null */
+	public $native_video_id;
+	/** @var string|null */
+	public $next_webhook_retry_at;
 	/** @var string|null */
 	public $object;
 	/** @var string|null */
@@ -2145,6 +2367,10 @@ class VideoGenerationResponse
 	public $status;
 	/** @var array<string, mixed>|null */
 	public $usage;
+	/** @var array<string, mixed>|null */
+	public $webhook;
+	/** @var string|null */
+	public $websocket_url;
 }
 
 class VideoInputReference
@@ -2157,6 +2383,68 @@ class VideoInputReference
 	public $role;
 	/** @var string */
 	public $type;
+}
+
+class VideoListResponse
+{
+	/** @var array|null */
+	public $data;
+	/** @var string|null */
+	public $first_id;
+	/** @var bool|null */
+	public $has_more;
+	/** @var string|null */
+	public $last_id;
+	/** @var string|null */
+	public $object;
+}
+
+class VideoModelCapability
+{
+	/** @var array|null */
+	public $input_types;
+	/** @var string|null */
+	public $model;
+	/** @var string|null */
+	public $name;
+	/** @var array|null */
+	public $output_types;
+	/** @var array<string, mixed>|null */
+	public $pricing;
+	/** @var array|null */
+	public $providers;
+	/** @var string|null */
+	public $status;
+	/** @var array|null */
+	public $supported_parameters;
+	/** @var array<string, mixed>|null */
+	public $supported_parameters_detail;
+	/** @var array|null */
+	public $supported_params;
+	/** @var array<string, mixed>|null */
+	public $supported_params_detail;
+}
+
+class VideoModelProviderCapability
+{
+	/** @var string|null */
+	public $id;
+	/** @var array|null */
+	public $supported_parameters;
+	/** @var array<string, mixed>|null */
+	public $supported_parameters_detail;
+	/** @var array|null */
+	public $supported_params;
+	/** @var array<string, mixed>|null */
+	public $supported_params_detail;
+}
+
+class VideoModelsResponse
+{
+	/** @var array|null */
+	public $data;
+	/** @var string|null */
+	public $object;
 }
 
 class VideoOutput
@@ -2179,82 +2467,6 @@ class VideoOutputConfig
 {
 	/** @var string|null */
 	public $access;
-}
-
-class WebhookEndpoint
-{
-	/** @var string|null */
-	public $createdAt;
-	/** @var string|null */
-	public $createdBy;
-	/** @var string|null */
-	public $deletedAt;
-	/** @var array|null */
-	public $events;
-	/** @var bool|null */
-	public $hasSecret;
-	/** @var string|null */
-	public $id;
-	/** @var string|null */
-	public $name;
-	/** @var string|null */
-	public $status;
-	/** @var string|null */
-	public $updatedAt;
-	/** @var string|null */
-	public $url;
-	/** @var string|null */
-	public $workspaceId;
-}
-
-class WebhookEndpointCreateRequest
-{
-	/** @var array|null */
-	public $events;
-	/** @var string|null */
-	public $name;
-	/** @var string */
-	public $url;
-}
-
-class WebhookEndpointCreateResponse
-{
-	/** @var string|null */
-	public $createdAt;
-	/** @var string|null */
-	public $createdBy;
-	/** @var string|null */
-	public $deletedAt;
-	/** @var array|null */
-	public $events;
-	/** @var bool|null */
-	public $hasSecret;
-	/** @var string|null */
-	public $id;
-	/** @var string|null */
-	public $name;
-	/** @var string|null */
-	public $signing_secret;
-	/** @var string|null */
-	public $status;
-	/** @var string|null */
-	public $updatedAt;
-	/** @var string|null */
-	public $url;
-	/** @var string|null */
-	public $workspaceId;
-}
-
-class WebhookEndpointUpdateRequest
-{
-	/** @var array|null */
-	public $events;
-	/** @var string|null */
-	public $name;
-	/** @var string|null */
-	public $status;
-	/** @var string|null */
-	public $url;
 }
 
 class Workspace

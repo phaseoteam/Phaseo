@@ -168,6 +168,56 @@ pub struct ApiKeyWithValueResponse {
 	pub data: HashMap<String, String>,
 }
 
+pub struct AsyncJobWebSocketClientEvent {
+	pub r#type: String,
+}
+
+pub struct AsyncJobWebSocketServerEvent {
+	pub data: Option<Option<String>>,
+	pub r#type: String,
+}
+
+pub struct AsyncJobWebSocketUpgradeRequiredResponse {
+	pub error: Option<HashMap<String, String>>,
+}
+
+pub struct AsyncWebhookDeliveryAttempt {
+	pub attempt_number: Option<i64>,
+	pub delivered_at: Option<Option<String>>,
+	pub delivery_key: Option<String>,
+	pub error_message: Option<Option<String>>,
+	pub event_type: Option<String>,
+	pub id: Option<String>,
+	pub max_attempts: Option<i64>,
+	pub next_retry_at: Option<Option<String>>,
+	pub response_body_preview: Option<Option<String>>,
+	pub response_status: Option<Option<i64>>,
+	pub status: Option<String>,
+	pub tried_at: Option<String>,
+}
+
+pub struct AsyncWebhookDeliverySummary {
+	pub delivered_event_types: Option<Vec<String>>,
+	pub delivered_events: Option<i64>,
+	pub last_attempt_at: Option<Option<String>>,
+	pub last_attempt_status: Option<Option<String>>,
+	pub last_delivered_at: Option<Option<String>>,
+	pub last_error_message: Option<Option<String>>,
+	pub last_failure_at: Option<Option<String>>,
+	pub last_response_status: Option<Option<i64>>,
+	pub next_retry_at: Option<Option<String>>,
+	pub pending_retries: Option<i64>,
+	pub total_attempts: Option<i64>,
+}
+
+pub struct AsyncWebhookPublicState {
+	pub attempts: Option<Vec<HashMap<String, String>>>,
+	pub delivery: Option<HashMap<String, String>>,
+	pub events: Option<Vec<String>>,
+	pub has_secret: Option<bool>,
+	pub url: Option<Option<String>>,
+}
+
 pub struct AudioContentPart {
 	pub input_audio: HashMap<String, String>,
 	pub r#type: String,
@@ -210,11 +260,60 @@ pub struct AudioTranslationResponse {
 pub struct BatchBillingSummary {
 	pub billed: Option<bool>,
 	pub charged: Option<bool>,
-	pub cost_nanos: Option<i64>,
-	pub cost_usd: Option<f64>,
-	pub finalized_at: Option<String>,
+	pub cost_nanos: Option<Option<i64>>,
+	pub cost_usd: Option<Option<f64>>,
+	pub currency: Option<String>,
+	pub estimated_nanos: Option<Option<i64>>,
+	pub estimated_provider_cost: Option<Option<String>>,
+	pub estimated_user_cost: Option<Option<String>>,
+	pub estimation_sample_size: Option<Option<i64>>,
+	pub estimation_total_rows: Option<Option<i64>>,
+	pub estimation_truncated: Option<Option<bool>>,
+	pub finalized_at: Option<Option<String>>,
 	pub pricing_breakdown: Option<HashMap<String, String>>,
 	pub reason: Option<String>,
+	pub reservation_id: Option<Option<String>>,
+	pub reservation_status: Option<Option<String>>,
+	pub reserved_nanos: Option<Option<i64>>,
+	pub settled_provider_cost: Option<Option<String>>,
+	pub settled_user_cost: Option<Option<String>>,
+	pub state: Option<String>,
+	pub total_nanos: Option<Option<i64>>,
+}
+
+pub struct BatchListResponse {
+	pub data: Option<Vec<HashMap<String, String>>>,
+	pub first_id: Option<Option<String>>,
+	pub has_more: Option<bool>,
+	pub last_id: Option<Option<String>>,
+	pub object: Option<String>,
+}
+
+pub struct BatchModelCapability {
+	pub input_types: Option<Vec<String>>,
+	pub model: Option<String>,
+	pub name: Option<String>,
+	pub output_types: Option<Vec<String>>,
+	pub pricing: Option<HashMap<String, String>>,
+	pub providers: Option<Vec<HashMap<String, String>>>,
+	pub status: Option<String>,
+	pub supported_parameters: Option<Vec<String>>,
+	pub supported_parameters_detail: Option<HashMap<String, String>>,
+	pub supported_params: Option<Vec<String>>,
+	pub supported_params_detail: Option<HashMap<String, String>>,
+}
+
+pub struct BatchModelProviderCapability {
+	pub id: Option<String>,
+	pub supported_parameters: Option<Vec<String>>,
+	pub supported_parameters_detail: Option<HashMap<String, String>>,
+	pub supported_params: Option<Vec<String>>,
+	pub supported_params_detail: Option<HashMap<String, String>>,
+}
+
+pub struct BatchModelsResponse {
+	pub data: Option<Vec<HashMap<String, String>>>,
+	pub object: Option<String>,
 }
 
 pub struct BatchProviderCapability {
@@ -284,6 +383,7 @@ pub struct BatchRequestRow {
 
 pub struct BatchResponse {
 	pub billing: Option<HashMap<String, String>>,
+	pub cancel_url: Option<Option<String>>,
 	pub cancelled_at: Option<i64>,
 	pub cancelling_at: Option<i64>,
 	pub completed_at: Option<i64>,
@@ -295,20 +395,30 @@ pub struct BatchResponse {
 	pub expired_at: Option<i64>,
 	pub expires_at: Option<i64>,
 	pub failed_at: Option<i64>,
+	pub finalized_at: Option<Option<String>>,
 	pub finalizing_at: Option<i64>,
 	pub id: Option<String>,
 	pub in_progress_at: Option<i64>,
 	pub input_file_id: Option<String>,
+	pub last_webhook_dispatched_at: Option<Option<String>>,
+	pub last_webhook_progress: Option<Option<f64>>,
+	pub last_webhook_progress_at: Option<Option<String>>,
+	pub lifecycle_status: Option<String>,
 	pub metadata: Option<HashMap<String, String>>,
+	pub native_batch_id: Option<Option<String>>,
+	pub next_webhook_retry_at: Option<Option<String>>,
 	pub object: Option<String>,
 	pub output_file_id: Option<String>,
+	pub polling_url: Option<String>,
 	pub pricing_lines: Option<Vec<HashMap<String, String>>>,
+	pub progress: Option<i64>,
 	pub provider: Option<String>,
 	pub request_counts: Option<HashMap<String, String>>,
 	pub request_id: Option<String>,
 	pub session_id: Option<String>,
 	pub status: Option<String>,
 	pub webhook: Option<HashMap<String, String>>,
+	pub websocket_url: Option<String>,
 }
 
 pub type BenchmarkId = JsonValue;
@@ -759,7 +869,9 @@ pub struct Model {
 	pub retirement_date: Option<Option<String>>,
 	pub status: Option<Option<String>>,
 	pub supported_parameters: Option<Vec<String>>,
+	pub supported_parameters_detail: Option<HashMap<String, String>>,
 	pub supported_params: Option<Vec<String>>,
+	pub supported_params_detail: Option<HashMap<String, String>>,
 	pub top_provider: Option<HashMap<String, String>>,
 	pub top_provider_id: Option<Option<String>>,
 }
@@ -793,8 +905,11 @@ pub struct ModelProviderAvailability {
 	pub is_active_gateway: bool,
 	pub model_routing_status: String,
 	pub params: Vec<String>,
+	pub params_detail: Option<HashMap<String, String>>,
 	pub provider_routing_status: String,
 	pub provider_status: String,
+	pub supported_parameters: Option<Vec<String>>,
+	pub supported_parameters_detail: Option<HashMap<String, String>>,
 }
 
 pub struct ModelsPrivacyScopeNotImplementedResponse {
@@ -957,14 +1072,11 @@ pub struct ProvisioningKeyWithValue {
 	pub status: Option<String>,
 }
 
-pub struct RealtimeNotImplementedResponse {
-	pub error: HashMap<String, String>,
-}
-
 pub struct ReasoningConfig {
 	pub effort: Option<String>,
 	pub enabled: Option<bool>,
 	pub max_tokens: Option<i64>,
+	pub mode: Option<String>,
 	pub summary: Option<String>,
 }
 
@@ -1087,31 +1199,13 @@ pub struct ResponsesResponse {
 	pub usage: Option<HashMap<String, String>>,
 }
 
-pub struct ResponsesWebSocketCreateEvent {
-	pub input: Option<String>,
-	pub model: String,
-	pub previous_response_id: Option<Option<String>>,
-	pub store: Option<bool>,
-	pub tool_choice: Option<String>,
-	pub tools: Option<Vec<HashMap<String, String>>>,
-	pub r#type: String,
-}
-
-pub struct ResponsesWebSocketServerEvent {
-	pub error: Option<HashMap<String, String>>,
-	pub response: Option<HashMap<String, String>>,
-	pub status: Option<i64>,
-	pub r#type: Option<String>,
-}
-
-pub struct ResponsesWebSocketUpgradeRequiredResponse {
-	pub error: Option<HashMap<String, String>>,
-}
-
 pub struct ServerToolUsage {
 	pub datetime_requests: Option<i64>,
 	pub web_fetch_requests: Option<i64>,
 	pub web_search_requests: Option<i64>,
+}
+
+pub struct SupportedParameterDetails {
 }
 
 pub struct TextContentPart {
@@ -1145,6 +1239,24 @@ pub struct Usage {
 	pub prompt_tokens: Option<i64>,
 	pub server_tool_use: Option<HashMap<String, String>>,
 	pub total_tokens: Option<i64>,
+}
+
+pub struct VideoBillingSummary {
+	pub billable: Option<bool>,
+	pub billed_at: Option<String>,
+	pub charge_reason: Option<Option<String>>,
+	pub charged: Option<Option<bool>>,
+	pub currency: Option<String>,
+	pub estimated_nanos: Option<Option<i64>>,
+	pub estimated_provider_cost: Option<Option<String>>,
+	pub estimated_user_cost: Option<Option<String>>,
+	pub reservation_id: Option<Option<String>>,
+	pub reservation_status: Option<Option<String>>,
+	pub reserved_nanos: Option<Option<i64>>,
+	pub settled_provider_cost: Option<Option<String>>,
+	pub settled_user_cost: Option<Option<String>>,
+	pub state: Option<String>,
+	pub total_nanos: Option<Option<i64>>,
 }
 
 pub struct VideoContentPart {
@@ -1184,6 +1296,7 @@ pub struct VideoGenerationResponse {
 	pub asset: Option<Option<HashMap<String, String>>>,
 	pub audio: Option<bool>,
 	pub billing: Option<HashMap<String, String>>,
+	pub cancel_url: Option<Option<String>>,
 	pub completed_at: Option<Option<String>>,
 	pub content_url: Option<String>,
 	pub created_at: Option<String>,
@@ -1192,7 +1305,13 @@ pub struct VideoGenerationResponse {
 	pub expires_at: Option<Option<i64>>,
 	pub generation_id: Option<Option<String>>,
 	pub id: Option<String>,
+	pub last_webhook_dispatched_at: Option<Option<String>>,
+	pub last_webhook_progress: Option<Option<f64>>,
+	pub last_webhook_progress_at: Option<Option<String>>,
+	pub lifecycle_status: Option<String>,
 	pub model: Option<String>,
+	pub native_video_id: Option<Option<String>>,
+	pub next_webhook_retry_at: Option<Option<String>>,
 	pub object: Option<String>,
 	pub output_access: Option<String>,
 	pub outputs: Option<Vec<HashMap<String, String>>>,
@@ -1208,6 +1327,8 @@ pub struct VideoGenerationResponse {
 	pub started_at: Option<Option<String>>,
 	pub status: Option<String>,
 	pub usage: Option<HashMap<String, String>>,
+	pub webhook: Option<HashMap<String, String>>,
+	pub websocket_url: Option<String>,
 }
 
 pub struct VideoInputReference {
@@ -1215,6 +1336,41 @@ pub struct VideoInputReference {
 	pub reference_type: Option<String>,
 	pub role: Option<String>,
 	pub r#type: String,
+}
+
+pub struct VideoListResponse {
+	pub data: Option<Vec<HashMap<String, String>>>,
+	pub first_id: Option<Option<String>>,
+	pub has_more: Option<bool>,
+	pub last_id: Option<Option<String>>,
+	pub object: Option<String>,
+}
+
+pub struct VideoModelCapability {
+	pub input_types: Option<Vec<String>>,
+	pub model: Option<String>,
+	pub name: Option<String>,
+	pub output_types: Option<Vec<String>>,
+	pub pricing: Option<HashMap<String, String>>,
+	pub providers: Option<Vec<HashMap<String, String>>>,
+	pub status: Option<String>,
+	pub supported_parameters: Option<Vec<String>>,
+	pub supported_parameters_detail: Option<HashMap<String, String>>,
+	pub supported_params: Option<Vec<String>>,
+	pub supported_params_detail: Option<HashMap<String, String>>,
+}
+
+pub struct VideoModelProviderCapability {
+	pub id: Option<String>,
+	pub supported_parameters: Option<Vec<String>>,
+	pub supported_parameters_detail: Option<HashMap<String, String>>,
+	pub supported_params: Option<Vec<String>>,
+	pub supported_params_detail: Option<HashMap<String, String>>,
+}
+
+pub struct VideoModelsResponse {
+	pub data: Option<Vec<HashMap<String, String>>>,
+	pub object: Option<String>,
 }
 
 pub struct VideoOutput {
@@ -1228,48 +1384,6 @@ pub struct VideoOutput {
 
 pub struct VideoOutputConfig {
 	pub access: Option<String>,
-}
-
-pub struct WebhookEndpoint {
-	pub createdAt: Option<Option<String>>,
-	pub createdBy: Option<Option<String>>,
-	pub deletedAt: Option<Option<String>>,
-	pub events: Option<Vec<String>>,
-	pub hasSecret: Option<bool>,
-	pub id: Option<String>,
-	pub name: Option<String>,
-	pub status: Option<String>,
-	pub updatedAt: Option<Option<String>>,
-	pub url: Option<String>,
-	pub workspaceId: Option<String>,
-}
-
-pub struct WebhookEndpointCreateRequest {
-	pub events: Option<Vec<String>>,
-	pub name: Option<String>,
-	pub url: String,
-}
-
-pub struct WebhookEndpointCreateResponse {
-	pub createdAt: Option<Option<String>>,
-	pub createdBy: Option<Option<String>>,
-	pub deletedAt: Option<Option<String>>,
-	pub events: Option<Vec<String>>,
-	pub hasSecret: Option<bool>,
-	pub id: Option<String>,
-	pub name: Option<String>,
-	pub signing_secret: Option<String>,
-	pub status: Option<String>,
-	pub updatedAt: Option<Option<String>>,
-	pub url: Option<String>,
-	pub workspaceId: Option<String>,
-}
-
-pub struct WebhookEndpointUpdateRequest {
-	pub events: Option<Vec<String>>,
-	pub name: Option<String>,
-	pub status: Option<String>,
-	pub url: Option<String>,
 }
 
 pub struct Workspace {

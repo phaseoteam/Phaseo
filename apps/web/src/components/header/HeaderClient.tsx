@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { ButtonGroup } from "@/components/ui/button-group";
 import TeamSwitcher from "./TeamSwitcher";
 import { SwapTeam } from "@/app/(dashboard)/actions";
 import { postClientAuthSignOut } from "@/lib/fetchers/internal/postClientAuthSignOut";
@@ -42,6 +43,8 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CurrentUserAvatar } from "@/components/ui/current-user-avatar";
+import { getSupportAvailability } from "@/lib/support/schedule";
 
 interface HeaderProps {
 	isLoggedIn: boolean;
@@ -72,9 +75,18 @@ export default function HeaderClient({
 		dark: { label: "Dark", icon: Moon },
 		system: { label: "System", icon: Monitor },
 	} as const;
+	const { isOpen: supportIsOpen } = getSupportAvailability();
+	const supportDotClasses = supportIsOpen
+		? "bg-emerald-500 ring-emerald-400/60"
+		: "bg-amber-500 ring-amber-400/60";
+	const supportDotClass =
+		supportDotClasses
+			.split(" ")
+			.find((value) => value.startsWith("bg-")) ?? "bg-muted-foreground";
 	const [activeWorkspaceId, setActiveTeamId] = useState<string | undefined>(
 		currentTeamId ?? teams[0]?.id,
 	);
+	const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 	const [isMobileTeamDialogOpen, setIsMobileTeamDialogOpen] = useState(false);
 	const activeTeam = teams.find((team) => team.id === activeWorkspaceId) ?? teams[0];
 
@@ -88,8 +100,7 @@ export default function HeaderClient({
 		} catch (error) {
 			console.error("Sign out error", error);
 		} finally {
-			router.push("/");
-			router.refresh();
+			window.location.assign("/");
 		}
 	}
 
@@ -117,45 +128,164 @@ export default function HeaderClient({
 
 	const navLinks = [
 		{ href: "/models", label: "Models", icon: Boxes },
-		{ href: "/chat", label: "Playground", icon: MessageSquare },
+		{ href: "/chat", label: "Chat", icon: MessageSquare },
 		{ href: "/compare", label: "Compare", icon: Scale },
 		{ href: "/api-providers", label: "Providers", icon: Server },
 		{ href: "/apps", label: "Apps", icon: AppWindow },
 		{ href: "/rankings", label: "Rankings", icon: Trophy },
 	];
-	const docsHref = "https://docs.ai-stats.phaseo.app/v1";
+	const docsHref = "https://phaseo.app/docs/v1";
 
 	if (variant === "mobile") {
+		if (!isLoggedIn) {
+			return (
+				<DropdownMenu
+					open={isMobileNavOpen}
+					onOpenChange={(open) => setIsMobileNavOpen(Boolean(open))}
+				>
+					<ButtonGroup className="h-8 items-stretch overflow-hidden rounded-2xl shadow-xs">
+						<Button asChild className="h-8 rounded-r-none px-4">
+							<Link href="/sign-up" prefetch={false}>
+								Sign Up
+							</Link>
+						</Button>
+						<DropdownMenuTrigger asChild>
+							<Button
+								className="h-8 w-8 rounded-l-none border-l border-primary-foreground/25 px-0"
+								aria-label="Open navigation menu"
+							>
+								<ChevronDown
+									className={cn(
+										"size-4 transition-transform duration-150",
+										isMobileNavOpen && "rotate-180"
+									)}
+									aria-hidden="true"
+								/>
+							</Button>
+						</DropdownMenuTrigger>
+					</ButtonGroup>
+					<DropdownMenuContent align="end" className="w-48 rounded-xl p-1">
+						{navLinks.map(({ href, label, icon: Icon }) => {
+							const isActive =
+								pathname === href || pathname.startsWith(href + "/");
+							return (
+								<DropdownMenuItem
+									key={href}
+									asChild
+									className={cn(
+										"rounded-md py-2 text-sm",
+										isActive && "font-semibold text-primary"
+									)}
+								>
+									<Link href={href} prefetch={false} className="flex items-center gap-2">
+										<Icon className="h-4 w-4" />
+										{label}
+									</Link>
+								</DropdownMenuItem>
+							);
+						})}
+						<DropdownMenuItem asChild className="rounded-md py-2 text-sm">
+							<Link
+								href={docsHref}
+								target="_blank"
+								rel="noreferrer"
+								className="flex items-center gap-2"
+							>
+								<BookOpenText className="h-4 w-4" />
+								Docs
+							</Link>
+						</DropdownMenuItem>
+						<DropdownMenuSeparator />
+						<div className="px-1 py-1">
+							<div
+								role="radiogroup"
+								aria-label="Theme mode"
+								className="inline-flex w-full items-center justify-center gap-1 rounded-md bg-zinc-100 p-0.5 dark:bg-zinc-900"
+							>
+								{(["light", "dark", "system"] as const).map((mode) => {
+									const Icon = themeMeta[mode].icon;
+									const selected = currentTheme === mode;
+									return (
+										<button
+											key={mode}
+											type="button"
+											role="radio"
+											aria-checked={selected}
+											aria-label={`Set theme: ${themeMeta[mode].label}`}
+											onClick={() => setTheme(mode)}
+											className={cn(
+												"relative flex h-8 flex-1 items-center justify-center rounded-md text-zinc-500 transition-colors",
+												"hover:bg-white hover:text-zinc-950 dark:hover:bg-zinc-800 dark:hover:text-zinc-50",
+												selected
+													? "bg-white text-zinc-950 shadow-xs dark:bg-zinc-800 dark:text-zinc-50"
+													: "bg-transparent dark:text-zinc-400"
+											)}
+											title={themeMeta[mode].label}
+										>
+											<Icon className="h-4 w-4" />
+										</button>
+									);
+								})}
+							</div>
+						</div>
+					</DropdownMenuContent>
+				</DropdownMenu>
+			);
+		}
+
 		return (
-			<DropdownMenu>
+			<DropdownMenu
+				open={isMobileNavOpen}
+				onOpenChange={(open) => {
+					const nextOpen = Boolean(open);
+					setIsMobileNavOpen(nextOpen);
+					if (!nextOpen) setIsMobileTeamDialogOpen(false);
+				}}
+			>
 				<DropdownMenuTrigger asChild>
 					<Button
 						variant="ghost"
 						size="icon"
-						className="group overflow-hidden"
-						aria-label="Toggle menu"
+						className={cn(
+							"size-[var(--site-header-control-h,2.25rem)] rounded-full p-0",
+							"bg-transparent hover:bg-zinc-100/70 dark:hover:bg-zinc-900/60",
+							"focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:focus-visible:ring-zinc-600/50",
+							isMobileNavOpen && "bg-zinc-100/70 dark:bg-zinc-900/60",
+						)}
+						aria-label="Open profile menu"
+						aria-expanded={isMobileNavOpen}
 					>
-						<span className="relative block h-5 w-5 overflow-hidden" aria-hidden="true">
-							<span className="absolute left-0 top-1/2 h-0.5 w-5 origin-center -translate-y-[6px] rounded-full bg-current transition-all duration-200 ease-out group-data-[state=open]:translate-y-0 group-data-[state=open]:rotate-45" />
-							<span className="absolute left-0 top-1/2 h-0.5 w-5 origin-center rounded-full bg-current transition-all duration-200 ease-out group-data-[state=open]:opacity-0" />
-							<span className="absolute left-0 top-1/2 h-0.5 w-5 origin-center translate-y-[6px] rounded-full bg-current transition-all duration-200 ease-out group-data-[state=open]:translate-y-0 group-data-[state=open]:-rotate-45" />
-						</span>
+						<CurrentUserAvatar user={user} />
 					</Button>
 				</DropdownMenuTrigger>
-					<DropdownMenuContent align="end" className="w-56 rounded-xl p-1">
+					<DropdownMenuContent align="end" className="w-56">
+						{(userRole === "editor" || userRole === "admin") && (
+							<>
+								<DropdownMenuItem asChild className="cursor-pointer text-sm">
+									<Link href="/internal" prefetch={false}>
+										<Lock className="h-4 w-4" />
+										<span>Internal</span>
+									</Link>
+								</DropdownMenuItem>
+								<DropdownMenuSeparator />
+							</>
+						)}
 						{isLoggedIn && teams.length > 0 && (
 							<>
 								<Popover
 									modal={false}
 									open={isMobileTeamDialogOpen}
-									onOpenChange={setIsMobileTeamDialogOpen}
+									onOpenChange={(open) =>
+										setIsMobileTeamDialogOpen(Boolean(open))
+									}
 								>
 									<PopoverTrigger asChild>
 										<button
 											type="button"
 											className={cn(
-												"relative flex w-full select-none items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-hidden transition-colors",
-												"hover:bg-zinc-100 hover:text-zinc-900 focus:bg-zinc-100 focus:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 dark:focus:bg-zinc-800 dark:focus:text-zinc-50",
+												"relative flex min-h-7 w-full cursor-pointer select-none items-center gap-2 rounded-xl px-2 py-1.5 text-left text-sm outline-hidden transition-colors",
+												"hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+												isMobileTeamDialogOpen && "bg-accent text-accent-foreground",
 											)}
 										>
 											<Users className="h-4 w-4" />
@@ -174,7 +304,7 @@ export default function HeaderClient({
 										side="bottom"
 										align="start"
 										sideOffset={6}
-										className="w-52 rounded-xl p-1"
+										className="w-56 gap-0 rounded-2xl p-1"
 									>
 										{teams.slice(0, 5).map((team) => {
 											const isActive = team.id === activeWorkspaceId;
@@ -183,8 +313,9 @@ export default function HeaderClient({
 													key={team.id}
 													type="button"
 													className={cn(
-														"flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden transition-colors",
-														"hover:bg-zinc-100 hover:text-zinc-900 focus:bg-zinc-100 focus:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 dark:focus:bg-zinc-800 dark:focus:text-zinc-50",
+														"flex min-h-7 w-full cursor-pointer select-none items-center gap-2 rounded-xl px-2 py-1.5 text-sm outline-hidden transition-colors",
+														"hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+														isActive && "bg-accent text-accent-foreground",
 													)}
 													onClick={() => {
 														void handleTeamSwitch(team.id, team.name).then((ok) => {
@@ -209,8 +340,8 @@ export default function HeaderClient({
 											href="/settings/workspaces/settings"
 											prefetch={false}
 											className={cn(
-												"flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden transition-colors",
-												"hover:bg-zinc-100 hover:text-zinc-900 focus:bg-zinc-100 focus:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 dark:focus:bg-zinc-800 dark:focus:text-zinc-50",
+												"flex min-h-7 w-full cursor-pointer select-none items-center gap-2 rounded-xl px-2 py-1.5 text-sm outline-hidden transition-colors",
+												"hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
 											)}
 											onClick={() => setIsMobileTeamDialogOpen(false)}
 										>
@@ -231,8 +362,8 @@ export default function HeaderClient({
 								key={href}
 								asChild
 								className={cn(
-									"rounded-md py-1.5 text-sm",
-									isActive && "font-semibold text-blue-500",
+									"cursor-pointer text-sm",
+									isActive && "bg-accent font-medium text-accent-foreground",
 								)}
 							>
 								<Link href={href} prefetch={false} className="flex items-center gap-2">
@@ -247,33 +378,21 @@ export default function HeaderClient({
 
 					{isLoggedIn ? (
 						<>
-							{(userRole === "editor" || userRole === "admin") && (
-								<>
-									<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
-										<Link href="/internal" prefetch={false}>
-											<Lock className="h-4 w-4" />
-											<span>Internal</span>
-										</Link>
-									</DropdownMenuItem>
-									<DropdownMenuSeparator />
-								</>
-							)}
-
-							<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
+							<DropdownMenuItem asChild className="cursor-pointer text-sm">
 								<Link href="/experiments" prefetch={false}>
 									<FlaskConical className="h-4 w-4" />
 									<span>Experiments</span>
 								</Link>
 							</DropdownMenuItem>
 
-							<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
+							<DropdownMenuItem asChild className="cursor-pointer text-sm">
 								<Link href="/settings/workspaces/settings" prefetch={false}>
 									<Users className="h-4 w-4" />
 									<span>Workspaces</span>
 								</Link>
 							</DropdownMenuItem>
 
-								<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
+								<DropdownMenuItem asChild className="cursor-pointer text-sm">
 									<Link href="/settings/account" prefetch={false}>
 										<Settings className="h-4 w-4" />
 									<span>Settings</span>
@@ -282,7 +401,7 @@ export default function HeaderClient({
 
 							<DropdownMenuSeparator />
 
-							<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
+							<DropdownMenuItem asChild className="cursor-pointer text-sm">
 								<Link
 									href={`/settings/usage?workspace_id=${encodeURIComponent(
 										activeWorkspaceId ?? "",
@@ -293,25 +412,44 @@ export default function HeaderClient({
 									<span>Usage</span>
 								</Link>
 							</DropdownMenuItem>
-							<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
+							<DropdownMenuItem asChild className="cursor-pointer text-sm">
 								<Link href="/settings/credits" prefetch={false}>
 									<CreditCard className="h-4 w-4" />
 									<span>Credits</span>
 								</Link>
 							</DropdownMenuItem>
-							<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
+							<DropdownMenuItem asChild className="cursor-pointer text-sm">
 								<Link href="/settings/keys" prefetch={false}>
 									<KeyIcon className="h-4 w-4" />
 									<span>Keys</span>
 								</Link>
 							</DropdownMenuItem>
-								<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
+								<DropdownMenuItem asChild className="cursor-pointer text-sm">
 									<Link href="/contact" prefetch={false}>
 										<LifeBuoy className="h-4 w-4" />
-										<span>Support</span>
+										<span className="flex min-w-0 flex-1 items-center justify-between gap-3">
+											<span>Support</span>
+											<span
+												className="relative flex h-2.5 w-2.5 shrink-0"
+												aria-hidden="true"
+											>
+												<span
+													className={cn(
+														"absolute inline-flex h-full w-full animate-ping rounded-full opacity-60",
+														supportDotClass,
+													)}
+												/>
+												<span
+													className={cn(
+														"relative inline-flex h-full w-full rounded-full",
+														supportDotClass,
+													)}
+												/>
+											</span>
+										</span>
 									</Link>
 								</DropdownMenuItem>
-								<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
+								<DropdownMenuItem asChild className="cursor-pointer text-sm">
 									<Link href={docsHref} target="_blank" rel="noreferrer">
 										<BookOpenText className="h-4 w-4" />
 										<span>Docs</span>
@@ -324,7 +462,7 @@ export default function HeaderClient({
 									<div
 										role="radiogroup"
 										aria-label="Theme mode"
-										className="inline-flex w-full items-center justify-center gap-1 rounded-md p-0.5"
+										className="inline-flex w-full items-center justify-center gap-1 rounded-xl bg-muted/60 p-0.5"
 									>
 										{(["light", "dark", "system"] as const).map((mode) => {
 											const Icon = themeMeta[mode].icon;
@@ -338,11 +476,11 @@ export default function HeaderClient({
 													aria-label={`Set theme: ${themeMeta[mode].label}`}
 													onClick={() => setTheme(mode)}
 													className={cn(
-														"relative flex h-7 flex-1 items-center justify-center rounded-md text-zinc-500 transition-colors",
-														"hover:bg-zinc-100/70 hover:text-zinc-900 dark:hover:bg-zinc-800/70 dark:hover:text-zinc-100",
+														"relative flex h-7 flex-1 items-center justify-center rounded-lg text-muted-foreground transition-colors",
+														"hover:bg-background hover:text-foreground",
 														selected
-															? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
-															: "bg-transparent dark:text-zinc-300",
+															? "bg-background text-foreground shadow-xs"
+															: "bg-transparent",
 													)}
 													title={themeMeta[mode].label}
 												>
@@ -356,8 +494,9 @@ export default function HeaderClient({
 								<DropdownMenuSeparator />
 
 								<DropdownMenuItem
-									className="rounded-md py-1.5 text-sm"
-								onSelect={(event) => {
+									variant="destructive"
+									className="cursor-pointer text-sm"
+								onClick={(event) => {
 									event.preventDefault();
 									void handleSignOut();
 								}}
@@ -368,9 +507,9 @@ export default function HeaderClient({
 						</>
 					) : (
 						<>
-							<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
-								<Link href="/sign-in" prefetch={false}>
-									Sign in
+							<DropdownMenuItem asChild className="cursor-pointer text-sm">
+								<Link href="/sign-up" prefetch={false}>
+									Sign Up
 								</Link>
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
@@ -378,7 +517,7 @@ export default function HeaderClient({
 								<div
 									role="radiogroup"
 									aria-label="Theme mode"
-									className="inline-flex w-full items-center justify-center gap-1 rounded-md p-0.5"
+									className="inline-flex w-full items-center justify-center gap-1 rounded-xl bg-muted/60 p-0.5"
 								>
 									{(["light", "dark", "system"] as const).map((mode) => {
 										const Icon = themeMeta[mode].icon;
@@ -392,11 +531,11 @@ export default function HeaderClient({
 												aria-label={`Set theme: ${themeMeta[mode].label}`}
 												onClick={() => setTheme(mode)}
 												className={cn(
-													"relative flex h-7 flex-1 items-center justify-center rounded-md text-zinc-500 transition-colors",
-													"hover:bg-zinc-100/70 hover:text-zinc-900 dark:hover:bg-zinc-800/70 dark:hover:text-zinc-100",
+													"relative flex h-7 flex-1 items-center justify-center rounded-lg text-muted-foreground transition-colors",
+													"hover:bg-background hover:text-foreground",
 													selected
-														? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
-														: "bg-transparent dark:text-zinc-300",
+														? "bg-background text-foreground shadow-xs"
+														: "bg-transparent",
 												)}
 												title={themeMeta[mode].label}
 											>
@@ -426,12 +565,12 @@ export default function HeaderClient({
 					/>
 				</>
 			) : (
-				<Link href="/sign-in" prefetch={false}>
+				<Link href="/sign-up" prefetch={false}>
 					<Button
-						variant="outline"
+						variant="default"
 						className="rounded-lg px-4 py-2 text-xs font-semibold"
 					>
-						Sign In
+						Sign Up
 					</Button>
 				</Link>
 			)}

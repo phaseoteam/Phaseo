@@ -6,7 +6,7 @@ export type GatewayBindings = {
     GATEWAY_CACHE: KVNamespace;
     KV?: KVNamespace;
     DB?: D1Database;
-    GATEWAY_CONTROL_SECRET?: string;
+    PHASEO_CONTROL_SECRET?: string;
     NEXT_PUBLIC_GATEWAY_VERSION?: string;
     AXIOM_API_KEY?: string;
     AXIOM_DATASET?: string;
@@ -45,14 +45,13 @@ export type GatewayBindings = {
     AWS_SECRET_ACCESS_KEY?: string;
     AWS_SESSION_TOKEN?: string;
     AWS_REGION?: string;
+    ARCEE_AI_API_KEY?: string;
     ARCEE_API_KEY?: string;
     ARCEE_BASE_URL?: string;
     ATLAS_CLOUD_API_KEY?: string;
     ATLAS_CLOUD_BASE_URL?: string;
     BASETEN_API_KEY?: string;
     BASETEN_BASE_URL?: string;
-    MEITUAN_API_KEY?: string;
-    MEITUAN_BASE_URL?: string;
     LONGCAT_API_KEY?: string;
     LONGCAT_BASE_URL?: string;
     BYTEDANCE_SEED_API_KEY?: string;
@@ -73,6 +72,8 @@ export type GatewayBindings = {
     COHERE_BASE_URL?: string;
     CROFAI_API_KEY?: string;
     CROFAI_BASE_URL?: string;
+    CROF_AI_API_KEY?: string;
+    CROF_AI_BASE_URL?: string;
     VOYAGE_API_KEY?: string;
     VOYAGE_BASE_URL?: string;
     CRUSOE_API_KEY?: string;
@@ -93,6 +94,7 @@ export type GatewayBindings = {
     FRIENDLI_TOKEN?: string;
     FRIENDLI_BASE_URL?: string;
     GMI_API_KEY?: string;
+    GMI_CLOUD_API_KEY?: string;
     GMI_BASE_URL?: string;
     GROQ_API_KEY?: string;
     GROQ_BASE_URL?: string;
@@ -117,11 +119,14 @@ export type GatewayBindings = {
     LIQUID_AI_BASE_URL?: string;
     MANCER_API_KEY?: string;
     MANCER_BASE_URL?: string;
+    META_MODEL_API_KEY?: string;
+    META_MODEL_BASE_URL?: string;
     MINIMAX_API_KEY?: string;
     MINIMAX_BASE_URL?: string;
     MISTRAL_AI_API_KEY?: string;
     MISTRAL_BASE_URL?: string;
     ELEVENLABS_API_KEY?: string;
+    ELEVEN_LABS_API_KEY?: string;
     ELEVENLABS_BASE_URL?: string;
     SUNO_API_KEY?: string;
     SUNO_BASE_URL?: string;
@@ -132,6 +137,7 @@ export type GatewayBindings = {
     MORPHEUS_API_KEY?: string;
     MORPHEUS_BASE_URL?: string;
     NEBIUS_API_KEY?: string;
+    NEBIUS_TOKEN_FACTORY_API_KEY?: string;
     NEBIUS_BASE_URL?: string;
     NEBIUS_EU_NORTH_1_BASE_URL?: string;
     NEBIUS_US_CENTRAL_1_BASE_URL?: string;
@@ -175,6 +181,8 @@ export type GatewayBindings = {
     OVH_AI_ENDPOINTS_URL?: string;
     RELACE_API_KEY?: string;
     RELACE_BASE_URL?: string;
+    SAKANA_API_KEY?: string;
+    SAKANA_BASE_URL?: string;
     SAMBANOVA_API_KEY?: string;
     SAMBANOVA_BASE_URL?: string;
     SCW_SECRET_KEY?: string;
@@ -206,10 +214,10 @@ export type GatewayBindings = {
     GITHUB_TOKEN?: string;
     GH_TOKEN?: string;
     GATEWAY_PUBLIC_BASE_URL?: string;
-    AI_STATS_WEB_BASE_URL?: string;
-    AI_STATS_OAUTH_PRIVATE_JWK?: string;
-    AI_STATS_OAUTH_TOKEN_PEPPER?: string;
-    AI_STATS_THIRD_PARTY_OAUTH_ENABLED?: string;
+    PHASEO_WEB_BASE_URL?: string;
+    PHASEO_OAUTH_PRIVATE_JWK?: string;
+    PHASEO_OAUTH_TOKEN_PEPPER?: string;
+    PHASEO_THIRD_PARTY_OAUTH_ENABLED?: string;
     KEY_PEPPER?: string;
     KEY_PEPPER_ACTIVE?: string;
     KEY_PEPPER_PREVIOUS?: string;

@@ -17,7 +17,7 @@ For text requests, set the sort you want directly on the `provider` object.
 
 <CodeGroup>
 ```bash cURL
-curl https://api.phaseo.app/v1/responses \
+curl https://api.phaseo.ai/v1/responses \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -30,9 +30,9 @@ curl https://api.phaseo.app/v1/responses \
 ```
 
 ```typescript TypeScript SDK
-import AIStats from "@ai-stats/sdk";
+import Phaseo from "@phaseo/sdk";
 
-const client = new AIStats({ apiKey: process.env.AI_STATS_API_KEY! });
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
   model: "google/gemini-3.1-flash-lite",
@@ -46,9 +46,9 @@ console.log(response.output_text);
 ```
 
 ```python Python SDK
-from ai_stats import AIStats
+from phaseo import Phaseo
 
-client = AIStats(api_key="YOUR_API_KEY")
+client = Phaseo(api_key="YOUR_API_KEY")
 
 response = client.generate_response(
     {
@@ -70,13 +70,13 @@ import (
   "context"
   "fmt"
 
-  aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
 )
 
 func main() {
-  client := aistats.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
+  client := phaseo.New("YOUR_API_KEY", "https://api.phaseo.ai/v1")
 
-  response, err := client.GenerateResponse(context.Background(), aistats.ResponsesRequest{
+  response, err := client.GenerateResponse(context.Background(), phaseo.ResponsesRequest{
     Model: "google/gemini-3.1-flash-lite",
     Input: "Give me one release-note bullet for the last deploy.",
     Provider: map[string]interface{}{
@@ -92,10 +92,10 @@ func main() {
 ```
 
 ```csharp C# SDK
-using AiStatsSdk;
+using PhaseoSdk;
 using System.Collections.Generic;
 
-var client = new AIStats("YOUR_API_KEY");
+var client = new Phaseo("YOUR_API_KEY");
 
 var response = await client.GenerateResponse(new Dictionary<string, object>
 {
@@ -114,9 +114,9 @@ Console.WriteLine(response);
 <?php
 require 'vendor/autoload.php';
 
-use AIStats\Sdk\AIStats;
+use Phaseo\Sdk\Phaseo;
 
-$client = new AIStats(getenv('AI_STATS_API_KEY') ?: 'YOUR_API_KEY');
+$client = new Phaseo(getenv('PHASEO_API_KEY') ?: 'YOUR_API_KEY');
 
 $response = $client->generateResponse([
     'model' => 'google/gemini-3.1-flash-lite',
@@ -130,9 +130,9 @@ print_r($response);
 ```
 
 ```ruby Ruby SDK
-require 'ai_stats_sdk'
+require 'phaseo_sdk'
 
-client = AIStatsSdk::AIStats.new(api_key: ENV.fetch('AI_STATS_API_KEY', 'YOUR_API_KEY'))
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY', 'YOUR_API_KEY'))
 
 response = client.generate_response(
   model: 'google/gemini-3.1-flash-lite',
@@ -179,7 +179,7 @@ For example, sort only among one approved set of providers:
 
 <CodeGroup>
 ```bash cURL
-curl https://api.phaseo.app/v1/responses \
+curl https://api.phaseo.ai/v1/responses \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -193,9 +193,9 @@ curl https://api.phaseo.app/v1/responses \
 ```
 
 ```typescript TypeScript SDK
-import AIStats from "@ai-stats/sdk";
+import Phaseo from "@phaseo/sdk";
 
-const client = new AIStats({ apiKey: process.env.AI_STATS_API_KEY! });
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
   model: "google/gemini-3.1-flash-lite",
@@ -210,9 +210,9 @@ console.log(response.output_text);
 ```
 
 ```python Python SDK
-from ai_stats import AIStats
+from phaseo import Phaseo
 
-client = AIStats(api_key="YOUR_API_KEY")
+client = Phaseo(api_key="YOUR_API_KEY")
 
 response = client.generate_response(
     {
@@ -235,13 +235,13 @@ import (
   "context"
   "fmt"
 
-  aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
 )
 
 func main() {
-  client := aistats.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
+  client := phaseo.New("YOUR_API_KEY", "https://api.phaseo.ai/v1")
 
-  response, err := client.GenerateResponse(context.Background(), aistats.ResponsesRequest{
+  response, err := client.GenerateResponse(context.Background(), phaseo.ResponsesRequest{
     Model: "google/gemini-3.1-flash-lite",
     Input: "Summarize the incident in one sentence.",
     Provider: map[string]interface{}{
@@ -258,10 +258,10 @@ func main() {
 ```
 
 ```csharp C# SDK
-using AiStatsSdk;
+using PhaseoSdk;
 using System.Collections.Generic;
 
-var client = new AIStats("YOUR_API_KEY");
+var client = new Phaseo("YOUR_API_KEY");
 
 var response = await client.GenerateResponse(new Dictionary<string, object>
 {
@@ -281,9 +281,9 @@ Console.WriteLine(response);
 <?php
 require 'vendor/autoload.php';
 
-use AIStats\Sdk\AIStats;
+use Phaseo\Sdk\Phaseo;
 
-$client = new AIStats(getenv('AI_STATS_API_KEY') ?: 'YOUR_API_KEY');
+$client = new Phaseo(getenv('PHASEO_API_KEY') ?: 'YOUR_API_KEY');
 
 $response = $client->generateResponse([
     'model' => 'google/gemini-3.1-flash-lite',
@@ -298,9 +298,9 @@ print_r($response);
 ```
 
 ```ruby Ruby SDK
-require 'ai_stats_sdk'
+require 'phaseo_sdk'
 
-client = AIStatsSdk::AIStats.new(api_key: ENV.fetch('AI_STATS_API_KEY', 'YOUR_API_KEY'))
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY', 'YOUR_API_KEY'))
 
 response = client.generate_response(
   model: 'google/gemini-3.1-flash-lite',

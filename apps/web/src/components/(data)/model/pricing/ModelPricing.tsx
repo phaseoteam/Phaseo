@@ -5,12 +5,13 @@ import {
 	fetchFrontendModelProviderRoutingHealth,
 	fetchFrontendModelProviderRuntimeStats,
 	fetchFrontendModelPricing,
-	fetchFrontendModelSubscriptionPlans,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { getModelPricingCached } from "@/lib/fetchers/models/getModelPricing";
 import ModelPricingClient from "@/components/(data)/model/pricing/ModelPricingClient";
 import ModelPendingApiReleaseBanner from "@/components/(data)/model/overview/ModelPendingApiReleaseBanner";
 import { fetchWorkspacePrivacySettings } from "@/lib/fetchers/internal/fetchWorkspacePrivacySettings";
 import type { WorkspacePrivacySettings } from "@/app/api/internal/workspace/privacy-settings/route";
+import { isAdminViewer } from "@/lib/auth/getViewerRole";
 import {
 	Empty,
 	EmptyContent,
@@ -19,6 +20,31 @@ import {
 	EmptyMedia,
 	EmptyTitle,
 } from "@/components/ui/empty";
+
+const OPTIONAL_PROVIDER_TELEMETRY_TIMEOUT_MS = 2_500;
+
+function withOptionalTimeout<T>(
+	promise: Promise<T>,
+	fallback: T,
+	label: string
+): Promise<T> {
+	let timeout: ReturnType<typeof setTimeout> | null = null;
+	const timeoutPromise = new Promise<T>((resolve) => {
+		timeout = setTimeout(() => {
+			console.warn(`[ModelPricing] ${label} timed out; using fallback.`);
+			resolve(fallback);
+		}, OPTIONAL_PROVIDER_TELEMETRY_TIMEOUT_MS);
+	});
+
+	return Promise.race([promise, timeoutPromise])
+		.catch((error) => {
+			console.warn(`[ModelPricing] ${label} failed; using fallback.`, error);
+			return fallback;
+		})
+		.finally(() => {
+			if (timeout) clearTimeout(timeout);
+		});
+}
 
 export default async function ModelPricing({
 	modelId,
@@ -29,17 +55,23 @@ export default async function ModelPricing({
 	includeHidden: boolean;
 	showHeader?: boolean;
 }) {
-	const [providers, header, subscriptionPlans] = await Promise.all([
-		fetchFrontendModelPricing(modelId),
+	const includeInternalProviders = await withOptionalTimeout(
+		isAdminViewer(),
+		false,
+		"admin viewer check"
+	);
+	const [providers, header] = await Promise.all([
+		includeInternalProviders
+			? getModelPricingCached(modelId, includeHidden)
+			: fetchFrontendModelPricing(modelId),
 		fetchFrontendModelHeader(modelId, includeHidden),
-		fetchFrontendModelSubscriptionPlans(modelId).catch(() => {
-			return [];
-		}),
 	]);
 	const workspacePrivacySettings: WorkspacePrivacySettings | null =
-		await fetchWorkspacePrivacySettings().catch(() => {
-			return null;
-		});
+		await withOptionalTimeout(
+			fetchWorkspacePrivacySettings(),
+			null,
+			"workspace privacy settings"
+		);
 
 	// Show providers with model mappings even when pricing rules are missing.
 	const providersForDisplay = (providers || []).filter(
@@ -65,21 +97,31 @@ export default async function ModelPricing({
 	const showPendingApiBanner =
 		header?.status === "Available" && !hasActiveApiProviders;
 
-	const runtimeStats = await fetchFrontendModelProviderRuntimeStats({
-		modelId,
-		providerIds: providersForDisplay.map((p) => p.provider.api_provider_id),
-		modelAliases: providersForDisplay.flatMap((p) =>
-			p.provider_models.flatMap((pm) => [
-				pm.model_id,
-				pm.provider_model_slug ?? "",
-			])
+	const [runtimeStats, routingHealth] = await Promise.all([
+		withOptionalTimeout(
+			fetchFrontendModelProviderRuntimeStats({
+				modelId,
+				providerIds: providersForDisplay.map((p) => p.provider.api_provider_id),
+				modelAliases: providersForDisplay.flatMap((p) =>
+					p.provider_models.flatMap((pm) => [
+						pm.model_id,
+						pm.provider_model_slug ?? "",
+					])
+				),
+			}),
+			{},
+			"provider runtime stats"
 		),
-	});
-	const routingHealth = await fetchFrontendModelProviderRoutingHealth({
-		modelId,
-		providerIds: providersForDisplay.map((p) => p.provider.api_provider_id),
-		windowHours: 24,
-	});
+		withOptionalTimeout(
+			fetchFrontendModelProviderRoutingHealth({
+				modelId,
+				providerIds: providersForDisplay.map((p) => p.provider.api_provider_id),
+				windowHours: 24,
+			}),
+			{},
+			"provider routing health"
+		),
+	]);
 
 	// console.log(
 	// 	"Providers with rules:",
@@ -89,12 +131,12 @@ export default async function ModelPricing({
 	// 	}))
 	// );
 
-	if (!providersForDisplay.length && !subscriptionPlans.length) {
+	if (!providersForDisplay.length) {
 		return (
 			<div className="space-y-4">
 				{showHeader ? (
 					<h2 className="text-2xl font-semibold tracking-tight text-foreground">
-						Availability + Pricing
+						Providers
 					</h2>
 				) : null}
 				{showPendingApiBanner ? (
@@ -112,8 +154,7 @@ export default async function ModelPricing({
 						</EmptyMedia>
 						<EmptyTitle>No pricing data available yet</EmptyTitle>
 						<EmptyDescription>
-							No API pricing or subscription plan information is available
-							for this model yet.
+							No API provider pricing or availability is available for this model yet.
 						</EmptyDescription>
 					</EmptyHeader>
 					<EmptyContent>
@@ -123,7 +164,7 @@ export default async function ModelPricing({
 							data.
 							<a
 								className="ml-1 text-primary underline"
-								href="https://github.com/AI-Stats/AI-Stats/issues"
+								href="https://github.com/phaseoteam/Phaseo/issues"
 								target="_blank"
 								rel="noopener noreferrer"
 							>
@@ -145,8 +186,8 @@ export default async function ModelPricing({
 				/>
 			) : null}
 			<ModelPricingClient
+				modelId={modelId}
 				providers={providersForDisplay}
-				subscriptionPlans={subscriptionPlans}
 				creatorOrgId={header?.organisation_id ?? null}
 				runtimeStats={runtimeStats}
 				routingHealth={routingHealth}

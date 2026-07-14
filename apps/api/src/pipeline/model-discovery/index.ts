@@ -11,12 +11,13 @@ import {
 	extractProviderApiModelSnapshot,
 	fetchProviderModels,
 	hasProviderApiSnapshotValue,
+	hasDiscordNotifiableChanges,
 	loadConfiguredProviderModelIds,
 	loadLatestConfiguredCoverageState,
+	loadLatestPricingTableState,
 	readBindingEnv,
 	runPricingMonitorCheck,
 	sendDiscordNotification,
-	shouldNotifyConfiguredModelCoverage,
 	shouldRunPricingMonitor,
 	summarizeMissingConfiguredProviderModels,
 	toBool,
@@ -24,10 +25,14 @@ import {
 	toPricingFingerprint,
 } from "./helpers";
 import {
+	buildPricingTableIssueEntries,
+	buildCatalogPricingIssueEntries,
+	buildProviderPricingIssueEntries,
 	buildProviderIssueEntries,
 	shouldSyncProviderDiscoveryIssues,
 	syncUpstreamDiscoveryIssues,
 } from "./github-issues";
+import { fetchPricingTableSnapshots, type PricingTableSnapshot } from "./pricing-tables";
 
 type DiscoveryTrigger = "scheduled" | "manual";
 
@@ -50,11 +55,6 @@ type ProviderConfig = {
 	baseUrlEnv?: string[];
 	apiKeyEnv?: string[];
 	authStyle?: "bearer" | "anthropic" | "google_api_key_query" | "clarifai_key" | "elevenlabs" | "api_key_authorization" | "none";
-	pagination?: {
-		nextPageTokenFields: string[];
-		pageTokenQueryParam: string;
-		maxPages?: number;
-	};
 };
 
 type ProviderChange = {
@@ -121,6 +121,7 @@ type ProviderApiPricingMonitorSummary = {
 	executed: boolean;
 	baselineInitialized: boolean;
 	modelsWithPricing: number;
+	providersWithoutPricing: string[];
 	updatesDetected: number;
 	providersChanged: number;
 	providerChanges: PricingProviderChange[];
@@ -135,6 +136,18 @@ type ConfiguredModelCoverageMonitorSummary = {
 	providersChanged: number;
 	providerChanges: PricingProviderChange[];
 	fingerprint: string | null;
+	error?: string | null;
+};
+
+type PricingTableMonitorSummary = {
+	enabled: boolean;
+	executed: boolean;
+	baselineInitialized: boolean;
+	sourcesChecked: number;
+	updatesDetected: number;
+	providerChanges: PricingTableSnapshot[];
+	sources: PricingTableSnapshot[];
+	errors: string[];
 	error?: string | null;
 };
 
@@ -191,6 +204,7 @@ type DiscoveryRunSummary = {
 	persistenceDeferredReason?: string | null;
 	pricingMonitor: PricingMonitorSummary;
 	providerApiPricingMonitor: ProviderApiPricingMonitorSummary;
+	pricingTableMonitor: PricingTableMonitorSummary;
 	configuredModelCoverageMonitor: ConfiguredModelCoverageMonitorSummary;
 };
 
@@ -227,10 +241,29 @@ const PRICING_EXTRACTION_MAX_DEPTH = 4;
 const MAX_SAMPLE_TEXT_LENGTH = 180;
 const PROVIDER_ID_ALIASES: Record<string, string> = {
 	"alibaba-cloud": "alibaba",
-	"xai": "x-ai",
+	"xai": "spacex-ai",
 	"atlas-cloud": "atlascloud",
 };
-const PROVIDER_API_PRICING_WATCH_PROVIDER_IDS = new Set<string>(["atlascloud", "crofai"]);
+const PROVIDER_API_PRICING_WATCH_PROVIDER_IDS = new Set<string>([
+	"ai21",
+	"akashml",
+	"aion-labs",
+	"arcee-ai",
+	"atlascloud",
+	"baseten",
+	"chutes",
+	"crofai",
+	"deepinfra",
+	"nebius-token-factory",
+	"gmicloud",
+	"groq",
+	"inception",
+	"nextbit",
+	"novitaai",
+	"spacex-ai",
+	"together",
+	"venice",
+]);
 
 const PROVIDERS: ProviderConfig[] = [
 	{ providerId: "ai21", providerName: "AI21", modelsEndpoint: "https://api.ai21.com/studio/v1/models", apiKeyEnv: ["AI21_API_KEY"] },
@@ -249,7 +282,7 @@ const PROVIDERS: ProviderConfig[] = [
 		apiKeyEnv: ["ANTHROPIC_API_KEY"],
 		authStyle: "anthropic",
 	},
-	{ providerId: "arcee-ai", providerName: "Arcee AI", modelsEndpoint: "https://api.arcee.ai/api/v1/models", apiKeyEnv: ["ARCEE_API_KEY"] },
+	{ providerId: "arcee-ai", providerName: "Arcee AI", modelsEndpoint: "https://api.arcee.ai/api/v1/models", apiKeyEnv: ["ARCEE_AI_API_KEY", "ARCEE_API_KEY"] },
 	{ providerId: "atlascloud", providerName: "AtlasCloud", modelsEndpoint: "https://api.atlascloud.ai/api/v1/models", apiKeyEnv: ["ATLAS_CLOUD_API_KEY"] },
 	{ providerId: "crofai", providerName: "CrofAI", modelsEndpoint: "https://crof.ai/v1/models", authStyle: "none" },
 	{
@@ -281,25 +314,15 @@ const PROVIDERS: ProviderConfig[] = [
 		providerId: "elevenlabs",
 		providerName: "ElevenLabs",
 		modelsEndpoint: "https://api.elevenlabs.io/v1/models",
-		apiKeyEnv: ["ELEVENLABS_API_KEY"],
+		apiKeyEnv: ["ELEVEN_LABS_API_KEY", "ELEVENLABS_API_KEY"],
 		authStyle: "elevenlabs",
 	},
-	{
-		providerId: "fireworks",
-		providerName: "Fireworks",
-		modelsEndpoint: "https://api.fireworks.ai/v1/accounts/fireworks/models?filter=supports_serverless%3Dtrue&pageSize=200",
-		apiKeyEnv: ["FIREWORKS_API_KEY"],
-		pagination: {
-			nextPageTokenFields: ["nextPageToken"],
-			pageTokenQueryParam: "pageToken",
-			maxPages: 50,
-		},
-	},
+	{ providerId: "fireworks", providerName: "Fireworks", modelsEndpoint: "https://api.fireworks.ai/inference/v1/models", apiKeyEnv: ["FIREWORKS_API_KEY"] },
 	{
 		providerId: "gmicloud",
 		providerName: "GMICloud",
 		modelsEndpoint: "https://api.gmi-serving.com/v1/models",
-		apiKeyEnv: ["GMI_API_KEY"],
+		apiKeyEnv: ["GMI_CLOUD_API_KEY", "GMI_API_KEY"],
 	},
 	{
 		providerId: "google-ai-studio",
@@ -311,21 +334,13 @@ const PROVIDERS: ProviderConfig[] = [
 	{ providerId: "groq", providerName: "Groq", modelsEndpoint: "https://api.groq.com/openai/v1/models", apiKeyEnv: ["GROQ_API_KEY"] },
 	{ providerId: "inception", providerName: "Inception", modelsEndpoint: "https://api.inceptionlabs.ai/v1/models", apiKeyEnv: ["INCEPTION_API_KEY"] },
 	{ providerId: "ionrouter", providerName: "IonRouter", modelsEndpoint: "https://api.ionrouter.io/v1/models", apiKeyEnv: ["IONROUTER_API_KEY"] },
-	{
-		providerId: "longcat",
-		providerName: "LongCat",
-		modelsEndpoint: "https://api.longcat.chat/openai/v1/models",
-		pathPrefix: "/openai/v1",
-		baseUrlEnv: ["MEITUAN_BASE_URL", "LONGCAT_BASE_URL"],
-		apiKeyEnv: ["MEITUAN_API_KEY", "LONGCAT_API_KEY"],
-	},
 	{ providerId: "mistral", providerName: "Mistral", modelsEndpoint: "https://api.mistral.ai/v1/models", apiKeyEnv: ["MISTRAL_AI_API_KEY"] },
 	{ providerId: "moonshot-ai", providerName: "Moonshot AI", modelsEndpoint: "https://api.moonshot.ai/v1/models", apiKeyEnv: ["MOONSHOT_AI_API_KEY"] },
 	{
 		providerId: "nebius-token-factory",
 		providerName: "Nebius Token Factory",
-		modelsEndpoint: "https://api.tokenfactory.nebius.com/v1/models",
-		apiKeyEnv: ["NEBIUS_API_KEY"],
+		modelsEndpoint: "https://api.tokenfactory.nebius.com/v1/models?verbose=true",
+		apiKeyEnv: ["NEBIUS_TOKEN_FACTORY_API_KEY", "NEBIUS_API_KEY"],
 	},
 	{ providerId: "nextbit", providerName: "NextBit", modelsEndpoint: "https://api.nextbit256.com/v1/models", apiKeyEnv: ["NEXTBIT_API_KEY"] },
 	{ providerId: "novitaai", providerName: "NovitaAI", modelsEndpoint: "https://api.novita.ai/openai/v1/models", apiKeyEnv: ["NOVITA_API_KEY"] },
@@ -341,7 +356,7 @@ const PROVIDERS: ProviderConfig[] = [
 	},
 	{ providerId: "voyage", providerName: "Voyage", modelsEndpoint: "https://api.voyageai.com/v1/models", apiKeyEnv: ["VOYAGE_API_KEY"] },
 	{ providerId: "stepfun", providerName: "StepFun", modelsEndpoint: "https://api.stepfun.ai/v1/models", apiKeyEnv: ["STEPFUN_API_KEY"] },
-	{ providerId: "together", providerName: "Together", modelsEndpoint: "https://api.together.ai/v1/models", apiKeyEnv: ["TOGETHER_API_KEY"] },
+	{ providerId: "together", providerName: "Together", modelsEndpoint: "https://api.together.xyz/v1/models", apiKeyEnv: ["TOGETHER_API_KEY"] },
 	{ providerId: "venice", providerName: "Venice", modelsEndpoint: "https://api.venice.ai/api/v1/models", apiKeyEnv: ["VENICE_API_KEY"] },
 		{
 			providerId: "weights-and-biases",
@@ -349,10 +364,12 @@ const PROVIDERS: ProviderConfig[] = [
 			modelsEndpoint: "https://api.inference.wandb.ai/v1/models",
 			apiKeyEnv: ["WEIGHTSANDBIASES_API_KEY", "WANDB_API_KEY"],
 		},
-	{ providerId: "x-ai", providerName: "xAI", modelsEndpoint: "https://api.x.ai/v1/models", apiKeyEnv: ["X_AI_API_KEY"] },
+	{ providerId: "spacex-ai", providerName: "SpaceXAI", modelsEndpoint: "https://api.x.ai/v1/models", apiKeyEnv: ["X_AI_API_KEY"] },
 	{ providerId: "xiaomi", providerName: "Xiaomi", modelsEndpoint: "https://api.xiaomimimo.com/v1/models", apiKeyEnv: ["XIAOMI_MIMO_API_KEY"] },
 	{ providerId: "z-ai", providerName: "z.AI", modelsEndpoint: "https://api.z.ai/api/paas/v4/models", apiKeyEnv: ["ZAI_API_KEY"] },
 ];
+
+const PROVIDER_NAMES_BY_ID = new Map(PROVIDERS.map((provider) => [provider.providerId, provider.providerName]));
 
 export function getModelDiscoveryProviderCount(): number {
 	return PROVIDERS.length;
@@ -443,6 +460,7 @@ function compactSummary(summary: DiscoveryRunSummary, extra: { notificationError
 			executed: summary.providerApiPricingMonitor.executed,
 			baselineInitialized: summary.providerApiPricingMonitor.baselineInitialized,
 			modelsWithPricing: summary.providerApiPricingMonitor.modelsWithPricing,
+			providersWithoutPricing: summary.providerApiPricingMonitor.providersWithoutPricing,
 			updatesDetected: summary.providerApiPricingMonitor.updatesDetected,
 			providersChanged: summary.providerApiPricingMonitor.providersChanged,
 			providerChanges: summary.providerApiPricingMonitor.providerChanges.map((provider) => ({
@@ -451,6 +469,26 @@ function compactSummary(summary: DiscoveryRunSummary, extra: { notificationError
 				samples: provider.samples.slice(0, MAX_SUMMARY_MODEL_SAMPLES),
 			})),
 			error: summary.providerApiPricingMonitor.error ?? undefined,
+		},
+		pricingTableMonitor: {
+			enabled: summary.pricingTableMonitor.enabled,
+			executed: summary.pricingTableMonitor.executed,
+			baselineInitialized: summary.pricingTableMonitor.baselineInitialized,
+			sourcesChecked: summary.pricingTableMonitor.sourcesChecked,
+			updatesDetected: summary.pricingTableMonitor.updatesDetected,
+			providerChanges: summary.pricingTableMonitor.providerChanges.map((source) => ({
+				providerId: source.providerId,
+				providerName: source.providerName,
+				sourceUrl: source.sourceUrl,
+				tableCount: source.tableCount,
+				pricingSamples: source.pricingSamples,
+			})),
+			sources: summary.pricingTableMonitor.sources.map((source) => ({
+				providerId: source.providerId,
+				fingerprint: source.fingerprint,
+			})),
+			errors: summary.pricingTableMonitor.errors,
+			error: summary.pricingTableMonitor.error ?? undefined,
 		},
 		configuredModelCoverageMonitor: {
 			enabled: summary.configuredModelCoverageMonitor.enabled,
@@ -671,6 +709,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		const discoveredModelIdsByProvider = new Map<string, string[]>();
 		const previousState = await fetchPreviousModelsByProviders(providers.map((provider) => provider.providerId));
 		const providerApiPricingChangesByProvider = new Map<string, PricingProviderChange>();
+		const providerApiProvidersWithoutPricing = new Set<string>();
 		let providerApiModelsWithPricing = 0;
 		let providerApiPricingBaselineInitialized = false;
 
@@ -701,9 +740,11 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 				const { added, removed } = diffModelIds(previousModelIds, currentModelIds);
 
 				const nowIso = new Date().toISOString();
+				let providerModelsWithPricing = 0;
 				for (const model of discoveredModels) {
 					if (toPricingFingerprint(model.pricingDetails)) {
 						providerApiModelsWithPricing += 1;
+						providerModelsWithPricing += 1;
 					}
 					upsertRows.push({
 						provider_id: provider.providerId,
@@ -714,6 +755,9 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 						last_seen_at: nowIso,
 						last_run_id: runId,
 					});
+				}
+				if (PROVIDER_API_PRICING_WATCH_PROVIDER_IDS.has(provider.providerId) && providerModelsWithPricing === 0) {
+					providerApiProvidersWithoutPricing.add(provider.providerId);
 				}
 				for (const modelId of removed) {
 					deleteRows.push({
@@ -801,9 +845,20 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			executed: true,
 			baselineInitialized: providerApiPricingBaselineInitialized,
 			modelsWithPricing: providerApiModelsWithPricing,
+			providersWithoutPricing: Array.from(providerApiProvidersWithoutPricing).sort(),
 			updatesDetected: 0,
 			providersChanged: 0,
 			providerChanges: [],
+		};
+		let pricingTableMonitor: PricingTableMonitorSummary = {
+			enabled: pricingEnabled,
+			executed: false,
+			baselineInitialized: false,
+			sourcesChecked: 0,
+			updatesDetected: 0,
+			providerChanges: [],
+			sources: [],
+			errors: [],
 		};
 		let configuredModelCoverageMonitor: ConfiguredModelCoverageMonitorSummary = {
 			enabled: true,
@@ -822,6 +877,26 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 				const reason = error instanceof Error ? error.message : String(error);
 				pricingMonitor.error = reason;
 				console.error("[model-discovery] Pricing monitor failed:", reason);
+			}
+			pricingTableMonitor.executed = true;
+			try {
+				const previousByProvider = new Map(
+					(await loadLatestPricingTableState(args.source)).map((source) => [source.providerId, source.fingerprint])
+				);
+				const { snapshots: sources, errors } = await fetchPricingTableSnapshots();
+				pricingTableMonitor.sources = sources;
+				pricingTableMonitor.errors = errors;
+				pricingTableMonitor.sourcesChecked = sources.length;
+				pricingTableMonitor.baselineInitialized = sources.some((source) => !previousByProvider.has(source.providerId));
+				pricingTableMonitor.providerChanges = sources.filter((source) => {
+					const previous = previousByProvider.get(source.providerId);
+					return Boolean(previous) && previous !== source.fingerprint;
+				});
+				pricingTableMonitor.updatesDetected = pricingTableMonitor.providerChanges.length;
+			} catch (error) {
+				const reason = error instanceof Error ? error.message : String(error);
+				pricingTableMonitor.error = reason;
+				console.error("[model-discovery] Pricing table monitor failed:", reason);
 			}
 		}
 		const providerChanges = Array.from(providerApiPricingChangesByProvider.values())
@@ -907,8 +982,6 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			try {
 				notificationSummary = await sendDiscordNotification({
 					modelChanges: changes,
-					pricing: pricingMonitor,
-					providerApiPricing: providerApiPricingMonitor,
 					configuredModelCoverage: configuredModelCoverageNotificationSummary,
 				});
 			} catch (error) {
@@ -917,13 +990,10 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			}
 		}
 
-		const includeConfiguredCoverageNotifications = shouldNotifyConfiguredModelCoverage();
-		const hasNotifiableChanges =
-			changes.length > 0 ||
-			pricingMonitor.updatesDetected > 0 ||
-			providerApiPricingMonitor.updatesDetected > 0 ||
-			(includeConfiguredCoverageNotifications &&
-				configuredModelCoverageNotificationSummary.updatesDetected > 0);
+		const hasNotifiableChanges = hasDiscordNotifiableChanges({
+			modelChanges: changes,
+			configuredModelCoverage: configuredModelCoverageNotificationSummary,
+		});
 		const requiresNotificationDelivery = shouldNotify && hasNotifiableChanges;
 		const notificationDelivered = !requiresNotificationDelivery || notificationSummary.delivered;
 		const persistenceDeferredReason = !notificationDelivered
@@ -942,7 +1012,12 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			}
 		}
 
-		if (changes.length > 0) {
+		if (
+			changes.length > 0 ||
+			pricingMonitor.providerChanges.length > 0 ||
+			providerApiPricingMonitor.providerChanges.length > 0 ||
+			pricingTableMonitor.providerChanges.length > 0
+		) {
 			if (!shouldSyncProviderDiscoveryIssues()) {
 				issueSyncSummary = {
 					created: 0,
@@ -953,11 +1028,31 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 				console.log("[model-discovery] Provider GitHub issue sync skipped:", issueSyncSummary.reason);
 			} else {
 				try {
-					const issueEntries = buildProviderIssueEntries({
-						changes,
-						detectedAt: new Date().toISOString(),
-						detectionSource: args.source,
-					});
+					const detectedAt = new Date().toISOString();
+					const issueEntries = [
+						...buildProviderIssueEntries({ changes, detectedAt, detectionSource: args.source }),
+						...buildCatalogPricingIssueEntries({
+							changes: pricingMonitor.providerChanges.map((change) => ({
+								...change,
+								providerName: PROVIDER_NAMES_BY_ID.get(change.providerId) ?? change.providerId,
+							})),
+							detectedAt,
+							detectionSource: args.source,
+						}),
+						...buildProviderPricingIssueEntries({
+							changes: providerApiPricingMonitor.providerChanges.map((change) => ({
+								...change,
+								providerName: PROVIDER_NAMES_BY_ID.get(change.providerId) ?? change.providerId,
+							})),
+							detectedAt,
+							detectionSource: args.source,
+						}),
+						...buildPricingTableIssueEntries({
+							changes: pricingTableMonitor.providerChanges,
+							detectedAt,
+							detectionSource: args.source,
+						}),
+					];
 					issueSyncSummary = await syncUpstreamDiscoveryIssues(issueEntries);
 					if (issueSyncSummary.skipped) {
 						console.log(
@@ -1002,6 +1097,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			persistenceDeferredReason,
 			pricingMonitor,
 			providerApiPricingMonitor,
+			pricingTableMonitor,
 			configuredModelCoverageMonitor,
 		};
 
@@ -1012,6 +1108,8 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			Boolean(summary.persistenceDeferredReason) ||
 			Boolean(summary.pricingMonitor.error) ||
 			Boolean(summary.providerApiPricingMonitor.error) ||
+			Boolean(summary.pricingTableMonitor.error) ||
+			summary.pricingTableMonitor.errors.length > 0 ||
 			Boolean(summary.configuredModelCoverageMonitor.error)
 				? "completed_with_errors"
 				: "completed";
@@ -1056,9 +1154,20 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 				executed: false,
 				baselineInitialized: false,
 				modelsWithPricing: 0,
+				providersWithoutPricing: [],
 				updatesDetected: 0,
 				providersChanged: 0,
 				providerChanges: [],
+			},
+			pricingTableMonitor: {
+				enabled: pricingEnabled,
+				executed: false,
+				baselineInitialized: false,
+				sourcesChecked: 0,
+				updatesDetected: 0,
+				providerChanges: [],
+				sources: [],
+				errors: [],
 			},
 			configuredModelCoverageMonitor: {
 				enabled: true,

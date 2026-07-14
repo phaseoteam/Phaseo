@@ -9,9 +9,9 @@
 #include "../src/gen/client.hpp"
 #include "../src/gen/operations.hpp"
 
-using ai_stats::gen::Client;
-using ai_stats::gen::Response;
-using ai_stats::gen::Transport;
+using phaseo::gen::Client;
+using phaseo::gen::Response;
+using phaseo::gen::Transport;
 
 namespace {
 std::string run_command(const std::string &command) {
@@ -34,6 +34,37 @@ std::string run_command(const std::string &command) {
   pclose(pipe);
 #endif
   return output;
+}
+
+std::string env_or_default(const char *name, const std::string &fallback) {
+  const char *value = std::getenv(name);
+  return value && std::string(value).size() ? value : fallback;
+}
+
+std::string json_escape(const std::string &value) {
+  std::ostringstream escaped;
+  for (char ch : value) {
+    switch (ch) {
+      case '\\':
+        escaped << "\\\\";
+        break;
+      case '"':
+        escaped << "\\\"";
+        break;
+      case '\n':
+        escaped << "\\n";
+        break;
+      case '\r':
+        escaped << "\\r";
+        break;
+      case '\t':
+        escaped << "\\t";
+        break;
+      default:
+        escaped << ch;
+    }
+  }
+  return escaped.str();
 }
 
 class CurlTransport final : public Transport {
@@ -73,23 +104,31 @@ class CurlTransport final : public Transport {
 }  // namespace
 
 int main() {
-  const char *api_key = std::getenv("AI_STATS_API_KEY");
+  const char *api_key = std::getenv("PHASEO_API_KEY");
   if (!api_key || std::string(api_key).empty()) {
-    std::cerr << "AI_STATS_API_KEY is required\n";
+    std::cerr << "PHASEO_API_KEY is required\n";
     return 1;
   }
 
-  const char *base_url_env = std::getenv("AI_STATS_BASE_URL");
+  const char *base_url_env = std::getenv("PHASEO_BASE_URL");
   std::string base_url = base_url_env && std::string(base_url_env).size()
                              ? base_url_env
-                             : "https://api.phaseo.app/v1";
+                             : "https://api.phaseo.ai/v1";
+  std::string model = env_or_default("PHASEO_SMOKE_MODEL", "openai/gpt-5.4-nano");
+  std::string input = env_or_default("PHASEO_SMOKE_INPUT", "Hi");
+  int max_output_tokens = std::atoi(env_or_default("PHASEO_SMOKE_MAX_OUTPUT_TOKENS", "32").c_str());
+  if (max_output_tokens <= 0) {
+    max_output_tokens = 32;
+  }
 
   CurlTransport transport;
   Client client(base_url, &transport);
   client.set_header("Authorization", std::string("Bearer ") + api_key);
 
-  std::string payload = "{\"model\":\"openai/gpt-5-nano\",\"input\":\"Hi\"}";
-  auto response = ai_stats::gen::CreateResponse(client, {}, payload);
+  std::ostringstream payload;
+  payload << "{\"model\":\"" << json_escape(model) << "\",\"input\":\"" << json_escape(input)
+          << "\",\"max_output_tokens\":" << max_output_tokens << "}";
+  auto response = phaseo::gen::CreateResponse(client, {}, payload.str());
   if (response.status < 200 || response.status >= 300) {
     std::cerr << "HTTP " << response.status << ": " << response.body << std::endl;
     return 1;

@@ -30,7 +30,8 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     "google-ai-studio": GoogleAIStudioAdapter,
     anthropic: AnthropicAdapter,
     "anthropic-us": AnthropicAdapter,
-    "x-ai": createOpenAICompatibleAdapter("x-ai"), // xAI is OpenAI-compatible, uses openai_compat executor
+    "spacex-ai": createOpenAICompatibleAdapter("spacex-ai"), // SpaceXAI is OpenAI-compatible, uses openai_compat executor
+    "x-ai": createOpenAICompatibleAdapter("x-ai"),
     xai: createOpenAICompatibleAdapter("xai"),
     xiaomi: XiaomiAdapter,
     azure: AzureAdapter,
@@ -41,6 +42,7 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     "bytedance-seed": createOpenAICompatibleAdapter("bytedance-seed"),
     byteplus: createOpenAICompatibleAdapter("byteplus"),
     mistral: createOpenAICompatibleAdapter("mistral"),
+    sakana: createOpenAICompatibleAdapter("sakana"),
     elevenlabs: ElevenLabsAdapter,
     suno: SunoAdapter,
     alibaba: createOpenAICompatibleAdapter("alibaba"),
@@ -113,6 +115,7 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     "amazon-bedrock": createOpenAICompatibleAdapter("amazon-bedrock"),
     "google-vertex": createOpenAICompatibleAdapter("google-vertex"),
     "google-vertex-eu": createOpenAICompatibleAdapter("google-vertex-eu"),
+    meta: createOpenAICompatibleAdapter("meta"),
 };
 
 // Capability-specific adapter overrides (e.g. Mistral OCR)

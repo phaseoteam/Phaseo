@@ -3,8 +3,8 @@ declare(strict_types=1);
 
 require_once __DIR__ . "/../src/index.php";
 
-use AIStats\Sdk\AIStats;
-use AIStats\Sdk\Devtools;
+use Phaseo\Sdk\Phaseo;
+use Phaseo\Sdk\Devtools;
 
 function assert_true(bool $condition, string $message): void
 {
@@ -21,13 +21,13 @@ function invoke_private(object $target, string $method, array $args = []): mixed
     return $fn->invokeArgs($target, $args);
 }
 
-$tmpDir = sys_get_temp_dir() . "/ai-stats-devtools-php-" . bin2hex(random_bytes(4));
+$tmpDir = sys_get_temp_dir() . "/phaseo-devtools-php-" . bin2hex(random_bytes(4));
 @mkdir($tmpDir, 0777, true);
 
 try {
-    $client = new AIStats(
+    $client = new Phaseo(
         apiKey: "test",
-        basePath: "https://api.phaseo.app/v1",
+        basePath: "https://api.phaseo.ai/v1",
         enableDeprecationWarnings: false,
         devtools: Devtools::create(enabled: true, directory: $tmpDir)
     );
@@ -273,7 +273,7 @@ try {
                 ["model" => "openai/gpt-5-nano", "input" => "hi"],
                 false,
                 function (): never {
-                    throw new \AIStats\Gen\RequestException(
+                    throw new \Phaseo\Gen\RequestException(
                         429,
                         json_encode([
                             "request_id" => "req_php_err_1",
@@ -286,7 +286,7 @@ try {
             ]
         );
         throw new RuntimeException("expected RequestException to be thrown");
-    } catch (\AIStats\Gen\RequestException $error) {
+    } catch (\Phaseo\Gen\RequestException $error) {
         assert_true($error->getStatusCode() === 429, "expected RequestException status code");
     }
 

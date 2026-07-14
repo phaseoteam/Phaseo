@@ -15,15 +15,18 @@
   "api_model_id": "google/diffusiongemma-26b-a4b-it",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://blog.google/innovation-and-ai/technology/developers-tools/diffusion-gemma-faster-text-generation/"
     },
     {
-      "platform": "documentation",
+      "title": "Documentation",
+      "kind": "documentation",
       "url": "https://ai.google.dev/gemma/docs/diffusiongemma"
     },
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/google/diffusiongemma-26B-A4B-it"
     }
   ],
@@ -98,7 +101,7 @@
     },
     {
       "benchmark_id": "humanitys-last-exam",
-      "score": 11.0,
+      "score": 11,
       "is_self_reported": true,
       "other_info": "No tools",
       "source_link": "https://huggingface.co/google/diffusiongemma-26B-A4B-it"
@@ -147,14 +150,14 @@
     },
     {
       "benchmark_id": "medxpertqa",
-      "score": 49.0,
+      "score": 49,
       "is_self_reported": true,
       "other_info": "MM",
       "source_link": "https://huggingface.co/google/diffusiongemma-26B-A4B-it"
     },
     {
       "benchmark_id": "openai-mrcr-8-needle-128k",
-      "score": 32.0,
+      "score": 32,
       "is_self_reported": true,
       "other_info": "Average",
       "source_link": "https://huggingface.co/google/diffusiongemma-26B-A4B-it"

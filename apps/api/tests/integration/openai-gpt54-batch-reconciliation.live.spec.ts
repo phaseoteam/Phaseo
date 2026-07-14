@@ -43,7 +43,7 @@ function requireEnv(name: string): string {
 
 function parseGatewayKeyKid(value: string): string {
 	const match = value.match(/^aistats_v1_sk_([^_]+)_/);
-	if (!match?.[1]) throw new Error("Expected structured AI Stats API key");
+	if (!match?.[1]) throw new Error("Expected structured Phaseo API key");
 	return match[1];
 }
 

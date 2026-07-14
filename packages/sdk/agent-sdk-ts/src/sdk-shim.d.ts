@@ -1,5 +1,5 @@
-declare module "@ai-stats/sdk" {
-	export type AIStatsOptions = {
+declare module "@phaseo/sdk" {
+	export type PhaseoOptions = {
 		apiKey?: string;
 		baseUrl?: string;
 		timeoutMs?: number;
@@ -35,8 +35,8 @@ declare module "@ai-stats/sdk" {
 		[key: string]: unknown;
 	};
 
-	export default class AIStats {
-		constructor(options?: AIStatsOptions);
+	export default class Phaseo {
+		constructor(options?: PhaseoOptions);
 		responses: {
 			create(request: ResponsesRequest): Promise<ResponsesResponse | AsyncGenerator<string>>;
 		};

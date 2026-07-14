@@ -12,10 +12,10 @@ import {
 } from "@/components/ui/card";
 
 export const metadata: Metadata = {
-	title: "Experiments - AI Stats",
+	title: "Experiments - Phaseo",
 	description:
-		"Experiments is where we test and iterate on early AI Stats product experiments.",
-	keywords: ["Experiments", "Labs", "AI Stats"],
+		"Experiments is where we test and iterate on early Phaseo product experiments.",
+	keywords: ["Experiments", "Labs", "Phaseo"],
 	alternates: {
 		canonical: "/experiments",
 	},
@@ -64,7 +64,7 @@ export default function ExperimentsPage() {
 							</CardTitle>
 							<CardDescription>
 								Generate BYOC spawn commands and bootstrap scripts. You provision and pay cloud
-								infra in your own account; AI Stats only bills Gateway usage.
+								infra in your own account; Phaseo only bills Gateway usage.
 							</CardDescription>
 						</CardHeader>
 						<CardContent>

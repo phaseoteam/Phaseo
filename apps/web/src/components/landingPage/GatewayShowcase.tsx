@@ -273,7 +273,7 @@ async function GatewayShowcaseData() {
 											{app.name}
 										</Link>
 										<p className="truncate text-xs text-muted-foreground">
-											AI Stats app profile
+											Phaseo app profile
 										</p>
 									</div>
 									<div className="text-right">
@@ -302,7 +302,7 @@ export default function GatewayShowcase() {
 					variant="secondary"
 					className="w-fit border border-zinc-300 bg-white text-xs font-medium text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
 				>
-					AI Stats Gateway
+					Phaseo Gateway
 				</Badge>
 				<div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
 					<div className="max-w-3xl space-y-3">

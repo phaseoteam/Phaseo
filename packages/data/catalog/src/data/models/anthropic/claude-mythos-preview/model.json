@@ -2,7 +2,7 @@
   "model_id": "anthropic/claude-mythos-preview",
   "organisation_id": "anthropic",
   "name": "Claude Mythos Preview",
-  "status": "Withheld",
+  "status": "Limited Access",
   "previous_model_id": null,
   "description": "Claude Mythos Preview is Anthropic's most capable Sonnet-class model yet, with frontier performance across coding, agents, and professional work. This entry tracks a preview release and capabilities may change before general availability.",
   "announced_date": "2026-04-07T00:00:00",
@@ -16,7 +16,8 @@
   "family_id": "anthropic/claude-mythos",
   "links": [
     {
-      "platform": "announcement",
+      "title": "Announcement",
+      "kind": "announcement",
       "url": "https://www.anthropic.com/glasswing"
     }
   ],

@@ -144,7 +144,8 @@ export default function ModelTimeOfDayChart({
 							<LineChart data={chartData}>
 								<CartesianGrid
 									strokeDasharray="3 3"
-									stroke="rgba(148, 163, 184, 0.2)"
+									stroke="var(--border)"
+									opacity={0.5}
 									vertical={false}
 								/>
 								<XAxis
@@ -154,7 +155,7 @@ export default function ModelTimeOfDayChart({
 									tickLine={false}
 									tick={{
 										fontSize: 12,
-										fill: "hsl(var(--muted-foreground))",
+										fill: "var(--muted-foreground)",
 									}}
 								/>
 								<YAxis
@@ -162,7 +163,7 @@ export default function ModelTimeOfDayChart({
 									tickLine={false}
 									tick={{
 										fontSize: 12,
-										fill: "hsl(var(--muted-foreground))",
+										fill: "var(--muted-foreground)",
 									}}
 									tickFormatter={(value) =>
 										`${value}${metricConfig.unit}`
@@ -176,7 +177,7 @@ export default function ModelTimeOfDayChart({
 
 										const point = payload[0];
 										return (
-											<div className="rounded-lg border border-border bg-background p-3 shadow-md">
+											<div className="rounded-lg border border-border bg-popover p-3 text-popover-foreground shadow-md">
 												<p className="text-xs uppercase text-muted-foreground">
 													{formatHour(
 														point.payload.hour

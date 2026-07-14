@@ -1,6 +1,6 @@
 require_relative "client"
 
-module AiStats
+module Phaseo
   module Gen
     module Operations
       def self.createAnthropicMessage(client, path: nil, query: nil, headers: nil, body: nil)

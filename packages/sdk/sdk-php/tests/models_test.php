@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . "/../src/index.php";
 
-use AIStats\Sdk\AIStats;
+use Phaseo\Sdk\Phaseo;
 
 function assert_true(bool $condition, string $message): void
 {
@@ -12,7 +12,7 @@ function assert_true(bool $condition, string $message): void
     }
 }
 
-final class FakeModelsClient extends \AIStats\Gen\Client
+final class FakeModelsClient extends \Phaseo\Gen\Client
 {
     public array $calls = [];
 
@@ -43,9 +43,9 @@ final class FakeModelsClient extends \AIStats\Gen\Client
     }
 }
 
-$client = new AIStats(
+$client = new Phaseo(
     apiKey: "test",
-    basePath: "https://api.phaseo.app/v1",
+    basePath: "https://api.phaseo.ai/v1",
     enableDeprecationWarnings: false
 );
 
@@ -60,7 +60,7 @@ assert_true(($response["availability_mode"] ?? null) === "all", "expected availa
 assert_true(($response["models"][0]["providers"][0]["availability_status"] ?? null) === "coming_soon", "expected availability_status");
 assert_true(($response["models"][0]["providers"][0]["availability_reason"] ?? null) === "scheduled", "expected availability_reason");
 assert_true($fake->calls === [
-    ["GET", "/gateway/models", ["availability" => "all"], null, null],
+    ["GET", "/models", ["availability" => "all"], null, null],
 ], "expected request call for models discovery");
 
 echo "php models tests ok" . PHP_EOL;

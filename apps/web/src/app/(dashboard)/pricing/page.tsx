@@ -16,7 +16,7 @@ import {
 import { GATEWAY_TIERS } from "@/components/(gateway)/credits/tiers";
 
 export const metadata: Metadata = buildMetadata({
-	title: "AI Gateway Pricing & Credit Fees",
+	title: "Pricing",
 	description:
 		"See gateway pricing, credit fees, BYOK support and plan differences for Free and Pay As You Go.",
 	path: "/pricing",
@@ -378,7 +378,7 @@ const FAQ_SECTIONS: FAQSection[] = [
 				id: "do-you-enforce-rate-limits",
 				question: "Do you enforce platform rate limits?",
 				answer:
-					"No. AI Stats does not apply platform-level rate limits across plans. Upstream providers may apply limits, and we actively work with providers to secure the highest practical limits for customers.",
+					"No. Phaseo does not apply platform-level rate limits across plans. Upstream providers may apply limits, and we actively work with providers to secure the highest practical limits for customers.",
 			},
 			{
 				id: "can-i-separate-environments",
@@ -426,7 +426,7 @@ const FAQ_SECTIONS: FAQSection[] = [
 				id: "do-you-train-on-data",
 				question: "Do you train on customer data?",
 				answer:
-					"No. AI Stats does not use customer prompts or outputs to train foundation models.",
+					"No. Phaseo does not use customer prompts or outputs to train foundation models.",
 			},
 			{
 				id: "how-does-byok-work",
@@ -496,7 +496,7 @@ export default function PricingPage() {
 						Gateway Pricing
 					</div>
 					<h1 className="max-w-4xl text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-						AI Stats Gateway pricing matrix.
+						Phaseo Gateway pricing matrix.
 					</h1>
 					<p className="max-w-3xl text-base leading-7 text-muted-foreground">
 						This page focuses on Gateway plans and capabilities. For model-level token and request cost estimation, use the{" "}
@@ -506,9 +506,9 @@ export default function PricingPage() {
 						{" "}and review{" "}
 						<Link
 							className="underline underline-offset-4"
-							href="/how-ai-stats-calculates-model-pricing"
+							href="/how-phaseo-calculates-model-pricing"
 						>
-							how AI Stats calculates model pricing
+							how Phaseo calculates model pricing
 						</Link>
 						.
 					</p>

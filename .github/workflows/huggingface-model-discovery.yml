@@ -21,7 +21,7 @@ jobs:
         name: Hugging Face model discovery
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+            - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
               with:
                   fetch-depth: 1
                   persist-credentials: false
@@ -48,7 +48,7 @@ jobs:
 
             - name: Restore Hugging Face discovery state cache
               id: hf-model-discovery-state-cache
-              uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae
+              uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
               with:
                   path: scripts/model-discovery/state
                   key: hf-model-discovery-state-${{ github.ref_name }}-${{ github.run_id }}
@@ -65,12 +65,13 @@ jobs:
                   pnpm exec tsx scripts/model-discovery/run-hf-private.ts
                   --discord-role-id "${DISCORD_ROLE_ID}"
                   --discord-user-id "${DISCORD_USER_ID}"
+                  --hf-discord-avatar-url "https://phaseo.app/png_logo_dark.png"
                   --hf-token "${HF_TOKEN}"
-                  --hf-orgs "primeintellect,voyageai,arcee-ai,apple,baidu,suno,perplexity-ai,moonshotai,elevenlabs,cohere,anthropic,amazon,ai21labs,ai-stats,ibm-granite,nousresearch,bytedance-seed,minimaxai,microsoft,xai-org,zai-org,lgai-exaone,mistralai,meta-llama,nvidia,google,openai,deepseek-ai,qwen"
+                  --hf-orgs "primeintellect,voyageai,arcee-ai,apple,baidu,suno,perplexity-ai,moonshotai,elevenlabs,cohere,anthropic,amazon,ai21labs,phaseo,ibm-granite,nousresearch,bytedance-seed,minimaxai,microsoft,xai-org,zai-org,lgai-exaone,mistralai,meta-llama,nvidia,google,openai,deepseek-ai,qwen"
 
             - name: Save Hugging Face discovery state cache
               if: always()
-              uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae
+              uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
               with:
                   path: scripts/model-discovery/state
                   key: ${{ steps.hf-model-discovery-state-cache.outputs.cache-primary-key }}

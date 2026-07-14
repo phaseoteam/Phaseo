@@ -1,51 +1,51 @@
 # Cross-Language Devtools Pattern
 
-The `createAIStatsDevtools()` pattern is designed to work consistently across all AI Stats SDKs.
+The `createPhaseoDevtools()` pattern is designed to work consistently across all Phaseo SDKs.
 
 ## TypeScript/JavaScript
 
 ```typescript
-import { AIStats, createAIStatsDevtools } from '@ai-stats/sdk';
+import { Phaseo, createPhaseoDevtools } from '@phaseo/sdk';
 
-const client = new AIStats({
-  apiKey: process.env.AI_STATS_API_KEY,
-  devtools: createAIStatsDevtools()
+const client = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY,
+  devtools: createPhaseoDevtools()
 });
 ```
 
 Or using the standalone package:
 
 ```typescript
-import { AIStats } from '@ai-stats/sdk';
-import { createAIStatsDevtools } from '@ai-stats/devtools';
+import { Phaseo } from '@phaseo/sdk';
+import { createPhaseoDevtools } from '@phaseo/devtools';
 
-const client = new AIStats({
-  apiKey: process.env.AI_STATS_API_KEY,
-  devtools: createAIStatsDevtools()
+const client = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY,
+  devtools: createPhaseoDevtools()
 });
 ```
 
 ## Python
 
 ```python
-from ai_stats import AIStats
-from ai_stats.devtools import create_ai_stats_devtools
+from phaseo import Phaseo
+from phaseo.devtools import create_phaseo_devtools
 
-client = AIStats(
-    api_key=os.environ["AI_STATS_API_KEY"],
-    devtools=create_ai_stats_devtools()
+client = Phaseo(
+    api_key=os.environ["PHASEO_API_KEY"],
+    devtools=create_phaseo_devtools()
 )
 ```
 
 Or with custom configuration:
 
 ```python
-from ai_stats import AIStats
-from ai_stats.devtools import create_ai_stats_devtools
+from phaseo import Phaseo
+from phaseo.devtools import create_phaseo_devtools
 
-client = AIStats(
-    api_key=os.environ["AI_STATS_API_KEY"],
-    devtools=create_ai_stats_devtools(
+client = Phaseo(
+    api_key=os.environ["PHASEO_API_KEY"],
+    devtools=create_phaseo_devtools(
         directory="./my-devtools-data",
         flush_interval_ms=2000,
         capture_headers=True
@@ -60,14 +60,14 @@ package main
 
 import (
     "os"
-    "github.com/ai-stats/ai-stats-go"
-    "github.com/ai-stats/ai-stats-go/devtools"
+    "github.com/phaseo/phaseo-go"
+    "github.com/phaseo/phaseo-go/devtools"
 )
 
 func main() {
-    client := aistats.NewClient(
-        aistats.WithAPIKey(os.Getenv("AI_STATS_API_KEY")),
-        aistats.WithDevtools(devtools.CreateAIStatsDevtools()),
+    client := phaseo.NewClient(
+        phaseo.WithAPIKey(os.Getenv("PHASEO_API_KEY")),
+        phaseo.WithDevtools(devtools.CreatePhaseoDevtools()),
     )
 }
 ```
@@ -75,9 +75,9 @@ func main() {
 With custom configuration:
 
 ```go
-client := aistats.NewClient(
-    aistats.WithAPIKey(os.Getenv("AI_STATS_API_KEY")),
-    aistats.WithDevtools(devtools.CreateAIStatsDevtools(
+client := phaseo.NewClient(
+    phaseo.WithAPIKey(os.Getenv("PHASEO_API_KEY")),
+    phaseo.WithDevtools(devtools.CreatePhaseoDevtools(
         devtools.WithDirectory("./my-devtools-data"),
         devtools.WithFlushInterval(2 * time.Second),
         devtools.WithCaptureHeaders(true),
@@ -88,21 +88,21 @@ client := aistats.NewClient(
 ## C# / .NET
 
 ```csharp
-using AIStats;
-using AIStats.Devtools;
+using Phaseo;
+using Phaseo.Devtools;
 
-var client = new AIStatsClient(
-    apiKey: Environment.GetEnvironmentVariable("AI_STATS_API_KEY"),
-    devtools: AIStatsDevtools.Create()
+var client = new PhaseoClient(
+    apiKey: Environment.GetEnvironmentVariable("PHASEO_API_KEY"),
+    devtools: PhaseoDevtools.Create()
 );
 ```
 
 With custom configuration:
 
 ```csharp
-var client = new AIStatsClient(
-    apiKey: Environment.GetEnvironmentVariable("AI_STATS_API_KEY"),
-    devtools: AIStatsDevtools.Create(new DevtoolsConfig
+var client = new PhaseoClient(
+    apiKey: Environment.GetEnvironmentVariable("PHASEO_API_KEY"),
+    devtools: PhaseoDevtools.Create(new DevtoolsConfig
     {
         Directory = "./my-devtools-data",
         FlushIntervalMs = 2000,
@@ -114,20 +114,20 @@ var client = new AIStatsClient(
 ## Ruby
 
 ```ruby
-require 'ai_stats'
+require 'phaseo'
 
-client = AIStats::Client.new(
-  api_key: ENV['AI_STATS_API_KEY'],
-  devtools: AIStats::Devtools.create
+client = Phaseo::Client.new(
+  api_key: ENV['PHASEO_API_KEY'],
+  devtools: Phaseo::Devtools.create
 )
 ```
 
 With custom configuration:
 
 ```ruby
-client = AIStats::Client.new(
-  api_key: ENV['AI_STATS_API_KEY'],
-  devtools: AIStats::Devtools.create(
+client = Phaseo::Client.new(
+  api_key: ENV['PHASEO_API_KEY'],
+  devtools: Phaseo::Devtools.create(
     directory: './my-devtools-data',
     flush_interval_ms: 2000,
     capture_headers: true
@@ -140,11 +140,11 @@ client = AIStats::Client.new(
 ```php
 <?php
 
-use AIStats\AIStats;
-use AIStats\Devtools;
+use Phaseo\Phaseo;
+use Phaseo\Devtools;
 
-$client = new AIStats([
-    'api_key' => $_ENV['AI_STATS_API_KEY'],
+$client = new Phaseo([
+    'api_key' => $_ENV['PHASEO_API_KEY'],
     'devtools' => Devtools::create()
 ]);
 ```
@@ -152,8 +152,8 @@ $client = new AIStats([
 With custom configuration:
 
 ```php
-$client = new AIStats([
-    'api_key' => $_ENV['AI_STATS_API_KEY'],
+$client = new Phaseo([
+    'api_key' => $_ENV['PHASEO_API_KEY'],
     'devtools' => Devtools::create([
         'directory' => './my-devtools-data',
         'flush_interval_ms' => 2000,
@@ -165,10 +165,10 @@ $client = new AIStats([
 ## Rust
 
 ```rust
-use ai_stats::{AIStats, devtools};
+use phaseo::{Phaseo, devtools};
 
-let client = AIStats::builder()
-    .api_key(std::env::var("AI_STATS_API_KEY").unwrap())
+let client = Phaseo::builder()
+    .api_key(std::env::var("PHASEO_API_KEY").unwrap())
     .devtools(devtools::create())
     .build()?;
 ```
@@ -176,8 +176,8 @@ let client = AIStats::builder()
 With custom configuration:
 
 ```rust
-let client = AIStats::builder()
-    .api_key(std::env::var("AI_STATS_API_KEY").unwrap())
+let client = Phaseo::builder()
+    .api_key(std::env::var("PHASEO_API_KEY").unwrap())
     .devtools(devtools::create()
         .directory("./my-devtools-data")
         .flush_interval(Duration::from_secs(2))
@@ -190,17 +190,17 @@ let client = AIStats::builder()
 
 All language implementations should:
 
-1. **Write to the same format**: All SDKs write telemetry data to `.ai-stats-devtools/` in the same JSONL format defined by `@ai-stats/devtools-core`
+1. **Write to the same format**: All SDKs write telemetry data to `.phaseo-devtools/` in the same JSONL format defined by `@phaseo/devtools-core`
 
-2. **Share the same viewer**: All languages use `@ai-stats/devtools-viewer` to view captured data (it's language-agnostic)
+2. **Share the same viewer**: All languages use `@phaseo/devtools-viewer` to view captured data (it's language-agnostic)
 
 3. **Use consistent naming**:
-   - Function: `createAIStatsDevtools()` / `create_ai_stats_devtools()` / `CreateAIStatsDevtools()`
+   - Function: `createPhaseoDevtools()` / `create_phaseo_devtools()` / `CreatePhaseoDevtools()`
    - Config keys: `directory`, `flushIntervalMs`, `captureHeaders`, `saveAssets`, `maxQueueSize`
 
 4. **Respect environment variables**:
-   - `AI_STATS_DEVTOOLS=true/false` - Enable/disable devtools
-   - `AI_STATS_DEVTOOLS_DIR=path` - Custom directory path
+   - `PHASEO_DEVTOOLS=true/false` - Enable/disable devtools
+   - `PHASEO_DEVTOOLS_DIR=path` - Custom directory path
    - Default to enabled in dev, disabled in production
 
 5. **Zero performance impact**: All implementations should:
@@ -213,13 +213,13 @@ All language implementations should:
 
 | Language | Status | Package | Viewer Support |
 |----------|--------|---------|----------------|
-| TypeScript | Complete | `@ai-stats/sdk`, `@ai-stats/devtools` | Native |
-| Python | Complete | `ai-stats` | Compatible |
-| Go | Complete | `github.com/ai-stats/ai-stats-go` | Compatible |
-| C# | Complete | `AIStats` | Compatible |
-| Java | Complete | `ai-stats-sdk` | Compatible |
-| Ruby | Complete | `ai_stats` | Compatible |
-| PHP | Complete | `ai-stats/ai-stats-php` | Compatible |
-| Rust | Coming Soon | `ai-stats` | Compatible |
+| TypeScript | Complete | `@phaseo/sdk`, `@phaseo/devtools` | Native |
+| Python | Complete | `phaseo` | Compatible |
+| Go | Complete | `github.com/phaseo/phaseo-go` | Compatible |
+| C# | Complete | `Phaseo` | Compatible |
+| Java | Complete | `phaseo-sdk` | Compatible |
+| Ruby | Complete | `phaseo` | Compatible |
+| PHP | Complete | `phaseo/phaseo-php` | Compatible |
+| Rust | Coming Soon | `phaseo` | Compatible |
 
-The devtools viewer (`@ai-stats/devtools-viewer`) already supports viewing data from any language implementation.
+The devtools viewer (`@phaseo/devtools-viewer`) already supports viewing data from any language implementation.

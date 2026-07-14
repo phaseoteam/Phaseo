@@ -4,7 +4,7 @@ import { buildMetadata } from "@/lib/seo";
 import { fetchFrontendModelUpdates } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 
 export const metadata: Metadata = buildMetadata({
-	title: "AI Model Updates",
+	title: "Model Updates",
 	description:
 		"Stay up to date with the latest AI model changes. Track new releases, deprecations, major upgrades and benchmark highlights across leading LLMs and multimodal models.",
 	path: "/updates/models",
@@ -15,7 +15,7 @@ export const metadata: Metadata = buildMetadata({
 		"model changelog",
 		"AI benchmarks",
 		"new AI models",
-		"AI Stats",
+		"Phaseo",
 		"GPT-5.1",
 		"Claude 4.5",
 		"Gemini 2.5",

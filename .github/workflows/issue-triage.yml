@@ -25,7 +25,7 @@ jobs:
             contents: read
             issues: write
         steps:
-            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+            - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
               with:
                   persist-credentials: false
 
@@ -35,8 +35,8 @@ jobs:
               with:
                   model: opencode/big-pickle
                   prompt: |
-                      You are responding to a new GitHub issue on AI Stats.
-                      AI Stats is an open-source monorepo with a Next.js web app, Cloudflare
+                      You are responding to a new GitHub issue on Phaseo.
+                      Phaseo is an open-source monorepo with a Next.js web app, Cloudflare
                       Worker API gateway, docs, and SDKs.
 
                       Your job is to produce:

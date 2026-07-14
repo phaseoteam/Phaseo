@@ -15,7 +15,8 @@
   "api_model_id": "inclusionai/ring-flash-2.0",
   "links": [
     {
-      "platform": "weights",
+      "title": "Weights",
+      "kind": "weights",
       "url": "https://huggingface.co/inclusionAI/Ring-flash-2.0"
     }
   ],

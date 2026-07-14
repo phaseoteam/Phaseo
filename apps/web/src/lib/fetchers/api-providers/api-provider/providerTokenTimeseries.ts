@@ -3,6 +3,7 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { getTopModels } from "./top-models";
+import { isMissingRelationError } from "./missingRelation";
 
 const DEFAULT_DAYS = 30;
 const DEFAULT_TOP_MODELS = 8;
@@ -97,6 +98,15 @@ async function fetchProviderModelRollupRows(
 		if (error) {
 			hadError = true;
 			hitPageCap = false;
+			if (isMissingRelationError(error)) {
+				logUsageFetch("provider_model_rollup_missing_relation", {
+					providerId: apiProviderId,
+					filteredModelIds: Array.isArray(modelIds) ? modelIds.length : null,
+					pagesFetched,
+					rows: rows.length,
+				});
+				break;
+			}
 			console.error("Error loading provider rollup rows for chart:", error);
 			break;
 		}
@@ -144,6 +154,14 @@ async function fetchTopProviderModelIds(
 		p_limit: Math.max(1, Math.min(100, topModelsLimit)),
 	});
 	if (error) {
+		if (isMissingRelationError(error)) {
+			logUsageFetch("provider_model_top_ids_missing_relation", {
+				providerId: apiProviderId,
+				sinceIso,
+				limit: topModelsLimit,
+			});
+			return [];
+		}
 		console.error("Error loading top provider models:", error);
 		return [];
 	}

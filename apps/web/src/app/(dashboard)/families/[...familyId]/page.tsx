@@ -20,6 +20,8 @@ const STATUS_STYLES: Record<string, string> = {
 	Available:
 		"border-emerald-500/50 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300",
 	Announced: "border-sky-500/40 bg-sky-500/10 text-sky-600 dark:text-sky-300",
+	"Limited Access":
+		"border-fuchsia-500/40 bg-fuchsia-500/10 text-fuchsia-600 dark:text-fuchsia-300",
 	Withheld:
 		"border-violet-500/40 bg-violet-500/10 text-violet-600 dark:text-violet-300",
 	Rumoured:
@@ -60,13 +62,13 @@ export async function generateMetadata(props: {
 		return buildMetadata({
 			title: "AI Model Family",
 			description:
-				"Explore related AI models within the same family, compare member variants, and follow release milestones, pricing context, and provider availability across AI Stats.",
+				"Explore related AI models within the same family, compare member variants, and follow release milestones, pricing context, and provider availability across Phaseo.",
 			path,
-			keywords: ["AI model family", "AI models", "AI Stats"],
+			keywords: ["AI model family", "AI models", "Phaseo"],
 		});
 	}
 
-	const description = `${family.family_name} family on AI Stats. Explore ${family.models.length} related models and their release timelines.`;
+	const description = `${family.family_name} family on Phaseo. Explore ${family.models.length} related models and their release timelines.`;
 
 	return buildMetadata({
 		title: `${family.family_name} Family - Related AI Models`,
@@ -76,7 +78,7 @@ export async function generateMetadata(props: {
 			family.family_name,
 			`${family.family_name} family`,
 			"AI model family",
-			"AI Stats",
+			"Phaseo",
 		],
 	});
 }

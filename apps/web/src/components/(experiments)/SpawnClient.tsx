@@ -183,7 +183,7 @@ export default function SpawnClient() {
 					<h1 className="text-3xl font-semibold tracking-tight">Spawn+ (BYOC)</h1>
 					<p className="max-w-5xl text-sm text-zinc-600 dark:text-zinc-300 sm:text-base">
 						Spawn+ is a BYOC workflow. You run commands and provisioning scripts yourself, inside
-						your cloud account. AI Stats does not host your compute, VPC, storage, or cloud bill.
+						your cloud account. Phaseo does not host your compute, VPC, storage, or cloud bill.
 					</p>
 				</div>
 				<div className="flex flex-wrap gap-2">
@@ -214,10 +214,10 @@ export default function SpawnClient() {
 					<div className="rounded-xl border border-zinc-200 bg-zinc-50/70 p-4 dark:border-zinc-800 dark:bg-zinc-900/40">
 						<p className="mb-2 flex items-center gap-2 text-sm font-semibold">
 							<Wallet className="h-4 w-4" />
-							AI Stats Billing
+							Phaseo Billing
 						</p>
 						<p className="text-sm text-zinc-600 dark:text-zinc-300">
-							AI Stats only bills for Gateway usage routed with your API key. No cloud resource
+							Phaseo only bills for Gateway usage routed with your API key. No cloud resource
 							markup, no hidden infrastructure hosting.
 						</p>
 					</div>
@@ -459,7 +459,7 @@ export default function SpawnClient() {
 								<li>Destroy compute and networking resources after each experiment run.</li>
 								<li>Revoke temporary credentials and rotate cloud keys used for provisioning.</li>
 								<li>Review cloud billing dashboards for idle disks, IPs, and instances.</li>
-								<li>AI Stats billing remains scoped to Gateway API usage only.</li>
+								<li>Phaseo billing remains scoped to Gateway API usage only.</li>
 							</ul>
 						</CardContent>
 					</Card>

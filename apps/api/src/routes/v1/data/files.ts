@@ -66,9 +66,11 @@ function resolveUploadProvider(req: Request): { ok: true; providerId: string } |
 	const url = new URL(req.url);
 	const requested =
 		toText(url.searchParams.get("provider")) ??
+		toText(req.headers.get("x-phaseo-provider")) ??
 		toText(req.headers.get("x-ai-stats-provider"));
 	const model =
 		toText(url.searchParams.get("model")) ??
+		toText(req.headers.get("x-phaseo-model")) ??
 		toText(req.headers.get("x-ai-stats-model"));
 	const requestedProviders = requested
 		? resolveRequestedBatchProviders(requested)

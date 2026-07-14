@@ -1,21 +1,41 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import {
+	useEffect,
+	useState,
+	useSyncExternalStore,
+	type ComponentProps,
+	type ReactNode,
+} from "react";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import {
+	ArrowRight,
+	AudioLines,
+	BadgeCheck,
+	ImageIcon,
+	MessageSquareText,
+	Mic,
+	Music2,
+	Radio,
+	Sparkles,
+	Subtitles,
+	Video,
+	Workflow,
+} from "lucide-react";
 import NumberFlow from "@number-flow/react";
 import { Logo } from "@/components/Logo";
-import ThroughputLiveChart from "./ThroughputLiveChart";
+import { getModalityTone } from "@/lib/models/modalityStyles";
 
 type Benefit = {
 	title: string;
 	body: string;
 	href: string;
 	cta: string;
-	visual: "models" | "uptime" | "observability" | "database";
+	visual: "models" | "uptime" | "observability" | "database" | "modalities";
 };
 
 type QuickstartVariant = "default" | "beta";
+type NumberFlowFormat = ComponentProps<typeof NumberFlow>["format"];
 
 export type LandingOpenModelIntelEntry = {
 	providerId: string;
@@ -26,6 +46,30 @@ export type LandingOpenModelIntelEntry = {
 	inputPrice: number;
 	outputPrice: number;
 };
+
+function useIsHydrated() {
+	return useSyncExternalStore(
+		() => () => {},
+		() => true,
+		() => false,
+	);
+}
+
+function HydratedNumberFlow({
+	value,
+	format,
+}: {
+	value: number;
+	format?: NumberFlowFormat;
+}) {
+	const isHydrated = useIsHydrated();
+
+	if (!isHydrated) {
+		return <>{new Intl.NumberFormat("en-US", format).format(value)}</>;
+	}
+
+	return <NumberFlow value={value} format={format} />;
+}
 
 const BENEFITS_DEFAULT: Benefit[] = [
 	{
@@ -43,17 +87,17 @@ const BENEFITS_DEFAULT: Benefit[] = [
 		visual: "models",
 	},
 	{
-		title: "Maximum Availability",
-		body: "Route across the broadest provider set we support so requests keep moving when endpoints degrade.",
-		href: "/sign-up",
-		cta: "Get started",
-		visual: "uptime",
+		title: "Every AI Workload",
+		body: "Build with text, images, video, audio, moderation, embeddings, and more through one API.",
+		href: "https://phaseo.app/docs/v1",
+		cta: "Explore Gateway",
+		visual: "modalities",
 	},
 	{
-		title: "Price & Performance Insights",
-		body: "Track latency, throughput, and price trends before choosing a model for production.",
-		href: "/tools/pricing-calculator",
-		cta: "Explore tools",
+		title: "Request Observability",
+		body: "Monitor pricing, reliability, usage, and performance for every request in one place.",
+		href: "/settings/usage",
+		cta: "View activity",
 		visual: "observability",
 	},
 ];
@@ -103,7 +147,7 @@ const PROVIDERS = [
 	"suno",
 	"together",
 	"weights-and-biases",
-	"x-ai",
+	"spacex-ai",
 	"z-ai",
 	"xiaomi",
 	"arcee-ai",
@@ -117,9 +161,7 @@ const PROVIDERS = [
 	"nousresearch",
 ] as const;
 
-const BENEFITS_BETA: Benefit[] = BENEFITS_DEFAULT.filter(
-	(benefit) => benefit.visual !== "observability"
-);
+const BENEFITS_BETA: Benefit[] = BENEFITS_DEFAULT;
 
 const GRID_COLUMNS = 8;
 const GRID_ROWS = 7;
@@ -129,7 +171,7 @@ const FEATURED_PROVIDER_IDS = [
 	"google",
 	"google-vertex",
 	"deepseek",
-	"x-ai",
+	"spacex-ai",
 	"mistral",
 	"groq",
 	"amazon-bedrock",
@@ -409,7 +451,7 @@ function UptimeVisual({ variant = "default" }: { variant?: QuickstartVariant }) 
 							</div>
 							<span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">↔</span>
 							<div className="rounded-xl border border-zinc-200/80 bg-zinc-50/70 px-2 py-2 text-center dark:border-zinc-800 dark:bg-zinc-900/70">
-								<p className="text-[10px] font-semibold text-zinc-800 dark:text-zinc-100">AI Stats</p>
+								<p className="text-[10px] font-semibold text-zinc-800 dark:text-zinc-100">Phaseo</p>
 							</div>
 							<span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">↔</span>
 							<div className="rounded-xl border border-zinc-200/80 bg-zinc-50/70 px-2 py-2 text-center dark:border-zinc-800 dark:bg-zinc-900/70">
@@ -485,79 +527,234 @@ function UptimeVisual({ variant = "default" }: { variant?: QuickstartVariant }) 
 	);
 }
 
-function Sparkline({ color, points }: { color: string; points: string }) {
-	return <path d={points} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" />;
+const WORKLOADS = [
+	{ label: "Text", detail: "Chat & responses", icon: MessageSquareText, tone: "text" },
+	{ label: "Images", detail: "Generate & edit", icon: ImageIcon, tone: "image" },
+	{ label: "Video", detail: "Prompt to video", icon: Video, tone: "video" },
+	{ label: "Text to Speech", detail: "Natural voice", icon: Mic, tone: "audio_tts" },
+	{ label: "Transcription", detail: "Speech to text", icon: Subtitles, tone: "audio_stt" },
+	{ label: "Music", detail: "Generate audio", icon: Music2, tone: "audio_music" },
+	{ label: "Moderation", detail: "Text & images", icon: BadgeCheck, tone: "moderations" },
+	{ label: "Embeddings", detail: "Vector search", icon: Sparkles, tone: "embeddings" },
+	{ label: "Realtime", detail: "Live interactions", icon: Radio, tone: "rerank" },
+	{ label: "Batch", detail: "Async processing", icon: Workflow, tone: "file" },
+] as const;
+
+function ModalityTicker({
+	workloads,
+	speed,
+}: {
+	workloads: readonly (typeof WORKLOADS)[number][];
+	speed: number;
+}) {
+	const loopedWorkloads = [...workloads, ...workloads];
+
+	return (
+		<div className="h-[150px] overflow-hidden">
+			<div
+				className="space-y-1.5 px-0.5 py-1 motion-reduce:[animation:none]!"
+				style={{ animation: `modality-ticker ${speed}s linear infinite` }}
+			>
+				{loopedWorkloads.map((workload, index) => {
+					const Icon = workload.icon;
+					const tone = getModalityTone(workload.tone);
+
+					return (
+						<div
+							key={`${workload.label}-${index}`}
+							className="flex h-[46px] items-center gap-2 rounded-xl border border-zinc-200/80 bg-white/80 px-2.5 py-2 dark:border-zinc-800/80 dark:bg-zinc-950/80"
+						>
+							<Icon className={`h-3.5 w-3.5 shrink-0 ${tone.iconClassName}`} />
+							<span className="min-w-0 flex-1">
+								<span className="block whitespace-nowrap text-[10px] font-semibold leading-tight text-zinc-950 dark:text-zinc-50">
+									{workload.label}
+								</span>
+								<span className="mt-0.5 block whitespace-nowrap text-[9px] leading-tight text-zinc-500 dark:text-zinc-400">
+									{workload.detail}
+								</span>
+							</span>
+						</div>
+					);
+				})}
+			</div>
+		</div>
+	);
 }
 
-function AnimatedPriceSparkline({
-	color,
-	points,
-	altPoints,
-	duration,
-	delay = "0s",
-}: {
-	color: string;
-	points: string;
-	altPoints?: string;
-	duration: string;
-	delay?: string;
-}) {
+function ModalitiesVisual() {
+	const columns = [
+		WORKLOADS.filter((_, index) => index % 2 === 0),
+		WORKLOADS.filter((_, index) => index % 2 === 1),
+	] as const;
+
 	return (
-		<path d={points} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round">
-			{altPoints ? (
-				<animate
-					attributeName="d"
-					values={`${points};${altPoints};${points}`}
-					dur={duration}
-					begin={delay}
-					repeatCount="indefinite"
-					calcMode="spline"
-					keyTimes="0;0.5;1"
-					keySplines="0.42 0 0.2 1;0.42 0 0.2 1"
-				/>
-			) : null}
-		</path>
+		<VisualStage>
+			<div className="w-full max-w-[340px] space-y-2.5">
+				<div className="flex items-center justify-between px-1">
+					<span className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
+						Gateway capabilities
+					</span>
+					<span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500">
+						{WORKLOADS.length} workloads
+					</span>
+				</div>
+				<div className="grid grid-cols-2 gap-2">
+					<ModalityTicker workloads={columns[0]} speed={16} />
+					<ModalityTicker workloads={columns[1]} speed={16} />
+				</div>
+			</div>
+		</VisualStage>
 	);
 }
 
 function ObservabilityVisual() {
+	const requests = [
+		{
+			providerId: "openai",
+			model: "GPT-5.6 Sol",
+			path: "/v1/responses",
+			latency: "612 ms",
+			throughput: "91 tok/s",
+			cost: "$0.018",
+			status: "200 OK",
+			statusTone:
+				"bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300",
+		},
+		{
+			providerId: "anthropic",
+			model: "Claude Fable 5",
+			path: "/v1/messages",
+			latency: "958 ms",
+			throughput: "61 tok/s",
+			cost: "$0.041",
+			status: "200 OK",
+			statusTone:
+				"bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300",
+		},
+		{
+			providerId: "google",
+			model: "Gemini 3.1 Pro",
+			path: "/v1/generate",
+			latency: "684 ms",
+			throughput: "88 tok/s",
+			cost: "$0.014",
+			status: "200 OK",
+			statusTone:
+				"bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300",
+		},
+		{
+			providerId: "x-ai",
+			model: "Grok 4.5",
+			path: "/v1/chat",
+			latency: "488 ms",
+			throughput: "112 tok/s",
+			cost: "$0.012",
+			status: "200 OK",
+			statusTone:
+				"bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300",
+		},
+	] as const;
+	const [hoveredRequestIndex, setHoveredRequestIndex] = useState<number | null>(
+		null,
+	);
+	const selectedRequest =
+		hoveredRequestIndex === null
+			? requests[0]
+			: requests[hoveredRequestIndex];
+
 	return (
 		<VisualStage>
-			<div className="relative h-full w-full max-w-[252px]">
-				<div className="absolute bottom-1 left-0 z-0 w-[62%] rounded-2xl border border-zinc-200/80 bg-white/96 p-3 dark:border-zinc-800 dark:bg-zinc-950/96">
-					<div className="flex items-center justify-between text-[10px] text-zinc-500 dark:text-zinc-400">
-						<span>Price</span>
-						<span>7d</span>
-					</div>
-					<svg viewBox="0 0 150 74" className="mt-2 h-20 w-full" preserveAspectRatio="none" aria-hidden="true">
-						<AnimatedPriceSparkline
-							color="#f59e0b"
-							points="M4 14 H22 V18 H40 V22 H58 V26 H76 V30 H94 V33 H112 V37 H130 V40 H146"
-							altPoints="M4 13 H22 V17 H40 V21 H58 V25 H76 V29 H94 V32 H112 V36 H130 V39 H146"
-							duration="7.5s"
-						/>
-						<AnimatedPriceSparkline
-							color="#14b8a6"
-							points="M4 26 H22 V30 H40 V33 H58 V37 H76 V41 H94 V45 H112 V49 H130 V52 H146"
-							altPoints="M4 25 H22 V29 H40 V32 H58 V36 H76 V40 H94 V44 H112 V48 H130 V51 H146"
-							duration="6.8s"
-							delay="0.5s"
-						/>
-						<AnimatedPriceSparkline
-							color="#3b82f6"
-							points="M4 40 H22 V43 H40 V47 H58 V50 H76 V54 H94 V57 H112 V60 H130 V63 H146"
-							altPoints="M4 39 H22 V42 H40 V46 H58 V49 H76 V53 H94 V56 H112 V59 H130 V62 H146"
-							duration="8.1s"
-							delay="0.9s"
-						/>
-					</svg>
+			<div className="relative flex h-full w-full flex-col justify-center px-5 py-3">
+				<div
+					className="space-y-1"
+					onMouseLeave={() => setHoveredRequestIndex(null)}
+				>
+					{requests.map((request, index) => {
+						const isHovered = index === hoveredRequestIndex;
+
+						return (
+							<div
+								key={`${request.providerId}-${request.path}`}
+								onMouseEnter={() => setHoveredRequestIndex(index)}
+								className={`grid min-h-6 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-lg border px-2.5 py-0.5 transition-colors ${
+									isHovered
+										? "border-zinc-300 bg-zinc-50/80 dark:border-zinc-700 dark:bg-zinc-900/60"
+										: "border-zinc-200/80 bg-white hover:border-zinc-300 hover:bg-zinc-50/70 dark:border-zinc-800/80 dark:bg-zinc-950 dark:hover:border-zinc-700 dark:hover:bg-zinc-900/50"
+								}`}
+							>
+								<div className="flex min-w-0 items-center gap-1.5 self-center">
+									<span className="relative h-3 w-3 shrink-0">
+										<Logo
+											id={request.providerId}
+											alt={request.providerId}
+											variant="color"
+											fill
+											sizes="12px"
+											className="object-contain object-center"
+										/>
+									</span>
+									<div className="min-w-0">
+										<p className="truncate text-[10px] font-semibold leading-none text-zinc-950 dark:text-zinc-50">
+											{request.model}
+										</p>
+									</div>
+								</div>
+								<div className="flex items-center justify-end self-center text-right">
+									<span
+										className={`inline-flex rounded-full px-1.5 py-0.5 text-[8px] font-semibold leading-none ${request.statusTone}`}
+									>
+										{request.status}
+									</span>
+								</div>
+							</div>
+						);
+					})}
 				</div>
-				<div className="absolute right-0 top-0 z-10 w-[72%] rounded-2xl border border-zinc-200/80 bg-white/96 p-3 dark:border-zinc-800 dark:bg-zinc-950/96">
-					<div className="flex items-center justify-between text-[10px] text-zinc-500 dark:text-zinc-400">
-						<span>Throughput</span>
-						<span>tok/s</span>
+				<div
+					className={`pointer-events-none absolute right-4 top-11 w-[136px] rounded-xl border border-zinc-200/90 bg-white p-2 shadow-[0_12px_30px_rgba(15,23,42,0.14)] transition-all duration-200 dark:border-zinc-800 dark:bg-zinc-950 dark:shadow-[0_12px_30px_rgba(2,6,23,0.42)] ${
+						hoveredRequestIndex === null
+							? "translate-y-1 opacity-0"
+							: "translate-y-0 opacity-100"
+					}`}
+					aria-hidden="true"
+				>
+					<div className="flex items-center gap-1.5">
+						<span className="relative h-3.5 w-3.5 shrink-0">
+							<Logo
+								id={selectedRequest.providerId}
+								alt={selectedRequest.providerId}
+								variant="color"
+								fill
+								sizes="14px"
+								className="object-contain object-center"
+							/>
+						</span>
+						<p className="truncate text-[10px] font-semibold leading-none text-zinc-950 dark:text-zinc-50">
+							{selectedRequest.model}
+						</p>
 					</div>
-<ThroughputLiveChart />
+					<div className="mt-2 grid gap-1 text-[9px] leading-none">
+						<div className="flex justify-between gap-2">
+							<span className="text-zinc-500 dark:text-zinc-400">Latency</span>
+							<span className="font-semibold text-zinc-950 dark:text-zinc-50">
+								{selectedRequest.latency}
+							</span>
+						</div>
+						<div className="flex justify-between gap-2">
+							<span className="text-zinc-500 dark:text-zinc-400">
+								Throughput
+							</span>
+							<span className="font-semibold text-zinc-950 dark:text-zinc-50">
+								{selectedRequest.throughput}
+							</span>
+						</div>
+						<div className="flex justify-between gap-2">
+							<span className="text-zinc-500 dark:text-zinc-400">Cost</span>
+							<span className="font-semibold text-zinc-950 dark:text-zinc-50">
+								{selectedRequest.cost}
+							</span>
+						</div>
+					</div>
 				</div>
 			</div>
 		</VisualStage>
@@ -567,21 +764,21 @@ function ObservabilityVisual() {
 const BETA_OPEN_MODEL_INTEL: LandingOpenModelIntelEntry[] = [
 	{
 		providerId: "openai",
-		name: "GPT-5.5",
-		model: "openai/gpt-5.5",
+		name: "GPT-5.6 Sol",
+		model: "openai/gpt-5.6-sol",
 		latencyMs: 472,
 		throughputTps: 92,
-		inputPrice: 5.0,
-		outputPrice: 30.0,
+		inputPrice: 12.5,
+		outputPrice: 75.0,
 	},
 	{
 		providerId: "anthropic",
-		name: "Claude Opus 4.7",
-		model: "anthropic/claude-opus-4.7",
-		latencyMs: 534,
-		throughputTps: 84,
-		inputPrice: 5.0,
-		outputPrice: 25.0,
+		name: "Claude Fable 5",
+		model: "anthropic/claude-fable-5",
+		latencyMs: 548,
+		throughputTps: 79,
+		inputPrice: 10.0,
+		outputPrice: 50.0,
 	},
 	{
 		providerId: "google",
@@ -612,11 +809,11 @@ const BETA_OPEN_MODEL_INTEL: LandingOpenModelIntelEntry[] = [
 	},
 	{
 		providerId: "moonshotai",
-		name: "Kimi K2.6",
-		model: "moonshotai/kimi-k2.6",
+		name: "Kimi K2.7 Code",
+		model: "moonshotai/kimi-k2.7-code",
 		latencyMs: 423,
 		throughputTps: 89,
-		inputPrice: 1.0,
+		inputPrice: 0.95,
 		outputPrice: 4.0,
 	},
 ] as const;
@@ -635,7 +832,7 @@ function BetaModelHeader({
 	showLabel?: boolean;
 }) {
 	return (
-		<div className="border-b border-zinc-200/80 pb-2 dark:border-zinc-800/80">
+		<div className="border-b border-zinc-200/80 pb-1.5 dark:border-zinc-800/80">
 			<div className="min-w-0">
 				{showLabel ? (
 					<span className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
@@ -643,7 +840,9 @@ function BetaModelHeader({
 					</span>
 				) : null}
 				{nameSlot ?? (
-					<div className={`${showLabel ? "mt-1" : ""} flex items-center gap-2`}>
+					<div
+						className={`${showLabel ? "mt-1" : ""} flex min-h-6 items-center gap-2`}
+					>
 						<span className="relative h-4 w-4 shrink-0">
 							<Logo
 								id={providerId}
@@ -706,16 +905,16 @@ function BetaDatabaseVisual() {
 					nameSlot={
 						<div className="h-6 overflow-hidden">
 							<div
-								className={`space-y-1 ${
+								className={
 									isSliding
 										? "-translate-y-6 transition-transform duration-300 ease-out"
 										: "translate-y-0"
-								}`}
+								}
 							>
 								{[currentModel, incomingModel].map((model, index) => (
 									<div
 										key={`${model.model}-${index}`}
-										className="flex h-6 items-center gap-2"
+										className="flex h-6 items-center gap-2 pt-px"
 									>
 										<span className="relative h-4 w-4 shrink-0">
 											<Logo
@@ -736,13 +935,16 @@ function BetaDatabaseVisual() {
 						</div>
 					}
 				/>
-				<div className="grid grid-cols-2 gap-4 xl:grid-cols-[0.9fr_1fr_1.2fr]">
+				<div
+					className="grid grid-cols-2 gap-4 xl:grid-cols-[0.9fr_1fr_1.2fr]"
+					data-nosnippet
+				>
 					<div>
 						<span className="text-[9px] font-medium text-zinc-500 dark:text-zinc-400">
 							Latency
 						</span>
 						<p className="mt-1 text-[16px] font-semibold leading-none tracking-[-0.04em] text-zinc-950 dark:text-zinc-50">
-							<NumberFlow value={currentModel.latencyMs} />
+							<HydratedNumberFlow value={currentModel.latencyMs} />
 							<span className="ml-0.5 text-[10px] font-medium tracking-normal text-zinc-500 dark:text-zinc-400">
 								ms
 							</span>
@@ -753,7 +955,7 @@ function BetaDatabaseVisual() {
 							Throughput
 						</span>
 						<p className="mt-1 text-[16px] font-semibold leading-none tracking-[-0.04em] text-zinc-950 dark:text-zinc-50">
-							<NumberFlow value={currentModel.throughputTps} />
+							<HydratedNumberFlow value={currentModel.throughputTps} />
 							<span className="ml-0.5 text-[10px] font-medium tracking-normal text-zinc-500 dark:text-zinc-400">
 								tok/s
 							</span>
@@ -764,9 +966,9 @@ function BetaDatabaseVisual() {
 							Pricing
 						</span>
 						<p className="mt-1 whitespace-nowrap text-[12px] font-semibold leading-none text-zinc-950 dark:text-zinc-50">
-							$<NumberFlow value={currentModel.inputPrice} format={{ minimumFractionDigits: 2, maximumFractionDigits: 2 }} />
+							$<HydratedNumberFlow value={currentModel.inputPrice} format={{ minimumFractionDigits: 2, maximumFractionDigits: 2 }} />
 							<span className="px-1 text-zinc-400 dark:text-zinc-500">/</span>$
-							<NumberFlow value={currentModel.outputPrice} format={{ minimumFractionDigits: 2, maximumFractionDigits: 2 }} />
+							<HydratedNumberFlow value={currentModel.outputPrice} format={{ minimumFractionDigits: 2, maximumFractionDigits: 2 }} />
 						</p>
 					</div>
 				</div>
@@ -832,8 +1034,9 @@ function BenefitVisual({
 			return <ModelsVisual variant={variant} />;
 		case "uptime":
 			return <UptimeVisual variant={variant} />;
+		case "modalities":
+			return <ModalitiesVisual />;
 		case "observability":
-			if (variant === "beta") return null;
 			return <ObservabilityVisual />;
 		case "database":
 		default:
@@ -850,7 +1053,7 @@ export default function HomeQuickstartSection({
 
 	return (
 		<div className="mx-auto mt-6 max-w-7xl">
-			<div className={`grid grid-cols-1 gap-5 ${variant === "beta" ? "md:grid-cols-2 lg:grid-cols-3" : "md:grid-cols-2 xl:grid-cols-4"}`}>
+			<div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
 				{benefits.map((benefit) => (
 					<Link
 						key={benefit.title}

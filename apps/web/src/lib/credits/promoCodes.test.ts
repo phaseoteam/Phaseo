@@ -44,5 +44,8 @@ describe("promo code helpers", () => {
 
 	it("maps promo_code transactions to Promo Credit", () => {
 		expect(getCreditTransactionKindLabel("promo_code")).toBe("Promo Credit");
+		expect(getCreditTransactionKindLabel("goodwill_credit")).toBe(
+			"Goodwill Credit",
+		);
 	});
 });

@@ -7,7 +7,7 @@ const EXPLORE_PROVIDERS = [
 	{ id: "openai", label: "OpenAI" },
 	{ id: "anthropic", label: "Anthropic" },
 	{ id: "google", label: "Google" },
-	{ id: "xai", label: "xAI" },
+	{ id: "xai", label: "SpaceXAI" },
 	{ id: "mistral", label: "Mistral" },
 	{ id: "deepseek", label: "DeepSeek" },
 	{ id: "minimax", label: "MiniMax" },
@@ -45,7 +45,7 @@ export default function ExploreModelsProviderTicker() {
 		const interval = window.setInterval(() => {
 			setNextProviderIndex((providerIndex + 1) % EXPLORE_PROVIDERS.length);
 			setIsSliding(true);
-		}, 2000);
+		}, 3000);
 
 		return () => {
 			window.clearInterval(interval);

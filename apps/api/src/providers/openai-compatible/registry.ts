@@ -40,6 +40,7 @@ import { CRUSOE_OPENAI_COMPAT_CONFIGS } from "../crusoe/config";
 import { PARASAIL_OPENAI_COMPAT_CONFIGS } from "../parasail/config";
 import { PHALA_OPENAI_COMPAT_CONFIGS } from "../phala/config";
 import { SAMBANOVA_OPENAI_COMPAT_CONFIGS } from "../sambanova/config";
+import { SAKANA_OPENAI_COMPAT_CONFIGS } from "../sakana/config";
 import { SCALEWAY_OPENAI_COMPAT_CONFIGS } from "../scaleway/config";
 import { SILICONFLOW_OPENAI_COMPAT_CONFIGS } from "../siliconflow/config";
 import { WEIGHTS_AND_BIASES_OPENAI_COMPAT_CONFIGS } from "../weights-and-biases/config";
@@ -61,6 +62,7 @@ import { LIQUID_AI_OPENAI_COMPAT_CONFIGS } from "../liquid-ai/config";
 import { TENSORIX_OPENAI_COMPAT_CONFIGS } from "../tensorix/config";
 import { OVHCLOUD_OPENAI_COMPAT_CONFIGS } from "../ovhcloud/config";
 import { THINKING_MACHINES_OPENAI_COMPAT_CONFIGS } from "../thinking-machines/config";
+import { META_OPENAI_COMPAT_CONFIGS } from "../meta/config";
 
 export const OPENAI_COMPAT_CONFIG = {
 	...OPENAI_OPENAI_COMPAT_CONFIGS,
@@ -104,6 +106,7 @@ export const OPENAI_COMPAT_CONFIG = {
 	...PARASAIL_OPENAI_COMPAT_CONFIGS,
 	...PHALA_OPENAI_COMPAT_CONFIGS,
 	...SAMBANOVA_OPENAI_COMPAT_CONFIGS,
+	...SAKANA_OPENAI_COMPAT_CONFIGS,
 	...SCALEWAY_OPENAI_COMPAT_CONFIGS,
 	...SILICONFLOW_OPENAI_COMPAT_CONFIGS,
 	...WEIGHTS_AND_BIASES_OPENAI_COMPAT_CONFIGS,
@@ -125,4 +128,5 @@ export const OPENAI_COMPAT_CONFIG = {
 	...TENSORIX_OPENAI_COMPAT_CONFIGS,
 	...OVHCLOUD_OPENAI_COMPAT_CONFIGS,
 	...THINKING_MACHINES_OPENAI_COMPAT_CONFIGS,
+	...META_OPENAI_COMPAT_CONFIGS,
 } satisfies Record<string, OpenAICompatConfig>;

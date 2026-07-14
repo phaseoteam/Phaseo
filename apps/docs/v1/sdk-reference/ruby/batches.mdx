@@ -7,9 +7,9 @@ description: "Call /batches with the Ruby SDK."
 
 ### Example
 ```ruby
-require 'ai_stats_sdk'
+require 'phaseo_sdk'
 
-client = AIStatsSdk::AIStats.new(api_key: ENV.fetch('AI_STATS_API_KEY'))
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY'))
 
 batch = client.create_batch(
   model: 'openai/gpt-5-mini',
@@ -32,10 +32,9 @@ websocket_url = client.batch_websocket_url(batch["id"], interval_ms: 1500)
 - `items`: Structured prompt shorthand with `id` / `custom_id`, `prompt`, `messages`, per-row settings, or an advanced `body`.
 - `requests`: Advanced inline provider-native batch rows.
 - `input_file_id`: Existing file id uploaded via `/batches/files?model=...` for large prebuilt JSONL inputs.
-- `endpoint`: Optional target endpoint for advanced rows. AI Stats chooses a model/provider default when omitted.
+- `endpoint`: Optional target endpoint for advanced rows. Phaseo chooses a model/provider default when omitted.
 - `completion_window`: e.g., `24h`.
-- `session_id`: Optional AI Stats grouping id for logs, sessions, and investigate tooling.
-- `webhook_endpoint_id`: Workspace-managed webhook endpoint id configured in the dashboard.
+- `session_id`: Optional Phaseo grouping id for logs, sessions, and investigate tooling.
 - `webhook`: Optional webhook configuration for async lifecycle notifications.
 - `metadata`: Optional object stored with the batch.
 

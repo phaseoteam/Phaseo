@@ -5,10 +5,10 @@ import { RoomScaffold } from "@/components/(chat)/RoomScaffold";
 import { ImageStudioRoom } from "@/components/(chat)/rooms/ImageStudioRoom";
 
 export const metadata: Metadata = buildMetadata({
-	title: "Image Studio - AI Stats Chat",
+	title: "Image Studio",
 	description: "Prompt-first image generation workspace with gallery history.",
 	path: "/chat/image",
-	keywords: ["AI image generation", "image studio", "AI Stats chat"],
+	keywords: ["AI image generation", "image studio", "Phaseo chat"],
 });
 
 export default async function ChatImagePage() {

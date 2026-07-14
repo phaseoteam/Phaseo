@@ -31,18 +31,20 @@ export async function generateMetadata(props: {
 		return buildMetadata({
 			title: "API Provider Models",
 			description:
-				"Browse all models available from this API provider on AI Stats, ordered by model release date with announcement-date fallback, plus capability support, pricing visibility, and gateway accessibility.",
+				"Browse all models available from this API provider on Phaseo, ordered by model release date with announcement-date fallback, plus capability support, pricing visibility, and gateway accessibility.",
 			path,
 			imagePath,
+			robots: { index: false, follow: true },
 		});
 	}
 
 	const providerName = header.api_provider_name ?? "AI API provider";
 	return buildMetadata({
 		title: `${providerName} Models - Ordered by Model Date`,
-		description: `View all ${providerName} models on AI Stats ordered by release date, with announcement date fallback, gateway accessibility, supported capabilities, and quick visibility into pricing and integration coverage.`,
+		description: `View all ${providerName} models on Phaseo ordered by release date, with announcement date fallback, gateway accessibility, supported capabilities, and quick visibility into pricing and integration coverage.`,
 		path,
 		imagePath,
+		robots: { index: false, follow: true },
 	});
 }
 

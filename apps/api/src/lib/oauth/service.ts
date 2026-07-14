@@ -9,12 +9,14 @@ const REFRESH_TOKEN_TTL_SECONDS = 90 * 24 * 60 * 60;
 const DEVICE_CODE_TTL_SECONDS = 10 * 60;
 const AUTH_CODE_TTL_SECONDS = 10 * 60;
 const DEFAULT_DEVICE_INTERVAL_SECONDS = 5;
-const DEFAULT_WEB_BASE_URL = "https://ai-stats.com";
-const DEFAULT_API_BASE_URL = "https://api.phaseo.app";
-const ACCESS_TOKEN_AUDIENCE = "ai-stats-api";
+const DEFAULT_WEB_BASE_URL = "https://phaseo.app";
+const DEFAULT_API_BASE_URL = "https://api.phaseo.ai";
+const ACCESS_TOKEN_AUDIENCE = "phaseo-api";
 const TRUTHY_VALUES = new Set(["1", "true", "yes", "on"]);
 
-export const CLI_CLIENT_ID = "aistats_cli";
+export const CLI_CLIENT_ID = "phaseo_cli";
+export const LEGACY_CLI_CLIENT_ID = "aistats_cli";
+const CLI_CLIENT_IDS = new Set([CLI_CLIENT_ID, LEGACY_CLI_CLIENT_ID]);
 
 export const CLI_DEFAULT_SCOPES = DEFAULT_CLI_OAUTH_CAPABILITIES;
 
@@ -83,7 +85,7 @@ export function getApiBaseUrl(): string {
 
 export function getWebBaseUrl(): string {
 	const bindings = getBindings();
-	return String(bindings.AI_STATS_WEB_BASE_URL ?? DEFAULT_WEB_BASE_URL).replace(/\/+$/, "");
+	return String(bindings.PHASEO_WEB_BASE_URL ?? DEFAULT_WEB_BASE_URL).replace(/\/+$/, "");
 }
 
 export function getIssuer(): string {
@@ -92,13 +94,13 @@ export function getIssuer(): string {
 
 export function isThirdPartyOAuthEnabled(): boolean {
 	const bindings = getBindings();
-	const raw = bindings.AI_STATS_THIRD_PARTY_OAUTH_ENABLED;
+	const raw = bindings.PHASEO_THIRD_PARTY_OAUTH_ENABLED;
 	if (typeof raw === "boolean") return raw;
 	return TRUTHY_VALUES.has(String(raw ?? "").trim().toLowerCase());
 }
 
 export function isOAuthClientUsable(clientId: string): boolean {
-	return clientId.trim() === CLI_CLIENT_ID || isThirdPartyOAuthEnabled();
+	return CLI_CLIENT_IDS.has(clientId.trim()) || isThirdPartyOAuthEnabled();
 }
 
 export function normalizeScopes(raw: unknown, fallback: readonly string[] = []): string[] {
@@ -126,20 +128,54 @@ export function parseTokenRequestBody(raw: string, contentType: string | null): 
 	return out;
 }
 
+export async function hashOAuthSecret(value: string): Promise<string> {
+	const bindings = getBindings();
+	const pepper = String(
+		bindings.PHASEO_OAUTH_TOKEN_PEPPER ??
+			bindings.KEY_PEPPER_ACTIVE ??
+			bindings.KEY_PEPPER ??
+			"",
+	);
+	const key = await crypto.subtle.importKey(
+		"raw",
+		encoder.encode(pepper),
+		{ name: "HMAC", hash: "SHA-256" },
+		false,
+		["sign"],
+	);
+	const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(value));
+	return base64UrlEncodeBytes(new Uint8Array(signature));
+}
+
+// PKCE code challenges are specified as SHA-256 digests, not password hashes.
 async function sha256Base64Url(value: string): Promise<string> {
 	const digest = await crypto.subtle.digest("SHA-256", encoder.encode(value));
 	return base64UrlEncodeBytes(new Uint8Array(digest));
 }
 
-export async function hashOAuthSecret(value: string): Promise<string> {
+export async function hashOAuthClientSecret(value: string): Promise<string> {
 	const bindings = getBindings();
-	const pepper = String(
-		bindings.AI_STATS_OAUTH_TOKEN_PEPPER ??
-			bindings.KEY_PEPPER_ACTIVE ??
-			bindings.KEY_PEPPER ??
-			"",
+	const pepper = String(bindings.PHASEO_OAUTH_TOKEN_PEPPER ?? bindings.KEY_PEPPER_ACTIVE ?? bindings.KEY_PEPPER ?? "");
+	const iterations = 600_000;
+	const salt = randomBase64Url(16);
+	const key = await crypto.subtle.importKey("raw", encoder.encode(value), "PBKDF2", false, ["deriveBits"]);
+	const bits = await crypto.subtle.deriveBits(
+		{ name: "PBKDF2", hash: "SHA-256", salt: encoder.encode(`${pepper}:${salt}`), iterations },
+		key,
+		256,
 	);
-	return sha256Base64Url(`${pepper}:${value}`);
+	return `pbkdf2-sha256$${iterations}$${salt}$${base64UrlEncodeBytes(new Uint8Array(bits))}`;
+}
+
+async function verifyPbkdf2OAuthClientSecret(value: string, stored: string): Promise<boolean> {
+	const [, rawIterations, salt, expected] = stored.split("$");
+	const iterations = Number(rawIterations);
+	if (!Number.isSafeInteger(iterations) || iterations < 100_000 || !salt || !expected) return false;
+	const bindings = getBindings();
+	const pepper = String(bindings.PHASEO_OAUTH_TOKEN_PEPPER ?? bindings.KEY_PEPPER_ACTIVE ?? bindings.KEY_PEPPER ?? "");
+	const key = await crypto.subtle.importKey("raw", encoder.encode(value), "PBKDF2", false, ["deriveBits"]);
+	const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt: encoder.encode(`${pepper}:${salt}`), iterations }, key, 256);
+	return timingSafeEqual(base64UrlEncodeBytes(new Uint8Array(bits)), expected);
 }
 
 export async function verifyClientSecret(
@@ -149,6 +185,9 @@ export async function verifyClientSecret(
 	if (client.client_type !== "confidential") return true;
 	const normalizedSecret = String(providedSecret ?? "").trim();
 	if (!normalizedSecret || !client.client_secret_hash) return false;
+	if (client.client_secret_hash.startsWith("pbkdf2-sha256$")) {
+		return verifyPbkdf2OAuthClientSecret(normalizedSecret, client.client_secret_hash);
+	}
 	return timingSafeEqual(await hashOAuthSecret(normalizedSecret), client.client_secret_hash);
 }
 
@@ -185,7 +224,7 @@ function publicJwkFromPrivate(jwk: JsonWebKey): JsonWebKey {
 	const { d, p, q, dp, dq, qi, oth, key_ops, ...publicJwk } = jwk as any;
 	return {
 		...publicJwk,
-		kid: (jwk as any).kid ?? "aistats-oauth-v1",
+		kid: (jwk as any).kid ?? "phaseo-oauth-v1",
 		alg: "RS256",
 		use: "sig",
 		key_ops: ["verify"],
@@ -194,18 +233,18 @@ function publicJwkFromPrivate(jwk: JsonWebKey): JsonWebKey {
 
 async function getSigningMaterial() {
 	const bindings = getBindings();
-	const rawJwk = String(bindings.AI_STATS_OAUTH_PRIVATE_JWK ?? "").trim();
+	const rawJwk = String(bindings.PHASEO_OAUTH_PRIVATE_JWK ?? "").trim();
 	if (rawJwk) {
 		const jwk = JSON.parse(rawJwk) as JsonWebKey;
 		return {
 			privateKey: await importPrivateJwk(jwk),
 			publicJwk: publicJwkFromPrivate(jwk),
-			kid: String((jwk as any).kid ?? "aistats-oauth-v1"),
+			kid: String((jwk as any).kid ?? "phaseo-oauth-v1"),
 		};
 	}
 
 	if (String(bindings.NODE_ENV ?? "").toLowerCase() === "production") {
-		throw new Error("AI_STATS_OAUTH_PRIVATE_JWK is required for OAuth token signing");
+		throw new Error("PHASEO_OAUTH_PRIVATE_JWK is required for OAuth token signing");
 	}
 
 	if (!ephemeralSigningKey) {
@@ -224,12 +263,12 @@ async function getSigningMaterial() {
 			privateKey: keyPair.privateKey,
 			publicJwk: {
 				...publicJwk,
-				kid: "aistats-oauth-dev",
+				kid: "phaseo-oauth-dev",
 				alg: "RS256",
 				use: "sig",
 				key_ops: ["verify"],
 			} as JsonWebKey,
-			kid: "aistats-oauth-dev",
+			kid: "phaseo-oauth-dev",
 		};
 	}
 
@@ -303,16 +342,24 @@ export async function loadOAuthClient(clientId: string): Promise<OAuthClient | n
 	if (!id) return null;
 	if (!isOAuthClientUsable(id)) return null;
 
-	const firstParty = await supabase
+	let firstParty = await supabase
 		.from("oauth_clients")
 		.select("id, name, description, logo_url, homepage_url, client_type, client_secret_hash, redirect_uris, allowed_scopes, is_first_party, beta_status, status")
 		.eq("id", id)
 		.eq("status", "active")
 		.maybeSingle();
+	if ((firstParty.error || !firstParty.data) && id === LEGACY_CLI_CLIENT_ID) {
+		firstParty = await supabase
+			.from("oauth_clients")
+			.select("id, name, description, logo_url, homepage_url, client_type, client_secret_hash, redirect_uris, allowed_scopes, is_first_party, beta_status, status")
+			.eq("id", CLI_CLIENT_ID)
+			.eq("status", "active")
+			.maybeSingle();
+	}
 	if (!firstParty.error && firstParty.data) {
 		const row = firstParty.data as any;
 		return {
-			id: row.id,
+			id: id === LEGACY_CLI_CLIENT_ID ? LEGACY_CLI_CLIENT_ID : row.id,
 			name: row.name,
 			description: row.description ?? null,
 			logo_url: row.logo_url ?? null,
@@ -327,16 +374,24 @@ export async function loadOAuthClient(clientId: string): Promise<OAuthClient | n
 		};
 	}
 
-	const metadata = await supabase
+	let metadata = await supabase
 		.from("oauth_app_metadata")
 		.select("client_id, name, description, logo_url, homepage_url, client_type, client_secret_hash, redirect_uris, allowed_scopes, is_first_party, beta_status, status")
 		.eq("client_id", id)
 		.eq("status", "active")
 		.maybeSingle();
+	if ((metadata.error || !metadata.data) && id === LEGACY_CLI_CLIENT_ID) {
+		metadata = await supabase
+			.from("oauth_app_metadata")
+			.select("client_id, name, description, logo_url, homepage_url, client_type, client_secret_hash, redirect_uris, allowed_scopes, is_first_party, beta_status, status")
+			.eq("client_id", CLI_CLIENT_ID)
+			.eq("status", "active")
+			.maybeSingle();
+	}
 	if (metadata.error || !metadata.data) return null;
 	const row = metadata.data as any;
 	return {
-		id: row.client_id,
+		id: id === LEGACY_CLI_CLIENT_ID ? LEGACY_CLI_CLIENT_ID : row.client_id,
 		name: row.name,
 		description: row.description ?? null,
 		logo_url: row.logo_url ?? null,
@@ -357,7 +412,7 @@ export function filterAllowedScopes(client: OAuthClient, requested: string[]): s
 }
 
 function isCliLoopbackRedirectUri(client: OAuthClient, redirectUri: string): boolean {
-	if (client.id !== CLI_CLIENT_ID) return false;
+	if (!CLI_CLIENT_IDS.has(client.id)) return false;
 	try {
 		const url = new URL(redirectUri);
 		return (
@@ -604,7 +659,7 @@ export function verificationUriFor(userCode?: string): string {
 export function authorizationConsentUrl(params: URLSearchParams): string {
 	const url = new URL(`${getWebBaseUrl()}/oauth/consent`);
 	params.forEach((value, key) => url.searchParams.set(key, value));
-	url.searchParams.set("aistats_oauth", "1");
+	url.searchParams.set("phaseo_oauth", "1");
 	return url.toString();
 }
 

@@ -41,7 +41,7 @@ vi.mock("@/runtime/env", () => ({
 	getSupabaseAdmin: () => buildSupabaseMock(),
 	getBindings: () => ({
 		RESEND_API_KEY: "resend_key",
-		RESEND_FROM_EMAIL: "AI Stats <noreply@example.com>",
+		RESEND_FROM_EMAIL: "Phaseo <noreply@example.com>",
 	}),
 }));
 
@@ -69,7 +69,7 @@ describe("email outbox", () => {
 			user_id: "user_1",
 			payload: {
 				workspace_name: "Acme",
-				key_preview: "aistats_v1_sk_kid123...cret",
+				key_preview: "phaseo_v1_sk_kid123...cret",
 				reported_source: "github",
 				evidence_url: "https://github.com/example/repo/commit/abc",
 				auto_revoked: true,
@@ -88,7 +88,7 @@ describe("email outbox", () => {
 				to: "owner@example.com",
 				subject: "Security alert: exposed API key revoked",
 				html: expect.stringContaining("reported as publicly exposed and has been revoked"),
-				text: expect.stringContaining("Key: aistats_v1_sk_kid123...cret"),
+				text: expect.stringContaining("Key: phaseo_v1_sk_kid123...cret"),
 			}),
 		);
 		expect(state.updateCalls[0]).toMatchObject({

@@ -89,7 +89,7 @@ describe("DevToolsEntrySchema", () => {
       response: {
         data: {
           id: "key_123",
-          prefix: "aistats_v1_sk_test",
+          prefix: "phaseo_v1_sk_test",
           status: "active",
         },
       },

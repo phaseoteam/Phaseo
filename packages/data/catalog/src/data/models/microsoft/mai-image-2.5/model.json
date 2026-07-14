@@ -1,0 +1,26 @@
+{
+  "model_id": "microsoft/mai-image-2.5",
+  "organisation_id": "microsoft",
+  "name": "MAI Image 2.5",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "MAI Image 2.5 is Microsoft's image generation model for both text-to-image and image editing workflows. Microsoft announced it at Build 2026 and described the image family as generally available in Microsoft Foundry and MAI Playground.",
+  "announced_date": "2026-06-02T00:00:00",
+  "release_date": "2026-06-02T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "image",
+  "api_model_id": "microsoft/mai-image-2.5",
+  "family_id": "microsoft/mai",
+  "links": [
+    {
+      "title": "Announcement",
+      "kind": "announcement",
+      "url": "https://microsoft.ai/news/introducing-mai-image-2-5/"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

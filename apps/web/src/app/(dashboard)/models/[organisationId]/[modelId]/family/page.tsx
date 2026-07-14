@@ -47,7 +47,7 @@ export async function generateMetadata(props: {
 			modelDescription,
 			suffix:
 				"Explore related variants, benchmark context, provider coverage, pricing information, and release timeline connections.",
-			fallback: `Explore ${modelName}'s family on AI Stats, including related variants, benchmark context, provider coverage, pricing information, and release timeline connections.`,
+			fallback: `Explore ${modelName}'s family on Phaseo, including related variants, benchmark context, provider coverage, pricing information, and release timeline connections.`,
 		}),
 		path,
 		keywords: [
@@ -55,7 +55,7 @@ export async function generateMetadata(props: {
 			`${modelName} family`,
 			`${modelName} related models`,
 			organisationName ? `${organisationName} AI` : null,
-			"AI Stats",
+			"Phaseo",
 			"AI model family",
 		].filter(Boolean) as string[],
 		imagePath,
@@ -71,6 +71,8 @@ const STATUS_STYLES: Record<string, string> = {
 	Available:
 		"border-emerald-500/50 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300",
 	Announced: "border-sky-500/40 bg-sky-500/10 text-sky-600 dark:text-sky-300",
+	"Limited Access":
+		"border-fuchsia-500/40 bg-fuchsia-500/10 text-fuchsia-600 dark:text-fuchsia-300",
 	Withheld:
 		"border-violet-500/40 bg-violet-500/10 text-violet-600 dark:text-violet-300",
 	Rumoured:
@@ -298,7 +300,7 @@ export default async function Page({
 										add it to the family tree.
 									</p>
 									<a
-										href="https://github.com/AI-Stats/AI-Stats/discussions/new"
+										href="https://github.com/phaseoteam/Phaseo/discussions/new"
 										target="_blank"
 										rel="noreferrer"
 										className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary underline decoration-transparent hover:decoration-current transition-colors duration-200"

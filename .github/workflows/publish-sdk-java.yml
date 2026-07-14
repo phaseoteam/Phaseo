@@ -24,7 +24,7 @@ jobs:
             exit 1
           fi
 
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
@@ -33,7 +33,7 @@ jobs:
           package-manager-cache: false
 
       - name: Setup Java
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654
+        uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a
         with:
           distribution: "temurin"
           java-version: "17"
@@ -65,7 +65,7 @@ jobs:
           node - <<'NODE'
           const fs = require("node:fs");
           const version = process.env.VERSION;
-          const filePath = "packages/sdk/sdk-java/src/ai/stats/sdk/AIStats.java";
+          const filePath = "packages/sdk/sdk-java/src/app/phaseo/sdk/Phaseo.java";
           const source = fs.readFileSync(filePath, "utf8");
           const match = source.match(/new TelemetryRecorder\(devtoolsConfig,\s*"([^"]+)"\)/);
           if (!match) {
@@ -112,7 +112,7 @@ jobs:
           version = os.environ["VERSION"]
           pom = Path("packages/sdk/sdk-java/pom.xml")
           source = pom.read_text(encoding="utf-8")
-          pattern = re.compile(r"(<artifactId>ai-stats-sdk</artifactId>\s*[\r\n]+\s*<version>)([^<]+)(</version>)", re.MULTILINE)
+          pattern = re.compile(r"(<artifactId>phaseo-sdk</artifactId>\s*[\r\n]+\s*<version>)([^<]+)(</version>)", re.MULTILINE)
           updated, count = pattern.subn(rf"\1{version}\3", source, count=1)
           if count != 1:
             raise SystemExit("Unable to set version in pom.xml")

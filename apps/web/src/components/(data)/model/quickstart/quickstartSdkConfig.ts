@@ -8,8 +8,8 @@ import {
 
 export type LanguageGroupId =
 	| "raw"
-	| "ai-stats-client"
-	| "ai-stats-agent"
+	| "phaseo-client"
+	| "phaseo-agent"
 	| "openai"
 	| "anthropic";
 
@@ -27,8 +27,8 @@ export const LANGUAGE_GROUP_META: Record<
 	{ label: string; icon: LucideIcon }
 > = {
 	raw: { label: "Raw HTTP", icon: TerminalSquare },
-	"ai-stats-client": { label: "AI Stats Client SDKs", icon: Braces },
-	"ai-stats-agent": { label: "AI Stats Agent SDK", icon: Bot },
+	"phaseo-client": { label: "Phaseo Client SDKs", icon: Braces },
+	"phaseo-agent": { label: "Phaseo Agent SDK", icon: Bot },
 	openai: { label: "OpenAI SDK", icon: Package },
 	anthropic: { label: "Anthropic SDK", icon: Package },
 };
@@ -38,25 +38,25 @@ export const LANGUAGE_OPTIONS: LanguageOption[] = [
 	{
 		value: "ai-sdk",
 		label: "Vercel AI SDK",
-		group: "ai-stats-client",
+		group: "phaseo-client",
 		placement: "direct",
 		icon: Bot,
 		disabled: false,
 	},
 	{ value: "node-fetch", label: "Node.js fetch", group: "raw", disabled: false },
 	{ value: "python-requests", label: "Python requests", group: "raw", disabled: false },
-	{ value: "typescript-sdk", label: "TypeScript SDK", group: "ai-stats-client", disabled: false },
-	{ value: "python-sdk", label: "Python SDK", group: "ai-stats-client", disabled: false },
-	{ value: "go-sdk", label: "Go SDK", group: "ai-stats-client", disabled: false },
-	{ value: "csharp-sdk", label: "C# SDK", group: "ai-stats-client", disabled: false },
-	{ value: "php-sdk", label: "PHP SDK", group: "ai-stats-client", disabled: false },
-	{ value: "ruby-sdk", label: "Ruby SDK", group: "ai-stats-client", disabled: false },
-	{ value: "agent-sdk-ts", label: "TypeScript Agent SDK", group: "ai-stats-agent", disabled: false },
-	{ value: "agent-sdk-python", label: "Python Agent SDK", group: "ai-stats-agent", disabled: false },
-	{ value: "agent-sdk-go", label: "Go Agent SDK", group: "ai-stats-agent", disabled: false },
-	{ value: "agent-sdk-csharp", label: "C# Agent SDK", group: "ai-stats-agent", disabled: false },
-	{ value: "agent-sdk-php", label: "PHP Agent SDK", group: "ai-stats-agent", disabled: false },
-	{ value: "agent-sdk-ruby", label: "Ruby Agent SDK", group: "ai-stats-agent", disabled: false },
+	{ value: "typescript-sdk", label: "TypeScript SDK", group: "phaseo-client", disabled: false },
+	{ value: "python-sdk", label: "Python SDK", group: "phaseo-client", disabled: false },
+	{ value: "go-sdk", label: "Go SDK", group: "phaseo-client", disabled: false },
+	{ value: "csharp-sdk", label: "C# SDK", group: "phaseo-client", disabled: false },
+	{ value: "php-sdk", label: "PHP SDK", group: "phaseo-client", disabled: false },
+	{ value: "ruby-sdk", label: "Ruby SDK", group: "phaseo-client", disabled: false },
+	{ value: "agent-sdk-ts", label: "TypeScript Agent SDK", group: "phaseo-agent", disabled: false },
+	{ value: "agent-sdk-python", label: "Python Agent SDK", group: "phaseo-agent", disabled: false },
+	{ value: "agent-sdk-go", label: "Go Agent SDK", group: "phaseo-agent", disabled: false },
+	{ value: "agent-sdk-csharp", label: "C# Agent SDK", group: "phaseo-agent", disabled: false },
+	{ value: "agent-sdk-php", label: "PHP Agent SDK", group: "phaseo-agent", disabled: false },
+	{ value: "agent-sdk-ruby", label: "Ruby Agent SDK", group: "phaseo-agent", disabled: false },
 	{ value: "openai-python", label: "OpenAI Python Client", group: "openai", disabled: false },
 	{ value: "openai-node", label: "OpenAI Node.js Client", group: "openai", disabled: false },
 	{ value: "anthropic-python", label: "Anthropic Python Client", group: "anthropic", disabled: false },
@@ -65,8 +65,8 @@ export const LANGUAGE_OPTIONS: LanguageOption[] = [
 
 export const LANGUAGE_GROUP_ORDER: LanguageGroupId[] = [
 	"raw",
-	"ai-stats-client",
-	"ai-stats-agent",
+	"phaseo-client",
+	"phaseo-agent",
 	"openai",
 	"anthropic",
 ];
@@ -95,7 +95,7 @@ export const INSTALLABLE_LANGUAGES = new Set([
 	"anthropic-node",
 ]);
 
-export const AI_STATS_METHODS: Record<string, { ts: string; py: string }> = {
+export const PHASEO_METHODS: Record<string, { ts: string; py: string }> = {
 	"chat.completions": { ts: "generateText", py: "generate_text" },
 	responses: { ts: "generateResponse", py: "generate_response" },
 	embeddings: { ts: "generateEmbedding", py: "generate_embedding" },
@@ -118,31 +118,31 @@ export const OPENAI_METHODS: Record<string, { ts: string; py: string }> = {
 export function getInstallationCode(language: string): string {
 	switch (language) {
 		case "ai-sdk":
-			return "npm install ai @ai-stats/ai-sdk-provider";
+			return "npm install ai @phaseo/ai-sdk-provider";
 		case "agent-sdk-ts":
-			return "pnpm add @ai-stats/sdk @ai-stats/agent-sdk";
+			return "pnpm add @phaseo/sdk @phaseo/agent-sdk";
 		case "agent-sdk-python":
-			return "pip install ai-stats-py-sdk ai-stats-agent-sdk";
+			return "pip install phaseo phaseo-agent-sdk";
 		case "agent-sdk-go":
-			return "go get github.com/AI-Stats/AI-Stats/packages/sdk/agent-sdk-go@latest";
+			return "go get github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go@latest";
 		case "agent-sdk-csharp":
-			return "dotnet add package AI.Stats.Sdk\ndotnet add package AI.Stats.AgentSdk";
+			return "dotnet add package Phaseo.Sdk\ndotnet add package Phaseo.AgentSdk";
 		case "agent-sdk-php":
-			return "composer require ai-stats/php-sdk ai-stats/agent-sdk-php";
+			return "composer require phaseo/sdk phaseo/agent-sdk";
 		case "agent-sdk-ruby":
-			return "gem install ai_stats_sdk ai_stats_agent_sdk";
+			return "gem install phaseo_sdk phaseo_agent_sdk";
 		case "typescript-sdk":
-			return "npm install @ai-stats/sdk";
+			return "npm install @phaseo/sdk";
 		case "python-sdk":
-			return "pip install ai-stats-py-sdk";
+			return "pip install phaseo";
 		case "go-sdk":
-			return "go get github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go@latest";
+			return "go get github.com/phaseoteam/Phaseo/packages/sdk/sdk-go@latest";
 		case "csharp-sdk":
-			return "dotnet add package AI.Stats.Sdk";
+			return "dotnet add package Phaseo.Sdk";
 		case "php-sdk":
-			return "composer require ai-stats/php-sdk";
+			return "composer require phaseo/sdk";
 		case "ruby-sdk":
-			return "gem install ai_stats_sdk";
+			return "gem install phaseo_sdk";
 		case "openai-python":
 			return "pip install openai";
 		case "openai-node":

@@ -1,0 +1,68 @@
+{
+  "model_id": "spacex-ai/grok-1",
+  "organisation_id": "spacex-ai",
+  "name": "Grok 1",
+  "status": "Retired",
+  "previous_model_id": "spacex-ai/grok-0",
+  "description": "Grok 1 is a text-to-speech model from SpaceXAI. It accepts text inputs and produces text outputs.",
+  "announced_date": "2023-11-03T00:00:00",
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Apache 2.0",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "spacex-ai/grok-1",
+  "links": [
+    {
+      "title": "Announcement",
+      "kind": "announcement",
+      "url": "https://x.ai/news/grok"
+    },
+    {
+      "title": "Repository",
+      "kind": "repository",
+      "url": "https://github.com/xai-org/grok-1"
+    },
+    {
+      "title": "Weights",
+      "kind": "weights",
+      "url": "https://huggingface.co/xai-org/grok-1"
+    }
+  ],
+  "details": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "gsm8k",
+      "score": 62.9,
+      "is_self_reported": true,
+      "other_info": "8 Shot",
+      "source_link": "https://x.ai/news/grok",
+      "rank": 56
+    },
+    {
+      "benchmark_id": "humaneval",
+      "score": 63.2,
+      "is_self_reported": true,
+      "other_info": "0 Shot",
+      "source_link": "https://x.ai/news/grok",
+      "rank": 80
+    },
+    {
+      "benchmark_id": "math",
+      "score": 23.9,
+      "is_self_reported": true,
+      "other_info": "4 Shot",
+      "source_link": "https://x.ai/news/grok",
+      "rank": 80
+    },
+    {
+      "benchmark_id": "mmlu",
+      "score": 73,
+      "is_self_reported": true,
+      "other_info": "5 Shot",
+      "source_link": "https://x.ai/news/grok",
+      "rank": 108
+    }
+  ]
+}

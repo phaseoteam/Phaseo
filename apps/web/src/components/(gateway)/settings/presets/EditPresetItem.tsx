@@ -359,17 +359,16 @@ export default function EditPresetItem({ p, providers = [] }: EditPresetItemProp
 
 	return (
 		<>
-			<DropdownMenuItem asChild>
-				<button
+			<DropdownMenuItem render={<button
 					className="w-full text-left flex items-center gap-2"
 					onClick={(e) => {
 						e.preventDefault();
 						setTimeout(() => setOpen(true), 0);
-					}}
-				>
+					}} />}>
+
 					<Edit2 className="mr-2" />
 					Edit
-				</button>
+
 			</DropdownMenuItem>
 			<Dialog open={open} onOpenChange={setOpen}>
 				<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">

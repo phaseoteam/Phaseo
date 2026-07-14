@@ -1,6 +1,6 @@
 ---
 title: "PHP SDK (preview)"
-description: "Local-preview PHP wrapper for the AI Stats API."
+description: "Local-preview PHP wrapper for the Phaseo API."
 ---
 
 <Note type="warning">
@@ -39,8 +39,8 @@ The local wrapper at `packages/sdk/sdk-php/src/index.php` currently exposes thes
 ```php
 require 'vendor/autoload.php';
 
-use AIStats\Sdk\AIStats;
+use Phaseo\Sdk\Phaseo;
 
-$client = new AIStats('YOUR_KEY');
+$client = new Phaseo('YOUR_KEY');
 $models = $client->listModels(['limit' => 5]);
 ```

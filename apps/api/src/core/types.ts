@@ -67,6 +67,7 @@ export type RequestMeta = {
     returnUpstreamResponse?: boolean;
     startedAtMs?: number;
     upstreamStartMs?: number;
+    completedAtMs?: number;
     beta?: RequestBetaOptions;
     keySource?: "gateway" | "byok";
     byokKeyId?: string | null;
@@ -74,6 +75,8 @@ export type RequestMeta = {
     throughput_tps?: number;      // Tokens per second
     generation_ms?: number;       // Post-first-token generation duration when available
     latency_ms?: number;          // Time to first token/byte when available; otherwise best-effort total latency
+    end_to_end_ms?: number;       // Request start to completion when available
+    preserve_stream_timing?: boolean; // Internal: stream is synthetic and already has authoritative timing
     before_ms?: number;           // Gateway preflight ("before" stage) latency
     beforeContextMs?: number;     // Context fetch + enrichment latency inside before
     beforeContextCacheStatus?: "hit" | "miss" | "bypass";
@@ -84,6 +87,7 @@ export type RequestMeta = {
     beforeContextCacheWriteMs?: number;
     beforeContextFallbackRemap?: boolean;
     returnMeta?: boolean;         // Should meta block be returned to caller
+    returnRoutingDiagnostics?: boolean;
     providerCapabilitiesBeta?: boolean;
 };
 
@@ -244,6 +248,7 @@ export type GatewayUsage = {
         web_search_extra_results?: number;
         web_fetch_requests?: number;
         advisor_requests?: number;
+        subagent_requests?: number;
         image_generation_requests?: number;
         apply_patch_requests?: number;
     };
@@ -251,6 +256,7 @@ export type GatewayUsage = {
     server_tool_web_search_extra_results?: number;
     server_tool_web_fetch_requests?: number;
     server_tool_advisor_requests?: number;
+    server_tool_subagent_requests?: number;
     server_tool_image_generation_requests?: number;
     server_tool_apply_patch_requests?: number;
 

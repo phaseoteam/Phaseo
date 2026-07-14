@@ -1,31 +1,40 @@
 export const MODEL_STATUS_OPTIONS = [
-  "Rumoured",
-  "Announced",
-  "Withheld",
-  "Released",
-  "Deprecated",
-  "Retired",
+    "Rumoured",
+    "Announced",
+    "Limited Access",
+    "Withheld",
+    "Released",
+    "Deprecated",
+    "Retired",
 ] as const
 
 export type ModelStatusOption = (typeof MODEL_STATUS_OPTIONS)[number]
 
 const LEGACY_RELEASED_STATUSES = new Set([
-  "available",
-  "active",
-  "beta",
-  "preview",
-  "released",
+    "available",
+    "active",
+    "beta",
+    "preview",
+    "released",
 ])
 
 export function normalizeModelStatus(value: string | null | undefined): ModelStatusOption {
-  const normalized = (value ?? "").trim().toLowerCase()
-  if (normalized === "rumoured") return "Rumoured"
-  if (normalized === "announced") return "Announced"
-  if (normalized === "withheld") return "Withheld"
-  if (normalized === "deprecated") return "Deprecated"
-  if (normalized === "retired") return "Retired"
-  if (LEGACY_RELEASED_STATUSES.has(normalized)) return "Released"
-  return "Released"
+    const normalized = (value ?? "").trim().toLowerCase()
+    if (normalized === "rumoured") return "Rumoured"
+    if (normalized === "announced") return "Announced"
+    if (
+        normalized === "limited access" ||
+        normalized === "limited_access" ||
+        normalized === "limited-access" ||
+        normalized === "private preview" ||
+        normalized === "private_preview" ||
+        normalized === "restricted"
+    ) return "Limited Access"
+    if (normalized === "withheld") return "Withheld"
+    if (normalized === "deprecated") return "Deprecated"
+    if (normalized === "retired") return "Retired"
+    if (LEGACY_RELEASED_STATUSES.has(normalized)) return "Released"
+    return "Released"
 }
 
 export const MODEL_MODALITY_OPTIONS = [

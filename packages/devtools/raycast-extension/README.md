@@ -1,39 +1,38 @@
-# AI Stats Raycast Extension
+# Phaseo Raycast Extension
 
-Browse AI models, organisations, and API providers directly from Raycast.
+Search Phaseo's AI model catalogue directly from Raycast.
 
 ## Features
 
-- **Browse Models**: Search and compare AI models with detailed information
-- **Explore Organisations**: View all AI model organisations
-- **View Providers**: Browse API providers for AI models
+- **Browse Models**: Search Phaseo's catalogue by model, organisation, or endpoint
+- **Organisation logos**: See the same organisation logos used in the Phaseo web app
+- **Open Model Page**: Press Enter to open the canonical Phaseo model page
+- **Copy Model ID**: Use Raycast's native Copy shortcut on the selected row
 
 ## Setup
 
 1. Install the extension in Raycast
-2. Get your API key from [api.phaseo.app](https://api.phaseo.app)
-3. Configure the extension with your API key in preferences
+2. Get your API key from [Phaseo](https://phaseo.app)
+3. Configure the model browser with your Phaseo API key in preferences
 
 ## Development
 
 ```bash
-# Install dependencies
-npm install
-
-# Run in development mode
-npm run dev
-
-# Build for production
-npm run build
-
-# Lint
-npm run lint
+# From this directory
+pnpm install
+pnpm run dev
+pnpm run build
+pnpm run lint
 ```
+
+On first run, Raycast prompts each user for their own Phaseo API key. It is
+stored as a Raycast password preference and is sent only as the Bearer token
+for requests to the configured Phaseo API URL.
 
 ## Requirements
 
-- Raycast (macOS/Windows)
-- AI Stats API key
+- Raycast (macOS or Windows)
+- Phaseo API key
 - Internet connection
 
 ## License

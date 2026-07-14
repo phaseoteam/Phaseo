@@ -19,7 +19,6 @@ import {
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
-	SelectValue,
 } from "@/components/ui/select"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
@@ -41,11 +40,11 @@ const RANGE_LABELS: Record<TimeRange, string> = {
 }
 
 const HEATMAP_LEVEL_CLASSES = [
-	"bg-zinc-100",
-	"bg-indigo-100",
-	"bg-indigo-200",
-	"bg-indigo-400",
-	"bg-indigo-600",
+	"bg-muted",
+	"bg-primary/15",
+	"bg-primary/30",
+	"bg-primary/55",
+	"bg-primary",
 ]
 
 const WEEKDAY_LABELS = ["M", "", "W", "", "F", "", ""]
@@ -125,13 +124,13 @@ function formatMetricValue(metric: Metric, value: number, compact = true): strin
 
 function getProviderFromModelId(id: string): string {
 	const provider = id.includes("/") ? id.split("/")[0] : ""
-	return provider || "ai-stats"
+	return provider || "phaseo"
 }
 
 function formatProviderName(provider: string): string {
 	const normalized = provider.trim().toLowerCase()
 	const known: Record<string, string> = {
-		"ai-stats": "AI Stats",
+		"phaseo": "Phaseo",
 		anthropic: "Anthropic",
 		deepseek: "DeepSeek",
 		google: "Google",
@@ -139,8 +138,8 @@ function formatProviderName(provider: string): string {
 		mistral: "Mistral AI",
 		openai: "OpenAI",
 		openrouter: "OpenRouter",
-		xai: "xAI",
-		"x-ai": "xAI",
+		xai: "SpaceXAI",
+		"spacex-ai": "SpaceXAI",
 	}
 
 	return (
@@ -155,7 +154,7 @@ function formatProviderName(provider: string): string {
 
 function ProviderMark({ provider, label }: { provider: string; label: string }) {
 	return (
-		<div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white p-1">
+		<div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border bg-background p-1">
 			<Logo
 				id={provider}
 				alt={`${label} logo`}
@@ -164,7 +163,7 @@ function ProviderMark({ provider, label }: { provider: string; label: string }) 
 				className="h-4.5 w-4.5 object-contain"
 				fallbackToColor={false}
 				fallback={
-					<span className="text-[9px] font-semibold uppercase text-zinc-500">
+					<span className="text-[9px] font-semibold uppercase text-muted-foreground">
 						{label.slice(0, 2)}
 					</span>
 				}
@@ -228,44 +227,44 @@ function ActivityHeatmap({
 		.filter(Boolean) as Array<{ index: number; label: string }>
 
 	return (
-		<section className="min-w-0 overflow-hidden border-t border-zinc-200 pt-6">
+		<section className="min-w-0 overflow-hidden border-t border-border pt-6">
 			<div className="mb-4 flex items-start justify-between gap-4">
 				<div>
-					<h2 className="text-lg font-semibold text-zinc-950">Activity</h2>
+					<h2 className="text-lg font-semibold text-foreground">Activity</h2>
 				</div>
-				<div className="text-sm text-zinc-500">
+				<div className="text-sm text-muted-foreground">
 					{metric === "tokens" ? "Tokens" : metric === "spend" ? "Spend" : "Requests"}
 				</div>
 			</div>
 
-			<div className="mb-5 grid max-w-3xl grid-cols-4 divide-x divide-zinc-200 text-sm">
+			<div className="mb-5 grid max-w-3xl grid-cols-4 divide-x divide-border text-sm">
 				<div className="pr-6">
-					<div className="flex items-center gap-1.5 text-zinc-500">
+					<div className="flex items-center gap-1.5 text-muted-foreground">
 						<Flame className="h-3.5 w-3.5" />
 						<span>Streak</span>
 					</div>
-					<div className="mt-1 text-base font-semibold text-zinc-950">
+					<div className="mt-1 text-base font-semibold text-foreground">
 						{profile.currentStreak.toLocaleString()} days
 					</div>
-					<div className="mt-0.5 text-xs text-zinc-500">
+					<div className="mt-0.5 text-xs text-muted-foreground">
 						Best {profile.longestStreak.toLocaleString()}
 					</div>
 				</div>
 				<div className="px-6">
-						<div className="text-zinc-500">Avg / day</div>
-						<div className="mt-1 text-base font-semibold text-zinc-950">
+						<div className="text-muted-foreground">Avg / day</div>
+						<div className="mt-1 text-base font-semibold text-foreground">
 							{formatMetricValue(metric, avgDay)}
 						</div>
 				</div>
 				<div className="px-6">
-					<div className="text-zinc-500">Avg / week</div>
-					<div className="mt-1 text-base font-semibold text-zinc-950">
+					<div className="text-muted-foreground">Avg / week</div>
+					<div className="mt-1 text-base font-semibold text-foreground">
 						{formatMetricValue(metric, avgWeek)}
 					</div>
 				</div>
 				<div className="pl-6">
-					<div className="text-zinc-500">Total</div>
-					<div className="mt-1 text-base font-semibold text-zinc-950">
+					<div className="text-muted-foreground">Total</div>
+					<div className="mt-1 text-base font-semibold text-foreground">
 						{formatMetricValue(metric, total)}
 					</div>
 				</div>
@@ -273,7 +272,7 @@ function ActivityHeatmap({
 
 			<div className="w-full max-w-full overflow-hidden pb-1">
 				<div className="w-full">
-					<div className="ml-5 grid grid-cols-[repeat(53,1fr)] gap-1 text-[10px] text-zinc-400">
+					<div className="ml-5 grid grid-cols-[repeat(53,1fr)] gap-1 text-[10px] text-muted-foreground/70">
 						{Array.from({ length: 53 }).map((_, weekIndex) => {
 							const label =
 								monthLabels.find(
@@ -284,7 +283,7 @@ function ActivityHeatmap({
 					</div>
 
 					<div className="mt-1 grid grid-cols-[0.75rem_minmax(0,1fr)] gap-2">
-						<div className="grid grid-rows-7 gap-1 text-[10px] text-zinc-500">
+						<div className="grid grid-rows-7 gap-1 text-[10px] text-muted-foreground">
 							{WEEKDAY_LABELS.map((label, index) => (
 								<div key={`${label}-${index}`} className="flex h-3.5 items-center">
 									{label}
@@ -321,7 +320,7 @@ function ActivityHeatmap({
 				</div>
 			</div>
 
-			<div className="mt-3 flex items-center gap-2 text-xs text-zinc-500">
+			<div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
 				<span>Less</span>
 				<div className="flex items-center gap-1">
 					{HEATMAP_LEVEL_CLASSES.map((levelClass, index) => (
@@ -337,11 +336,11 @@ function ActivityHeatmap({
 
 			<div className="mt-8 grid gap-10 lg:grid-cols-2">
 				<div>
-					<h3 className="text-sm font-semibold text-zinc-950">Activity insights</h3>
+					<h3 className="text-sm font-semibold text-foreground">Activity insights</h3>
 					<div className="mt-3 space-y-3 text-sm">
 						<div className="flex items-center justify-between gap-6">
-							<span className="text-zinc-500">Biggest day</span>
-							<span className="text-right font-medium text-zinc-950">
+							<span className="text-muted-foreground">Biggest day</span>
+							<span className="text-right font-medium text-foreground">
 								{biggestDay
 									? `${formatLongDate(biggestDay.date)} · ${formatMetricValue(
 											metric,
@@ -351,18 +350,18 @@ function ActivityHeatmap({
 							</span>
 						</div>
 						<div className="flex items-center justify-between gap-6">
-							<span className="text-zinc-500">Most active weekday</span>
-							<span className="font-medium text-zinc-950">{mostActiveWeekday}</span>
+							<span className="text-muted-foreground">Most active weekday</span>
+							<span className="font-medium text-foreground">{mostActiveWeekday}</span>
 						</div>
 						<div className="flex items-center justify-between gap-6">
-							<span className="text-zinc-500">Active days</span>
-							<span className="font-medium text-zinc-950">
+							<span className="text-muted-foreground">Active days</span>
+							<span className="font-medium text-foreground">
 								{nonZeroDays.length.toLocaleString()} of {activeDays.length.toLocaleString()}
 							</span>
 						</div>
 						<div className="flex items-center justify-between gap-6">
-							<span className="text-zinc-500">Quiet days</span>
-							<span className="font-medium text-zinc-950">
+							<span className="text-muted-foreground">Quiet days</span>
+							<span className="font-medium text-foreground">
 								{Math.max(0, activeDays.length - nonZeroDays.length).toLocaleString()}
 							</span>
 						</div>
@@ -370,23 +369,23 @@ function ActivityHeatmap({
 				</div>
 
 				<div>
-					<h3 className="text-sm font-semibold text-zinc-950">Usage notes</h3>
+					<h3 className="text-sm font-semibold text-foreground">Usage notes</h3>
 					<div className="mt-3 space-y-3 text-sm">
 						<div className="flex items-center justify-between gap-6">
-							<span className="text-zinc-500">Most used model</span>
-							<span className="max-w-[14rem] truncate text-right font-medium text-zinc-950">
+							<span className="text-muted-foreground">Most used model</span>
+							<span className="max-w-[14rem] truncate text-right font-medium text-foreground">
 								{topModel?.name ?? "No model activity"}
 							</span>
 						</div>
 						<div className="flex items-center justify-between gap-6">
-							<span className="text-zinc-500">Top model share</span>
-							<span className="font-medium text-zinc-950">
+							<span className="text-muted-foreground">Top model share</span>
+							<span className="font-medium text-foreground">
 								{topModel ? `${topModelShare}%` : "0%"}
 							</span>
 						</div>
 						<div className="flex items-center justify-between gap-6">
-							<span className="text-zinc-500">Models used</span>
-							<span className="font-medium text-zinc-950">
+							<span className="text-muted-foreground">Models used</span>
+							<span className="font-medium text-foreground">
 								{profile.topModels.length.toLocaleString()}
 							</span>
 						</div>
@@ -442,18 +441,18 @@ export default function ProfileDashboard({
 			<header className="flex items-start justify-between gap-4">
 				<div className="flex items-center gap-3">
 					<div className="relative">
-						<Avatar className="h-14 w-14 border border-zinc-200 bg-zinc-50">
+						<Avatar className="h-14 w-14 border border-border bg-muted">
 							{profile.avatarUrl ? (
 								<AvatarImage src={profile.avatarUrl} alt={profile.displayName} />
 							) : null}
-							<AvatarFallback className="bg-zinc-100 font-semibold text-zinc-700">
+							<AvatarFallback className="bg-muted font-semibold text-muted-foreground">
 								{getInitials(profile.displayName)}
 							</AvatarFallback>
 						</Avatar>
 						{publicView ? null : (
 							<button
 								type="button"
-								className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-600 shadow-sm"
+								className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-sm transition-colors hover:text-foreground"
 								aria-label="Change profile photo"
 							>
 								<Camera className="h-3 w-3" />
@@ -461,13 +460,13 @@ export default function ProfileDashboard({
 						)}
 					</div>
 					<div>
-						<h1 className="text-base font-semibold text-zinc-950">
+						<h1 className="text-base font-semibold text-foreground">
 							{profile.displayName}
 						</h1>
 						{publicView ? (
-							<p className="text-sm text-zinc-500">/{profile.publicProfileSlug}</p>
+							<p className="text-sm text-muted-foreground">/{profile.publicProfileSlug}</p>
 						) : profile.email ? (
-							<p className="text-sm text-zinc-500" data-pii="true">
+							<p className="text-sm text-muted-foreground" data-pii="true">
 								{profile.email}
 							</p>
 						) : null}
@@ -479,12 +478,12 @@ export default function ProfileDashboard({
 			<section className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]">
 				<div className="min-w-0">
 					<div className="mb-4 flex flex-wrap items-center gap-3">
-						<h2 className="mr-2 text-lg font-semibold text-zinc-950">
+						<h2 className="mr-2 text-lg font-semibold text-foreground">
 							Usage summary
 						</h2>
 						<Select value={range} onValueChange={(value) => setRange(value as TimeRange)}>
-							<SelectTrigger className="h-8 w-36 rounded-lg border-zinc-200 bg-white text-xs shadow-none">
-								<SelectValue />
+							<SelectTrigger className="h-8 w-36 rounded-lg border-border bg-input/50 text-xs text-foreground shadow-none">
+								<span data-slot="select-value">{RANGE_LABELS[range]}</span>
 							</SelectTrigger>
 							<SelectContent>
 								{Object.entries(RANGE_LABELS).map(([value, label]) => (
@@ -494,7 +493,7 @@ export default function ProfileDashboard({
 								))}
 							</SelectContent>
 						</Select>
-						<div className="inline-flex rounded-lg bg-zinc-100 p-1">
+						<div className="inline-flex rounded-lg bg-muted/70 p-1">
 							{(["tokens", "spend", "requests"] as const).map((nextMetric) => (
 								<button
 									key={nextMetric}
@@ -503,8 +502,8 @@ export default function ProfileDashboard({
 									className={[
 										"h-7 rounded-md px-4 text-xs font-medium transition-colors",
 										metric === nextMetric
-											? "bg-white text-zinc-950 shadow-sm"
-											: "text-zinc-600 hover:text-zinc-950",
+											? "bg-background text-foreground shadow-sm"
+											: "text-muted-foreground hover:text-foreground",
 									].join(" ")}
 								>
 									{nextMetric === "tokens"
@@ -519,14 +518,14 @@ export default function ProfileDashboard({
 
 					<div className="grid min-w-0 gap-3">
 						<div className="w-fit">
-							<div className="text-xs text-zinc-500">
+							<div className="text-xs text-muted-foreground">
 								{metric === "tokens" ? "Tokens" : metric === "spend" ? "Spend" : "Requests"} ·{" "}
 								{RANGE_LABELS[range].toLowerCase()}
 							</div>
-							<div className="mt-1 text-4xl font-semibold tracking-tight text-zinc-950">
+							<div className="mt-1 text-4xl font-semibold tracking-tight text-foreground">
 								{formatMetricValue(metric, total)}
 							</div>
-							<div className="mt-1 text-sm text-zinc-500">
+							<div className="mt-1 text-sm text-muted-foreground">
 								{previous == null
 									? "No prior data"
 									: `${previous > 0 ? "+" : ""}${Math.round(previous)}% vs prior`}
@@ -570,7 +569,7 @@ export default function ProfileDashboard({
 											hideIndicator
 											labelFormatter={(label) => formatLongDate(String(label))}
 											formatter={(value) => (
-												<span className="font-mono font-semibold tabular-nums text-zinc-950">
+												<span className="font-mono font-semibold tabular-nums text-foreground">
 													{formatMetricValue(metric, Number(value), false)}
 												</span>
 											)}
@@ -583,18 +582,18 @@ export default function ProfileDashboard({
 					</div>
 				</div>
 
-				<aside className="min-w-0 border-l border-zinc-200 pl-5">
+				<aside className="min-w-0 border-l border-border pl-5">
 					<div className="mb-5 flex items-center justify-between">
 						<div className="flex items-baseline gap-2">
-							<h2 className="text-lg font-semibold text-zinc-950">Top models</h2>
-							<span className="text-sm text-zinc-500">
+							<h2 className="text-lg font-semibold text-foreground">Top models</h2>
+							<span className="text-sm text-muted-foreground">
 								by {metric === "tokens" ? "tokens" : metric === "spend" ? "spend" : "requests"}
 							</span>
 						</div>
 						{publicView ? null : (
 							<Link
 								href="/settings/usage/overview"
-								className="text-xs font-medium text-zinc-600 hover:text-zinc-950"
+								className="text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
 							>
 								View all usage <ExternalLink className="ml-1 inline h-3 w-3" />
 							</Link>
@@ -603,7 +602,7 @@ export default function ProfileDashboard({
 
 					<div className="space-y-4">
 						{topModels.length === 0 ? (
-							<div className="rounded-lg bg-zinc-50 px-3 py-4 text-sm text-zinc-500">
+							<div className="rounded-lg bg-muted/50 px-3 py-4 text-sm text-muted-foreground">
 								No model activity recorded yet.
 							</div>
 						) : (
@@ -621,22 +620,22 @@ export default function ProfileDashboard({
 										<div className="flex items-center gap-3">
 											<ProviderMark provider={provider} label={providerName} />
 											<div className="min-w-0 flex-1">
-												<div className="truncate text-sm font-medium text-zinc-950">
+												<div className="truncate text-sm font-medium text-foreground">
 													{model.name}
 												</div>
-												<div className="truncate text-xs text-zinc-500">
+												<div className="truncate text-xs text-muted-foreground">
 													{providerName}
 												</div>
 											</div>
-											<div className="text-sm font-semibold tabular-nums text-zinc-950">
+											<div className="text-sm font-semibold tabular-nums text-foreground">
 												{metric === "spend"
 													? formatUsdFromNanos(model.spendNanos)
 													: formatCompactNumber(value)}
 											</div>
 										</div>
-										<div className="h-1.5 overflow-hidden rounded-full bg-zinc-100">
+										<div className="h-1.5 overflow-hidden rounded-full bg-muted">
 											<div
-												className="h-full rounded-full bg-zinc-800"
+												className="h-full rounded-full bg-foreground"
 												style={{
 													width: `${Math.max(3, (value / topModelMax) * 100)}%`,
 												}}

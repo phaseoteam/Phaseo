@@ -1,4 +1,4 @@
--- Ensure chat requests consistently attach to the canonical AI Stats Chat app.
+-- Ensure chat requests consistently attach to the canonical Phaseo Chat app.
 -- Note: api_apps is team-scoped, so this creates/uses one canonical chat app per team.
 
 begin;
@@ -73,14 +73,14 @@ upserted as (
   )
   select
     t.team_id,
-    'https://ai-stats.phaseo.app/chat',
-    'AI Stats Chat',
-    'https://ai-stats.phaseo.app/chat',
+    'https://phaseo.app/chat',
+    'Phaseo Chat',
+    'https://phaseo.app/chat',
     true,
     now(),
     now(),
     jsonb_build_object(
-      'identityUrl', 'https://ai-stats.phaseo.app/chat',
+      'identityUrl', 'https://phaseo.app/chat',
       'managed', true
     )
   from teams_using_chat t
@@ -101,7 +101,7 @@ from public.keys k,
      public.api_apps aa
 where gr.key_id = k.id
   and aa.team_id = gr.team_id
-  and aa.app_key = 'https://ai-stats.phaseo.app/chat'
+  and aa.app_key = 'https://phaseo.app/chat'
   and k.name = '__chat_route_managed_key__'
   and (gr.app_id is null or gr.app_id <> aa.id);
 commit;

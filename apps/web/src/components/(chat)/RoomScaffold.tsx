@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useTheme } from "next-themes";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Database, Gauge, LogOut, UserRound } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ChatRoomSwitcher } from "@/components/(chat)/ChatRoomSwitcher";
+import { ThemeSelector } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { fetchClientAuthHeaderData } from "@/lib/fetchers/internal/fetchClientAuthHeaderData";
 import { postClientAuthSignOut } from "@/lib/fetchers/internal/postClientAuthSignOut";
@@ -43,24 +43,27 @@ type SidebarAuthUser = {
 export const ROOM_SIDEBAR_SLOT_ID = "room-scaffold-sidebar-slot";
 
 function RoomSidebarBrand() {
-	const { resolvedTheme } = useTheme();
 	const { state: sidebarState, isMobile } = useSidebar();
 	const collapsed = sidebarState === "collapsed" && !isMobile;
-	const isDarkTheme = resolvedTheme === "dark";
-	const brandSrc = collapsed
-		? isDarkTheme
-			? "/logo_dark.svg"
-			: "/logo_light.svg"
-		: isDarkTheme
-			? "/wordmark_dark.svg"
-			: "/wordmark_light.svg";
+	const brandLightSrc = collapsed ? "/logo_light.svg" : "/wordmark_light.svg";
+	const brandDarkSrc = collapsed ? "/logo_dark.svg" : "/wordmark_dark.svg";
+	const brandClassName = collapsed ? "h-5 select-none" : "h-6 select-none";
 
 	return (
-		<img
-			src={brandSrc}
-			alt="AI Stats"
-			className={collapsed ? "h-7 select-none" : "h-8 select-none"}
-		/>
+		<>
+			<img
+				src={brandLightSrc}
+				alt=""
+				aria-hidden="true"
+				className={`${brandClassName} block dark:hidden`}
+			/>
+			<img
+				src={brandDarkSrc}
+				alt=""
+				aria-hidden="true"
+				className={`${brandClassName} hidden dark:block`}
+			/>
+		</>
 	);
 }
 
@@ -165,20 +168,19 @@ export function RoomScaffold({ children }: RoomScaffoldProps) {
 	return (
 		<SidebarProvider defaultOpen contained className="h-full overflow-hidden">
 			<Sidebar collapsible="icon" className="border-r border-border bg-background">
-				<SidebarHeader className="gap-0 px-0 pt-3.5 pb-0">
-					<div className="mb-3.5 ml-2 flex w-full items-center gap-2 px-2 group-data-[collapsible=icon]:ml-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:pb-1">
-						<Link href="/">
+				<SidebarHeader className="h-[57px] gap-0 border-b border-border px-0 py-0">
+					<div className="flex h-full w-full items-center gap-2 px-4 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2">
+						<Link href="/" aria-label="Phaseo">
 							<RoomSidebarBrand />
 						</Link>
 					</div>
-					<div className="mb-2 h-px w-full bg-border" />
 				</SidebarHeader>
-				<SidebarContent>
+				<SidebarContent className="gap-0">
 					<ChatRoomSwitcher />
 					<SidebarSeparator className="my-0" />
 					{!hasCustomSidebarContent ? (
 						<>
-							<div className="px-2 py-1.5">
+							<div className="px-2 pb-1 pt-1.5">
 								<RoomSidebarDatabaseButton />
 							</div>
 							<SidebarSeparator className="my-0" />
@@ -186,19 +188,19 @@ export function RoomScaffold({ children }: RoomScaffoldProps) {
 					) : null}
 					<div
 						id={ROOM_SIDEBAR_SLOT_ID}
-						className="flex min-h-0 flex-1 flex-col gap-2"
+						className="flex min-h-0 flex-1 flex-col gap-0"
 					/>
 				</SidebarContent>
 				<SidebarFooter className="border-t border-border px-3 py-3">
 					{authUser ? (
-						<div className="grid gap-3">
+						<div className="grid gap-2">
 							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button
+								<DropdownMenuTrigger render={<Button
 										variant="ghost"
-										className="w-full justify-start gap-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
-									>
-										<Avatar className="h-8 w-8 rounded-lg border border-zinc-200/70 dark:border-zinc-800/70">
+										aria-label="Open account menu"
+										className="h-auto min-h-14 w-full touch-manipulation justify-start gap-3 rounded-2xl py-2 active:bg-muted data-open:bg-muted group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0" />}>
+
+										<Avatar className="pointer-events-none h-8 w-8 rounded-lg border border-zinc-200/70 dark:border-zinc-800/70">
 											{authUser.avatarUrl ? (
 												<AvatarImage
 													src={authUser.avatarUrl}
@@ -210,12 +212,15 @@ export function RoomScaffold({ children }: RoomScaffoldProps) {
 												{initials || "U"}
 											</AvatarFallback>
 										</Avatar>
-										<div className="flex min-w-0 flex-col items-start group-data-[collapsible=icon]:hidden">
+										<div className="pointer-events-none flex min-w-0 flex-col items-start text-left group-data-[collapsible=icon]:hidden">
 											<span className="truncate text-sm font-medium">
 												{firstName}
 											</span>
+											<span className="truncate text-[11px] font-normal text-muted-foreground">
+												All data is stored locally.
+											</span>
 										</div>
-									</Button>
+
 								</DropdownMenuTrigger>
 								<DropdownMenuContent
 									side="right"
@@ -223,18 +228,23 @@ export function RoomScaffold({ children }: RoomScaffoldProps) {
 									sideOffset={8}
 									className="w-56 z-[90]"
 								>
-									<DropdownMenuItem asChild>
-										<Link href="/settings/account">
+									<DropdownMenuItem render={<Link href="/settings/account" />}>
+
 											<UserRound className="mr-2 h-4 w-4" />
 											Account
-										</Link>
+
 									</DropdownMenuItem>
-									<DropdownMenuItem asChild>
-										<Link href="/gateway/usage">
+									<DropdownMenuItem render={<Link href="/gateway/usage" />}>
+
 											<Gauge className="mr-2 h-4 w-4" />
 											Usage
-										</Link>
+
 									</DropdownMenuItem>
+									<DropdownMenuSeparator />
+									<div className="flex min-h-10 items-center justify-between gap-3 px-2 py-1.5">
+										<span className="text-sm">Theme</span>
+										<ThemeSelector className="shrink-0" showSelectedLabel={false} />
+									</div>
 									<DropdownMenuSeparator />
 									<DropdownMenuItem onClick={handleSignOut}>
 										<LogOut className="mr-2 h-4 w-4" />
@@ -242,9 +252,6 @@ export function RoomScaffold({ children }: RoomScaffoldProps) {
 									</DropdownMenuItem>
 								</DropdownMenuContent>
 							</DropdownMenu>
-							<p className="text-[11px] text-muted-foreground group-data-[collapsible=icon]:hidden">
-								All data is stored locally in your browser.
-							</p>
 						</div>
 					) : authLoading ? (
 						<div className="h-9 w-full rounded-md bg-muted/40" />

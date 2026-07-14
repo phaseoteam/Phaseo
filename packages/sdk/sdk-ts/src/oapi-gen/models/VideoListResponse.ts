@@ -114,7 +114,6 @@ export interface VideoListResponse {
         pending_retries?: number;
         total_attempts?: number;
       };
-      endpoint_id?: string | null;
       events?: string[];
       has_secret?: boolean;
       url?: string | null;

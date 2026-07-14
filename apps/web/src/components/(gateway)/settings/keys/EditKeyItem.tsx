@@ -19,8 +19,20 @@ import { updateApiKeyAction } from "@/app/(dashboard)/settings/keys/actions";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
-export default function EditKeyItem({ k }: any) {
-	const [open, setOpen] = useState(false);
+export default function EditKeyItem({
+	k,
+	trigger = true,
+	open: controlledOpen,
+	onOpenChange,
+}: {
+	k: any;
+	trigger?: boolean;
+	open?: boolean;
+	onOpenChange?: (open: boolean) => void;
+}) {
+	const [internalOpen, setInternalOpen] = useState(false);
+	const open = controlledOpen ?? internalOpen;
+	const setOpen = onOpenChange ?? setInternalOpen;
 	const [name, setName] = useState(k.name || "");
 	const [paused, setPaused] = useState(k.status !== "active");
 	const [loading, setLoading] = useState(false);
@@ -48,19 +60,19 @@ export default function EditKeyItem({ k }: any) {
 
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
-			<DropdownMenuItem asChild>
-				<button
-					className="w-full text-left flex items-center gap-2"
-					onClick={(e) => {
-						e.preventDefault();
-						// open after menu closes
-						setTimeout(() => setOpen(true), 0);
-					}}
-				>
-					<Edit2 className="mr-2" />
-					Edit
-				</button>
-			</DropdownMenuItem>
+			{trigger ? (
+				<DropdownMenuItem render={<div
+						className="w-full text-left flex items-center gap-2"
+						onClick={() => {
+							// open after menu closes
+							setTimeout(() => setOpen(true), 0);
+						}} />}>
+
+						<Edit2 className="mr-2" />
+						Edit
+
+				</DropdownMenuItem>
+			) : null}
 			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>Edit API Key</DialogTitle>

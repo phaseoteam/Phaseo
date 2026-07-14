@@ -1,7 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useDeferredValue, useMemo, useState } from "react";
+import {
+	useDeferredValue,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+	type ReactNode,
+} from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { debounce, useQueryState } from "nuqs";
 import { Input } from "@/components/ui/input";
@@ -9,25 +16,30 @@ import {
 	Search,
 	Grid as GridIcon,
 	Table as TableIcon,
-	Layers as LayersIcon,
 	SlidersHorizontal,
 	Activity,
+	AlertTriangle,
 	ArrowDownCircle,
-	ArrowUpCircle,
 	ArrowUpDown,
+	Ban,
+	Binary,
 	Captions,
+	CheckCircle2,
 	CircleDot,
+	Clock3,
 	FileText,
+	Globe2,
 	Headphones,
 	Music4,
 	Route,
 	Sparkles,
 	Speech,
-	Text as TextIcon,
+	Type as TypeIcon,
 	ImageIcon,
+	Layers3,
 	Video,
 	CalendarDays,
-	Tag,
+	XCircle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -50,16 +62,69 @@ import {
 	SheetHeader,
 	SheetTitle,
 } from "@/components/ui/sheet";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { getModalityTone } from "@/lib/models/modalityStyles";
+import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { featureLabels } from "@/lib/config/featureLabels";
 import type { MonitorModelTableRow } from "@/lib/fetchers/models/table-view/types";
 import { MonitorTableClient } from "@/components/monitor/MonitorTableClient";
+import { Logo } from "@/components/Logo";
+import { Slider } from "@/components/ui/slider";
 
 type OptionCount = {
 	value: string;
 	count: number;
 };
+
+type TableSortOption = {
+	value: string;
+	direction: "asc" | "desc";
+	label: string;
+	triggerLabel: string;
+};
+
+const TABLE_SORT_OPTIONS: TableSortOption[] = [
+	{
+		value: "added",
+		direction: "desc",
+		label: "Newest",
+		triggerLabel: "Newest",
+	},
+	{
+		value: "weeklyTokens",
+		direction: "desc",
+		label: "Most Popular (7d Tokens)",
+		triggerLabel: "Most Popular",
+	},
+	{
+		value: "inputPrice",
+		direction: "asc",
+		label: "Price: Low to High",
+		triggerLabel: "Lowest Price",
+	},
+	{
+		value: "outputPrice",
+		direction: "desc",
+		label: "Price: High to Low",
+		triggerLabel: "Highest Price",
+	},
+	{
+		value: "context",
+		direction: "desc",
+		label: "Context: High to Low",
+		triggerLabel: "Largest Context",
+	},
+];
+
+const CONTEXT_LENGTH_STOPS = [
+	0, 4_000, 8_000, 16_000, 32_000, 64_000, 128_000, 256_000, 512_000, 1_000_000,
+] as const;
 
 const MODALITY_FILTER_DISPLAY_ORDER = [
 	"text",
@@ -77,13 +142,47 @@ const MODALITY_FILTER_DISPLAY_ORDER = [
 
 const STATUS_FILTER_DISPLAY_ORDER = [
 	"active",
-	"coming_soon",
 	"deranked_lvl1",
 	"deranked_lvl2",
 	"deranked_lvl3",
+	"coming_soon",
 	"inactive",
 	"disabled",
 ] as const;
+
+const STATUS_FILTER_META: Record<
+	string,
+	{ icon: LucideIcon; iconClassName: string }
+> = {
+	active: {
+		icon: CheckCircle2,
+		iconClassName: "text-green-600 dark:text-green-400",
+	},
+	deranked_lvl1: {
+		icon: AlertTriangle,
+		iconClassName: "text-amber-500 dark:text-amber-400",
+	},
+	deranked_lvl2: {
+		icon: AlertTriangle,
+		iconClassName: "text-amber-600 dark:text-amber-400",
+	},
+	deranked_lvl3: {
+		icon: AlertTriangle,
+		iconClassName: "text-red-500 dark:text-red-400",
+	},
+	coming_soon: {
+		icon: Clock3,
+		iconClassName: "text-sky-600 dark:text-sky-400",
+	},
+	inactive: {
+		icon: XCircle,
+		iconClassName: "text-zinc-500 dark:text-zinc-400",
+	},
+	disabled: {
+		icon: Ban,
+		iconClassName: "text-red-600 dark:text-red-400",
+	},
+};
 
 interface ModelsTableDisplayProps {
 	initialModelData: MonitorModelTableRow[];
@@ -91,7 +190,35 @@ interface ModelsTableDisplayProps {
 	allModalities: string[];
 	allFeatures: string[];
 	allStatuses: string[];
-	allTiers: string[];
+}
+
+function parseContextMinParam(value: string | null): number {
+	const parsed = Number(value);
+	return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+function formatContextStop(value: number): string {
+	if (value <= 0) return "Any";
+	if (value >= 1_000_000) return `${Math.round(value / 1_000_000)}M`;
+	return `${Math.round(value / 1_000)}K`;
+}
+
+function getClosestStopIndex(value: number): number {
+	if (!Number.isFinite(value) || value <= 0) return 0;
+	const index = CONTEXT_LENGTH_STOPS.findIndex((stop) => stop >= value);
+	return index === -1 ? CONTEXT_LENGTH_STOPS.length - 1 : index;
+}
+
+function formatRegionLabel(value: string): string {
+	const normalized = String(value ?? "")
+		.trim()
+		.toLowerCase();
+	if (normalized === "us") return "US";
+	if (normalized === "eu") return "EU";
+	if (normalized === "apac") return "APAC";
+	if (normalized === "jp") return "Japan";
+	if (normalized === "au") return "Australia";
+	return normalized ? normalized.toUpperCase() : value;
 }
 
 function parseCsvParam(value: string | null): string[] {
@@ -195,7 +322,9 @@ function toggleInList(current: string[], value: string): string[] {
 }
 
 function toTitleCase(value: string): string {
-	const normalized = String(value ?? "").trim().toLowerCase();
+	const normalized = String(value ?? "")
+		.trim()
+		.toLowerCase();
 	if (normalized === "audio_stt") return "Transcription";
 	if (normalized === "audio_tts") return "Speech";
 	if (normalized === "audio_music") return "Music";
@@ -215,6 +344,7 @@ function toTitleCase(value: string): string {
 function formatStatusLabel(value: string): string {
 	const normalized = normalizeStatusFilterValue(value);
 	if (normalized === "active") return "Active On Gateway";
+	if (normalized === "coming_soon") return "Coming Soon";
 	if (normalized === "inactive") return "Not Active";
 	if (normalized === "deranked_lvl1") return "Deranked Level 1";
 	if (normalized === "deranked_lvl2") return "Deranked Level 2";
@@ -248,7 +378,7 @@ function getModalityIcon(modality: string): LucideIcon {
 	}
 	if (normalized.includes("audio")) return Headphones;
 	if (normalized.includes("file")) return FileText;
-	if (normalized.includes("text")) return TextIcon;
+	if (normalized.includes("text")) return TypeIcon;
 	return CircleDot;
 }
 
@@ -258,6 +388,7 @@ function FilterCheckboxList({
 	onToggle,
 	labelForValue,
 	iconForValue,
+	renderStart,
 	toneForValue,
 	collapsedLimit,
 }: {
@@ -266,6 +397,11 @@ function FilterCheckboxList({
 	onToggle: (value: string) => void;
 	labelForValue?: (value: string) => string;
 	iconForValue?: (value: string) => LucideIcon;
+	renderStart?: (options: {
+		value: string;
+		label: string;
+		checked: boolean;
+	}) => ReactNode;
 	toneForValue?: (value: string) => ReturnType<typeof getModalityTone>;
 	collapsedLimit?: number;
 }) {
@@ -291,6 +427,11 @@ function FilterCheckboxList({
 						? labelForValue(option.value)
 						: toTitleCase(option.value);
 					const Icon = iconForValue?.(option.value);
+					const start = renderStart?.({
+						value: option.value,
+						label,
+						checked,
+					});
 					const tone = toneForValue?.(option.value);
 
 					return (
@@ -307,26 +448,27 @@ function FilterCheckboxList({
 							aria-pressed={checked}
 						>
 							<span className="flex items-center gap-2 min-w-0">
-								{Icon ? (
-									tone ? (
-										<span
-											className={cn(
-												"inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-border/60 bg-background text-muted-foreground transition-colors",
-												tone.sidebarIconHoverClassName,
-												checked && tone.sidebarIconSelectedClassName,
-											)}
-										>
-											<Icon className="h-3 w-3" />
-										</span>
-									) : (
-										<Icon
-											className={cn(
-												"h-3.5 w-3.5 shrink-0",
-												checked ? "text-primary" : "text-muted-foreground",
-											)}
-										/>
-									)
-								) : null}
+								{start ??
+									(Icon ? (
+										tone ? (
+											<span
+												className={cn(
+													"inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-border/60 bg-background text-muted-foreground transition-colors",
+													tone.sidebarIconHoverClassName,
+													checked && tone.sidebarIconSelectedClassName,
+												)}
+											>
+												<Icon className="h-3 w-3" />
+											</span>
+										) : (
+											<Icon
+												className={cn(
+													"h-3.5 w-3.5 shrink-0",
+													checked ? "text-primary" : "text-muted-foreground",
+												)}
+											/>
+										)
+									) : null)}
 								<span className="text-sm truncate">{label}</span>
 							</span>
 							<span
@@ -365,6 +507,20 @@ function getOptionCounts(
 		.filter((option) => option.count > 0);
 }
 
+function FilterLogo({ value, label }: { value: string; label: string }) {
+	return (
+		<span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-border/60 bg-background p-0.5">
+			<Logo
+				id={value}
+				alt={`${label} logo`}
+				width={14}
+				height={14}
+				className="h-3.5 w-3.5 object-contain"
+			/>
+		</span>
+	);
+}
+
 function getModalityOptions(
 	countsMap: Map<string, number>,
 	values: string[],
@@ -376,7 +532,11 @@ function getModalityOptions(
 
 	const known = new Set<string>(MODALITY_FILTER_DISPLAY_ORDER);
 	const normalizedValues = Array.from(
-		new Set(values.map((value) => normalizeModalityFilterValue(value)).filter(Boolean)),
+		new Set(
+			values
+				.map((value) => normalizeModalityFilterValue(value))
+				.filter(Boolean),
+		),
 	);
 	const additional = normalizedValues
 		.filter((value) => !known.has(value))
@@ -399,49 +559,96 @@ function OutputModalityButtonRow({
 	selected: string[];
 	onToggle: (value: string) => void;
 }) {
+	const viewportRef = useRef<HTMLDivElement | null>(null);
+	const contentRef = useRef<HTMLDivElement | null>(null);
+	const [hasHorizontalOverflow, setHasHorizontalOverflow] = useState(false);
+
+	useEffect(() => {
+		const viewport = viewportRef.current;
+		if (!viewport) return;
+
+		const updateOverflow = () => {
+			setHasHorizontalOverflow(viewport.scrollWidth > viewport.clientWidth + 1);
+		};
+
+		updateOverflow();
+		const resizeObserver = new ResizeObserver(updateOverflow);
+		resizeObserver.observe(viewport);
+		if (contentRef.current) resizeObserver.observe(contentRef.current);
+		window.addEventListener("resize", updateOverflow);
+
+		return () => {
+			resizeObserver.disconnect();
+			window.removeEventListener("resize", updateOverflow);
+		};
+	}, [options]);
+
 	if (options.length === 0) return null;
 
-	return (
-		<div className="flex gap-2 overflow-x-auto pb-1">
-			{options.map((option) => {
-				const checked = selected.includes(option.value);
-				const Icon = getModalityIcon(option.value);
-				const tone = getModalityTone(option.value);
+	const buttons = options.map((option) => {
+		const checked = selected.includes(option.value);
+		const Icon = getModalityIcon(option.value);
+		const tone = getModalityTone(option.value);
 
-				return (
-					<button
-						key={option.value}
-						type="button"
-						onClick={() => onToggle(option.value)}
-						aria-pressed={checked}
-						className={cn(
-							"group inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors",
-							checked
-								? tone.badgeClassName
-								: "border-border/70 bg-background text-foreground hover:bg-muted/45",
-						)}
-					>
-						<span
-							className={cn(
-								"inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border/60 bg-background/80",
-								checked ? tone.sidebarIconSelectedClassName : tone.sidebarIconHoverClassName,
-							)}
-						>
-							<Icon className="h-3.5 w-3.5" />
-						</span>
-						<span>{toTitleCase(option.value)}</span>
-						<span
-							className={cn(
-								"inline-flex min-w-6 items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-medium tabular-nums",
-								checked ? "bg-black/5 dark:bg-white/10" : "bg-muted text-muted-foreground",
-							)}
-						>
-							{option.count}
-						</span>
-					</button>
-				);
-			})}
-		</div>
+		return (
+			<Button
+				key={option.value}
+				type="button"
+				variant="ghost"
+				size="sm"
+				onClick={() => onToggle(option.value)}
+				aria-pressed={checked}
+				className={cn(
+					"group h-9 shrink-0 rounded-md px-2 text-sm shadow-none transition-colors",
+					checked
+						? cn(
+								"bg-muted text-foreground hover:bg-muted",
+								tone.badgeClassName,
+								"border-transparent hover:border-transparent",
+							)
+						: "text-muted-foreground hover:text-foreground",
+				)}
+			>
+				<span
+					className={cn(
+						"inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-sm",
+						checked
+							? tone.iconClassName
+							: cn(
+									"bg-transparent text-muted-foreground transition-colors",
+									tone.ghostIconHoverClassName,
+								),
+					)}
+				>
+					<Icon className="h-3.5 w-3.5" />
+				</span>
+				<span>{toTitleCase(option.value)}</span>
+				<span
+					className={cn(
+						"inline-flex min-w-5 items-center justify-center px-1 text-[11px] font-medium leading-none tabular-nums",
+						checked ? "text-current" : "text-muted-foreground",
+					)}
+				>
+					{option.count}
+				</span>
+			</Button>
+		);
+	});
+
+	return (
+		<ScrollArea
+			className="w-full [&>[data-orientation=horizontal]]:opacity-100 [&>[data-orientation=horizontal]]:transition-none"
+			scrollBarOrientation="horizontal"
+			viewportClassName={hasHorizontalOverflow ? "pb-2" : "pb-0"}
+			viewportRef={viewportRef}
+		>
+			<div
+				ref={contentRef}
+				className="flex min-w-max items-center gap-1.5 pr-4"
+			>
+				{buttons}
+			</div>
+		</ScrollArea>
 	);
 }
 
@@ -450,8 +657,6 @@ export default function ModelsTableDisplay({
 	allEndpoints,
 	allModalities,
 	allFeatures,
-	allStatuses,
-	allTiers,
 }: ModelsTableDisplayProps) {
 	const [search, setSearch] = useQueryState("search", {
 		defaultValue: "",
@@ -462,11 +667,49 @@ export default function ModelsTableDisplay({
 	});
 	const deferredSearch = useDeferredValue(search ?? "");
 	const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+	const toolbarRef = useRef<HTMLDivElement | null>(null);
+	const [stickyOffsets, setStickyOffsets] = useState({
+		toolbarTop: 60,
+		tableHeaderTop: 60,
+	});
 
-	const DEFAULT_OPEN_SECTIONS = ["gatewayStatus", "inputModalities"];
-	const [openFilterSections, setOpenFilterSections] = useState<string[]>([
-		...DEFAULT_OPEN_SECTIONS,
-	]);
+	useEffect(() => {
+		const toolbar = toolbarRef.current;
+		if (!toolbar || typeof window === "undefined") return;
+
+		const siteHeader = document.querySelector<HTMLElement>(
+			"#dashboard-shell > header",
+		);
+		const mediumViewport = window.matchMedia("(min-width: 768px)");
+		const updateOffsets = () => {
+			const toolbarTop = Math.ceil(
+				siteHeader?.getBoundingClientRect().height ?? 60,
+			);
+			const toolbarHeight = mediumViewport.matches
+				? Math.ceil(toolbar.getBoundingClientRect().height)
+				: 0;
+			const tableHeaderTop = toolbarTop + toolbarHeight;
+			setStickyOffsets((current) =>
+				current.toolbarTop === toolbarTop &&
+				current.tableHeaderTop === tableHeaderTop
+					? current
+					: { toolbarTop, tableHeaderTop },
+			);
+		};
+
+		updateOffsets();
+		const resizeObserver = new ResizeObserver(updateOffsets);
+		resizeObserver.observe(toolbar);
+		if (siteHeader) resizeObserver.observe(siteHeader);
+		mediumViewport.addEventListener("change", updateOffsets);
+		window.addEventListener("resize", updateOffsets);
+
+		return () => {
+			resizeObserver.disconnect();
+			mediumViewport.removeEventListener("change", updateOffsets);
+			window.removeEventListener("resize", updateOffsets);
+		};
+	}, []);
 
 	const [selectedStatuses, setSelectedStatuses] = useQueryState("statuses", {
 		defaultValue: [] as string[],
@@ -478,12 +721,15 @@ export default function ModelsTableDisplay({
 	const [hasInteractedWithStatuses, setHasInteractedWithStatuses] = useState(
 		selectedStatuses.length > 0,
 	);
+	const hasSearchQuery = deferredSearch.trim().length > 0;
 	const effectiveSelectedStatuses = useMemo(
 		() =>
 			!hasInteractedWithStatuses && selectedStatuses.length === 0
-				? ["active"]
+				? hasSearchQuery
+					? []
+					: ["active"]
 				: selectedStatuses,
-		[hasInteractedWithStatuses, selectedStatuses],
+		[hasInteractedWithStatuses, hasSearchQuery, selectedStatuses],
 	);
 	const [selectedEndpoints, setSelectedEndpoints] = useQueryState("endpoints", {
 		defaultValue: [] as string[],
@@ -502,14 +748,16 @@ export default function ModelsTableDisplay({
 			clearOnDefault: true,
 		},
 	);
-	const [selectedOutputModalities, setSelectedOutputModalities] =
-		useQueryState("outputModalities", {
+	const [selectedOutputModalities, setSelectedOutputModalities] = useQueryState(
+		"outputModalities",
+		{
 			defaultValue: [] as string[],
 			parse: parseModalityParam,
 			serialize: serializeCsvParam,
 			shallow: true,
 			clearOnDefault: true,
-		});
+		},
+	);
 	const [selectedFeatures, setSelectedFeatures] = useQueryState("features", {
 		defaultValue: [] as string[],
 		parse: parseCsvParam,
@@ -524,6 +772,50 @@ export default function ModelsTableDisplay({
 		shallow: true,
 		clearOnDefault: true,
 	});
+	const DEFAULT_OPEN_SECTIONS = ["gatewayStatus", "inputModalities"];
+	const [openFilterSections, setOpenFilterSections] = useState<string[]>(() => [
+		...DEFAULT_OPEN_SECTIONS,
+		...(selectedTiers.length > 0 ? ["tiers"] : []),
+	]);
+	const [selectedSupportedParameters, setSelectedSupportedParameters] =
+		useQueryState("supportedParameters", {
+			defaultValue: [] as string[],
+			parse: parseCsvParam,
+			serialize: serializeCsvParam,
+			shallow: true,
+			clearOnDefault: true,
+		});
+	const [selectedProviders, setSelectedProviders] = useQueryState("providers", {
+		defaultValue: [] as string[],
+		parse: parseCsvParam,
+		serialize: serializeCsvParam,
+		shallow: true,
+		clearOnDefault: true,
+	});
+	const [selectedRegions, setSelectedRegions] = useQueryState("regions", {
+		defaultValue: [] as string[],
+		parse: parseCsvParam,
+		serialize: serializeCsvParam,
+		shallow: true,
+		clearOnDefault: true,
+	});
+	const [selectedCreators, setSelectedCreators] = useQueryState("creators", {
+		defaultValue: [] as string[],
+		parse: parseCsvParam,
+		serialize: serializeCsvParam,
+		shallow: true,
+		clearOnDefault: true,
+	});
+	const [selectedContextMin, setSelectedContextMin] = useQueryState(
+		"contextMin",
+		{
+			defaultValue: 0,
+			parse: parseContextMinParam,
+			serialize: (value) => String(value),
+			shallow: true,
+			clearOnDefault: true,
+		},
+	);
 	const [yearSelected, setYearSelected] = useQueryState("year", {
 		defaultValue: 0,
 		parse: parseYearParam,
@@ -531,18 +823,35 @@ export default function ModelsTableDisplay({
 		shallow: true,
 		clearOnDefault: true,
 	});
+	const [sortField, setSortField] = useQueryState("sort", {
+		defaultValue: "added",
+		parse: (value) => value || "added",
+		serialize: (value) => value,
+		clearOnDefault: true,
+		shallow: true,
+	});
+	const [sortDirection, setSortDirection] = useQueryState("dir", {
+		defaultValue: "desc" as "asc" | "desc",
+		parse: (value) => (value === "asc" ? "asc" : "desc"),
+		serialize: (value) => value,
+		clearOnDefault: true,
+		shallow: true,
+	});
 
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 	const isTable = pathname?.includes("/models/table");
-	const isCollections = pathname?.includes("/models/collections");
 
-	const isDefaultTiers = selectedTiers.length === 0;
+	const selectedContextStopIndex = getClosestStopIndex(selectedContextMin);
 
 	const counts = useMemo(() => {
 		const inputMap = new Map<string, number>();
 		const outputMap = new Map<string, number>();
 		const featureMap = new Map<string, number>();
+		const supportedParameterMap = new Map<string, number>();
+		const providerMap = new Map<string, number>();
+		const regionMap = new Map<string, number>();
+		const creatorMap = new Map<string, number>();
 		const endpointMap = new Map<string, number>();
 		const statusMap = new Map<string, number>();
 		const tierMap = new Map<string, number>();
@@ -564,8 +873,32 @@ export default function ModelsTableDisplay({
 				if (!key) continue;
 				featureMap.set(key, (featureMap.get(key) ?? 0) + 1);
 			}
+			for (const parameter of item.supportedParameters ?? []) {
+				const key = String(parameter ?? "").trim();
+				if (!key) continue;
+				supportedParameterMap.set(
+					key,
+					(supportedParameterMap.get(key) ?? 0) + 1,
+				);
+			}
+			const providerId = String(item.provider.id ?? "").trim();
+			if (providerId) {
+				providerMap.set(providerId, (providerMap.get(providerId) ?? 0) + 1);
+			}
+			for (const region of item.provider.executionRegions ?? []) {
+				const key = String(region ?? "")
+					.trim()
+					.toLowerCase();
+				if (!key) continue;
+				regionMap.set(key, (regionMap.get(key) ?? 0) + 1);
+			}
+			const creatorId = String(item.organisationId ?? "").trim();
+			if (creatorId) {
+				creatorMap.set(creatorId, (creatorMap.get(creatorId) ?? 0) + 1);
+			}
 			const endpoint = String(item.endpoint ?? "").trim();
-			if (endpoint) endpointMap.set(endpoint, (endpointMap.get(endpoint) ?? 0) + 1);
+			if (endpoint)
+				endpointMap.set(endpoint, (endpointMap.get(endpoint) ?? 0) + 1);
 
 			const status = String(item.gatewayStatus ?? "").trim();
 			const statusKey = normalizeStatusFilterValue(status);
@@ -573,7 +906,9 @@ export default function ModelsTableDisplay({
 				statusMap.set(statusKey, (statusMap.get(statusKey) ?? 0) + 1);
 			}
 
-			const tier = String(item.tier ?? "standard").trim();
+			const tier = String(item.tier ?? "standard")
+				.trim()
+				.toLowerCase();
 			if (tier) tierMap.set(tier, (tierMap.get(tier) ?? 0) + 1);
 
 			if (item.added) {
@@ -586,6 +921,10 @@ export default function ModelsTableDisplay({
 			inputMap,
 			outputMap,
 			featureMap,
+			supportedParameterMap,
+			providerMap,
+			regionMap,
+			creatorMap,
 			endpointMap,
 			statusMap,
 			tierMap,
@@ -605,31 +944,77 @@ export default function ModelsTableDisplay({
 		() => getOptionCounts(allFeatures, counts.featureMap),
 		[allFeatures, counts.featureMap],
 	);
+	const supportedParameterOptions = useMemo(
+		() =>
+			getOptionCounts(
+				Array.from(counts.supportedParameterMap.keys()).sort((a, b) =>
+					toTitleCase(a).localeCompare(toTitleCase(b)),
+				),
+				counts.supportedParameterMap,
+			),
+		[counts.supportedParameterMap],
+	);
+	const providerOptions = useMemo(
+		() =>
+			getOptionCounts(
+				Array.from(counts.providerMap.keys()),
+				counts.providerMap,
+			),
+		[counts.providerMap],
+	);
+	const regionOptions = useMemo(
+		() =>
+			getOptionCounts(Array.from(counts.regionMap.keys()), counts.regionMap),
+		[counts.regionMap],
+	);
+	const creatorOptions = useMemo(
+		() =>
+			getOptionCounts(Array.from(counts.creatorMap.keys()), counts.creatorMap),
+		[counts.creatorMap],
+	);
 	const endpointOptions = useMemo(
 		() => getOptionCounts(allEndpoints, counts.endpointMap),
 		[allEndpoints, counts.endpointMap],
 	);
-	const statusOptions = useMemo(() => {
-		const normalized = Array.from(
-			new Set(
-				allStatuses
-					.map((value) => normalizeStatusFilterValue(value))
-					.filter(Boolean),
-			),
-		);
-		const known = new Set<string>(STATUS_FILTER_DISPLAY_ORDER);
-		const preferred = STATUS_FILTER_DISPLAY_ORDER.filter((value) =>
-			normalized.includes(value),
-		);
-		const rest = normalized
-			.filter((value) => !known.has(value))
-			.sort((a, b) => a.localeCompare(b));
-		return getOptionCounts([...preferred, ...rest], counts.statusMap);
-	}, [allStatuses, counts.statusMap]);
+	const statusOptions = useMemo(
+		() =>
+			STATUS_FILTER_DISPLAY_ORDER.map((value) => ({
+				value,
+				count: counts.statusMap.get(value) ?? 0,
+			})),
+		[counts.statusMap],
+	);
 	const tierOptions = useMemo(() => {
-		const uniqueTiers = Array.from(new Set(["standard", ...allTiers]));
-		return getOptionCounts(uniqueTiers, counts.tierMap);
-	}, [allTiers, counts.tierMap]);
+		const preferredOrder = ["standard", "batch", "free"];
+		const values = Array.from(counts.tierMap.keys()).sort((a, b) => {
+			const aIndex = preferredOrder.indexOf(a);
+			const bIndex = preferredOrder.indexOf(b);
+			if (aIndex !== -1 || bIndex !== -1) {
+				if (aIndex === -1) return 1;
+				if (bIndex === -1) return -1;
+				return aIndex - bIndex;
+			}
+			return a.localeCompare(b);
+		});
+		return getOptionCounts(values, counts.tierMap);
+	}, [counts.tierMap]);
+	const providerLabels = useMemo(
+		() =>
+			new Map(
+				initialModelData.map((item) => [item.provider.id, item.provider.name]),
+			),
+		[initialModelData],
+	);
+	const creatorLabels = useMemo(
+		() =>
+			new Map(
+				initialModelData.map((item) => [
+					item.organisationId ?? "",
+					item.organisationName ?? item.organisationId ?? "Unknown",
+				]),
+			),
+		[initialModelData],
+	);
 	const yearOptions = useMemo(
 		() =>
 			Array.from(counts.yearMap.entries())
@@ -638,104 +1023,18 @@ export default function ModelsTableDisplay({
 		[counts.yearMap],
 	);
 
-	const shownCount = useMemo(() => {
-		return initialModelData.filter((item) => {
-			if (deferredSearch.trim()) {
-				const searchLower = deferredSearch.trim().toLowerCase();
-				const matchesSearch = Object.values(item).some((value) => {
-					if (Array.isArray(value)) {
-						return value.some((v) => String(v).toLowerCase().includes(searchLower));
-					}
-					if (typeof value === "object" && value !== null) {
-						return Object.values(value).some((nestedValue) => {
-							if (Array.isArray(nestedValue)) {
-								return nestedValue.some((v) =>
-									String(v).toLowerCase().includes(searchLower),
-								);
-							}
-							return String(nestedValue).toLowerCase().includes(searchLower);
-						});
-					}
-					return String(value).toLowerCase().includes(searchLower);
-				});
-				if (!matchesSearch) return false;
-			}
-
-			if (yearSelected > 0) {
-				const itemYear = item.added ? new Date(item.added).getFullYear() : null;
-				if (itemYear !== yearSelected) return false;
-			}
-
-			if (selectedInputModalities.length > 0) {
-				const normalizedInputs = new Set(
-					(item.inputModalities ?? [])
-						.map((value) => normalizeModalityFilterValue(String(value ?? "")))
-						.filter(Boolean),
-				);
-				const hasAllInputs = selectedInputModalities.every((mod) =>
-					normalizedInputs.has(mod),
-				);
-				if (!hasAllInputs) return false;
-			}
-
-			if (selectedOutputModalities.length > 0) {
-				const normalizedOutputs = new Set(
-					(item.outputModalities ?? [])
-						.map((value) => normalizeModalityFilterValue(String(value ?? "")))
-						.filter(Boolean),
-				);
-				const hasAllOutputs = selectedOutputModalities.every((mod) =>
-					normalizedOutputs.has(mod),
-				);
-				if (!hasAllOutputs) return false;
-			}
-
-			if (selectedFeatures.length > 0) {
-				const hasAllFeatures = selectedFeatures.every((feat) =>
-					item.provider.features.includes(feat),
-				);
-				if (!hasAllFeatures) return false;
-			}
-
-			if (selectedEndpoints.length > 0 && !selectedEndpoints.includes(item.endpoint)) {
-				return false;
-			}
-
-			if (
-				effectiveSelectedStatuses.length > 0 &&
-				!effectiveSelectedStatuses.includes(
-					normalizeStatusFilterValue(item.gatewayStatus),
-				)
-			) {
-				return false;
-			}
-
-			if (selectedTiers.length > 0) {
-				const tier = item.tier || "standard";
-				if (!selectedTiers.includes(tier)) return false;
-			}
-
-			return true;
-		}).length;
-	}, [
-		deferredSearch,
-		initialModelData,
-		selectedEndpoints,
-		selectedFeatures,
-		selectedInputModalities,
-		selectedOutputModalities,
-		effectiveSelectedStatuses,
-		selectedTiers,
-		yearSelected,
-	]);
-
 	const activeFilterCount =
 		(hasInteractedWithStatuses ? selectedStatuses.length : 0) +
 		selectedEndpoints.length +
 		selectedInputModalities.length +
 		selectedOutputModalities.length +
 		selectedFeatures.length +
-		(isDefaultTiers ? 0 : selectedTiers.length) +
+		selectedTiers.length +
+		selectedSupportedParameters.length +
+		selectedProviders.length +
+		selectedRegions.length +
+		selectedCreators.length +
+		(selectedContextMin > 0 ? 1 : 0) +
 		(yearSelected > 0 ? 1 : 0);
 
 	const resetFilters = () => {
@@ -746,13 +1045,18 @@ export default function ModelsTableDisplay({
 		setSelectedOutputModalities([]);
 		setSelectedFeatures([]);
 		setSelectedTiers([]);
+		setSelectedSupportedParameters([]);
+		setSelectedProviders([]);
+		setSelectedRegions([]);
+		setSelectedCreators([]);
+		setSelectedContextMin(0);
 		setYearSelected(0);
 	};
 
 	const buildHref = (path: string) => {
 		const params = new URLSearchParams(searchParams?.toString() ?? "");
 
-		if (path === "/models" || path === "/models/collections") {
+		if (path === "/models") {
 			const searchValue = params.get("search") ?? "";
 			if (searchValue.trim()) {
 				params.set("q", searchValue);
@@ -784,7 +1088,6 @@ export default function ModelsTableDisplay({
 			}
 			params.delete("year");
 
-			params.delete("tiers");
 			params.delete("sort");
 			params.delete("dir");
 			params.delete("page");
@@ -813,65 +1116,118 @@ export default function ModelsTableDisplay({
 		return qs ? `${path}?${qs}` : path;
 	};
 
-	const shownCountLabel = `${shownCount.toLocaleString()} shown`;
-	const shownCountWithSearchLabel = deferredSearch
-		? `${shownCountLabel} for "${deferredSearch}"`
-		: shownCountLabel;
+	const selectedTableSort =
+		TABLE_SORT_OPTIONS.find(
+			(option) =>
+				option.value === sortField && option.direction === sortDirection,
+		) ?? TABLE_SORT_OPTIONS[0];
+
+	const filterButton = (compact = false) => (
+		<Button
+			type="button"
+			size="sm"
+			className={cn(
+				"relative h-8 shrink-0 rounded-md border border-border/70 bg-background text-foreground shadow-xs transition-colors hover:bg-muted/45 dark:border-border/70 dark:bg-background dark:text-foreground dark:hover:bg-muted/25",
+				compact ? "w-9 px-0" : "gap-1.5",
+			)}
+			onClick={() => setMobileFiltersOpen(true)}
+		>
+			<SlidersHorizontal className="h-3.5 w-3.5" />
+			<span className={compact ? "sr-only" : undefined}>Filters</span>
+			{activeFilterCount > 0 ? (
+				<span
+					className={cn(
+						"inline-flex min-w-5 items-center justify-center rounded-sm bg-primary/15 px-1.5 py-0.5 text-[11px] font-medium text-primary tabular-nums",
+						compact && "absolute -right-1 -top-1 min-w-4 px-1 py-0 text-[10px]",
+					)}
+				>
+					{activeFilterCount}
+				</span>
+			) : null}
+		</Button>
+	);
+
+	const viewSwitcherItemClass = (active: boolean, isFirst = false) =>
+		cn(
+			"inline-flex h-8 w-9 items-center justify-center text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/45",
+			!isFirst && "border-l border-border/70",
+			active &&
+				"bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground",
+		);
 
 	const viewSwitcher = (
-		<div className="inline-flex rounded-md overflow-hidden border bg-background">
+		<div className="inline-flex h-8 shrink-0 overflow-hidden rounded-md border border-border/70 bg-background shadow-xs">
 			<Tooltip>
 				<TooltipTrigger asChild>
-					<Button
-						size="sm"
-						asChild
-						variant={!isTable ? "default" : "outline"}
-						className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
+					<Link
+						href={buildHref("/models")}
+						prefetch={false}
+						aria-label="Card view"
+						aria-current={!isTable ? "page" : undefined}
+						className={viewSwitcherItemClass(!isTable, true)}
 					>
-						<Link href={buildHref("/models")} prefetch={false} aria-label="Card view">
-							<GridIcon className="h-4 w-4" />
-						</Link>
-					</Button>
+						<GridIcon className="h-4 w-4" />
+					</Link>
 				</TooltipTrigger>
 				<TooltipContent side="top">Card view</TooltipContent>
 			</Tooltip>
 
 			<Tooltip>
 				<TooltipTrigger asChild>
-					<Button
-						size="sm"
-						variant={isTable ? "default" : "outline"}
-						className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
-						asChild
+					<Link
+						href={buildHref("/models/table")}
+						prefetch={false}
+						aria-label="Table view"
+						aria-current={isTable ? "page" : undefined}
+						className={viewSwitcherItemClass(isTable)}
 					>
-						<Link href={buildHref("/models/table")} prefetch={false} aria-label="Table view">
-							<TableIcon className="h-4 w-4" />
-						</Link>
-					</Button>
+						<TableIcon className="h-4 w-4" />
+					</Link>
 				</TooltipTrigger>
 				<TooltipContent side="top">Table view</TooltipContent>
 			</Tooltip>
-
-			<Tooltip>
-				<TooltipTrigger asChild>
-					<Button
-						size="sm"
-						variant={isCollections ? "default" : "outline"}
-						className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
-						asChild
-					>
-						<Link
-							href={buildHref("/models/collections")}
-							prefetch={false}
-							aria-label="Collections view"
-						>
-							<LayersIcon className="h-4 w-4" />
-						</Link>
-					</Button>
-				</TooltipTrigger>
-				<TooltipContent side="top">Collections</TooltipContent>
-			</Tooltip>
 		</div>
+	);
+
+	const sortSelect = (triggerClassName: string) => (
+		<Select
+			value={`${selectedTableSort.value}:${selectedTableSort.direction}`}
+			onValueChange={(value) => {
+				const nextSort = TABLE_SORT_OPTIONS.find(
+					(option) => `${option.value}:${option.direction}` === value,
+				);
+				if (!nextSort) return;
+				setSortField(nextSort.value);
+				setSortDirection(nextSort.direction);
+			}}
+		>
+			<SelectTrigger
+				className={cn(
+					"border border-border/70 bg-background shadow-xs hover:bg-muted/45 dark:border-border/70 dark:bg-background dark:hover:bg-muted/25",
+					triggerClassName,
+				)}
+				aria-label="Sort models"
+			>
+				<span className="flex min-w-0 items-center gap-2">
+					<ArrowUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+					<span className="truncate">{selectedTableSort.triggerLabel}</span>
+				</span>
+			</SelectTrigger>
+			<SelectContent
+				align="start"
+				alignItemWithTrigger={false}
+				className="!w-max min-w-(--anchor-width) max-w-[calc(100vw-2rem)]"
+			>
+				{TABLE_SORT_OPTIONS.map((option) => (
+					<SelectItem
+						key={`${option.value}:${option.direction}`}
+						value={`${option.value}:${option.direction}`}
+					>
+						{option.label}
+					</SelectItem>
+				))}
+			</SelectContent>
+		</Select>
 	);
 
 	const filtersContent = (
@@ -899,6 +1255,19 @@ export default function ModelsTableDisplay({
 							);
 						}}
 						labelForValue={formatStatusLabel}
+						renderStart={({ value }) => {
+							const statusMeta = STATUS_FILTER_META[value];
+							if (!statusMeta) return null;
+							const StatusIcon = statusMeta.icon;
+							return (
+								<StatusIcon
+									className={cn(
+										"h-3.5 w-3.5 shrink-0",
+										statusMeta.iconClassName,
+									)}
+								/>
+							);
+						}}
 					/>
 				</AccordionContent>
 			</AccordionItem>
@@ -915,7 +1284,9 @@ export default function ModelsTableDisplay({
 						options={inputModalityOptions}
 						selected={selectedInputModalities}
 						onToggle={(value) =>
-							setSelectedInputModalities(toggleInList(selectedInputModalities, value))
+							setSelectedInputModalities(
+								toggleInList(selectedInputModalities, value),
+							)
 						}
 						iconForValue={getModalityIcon}
 						labelForValue={toTitleCase}
@@ -927,16 +1298,172 @@ export default function ModelsTableDisplay({
 			<AccordionItem value="tiers" className="border-border/70">
 				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
 					<span className="flex items-center gap-2">
-						<Tag className="h-4 w-4 text-muted-foreground" />
-						Pricing Tier
+						<Layers3 className="h-4 w-4 text-muted-foreground" />
+						Tier
 					</span>
 				</AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation>
 					<FilterCheckboxList
 						options={tierOptions}
 						selected={selectedTiers}
-						onToggle={(value) => setSelectedTiers(toggleInList(selectedTiers, value))}
+						onToggle={(value) =>
+							setSelectedTiers(toggleInList(selectedTiers, value))
+						}
 						labelForValue={toTitleCase}
+						renderStart={({ value, checked }) => {
+							const tierMeta = getTierFilterMeta(value);
+							const TierIcon = tierMeta.icon;
+							return (
+								<TierIcon
+									className={cn(
+										"h-3.5 w-3.5 shrink-0 text-muted-foreground transition-colors",
+										tierMeta.filterIconHoverClassName,
+										checked && tierMeta.iconClassName,
+									)}
+								/>
+							);
+						}}
+					/>
+				</AccordionContent>
+			</AccordionItem>
+
+			<AccordionItem value="contextLength" className="border-border/70">
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
+					<span className="flex items-center gap-2">
+						<Binary className="h-4 w-4 text-muted-foreground" />
+						Context Length
+					</span>
+				</AccordionTrigger>
+				<AccordionContent className="pt-1" disableAnimation>
+					<div className="space-y-2 px-2 pb-1.5 pt-1">
+						<Slider
+							value={[selectedContextStopIndex]}
+							min={0}
+							max={CONTEXT_LENGTH_STOPS.length - 1}
+							step={1}
+							onValueChange={(next) => {
+								const nextIndex = Number(next[0] ?? 0);
+								const clamped = Math.min(
+									Math.max(nextIndex, 0),
+									CONTEXT_LENGTH_STOPS.length - 1,
+								);
+								setSelectedContextMin(CONTEXT_LENGTH_STOPS[clamped] ?? 0);
+							}}
+							aria-label="Minimum context length"
+						/>
+						<div className="flex items-center justify-between text-[11px] text-muted-foreground tabular-nums">
+							<span>{formatContextStop(CONTEXT_LENGTH_STOPS[0])}</span>
+							<span>
+								{selectedContextMin > 0
+									? `Min ${formatContextStop(selectedContextMin)} tokens`
+									: "No minimum"}
+							</span>
+							<span>
+								{formatContextStop(
+									CONTEXT_LENGTH_STOPS[CONTEXT_LENGTH_STOPS.length - 1],
+								)}
+							</span>
+						</div>
+						<div className="flex justify-center">
+							{selectedContextMin > 0 ? (
+								<Button
+									type="button"
+									variant="ghost"
+									size="sm"
+									className="h-7 px-2 text-xs"
+									onClick={() => setSelectedContextMin(0)}
+								>
+									Reset
+								</Button>
+							) : null}
+						</div>
+					</div>
+				</AccordionContent>
+			</AccordionItem>
+
+			<AccordionItem value="supportedParameters" className="border-border/70">
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
+					<span className="flex items-center gap-2">
+						<SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+						Supported Parameters
+					</span>
+				</AccordionTrigger>
+				<AccordionContent className="pt-1" disableAnimation>
+					<FilterCheckboxList
+						options={supportedParameterOptions}
+						selected={selectedSupportedParameters}
+						onToggle={(value) =>
+							setSelectedSupportedParameters(
+								toggleInList(selectedSupportedParameters, value),
+							)
+						}
+						labelForValue={toTitleCase}
+						collapsedLimit={5}
+					/>
+				</AccordionContent>
+			</AccordionItem>
+
+			<AccordionItem value="providers" className="border-border/70">
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
+					<span className="flex items-center gap-2">
+						<Route className="h-4 w-4 text-muted-foreground" />
+						Providers
+					</span>
+				</AccordionTrigger>
+				<AccordionContent className="pt-1" disableAnimation>
+					<FilterCheckboxList
+						options={providerOptions}
+						selected={selectedProviders}
+						onToggle={(value) =>
+							setSelectedProviders(toggleInList(selectedProviders, value))
+						}
+						labelForValue={(value) => providerLabels.get(value) ?? value}
+						renderStart={({ value, label }) => (
+							<FilterLogo value={value} label={label} />
+						)}
+						collapsedLimit={5}
+					/>
+				</AccordionContent>
+			</AccordionItem>
+
+			<AccordionItem value="regionRouting" className="border-border/70">
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
+					<span className="flex items-center gap-2">
+						<Globe2 className="h-4 w-4 text-muted-foreground" />
+						Region Routing
+					</span>
+				</AccordionTrigger>
+				<AccordionContent className="pt-1" disableAnimation>
+					<FilterCheckboxList
+						options={regionOptions}
+						selected={selectedRegions}
+						onToggle={(value) =>
+							setSelectedRegions(toggleInList(selectedRegions, value))
+						}
+						labelForValue={formatRegionLabel}
+					/>
+				</AccordionContent>
+			</AccordionItem>
+
+			<AccordionItem value="modelCreators" className="border-border/70">
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
+					<span className="flex items-center gap-2">
+						<TypeIcon className="h-4 w-4 text-muted-foreground" />
+						Model Creators
+					</span>
+				</AccordionTrigger>
+				<AccordionContent className="pt-1" disableAnimation>
+					<FilterCheckboxList
+						options={creatorOptions}
+						selected={selectedCreators}
+						onToggle={(value) =>
+							setSelectedCreators(toggleInList(selectedCreators, value))
+						}
+						labelForValue={(value) => creatorLabels.get(value) ?? value}
+						renderStart={({ value, label }) => (
+							<FilterLogo value={value} label={label} />
+						)}
+						collapsedLimit={5}
 					/>
 				</AccordionContent>
 			</AccordionItem>
@@ -952,9 +1479,10 @@ export default function ModelsTableDisplay({
 					<FilterCheckboxList
 						options={featureOptions}
 						selected={selectedFeatures}
-						onToggle={(value) => setSelectedFeatures(toggleInList(selectedFeatures, value))}
+						onToggle={(value) =>
+							setSelectedFeatures(toggleInList(selectedFeatures, value))
+						}
 						labelForValue={(value) => featureLabels[value] ?? value}
-						collapsedLimit={5}
 					/>
 				</AccordionContent>
 			</AccordionItem>
@@ -970,7 +1498,9 @@ export default function ModelsTableDisplay({
 					<FilterCheckboxList
 						options={endpointOptions}
 						selected={selectedEndpoints}
-						onToggle={(value) => setSelectedEndpoints(toggleInList(selectedEndpoints, value))}
+						onToggle={(value) =>
+							setSelectedEndpoints(toggleInList(selectedEndpoints, value))
+						}
 						labelForValue={(value) => value}
 						collapsedLimit={5}
 					/>
@@ -1011,16 +1541,20 @@ export default function ModelsTableDisplay({
 			</aside>
 
 			<section className="min-w-0 flex flex-1 flex-col">
-				<div className="shrink-0 border-b border-border/70 bg-background/95 px-4 py-2.5 backdrop-blur lg:px-8">
-					<div className="sm:hidden space-y-2">
-						<div className="flex items-center justify-between gap-2">
+				<div
+					ref={toolbarRef}
+					className="z-40 shrink-0 border-b border-border/70 bg-background/95 px-4 pb-1 pt-2.5 backdrop-blur md:sticky lg:px-8"
+					style={{ top: `${stickyOffsets.toolbarTop}px` }}
+				>
+					<div className="md:hidden space-y-2">
+						<div className="flex items-center gap-2">
 							<h1 className="font-bold text-xl leading-8">Models</h1>
-							<div className="flex items-center justify-end gap-2 min-w-0">
-								<span className="text-sm text-muted-foreground tabular-nums whitespace-nowrap">
-									{shownCountLabel}
-								</span>
-								{viewSwitcher}
-							</div>
+						</div>
+
+						<div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
+							{sortSelect("h-8 min-w-0 rounded-md bg-background text-sm")}
+							{filterButton(true)}
+							{viewSwitcher}
 						</div>
 
 						<div className="relative w-full">
@@ -1033,85 +1567,71 @@ export default function ModelsTableDisplay({
 										limitUrlUpdates: debounce(250),
 									})
 								}
-								className="h-8 rounded-md border border-border bg-background pl-9 pr-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary w-full"
+								className="h-8 w-full rounded-md border border-border bg-background pl-9 pr-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary"
+								style={{ minWidth: 0 }}
 							/>
 						</div>
-
-						<Button
-							type="button"
-							variant="outline"
-							size="sm"
-							className="h-8 w-full justify-center gap-1.5"
-							onClick={() => setMobileFiltersOpen(true)}
-						>
-							<SlidersHorizontal className="h-3.5 w-3.5" />
-							Filters
-							{activeFilterCount > 0 ? (
-								<span className="inline-flex min-w-5 items-center justify-center rounded-sm bg-primary/15 px-1.5 py-0.5 text-[11px] font-medium text-primary tabular-nums">
-									{activeFilterCount}
-								</span>
-							) : null}
-						</Button>
 					</div>
 
-					<div className="hidden sm:block">
-						<div className="grid grid-cols-1 gap-2 sm:grid-cols-[auto_minmax(260px,460px)_auto] sm:items-center sm:gap-3">
-							<div className="min-w-0 sm:flex sm:h-8 sm:items-center">
-								<h1 className="font-bold text-xl leading-8">Models</h1>
-							</div>
-
-							<div className="relative w-full sm:justify-self-center">
-								<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-								<Input
-									placeholder="Search"
-									value={search}
-									onChange={(e) =>
-										setSearch(e.target.value || "", {
-											limitUrlUpdates: debounce(250),
-										})
-									}
-									className="h-8 rounded-md border border-border bg-background pl-9 pr-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary w-full"
-								/>
-							</div>
-
-							<div className="flex items-center justify-end gap-2 sm:justify-self-end">
-								{viewSwitcher}
-							</div>
-						</div>
-
-						<div className="mt-1.5 flex flex-wrap items-center justify-between gap-2">
-							<div className="flex items-center gap-2">
-								<div className="text-sm text-muted-foreground">
-									{shownCountWithSearchLabel}
+					<div className="hidden md:block">
+						<div className="hidden lg:block">
+							<div className="flex items-center justify-between gap-4">
+								<div className="flex h-8 min-w-0 shrink-0 items-center">
+									<h1 className="font-bold text-xl leading-8">Models</h1>
 								</div>
-								<Button
-									type="button"
-									variant="outline"
-									size="sm"
-									className="h-8 gap-1.5 lg:hidden"
-									onClick={() => setMobileFiltersOpen(true)}
-								>
-									<SlidersHorizontal className="h-3.5 w-3.5" />
-									Filters
-									{activeFilterCount > 0 ? (
-										<span className="inline-flex min-w-5 items-center justify-center rounded-sm bg-primary/15 px-1.5 py-0.5 text-[11px] font-medium text-primary tabular-nums">
-											{activeFilterCount}
-										</span>
-									) : null}
-								</Button>
+
+								<div className="flex min-w-0 flex-1 items-center justify-end gap-3">
+									<div className="relative min-w-[15rem] max-w-[22rem] flex-1 2xl:max-w-[28rem]">
+										<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+										<Input
+											placeholder="Search"
+											value={search}
+											onChange={(e) =>
+												setSearch(e.target.value || "", {
+													limitUrlUpdates: debounce(250),
+												})
+											}
+											className="h-8 w-full rounded-md border border-border bg-background pl-9 pr-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary"
+											style={{ minWidth: 0 }}
+										/>
+									</div>
+									{sortSelect(
+										"h-8 w-[12.5rem] rounded-md bg-background text-sm 2xl:w-[13.5rem]",
+									)}
+									{viewSwitcher}
+								</div>
 							</div>
-							<div className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-								<ArrowUpDown className="h-3.5 w-3.5" />
-								Sort in table columns
+						</div>
+
+						<div className="lg:hidden">
+							<div className="flex h-8 items-center justify-between gap-3">
+								<h1 className="font-bold text-xl leading-8">Models</h1>
+								<div className="flex shrink-0 items-center justify-end gap-2">
+									{filterButton()}
+									{viewSwitcher}
+								</div>
+							</div>
+							<div className="mt-2 grid grid-cols-[minmax(9rem,12rem)_minmax(0,1fr)] items-center gap-2">
+								{sortSelect("h-8 min-w-0 rounded-md bg-background text-sm")}
+								<div className="relative min-w-0">
+									<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+									<Input
+										placeholder="Search"
+										value={search}
+										onChange={(e) =>
+											setSearch(e.target.value || "", {
+												limitUrlUpdates: debounce(250),
+											})
+										}
+										className="h-8 w-full rounded-md border border-border bg-background pl-9 pr-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary"
+										style={{ minWidth: 0 }}
+									/>
+								</div>
 							</div>
 						</div>
 					</div>
 
-					<div className="mt-3 space-y-2">
-						<div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-							<ArrowUpCircle className="h-3.5 w-3.5" />
-							Output modalities
-						</div>
+					<div className="mt-1.5">
 						<OutputModalityButtonRow
 							options={outputModalityOptions}
 							selected={selectedOutputModalities}
@@ -1124,9 +1644,11 @@ export default function ModelsTableDisplay({
 					</div>
 				</div>
 
-				<div className="w-full px-4 pt-2 pb-5 lg:px-8 lg:pt-2 lg:pb-6">
+				<div className="w-full px-4 pb-5 pt-1 lg:px-8 lg:pb-6 lg:pt-1">
 					<MonitorTableClient
 						initialModelData={initialModelData}
+						effectiveStatuses={effectiveSelectedStatuses}
+						stickyHeaderOffset={stickyOffsets.tableHeaderTop}
 					/>
 				</div>
 			</section>

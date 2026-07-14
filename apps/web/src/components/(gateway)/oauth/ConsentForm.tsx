@@ -402,7 +402,7 @@ export default function ConsentForm({
 					<div className="flex-1">
 						<CardTitle className="text-2xl">{oauthApp.name}</CardTitle>
 						<CardDescription className="mt-1">
-							wants access to your AI Stats account
+							wants access to your Phaseo account
 						</CardDescription>
 						{oauthApp.homepage_url && (
 							<a

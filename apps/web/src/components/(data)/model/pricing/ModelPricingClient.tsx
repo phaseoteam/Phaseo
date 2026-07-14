@@ -1,25 +1,37 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+    useCallback,
+    useEffect,
+    useLayoutEffect,
+    useMemo,
+    useRef,
+    useState,
+} from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import { AppWindow, ArrowDown, ArrowUp, ChevronDown, Shield, SlidersHorizontal, Server } from "lucide-react";
-import { Card } from "@/components/ui/card";
+    ArrowDown,
+    ArrowUp,
+    ChevronsUpDown,
+    Shield,
+    Server,
+} from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from "@/components/ui/tooltip";
+	HoverCard,
+	HoverCardContent,
+	HoverCardTrigger,
+} from "@/components/ui/hover-card";
+import {
+	Table,
+	TableBody,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
 import {
     Empty,
     EmptyDescription,
@@ -28,12 +40,10 @@ import {
     EmptyTitle,
 } from "@/components/ui/empty";
 import { type ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
-import type { SubscriptionPlan } from "@/lib/fetchers/models/getModelSubscriptionPlans";
 import type { ProviderRuntimeStatsMap } from "@/lib/fetchers/models/getModelProviderRuntimeStats";
 import type { ProviderRoutingStatusMap } from "@/lib/fetchers/models/getModelProviderRoutingHealth";
 import ProviderCard from "@/components/(data)/model/pricing/ProviderCard";
 import { cn } from "@/lib/utils";
-import { normalizeQuantizationScheme } from "@/lib/quantization";
 import { normalizeProviderPromptTrainingPolicy } from "@/lib/providers/promptTrainingPolicy";
 import { mergeProviderPricingOffers } from "@/lib/providers/providerFamilyGroups";
 import {
@@ -41,15 +51,29 @@ import {
     getProviderModelScopeForPlan,
 } from "@/components/(data)/model/pricing/providerPlanRouting";
 import { getPricingProviderVariantLabels } from "@/components/(data)/model/pricing/pricingProviderVariants";
-const PRICING_VIEW_STORAGE_KEY = "ai-stats:model-pricing-view";
+import {
+    buildProviderSections,
+    buildProviderTablePriceSummary,
+} from "@/components/(data)/model/pricing/pricingHelpers";
+import {
+    chooseGatewayStatus,
+    type CanonicalGatewayStatus,
+    getGatewayStatusSortRank,
+    resolveGatewayStatus,
+} from "@/components/(data)/model/pricing/providerGatewayStatus";
 const SORT_QUERY_KEY = "sort";
 const SORT_DIRECTION_QUERY_KEY = "dir";
-const VIEW_QUERY_KEY = "view";
-const QUANT_QUERY_KEY = "quant";
 
-type SortOption = "default" | "pricing" | "throughput" | "latency" | "uptime";
+type SortOption =
+    | "default"
+    | "provider"
+    | "input"
+    | "output"
+    | "cache_read"
+    | "throughput"
+    | "latency"
+    | "uptime";
 type SortDirection = "asc" | "desc";
-type PricingView = "api" | "subscription";
 type WorkspacePrivacySettings = {
     isAuthenticated: boolean;
     privacyEnablePaidMayTrain: boolean;
@@ -58,80 +82,129 @@ type WorkspacePrivacySettings = {
     providerRestrictionMode: "none" | "allowlist" | "blocklist";
     providerRestrictionProviderIds: string[];
 };
-const SORT_TRIGGER_LABELS: Record<SortOption, string> = {
-    default: "Sort by",
-    pricing: "Sort by Price",
-    throughput: "Sort by Throughput",
-    latency: "Sort by Latency",
-    uptime: "Sort by Uptime",
-};
-const SORT_OPTION_LABELS: Record<SortOption, string> = {
-    default: "Sort by Default",
-    pricing: "Sort by Price",
-    throughput: "Sort by Throughput",
-    latency: "Sort by Latency",
-    uptime: "Sort by Uptime",
-};
 const DEFAULT_SORT_DIRECTIONS: Record<Exclude<SortOption, "default">, SortDirection> = {
-    pricing: "asc",
+    provider: "asc",
+    input: "asc",
+    output: "asc",
+    cache_read: "asc",
     throughput: "desc",
     latency: "asc",
     uptime: "desc",
 };
 
-const PRICING_METER_PREFERENCE = [
-    "input_tokens",
-    "output_tokens",
-    "input_text_tokens",
-    "output_text_tokens",
-    "cached_read_text_tokens",
-    "cached_write_text_tokens",
-    "cached_write_text_tokens_5m",
-    "cached_write_text_tokens_1h",
-    "input_image_tokens",
-    "output_image_tokens",
-    "input_audio_tokens",
-    "output_audio_tokens",
-] as const;
-const DEFAULT_VISIBLE_PROVIDER_COUNT = 6;
-const PLAN_FREQUENCY_ALIASES: Record<string, string> = {
-    mo: "monthly",
-    month: "monthly",
-    monthly: "monthly",
-    qtr: "quarterly",
-    quarter: "quarterly",
-    quarterly: "quarterly",
-    yr: "yearly",
-    year: "yearly",
-    annual: "yearly",
-    yearly: "yearly",
-    week: "weekly",
-    weekly: "weekly",
-    day: "daily",
-    daily: "daily",
-};
-const PLAN_FREQUENCY_MONTH_MULTIPLIERS: Record<string, number> = {
-    daily: 30,
-    weekly: 4.345,
-    monthly: 1,
-    quarterly: 1 / 3,
-    yearly: 1 / 12,
-};
-const PLAN_FREQUENCY_SORT_ORDER: Record<string, number> = {
-    monthly: 0,
-    quarterly: 1,
-    yearly: 2,
-    weekly: 3,
-    daily: 4,
-    usage: 98,
-    custom: 99,
-};
+const EMPTY_RUNTIME_STATS: ProviderRuntimeStatsMap = {};
+const EMPTY_ROUTING_HEALTH: ProviderRoutingStatusMap = {};
+const ESTIMATED_ROUTING_WEIGHTS = {
+    price: 0.32,
+    uptime: 0.28,
+    latency: 0.20,
+    throughput: 0.14,
+    observations: 0.06,
+} as const;
 
-type SubscriptionPrice = {
-    price: number;
-    currency: string;
-    frequency: string;
-};
+function getDisplayedProviderUptime(
+	stats: ProviderRuntimeStatsMap[string] | undefined
+): number | null {
+	if (!hasProviderUptimeObservation(stats)) return null;
+	return stats?.uptimePct3d ?? null;
+}
+
+const DEFAULT_ROUTING_ERROR_RATE = 0;
+
+function routingStatusMultiplier(status: CanonicalGatewayStatus): number {
+    if (status === "active") return 1;
+    if (status === "deranked_lvl1") return 1e-3;
+    if (status === "deranked_lvl2") return 1e-6;
+    if (status === "deranked_lvl3") return 1e-9;
+    return 0;
+}
+
+function clamp01(value: number): number {
+    return Math.max(0, Math.min(1, value));
+}
+
+function finitePositive(value: unknown): number | null {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+}
+
+function hasProviderUptimeObservation(
+	stats: ProviderRuntimeStatsMap[string] | undefined
+): boolean {
+	if (!stats) return false;
+	if ((stats.healthRequests3d ?? 0) > 0) return true;
+	return stats.uptimeDaily3d.some((entry) => entry.requests > 0);
+}
+
+function normalizedMetricScore(args: {
+    value: number | null;
+    min: number | null;
+    max: number | null;
+    lowerIsBetter?: boolean;
+    missingScore?: number;
+}): number {
+    if (args.value === null) return args.missingScore ?? 0.5;
+    if (args.min === null || args.max === null) return 0.5;
+    if (args.max <= args.min) return 1;
+    const normalized = clamp01((args.value - args.min) / (args.max - args.min));
+    return args.lowerIsBetter ? 1 - normalized : normalized;
+}
+
+function getProviderObservationConfidence(
+	stats: ProviderRuntimeStatsMap[string] | undefined
+): number {
+	if (!stats) return 0;
+
+	const requestConfidence = clamp01(Math.log10(Math.max(0, stats.requests3d) + 1) / 2);
+	const recentRequestConfidence = stats.requests30m > 0 ? 0.2 : 0;
+	const metricConfidence =
+		(finitePositive(stats.latencyMs30m) ? 0.25 : 0) +
+		(finitePositive(stats.throughput30m) ? 0.25 : 0) +
+		(getDisplayedProviderUptime(stats) !== null ? 0.25 : 0) +
+		(stats.lastRequestAt ? 0.25 : 0);
+
+	return clamp01(Math.max(requestConfidence, metricConfidence) + recentRequestConfidence);
+}
+
+function observedRouteMultiplier(confidence: number): number {
+	// Unknown routes stay eligible, but observed routes should sort ahead when
+	// pricing is close enough that performance/reliability data matters.
+	return 0.55 + 0.45 * clamp01(confidence);
+}
+
+function normalizeInverseSquarePriceWeights(
+    entries: Array<{ providerId: string; price: number | null }>
+): Map<string, number> {
+    const finitePrices = entries
+        .map((entry) => entry.price)
+        .filter((price): price is number => typeof price === "number" && Number.isFinite(price));
+    if (!finitePrices.length) {
+        return new Map(entries.map((entry) => [entry.providerId, 0.5]));
+    }
+
+    const positivePrices = finitePrices.filter((price) => price > 0);
+    const freePriceFloor = positivePrices.length ? Math.min(...positivePrices) / 10 : 1;
+    const rawWeights = new Map<string, number>();
+    for (const entry of entries) {
+        if (entry.price === null) {
+            rawWeights.set(entry.providerId, 0);
+            continue;
+        }
+        const safePrice = entry.price > 0 ? entry.price : freePriceFloor;
+        rawWeights.set(entry.providerId, 1 / Math.pow(safePrice, 2));
+    }
+
+    const maxWeight = Math.max(...Array.from(rawWeights.values()), 0);
+    if (maxWeight <= 0) {
+        return new Map(entries.map((entry) => [entry.providerId, 0.5]));
+    }
+    return new Map(
+        entries.map((entry) => [
+            entry.providerId,
+            (rawWeights.get(entry.providerId) ?? 0) / maxWeight,
+        ])
+    );
+}
 
 function getPreferredPlan(plans: string[]): string {
     if (plans.includes("standard")) return "standard";
@@ -139,28 +212,17 @@ function getPreferredPlan(plans: string[]): string {
     return plans[0] || "standard";
 }
 
-function normalizedRulePrice(
-    rule: ProviderPricing["pricing_rules"][number]
-): number | null {
-    const price = Number(rule.price_per_unit);
-    if (!Number.isFinite(price) || price < 0) return null;
-    const unitSize = Number(rule.unit_size ?? 1);
-    if (!Number.isFinite(unitSize) || unitSize <= 0) return null;
-    return price / unitSize;
-}
-
-function isPricingView(value: string | null): value is PricingView {
-    return value === "api" || value === "subscription";
-}
-
-function isSortOption(value: string | null): value is SortOption {
-    return (
-        value === "default" ||
-        value === "pricing" ||
-        value === "throughput" ||
-        value === "latency" ||
-        value === "uptime"
-    );
+function parseSortOption(value: string | null): SortOption {
+    if (value === "pricing" || value === "input") return "input";
+    if (value === "provider") return "provider";
+    if (value === "output") return "output";
+    if (value === "cache_read" || value === "cache" || value === "cached") {
+        return "cache_read";
+    }
+    if (value === "throughput") return "throughput";
+    if (value === "latency") return "latency";
+    if (value === "uptime") return "uptime";
+    return "default";
 }
 
 function isSortDirection(value: string | null): value is SortDirection {
@@ -183,6 +245,28 @@ function getProviderPromptTrainingPolicy(provider: ProviderPricing): string {
     return normalizeProviderPromptTrainingPolicy(
         override ?? provider.provider.prompt_training_policy ?? null
     );
+}
+
+function UptimeHeaderHoverContent() {
+	return (
+		<div className="space-y-2">
+			<p className="text-sm font-medium text-foreground">3-day uptime</p>
+			<div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-zinc-200 pt-2.5 text-xs text-muted-foreground dark:border-zinc-800">
+				<div className="flex items-center gap-1.5">
+					<span className="h-2 w-2 rounded-full bg-emerald-500" />
+					<span>&gt;99%</span>
+				</div>
+				<div className="flex items-center gap-1.5">
+					<span className="h-2 w-2 rounded-full bg-amber-500" />
+					<span>95-99%</span>
+				</div>
+				<div className="flex items-center gap-1.5">
+					<span className="h-2 w-2 rounded-full bg-red-500" />
+					<span>&lt;95%</span>
+				</div>
+			</div>
+		</div>
+	);
 }
 
 function getIgnoredPrivacyReasons(
@@ -222,127 +306,16 @@ function getIgnoredPrivacyReasons(
     return reasons;
 }
 
-function normalizePlanFrequency(value: string | null | undefined): string {
-    const normalized = String(value ?? "").trim().toLowerCase();
-    return PLAN_FREQUENCY_ALIASES[normalized] ?? normalized;
-}
-
-function getFrequencyLabel(value: string): string {
-    const normalized = normalizePlanFrequency(value);
-    if (!normalized) return "Other";
-    return normalized.charAt(0).toUpperCase() + normalized.slice(1);
-}
-
-function isNonFixedPlanFrequency(value: string): boolean {
-    const normalized = normalizePlanFrequency(value);
-    return normalized === "usage" || normalized === "custom";
-}
-
-function toMonthlyEquivalent(price: SubscriptionPrice): number | null {
-    const raw = Number(price.price);
-    if (!Number.isFinite(raw) || raw < 0) return null;
-    const normalized = normalizePlanFrequency(price.frequency);
-    if (normalized === "usage" || normalized === "custom") return null;
-    const multiplier = PLAN_FREQUENCY_MONTH_MULTIPLIERS[normalized];
-    if (typeof multiplier !== "number") return raw;
-    return raw * multiplier;
-}
-
-function getCurrencySortRank(currency: string | null | undefined): number {
-    const normalized = String(currency ?? "").trim().toUpperCase();
-    if (!normalized || normalized === "USD") return 0;
-    return 1;
-}
-
-function formatPlanPriceValue(price: SubscriptionPrice): string {
-    const normalized = normalizePlanFrequency(price.frequency);
-    if (normalized === "usage") return "Usage-based";
-    if (normalized === "custom") return "Custom pricing";
-
-    const currency = String(price.currency || "USD").toUpperCase();
-    return new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency,
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2,
-    }).format(price.price);
-}
-
-function sortSubscriptionPlanPrices(prices: SubscriptionPrice[]): SubscriptionPrice[] {
-    return [...prices].sort((a, b) => {
-        const aNonFixed = isNonFixedPlanFrequency(a.frequency);
-        const bNonFixed = isNonFixedPlanFrequency(b.frequency);
-        if (aNonFixed !== bNonFixed) return aNonFixed ? 1 : -1;
-
-        const currencyRank = getCurrencySortRank(a.currency) - getCurrencySortRank(b.currency);
-        if (currencyRank !== 0) return currencyRank;
-
-        const aMonthly = toMonthlyEquivalent(a);
-        const bMonthly = toMonthlyEquivalent(b);
-        if (aMonthly != null && bMonthly != null && aMonthly !== bMonthly) {
-            return aMonthly - bMonthly;
-        }
-        if (aMonthly == null && bMonthly != null) return 1;
-        if (aMonthly != null && bMonthly == null) return -1;
-
-        if (a.price !== b.price) return a.price - b.price;
-
-        const aFrequencyOrder =
-            PLAN_FREQUENCY_SORT_ORDER[normalizePlanFrequency(a.frequency)] ?? 99;
-        const bFrequencyOrder =
-            PLAN_FREQUENCY_SORT_ORDER[normalizePlanFrequency(b.frequency)] ?? 99;
-        if (aFrequencyOrder !== bFrequencyOrder) {
-            return aFrequencyOrder - bFrequencyOrder;
-        }
-        return String(a.frequency).localeCompare(String(b.frequency));
-    });
-}
-
-function getPlanSortKey(prices: SubscriptionPrice[]): {
-    currencyRank: number;
-    monthlyEquivalent: number;
-    rawPrice: number;
-} | null {
-    const sorted = sortSubscriptionPlanPrices(
-        prices.filter(
-            (price) =>
-                Number.isFinite(Number(price.price)) &&
-                Number(price.price) >= 0 &&
-                Boolean(String(price.currency ?? "").trim()) &&
-                !isNonFixedPlanFrequency(price.frequency)
-        )
-    );
-    const first = sorted[0];
-    if (!first) return null;
-    return {
-        currencyRank: getCurrencySortRank(first.currency),
-        monthlyEquivalent: toMonthlyEquivalent(first) ?? Number(first.price),
-        rawPrice: Number(first.price),
-    };
-}
-
-function isProviderModelActiveForPlan(
-    model: ProviderPricing["provider_models"][number]
-): boolean {
-    return model.is_active_gateway && model.capability_status !== "disabled";
-}
-
-function getQuantizationFilterFromUrl(value: string | null): string {
-    const normalized = normalizeQuantizationScheme(value);
-    return normalized ?? "all";
-}
-
 export default function ModelPricingClient({
     providers,
-    subscriptionPlans,
     creatorOrgId,
-    runtimeStats = {},
-    routingHealth = {},
+    runtimeStats = EMPTY_RUNTIME_STATS,
+    routingHealth = EMPTY_ROUTING_HEALTH,
     workspacePrivacySettings = null,
     showHeader = true,
 }: {
+    modelId: string;
     providers: ProviderPricing[];
-    subscriptionPlans: SubscriptionPlan[];
     creatorOrgId?: string | null;
     runtimeStats?: ProviderRuntimeStatsMap;
     routingHealth?: ProviderRoutingStatusMap;
@@ -351,7 +324,12 @@ export default function ModelPricingClient({
 }) {
     const pathname = usePathname() ?? "/";
     const router = useRouter();
-    const searchParams = useSearchParams() ?? new URLSearchParams();
+    const searchParams = useSearchParams();
+    const effectiveSearchParams = useMemo(
+        () => searchParams ?? new URLSearchParams(),
+        [searchParams]
+    );
+    const liveRuntimeStats = runtimeStats;
     const displayProviders = useMemo(
         () => mergeProviderPricingOffers(providers),
         [providers]
@@ -373,111 +351,135 @@ export default function ModelPricingClient({
         (provider) =>
             provider.provider_models.length > 0 || provider.pricing_rules.length > 0
     );
-    const hasSubscriptionPlans = subscriptionPlans.length > 0;
-    const defaultPricingView: PricingView =
-        !hasApiProviders && hasSubscriptionPlans ? "subscription" : "api";
 
     const [sort, setSort] = useState<SortOption>(() => {
-        const fromUrl = searchParams.get(SORT_QUERY_KEY);
-        return isSortOption(fromUrl) ? fromUrl : "default";
+        return parseSortOption(effectiveSearchParams.get(SORT_QUERY_KEY));
     });
     const [sortDirection, setSortDirection] = useState<SortDirection>(() => {
-        const fromUrl = searchParams.get(SORT_DIRECTION_QUERY_KEY);
+        const fromUrl = effectiveSearchParams.get(SORT_DIRECTION_QUERY_KEY);
         return isSortDirection(fromUrl) ? fromUrl : "desc";
     });
-    const [pricingView, setPricingView] = useState<PricingView>(() => {
-        const fromUrl = searchParams.get(VIEW_QUERY_KEY);
-        return isPricingView(fromUrl) ? fromUrl : defaultPricingView;
-    });
-    const [quantizationFilter, setQuantizationFilter] = useState<string>(() =>
-        getQuantizationFilterFromUrl(searchParams.get(QUANT_QUERY_KEY))
-    );
-    const [showAllProviders, setShowAllProviders] = useState(false);
     const [showIgnoredProviders, setShowIgnoredProviders] = useState(false);
-
-    const sortLabel = SORT_TRIGGER_LABELS[sort];
-
-    const sortedSubscriptionPlans = useMemo(() => {
-        return [...subscriptionPlans].sort((a, b) => {
-            const aKey = getPlanSortKey(a.prices ?? []);
-            const bKey = getPlanSortKey(b.prices ?? []);
-            if (aKey && bKey) {
-                if (aKey.currencyRank !== bKey.currencyRank) {
-                    return aKey.currencyRank - bKey.currencyRank;
-                }
-                if (aKey.monthlyEquivalent !== bKey.monthlyEquivalent) {
-                    return aKey.monthlyEquivalent - bKey.monthlyEquivalent;
-                }
-                if (aKey.rawPrice !== bKey.rawPrice) {
-                    return aKey.rawPrice - bKey.rawPrice;
-                }
-            } else if (aKey && !bKey) {
-                return -1;
-            } else if (!aKey && bKey) {
-                return 1;
-            }
-
-            const aOrg = a.organisation?.name ?? "";
-            const bOrg = b.organisation?.name ?? "";
-            if (aOrg !== bOrg) return aOrg.localeCompare(bOrg);
-            return a.name.localeCompare(b.name);
-        });
-    }, [subscriptionPlans]);
-
-    const quantizationOptions = useMemo(() => {
-        const values = new Set<string>();
-        for (const provider of displayProviders) {
-            for (const model of provider.provider_models) {
-                const quant = normalizeQuantizationScheme(model.quantization_scheme);
-                if (quant) values.add(quant);
-            }
-        }
-        return Array.from(values).sort((a, b) => a.localeCompare(b));
-    }, [displayProviders]);
-    const hasQuantizationOptions = quantizationOptions.length > 0;
 
     const sortedProviders = useMemo(() => {
         const list = displayProviders.filter((provider) =>
             provider.pricing_rules.length > 0 || provider.provider_models.length > 0
         );
-        const getProviderSortPrice = (provider: ProviderPricing): number | null => {
-            const preferredPlan = getProviderDefaultPlan(provider);
-            const planRules = provider.pricing_rules.filter(
-                (r) => (r.pricing_plan || "standard") === preferredPlan
-            );
-            if (!planRules.length) return null;
-
-            for (const meter of PRICING_METER_PREFERENCE) {
-                const preferredPrices = planRules
-                    .filter((rule) => rule.meter === meter)
-                    .map(normalizedRulePrice)
-                    .filter((price): price is number => price !== null);
-                if (preferredPrices.length) {
-                    return Math.min(...preferredPrices);
-                }
-            }
-
-            const fallbackPrices = planRules
-                .map(normalizedRulePrice)
-                .filter((price): price is number => price !== null);
-            if (!fallbackPrices.length) return null;
-            return Math.min(...fallbackPrices);
+        const sectionCache = new Map<string, ReturnType<typeof buildProviderSections>>();
+        const getCachedSections = (provider: ProviderPricing) => {
+            const providerId = provider.provider.api_provider_id;
+            const cached = sectionCache.get(providerId);
+            if (cached) return cached;
+            const built = buildProviderSections(provider, getProviderDefaultPlan(provider));
+            sectionCache.set(providerId, built);
+            return built;
+        };
+        const getProviderSortPrice = (
+            provider: ProviderPricing,
+            direction: "input" | "output" | "cached"
+        ): number | null => {
+            const sections = getCachedSections(provider);
+            return buildProviderTablePriceSummary(sections, direction).sortValue;
         };
 
-        const isProviderActiveForPlan = (provider: ProviderPricing) => {
+        const getProviderGatewayStatus = (provider: ProviderPricing): CanonicalGatewayStatus => {
             const modelScope = getProviderModelScopeForPlan(
                 provider,
                 getProviderDefaultPlan(provider)
             );
-            return modelScope.some((pm) => isProviderModelActiveForPlan(pm));
+            const statuses = modelScope.map((pm) =>
+                resolveGatewayStatus({
+                    isActiveGateway: pm.is_active_gateway,
+                    capabilityStatus: pm.capability_status,
+                    providerStatus: provider.provider.status,
+                    providerRoutingStatus: provider.provider.routing_status,
+                    modelRoutingStatus: pm.routing_status,
+                    effectiveFrom: pm.effective_from,
+                    effectiveTo: pm.effective_to,
+                })
+            );
+            return chooseGatewayStatus(statuses);
         };
 
-        const byActive = (a: ProviderPricing, b: ProviderPricing) => {
-            const aIsActive = isProviderActiveForPlan(a);
-            const bIsActive = isProviderActiveForPlan(b);
-            if (aIsActive && !bIsActive) return -1;
-            if (!aIsActive && bIsActive) return 1;
-            return 0;
+        const getProviderStatusRank = (provider: ProviderPricing): number => {
+            return getGatewayStatusSortRank(getProviderGatewayStatus(provider));
+        };
+
+        const byGatewayStatus = (a: ProviderPricing, b: ProviderPricing) => {
+            const aRank = getProviderStatusRank(a);
+            const bRank = getProviderStatusRank(b);
+            return aRank - bRank;
+        };
+
+        const defaultPriceWeights = normalizeInverseSquarePriceWeights(
+            list.map((provider) => {
+                const input = getProviderSortPrice(provider, "input");
+                const output = getProviderSortPrice(provider, "output");
+                return {
+                    providerId: provider.provider.api_provider_id,
+                    price: input === null && output === null ? null : (input ?? 0) + (output ?? 0),
+                };
+            })
+        );
+        const latencySamples = list
+            .map((provider) =>
+                finitePositive(
+                    liveRuntimeStats[provider.provider.api_provider_id]?.latencyMs30m
+                )
+            )
+            .filter((value): value is number => value !== null);
+        const throughputSamples = list
+            .map((provider) =>
+                finitePositive(
+                    liveRuntimeStats[provider.provider.api_provider_id]?.throughput30m
+                )
+            )
+            .filter((value): value is number => value !== null);
+        const minLatency = latencySamples.length ? Math.min(...latencySamples) : null;
+        const maxLatency = latencySamples.length ? Math.max(...latencySamples) : null;
+        const minThroughput = throughputSamples.length ? Math.min(...throughputSamples) : null;
+        const maxThroughput = throughputSamples.length ? Math.max(...throughputSamples) : null;
+
+        const getEstimatedRoutingScore = (provider: ProviderPricing): number => {
+            const providerId = provider.provider.api_provider_id;
+            const stats = liveRuntimeStats[providerId];
+            const status = getProviderGatewayStatus(provider);
+            const statusMultiplier = routingStatusMultiplier(status);
+            if (statusMultiplier <= 0) return 0;
+
+            const liveHealth = routingHealth[providerId];
+            const healthMultiplier = liveHealth?.deranked ? 1e-9 : 1;
+            const priceWeight = defaultPriceWeights.get(providerId) ?? 0.5;
+            const observationConfidence = getProviderObservationConfidence(stats);
+            const errorRate =
+                1 - ((stats?.requestSuccessPct3d ?? getDisplayedProviderUptime(stats) ?? (1 - DEFAULT_ROUTING_ERROR_RATE) * 100) / 100);
+            const uptimeScore = 1 - Math.max(0, Math.min(1, errorRate));
+            const latencyScore = normalizedMetricScore({
+                value: finitePositive(stats?.latencyMs30m),
+                min: minLatency,
+                max: maxLatency,
+                lowerIsBetter: true,
+                missingScore: 0.2,
+            });
+            const throughputScore = normalizedMetricScore({
+                value: finitePositive(stats?.throughput30m),
+                min: minThroughput,
+                max: maxThroughput,
+                missingScore: 0.2,
+            });
+            const weightedScore =
+                ESTIMATED_ROUTING_WEIGHTS.price * priceWeight +
+                ESTIMATED_ROUTING_WEIGHTS.uptime * Math.max(0.05, Math.min(1, uptimeScore)) +
+                ESTIMATED_ROUTING_WEIGHTS.latency * latencyScore +
+                ESTIMATED_ROUTING_WEIGHTS.throughput * throughputScore +
+                ESTIMATED_ROUTING_WEIGHTS.observations * observationConfidence;
+
+            return (
+                statusMultiplier *
+                healthMultiplier *
+                observedRouteMultiplier(observationConfidence) *
+                weightedScore
+            );
         };
 
         const byName = (a: ProviderPricing, b: ProviderPricing) => {
@@ -487,8 +489,8 @@ export default function ModelPricingClient({
         };
 
         const withCreatorBias = (a: ProviderPricing, b: ProviderPricing) => {
-            const activeCmp = byActive(a, b);
-            if (activeCmp !== 0) return activeCmp;
+            const statusCmp = byGatewayStatus(a, b);
+            if (statusCmp !== 0) return statusCmp;
             if (creatorOrgId) {
                 const aIsCreator = a.provider.api_provider_id === creatorOrgId;
                 const bIsCreator = b.provider.api_provider_id === creatorOrgId;
@@ -498,16 +500,38 @@ export default function ModelPricingClient({
             return byName(a, b);
         };
 
+        const byEstimatedRoutingOrder = (a: ProviderPricing, b: ProviderPricing) => {
+            const scoreDelta = getEstimatedRoutingScore(b) - getEstimatedRoutingScore(a);
+            if (Math.abs(scoreDelta) > Number.EPSILON) return scoreDelta;
+            return withCreatorBias(a, b);
+        };
+
         if (sort === "default") {
-            return list.sort(withCreatorBias);
+            return list.sort(byEstimatedRoutingOrder);
+        }
+
+        if (sort === "provider") {
+            return list.sort((a, b) => {
+                const statusCmp = byGatewayStatus(a, b);
+                if (statusCmp !== 0) return statusCmp;
+                const byProvider = byName(a, b);
+                if (byProvider !== 0) {
+                    return sortDirection === "asc" ? byProvider : -byProvider;
+                }
+                return withCreatorBias(a, b);
+            });
         }
 
         if (sort === "throughput") {
             return list.sort((a, b) => {
-                const activeCmp = byActive(a, b);
-                if (activeCmp !== 0) return activeCmp;
-                const aTp = runtimeStats[a.provider.api_provider_id]?.throughput30m;
-                const bTp = runtimeStats[b.provider.api_provider_id]?.throughput30m;
+                const statusCmp = byGatewayStatus(a, b);
+                if (statusCmp !== 0) return statusCmp;
+                const aTp = finitePositive(
+                    liveRuntimeStats[a.provider.api_provider_id]?.throughput30m
+                );
+                const bTp = finitePositive(
+                    liveRuntimeStats[b.provider.api_provider_id]?.throughput30m
+                );
                 if (aTp == null && bTp == null) return withCreatorBias(a, b);
                 if (aTp == null) return 1;
                 if (bTp == null) return -1;
@@ -520,10 +544,14 @@ export default function ModelPricingClient({
 
         if (sort === "latency") {
             return list.sort((a, b) => {
-                const activeCmp = byActive(a, b);
-                if (activeCmp !== 0) return activeCmp;
-                const aLat = runtimeStats[a.provider.api_provider_id]?.latencyMs30m;
-                const bLat = runtimeStats[b.provider.api_provider_id]?.latencyMs30m;
+                const statusCmp = byGatewayStatus(a, b);
+                if (statusCmp !== 0) return statusCmp;
+                const aLat = finitePositive(
+                    liveRuntimeStats[a.provider.api_provider_id]?.latencyMs30m
+                );
+                const bLat = finitePositive(
+                    liveRuntimeStats[b.provider.api_provider_id]?.latencyMs30m
+                );
                 if (aLat == null && bLat == null) return withCreatorBias(a, b);
                 if (aLat == null) return 1;
                 if (bLat == null) return -1;
@@ -534,13 +562,13 @@ export default function ModelPricingClient({
             });
         }
 
-        if (sort === "pricing") {
+        if (sort === "input" || sort === "output" || sort === "cache_read") {
             return list.sort((a, b) => {
-                const activeCmp = byActive(a, b);
-                if (activeCmp !== 0) return activeCmp;
-
-                const aPrice = getProviderSortPrice(a);
-                const bPrice = getProviderSortPrice(b);
+                const statusCmp = byGatewayStatus(a, b);
+                if (statusCmp !== 0) return statusCmp;
+                const sortDirectionKey = sort === "cache_read" ? "cached" : sort;
+                const aPrice = getProviderSortPrice(a, sortDirectionKey);
+                const bPrice = getProviderSortPrice(b, sortDirectionKey);
                 if (aPrice == null && bPrice == null) return withCreatorBias(a, b);
                 if (aPrice == null) return 1;
                 if (bPrice == null) return -1;
@@ -553,10 +581,14 @@ export default function ModelPricingClient({
 
         if (sort === "uptime") {
             return list.sort((a, b) => {
-                const activeCmp = byActive(a, b);
-                if (activeCmp !== 0) return activeCmp;
-                const aUptime = runtimeStats[a.provider.api_provider_id]?.uptimePct3d;
-                const bUptime = runtimeStats[b.provider.api_provider_id]?.uptimePct3d;
+                const statusCmp = byGatewayStatus(a, b);
+                if (statusCmp !== 0) return statusCmp;
+                const aUptime = getDisplayedProviderUptime(
+                    liveRuntimeStats[a.provider.api_provider_id]
+                );
+                const bUptime = getDisplayedProviderUptime(
+                    liveRuntimeStats[b.provider.api_provider_id]
+                );
                 if (aUptime == null && bUptime == null) return withCreatorBias(a, b);
                 if (aUptime == null) return 1;
                 if (bUptime == null) return -1;
@@ -568,31 +600,20 @@ export default function ModelPricingClient({
         }
 
         return list.sort(withCreatorBias);
-    }, [displayProviders, creatorOrgId, runtimeStats, sort, sortDirection]);
+    }, [displayProviders, creatorOrgId, liveRuntimeStats, routingHealth, sort, sortDirection]);
 
     const { filteredProviders, ignoredProviderReasons } = useMemo(() => {
-        const quantizedProviders =
-            quantizationFilter === "all"
-                ? sortedProviders
-                : sortedProviders.filter((provider) =>
-                      provider.provider_models.some(
-                          (pm) =>
-                              normalizeQuantizationScheme(pm.quantization_scheme) ===
-                              quantizationFilter
-                      )
-                  );
-
         const ignoredReasonMap = new Map<string, string[]>();
         if (!workspacePrivacySettings?.isAuthenticated) {
             return {
-                filteredProviders: quantizedProviders,
+                filteredProviders: sortedProviders,
                 ignoredProviderReasons: ignoredReasonMap,
             };
         }
 
         const eligible: ProviderPricing[] = [];
         const ignored: ProviderPricing[] = [];
-        for (const provider of quantizedProviders) {
+        for (const provider of sortedProviders) {
             const reasons = getIgnoredPrivacyReasons(provider, workspacePrivacySettings);
             if (reasons.length) {
                 ignoredReasonMap.set(provider.provider.api_provider_id, reasons);
@@ -606,7 +627,7 @@ export default function ModelPricingClient({
             filteredProviders: showIgnoredProviders ? [...eligible, ...ignored] : eligible,
             ignoredProviderReasons: ignoredReasonMap,
         };
-    }, [quantizationFilter, showIgnoredProviders, sortedProviders, workspacePrivacySettings]);
+    }, [showIgnoredProviders, sortedProviders, workspacePrivacySettings]);
     const ignoredProviderCount = ignoredProviderReasons.size;
     const canShowIgnoredToggle =
         Boolean(workspacePrivacySettings?.isAuthenticated) && ignoredProviderCount > 0;
@@ -615,21 +636,58 @@ export default function ModelPricingClient({
         filteredProviders.length === 0 &&
         ignoredProviderCount > 0 &&
         !showIgnoredProviders;
-    const hasProviderOverflow =
-        filteredProviders.length > DEFAULT_VISIBLE_PROVIDER_COUNT;
-    const alwaysVisibleProviders = hasProviderOverflow
-        ? filteredProviders.slice(0, DEFAULT_VISIBLE_PROVIDER_COUNT)
-        : filteredProviders;
-    const extraProviders = hasProviderOverflow
-        ? filteredProviders.slice(DEFAULT_VISIBLE_PROVIDER_COUNT)
-        : [];
-    const hiddenProviderCount = hasProviderOverflow
-        ? filteredProviders.length - DEFAULT_VISIBLE_PROVIDER_COUNT
-        : 0;
+    const visibleProviders = filteredProviders;
+    const showCacheReadColumn = useMemo(() => {
+        return visibleProviders.some((provider) => {
+            const sections = buildProviderSections(provider, getProviderDefaultPlan(provider));
+            return buildProviderTablePriceSummary(sections, "cached").primary !== null;
+        });
+    }, [visibleProviders]);
+    const providerTableViewportRef = useRef<HTMLDivElement>(null);
+    const [providerTableOverflows, setProviderTableOverflows] = useState<boolean | null>(null);
+    const [providerTableThumbWidth, setProviderTableThumbWidth] = useState<number | null>(null);
+
+    useLayoutEffect(() => {
+        const viewport = providerTableViewportRef.current;
+        if (!viewport) return;
+
+        let frame = 0;
+        const updateOverflow = () => {
+            const next = viewport.scrollWidth > viewport.clientWidth + 1;
+            const nextThumbWidth =
+                next && viewport.scrollWidth > 0
+                    ? Math.max(40, (viewport.clientWidth * viewport.clientWidth) / viewport.scrollWidth)
+                    : null;
+            setProviderTableOverflows((current) =>
+                current === next ? current : next
+            );
+            setProviderTableThumbWidth((current) =>
+                current === nextThumbWidth ? current : nextThumbWidth
+            );
+        };
+        const measure = () => {
+            if (frame) window.cancelAnimationFrame(frame);
+            frame = window.requestAnimationFrame(updateOverflow);
+        };
+
+        updateOverflow();
+        measure();
+        const resizeObserver = new ResizeObserver(measure);
+        resizeObserver.observe(viewport);
+        const content = viewport.querySelector("table") ?? viewport.firstElementChild;
+        if (content) resizeObserver.observe(content);
+        window.addEventListener("resize", measure);
+
+        return () => {
+            if (frame) window.cancelAnimationFrame(frame);
+            resizeObserver.disconnect();
+            window.removeEventListener("resize", measure);
+        };
+    }, [showCacheReadColumn, visibleProviders.length]);
 
     const updateUrlState = useCallback(
         (updates: Record<string, string | null>) => {
-            const next = new URLSearchParams(searchParams.toString());
+            const next = new URLSearchParams(effectiveSearchParams.toString());
             for (const [key, value] of Object.entries(updates)) {
                 if (!value) {
                     next.delete(key);
@@ -642,494 +700,305 @@ export default function ModelPricingClient({
                 scroll: false,
             });
         },
-        [pathname, router, searchParams]
+        [effectiveSearchParams, pathname, router]
     );
 
     useEffect(() => {
-        const nextSort = isSortOption(searchParams.get(SORT_QUERY_KEY))
-            ? (searchParams.get(SORT_QUERY_KEY) as SortOption)
-            : "default";
+        const nextSort = parseSortOption(effectiveSearchParams.get(SORT_QUERY_KEY));
         setSort((current) => (current === nextSort ? current : nextSort));
-        const nextDirection = isSortDirection(searchParams.get(SORT_DIRECTION_QUERY_KEY))
-            ? (searchParams.get(SORT_DIRECTION_QUERY_KEY) as SortDirection)
+        const nextDirection = isSortDirection(effectiveSearchParams.get(SORT_DIRECTION_QUERY_KEY))
+            ? (effectiveSearchParams.get(SORT_DIRECTION_QUERY_KEY) as SortDirection)
             : getDefaultSortDirection(nextSort);
         setSortDirection((current) =>
             current === nextDirection ? current : nextDirection
         );
 
-        const nextView = searchParams.get(VIEW_QUERY_KEY);
-        if (isPricingView(nextView)) {
-            setPricingView((current) => (current === nextView ? current : nextView));
-        }
+    }, [effectiveSearchParams]);
 
-        const nextQuant = getQuantizationFilterFromUrl(
-            searchParams.get(QUANT_QUERY_KEY)
+    const onColumnSortChange = useCallback(
+        (nextSort: Exclude<SortOption, "default">) => {
+            const defaultDirection = getDefaultSortDirection(nextSort);
+            const oppositeDirection: SortDirection =
+                defaultDirection === "asc" ? "desc" : "asc";
+
+            if (sort !== nextSort) {
+                setSort(nextSort);
+                setSortDirection(defaultDirection);
+                updateUrlState({
+                    [SORT_QUERY_KEY]: nextSort,
+                    [SORT_DIRECTION_QUERY_KEY]: defaultDirection,
+                });
+                return;
+            }
+
+            if (sortDirection === defaultDirection) {
+                setSort(nextSort);
+                setSortDirection(oppositeDirection);
+                updateUrlState({
+                    [SORT_QUERY_KEY]: nextSort,
+                    [SORT_DIRECTION_QUERY_KEY]: oppositeDirection,
+                });
+                return;
+            }
+
+            setSort("default");
+            setSortDirection("desc");
+            updateUrlState({
+                [SORT_QUERY_KEY]: null,
+                [SORT_DIRECTION_QUERY_KEY]: null,
+            });
+        },
+        [sort, sortDirection, updateUrlState]
+    );
+
+	const renderTableSortHead = (
+		label: string,
+		option: Exclude<SortOption, "default">,
+		align: "left" | "right" = "right"
+	) => {
+        const isActive = sort === option;
+		const labelNode = (
+			<span
+				className={cn(
+					option === "uptime" &&
+						"underline decoration-dotted underline-offset-4",
+				)}
+			>
+				{label}
+			</span>
+		);
+        const icon = isActive ? (
+            sortDirection === "asc" ? (
+                <ArrowUp className="h-3.5 w-3.5" />
+            ) : (
+                <ArrowDown className="h-3.5 w-3.5" />
+            )
+        ) : (
+            <ChevronsUpDown className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
         );
-        setQuantizationFilter((current) =>
-            current === nextQuant ? current : nextQuant
-        );
-    }, [searchParams]);
+		const wrapHeader = (button: React.ReactElement) => {
+			if (option !== "uptime") return button;
+			return (
+				<HoverCard openDelay={120} closeDelay={80}>
+					<HoverCardTrigger asChild>{button}</HoverCardTrigger>
+					<HoverCardContent align="end" className="w-72 text-left">
+						<UptimeHeaderHoverContent />
+					</HoverCardContent>
+				</HoverCard>
+			);
+		};
 
-    useEffect(() => {
-        if (quantizationFilter === "all") return;
-        if (quantizationOptions.includes(quantizationFilter)) return;
-
-        setQuantizationFilter("all");
-        updateUrlState({
-            [QUANT_QUERY_KEY]: null,
-        });
-    }, [quantizationFilter, quantizationOptions, updateUrlState]);
-
-    useEffect(() => {
-        setShowAllProviders(false);
-    }, [quantizationFilter, sort, sortDirection, showIgnoredProviders]);
-
-    useEffect(() => {
-        try {
-            const urlView = new URLSearchParams(window.location.search).get(
-                VIEW_QUERY_KEY
+        if (align === "left") {
+            return wrapHeader(
+                <button
+                    type="button"
+                    onClick={() => onColumnSortChange(option)}
+                    className={cn(
+                        "group inline-flex w-full items-center gap-1.5 text-left text-xs font-medium transition-colors hover:text-foreground justify-start",
+                        isActive ? "text-foreground" : "text-muted-foreground"
+                    )}
+                    aria-label={`Sort providers by ${label.toLowerCase()}`}
+                >
+                    {labelNode}
+                    {icon}
+                </button>
             );
-            if (isPricingView(urlView)) {
-                setPricingView(urlView);
-                return;
-            }
-
-            const stored = window.localStorage.getItem(PRICING_VIEW_STORAGE_KEY);
-            if (isPricingView(stored)) {
-                const nextView: PricingView =
-                    !hasApiProviders && hasSubscriptionPlans && stored === "api"
-                        ? "subscription"
-                        : stored;
-                setPricingView(nextView);
-                return;
-            }
-
-            setPricingView(defaultPricingView);
-        } catch (error) {
-            console.warn("[pricing] failed to read pricing view preference", error);
         }
-    }, [defaultPricingView, hasApiProviders, hasSubscriptionPlans]);
 
-    const onPricingViewChange = useCallback(
-        (checked: boolean) => {
-            const nextView: PricingView = checked ? "subscription" : "api";
-            setPricingView(nextView);
-            try {
-                window.localStorage.setItem(PRICING_VIEW_STORAGE_KEY, nextView);
-            } catch (error) {
-                console.warn("[pricing] failed to persist pricing view preference", error);
-            }
-
-            updateUrlState({
-                [VIEW_QUERY_KEY]: nextView === "api" ? null : nextView,
-            });
-        },
-        [updateUrlState]
-    );
-
-    const onSortChange = useCallback(
-        (value: string) => {
-            if (!isSortOption(value)) return;
-
-            setSort(value);
-            const nextDirection = getDefaultSortDirection(value);
-            setSortDirection(nextDirection);
-            updateUrlState({
-                [SORT_QUERY_KEY]: value === "default" ? null : value,
-                [SORT_DIRECTION_QUERY_KEY]:
-                    value === "default" ? null : nextDirection,
-            });
-        },
-        [updateUrlState]
-    );
-    const onToggleSortDirection = useCallback(() => {
-        if (sort === "default") return;
-
-        const nextDirection: SortDirection =
-            sortDirection === "asc" ? "desc" : "asc";
-        setSortDirection(nextDirection);
-        updateUrlState({
-            [SORT_QUERY_KEY]: sort,
-            [SORT_DIRECTION_QUERY_KEY]: nextDirection,
-        });
-    }, [sort, sortDirection, updateUrlState]);
-
-    const onQuantizationFilterChange = useCallback(
-        (value: string) => {
-            const nextValue =
-                value === "all" ? "all" : normalizeQuantizationScheme(value) ?? "all";
-            setQuantizationFilter(nextValue);
-            updateUrlState({
-                [QUANT_QUERY_KEY]: nextValue === "all" ? null : nextValue,
-            });
-        },
-        [updateUrlState]
-    );
-
-    const headerTitle =
-        pricingView === "subscription" ? "Subscription Plans" : "Providers";
-
-    const pricingViewToggle = (
-        <div className="inline-flex shrink-0 items-center gap-2 rounded-full border border-zinc-200 bg-background px-3 py-1.5 dark:border-zinc-800">
-            <span
+        return wrapHeader(
+            <button
+                type="button"
+                onClick={() => onColumnSortChange(option)}
                 className={cn(
-                    "text-xs font-medium transition-colors sm:text-sm",
-                    pricingView === "api"
-                        ? "text-foreground"
-                        : "text-muted-foreground"
+                    "group inline-flex w-full items-center justify-end gap-1.5 text-right text-xs font-medium transition-colors hover:text-foreground",
+                    isActive ? "text-foreground" : "text-muted-foreground"
                 )}
+                aria-label={`Sort providers by ${label.toLowerCase()}`}
             >
-                API
-            </span>
-            <Switch
-                aria-label="Toggle pricing view"
-                checked={pricingView === "subscription"}
-                onCheckedChange={onPricingViewChange}
-            />
-            <span
-                className={cn(
-                    "text-xs font-medium transition-colors sm:text-sm",
-                    pricingView === "subscription"
-                        ? "text-foreground"
-                        : "text-muted-foreground"
-                )}
-            >
-                Subscriptions
-            </span>
-        </div>
-    );
+                {icon}
+                {labelNode}
+            </button>
+        );
+    };
 
     return (
         <div className="space-y-6">
             {showHeader ? (
                 <div className="flex flex-wrap items-start justify-between gap-3">
                     <h2 className="text-2xl font-semibold tracking-tight text-foreground">
-                        {headerTitle}
+                        Providers
                     </h2>
-                    {pricingViewToggle}
                 </div>
             ) : (
-                <div className="flex justify-end">{pricingViewToggle}</div>
+                <></>
             )}
-
-            {pricingView === "api" ? (
-                <section className="space-y-4">
-                    {hasApiProviders ? (
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div className="flex flex-wrap items-center gap-2.5">
-                                {hasQuantizationOptions ? (
-                                    <Select
-                                        value={quantizationFilter}
-                                        onValueChange={onQuantizationFilterChange}
-                                    >
-                                        <SelectTrigger className="h-9 w-[220px] bg-background">
-                                            <SelectValue placeholder="Quantization">
-                                                {quantizationFilter === "all"
-                                                    ? "All Quantizations"
-                                                    : quantizationFilter}
-                                            </SelectValue>
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">All Quantizations</SelectItem>
-                                            {quantizationOptions.map((quant) => (
-                                                <SelectItem key={quant} value={quant}>
-                                                    {quant}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                ) : null}
-                                <Select value={sort} onValueChange={onSortChange}>
-                                    <SelectTrigger className="h-9 w-[210px] bg-background">
-                                        <SelectValue placeholder="Sort by">{sortLabel}</SelectValue>
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="default">{SORT_OPTION_LABELS.default}</SelectItem>
-                                        <SelectItem value="pricing">{SORT_OPTION_LABELS.pricing}</SelectItem>
-                                        <SelectItem value="throughput">{SORT_OPTION_LABELS.throughput}</SelectItem>
-                                        <SelectItem value="latency">{SORT_OPTION_LABELS.latency}</SelectItem>
-                                        <SelectItem value="uptime">{SORT_OPTION_LABELS.uptime}</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                {sort !== "default" ? (
-                                    <TooltipProvider>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <button
-                                                    type="button"
-                                                    onClick={onToggleSortDirection}
-                                                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-background text-muted-foreground transition-colors hover:text-foreground dark:border-zinc-800"
-                                                    aria-label={
-                                                        sortDirection === "asc"
-                                                            ? "Sorted ascending, click to sort descending"
-                                                            : "Sorted descending, click to sort ascending"
-                                                    }
-                                                >
-                                                    {sortDirection === "asc" ? (
-                                                        <ArrowUp className="h-3.5 w-3.5" />
-                                                    ) : (
-                                                        <ArrowDown className="h-3.5 w-3.5" />
-                                                    )}
-                                                </button>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                                {sortDirection === "asc"
-                                                    ? "Ascending"
-                                                    : "Descending"}
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
-                                ) : null}
-                            </div>
-                            <div className="flex items-center gap-2.5">
-                                {canShowIgnoredToggle ? (
-                                    <label className="inline-flex items-center gap-2.5 rounded-md border border-zinc-200 bg-background px-3 py-1.5 text-sm text-foreground dark:border-zinc-800">
-                                        <Switch
-                                            checked={showIgnoredProviders}
-                                            onCheckedChange={setShowIgnoredProviders}
-                                            aria-label="Show ignored providers"
-                                        />
-                                        <span>Show ignored</span>
-                                    </label>
-                                ) : null}
-                            </div>
-                        </div>
-                    ) : null}
-                    {filteredProviders.length > 0 ? (
-                        <div className="space-y-3">
-							<div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-                                {alwaysVisibleProviders.map((prov) => (
-                                    <ProviderCard
-                                        key={prov.provider.api_provider_id}
-                                        provider={prov}
-                                        defaultPlan={getProviderDefaultPlan(prov)}
-                                        availablePlans={getProviderAvailablePlans(prov)}
-                                        comparisonProviders={displayProviders}
-                                        privacyIgnoredReasons={
-                                            ignoredProviderReasons.get(
-                                                prov.provider.api_provider_id
-                                            ) ?? null
-                                        }
-                                        runtimeStats={
-                                            runtimeStats[prov.provider.api_provider_id] ?? null
-                                        }
-                                        routingStatus={
-                                            routingHealth[prov.provider.api_provider_id] ?? null
-                                        }
-                                        variantLabels={
-                                            providerVariantLabelsById.get(
-                                                prov.provider.api_provider_id
-                                            ) ?? null
-                                        }
+            <section className="space-y-4">
+                {hasApiProviders ? (
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div />
+                        <div className="flex items-center gap-2.5">
+                            {canShowIgnoredToggle ? (
+                                <div className="inline-flex items-center gap-2.5 rounded-md border border-zinc-200 bg-background px-3 py-1.5 text-sm text-foreground dark:border-zinc-800">
+                                    <Switch
+                                        checked={showIgnoredProviders}
+                                        onCheckedChange={setShowIgnoredProviders}
+                                        aria-label="Show ignored providers"
                                     />
-                                ))}
-                            </div>
-                            {hasProviderOverflow ? (
-                                <>
-                                    <div
-                                        className={cn(
-                                            "grid overflow-hidden transition-[grid-template-rows,opacity] duration-300 ease-out",
-                                            showAllProviders
-                                                ? "grid-rows-[1fr] opacity-100"
-                                                : "grid-rows-[0fr] opacity-0"
-                                        )}
-                                    >
-                                        <div className="overflow-hidden">
-                                            <div className="pt-3">
-												<div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-                                                    {extraProviders.map((prov) => (
-                                                        <ProviderCard
-                                                            key={prov.provider.api_provider_id}
-                                                            provider={prov}
-                                                            defaultPlan={getProviderDefaultPlan(prov)}
-                                                            availablePlans={getProviderAvailablePlans(prov)}
-                                                            comparisonProviders={displayProviders}
-                                                            privacyIgnoredReasons={
-                                                                ignoredProviderReasons.get(
-                                                                    prov.provider.api_provider_id
-                                                                ) ?? null
-                                                            }
-                                                            runtimeStats={
-                                                                runtimeStats[
-                                                                    prov.provider.api_provider_id
-                                                                ] ?? null
-                                                            }
-                                                            routingStatus={
-                                                                routingHealth[
-                                                                    prov.provider.api_provider_id
-                                                                ] ?? null
-                                                            }
-                                                            variantLabels={
-                                                                providerVariantLabelsById.get(
-                                                                    prov.provider.api_provider_id
-                                                                ) ?? null
-                                                            }
-                                                        />
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="flex justify-center">
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            className="gap-1.5"
-                                            onClick={() =>
-                                                setShowAllProviders((current) => !current)
-                                            }
-                                        >
-                                            <span>
-                                                {showAllProviders
-                                                    ? "Show fewer providers"
-                                                    : `Show ${hiddenProviderCount.toLocaleString()} more provider${
-                                                          hiddenProviderCount === 1 ? "" : "s"
-                                                      }`}
-                                            </span>
-                                            <ChevronDown
-                                                className={cn(
-                                                    "h-4 w-4 transition-transform duration-200",
-                                                    showAllProviders ? "rotate-180" : "rotate-0"
-                                                )}
-                                            />
-                                        </Button>
-                                    </div>
-                                </>
+                                    <span>Show ignored</span>
+                                </div>
                             ) : null}
                         </div>
-                    ) : allProvidersHiddenByPrivacy ? (
-                        <Empty className="rounded-lg border p-10">
-                            <EmptyHeader>
-                                <EmptyMedia variant="icon">
-                                    <Shield className="size-5" />
-                                </EmptyMedia>
-                                <EmptyTitle>All providers hidden</EmptyTitle>
-                                <EmptyDescription>
-                                    Your workspace privacy preferences are currently filtering out every provider for this model.
-                                </EmptyDescription>
-                            </EmptyHeader>
-                            <div className="mt-5 flex flex-wrap items-center justify-center gap-2.5">
-                                <Button asChild type="button" variant="outline">
-                                    <Link href="/settings/privacy">Update Privacy Settings</Link>
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    onClick={() => setShowIgnoredProviders(true)}
-                                >
-                                    Show Hidden Providers
-                                </Button>
-                            </div>
-                        </Empty>
-                    ) : sortedProviders.length > 0 ? (
-                        <Empty className="rounded-lg border p-8">
-                            <EmptyHeader>
-                                <EmptyMedia variant="icon">
-                                    <SlidersHorizontal className="size-5" />
-                                </EmptyMedia>
-                                <EmptyTitle>No matching API providers</EmptyTitle>
-                                <EmptyDescription>
-                                    No providers match the selected quantization filter.
-                                </EmptyDescription>
-                            </EmptyHeader>
-                        </Empty>
-                    ) : (
-                        <Empty className="rounded-lg border p-8">
-                            <EmptyHeader>
-                                <EmptyMedia variant="icon">
-                                    <Server className="size-5" />
-                                </EmptyMedia>
-                                <EmptyTitle>No API providers listed yet</EmptyTitle>
-                                <EmptyDescription>
-                                    No API provider availability is listed for this model yet.
-                                </EmptyDescription>
-                            </EmptyHeader>
-                        </Empty>
-                    )}
-                </section>
-            ) : (
-                <section className="space-y-4">
-                    {sortedSubscriptionPlans.length > 0 ? (
-                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
-                            {sortedSubscriptionPlans.map((planItem) => {
-                                const sortedPrices = sortSubscriptionPlanPrices(
-                                    (planItem.prices ?? []).filter(
-                                        (price) =>
-                                            Number.isFinite(Number(price.price)) &&
-                                            Number(price.price) >= 0
-                                    )
-                                );
-                                return (
-                                    <Card
-                                        key={planItem.plan_id}
-                                        className="group h-full border-border/70 bg-gradient-to-b from-background to-muted/[0.22] p-4 transition-colors hover:border-border"
-                                    >
-                                        <div className="space-y-3">
-                                            <div className="flex items-start gap-3">
-                                                <div className="min-w-0 space-y-1">
-                                                    <Link
-                                                        href={`/subscription-plans/${planItem.plan_id}`}
-                                                        className="block text-sm font-semibold leading-tight transition-colors hover:text-primary"
-                                                    >
-                                                        {planItem.name}
-                                                    </Link>
-                                                    <p className="text-xs text-muted-foreground">
-                                                        {planItem.organisation?.name ?? "Unknown provider"}
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            {sortedPrices.length > 0 ? (
-                                                <div className="rounded-md border border-border/70 bg-background/70 p-2">
-                                                    <div className="space-y-1.5">
-                                                        {sortedPrices.map((price) => (
-                                                            <div
-                                                                key={`${price.frequency}:${price.currency}:${price.price}`}
-                                                                className="flex items-center justify-between gap-3 text-xs"
-                                                            >
-                                                                <span className="text-muted-foreground">
-                                                                    {getFrequencyLabel(price.frequency)}
-                                                                </span>
-                                                                <span className="font-semibold tabular-nums text-foreground">
-                                                                    {formatPlanPriceValue(price)}
-                                                                </span>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="rounded-md border border-border/70 bg-muted/40 px-2.5 py-2 text-xs text-muted-foreground">
-                                                    No pricing values listed yet.
-                                                </div>
-                                            )}
-
-                                            {typeof planItem.model_info?.rate_limit === "string" &&
-                                            planItem.model_info.rate_limit.trim() ? (
-                                                <p className="text-xs text-muted-foreground">
-                                                    Rate limit: {planItem.model_info.rate_limit}
-                                                </p>
-                                            ) : null}
-                                        </div>
-                                    </Card>
-                                );
-                            })}
+                    </div>
+                ) : null}
+                {filteredProviders.length > 0 ? (
+                    <div className="space-y-2">
+                        <div className="overflow-hidden rounded-md border border-zinc-200/80 bg-background dark:border-zinc-800">
+                            <ScrollArea
+                                className={cn(
+                                    "w-full",
+                                    providerTableOverflows === true
+                                        ? "[&_[data-orientation=horizontal]]:h-2 [&_[data-orientation=horizontal]]:border-t-0 [&_[data-orientation=horizontal]_[data-slot=scroll-area-thumb]]:min-w-[var(--provider-table-scrollbar-thumb-width,2.5rem)] [&_[data-orientation=horizontal]_[data-slot=scroll-area-thumb]]:bg-zinc-400/70 [&_[data-orientation=horizontal]_[data-slot=scroll-area-thumb]]:transition-colors hover:[&_[data-orientation=horizontal]_[data-slot=scroll-area-thumb]]:bg-zinc-500/80 focus-within:[&_[data-orientation=horizontal]_[data-slot=scroll-area-thumb]]:bg-zinc-500/80 dark:[&_[data-orientation=horizontal]_[data-slot=scroll-area-thumb]]:bg-zinc-500/80 dark:hover:[&_[data-orientation=horizontal]_[data-slot=scroll-area-thumb]]:bg-zinc-400/90 dark:focus-within:[&_[data-orientation=horizontal]_[data-slot=scroll-area-thumb]]:bg-zinc-400/90"
+                                        : "[&_[data-orientation=horizontal]]:hidden"
+                                )}
+                                keepScrollbarMounted
+                                scrollBarOrientation="horizontal"
+                                style={
+                                    providerTableThumbWidth
+                                        ? ({
+                                              "--provider-table-scrollbar-thumb-width": `${providerTableThumbWidth}px`,
+                                          } as React.CSSProperties)
+                                        : undefined
+                                }
+                                viewportClassName={providerTableOverflows === true ? "pb-1.5" : undefined}
+                                viewportRef={providerTableViewportRef}
+                            >
+								<Table
+									className={cn(
+										"table-auto lg:min-w-full",
+										showCacheReadColumn ? "min-w-[944px]" : "min-w-[888px]",
+									)}
+									wrapInContainer={false}
+								>
+									<colgroup>
+										<col className="w-72" />
+										<col className="w-24" />
+										<col className="w-24" />
+										{showCacheReadColumn ? <col className="w-32" /> : null}
+										<col className="w-24" />
+										<col className="w-28" />
+										<col className="w-32" />
+									</colgroup>
+									<TableHeader>
+										<TableRow className="hover:bg-transparent">
+											<TableHead className="h-8 min-w-[280px] px-3 whitespace-nowrap">
+												{renderTableSortHead("Provider", "provider", "left")}
+											</TableHead>
+											<TableHead className="h-8 w-24 min-w-24 pl-2 pr-4 text-right whitespace-nowrap">
+												{renderTableSortHead("Input $/M", "input")}
+											</TableHead>
+											<TableHead className="h-8 w-24 min-w-24 pl-2 pr-4 text-right whitespace-nowrap">
+												{renderTableSortHead("Output $/M", "output")}
+											</TableHead>
+											{showCacheReadColumn ? (
+												<TableHead className="h-8 w-32 min-w-32 pl-2 pr-4 text-right whitespace-nowrap">
+													{renderTableSortHead("Cache Read $/M", "cache_read")}
+												</TableHead>
+											) : null}
+											<TableHead className="h-8 w-24 min-w-24 pl-2 pr-4 text-right whitespace-nowrap">
+												{renderTableSortHead("Latency", "latency")}
+											</TableHead>
+											<TableHead className="h-8 w-28 min-w-28 pl-2 pr-4 text-right whitespace-nowrap">
+												{renderTableSortHead("Throughput", "throughput")}
+											</TableHead>
+											<TableHead className="h-8 w-32 min-w-32 pl-2 pr-4 text-right whitespace-nowrap">
+												{renderTableSortHead("Uptime", "uptime")}
+											</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {visibleProviders.map((prov, index) => (
+                                            <ProviderCard
+                                                key={prov.provider.api_provider_id}
+                                                provider={prov}
+                                                defaultPlan={getProviderDefaultPlan(prov)}
+                                                availablePlans={getProviderAvailablePlans(prov)}
+                                                comparisonProviders={displayProviders}
+                                                navigationProviders={visibleProviders}
+                                                privacyIgnoredReasons={
+                                                    ignoredProviderReasons.get(
+                                                        prov.provider.api_provider_id
+                                                    ) ?? null
+                                                }
+                                                runtimeStats={
+                                                    liveRuntimeStats[prov.provider.api_provider_id] ?? null
+                                                }
+                                                routingStatus={
+                                                    routingHealth[prov.provider.api_provider_id] ?? null
+                                                }
+                                                variantLabels={
+                                                    providerVariantLabelsById.get(
+                                                        prov.provider.api_provider_id
+                                                    ) ?? null
+                                                }
+                                                showCacheReadColumn={showCacheReadColumn}
+                                                isLastVisible={index === visibleProviders.length - 1}
+                                            />
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </ScrollArea>
                         </div>
-                    ) : (
-                        <Empty className="rounded-lg border p-8">
-                            <EmptyHeader>
-                                <EmptyMedia variant="icon">
-                                    <AppWindow className="size-5" />
-                                </EmptyMedia>
-                                <EmptyTitle>No subscription plans listed yet</EmptyTitle>
-                                <EmptyDescription>
-                                    No subscription pricing is available for this model.
-                                </EmptyDescription>
-                            </EmptyHeader>
-                        </Empty>
-                    )}
-                </section>
-            )}
+                    </div>
+                ) : allProvidersHiddenByPrivacy ? (
+                    <Empty className="rounded-lg border p-10">
+                        <EmptyHeader>
+                            <EmptyMedia variant="icon">
+                                <Shield className="size-5" />
+                            </EmptyMedia>
+                            <EmptyTitle>All providers hidden</EmptyTitle>
+                            <EmptyDescription>
+                                Your workspace privacy preferences are currently filtering out every provider for this model.
+                            </EmptyDescription>
+                        </EmptyHeader>
+                        <div className="mt-5 flex flex-wrap items-center justify-center gap-2.5">
+                            <Button asChild type="button" variant="outline">
+                                <Link href="/settings/privacy">Update Privacy Settings</Link>
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                onClick={() => setShowIgnoredProviders(true)}
+                            >
+                                Show Hidden Providers
+                            </Button>
+                        </div>
+                    </Empty>
+                ) : sortedProviders.length > 0 ? (
+                    <Empty className="rounded-lg border p-8">
+                        <EmptyHeader>
+                            <EmptyMedia variant="icon">
+                                <Shield className="size-5" />
+                            </EmptyMedia>
+                            <EmptyTitle>No visible API providers</EmptyTitle>
+                            <EmptyDescription>
+                                Provider availability exists for this model, but nothing is currently visible.
+                            </EmptyDescription>
+                        </EmptyHeader>
+                    </Empty>
+                ) : (
+                    <Empty className="rounded-lg border p-8">
+                        <EmptyHeader>
+                            <EmptyMedia variant="icon">
+                                <Server className="size-5" />
+                            </EmptyMedia>
+                            <EmptyTitle>No API providers listed yet</EmptyTitle>
+                            <EmptyDescription>
+                                No API provider availability is listed for this model yet.
+                            </EmptyDescription>
+                        </EmptyHeader>
+                    </Empty>
+                )}
+            </section>
         </div>
     );
 }

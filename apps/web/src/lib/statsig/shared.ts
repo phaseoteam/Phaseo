@@ -1,10 +1,15 @@
 import type { StatsigUser } from "@statsig/react-bindings";
 
-export const STATSIG_STABLE_ID_COOKIE = "ai_stats_statsig_stable_id";
-export const BETA_OPT_IN_STORAGE_KEY = "ai_stats_beta_opt_in";
-export const BETA_PROFILE_STORAGE_KEY = "ai_stats_beta_profile";
-export const BETA_OPT_IN_CHANGED_EVENT = "ai-stats-beta-opt-in-changed";
-export const BETA_PROFILE_CHANGED_EVENT = "ai-stats-beta-profile-changed";
+export const STATSIG_STABLE_ID_COOKIE = "phaseo_statsig_stable_id";
+const LEGACY_STATSIG_STABLE_ID_COOKIE = "ai_stats_statsig_stable_id";
+export const BETA_OPT_IN_STORAGE_KEY = "phaseo_beta_opt_in";
+const LEGACY_BETA_OPT_IN_STORAGE_KEY = "ai_stats_beta_opt_in";
+export const BETA_PROFILE_STORAGE_KEY = "phaseo_beta_profile";
+const LEGACY_BETA_PROFILE_STORAGE_KEY = "ai_stats_beta_profile";
+export const BETA_OPT_IN_CHANGED_EVENT = "phaseo-beta-opt-in-changed";
+const LEGACY_BETA_OPT_IN_CHANGED_EVENT = "ai-stats-beta-opt-in-changed";
+export const BETA_PROFILE_CHANGED_EVENT = "phaseo-beta-profile-changed";
+const LEGACY_BETA_PROFILE_CHANGED_EVENT = "ai-stats-beta-profile-changed";
 export const NEW_LANDING_PAGE_GATE =
 	process.env.NEXT_PUBLIC_STATSIG_LANDING_PAGE_GATE ??
 	process.env.NEXT_PUBLIC_STATSIG_GATEWAY_HERO_GATE ??
@@ -107,7 +112,9 @@ export function readStoredBetaProfile(): StatsigProfile {
 	if (typeof window === "undefined") return EMPTY_STATSIG_PROFILE;
 
 	try {
-		const raw = window.localStorage.getItem(BETA_PROFILE_STORAGE_KEY);
+		const raw =
+			window.localStorage.getItem(BETA_PROFILE_STORAGE_KEY) ??
+			window.localStorage.getItem(LEGACY_BETA_PROFILE_STORAGE_KEY);
 		if (raw) {
 			const parsed = JSON.parse(raw) as Partial<StatsigProfile>;
 			return {
@@ -122,7 +129,10 @@ export function readStoredBetaProfile(): StatsigProfile {
 	try {
 		return {
 			betaOptIn:
-				window.localStorage.getItem(BETA_OPT_IN_STORAGE_KEY) === "true",
+				(
+					window.localStorage.getItem(BETA_OPT_IN_STORAGE_KEY) ??
+					window.localStorage.getItem(LEGACY_BETA_OPT_IN_STORAGE_KEY)
+				) === "true",
 			betaFeatures: {},
 		};
 	} catch {
@@ -160,6 +170,8 @@ export function writeStoredBetaProfile(profile: StatsigProfile): void {
 			BETA_OPT_IN_STORAGE_KEY,
 			normalizedProfile.betaOptIn ? "true" : "false"
 		);
+		window.localStorage.removeItem(LEGACY_BETA_PROFILE_STORAGE_KEY);
+		window.localStorage.removeItem(LEGACY_BETA_OPT_IN_STORAGE_KEY);
 	} catch {
 		// Ignore storage access errors in privacy-focused browsers.
 	}
@@ -178,16 +190,32 @@ export function dispatchStoredBetaProfileChanged(profile: StatsigProfile): void 
 			detail: profile.betaOptIn,
 		})
 	);
+	window.dispatchEvent(
+		new CustomEvent<StatsigProfile>(LEGACY_BETA_PROFILE_CHANGED_EVENT, {
+			detail: profile,
+		})
+	);
+	window.dispatchEvent(
+		new CustomEvent<boolean>(LEGACY_BETA_OPT_IN_CHANGED_EVENT, {
+			detail: profile.betaOptIn,
+		})
+	);
 }
 
 export function readStableIdCookie(): string | null {
 	if (typeof document === "undefined") return null;
 
-	const encodedName = `${STATSIG_STABLE_ID_COOKIE}=`;
+	const cookieNames = [
+		STATSIG_STABLE_ID_COOKIE,
+		LEGACY_STATSIG_STABLE_ID_COOKIE,
+	];
 	for (const part of document.cookie.split(";")) {
 		const trimmed = part.trim();
-		if (!trimmed.startsWith(encodedName)) continue;
-		return decodeURIComponent(trimmed.slice(encodedName.length));
+		for (const cookieName of cookieNames) {
+			const encodedName = `${cookieName}=`;
+			if (!trimmed.startsWith(encodedName)) continue;
+			return decodeURIComponent(trimmed.slice(encodedName.length));
+		}
 	}
 
 	return null;
@@ -200,4 +228,7 @@ export function writeStableIdCookie(stableID: string): void {
 	document.cookie =
 		`${STATSIG_STABLE_ID_COOKIE}=${encodeURIComponent(stableID)}; ` +
 		`Max-Age=${maxAgeSeconds}; Path=/; SameSite=Lax`;
+	document.cookie =
+		`${LEGACY_STATSIG_STABLE_ID_COOKIE}=; ` +
+		"Max-Age=0; Path=/; SameSite=Lax";
 }

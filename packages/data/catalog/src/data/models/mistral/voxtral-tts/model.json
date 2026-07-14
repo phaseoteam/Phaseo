@@ -15,7 +15,8 @@
   "api_model_id": "mistral/voxtral-tts",
   "links": [
     {
-      "platform": "api_reference",
+      "title": "API Reference",
+      "kind": "api_reference",
       "url": "https://docs.mistral.ai/studio-api/audio/text_to_speech"
     }
   ],

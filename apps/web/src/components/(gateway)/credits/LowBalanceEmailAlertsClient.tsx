@@ -47,11 +47,11 @@ export default function LowBalanceEmailAlertsClient(props: {
 	}, [threshold]);
 
 	return (
-		<Card>
-			<CardHeader className="pb-3">
+		<Card size="sm">
+			<CardHeader className="pb-1">
 				<CardTitle className="text-base">Low balance email alert</CardTitle>
 			</CardHeader>
-			<CardContent className="space-y-4">
+			<CardContent className="space-y-3">
 				<div className="flex items-center justify-between gap-4">
 					<div className="min-w-0">
 						<div className="text-sm font-medium">Email me when balance is low</div>

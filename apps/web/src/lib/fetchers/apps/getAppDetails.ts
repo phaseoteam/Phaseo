@@ -4,6 +4,7 @@ import { sumTokens } from "@/lib/utils/sumTokens";
 
 export type AppDetails = {
 	id: string;
+	slug: string;
 	title: string;
 	url: string | null;
 	image_url: string | null;
@@ -17,6 +18,12 @@ export type AppDetails = {
 	total_requests: number;
 };
 
+function isUuid(value: string): boolean {
+	return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+		value,
+	);
+}
+
 function isMissingAppRollupRelation(error: unknown): boolean {
 	const message =
 		typeof error === "object" && error && "message" in error
@@ -26,39 +33,46 @@ function isMissingAppRollupRelation(error: unknown): boolean {
 	return message.includes('relation "public.gateway_usage_rollup_daily_app" does not exist');
 }
 
-export async function getAppDetails(appId: string): Promise<AppDetails | null> {
+export async function getAppDetails(appReference: string): Promise<AppDetails | null> {
 	try {
 		const supabase = createAdminClient();
+		const reference = appReference.trim();
+		if (!reference) return null;
 		// Get app metadata
-		const { data: app, error: appError } = await supabase
+		const appQuery = supabase
 			.from("api_apps")
 			.select("*")
-			.eq("id", appId)
-			.eq("is_public", true)
-			.single();
+			.eq("is_public", true);
+		const { data: app, error: appError } = isUuid(reference)
+			? await appQuery.eq("id", reference).single()
+			: await appQuery.eq("slug", reference).single();
 
 		if (appError || !app) {
 			console.error("Error fetching app details:", appError);
 			return null;
 		}
+		const appDetails = {
+			...app,
+			slug: String((app as { slug?: unknown }).slug ?? "").trim(),
+		};
 
 		// Get aggregated usage stats
 		const { data: stats, error: statsError } = await supabase
 			.from("gateway_usage_rollup_daily_app")
 			.select("requests, success_requests, total_tokens")
-			.eq("app_id", appId);
+			.eq("app_id", app.id);
 
 		if (statsError) {
 			if (isMissingAppRollupRelation(statsError)) {
 				const { data: requestRows, error: requestsError } = await supabase
 					.from("gateway_requests")
 					.select("usage, success")
-					.eq("app_id", appId);
+					.eq("app_id", app.id);
 
 				if (requestsError) {
 					console.error("Error fetching app stats fallback:", requestsError);
 					return {
-						...app,
+						...appDetails,
 						total_tokens: 0,
 						total_requests: 0,
 					};
@@ -75,7 +89,7 @@ export async function getAppDetails(appId: string): Promise<AppDetails | null> {
 				}
 
 				return {
-					...app,
+					...appDetails,
 					total_tokens: totalTokens,
 					total_requests: totalSuccessfulRequests,
 				};
@@ -95,13 +109,35 @@ export async function getAppDetails(appId: string): Promise<AppDetails | null> {
 		}
 
 		return {
-			...app,
+			...appDetails,
 			total_tokens: totalTokens,
 			total_requests: totalSuccessfulRequests,
 		};
 	} catch (err) {
 		console.error("Unexpected error fetching app details:", err);
 		return null;
+	}
+}
+
+export async function isPublicAppId(appId: string): Promise<boolean> {
+	try {
+		const supabase = createAdminClient();
+		const { data, error } = await supabase
+			.from("api_apps")
+			.select("id")
+			.eq("id", appId)
+			.eq("is_public", true)
+			.maybeSingle();
+
+		if (error) {
+			console.error("Error checking public app access:", error);
+			return false;
+		}
+
+		return Boolean(data?.id);
+	} catch (err) {
+		console.error("Unexpected error checking public app access:", err);
+		return false;
 	}
 }
 

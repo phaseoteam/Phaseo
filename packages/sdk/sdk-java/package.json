@@ -1,16 +1,16 @@
 {
-  "name": "@ai-stats/java-sdk",
+  "name": "@phaseo/java-sdk",
   "version": "2.0.4",
   "private": true,
-  "description": "AI Stats Java SDK (preview) - generated client with models wrapper",
+  "description": "Phaseo Java SDK (preview) - generated client with models wrapper",
   "license": "MIT",
   "scripts": {
-    "postinstall": "node ../scripts/postinstall-viewer-prompt.cjs @ai-stats/java-sdk",
+    "postinstall": "node ../scripts/postinstall-viewer-prompt.cjs @phaseo/java-sdk",
     "build": "mvn -f pom.xml -DskipTests package",
     "test": "mvn -f pom.xml test",
     "publish:prepare": "mvn -f pom.xml -DskipTests verify",
-    "smoke:chat": "dotenv -e .env.local -- cmd /c \"javac -d tests/out src/gen/*.java tests/SmokeChat.java && java -cp tests/out SmokeChat\"",
-    "smoke:responses": "dotenv -e .env.local -- cmd /c \"javac -d tests/out src/gen/*.java tests/SmokeResponses.java && java -cp tests/out SmokeResponses\"",
+    "smoke:chat": "dotenv -e .env.local -- cmd /c \"javac -d tests/out src/app/phaseo/gen/*.java tests/SmokeChat.java && java -cp tests/out SmokeChat\"",
+    "smoke:responses": "dotenv -e .env.local -- cmd /c \"javac -d tests/out src/app/phaseo/gen/*.java tests/SmokeResponses.java && java -cp tests/out SmokeResponses\"",
     "smoke:responses:sdk": "dotenv -e .env.local -- mvn -f pom.xml -DskipTests test-compile org.codehaus.mojo:exec-maven-plugin:3.5.0:java -Dexec.mainClass=SmokeResponsesSdk -Dexec.classpathScope=test"
   }
 }

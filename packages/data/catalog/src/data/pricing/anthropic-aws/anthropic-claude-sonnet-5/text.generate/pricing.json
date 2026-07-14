@@ -1,0 +1,109 @@
+{
+  "key": "anthropic-aws:anthropic/claude-sonnet-5:text.generate",
+  "api_provider_id": "anthropic-aws",
+  "provider_slug": "anthropic-aws",
+  "api_model_id": "anthropic/claude-sonnet-5",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Introductory Claude Sonnet 5 rate based on official Anthropic launch pricing; aligned to Anthropic-hosted AWS provider routing.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-30T00:00:00Z",
+      "effective_to": "2026-09-01T00:00:00Z"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.2,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Introductory Claude Sonnet 5 cache-read rate derived from Anthropic's standard cache pricing convention; aligned to Anthropic-hosted AWS provider routing.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-30T00:00:00Z",
+      "effective_to": "2026-09-01T00:00:00Z"
+    },
+    {
+      "meter": "cached_write_text_tokens_5m",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Introductory Claude Sonnet 5 5-minute cache-write rate derived from Anthropic's standard cache pricing convention; aligned to Anthropic-hosted AWS provider routing.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-30T00:00:00Z",
+      "effective_to": "2026-09-01T00:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 10,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Introductory Claude Sonnet 5 rate based on official Anthropic launch pricing; aligned to Anthropic-hosted AWS provider routing.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-30T00:00:00Z",
+      "effective_to": "2026-09-01T00:00:00Z"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 3,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Standard Claude Sonnet 5 rate based on official Anthropic launch pricing; aligned to Anthropic-hosted AWS provider routing.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-01T00:00:00Z"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.3,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Standard Claude Sonnet 5 cache-read rate derived from Anthropic's standard cache pricing convention; aligned to Anthropic-hosted AWS provider routing.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-01T00:00:00Z"
+    },
+    {
+      "meter": "cached_write_text_tokens_5m",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 3.75,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Standard Claude Sonnet 5 5-minute cache-write rate derived from Anthropic's standard cache pricing convention; aligned to Anthropic-hosted AWS provider routing.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-01T00:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 15,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Standard Claude Sonnet 5 rate based on official Anthropic launch pricing; aligned to Anthropic-hosted AWS provider routing.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-09-01T00:00:00Z"
+    }
+  ]
+}
