@@ -477,7 +477,9 @@ jobs:
     deploy-preview-web:
         name: Deploy Web (Preview)
         runs-on: ubuntu-latest
-        needs: apps
+        needs:
+            - apps
+            - deploy-preview-web-api
         concurrency:
             group: deploy-preview-web-${{ github.event.pull_request.number || github.ref }}
             cancel-in-progress: true
@@ -527,7 +529,9 @@ jobs:
               run: |
                   git_branch="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
                   vercel pull --yes --environment=preview --git-branch="$git_branch" --token=$VERCEL_TOKEN
-                  preview_url="$(vercel deploy --yes --force --archive=tgz --token=$VERCEL_TOKEN)"
+                  preview_url="$(vercel deploy --yes --force --archive=tgz --token=$VERCEL_TOKEN \
+                    --build-env WEB_API_ORIGIN=https://phaseo-web-api-staging.danielbutler500.workers.dev \
+                    --env WEB_API_ORIGIN=https://phaseo-web-api-staging.danielbutler500.workers.dev)"
                   echo "url=$preview_url" >> "$GITHUB_OUTPUT"
 
             - name: Update pull request preview link
@@ -561,6 +565,120 @@ jobs:
                         body,
                       })
                     }
+
+    deploy-preview-web-api:
+        name: Deploy Web API (Staging)
+        runs-on: ubuntu-latest
+        needs: apps
+        if: >
+            github.event_name == 'workflow_dispatch' ||
+            (
+                github.event_name == 'pull_request' &&
+                !startsWith(github.head_ref, 'chore/auto-model-statuses') &&
+                github.event.pull_request.head.repo.full_name == github.repository &&
+                contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.pull_request.author_association)
+            )
+        permissions:
+            contents: read
+        steps:
+            - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+
+            - name: Setup pnpm
+              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
+              with:
+                  version: 10.33.0
+                  run_install: false
+                  standalone: true
+            - name: Setup Node.js
+              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+
+            - name: Restore lockfile (guard setup-node cache mutation)
+              run: git checkout -- pnpm-lock.yaml
+
+            - name: Install dependencies
+              run: corepack pnpm install --frozen-lockfile
+
+            - name: Validate Cloudflare web API deploy secrets
+              shell: bash
+              env:
+                  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+              run: |
+                  set -euo pipefail
+                  missing=()
+                  [ -z "${CLOUDFLARE_API_TOKEN:-}" ] && missing+=("CLOUDFLARE_API_TOKEN")
+                  [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ] && missing+=("CLOUDFLARE_ACCOUNT_ID")
+                  if [ "${#missing[@]}" -gt 0 ]; then
+                    echo "::error::Missing required Cloudflare deploy secret(s): ${missing[*]}"
+                    exit 1
+                  fi
+
+            - name: Deploy web API staging Worker
+              uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0
+              with:
+                  apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                  accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+                  workingDirectory: apps/web-api
+                  command: deploy --env staging
+
+    deploy-preview-api:
+        name: Deploy Gateway API (Staging)
+        runs-on: ubuntu-latest
+        needs: apps
+        if: >
+            github.event_name == 'workflow_dispatch' ||
+            (
+                github.event_name == 'pull_request' &&
+                !startsWith(github.head_ref, 'chore/auto-model-statuses') &&
+                github.event.pull_request.head.repo.full_name == github.repository &&
+                contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.pull_request.author_association)
+            )
+        permissions:
+            contents: read
+        steps:
+            - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+
+            - name: Setup pnpm
+              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
+              with:
+                  version: 10.33.0
+                  run_install: false
+                  standalone: true
+            - name: Setup Node.js
+              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+
+            - name: Restore lockfile (guard setup-node cache mutation)
+              run: git checkout -- pnpm-lock.yaml
+
+            - name: Install dependencies
+              run: corepack pnpm install --frozen-lockfile
+
+            - name: Validate Cloudflare gateway API deploy secrets
+              shell: bash
+              env:
+                  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+              run: |
+                  set -euo pipefail
+                  missing=()
+                  [ -z "${CLOUDFLARE_API_TOKEN:-}" ] && missing+=("CLOUDFLARE_API_TOKEN")
+                  [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ] && missing+=("CLOUDFLARE_ACCOUNT_ID")
+                  if [ "${#missing[@]}" -gt 0 ]; then
+                    echo "::error::Missing required Cloudflare deploy secret(s): ${missing[*]}"
+                    exit 1
+                  fi
+
+            - name: Deploy gateway API staging Worker
+              uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0
+              with:
+                  apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                  accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+                  workingDirectory: apps/api
+                  command: deploy --env staging
 
     deploy:
         runs-on: ubuntu-latest

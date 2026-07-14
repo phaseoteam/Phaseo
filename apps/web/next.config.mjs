@@ -15,6 +15,7 @@ const configuredAllowedDevOrigins =
     .filter(Boolean) ?? [];
 
 const mintlifyProxyOrigin = "https://aistats.mintlify.site";
+const webApiOrigin = process.env.WEB_API_ORIGIN?.trim().replace(/\/$/, "");
 const docsProxyRewrites = [
   {
     source: "/docs",
@@ -112,6 +113,18 @@ const nextConfig = {
         },
       ],
       afterFiles: [
+		...(webApiOrigin
+			? [
+					{
+						source: "/api/public/:path*",
+						destination: `${webApiOrigin}/api/public/:path*`,
+					},
+					{
+						source: "/api/account/:path*",
+						destination: `${webApiOrigin}/api/account/:path*`,
+					},
+				]
+			: []),
         ...docsProxyRewrites,
         {
           source: "/ingest/static/:path*",
