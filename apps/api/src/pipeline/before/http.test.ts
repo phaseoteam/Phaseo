@@ -43,6 +43,20 @@ describe("before/http err", () => {
 		});
 	});
 
+	it.each(["insufficient_funds", "key_limit_exceeded"] as const)(
+		"classifies %s as a user/workspace error",
+		async (code) => {
+			const response = err(code, { reason: code });
+			expect(response.status).toBe(code === "insufficient_funds" ? 402 : 429);
+			const payload = await response.json();
+			expect(payload).toMatchObject({
+				error: code,
+				error_type: "user",
+				error_origin: "user",
+			});
+		},
+	);
+
 	it("adds structured route-level upstream diagnostics for provider timeouts", async () => {
 		const response = err("upstream_error", {
 			reason: "video_provider_timeout",
