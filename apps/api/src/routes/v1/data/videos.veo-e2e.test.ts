@@ -172,7 +172,7 @@ vi.mock("@/runtime/env", () => ({
 		GOOGLE_VERTEX_PROJECT: "test-project",
 		GOOGLE_VERTEX_LOCATION: "us-east5",
 		GATEWAY_PUBLIC_BASE_URL: "https://api.phaseo.ai",
-		KEY_PEPPER: "test-video-secret",
+	KEY_PEPPER_ACTIVE: "test-video-secret",
 	}),
 	getSupabaseAdmin: () => buildSupabaseAdminMock(),
 }));

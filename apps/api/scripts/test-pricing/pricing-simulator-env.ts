@@ -93,7 +93,7 @@ export function ensureRuntimeConfigured(): void {
         GOOGLE_AI_STUDIO_API_KEY: process.env.GOOGLE_AI_STUDIO_API_KEY,
         ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
         X_AI_API_KEY: process.env.X_AI_API_KEY,
-        KEY_PEPPER: process.env.KEY_PEPPER,
+        KEY_PEPPER_ACTIVE: process.env.KEY_PEPPER_ACTIVE,
         NODE_ENV: process.env.NODE_ENV,
         BYOK_KMS_KEY_V1_B64: process.env.BYOK_KMS_KEY_V1_B64,
         BYOK_ACTIVE_KEY_VERSION: process.env.BYOK_ACTIVE_KEY_VERSION,

@@ -15,7 +15,7 @@ interface AuthorizationCardProps {
 }
 
 export default function AuthorizationCard({ authorization }: AuthorizationCardProps) {
-	const additionalScopes = Array.isArray(authorization.additional_scopes)
+	const additionalScopes: string[] = Array.isArray(authorization.additional_scopes)
 		? authorization.additional_scopes.filter((scope: unknown): scope is string => typeof scope === "string")
 		: [];
 

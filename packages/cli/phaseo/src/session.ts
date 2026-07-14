@@ -11,7 +11,7 @@ export type Session = {
 	scope?: string;
 };
 
-type SessionBackend = "dpapi-file" | "keychain" | "secret-service" | "file";
+type SessionBackend = "dpapi-file" | "keychain" | "secret-service" | "file" | "unavailable";
 
 const SESSION_SERVICE = "phaseo-cli-session";
 const SESSION_ACCOUNT = "default";
@@ -47,7 +47,19 @@ export function preferredSessionBackend(
 	if (platform === "win32") return "dpapi-file";
 	if (platform === "darwin") return "keychain";
 	if (platform === "linux") return "secret-service";
-	return "file";
+	return "unavailable";
+}
+
+function storageError(backend: SessionBackend, cause?: unknown): Error {
+	const detail = cause instanceof Error && cause.message ? ` (${cause.message})` : "";
+	if (backend === "unavailable") {
+		return new Error(
+			"No OS-backed credential store is available on this platform. Set PHASEO_SESSION_BACKEND=file only if you explicitly accept plaintext session storage.",
+		);
+	}
+	return new Error(
+		`Unable to store the Phaseo session in the OS credential store${detail}. Fix the credential-store service and retry. Set PHASEO_SESSION_BACKEND=file only if you explicitly accept plaintext session storage.`,
+	);
 }
 
 function parseSession(raw: string): Session | null {
@@ -232,15 +244,15 @@ async function clearSecretServiceSession(): Promise<void> {
 export async function readSession(): Promise<Session | null> {
 	const backend = preferredSessionBackend();
 	if (backend === "dpapi-file") {
-		return (await readDpapiSession()) ?? readSessionFile();
+		return readDpapiSession();
 	}
 	if (backend === "keychain") {
-		return (await readKeychainSession()) ?? readSessionFile();
+		return readKeychainSession();
 	}
 	if (backend === "secret-service") {
-		return (await readSecretServiceSession()) ?? readSessionFile();
+		return readSecretServiceSession();
 	}
-	return readSessionFile();
+	return backend === "file" ? readSessionFile() : null;
 }
 
 export async function writeSession(session: Session): Promise<void> {
@@ -261,10 +273,14 @@ export async function writeSession(session: Session): Promise<void> {
 			await clearSessionFile();
 			return;
 		}
-	} catch {
-		// Fall back to the legacy file backend when no OS-backed store is available.
+		if (backend === "file") {
+			await writeSessionFile(session);
+			return;
+		}
+	} catch (error) {
+		throw storageError(backend, error);
 	}
-	await writeSessionFile(session);
+	throw storageError(backend);
 }
 
 export async function clearSession(): Promise<void> {

@@ -4,7 +4,7 @@ import {
 	normalizeScopeList,
 } from "./capabilities.js";
 
-const DEFAULT_API_URL = "https://api.phaseo.ai";
+export const DEFAULT_API_URL = "https://api.phaseo.app";
 export const DEFAULT_LOGIN_SCOPES = DEFAULT_CLI_OAUTH_CAPABILITIES;
 
 export const DEFAULT_SCOPE = DEFAULT_LOGIN_SCOPES.join(" ");
@@ -22,7 +22,20 @@ export function parseScopeArgument(raw?: string): string {
 
 export function normalizeApiRoot(input?: string): string {
 	const raw = input || process.env.PHASEO_API_URL || DEFAULT_API_URL;
-	return raw.replace(/\/+$/, "").replace(/\/v1$/, "");
+	let url: URL;
+	try {
+		url = new URL(raw);
+	} catch {
+		throw new Error("Phaseo API URL must be a valid absolute URL");
+	}
+	const isLoopback = url.hostname === "127.0.0.1" || url.hostname === "::1" || url.hostname === "[::1]" || url.hostname === "localhost";
+	if (url.protocol !== "https:" && !(url.protocol === "http:" && isLoopback)) {
+		throw new Error("Phaseo API URL must use HTTPS (HTTP is only allowed for loopback development)");
+	}
+	if (url.username || url.password || url.search || url.hash) {
+		throw new Error("Phaseo API URL must not contain credentials, a query string, or a fragment");
+	}
+	return url.toString().replace(/\/+$/, "").replace(/\/v1$/, "");
 }
 
 export function v1Url(apiRoot: string, path: string): string {

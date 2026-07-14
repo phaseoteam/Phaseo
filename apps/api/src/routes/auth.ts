@@ -168,7 +168,7 @@ authRouter.post(
 				{
 					ok: false,
 					error: "server_misconfig",
-					message: "KEY_PEPPER_ACTIVE (or KEY_PEPPER) is not configured",
+					message: "KEY_PEPPER_ACTIVE is not configured",
 				},
 				503,
 				{ "Cache-Control": "no-store" },

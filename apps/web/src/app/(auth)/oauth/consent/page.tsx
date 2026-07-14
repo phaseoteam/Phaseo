@@ -5,6 +5,7 @@ import ConsentForm from "@/components/(gateway)/oauth/ConsentForm";
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
+import { isSafeOAuthRedirectUrl } from "@/lib/oauth/safeUrls";
 
 export const metadata = {
 	title: "Authorize Application - Phaseo",
@@ -162,7 +163,10 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 		}
 
 		if ("redirect_url" in authorizationDetails && authorizationDetails.redirect_url) {
-			redirect(authorizationDetails.redirect_url);
+			if (isSafeOAuthRedirectUrl(authorizationDetails.redirect_url)) {
+				redirect(authorizationDetails.redirect_url);
+			}
+			throw new Error("Authorization server returned an unsafe redirect URL");
 		}
 
 		resolvedClientId =

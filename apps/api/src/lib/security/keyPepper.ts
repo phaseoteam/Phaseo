@@ -2,7 +2,7 @@ import type { GatewayBindings } from "@/runtime/env.types";
 
 type PepperBindings = Pick<
 	GatewayBindings,
-	"KEY_PEPPER" | "KEY_PEPPER_ACTIVE" | "KEY_PEPPER_PREVIOUS"
+	"KEY_PEPPER_ACTIVE" | "KEY_PEPPER_PREVIOUS"
 >;
 
 export type KeyPepperCandidateSource = "active" | "previous";
@@ -18,9 +18,7 @@ function normalize(value: string | null | undefined): string {
 
 export function resolveActiveKeyPepper(bindings: PepperBindings): string | null {
 	const active = normalize(bindings.KEY_PEPPER_ACTIVE);
-	if (active) return active;
-	const legacy = normalize(bindings.KEY_PEPPER);
-	return legacy || null;
+	return active || null;
 }
 
 export function resolveKeyPepperCandidates(bindings: PepperBindings): KeyPepperCandidate[] {

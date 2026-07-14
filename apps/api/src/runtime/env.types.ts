@@ -4,6 +4,8 @@ export type GatewayBindings = {
     SUPABASE_URL: string;
     SUPABASE_SERVICE_ROLE_KEY: string;
     GATEWAY_CACHE: KVNamespace;
+    OAUTH_STRICT_RATE_LIMITER?: RateLimit;
+    OAUTH_TOKEN_RATE_LIMITER?: RateLimit;
     KV?: KVNamespace;
     DB?: D1Database;
     PHASEO_CONTROL_SECRET?: string;
@@ -213,9 +215,9 @@ export type GatewayBindings = {
     GATEWAY_PUBLIC_BASE_URL?: string;
     PHASEO_WEB_BASE_URL?: string;
     PHASEO_OAUTH_PRIVATE_JWK?: string;
-    PHASEO_OAUTH_TOKEN_PEPPER?: string;
+    PHASEO_OAUTH_TOKEN_PEPPER_ACTIVE?: string;
+    PHASEO_OAUTH_TOKEN_PEPPER_PREVIOUS?: string;
     PHASEO_THIRD_PARTY_OAUTH_ENABLED?: string;
-    KEY_PEPPER?: string;
     KEY_PEPPER_ACTIVE?: string;
     KEY_PEPPER_PREVIOUS?: string;
     VIDEO_DOWNLOAD_SIGNING_SECRET?: string;

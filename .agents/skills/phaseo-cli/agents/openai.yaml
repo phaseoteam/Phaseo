@@ -1,0 +1,4 @@
+interface:
+  display_name: "Phaseo CLI"
+  short_description: "Operate and debug Phaseo from the terminal."
+  default_prompt: "Use $phaseo-cli to inspect and troubleshoot this Phaseo integration from the terminal."

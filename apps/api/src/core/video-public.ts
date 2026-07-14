@@ -39,7 +39,7 @@ async function hmacSha256Hex(secret: string, message: string): Promise<string> {
 
 function resolveVideoDownloadSigningSecret(): string | null {
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
-	return normalizeText(bindings.VIDEO_DOWNLOAD_SIGNING_SECRET) ?? normalizeText(bindings.KEY_PEPPER);
+	return normalizeText(bindings.VIDEO_DOWNLOAD_SIGNING_SECRET) ?? normalizeText(bindings.KEY_PEPPER_ACTIVE);
 }
 
 export function resolveGatewayPublicBaseUrl(requestUrl?: string | null): string {

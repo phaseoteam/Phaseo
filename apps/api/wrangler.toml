@@ -40,3 +40,21 @@ invocation_logs = true
 binding = "GATEWAY_CACHE"
 id = "f5e23068fcd94125ad9860c817c543d9"
 preview_id = "f5e23068fcd94125ad9860c817c543d9"
+
+# Native per-location Workers rate limiting. Application-level device polling
+# checks remain authoritative because these counters are intentionally approximate.
+[[ratelimits]]
+name = "OAUTH_STRICT_RATE_LIMITER"
+namespace_id = "41001"
+
+[ratelimits.simple]
+limit = 10
+period = 60
+
+[[ratelimits]]
+name = "OAUTH_TOKEN_RATE_LIMITER"
+namespace_id = "41002"
+
+[ratelimits.simple]
+limit = 60
+period = 60

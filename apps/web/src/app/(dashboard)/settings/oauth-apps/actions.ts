@@ -40,6 +40,26 @@ interface OAuthAppResult {
 	error?: string;
 }
 
+type OAuthAppMetadataUrls = Pick<
+	CreateOAuthAppInput,
+	"homepage_url" | "logo_url" | "privacy_policy_url" | "terms_of_service_url"
+>;
+
+function validateMetadataUrls(values: OAuthAppMetadataUrls): string | null {
+	for (const [field, value] of Object.entries(values)) {
+		if (value === undefined || value.trim() === "") continue;
+		try {
+			const url = new URL(value);
+			if (url.protocol !== "https:" || url.username || url.password || url.hash) {
+				return `${field.replaceAll("_", " ")} must be an HTTPS URL without credentials or a fragment`;
+			}
+		} catch {
+			return `${field.replaceAll("_", " ")} must be a valid HTTPS URL`;
+		}
+	}
+	return null;
+}
+
 const SUPPORTED_OAUTH_SCOPES = new Set(OAUTH_SCOPE_OPTIONS.map((option) => option.value));
 
 function validateOAuthScopes(scopes: string[] | undefined): string[] {
@@ -105,13 +125,16 @@ export async function createOAuthAppAction(
 		for (const uri of input.redirect_uris) {
 			try {
 				const url = new URL(uri);
-				if (url.protocol !== "http:" && url.protocol !== "https:") {
+				const loopback = url.hostname === "127.0.0.1" || url.hostname === "::1" || url.hostname === "[::1]" || url.hostname === "localhost";
+				if (url.username || url.password || url.hash || (url.protocol !== "https:" && !(url.protocol === "http:" && loopback))) {
 					return { error: `Invalid redirect URI: ${uri}` };
 				}
 			} catch {
 				return { error: `Invalid redirect URI format: ${uri}` };
 			}
 		}
+		const metadataUrlError = validateMetadataUrls(input);
+		if (metadataUrlError) return { error: metadataUrlError };
 
 		const allowedScopes = validateOAuthScopes(input.allowed_scopes);
 		const adminClient = createAdminClient();
@@ -212,6 +235,8 @@ export async function updateOAuthAppAction(
 		if (!membership) {
 			return { error: "Workspace owner or admin access is required" };
 		}
+		const metadataUrlError = validateMetadataUrls(updates);
+		if (metadataUrlError) return { error: metadataUrlError };
 
 		// Update metadata
 		const { data: updated, error: updateError } = await supabase

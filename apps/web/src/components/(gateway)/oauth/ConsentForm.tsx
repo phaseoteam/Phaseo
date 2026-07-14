@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { isSafeOAuthRedirectUrl } from "@/lib/oauth/safeUrls";
 
 interface ConsentFormProps {
 	oauthApp: any;
@@ -344,7 +345,11 @@ export default function ConsentForm({
 			}
 
 			if (result.data?.redirect_url) {
-				window.location.href = result.data.redirect_url;
+				if (!isSafeOAuthRedirectUrl(result.data.redirect_url)) {
+					setError("The authorization server returned an unsafe redirect URL.");
+					return;
+				}
+				window.location.assign(result.data.redirect_url);
 			}
 		} catch (err: any) {
 			setError(err.message || "Failed to authorize application");
@@ -369,7 +374,11 @@ export default function ConsentForm({
 			});
 
 			if (result.data?.redirect_url) {
-				window.location.href = result.data.redirect_url;
+				if (!isSafeOAuthRedirectUrl(result.data.redirect_url)) {
+					setError("The authorization server returned an unsafe redirect URL.");
+					return;
+				}
+				window.location.assign(result.data.redirect_url);
 			}
 		} catch (err: any) {
 			setError(err.message || "Failed to deny authorization");

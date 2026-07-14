@@ -77,28 +77,55 @@ app.use("*", async (c, next) => {
 	}
 });
 
+function isHttpsUrl(value: string): boolean {
+	try {
+		const url = new URL(value);
+		return url.protocol === "https:" && !url.username && !url.password;
+	} catch {
+		return false;
+	}
+}
+
+function isSafeOAuthRedirect(value: string): boolean {
+	try {
+		const url = new URL(value);
+		if (url.username || url.password || url.hash) return false;
+		if (url.protocol === "https:") return true;
+		return url.protocol === "http:" &&
+			(url.hostname === "127.0.0.1" || url.hostname === "::1" || url.hostname === "[::1]" || url.hostname === "localhost");
+	} catch {
+		return false;
+	}
+}
+
+const httpsUrlSchema = z.string().url().refine(isHttpsUrl, "URL must use HTTPS");
+const oauthRedirectSchema = z.string().url().refine(
+	isSafeOAuthRedirect,
+	"Redirect URI must use HTTPS, except for loopback development callbacks",
+);
+
 // Validation schemas
 const createOAuthClientSchema = z.object({
 	name: z.string().min(3).max(100),
 	client_type: z.enum(["public", "confidential"]).default("confidential"),
 	allowed_scopes: z.array(z.string().trim().min(1)).optional(),
 	description: z.string().optional(),
-	homepage_url: z.string().url().optional(),
-	redirect_uris: z.array(z.string().url()).min(1),
-	logo_url: z.string().url().optional(),
-	privacy_policy_url: z.string().url().optional(),
-	terms_of_service_url: z.string().url().optional(),
+	homepage_url: httpsUrlSchema.optional(),
+	redirect_uris: z.array(oauthRedirectSchema).min(1),
+	logo_url: httpsUrlSchema.optional(),
+	privacy_policy_url: httpsUrlSchema.optional(),
+	terms_of_service_url: httpsUrlSchema.optional(),
 });
 
 const updateOAuthClientSchema = z.object({
 	name: z.string().min(3).max(100).optional(),
 	allowed_scopes: z.array(z.string().trim().min(1)).optional(),
 	description: z.string().optional(),
-	homepage_url: z.string().url().optional(),
-	logo_url: z.string().url().optional(),
-	privacy_policy_url: z.string().url().optional(),
-	terms_of_service_url: z.string().url().optional(),
-	redirect_uris: z.array(z.string().url()).min(1).optional(),
+	homepage_url: httpsUrlSchema.optional(),
+	logo_url: httpsUrlSchema.optional(),
+	privacy_policy_url: httpsUrlSchema.optional(),
+	terms_of_service_url: httpsUrlSchema.optional(),
+	redirect_uris: z.array(oauthRedirectSchema).min(1).optional(),
 });
 
 async function attachOAuthAppStats(
