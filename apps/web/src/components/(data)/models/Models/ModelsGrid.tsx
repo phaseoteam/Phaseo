@@ -25,13 +25,9 @@ type ModelRow = {
 
 const VIRTUALIZE_AFTER_ROWS = 60;
 const VIRTUAL_OVERSCAN_ROWS = 14;
-const SERVER_RENDERED_MODEL_COUNT = 18;
 const DEFAULT_DESKTOP_ROW_HEIGHT = 208;
 const DEFAULT_MOBILE_ROW_HEIGHT = 320;
 const DEFAULT_WIDE_DESKTOP_ROW_HEIGHT = 196;
-// Window observers populate the exact viewport after hydration. A non-zero
-// estimate keeps the first virtual rows visible while that observer attaches.
-const INITIAL_WINDOW_RECT = { width: 0, height: 900 };
 
 function chunkModels(models: ModelCardLike[], columns: number): ModelRow[] {
 	const rows: ModelRow[] = [];
@@ -45,8 +41,8 @@ function chunkModels(models: ModelCardLike[], columns: number): ModelRow[] {
 	return rows;
 }
 
-function useColumnCount(): number | null {
-	const [columnCount, setColumnCount] = useState<number | null>(null);
+function useColumnCount(): number {
+	const [columnCount, setColumnCount] = useState(1);
 
 	useEffect(() => {
 		if (typeof window === "undefined") return;
@@ -63,7 +59,6 @@ function useColumnCount(): number | null {
 			}
 			setColumnCount(1);
 		};
-
 		update();
 		desktopQuery.addEventListener("change", update);
 		wideDesktopQuery.addEventListener("change", update);
@@ -134,7 +129,6 @@ function ModelsGridContent({
 		count: rows.length,
 		estimateSize: () => estimatedRowHeight,
 		overscan: VIRTUAL_OVERSCAN_ROWS,
-		initialRect: INITIAL_WINDOW_RECT,
 		scrollMargin,
 		enabled: shouldVirtualize,
 	});
@@ -221,7 +215,7 @@ function ModelsGridContent({
 							className={`absolute left-0 top-0 w-full bg-background ${
 								isLastRow ? "" : "border-b border-border/70"
 							}`}
-							style={{
+						style={{
 								transform: `translateY(${virtualRow.start - rowVirtualizer.options.scrollMargin}px)`,
 							}}
 						>
@@ -254,27 +248,6 @@ function ModelsGridContent({
 	);
 }
 
-function ServerRenderedModelsGrid({
-	filteredModels,
-	showOrganisationPrefix = false,
-}: ModelsGridProps) {
-	return (
-		<div className="bg-border/70">
-			<div className="grid grid-cols-1 gap-px md:grid-cols-2 2xl:grid-cols-3">
-				{filteredModels.slice(0, SERVER_RENDERED_MODEL_COUNT).map((model) => (
-					<div key={model.model_id} className="bg-background">
-						<ModelCard
-							model={model}
-							showOrganisationPrefix={showOrganisationPrefix}
-							contentPaddingClassName="md:px-3"
-						/>
-					</div>
-				))}
-			</div>
-		</div>
-	);
-}
-
 function ModelsGridImpl(props: ModelsGridProps) {
 	const columns = useColumnCount();
 
@@ -284,9 +257,6 @@ function ModelsGridImpl(props: ModelsGridProps) {
 				No models found for the selected filters.
 			</div>
 		);
-	}
-	if (columns === null) {
-		return <ServerRenderedModelsGrid {...props} />;
 	}
 
 	return <ModelsGridContent key={columns} {...props} columns={columns} />;

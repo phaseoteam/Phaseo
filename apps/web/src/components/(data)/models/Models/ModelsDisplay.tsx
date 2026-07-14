@@ -2,8 +2,6 @@
 
 import Link from "next/link";
 import {
-	Suspense,
-	use,
 	useCallback,
 	useDeferredValue,
 	useEffect,
@@ -94,13 +92,14 @@ import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDisplay";
 import type {
 	GatewayStatusFilter,
-	ModelsPageData,
+	ModelsFilterFacets,
 	ModelsPageModel,
 	OptionCount,
 } from "./modelsDisplay.types";
 
 interface ModelsDisplayProps {
-	dataPromise: Promise<ModelsPageData>;
+	models: ModelsPageModel[];
+	facets: ModelsFilterFacets;
 	showPrimaryHeader?: boolean;
 }
 
@@ -651,7 +650,6 @@ function FilterCheckboxList({
 	collapsedLimit?: number;
 }) {
 	const [expanded, setExpanded] = useState(false);
-
 	const canCollapse =
 		Number.isFinite(collapsedLimit) &&
 		Number(collapsedLimit) > 0 &&
@@ -911,25 +909,10 @@ function OutputModalityButtonRow({
 }
 
 export default function ModelsDisplay({
-	dataPromise,
+	models,
+	facets,
 	showPrimaryHeader = true,
 }: ModelsDisplayProps) {
-	return (
-		<Suspense fallback={null}>
-			<ModelsDisplayContent
-				dataPromise={dataPromise}
-				showPrimaryHeader={showPrimaryHeader}
-			/>
-		</Suspense>
-	);
-}
-
-function ModelsDisplayContent({
-	dataPromise,
-	showPrimaryHeader = true,
-}: ModelsDisplayProps) {
-	const modelsPageData = use(dataPromise);
-	const { models, facets } = modelsPageData;
 	const [search, setSearch] = useQueryState("q", qParser);
 	const deferredSearch = useDeferredValue(search ?? "");
 	const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
