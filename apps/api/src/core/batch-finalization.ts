@@ -3,6 +3,7 @@
 // How: Reads output JSONL, prices successful responses, applies one idempotent charge, and marks billed.
 
 import { getBindings } from "@/runtime/env";
+import { emitGatewayOperationalFailure } from "@/observability/axiom";
 import { resolveCapabilityFromEndpoint } from "@/lib/config/capabilityToEndpoints";
 import { pickFirstFiniteNumber, resolveCanonicalTokenUsage } from "@core/usage-normalization";
 import {
@@ -904,6 +905,13 @@ export async function finalizeBatchJob(args: FinalizeBatchJobArgs): Promise<Fina
 			workspaceId: args.workspaceId,
 			batchId: args.batchId,
 			status,
+		});
+		await emitGatewayOperationalFailure({
+			workflow: "batch_finalization",
+			workspaceId: args.workspaceId,
+			resourceId: args.batchId,
+			reason: "batch_job_settlement_failed",
+			error,
 		});
 		return {
 			status,

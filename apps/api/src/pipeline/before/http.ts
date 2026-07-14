@@ -29,9 +29,7 @@ export function json(data: unknown, status = 200) {
 function defaultErrorType(code: ErrorCode): "user" | "system" {
     if (
         code === "upstream_error" ||
-        code === "gateway_error" ||
-        code === "key_limit_exceeded" ||
-        code === "insufficient_funds"
+        code === "gateway_error"
     ) {
         return "system";
     }

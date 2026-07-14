@@ -6,6 +6,7 @@ import { loadPriceCard } from "@pipeline/pricing/loader";
 import { recordUsageAndCharge } from "@pipeline/pricing/persist";
 import { applyByokServiceFee } from "@pipeline/pricing/byok-fee";
 import { getSupabaseAdmin } from "@/runtime/env";
+import { emitGatewayOperationalFailure } from "@/observability/axiom";
 import {
 	getVideoJobMeta,
 	getVideoJobRecord,
@@ -1086,6 +1087,13 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 			error: captureErr,
 			workspaceId: args.workspaceId,
 			videoId: args.videoId,
+		});
+		await emitGatewayOperationalFailure({
+			workflow: "video_finalization",
+			workspaceId: args.workspaceId,
+			resourceId: args.videoId,
+			reason: "video_capture_reservation_failed",
+			error: captureErr,
 		});
 		return {
 			status: nextStatus,
