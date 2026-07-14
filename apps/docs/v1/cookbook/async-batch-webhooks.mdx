@@ -3,9 +3,11 @@ title: "Run async batches with webhooks"
 description: "Create batch jobs, recover with polling, and consume standardized webhook deliveries without losing lifecycle visibility."
 ---
 
-Batch execution is asynchronous and often fan-out heavy. This recipe shows the smallest production-safe loop for creating one batch, tracking it, and reconciling webhook delivery with your own status checks.
+Use this recipe to run a deferred batch job, receive webhook notifications, and keep a polling fallback for recovery. It is designed for workloads where throughput and cost matter more than immediate latency.
 
-## 1. Upload the input file
+Phaseo batch jobs currently support OpenAI, Anthropic, Google Gemini, Mistral, xAI, Groq, and Together AI through the same `/v1/batches` API. Send the model and prompts you want; Phaseo infers the upstream provider, creates files when the provider requires files, and uses inline native batch APIs when the provider supports them. Use `provider` only when you need an advanced routing constraint.
+
+## 1. Create the batch
 
 ```bash
 curl https://api.phaseo.ai/v1/files \
@@ -14,33 +16,47 @@ curl https://api.phaseo.ai/v1/files \
   -F "file=@requests.jsonl"
 ```
 
-Persist the returned `file_id`. The same file id becomes the batch input handle.
-
-## 2. Create the batch
+Then pass the returned file id:
 
 ```bash
 curl https://api.phaseo.ai/v1/batches \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
+    "model": "openai/gpt-5-mini",
     "input_file_id": "file_123",
-    "endpoint": "/v1/chat/completions",
-    "completion_window": "24h",
-    "metadata": {
-      "job": "nightly-evals",
-      "owner": "ranking-worker"
-    },
-    "webhook": {
-      "url": "https://example.com/api/batch-webhook",
-      "events": ["batch.progress", "batch.completed", "batch.failed", "batch.cancelled", "batch.expired"],
-      "secret": "whsec_your_signing_secret"
-    }
+    "webhook_endpoint_id": "we_123"
   }'
 ```
 
-Store the returned `batch_id` immediately.
+## 3. Use the TypeScript SDK helper
 
-## 3. Poll status for control-plane recovery
+The SDK keeps the create, poll, per-request result, and webhook verification steps together:
+
+```typescript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY });
+
+const batch = await client.batches.create({
+  model: "openai/gpt-5-mini",
+  prompts: ["Summarize this record.", "Classify this support ticket."],
+  webhook_endpoint_id: "we_123",
+});
+
+const completed = await client.batches.wait(batch.id!, {
+  intervalMs: 5_000,
+  timeoutMs: 30 * 60_000,
+});
+
+const rows = await client.batches.listRequests(completed.id!, {
+  status: "completed",
+});
+```
+
+Use `client.batches.wait(...)` only after you have persisted the batch id. It polls an existing job; it does not create a replacement job.
+
+## 4. Poll status for recovery
 
 Always keep your own polling path even when webhooks are enabled:
 
@@ -54,9 +70,6 @@ Use the normalized gateway fields when they are present:
 - `lifecycle_status` for a stable cross-job status
 - `polling_url` as the canonical status endpoint
 - `cancel_url` when the batch is still cancellable
-- `native_batch_id` only for provider correlation; continue polling with the gateway `id`
-- `billing.reservation_status` to distinguish held, settled, released, or failed billing state
-- webhook delivery summary fields to separate job execution from callback delivery
 
 That polling loop is your fallback when webhook delivery is delayed or your consumer is temporarily unavailable.
 
@@ -166,7 +179,7 @@ Webhook callback URLs must use HTTPS. Literal private, loopback, link-local, and
 Use the terminal batch object to decide the next step:
 
 - completed batches should move on to output retrieval and result ingestion
-- failed and expired batches should capture both the batch terminal state and the webhook delivery state
+- failed batches should capture both the batch failure state and the webhook delivery state
 - cancelled batches should stop downstream fan-out cleanly
 
 Operations should distinguish:
@@ -189,8 +202,5 @@ Put those signals in the same async-jobs dashboard so operators can tell whether
 ## Related guides
 
 - [API Reference: Batches](../api-reference/endpoint/batches.mdx)
-- [API Reference: Batch List](../api-reference/endpoint/batches-list.mdx)
-- [API Reference: Batch Models](../api-reference/endpoint/batches-models.mdx)
 - [API Reference: Batch Status](../api-reference/endpoint/batches-status.mdx)
-- [API Reference: Cancel Batch](../api-reference/endpoint/batches-cancel.mdx)
 - [API Reference: Async Jobs WebSocket](../api-reference/endpoint/async-jobs-ws.mdx)

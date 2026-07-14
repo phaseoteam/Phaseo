@@ -561,24 +561,58 @@ class BatchModelsResponse
 	public $object;
 }
 
+class BatchProviderCapability
+{
+	/** @var string|null */
+	public $documentation_url;
+	/** @var array|null */
+	public $gateway_input_modes;
+	/** @var string|null */
+	public $id;
+	/** @var string|null */
+	public $name;
+	/** @var array|null */
+	public $native_input_modes;
+	/** @var string|null */
+	public $notes;
+	/** @var string|null */
+	public $status;
+}
+
 class BatchRequest
 {
 	/** @var string|null */
 	public $completion_window;
 	/** @var array<string, mixed>|null */
 	public $debug;
-	/** @var string */
+	/** @var string|null */
 	public $endpoint;
-	/** @var string */
+	/** @var string|null */
 	public $input_file_id;
+	/** @var array|null */
+	public $items;
+	/** @var int|null */
+	public $max_tokens;
 	/** @var array<string, mixed>|null */
 	public $metadata;
+	/** @var string|null */
+	public $model;
+	/** @var array|null */
+	public $prompts;
 	/** @var array<string, mixed>|null */
 	public $provider;
+	/** @var array|null */
+	public $requests;
 	/** @var string|null */
 	public $session_id;
+	/** @var string|null */
+	public $system;
+	/** @var float|null */
+	public $temperature;
 	/** @var array<string, mixed>|null */
 	public $webhook;
+	/** @var string|null */
+	public $webhook_endpoint_id;
 }
 
 class BatchRequestCounts
@@ -589,6 +623,62 @@ class BatchRequestCounts
 	public $failed;
 	/** @var int|null */
 	public $total;
+}
+
+class BatchRequestItem
+{
+	/** @var array<string, mixed> */
+	public $body;
+	/** @var string|null */
+	public $custom_id;
+	/** @var string|null */
+	public $method;
+	/** @var string|null */
+	public $url;
+}
+
+class BatchRequestRow
+{
+	/** @var string|null */
+	public $completed_at;
+	/** @var int|null */
+	public $cost_nanos;
+	/** @var float|null */
+	public $cost_usd;
+	/** @var string|null */
+	public $created_at;
+	/** @var string|null */
+	public $custom_id;
+	/** @var string|null */
+	public $endpoint;
+	/** @var array<string, mixed>|null */
+	public $error_body;
+	/** @var string|null */
+	public $id;
+	/** @var array<string, mixed>|null */
+	public $meta;
+	/** @var string|null */
+	public $method;
+	/** @var string|null */
+	public $model;
+	/** @var string|null */
+	public $native_batch_id;
+	/** @var string|null */
+	public $provider;
+	/** @var string|null */
+	public $request_body_hash;
+	/** @var int|null */
+	public $request_index;
+	/** @var array<string, mixed>|null */
+	public $response_body;
+	/** @var int|null */
+	public $response_status;
+	/** @var string|null */
+	public $status;
+	/** @var string|null */
+	public $updated_at;
+	/** @var array<string, mixed>|null */
+	public $usage;
 }
 
 class BatchResponse
@@ -739,7 +829,7 @@ class ChatCompletionsRequest
 	public $presence_penalty;
 	/** @var string|null */
 	public $prompt_cache_key;
-	/** @var array<string, mixed>|null */
+	/** @var string|array<string, mixed>|null */
 	public $provider;
 	/** @var array<string, mixed>|null */
 	public $provider_options;

@@ -314,21 +314,69 @@ type BatchModelsResponse struct {
 	Object *string `json:"object,omitempty"`
 }
 
+type BatchProviderCapability struct {
+	DocumentationUrl *string `json:"documentation_url,omitempty"`
+	GatewayInputModes *[]string `json:"gateway_input_modes,omitempty"`
+	Id *string `json:"id,omitempty"`
+	Name *string `json:"name,omitempty"`
+	NativeInputModes *[]string `json:"native_input_modes,omitempty"`
+	Notes *string `json:"notes,omitempty"`
+	Status *string `json:"status,omitempty"`
+}
+
 type BatchRequest struct {
 	CompletionWindow *string `json:"completion_window,omitempty"`
 	Debug *map[string]interface{} `json:"debug,omitempty"`
-	Endpoint string `json:"endpoint"`
-	InputFileId string `json:"input_file_id"`
+	Endpoint *string `json:"endpoint,omitempty"`
+	InputFileId *string `json:"input_file_id,omitempty"`
+	Items *[]map[string]interface{} `json:"items,omitempty"`
+	MaxTokens *int `json:"max_tokens,omitempty"`
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+	Model *string `json:"model,omitempty"`
+	Prompts *[]string `json:"prompts,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
+	Requests *[]map[string]interface{} `json:"requests,omitempty"`
 	SessionId *string `json:"session_id,omitempty"`
+	System *string `json:"system,omitempty"`
+	Temperature *float64 `json:"temperature,omitempty"`
 	Webhook *map[string]interface{} `json:"webhook,omitempty"`
+	WebhookEndpointId *string `json:"webhook_endpoint_id,omitempty"`
 }
 
 type BatchRequestCounts struct {
 	Completed *int `json:"completed,omitempty"`
 	Failed *int `json:"failed,omitempty"`
 	Total *int `json:"total,omitempty"`
+}
+
+type BatchRequestItem struct {
+	Body map[string]interface{} `json:"body"`
+	CustomId *string `json:"custom_id,omitempty"`
+	Method *string `json:"method,omitempty"`
+	Url *string `json:"url,omitempty"`
+}
+
+type BatchRequestRow struct {
+	CompletedAt *string `json:"completed_at,omitempty"`
+	CostNanos *int `json:"cost_nanos,omitempty"`
+	CostUsd *float64 `json:"cost_usd,omitempty"`
+	CreatedAt *string `json:"created_at,omitempty"`
+	CustomId *string `json:"custom_id,omitempty"`
+	Endpoint *string `json:"endpoint,omitempty"`
+	ErrorBody *map[string]interface{} `json:"error_body,omitempty"`
+	Id *string `json:"id,omitempty"`
+	Meta *map[string]interface{} `json:"meta,omitempty"`
+	Method *string `json:"method,omitempty"`
+	Model *string `json:"model,omitempty"`
+	NativeBatchId *string `json:"native_batch_id,omitempty"`
+	Provider *string `json:"provider,omitempty"`
+	RequestBodyHash *string `json:"request_body_hash,omitempty"`
+	RequestIndex *int `json:"request_index,omitempty"`
+	ResponseBody *map[string]interface{} `json:"response_body,omitempty"`
+	ResponseStatus *int `json:"response_status,omitempty"`
+	Status *string `json:"status,omitempty"`
+	UpdatedAt *string `json:"updated_at,omitempty"`
+	Usage *map[string]interface{} `json:"usage,omitempty"`
 }
 
 type BatchResponse struct {
@@ -1042,7 +1090,7 @@ type ChatCompletionsRequest struct {
 	ParallelToolCalls *bool `json:"parallel_tool_calls,omitempty"`
 	PresencePenalty *float64 `json:"presence_penalty,omitempty"`
 	PromptCacheKey *string `json:"prompt_cache_key,omitempty"`
-	Provider *map[string]interface{} `json:"provider,omitempty"`
+	Provider interface{} `json:"provider,omitempty"`
 	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
 	Reasoning *map[string]interface{} `json:"reasoning,omitempty"`
 	ResponseFormat interface{} `json:"response_format,omitempty"`

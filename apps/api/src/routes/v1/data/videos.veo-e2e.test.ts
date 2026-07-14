@@ -19,6 +19,7 @@ const state = vi.hoisted(() => ({
 	releaseCalls: [] as Array<Record<string, unknown>>,
 	captureCalls: [] as Array<Record<string, unknown>>,
 	webhookEvents: [] as Array<Record<string, unknown>>,
+	reconciliationUpdates: [] as Array<Record<string, unknown>>,
 	lastPersistedContent: null as
 		| {
 				workspaceId: string;
@@ -42,6 +43,7 @@ function resetState() {
 	state.releaseCalls = [];
 	state.captureCalls = [];
 	state.webhookEvents = [];
+	state.reconciliationUpdates = [];
 	state.lastPersistedContent = null;
 }
 
@@ -206,6 +208,8 @@ vi.mock("@core/video-jobs", () => ({
 			status,
 			billedAt: null,
 			meta: { ...meta },
+			nextReconcileAt: "2026-06-17T10:00:00.000Z",
+			reconcileAttempts: 0,
 			updatedAt: now,
 			createdAt: now,
 		};
@@ -223,6 +227,13 @@ vi.mock("@core/video-jobs", () => ({
 	}),
 	getVideoJobMeta: vi.fn(async (workspaceId: string, videoId: string) => getStoredJob(workspaceId, videoId)?.meta ?? null),
 	getVideoJobRecord: vi.fn(async (workspaceId: string, videoId: string) => getStoredJob(workspaceId, videoId)?.record ?? null),
+	listPendingVideoJobs: vi.fn(async () =>
+		Array.from(state.jobs.values()).map((entry, index) => ({
+			...entry.record,
+			reconcileAttempts: index + 1,
+			nextReconcileAt: "2026-06-17T10:00:00.000Z",
+		})),
+	),
 	setVideoJobStatus: vi.fn(async (workspaceId: string, videoId: string, status: string, metaPatch?: Record<string, unknown>) => {
 		const current = getStoredJob(workspaceId, videoId);
 		if (!current) throw new Error(`Missing video job ${workspaceId}/${videoId}`);
@@ -241,6 +252,9 @@ vi.mock("@core/video-jobs", () => ({
 		if (!current) throw new Error(`Missing video job ${workspaceId}/${videoId}`);
 		current.record.billedAt = new Date().toISOString();
 		setStoredJob(workspaceId, videoId, current);
+	}),
+	updateVideoJobReconciliation: vi.fn(async (args: Record<string, unknown>) => {
+		state.reconciliationUpdates.push(args);
 	}),
 	listTeamVideoJobs: vi.fn(async () => []),
 }));
@@ -367,6 +381,7 @@ vi.mock("./videos.helpers", async () => {
 });
 
 import { execute } from "../../../executors/google-vertex/video-generate";
+import { runVideoReconciliationJob } from "../../../pipeline/video-reconciliation";
 import { getVideoByIdHandler } from "./videos.get-by-id";
 import { getVideoContentHandler } from "./videos.get-content";
 
@@ -524,6 +539,106 @@ describe("video Veo 3.1 Lite lifecycle end-to-end", () => {
 		expect(new Uint8Array(await contentResponse.arrayBuffer())).toEqual(videoBytes);
 		expect(state.lastPersistedContent).toBeNull();
 		expect(state.captureCalls).toHaveLength(1);
+	});
+
+	it("reconciles and bills a completed VEO job without user status or content fetch", async () => {
+		const requestId = "vid_veo_lite_reconcile_success";
+		const operationName =
+			"projects/test-project/locations/us-east5/publishers/google/models/veo-3.1-lite-generate-preview/operations/vertex-op-reconcile-success";
+		const videoUrl = "https://cdn.vertex.example/videos/veo-lite-reconcile-success.mp4";
+
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+				const url = String(input);
+				if (url.includes(":predictLongRunning")) {
+					return jsonResponse({
+						name: operationName,
+						done: false,
+					});
+				}
+				if (url.includes(":fetchPredictOperation")) {
+					const body = JSON.parse(String(init?.body ?? "{}"));
+					expect(body.operationName).toBe(operationName);
+					return jsonResponse({
+						name: operationName,
+						done: true,
+						response: {
+							model: "google/veo-3.1-lite-generate-preview",
+							videos: [{ uri: videoUrl, mimeType: "video/mp4" }],
+							videoMetadata: {
+								durationSeconds: 5,
+								resolution: "720p",
+							},
+						},
+						metadata: {
+							quality: "standard",
+						},
+					});
+				}
+				throw new Error(`Unexpected fetch url: ${url}`);
+			}),
+		);
+
+		const submitResult = await execute(buildExecutorArgs(requestId));
+		expect(submitResult.ir?.status).toBe("queued");
+		expect(state.reserveCalls).toHaveLength(1);
+		expect(state.captureCalls).toHaveLength(0);
+
+		const summary = await runVideoReconciliationJob({
+			limit: 10,
+			concurrency: 1,
+			workerId: "video-veo-reconcile-test",
+			leaseSeconds: 180,
+			shardCount: 1,
+			shardIndex: 0,
+		});
+
+		expect(summary).toMatchObject({
+			jobsScanned: 1,
+			jobsPolled: 1,
+			jobsUpdated: 1,
+			jobsCompleted: 1,
+			jobsCharged: 1,
+			jobsErrored: 0,
+		});
+		expect(state.captureCalls).toHaveLength(1);
+		expect(state.releaseCalls).toHaveLength(0);
+		expect(state.webhookEvents).toEqual([
+			{
+				workspaceId: "ws_video_e2e",
+				videoId: requestId,
+				eventType: "video.completed",
+			},
+		]);
+		expect(state.reconciliationUpdates).toEqual([
+			{
+				workspaceId: "ws_video_e2e",
+				videoId: requestId,
+				nextReconcileAt: null,
+				lastError: null,
+			},
+		]);
+
+		const storedAfterReconciliation = getStoredJob("ws_video_e2e", requestId);
+		expect(storedAfterReconciliation?.record?.billedAt).toBeTruthy();
+		expect(storedAfterReconciliation?.meta).toMatchObject({
+			charged: true,
+			costNanos: 150_000_000,
+			costUsd: 0.15,
+			billingReason: "captured",
+			googleVideoUri: videoUrl,
+			lastReconciledAt: expect.any(String),
+		});
+		expect(state.gatewayRequests.get(requestId)).toMatchObject({
+			cost_nanos: 150_000_000,
+			usage: {
+				output_video_seconds: 5,
+				resolution: "720p",
+				cost_usd: 0.15,
+			},
+		});
+		expect(state.lastPersistedContent).toBeNull();
 	});
 
 	it("plans and executes the submit -> hold -> failed terminal status -> release flow without charging", async () => {

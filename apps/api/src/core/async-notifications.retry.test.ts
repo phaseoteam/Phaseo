@@ -3,11 +3,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const getAsyncOperationMock = vi.fn();
 const listAsyncOperationsMock = vi.fn();
 const patchAsyncOperationMetaMock = vi.fn();
+const claimAsyncWebhookDeliveryMock = vi.fn();
+const completeAsyncWebhookDeliveryMock = vi.fn();
+const releaseAsyncWebhookDeliveryClaimMock = vi.fn();
 
 vi.mock("@core/async-operations", () => ({
+	claimAsyncWebhookDelivery: (...args: any[]) => claimAsyncWebhookDeliveryMock(...args),
+	completeAsyncWebhookDelivery: (...args: any[]) => completeAsyncWebhookDeliveryMock(...args),
 	getAsyncOperation: (...args: any[]) => getAsyncOperationMock(...args),
 	listAsyncOperations: (...args: any[]) => listAsyncOperationsMock(...args),
 	patchAsyncOperationMeta: (...args: any[]) => patchAsyncOperationMetaMock(...args),
+	releaseAsyncWebhookDeliveryClaim: (...args: any[]) => releaseAsyncWebhookDeliveryClaimMock(...args),
 }));
 
 vi.mock("@/runtime/env", () => ({
@@ -39,6 +45,9 @@ describe("dispatchAsyncWebhookEvent retries", () => {
 		getAsyncOperationMock.mockReset();
 		listAsyncOperationsMock.mockReset();
 		patchAsyncOperationMetaMock.mockReset();
+		claimAsyncWebhookDeliveryMock.mockReset().mockResolvedValue(true);
+		completeAsyncWebhookDeliveryMock.mockReset().mockResolvedValue(true);
+		releaseAsyncWebhookDeliveryClaimMock.mockReset().mockResolvedValue(true);
 		vi.restoreAllMocks();
 	});
 

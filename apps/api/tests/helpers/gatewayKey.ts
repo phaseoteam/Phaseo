@@ -2,6 +2,15 @@ export function resolveGatewayApiKeyFromEnv(env: NodeJS.ProcessEnv = process.env
 	const direct = normalize(env.GATEWAY_API_KEY);
 	if (direct) return direct;
 
+	const performance = normalize(env.AI_STATS_PERFORMANCE_TEST_KEY);
+	if (performance) return performance;
+
+	const aiStats = normalize(env.AI_STATS_API_KEY);
+	if (aiStats) return aiStats;
+
+	const openaiGateway = normalize(env.OPENAI_GATEWAY_API_KEY);
+	if (openaiGateway) return openaiGateway;
+
 	const explicitGateway = normalize(env.PLAYGROUND_GATEWAY_KEY);
 	if (explicitGateway) return explicitGateway;
 

@@ -1,8 +1,11 @@
 import { dispatchBackground, getBindings } from "@/runtime/env";
 import {
+	claimAsyncWebhookDelivery,
+	completeAsyncWebhookDelivery,
 	getAsyncOperation,
 	listAsyncOperations,
 	patchAsyncOperationMeta,
+	releaseAsyncWebhookDeliveryClaim,
 	type AsyncOperationRecord,
 } from "@core/async-operations";
 import {
@@ -13,6 +16,10 @@ import {
 	toPublicVideoProviderId,
 	toPublicVideoStatus,
 } from "@core/video-public";
+import {
+	getWebhookEndpointSigningConfig,
+	validateWebhookEndpointUrlForDelivery,
+} from "@core/webhook-endpoints";
 
 export type SupportedAsyncNotificationKind = "video" | "batch";
 export type AsyncNotificationPhase = "created" | "progress" | "completed" | "failed" | "cancelled" | "expired";
@@ -20,6 +27,13 @@ export type AsyncNotificationEventType =
 	| `job.${AsyncNotificationPhase}`
 	| `video.${AsyncNotificationPhase}`
 	| `batch.${AsyncNotificationPhase}`;
+
+const DEFAULT_ASYNC_WEBHOOK_EVENTS: AsyncNotificationEventType[] = [
+	"job.completed",
+	"job.failed",
+	"job.cancelled",
+	"job.expired",
+];
 export type AsyncJobLifecycleStatus = "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
 export type AsyncWebhookAttemptStatus = "delivered" | "scheduled_retry" | "failed_permanently";
 export type AsyncWebhookDeliveryAttempt = {
@@ -220,12 +234,7 @@ function resolveWebhookUrl(value: unknown): string | null {
 		const parsed = new URL(text);
 		const hostname = parsed.hostname.toLowerCase();
 		if (parsed.protocol === "https:" && !isLocalOrPrivateWebhookHost(hostname)) return parsed.toString();
-		if (
-			parsed.protocol === "http:" &&
-			isLocalDevelopmentWebhookHost(hostname)
-		) {
-			return parsed.toString();
-		}
+		if (parsed.protocol === "http:" && isLocalDevelopmentWebhookHost(hostname)) return parsed.toString();
 		return null;
 	} catch {
 		return null;
@@ -246,9 +255,7 @@ function isLocalOrPrivateWebhookHost(hostname: string): boolean {
 
 function isLocalOrPrivateIpv4Host(hostname: string): boolean {
 	const parts = hostname.split(".").map((part) => Number(part));
-	if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) {
-		return false;
-	}
+	if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) return false;
 	const [first, second] = parts;
 	return (
 		first === 0 ||
@@ -298,12 +305,6 @@ function normalizeWebhookEvent(kind: SupportedAsyncNotificationKind, value: unkn
 			return normalizedText as AsyncNotificationEventType;
 		}
 	}
-	if (normalizedText === `${kind}.created`) return `${kind}.created`;
-	if (normalizedText === `${kind}.progress`) return `${kind}.progress`;
-	if (normalizedText === `${kind}.completed`) return `${kind}.completed`;
-	if (normalizedText === `${kind}.failed`) return `${kind}.failed`;
-	if (normalizedText === `${kind}.cancelled`) return `${kind}.cancelled`;
-	if (normalizedText === `${kind}.expired`) return `${kind}.expired`;
 	return null;
 }
 
@@ -378,13 +379,14 @@ function resolveAsyncErrorMeta(meta: AsyncNotificationMeta) {
 function sanitizePublicWebhookConfig(
 	kind: SupportedAsyncNotificationKind,
 	value: unknown,
-): { url: string; events: AsyncNotificationEventType[]; has_secret: boolean } | null {
+): { endpoint_id?: string | null; url: string | null; events: AsyncNotificationEventType[]; has_secret: boolean } | null {
 	const parsed = parseAsyncWebhookConfig(kind, value);
 	if (!parsed) return null;
 	return {
-		url: parsed.url,
+		endpoint_id: parsed.endpointId ?? null,
+		url: parsed.url ?? null,
 		events: parsed.events,
-		has_secret: Boolean(parsed.secret),
+		has_secret: Boolean(parsed.secret) || Boolean(parsed.endpointId),
 	};
 }
 
@@ -445,6 +447,7 @@ export function buildPublicAsyncWebhook(
 		return null;
 	}
 	return {
+		endpoint_id: config?.endpoint_id ?? null,
 		url: config?.url ?? null,
 		events: config?.events ?? [],
 		has_secret: config?.has_secret ?? false,
@@ -461,26 +464,71 @@ export function parseAsyncWebhookConfig(
 	kind: SupportedAsyncNotificationKind,
 	value: unknown,
 ): {
-	url: string;
+	endpointId?: string | null;
+	url?: string | null;
 	secret?: string | null;
 	events: AsyncNotificationEventType[];
 } | null {
 	if (!value || typeof value !== "object" || Array.isArray(value)) return null;
 	const record = value as Record<string, unknown>;
+	const endpointId = normalizeText(record.endpoint_id ?? record.endpointId);
 	const url = resolveWebhookUrl(record.url);
-	if (!url) return null;
+	if (!url && !endpointId) return null;
 	const secret = normalizeText(record.secret);
-	if ("events" in record && record.events != null && !Array.isArray(record.events)) return null;
+	const hasEvents = Object.prototype.hasOwnProperty.call(record, "events");
+	if (hasEvents && !Array.isArray(record.events)) return null;
 	const rawEvents = Array.isArray(record.events) ? record.events : [];
 	const normalizedEvents = rawEvents
 		.map((entry) => normalizeWebhookEvent(kind, entry))
 		.filter((entry): entry is AsyncNotificationEventType => Boolean(entry));
 	const uniqueEvents = [...new Set(normalizedEvents)];
 	if (rawEvents.length > 0 && uniqueEvents.length === 0) return null;
-	return {
-		url,
+	const out: {
+		endpointId?: string | null;
+		url?: string | null;
+		secret?: string | null;
+		events: AsyncNotificationEventType[];
+	} = {
 		secret,
-		events: uniqueEvents.length > 0 ? uniqueEvents : ["job.completed", "job.failed", "job.cancelled", "job.expired"],
+		events: uniqueEvents,
+	};
+	if (endpointId) out.endpointId = endpointId;
+	if (url) out.url = url;
+	return out;
+}
+
+async function resolveAsyncWebhookConfig(args: {
+	workspaceId: string;
+	kind: SupportedAsyncNotificationKind;
+	value: unknown;
+}): Promise<{ url: string; secret?: string | null; events: AsyncNotificationEventType[] } | null> {
+	const parsed = parseAsyncWebhookConfig(args.kind, args.value);
+	if (!parsed) return null;
+	if (parsed.endpointId) {
+		const endpoint = await getWebhookEndpointSigningConfig({
+			workspaceId: args.workspaceId,
+			endpointId: parsed.endpointId,
+		});
+		if (!endpoint) return null;
+		const endpointEvents = endpoint.events
+			.map((entry) => normalizeWebhookEvent(args.kind, entry))
+			.filter((entry): entry is AsyncNotificationEventType => Boolean(entry));
+		return {
+			url: endpoint.url,
+			secret: endpoint.secret,
+			events:
+				parsed.events.length > 0
+					? parsed.events
+					: endpointEvents.length > 0
+						? endpointEvents
+						: DEFAULT_ASYNC_WEBHOOK_EVENTS,
+		};
+	}
+	if (!parsed.url) return null;
+	return {
+		url: parsed.url,
+		secret: parsed.secret,
+		events: parsed.events.length > 0 ? parsed.events : DEFAULT_ASYNC_WEBHOOK_EVENTS,
 	};
 }
 
@@ -556,9 +604,9 @@ function resolveVideoBilling(record: AsyncOperationRecord, meta: AsyncNotificati
 					? "settled"
 					: status === "completed"
 						? "pending"
-					: estimatedUsd != null
-						? "estimated"
-						: "pending",
+						: estimatedUsd != null
+							? "estimated"
+							: "pending",
 		billable: charged === true || (settledNanos != null && settledNanos > 0),
 		total_nanos: settledNanos,
 		estimated_nanos: estimatedNanos,
@@ -607,9 +655,9 @@ function resolveBatchBilling(record: AsyncOperationRecord, meta: AsyncNotificati
 					? "settled"
 					: status === "completed"
 						? "pending"
-					: estimatedUsd != null
-						? "estimated"
-						: "pending",
+						: estimatedUsd != null
+							? "estimated"
+							: "pending",
 		billable: charged === true || (settledNanos != null && settledNanos > 0),
 		total_nanos: settledNanos,
 		estimated_nanos: estimatedNanos,
@@ -779,8 +827,8 @@ export function toAsyncLifecycleStatus(status: string): AsyncJobLifecycleStatus 
 			return "failed";
 		case "expired":
 			return "expired";
-		case "cancelled":
 		case "canceled":
+		case "cancelled":
 			return "cancelled";
 		case "processing":
 		case "in_progress":
@@ -813,13 +861,7 @@ async function buildVideoJobData(baseUrl: string, record: AsyncOperationRecord, 
 		native_id: normalizeText(record.nativeId),
 		session_id: normalizeText(record.sessionId),
 		app_id: normalizeText(record.appId),
-		progress: typeof progress === "number"
-			? Math.max(0, Math.min(100, Math.round(progress)))
-			: toFiniteNumber(meta.progress) != null
-				? Math.max(0, Math.min(100, Math.round(toFiniteNumber(meta.progress) ?? 0)))
-				: status === "completed"
-					? 100
-					: 0,
+		progress: typeof progress === "number" ? Math.max(0, Math.min(100, Math.round(progress))) : status === "completed" ? 100 : 0,
 		provider: toPublicVideoProviderId(rawProvider),
 		model: normalizeText(record.model) ?? normalizeText(meta.model),
 		polling_url: buildVideoPollingUrl(baseUrl, record.internalId),
@@ -968,6 +1010,15 @@ async function sendAsyncWebhookRequest(args: {
 	attemptNumber: number;
 	maxAttempts: number;
 }): Promise<AsyncWebhookRequestResult> {
+	const validatedUrl = await validateWebhookEndpointUrlForDelivery(args.url);
+	if (validatedUrl.ok === false) {
+		return {
+			ok: false,
+			statusCode: null,
+			bodyPreview: null,
+			errorMessage: `Webhook URL rejected: ${validatedUrl.reason}`,
+		};
+	}
 	const headers: Record<string, string> = {
 		"Content-Type": "application/json",
 		"User-Agent": "Phaseo-Async-Webhook/1.0",
@@ -986,12 +1037,21 @@ async function sendAsyncWebhookRequest(args: {
 	const controller = new AbortController();
 	const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 	try {
-		const response = await fetch(args.url, {
+		const response = await fetch(validatedUrl.url, {
 			method: "POST",
 			headers,
 			body: args.body,
+			redirect: "manual",
 			signal: controller.signal,
 		});
+		if (response.status >= 300 && response.status < 400) {
+			return {
+				ok: false,
+				statusCode: response.status,
+				bodyPreview: null,
+				errorMessage: "Webhook redirects are not allowed",
+			};
+		}
 		const preview = await response.text().catch(() => "");
 		if (!response.ok) {
 			return {
@@ -1031,12 +1091,7 @@ function buildWebhookEventId(args: {
 	internalId: string;
 	deliveryKey: string;
 }): string {
-	return [
-		"evt",
-		args.kind,
-		args.internalId,
-		args.deliveryKey,
-	]
+	return ["evt", args.kind, args.internalId, args.deliveryKey]
 		.join("_")
 		.replace(/[^a-zA-Z0-9_-]+/g, "_")
 		.slice(0, 160);
@@ -1057,13 +1112,12 @@ async function markQueuedWebhookRetryUndeliverable(args: {
 	const nowIso = new Date().toISOString();
 	const nextRetryQueue = { ...args.retryQueue };
 	delete nextRetryQueue[args.deliveryKey];
-	const attemptNumber = Math.max(1, existingRetry.attemptCount);
 	const attempts = appendWebhookAttempt(args.webhookAttempts, {
 		id: `${args.deliveryKey}:undeliverable:${nowIso}`,
 		delivery_key: args.deliveryKey,
 		event_type: args.eventType,
 		status: "failed_permanently",
-		attempt_number: attemptNumber,
+		attempt_number: Math.max(1, existingRetry.attemptCount),
 		max_attempts: MAX_WEBHOOK_ATTEMPTS,
 		tried_at: nowIso,
 		delivered_at: null,
@@ -1105,13 +1159,13 @@ export async function dispatchAsyncWebhookEvent(args: {
 		meta.webhookDeliveries && typeof meta.webhookDeliveries === "object" && !Array.isArray(meta.webhookDeliveries)
 			? (meta.webhookDeliveries as Record<string, string>)
 			: {};
-	const webhookAttempts = normalizeAsyncWebhookAttempts(
-		meta.webhookAttempts ?? meta.webhook_attempts,
-	);
-	const retryQueue = normalizeAsyncWebhookRetryQueue(
-		meta.webhookRetryQueue ?? meta.webhook_retry_queue,
-	);
-	const webhook = parseAsyncWebhookConfig(args.kind, meta.webhook);
+	const webhookAttempts = normalizeAsyncWebhookAttempts(meta.webhookAttempts ?? meta.webhook_attempts);
+	const retryQueue = normalizeAsyncWebhookRetryQueue(meta.webhookRetryQueue ?? meta.webhook_retry_queue);
+	const webhook = await resolveAsyncWebhookConfig({
+		workspaceId: args.workspaceId,
+		kind: args.kind,
+		value: meta.webhook,
+	});
 	if (!webhook) {
 		if (args.force && retryQueue[deliveryKey]) {
 			await markQueuedWebhookRetryUndeliverable({
@@ -1162,20 +1216,22 @@ export async function dispatchAsyncWebhookEvent(args: {
 	if (
 		!args.force &&
 		webhookAttempts.some(
-			(attempt) =>
-				attempt.delivery_key === deliveryKey &&
-				attempt.status === "failed_permanently",
+			(attempt) => attempt.delivery_key === deliveryKey && attempt.status === "failed_permanently",
 		)
 	) {
 		return false;
 	}
-	const existingRetry = retryQueue[deliveryKey];
-	const attemptNumber = Math.max(1, (existingRetry?.attemptCount ?? 0) + 1);
-	const eventId = buildWebhookEventId({
+	const claimToken = crypto.randomUUID();
+	const claimed = await claimAsyncWebhookDelivery({
+		workspaceId: args.workspaceId,
 		kind: args.kind,
 		internalId: args.internalId,
 		deliveryKey,
+		claimToken,
 	});
+	if (!claimed) return false;
+	const eventId = buildWebhookEventId({ kind: args.kind, internalId: args.internalId, deliveryKey });
+	const attemptNumber = Math.max(1, (retryQueue[deliveryKey]?.attemptCount ?? 0) + 1);
 	const payload = {
 		id: eventId,
 		type: specificEvent,
@@ -1191,7 +1247,16 @@ export async function dispatchAsyncWebhookEvent(args: {
 			progress: progressBucket ?? args.progress ?? null,
 		}),
 	};
-	if (!payload.data) return false;
+	if (!payload.data) {
+		await releaseAsyncWebhookDeliveryClaim({
+			workspaceId: args.workspaceId,
+			kind: args.kind,
+			internalId: args.internalId,
+			deliveryKey,
+			claimToken,
+		}).catch(() => null);
+		return false;
+	}
 	const body = JSON.stringify(payload);
 	const nowIso = new Date().toISOString();
 	const requestResult = await sendAsyncWebhookRequest({
@@ -1205,6 +1270,13 @@ export async function dispatchAsyncWebhookEvent(args: {
 		maxAttempts: MAX_WEBHOOK_ATTEMPTS,
 	});
 	if (!requestResult.ok) {
+		await releaseAsyncWebhookDeliveryClaim({
+			workspaceId: args.workspaceId,
+			kind: args.kind,
+			internalId: args.internalId,
+			deliveryKey,
+			claimToken,
+		}).catch((error) => console.error("async_user_webhook_claim_release_failed", { error, deliveryKey }));
 		const nextRetryDelayMs = computeRetryDelayMsForAttempt(attemptNumber);
 		const nextRetryAt = nextRetryDelayMs != null
 			? new Date(Date.now() + nextRetryDelayMs).toISOString()
@@ -1249,7 +1321,6 @@ export async function dispatchAsyncWebhookEvent(args: {
 			internalId: args.internalId,
 			eventType: specificEvent,
 			status: requestResult.statusCode,
-			bodyPreview: requestResult.bodyPreview,
 			errorMessage: requestResult.errorMessage,
 			attemptNumber,
 			nextRetryAt,
@@ -1266,6 +1337,21 @@ export async function dispatchAsyncWebhookEvent(args: {
 			},
 		});
 		return false;
+	}
+	const completedClaim = await completeAsyncWebhookDelivery({
+		workspaceId: args.workspaceId,
+		kind: args.kind,
+		internalId: args.internalId,
+		deliveryKey,
+		claimToken,
+	});
+	if (!completedClaim) {
+		console.error("async_user_webhook_claim_completion_failed", {
+			workspaceId: args.workspaceId,
+			kind: args.kind,
+			internalId: args.internalId,
+			deliveryKey,
+		});
 	}
 	const nextRetryQueue = { ...retryQueue };
 	delete nextRetryQueue[deliveryKey];
@@ -1367,9 +1453,7 @@ export async function runAsyncWebhookRetriesJob(args?: {
 			const kind = resolveKind(record.kind);
 			if (!kind) continue;
 			const meta = (record.meta ?? {}) as AsyncNotificationMeta;
-			const retryQueue = normalizeAsyncWebhookRetryQueue(
-				meta.webhookRetryQueue ?? meta.webhook_retry_queue,
-			);
+			const retryQueue = normalizeAsyncWebhookRetryQueue(meta.webhookRetryQueue ?? meta.webhook_retry_queue);
 			const recordDueDeliveries = Object.values(retryQueue)
 				.filter((entry) => {
 					const nextRetryAtMs = entry.nextRetryAt ? Date.parse(entry.nextRetryAt) : Number.NaN;

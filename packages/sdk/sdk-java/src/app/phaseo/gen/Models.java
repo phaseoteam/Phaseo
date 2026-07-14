@@ -170,56 +170,6 @@ public final class Models {
 		public Object data;
 	}
 
-	public static class AsyncJobWebSocketClientEvent {
-		public Object type;
-	}
-
-	public static class AsyncJobWebSocketServerEvent {
-		public Object data;
-		public Object type;
-	}
-
-	public static class AsyncJobWebSocketUpgradeRequiredResponse {
-		public Object error;
-	}
-
-	public static class AsyncWebhookDeliveryAttempt {
-		public Integer attempt_number;
-		public String delivered_at;
-		public String delivery_key;
-		public String error_message;
-		public String event_type;
-		public String id;
-		public Integer max_attempts;
-		public String next_retry_at;
-		public String response_body_preview;
-		public Integer response_status;
-		public Object status;
-		public String tried_at;
-	}
-
-	public static class AsyncWebhookDeliverySummary {
-		public java.util.List<String> delivered_event_types;
-		public Integer delivered_events;
-		public String last_attempt_at;
-		public Object last_attempt_status;
-		public String last_delivered_at;
-		public String last_error_message;
-		public String last_failure_at;
-		public Integer last_response_status;
-		public String next_retry_at;
-		public Integer pending_retries;
-		public Integer total_attempts;
-	}
-
-	public static class AsyncWebhookPublicState {
-		public java.util.List<Object> attempts;
-		public Object delivery;
-		public java.util.List<String> events;
-		public Boolean has_secret;
-		public String url;
-	}
-
 	public static class AudioContentPart {
 		public Object input_audio;
 		public Object type;
@@ -264,58 +214,19 @@ public final class Models {
 		public Boolean charged;
 		public Integer cost_nanos;
 		public Double cost_usd;
-		public String currency;
-		public Integer estimated_nanos;
-		public String estimated_provider_cost;
-		public String estimated_user_cost;
-		public Integer estimation_sample_size;
-		public Integer estimation_total_rows;
-		public Boolean estimation_truncated;
 		public String finalized_at;
 		public Object pricing_breakdown;
 		public String reason;
-		public String reservation_id;
-		public String reservation_status;
-		public Integer reserved_nanos;
-		public String settled_provider_cost;
-		public String settled_user_cost;
-		public Object state;
-		public Integer total_nanos;
 	}
 
-	public static class BatchListResponse {
-		public java.util.List<Object> data;
-		public String first_id;
-		public Boolean has_more;
-		public String last_id;
-		public String object;
-	}
-
-	public static class BatchModelCapability {
-		public java.util.List<String> input_types;
-		public String model;
-		public String name;
-		public java.util.List<String> output_types;
-		public Object pricing;
-		public java.util.List<Object> providers;
-		public String status;
-		public java.util.List<String> supported_parameters;
-		public Object supported_parameters_detail;
-		public java.util.List<String> supported_params;
-		public Object supported_params_detail;
-	}
-
-	public static class BatchModelProviderCapability {
+	public static class BatchProviderCapability {
+		public String documentation_url;
+		public java.util.List<Object> gateway_input_modes;
 		public String id;
-		public java.util.List<String> supported_parameters;
-		public Object supported_parameters_detail;
-		public java.util.List<String> supported_params;
-		public Object supported_params_detail;
-	}
-
-	public static class BatchModelsResponse {
-		public java.util.List<Object> data;
-		public String object;
+		public String name;
+		public java.util.List<Object> native_input_modes;
+		public String notes;
+		public Object status;
 	}
 
 	public static class BatchRequest {
@@ -323,10 +234,18 @@ public final class Models {
 		public Object debug;
 		public String endpoint;
 		public String input_file_id;
+		public java.util.List<Object> items;
+		public Integer max_tokens;
 		public Object metadata;
+		public String model;
+		public java.util.List<String> prompts;
 		public Object provider;
+		public java.util.List<Object> requests;
 		public String session_id;
+		public String system;
+		public Double temperature;
 		public Object webhook;
+		public String webhook_endpoint_id;
 	}
 
 	public static class BatchRequestCounts {
@@ -335,9 +254,38 @@ public final class Models {
 		public Integer total;
 	}
 
+	public static class BatchRequestItem {
+		public Object body;
+		public String custom_id;
+		public String method;
+		public String url;
+	}
+
+	public static class BatchRequestRow {
+		public String completed_at;
+		public Integer cost_nanos;
+		public Double cost_usd;
+		public String created_at;
+		public String custom_id;
+		public String endpoint;
+		public Object error_body;
+		public String id;
+		public Object meta;
+		public String method;
+		public String model;
+		public String native_batch_id;
+		public String provider;
+		public String request_body_hash;
+		public Integer request_index;
+		public Object response_body;
+		public Integer response_status;
+		public String status;
+		public String updated_at;
+		public Object usage;
+	}
+
 	public static class BatchResponse {
 		public Object billing;
-		public String cancel_url;
 		public Integer cancelled_at;
 		public Integer cancelling_at;
 		public Integer completed_at;
@@ -349,30 +297,20 @@ public final class Models {
 		public Integer expired_at;
 		public Integer expires_at;
 		public Integer failed_at;
-		public String finalized_at;
 		public Integer finalizing_at;
 		public String id;
 		public Integer in_progress_at;
 		public String input_file_id;
-		public String last_webhook_dispatched_at;
-		public Double last_webhook_progress;
-		public String last_webhook_progress_at;
-		public Object lifecycle_status;
 		public Object metadata;
-		public String native_batch_id;
-		public String next_webhook_retry_at;
 		public String object;
 		public String output_file_id;
-		public String polling_url;
 		public java.util.List<Object> pricing_lines;
-		public Integer progress;
 		public String provider;
 		public Object request_counts;
 		public String request_id;
 		public String session_id;
 		public String status;
 		public Object webhook;
-		public String websocket_url;
 	}
 
 	public static class BenchmarkId {
@@ -827,9 +765,7 @@ public final class Models {
 		public String retirement_date;
 		public String status;
 		public java.util.List<String> supported_parameters;
-		public Object supported_parameters_detail;
 		public java.util.List<String> supported_params;
-		public Object supported_params_detail;
 		public Object top_provider;
 		public String top_provider_id;
 	}
@@ -864,11 +800,8 @@ public final class Models {
 		public Boolean is_active_gateway;
 		public Object model_routing_status;
 		public java.util.List<String> params;
-		public Object params_detail;
 		public Object provider_routing_status;
 		public Object provider_status;
-		public java.util.List<String> supported_parameters;
-		public Object supported_parameters_detail;
 	}
 
 	public static class ModelsPrivacyScopeNotImplementedResponse {
@@ -1168,9 +1101,6 @@ public final class Models {
 		public Integer web_search_requests;
 	}
 
-	public static class SupportedParameterDetails {
-	}
-
 	public static class TextContentPart {
 		public String text;
 		public Object type;
@@ -1204,24 +1134,6 @@ public final class Models {
 		public Integer prompt_tokens;
 		public Object server_tool_use;
 		public Integer total_tokens;
-	}
-
-	public static class VideoBillingSummary {
-		public Boolean billable;
-		public String billed_at;
-		public String charge_reason;
-		public Boolean charged;
-		public String currency;
-		public Integer estimated_nanos;
-		public String estimated_provider_cost;
-		public String estimated_user_cost;
-		public String reservation_id;
-		public String reservation_status;
-		public Integer reserved_nanos;
-		public String settled_provider_cost;
-		public String settled_user_cost;
-		public Object state;
-		public Integer total_nanos;
 	}
 
 	public static class VideoContentPart {
@@ -1261,7 +1173,6 @@ public final class Models {
 		public Object asset;
 		public Boolean audio;
 		public Object billing;
-		public String cancel_url;
 		public Object completed_at;
 		public String content_url;
 		public Object created_at;
@@ -1270,13 +1181,7 @@ public final class Models {
 		public Integer expires_at;
 		public String generation_id;
 		public String id;
-		public String last_webhook_dispatched_at;
-		public Double last_webhook_progress;
-		public String last_webhook_progress_at;
-		public Object lifecycle_status;
 		public String model;
-		public String native_video_id;
-		public String next_webhook_retry_at;
 		public String object;
 		public Object output_access;
 		public java.util.List<Object> outputs;
@@ -1292,8 +1197,6 @@ public final class Models {
 		public Object started_at;
 		public Object status;
 		public Object usage;
-		public Object webhook;
-		public String websocket_url;
 	}
 
 	public static class VideoInputReference {
@@ -1301,41 +1204,6 @@ public final class Models {
 		public String reference_type;
 		public Object role;
 		public Object type;
-	}
-
-	public static class VideoListResponse {
-		public java.util.List<Object> data;
-		public String first_id;
-		public Boolean has_more;
-		public String last_id;
-		public String object;
-	}
-
-	public static class VideoModelCapability {
-		public java.util.List<String> input_types;
-		public String model;
-		public String name;
-		public java.util.List<String> output_types;
-		public Object pricing;
-		public java.util.List<Object> providers;
-		public String status;
-		public java.util.List<String> supported_parameters;
-		public Object supported_parameters_detail;
-		public java.util.List<String> supported_params;
-		public Object supported_params_detail;
-	}
-
-	public static class VideoModelProviderCapability {
-		public String id;
-		public java.util.List<String> supported_parameters;
-		public Object supported_parameters_detail;
-		public java.util.List<String> supported_params;
-		public Object supported_params_detail;
-	}
-
-	public static class VideoModelsResponse {
-		public java.util.List<Object> data;
-		public String object;
 	}
 
 	public static class VideoOutput {
@@ -1349,6 +1217,48 @@ public final class Models {
 
 	public static class VideoOutputConfig {
 		public Object access;
+	}
+
+	public static class WebhookEndpoint {
+		public String createdAt;
+		public String createdBy;
+		public String deletedAt;
+		public java.util.List<String> events;
+		public Boolean hasSecret;
+		public String id;
+		public String name;
+		public Object status;
+		public String updatedAt;
+		public String url;
+		public String workspaceId;
+	}
+
+	public static class WebhookEndpointCreateRequest {
+		public java.util.List<String> events;
+		public String name;
+		public String url;
+	}
+
+	public static class WebhookEndpointCreateResponse {
+		public String createdAt;
+		public String createdBy;
+		public String deletedAt;
+		public java.util.List<String> events;
+		public Boolean hasSecret;
+		public String id;
+		public String name;
+		public String signing_secret;
+		public Object status;
+		public String updatedAt;
+		public String url;
+		public String workspaceId;
+	}
+
+	public static class WebhookEndpointUpdateRequest {
+		public java.util.List<String> events;
+		public String name;
+		public Object status;
+		public String url;
 	}
 
 	public static class Workspace {

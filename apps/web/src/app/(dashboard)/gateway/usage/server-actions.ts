@@ -2873,6 +2873,16 @@ function normalizeRecord(value: unknown): Record<string, unknown> | null {
 	return value as Record<string, unknown>;
 }
 
+function isInternalBatchFileRecord(args: {
+	kind: string | null;
+	internalId: string | null;
+	meta: Record<string, unknown> | null;
+}): boolean {
+	if (args.kind !== "batch") return false;
+	if (args.internalId?.startsWith("__file__:")) return true;
+	return normalizeText(args.meta?.resource) === "file";
+}
+
 type AsyncWebhookAttemptStatus =
 	| "delivered"
 	| "scheduled_retry"
@@ -3192,6 +3202,7 @@ function toAsyncJobRow(
 		row.meta && typeof row.meta === "object" && !Array.isArray(row.meta)
 			? (row.meta as Record<string, unknown>)
 			: null;
+	if (isInternalBatchFileRecord({ kind, internalId, meta })) return null;
 	const failureDiagnostics = parseAsyncJobFailureDiagnostics(meta);
 	const webhook = buildWebhookSummary(meta);
 	if (
@@ -3274,7 +3285,8 @@ export async function fetchRecentAsyncJobs(params?: {
 		.from("gateway_async_operations")
 		.select("kind,internal_id,request_id,session_id,app_id,provider,model,status,billed_at,created_at,updated_at,meta")
 		.eq("workspace_id", workspaceId)
-		.in("kind", ["video", "batch"]);
+		.in("kind", ["video", "batch"])
+		.not("internal_id", "like", "__file__:%");
 
 	if (params?.kind) {
 		query = query.eq("kind", params.kind);

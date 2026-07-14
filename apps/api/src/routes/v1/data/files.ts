@@ -6,25 +6,26 @@ import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { withRuntime } from "../../utils";
 import { authenticate } from "@pipeline/before/auth";
-import type { AuthFailure } from "@pipeline/before/auth";
+import type { AuthFailure, AuthSuccess } from "@pipeline/before/auth";
 import { err } from "@pipeline/before/http";
 import { generatePublicId } from "@pipeline/before/genId";
-import { getBindings } from "@/runtime/env";
-import { resolveProviderKey } from "@providers/keys";
 import { getBatchFileMeta, saveBatchFileMeta } from "@core/batch-jobs";
-
-const OPENAI_PROVIDER_ID = "openai";
-const OPENAI_BASE_URL = "https://api.openai.com";
-
-function resolveOpenAiBaseUrl(bindings: Record<string, string | undefined>): string {
-	const base = String(bindings.OPENAI_BASE_URL || OPENAI_BASE_URL).replace(/\/+$/, "");
-	return /\/v1$/i.test(base) ? base : `${base}/v1`;
-}
+import { getBatchApiFeatureGateName, isBatchApiAccessEnabled } from "@core/feature-flags";
+import {
+	buildUnsupportedBatchModePayload,
+	resolveBatchProvidersForMode,
+	resolveBatchProvidersFromModel,
+	resolveRequestedBatchProviders,
+} from "@core/batch-capabilities";
+import {
+	batchText,
+	fetchProviderBatchApi,
+	OPENAI_BATCH_PROVIDER_ID,
+	parseUpstreamJson,
+} from "@core/batch-provider-adapters";
 
 function toText(value: unknown): string | null {
-	if (typeof value !== "string") return null;
-	const trimmed = value.trim();
-	return trimmed.length > 0 ? trimmed : null;
+	return batchText(value);
 }
 
 function proxyResponse(upstream: Response): Response {
@@ -35,57 +36,76 @@ function proxyResponse(upstream: Response): Response {
 	});
 }
 
-async function parseUpstreamJson(response: Response): Promise<any | null> {
-	const contentType = response.headers.get("content-type") ?? "";
-	if (!contentType.toLowerCase().includes("application/json")) return null;
-	return response.clone().json().catch(() => null);
+function jsonPayload(payload: unknown, status = 200): Response {
+	return new Response(JSON.stringify(payload), {
+		status,
+		headers: {
+			"Content-Type": "application/json",
+			"Cache-Control": "no-store",
+		},
+	});
 }
 
-async function fetchOpenAiFiles(args: {
-	endpointPath: string;
-	method: string;
-	body?: BodyInit | null;
-	contentType?: string | null;
-}): Promise<Response> {
-	const bindings = getBindings() as unknown as Record<string, string | undefined>;
-	let keyInfo: { key: string };
-	try {
-		keyInfo = resolveProviderKey(
-			{ providerId: OPENAI_PROVIDER_ID, byokMeta: [] },
-			() => bindings.OPENAI_API_KEY,
-		);
-	} catch {
-		return new Response(
-			JSON.stringify({
-				error: {
-					type: "upstream_error",
-					reason: "openai_key_missing",
-				},
-			}),
-			{ status: 502, headers: { "Content-Type": "application/json" } },
-		);
-	}
-	const headers = new Headers({
-		Authorization: `Bearer ${keyInfo.key}`,
+async function requireBatchApiAccess(auth: AuthSuccess, requestId: string): Promise<Response | null> {
+	if (await isBatchApiAccessEnabled(auth)) return null;
+	return jsonPayload({
+		error: "forbidden",
+		reason: "batch_api_feature_flag_disabled",
+		message: "The Batch API is currently limited to the enabled Statsig admin segment.",
+		feature_gate: getBatchApiFeatureGateName(),
+		request_id: requestId,
+		workspace_id: auth.workspaceId,
+		status_code: 403,
+		error_type: "user",
+		error_origin: "gateway",
+		generation_id: requestId,
+	}, 403);
+}
+
+function resolveUploadProvider(req: Request): { ok: true; providerId: string } | { ok: false; response: Response } {
+	const url = new URL(req.url);
+	const requested =
+		toText(url.searchParams.get("provider")) ??
+		toText(req.headers.get("x-phaseo-provider")) ??
+		toText(req.headers.get("x-ai-stats-provider"));
+	const model =
+		toText(url.searchParams.get("model")) ??
+		toText(req.headers.get("x-phaseo-model")) ??
+		toText(req.headers.get("x-ai-stats-model"));
+	const requestedProviders = requested
+		? resolveRequestedBatchProviders(requested)
+		: resolveBatchProvidersFromModel(model);
+	const effectiveProviders = requestedProviders.length > 0 ? requestedProviders : [OPENAI_BATCH_PROVIDER_ID];
+	const activeFileProviders = resolveBatchProvidersForMode({
+		mode: "file",
+		requestedProviders: effectiveProviders,
+		activeOnly: true,
 	});
-	if (args.contentType) {
-		headers.set("Content-Type", args.contentType);
+	if (activeFileProviders.length === 0) {
+		return {
+			ok: false,
+			response: jsonPayload(buildUnsupportedBatchModePayload({
+				mode: "file",
+				requestedProviders: effectiveProviders,
+			}), 400),
+		};
 	}
-	return fetch(`${resolveOpenAiBaseUrl(bindings)}${args.endpointPath}`, {
-		method: args.method,
-		headers,
-		body: args.body ?? undefined,
-	});
+	return { ok: true, providerId: activeFileProviders[0]!.providerId };
 }
 
 async function handleUpload(req: Request) {
 	const requestId = generatePublicId();
-    const auth = await authenticate(req);
-    if (!auth.ok) {
-        const reason = (auth as AuthFailure).reason;
-        return err("unauthorised", { reason, request_id: requestId });
-    }
-	const upstream = await fetchOpenAiFiles({
+	const auth = await authenticate(req);
+	if (!auth.ok) {
+		const reason = (auth as AuthFailure).reason;
+		return err("unauthorised", { reason, request_id: requestId });
+	}
+	const accessDenied = await requireBatchApiAccess(auth, requestId);
+	if (accessDenied) return accessDenied;
+	const providerResolution = resolveUploadProvider(req);
+	if (providerResolution.ok === false) return providerResolution.response;
+	const providerId = providerResolution.providerId;
+	const upstream = await fetchProviderBatchApi(providerId, {
 		endpointPath: "/files",
 		method: "POST",
 		body: req.body,
@@ -96,7 +116,7 @@ async function handleUpload(req: Request) {
 		const fileId = toText(payload?.id);
 		if (fileId) {
 			await saveBatchFileMeta(auth.workspaceId, fileId, {
-				provider: OPENAI_PROVIDER_ID,
+				provider: providerId,
 				status: toText(payload?.status) ?? "uploaded",
 				purpose: toText(payload?.purpose),
 				filename: toText(payload?.filename),
@@ -117,11 +137,13 @@ async function handleUpload(req: Request) {
 
 async function handleList(req: Request) {
 	const requestId = generatePublicId();
-    const auth = await authenticate(req);
-    if (!auth.ok) {
-        const reason = (auth as AuthFailure).reason;
-        return err("unauthorised", { reason, request_id: requestId });
-    }
+	const auth = await authenticate(req);
+	if (!auth.ok) {
+		const reason = (auth as AuthFailure).reason;
+		return err("unauthorised", { reason, request_id: requestId });
+	}
+	const accessDenied = await requireBatchApiAccess(auth, requestId);
+	if (accessDenied) return accessDenied;
 	return err("not_supported", {
 		reason: "file_list_not_supported_with_shared_gateway_key",
 		request_id: requestId,
@@ -131,11 +153,13 @@ async function handleList(req: Request) {
 
 async function handleRetrieve(req: Request, id: string) {
 	const requestId = generatePublicId();
-    const auth = await authenticate(req);
-    if (!auth.ok) {
-        const reason = (auth as AuthFailure).reason;
-        return err("unauthorised", { reason, request_id: requestId });
-    }
+	const auth = await authenticate(req);
+	if (!auth.ok) {
+		const reason = (auth as AuthFailure).reason;
+		return err("unauthorised", { reason, request_id: requestId });
+	}
+	const accessDenied = await requireBatchApiAccess(auth, requestId);
+	if (accessDenied) return accessDenied;
 	const fileId = String(id ?? "").trim();
 	if (!fileId) {
 		return err("validation_error", {
@@ -154,14 +178,15 @@ async function handleRetrieve(req: Request, id: string) {
 		});
 	}
 
-	const upstream = await fetchOpenAiFiles({
+	const providerId = owned.provider || OPENAI_BATCH_PROVIDER_ID;
+	const upstream = await fetchProviderBatchApi(providerId, {
 		endpointPath: `/files/${encodeURIComponent(fileId)}`,
 		method: "GET",
 	});
 	const payload = await parseUpstreamJson(upstream);
 	if (upstream.ok && payload) {
 		await saveBatchFileMeta(auth.workspaceId, fileId, {
-			provider: OPENAI_PROVIDER_ID,
+			provider: providerId,
 			status: toText(payload?.status) ?? owned.status ?? "available",
 			purpose: toText(payload?.purpose) ?? owned.purpose ?? null,
 			filename: toText(payload?.filename) ?? owned.filename ?? null,
@@ -186,6 +211,8 @@ async function handleRetrieveContent(req: Request, id: string) {
 		const reason = (auth as AuthFailure).reason;
 		return err("unauthorised", { reason, request_id: requestId });
 	}
+	const accessDenied = await requireBatchApiAccess(auth, requestId);
+	if (accessDenied) return accessDenied;
 	const fileId = String(id ?? "").trim();
 	if (!fileId) {
 		return err("validation_error", {
@@ -204,7 +231,8 @@ async function handleRetrieveContent(req: Request, id: string) {
 		});
 	}
 
-	const upstream = await fetchOpenAiFiles({
+	const providerId = owned.provider || OPENAI_BATCH_PROVIDER_ID;
+	const upstream = await fetchProviderBatchApi(providerId, {
 		endpointPath: `/files/${encodeURIComponent(fileId)}/content`,
 		method: "GET",
 	});

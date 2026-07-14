@@ -10,24 +10,27 @@ import {
 } from "./batch-jobs";
 
 const {
+	claimAsyncOperationsForReconciliationMock,
 	getAsyncOperationMock,
 	isAsyncOperationBilledMock,
-	listAsyncOperationsMock,
 	markAsyncOperationBilledMock,
+	updateAsyncOperationReconciliationMock,
 	upsertAsyncOperationMock,
 } = vi.hoisted(() => ({
+	claimAsyncOperationsForReconciliationMock: vi.fn(),
 	getAsyncOperationMock: vi.fn(),
 	isAsyncOperationBilledMock: vi.fn(),
-	listAsyncOperationsMock: vi.fn(),
 	markAsyncOperationBilledMock: vi.fn(),
+	updateAsyncOperationReconciliationMock: vi.fn(),
 	upsertAsyncOperationMock: vi.fn(),
 }));
 
 vi.mock("@core/async-operations", () => ({
+	claimAsyncOperationsForReconciliation: claimAsyncOperationsForReconciliationMock,
 	getAsyncOperation: getAsyncOperationMock,
 	isAsyncOperationBilled: isAsyncOperationBilledMock,
-	listAsyncOperations: listAsyncOperationsMock,
 	markAsyncOperationBilled: markAsyncOperationBilledMock,
+	updateAsyncOperationReconciliation: updateAsyncOperationReconciliationMock,
 	upsertAsyncOperation: upsertAsyncOperationMock,
 	setAsyncOperationStatus: vi.fn(async () => undefined),
 	patchAsyncOperationMeta: vi.fn(async () => undefined),
@@ -35,13 +38,14 @@ vi.mock("@core/async-operations", () => ({
 
 describe("batch-jobs metadata", () => {
 	beforeEach(() => {
+		claimAsyncOperationsForReconciliationMock.mockReset();
 		getAsyncOperationMock.mockReset();
 		isAsyncOperationBilledMock.mockReset();
-		listAsyncOperationsMock.mockReset();
 		markAsyncOperationBilledMock.mockReset();
+		updateAsyncOperationReconciliationMock.mockReset();
 		upsertAsyncOperationMock.mockReset();
 		isAsyncOperationBilledMock.mockResolvedValue(false);
-		listAsyncOperationsMock.mockResolvedValue([]);
+		claimAsyncOperationsForReconciliationMock.mockResolvedValue([]);
 		markAsyncOperationBilledMock.mockResolvedValue(true);
 	});
 
@@ -59,6 +63,13 @@ describe("batch-jobs metadata", () => {
 			internalId: "batch_1",
 			nativeId: "b_native_1",
 			provider: "openai",
+			status: "in_progress",
+			nextReconcileAt: expect.any(String),
+		}));
+		expect(upsertAsyncOperationMock.mock.calls[0]?.[0]?.meta).toEqual(expect.objectContaining({
+			resource: "job",
+			provider: "openai",
+			nativeBatchId: "b_native_1",
 			status: "in_progress",
 		}));
 	});
@@ -166,6 +177,32 @@ describe("batch-jobs metadata", () => {
 		}));
 	});
 
+	it("normalizes legacy inline input mode metadata to requests", async () => {
+		getAsyncOperationMock.mockResolvedValueOnce({
+			workspace_id: "team_1",
+			kind: "batch",
+			internal_id: "batch_legacy",
+			provider: "openai",
+			native_id: "batch_native",
+			model: "gpt-4.1-mini",
+			status: "completed",
+			meta: {
+				provider: "openai",
+				status: "completed",
+				inputMode: "inline",
+			},
+			billed_at: null,
+			created_at: null,
+			updated_at: null,
+		});
+
+		const batchMeta = await getBatchJobMeta("team_1", "batch_legacy");
+		expect(batchMeta).toEqual(expect.objectContaining({
+			provider: "openai",
+			inputMode: "requests",
+		}));
+	});
+
 	it("delegates billed state helpers through async operations storage", async () => {
 		isAsyncOperationBilledMock.mockResolvedValueOnce(true);
 		markAsyncOperationBilledMock.mockResolvedValueOnce(true);
@@ -177,8 +214,29 @@ describe("batch-jobs metadata", () => {
 		expect(markAsyncOperationBilledMock).toHaveBeenCalledWith("team_1", "batch", "batch_1");
 	});
 
-	it("lists unbilled active and terminal batch jobs from shared async operations storage", async () => {
-		listAsyncOperationsMock.mockResolvedValueOnce([
+	it("claims due batch jobs while excluding batch-owned file records", async () => {
+		claimAsyncOperationsForReconciliationMock.mockResolvedValueOnce([
+			{
+				workspaceId: "team_1",
+				kind: "batch",
+				internalId: "__file__:file_pending",
+				requestId: null,
+				sessionId: null,
+				appId: null,
+				provider: "openai",
+				nativeId: "file_pending",
+				model: null,
+				status: "pending",
+				meta: { resource: "file", provider: "openai", status: "pending" },
+				billedAt: null,
+				nextReconcileAt: "2026-05-05T00:01:00.000Z",
+				reconcileAttempts: 1,
+				reconcileLockedAt: "2026-05-05T00:01:01.000Z",
+				reconcileLockedBy: "worker-1",
+				lastReconcileError: null,
+				createdAt: "2026-05-05T00:00:00.000Z",
+				updatedAt: "2026-05-05T00:00:30.000Z",
+			},
 			{
 				workspaceId: "team_1",
 				kind: "batch",
@@ -192,6 +250,11 @@ describe("batch-jobs metadata", () => {
 				status: "pending",
 				meta: { provider: "openai", status: "pending" },
 				billedAt: null,
+				nextReconcileAt: "2026-05-05T00:01:00.000Z",
+				reconcileAttempts: 1,
+				reconcileLockedAt: "2026-05-05T00:01:01.000Z",
+				reconcileLockedBy: "worker-1",
+				lastReconcileError: null,
 				createdAt: "2026-05-05T00:00:00.000Z",
 				updatedAt: "2026-05-05T00:01:00.000Z",
 			},
@@ -207,18 +270,45 @@ describe("batch-jobs metadata", () => {
 				model: "openai/gpt-5-mini",
 				status: "completed",
 				meta: { provider: "openai", status: "completed" },
-				billedAt: "2026-05-05T00:02:00.000Z",
+				billedAt: null,
+				nextReconcileAt: "2026-05-05T00:02:00.000Z",
+				reconcileAttempts: 2,
+				reconcileLockedAt: "2026-05-05T00:02:01.000Z",
+				reconcileLockedBy: "worker-1",
+				lastReconcileError: null,
 				createdAt: "2026-05-05T00:00:00.000Z",
 				updatedAt: "2026-05-05T00:02:00.000Z",
 			},
 		]);
 
-		const jobs = await listPendingBatchJobs(25);
+		const jobs = await listPendingBatchJobs(25, {
+			workerId: "worker-1",
+			leaseSeconds: 300,
+			shardCount: 4,
+			shardIndex: 1,
+		});
 
-		expect(listAsyncOperationsMock).toHaveBeenCalledWith({
+		expect(claimAsyncOperationsForReconciliationMock).toHaveBeenCalledWith({
 			kind: "batch",
 			limit: 25,
-			unbilledOnly: true,
+			statuses: [
+				null,
+				"submitting",
+				"validating",
+				"pending",
+				"in_progress",
+				"finalizing",
+				"cancelling",
+				"completed",
+				"failed",
+				"expired",
+				"cancelled",
+				"canceled",
+			],
+			workerId: "worker-1",
+			leaseSeconds: 300,
+			shardCount: 4,
+			shardIndex: 1,
 		});
 		expect(jobs).toHaveLength(2);
 		expect(jobs[0]).toMatchObject({
@@ -232,6 +322,7 @@ describe("batch-jobs metadata", () => {
 			batchId: "batch_done",
 			status: "completed",
 			provider: "openai",
+			reconcileAttempts: 2,
 		});
 	});
 });

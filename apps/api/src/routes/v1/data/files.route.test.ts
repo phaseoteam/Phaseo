@@ -19,6 +19,7 @@ const state = vi.hoisted(() => ({
 }));
 
 function resetState() {
+	state.authResult.workspaceId = "ws_files_test";
 	state.fileMeta.clear();
 	state.fetchCalls = [];
 }
@@ -220,5 +221,152 @@ describe("filesRoutes", () => {
 			file_id: "file_missing_123",
 		});
 		expect(state.fetchCalls).toEqual([]);
+	});
+
+	it("uploads and retrieves files through the provider inferred from the model", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+				const url = String(input);
+				const method = String(init?.method ?? "GET").toUpperCase();
+				state.fetchCalls.push({
+					url,
+					method,
+					headers: Object.fromEntries(new Headers(init?.headers).entries()),
+				});
+
+				if (url === "https://api.groq.com/openai/v1/files" && method === "POST") {
+					return jsonResponse({
+						id: "file_groq_123",
+						object: "file",
+						purpose: "batch",
+						filename: "groq-batch.jsonl",
+						status: "uploaded",
+					});
+				}
+
+				if (url === "https://api.groq.com/openai/v1/files/file_groq_123/content" && method === "GET") {
+					return new Response('{"ok":true}\n', {
+						status: 200,
+						headers: {
+							"Content-Type": "application/jsonl",
+						},
+					});
+				}
+
+				throw new Error(`Unexpected fetch: ${method} ${url}`);
+			}),
+		);
+
+		const { filesRoutes } = await import("./files");
+
+		const uploadBody = new FormData();
+		uploadBody.set("purpose", "batch");
+		uploadBody.set("file", new Blob(['{"ok":true}\n'], { type: "application/jsonl" }), "groq-batch.jsonl");
+
+		const uploadResponse = await filesRoutes.request("https://example.com/?model=llama-3.3-70b-versatile", {
+			method: "POST",
+			body: uploadBody,
+		});
+
+		expect(uploadResponse.status).toBe(200);
+		expect(state.fileMeta.get(fileKey("ws_files_test", "file_groq_123"))).toMatchObject({
+			provider: "groq",
+			status: "uploaded",
+			filename: "groq-batch.jsonl",
+		});
+
+		const contentResponse = await filesRoutes.request("https://example.com/file_groq_123/content", {
+			method: "GET",
+		});
+
+		expect(contentResponse.status).toBe(200);
+		expect(await contentResponse.text()).toBe('{"ok":true}\n');
+		expect(state.fetchCalls.map((call) => `${call.method} ${call.url}`)).toEqual([
+			"POST https://api.groq.com/openai/v1/files",
+			"GET https://api.groq.com/openai/v1/files/file_groq_123/content",
+		]);
+	});
+
+	it("rejects file uploads when the model resolves to a requests-only batch provider", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => {
+				throw new Error("fetch should not be called");
+			}),
+		);
+
+		const { filesRoutes } = await import("./files");
+
+		const uploadBody = new FormData();
+		uploadBody.set("purpose", "batch");
+		uploadBody.set("file", new Blob(['{"ok":true}\n'], { type: "application/jsonl" }), "claude-batch.jsonl");
+
+		const response = await filesRoutes.request("https://example.com/?model=claude-sonnet-4", {
+			method: "POST",
+			body: uploadBody,
+		});
+
+		expect(response.status).toBe(400);
+		await expect(response.json()).resolves.toMatchObject({
+			error: {
+				reason: "batch_input_mode_not_supported",
+				input_mode: "file",
+				requested_providers: ["anthropic"],
+			},
+		});
+		expect(state.fetchCalls).toEqual([]);
+	});
+
+	it("keeps file ownership scoped to the authenticated workspace", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+				const url = String(input);
+				const method = String(init?.method ?? "GET").toUpperCase();
+				state.fetchCalls.push({
+					url,
+					method,
+					headers: Object.fromEntries(new Headers(init?.headers).entries()),
+				});
+				if (url === "https://api.openai.example/v1/files" && method === "POST") {
+					return jsonResponse({
+						id: "file_workspace_123",
+						object: "file",
+						purpose: "batch",
+						status: "uploaded",
+					});
+				}
+				throw new Error(`Unexpected fetch: ${method} ${url}`);
+			}),
+		);
+
+		const { filesRoutes } = await import("./files");
+		const uploadBody = new FormData();
+		uploadBody.set("purpose", "batch");
+		uploadBody.set("file", new Blob(['{"ok":true}\n'], { type: "application/jsonl" }), "batch-input.jsonl");
+
+		const uploadResponse = await filesRoutes.request("https://example.com/", {
+			method: "POST",
+			body: uploadBody,
+		});
+		expect(uploadResponse.status).toBe(200);
+		expect(state.fileMeta.get(fileKey("ws_files_test", "file_workspace_123"))).toMatchObject({
+			provider: "openai",
+		});
+
+		state.authResult.workspaceId = "ws_other_test";
+		const retrieveResponse = await filesRoutes.request("https://example.com/file_workspace_123", {
+			method: "GET",
+		});
+		expect(retrieveResponse.status).toBe(404);
+		expect(await retrieveResponse.json()).toMatchObject({
+			error: "not_found",
+			reason: "file_not_found_or_not_owned",
+			file_id: "file_workspace_123",
+		});
+		expect(state.fetchCalls.map((call) => `${call.method} ${call.url}`)).toEqual([
+			"POST https://api.openai.example/v1/files",
+		]);
 	});
 });

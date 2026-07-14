@@ -1,3 +1,4 @@
+import { createHmac } from "node:crypto";
 import { describe, expect, test, vi } from "vitest";
 import { Phaseo } from "../src/index.js";
 import { OpenAI } from "../src/compat/openai.js";
@@ -482,5 +483,98 @@ describe("Phaseo batch helpers", () => {
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+
+  test("lists tracked batch request rows", async () => {
+    const fetchImpl: typeof fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("https://example.test/batches/batch_123/requests?limit=50&offset=10&status=completed");
+      expect(init?.method).toBe("GET");
+      return new Response(JSON.stringify({
+        object: "list",
+        batch_id: "batch_123",
+        data: [{
+          id: "row_1",
+          custom_id: "request-1",
+          status: "completed",
+          response_body: { id: "resp_1" },
+        }],
+      }), { status: 200, headers: { "Content-Type": "application/json" } });
+    }) as unknown as typeof fetch;
+    const client = new Phaseo({ apiKey: "sk_test_123", baseUrl: "https://example.test", fetchImpl });
+
+    const rows = await client.batches.listRequests("batch_123", {
+      limit: 50,
+      offset: 10,
+      status: "completed",
+    });
+
+    expect(rows.batch_id).toBe("batch_123");
+    expect(rows.data?.[0]?.custom_id).toBe("request-1");
+    expect(rows.data?.[0]?.response_body).toEqual({ id: "resp_1" });
+  });
+
+  test("waits for an existing batch to reach a terminal status", async () => {
+    vi.useFakeTimers();
+    const statuses = ["in_progress", "completed"];
+    const fetchImpl: typeof fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("https://example.test/batches/batch_123");
+      expect(init?.method).toBe("GET");
+      return new Response(JSON.stringify({
+        id: "batch_123",
+        object: "batch",
+        status: statuses.shift() ?? "completed",
+      }), { status: 200, headers: { "Content-Type": "application/json" } });
+    }) as unknown as typeof fetch;
+
+    try {
+      const client = new Phaseo({ apiKey: "sk_test_123", baseUrl: "https://example.test", fetchImpl });
+      const polled: string[] = [];
+      const pending = client.batches.wait("batch_123", {
+        intervalMs: 250,
+        timeoutMs: 1_000,
+        onPoll: (batch) => {
+          polled.push(String(batch.status));
+        },
+      });
+
+      await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(1));
+      await vi.advanceTimersByTimeAsync(250);
+      const batch = await pending;
+
+      expect(batch.status).toBe("completed");
+      expect(polled).toEqual(["in_progress", "completed"]);
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("verifies Phaseo signed webhook payloads", async () => {
+    const body = JSON.stringify({ type: "batch.completed", data: { id: "batch_123" } });
+    const timestamp = String(Math.floor(Date.now() / 1000));
+    const signature = createHmac("sha256", "whsec_test")
+      .update(`${timestamp}.${body}`)
+      .digest("hex");
+
+    await expect(Phaseo.verifyWebhookSignature({
+      body,
+      secret: "whsec_test",
+      timestamp,
+      signature,
+    })).resolves.toBe(true);
+
+    const client = new Phaseo({ apiKey: "sk_test_123", baseUrl: "https://example.test" });
+    await expect(client.webhooks.verifySignature({
+      body,
+      secret: "whsec_test",
+      timestamp,
+      signature: `sha256=${signature}`,
+    })).resolves.toBe(true);
+    await expect(client.webhooks.verifySignature({
+      body,
+      secret: "whsec_test",
+      timestamp,
+      signature: "sha256=bad",
+    })).resolves.toBe(false);
   });
 });

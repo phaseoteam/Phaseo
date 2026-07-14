@@ -13,6 +13,16 @@ import {
 	setBatchJobStatus,
 	type BatchJobMeta,
 } from "@core/batch-jobs";
+import {
+	resolveBatchPricingModelCandidates,
+	resolveBatchPricingProviderCandidates,
+} from "@core/batch-model-aliases";
+import { saveBatchRequestRows, type BatchRequestRowInput } from "@core/batch-requests";
+import {
+	batchText,
+	fetchProviderBatchOutputEntries,
+	OPENAI_BATCH_PROVIDER_ID,
+} from "@core/batch-provider-adapters";
 import { computeBill } from "@pipeline/pricing/engine";
 import { loadPriceCard } from "@pipeline/pricing/loader";
 import { recordUsageAndCharge } from "@pipeline/pricing/persist";
@@ -61,6 +71,8 @@ type BatchSettlementComputation =
 			reason: string;
 			pricedUsage: Record<string, unknown>;
 			pricingBreakdown: Record<string, unknown>;
+			outputEntries: any[];
+			rowCostsByIndex: Array<number | null>;
 	  }
 	| {
 			ok: false;
@@ -86,9 +98,7 @@ export type FinalizeBatchJobResult = {
 };
 
 function normalizeText(value: unknown): string | null {
-	if (typeof value !== "string") return null;
-	const trimmed = value.trim();
-	return trimmed.length > 0 ? trimmed : null;
+	return batchText(value);
 }
 
 function toFiniteNumber(value: unknown): number | null {
@@ -164,6 +174,7 @@ function resolvePricingCapabilityCandidates(endpoint: unknown): string[] {
 		normalizedPath === "/completions"
 	) {
 		candidates.push("batch");
+		candidates.push("text.generate");
 	}
 	return [...new Set(candidates.map((value) => value.trim()).filter(Boolean))];
 }
@@ -382,25 +393,30 @@ async function resolveBatchPriceCard(args: {
 	model: string;
 	endpoint: unknown;
 }): Promise<{ capability: string; pricingPlan: "batch" | "free"; card: Awaited<ReturnType<typeof loadPriceCard>> } | null> {
+	const models = resolveBatchPricingModelCandidates(args.providerId, args.model);
 	for (const capability of resolvePricingCapabilityCandidates(args.endpoint)) {
-		const card = await loadPriceCard(args.providerId, args.model, capability);
-		if (
-			card &&
-			Array.isArray((card as any)?.rules) &&
-			(card as any).rules.some((rule: any) => {
-				const plan = String(rule?.pricing_plan ?? "").trim().toLowerCase();
-				return plan === "batch" || plan === "free";
-			})
-		) {
-			const hasBatch = (card as any).rules.some((rule: any) =>
-				String(rule?.pricing_plan ?? "").trim().toLowerCase() === "batch"
-			);
-			return { capability, pricingPlan: hasBatch ? "batch" : "free", card };
-		}
-		if (card && isImageBatchEndpoint(args.endpoint)) {
-			const derived = deriveOpenAiImageBatchPriceCard(card);
-			if (derived && Array.isArray((derived as any).rules)) {
-				return { capability, pricingPlan: "batch", card: derived };
+		for (const pricingProvider of resolveBatchPricingProviderCandidates(args.providerId)) {
+			for (const model of models) {
+				const card = await loadPriceCard(pricingProvider, model, capability);
+				if (
+					card &&
+					Array.isArray((card as any)?.rules) &&
+					(card as any).rules.some((rule: any) => {
+						const plan = String(rule?.pricing_plan ?? "").trim().toLowerCase();
+						return plan === "batch" || plan === "free";
+					})
+				) {
+					const hasBatch = (card as any).rules.some((rule: any) =>
+						String(rule?.pricing_plan ?? "").trim().toLowerCase() === "batch"
+					);
+					return { capability, pricingPlan: hasBatch ? "batch" : "free", card };
+				}
+				if (card && isImageBatchEndpoint(args.endpoint)) {
+					const derived = deriveOpenAiImageBatchPriceCard(card);
+					if (derived && Array.isArray((derived as any).rules)) {
+						return { capability, pricingPlan: "batch", card: derived };
+					}
+				}
 			}
 		}
 	}
@@ -436,6 +452,17 @@ function extractResponseBody(entry: any): any | null {
 
 function extractCustomId(entry: any): string | null {
 	return normalizeText(entry?.custom_id ?? entry?.id ?? entry?.request?.custom_id);
+}
+
+function extractOutputCustomId(entry: any, fallbackIndex: number): string {
+	return extractCustomId(entry) ?? `response-${fallbackIndex + 1}`;
+}
+
+function extractErrorBody(entry: any): Record<string, unknown> | null {
+	const candidate = entry?.error ?? entry?.response?.body?.error ?? entry?.response?.error;
+	return candidate && typeof candidate === "object" && !Array.isArray(candidate)
+		? candidate as Record<string, unknown>
+		: null;
 }
 
 function extractRequestBody(entry: any): Record<string, unknown> | null {
@@ -593,7 +620,12 @@ async function settleBatchCharge(args: {
 async function computeBatchSettlement(meta: BatchJobMeta, status: string): Promise<BatchSettlementComputation> {
 	const completedCount = meta.requestCounts?.completed ?? null;
 	const outputFileId = normalizeText(meta.outputFileId);
-	if (!outputFileId) {
+	const providerId = normalizeText(meta.provider) ?? OPENAI_BATCH_PROVIDER_ID;
+	const supportsNativeResults =
+		providerId === "anthropic" ||
+		providerId === "google-ai-studio" ||
+		providerId === "x-ai";
+	if (!outputFileId && !supportsNativeResults) {
 		if (status === "completed") return { ok: false, reason: "missing_output_file" };
 		if ((completedCount ?? 0) > 0) return { ok: false, reason: "missing_output_file" };
 		return {
@@ -608,13 +640,25 @@ async function computeBatchSettlement(meta: BatchJobMeta, status: string): Promi
 				total_usd_str: "0.000000000",
 				total_cents: 0,
 			},
+			outputEntries: [],
+			rowCostsByIndex: [],
 		};
 	}
 
-	const text = await fetchOpenAiFileText(outputFileId);
-	const entries = parseJsonLines(text);
+	const entries = await fetchProviderBatchOutputEntries(meta);
+	const downloadedSuccessfulResponses = entries.reduce(
+		(total, entry) => total + (extractResponseBody(entry) ? 1 : 0),
+		0,
+	);
+	if (completedCount != null && downloadedSuccessfulResponses !== completedCount) {
+		return { ok: false, reason: "successful_output_count_mismatch" };
+	}
 	const inputEntriesByCustomId = new Map<string, any>();
-	if ((isVideoBatchEndpoint(meta.endpoint) || isImageBatchEndpoint(meta.endpoint)) && normalizeText(meta.inputFileId)) {
+	if (
+		providerId === OPENAI_BATCH_PROVIDER_ID &&
+		(isVideoBatchEndpoint(meta.endpoint) || isImageBatchEndpoint(meta.endpoint)) &&
+		normalizeText(meta.inputFileId)
+	) {
 		const inputText = await fetchOpenAiFileText(String(meta.inputFileId));
 		for (const inputEntry of parseJsonLines(inputText)) {
 			const customId = extractCustomId(inputEntry);
@@ -627,8 +671,10 @@ async function computeBatchSettlement(meta: BatchJobMeta, status: string): Promi
 	let pricedResponses = 0;
 	let missingUsageResponses = 0;
 	const pricingLines = new Map<string, BatchPricingLineAggregate>();
+	const rowCostsByIndex: Array<number | null> = [];
 
-	for (const entry of entries) {
+	for (let index = 0; index < entries.length; index += 1) {
+		const entry = entries[index];
 		const body = extractResponseBody(entry);
 		if (!body) continue;
 		successfulResponses += 1;
@@ -646,7 +692,7 @@ async function computeBatchSettlement(meta: BatchJobMeta, status: string): Promi
 		const model = normalizeText(body.model) ?? normalizeText(requestBody?.model) ?? normalizeText(meta.model);
 		if (!model) return { ok: false, reason: "missing_model" };
 		const priceCard = await resolveBatchPriceCard({
-			providerId: OPENAI_PROVIDER_ID,
+			providerId,
 			model,
 			endpoint,
 		});
@@ -718,6 +764,7 @@ async function computeBatchSettlement(meta: BatchJobMeta, status: string): Promi
 			return { ok: false, reason: "price_card_missing" };
 		}
 		totalNanos += rowNanos;
+		rowCostsByIndex[index] = rowNanos;
 		addPricedLines(pricingLines, priced);
 		addUsageSample(usageAggregate, usageSample);
 		pricedResponses += 1;
@@ -728,6 +775,9 @@ async function computeBatchSettlement(meta: BatchJobMeta, status: string): Promi
 			ok: false,
 			reason: missingUsageResponses > 0 ? "missing_usage" : "unpriced_successful_responses",
 		};
+	}
+	if (completedCount != null && successfulResponses !== completedCount) {
+		return { ok: false, reason: "successful_output_count_mismatch" };
 	}
 
 	if ((completedCount ?? 0) > 0 && successfulResponses === 0) {
@@ -770,6 +820,8 @@ async function computeBatchSettlement(meta: BatchJobMeta, status: string): Promi
 			failed_requests: meta.requestCounts?.failed ?? null,
 			total_requests: meta.requestCounts?.total ?? null,
 		},
+		outputEntries: entries,
+		rowCostsByIndex,
 	};
 }
 
@@ -931,6 +983,45 @@ export async function finalizeBatchJob(args: FinalizeBatchJobArgs): Promise<Fina
 		pricedUsage: settlement.pricedUsage,
 		pricingBreakdown: settlement.pricingBreakdown,
 	});
+	if (settlement.outputEntries.length > 0) {
+		const completedAt = new Date().toISOString();
+		const providerId = normalizeText(record.meta.provider) ?? OPENAI_BATCH_PROVIDER_ID;
+		const rows = settlement.outputEntries.map((entry, index): BatchRequestRowInput => {
+			const body = extractResponseBody(entry);
+			const responseStatus = Number(entry?.response?.status_code ?? entry?.status_code ?? 0);
+			const errorBody = extractErrorBody(entry);
+			return {
+				provider: providerId,
+				nativeBatchId: record.meta?.nativeBatchId ?? args.batchId,
+				customId: extractOutputCustomId(entry, index),
+				requestIndex: index,
+				model: normalizeText(body?.model) ?? normalizeText(record.meta?.model),
+				status: body ? "completed" : errorBody ? "failed" : status,
+				responseStatus: Number.isFinite(responseStatus) && responseStatus > 0 ? responseStatus : null,
+				responseBody: null,
+				errorBody,
+				usage: body?.usage && typeof body.usage === "object" ? body.usage as Record<string, unknown> : null,
+				costNanos: settlement.rowCostsByIndex[index] ?? null,
+				costUsd:
+					typeof settlement.rowCostsByIndex[index] === "number"
+						? (settlement.rowCostsByIndex[index] as number) / 1_000_000_000
+						: null,
+				meta: { finalized_from_output_file: true, response_body_omitted: true },
+				completedAt,
+			};
+		});
+		await saveBatchRequestRows({
+			workspaceId: args.workspaceId,
+			batchId: args.batchId,
+			rows,
+		}).catch((error) => {
+			console.error("batch_request_rows_finalize_failed", {
+				error,
+				workspaceId: args.workspaceId,
+				batchId: args.batchId,
+			});
+		});
+	}
 	if (chargeApplied) {
 		await markBatchJobBilled(args.workspaceId, args.batchId);
 	}

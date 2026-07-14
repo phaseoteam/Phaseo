@@ -455,23 +455,54 @@ module Phaseo
     # @!attribute [rw] object
     #   @return [String, nil]
     BatchModelsResponse = Struct.new(:data, :object, keyword_init: true)
+    # @!attribute [rw] documentation_url
+    #   @return [String, nil]
+    # @!attribute [rw] gateway_input_modes
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] id
+    #   @return [String, nil]
+    # @!attribute [rw] name
+    #   @return [String, nil]
+    # @!attribute [rw] native_input_modes
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] notes
+    #   @return [String, nil]
+    # @!attribute [rw] status
+    #   @return [String, nil]
+    BatchProviderCapability = Struct.new(:documentation_url, :gateway_input_modes, :id, :name, :native_input_modes, :notes, :status, keyword_init: true)
     # @!attribute [rw] completion_window
     #   @return [String, nil]
     # @!attribute [rw] debug
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] endpoint
-    #   @return [String]
+    #   @return [String, nil]
     # @!attribute [rw] input_file_id
-    #   @return [String]
+    #   @return [String, nil]
+    # @!attribute [rw] items
+    #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] max_tokens
+    #   @return [Integer, nil]
     # @!attribute [rw] metadata
     #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] model
+    #   @return [String, nil]
+    # @!attribute [rw] prompts
+    #   @return [Array<String>, nil]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] requests
+    #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] session_id
     #   @return [String, nil]
+    # @!attribute [rw] system
+    #   @return [String, nil]
+    # @!attribute [rw] temperature
+    #   @return [Float, nil]
     # @!attribute [rw] webhook
     #   @return [Hash{String => Object}, nil]
-    BatchRequest = Struct.new(:completion_window, :debug, :endpoint, :input_file_id, :metadata, :provider, :session_id, :webhook, keyword_init: true)
+    # @!attribute [rw] webhook_endpoint_id
+    #   @return [String, nil]
+    BatchRequest = Struct.new(:completion_window, :debug, :endpoint, :input_file_id, :items, :max_tokens, :metadata, :model, :prompts, :provider, :requests, :session_id, :system, :temperature, :webhook, :webhook_endpoint_id, keyword_init: true)
     # @!attribute [rw] completed
     #   @return [Integer, nil]
     # @!attribute [rw] failed
@@ -479,6 +510,56 @@ module Phaseo
     # @!attribute [rw] total
     #   @return [Integer, nil]
     BatchRequestCounts = Struct.new(:completed, :failed, :total, keyword_init: true)
+    # @!attribute [rw] body
+    #   @return [Hash{String => Object}]
+    # @!attribute [rw] custom_id
+    #   @return [String, nil]
+    # @!attribute [rw] method
+    #   @return [String, nil]
+    # @!attribute [rw] url
+    #   @return [String, nil]
+    BatchRequestItem = Struct.new(:body, :custom_id, :method, :url, keyword_init: true)
+    # @!attribute [rw] completed_at
+    #   @return [String, nil]
+    # @!attribute [rw] cost_nanos
+    #   @return [Integer, nil]
+    # @!attribute [rw] cost_usd
+    #   @return [Float, nil]
+    # @!attribute [rw] created_at
+    #   @return [String, nil]
+    # @!attribute [rw] custom_id
+    #   @return [String, nil]
+    # @!attribute [rw] endpoint
+    #   @return [String, nil]
+    # @!attribute [rw] error_body
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] id
+    #   @return [String, nil]
+    # @!attribute [rw] meta
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] method
+    #   @return [String, nil]
+    # @!attribute [rw] model
+    #   @return [String, nil]
+    # @!attribute [rw] native_batch_id
+    #   @return [String, nil]
+    # @!attribute [rw] provider
+    #   @return [String, nil]
+    # @!attribute [rw] request_body_hash
+    #   @return [String, nil]
+    # @!attribute [rw] request_index
+    #   @return [Integer, nil]
+    # @!attribute [rw] response_body
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] response_status
+    #   @return [Integer, nil]
+    # @!attribute [rw] status
+    #   @return [String, nil]
+    # @!attribute [rw] updated_at
+    #   @return [String, nil]
+    # @!attribute [rw] usage
+    #   @return [Hash{String => Object}, nil]
+    BatchRequestRow = Struct.new(:completed_at, :cost_nanos, :cost_usd, :created_at, :custom_id, :endpoint, :error_body, :id, :meta, :method, :model, :native_batch_id, :provider, :request_body_hash, :request_index, :response_body, :response_status, :status, :updated_at, :usage, keyword_init: true)
     # @!attribute [rw] billing
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] cancel_url
@@ -613,7 +694,7 @@ module Phaseo
     # @!attribute [rw] prompt_cache_key
     #   @return [String, nil]
     # @!attribute [rw] provider
-    #   @return [Hash{String => Object}, nil]
+    #   @return [String, Hash{String => Object}, nil]
     # @!attribute [rw] provider_options
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] reasoning

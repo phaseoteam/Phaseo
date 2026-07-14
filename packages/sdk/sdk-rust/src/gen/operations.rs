@@ -240,6 +240,16 @@ pub fn listApiKeys<T: Transport>(client: &Client<T>, path: &HashMap<String, Stri
 	client.request("GET", &resolved_path, body)
 }
 
+pub fn listBatchCapabilities<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/batches/capabilities");
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn listBatchCapabilitiesAlias<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/batch/capabilities");
+	client.request("GET", &resolved_path, body)
+}
+
 pub fn listBatches<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/batches");
 	client.request("GET", &resolved_path, body)
@@ -257,6 +267,16 @@ pub fn listBatchModels<T: Transport>(client: &Client<T>, path: &HashMap<String, 
 
 pub fn listBatchModelsAlias<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/batch/models");
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn listBatchRequests<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/batches/{}/requests", path.get("batch_id").cloned().unwrap_or_default());
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn listBatchRequestsAlias<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/batch/{}/requests", path.get("id").cloned().unwrap_or_default());
 	client.request("GET", &resolved_path, body)
 }
 
@@ -340,6 +360,26 @@ pub fn retrieveBatchAlias<T: Transport>(client: &Client<T>, path: &HashMap<Strin
 	client.request("GET", &resolved_path, body)
 }
 
+pub fn retrieveBatchFile<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/batches/files/{}", path.get("file_id").cloned().unwrap_or_default());
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn retrieveBatchFileAlias<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/batch/files/{}", path.get("file_id").cloned().unwrap_or_default());
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn retrieveBatchFileContent<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/batches/files/{}/content", path.get("file_id").cloned().unwrap_or_default());
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn retrieveBatchFileContentAlias<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/batch/files/{}/content", path.get("file_id").cloned().unwrap_or_default());
+	client.request("GET", &resolved_path, body)
+}
+
 pub fn retrieveFile<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/files/{}", path.get("file_id").cloned().unwrap_or_default());
 	client.request("GET", &resolved_path, body)
@@ -358,6 +398,16 @@ pub fn updateApiKey<T: Transport>(client: &Client<T>, path: &HashMap<String, Str
 pub fn updateWorkspace<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/workspaces/{}", path.get("id").cloned().unwrap_or_default());
 	client.request("PATCH", &resolved_path, body)
+}
+
+pub fn uploadBatchFile<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/batches/files");
+	client.request("POST", &resolved_path, body)
+}
+
+pub fn uploadBatchFileAlias<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/batch/files");
+	client.request("POST", &resolved_path, body)
 }
 
 pub fn uploadFile<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {

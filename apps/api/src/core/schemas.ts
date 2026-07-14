@@ -201,16 +201,43 @@ const UploadFileSchema = z.custom<File | Blob>(isFileLike, {
 });
 
 // Batch schema
+const BatchWebhookSchema = z.object({
+    url: z.string().url().optional(),
+    endpoint_id: z.string().min(1).optional(),
+    endpointId: z.string().min(1).optional(),
+    secret: z.string().min(1).optional(),
+    events: z.array(z.string().min(1)).optional(),
+}).refine((value) => Boolean(value.url || value.endpoint_id || value.endpointId), {
+    message: "webhook requires url or endpoint_id",
+});
+
+const BatchRequestItemSchema = z.object({
+    custom_id: z.string().min(1).optional(),
+    customId: z.string().min(1).optional(),
+    method: z.string().min(1).optional(),
+    url: z.string().min(1).optional(),
+    body: z.record(z.string(), z.any()).optional(),
+    request: z.record(z.string(), z.any()).optional(),
+}).refine((value) => Boolean(value.body || value.request), {
+    message: "batch request requires body or request",
+});
+
 export const BatchSchema = z.object({
-    input_file_id: z.string().min(1),
+    input_file_id: z.string().min(1).optional(),
+    requests: z.array(BatchRequestItemSchema).min(1).optional(),
     endpoint: z.string().min(1),
     completion_window: z.string().optional(),
     metadata: z.record(z.string(), z.any()).optional(),
+    session_id: z.string().trim().min(1).max(256).optional(),
+    webhook: BatchWebhookSchema.optional(),
+    webhook_endpoint_id: z.string().min(1).optional(),
     echo_upstream_request: z.boolean().optional(),
     debug: DebugOptionsSchema,
     beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
     routing: ProviderRoutingSchema,
+}).refine((value) => Boolean(value.input_file_id) !== Boolean(value.requests), {
+    message: "Provide exactly one of input_file_id or requests.",
 });
 export type BatchRequest = z.infer<typeof BatchSchema>;
 

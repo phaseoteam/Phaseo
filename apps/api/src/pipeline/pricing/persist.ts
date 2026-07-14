@@ -7,7 +7,7 @@ import { invalidateGatewayCreditCache } from "../../core/gateway-credit-cache";
 import { getSupabaseAdmin, ensureRuntimeForBackground } from "../../runtime/env";
 import { enqueueLowBalanceEmail } from "../notifications/low-balance";
 
-type ChargeRpcResult = {
+export type ChargeRpcResult = {
     status: string;
     auto_top_up_amount_nanos: number;
     auto_top_up_account_id: string | null;
@@ -169,7 +169,7 @@ export async function recordUsageAndCharge(args: {
     requestId: string;
     workspaceId: string;
     cost_nanos: number;
-}) {
+}): Promise<ChargeRpcResult> {
     const releaseRuntime = ensureRuntimeForBackground();
     try {
         const supabase = getSupabaseAdmin();
@@ -183,8 +183,11 @@ export async function recordUsageAndCharge(args: {
         if (onceRpc.error) throw onceRpc.error;
         const chargeResult = normalizeChargeRpcResult(onceRpc.data);
 
-        if (!chargeResult) return;
-        if (chargeResult.already_applied) return;
+        if (!chargeResult) throw new Error("gateway_charge_result_missing");
+        if (!chargeResult.applied && !chargeResult.already_applied) {
+            throw new Error(`gateway_charge_not_applied:${chargeResult.status || "unknown"}`);
+        }
+        if (chargeResult.already_applied) return chargeResult;
         await invalidateGatewayCreditCache(args.workspaceId);
 
         try {
@@ -210,7 +213,7 @@ export async function recordUsageAndCharge(args: {
                     workspaceId: args.workspaceId,
                     amount_nanos: chargeResult.auto_top_up_amount_nanos,
                 });
-                return;
+                return chargeResult;
             }
             const amount_cents = Math.round(chargeResult.auto_top_up_amount_nanos / 10_000_000); // since 1 cent = 10,000,000 nanos
             const paymentMethod =
@@ -222,7 +225,7 @@ export async function recordUsageAndCharge(args: {
                 console.error("[auto-recharge] Skipped: no payment method available", {
                     workspaceId: args.workspaceId,
                 });
-                return;
+                return chargeResult;
             }
 
             const topUpMetadata: Record<string, string> = {
@@ -254,6 +257,7 @@ export async function recordUsageAndCharge(args: {
             // Log success or handle failure
             console.log(`[auto-recharge] Initiated for team ${args.workspaceId}, payment intent ${paymentIntent.id}, amount: $${(amount_cents / 100).toFixed(2)}`);
         }
+        return chargeResult;
     } finally {
         releaseRuntime();
     }

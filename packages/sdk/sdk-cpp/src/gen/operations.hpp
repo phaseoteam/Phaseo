@@ -239,6 +239,16 @@ inline Response ListApiKeys(Client& client, const std::map<std::string, std::str
 	return client.request("GET", resolved_path, body);
 }
 
+inline Response ListBatchCapabilities(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/batches/capabilities";
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response ListBatchCapabilitiesAlias(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/batch/capabilities";
+	return client.request("GET", resolved_path, body);
+}
+
 inline Response ListBatches(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/batches";
 	return client.request("GET", resolved_path, body);
@@ -256,6 +266,16 @@ inline Response ListBatchModels(Client& client, const std::map<std::string, std:
 
 inline Response ListBatchModelsAlias(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/batch/models";
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response ListBatchRequests(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/batches/" + (path.count("batch_id") ? path.at("batch_id") : std::string{}) + "/requests";
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response ListBatchRequestsAlias(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/batch/" + (path.count("id") ? path.at("id") : std::string{}) + "/requests";
 	return client.request("GET", resolved_path, body);
 }
 
@@ -339,6 +359,26 @@ inline Response RetrieveBatchAlias(Client& client, const std::map<std::string, s
 	return client.request("GET", resolved_path, body);
 }
 
+inline Response RetrieveBatchFile(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/batches/files/" + (path.count("file_id") ? path.at("file_id") : std::string{});
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response RetrieveBatchFileAlias(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/batch/files/" + (path.count("file_id") ? path.at("file_id") : std::string{});
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response RetrieveBatchFileContent(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/batches/files/" + (path.count("file_id") ? path.at("file_id") : std::string{}) + "/content";
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response RetrieveBatchFileContentAlias(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/batch/files/" + (path.count("file_id") ? path.at("file_id") : std::string{}) + "/content";
+	return client.request("GET", resolved_path, body);
+}
+
 inline Response RetrieveFile(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/files/" + (path.count("file_id") ? path.at("file_id") : std::string{});
 	return client.request("GET", resolved_path, body);
@@ -359,16 +399,19 @@ inline Response UpdateWorkspace(Client& client, const std::map<std::string, std:
 	return client.request("PATCH", resolved_path, body);
 }
 
+inline Response UploadBatchFile(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/batches/files";
+	return client.request("POST", resolved_path, body);
+}
+
+inline Response UploadBatchFileAlias(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/batch/files";
+	return client.request("POST", resolved_path, body);
+}
+
 inline Response UploadFile(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/files";
 	return client.request("POST", resolved_path, body);
 }
 
 } // namespace phaseo::gen
-
-#ifndef PHASEO_CPP_NAMESPACE_ALIAS
-#define PHASEO_CPP_NAMESPACE_ALIAS
-namespace phaseo {
-namespace gen = ::phaseo::gen;
-}
-#endif

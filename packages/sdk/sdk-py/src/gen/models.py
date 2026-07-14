@@ -283,20 +283,65 @@ class BatchModelsResponse(TypedDict):
 	data: NotRequired[List[Dict[str, Any]]]
 	object: NotRequired[str]
 
+class BatchProviderCapability(TypedDict):
+	documentation_url: NotRequired[str]
+	gateway_input_modes: NotRequired[List[Literal["file", "requests"]]]
+	id: NotRequired[str]
+	name: NotRequired[str]
+	native_input_modes: NotRequired[List[Literal["file", "requests"]]]
+	notes: NotRequired[Optional[str]]
+	status: NotRequired[Literal["active", "planned"]]
+
 class BatchRequest(TypedDict):
 	completion_window: NotRequired[str]
 	debug: NotRequired[Dict[str, Any]]
-	endpoint: str
-	input_file_id: str
+	endpoint: NotRequired[str]
+	input_file_id: NotRequired[str]
+	items: NotRequired[List[Dict[str, Any]]]
+	max_tokens: NotRequired[int]
 	metadata: NotRequired[Dict[str, Any]]
+	model: NotRequired[str]
+	prompts: NotRequired[List[str]]
 	provider: NotRequired[Dict[str, Any]]
+	requests: NotRequired[List[Dict[str, Any]]]
 	session_id: NotRequired[str]
+	system: NotRequired[str]
+	temperature: NotRequired[float]
 	webhook: NotRequired[Dict[str, Any]]
+	webhook_endpoint_id: NotRequired[str]
 
 class BatchRequestCounts(TypedDict):
 	completed: NotRequired[int]
 	failed: NotRequired[int]
 	total: NotRequired[int]
+
+class BatchRequestItem(TypedDict):
+	body: Dict[str, Any]
+	custom_id: NotRequired[str]
+	method: NotRequired[str]
+	url: NotRequired[str]
+
+class BatchRequestRow(TypedDict):
+	completed_at: NotRequired[Optional[str]]
+	cost_nanos: NotRequired[Optional[int]]
+	cost_usd: NotRequired[Optional[float]]
+	created_at: NotRequired[Optional[str]]
+	custom_id: NotRequired[str]
+	endpoint: NotRequired[Optional[str]]
+	error_body: NotRequired[Optional[Dict[str, Any]]]
+	id: NotRequired[str]
+	meta: NotRequired[Dict[str, Any]]
+	method: NotRequired[Optional[str]]
+	model: NotRequired[Optional[str]]
+	native_batch_id: NotRequired[Optional[str]]
+	provider: NotRequired[str]
+	request_body_hash: NotRequired[Optional[str]]
+	request_index: NotRequired[int]
+	response_body: NotRequired[Optional[Dict[str, Any]]]
+	response_status: NotRequired[Optional[int]]
+	status: NotRequired[str]
+	updated_at: NotRequired[Optional[str]]
+	usage: NotRequired[Optional[Dict[str, Any]]]
 
 class BatchResponse(TypedDict):
 	billing: NotRequired[Dict[str, Any]]
@@ -373,7 +418,7 @@ class ChatCompletionsRequest(TypedDict):
 	parallel_tool_calls: NotRequired[bool]
 	presence_penalty: NotRequired[float]
 	prompt_cache_key: NotRequired[Optional[str]]
-	provider: NotRequired[Dict[str, Any]]
+	provider: NotRequired[Union[Literal["openai", "anthropic", "google-ai-studio", "gemini", "mistral", "x-ai", "xai", "groq", "together"], Dict[str, Any]]]
 	provider_options: NotRequired[Dict[str, Any]]
 	reasoning: NotRequired[Dict[str, Any]]
 	response_format: NotRequired[Union[str, Dict[str, Any]]]
@@ -1248,4 +1293,4 @@ class WorkspaceUpdateRequest(TypedDict):
 	name: NotRequired[str]
 	slug: NotRequired[str]
 
-models___all__ = ["ActivityEntry", "ActivityResponse", "AnalyticsAccessTokenRequiredResponse", "AnalyticsNotImplementedResponse", "AnthropicContentBlock", "AnthropicMessage", "AnthropicMessagesRequest", "AnthropicMessagesResponse", "AnthropicTool", "AnthropicUsage", "ApiKey", "ApiKeyCreateRequest", "ApiKeyListResponse", "ApiKeyResponse", "ApiKeyScopeValue", "ApiKeyUpdateRequest", "ApiKeyWithValue", "ApiKeyWithValueResponse", "AsyncJobWebSocketClientEvent", "AsyncJobWebSocketServerEvent", "AsyncJobWebSocketUpgradeRequiredResponse", "AsyncWebhookDeliveryAttempt", "AsyncWebhookDeliverySummary", "AsyncWebhookPublicState", "AudioContentPart", "AudioSpeechRequest", "AudioTranscriptionRequest", "AudioTranscriptionResponse", "AudioTranslationRequest", "AudioTranslationResponse", "BatchBillingSummary", "BatchListResponse", "BatchModelCapability", "BatchModelProviderCapability", "BatchModelsResponse", "BatchRequest", "BatchRequestCounts", "BatchResponse", "BenchmarkId", "CacheControl", "ChatAudioOutputPart", "ChatChoice", "ChatCompletionsRequest", "ChatCompletionsResponse", "ChatImageOutputPart", "ChatMessage", "CreditsResponse", "DataModel", "DataModelOrganisation", "DebugOptions", "DeletedResponse", "Embedding", "EmbeddingsMultimodalInput", "EmbeddingsRequest", "EmbeddingsResponse", "ErrorFailureSampleItem", "ErrorProviderCandidateDiagnostics", "ErrorProviderEnablementDiagnostics", "ErrorProviderFailureDiagnostics", "ErrorResponse", "ErrorRoutingDiagnostics", "ErrorUpstreamError", "FileResponse", "FileUploadRequest", "FunctionToolDefinition", "GatewayDatetimeToolDefinition", "GatewayModelsResponse", "GatewayWebFetchToolDefinition", "GatewayWebSearchToolDefinition", "GenerationResponse", "Image", "ImageConfig", "ImageContentPart", "ImageModerationInput", "ImagesEditRequest", "ImagesEditResponse", "ImagesGenerationRequest", "ImagesGenerationResponse", "InvalidRequestResponse", "KeyInvalidateResponse", "KnownModelId", "ListFilesResponse", "ManagementKeyCreateRequest", "ManagementKeyCreateResponse", "ManagementKeyDeleteResponse", "ManagementKeyDetailResponse", "ManagementKeyListResponse", "ManagementKeyUpdateRequest", "ManagementKeyUpdateResponse", "MessageContentPart", "Model", "ModelAvailability", "ModelId", "ModelLifecycle", "ModelProviderAvailability", "ModelsPrivacyScopeNotImplementedResponse", "ModerationCategories", "ModerationCategoryScores", "ModerationResult", "ModerationsRequest", "ModerationsResponse", "MusicGenerateRequest", "MusicGenerateResponse", "NotImplementedResponse", "OcrRequest", "OcrResponse", "OrganisationId", "OrganisationIdList", "Provider", "ProviderOptions", "ProviderRoutingOptions", "ProvisioningKey", "ProvisioningKeyDetail", "ProvisioningKeyWithValue", "ReasoningConfig", "RerankDocument", "RerankRequest", "RerankResponse", "RerankResult", "ResponsesInputItem", "ResponsesOutputAudioPart", "ResponsesOutputContentPart", "ResponsesOutputImagePart", "ResponsesOutputItem", "ResponsesOutputTextPart", "ResponsesRequest", "ResponsesResponse", "ServerToolUsage", "SupportedParameterDetails", "TextContentPart", "TextGenerateTool", "TextModerationInput", "TextToolChoice", "ToolCall", "ToolCallContentPart", "Usage", "VideoBillingSummary", "VideoContentPart", "VideoDeleteResponse", "VideoGenerationRequest", "VideoGenerationResponse", "VideoInputReference", "VideoListResponse", "VideoModelCapability", "VideoModelProviderCapability", "VideoModelsResponse", "VideoOutput", "VideoOutputConfig", "Workspace", "WorkspaceActivityEntry", "WorkspaceActivityResponse", "WorkspaceCreateRequest", "WorkspaceListResponse", "WorkspaceResponse", "WorkspaceUpdateRequest"]
+models___all__ = ["ActivityEntry", "ActivityResponse", "AnalyticsAccessTokenRequiredResponse", "AnalyticsNotImplementedResponse", "AnthropicContentBlock", "AnthropicMessage", "AnthropicMessagesRequest", "AnthropicMessagesResponse", "AnthropicTool", "AnthropicUsage", "ApiKey", "ApiKeyCreateRequest", "ApiKeyListResponse", "ApiKeyResponse", "ApiKeyScopeValue", "ApiKeyUpdateRequest", "ApiKeyWithValue", "ApiKeyWithValueResponse", "AsyncJobWebSocketClientEvent", "AsyncJobWebSocketServerEvent", "AsyncJobWebSocketUpgradeRequiredResponse", "AsyncWebhookDeliveryAttempt", "AsyncWebhookDeliverySummary", "AsyncWebhookPublicState", "AudioContentPart", "AudioSpeechRequest", "AudioTranscriptionRequest", "AudioTranscriptionResponse", "AudioTranslationRequest", "AudioTranslationResponse", "BatchBillingSummary", "BatchListResponse", "BatchModelCapability", "BatchModelProviderCapability", "BatchModelsResponse", "BatchProviderCapability", "BatchRequest", "BatchRequestCounts", "BatchRequestItem", "BatchRequestRow", "BatchResponse", "BenchmarkId", "CacheControl", "ChatAudioOutputPart", "ChatChoice", "ChatCompletionsRequest", "ChatCompletionsResponse", "ChatImageOutputPart", "ChatMessage", "CreditsResponse", "DataModel", "DataModelOrganisation", "DebugOptions", "DeletedResponse", "Embedding", "EmbeddingsMultimodalInput", "EmbeddingsRequest", "EmbeddingsResponse", "ErrorFailureSampleItem", "ErrorProviderCandidateDiagnostics", "ErrorProviderEnablementDiagnostics", "ErrorProviderFailureDiagnostics", "ErrorResponse", "ErrorRoutingDiagnostics", "ErrorUpstreamError", "FileResponse", "FileUploadRequest", "FunctionToolDefinition", "GatewayDatetimeToolDefinition", "GatewayModelsResponse", "GatewayWebFetchToolDefinition", "GatewayWebSearchToolDefinition", "GenerationResponse", "Image", "ImageConfig", "ImageContentPart", "ImageModerationInput", "ImagesEditRequest", "ImagesEditResponse", "ImagesGenerationRequest", "ImagesGenerationResponse", "InvalidRequestResponse", "KeyInvalidateResponse", "KnownModelId", "ListFilesResponse", "ManagementKeyCreateRequest", "ManagementKeyCreateResponse", "ManagementKeyDeleteResponse", "ManagementKeyDetailResponse", "ManagementKeyListResponse", "ManagementKeyUpdateRequest", "ManagementKeyUpdateResponse", "MessageContentPart", "Model", "ModelAvailability", "ModelId", "ModelLifecycle", "ModelProviderAvailability", "ModelsPrivacyScopeNotImplementedResponse", "ModerationCategories", "ModerationCategoryScores", "ModerationResult", "ModerationsRequest", "ModerationsResponse", "MusicGenerateRequest", "MusicGenerateResponse", "NotImplementedResponse", "OcrRequest", "OcrResponse", "OrganisationId", "OrganisationIdList", "Provider", "ProviderOptions", "ProviderRoutingOptions", "ProvisioningKey", "ProvisioningKeyDetail", "ProvisioningKeyWithValue", "ReasoningConfig", "RerankDocument", "RerankRequest", "RerankResponse", "RerankResult", "ResponsesInputItem", "ResponsesOutputAudioPart", "ResponsesOutputContentPart", "ResponsesOutputImagePart", "ResponsesOutputItem", "ResponsesOutputTextPart", "ResponsesRequest", "ResponsesResponse", "ServerToolUsage", "SupportedParameterDetails", "TextContentPart", "TextGenerateTool", "TextModerationInput", "TextToolChoice", "ToolCall", "ToolCallContentPart", "Usage", "VideoBillingSummary", "VideoContentPart", "VideoDeleteResponse", "VideoGenerationRequest", "VideoGenerationResponse", "VideoInputReference", "VideoListResponse", "VideoModelCapability", "VideoModelProviderCapability", "VideoModelsResponse", "VideoOutput", "VideoOutputConfig", "Workspace", "WorkspaceActivityEntry", "WorkspaceActivityResponse", "WorkspaceCreateRequest", "WorkspaceListResponse", "WorkspaceResponse", "WorkspaceUpdateRequest"]

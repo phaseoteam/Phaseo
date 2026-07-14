@@ -26,6 +26,7 @@ export type EndpointType =
   | "batches.models"
   | "batches.retrieve"
   | "batches.cancel"
+  | "batches.requests"
   | "files.list"
   | "files.retrieve"
   | "files.upload"

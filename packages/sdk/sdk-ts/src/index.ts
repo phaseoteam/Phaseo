@@ -45,6 +45,7 @@ import {
 } from "./devtools/telemetry.js";
 import type { DevToolsConfig } from "./devtools/core.js";
 import type { KnownModelId as GeneratedKnownModelId } from "./modelIds.js";
+import { verifyAsyncWebhookSignature as verifyWebhookSignatureValue } from "./webhooks.js";
 
 export type KnownModelId = GeneratedKnownModelId;
 export type ModelIdLiteral = KnownModelId;
@@ -226,6 +227,31 @@ export type AsyncJobWebSocketOptions = {
   intervalMs?: number;
   closeOnTerminal?: boolean;
 };
+export type BatchRequestRowsResponse = Awaited<ReturnType<typeof ops.listBatchRequests>>;
+export type BatchTerminalStatus = "completed" | "failed" | "cancelled" | "expired";
+export type BatchProviderSelector = string | NonNullable<BatchRequest["provider"]>;
+export type BatchCreateRequest = Omit<BatchRequest, "provider"> & {
+  provider?: BatchProviderSelector;
+};
+export type BatchWaitOptions = {
+  intervalMs?: number;
+  timeoutMs?: number;
+  signal?: AbortSignal;
+  terminalStatuses?: BatchTerminalStatus[];
+  onPoll?: (batch: BatchResponse) => void | Promise<void>;
+};
+export type BatchRequestListOptions = {
+  limit?: number;
+  offset?: number;
+  status?: string;
+};
+export type WebhookVerificationInput = {
+  body: string | Uint8Array | ArrayBuffer;
+  secret: string;
+  signature: string | null | undefined;
+  timestamp?: string | number | null;
+  toleranceSeconds?: number;
+};
 
 type ChatMessageInput =
   | { role: "system"; content: string | MessageContentPartInput[]; name?: string }
@@ -358,14 +384,23 @@ export class Phaseo {
   };
 
   readonly batches = {
-    create: async (req: BatchRequest): Promise<BatchResponse> => this.createBatch(req),
+    create: async (req: BatchCreateRequest): Promise<BatchResponse> => this.createBatch(req),
     list: async (params: Record<string, unknown> = {}): Promise<BatchListResponse> => this.listBatches(params),
     get: async (batchId: string): Promise<BatchResponse> => this.getBatch(batchId),
     cancel: async (batchId: string): Promise<BatchResponse> => this.cancelBatch(batchId),
+    listRequests: async (batchId: string, options: BatchRequestListOptions = {}): Promise<BatchRequestRowsResponse> =>
+      this.listBatchRequests(batchId, options),
+    wait: async (batchId: string, options: BatchWaitOptions = {}): Promise<BatchResponse> =>
+      this.waitForBatch(batchId, options),
     listModels: async (params: Record<string, unknown> = {}): Promise<BatchModelsResponse> =>
       this.listBatchModels(params),
     websocketUrl: (batchId: string, options: AsyncJobWebSocketOptions = {}): string =>
       this.getAsyncJobWebSocketUrl("batch", batchId, options),
+  };
+
+  readonly webhooks = {
+    verifySignature: async (input: WebhookVerificationInput): Promise<boolean> =>
+      Phaseo.verifyWebhookSignature(input),
   };
 
   readonly videos = {
@@ -882,10 +917,10 @@ export class Phaseo {
     }
   }
 
-  createBatch(req: BatchRequest): Promise<BatchResponse> {
+  createBatch(req: BatchCreateRequest): Promise<BatchResponse> {
     return this.telemetry.wrap(
       "batches.create",
-      () => ops.createBatch(this.client, { body: req }),
+      () => ops.createBatch(this.client, { body: req as BatchRequest }),
       () => req,
       extractBatchMetadata
     );
@@ -907,6 +942,59 @@ export class Phaseo {
       () => ({ batch_id: batchId }),
       extractBatchMetadata
     );
+  }
+
+  listBatchRequests(batchId: string, options: BatchRequestListOptions = {}): Promise<BatchRequestRowsResponse> {
+    return this.telemetry.wrap(
+      "batches.requests",
+      () => ops.listBatchRequests(this.client, {
+        path: { batch_id: batchId },
+        query: {
+          ...(options.limit !== undefined ? { limit: options.limit } : {}),
+          ...(options.offset !== undefined ? { offset: options.offset } : {}),
+          ...(options.status !== undefined ? { status: options.status } : {}),
+        },
+      }),
+      () => ({ batch_id: batchId, ...options })
+    );
+  }
+
+  async waitForBatch(batchId: string, options: BatchWaitOptions = {}): Promise<BatchResponse> {
+    const normalizedId = asTrimmedString(batchId);
+    if (!normalizedId) throw new Error("batchId is required");
+    const intervalMs = Math.max(250, Math.trunc(options.intervalMs ?? 5_000));
+    const timeoutMs = Math.max(1, Math.trunc(options.timeoutMs ?? 30 * 60_000));
+    const terminalStatuses = new Set(
+      (options.terminalStatuses ?? ["completed", "failed", "cancelled", "expired"])
+        .map((status) => normalizeBatchStatus(status))
+        .filter((status): status is BatchTerminalStatus => Boolean(status))
+    );
+    if (terminalStatuses.size === 0) throw new Error("At least one terminal batch status is required");
+    const startedAt = Date.now();
+    while (true) {
+      throwIfAborted(options.signal);
+      const batch = await this.getBatch(normalizedId);
+      await options.onPoll?.(batch);
+      const status = normalizeBatchStatus(batch.status);
+      if (status && terminalStatuses.has(status)) return batch;
+      if (Date.now() - startedAt >= timeoutMs) throw new Error(`Timed out waiting for batch ${normalizedId}`);
+      await sleep(Math.min(intervalMs, Math.max(1, timeoutMs - (Date.now() - startedAt))), options.signal);
+    }
+  }
+
+  static async verifyWebhookSignature(input: WebhookVerificationInput): Promise<boolean> {
+    const timestamp = input.timestamp == null ? null : String(input.timestamp);
+    if (!timestamp || !input.signature) return false;
+    const body = input.body instanceof ArrayBuffer ? new Uint8Array(input.body) : input.body;
+    return verifyWebhookSignatureValue({
+      secret: input.secret,
+      body,
+      headers: {
+        "x-phaseo-timestamp": timestamp,
+        "x-phaseo-signature": input.signature.trim().replace(/^sha256=/i, ""),
+      },
+      toleranceSeconds: input.toleranceSeconds,
+    });
   }
 
   listBatches(params: Record<string, unknown> = {}): Promise<BatchListResponse> {
@@ -936,13 +1024,21 @@ export class Phaseo {
   getFile(fileId: string): Promise<FileObject> {
     return this.telemetry.wrap(
       "files.retrieve",
-      () => ops.retrieveFile(this.client, { path: { file_id: fileId } as any }),
+      async () => {
+        const url = new URL(`batches/files/${encodeURIComponent(fileId)}`, `${this.basePath}/`);
+        const res = await this.fetchImpl(url.toString(), { method: "GET", headers: this.headers });
+        if (!res.ok) {
+          const text = await res.text();
+          throw createHttpError(res, text);
+        }
+        return (await res.json()) as FileObject;
+      },
       () => ({ file_id: fileId })
     );
   }
 
   async getFileContent(fileId: string): Promise<Uint8Array> {
-    const url = new URL(`files/${encodeURIComponent(fileId)}/content`, `${this.basePath}/`);
+    const url = new URL(`batches/files/${encodeURIComponent(fileId)}/content`, `${this.basePath}/`);
     const res = await this.fetchImpl(url.toString(), {
       method: "GET",
       headers: this.headers,
@@ -954,7 +1050,12 @@ export class Phaseo {
     return new Uint8Array(await res.arrayBuffer());
   }
 
-  async uploadFile(params: { purpose?: string; file: Blob | File | BufferSource | string }): Promise<FileObject> {
+  async uploadFile(params: {
+    purpose?: string;
+    file: Blob | File | BufferSource | string;
+    model?: string;
+    provider?: string;
+  }): Promise<FileObject> {
     return this.telemetry.wrap(
       "files.upload",
       async () => {
@@ -963,7 +1064,10 @@ export class Phaseo {
         if (params.purpose) {
           form.append("purpose", params.purpose);
         }
-        const res = await this.fetchImpl(`${this.basePath}/files`, {
+        const url = new URL("batches/files", `${this.basePath}/`);
+        if (params.model) url.searchParams.set("model", params.model);
+        if (params.provider) url.searchParams.set("provider", params.provider);
+        const res = await this.fetchImpl(url.toString(), {
           method: "POST",
           headers: this.headers,
           body: form
@@ -974,7 +1078,7 @@ export class Phaseo {
         }
         return (await res.json()) as FileObject;
       },
-      () => ({ purpose: params.purpose, file: "[File]" })
+      () => ({ purpose: params.purpose, model: params.model, provider: params.provider, file: "[File]" })
     );
   }
 
@@ -1641,6 +1745,32 @@ function buildInactiveModelRequestMessage(info: ModelLifecycleInfo): string {
   const sourceStatus = normalizeSourceStatus(info.sourceStatus) ?? "unknown";
   const replacement = info.replacementModelId ? ` Use "${info.replacementModelId}" instead.` : "";
   return `[phaseo] Model "${info.modelId}" is not active for inference (status: ${sourceStatus}).${replacement}`;
+}
+
+function normalizeBatchStatus(value: unknown): BatchTerminalStatus | null {
+  const normalized = asTrimmedString(value)?.toLowerCase();
+  if (!normalized) return null;
+  if (normalized === "canceled") return "cancelled";
+  if (normalized === "completed" || normalized === "failed" || normalized === "cancelled" || normalized === "expired") {
+    return normalized;
+  }
+  return null;
+}
+
+function throwIfAborted(signal?: AbortSignal): void {
+  if (!signal?.aborted) return;
+  throw signal.reason instanceof Error ? signal.reason : new Error("Operation aborted");
+}
+
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    throwIfAborted(signal);
+    const timeout = setTimeout(resolve, ms);
+    signal?.addEventListener("abort", () => {
+      clearTimeout(timeout);
+      reject(signal.reason instanceof Error ? signal.reason : new Error("Operation aborted"));
+    }, { once: true });
+  });
 }
 
 function asTrimmedString(value: unknown): string | null {

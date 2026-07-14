@@ -707,6 +707,36 @@ func ListApiKeys(client *Client, path map[string]string, query map[string]string
 	return out, nil
 }
 
+func ListBatchCapabilities(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/batches/capabilities"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func ListBatchCapabilitiesAlias(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/batch/capabilities"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
 func ListBatches(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/batches"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
@@ -737,6 +767,36 @@ func ListBatchesAlias(client *Client, path map[string]string, query map[string]s
 	return out, nil
 }
 
+func ListBatchFiles(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
+	resolvedPath := "/batches/files"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero interface{}
+		return zero, err
+	}
+	var out interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func ListBatchFilesAlias(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
+	resolvedPath := "/batch/files"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero interface{}
+		return zero, err
+	}
+	var out interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
 func ListBatchModels(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/batches/models"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
@@ -754,6 +814,36 @@ func ListBatchModels(client *Client, path map[string]string, query map[string]st
 
 func ListBatchModelsAlias(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/batch/models"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func ListBatchRequests(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/batches/" + url.PathEscape(path["batch_id"]) + "/requests"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func ListBatchRequestsAlias(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/batch/" + url.PathEscape(path["id"]) + "/requests"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}
@@ -1007,6 +1097,66 @@ func RetrieveBatchAlias(client *Client, path map[string]string, query map[string
 	return out, nil
 }
 
+func RetrieveBatchFile(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/batches/files/" + url.PathEscape(path["file_id"])
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func RetrieveBatchFileAlias(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/batch/files/" + url.PathEscape(path["file_id"])
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func RetrieveBatchFileContent(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
+	resolvedPath := "/batches/files/" + url.PathEscape(path["file_id"]) + "/content"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero interface{}
+		return zero, err
+	}
+	var out interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func RetrieveBatchFileContentAlias(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
+	resolvedPath := "/batch/files/" + url.PathEscape(path["file_id"]) + "/content"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero interface{}
+		return zero, err
+	}
+	var out interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
 func RetrieveFile(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/files/" + url.PathEscape(path["file_id"])
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
@@ -1055,6 +1205,36 @@ func UpdateApiKey(client *Client, path map[string]string, query map[string]strin
 func UpdateWorkspace(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/workspaces/" + url.PathEscape(path["id"])
 	data, err := client.Request("PATCH", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func UploadBatchFile(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/batches/files"
+	data, err := client.Request("POST", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func UploadBatchFileAlias(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/batch/files"
+	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}
 		return zero, err

@@ -1,121 +1,94 @@
 "use client";
 
-import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown, PanelLeftIcon } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 
-import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-	Sheet,
-	SheetContent,
-	SheetHeader,
-	SheetTitle,
-	SheetTrigger,
-} from "@/components/ui/sheet";
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import { getActiveSettingsNav, getSettingsSidebar } from "./Sidebar.config";
 
 export default function SettingsSidebarTrigger({
-	className,
 	showBroadcast = true,
-	triggerLabel,
+	showWebhooks = true,
 }: {
-	className?: string;
 	showBroadcast?: boolean;
-	triggerLabel?: string;
+	showWebhooks?: boolean;
 }) {
 	const pathname = usePathname();
-	const [open, setOpen] = React.useState(false);
-	const navGroups = React.useMemo(
-		() => getSettingsSidebar({ showBroadcast }),
-		[showBroadcast],
-	);
-	const activeNav = React.useMemo(
-		() => getActiveSettingsNav(pathname ?? "", { showBroadcast }),
-		[pathname, showBroadcast],
-	);
+	const navGroups = getSettingsSidebar({ showBroadcast, showWebhooks });
+	const activeNav = getActiveSettingsNav(pathname ?? "", { showBroadcast, showWebhooks });
 	const activeItem = activeNav?.item ?? null;
-	const label = triggerLabel ?? activeItem?.label ?? "Settings";
 
 	return (
 		<div className="lg:hidden">
-			<Sheet open={open} onOpenChange={setOpen}>
-				<SheetTrigger asChild>
+			<DropdownMenu>
+				<DropdownMenuTrigger asChild>
 					<Button
 						variant="outline"
-						className={cn("w-full justify-between", className)}
-						aria-label="Open settings sections"
+						className="w-full justify-between"
+						aria-haspopup="menu"
 					>
-						<span className="flex min-w-0 items-center gap-2">
-							{triggerLabel ? <PanelLeftIcon className="h-4 w-4 shrink-0" /> : null}
-							<span className="truncate">{label}</span>
-							{!triggerLabel && activeItem?.badge ? (
+						<span className="flex items-center gap-2 min-w-0">
+							<span className="truncate">{activeItem?.label ?? "Settings"}</span>
+							{activeItem?.badge && (
 								<Badge
 									variant="outline"
 									className="h-5 px-1.5 text-[10px] uppercase tracking-wide"
 								>
 									{activeItem.badge}
 								</Badge>
-							) : null}
+							)}
 						</span>
-						{triggerLabel ? null : (
-							<ChevronDown className="h-4 w-4 shrink-0" aria-hidden="true" />
-						)}
+						<ChevronDown className="h-4 w-4 shrink-0" aria-hidden="true" />
 					</Button>
-				</SheetTrigger>
-				<SheetContent side="left" className="w-[20rem] max-w-[90vw] gap-0 p-0">
-					<SheetHeader className="border-b px-4 py-4">
-						<SheetTitle className="text-sm">Settings</SheetTitle>
-					</SheetHeader>
-					<div className="min-h-0 flex-1 overflow-y-auto px-2 py-3">
-						{navGroups.map((group) => (
-							<div key={group.heading ?? "settings"} className="pb-3">
-								{group.heading ? (
-									<div className="px-2 pb-1.5 text-xs font-medium text-muted-foreground">
-										{group.heading}
-									</div>
-								) : null}
-								<div className="space-y-1">
-									{group.items.map((item) => {
-										const active = activeItem?.href === item.href;
-										const Icon = item.icon;
-
-										return (
-											<Link
-												key={item.href}
-												href={item.href}
-												prefetch={false}
-												aria-current={active ? "page" : undefined}
-												onClick={() => setOpen(false)}
-												className={cn(
-													"flex min-h-9 items-center gap-2 rounded-md px-2 text-sm transition-colors",
-													active
-														? "bg-muted font-medium text-foreground"
-														: "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
-												)}
-											>
-												{Icon ? <Icon className="h-4 w-4 shrink-0" /> : null}
-												<span className="min-w-0 flex-1 truncate">{item.label}</span>
-												{item.badge ? (
-													<Badge
-														variant="outline"
-														className="h-5 px-1.5 text-[10px] uppercase tracking-wide"
-													>
-														{item.badge}
-													</Badge>
-												) : null}
-											</Link>
-										);
-									})}
-								</div>
-							</div>
-						))}
-					</div>
-				</SheetContent>
-			</Sheet>
+				</DropdownMenuTrigger>
+				<DropdownMenuContent
+					align="start"
+					className="w-[min(24rem,calc(100vw-2rem))]"
+				>
+					{navGroups.map((group, index) => (
+						<div key={`${group.heading ?? "group"}-${index}`}>
+							{group.heading ? (
+								<DropdownMenuLabel className="text-xs uppercase tracking-wide text-muted-foreground">
+									{group.heading}
+								</DropdownMenuLabel>
+							) : null}
+							{group.items.map((item) => {
+								const active = activeItem?.href === item.href;
+								return (
+									<DropdownMenuItem key={item.href} asChild>
+										<Link href={item.href} className="flex w-full items-center gap-2">
+											<span className="min-w-0 flex-1 truncate">
+												{item.label}
+											</span>
+											{item.badge ? (
+												<Badge
+													variant="outline"
+													className="h-5 px-1.5 text-[10px] uppercase tracking-wide"
+												>
+													{item.badge}
+												</Badge>
+											) : null}
+											{active ? <Check className="h-4 w-4 shrink-0" /> : null}
+										</Link>
+									</DropdownMenuItem>
+								);
+							})}
+							{index < navGroups.length - 1 ? <DropdownMenuSeparator /> : null}
+						</div>
+					))}
+				</DropdownMenuContent>
+			</DropdownMenu>
 		</div>
 	);
 }

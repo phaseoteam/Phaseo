@@ -17,10 +17,12 @@ import { audioTranscriptionRoutes } from "./audio-transcription";
 import { audioTranslationRoutes } from "./audio-translation";
 import { imagesGenerationsRoutes } from "./images-generations";
 import { imagesEditsRoutes } from "./images-edits";
-import { disabledMusicRoutes } from "./feature-disabled";
-import { videosRoutes } from "./videos";
 import { batchRoutes } from "./batches";
 import { filesRoutes } from "./files";
+import {
+    disabledMusicRoutes,
+    disabledVideosRoutes,
+} from "./feature-disabled";
 import { ocrRoutes } from "./ocr";
 import { asyncJobsRoutes } from "./async-jobs";
 
@@ -37,8 +39,8 @@ inferenceRouter.route("/audio/transcriptions", audioTranscriptionRoutes);
 inferenceRouter.route("/audio/translations", audioTranslationRoutes);
 inferenceRouter.route("/images/generations", imagesGenerationsRoutes);
 inferenceRouter.route("/images/edits", imagesEditsRoutes);
-inferenceRouter.route("/videos", videosRoutes);
-inferenceRouter.route("/video/generations", videosRoutes);
+inferenceRouter.route("/videos", disabledVideosRoutes);
+inferenceRouter.route("/video/generations", disabledVideosRoutes);
 inferenceRouter.route("/ocr", ocrRoutes);
 inferenceRouter.route("/music/generate", disabledMusicRoutes);
 inferenceRouter.route("/music/generations", disabledMusicRoutes);

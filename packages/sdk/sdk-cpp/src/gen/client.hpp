@@ -32,10 +32,3 @@ private:
 };
 
 } // namespace phaseo::gen
-
-#ifndef PHASEO_CPP_NAMESPACE_ALIAS
-#define PHASEO_CPP_NAMESPACE_ALIAS
-namespace phaseo {
-namespace gen = ::phaseo::gen;
-}
-#endif

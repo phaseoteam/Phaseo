@@ -332,6 +332,20 @@ function listApiKeys(Client $client, ?array $path = null, ?array $query = null, 
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
+function listBatchCapabilities(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/batches/capabilities";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listBatchCapabilitiesAlias(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/batch/capabilities";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
 function listBatches(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -346,6 +360,20 @@ function listBatchesAlias(Client $client, ?array $path = null, ?array $query = n
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
+function listBatchFiles(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/batches/files";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listBatchFilesAlias(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/batch/files";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
 function listBatchModels(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -357,6 +385,20 @@ function listBatchModelsAlias(Client $client, ?array $path = null, ?array $query
 {
 	$path = $path ?? [];
 	$resolvedPath = "/batch/models";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listBatchRequests(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/batches/{$path["batch_id"]}/requests";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listBatchRequestsAlias(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/batch/{$path["id"]}/requests";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
@@ -472,6 +514,34 @@ function retrieveBatchAlias(Client $client, ?array $path = null, ?array $query =
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
+function retrieveBatchFile(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/batches/files/{$path["file_id"]}";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function retrieveBatchFileAlias(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/batch/files/{$path["file_id"]}";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function retrieveBatchFileContent(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/batches/files/{$path["file_id"]}/content";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function retrieveBatchFileContentAlias(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/batch/files/{$path["file_id"]}/content";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
 function retrieveFile(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -498,6 +568,20 @@ function updateWorkspace(Client $client, ?array $path = null, ?array $query = nu
 	$path = $path ?? [];
 	$resolvedPath = "/workspaces/{$path["id"]}";
 	return $client->request("PATCH", $resolvedPath, $query, $headers, $body);
+}
+
+function uploadBatchFile(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/batches/files";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
+function uploadBatchFileAlias(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/batch/files";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
 function uploadFile(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)

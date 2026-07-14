@@ -178,6 +178,61 @@ Useful optional environment:
 - `LIVE_VIDEO_BATCH_BATCH_POLL_DELAY_MS`
 - `LIVE_VIDEO_BATCH_BATCH_REQUEST_COUNT`
 
+## Native Batch Provider Matrix
+
+This suite runs one minimal text batch independently against OpenAI, Gemini, Anthropic, xAI, and Mistral. It is disabled unless both live flags are set, so collecting the suite cannot create provider spend.
+
+Each provider suite verifies:
+
+- the gateway returns a public batch ID and persists the native provider ID
+- a positive wallet reservation exists after creation
+- reconciliation reaches normalized `completed` state and records `billed_at`
+- authoritative cost exactly matches `settled_amount_nanos`
+- the reservation reaches `captured`
+- completed request rows are available through `/batches/:id/requests`
+- a managed `batch.completed` webhook arrives with a stable event ID and valid HMAC signature
+
+The harness creates one temporary managed webhook endpoint backed by webhook.site and marks it deleted in `afterAll`. Provider batches and billing records are intentionally retained as audit evidence.
+
+Required environment:
+
+- `LIVE_RUN=1`
+- `LIVE_BATCH_PROVIDER_MATRIX_RUN=1`
+- `GATEWAY_URL=https://api.phaseo.app/v1`
+- `GATEWAY_API_KEY` for a workspace in the Statsig Batch API admin segment
+- `SUPABASE_URL` or `NEXT_PUBLIC_SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `ASYNC_WEBHOOK_SECRET_ENCRYPTION_KEY` matching the deployed Worker secret
+
+Run all five sequentially:
+
+```bash
+pnpm --filter @phaseo/gateway-api test:live:batch-providers
+```
+
+Run one provider first:
+
+```bash
+LIVE_BATCH_PROVIDER_MATRIX_PROVIDERS=openai pnpm --filter @phaseo/gateway-api test:live:batch-providers
+```
+
+Provider IDs are `openai`, `google-ai-studio`, `anthropic`, `x-ai`, and `mistral`. On PowerShell, set the variable first with `$env:LIVE_BATCH_PROVIDER_MATRIX_PROVIDERS = "openai"`.
+
+Useful optional environment:
+
+- `LIVE_BATCH_PROVIDER_MATRIX_REQUEST_COUNT=1`
+- `LIVE_BATCH_PROVIDER_MATRIX_DB_POLL_ATTEMPTS=90`
+- `LIVE_BATCH_PROVIDER_MATRIX_DB_POLL_DELAY_MS=30000`
+- `LIVE_BATCH_PROVIDER_MATRIX_WEBHOOK_POLL_ATTEMPTS=30`
+- `LIVE_BATCH_PROVIDER_MATRIX_WEBHOOK_POLL_DELAY_MS=5000`
+- `LIVE_BATCH_PROVIDER_MATRIX_OPENAI_MODEL=openai/gpt-5.4-nano`
+- `LIVE_BATCH_PROVIDER_MATRIX_GEMINI_MODEL=google/gemini-2.5-flash-lite`
+- `LIVE_BATCH_PROVIDER_MATRIX_ANTHROPIC_MODEL=anthropic/claude-haiku-4.5`
+- `LIVE_BATCH_PROVIDER_MATRIX_XAI_MODEL=spacex-ai/grok-4.3`
+- `LIVE_BATCH_PROVIDER_MATRIX_MISTRAL_MODEL=mistral/mistral-small-4`
+
+Deploy the Worker and confirm the Statsig admin gate before enabling the live flags. Start with OpenAI, inspect its reservation and webhook result, then run the remaining providers individually before running the complete matrix.
+
 ## Provider Endpoint Matrix
 
 This suite discovers active provider/model capability pairs from `/models`, picks a low-cost model candidate for each provider + supported data-plane surface, and exercises one minimal valid request per surface.

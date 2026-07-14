@@ -492,6 +492,32 @@ describe("video-finalization", () => {
 		);
 	});
 
+	it("does not legacy-charge when reservation capture was already applied", async () => {
+		captureWalletReservationMock.mockResolvedValue({
+			applied: false,
+			alreadyApplied: true,
+			status: "captured",
+			amountNanos: 5000000,
+		});
+
+		const result = await finalizeVideoJob({
+			workspaceId: "team_1",
+			videoId: "video_captured_retry",
+			providerId: "openai",
+			status: "completed",
+			model: "openai/sora-2",
+			seconds: 4,
+		});
+
+		expect(result).toEqual({
+			status: "completed",
+			charged: true,
+			reason: "captured",
+		});
+		expect(recordUsageAndChargeMock).not.toHaveBeenCalled();
+		expect(markVideoJobBilledMock).toHaveBeenCalledWith("team_1", "video_captured_retry");
+	});
+
 	it("falls back to legacy debit only when reservation is not found", async () => {
 		captureWalletReservationMock.mockResolvedValue({
 			applied: false,
@@ -536,6 +562,43 @@ describe("video-finalization", () => {
 			}),
 		);
 		expect(markVideoJobBilledMock).toHaveBeenCalledWith("team_2", "video_2");
+	});
+
+	it("does not legacy-charge again when reservation is missing but the video is already billed", async () => {
+		captureWalletReservationMock.mockResolvedValue({
+			applied: false,
+			alreadyApplied: false,
+			status: "not_found",
+			amountNanos: 0,
+		});
+		isVideoJobBilledMock.mockResolvedValue(true);
+		loadPriceCardMock.mockResolvedValue({
+			provider: "openai",
+			model: "openai/sora-2",
+			endpoint: "video.generation",
+			currency: "USD",
+			effective_from: null,
+			version: null,
+			rules: [],
+		});
+
+		const result = await finalizeVideoJob({
+			workspaceId: "team_2",
+			videoId: "video_legacy_retry",
+			providerId: "openai",
+			status: "completed",
+			model: "openai/sora-2",
+			seconds: 4,
+		});
+
+		expect(result).toEqual({
+			status: "completed",
+			charged: false,
+			pricedUsage: undefined,
+			reason: "already_billed",
+		});
+		expect(recordUsageAndChargeMock).not.toHaveBeenCalled();
+		expect(markVideoJobBilledMock).toHaveBeenCalledWith("team_2", "video_legacy_retry");
 	});
 
 	it("does not legacy-charge when capture RPC throws", async () => {

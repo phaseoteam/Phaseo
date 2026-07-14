@@ -3,17 +3,20 @@
 // How: Persist/read batch metadata from shared async-operations storage.
 
 import {
+	claimAsyncOperationsForReconciliation,
+	findAsyncOperationByNativeId,
 	getAsyncOperation,
 	isAsyncOperationBilled,
-	listAsyncOperations,
 	listTeamAsyncOperations,
 	markAsyncOperationBilled,
 	patchAsyncOperationMeta,
 	setAsyncOperationStatus,
+	updateAsyncOperationReconciliation,
 	upsertAsyncOperation,
 } from "@core/async-operations";
 
 export type BatchJobMeta = {
+	resource?: "job";
 	provider: string;
 	requestId?: string | null;
 	sessionId?: string | null;
@@ -24,6 +27,7 @@ export type BatchJobMeta = {
 	endpoint?: string | null;
 	completionWindow?: string | null;
 	inputFileId?: string | null;
+	inputMode?: "file" | "requests" | null;
 	outputFileId?: string | null;
 	errorFileId?: string | null;
 	requestCounts?: {
@@ -37,11 +41,7 @@ export type BatchJobMeta = {
 	billingReason?: string | null;
 	finalizedAt?: string | null;
 	pricedUsage?: Record<string, unknown> | null;
-	estimatedUsage?: Record<string, unknown> | null;
 	pricingBreakdown?: Record<string, unknown> | null;
-	reservationId?: string | null;
-	reservedNanos?: number | null;
-	reservationStatus?: string | null;
 	webhook?: Record<string, unknown> | null;
 	webhookDeliveries?: Record<string, string> | null;
 	webhookAttempts?: Record<string, unknown>[] | null;
@@ -50,10 +50,11 @@ export type BatchJobMeta = {
 	lastWebhookProgress?: number | null;
 	lastWebhookProgressAt?: string | null;
 	lastWebhookDispatchedAt?: string | null;
-	lastPolledAt?: string | null;
-	polledStatus?: string | null;
 	keySource?: "gateway" | "byok" | null;
 	byokKeyId?: string | null;
+	reservationId?: string | null;
+	reservedNanos?: number | null;
+	reservationStatus?: string | null;
 	createdAt?: number;
 };
 
@@ -69,6 +70,8 @@ export type BatchJobRecord = {
 	status: string | null;
 	billedAt: string | null;
 	meta: BatchJobMeta | null;
+	nextReconcileAt: string | null;
+	reconcileAttempts: number;
 	updatedAt: string | null;
 	createdAt: string | null;
 };
@@ -85,13 +88,52 @@ export type BatchFileMeta = {
 };
 
 const BATCH_FILE_INTERNAL_PREFIX = "__file__:";
+const BATCH_RECONCILE_STATUSES = [
+	null,
+	"submitting",
+	"validating",
+	"pending",
+	"in_progress",
+	"finalizing",
+	"cancelling",
+	"completed",
+	"failed",
+	"expired",
+	"cancelled",
+	"canceled",
+];
+
+function nextIsoFromNow(delaySeconds: number): string {
+	return new Date(Date.now() + Math.max(0, Math.trunc(delaySeconds)) * 1_000).toISOString();
+}
+
+function initialBatchReconcileAt(status?: string | null): string | null {
+	const normalized = String(status ?? "").toLowerCase();
+	if (
+		normalized === "completed" ||
+		normalized === "failed" ||
+		normalized === "expired" ||
+		normalized === "cancelled" ||
+		normalized === "canceled"
+	) {
+		return null;
+	}
+	return nextIsoFromNow(5 * 60);
+}
+
+function toNonEmptyString(value: unknown): string | null {
+	if (typeof value !== "string") return null;
+	const trimmed = value.trim();
+	return trimmed.length > 0 ? trimmed : null;
+}
 
 function parseBatchMeta(value: unknown): BatchJobMeta | null {
 	if (!value || typeof value !== "object" || Array.isArray(value)) return null;
 	const source = value as Record<string, unknown>;
+	if (source.resource === "file") return null;
 	const provider = typeof source.provider === "string" ? source.provider.trim() : "";
 	if (!provider) return null;
-	const out: BatchJobMeta = { provider };
+	const out: BatchJobMeta = { provider, resource: "job" };
 	if (typeof source.requestId === "string") out.requestId = source.requestId;
 	if (typeof source.request_id === "string") out.requestId = source.request_id;
 	if (typeof source.sessionId === "string") out.sessionId = source.sessionId;
@@ -104,6 +146,10 @@ function parseBatchMeta(value: unknown): BatchJobMeta | null {
 	if (typeof source.endpoint === "string") out.endpoint = source.endpoint;
 	if (typeof source.completionWindow === "string") out.completionWindow = source.completionWindow;
 	if (typeof source.inputFileId === "string") out.inputFileId = source.inputFileId;
+	if (source.inputMode === "file" || source.inputMode === "requests") out.inputMode = source.inputMode;
+	if (source.inputMode === "inline") out.inputMode = "requests";
+	if (source.input_mode === "file" || source.input_mode === "requests") out.inputMode = source.input_mode;
+	if (source.input_mode === "inline") out.inputMode = "requests";
 	if (typeof source.outputFileId === "string") out.outputFileId = source.outputFileId;
 	if (typeof source.errorFileId === "string") out.errorFileId = source.errorFileId;
 	const requestCountsRaw =
@@ -134,24 +180,12 @@ function parseBatchMeta(value: unknown): BatchJobMeta | null {
 	if (source.priced_usage && typeof source.priced_usage === "object" && !Array.isArray(source.priced_usage)) {
 		out.pricedUsage = source.priced_usage as Record<string, unknown>;
 	}
-	if (source.estimatedUsage && typeof source.estimatedUsage === "object" && !Array.isArray(source.estimatedUsage)) {
-		out.estimatedUsage = source.estimatedUsage as Record<string, unknown>;
-	}
-	if (source.estimated_usage && typeof source.estimated_usage === "object" && !Array.isArray(source.estimated_usage)) {
-		out.estimatedUsage = source.estimated_usage as Record<string, unknown>;
-	}
 	if (source.pricingBreakdown && typeof source.pricingBreakdown === "object" && !Array.isArray(source.pricingBreakdown)) {
 		out.pricingBreakdown = source.pricingBreakdown as Record<string, unknown>;
 	}
 	if (source.pricing_breakdown && typeof source.pricing_breakdown === "object" && !Array.isArray(source.pricing_breakdown)) {
 		out.pricingBreakdown = source.pricing_breakdown as Record<string, unknown>;
 	}
-	if (typeof source.reservationId === "string") out.reservationId = source.reservationId;
-	if (typeof source.reservation_id === "string") out.reservationId = source.reservation_id;
-	if (typeof source.reservedNanos === "number") out.reservedNanos = source.reservedNanos;
-	if (typeof source.reserved_nanos === "number") out.reservedNanos = source.reserved_nanos;
-	if (typeof source.reservationStatus === "string") out.reservationStatus = source.reservationStatus;
-	if (typeof source.reservation_status === "string") out.reservationStatus = source.reservation_status;
 	if (source.webhook && typeof source.webhook === "object" && !Array.isArray(source.webhook)) {
 		out.webhook = source.webhook as Record<string, unknown>;
 	}
@@ -177,12 +211,14 @@ function parseBatchMeta(value: unknown): BatchJobMeta | null {
 	if (typeof source.last_webhook_progress_at === "string") out.lastWebhookProgressAt = source.last_webhook_progress_at;
 	if (typeof source.lastWebhookDispatchedAt === "string") out.lastWebhookDispatchedAt = source.lastWebhookDispatchedAt;
 	if (typeof source.last_webhook_dispatched_at === "string") out.lastWebhookDispatchedAt = source.last_webhook_dispatched_at;
-	if (typeof source.lastPolledAt === "string") out.lastPolledAt = source.lastPolledAt;
-	if (typeof source.last_polled_at === "string") out.lastPolledAt = source.last_polled_at;
-	if (typeof source.polledStatus === "string") out.polledStatus = source.polledStatus;
-	if (typeof source.polled_status === "string") out.polledStatus = source.polled_status;
 	if (source.keySource === "gateway" || source.keySource === "byok") out.keySource = source.keySource;
 	if (typeof source.byokKeyId === "string") out.byokKeyId = source.byokKeyId;
+	if (typeof source.reservationId === "string") out.reservationId = source.reservationId;
+	if (typeof source.reservation_id === "string") out.reservationId = source.reservation_id;
+	if (typeof source.reservedNanos === "number") out.reservedNanos = source.reservedNanos;
+	if (typeof source.reserved_nanos === "number") out.reservedNanos = source.reserved_nanos;
+	if (typeof source.reservationStatus === "string") out.reservationStatus = source.reservationStatus;
+	if (typeof source.reservation_status === "string") out.reservationStatus = source.reservation_status;
 	if (typeof source.createdAt === "number") out.createdAt = source.createdAt;
 	return out;
 }
@@ -218,6 +254,8 @@ function mergeDbBatchMeta(record: Awaited<ReturnType<typeof getAsyncOperation>>)
 
 function toBatchJobRecord(record: Awaited<ReturnType<typeof getAsyncOperation>>): BatchJobRecord | null {
 	if (!record) return null;
+	const meta = mergeDbBatchMeta(record);
+	if (!meta) return null;
 	return {
 		workspaceId: record.workspaceId,
 		batchId: record.internalId,
@@ -229,10 +267,25 @@ function toBatchJobRecord(record: Awaited<ReturnType<typeof getAsyncOperation>>)
 		model: record.model,
 		status: record.status,
 		billedAt: record.billedAt,
-		meta: mergeDbBatchMeta(record),
+		meta,
+		nextReconcileAt: record.nextReconcileAt,
+		reconcileAttempts: record.reconcileAttempts,
 		updatedAt: record.updatedAt,
 		createdAt: record.createdAt,
 	};
+}
+
+export function resolveBatchProviderNativeId(args: {
+	batchId: string;
+	nativeId?: string | null;
+	meta?: BatchJobMeta | null;
+}): string {
+	return (
+		toNonEmptyString(args.nativeId) ??
+		toNonEmptyString(args.meta?.nativeBatchId) ??
+		toNonEmptyString(args.batchId) ??
+		args.batchId
+	);
 }
 
 export async function saveBatchJobMeta(
@@ -241,7 +294,7 @@ export async function saveBatchJobMeta(
 	meta: BatchJobMeta,
 ): Promise<void> {
 	if (!workspaceId || !batchId) return;
-	const payload = { ...meta, createdAt: meta.createdAt ?? Date.now() };
+	const payload = { ...meta, resource: "job" as const, createdAt: meta.createdAt ?? Date.now() };
 	await upsertAsyncOperation({
 		workspaceId,
 		kind: "batch",
@@ -249,11 +302,12 @@ export async function saveBatchJobMeta(
 		requestId: payload.requestId ?? null,
 		sessionId: payload.sessionId ?? null,
 		appId: payload.appId ?? null,
-		nativeId: payload.nativeBatchId ?? batchId,
+		nativeId: payload.nativeBatchId ?? null,
 		provider: payload.provider,
 		model: payload.model ?? null,
 		status: payload.status ?? null,
 		meta: payload as unknown as Record<string, unknown>,
+		nextReconcileAt: initialBatchReconcileAt(payload.status),
 	});
 }
 
@@ -266,6 +320,15 @@ export async function getBatchJobMeta(workspaceId: string, batchId: string): Pro
 export async function getBatchJobRecord(workspaceId: string, batchId: string): Promise<BatchJobRecord | null> {
 	if (!workspaceId || !batchId) return null;
 	const record = await getAsyncOperation(workspaceId, "batch", batchId);
+	return toBatchJobRecord(record);
+}
+
+export async function findBatchJobRecordByNativeId(
+	provider: string,
+	nativeId: string,
+): Promise<BatchJobRecord | null> {
+	if (!provider || !nativeId) return null;
+	const record = await findAsyncOperationByNativeId("batch", provider, nativeId);
 	return toBatchJobRecord(record);
 }
 
@@ -308,11 +371,23 @@ export async function markBatchJobBilled(workspaceId: string, batchId: string): 
 	return markAsyncOperationBilled(workspaceId, "batch", batchId);
 }
 
-export async function listPendingBatchJobs(limit = 100): Promise<BatchJobRecord[]> {
-	const records = await listAsyncOperations({
+export async function listPendingBatchJobs(
+	limit = 100,
+	options?: {
+		workerId?: string;
+		leaseSeconds?: number;
+		shardCount?: number;
+		shardIndex?: number;
+	},
+): Promise<BatchJobRecord[]> {
+	const records = await claimAsyncOperationsForReconciliation({
 		kind: "batch",
 		limit,
-		unbilledOnly: true,
+		statuses: BATCH_RECONCILE_STATUSES,
+		workerId: options?.workerId,
+		leaseSeconds: options?.leaseSeconds,
+		shardCount: options?.shardCount,
+		shardIndex: options?.shardIndex,
 	});
 	return records
 		.map((record) => toBatchJobRecord(record))
@@ -321,6 +396,7 @@ export async function listPendingBatchJobs(limit = 100): Promise<BatchJobRecord[
 			const status = String(record.status ?? "").toLowerCase();
 			return (
 				status === "" ||
+				status === "submitting" ||
 				status === "validating" ||
 				status === "pending" ||
 				status === "in_progress" ||
@@ -367,6 +443,7 @@ export async function setBatchJobStatus(
 		internalId: batchId,
 		status,
 		metaPatch,
+		nextReconcileAt: initialBatchReconcileAt(status),
 	});
 }
 
@@ -382,5 +459,21 @@ export async function patchBatchJobMeta(
 		kind: "batch",
 		internalId: batchId,
 		metaPatch,
+	});
+}
+
+export async function updateBatchJobReconciliation(args: {
+	workspaceId: string;
+	batchId: string;
+	nextReconcileAt?: string | null;
+	lastError?: string | null;
+}): Promise<void> {
+	if (!args.workspaceId || !args.batchId) return;
+	await updateAsyncOperationReconciliation({
+		workspaceId: args.workspaceId,
+		kind: "batch",
+		internalId: args.batchId,
+		nextReconcileAt: args.nextReconcileAt,
+		lastError: args.lastError,
 	});
 }

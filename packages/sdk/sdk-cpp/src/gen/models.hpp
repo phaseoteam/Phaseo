@@ -320,21 +320,69 @@ struct BatchModelsResponse {
 	std::string object;
 };
 
+struct BatchProviderCapability {
+	std::string documentation_url;
+	std::vector<std::any> gateway_input_modes;
+	std::string id;
+	std::string name;
+	std::vector<std::any> native_input_modes;
+	std::optional<std::string> notes;
+	std::any status;
+};
+
 struct BatchRequest {
 	std::string completion_window;
 	std::map<std::string, std::any> debug;
 	std::string endpoint;
 	std::string input_file_id;
+	std::vector<std::map<std::string, std::any>> items;
+	std::optional<int> max_tokens;
 	std::map<std::string, std::any> metadata;
+	std::string model;
+	std::vector<std::string> prompts;
 	std::map<std::string, std::any> provider;
+	std::vector<std::map<std::string, std::any>> requests;
 	std::string session_id;
+	std::string system;
+	std::optional<double> temperature;
 	std::map<std::string, std::any> webhook;
+	std::string webhook_endpoint_id;
 };
 
 struct BatchRequestCounts {
 	std::optional<int> completed;
 	std::optional<int> failed;
 	std::optional<int> total;
+};
+
+struct BatchRequestItem {
+	std::map<std::string, std::any> body;
+	std::string custom_id;
+	std::string method;
+	std::string url;
+};
+
+struct BatchRequestRow {
+	std::optional<std::string> completed_at;
+	std::optional<int> cost_nanos;
+	std::optional<double> cost_usd;
+	std::optional<std::string> created_at;
+	std::string custom_id;
+	std::optional<std::string> endpoint;
+	std::optional<std::map<std::string, std::any>> error_body;
+	std::string id;
+	std::map<std::string, std::any> meta;
+	std::optional<std::string> method;
+	std::optional<std::string> model;
+	std::optional<std::string> native_batch_id;
+	std::string provider;
+	std::optional<std::string> request_body_hash;
+	std::optional<int> request_index;
+	std::optional<std::map<std::string, std::any>> response_body;
+	std::optional<int> response_status;
+	std::string status;
+	std::optional<std::string> updated_at;
+	std::optional<std::map<std::string, std::any>> usage;
 };
 
 struct BatchResponse {
@@ -416,7 +464,7 @@ struct ChatCompletionsRequest {
 	std::optional<bool> parallel_tool_calls;
 	std::optional<double> presence_penalty;
 	std::optional<std::string> prompt_cache_key;
-	std::map<std::string, std::any> provider;
+	std::any provider;
 	std::map<std::string, std::any> provider_options;
 	std::map<std::string, std::any> reasoning;
 	std::any response_format;
@@ -1392,10 +1440,3 @@ struct WorkspaceUpdateRequest {
 };
 
 } // namespace phaseo::gen
-
-#ifndef PHASEO_CPP_NAMESPACE_ALIAS
-#define PHASEO_CPP_NAMESPACE_ALIAS
-namespace phaseo {
-namespace gen = ::phaseo::gen;
-}
-#endif
