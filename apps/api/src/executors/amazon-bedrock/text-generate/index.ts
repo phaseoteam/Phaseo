@@ -64,10 +64,8 @@ async function executeBedrockOpenAI(
 			? irToOpenAIResponses(irRequest, model, providerId, args.capabilityParams)
 			: irToOpenAIChat(irRequest, model, providerId, args.capabilityParams);
 
-		// Stream upstream by default so non-stream callers still capture first-token latency
-		// and generation timing from the buffered stream path.
-		payload.stream = true;
-		if (route === "chat") {
+		payload.stream = Boolean(irRequest.stream);
+		if (route === "chat" && payload.stream) {
 			payload.stream_options = {
 				...(payload.stream_options ?? {}),
 				include_usage: true,
