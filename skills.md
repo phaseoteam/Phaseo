@@ -23,7 +23,7 @@ An agent following this file should have enough information to implement:
 
 ## Canonical Gateway Contract
 
-- Base URL: `https://api.phaseo.ai/v1`
+- Base URL: `https://api.phaseo.app/v1`
 - Auth header: `Authorization: Bearer <PHASEO_API_KEY or OAuth access token>`
 - Optional attribution:
   - `x-title: <app-name>`
@@ -378,7 +378,7 @@ At integration boundary, normalize to:
 
 ## Definition of Done
 
-- Integration uses external gateway contract (`https://api.phaseo.ai/v1`) correctly.
+- Integration uses external gateway contract (`https://api.phaseo.app/v1`) correctly.
 - All in-scope control + generation surfaces are wired behind one coherent client layer.
 - Chat app supports model discovery + Responses API conversation continuity.
 - Async surfaces (video/music) include creation + polling and terminal handling.

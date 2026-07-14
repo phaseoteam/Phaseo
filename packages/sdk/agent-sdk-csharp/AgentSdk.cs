@@ -602,7 +602,7 @@ public static class AgentSdk
                           options.ClientOptions.TryGetValue("baseUrl", out var baseUrlValue)
                 ? baseUrlValue?.ToString()
                 : Environment.GetEnvironmentVariable("PHASEO_BASE_URL");
-            client = new PhaseoSdk.Phaseo(apiKey: apiKey, basePath: baseUrl ?? "https://api.phaseo.ai/v1");
+            client = new PhaseoSdk.Phaseo(apiKey: apiKey, basePath: baseUrl ?? "https://api.phaseo.app/v1");
         }
 
         return new GatewayAgentClient(client, options);

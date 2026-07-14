@@ -14,7 +14,7 @@ import (
 	gen "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/src/gen"
 )
 
-const defaultBaseURL = "https://api.phaseo.ai/v1"
+const defaultBaseURL = "https://api.phaseo.app/v1"
 
 type ChatCompletionsRequest = gen.ChatCompletionsRequest
 type ResponsesRequest = gen.ResponsesRequest

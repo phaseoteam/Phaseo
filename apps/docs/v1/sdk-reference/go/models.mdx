@@ -14,7 +14,7 @@ import (
   phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
 )
 
-client := phaseo.New(apiKey, "https://api.phaseo.ai/v1")
+client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
 models, err := client.GetModels(context.Background(), map[string]string{
   "provider": "anthropic",
   "provider_status": "beta,not_ready",

@@ -364,17 +364,17 @@ describe("video webhook helpers", () => {
 	});
 
 	it("verifies Alibaba webhook bearer or token auth with timing-safe comparison", () => {
-		const bearerReq = new Request("https://api.phaseo.ai/internal/video-webhooks/alibaba", {
+		const bearerReq = new Request("https://api.phaseo.app/internal/video-webhooks/alibaba", {
 			headers: {
 				authorization: "Bearer alibaba-secret",
 			},
 		});
-		const tokenReq = new Request("https://api.phaseo.ai/internal/video-webhooks/alibaba", {
+		const tokenReq = new Request("https://api.phaseo.app/internal/video-webhooks/alibaba", {
 			headers: {
 				"x-webhook-token": "alibaba-secret",
 			},
 		});
-		const badReq = new Request("https://api.phaseo.ai/internal/video-webhooks/alibaba", {
+		const badReq = new Request("https://api.phaseo.app/internal/video-webhooks/alibaba", {
 			headers: {
 				"x-webhook-token": "wrong-secret",
 			},

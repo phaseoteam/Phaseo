@@ -9,7 +9,7 @@ Video generation is asynchronous by design. This recipe shows the minimum applic
 
 <CodeGroup>
 ```bash cURL
-curl https://api.phaseo.ai/v1/videos \
+curl https://api.phaseo.app/v1/videos \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -24,7 +24,7 @@ curl https://api.phaseo.ai/v1/videos \
 ```
 
 ```typescript TypeScript
-const response = await fetch("https://api.phaseo.ai/v1/videos", {
+const response = await fetch("https://api.phaseo.app/v1/videos", {
   method: "POST",
   headers: {
     Authorization: "Bearer YOUR_API_KEY",
@@ -49,7 +49,7 @@ console.log(job.video_id);
 import requests
 
 response = requests.post(
-    "https://api.phaseo.ai/v1/videos",
+    "https://api.phaseo.app/v1/videos",
     headers={
         "Authorization": "Bearer YOUR_API_KEY",
         "Content-Type": "application/json",
@@ -89,7 +89,7 @@ func main() {
     }
   }`)
 
-  req, _ := http.NewRequest("POST", "https://api.phaseo.ai/v1/videos", bytes.NewBuffer(body))
+  req, _ := http.NewRequest("POST", "https://api.phaseo.app/v1/videos", bytes.NewBuffer(body))
   req.Header.Set("Authorization", "Bearer YOUR_API_KEY")
   req.Header.Set("Content-Type", "application/json")
 
@@ -122,13 +122,13 @@ var content = new StringContent("""
 }
 """, Encoding.UTF8, "application/json");
 
-var response = await client.PostAsync("https://api.phaseo.ai/v1/videos", content);
+var response = await client.PostAsync("https://api.phaseo.app/v1/videos", content);
 Console.WriteLine(await response.Content.ReadAsStringAsync());
 ```
 
 ```php PHP
 <?php
-$ch = curl_init('https://api.phaseo.ai/v1/videos');
+$ch = curl_init('https://api.phaseo.app/v1/videos');
 curl_setopt_array($ch, [
     CURLOPT_POST => true,
     CURLOPT_RETURNTRANSFER => true,
@@ -158,7 +158,7 @@ require 'net/http'
 require 'json'
 require 'uri'
 
-uri = URI('https://api.phaseo.ai/v1/videos')
+uri = URI('https://api.phaseo.app/v1/videos')
 request = Net::HTTP::Post.new(uri)
 request['Authorization'] = 'Bearer YOUR_API_KEY'
 request['Content-Type'] = 'application/json'
@@ -188,12 +188,12 @@ Your worker or application can poll:
 
 <CodeGroup>
 ```bash cURL
-curl https://api.phaseo.ai/v1/videos/VIDEO_ID \
+curl https://api.phaseo.app/v1/videos/VIDEO_ID \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
 ```typescript TypeScript
-const response = await fetch("https://api.phaseo.ai/v1/videos/VIDEO_ID", {
+const response = await fetch("https://api.phaseo.app/v1/videos/VIDEO_ID", {
   headers: {
     Authorization: "Bearer YOUR_API_KEY",
   },
@@ -207,7 +207,7 @@ console.log(status.status);
 import requests
 
 response = requests.get(
-    "https://api.phaseo.ai/v1/videos/VIDEO_ID",
+    "https://api.phaseo.app/v1/videos/VIDEO_ID",
     headers={
         "Authorization": "Bearer YOUR_API_KEY",
     },
@@ -226,7 +226,7 @@ import (
 )
 
 func main() {
-  req, _ := http.NewRequest("GET", "https://api.phaseo.ai/v1/videos/VIDEO_ID", nil)
+  req, _ := http.NewRequest("GET", "https://api.phaseo.app/v1/videos/VIDEO_ID", nil)
   req.Header.Set("Authorization", "Bearer YOUR_API_KEY")
 
   resp, err := http.DefaultClient.Do(req)
@@ -245,13 +245,13 @@ using System.Net.Http.Headers;
 using var client = new HttpClient();
 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "YOUR_API_KEY");
 
-var response = await client.GetAsync("https://api.phaseo.ai/v1/videos/VIDEO_ID");
+var response = await client.GetAsync("https://api.phaseo.app/v1/videos/VIDEO_ID");
 Console.WriteLine(await response.Content.ReadAsStringAsync());
 ```
 
 ```php PHP
 <?php
-$ch = curl_init('https://api.phaseo.ai/v1/videos/VIDEO_ID');
+$ch = curl_init('https://api.phaseo.app/v1/videos/VIDEO_ID');
 curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_HTTPHEADER => [
@@ -269,7 +269,7 @@ echo $response;
 require 'net/http'
 require 'uri'
 
-uri = URI('https://api.phaseo.ai/v1/videos/VIDEO_ID')
+uri = URI('https://api.phaseo.app/v1/videos/VIDEO_ID')
 request = Net::HTTP::Get.new(uri)
 request['Authorization'] = 'Bearer YOUR_API_KEY'
 

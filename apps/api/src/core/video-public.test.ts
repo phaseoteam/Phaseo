@@ -20,7 +20,7 @@ describe("video-public helpers", () => {
 		getBindingsMock.mockReset();
 		getBindingsMock.mockReturnValue({
 	KEY_PEPPER_ACTIVE: "test-secret",
-			GATEWAY_PUBLIC_BASE_URL: "https://api.phaseo.ai",
+			GATEWAY_PUBLIC_BASE_URL: "https://api.phaseo.app",
 		});
 	});
 
@@ -41,7 +41,7 @@ describe("video-public helpers", () => {
 
 	it("issues and verifies signed download URLs", async () => {
 		const signed = await issueSignedVideoDownloadUrl({
-			baseUrl: "https://api.phaseo.ai",
+			baseUrl: "https://api.phaseo.app",
 			workspaceId: "team_123",
 			videoId: "G-abc",
 			index: 1,
@@ -51,8 +51,8 @@ describe("video-public helpers", () => {
 
 		expect(signed?.download_url).toContain("/v1/videos/G-abc/content?index=1");
 		expect(signed?.expires_at).toBeTypeOf("number");
-		expect(buildVideoPollingUrl("https://api.phaseo.ai", "G-abc")).toBe("https://api.phaseo.ai/v1/videos/G-abc");
-		expect(buildVideoContentUrl("https://api.phaseo.ai", "G-abc", 1)).toBe("https://api.phaseo.ai/v1/videos/G-abc/content?index=1");
+		expect(buildVideoPollingUrl("https://api.phaseo.app", "G-abc")).toBe("https://api.phaseo.app/v1/videos/G-abc");
+		expect(buildVideoContentUrl("https://api.phaseo.app", "G-abc", 1)).toBe("https://api.phaseo.app/v1/videos/G-abc/content?index=1");
 
 		const verified = await verifySignedVideoDownloadRequest(String(signed?.download_url));
 		expect(verified).toEqual({

@@ -11,7 +11,7 @@ export interface PhaseoSettings {
   /**
    * Base URL for the Phaseo Gateway API.
 	 * If not provided, will use the PHASEO_BASE_URL environment variable.
-   * @default "https://api.phaseo.ai/v1"
+   * @default "https://api.phaseo.app/v1"
    */
   baseURL?: string;
 

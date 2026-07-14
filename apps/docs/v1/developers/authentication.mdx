@@ -34,7 +34,7 @@ Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
 Most HTTP clients let you set this once on the client. For example, with `fetch`:
 
 ```ts
-const response = await fetch("https://api.phaseo.ai/v1/chat/completions", {
+const response = await fetch("https://api.phaseo.app/v1/chat/completions", {
 	method: "POST",
 	headers: {
 		Authorization: `Bearer ${process.env.PHASEO_API_KEY}`,

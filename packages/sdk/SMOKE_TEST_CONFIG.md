@@ -25,7 +25,7 @@ PHASEO_API_KEY=your-phaseo-api-key
 Optional:
 
 ```bash
-PHASEO_BASE_URL=https://api.phaseo.ai/v1
+PHASEO_BASE_URL=https://api.phaseo.app/v1
 PHASEO_SMOKE_MODEL=openai/gpt-5.4-nano
 PHASEO_SMOKE_INPUT=Hi
 PHASEO_SMOKE_MAX_OUTPUT_TOKENS=32
@@ -67,4 +67,4 @@ If a smoke test fails with an invalid model error, confirm that the API key can 
 
 If a smoke test fails before making a request, confirm `PHASEO_API_KEY` is set in the process environment or in the `.env.local` file used by the specific package script.
 
-If a smoke test hits the wrong host, set `PHASEO_BASE_URL=https://api.phaseo.ai/v1`.
+If a smoke test hits the wrong host, set `PHASEO_BASE_URL=https://api.phaseo.app/v1`.

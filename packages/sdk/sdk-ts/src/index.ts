@@ -264,7 +264,7 @@ export type ChatCompletionsParams = Omit<ChatCompletionsRequest, "model" | "mess
   messages: ChatMessageInput[];
 };
 
-const DEFAULT_BASE_URL = "https://api.phaseo.ai/v1";
+const DEFAULT_BASE_URL = "https://api.phaseo.app/v1";
 
 function trimTrailingSlashes(value: string): string {
   let end = value.length;

@@ -25,7 +25,7 @@ using PhaseoSdk;
 
 var client = new Phaseo(
     apiKey: Environment.GetEnvironmentVariable("PHASEO_API_KEY"),
-    basePath: Environment.GetEnvironmentVariable("PHASEO_BASE_URL") ?? "https://api.phaseo.ai/v1"
+    basePath: Environment.GetEnvironmentVariable("PHASEO_BASE_URL") ?? "https://api.phaseo.app/v1"
 );
 
 var response = await client.CreateResponse(new Dictionary<string, object>
@@ -94,7 +94,7 @@ Console.WriteLine(resourceSocketUrl);
 ## Environment variables
 
 - `PHASEO_API_KEY` (required unless passed in code)
-- `PHASEO_BASE_URL` (optional, defaults to `https://api.phaseo.ai/v1`)
+- `PHASEO_BASE_URL` (optional, defaults to `https://api.phaseo.app/v1`)
 
 ## Regeneration and local checks
 

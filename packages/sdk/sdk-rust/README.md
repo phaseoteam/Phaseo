@@ -60,7 +60,7 @@ impl Transport for HttpTransport {
 fn main() {
     let api_key = std::env::var("PHASEO_API_KEY").expect("PHASEO_API_KEY is required");
     let base_url = std::env::var("PHASEO_BASE_URL")
-        .unwrap_or_else(|_| "https://api.phaseo.ai/v1".to_string());
+        .unwrap_or_else(|_| "https://api.phaseo.app/v1".to_string());
 
     let transport = HttpTransport;
     let mut client = Client::new(base_url, transport);
@@ -81,7 +81,7 @@ fn main() {
 ## Environment variables
 
 - `PHASEO_API_KEY` (required)
-- `PHASEO_BASE_URL` (optional, defaults to `https://api.phaseo.ai/v1`)
+- `PHASEO_BASE_URL` (optional, defaults to `https://api.phaseo.app/v1`)
 
 ## Regeneration and local checks
 

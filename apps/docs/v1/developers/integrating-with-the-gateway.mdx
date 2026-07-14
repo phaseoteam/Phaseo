@@ -67,7 +67,7 @@ Start with the request shape your app is most likely to keep. This example uses 
 
 <CodeGroup>
 ```bash cURL
-curl https://api.phaseo.ai/v1/chat/completions \
+curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -84,7 +84,7 @@ import OpenAI from "openai";
 
 const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
-  baseURL: "https://api.phaseo.ai/v1",
+  baseURL: "https://api.phaseo.app/v1",
 });
 
 const response = await client.chat.completions.create({
@@ -103,7 +103,7 @@ from openai import OpenAI
 
 client = OpenAI(
     api_key="YOUR_API_KEY",
-    base_url="https://api.phaseo.ai/v1",
+    base_url="https://api.phaseo.app/v1",
 )
 
 response = client.chat.completions.create(
@@ -128,7 +128,7 @@ import (
 )
 
 func main() {
-  client := phaseo.New("YOUR_API_KEY", "https://api.phaseo.ai/v1")
+  client := phaseo.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
 
   response, err := client.ChatCompletions(context.Background(), map[string]interface{}{
     "model": "google/gemma-3-27b:free",
@@ -209,7 +209,7 @@ Store your API key in environment variables for different environments:
 ```bash
 # .env.local
 PHASEO_API_KEY="phaseo_v1_sk_<kid>_<secret>"
-PHASEO_BASE_URL="https://api.phaseo.ai/v1"
+PHASEO_BASE_URL="https://api.phaseo.app/v1"
 ```
 
 When making requests, send the key in the `Authorization` header:

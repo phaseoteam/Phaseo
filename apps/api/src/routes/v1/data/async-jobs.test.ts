@@ -57,7 +57,7 @@ vi.mock("../../utils", () => ({
 describe("parseAsyncWebsocketOptions", () => {
 	it("uses safe defaults", () => {
 		expect(
-			parseAsyncWebsocketOptions(new URL("https://api.phaseo.ai/v1/async/video/job_123/ws")),
+			parseAsyncWebsocketOptions(new URL("https://api.phaseo.app/v1/async/video/job_123/ws")),
 		).toEqual({
 			intervalMs: 2500,
 			closeOnTerminal: true,
@@ -68,7 +68,7 @@ describe("parseAsyncWebsocketOptions", () => {
 		expect(
 			parseAsyncWebsocketOptions(
 				new URL(
-					"https://api.phaseo.ai/v1/async/batch/job_123/ws?interval_ms=100&close_on_terminal=false",
+					"https://api.phaseo.app/v1/async/batch/job_123/ws?interval_ms=100&close_on_terminal=false",
 				),
 			),
 		).toEqual({
@@ -78,7 +78,7 @@ describe("parseAsyncWebsocketOptions", () => {
 
 		expect(
 			parseAsyncWebsocketOptions(
-				new URL("https://api.phaseo.ai/v1/async/batch/job_123/ws?interval_ms=60000"),
+				new URL("https://api.phaseo.app/v1/async/batch/job_123/ws?interval_ms=60000"),
 			),
 		).toEqual({
 			intervalMs: 10000,

@@ -59,7 +59,7 @@ describe("video status helpers", () => {
 	});
 
 	it("expands list filters to match stored internal aliases", () => {
-		const url = new URL("https://api.phaseo.ai/v1/videos?status=processing,cancelled,expired");
+		const url = new URL("https://api.phaseo.app/v1/videos?status=processing,cancelled,expired");
 		expect(parseVideoListStatuses(url)).toEqual([
 			"processing",
 			"in_progress",

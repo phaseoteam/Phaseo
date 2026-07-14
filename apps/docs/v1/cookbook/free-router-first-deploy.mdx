@@ -17,7 +17,7 @@ Instead of picking one free model yourself, send requests to `phaseo/free`. Phas
 
 <CodeGroup>
 ```bash cURL
-curl https://api.phaseo.ai/v1/responses \
+curl https://api.phaseo.app/v1/responses \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -68,7 +68,7 @@ import (
 )
 
 func main() {
-  client := phaseo.New("YOUR_API_KEY", "https://api.phaseo.ai/v1")
+  client := phaseo.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
 
   response, err := client.GenerateResponse(context.Background(), phaseo.ResponsesRequest{
     Model: "phaseo/free",

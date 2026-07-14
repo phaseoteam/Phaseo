@@ -16,7 +16,7 @@ func TestSmokeChat(t *testing.T) {
 	}
 	baseURL := os.Getenv("PHASEO_BASE_URL")
 	if baseURL == "" {
-		baseURL = "https://api.phaseo.ai/v1"
+		baseURL = "https://api.phaseo.app/v1"
 	}
 
 	client := gen.NewClient(baseURL)

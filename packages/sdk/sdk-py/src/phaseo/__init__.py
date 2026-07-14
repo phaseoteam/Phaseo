@@ -18,7 +18,7 @@ from phaseo_devtools import TelemetryRecorder, create_phaseo_devtools
 from .model_ids import MODEL_IDS, ModelIds
 from .webhooks import compute_async_webhook_signature, verify_async_webhook_signature
 
-DEFAULT_BASE_URL = "https://api.phaseo.ai/v1"
+DEFAULT_BASE_URL = "https://api.phaseo.app/v1"
 DEFAULT_USER_AGENT = "phaseo-python"
 
 

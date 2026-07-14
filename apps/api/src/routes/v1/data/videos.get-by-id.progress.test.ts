@@ -94,7 +94,7 @@ describe("getVideoByIdHandler progress polling", () => {
 
 	it("persists provider progress before dispatching OpenAI-compatible progress webhooks", async () => {
 		const response = await getVideoByIdHandler(
-			new Request("https://api.phaseo.ai/v1/videos/video_progress"),
+			new Request("https://api.phaseo.app/v1/videos/video_progress"),
 		);
 
 		expect(response.status).toBe(200);

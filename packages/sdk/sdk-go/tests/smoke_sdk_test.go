@@ -18,7 +18,7 @@ func TestSmokeResponsesSDK(t *testing.T) {
 
 	baseURL := os.Getenv("PHASEO_BASE_URL")
 	if baseURL == "" {
-		baseURL = "https://api.phaseo.ai/v1"
+		baseURL = "https://api.phaseo.app/v1"
 	}
 
 	model := os.Getenv("PHASEO_SMOKE_MODEL")

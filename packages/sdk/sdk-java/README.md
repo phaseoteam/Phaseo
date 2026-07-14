@@ -37,7 +37,7 @@ public class Main {
         String apiKey = System.getenv("PHASEO_API_KEY");
         String baseUrl = System.getenv("PHASEO_BASE_URL");
         if (baseUrl == null || baseUrl.isEmpty()) {
-            baseUrl = "https://api.phaseo.ai/v1";
+            baseUrl = "https://api.phaseo.app/v1";
         }
 
         Phaseo client = new Phaseo(apiKey, baseUrl);
@@ -110,7 +110,7 @@ System.out.println(resourceSocketUrl);
 ## Environment variables
 
 - `PHASEO_API_KEY` (required unless passed in code)
-- `PHASEO_BASE_URL` (optional, defaults to `https://api.phaseo.ai/v1`)
+- `PHASEO_BASE_URL` (optional, defaults to `https://api.phaseo.app/v1`)
 
 ## Regeneration and local checks
 

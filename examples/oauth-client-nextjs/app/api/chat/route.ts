@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getTokens, updateTokens } from '@/lib/session';
 import { isTokenExpired, refreshAccessToken } from '@/lib/oauth';
 
-const GATEWAY_ORIGIN = (process.env.NEXT_PUBLIC_GATEWAY_URL || 'https://api.phaseo.ai').replace(/\/+$/, '');
+const GATEWAY_ORIGIN = (process.env.NEXT_PUBLIC_GATEWAY_URL || 'https://api.phaseo.app').replace(/\/+$/, '');
 const GATEWAY_BASE = /\/v1$/i.test(GATEWAY_ORIGIN) ? GATEWAY_ORIGIN : `${GATEWAY_ORIGIN}/v1`;
 
 export async function POST(request: NextRequest) {

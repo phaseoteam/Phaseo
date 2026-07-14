@@ -57,7 +57,7 @@ public class Phaseo {
 	}
 
 	private static final ObjectMapper MAPPER = new ObjectMapper();
-	private static final String DEFAULT_BASE_URL = "https://api.phaseo.ai/v1";
+	private static final String DEFAULT_BASE_URL = "https://api.phaseo.app/v1";
 	private static final Set<String> ACTIVE_MODEL_SOURCE_STATUSES = Set.of("active", "available");
 	private static final Set<String> INACTIVE_MODEL_SOURCE_STATUSES = Set.of(
 		"deprecated",

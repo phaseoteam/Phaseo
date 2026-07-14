@@ -73,7 +73,7 @@ type LiveCompareEvent =
 			message: string;
 	  };
 
-      const DEFAULT_GATEWAY_BASE_URL = "https://api.phaseo.ai/v1";
+      const DEFAULT_GATEWAY_BASE_URL = "https://api.phaseo.app/v1";
       const DEFAULT_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
       const DEFAULT_LLMGATEWAY_BASE_URL = "https://api.llmgateway.io/v1";
       const DEFAULT_VERCEL_AI_GATEWAY_BASE_URL = "https://ai-gateway.vercel.sh/v1";

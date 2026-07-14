@@ -14,7 +14,7 @@ type CliOptions = {
 type LoadedEnv = Record<string, string>;
 
 const DEFAULT_MODELS = ["poolside/laguna-xs.2:free", "poolside/laguna-m.1:free"];
-const DEFAULT_BASE_URL = "https://api.phaseo.ai/v1";
+const DEFAULT_BASE_URL = "https://api.phaseo.app/v1";
 const DEFAULT_COUNT = 5;
 const DEFAULT_MAX_OUTPUT_TOKENS = 160;
 const DEFAULT_DELAY_MS = 750;

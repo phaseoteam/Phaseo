@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { absoluteUrl, SITE_URL } from "@/lib/seo";
 
 const DEFAULT_DOCS_BASE_URL = "https://phaseo.app/docs";
-const DEFAULT_GATEWAY_API_BASE_URL = "https://api.phaseo.ai/v1";
+const DEFAULT_GATEWAY_API_BASE_URL = "https://api.phaseo.app/v1";
 const DEFAULT_SUPABASE_BASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co";
 
 function normalizeUrl(value: string): string {

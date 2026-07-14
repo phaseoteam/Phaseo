@@ -82,7 +82,7 @@ Per-block `cache_control` wins over the default policy.
 Use `/v1/chat/completions` when you are using OpenAI-compatible chat clients.
 
 ```bash
-curl https://api.phaseo.ai/v1/chat/completions \
+curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -131,7 +131,7 @@ The provider-specific alias is also accepted:
 Use `/v1/responses` for new OpenAI-compatible text integrations and agent flows.
 
 ```bash
-curl https://api.phaseo.ai/v1/responses \
+curl https://api.phaseo.app/v1/responses \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -172,7 +172,7 @@ When you already have a Google Gemini cached content resource, pass it through `
 Use `/v1/messages` when your client is Anthropic-compatible.
 
 ```bash
-curl https://api.phaseo.ai/v1/messages \
+curl https://api.phaseo.app/v1/messages \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{

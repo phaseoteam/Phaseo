@@ -1449,7 +1449,7 @@ puts JSON.pretty_generate(response)`}`;
 });
 
 const response = await fetch(
-  "https://api.phaseo.ai/v1/models?" + query.toString(),
+  "https://api.phaseo.app/v1/models?" + query.toString(),
   {
     headers: {
       Authorization: "Bearer " + process.env.PHASEO_API_KEY,
@@ -1566,7 +1566,7 @@ if (buffer) processLine(buffer.trim());`;
 import requests
 
 response = requests.get(
-    "https://api.phaseo.ai/v1/models",
+    "https://api.phaseo.app/v1/models",
     headers={"Authorization": f"Bearer {os.environ['PHASEO_API_KEY']}"},
     params={
         "model_id": "${modelIdentifierInCode}",

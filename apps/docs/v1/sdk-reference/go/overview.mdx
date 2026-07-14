@@ -47,7 +47,7 @@ import (
   phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
 )
 
-client := phaseo.New("YOUR_KEY", "https://api.phaseo.ai/v1")
+client := phaseo.New("YOUR_KEY", "https://api.phaseo.app/v1")
 models, err := client.GetModels(context.Background(), map[string]string{"limit": "5"})
 if err != nil {
   panic(err)

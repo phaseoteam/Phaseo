@@ -107,7 +107,7 @@ final class FakeVideoClient extends \Phaseo\Gen\Client
 
 $client = new Phaseo(
     apiKey: "test",
-    basePath: "https://api.phaseo.ai/v1",
+    basePath: "https://api.phaseo.app/v1",
     enableDeprecationWarnings: false
 );
 
@@ -158,7 +158,7 @@ assert_true(($models["data"][0]["id"] ?? null) === "google/veo-3", "expected vid
 $list = $client->listVideos(["status" => "queued,completed", "limit" => "2"]);
 assert_true(($list["data"][1]["id"] ?? null) === "video_456", "expected second video id in list");
 assert_true(
-    $client->getVideoWebSocketUrl("video_123", 900) === "wss://api.phaseo.ai/v1/async/video/video_123/ws?interval_ms=900",
+    $client->getVideoWebSocketUrl("video_123", 900) === "wss://api.phaseo.app/v1/async/video/video_123/ws?interval_ms=900",
     "expected video websocket URL"
 );
 

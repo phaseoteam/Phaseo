@@ -23,7 +23,7 @@ cp .env.example .env.local
 
 Set:
 - `PHASEO_API_KEY`
-- `NEXT_PUBLIC_GATEWAY_URL` (recommended `https://api.phaseo.ai`)
+- `NEXT_PUBLIC_GATEWAY_URL` (recommended `https://api.phaseo.app`)
 
 3. Run:
 

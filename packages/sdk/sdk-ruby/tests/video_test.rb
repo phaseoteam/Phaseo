@@ -138,7 +138,7 @@ class VideoTest < Minitest::Test
     assert_equal true, deleted["deleted"]
     assert_equal "google/veo-3", models["data"][0]["id"]
     assert_equal "video_456", list["data"][1]["id"]
-    assert_equal "wss://api.phaseo.ai/v1/async/video/video_123/ws?interval_ms=900", client.video_websocket_url("video_123", interval_ms: 900)
+    assert_equal "wss://api.phaseo.app/v1/async/video/video_123/ws?interval_ms=900", client.video_websocket_url("video_123", interval_ms: 900)
     assert_equal [
       ["GET", "/models", { "model_id" => "google/veo-3", "limit" => "1" }, nil, nil],
       ["POST", "/videos", nil, nil, { model: "google/veo-3", prompt: "orbiting camera shot" }],

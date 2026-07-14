@@ -241,7 +241,7 @@ import { createPhaseo } from "@phaseo/ai-sdk-provider";
 
 const phaseo = createPhaseo({
 	apiKey: "your_api_key",
-	baseURL: "https://api.phaseo.ai/v1", // optional
+	baseURL: "https://api.phaseo.app/v1", // optional
 	headers: {
 		"X-Custom-Header": "value", // optional
 	},
@@ -323,7 +323,7 @@ Creates a new Phaseo provider instance.
 **Parameters:**
 
 -   `settings.apiKey` (string, optional) - API key for authentication. Defaults to `PHASEO_API_KEY`.
--   `settings.baseURL` (string, optional) - Gateway base URL. Defaults to `PHASEO_BASE_URL`, then `https://api.phaseo.ai/v1`
+-   `settings.baseURL` (string, optional) - Gateway base URL. Defaults to `PHASEO_BASE_URL`, then `https://api.phaseo.app/v1`
 -   `settings.headers` (object, optional) - Additional headers to include in requests
 -   `settings.fetch` (function, optional) - Custom fetch implementation
 
@@ -521,7 +521,7 @@ import type {
 
 const settings: PhaseoSettings = {
 	apiKey: "your_key",
-	baseURL: "https://api.phaseo.ai/v1",
+	baseURL: "https://api.phaseo.app/v1",
 };
 ```
 

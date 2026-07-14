@@ -41,7 +41,7 @@ curl https://api.anthropic.com/v1/messages \
 
 # After (Phaseo)
 
-curl https://api.phaseo.ai/v1/messages \
+curl https://api.phaseo.app/v1/messages \
  -H "Authorization: Bearer your-phaseo-key" \
  -H "Content-Type: application/json" \
  -d '{
@@ -61,7 +61,7 @@ client = anthropic.Anthropic(api_key="sk-ant-your-anthropic-key")
 # After
 client = anthropic.Anthropic(
     api_key="your-phaseo-key",
-    base_url="https://api.phaseo.ai/v1"
+    base_url="https://api.phaseo.app/v1"
 )
 
 response = client.messages.create(
@@ -82,7 +82,7 @@ const client = new Anthropic({
 // After
 const client = new Anthropic({
 	apiKey: "your-phaseo-key",
-	baseURL: "https://api.phaseo.ai/v1",
+	baseURL: "https://api.phaseo.app/v1",
 });
 
 const response = await client.messages.create({

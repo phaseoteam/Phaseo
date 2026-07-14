@@ -33,7 +33,7 @@ Most integrations start with:
 
 ### Base URL
 
-`https://api.phaseo.ai/v1`
+`https://api.phaseo.app/v1`
 
 ### Auth
 

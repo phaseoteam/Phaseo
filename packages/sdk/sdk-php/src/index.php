@@ -66,7 +66,7 @@ class Phaseo
 
     public function __construct(
         ?string $apiKey = null,
-        string $basePath = "https://api.phaseo.ai/v1",
+        string $basePath = "https://api.phaseo.app/v1",
         bool $enableDeprecationWarnings = true,
         bool $warningsAsErrors = false,
         ?callable $logger = null,
