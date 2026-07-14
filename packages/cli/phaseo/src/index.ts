@@ -592,6 +592,11 @@ export function validateLoopbackRedirectUri(value: string): string {
 	return url.toString();
 }
 
+export function callbackListenHost(redirectUri: string): string {
+	const hostname = new URL(redirectUri).hostname;
+	return hostname === "[::1]" ? "::1" : hostname;
+}
+
 function openUrl(url: string): boolean {
 	if (prefersDeviceCodeByEnvironment()) {
 		return false;
@@ -701,7 +706,7 @@ async function chooseLoginMethod(flags: Record<string, string | boolean>, json: 
 
 function createCallbackServer(args: { redirectUri: string; expectedState: string }) {
 	const redirect = new URL(args.redirectUri);
-	const host = redirect.hostname;
+	const host = callbackListenHost(args.redirectUri);
 	const port = redirect.port ? Number(redirect.port) : 8976;
 	const callbackPath = redirect.pathname || "/";
 	let settled = false;

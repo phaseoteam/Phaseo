@@ -12,6 +12,7 @@ import {
 } from "../src/api.ts";
 import {
 	buildLogsListPath,
+	callbackListenHost,
 	helpKeyForCommand,
 	parseArgs,
 	renderVersionText,
@@ -182,6 +183,11 @@ test("only accepts loopback browser callback URLs", () => {
 	assert.throws(() => validateLoopbackRedirectUri("https://example.com/callback"), /HTTP loopback/);
 	assert.throws(() => validateLoopbackRedirectUri("http://0.0.0.0:8976/callback"), /HTTP loopback/);
 	assert.throws(() => validateLoopbackRedirectUri("http://127.0.0.1:8976/callback?next=evil"), /HTTP loopback/);
+});
+
+test("normalizes a bracketed IPv6 loopback callback host for Node", () => {
+	assert.equal(callbackListenHost("http://[::1]:8976/callback"), "::1");
+	assert.equal(callbackListenHost("http://127.0.0.1:8976/callback"), "127.0.0.1");
 });
 
 test("resolves help text for command groups and leaf commands", () => {
