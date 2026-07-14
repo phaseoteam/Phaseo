@@ -157,7 +157,7 @@ describe("authenticateManagement", () => {
 		vi.useRealTimers();
 	});
 
-	it("accepts active management keys", async () => {
+	it("accepts active typed management keys", async () => {
 		const kid = "MGMTKEY12345";
 		const secret = "secret_management_key";
 		runtime.dbRow.value = {
@@ -170,7 +170,7 @@ describe("authenticateManagement", () => {
 
 		const { authenticateManagement } = await import("./auth");
 		const result = await authenticateManagement(
-			buildRequest(`phaseo_v1_sk_${kid}_${secret}`),
+			buildRequest(`phaseo_v1_mk_${kid}_${secret}`),
 		);
 		await flushBackground();
 
@@ -188,55 +188,52 @@ describe("authenticateManagement", () => {
 		);
 	});
 
-	it("accepts legacy aistats-prefixed management keys", async () => {
-		const kid = "MGMTLEGACY1";
-		const secret = "secret_legacy_management_key";
+	it("accepts typed management keys and rejects them for gateway authentication", async () => {
+		const kid = "MGMTTYPED123";
+		const secret = "secret_typed_management_key";
 		runtime.dbRow.value = {
-			id: "mgmt_legacy_prefix",
-			workspace_id: "team_legacy",
+			id: "mgmt_typed",
+			workspace_id: "team_typed",
 			status: "active",
 			hash: hashSecret(secret),
-			scopes: "[\"workspaces:read\"]",
+			scopes: "[\"credits:read\",\"activity:read\"]",
 		};
 
-		const { authenticateManagement } = await import("./auth");
-		const result = await authenticateManagement(
-			buildRequest(`aistats_v1_sk_${kid}_${secret}`),
+		const { authenticate, authenticateManagement } = await import("./auth");
+		const managementResult = await authenticateManagement(
+			buildRequest(`phaseo_v1_mk_${kid}_${secret}`),
 		);
-
-		expect(result).toMatchObject({
+		expect(managementResult).toMatchObject({
 			ok: true,
-			workspaceId: "team_legacy",
-			apiKeyId: "mgmt_legacy_prefix",
-			apiKeyKid: kid,
-			scopes: ["workspaces:read"],
+			apiKeyId: "mgmt_typed",
+			scopes: ["credits:read", "activity:read"],
 		});
+		await flushBackground();
+
+		runtime.supabase.from.mockClear();
+		const gatewayResult = await authenticate(buildRequest(`phaseo_v1_mk_${kid}_${secret}`));
+		expect(gatewayResult).toEqual({
+			ok: false,
+			reason: "management_key_not_valid_for_gateway",
+		});
+		expect(runtime.supabase.from).not.toHaveBeenCalled();
 	});
 
-	it("rejects legacy aistats-prefixed management keys after the cutoff", async () => {
-		vi.useFakeTimers();
-		vi.setSystemTime(new Date("2027-01-01T00:00:00.000Z"));
-
-		const kid = "MGMTLEGACY2";
+	it("rejects inference and legacy management key formats before querying the database", async () => {
+		const kid = "MGMTLEGACY1";
 		const secret = "secret_legacy_management_key";
-		runtime.dbRow.value = {
-			id: "mgmt_legacy_prefix",
-			workspace_id: "team_legacy",
-			status: "active",
-			hash: hashSecret(secret),
-			scopes: "[\"workspaces:read\"]",
-		};
-
 		const { authenticateManagement } = await import("./auth");
-		const result = await authenticateManagement(
-			buildRequest(`aistats_v1_sk_${kid}_${secret}`),
-		);
 
-		expect(result).toEqual({
-			ok: false,
-			reason: "legacy_key_prefix_retired",
-		});
-		expect(runtime.maybeSingle).not.toHaveBeenCalled();
+		for (const token of [
+			`phaseo_v1_sk_${kid}_${secret}`,
+			`aistats_v1_sk_${kid}_${secret}`,
+			`aistats_v1_mk_${kid}_${secret}`,
+		]) {
+			const result = await authenticateManagement(buildRequest(token));
+			expect(result).toEqual({ ok: false, reason: "management_key_required" });
+		}
+
+		expect(runtime.supabase.from).not.toHaveBeenCalled();
 	});
 
 	it("rejects soft-blocked management keys", async () => {
@@ -252,13 +249,13 @@ describe("authenticateManagement", () => {
 
 		const { authenticateManagement } = await import("./auth");
 		const result = await authenticateManagement(
-			buildRequest(`phaseo_v1_sk_${kid}_${secret}`),
+			buildRequest(`phaseo_v1_mk_${kid}_${secret}`),
 		);
 
 		expect(result).toEqual({ ok: false, reason: "key_soft_blocked" });
 	});
 
-	it("rejects legacy management keys with no scopes", async () => {
+	it("rejects management keys with no scopes", async () => {
 		const kid = "MGMTNOSCOPE1";
 		const secret = "secret_without_scopes";
 		runtime.dbRow.value = {
@@ -271,7 +268,7 @@ describe("authenticateManagement", () => {
 
 		const { authenticateManagement } = await import("./auth");
 		const result = await authenticateManagement(
-			buildRequest(`phaseo_v1_sk_${kid}_${secret}`),
+			buildRequest(`phaseo_v1_mk_${kid}_${secret}`),
 		);
 
 		expect(result).toEqual({ ok: false, reason: "management_key_scopes_required" });
@@ -290,7 +287,7 @@ describe("authenticateManagement", () => {
 
 		const { authenticateManagement } = await import("./auth");
 		const result = await authenticateManagement(
-			buildRequest(`phaseo_v1_sk_${kid}_${secret}`),
+			buildRequest(`phaseo_v1_mk_${kid}_${secret}`),
 		);
 
 		expect(result).toEqual({ ok: false, reason: "key_expired" });

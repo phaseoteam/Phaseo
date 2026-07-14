@@ -8,7 +8,7 @@
 /* eslint-disable @typescript-eslint/ban-types */
 
 type ExtensionPreferences = {
-  /** API Key - Your Phaseo API key from api.phaseo.ai */
+  /** API Key - Your Phaseo API key */
   "apiKey": string,
   /** API URL - Custom API URL (optional) */
   "apiUrl": string
@@ -20,18 +20,10 @@ declare type Preferences = ExtensionPreferences
 declare namespace Preferences {
   /** Preferences accessible in the `models` command */
   export type Models = ExtensionPreferences & {}
-  /** Preferences accessible in the `organisations` command */
-  export type Organisations = ExtensionPreferences & {}
-  /** Preferences accessible in the `providers` command */
-  export type Providers = ExtensionPreferences & {}
 }
 
 declare namespace Arguments {
   /** Arguments passed to the `models` command */
   export type Models = {}
-  /** Arguments passed to the `organisations` command */
-  export type Organisations = {}
-  /** Arguments passed to the `providers` command */
-  export type Providers = {}
 }
 

@@ -2,9 +2,15 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
-import { makeKeyV2, hmacSecret } from "@/lib/keygen";
+import { hmacSecret, makeManagementKeyV1 } from "@/lib/keygen";
 import { enforceTeamKeyLimit } from "@/lib/server/teamLimits";
 import { resolveActiveKeyPepper } from "@/lib/server/keyPepper";
+import {
+	CONTROL_SCOPES,
+	MANAGEMENT_KEY_TEMPLATE_SCOPES,
+	managementKeyScopes,
+	type ManagementKeyTemplate,
+} from "@/lib/managementKeyScopes";
 import {
 	requireActingUser,
 	requireAuthenticatedUser,
@@ -25,7 +31,8 @@ export type CreateManagementKeyInput = {
 	name: string;
 	creatorUserId: string;
 	workspaceId: string;
-	scopes?: string;
+	template?: "read-only" | "read-write" | "full-control";
+	scopes?: string[];
 	expiresAt?: string | null;
 };
 
@@ -34,6 +41,9 @@ export type UpdateManagementKeyInput = {
 	paused?: boolean;
 	expiresAt?: string | null;
 };
+
+export type { ManagementKeyTemplate } from "@/lib/managementKeyScopes";
+
 
 function parseOptionalExpiry(expiresAt: string | null | undefined): string | null | undefined {
 	if (expiresAt === undefined) return undefined;
@@ -52,7 +62,7 @@ function parseOptionalExpiry(expiresAt: string | null | undefined): string | nul
 export async function createManagementKeyAction(
 	input: CreateManagementKeyInput
 ) {
-	const { name, creatorUserId, workspaceId, scopes = "[]", expiresAt } = input;
+	const { name, creatorUserId, workspaceId, template, scopes, expiresAt } = input;
 
 	if (!name || typeof name !== "string") {
 		throw new Error("Name is required");
@@ -68,37 +78,42 @@ export async function createManagementKeyAction(
 	requireActingUser(creatorUserId, user.id);
 	await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 	await enforceTeamKeyLimit(supabase as any, workspaceId);
-
-	// Generate secure key
-	const { kid, secret, plaintext, prefix } = makeKeyV2();
-
-	const pepper = resolveActiveKeyPepper();
-
-	const hash = hmacSecret(secret, pepper);
-
-	const insertObj = {
-		workspace_id: workspaceId,
-		name: name.trim(),
-		kid,
-		hash,
-		prefix,
-		status: "active",
-		scopes,
-		expires_at: parseOptionalExpiry(expiresAt) ?? null,
-		created_by: creatorUserId,
-		created_at: new Date().toISOString(),
-	};
-
+	const { kid, secret, plaintext, prefix } = makeManagementKeyV1();
+	const hash = hmacSecret(secret, resolveActiveKeyPepper());
+	if (template !== undefined && scopes !== undefined) {
+		throw new Error("Provide either an access template or explicit scopes, not both");
+	}
+	if (template === undefined && scopes === undefined) {
+		throw new Error("Select an access template or explicit scopes");
+	}
+	if (template !== undefined && !(template in MANAGEMENT_KEY_TEMPLATE_SCOPES)) {
+		throw new Error("Unsupported management key access template");
+	}
+	const resolvedScopes = template ? managementKeyScopes(template) : scopes!;
+	if (resolvedScopes.length === 0) {
+		throw new Error("At least one management scope is required");
+	}
+	const unsupportedScope = resolvedScopes.find((scope) => !CONTROL_SCOPES.includes(scope as (typeof CONTROL_SCOPES)[number]));
+	if (unsupportedScope) {
+		throw new Error(`Unsupported management scope: ${unsupportedScope}`);
+	}
 	const { data, error } = await supabase
 		.from("management_keys")
-		.insert(insertObj)
+		.insert({
+			workspace_id: workspaceId,
+			name: name.trim(),
+			kid,
+			hash,
+			prefix,
+			status: "active",
+			scopes: JSON.stringify(resolvedScopes),
+			expires_at: parseOptionalExpiry(expiresAt) ?? null,
+			created_by: creatorUserId,
+			created_at: new Date().toISOString(),
+		})
 		.select("id, created_at")
 		.maybeSingle();
-
-	if (error) {
-		console.error("Failed to create management API key:", error);
-		throw new Error(`Failed to create management API key: ${error.message}`);
-	}
+	if (error) throw new Error(`Failed to create management API key: ${error.message}`);
 
 	revalidatePath("/settings/management-api-keys");
 
@@ -163,6 +178,31 @@ export async function updateManagementKeyAction(
 
 	revalidatePath("/settings/management-api-keys");
 
+	return { success: true };
+}
+
+export async function updateManagementKeyScopesAction(
+	id: string,
+	template: ManagementKeyTemplate,
+) {
+	if (!id || typeof id !== "string") throw new Error("Valid key ID is required");
+	const { supabase, user } = await requireAuthenticatedUser();
+	const { data: keyRow, error: keyErr } = await supabase
+		.from("management_keys")
+		.select("workspace_id")
+		.eq("id", id)
+		.maybeSingle();
+	if (keyErr) throw keyErr;
+	if (!keyRow?.workspace_id) throw new Error("Management API key not found");
+	await requireWorkspaceMembership(supabase, user.id, keyRow.workspace_id, ["owner", "admin"]);
+
+	const { error } = await supabase
+		.from("management_keys")
+		.update({ scopes: JSON.stringify(managementKeyScopes(template)) })
+		.eq("id", id)
+		.eq("workspace_id", keyRow.workspace_id);
+	if (error) throw new Error(`Failed to update management API key scopes: ${error.message}`);
+	revalidatePath("/settings/management-api-keys");
 	return { success: true };
 }
 
