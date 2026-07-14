@@ -66,4 +66,4 @@ Each model page section will be added as an independent resource rather than ext
 - `pnpm exec wrangler deploy --env staging` creates `phaseo-web-api-staging` on the account's `workers.dev` subdomain. It has no `phaseo.app` route, so it is safe for PR validation.
 - The PR workflow deploys that staging Worker and points its Vercel preview at it with `WEB_API_ORIGIN`; it supplies the origin at both build and runtime without changing Vercel's shared preview environment.
 - Before the first staging deployment, provision its `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` values in Cloudflare.
-- After merge, CI deploys the default environment as `phaseo-web-api`, which is the only environment allowed to own `phaseo.app/api/public/models*` during the initial rollout.
+- Promote the default environment explicitly with `pnpm exec wrangler deploy --env=""` after the PR is reviewed. `phaseo-web-api` is the only Worker allowed to own `phaseo.app/api/public/models*` during the initial rollout.

@@ -694,8 +694,6 @@ jobs:
                       name: Deploy Web
                     - target: api
                       name: Deploy API
-                    - target: web-api
-                      name: Deploy Web API
                     - target: docs
                       name: Deploy Docs
         steps:
@@ -741,11 +739,11 @@ jobs:
               run: git checkout -- pnpm-lock.yaml
 
             - name: Install dependencies (for API)
-              if: matrix.target == 'api' || matrix.target == 'web-api'
+              if: matrix.target == 'api'
               run: corepack pnpm install --frozen-lockfile
 
             - name: Validate Cloudflare API deploy secrets
-              if: matrix.target == 'api' || matrix.target == 'web-api'
+              if: matrix.target == 'api'
               shell: bash
               env:
                   CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -780,15 +778,6 @@ jobs:
                   apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
                   accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
                   workingDirectory: apps/api
-
-            - name: Deploy web API Worker to Cloudflare
-              if: matrix.target == 'web-api'
-              uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0
-              with:
-                  apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-                  accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-                  workingDirectory: apps/web-api
-                  command: deploy --env=""
 
             # ---------- DOCS ----------
             - name: Docs (Mintlify deploy is handled by GitHub App)
