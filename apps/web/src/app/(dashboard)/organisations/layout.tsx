@@ -1,9 +1,5 @@
-import type { ReactNode } from "react";
-
 export default function OrganisationsLayout({
 	children,
-}: {
-	children: ReactNode;
-}) {
+}: LayoutProps<"/organisations">) {
 	return children;
 }
