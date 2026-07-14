@@ -124,7 +124,7 @@ function ProviderSheetSectionLink({
 	className,
 }: {
 	href: string;
-	children: React.ReactNode;
+	children: React.ComponentProps<typeof Link>["children"];
 	className?: string;
 }) {
 	return (
