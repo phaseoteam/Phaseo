@@ -89,21 +89,25 @@ export async function emitGatewayOperationalFailure(args: {
     reason: string;
     error?: unknown;
 }) {
-    const message = args.error instanceof Error ? args.error.message : String(args.error ?? "");
-    await sendAxiomWideEvent({
-        event_type: "gateway.operational_failure",
-        event_emitted_at: new Date().toISOString(),
-        success: false,
-        error_type: "system",
-        error_origin: "gateway",
-        error_operational_kind: "finalization_failed",
-        error_action_owner: "gateway",
-        error_requires_investigation: true,
-        error_code: args.reason,
-        error_message: message.slice(0, 500) || null,
-        workspace_id: args.workspaceId,
-        finalization_workflow: args.workflow,
-        finalization_resource_id: args.resourceId,
-    });
+    try {
+        const message = args.error instanceof Error ? args.error.message : String(args.error ?? "");
+        await sendAxiomWideEvent({
+            event_type: "gateway.operational_failure",
+            event_emitted_at: new Date().toISOString(),
+            success: false,
+            error_type: "system",
+            error_origin: "gateway",
+            error_operational_kind: "finalization_failed",
+            error_action_owner: "gateway",
+            error_requires_investigation: true,
+            error_code: args.reason,
+            error_message: message.slice(0, 500) || null,
+            workspace_id: args.workspaceId,
+            finalization_workflow: args.workflow,
+            finalization_resource_id: args.resourceId,
+        });
+    } catch (error) {
+        console.error("[observability] finalization failure event emit failed", error);
+    }
 }
 
