@@ -40,7 +40,7 @@ curl https://oai.helicone.ai/v1/chat/completions \
 
 # After (Phaseo)
 
-curl https://api.phaseo.ai/v1/chat/completions \
+curl https://api.phaseo.app/v1/chat/completions \
  -H "Authorization: Bearer your-phaseo-key" \
  -H "Content-Type: application/json" \
  -d '{
@@ -55,7 +55,7 @@ import openai
 
 client = openai.OpenAI(
     api_key="your-phaseo-key",
-    base_url="https://api.phaseo.ai/v1"
+    base_url="https://api.phaseo.app/v1"
 )
 
 response = client.chat.completions.create(
@@ -69,7 +69,7 @@ import OpenAI from "openai";
 
 const client = new OpenAI({
 	apiKey: "your-phaseo-key",
-	baseURL: "https://api.phaseo.ai/v1",
+	baseURL: "https://api.phaseo.app/v1",
 });
 
 const response = await client.chat.completions.create({

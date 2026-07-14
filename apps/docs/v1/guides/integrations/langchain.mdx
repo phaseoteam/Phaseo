@@ -20,7 +20,7 @@ from langchain_openai import ChatOpenAI
 llm = ChatOpenAI(
     model="openai/gpt-5-nano",
     api_key=os.environ["PHASEO_API_KEY"],
-    base_url="https://api.phaseo.ai/v1",
+    base_url="https://api.phaseo.app/v1",
 )
 
 result = llm.invoke("Write one sentence about routing reliability.")

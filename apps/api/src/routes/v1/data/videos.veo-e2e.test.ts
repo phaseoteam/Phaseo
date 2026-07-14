@@ -173,7 +173,7 @@ vi.mock("@/runtime/env", () => ({
 		GOOGLE_VERTEX_BASE_URL: "https://api.vertex.example",
 		GOOGLE_VERTEX_PROJECT: "test-project",
 		GOOGLE_VERTEX_LOCATION: "us-east5",
-		GATEWAY_PUBLIC_BASE_URL: "https://api.phaseo.ai",
+		GATEWAY_PUBLIC_BASE_URL: "https://api.phaseo.app",
 	KEY_PEPPER_ACTIVE: "test-video-secret",
 	}),
 	getSupabaseAdmin: () => buildSupabaseAdminMock(),
@@ -497,7 +497,7 @@ describe("video Veo 3.1 Lite lifecycle end-to-end", () => {
 		});
 
 		const statusResponse = await getVideoByIdHandler(
-			new Request(`https://api.phaseo.ai/v1/videos/${requestId}`),
+			new Request(`https://api.phaseo.app/v1/videos/${requestId}`),
 		);
 		expect(statusResponse.status).toBe(200);
 		const statusBody = await statusResponse.json();
@@ -532,7 +532,7 @@ describe("video Veo 3.1 Lite lifecycle end-to-end", () => {
 		expect(gatewayRequest?.cost_nanos).toBe(150_000_000);
 
 		const contentResponse = await getVideoContentHandler(
-			new Request(`https://api.phaseo.ai/v1/videos/${requestId}/content`),
+			new Request(`https://api.phaseo.app/v1/videos/${requestId}/content`),
 		);
 		expect(contentResponse.status).toBe(200);
 		expect(contentResponse.headers.get("content-type")).toBe("video/mp4");
@@ -687,7 +687,7 @@ describe("video Veo 3.1 Lite lifecycle end-to-end", () => {
 		});
 
 		const statusResponse = await getVideoByIdHandler(
-			new Request(`https://api.phaseo.ai/v1/videos/${requestId}`),
+			new Request(`https://api.phaseo.app/v1/videos/${requestId}`),
 		);
 		expect(statusResponse.status).toBe(200);
 		const statusBody = await statusResponse.json();
@@ -752,7 +752,7 @@ describe("video Veo 3.1 Lite lifecycle end-to-end", () => {
 		expect(submitResult.ir?.status).toBe("queued");
 
 		const statusResponse = await getVideoByIdHandler(
-			new Request(`https://api.phaseo.ai/v1/videos/${requestId}`),
+			new Request(`https://api.phaseo.app/v1/videos/${requestId}`),
 		);
 		expect(statusResponse.status).toBe(502);
 		const statusBody = await statusResponse.json();

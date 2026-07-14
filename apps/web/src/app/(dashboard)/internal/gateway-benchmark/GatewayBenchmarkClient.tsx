@@ -372,7 +372,7 @@ export default function GatewayBenchmarkClient() {
 	const [runs, setRuns] = useState("5");
 	const [maxCompletionTokens, setMaxCompletionTokens] = useState("64");
 	const [endpoint, setEndpoint] = useState<"chat_completions" | "responses">("chat_completions");
-	const [gatewayBaseUrl, setGatewayBaseUrl] = useState("https://api.phaseo.ai/v1");
+	const [gatewayBaseUrl, setGatewayBaseUrl] = useState("https://api.phaseo.app/v1");
 	const [openRouterBaseUrl, setOpenRouterBaseUrl] = useState("https://openrouter.ai/api/v1");
 	const [llmGatewayBaseUrl, setLlmGatewayBaseUrl] = useState("https://api.llmgateway.io/v1");
 	const [vercelAiGatewayBaseUrl, setVercelAiGatewayBaseUrl] = useState("https://ai-gateway.vercel.sh/v1");

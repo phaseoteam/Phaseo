@@ -17,7 +17,7 @@ func main() {
 		panic("Set PHASEO_API_KEY")
 	}
 
-	client := phaseo.NewPhaseo(apiKey, "https://api.phaseo.ai/v1")
+	client := phaseo.NewPhaseo(apiKey, "https://api.phaseo.app/v1")
 	resp, err := client.GetModels(context.Background(), map[string]string{
 		"provider": "anthropic",
 		"provider_status": "beta,not_ready",

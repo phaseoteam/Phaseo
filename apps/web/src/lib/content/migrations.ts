@@ -1,6 +1,6 @@
 import type { ShikiLang } from "@/components/(data)/model/quickstart/shiki";
 
-const PHASEO_BASE_URL = "https://api.phaseo.ai/v1";
+const PHASEO_BASE_URL = "https://api.phaseo.app/v1";
 
 export type MigrationCodeSnippet = {
 	label: string;

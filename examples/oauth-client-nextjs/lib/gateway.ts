@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { isTokenExpired, refreshAccessToken } from '@/lib/oauth';
 import { getTokens, updateTokens } from '@/lib/session';
 
-const DEFAULT_GATEWAY_ORIGIN = 'https://api.phaseo.ai';
+const DEFAULT_GATEWAY_ORIGIN = 'https://api.phaseo.app';
 const GATEWAY_ORIGIN = (process.env.NEXT_PUBLIC_GATEWAY_URL || DEFAULT_GATEWAY_ORIGIN).replace(/\/+$/, '');
 const GATEWAY_PATH_PREFIX = /\/v1$/i.test(GATEWAY_ORIGIN) ? '' : '/v1';
 

@@ -78,7 +78,7 @@ cp .env.example .env.local
 - `NEXT_PUBLIC_AISTATS_URL`
 - `NEXT_PUBLIC_REDIRECT_URI`
 - `SESSION_SECRET`
-- `NEXT_PUBLIC_GATEWAY_URL` (recommended: `https://api.phaseo.ai`)
+- `NEXT_PUBLIC_GATEWAY_URL` (recommended: `https://api.phaseo.app`)
 
 4. Run:
 
@@ -104,7 +104,7 @@ If a language SDK is unavailable or behind the latest API behavior:
 
 - Keep OAuth/session logic the same
 - Call gateway REST endpoints directly through the same contract:
-  - Base: `https://api.phaseo.ai/v1`
+  - Base: `https://api.phaseo.app/v1`
   - Auth: `Authorization: Bearer <PHASEO_API_KEY or OAuth token>`
 - Preserve response shapes used by your app
 

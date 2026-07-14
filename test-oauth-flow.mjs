@@ -35,7 +35,7 @@ if (!globalThis.crypto) {
 // Configuration
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const GATEWAY_URL = process.env.GATEWAY_URL || 'https://api.phaseo.ai';
+const GATEWAY_URL = process.env.GATEWAY_URL || 'https://api.phaseo.app';
 const TEST_APP_NAME = `Test OAuth App ${Date.now()}`;
 const TEST_REDIRECT_URI = 'https://localhost:3000/auth/callback';
 

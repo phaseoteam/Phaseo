@@ -24,7 +24,7 @@ import (
   phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
 )
 
-client := phaseo.New(apiKey, "https://api.phaseo.ai/v1")
+client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
 
 job, err := client.CreateVideo(context.Background(), map[string]interface{}{
   "model": "openai/sora-2",

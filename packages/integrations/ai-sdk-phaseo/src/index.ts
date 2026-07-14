@@ -19,7 +19,7 @@
  *
  * const phaseo = createPhaseo({
  *   apiKey: process.env.PHASEO_API_KEY,
- *   baseURL: 'https://api.phaseo.ai/v1',
+ *   baseURL: 'https://api.phaseo.app/v1',
  * });
  *
  * const { textStream } = streamText({

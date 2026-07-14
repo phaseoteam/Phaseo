@@ -2,7 +2,7 @@ import { Cache, getPreferenceValues } from "@raycast/api";
 import type { Preferences, ModelsResponse, ModelFilters } from "./types";
 
 const DEFAULT_API_URL = "https://api.phaseo.app/v1";
-const LEGACY_API_URL = "https://api.phaseo.ai/v1";
+const LEGACY_API_URL = "https://api.phaseo.app/v1";
 const apiCache = new Cache({ namespace: "phaseo-api" });
 
 const CACHE_TTL = {

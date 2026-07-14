@@ -43,7 +43,7 @@ final class FakeOrganisationsClient extends \Phaseo\Gen\Client
 
 $client = new Phaseo(
     apiKey: "test",
-    basePath: "https://api.phaseo.ai/v1",
+    basePath: "https://api.phaseo.app/v1",
     enableDeprecationWarnings: false
 );
 

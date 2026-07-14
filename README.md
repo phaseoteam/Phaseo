@@ -46,7 +46,7 @@ Phaseo keeps those decisions in one place: the gateway handles requests, while t
 Create an API key at `https://phaseo.app`, then call the gateway:
 
 ```bash
-curl https://api.phaseo.ai/v1/chat/completions \
+curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -62,7 +62,7 @@ import OpenAI from "openai";
 
 const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
-  baseURL: "https://api.phaseo.ai/v1",
+  baseURL: "https://api.phaseo.app/v1",
 });
 
 const response = await client.chat.completions.create({

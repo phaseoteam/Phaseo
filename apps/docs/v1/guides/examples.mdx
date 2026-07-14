@@ -21,7 +21,7 @@ Use this example for the fastest zero-credit smoke test with the Responses API.
 
 <CodeGroup>
 ```bash cURL
-curl https://api.phaseo.ai/v1/responses \
+curl https://api.phaseo.app/v1/responses \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -69,7 +69,7 @@ import (
 )
 
 func main() {
-  client := phaseo.New("YOUR_API_KEY", "https://api.phaseo.ai/v1")
+  client := phaseo.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
   input := map[string]interface{}{
     "role": "user",
     "content": []map[string]interface{}{
@@ -165,7 +165,7 @@ System.out.println(String.valueOf(response));
 Use this when you want an OpenAI-compatible chat request against a paid model.
 
 ```bash
-curl https://api.phaseo.ai/v1/chat/completions \
+curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -179,7 +179,7 @@ curl https://api.phaseo.ai/v1/chat/completions \
 Use this when your app needs a generated image from a prompt.
 
 ```bash
-curl https://api.phaseo.ai/v1/images/generations \
+curl https://api.phaseo.app/v1/images/generations \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{

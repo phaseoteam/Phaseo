@@ -42,7 +42,7 @@ import OpenAI from "openai";
 
 const after = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
-  baseURL: "https://api.phaseo.ai/v1",
+  baseURL: "https://api.phaseo.app/v1",
 });
 ```
 
@@ -53,7 +53,7 @@ import { createPhaseo } from "@phaseo/ai-sdk-provider";
 
 const phaseo = createPhaseo({
   apiKey: process.env.PHASEO_API_KEY,
-  baseURL: "https://api.phaseo.ai/v1",
+  baseURL: "https://api.phaseo.app/v1",
 });
 
 const { text } = await generateText({
@@ -63,7 +63,7 @@ const { text } = await generateText({
 ```
 
 ```bash cURL
-curl -s "https://api.phaseo.ai/v1/chat/completions" \
+curl -s "https://api.phaseo.app/v1/chat/completions" \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -87,7 +87,7 @@ Run the same prompt set against old and new paths, then compare latency, output 
 
 Use this checklist before promoting traffic:
 
-- Base URL updated to `https://api.phaseo.ai/v1`.
+- Base URL updated to `https://api.phaseo.app/v1`.
 - `PHASEO_API_KEY` configured in every runtime that previously used the Vercel gateway key.
 - Official `@phaseo/ai-sdk-provider` wired in if your app uses the Vercel AI SDK directly.
 - Primary AI SDK text generation path passes in staging.
@@ -108,8 +108,8 @@ Use this checklist before promoting traffic:
 ## Validation commands
 
 ```bash
-curl -s "https://api.phaseo.ai/v1/health"
-curl -s "https://api.phaseo.ai/v1/models" -H "Authorization: Bearer $PHASEO_API_KEY"
+curl -s "https://api.phaseo.app/v1/health"
+curl -s "https://api.phaseo.app/v1/models" -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
 Then:

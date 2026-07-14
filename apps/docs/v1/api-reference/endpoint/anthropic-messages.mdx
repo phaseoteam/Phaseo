@@ -34,7 +34,7 @@ Phaseo rewrites these tools to Anthropic-compatible format upstream, executes th
 When a compatible Anthropic model/provider pair supports native web search, you can also pass the native tool definition through directly:
 
 ```bash
-curl https://api.phaseo.ai/v1/messages \
+curl https://api.phaseo.app/v1/messages \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -60,7 +60,7 @@ Provider routing still filters for `web_search_options` support before execution
 ### Datetime example
 
 ```bash
-curl https://api.phaseo.ai/v1/messages \
+curl https://api.phaseo.app/v1/messages \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{

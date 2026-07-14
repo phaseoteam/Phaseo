@@ -26,7 +26,7 @@ const generate = Effect.gen(function* () {
 	const client = yield* HttpClient.HttpClient;
 
 	const request = HttpClientRequest.post(
-		"https://api.phaseo.ai/v1/chat/completions",
+		"https://api.phaseo.app/v1/chat/completions",
 	).pipe(
 		HttpClientRequest.bearerToken(Redacted.value(apiKey)),
 		HttpClientRequest.jsonBody({
@@ -56,14 +56,14 @@ const makeClient = Effect.gen(function* () {
 
 	return new OpenAI({
 		apiKey,
-		baseURL: "https://api.phaseo.ai/v1",
+		baseURL: "https://api.phaseo.app/v1",
 	});
 });
 ```
 
 ## Notes
 
-- Use `https://api.phaseo.ai/v1` for OpenAI-compatible calls.
+- Use `https://api.phaseo.app/v1` for OpenAI-compatible calls.
 - Keep model ids in Phaseo format, for example `openai/gpt-5-nano`.
 - Use a custom Effect layer when you want a provider-style abstraction across the rest of your application.
 - Test streaming and tool calls with your exact Effect package versions before production rollout.

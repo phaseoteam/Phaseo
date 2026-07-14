@@ -23,7 +23,7 @@ function invoke_private(object $target, string $method, array $args = []): mixed
 $warnings = [];
 $deprecatedClient = new Phaseo(
     apiKey: "test",
-    basePath: "https://api.phaseo.ai/v1",
+    basePath: "https://api.phaseo.app/v1",
     enableDeprecationWarnings: true,
     warningsAsErrors: false,
     logger: function (string $level, string $message, array $meta) use (&$warnings): void {
@@ -57,7 +57,7 @@ assert_true(count($warnings) === 0, "expected no warning callback when request i
 
 $retiredClient = new Phaseo(
     apiKey: "test",
-    basePath: "https://api.phaseo.ai/v1",
+    basePath: "https://api.phaseo.app/v1",
     enableDeprecationWarnings: true,
     warningsAsErrors: false,
     lifecycleResolver: function (string $modelId): array {

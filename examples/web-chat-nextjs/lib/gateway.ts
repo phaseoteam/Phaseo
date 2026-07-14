@@ -1,4 +1,4 @@
-const DEFAULT_GATEWAY_ORIGIN = 'https://api.phaseo.ai';
+const DEFAULT_GATEWAY_ORIGIN = 'https://api.phaseo.app';
 
 function gatewayOrigin() {
   return (process.env.NEXT_PUBLIC_GATEWAY_URL || DEFAULT_GATEWAY_ORIGIN).replace(/\/+$/, '');

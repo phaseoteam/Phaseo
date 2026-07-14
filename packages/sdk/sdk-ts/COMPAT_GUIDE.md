@@ -100,7 +100,7 @@ import { OpenAI } from '@phaseo/sdk/compat/openai';
 
 const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
-  baseURL: 'https://api.phaseo.ai/v1'
+  baseURL: 'https://api.phaseo.app/v1'
 });
 
 // OpenAI-compatible API
@@ -274,7 +274,7 @@ import { OpenAI } from '@phaseo/sdk/compat/openai';
 
 const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,           // Required
-  baseURL: 'https://api.phaseo.ai/v1',     // Optional (default)
+  baseURL: 'https://api.phaseo.app/v1',     // Optional (default)
   timeout: 60000,                                 // Optional (60s default)
   dangerouslyAllowBrowser: false,                 // Optional
   defaultHeaders: {                               // Optional
@@ -290,7 +290,7 @@ import { Anthropic } from '@phaseo/sdk/compat/anthropic';
 
 const client = new Anthropic({
   apiKey: process.env.PHASEO_API_KEY,           // Required
-  baseURL: 'https://api.phaseo.ai/v1',     // Optional (default)
+  baseURL: 'https://api.phaseo.app/v1',     // Optional (default)
   timeout: 60000,                                 // Optional (60s default)
   maxRetries: 3,                                  // Optional
   defaultHeaders: {                               // Optional
@@ -332,7 +332,7 @@ import { Phaseo } from '@phaseo/sdk';
 
 const client = new Phaseo({
   apiKey: process.env.PHASEO_API_KEY,
-  baseUrl: 'https://api.phaseo.ai/v1',
+  baseUrl: 'https://api.phaseo.app/v1',
   devtools: {
     enabled: true,  // Enable built-in devtools
     endpoint: 'http://localhost:3001'
@@ -376,8 +376,8 @@ Create a `.env` file:
 # Phaseo Gateway API Key (get yours at phaseo.ai)
 PHASEO_API_KEY=your-api-key-here
 
-# Optional: Custom gateway URL (defaults to https://api.phaseo.ai/v1)
-PHASEO_BASE_URL=https://api.phaseo.ai/v1
+# Optional: Custom gateway URL (defaults to https://api.phaseo.app/v1)
+PHASEO_BASE_URL=https://api.phaseo.app/v1
 ```
 
 ---

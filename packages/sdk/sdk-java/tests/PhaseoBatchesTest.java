@@ -141,20 +141,20 @@ public class PhaseoBatchesTest {
 
 	@Test
 	void getBatchWebSocketUrlBuildsExpectedUrl() {
-		Phaseo client = new Phaseo("test", "https://api.phaseo.ai/v1/", false, false, null);
+		Phaseo client = new Phaseo("test", "https://api.phaseo.app/v1/", false, false, null);
 		String url = client.getBatchWebSocketUrl("batch_123", 1500, false);
 		assertEquals(
-			"wss://api.phaseo.ai/v1/async/batch/batch_123/ws?interval_ms=1500&close_on_terminal=false",
+			"wss://api.phaseo.app/v1/async/batch/batch_123/ws?interval_ms=1500&close_on_terminal=false",
 			url
 		);
 	}
 
 	@Test
 	void getAsyncJobWebSocketUrlBuildsExpectedUrl() {
-		Phaseo client = new Phaseo("test", "https://api.phaseo.ai/v1/", false, false, null);
+		Phaseo client = new Phaseo("test", "https://api.phaseo.app/v1/", false, false, null);
 		String url = client.getAsyncJobWebSocketUrl("video", "video 123", 1500, false);
 		assertEquals(
-			"wss://api.phaseo.ai/v1/async/video/video%20123/ws?interval_ms=1500&close_on_terminal=false",
+			"wss://api.phaseo.app/v1/async/video/video%20123/ws?interval_ms=1500&close_on_terminal=false",
 			url
 		);
 	}

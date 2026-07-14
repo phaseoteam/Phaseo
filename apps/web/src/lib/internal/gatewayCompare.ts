@@ -110,12 +110,12 @@ export type GatewayStageSummary = {
 	unaccountedHeadersMs: Stats | null;
 };
 
-const DEFAULT_GATEWAY_BASE_URL = "https://api.phaseo.ai/v1";
+const DEFAULT_GATEWAY_BASE_URL = "https://api.phaseo.app/v1";
 const DEFAULT_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 const DEFAULT_LLMGATEWAY_BASE_URL = "https://api.llmgateway.io/v1";
 const DEFAULT_VERCEL_AI_GATEWAY_BASE_URL = "https://ai-gateway.vercel.sh/v1";
 const PROD_ALLOWED_BENCHMARK_HOSTS = new Set([
-	"api.phaseo.ai",
+	"api.phaseo.app",
 	"openrouter.ai",
 	"api.llmgateway.io",
 	"ai-gateway.vercel.sh",

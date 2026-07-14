@@ -21,7 +21,7 @@ function loadLocalEnv() {
 
 loadLocalEnv();
 
-const BASE_URL = (process.env.PHASEO_BASE_URL || 'https://api.phaseo.ai/v1').replace(/\/+$/, '');
+const BASE_URL = (process.env.PHASEO_BASE_URL || 'https://api.phaseo.app/v1').replace(/\/+$/, '');
 const API_KEY = process.env.PHASEO_API_KEY;
 const MODEL = process.env.PHASEO_MODEL || 'openai/gpt-5.6-sol';
 const APP_TITLE = process.env.PHASEO_APP_TITLE || process.env.PHASEO_APP_TITLE || 'Phaseo Node Quickstart';

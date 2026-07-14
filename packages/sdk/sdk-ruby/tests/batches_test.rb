@@ -91,11 +91,11 @@ class BatchesTest < Minitest::Test
     assert_equal "batch_123", response["id"]
     assert_equal "cancelling", response["status"]
     assert_equal(
-      "wss://api.phaseo.ai/v1/async/batch/batch_123/ws?interval_ms=1500&close_on_terminal=false",
+      "wss://api.phaseo.app/v1/async/batch/batch_123/ws?interval_ms=1500&close_on_terminal=false",
       client.batch_websocket_url("batch_123", interval_ms: 1500, close_on_terminal: false)
     )
     assert_equal(
-      "wss://api.phaseo.ai/v1/async/video/video%20123/ws?interval_ms=1500&close_on_terminal=false",
+      "wss://api.phaseo.app/v1/async/video/video%20123/ws?interval_ms=1500&close_on_terminal=false",
       client.get_async_job_websocket_url("video", "video 123", interval_ms: 1500, close_on_terminal: false)
     )
     assert_equal [["POST", "/batches/batch_123/cancel", nil, nil, nil]], calls

@@ -7,7 +7,7 @@ if (string.IsNullOrWhiteSpace(apiKey))
     throw new InvalidOperationException("PHASEO_API_KEY is required");
 }
 
-var baseUrl = Environment.GetEnvironmentVariable("PHASEO_BASE_URL") ?? "https://api.phaseo.ai/v1";
+var baseUrl = Environment.GetEnvironmentVariable("PHASEO_BASE_URL") ?? "https://api.phaseo.app/v1";
 var client = new PhaseoSdk.Phaseo(apiKey, baseUrl);
 var model = Environment.GetEnvironmentVariable("PHASEO_SMOKE_MODEL") ?? "openai/gpt-5.4-nano";
 var input = Environment.GetEnvironmentVariable("PHASEO_SMOKE_INPUT") ?? "Hi";
