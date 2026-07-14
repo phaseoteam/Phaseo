@@ -39,7 +39,7 @@
       "is_self_reported": false,
       "other_info": "inferred modality/version alias from gemini-1.0-pro",
       "source_link": "https://example.com/benchmark-image",
-      "rank": 13
+      "rank": 14
     },
     {
       "benchmark_id": "gpqa",
@@ -47,7 +47,7 @@
       "is_self_reported": false,
       "other_info": "inferred modality/version alias from gemini-1.0-pro",
       "source_link": "https://example.com/benchmark-image",
-      "rank": 229
+      "rank": 230
     },
     {
       "benchmark_id": "math",
@@ -63,7 +63,7 @@
       "is_self_reported": false,
       "other_info": "inferred modality/version alias from gemini-1.0-pro",
       "source_link": "https://example.com/benchmark-image",
-      "rank": 61
+      "rank": 62
     },
     {
       "benchmark_id": "mmlu",
@@ -79,7 +79,7 @@
       "is_self_reported": false,
       "other_info": "inferred modality/version alias from gemini-1.0-pro",
       "source_link": "https://example.com/benchmark-image",
-      "rank": 121
+      "rank": 122
     },
     {
       "benchmark_id": "wmt23",

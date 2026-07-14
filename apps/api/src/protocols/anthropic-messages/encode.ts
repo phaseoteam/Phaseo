@@ -52,7 +52,8 @@ export type AnthropicResponseContent =
 		};
 	}
 	| { type: "thinking"; thinking: string; signature: string }
-	| { type: "tool_use"; id: string; name: string; input: Record<string, any> };
+	| { type: "tool_use"; id: string; name: string; input: Record<string, any> }
+	| Record<string, any>;
 
 /**
  * Encode IR response to Anthropic Messages format
@@ -85,47 +86,17 @@ export function encodeAnthropicMessagesResponse(ir: IRChatResponse): AnthropicMe
 	}
 
 	const hasToolCalls = (mainChoice.message.toolCalls?.length ?? 0) > 0;
-	const { text, reasoningParts, imageParts } = splitContentParts(mainChoice.message.content as IRContentPart[]);
-	const contentText = mainChoice.message.refusal ?? text;
+	const contentParts = mainChoice.message.content as IRContentPart[];
+	const reasoningCount = countReasoningParts(contentParts);
 
-	if (typeof contentText === "string") {
-		const shouldIncludeText =
-			Boolean(mainChoice.message.refusal) ||
-			contentText.length > 0 ||
-			(contentText === "" && !hasToolCalls && reasoningParts.length === 0);
-
-		if (shouldIncludeText) {
-			content.push({
-				type: "text",
-				text: contentText,
-				citations: null,
-			});
-		}
-	}
-
-	if (imageParts.length > 0) {
-		for (const imagePart of imageParts) {
-			if (imagePart.source === "data") {
-				content.push({
-					type: "image",
-					source: {
-						type: "base64",
-						media_type: imagePart.mimeType,
-						data: imagePart.data,
-					},
-				});
-				continue;
-			}
-
-			content.push({
-				type: "image",
-				source: {
-					type: "url",
-					media_type: imagePart.mimeType,
-					url: imagePart.data,
-				},
-			});
-		}
+	if (typeof mainChoice.message.refusal === "string") {
+		content.push({
+			type: "text",
+			text: mainChoice.message.refusal,
+			citations: null,
+		});
+	} else {
+		content.push(...encodeOrderedContentParts(contentParts));
 	}
 
 	// CRITICAL FIX: Add tool_use blocks from tool calls
@@ -140,16 +111,8 @@ export function encodeAnthropicMessagesResponse(ir: IRChatResponse): AnthropicMe
 		}
 	}
 
-	if (reasoningParts.length > 0) {
-		for (const reasoning of reasoningParts) {
-			if (reasoning.text.length > 0) {
-				content.push({
-					type: "thinking",
-					thinking: reasoning.text,
-					signature: reasoning.signature ?? "",
-				});
-			}
-		}
+	if (content.length === 0 && !hasToolCalls && reasoningCount === 0) {
+		content.push({ type: "text", text: "", citations: null });
 	}
 
 	// Map finish reason
@@ -210,7 +173,12 @@ function encodeUsage(
 		server_tool_use:
 			typeof anyUsage?._ext?.serverToolUse?.datetime_requests === "number" ||
 			typeof anyUsage?._ext?.serverToolUse?.web_search_requests === "number" ||
-			typeof anyUsage?._ext?.serverToolUse?.web_fetch_requests === "number"
+			typeof anyUsage?._ext?.serverToolUse?.web_search_results === "number" ||
+			typeof anyUsage?._ext?.serverToolUse?.web_search_extra_results === "number" ||
+			typeof anyUsage?._ext?.serverToolUse?.web_fetch_requests === "number" ||
+			typeof anyUsage?._ext?.serverToolUse?.advisor_requests === "number" ||
+			typeof anyUsage?._ext?.serverToolUse?.image_generation_requests === "number" ||
+			typeof anyUsage?._ext?.serverToolUse?.apply_patch_requests === "number"
 				? {
 					...(typeof anyUsage?._ext?.serverToolUse?.datetime_requests === "number"
 						? { datetime_requests: anyUsage._ext.serverToolUse.datetime_requests }
@@ -218,11 +186,26 @@ function encodeUsage(
 					...(typeof anyUsage?._ext?.serverToolUse?.web_search_requests === "number"
 						? { web_search_requests: anyUsage._ext.serverToolUse.web_search_requests }
 						: {}),
+					...(typeof anyUsage?._ext?.serverToolUse?.web_search_results === "number"
+						? { web_search_results: anyUsage._ext.serverToolUse.web_search_results }
+						: {}),
+					...(typeof anyUsage?._ext?.serverToolUse?.web_search_extra_results === "number"
+						? { web_search_extra_results: anyUsage._ext.serverToolUse.web_search_extra_results }
+						: {}),
 					...(typeof anyUsage?._ext?.serverToolUse?.web_fetch_requests === "number"
 						? { web_fetch_requests: anyUsage._ext.serverToolUse.web_fetch_requests }
 						: {}),
+					...(typeof anyUsage?._ext?.serverToolUse?.advisor_requests === "number"
+						? { advisor_requests: anyUsage._ext.serverToolUse.advisor_requests }
+						: {}),
+					...(typeof anyUsage?._ext?.serverToolUse?.image_generation_requests === "number"
+						? { image_generation_requests: anyUsage._ext.serverToolUse.image_generation_requests }
+						: {}),
+					...(typeof anyUsage?._ext?.serverToolUse?.apply_patch_requests === "number"
+						? { apply_patch_requests: anyUsage._ext.serverToolUse.apply_patch_requests }
+						: {}),
 				}
-				: null,
+			: null,
 		service_tier: tier,
 	};
 }
@@ -236,27 +219,61 @@ function safeParseToolArguments(raw: string): Record<string, any> {
 	}
 }
 
-function splitContentParts(
-	parts: IRContentPart[],
-): {
-	text: string;
-	reasoningParts: Array<{ text: string; signature?: string }>;
-	imageParts: Array<Extract<IRContentPart, { type: "image" }>>;
-} {
-	if (!Array.isArray(parts)) return { text: "", reasoningParts: [], imageParts: [] };
-	const text = parts
-		.filter((part) => part.type === "text")
-		.map((part) => part.text)
-		.join("");
-	const reasoningParts = parts
-		.filter((part) => part.type === "reasoning_text")
-		.map((part) => ({
-			text: part.text,
-			signature: part.thoughtSignature,
-		}));
-	const imageParts = parts.filter((part) => part.type === "image") as Array<
-		Extract<IRContentPart, { type: "image" }>
-	>;
-	return { text, reasoningParts, imageParts };
+function countReasoningParts(parts: IRContentPart[]): number {
+	if (!Array.isArray(parts)) return 0;
+	return parts.filter((part) => part.type === "reasoning_text").length;
+}
+
+function encodeOrderedContentParts(parts: IRContentPart[]): AnthropicResponseContent[] {
+	if (!Array.isArray(parts)) return [];
+	const content: AnthropicResponseContent[] = [];
+	for (const part of parts) {
+		if (part.type === "text") {
+			if (part.text.length > 0) {
+				content.push({
+					type: "text",
+					text: part.text,
+					citations: null,
+				});
+			}
+			continue;
+		}
+		if (part.type === "reasoning_text") {
+			if (part.text.length > 0) {
+				content.push({
+					type: "thinking",
+					thinking: part.text,
+					signature: part.thoughtSignature ?? "",
+				});
+			}
+			continue;
+		}
+		if (part.type === "image") {
+			if (part.source === "data") {
+				content.push({
+					type: "image",
+					source: {
+						type: "base64",
+						media_type: part.mimeType,
+						data: part.data,
+					},
+				});
+				continue;
+			}
+			content.push({
+				type: "image",
+				source: {
+					type: "url",
+					media_type: part.mimeType,
+					url: part.data,
+				},
+			});
+			continue;
+		}
+		if (part.type === "provider_block") {
+			content.push(part.block);
+		}
+	}
+	return content;
 }
 

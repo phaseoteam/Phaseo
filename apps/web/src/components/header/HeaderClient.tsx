@@ -31,7 +31,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import TeamSwitcher from "./TeamSwitcher";
 import { SwapTeam } from "@/app/(dashboard)/actions";
-import { createClient } from "@/utils/supabase/client";
+import { postClientAuthSignOut } from "@/lib/fetchers/internal/postClientAuthSignOut";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import {
@@ -61,7 +61,7 @@ export default function HeaderClient({
 	variant = "desktop",
 }: HeaderProps) {
 	const router = useRouter();
-	const pathname = usePathname();
+	const pathname = usePathname() ?? "/";
 	const { theme, setTheme } = useTheme();
 	const currentTheme =
 		theme === "light" || theme === "dark" || theme === "system"
@@ -84,9 +84,9 @@ export default function HeaderClient({
 
 	async function handleSignOut() {
 		try {
-			const supabase = createClient();
-			const { error } = await supabase.auth.signOut();
-			if (error) console.error("Sign out error", error);
+			await postClientAuthSignOut();
+		} catch (error) {
+			console.error("Sign out error", error);
 		} finally {
 			router.push("/");
 			router.refresh();

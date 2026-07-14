@@ -89,7 +89,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://blog.google/products/gemini/gemini-3-flash/",
-      "rank": 31
+      "rank": 33
     },
     {
       "benchmark_id": "livecodebench-pro",
@@ -105,7 +105,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://blog.google/products/gemini/gemini-3-flash/",
-      "rank": 16
+      "rank": 21
     },
     {
       "benchmark_id": "mmmlu",
@@ -129,7 +129,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://blog.google/products/gemini/gemini-3-flash/",
-      "rank": 11
+      "rank": 12
     },
     {
       "benchmark_id": "omnidocbench-1.5",
@@ -137,7 +137,7 @@
       "is_self_reported": true,
       "other_info": "Lower is better",
       "source_link": "https://blog.google/products/gemini/gemini-3-flash/",
-      "rank": 3
+      "rank": 17
     },
     {
       "benchmark_id": "screenspot-pro",
@@ -161,7 +161,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://blog.google/products/gemini/gemini-3-flash/",
-      "rank": 12
+      "rank": 16
     },
     {
       "benchmark_id": "tau-2-bench",
@@ -177,7 +177,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://blog.google/products/gemini/gemini-3-flash/",
-      "rank": 35
+      "rank": 39
     },
     {
       "benchmark_id": "toolathlon",
@@ -185,7 +185,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://blog.google/products/gemini/gemini-3-flash/",
-      "rank": 5
+      "rank": 6
     },
     {
       "benchmark_id": "vending-bench-2",
@@ -225,7 +225,7 @@
       "is_self_reported": false,
       "other_info": "DeepSWE label: gemini-3-flash; mini-swe-agent; 5% +/-2%; avg cost $1.53; avg time 39m; out tok 233k",
       "source_link": "https://deepswe.datacurve.ai/",
-      "rank": 15
+      "rank": 16
     },
     {
       "benchmark_id": "elimination-game",

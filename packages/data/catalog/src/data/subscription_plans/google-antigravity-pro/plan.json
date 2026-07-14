@@ -1,0 +1,78 @@
+{
+  "plan_id": "google-antigravity-pro",
+  "name": "Google Antigravity Pro",
+  "organisation_id": "google",
+  "description": "Google Antigravity access through Google AI Pro with a flexible AI credit pool.",
+  "pricing_options": [
+    {
+      "frequency": "monthly",
+      "usd_price": 19.99,
+      "link": "https://antigravity.google/pricing",
+      "other_info": "Google AI Pro subscription tier"
+    },
+    {
+      "frequency": "yearly",
+      "usd_price": 199.99,
+      "link": "https://gemini.google/subscriptions/",
+      "other_info": "Google AI Pro annual billing"
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "AI Credits",
+      "feature_value": "Flexible Pool",
+      "feature_description": "Antigravity lists Google AI Pro as providing a flexible AI credit pool.",
+      "other_info": null
+    },
+    {
+      "feature_name": "Tab Completions",
+      "feature_value": "Unlimited",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Command Requests",
+      "feature_value": "Unlimited",
+      "feature_description": null,
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "google/gemini-3.5-flash",
+      "model_info": "Agent model access",
+      "rate_limit": "Consumes flexible AI credits",
+      "other_info": null
+    },
+    {
+      "model_id": "google/gemini-3.1-pro-preview",
+      "model_info": "Agent model access",
+      "rate_limit": "Consumes flexible AI credits",
+      "other_info": "Antigravity lists Gemini 3.1 Pro; this catalog currently tracks the preview model ID."
+    },
+    {
+      "model_id": "google/gemini-3-flash-preview",
+      "model_info": "Agent model access",
+      "rate_limit": "Consumes flexible AI credits",
+      "other_info": "Antigravity lists Gemini 3 Flash; this catalog currently tracks the preview model ID."
+    },
+    {
+      "model_id": "anthropic/claude-sonnet-4.6",
+      "model_info": "Agent model access",
+      "rate_limit": "Consumes flexible AI credits",
+      "other_info": null
+    },
+    {
+      "model_id": "anthropic/claude-opus-4.6",
+      "model_info": "Agent model access",
+      "rate_limit": "Consumes flexible AI credits",
+      "other_info": null
+    },
+    {
+      "model_id": "openai/gpt-oss-120b",
+      "model_info": "Agent model access",
+      "rate_limit": "Consumes flexible AI credits",
+      "other_info": null
+    }
+  ]
+}

@@ -1,8 +1,8 @@
 import { Suspense } from "react";
-import { createClient } from "@/utils/supabase/server";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import AccountDangerZoneClient from "@/components/(gateway)/settings/account/AccountDangerZoneClient";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
+import { fetchSettingsAccountDangerInitialData } from "@/lib/fetchers/internal/fetchSettingsAccountDangerInitialData";
 
 export const metadata = {
 	title: "Danger Zone - Settings",
@@ -23,11 +23,9 @@ export default function AccountDangerPage() {
 }
 
 async function AccountDangerContent() {
-	const supabase = await createClient();
-	const { data: authData } = await supabase.auth.getUser();
-	const authUser = authData.user;
+	const initialData = await fetchSettingsAccountDangerInitialData();
 
-	if (!authUser) {
+	if (!initialData.signedIn) {
 		return (
 			<div className="rounded-lg border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
 				Not signed in.

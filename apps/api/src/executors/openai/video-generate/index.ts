@@ -9,7 +9,7 @@ import { resolveProviderKey } from "@providers/keys";
 import { openAICompatHeaders, openAICompatUrl } from "@providers/openai-compatible/config";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import { saveVideoJobMeta } from "@core/video-jobs";
-import { reserveVideoGenerationCredits } from "@core/video-reservations";
+import { isInsufficientVideoReservationStatus, reserveVideoGenerationCredits } from "@core/video-reservations";
 import { releaseWalletReservation } from "@core/wallet-reservations";
 import { buildVideoPricingRequestOptions, resolveVideoSize } from "@core/video-request-options";
 import type { ProviderExecutor } from "../../types";
@@ -236,7 +236,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	try {
 		const reserved = await reserveVideoGenerationCredits({
 			workspaceId: args.workspaceId,
-			videoId: `req_${args.requestId}`,
+			videoId: args.requestId,
 			providerId: args.providerId,
 			model,
 			seconds: secondsForMeta,
@@ -258,7 +258,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				message: "Video duration seconds and pricing must be resolvable before submission.",
 			};
 		}
-		if (reserved.amountNanos > 0 && !reserved.held && reserved.status !== "insufficient_funds") {
+		if (reserved.amountNanos > 0 && !reserved.held && !isInsufficientVideoReservationStatus(reserved.status)) {
 			reservationGateError = {
 				status: 503,
 				type: "reservation_not_held",
@@ -296,7 +296,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		}
 	};
 
-	if (reservationStatus === "insufficient_funds") {
+	if (isInsufficientVideoReservationStatus(reservationStatus)) {
 		const upstream = new Response(
 			JSON.stringify({
 				error: {
@@ -434,6 +434,28 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const json = await res.json().catch(() => ({}));
 	const irResponse = openAiVideoToIR(json, args.requestId, model, args.providerId, seconds);
 	const nativeVideoId = irResponse.nativeId ?? json?.id;
+	if (!nativeVideoId) {
+		await releaseReservationOnFailure();
+		const upstream = new Response(
+			JSON.stringify({
+				error: {
+					type: "invalid_upstream_response",
+					message: "OpenAI video create response did not include a video id.",
+				},
+			}),
+			{ status: 502, headers: { "Content-Type": "application/json" } },
+		);
+		return {
+			kind: "completed",
+			ir: undefined,
+			bill,
+			upstream,
+			keySource: keyInfo.source,
+			byokKeyId: keyInfo.byokId,
+			mappedRequest,
+			rawResponse: json,
+		};
+	}
 	if (nativeVideoId) {
 		try {
 			await saveVideoJobMeta(args.workspaceId, args.requestId, {
@@ -465,6 +487,28 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				reservationStatus,
 				note: "reservation_retained_for_manual_reconciliation",
 			});
+			const upstream = new Response(
+				JSON.stringify({
+					error: {
+						type: "async_job_persistence_failed",
+						message: "OpenAI video job was created upstream, but AI Stats could not persist gateway ownership metadata.",
+						native_video_id: String(nativeVideoId),
+						reservation_id: reservationId,
+						reservation_status: reservationStatus,
+					},
+				}),
+				{ status: 502, headers: { "Content-Type": "application/json" } },
+			);
+			return {
+				kind: "completed",
+				ir: undefined,
+				bill,
+				upstream,
+				keySource: keyInfo.source,
+				byokKeyId: keyInfo.byokId,
+				mappedRequest,
+				rawResponse: json,
+			};
 		}
 	}
 

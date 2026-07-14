@@ -22,8 +22,10 @@ Set `stream: true` to receive server-sent events in Anthropic format (`message_s
 `/v1/messages` also supports these gateway-managed server tools:
 
 - `gateway:datetime`
-- `gateway:web_search`
-- `gateway:web_fetch`
+- `ai-stats:web_search`
+- `ai-stats:web_fetch`
+- `ai-stats:advisor`
+- `ai-stats:image_generation`
 
 AI Stats rewrites these tools to Anthropic-compatible format upstream, executes them server-side, and continues the tool loop.
 

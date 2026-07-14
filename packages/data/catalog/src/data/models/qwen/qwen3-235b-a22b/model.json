@@ -67,7 +67,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 131
+      "rank": 137
     },
     {
       "benchmark_id": "lmarena-text",
@@ -99,7 +99,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 18
+      "rank": 28
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -171,7 +171,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 185
+      "rank": 186
     },
     {
       "benchmark_id": "gsm8k",
@@ -195,7 +195,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 3
+      "rank": 5
     },
     {
       "benchmark_id": "livecodebench",
@@ -203,7 +203,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 16
+      "rank": 17
     },
     {
       "benchmark_id": "math",
@@ -243,7 +243,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 118
+      "rank": 121
     },
     {
       "benchmark_id": "mmlu-redux",
@@ -259,7 +259,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 20
+      "rank": 21
     },
     {
       "benchmark_id": "multilf",
@@ -291,7 +291,7 @@
       "is_self_reported": false,
       "other_info": "Confab 23.3%; non-response 8.0%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 26
+      "rank": 37
     },
     {
       "benchmark_id": "elimination-game",
@@ -299,7 +299,7 @@
       "is_self_reported": false,
       "other_info": "sigma 0.205; games 558; avg points 0.464",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 42
+      "rank": 39
     }
   ]
 }

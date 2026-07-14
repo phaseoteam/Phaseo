@@ -1,5 +1,5 @@
 import { cacheLife, cacheTag } from "next/cache";
-import { createClient } from "@/utils/supabase/client";
+import { createAdminClient } from "@/utils/supabase/admin";
 
 export type FamilyCard = {
 	family_id: string;
@@ -8,7 +8,7 @@ export type FamilyCard = {
 };
 
 export async function getAllFamilies(): Promise<FamilyCard[]> {
-	const supabase = await createClient();
+	const supabase = createAdminClient();
 
 	const { data, error } = await supabase
 		.from("data_model_families")
@@ -38,7 +38,9 @@ export async function getAllFamiliesCached(): Promise<FamilyCard[]> {
 	"use cache";
 
 	cacheLife("days");
+	cacheTag("public-model-catalogue");
 	cacheTag("data:families");
+	cacheTag("frontend:families");
 
 	console.log("[fetch] HIT for families");
 	return getAllFamilies();

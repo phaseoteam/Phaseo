@@ -61,6 +61,7 @@ export async function getAppUsageOverTime(
 	cacheTag("data:app_usage");
 	cacheTag(`data:app_usage:${appId}`);
 	cacheTag(`data:app_usage:${appId}:${range}`);
+	cacheTag("frontend:app-usage");
 
 	const supabase = await createAdminClient();
 
@@ -223,6 +224,7 @@ export async function getRecentAppRequests(
 	cacheTag("data:app_usage");
 	cacheTag(`data:app_usage:${appId}`);
 	cacheTag(`data:app_usage:${appId}:recent`);
+	cacheTag("frontend:app-usage");
 
 	const supabase = await createAdminClient();
 	const safeLimit = Math.max(1, Math.min(100, Math.round(limit)));

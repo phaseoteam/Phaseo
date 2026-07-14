@@ -1,0 +1,72 @@
+{
+  "plan_id": "cursor-ultra",
+  "name": "Cursor Ultra",
+  "organisation_id": "cursor",
+  "description": "Cursor individual plan for agent power users.",
+  "pricing_options": [
+    {
+      "frequency": "monthly",
+      "usd_price": 200,
+      "link": "https://cursor.com/pricing",
+      "other_info": "Individual paid tier"
+    },
+    {
+      "frequency": "yearly",
+      "usd_price": 1920,
+      "link": "https://cursor.com/pricing",
+      "other_info": "$160 per month, billed annually"
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "Agent Limits",
+      "feature_value": "20x Cursor Pro",
+      "feature_description": "Cursor describes Ultra as 20x the Agent limits of Pro.",
+      "other_info": null
+    },
+    {
+      "feature_name": "Frontier Models",
+      "feature_value": "Included",
+      "feature_description": "Cursor says paid plans include access to frontier models.",
+      "other_info": "Exact available model list may vary"
+    },
+    {
+      "feature_name": "Priority Access",
+      "feature_value": "Included",
+      "feature_description": "Priority access to new features.",
+      "other_info": null
+    },
+    {
+      "feature_name": "Cloud Agents",
+      "feature_value": "Included",
+      "feature_description": null,
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "cursor/composer-2.5",
+      "model_info": "Cursor native agent model",
+      "rate_limit": "20x Cursor Pro agent limits",
+      "other_info": null
+    },
+    {
+      "model_id": "openai/gpt-5.5",
+      "model_info": "Frontier model access",
+      "rate_limit": "Consumes included usage at model rates",
+      "other_info": "Representative OpenAI frontier model; exact availability may vary"
+    },
+    {
+      "model_id": "anthropic/claude-sonnet-4.6",
+      "model_info": "Frontier model access",
+      "rate_limit": "Consumes included usage at model rates",
+      "other_info": "Representative Anthropic frontier model; exact availability may vary"
+    },
+    {
+      "model_id": "google/gemini-3.5-flash",
+      "model_info": "Frontier model access",
+      "rate_limit": "Consumes included usage at model rates",
+      "other_info": "Representative Gemini frontier model; exact availability may vary"
+    }
+  ]
+}

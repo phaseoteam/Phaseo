@@ -92,7 +92,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://docs.x.ai/docs/models",
-      "rank": 51
+      "rank": 56
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -100,7 +100,7 @@
       "is_self_reported": true,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://docs.x.ai/docs/models",
-      "rank": 74
+      "rank": 80
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -108,7 +108,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://docs.x.ai/docs/models",
-      "rank": 32
+      "rank": 34
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -116,7 +116,7 @@
       "is_self_reported": true,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://docs.x.ai/docs/models",
-      "rank": 51
+      "rank": 53
     },
     {
       "benchmark_id": "aime-2024",
@@ -140,7 +140,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/blog/grok-3",
-      "rank": 37
+      "rank": 38
     },
     {
       "benchmark_id": "livecodebench",

@@ -2,9 +2,9 @@ import { Metadata } from "next";
 import { Suspense } from "react";
 import { buildMetadata } from "@/lib/seo";
 import PricingCalculator from "@/components/(tools)/PricingCalculator";
-import { getPricingModelsCached } from "@/lib/fetchers/pricing/getPricingModels";
+import { fetchFrontendPricingModels } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import type { PricingModel } from "@/lib/fetchers/pricing/getPricingModels";
 import { loadPricingCalculatorSearchParams } from "./search-params";
-import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 
 export const metadata: Metadata = buildMetadata({
 	title: "AI Pricing Calculator: Compare LLM API Costs",
@@ -39,10 +39,9 @@ async function PricingCalculatorPageContent({
 }: {
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-	const includeHidden = await resolveIncludeHidden();
-	let models: Awaited<ReturnType<typeof getPricingModelsCached>> = [];
+	let models: PricingModel[] = [];
 	try {
-		models = await getPricingModelsCached(includeHidden);
+		models = await fetchFrontendPricingModels();
 	} catch (error) {
 		console.error("[pricing-calculator] failed to load pricing models", error);
 	}

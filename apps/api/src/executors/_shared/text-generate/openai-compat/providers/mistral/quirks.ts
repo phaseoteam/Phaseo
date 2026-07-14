@@ -6,7 +6,6 @@ import type { ProviderQuirks } from "../../quirks/types";
 
 const MISTRAL_UNSUPPORTED_CHAT_FIELDS = [
 	"service_tier",
-	"speed",
 	"prompt_cache_key",
 	"safety_identifier",
 	"background",
@@ -43,5 +42,4 @@ export const mistralQuirks: ProviderQuirks = {
 		}
 	},
 };
-
 

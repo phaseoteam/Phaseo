@@ -1,60 +1,58 @@
 // src/components/gateway/Quickstart.tsx
 "use client";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuSeparator,
-	DropdownMenuSub,
-	DropdownMenuSubContent,
-	DropdownMenuSubTrigger,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import Link from "next/link";
-import {
-	ArrowRight,
-	Check,
-	ChevronDown,
-	Globe,
-	Info,
-	Shield,
-	TerminalSquare,
-} from "lucide-react";
+import { KeyRound, Settings2, Shield, TerminalSquare } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { BASE_URL } from "./config";
 import { safeDecodeURIComponent } from "@/lib/utils/safe-decode";
-import { capabilityToEndpoints } from "@/lib/config/capabilityToEndpoints";     
+import { capabilityToEndpoints } from "@/lib/config/capabilityToEndpoints";
 import { resolveGatewayPath } from "./endpoint-paths";
 import { EndpointRoutesTable } from "./EndpointRoutesTable";
 import { QuickstartUsageSection } from "./QuickstartUsageSection";
 import { buildEndpointRoutes, ENDPOINT_OPTIONS } from "./endpointRoutes";
-import { AI_SDK_ENDPOINTS, AI_STATS_METHODS, DIRECT_LANGUAGE_ORDER, LANGUAGE_GROUP_META, LANGUAGE_GROUP_ORDER, LANGUAGE_OPTIONS, OPENAI_METHODS, STREAMING_PATHS, type LanguageOption } from "./quickstartSdkConfig";
+import {
+	AI_SDK_ENDPOINTS,
+	AI_STATS_METHODS,
+	LANGUAGE_OPTIONS,
+	OPENAI_METHODS,
+	STREAMING_PATHS,
+	type LanguageOption,
+} from "./quickstartSdkConfig";
 import {
 	applyRoutingPreferenceToPayload,
 	buildExamplePayload,
-	buildStreamingDiff,
 	jsonToPythonLiteral,
 	resolveRoutingPreference,
 } from "./quickstartPayloads";
-import { Switch } from "@/components/ui/switch";
 import { useEffect, useMemo, useState } from "react";
 import type { QuickstartRequestContext } from "./requestContext";
 
 interface QuickstartProps {
-	modelId?: string; aliases?: string[]; apiModelIds?: string[];
-	primaryModelIdentifier?: string; acceptedModelIdentifiers?: string[];
+	modelId?: string;
+	aliases?: string[];
+	apiModelIds?: string[];
+	primaryModelIdentifier?: string;
+	acceptedModelIdentifiers?: string[];
 	primaryModelIdentifierByEndpoint?: Record<string, string>;
 	acceptedModelIdentifiersByEndpoint?: Record<string, string[]>;
-	endpoint?: string | null; supportedEndpoints?: string[]; showHeader?: boolean;
+	supportedParametersByEndpoint?: Record<
+		string,
+		Array<{
+			param_id: string;
+			provider_count_supported: number;
+			provider_count_total: number;
+			support_level: "all_providers" | "some_providers";
+			providers: Array<{
+				api_provider_id: string;
+				api_provider_name: string;
+				supported: boolean;
+			}>;
+		}>
+	>;
+	endpoint?: string | null;
+	supportedEndpoints?: string[];
+	showHeader?: boolean;
 	requestContext?: QuickstartRequestContext;
 }
 
@@ -62,6 +60,230 @@ const normalizeEndpointValue = (value: string | null | undefined) =>
 	value ? value.toLowerCase().replace(/^\//, "").replace(/\//g, ".") : "";
 
 const endpointValueFromPath = (path: string) => normalizeEndpointValue(path);
+
+type LanguageFamilyId =
+	| "curl"
+	| "typescript"
+	| "python"
+	| "go"
+	| "csharp"
+	| "php"
+	| "ruby";
+
+type ServiceTier = "standard" | "priority" | "flex";
+
+const LANGUAGE_FAMILY_ORDER: LanguageFamilyId[] = [
+	"typescript",
+	"python",
+	"curl",
+	"go",
+	"csharp",
+	"php",
+	"ruby",
+];
+
+const LANGUAGE_DEFAULT_ORDER = [
+	"typescript-sdk",
+	"ai-sdk",
+	"node-fetch",
+	"python-sdk",
+	"python-requests",
+	"openai-node",
+	"openai-python",
+	"curl",
+	"go-sdk",
+	"csharp-sdk",
+	"php-sdk",
+	"ruby-sdk",
+	"agent-sdk-ts",
+	"agent-sdk-python",
+	"agent-sdk-go",
+	"agent-sdk-csharp",
+	"agent-sdk-php",
+	"agent-sdk-ruby",
+	"anthropic-node",
+	"anthropic-python",
+] as const;
+
+const LANGUAGE_FAMILY_META: Record<
+	LanguageFamilyId,
+	{ label: string; values: string[] }
+> = {
+	curl: { label: "cURL", values: ["curl"] },
+	typescript: {
+		label: "TypeScript",
+		values: [
+			"typescript-sdk",
+			"agent-sdk-ts",
+			"ai-sdk",
+			"openai-node",
+			"anthropic-node",
+			"node-fetch",
+		],
+	},
+	python: {
+		label: "Python",
+		values: [
+			"python-sdk",
+			"agent-sdk-python",
+			"openai-python",
+			"anthropic-python",
+			"python-requests",
+		],
+	},
+	go: { label: "Go", values: ["go-sdk", "agent-sdk-go"] },
+	csharp: { label: "C#", values: ["csharp-sdk", "agent-sdk-csharp"] },
+	php: { label: "PHP", values: ["php-sdk", "agent-sdk-php"] },
+	ruby: { label: "Ruby", values: ["ruby-sdk", "agent-sdk-ruby"] },
+};
+
+const LANGUAGE_VARIANT_LABELS: Partial<Record<string, string>> = {
+	curl: "HTTP",
+	"ai-sdk": "Vercel AI SDK",
+	"node-fetch": "Fetch",
+	"python-requests": "Requests",
+	"typescript-sdk": "SDK",
+	"python-sdk": "SDK",
+	"go-sdk": "SDK",
+	"csharp-sdk": "SDK",
+	"php-sdk": "SDK",
+	"ruby-sdk": "SDK",
+	"agent-sdk-ts": "Agent SDK",
+	"agent-sdk-python": "Agent SDK",
+	"agent-sdk-go": "Agent SDK",
+	"agent-sdk-csharp": "Agent SDK",
+	"agent-sdk-php": "Agent SDK",
+	"agent-sdk-ruby": "Agent SDK",
+	"openai-node": "OpenAI",
+	"openai-python": "OpenAI",
+	"anthropic-node": "Anthropic",
+	"anthropic-python": "Anthropic",
+};
+
+const SERVICE_TIER_LABELS: Record<ServiceTier, string> = {
+	standard: "Standard",
+	priority: "Priority",
+	flex: "Flex",
+};
+const STREAMING_SNIPPET_LANGUAGES = new Set([
+	"curl",
+	"node-fetch",
+	"python-requests",
+	"ai-sdk",
+	"typescript-sdk",
+	"python-sdk",
+]);
+const DOCS_BASE_URL = "https://docs.ai-stats.phaseo.app/v1";
+const SERVICE_TIERS_DOCS_HREF = `${DOCS_BASE_URL}/guides/service-tiers`;
+const STREAMING_DOCS_HREF = `${DOCS_BASE_URL}/guides/streaming`;
+const ENDPOINT_DOCS_BY_VALUE: Partial<Record<string, { label: string; href: string }>> = {
+	responses: {
+		label: "Responses API",
+		href: `${DOCS_BASE_URL}/api-reference/endpoint/responses`,
+	},
+	"chat.completions": {
+		label: "Chat Completions API",
+		href: `${DOCS_BASE_URL}/api-reference/endpoint/chat-completions`,
+	},
+	messages: {
+		label: "Anthropic Messages API",
+		href: `${DOCS_BASE_URL}/api-reference/endpoint/anthropic-messages`,
+	},
+};
+const LANGUAGE_DOCS_BY_VALUE: Partial<Record<string, { label: string; href: string }>> = {
+	"typescript-sdk": {
+		label: "TypeScript SDK",
+		href: `${DOCS_BASE_URL}/sdk-reference/typescript/overview`,
+	},
+	"python-sdk": {
+		label: "Python SDK",
+		href: `${DOCS_BASE_URL}/sdk-reference/python/overview`,
+	},
+	"go-sdk": {
+		label: "Go SDK",
+		href: `${DOCS_BASE_URL}/sdk-reference/go/overview`,
+	},
+	"csharp-sdk": {
+		label: "C# SDK",
+		href: `${DOCS_BASE_URL}/sdk-reference/csharp/overview`,
+	},
+	"php-sdk": {
+		label: "PHP SDK",
+		href: `${DOCS_BASE_URL}/sdk-reference/php/overview`,
+	},
+	"ruby-sdk": {
+		label: "Ruby SDK",
+		href: `${DOCS_BASE_URL}/sdk-reference/ruby/overview`,
+	},
+	"ai-sdk": {
+		label: "Vercel AI SDK",
+		href: `${DOCS_BASE_URL}/sdk-reference/sdk/ai-sdk`,
+	},
+	"agent-sdk-ts": {
+		label: "TypeScript Agent SDK",
+		href: `${DOCS_BASE_URL}/sdk-reference/typescript/agent-sdk-overview`,
+	},
+	"agent-sdk-python": {
+		label: "Python Agent SDK",
+		href: `${DOCS_BASE_URL}/sdk-reference/python/agent-sdk-overview`,
+	},
+	"agent-sdk-go": {
+		label: "Go Agent SDK",
+		href: `${DOCS_BASE_URL}/sdk-reference/go/agent-sdk-overview`,
+	},
+	"agent-sdk-csharp": {
+		label: "C# Agent SDK",
+		href: `${DOCS_BASE_URL}/sdk-reference/csharp/agent-sdk-overview`,
+	},
+	"agent-sdk-php": {
+		label: "PHP Agent SDK",
+		href: `${DOCS_BASE_URL}/sdk-reference/php/agent-sdk-overview`,
+	},
+	"agent-sdk-ruby": {
+		label: "Ruby Agent SDK",
+		href: `${DOCS_BASE_URL}/sdk-reference/ruby/agent-sdk-overview`,
+	},
+	"openai-node": {
+		label: "OpenAI-compatible API",
+		href: `${DOCS_BASE_URL}/api-reference/endpoint/chat-completions`,
+	},
+	"openai-python": {
+		label: "OpenAI-compatible API",
+		href: `${DOCS_BASE_URL}/api-reference/endpoint/chat-completions`,
+	},
+	"anthropic-node": {
+		label: "Anthropic Messages API",
+		href: `${DOCS_BASE_URL}/api-reference/endpoint/anthropic-messages`,
+	},
+	"anthropic-python": {
+		label: "Anthropic Messages API",
+		href: `${DOCS_BASE_URL}/api-reference/endpoint/anthropic-messages`,
+	},
+};
+
+const getLanguageFamilyId = (language: string): LanguageFamilyId | null => {
+	for (const familyId of LANGUAGE_FAMILY_ORDER) {
+		if (LANGUAGE_FAMILY_META[familyId].values.includes(language)) {
+			return familyId;
+		}
+	}
+	return null;
+};
+
+const JSON_INDENT = 4;
+
+const formatEmbeddedObject = (json: string, indentSize: number) => {
+	const lines = json.split("\n");
+	if (lines.length <= 2) return "";
+	const indent = " ".repeat(indentSize);
+	const baseIndent = " ".repeat(JSON_INDENT);
+	return lines
+		.slice(1, -1)
+		.map((line) =>
+			`${indent}${line.startsWith(baseIndent) ? line.slice(baseIndent.length) : line}`,
+		)
+		.join("\n");
+};
 
 export default function Quickstart({
 	modelId,
@@ -71,129 +293,117 @@ export default function Quickstart({
 	acceptedModelIdentifiers,
 	primaryModelIdentifierByEndpoint,
 	acceptedModelIdentifiersByEndpoint,
+	supportedParametersByEndpoint,
 	endpoint,
 	supportedEndpoints = [],
 	showHeader = true,
 	requestContext,
 }: QuickstartProps) {
-        const supportedEndpointValues = useMemo(() => {
-                const normalized = new Set(
-                        supportedEndpoints.map((value) =>
-                                normalizeEndpointValue(value)
-                        )
-                );
-                const values = new Set<string>();
-                for (const value of normalized) {
-                        const mapped = capabilityToEndpoints[value];
-                        if (mapped && mapped.length > 0) {
-                                mapped.forEach((path) =>
-                                        values.add(endpointValueFromPath(path))
-                                );
-                                if (ENDPOINT_OPTIONS.some((option) => option.value === value)) {
-                                        values.add(value);
-                                }
-                                continue;
-                        }
-                        if (value) values.add(value);
-                }
-                if (endpoint) {
-                        values.add(normalizeEndpointValue(endpoint));
-                }
-                return values;
-        }, [supportedEndpoints, endpoint]);
+	const supportedEndpointValues = useMemo(() => {
+		const normalized = new Set(
+			supportedEndpoints.map((value) => normalizeEndpointValue(value)),
+		);
+		const values = new Set<string>();
+		for (const value of normalized) {
+			const mapped = capabilityToEndpoints[value];
+			if (mapped && mapped.length > 0) {
+				mapped.forEach((path) => values.add(endpointValueFromPath(path)));
+				if (ENDPOINT_OPTIONS.some((option) => option.value === value)) {
+					values.add(value);
+				}
+				continue;
+			}
+			if (value) values.add(value);
+		}
+		if (endpoint) {
+			values.add(normalizeEndpointValue(endpoint));
+		}
+		return values;
+	}, [supportedEndpoints, endpoint]);
 
-        const availableEndpoints = useMemo(() => {
-                const filtered = ENDPOINT_OPTIONS.filter((option) =>
-                        supportedEndpointValues.has(option.value)
-                );
-                return filtered.length > 0 ? filtered : ENDPOINT_OPTIONS;
-        }, [supportedEndpointValues]);
+	const availableEndpoints = useMemo(() => {
+		const filtered = ENDPOINT_OPTIONS.filter((option) =>
+			supportedEndpointValues.has(option.value),
+		);
+		return filtered.length > 0 ? filtered : ENDPOINT_OPTIONS;
+	}, [supportedEndpointValues]);
 
-        const defaultEndpoint = useMemo(() => {
-                return (
-                        availableEndpoints.find((e) => e.value === "responses")?.value ||
-                        availableEndpoints.find((e) => e.value === "chat.completions")?.value ||
-                        availableEndpoints.find((e) => e.value === "messages")?.value ||
-                        availableEndpoints[0]?.value ||
-                        "chat.completions"
-                );
-        }, [availableEndpoints]);
+	const defaultEndpoint = useMemo(() => {
+		return (
+			availableEndpoints.find((e) => e.value === "responses")?.value ||
+			availableEndpoints.find((e) => e.value === "chat.completions")?.value ||
+			availableEndpoints.find((e) => e.value === "messages")?.value ||
+			availableEndpoints[0]?.value ||
+			"chat.completions"
+		);
+	}, [availableEndpoints]);
 
-        const endpointRoutes = useMemo(
+	const endpointRoutes = useMemo(
 		() => buildEndpointRoutes(availableEndpoints),
 		[availableEndpoints],
 	);
 
-        const [selectedEndpoint, setSelectedEndpoint] = useState(defaultEndpoint);
-        const [selectedLanguage, setSelectedLanguage] = useState("curl");       
-        const [streamingEnabled, setStreamingEnabled] = useState(false);
-        const [showAllEndpointRoutes, setShowAllEndpointRoutes] = useState(false);
+	const [selectedEndpoint, setSelectedEndpoint] = useState(defaultEndpoint);
+	const [selectedLanguage, setSelectedLanguage] = useState("typescript-sdk");
+	const [selectedServiceTier, setSelectedServiceTier] =
+		useState<ServiceTier>("standard");
+	const batchEnabled = false;
+	const [streamingEnabled, setStreamingEnabled] = useState(false);
+	const [showAllEndpointRoutes, setShowAllEndpointRoutes] = useState(false);
 
-        useEffect(() => {
-                if (!availableEndpoints.some((e) => e.value === selectedEndpoint)) {
-                        setSelectedEndpoint(defaultEndpoint);
-                }
-        }, [availableEndpoints, defaultEndpoint, selectedEndpoint]);
+	useEffect(() => {
+		if (!availableEndpoints.some((e) => e.value === selectedEndpoint)) {
+			setSelectedEndpoint(defaultEndpoint);
+		}
+	}, [availableEndpoints, defaultEndpoint, selectedEndpoint]);
 
-        const supportedLanguageSet = useMemo(() => {
-                const normalizedEndpoint = normalizeEndpointValue(selectedEndpoint);
-                const supported = new Set<string>([
-                        "curl",
-                        "node-fetch",
-                        "python-requests",
-                        "go-sdk",
-                        "csharp-sdk",
-                        "php-sdk",
-                        "ruby-sdk",
-                ]);
-                if (AI_SDK_ENDPOINTS.has(normalizedEndpoint)) {
-                        supported.add("ai-sdk");
-                        supported.add("agent-sdk-ts");
-                        supported.add("agent-sdk-python");
-                        supported.add("agent-sdk-go");
-                        supported.add("agent-sdk-csharp");
-                        supported.add("agent-sdk-php");
-                        supported.add("agent-sdk-ruby");
-                }
-                if (AI_STATS_METHODS[normalizedEndpoint]) {
-                        supported.add("typescript-sdk");
-                        supported.add("python-sdk");
-                }
-                if (OPENAI_METHODS[normalizedEndpoint]) {
-                        supported.add("openai-python");
-                        supported.add("openai-node");
-                }
+	const quickstartEndpoint = batchEnabled ? "batch.create" : selectedEndpoint;
+
+	const supportedLanguageSet = useMemo(() => {
+		const normalizedEndpoint = normalizeEndpointValue(quickstartEndpoint);
+		const supported = new Set<string>([
+			"curl",
+			"node-fetch",
+			"python-requests",
+			"go-sdk",
+			"csharp-sdk",
+			"php-sdk",
+			"ruby-sdk",
+		]);
+		if (AI_SDK_ENDPOINTS.has(normalizedEndpoint)) {
+			supported.add("ai-sdk");
+			supported.add("agent-sdk-ts");
+			supported.add("agent-sdk-python");
+			supported.add("agent-sdk-go");
+			supported.add("agent-sdk-csharp");
+			supported.add("agent-sdk-php");
+			supported.add("agent-sdk-ruby");
+		}
+		if (
+			AI_STATS_METHODS[normalizedEndpoint] ||
+			normalizedEndpoint === "messages"
+		) {
+			supported.add("typescript-sdk");
+			supported.add("python-sdk");
+		}
+		if (OPENAI_METHODS[normalizedEndpoint]) {
+			supported.add("openai-python");
+			supported.add("openai-node");
+		}
 		if (normalizedEndpoint === "messages") {
 			supported.add("anthropic-python");
 			supported.add("anthropic-node");
 		}
-                return supported;
-        }, [selectedEndpoint]);
+		return supported;
+	}, [quickstartEndpoint]);
 
-        const availableLanguages = useMemo(
-                () =>
-                        LANGUAGE_OPTIONS.filter((option) =>
-                                supportedLanguageSet.has(option.value)
-                        ),
-                [supportedLanguageSet]
-        );
-
-	const directLanguageOptions = useMemo(() => {
-		return DIRECT_LANGUAGE_ORDER.map((value) =>
-			availableLanguages.find((option) => option.value === value),
-		).filter((option): option is LanguageOption => Boolean(option));
-	}, [availableLanguages]);
-
-	const availableLanguageGroups = useMemo(() => {
-		const groupedLanguages = availableLanguages.filter(
-			(option) => option.placement !== "direct",
-		);
-		return LANGUAGE_GROUP_ORDER.map((groupId) => ({
-			...LANGUAGE_GROUP_META[groupId],
-			id: groupId,
-			options: groupedLanguages.filter((option) => option.group === groupId),
-		})).filter((group) => group.options.length > 0);
-	}, [availableLanguages]);
+	const availableLanguages = useMemo(
+		() =>
+			LANGUAGE_OPTIONS.filter((option) =>
+				supportedLanguageSet.has(option.value),
+			),
+		[supportedLanguageSet],
+	);
 
 	const selectedLanguageOption = useMemo(
 		() =>
@@ -203,158 +413,391 @@ export default function Quickstart({
 		[availableLanguages, selectedLanguage],
 	);
 
-        useEffect(() => {
-                if (!supportedLanguageSet.has(selectedLanguage)) {
-                        const fallback =
-                                availableLanguages.find(
-                                        (option) =>
-                                                supportedLanguageSet.has(option.value) &&
-                                                !option.disabled
-                                )?.value || "curl";
-                        setSelectedLanguage(fallback);
-                }
-        }, [availableLanguages, selectedLanguage, supportedLanguageSet]);       
+	const selectedEndpointOption = useMemo(
+		() =>
+			availableEndpoints.find((option) => option.value === selectedEndpoint) ??
+			null,
+		[availableEndpoints, selectedEndpoint],
+	);
+	const supportedParameters =
+		supportedParametersByEndpoint?.[selectedEndpoint] ?? [];
 
-        const supportsStreaming = useMemo(() => {
-                const normalized = normalizeEndpointValue(selectedEndpoint);
-                if (!normalized) return false;
-                if (
-                        normalized === "chat.completions" ||
-                        normalized === "responses" ||
-                        normalized === "messages"
-                ) {
-                        return true;
-                }
-                const mapped = capabilityToEndpoints[normalized] ?? [];
-                return mapped.some((value) => STREAMING_PATHS.has(value));
-        }, [selectedEndpoint]);
+	const supportsServiceTier = useMemo(() => {
+		const normalized = normalizeEndpointValue(selectedEndpoint);
+		return (
+			normalized === "responses" ||
+			normalized === "chat.completions" ||
+			normalized === "messages"
+		);
+	}, [selectedEndpoint]);
 
-        useEffect(() => {
-                if (!supportsStreaming && streamingEnabled) {
-                        setStreamingEnabled(false);
-                }
-        }, [supportsStreaming, streamingEnabled]);
+	const availableLanguageFamilies = useMemo(
+		() =>
+			LANGUAGE_FAMILY_ORDER.map((familyId) => {
+				const meta = LANGUAGE_FAMILY_META[familyId];
+				const options = meta.values
+					.map((value) =>
+						availableLanguages.find((option) => option.value === value) ?? null,
+					)
+					.filter((option): option is LanguageOption => Boolean(option));
+				return {
+					id: familyId,
+					label: meta.label,
+					options,
+				};
+			}).filter((family) => family.options.length > 0),
+		[availableLanguages],
+	);
 
-        const normalizedSelectedEndpoint = normalizeEndpointValue(selectedEndpoint);
+	const selectedLanguageFamily = useMemo(
+		() =>
+			availableLanguageFamilies.find((family) =>
+				family.options.some((option) => option.value === selectedLanguage),
+			) ?? availableLanguageFamilies[0] ?? null,
+		[availableLanguageFamilies, selectedLanguage],
+	);
 
-        const endpointPrimaryModelIdentifier =
-                primaryModelIdentifierByEndpoint?.[normalizedSelectedEndpoint] ??
-                primaryModelIdentifier;
+	const secondaryLanguageOptions = selectedLanguageFamily?.options ?? [];
 
-        const endpointAcceptedIdentifiers =
-                acceptedModelIdentifiersByEndpoint?.[normalizedSelectedEndpoint] ??
-                acceptedModelIdentifiers ??
-                [];
+	useEffect(() => {
+		if (!supportedLanguageSet.has(selectedLanguage)) {
+			const selectedFamilyId = getLanguageFamilyId(selectedLanguage);
+			const selectedVariantLabel =
+				LANGUAGE_VARIANT_LABELS[selectedLanguage] ?? null;
+			const familyFallback =
+				selectedFamilyId
+					? LANGUAGE_FAMILY_META[selectedFamilyId].values.find((value) =>
+							supportedLanguageSet.has(value),
+					  ) ?? null
+					: null;
+			const variantFallback = selectedVariantLabel
+				? LANGUAGE_DEFAULT_ORDER.find(
+						(value) =>
+							supportedLanguageSet.has(value) &&
+							(LANGUAGE_VARIANT_LABELS[value] ?? null) === selectedVariantLabel,
+				  ) ?? null
+				: null;
+			const fallback =
+				familyFallback ||
+				variantFallback ||
+				LANGUAGE_DEFAULT_ORDER.find((value) => supportedLanguageSet.has(value)) ||
+				availableLanguages.find(
+					(option) =>
+						supportedLanguageSet.has(option.value) && !option.disabled,
+				)?.value ||
+				"curl";
+			setSelectedLanguage(fallback);
+		}
+	}, [availableLanguages, selectedLanguage, supportedLanguageSet]);
 
-        const decodedAcceptedIdentifiers = Array.from(
-                new Set([
-                        ...(endpointAcceptedIdentifiers.map((identifier) =>
-                                safeDecodeURIComponent(identifier)
-                        ) ?? []),
-                        ...(endpointAcceptedIdentifiers.length === 0
-                                ? [
-                                          ...(apiModelIds?.map((identifier) =>
-                                                  safeDecodeURIComponent(identifier)
-                                          ) ?? []),
-                                          ...(aliases?.map((alias) =>
-                                                  safeDecodeURIComponent(alias)
-                                          ) ?? []),
-                                  ]
-                                : []),
-                ])
-        ).filter(Boolean);
+	const supportsStreaming = useMemo(() => {
+		if (batchEnabled) return false;
+		if (!STREAMING_SNIPPET_LANGUAGES.has(selectedLanguage)) return false;
+		const normalized = normalizeEndpointValue(selectedEndpoint);
+		if (!normalized) return false;
+		if (
+			normalized === "chat.completions" ||
+			normalized === "responses" ||
+			normalized === "messages"
+		) {
+			return true;
+		}
+		const mapped = capabilityToEndpoints[normalized] ?? [];
+		return mapped.some((value) => STREAMING_PATHS.has(value));
+	}, [batchEnabled, selectedEndpoint, selectedLanguage]);
 
-        const model =
-                safeDecodeURIComponent(endpointPrimaryModelIdentifier) ||
-                decodedAcceptedIdentifiers[0] ||
-                safeDecodeURIComponent(modelId) ||
-                "model_id_here";
-        const endpointPath = resolveGatewayPath(selectedEndpoint);
-        const endpointUrl = `${BASE_URL}${endpointPath}`;
-        const routingPreference = resolveRoutingPreference(requestContext);
-        const payload = applyRoutingPreferenceToPayload(
-		buildExamplePayload(selectedEndpoint, model),
+	useEffect(() => {
+		if (!supportsStreaming && streamingEnabled) {
+			setStreamingEnabled(false);
+		}
+	}, [supportsStreaming, streamingEnabled]);
+
+	const normalizedSelectedEndpoint = normalizeEndpointValue(selectedEndpoint);
+
+	const endpointPrimaryModelIdentifier =
+		primaryModelIdentifierByEndpoint?.[normalizedSelectedEndpoint] ??
+		primaryModelIdentifier;
+
+	const endpointAcceptedIdentifiers =
+		acceptedModelIdentifiersByEndpoint?.[normalizedSelectedEndpoint] ??
+		acceptedModelIdentifiers ??
+		[];
+
+	const decodedAcceptedIdentifiers = useMemo(
+		() =>
+			Array.from(
+				new Set([
+					...(endpointAcceptedIdentifiers.map((identifier) =>
+						safeDecodeURIComponent(identifier),
+					) ?? []),
+					...(endpointAcceptedIdentifiers.length === 0
+						? [
+								...(apiModelIds?.map((identifier) =>
+									safeDecodeURIComponent(identifier),
+								) ?? []),
+								...(aliases?.map((alias) =>
+									safeDecodeURIComponent(alias),
+								) ?? []),
+						  ]
+						: []),
+				]),
+			).filter(Boolean),
+		[aliases, apiModelIds, endpointAcceptedIdentifiers],
+	);
+
+	const decodedAliases = useMemo(
+		() =>
+			new Set(
+				(aliases?.map((alias) => safeDecodeURIComponent(alias)) ?? []).filter(
+					Boolean,
+				),
+			),
+		[aliases],
+	);
+	const canonicalAcceptedIdentifiers = useMemo(
+		() =>
+			decodedAcceptedIdentifiers.filter(
+				(identifier) => !decodedAliases.has(identifier),
+			),
+		[decodedAcceptedIdentifiers, decodedAliases],
+	);
+
+	const model =
+		safeDecodeURIComponent(endpointPrimaryModelIdentifier) ||
+		canonicalAcceptedIdentifiers[0] ||
+		safeDecodeURIComponent(modelId) ||
+		decodedAcceptedIdentifiers[0] ||
+		"model_id_here";
+	const acceptedIdentifierList = useMemo(
+		() =>
+			Array.from(
+				new Set([
+					model,
+					...canonicalAcceptedIdentifiers,
+					...decodedAcceptedIdentifiers,
+				]),
+			).filter(Boolean),
+		[model, canonicalAcceptedIdentifiers, decodedAcceptedIdentifiers],
+	);
+	const [selectedModelIdentifier, setSelectedModelIdentifier] = useState(model);
+
+	useEffect(() => {
+		if (!acceptedIdentifierList.includes(selectedModelIdentifier)) {
+			setSelectedModelIdentifier(model);
+		}
+	}, [acceptedIdentifierList, model, selectedModelIdentifier]);
+
+	const modelIdentifierInCode = acceptedIdentifierList.includes(
+		selectedModelIdentifier,
+	)
+		? selectedModelIdentifier
+		: model;
+	const endpointPath = resolveGatewayPath(selectedEndpoint);
+	const batchEndpointPath = resolveGatewayPath("batch.create");
+	const activeEndpointPath = batchEnabled ? batchEndpointPath : endpointPath;
+	const endpointUrl = `${BASE_URL}${activeEndpointPath}`;
+	const routingPreference = resolveRoutingPreference(requestContext);
+	const requestPayloadBase = applyRoutingPreferenceToPayload(
+		buildExamplePayload(selectedEndpoint, modelIdentifierInCode),
 		routingPreference,
 	);
-        const payloadJson = JSON.stringify(payload, null, 2);
-        const rawSdkPayloadJson = payloadJson;
-        const payloadJsonStream = supportsStreaming
-                ? JSON.stringify({ ...payload, stream: true }, null, 2)
-                : payloadJson;
-        const shouldStream = supportsStreaming && streamingEnabled;
-        const activePayloadJson = shouldStream ? payloadJsonStream : payloadJson;
-        const payloadJsonNode = activePayloadJson
-                .split("\n")
-                .map((line) => `        ${line}`)
-                .join("\n");
-        const payloadJsonPython = jsonToPythonLiteral(activePayloadJson);
-        const streamPayloadJsonNode = payloadJsonStream
-                .split("\n")
-                .map((line) => `        ${line}`)
-                .join("\n");
-        const streamPayloadJsonPython = jsonToPythonLiteral(payloadJsonStream);
-        const aliasList = Array.from(
-                new Set([
-                        model,
-                        ...decodedAcceptedIdentifiers,
-                ])
-        ).filter(Boolean);
-        const streamingDiff = supportsStreaming
-                ? buildStreamingDiff(payloadJson)
-                : "";
-
-        const curlCommandLabel = shouldStream
-                ? "Send a streaming request"
-                : "Send a request";
-        const curlFlags = shouldStream ? "-N -s" : "-s";
-        const curlQuickstart = `# 1) Set your key
+	const requestPayload =
+		supportsServiceTier && !batchEnabled
+			? { ...requestPayloadBase, service_tier: selectedServiceTier }
+			: requestPayloadBase;
+	const batchLinePayload = supportsServiceTier
+		? { ...requestPayloadBase, service_tier: selectedServiceTier }
+		: requestPayloadBase;
+	const batchPayload = {
+		input_file_id: "file_abc123",
+		endpoint: endpointPath,
+		completion_window: "24h",
+	};
+	const payload = batchEnabled ? batchPayload : requestPayload;
+	const payloadJson = JSON.stringify(payload, null, JSON_INDENT);
+	const rawSdkPayloadJson = payloadJson;
+	const payloadJsonStream = supportsStreaming
+		? JSON.stringify({ ...requestPayload, stream: true }, null, JSON_INDENT)
+		: payloadJson;
+	const shouldStream = supportsStreaming && streamingEnabled;
+	const activePayloadJson = shouldStream ? payloadJsonStream : payloadJson;
+	const payloadObjectNode = formatEmbeddedObject(activePayloadJson, 4);
+	const payloadJsonPython = jsonToPythonLiteral(activePayloadJson);
+	const streamPayloadObjectNode = formatEmbeddedObject(payloadJsonStream, 4);
+	const streamPayloadJsonPython = jsonToPythonLiteral(payloadJsonStream);
+	const batchLineJson = JSON.stringify(
+		{
+			custom_id: "req_1",
+			method: "POST",
+			url: endpointPath,
+			body: batchLinePayload,
+		},
+		null,
+		JSON_INDENT,
+	);
+	const batchLineCommentTs = batchLineJson
+		.split("\n")
+		.map((line) => `// ${line}`)
+		.join("\n");
+	const batchLineCommentPy = batchLineJson
+		.split("\n")
+		.map((line) => `# ${line}`)
+		.join("\n");
+	const curlCommandLabel = batchEnabled
+		? "Create a batch job"
+		: shouldStream
+			? "Send a streaming request"
+			: "Send a request";
+	const curlFlags = shouldStream ? "-N -s" : "-s";
+	const curlQuickstart = `# 1) Set your key
 export AI_STATS_API_KEY="aistats_***"
 
-# 2) ${curlCommandLabel}
+${batchEnabled ? `${batchLineCommentPy}
+
+` : ""}# 2) ${curlCommandLabel}
 curl ${curlFlags} ${endpointUrl} \\
 -H "Authorization: Bearer $AI_STATS_API_KEY" \\
 -H "Content-Type: application/json" \\
 -d '${activePayloadJson}'`;
 
-        const normalizedEndpoint = normalizeEndpointValue(selectedEndpoint);    
-        const aiStatsMethod = AI_STATS_METHODS[normalizedEndpoint];
-        const openaiMethod = OPENAI_METHODS[normalizedEndpoint];
-        const aiSdkPrompt = (() => {
-                const payloadValue = payload as Record<string, unknown>;
-                const input = payloadValue.input;
-                if (typeof input === "string") return input;
-                const messages = payloadValue.messages as
-                        | Array<{ role?: string; content?: string }>
-                        | undefined;
-                const userMessage = messages?.find(
-                        (message) =>
-                                message?.role === "user" &&
-                                typeof message?.content === "string"
-                );
-                return (
-                        userMessage?.content ??
-                        "Give me one fun fact about cURL."
-                );
-        })();
-        const aiSdkPromptLiteral = JSON.stringify(aiSdkPrompt);
+	const normalizedEndpoint = normalizeEndpointValue(quickstartEndpoint);
+	const openaiMethod = OPENAI_METHODS[normalizedEndpoint];
+	const aiSdkPrompt = (() => {
+		const payloadValue = requestPayloadBase as Record<string, unknown>;
+		const input = payloadValue.input;
+		if (typeof input === "string") return input;
+		const messages = payloadValue.messages as
+			| Array<{ role?: string; content?: string }>
+			| undefined;
+		const userMessage = messages?.find(
+			(message) =>
+				message?.role === "user" &&
+				typeof message?.content === "string",
+		);
+		return userMessage?.content ?? "Give me one fun fact about cURL.";
+	})();
+	const aiSdkPromptLiteral = JSON.stringify(aiSdkPrompt);
+	const aiStatsMethod = AI_STATS_METHODS[normalizedEndpoint] ?? null;
+	const typescriptSdkResponseHandler =
+		normalizedEndpoint === "audio.speech"
+			? `const audio = await client.${aiStatsMethod?.ts}({
+${payloadObjectNode}
+});
 
-        const typescriptSdkUsage = aiStatsMethod
-                ? `import AIStats from '@ai-stats/sdk';
+const audioBytes = await audio.arrayBuffer();
+console.log(\`Generated speech bytes: \${audioBytes.byteLength}\`);`
+			: `const response = await client.${aiStatsMethod?.ts}({
+${payloadObjectNode}
+});
+
+console.log(JSON.stringify(response, null, 2));`;
+	const pythonSdkResponseHandler =
+		normalizedEndpoint === "audio.speech"
+			? `audio = client.${aiStatsMethod?.py}(payload)
+
+print(audio)`
+			: `response = client.${aiStatsMethod?.py}(payload)
+
+print(response)`;
+
+	const typescriptSdkUsage =
+		normalizedEndpoint === "chat.completions"
+			? shouldStream
+				? `import AIStats from '@ai-stats/sdk';
 
 const client = new AIStats({
   apiKey: process.env.AI_STATS_API_KEY,
 });
 
-const response = await client.${aiStatsMethod.ts}({
-${payloadJsonNode}
+for await (const line of client.streamText({
+${payloadObjectNode}
+})) {
+  process.stdout.write(line);
+}`
+				: `import AIStats from '@ai-stats/sdk';
+
+const client = new AIStats({
+  apiKey: process.env.AI_STATS_API_KEY,
 });
 
-console.log(response);`
-                : null;
+const response = await client.generateText({
+${payloadObjectNode}
+});
 
-        const aiSdkUsage = AI_SDK_ENDPOINTS.has(normalizedEndpoint)
-                ? shouldStream
-                        ? `import { streamText } from "ai";
+console.log(response.choices?.[0]?.message?.content ?? response);`
+			: normalizedEndpoint === "messages"
+				? shouldStream
+					? `import AIStats from '@ai-stats/sdk';
+
+const client = new AIStats({
+  apiKey: process.env.AI_STATS_API_KEY,
+});
+
+const stream = await client.messages.create({
+${payloadObjectNode}
+});
+
+for await (const line of stream as AsyncGenerator<string>) {
+  if (line === "data: [DONE]") break;
+  process.stdout.write(line);
+}`
+					: `import AIStats from '@ai-stats/sdk';
+
+const client = new AIStats({
+  apiKey: process.env.AI_STATS_API_KEY,
+});
+
+const response = await client.messages.create({
+${payloadObjectNode}
+});
+
+const messageText = response.content
+  ?.find((item) => item.type === "text")
+  ?.text;
+
+console.log(messageText ?? response);`
+			: normalizedEndpoint === "responses"
+				? shouldStream
+					? `import AIStats from '@ai-stats/sdk';
+
+const client = new AIStats({
+  apiKey: process.env.AI_STATS_API_KEY,
+});
+
+for await (const line of client.streamResponse({
+${payloadObjectNode}
+})) {
+  process.stdout.write(line);
+}`
+					: `import AIStats from '@ai-stats/sdk';
+
+const client = new AIStats({
+  apiKey: process.env.AI_STATS_API_KEY,
+});
+
+const response = await client.generateResponse({
+${payloadObjectNode}
+});
+
+const outputText = response.output
+  ?.flatMap((item) => item.content ?? [])
+  .find((item) => item.type === "output_text")
+  ?.text;
+
+console.log(outputText ?? response);`
+				: aiStatsMethod
+					? `import AIStats from '@ai-stats/sdk';
+
+const client = new AIStats({
+  apiKey: process.env.AI_STATS_API_KEY,
+});
+
+${typescriptSdkResponseHandler}`
+					: null;
+
+	const aiSdkUsage = AI_SDK_ENDPOINTS.has(normalizedEndpoint)
+		? shouldStream
+			? `import { streamText } from "ai";
 import { aiStats } from "@ai-stats/ai-sdk-provider";
 
 const { textStream } = streamText({
@@ -365,7 +808,7 @@ const { textStream } = streamText({
 for await (const chunk of textStream) {
   process.stdout.write(chunk);
 }`
-                        : `import { generateText } from "ai";
+			: `import { generateText } from "ai";
 import { aiStats } from "@ai-stats/ai-sdk-provider";
 
 const { text } = await generateText({
@@ -374,7 +817,7 @@ const { text } = await generateText({
 });
 
 console.log(text);`
-                : null;
+		: null;
 
 	const agentSdkTsUsage = AI_SDK_ENDPOINTS.has(normalizedEndpoint)
 		? `import {
@@ -510,45 +953,202 @@ result = agent.run(
 puts result.output`
 		: null;
 
-        const pythonSdkUsage = aiStatsMethod
-                ? `import os
+	const pythonSdkUsage =
+		normalizedEndpoint === "chat.completions"
+			? shouldStream
+				? `import os
 from ai_stats import AIStats
 
 client = AIStats(api_key=os.environ.get("AI_STATS_API_KEY"))
 
 payload = ${payloadJsonPython}
-response = client.${aiStatsMethod.py}(payload)
 
-print(response)`
-                : null;
+for line in client.stream_text(payload):
+    print(line)`
+				: `import os
+from ai_stats import AIStats
 
-	const goSdkUsage = `package main
+client = AIStats(api_key=os.environ.get("AI_STATS_API_KEY"))
+
+payload = ${payloadJsonPython}
+response = client.generate_text(payload)
+
+print(response.get("choices", [{}])[0].get("message", {}).get("content", response))`
+			: normalizedEndpoint === "messages"
+				? shouldStream
+					? `import os
+from ai_stats import AIStats
+
+client = AIStats(api_key=os.environ.get("AI_STATS_API_KEY"))
+
+payload = ${payloadJsonPython}
+stream = client.messages.create(payload)
+
+for line in stream:
+    if line == "data: [DONE]":
+        break
+    print(line)`
+					: `import os
+from ai_stats import AIStats
+
+client = AIStats(api_key=os.environ.get("AI_STATS_API_KEY"))
+
+payload = ${payloadJsonPython}
+response = client.messages.create(payload)
+
+message_text = next(
+    (
+        item.get("text")
+        for item in response.get("content", [])
+        if item.get("type") == "text"
+    ),
+    None,
+)
+
+print(message_text or response)`
+			: normalizedEndpoint === "responses"
+				? shouldStream
+					? `import os
+from ai_stats import AIStats
+
+client = AIStats(api_key=os.environ.get("AI_STATS_API_KEY"))
+
+payload = ${payloadJsonPython}
+
+for line in client.stream_response(payload):
+    print(line)`
+					: `import os
+from ai_stats import AIStats
+
+client = AIStats(api_key=os.environ.get("AI_STATS_API_KEY"))
+
+payload = ${payloadJsonPython}
+response = client.generate_response(payload)
+
+output_text = next(
+    (
+        content_item.get("text")
+        for item in response.get("output", [])
+        for content_item in item.get("content", [])
+        if content_item.get("type") == "output_text"
+    ),
+    None,
+)
+
+print(output_text or response)`
+				: aiStatsMethod
+					? `import os
+from ai_stats import AIStats
+
+client = AIStats(api_key=os.environ.get("AI_STATS_API_KEY"))
+
+payload = ${payloadJsonPython}
+${pythonSdkResponseHandler}`
+					: null;
+
+	const goSdkUsage = normalizedEndpoint === "chat.completions"
+		? `package main
 
 import (
-    "context"
-    "encoding/json"
-    "fmt"
-    aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
+  "context"
+  "encoding/json"
+  "fmt"
+
+  aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
 )
 
 func main() {
-    client, err := aistats.NewAIStatsFromEnv()
-    if err != nil {
-        panic(err)
-    }
+  client, err := aistats.NewAIStatsFromEnv()
+  if err != nil {
+    panic(err)
+  }
 
-    payloadJSON := \`${rawSdkPayloadJson}\`
-    var payload map[string]any
-    if err := json.Unmarshal([]byte(payloadJSON), &payload); err != nil {
-        panic(err)
-    }
+  payloadJSON := \`${rawSdkPayloadJson}\`
+  var payload aistats.ChatCompletionsRequest
+  if err := json.Unmarshal([]byte(payloadJSON), &payload); err != nil {
+    panic(err)
+  }
 
-    response, err := client.Request(context.Background(), "POST", "${endpointPath}", nil, nil, payload)
-    if err != nil {
-        panic(err)
-    }
+  response, err := client.GenerateText(context.Background(), payload)
+  if err != nil {
+    panic(err)
+  }
 
-    fmt.Println(response)
+  formatted, err := json.MarshalIndent(response, "", "  ")
+  if err != nil {
+    panic(err)
+  }
+
+  fmt.Println(string(formatted))
+}`
+		: normalizedEndpoint === "responses"
+			? `package main
+
+import (
+  "context"
+  "encoding/json"
+  "fmt"
+
+  aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
+)
+
+func main() {
+  client, err := aistats.NewAIStatsFromEnv()
+  if err != nil {
+    panic(err)
+  }
+
+  payloadJSON := \`${rawSdkPayloadJson}\`
+  var payload aistats.ResponsesRequest
+  if err := json.Unmarshal([]byte(payloadJSON), &payload); err != nil {
+    panic(err)
+  }
+
+  response, err := client.GenerateResponse(context.Background(), payload)
+  if err != nil {
+    panic(err)
+  }
+
+  formatted, err := json.MarshalIndent(response, "", "  ")
+  if err != nil {
+    panic(err)
+  }
+
+  fmt.Println(string(formatted))
+}`
+			: `package main
+
+import (
+  "context"
+  "encoding/json"
+  "fmt"
+
+  aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
+)
+
+func main() {
+  client, err := aistats.NewAIStatsFromEnv()
+  if err != nil {
+    panic(err)
+  }
+
+  payloadJSON := \`${rawSdkPayloadJson}\`
+  var payload map[string]any
+  if err := json.Unmarshal([]byte(payloadJSON), &payload); err != nil {
+    panic(err)
+  }
+
+  response, err := client.CreateAnthropicMessage(context.Background(), payload)
+  if err != nil {
+    panic(err)
+  }
+
+  formatted, err := json.MarshalIndent(response, "", "  ")
+  if err != nil {
+    panic(err)
+  }
+
+  fmt.Println(string(formatted))
 }`;
 
 	const csharpSdkUsage = `using System.Collections.Generic;
@@ -560,11 +1160,13 @@ var payload = JsonSerializer.Deserialize<Dictionary<string, object>>("""
 ${rawSdkPayloadJson}
 """);
 
-var response = await client.RawClient.SendAsync<object>(
-    method: "POST",
-    path: "${endpointPath}",
-    body: payload
-);
+var response = await client.${
+	normalizedEndpoint === "chat.completions"
+		? "GenerateText"
+		: normalizedEndpoint === "responses"
+			? "GenerateResponse"
+			: "CreateAnthropicMessage"
+}(payload!);
 
 Console.WriteLine(JsonSerializer.Serialize(response, new JsonSerializerOptions
 {
@@ -581,13 +1183,13 @@ $payload = json_decode(<<<'JSON'
 ${rawSdkPayloadJson}
 JSON, true, 512, JSON_THROW_ON_ERROR);
 
-$response = $client->rawClient()->request(
-    "POST",
-    "${endpointPath}",
-    null,
-    null,
-    $payload
-);
+$response = $client->${
+	normalizedEndpoint === "chat.completions"
+		? "generateText"
+		: normalizedEndpoint === "responses"
+			? "generateResponse"
+			: "createAnthropicMessage"
+}($payload);
 
 echo json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), PHP_EOL;`;
 
@@ -599,46 +1201,71 @@ payload = JSON.parse(<<~JSON)
 ${rawSdkPayloadJson}
 JSON
 
-response = client.raw_client.request(
-  method: "post",
-  path: "${endpointPath}",
-  body: payload
-)
+response = client.${
+	normalizedEndpoint === "chat.completions"
+		? "generate_text"
+		: normalizedEndpoint === "responses"
+			? "generate_response"
+			: "create_anthropic_message"
+}(payload)
 
 puts JSON.pretty_generate(response)`;
 
-        const nodeFetchQuickstart = `// 1) Set your key
+	const nodeFetchQuickstart = `// 1) Set your key
 const apiKey = process.env.AI_STATS_API_KEY;
 
-// 2) Send a request
+${batchEnabled ? `${batchLineCommentTs}
+
+` : ""}// 2) ${curlCommandLabel}
 const res = await fetch("${endpointUrl}", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    "Authorization": \`Bearer \${apiKey}\`,
-  },
-  body: JSON.stringify({
-${payloadJsonNode}
-  }),
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json",
+        "Authorization": \`Bearer \${apiKey}\`,
+    },
+    body: JSON.stringify({
+${payloadObjectNode}
+    }),
 });
+
+if (!res.ok) {
+  throw new Error(await res.text());
+}
 
 const data = await res.json();
 
-console.log(data.choices?.[0]?.message?.content || JSON.stringify(data, null, 2));`;
+${
+	normalizedEndpoint === "responses"
+		? `const outputText = data.output
+  ?.flatMap((item) => item?.content ?? [])
+  .find((item) => item?.type === "output_text")
+  ?.text;
 
-        const nodeFetchStreamingQuickstart = `// 1) Set your key
+console.log(outputText ?? JSON.stringify(data, null, 2));`
+		: normalizedEndpoint === "messages"
+			? `const messageText = data.content
+  ?.find((item) => item?.type === "text")
+  ?.text;
+
+console.log(messageText ?? JSON.stringify(data, null, 2));`
+			: `console.log(
+  data.choices?.[0]?.message?.content ?? JSON.stringify(data, null, 2),
+);`
+}`;
+
+	const nodeFetchStreamingQuickstart = `// 1) Set your key
 const apiKey = process.env.AI_STATS_API_KEY;
 
 // 2) Send a streaming request
 const res = await fetch("${endpointUrl}", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    "Authorization": \`Bearer \${apiKey}\`,
-  },
-  body: JSON.stringify({
-${streamPayloadJsonNode}
-  }),
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json",
+        "Authorization": \`Bearer \${apiKey}\`,
+    },
+    body: JSON.stringify({
+${streamPayloadObjectNode}
+    }),
 });
 
 if (!res.body) {
@@ -654,27 +1281,55 @@ while (true) {
   process.stdout.write(chunk);
 }`;
 
-        const pythonRequestsQuickstart = `# Import os and requests libraries    
+	const pythonRequestsQuickstart = `# Import os and requests libraries
 import os
 import requests
 
 # Get your API key
 API_KEY = os.environ.get("AI_STATS_API_KEY")
 
-# Send a request
+${batchEnabled ? `${batchLineCommentPy}
+
+` : ""}# ${curlCommandLabel}
 url = "${endpointUrl}"
 payload = ${payloadJsonPython}
 
 resp = requests.post(url, json=payload, headers={
-	"Authorization": f"Bearer {API_KEY}",
-	"Content-Type": "application/json",
+    "Authorization": f"Bearer {API_KEY}",
+    "Content-Type": "application/json",
 })
+resp.raise_for_status()
 
 data = resp.json()
 
-print(data.get("choices", [])[0].get("message", {}).get("content") if data.get("choices") else data)`;
+${
+	normalizedEndpoint === "responses"
+		? `output_text = next(
+    (
+        content_item.get("text")
+        for item in data.get("output", [])
+        for content_item in item.get("content", [])
+        if content_item.get("type") == "output_text"
+    ),
+    None,
+)
 
-        const pythonRequestsStreamingQuickstart = `# Import os and requests libraries
+print(output_text or data)`
+		: normalizedEndpoint === "messages"
+			? `message_text = next(
+    (
+        item.get("text")
+        for item in data.get("content", [])
+        if item.get("type") == "text"
+    ),
+    None,
+)
+
+print(message_text or data)`
+			: `print(data.get("choices", [])[0].get("message", {}).get("content") if data.get("choices") else data)`
+}`;
+
+	const pythonRequestsStreamingQuickstart = `# Import os and requests libraries
 import os
 import requests
 
@@ -686,15 +1341,15 @@ url = "${endpointUrl}"
 payload = ${streamPayloadJsonPython}
 
 with requests.post(url, json=payload, headers={
-        "Authorization": f"Bearer {API_KEY}",
-        "Content-Type": "application/json",
+    "Authorization": f"Bearer {API_KEY}",
+    "Content-Type": "application/json",
 }, stream=True) as resp:
-        for line in resp.iter_lines(decode_unicode=True):
-                if line:
-                        print(line)`;
+    for line in resp.iter_lines(decode_unicode=True):
+        if line:
+            print(line)`;
 
-        const openaiPythonUsage = openaiMethod
-                ? `import os
+	const openaiPythonUsage = openaiMethod
+		? `import os
 from openai import OpenAI
 
 client = OpenAI(
@@ -706,7 +1361,7 @@ payload = ${payloadJsonPython}
 response = client.${openaiMethod.py}(**payload)
 
 print(response)`
-                : null;
+		: null;
 
 	const openaiNodeUsage = openaiMethod
 		? `import OpenAI from 'openai';
@@ -717,7 +1372,7 @@ const client = new OpenAI({
 });
 
 const response = await client.${openaiMethod.ts}({
-${payloadJsonNode}
+${payloadObjectNode}
 });
 
 console.log(response);`
@@ -749,13 +1404,42 @@ const client = new Anthropic({
 });
 
 const response = await client.messages.create({
-${payloadJsonNode}
+${payloadObjectNode}
 });
 
 console.log(response);`
 			: null;
-
-	const compactMode = !showHeader;
+	const selectedLanguageLabel = selectedLanguageOption?.label ?? "Selected language";
+	const selectedEndpointLabel =
+		selectedEndpointOption?.label ?? "Selected endpoint";
+	const selectedLanguageVariantLabel =
+		LANGUAGE_VARIANT_LABELS[selectedLanguage] ?? selectedLanguageLabel;
+	const serviceTierLabel = SERVICE_TIER_LABELS[selectedServiceTier];
+	const docsLinks = Array.from(
+		new Map(
+			[
+				LANGUAGE_DOCS_BY_VALUE[selectedLanguage] ?? null,
+				ENDPOINT_DOCS_BY_VALUE[selectedEndpoint] ?? null,
+				supportsServiceTier && selectedServiceTier !== "standard"
+					? { label: "Service tiers", href: SERVICE_TIERS_DOCS_HREF }
+					: null,
+				shouldStream
+					? { label: "Streaming", href: STREAMING_DOCS_HREF }
+					: null,
+			]
+				.filter(
+					(link): link is { label: string; href: string } => Boolean(link),
+				)
+				.map((link) => [link.href, link]),
+		).values(),
+	);
+	const requestModeLabel = batchEnabled
+		? `Batch request for ${selectedEndpointLabel}`
+		: shouldStream
+			? `${serviceTierLabel} tier · Streaming enabled`
+			: supportsServiceTier
+				? `${serviceTierLabel} tier`
+				: "Standard request";
 
 	return (
 		<section className="space-y-6">
@@ -766,226 +1450,259 @@ console.log(response);`
 						Quickstart
 					</h2>
 					<p className="text-sm text-muted-foreground">
-						Use one of the accepted identifiers below for the selected endpoint.
+						Create a key, choose a supported route, and copy a ready request.
 					</p>
 				</header>
 			) : null}
 			<div className="space-y-6">
-				{compactMode ? null : (
-					<>
-						<Alert>
-							<Info className="h-4 w-4" />
-							<AlertTitle>Model identifiers</AlertTitle>
-							<AlertDescription className="text-sm">
-								{aliasList.length > 0 ? (
-									<span className="flex flex-wrap gap-2">
-										{aliasList.map((identifier) => (
-											<code
-												key={identifier}
-												className="rounded bg-muted px-2 py-1 text-xs font-mono select-all cursor-text"
-												title={identifier}
-											>
-												{identifier}
-											</code>
-										))}
-									</span>
-								) : (
-									"Use the model ID shown above when configuring your requests."
-								)}
+				<div className="grid gap-3 md:grid-cols-[auto_minmax(0,1fr)]">
+					<Badge
+						variant="outline"
+						className="w-fit self-start rounded-full px-2.5 py-0.5 text-[11px] uppercase tracking-[0.08em]"
+					>
+						Step 1
+					</Badge>
+					<div className="space-y-2">
+						<h3 className="text-base font-semibold">Get an API key</h3>
+						<div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+							<span>Create an API key in</span>
+							<Link
+								href="/settings/keys"
+								className="inline-flex items-center overflow-hidden rounded-lg border border-border/80 bg-background text-foreground shadow-xs transition-colors hover:bg-muted/40"
+							>
+								<span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs">
+									<Settings2 className="h-3 w-3" />
+									Settings
+								</span>
+								<span className="h-4 w-px bg-border/80" />
+								<span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs">
+									<KeyRound className="h-3 w-3" />
+									Keys
+								</span>
+							</Link>
+							<span>and store it as</span>
+							<code className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono">
+								AI_STATS_API_KEY
+							</code>
+						</div>
+						<Alert className="border-amber-200 bg-amber-50 py-2 text-amber-950 dark:border-amber-900/60 dark:bg-amber-900/20 dark:text-amber-50">
+							<Shield className="h-4 w-4 text-amber-700 dark:text-amber-300" />
+							<AlertTitle className="sr-only">Keep your API key secret</AlertTitle>
+							<AlertDescription className="text-sm text-amber-900/90 dark:text-amber-100/90">
+								Keep it server-side, never commit it, and rotate it immediately
+								if exposed.
 							</AlertDescription>
 						</Alert>
-
-						<div className="space-y-3">
-							<h3 className="text-base font-semibold">1) Get an API key</h3>
-							<p className="text-sm text-muted-foreground">
-								Create a key in
-								<Link
-									href="/settings/keys"
-									className="inline-flex items-center gap-2 rounded px-2 py-1 text-sm font-medium text-primary hover:bg-primary/5"
-								>
-									<span>Dashboard</span>
-									<ArrowRight className="h-4 w-4" />
-									<span>API Keys</span>
-								</Link>
-								, then set it as{" "}
-								<code className="bg-gray-400/20 p-1 rounded-md">
-									AI_STATS_API_KEY
-								</code>{" "}
-								in your environment variables.
-							</p>
-
-							<Alert variant="destructive">
-								<Shield className="h-4 w-4" />
-								<AlertTitle>Keep your API key secret</AlertTitle>
-								<AlertDescription className="text-sm">
-									This key grants access to all models and your credits.
-									Treat it like a password, do not share it, commit it to
-									source control, or expose it in client-side code. Rotate
-									keys immediately if you suspect compromise.
-								</AlertDescription>
-							</Alert>
-						</div>
-					</>
-				)}
-
-				<div className={compactMode ? "space-y-2" : "space-y-3"}>
-					{compactMode ? null : (
-						<h3 className="text-base font-semibold">
-							2) Choose endpoint, language, and streaming
-						</h3>
-					)}
-					<div className="grid gap-4 md:grid-cols-3">
-						<div className="space-y-1">
-							<label className="text-sm font-medium">Endpoint</label>
-							<Select
-								value={selectedEndpoint}
-								onValueChange={setSelectedEndpoint}
-							>
-								<SelectTrigger>
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									{availableEndpoints.map((option) => (
-										<SelectItem key={option.value} value={option.value}>
-											{option.label}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
-						<div className="space-y-1">
-							<label className="text-sm font-medium">Language</label>
-							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button
-										variant="outline"
-										className="h-9 w-full justify-between border-zinc-200 bg-transparent px-3 text-sm font-normal shadow-xs dark:border-zinc-800"
-									>
-										<span className="truncate">
-											{selectedLanguageOption?.label ?? "Choose language"}
-										</span>
-										<ChevronDown className="h-4 w-4 opacity-50" />
-									</Button>
-								</DropdownMenuTrigger>
-								<DropdownMenuContent
-									align="start"
-									className="min-w-[var(--radix-dropdown-menu-trigger-width)]"
-								>
-									<DropdownMenuLabel>Language</DropdownMenuLabel>
-									<DropdownMenuSeparator />
-									{directLanguageOptions.map((option) => {
-										const Icon = option.icon ?? Globe;
-										return (
-											<DropdownMenuItem
-												key={option.value}
-												onClick={() => setSelectedLanguage(option.value)}
-											>
-												<Icon className="h-4 w-4" />
-												<span>{option.label}</span>
-												{selectedLanguage === option.value ? (
-													<Check className="ml-auto h-4 w-4" />
-												) : null}
-											</DropdownMenuItem>
-										);
-									})}
-									{directLanguageOptions.length > 0 &&
-									availableLanguageGroups.length > 0 ? (
-										<DropdownMenuSeparator />
-									) : null}
-									{availableLanguageGroups.map((group, index) => {
-										const Icon = group.icon;
-										return (
-											<div key={group.id}>
-												<DropdownMenuSub>
-													<DropdownMenuSubTrigger>
-														<Icon className="h-4 w-4" />
-														<span>{group.label}</span>
-													</DropdownMenuSubTrigger>
-													<DropdownMenuSubContent>
-														{group.options.map((option) => (
-															<DropdownMenuItem
-																key={option.value}
-																onClick={() => setSelectedLanguage(option.value)}
-															>
-																<span>{option.label}</span>
-																{selectedLanguage === option.value ? (
-																	<Check className="ml-auto h-4 w-4" />
-																) : null}
-															</DropdownMenuItem>
-														))}
-													</DropdownMenuSubContent>
-												</DropdownMenuSub>
-												{index < availableLanguageGroups.length - 1 ? (
-													<DropdownMenuSeparator />
-												) : null}
-											</div>
-										);
-									})}
-								</DropdownMenuContent>
-							</DropdownMenu>
-						</div>
-						<div className="space-y-2">
-							<label className="text-sm font-medium">Streaming</label>
-							<div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/40 px-3 py-2">
-								<div className="flex items-center gap-2">
-									<Switch
-										checked={streamingEnabled}
-										onCheckedChange={setStreamingEnabled}
-										disabled={!supportsStreaming}
-									/>
-									<span className="text-sm font-medium">Enable SSE</span>
-								</div>
-							</div>
-							{compactMode ? null : (
-								<p className="text-xs text-muted-foreground">
-									{supportsStreaming
-										? 'Add "stream": true to receive token events.'
-										: "Streaming isn't available for this endpoint."}
-								</p>
-							)}
-						</div>
 					</div>
 				</div>
 
-				<EndpointRoutesTable
-					endpointRoutes={endpointRoutes}
-					selectedEndpoint={selectedEndpoint}
-					showAllEndpointRoutes={showAllEndpointRoutes}
-					onToggleShowAllEndpointRoutes={() =>
-						setShowAllEndpointRoutes((current) => !current)
-					}
-					onSelectEndpoint={setSelectedEndpoint}
-				/>
+				<div className="space-y-5 border-t border-border/70 pt-6">
+					<div className="grid gap-3 md:grid-cols-[auto_minmax(0,1fr)]">
+						<Badge
+							variant="outline"
+							className="w-fit self-start rounded-full px-2.5 py-0.5 text-[11px] uppercase tracking-[0.08em]"
+						>
+							Step 2
+						</Badge>
+						<div className="space-y-1">
+							<h3 className="text-base font-semibold">Send the request</h3>
+							<p className="text-sm text-muted-foreground">
+								Choose a supported endpoint, pick a main language, then select
+								the example style you want to copy.
+							</p>
+						</div>
+					</div>
 
-				<QuickstartUsageSection
-					compactMode={compactMode}
-					selectedLanguage={selectedLanguage}
-					supportsStreaming={supportsStreaming}
-					streamingEnabled={streamingEnabled}
-					streamingDiff={streamingDiff}
-					curlQuickstart={curlQuickstart}
-					typescriptSdkUsage={typescriptSdkUsage}
-					aiSdkUsage={aiSdkUsage}
-					agentSdkTsUsage={agentSdkTsUsage}
-					agentSdkPythonUsage={agentSdkPythonUsage}
-					agentSdkGoUsage={agentSdkGoUsage}
-					agentSdkCsharpUsage={agentSdkCsharpUsage}
-					agentSdkPhpUsage={agentSdkPhpUsage}
-					agentSdkRubyUsage={agentSdkRubyUsage}
-					pythonSdkUsage={pythonSdkUsage}
-					goSdkUsage={goSdkUsage}
-					csharpSdkUsage={csharpSdkUsage}
-					phpSdkUsage={phpSdkUsage}
-					rubySdkUsage={rubySdkUsage}
-					nodeFetchQuickstart={nodeFetchQuickstart}
-					nodeFetchStreamingQuickstart={nodeFetchStreamingQuickstart}
-					pythonRequestsQuickstart={pythonRequestsQuickstart}
-					pythonRequestsStreamingQuickstart={pythonRequestsStreamingQuickstart}
-					openaiPythonUsage={openaiPythonUsage}
-					openaiNodeUsage={openaiNodeUsage}
-					anthropicPythonUsage={anthropicPythonUsage}
-					anthropicNodeUsage={anthropicNodeUsage}
-				/>
+					<QuickstartUsageSection
+						modelIdentifierInCode={modelIdentifierInCode}
+						acceptedIdentifiers={acceptedIdentifierList}
+						onSelectModelIdentifier={setSelectedModelIdentifier}
+						supportedParameters={supportedParameters}
+						selectedEndpointLabel={selectedEndpointLabel}
+						selectedEndpointValue={selectedEndpoint}
+						endpointOptions={availableEndpoints.map((option) => ({
+							value: option.value,
+							label: option.label,
+						}))}
+						selectedLanguage={selectedLanguage}
+						selectedLanguageLabel={`${selectedLanguageFamily?.label ?? selectedLanguageLabel} · ${selectedLanguageVariantLabel}`}
+						selectedLanguageFamilyId={selectedLanguageFamily?.id ?? "typescript"}
+						availableLanguageFamilies={availableLanguageFamilies}
+						secondaryLanguageOptions={secondaryLanguageOptions}
+						supportsStreaming={supportsStreaming}
+						supportsServiceTier={supportsServiceTier}
+						streamingEnabled={streamingEnabled}
+						selectedServiceTier={selectedServiceTier}
+						docsLinks={docsLinks}
+						requestModeLabel={requestModeLabel}
+						serviceTierDocsHref={supportsServiceTier ? SERVICE_TIERS_DOCS_HREF : null}
+						streamingDocsHref={shouldStream ? STREAMING_DOCS_HREF : null}
+						onSelectEndpoint={setSelectedEndpoint}
+						onSelectLanguageFamily={(familyId) => {
+							const family = availableLanguageFamilies.find(
+								(candidate) => candidate.id === familyId,
+							);
+							if (family) {
+								setSelectedLanguage(family.options[0].value);
+							}
+						}}
+						onSelectLanguage={setSelectedLanguage}
+						onSelectServiceTier={setSelectedServiceTier}
+						onToggleStreaming={setStreamingEnabled}
+						curlQuickstart={curlQuickstart}
+						typescriptSdkUsage={typescriptSdkUsage}
+						aiSdkUsage={aiSdkUsage}
+						agentSdkTsUsage={agentSdkTsUsage}
+						agentSdkPythonUsage={agentSdkPythonUsage}
+						agentSdkGoUsage={agentSdkGoUsage}
+						agentSdkCsharpUsage={agentSdkCsharpUsage}
+						agentSdkPhpUsage={agentSdkPhpUsage}
+						agentSdkRubyUsage={agentSdkRubyUsage}
+						pythonSdkUsage={pythonSdkUsage}
+						goSdkUsage={goSdkUsage}
+						csharpSdkUsage={csharpSdkUsage}
+						phpSdkUsage={phpSdkUsage}
+						rubySdkUsage={rubySdkUsage}
+						nodeFetchQuickstart={nodeFetchQuickstart}
+						nodeFetchStreamingQuickstart={nodeFetchStreamingQuickstart}
+						pythonRequestsQuickstart={pythonRequestsQuickstart}
+						pythonRequestsStreamingQuickstart={pythonRequestsStreamingQuickstart}
+						openaiPythonUsage={openaiPythonUsage}
+						openaiNodeUsage={openaiNodeUsage}
+						anthropicPythonUsage={anthropicPythonUsage}
+						anthropicNodeUsage={anthropicNodeUsage}
+					/>
+
+					{false ? <QuickstartUsageSection
+						modelIdentifierInCode={modelIdentifierInCode}
+						acceptedIdentifiers={acceptedIdentifierList}
+						onSelectModelIdentifier={setSelectedModelIdentifier}
+						supportedParameters={supportedParameters}
+						selectedEndpointLabel={selectedEndpointLabel}
+						selectedEndpointValue={selectedEndpoint}
+						endpointOptions={availableEndpoints.map((option) => ({
+							value: option.value,
+							label: option.label,
+						}))}
+						selectedLanguage={selectedLanguage}
+						selectedLanguageLabel={`${selectedLanguageFamily?.label ?? selectedLanguageLabel} · ${selectedLanguageVariantLabel}`}
+						selectedLanguageFamilyId={selectedLanguageFamily?.id ?? "typescript"}
+						availableLanguageFamilies={availableLanguageFamilies}
+						secondaryLanguageOptions={secondaryLanguageOptions}
+						supportsStreaming={supportsStreaming}
+						supportsServiceTier={supportsServiceTier}
+						streamingEnabled={streamingEnabled}
+						selectedServiceTier={selectedServiceTier}
+						docsLinks={docsLinks}
+						requestModeLabel={requestModeLabel}
+						serviceTierDocsHref={supportsServiceTier ? SERVICE_TIERS_DOCS_HREF : null}
+						streamingDocsHref={shouldStream ? STREAMING_DOCS_HREF : null}
+						onSelectEndpoint={setSelectedEndpoint}
+						onSelectLanguageFamily={(familyId) => {
+							const family = availableLanguageFamilies.find(
+								(candidate) => candidate.id === familyId,
+							);
+							if (family) {
+								setSelectedLanguage(family.options[0].value);
+							}
+						}}
+						onSelectLanguage={setSelectedLanguage}
+						onSelectServiceTier={setSelectedServiceTier}
+						onToggleStreaming={setStreamingEnabled}
+						curlQuickstart={curlQuickstart}
+						typescriptSdkUsage={typescriptSdkUsage}
+						aiSdkUsage={aiSdkUsage}
+						agentSdkTsUsage={agentSdkTsUsage}
+						agentSdkPythonUsage={agentSdkPythonUsage}
+						agentSdkGoUsage={agentSdkGoUsage}
+						agentSdkCsharpUsage={agentSdkCsharpUsage}
+						agentSdkPhpUsage={agentSdkPhpUsage}
+						agentSdkRubyUsage={agentSdkRubyUsage}
+						pythonSdkUsage={pythonSdkUsage}
+						goSdkUsage={goSdkUsage}
+						csharpSdkUsage={csharpSdkUsage}
+						phpSdkUsage={phpSdkUsage}
+						rubySdkUsage={rubySdkUsage}
+						nodeFetchQuickstart={nodeFetchQuickstart}
+						nodeFetchStreamingQuickstart={nodeFetchStreamingQuickstart}
+						pythonRequestsQuickstart={pythonRequestsQuickstart}
+						pythonRequestsStreamingQuickstart={pythonRequestsStreamingQuickstart}
+						openaiPythonUsage={openaiPythonUsage}
+						openaiNodeUsage={openaiNodeUsage}
+						anthropicPythonUsage={anthropicPythonUsage}
+						anthropicNodeUsage={anthropicNodeUsage}
+					/> : null}
+
+					<EndpointRoutesTable
+						endpointRoutes={endpointRoutes}
+						selectedEndpoint={selectedEndpoint}
+						showAllEndpointRoutes={showAllEndpointRoutes}
+						onToggleShowAllEndpointRoutes={() =>
+							setShowAllEndpointRoutes((current) => !current)
+						}
+						onSelectEndpoint={setSelectedEndpoint}
+					/>
+
+					{false ? <QuickstartUsageSection
+						modelIdentifierInCode={modelIdentifierInCode}
+						acceptedIdentifiers={acceptedIdentifierList}
+						onSelectModelIdentifier={setSelectedModelIdentifier}
+						supportedParameters={supportedParameters}
+						selectedEndpointLabel={selectedEndpointLabel}
+						selectedEndpointValue={selectedEndpoint}
+						endpointOptions={availableEndpoints.map((option) => ({
+							value: option.value,
+							label: option.label,
+						}))}
+						selectedLanguage={selectedLanguage}
+						selectedLanguageFamilyId={selectedLanguageFamily?.id ?? "typescript"}
+						availableLanguageFamilies={availableLanguageFamilies}
+						secondaryLanguageOptions={secondaryLanguageOptions}
+						selectedLanguageLabel={`${selectedLanguageFamily?.label ?? selectedLanguageLabel} · ${selectedLanguageVariantLabel}`}
+						supportsStreaming={supportsStreaming}
+						supportsServiceTier={supportsServiceTier}
+						streamingEnabled={streamingEnabled}
+						selectedServiceTier={selectedServiceTier}
+						docsLinks={docsLinks}
+						requestModeLabel={requestModeLabel}
+						serviceTierDocsHref={supportsServiceTier ? SERVICE_TIERS_DOCS_HREF : null}
+						streamingDocsHref={shouldStream ? STREAMING_DOCS_HREF : null}
+						onSelectEndpoint={setSelectedEndpoint}
+						onSelectLanguageFamily={(familyId) => {
+							const family = availableLanguageFamilies.find(
+								(candidate) => candidate.id === familyId,
+							);
+							if (family) {
+								setSelectedLanguage(family.options[0].value);
+							}
+						}}
+						onSelectLanguage={setSelectedLanguage}
+						onSelectServiceTier={setSelectedServiceTier}
+						onToggleStreaming={setStreamingEnabled}
+						curlQuickstart={curlQuickstart}
+						typescriptSdkUsage={typescriptSdkUsage}
+						aiSdkUsage={aiSdkUsage}
+						agentSdkTsUsage={agentSdkTsUsage}
+						agentSdkPythonUsage={agentSdkPythonUsage}
+						agentSdkGoUsage={agentSdkGoUsage}
+						agentSdkCsharpUsage={agentSdkCsharpUsage}
+						agentSdkPhpUsage={agentSdkPhpUsage}
+						agentSdkRubyUsage={agentSdkRubyUsage}
+						pythonSdkUsage={pythonSdkUsage}
+						goSdkUsage={goSdkUsage}
+						csharpSdkUsage={csharpSdkUsage}
+						phpSdkUsage={phpSdkUsage}
+						rubySdkUsage={rubySdkUsage}
+						nodeFetchQuickstart={nodeFetchQuickstart}
+						nodeFetchStreamingQuickstart={nodeFetchStreamingQuickstart}
+						pythonRequestsQuickstart={pythonRequestsQuickstart}
+						pythonRequestsStreamingQuickstart={pythonRequestsStreamingQuickstart}
+						openaiPythonUsage={openaiPythonUsage}
+						openaiNodeUsage={openaiNodeUsage}
+						anthropicPythonUsage={anthropicPythonUsage}
+						anthropicNodeUsage={anthropicNodeUsage}
+					/> : null}
+				</div>
 			</div>
 		</section>
 	);

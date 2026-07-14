@@ -1,7 +1,7 @@
-import { getRecentModelUpdatesSplit } from "@/lib/fetchers/updates/getModelUpdates";
 import ModelUpdatesPage from "@/components/(data)/models/ModelUpdates/ModelUpdates";
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
+import { fetchFrontendModelUpdates } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 
 export const metadata: Metadata = buildMetadata({
 	title: "AI Model Updates",
@@ -25,7 +25,7 @@ export const metadata: Metadata = buildMetadata({
 
 export default async function Page() {
 	const { past: pastEvents, future: upcomingEvents } =
-		await getRecentModelUpdatesSplit({
+		await fetchFrontendModelUpdates({
 			limit: 250,
 			upcomingLimit: 4,
 		});

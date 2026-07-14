@@ -5,17 +5,17 @@ import CountryDetailShell from "@/components/(data)/countries/CountryDetailShell
 import CountryOrganisationCard from "@/components/(data)/countries/CountryOrganisationCard";
 import { ModelCard } from "@/components/(data)/models/Models/ModelCard";
 import { Logo } from "@/components/Logo";
-import { formatCountryDate } from "@/components/(data)/countries/utils";
 import {
-	getCountrySummaryByIso,
 	getUniqueCountryModels,
 	normaliseIso,
-} from "@/lib/fetchers/countries/getCountrySummary";
+	formatCountryDate,
+} from "@/components/(data)/countries/utils";
+import { fetchFrontendCountry } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { buildMetadata } from "@/lib/seo";
 
-async function loadCountry(isoInput: string, includeHidden: boolean) {
+async function loadCountry(isoInput: string) {
 	const iso = normaliseIso(isoInput);
-	return getCountrySummaryByIso(iso, includeHidden);
+	return fetchFrontendCountry(iso);
 }
 
 export async function generateMetadata({
@@ -25,8 +25,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
 	const { iso: isoParamRaw } = await params;
 	const isoParam = normaliseIso(isoParamRaw);
-	const includeHidden = false;
-	const country = await loadCountry(isoParam, includeHidden);
+	const country = await loadCountry(isoParam);
 	const pathIso = isoParam.toLowerCase();
 	const path = `/countries/${pathIso}`;
 	const imagePath = `/og/countries/${pathIso}`;
@@ -72,8 +71,7 @@ export default async function CountryDetailPage({
 }) {
 	const { iso: isoParamRaw } = await params;
 	const iso = normaliseIso(isoParamRaw);
-	const includeHidden = false;
-	const country = await loadCountry(iso, includeHidden);
+	const country = await loadCountry(iso);
 
 	if (!country) {
 		return (

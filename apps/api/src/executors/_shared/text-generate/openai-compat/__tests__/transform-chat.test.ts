@@ -207,6 +207,7 @@ describe("openAIChatToIR", () => {
 					total_tokens: 150,
 					input_tokens_details: {
 						cached_tokens: 70,
+						cache_creation_input_tokens: 13,
 						input_images: 4,
 					},
 					completion_tokens_details: {
@@ -222,6 +223,7 @@ describe("openAIChatToIR", () => {
 			expect(ir.usage?.reasoningTokens).toBe(11);
 			expect(ir.usage?._ext?.inputImageTokens).toBe(4);
 			expect(ir.usage?._ext?.outputImageTokens).toBe(2);
+			expect(ir.usage?._ext?.cachedWriteTokens).toBe(13);
 		});
 
 		it("maps server-side web search usage into IR usage", () => {
@@ -248,6 +250,9 @@ describe("openAIChatToIR", () => {
 						datetime_requests: 1,
 						web_search_requests: 2,
 						web_fetch_requests: 3,
+						advisor_requests: 1,
+						image_generation_requests: 1,
+						apply_patch_requests: 1,
 					},
 				},
 			};
@@ -257,6 +262,9 @@ describe("openAIChatToIR", () => {
 				datetime_requests: 1,
 				web_search_requests: 2,
 				web_fetch_requests: 3,
+				advisor_requests: 1,
+				image_generation_requests: 1,
+				apply_patch_requests: 1,
 			});
 		});
 
@@ -588,6 +596,46 @@ describe("openAIChatToIR", () => {
 });
 
 describe("irToOpenAIChat", () => {
+	it("preserves cache_control markers for explicit cache providers", () => {
+		const request = irToOpenAIChat({
+			model: "qwen/qwen3.7-max",
+			messages: [
+				{
+					role: "system",
+					content: [{
+						type: "text",
+						text: "stable system prompt",
+						cacheControl: { type: "ephemeral" },
+					}],
+				},
+				{
+					role: "user",
+					content: [{
+						type: "text",
+						text: "current question",
+						cacheControl: { type: "ephemeral" },
+					}],
+				},
+			],
+			stream: false,
+		} as any, "qwen3.7-max", "alibaba");
+
+		expect(request.messages[0].content).toEqual([
+			{
+				type: "text",
+				text: "stable system prompt",
+				cache_control: { type: "ephemeral" },
+			},
+		]);
+		expect(request.messages[1].content).toEqual([
+			{
+				type: "text",
+				text: "current question",
+				cache_control: { type: "ephemeral" },
+			},
+		]);
+	});
+
 	it("preserves native web search tools and tool choice", () => {
 		const request = irToOpenAIChat({
 			model: "openai/gpt-4.1",
@@ -631,6 +679,39 @@ describe("irToOpenAIChat", () => {
 		expect(request.web_search_options).toEqual({
 			search_context_size: "high",
 		});
+	});
+
+	it("passes image generation raw request options through to upstream chat requests", () => {
+		const request = irToOpenAIChat({
+			model: "openai/gpt-image-2",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "make an image" }],
+			}],
+			stream: false,
+			modalities: ["text", "image"],
+			imageConfig: {
+				aspectRatio: "16:9",
+				imageSize: "1024x1024",
+			},
+			rawRequest: {
+				quality: "high",
+				background: "transparent",
+				output_format: "png",
+				output_compression: 80,
+				moderation: "auto",
+			},
+		} as any, "gpt-image-2", "openai");
+
+		expect(request.image_config).toEqual({
+			aspect_ratio: "16:9",
+			image_size: "1024x1024",
+		});
+		expect(request.quality).toBe("high");
+		expect(request.background).toBe("transparent");
+		expect(request.output_format).toBe("png");
+		expect(request.output_compression).toBe(80);
+		expect(request.moderation).toBe("auto");
 	});
 
 	it("maps parallel tool call control for chat providers", () => {
@@ -718,6 +799,47 @@ describe("irToOpenAIChat", () => {
 		expect(request.reasoning).toBeDefined();
 		expect(request.reasoning.effort).toBe("high");
 		expect(request.reasoning.summary).toBe("auto");
+	});
+
+	it("maps Z.AI GLM-5.2 reasoning effort to thinking and reasoning_effort", () => {
+		const request = irToOpenAIChat({
+			model: "z-ai/glm-5.2",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "hi" }],
+			}],
+			stream: false,
+			reasoning: {
+				effort: "max",
+			},
+		} as any, "glm-5.2", "z-ai");
+
+		expect(request.thinking).toEqual({
+			type: "enabled",
+			clear_thinking: false,
+		});
+		expect(request.reasoning_effort).toBe("max");
+		expect(request.reasoning).toBeUndefined();
+	});
+
+	it("maps Z.AI disabled reasoning to thinking disabled", () => {
+		const request = irToOpenAIChat({
+			model: "z-ai/glm-5.2",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "hi" }],
+			}],
+			stream: false,
+			reasoning: {
+				effort: "none",
+			},
+		} as any, "glm-5.2", "zai");
+
+		expect(request.thinking).toEqual({
+			type: "disabled",
+			clear_thinking: false,
+		});
+		expect(request.reasoning_effort).toBeUndefined();
 	});
 
 	it("maps Arcee reasoning configuration to reasoning_effort", () => {

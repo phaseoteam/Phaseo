@@ -33,7 +33,7 @@ const encodeModelIdForUrl = (value: string): string => {
 };
 
 export default function CompareMiniHeader({ models }: CompareMiniHeaderProps) {
-	const searchParams = useSearchParams();
+	const searchParams = useSearchParams() ?? new URLSearchParams();
 	const router = useRouter();
 	const [comboboxOpen, setComboboxOpen] = useState(false);
 	const [replaceTargetId, setReplaceTargetId] = useState<string | null>(null);

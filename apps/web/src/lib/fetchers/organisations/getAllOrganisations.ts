@@ -1,6 +1,6 @@
 // lib/fetchers/organisations/getAllOrganisations.ts
 import { cacheLife, cacheTag } from "next/cache";
-import { createClient } from "@/utils/supabase/client";
+import { createAdminClient } from "@/utils/supabase/admin";
 
 export interface OrganisationCard {
     organisation_id: string;
@@ -10,7 +10,7 @@ export interface OrganisationCard {
 }
 
 export async function getAllOrganisations(): Promise<OrganisationCard[]> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data, error } = await supabase
         .from("data_organisations")
@@ -39,6 +39,8 @@ export async function getAllOrganisationsCached(): Promise<OrganisationCard[]> {
     "use cache";
 
     cacheLife("days");
+    cacheTag("public-model-catalogue");
+    cacheTag("frontend:organisations");
     cacheTag("data:organisations");
     cacheTag("data:organisations:list");
 

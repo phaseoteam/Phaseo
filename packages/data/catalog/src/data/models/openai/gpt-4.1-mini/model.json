@@ -96,7 +96,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 5
+      "rank": 3
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -104,7 +104,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 108
+      "rank": 114
     },
     {
       "benchmark_id": "graphwalks-bfs-lt-128k",
@@ -128,7 +128,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://livebench.ai/#/",
-      "rank": 35
+      "rank": 49
     },
     {
       "benchmark_id": "lmarena-text",
@@ -152,7 +152,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 5
+      "rank": 3
     },
     {
       "benchmark_id": "longfact-objects-hallucination-rate",

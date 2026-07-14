@@ -1,0 +1,24 @@
+{
+  "model_id": "windsurf/swe-1.6-fast",
+  "organisation_id": "windsurf",
+  "name": "SWE-1.6 Fast",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "SWE-1.6 Fast is a faster version of Windsurf's SWE-1.6 model for paying users, focused on software engineering agents.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "windsurf/swe-1.6-fast",
+  "links": [
+    {
+      "platform": "docs",
+      "url": "https://docs.windsurf.com/windsurf/models"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

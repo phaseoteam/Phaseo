@@ -1095,7 +1095,7 @@
         "effective_to":  null,
         "capabilities":  [
                              {
-                                 "capability_id":  "text.embed",
+                                 "capability_id":  "image.generate",
                                  "status":  "active",
                                  "params":  [
 
@@ -1118,7 +1118,7 @@
         "effective_to":  null,
         "capabilities":  [
                              {
-                                 "capability_id":  "text.embed",
+                                 "capability_id":  "image.edit",
                                  "status":  "active",
                                  "params":  [
 
@@ -1754,15 +1754,54 @@
         "effective_from":  "2026-04-03T00:00:00",
         "effective_to":  null,
         "capabilities":  [
-                             {
-                                 "capability_id":  "video.generate",
-                                 "status":  "coming_soon",
-                                 "params":  [
-
-                                            ]
-                             }
-                         ]
-    },
+                               {
+                                   "capability_id":  "video.generate",
+                                   "status":  "coming_soon",
+                                   "params":  {
+                                                   "prompt":  {
+                                                                  "type":  "string"
+                                                              },
+                                                   "duration":  {
+                                                                    "type":  "number",
+                                                                    "min":  1,
+                                                                    "aliases":  [
+                                                                                    "seconds",
+                                                                                    "duration_seconds"
+                                                                                ]
+                                                                },
+                                                   "size":  {
+                                                                "type":  "enum",
+                                                                "values":  [
+                                                                               "720P",
+                                                                               "720p",
+                                                                               "1280x720",
+                                                                               "720x1280",
+                                                                               "1280*720",
+                                                                               "720*1280",
+                                                                               "1080P",
+                                                                               "1080p",
+                                                                               "1920x1080",
+                                                                               "1080x1920",
+                                                                               "1920*1080",
+                                                                               "1080*1920"
+                                                                           ],
+                                                                "aliases":  [
+                                                                                "resolution"
+                                                                            ]
+                                                            },
+                                                   "negative_prompt":  {
+                                                                          "type":  "string"
+                                                                      },
+                                                   "input_image":  {
+                                                                       "type":  "string"
+                                                                   },
+                                                   "seed":  {
+                                                                "type":  "integer"
+                                                            }
+                                               }
+                               }
+                           ]
+      },
     {
         "api_model_id":  "qwen/qwen3.6-plus",
         "provider_api_model_id":  "alibaba-cloud:qwen/qwen3.6-plus",
@@ -2099,6 +2138,52 @@
                                                     "provider_default":  null,
                                                     "notes":  null
                                                 }
+                                            ]
+                             }
+                         ]
+    },
+    {
+        "api_model_id":  "qwen/qwen3.7-plus",
+        "provider_api_model_id":  "alibaba-cloud:qwen/qwen3.7-plus",
+        "provider_model_slug":  "qwen3.7-plus",
+        "internal_model_id":  "qwen/qwen3.7-plus",
+        "is_active_gateway":  true,
+        "quantization_scheme":  null,
+        "input_modalities":  "text,image,video",
+        "output_modalities":  "text",
+        "context_length":  1000000,
+        "max_output_tokens":  65536,
+        "effective_from":  "2026-06-01T00:00:00",
+        "effective_to":  null,
+        "capabilities":  [
+                             {
+                                 "capability_id":  "text.generate",
+                                 "status":  "active",
+                                 "params":  [
+
+                                            ]
+                             }
+                         ]
+    },
+    {
+        "api_model_id":  "qwen/qwen3.7-plus-2026-05-26",
+        "provider_api_model_id":  "alibaba-cloud:qwen/qwen3.7-plus-2026-05-26",
+        "provider_model_slug":  "qwen3.7-plus-2026-05-26",
+        "internal_model_id":  "qwen/qwen3.7-plus-2026-05-26",
+        "is_active_gateway":  true,
+        "quantization_scheme":  null,
+        "input_modalities":  "text,image,video",
+        "output_modalities":  "text",
+        "context_length":  1000000,
+        "max_output_tokens":  65536,
+        "effective_from":  "2026-06-01T00:00:00",
+        "effective_to":  null,
+        "capabilities":  [
+                             {
+                                 "capability_id":  "text.generate",
+                                 "status":  "active",
+                                 "params":  [
+
                                             ]
                              }
                          ]

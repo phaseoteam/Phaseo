@@ -37,6 +37,9 @@ function resolveReasoningConfig(providerId?: string): ReasoningConfig | null {
 	if (providerId === "openai") {
 		return { mode: "effort", field: "reasoning" };
 	}
+	if (providerId === "amazon-bedrock") {
+		return { mode: "effort", field: "reasoning" };
+	}
 	// Xiaomi uses a special format: chat_template_kwargs.enable_thinking
 	// This is handled entirely in the Xiaomi provider quirks (providers/xiaomi/quirks.ts)
 	// Do not add a config here - the quirk has full control

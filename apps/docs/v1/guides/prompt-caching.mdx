@@ -1,0 +1,236 @@
+---
+title: "Prompt Caching"
+description: "Reuse stable prompt context across Chat Completions, Responses, and Anthropic Messages requests."
+---
+
+Use prompt caching when the same large context appears across many requests. Mark stable instructions, documents, examples, tool outputs, or tool definitions as cacheable so supported providers can reuse that context on later calls.
+
+Prompt caching is different from [response caching](../cookbook/response-caching-with-presets.mdx). Prompt caching still runs inference, but can reduce repeated input processing cost and latency. Response caching returns a previously generated answer for an identical request.
+
+<Note>
+Prompt caching is provider- and model-specific. Unsupported providers ignore cache hints or route without cached pricing. Check the model page pricing table for cache read/write rates.
+</Note>
+
+## What to cache
+
+Cache content that stays stable across requests:
+
+- long system instructions
+- reused RAG documents
+- few-shot examples
+- tool definitions
+- large tool results that are reused in the next turn
+
+Avoid caching content that changes every request, contains short one-off user input, or includes sensitive data that your policy does not allow to be stored by the selected provider.
+
+## Cache controls
+
+AI Stats accepts Anthropic/OpenRouter-style cache controls on supported text content blocks:
+
+```json
+{
+  "cache_control": {
+    "type": "ephemeral",
+    "ttl": "5m"
+  }
+}
+```
+
+Use `ttl: "5m"` for short-lived shared context and `ttl: "1h"` when the provider and model support longer-lived prompt cache entries.
+
+You can also apply a default Anthropic cache policy through `provider_options`:
+
+```json
+{
+  "provider_options": {
+    "anthropic": {
+      "cache_control": {
+        "type": "ephemeral",
+        "ttl": "5m",
+        "scope": "last_user_message"
+      }
+    }
+  }
+}
+```
+
+Supported `scope` values:
+
+| Scope | Behavior |
+| --- | --- |
+| `all_text` | Add cache control to system text and user text/image blocks that do not already have cache control. |
+| `last_user_message` | Add cache control only to the latest user message. |
+| `none` | Do not apply a default cache policy. |
+
+Per-block `cache_control` wins over the default policy.
+
+## Chat Completions
+
+Use `/v1/chat/completions` when you are using OpenAI-compatible chat clients.
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $AI_STATS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4",
+    "messages": [
+      {
+        "role": "system",
+        "content": [
+          {
+            "type": "text",
+            "text": "You are a support assistant. Follow the company policy exactly.",
+            "cache_control": { "type": "ephemeral", "ttl": "1h" }
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "content": "Summarise the latest ticket."
+      }
+    ]
+  }'
+```
+
+For OpenAI-routed requests, you can also pass OpenAI cache retention options:
+
+```json
+{
+  "provider_options": {
+    "openai": {
+      "prompt_cache_retention": "24h"
+    }
+  }
+}
+```
+
+## Responses
+
+Use `/v1/responses` for new OpenAI-compatible text integrations and agent flows.
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $AI_STATS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4",
+    "input": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "input_text",
+            "text": "Reference document: Refunds are available for 30 days when...",
+            "cache_control": { "type": "ephemeral", "ttl": "5m" }
+          },
+          {
+            "type": "input_text",
+            "text": "Answer this customer: Can I return an item after 20 days?"
+          }
+        ]
+      }
+    ]
+  }'
+```
+
+When you already have a Google Gemini cached content resource, pass it through `provider_options.google.cached_content`:
+
+```json
+{
+  "provider_options": {
+    "google": {
+      "cached_content": "cachedContents/abc123"
+    }
+  }
+}
+```
+
+## Anthropic Messages
+
+Use `/v1/messages` when your client is Anthropic-compatible.
+
+```bash
+curl https://api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer $AI_STATS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4",
+    "max_tokens": 512,
+    "system": [
+      {
+        "type": "text",
+        "text": "You are a careful support assistant. Use the policy below.",
+        "cache_control": { "type": "ephemeral", "ttl": "1h" }
+      }
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Policy: refunds are available for 30 days when...",
+            "cache_control": { "type": "ephemeral", "ttl": "5m" }
+          },
+          {
+            "type": "text",
+            "text": "Can this customer return an item after 20 days?"
+          }
+        ]
+      }
+    ],
+    "tools": [
+      {
+        "name": "lookup_order",
+        "description": "Look up order status.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "order_id": { "type": "string" }
+          },
+          "required": ["order_id"]
+        },
+        "cache_control": { "type": "ephemeral", "ttl": "5m" }
+      }
+    ]
+  }'
+```
+
+Anthropic Messages supports cache control on:
+
+- `system` text blocks
+- message text and image blocks
+- tool result blocks
+- tool definitions
+
+## Usage and pricing fields
+
+When a provider returns cache usage, AI Stats normalizes it into common usage fields.
+
+| Field | Meaning |
+| --- | --- |
+| `input_tokens_details.cached_tokens` | Input tokens read from cache. |
+| `output_tokens_details.cached_tokens` | Input tokens written to provider prompt cache. |
+| `cached_write_text_tokens_5m` | Cache write tokens for a 5 minute TTL when the provider reports TTL-specific writes. |
+| `cached_write_text_tokens_1h` | Cache write tokens for a 1 hour TTL when the provider reports TTL-specific writes. |
+
+Cache writes are usually more expensive than normal input tokens. Cache reads are usually cheaper. Exact pricing depends on the provider, model, and TTL.
+
+## Practical checks
+
+After you add prompt caching:
+
+1. Send one request to create or warm the cache.
+2. Send a second request with the same cacheable content.
+3. Check the response usage and request details for cached read/write fields.
+4. Compare latency and cost over repeated calls, not just the first call.
+
+## Related pages
+
+- [Chat Completions](../api-reference/endpoint/chat-completions.mdx)
+- [Responses](../api-reference/endpoint/responses.mdx)
+- [Anthropic Messages](../api-reference/endpoint/anthropic-messages.mdx)
+- [Parameters](../api-reference/parameters.mdx)
+- [Context and Token Budgeting](./context-and-token-budgeting.mdx)
+- [Use response caching with presets](../cookbook/response-caching-with-presets.mdx)

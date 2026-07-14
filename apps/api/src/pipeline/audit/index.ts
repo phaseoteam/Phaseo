@@ -7,6 +7,10 @@ import { getSupabaseAdmin, ensureRuntimeForBackground, isLocalTestingModeEnabled
 import { ensureAppId } from "../after/apps";
 import type { Endpoint } from "@core/types";
 import { syncWorkspaceUsageRollupForRequest } from "@core/workspace-usage-rollups";
+import {
+	buildGatewayRequestUsageColumns,
+	stripGatewayRequestUsageColumns,
+} from "../usage-columns";
 
 function supaAdmin() {
     return getSupabaseAdmin();
@@ -15,6 +19,7 @@ function supaAdmin() {
 const DEFAULT_RETRY_ATTEMPTS = 3;
 const DEFAULT_RETRY_DELAY_MS = 250;
 let gatewayRequestsSupportsErrorPayloadColumn: boolean | null = null;
+let gatewayRequestsSupportsUsageColumns: boolean | null = null;
 let gatewayRequestDetailsTableAvailable: boolean | null = null;
 let warnedMissingGatewayRequestDetailsTable = false;
 
@@ -90,7 +95,16 @@ async function insertGatewayRequest(row: any) {
     };
 
     const initialRow =
-        gatewayRequestsSupportsErrorPayloadColumn === false
+        gatewayRequestsSupportsUsageColumns === false
+            ? stripGatewayRequestUsageColumns(
+                gatewayRequestsSupportsErrorPayloadColumn === false
+                    ? (() => {
+                        const { error_payload: _omit, ...legacyRow } = row ?? {};
+                        return legacyRow;
+                    })()
+                    : row,
+            )
+            : gatewayRequestsSupportsErrorPayloadColumn === false
             ? (() => {
                 const { error_payload: _omit, ...legacyRow } = row ?? {};
                 return legacyRow;
@@ -102,8 +116,26 @@ async function insertGatewayRequest(row: any) {
         if (gatewayRequestsSupportsErrorPayloadColumn === null && "error_payload" in row) {
             gatewayRequestsSupportsErrorPayloadColumn = true;
         }
+        if (gatewayRequestsSupportsUsageColumns === null && "usage_total_tokens" in row) {
+            gatewayRequestsSupportsUsageColumns = true;
+        }
         return inserted;
     } catch (error) {
+        if (
+            gatewayRequestsSupportsUsageColumns !== false &&
+            isMissingColumnError(error, "usage_", "gateway_requests")
+        ) {
+            gatewayRequestsSupportsUsageColumns = false;
+            const legacyRow = stripGatewayRequestUsageColumns(row);
+            return attemptInsert(
+                gatewayRequestsSupportsErrorPayloadColumn === false
+                    ? (() => {
+                        const { error_payload: _omit, ...withoutErrorPayload } = legacyRow;
+                        return withoutErrorPayload;
+                    })()
+                    : legacyRow,
+            );
+        }
         if (
             "error_payload" in row &&
             gatewayRequestsSupportsErrorPayloadColumn !== false &&
@@ -236,12 +268,21 @@ function buildSupaRow(args: {
     usage?: any | null; costNanos?: number | null; currency?: string | null;
     pricingLines?: any[] | null; throughput?: number | null;
     finishReason?: string | null;
+    requestPayload?: unknown;
+    gatewayResponse?: unknown;
     edgeColo?: string | null;
     edgeCity?: string | null;
     edgeCountry?: string | null;
     edgeContinent?: string | null;
     edgeAsn?: number | null;
 }) {
+    const usageColumns = buildGatewayRequestUsageColumns({
+        usage: args.usage ?? {},
+        endpoint: args.endpoint,
+        requestPayload: args.requestPayload,
+        gatewayResponse: args.gatewayResponse,
+    });
+
     return {
         request_id: args.requestId,
         workspace_id: args.workspaceId ?? null,
@@ -271,6 +312,7 @@ function buildSupaRow(args: {
         latency_ms: args.latencyMs ?? null,
         generation_ms: args.generationMs ?? null,
         usage: args.usage ?? {},
+        ...usageColumns,
         ...(args.costNanos != null ? { cost_nanos: Math.round(args.costNanos as number) } : {}),
         currency: args.currency ?? null,
         pricing_lines: Array.isArray(args.pricingLines) ? args.pricingLines : [],
@@ -380,6 +422,8 @@ export async function auditSuccess(args: {
             latencyMs: args.latencyMs ?? null,
             generationMs: args.generationMs ?? null,
             usage: strippedUsage ?? {},
+            requestPayload: args.requestPayload,
+            gatewayResponse: args.gatewayResponse,
             costNanos: args.totalNanos ?? (Number.isFinite(args.totalCents) ? Math.round((args.totalCents as number) * 1e7) : null),
             currency: args.currency,
             pricingLines,
@@ -439,6 +483,7 @@ type AuditFailureBefore = {
     workspaceId?: string | null;
     endpoint: Endpoint;
     model?: string | null;
+    requestedModel?: string | null;
     statusCode: number;
     errorCode: string;
     errorMessage?: string | null;
@@ -540,7 +585,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                 workspaceId: args.workspaceId ?? null,
                 endpoint: args.endpoint,
                 model: args.model ?? null,
-                canonicalModel: args.model ?? null,
+                canonicalModel: args.requestedModel ?? args.model ?? null,
                 provider: null,
                 stream: false,
                 byok: false,
@@ -561,6 +606,8 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                 latencyMs: args.latencyMs ?? null,
                 generationMs: null,
                 usage: {},
+                requestPayload: args.requestPayload,
+                gatewayResponse: args.gatewayResponse,
                 currency: null,
                 pricingLines: [],
                 keyId: args.keyId ?? null,
@@ -588,7 +635,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                             app_id: resolvedAppId ?? null,
                             key_id: args.keyId ?? null,
                             endpoint: args.endpoint,
-                            model_id: args.model ?? "unknown",
+                            model_id: args.requestedModel ?? args.model ?? "unknown",
                             provider: null,
                             status_code: args.statusCode,
                             success: false,
@@ -645,6 +692,8 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
             latencyMs: args.latencyMs ?? null,
             generationMs: args.generationMs ?? null,
             usage: {},
+            requestPayload: args.requestPayload,
+            gatewayResponse: args.gatewayResponse,
             currency: null,
             pricingLines: [],
             keyId: args.keyId ?? null,

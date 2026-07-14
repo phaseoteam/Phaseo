@@ -1,4 +1,5 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
+import { sendDiscordTextMessage } from "./discord";
 
 type DiscoveryTrigger = "scheduled" | "manual";
 
@@ -16,8 +17,16 @@ type ProviderConfig = {
 	providerId: string;
 	providerName: string;
 	modelsEndpoint: string;
+	pathPrefix?: string;
+	modelsPath?: string;
+	baseUrlEnv?: string[];
 	apiKeyEnv?: string[];
 	authStyle?: "bearer" | "anthropic" | "google_api_key_query" | "clarifai_key" | "elevenlabs" | "api_key_authorization" | "none";
+	pagination?: {
+		nextPageTokenFields: string[];
+		pageTokenQueryParam: string;
+		maxPages?: number;
+	};
 };
 
 type ProviderChange = {
@@ -113,6 +122,7 @@ type ConfiguredProviderModelRow = {
 };
 
 const DISCOVERY_TIMEOUT_MS = 30_000;
+const DEFAULT_DISCOVERY_MAX_PAGES = 50;
 const MAX_DISCORD_LINES = 30;
 const MAX_LIST_ITEMS = 8;
 const MAX_SUMMARY_MODEL_SAMPLES = 5;
@@ -141,6 +151,33 @@ export function asRecord(value: unknown): Record<string, unknown> | null {
 
 export function asArray(value: unknown): unknown[] {
 	return Array.isArray(value) ? value : [];
+}
+
+function normalizePathSegment(value: string | undefined): string {
+	if (!value) return "";
+	return `/${value.replace(/^\/+|\/+$/g, "")}`;
+}
+
+export function resolveProviderModelsEndpoint(provider: ProviderConfig): string {
+	const baseUrlOverride = provider.baseUrlEnv ? readBindingEnv(provider.baseUrlEnv) : null;
+	if (!baseUrlOverride) return provider.modelsEndpoint;
+
+	const parsed = new URL(baseUrlOverride);
+	const basePath = parsed.pathname.replace(/\/+$/, "");
+	const pathPrefix = normalizePathSegment(provider.pathPrefix);
+	const modelsPath = normalizePathSegment(provider.modelsPath ?? "/models");
+	const fullModelsPath = `${pathPrefix}${modelsPath}`;
+
+	if (fullModelsPath && (basePath === fullModelsPath || basePath.endsWith(fullModelsPath))) {
+		return parsed.toString();
+	}
+	if (pathPrefix && (basePath === pathPrefix || basePath.endsWith(pathPrefix))) {
+		parsed.pathname = `${basePath}${modelsPath}`.replace(/\/{2,}/g, "/");
+		return parsed.toString();
+	}
+
+	parsed.pathname = `${basePath}${fullModelsPath || modelsPath}`.replace(/\/{2,}/g, "/");
+	return parsed.toString();
 }
 
 export function normalizeJson(value: unknown): unknown {
@@ -465,9 +502,21 @@ export function hasAtlascloudLlmCategory(row: Record<string, unknown>): boolean 
 	return false;
 }
 
+function isTruthyFlag(value: unknown): boolean {
+	if (value === true) return true;
+	if (typeof value === "number") return value === 1;
+	if (typeof value === "string") {
+		return value.trim().toLowerCase() === "true";
+	}
+	return false;
+}
+
 export function shouldIncludeDiscoveredModel(providerId: string, row: Record<string, unknown>): boolean {
 	if (providerId === "atlascloud") {
 		return hasAtlascloudLlmCategory(row);
+	}
+	if (providerId === "fireworks") {
+		return isTruthyFlag(row.supportsServerless ?? row.supports_serverless);
 	}
 	if (providerId === "clarifai") {
 		return typeof row.model_type_id === "string" && row.model_type_id.trim().toLowerCase() === "text-to-text";
@@ -477,13 +526,11 @@ export function shouldIncludeDiscoveredModel(providerId: string, row: Record<str
 
 export function extractDiscoveredModels(providerId: string, payload: unknown): DiscoveredModel[] {
 	const root = asRecord(payload);
-	if (!root) return [];
-
-	const candidateCollections: unknown[] = [
-		root.data,
-		root.models,
-		asRecord(root.result)?.models,
-	];
+	const candidateCollections: unknown[] = Array.isArray(payload)
+		? [payload]
+		: root
+			? [root.data, root.models, asRecord(root.result)?.models]
+			: [];
 
 	const output = new Map<string, DiscoveredModel>();
 
@@ -512,13 +559,76 @@ export function extractDiscoveredModels(providerId: string, payload: unknown): D
 	return Array.from(output.values()).sort((a, b) => a.id.localeCompare(b.id));
 }
 
+function normalizeProviderResponseErrorDetail(value: unknown): string | null {
+	if (typeof value === "string") {
+		const trimmed = value.trim();
+		return trimmed || null;
+	}
+	if (typeof value === "number" && Number.isFinite(value) && value !== 0) {
+		return String(value);
+	}
+	const record = asRecord(value);
+	if (!record) return null;
+
+	for (const key of ["message", "msg", "detail", "error"]) {
+		const nested = record[key];
+		if (typeof nested === "string") {
+			const trimmed = nested.trim();
+			if (trimmed) return trimmed;
+		}
+		if (typeof nested === "number" && Number.isFinite(nested) && nested !== 0) {
+			return String(nested);
+		}
+	}
+
+	return null;
+}
+
+function extractProviderResponseErrorMessage(payload: unknown): string | null {
+	const root = asRecord(payload);
+	if (!root) return null;
+
+	const directError = normalizeProviderResponseErrorDetail(root.error);
+	if (directError) return directError;
+
+	const baseResp = asRecord(root.base_resp) ?? asRecord(root.baseResp);
+	const statusCode = toNullableInteger(
+		root.status_code ?? root.statusCode ?? baseResp?.status_code ?? baseResp?.statusCode
+	);
+	if (statusCode === null || statusCode === 0) return null;
+
+	const message =
+		normalizeProviderResponseErrorDetail(root.message) ??
+		normalizeProviderResponseErrorDetail(root.msg) ??
+		normalizeProviderResponseErrorDetail(root.detail) ??
+		normalizeProviderResponseErrorDetail(baseResp?.message) ??
+		normalizeProviderResponseErrorDetail(baseResp?.msg) ??
+		normalizeProviderResponseErrorDetail(baseResp?.detail);
+
+	return message ? `status_code ${statusCode}: ${message}` : `status_code ${statusCode}`;
+}
+
+function readNextPageToken(
+	root: Record<string, unknown> | null,
+	pagination: NonNullable<ProviderConfig["pagination"]>
+): string {
+	if (!root) return "";
+	for (const field of pagination.nextPageTokenFields) {
+		const value = root[field];
+		if (typeof value !== "string") continue;
+		const trimmed = value.trim();
+		if (trimmed) return trimmed;
+	}
+	return "";
+}
+
 export async function fetchProviderModels(provider: ProviderConfig, apiKey?: string | null): Promise<DiscoveredModel[]> {
 	const controller = new AbortController();
 	const timeout = setTimeout(() => controller.abort(), DISCOVERY_TIMEOUT_MS);
 
 	try {
 		const headers: Record<string, string> = {};
-		let url = provider.modelsEndpoint;
+		let url = resolveProviderModelsEndpoint(provider);
 
 		switch (provider.authStyle ?? "bearer") {
 			case "anthropic":
@@ -528,7 +638,7 @@ export async function fetchProviderModels(provider: ProviderConfig, apiKey?: str
 				break;
 			case "google_api_key_query": {
 				if (!apiKey) throw new Error(`${provider.providerId} api key missing`);
-				const parsed = new URL(provider.modelsEndpoint);
+				const parsed = new URL(url);
 				parsed.searchParams.set("key", apiKey);
 				url = parsed.toString();
 				break;
@@ -554,14 +664,60 @@ export async function fetchProviderModels(provider: ProviderConfig, apiKey?: str
 				break;
 		}
 
-		const response = await fetch(url, { method: "GET", headers, signal: controller.signal });
-		if (!response.ok) {
-			const body = await response.text().catch(() => "");
-			throw new Error(`HTTP ${response.status}${body ? `: ${body.slice(0, 200)}` : ""}`);
+		const output = new Map<string, DiscoveredModel>();
+		const pagination = provider.pagination;
+		const maxPages = pagination?.maxPages ?? DEFAULT_DISCOVERY_MAX_PAGES;
+		const seenPageTokens = new Set<string>();
+		let nextUrl: string | null = url;
+		let pageCount = 0;
+
+		while (nextUrl) {
+			pageCount += 1;
+			if (pagination && pageCount > maxPages) {
+				throw new Error(
+					`${provider.providerName} (${provider.providerId}) model discovery exceeded ${maxPages} pages`
+				);
+			}
+
+			const response = await fetch(nextUrl, { method: "GET", headers, signal: controller.signal });
+			if (!response.ok) {
+				const body = await response.text().catch(() => "");
+				throw new Error(`HTTP ${response.status}${body ? `: ${body.slice(0, 200)}` : ""}`);
+			}
+
+			const payload = await response.json();
+			const providerResponseErrorMessage = extractProviderResponseErrorMessage(payload);
+			if (providerResponseErrorMessage) {
+				throw new Error(`${provider.providerName} (${provider.providerId}) response error: ${providerResponseErrorMessage}`);
+			}
+
+			for (const model of extractDiscoveredModels(provider.providerId, payload)) {
+				output.set(model.id, model);
+			}
+
+			if (!pagination) {
+				nextUrl = null;
+				continue;
+			}
+
+			const nextPageToken = readNextPageToken(asRecord(payload), pagination);
+			if (!nextPageToken) {
+				nextUrl = null;
+				continue;
+			}
+			if (seenPageTokens.has(nextPageToken)) {
+				throw new Error(
+					`${provider.providerName} (${provider.providerId}) model discovery returned repeated page token: ${nextPageToken}`
+				);
+			}
+			seenPageTokens.add(nextPageToken);
+
+			const parsed = new URL(nextUrl);
+			parsed.searchParams.set(pagination.pageTokenQueryParam, nextPageToken);
+			nextUrl = parsed.toString();
 		}
 
-		const payload = await response.json();
-		return extractDiscoveredModels(provider.providerId, payload);
+		return Array.from(output.values()).sort((a, b) => a.id.localeCompare(b.id));
 	} finally {
 		clearTimeout(timeout);
 	}
@@ -1026,7 +1182,7 @@ export async function sendDiscordNotification(args: {
 	pricing: PricingMonitorSummary;
 	providerApiPricing: ProviderApiPricingMonitorSummary;
 	configuredModelCoverage: ConfiguredModelCoverageMonitorSummary;
-}): Promise<void> {
+}): Promise<{ delivered: boolean; skipped: boolean; reason?: string | null }> {
 	const configuredCoverageNotificationsEnabled = shouldNotifyConfiguredModelCoverage();
 	const configuredCoverageUpdatesForNotifications = configuredCoverageNotificationsEnabled
 		? args.configuredModelCoverage.updatesDetected
@@ -1038,46 +1194,30 @@ export async function sendDiscordNotification(args: {
 		args.providerApiPricing.updatesDetected === 0 &&
 		configuredCoverageUpdatesForNotifications === 0
 	) {
-		return;
+		return { delivered: false, skipped: true, reason: "no notifiable changes" };
 	}
 	const webhookUrl = readBindingEnv(["DISCORD_WEBHOOK_URL"]);
-	if (!webhookUrl) return;
+	if (!webhookUrl) {
+		return { delivered: false, skipped: true, reason: "missing DISCORD_WEBHOOK_URL" };
+	}
 
 	let parsedUrl: URL;
 	try {
 		parsedUrl = new URL(webhookUrl);
 	} catch {
 		console.warn("[model-discovery] invalid DISCORD_WEBHOOK_URL; skipping notification");
-		return;
+		return { delivered: false, skipped: true, reason: "invalid DISCORD_WEBHOOK_URL" };
 	}
 
 	const message = buildDiscordMessage(args);
-	if (!message.trim()) return;
-	const roleId = readBindingEnv(["DISCORD_ROLE_ID"]);
-	const userId = readBindingEnv(["DISCORD_USER_ID"]);
-	const mentions: string[] = [];
-	if (roleId) mentions.push(`<@&${roleId}>`);
-	if (userId) mentions.push(`<@${userId}>`);
-
-	const payload: Record<string, unknown> = {
-		content: mentions.length ? `${mentions.join(" ")}\n${message}` : message,
-	};
-	if (roleId || userId) {
-		payload.allowed_mentions = {
-			parse: [],
-			roles: roleId ? [roleId] : [],
-			users: userId ? [userId] : [],
-		};
+	if (!message.trim()) {
+		return { delivered: false, skipped: true, reason: "empty Discord message" };
 	}
-
-	const response = await fetch(parsedUrl.toString(), {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify(payload),
+	await sendDiscordTextMessage({
+		webhookUrl: parsedUrl.toString(),
+		message,
+		roleId: readBindingEnv(["DISCORD_ROLE_ID"]),
+		userId: readBindingEnv(["DISCORD_USER_ID"]),
 	});
-
-	if (!response.ok) {
-		const body = await response.text().catch(() => "");
-		throw new Error(`Discord webhook failed (${response.status})${body ? `: ${body.slice(0, 200)}` : ""}`);
-	}
+	return { delivered: true, skipped: false };
 }

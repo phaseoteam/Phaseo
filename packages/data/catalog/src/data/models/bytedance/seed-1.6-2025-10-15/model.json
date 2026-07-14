@@ -1,0 +1,19 @@
+{
+  "model_id": "bytedance/seed-1.6-2025-10-15",
+  "organisation_id": "bytedance",
+  "name": "Seed 1.6 (2025-10-15)",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Seed 1.6 (2025-10-15) is a dated ByteDance language model release for chat, writing, analysis, and general-purpose automation.",
+  "announced_date": null,
+  "release_date": "2025-10-15T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "bytedance/seed-1.6-2025-10-15",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

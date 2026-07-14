@@ -4,7 +4,7 @@
     "provider_api_model_id": "cloudflare:@cf/meta/llama-3.2-1b-instruct",
     "provider_model_slug": "@cf/meta/llama-3.2-1b-instruct",
     "internal_model_id": "meta/llama-3.2-1b",
-      "is_active_gateway": true,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -55,49 +55,6 @@
     "max_output_tokens": null,
     "effective_from": "2026-04-28T00:00:00",
     "effective_to": "2026-05-30T00:00:00",
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": [
-          {
-            "param_id": "max_tokens",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "temperature",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "top_p",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "api_model_id": "meta/llama-3.1-8b-instruct-fp8-fast",
-    "provider_api_model_id": "cloudflare:@cf/meta/llama-3.1-8b-instruct-fp8-fast",
-    "provider_model_slug": "@cf/meta/llama-3.1-8b-instruct-fp8-fast",
-    "internal_model_id": "meta/llama-3.1-8b",
-    "is_active_gateway": false,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-04-28T00:00:00",
-    "effective_to": null,
     "capabilities": [
       {
         "capability_id": "text.generate",
@@ -344,92 +301,6 @@
     ]
   },
   {
-    "api_model_id": "meta/llama-3.1-8b-instruct",
-    "provider_api_model_id": "cloudflare:@cf/meta/llama-3.1-8b-instruct",
-    "provider_model_slug": "@cf/meta/llama-3.1-8b-instruct",
-    "internal_model_id": "meta/llama-3.1-8b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-04-28T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": [
-          {
-            "param_id": "max_tokens",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "temperature",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "top_p",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "api_model_id": "meta/llama-3.1-8b-instruct-fp8",
-    "provider_api_model_id": "cloudflare:@cf/meta/llama-3.1-8b-instruct-fp8",
-    "provider_model_slug": "@cf/meta/llama-3.1-8b-instruct-fp8",
-    "internal_model_id": "meta/llama-3.1-8b",
-    "is_active_gateway": false,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-04-28T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": [
-          {
-            "param_id": "max_tokens",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "temperature",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "top_p",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          }
-        ]
-      }
-    ]
-  },
-  {
     "api_model_id": "meta/llama-3.1-8b-instruct-awq",
     "provider_api_model_id": "cloudflare:@cf/meta/llama-3.1-8b-instruct-awq",
     "provider_model_slug": "@cf/meta/llama-3.1-8b-instruct-awq",
@@ -473,98 +344,12 @@
     ]
   },
   {
-    "api_model_id": "meta/llama-3-8b-instruct",
-    "provider_api_model_id": "cloudflare:@cf/meta/llama-3-8b-instruct",
-    "provider_model_slug": "@cf/meta/llama-3-8b-instruct",
-    "internal_model_id": "meta/llama-3-8b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-04-28T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": [
-          {
-            "param_id": "max_tokens",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "temperature",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "top_p",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          }
-        ]
-      }
-    ]
-  },
-  {
     "api_model_id": "meta/llama-3-8b-instruct-awq",
     "provider_api_model_id": "cloudflare:@cf/meta/llama-3-8b-instruct-awq",
     "provider_model_slug": "@cf/meta/llama-3-8b-instruct-awq",
     "internal_model_id": "meta/llama-3-8b",
     "is_active_gateway": false,
     "quantization_scheme": "AWQ",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-04-28T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": [
-          {
-            "param_id": "max_tokens",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "temperature",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "top_p",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "api_model_id": "meta/llama-2-7b-chat-fp16",
-    "provider_api_model_id": "cloudflare:@cf/meta/llama-2-7b-chat-fp16",
-    "provider_model_slug": "@cf/meta/llama-2-7b-chat-fp16",
-    "internal_model_id": "meta/llama-2-7b-chat",
-    "is_active_gateway": false,
-    "quantization_scheme": "FP16",
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": null,
@@ -1032,6 +817,63 @@
     ]
   },
   {
+    "api_model_id": "zai-org/glm-5.2",
+    "provider_api_model_id": "cloudflare:@cf/zai-org/glm-5.2",
+    "provider_model_slug": "@cf/zai-org/glm-5.2",
+    "internal_model_id": "z-ai/glm-5.2",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-16T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
+      }
+    ]
+  },
+  {
     "api_model_id": "nvidia/nemotron-3-120b-a12b",
     "provider_api_model_id": "cloudflare:@cf/nvidia/nemotron-3-120b-a12b",
     "provider_model_slug": "@cf/nvidia/nemotron-3-120b-a12b",
@@ -1121,7 +963,7 @@
     "api_model_id": "moonshotai/kimi-k2.6",
     "provider_api_model_id": "cloudflare:@cf/moonshotai/kimi-k2.6",
     "provider_model_slug": "@cf/moonshotai/kimi-k2.6",
-    "internal_model_id": "",
+    "internal_model_id": "moonshotai/kimi-k2.6",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -1151,6 +993,63 @@
           },
           {
             "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "api_model_id": "moonshotai/kimi-k2.7-code",
+    "provider_api_model_id": "cloudflare:@cf/moonshotai/kimi-k2.7-code",
+    "provider_model_slug": "@cf/moonshotai/kimi-k2.7-code",
+    "internal_model_id": "moonshotai/kimi-k2.7-code",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-16T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tools",
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,
@@ -1215,6 +1114,476 @@
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2026-04-28T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "input",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemma-2b-it-lora",
+    "provider_api_model_id": "cloudflare:@cf/google/gemma-2b-it-lora",
+    "provider_model_slug": "@cf/google/gemma-2b-it-lora",
+    "internal_model_id": "google/gemma-2b-it-lora",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 8192,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-04T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "api_model_id": "black-forest-labs/flux-2-klein-9b",
+    "provider_api_model_id": "cloudflare:@cf/black-forest-labs/flux-2-klein-9b",
+    "provider_model_slug": "@cf/black-forest-labs/flux-2-klein-9b",
+    "internal_model_id": "black-forest-labs/flux-2-klein-9b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "image",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-04T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "mistral/mistral-7b-instruct-v0.2-lora",
+    "provider_api_model_id": "cloudflare:@cf/mistral/mistral-7b-instruct-v0.2-lora",
+    "provider_model_slug": "@cf/mistral/mistral-7b-instruct-v0.2-lora",
+    "internal_model_id": "mistral/mistral-7b-instruct-v0.2-lora",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 15000,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-04T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/whisper-1",
+    "provider_api_model_id": "cloudflare:@cf/openai/whisper",
+    "provider_model_slug": "@cf/openai/whisper",
+    "internal_model_id": "openai/whisper-1",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "audio",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-04T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.transcribe",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "deepseek/deepseek-r1-distill-qwen-32b",
+    "provider_api_model_id": "cloudflare:@cf/deepseek-ai/deepseek-r1-distill-qwen-32b",
+    "provider_model_slug": "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b",
+    "internal_model_id": "deepseek/deepseek-r1-distill-qwen-32b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 80000,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-04T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "api_model_id": "black-forest-labs/flux-1-schnell",
+    "provider_api_model_id": "cloudflare:@cf/black-forest-labs/flux-1-schnell",
+    "provider_model_slug": "@cf/black-forest-labs/flux-1-schnell",
+    "internal_model_id": "black-forest-labs/flux-1-schnell",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "image",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-04T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "microsoft/resnet-50",
+    "provider_api_model_id": "cloudflare:@cf/microsoft/resnet-50",
+    "provider_model_slug": "@cf/microsoft/resnet-50",
+    "internal_model_id": "microsoft/resnet-50",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-04T00:00:00",
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "bytedance/stable-diffusion-xl-lightning",
+    "provider_api_model_id": "cloudflare:@cf/bytedance/stable-diffusion-xl-lightning",
+    "provider_model_slug": "@cf/bytedance/stable-diffusion-xl-lightning",
+    "internal_model_id": "bytedance/stable-diffusion-xl-lightning",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "image",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-04T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta/llama-2-7b-chat",
+    "provider_api_model_id": "cloudflare:@cf/meta-llama/llama-2-7b-chat-hf-lora",
+    "provider_model_slug": "@cf/meta-llama/llama-2-7b-chat-hf-lora",
+    "internal_model_id": "meta/llama-2-7b-chat",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 8192,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-04T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta/m2m100-1.2b",
+    "provider_api_model_id": "cloudflare:@cf/meta/m2m100-1.2b",
+    "provider_model_slug": "@cf/meta/m2m100-1.2b",
+    "internal_model_id": "meta/m2m100-1.2b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-04T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "api_model_id": "black-forest-labs/flux-2-klein-4b",
+    "provider_api_model_id": "cloudflare:@cf/black-forest-labs/flux-2-klein-4b",
+    "provider_model_slug": "@cf/black-forest-labs/flux-2-klein-4b",
+    "internal_model_id": "black-forest-labs/flux-2-klein-4b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "image",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-04T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "black-forest-labs/flux-2-dev",
+    "provider_api_model_id": "cloudflare:@cf/black-forest-labs/flux-2-dev",
+    "provider_model_slug": "@cf/black-forest-labs/flux-2-dev",
+    "internal_model_id": "black-forest-labs/flux-2-dev",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "image",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-04T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemma-7b-it-lora",
+    "provider_api_model_id": "cloudflare:@cf/google/gemma-7b-it-lora",
+    "provider_model_slug": "@cf/google/gemma-7b-it-lora",
+    "internal_model_id": "google/gemma-7b-it-lora",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 3500,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-04T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/whisper-tiny-en",
+    "provider_api_model_id": "cloudflare:@cf/openai/whisper-tiny-en",
+    "provider_model_slug": "@cf/openai/whisper-tiny-en",
+    "internal_model_id": "openai/whisper-tiny-en",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "audio",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-04T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.transcribe",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/whisper-large-v3-turbo",
+    "provider_api_model_id": "cloudflare:@cf/openai/whisper-large-v3-turbo",
+    "provider_model_slug": "@cf/openai/whisper-large-v3-turbo",
+    "internal_model_id": "openai/whisper-large-v3-turbo",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "audio",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-04T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.transcribe",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/embeddinggemma-300m",
+    "provider_api_model_id": "cloudflare:@cf/google/embeddinggemma-300m",
+    "provider_model_slug": "@cf/google/embeddinggemma-300m",
+    "internal_model_id": "google/embeddinggemma-300m",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "embedding",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-04T00:00:00",
     "effective_to": null,
     "capabilities": [
       {

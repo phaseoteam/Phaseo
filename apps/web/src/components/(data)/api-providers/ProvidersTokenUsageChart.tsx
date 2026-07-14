@@ -8,16 +8,21 @@ import {
 } from "@/components/ui/empty";
 import ProviderTokenUsageChartClient from "@/components/(data)/api-providers/Gateway/ProviderTokenUsageChartClient";
 import {
-	getMarketShareTimeseries,
-	getProviderNamesByIds,
-} from "@/lib/fetchers/rankings/getRankingsData";
+	fetchFrontendMarketShareTimeseries,
+	fetchFrontendProviderNamesByIds,
+} from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import type {
 	ProviderTokenSeriesModel,
 	ProviderTokenSeriesPoint,
 } from "@/lib/fetchers/api-providers/api-provider/providerTokenTimeseries";
 
 export default async function ProvidersTokenUsageChart() {
-	const { data } = await getMarketShareTimeseries("provider", "month", "day", 8);
+	const { data } = await fetchFrontendMarketShareTimeseries(
+		"provider",
+		"month",
+		"day",
+		8,
+	);
 	const filtered = (data ?? []).filter(
 		(row) => row.name && row.name.toLowerCase() !== "unknown",
 	);
@@ -54,7 +59,7 @@ export default async function ProvidersTokenUsageChart() {
 	}
 
 	const providerIds = Array.from(totalsByProvider.keys());
-	const providerNames = await getProviderNamesByIds(providerIds);
+	const providerNames = await fetchFrontendProviderNamesByIds(providerIds);
 
 	const models: ProviderTokenSeriesModel[] = providerIds
 		.map((providerId) => ({

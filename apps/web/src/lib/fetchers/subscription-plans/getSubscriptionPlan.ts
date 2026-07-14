@@ -1,7 +1,7 @@
 // lib/fetchers/subscription-plans/getSubscriptionPlan.ts
 import { cacheLife, cacheTag } from "next/cache";
-import { createClient } from "@/utils/supabase/client";
-import { SubscriptionPlanSummary } from "./getAllSubscriptionPlans";
+import { createAdminClient } from "@/utils/supabase/admin";
+import type { SubscriptionPlanSummary } from "./getAllSubscriptionPlans";
 
 export interface SubscriptionPlanDetails extends SubscriptionPlanSummary {
     features: SubscriptionPlanFeature[];
@@ -38,7 +38,7 @@ export async function getSubscriptionPlan(
     baseId: string,
     includeHidden: boolean
 ): Promise<SubscriptionPlanDetails | null> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Get the plan details (all variants)
     const { data: planData, error: planError } = await supabase
@@ -171,6 +171,8 @@ export async function getSubscriptionPlanCached(
     "use cache";
 
     cacheLife("days");
+    cacheTag("public-model-catalogue");
+    cacheTag("frontend:subscription-plans");
     cacheTag("data:subscription_plans");
     cacheTag(`data:subscription_plans:${baseId}`);
 

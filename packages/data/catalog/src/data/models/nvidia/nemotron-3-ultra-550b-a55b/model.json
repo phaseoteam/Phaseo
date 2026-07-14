@@ -1,0 +1,49 @@
+{
+  "model_id": "nvidia/nemotron-3-ultra-550b-a55b",
+  "organisation_id": "nvidia",
+  "name": "Nemotron 3 Ultra",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Nemotron 3 Ultra is NVIDIA's largest Nemotron 3 model, a 550B total-parameter hybrid Mamba-Transformer mixture-of-experts model with up to 55B active parameters per token and up to 1M tokens of context, built for coding, research, and long-running agentic workflows.",
+  "announced_date": "2026-03-16T00:00:00",
+  "release_date": "2026-06-01T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "nvidia/nemotron-3-ultra-550b-a55b",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://investor.nvidia.com/news/press-release-details/2026/Enterprise-Software-Leaders-Build-AI-Agents-With-NVIDIA/default.aspx"
+    },
+    {
+      "platform": "website",
+      "url": "https://developer.nvidia.com/nemotron"
+    },
+    {
+      "platform": "api_reference",
+      "url": "https://docs.nvidia.com/nemotron/nightly/usage-cookbook/Nemotron-3-Ultra-Base/README.html"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 1000000
+    },
+    {
+      "name": "parameter_count",
+      "value": 550000000000
+    },
+    {
+      "name": "active_parameter_count",
+      "value": 55000000000
+    },
+    {
+      "name": "availability",
+      "value": "NVIDIA unveiled Nemotron 3 Ultra on June 1, 2026 as a new open model for long-running agents, and DigitalOcean now lists hosted inference support for the model."
+    }
+  ],
+  "benchmarks": []
+}

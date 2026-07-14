@@ -4,10 +4,11 @@ import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Database, Gauge, LogOut, UserRound } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ChatRoomSwitcher } from "@/components/(chat)/ChatRoomSwitcher";
 import { Button } from "@/components/ui/button";
+import { fetchClientAuthHeaderData } from "@/lib/fetchers/internal/fetchClientAuthHeaderData";
+import { postClientAuthSignOut } from "@/lib/fetchers/internal/postClientAuthSignOut";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -103,8 +104,7 @@ export function RoomScaffold({ children }: RoomScaffoldProps) {
 	const [authLoading, setAuthLoading] = useState(true);
 
 	const handleSignOut = useCallback(async () => {
-		const supabase = createClient();
-		await supabase.auth.signOut();
+		await postClientAuthSignOut();
 		setAuthUser(null);
 		window.location.href = "/sign-in";
 	}, []);
@@ -127,43 +127,30 @@ export function RoomScaffold({ children }: RoomScaffoldProps) {
 
 	useEffect(() => {
 		let mounted = true;
-		const supabase = createClient();
 		const loadUser = async () => {
 			setAuthLoading(true);
-			const { data, error } = await supabase.auth.getUser();
-			if (!mounted) return;
-			if (error || !data.user) {
-				setAuthUser(null);
-				setAuthLoading(false);
-				return;
+			try {
+				const data = await fetchClientAuthHeaderData();
+				if (!mounted) return;
+				if (!data.isLoggedIn || !data.user) {
+					setAuthUser(null);
+					return;
+				}
+				setAuthUser({
+					id: data.user.id,
+					email: data.user.email,
+					name: data.user.displayName ?? data.user.email ?? "Account",
+					avatarUrl: data.user.avatarUrl,
+				});
+			} catch {
+				if (mounted) setAuthUser(null);
+			} finally {
+				if (mounted) setAuthLoading(false);
 			}
-			const profile = await supabase
-				.from("users")
-				.select("display_name")
-				.eq("user_id", data.user.id)
-				.maybeSingle();
-			if (!mounted) return;
-			const displayName =
-				profile.data?.display_name ??
-				data.user.user_metadata?.full_name ??
-				data.user.user_metadata?.name ??
-				data.user.email ??
-				"Account";
-			setAuthUser({
-				id: data.user.id,
-				email: data.user.email ?? null,
-				name: displayName,
-				avatarUrl: data.user.user_metadata?.avatar_url ?? null,
-			});
-			setAuthLoading(false);
 		};
 		loadUser();
-		const { data: listener } = supabase.auth.onAuthStateChange(() => {
-			loadUser();
-		});
 		return () => {
 			mounted = false;
-			listener.subscription.unsubscribe();
 		};
 	}, []);
 

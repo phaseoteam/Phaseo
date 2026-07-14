@@ -1,0 +1,19 @@
+{
+  "model_id": "meituan/longcat-flash-omni-2603",
+  "organisation_id": "meituan",
+  "name": "LongCat Flash Omni 2603",
+  "status": "Retired",
+  "previous_model_id": null,
+  "description": "LongCat Flash Omni 2603 was a legacy Meituan LongCat model snapshot. Meituan retired this legacy model on May 29, 2026 as part of its migration toward LongCat 2.0 Preview.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": "2026-05-29T00:00:00",
+  "retirement_date": "2026-05-29T00:00:00",
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "meituan/longcat-flash-omni-2603",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

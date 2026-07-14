@@ -112,7 +112,7 @@ export default function Header() {
 		>
 			<Suspense
 				fallback={
-					<div className="mx-auto w-full max-w-full px-4 [view-transition-name:site-header-shell] sm:max-w-[640px] md:max-w-[768px] lg:max-w-[1024px] xl:max-w-[1280px] 2xl:max-w-[1536px]">
+					<div className="w-full max-w-full px-4 lg:px-5 xl:px-6">
 						{headerContent}
 					</div>
 				}

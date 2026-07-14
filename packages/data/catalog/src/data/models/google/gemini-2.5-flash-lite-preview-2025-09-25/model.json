@@ -63,7 +63,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-2.5-flash-lite",
       "source_link": "https://deepmind.google/models/gemini/flash-lite/",
-      "rank": 139
+      "rank": 140
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -71,7 +71,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-2.5-flash-lite",
       "source_link": "https://deepmind.google/models/gemini/flash-lite/",
-      "rank": 147
+      "rank": 154
     },
     {
       "benchmark_id": "livecodebench",
@@ -79,7 +79,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-2.5-flash-lite",
       "source_link": "https://deepmind.google/models/gemini/flash-lite/",
-      "rank": 61
+      "rank": 62
     },
     {
       "benchmark_id": "mmmu",
@@ -87,7 +87,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-2.5-flash-lite",
       "source_link": "https://deepmind.google/models/gemini/flash-lite/",
-      "rank": 49
+      "rank": 50
     },
     {
       "benchmark_id": "mrcr-v2",
@@ -103,7 +103,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-2.5-flash-lite",
       "source_link": "https://deepmind.google/models/gemini/flash-lite/",
-      "rank": 78
+      "rank": 79
     },
     {
       "benchmark_id": "swe-bench",
@@ -111,7 +111,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-2.5-flash-lite",
       "source_link": "https://deepmind.google/models/gemini/flash-lite/",
-      "rank": 126
+      "rank": 129
     },
     {
       "benchmark_id": "vibe-eval",

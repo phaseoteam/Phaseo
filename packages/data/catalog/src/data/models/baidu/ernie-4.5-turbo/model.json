@@ -86,7 +86,7 @@
       "is_self_reported": true,
       "other_info": "inferred version-family alias from ernie-4.5",
       "source_link": "https://www.hkubs.hku.hk/aimodelrankings_en/report/AdvancedReasoning.pdf",
-      "rank": 83
+      "rank": 84
     },
     {
       "benchmark_id": "gsm8k",
@@ -94,7 +94,7 @@
       "is_self_reported": true,
       "other_info": "inferred version-family alias from ernie-4.5",
       "source_link": "https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t",
-      "rank": 60
+      "rank": 61
     },
     {
       "benchmark_id": "hellaswag",
@@ -142,7 +142,7 @@
       "is_self_reported": true,
       "other_info": "inferred version-family alias from ernie-4.5",
       "source_link": "https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t",
-      "rank": 153
+      "rank": 156
     },
     {
       "benchmark_id": "mmlu-redux",
@@ -166,7 +166,7 @@
       "is_self_reported": true,
       "other_info": "inferred version-family alias from ernie-4.5",
       "source_link": "https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t",
-      "rank": 88
+      "rank": 89
     },
     {
       "benchmark_id": "winogrande",

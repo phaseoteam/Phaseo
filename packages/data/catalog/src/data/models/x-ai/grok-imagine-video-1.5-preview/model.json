@@ -2,13 +2,13 @@
   "model_id": "x-ai/grok-imagine-video-1.5-preview",
   "organisation_id": "x-ai",
   "name": "Grok Imagine Video 1.5 Preview",
-  "status": "Available",
+  "status": "Retired",
   "previous_model_id": "x-ai/grok-imagine-video",
   "description": "Grok Imagine Video 1.5 Preview is a preview video generation model from xAI's Grok Imagine family. It accepts text, image, and video inputs and generates video outputs through the Grok Imagine API.",
   "announced_date": "2026-05-30T00:00:00",
   "release_date": "2026-05-30T00:00:00",
-  "deprecation_date": null,
-  "retirement_date": null,
+  "deprecation_date": "2026-06-17T00:00:00",
+  "retirement_date": "2026-06-17T00:00:00",
   "license": "Proprietary",
   "input_types": "text,image,video",
   "output_types": "video",
@@ -27,6 +27,10 @@
     {
       "name": "regions",
       "value": "us-east-1,eu-west-1"
+    },
+    {
+      "name": "availability",
+      "value": "The upstream xAI model list now exposes the stable grok-imagine-video-1.5 ID; the preview alias was marked retired from the 2026-06-17 discovery signal."
     }
   ],
   "benchmarks": []

@@ -501,7 +501,9 @@ export async function getModelCollections(limit = DEFAULT_LIMIT): Promise<ModelC
 	"use cache";
 
 	cacheLife("hours");
+	cacheTag("public-model-catalogue");
 	cacheTag("collections");
+	cacheTag("frontend:model-collections");
 
 	const includeHidden = false;
 

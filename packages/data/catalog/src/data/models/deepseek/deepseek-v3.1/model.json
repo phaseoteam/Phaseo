@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": "Search agent with commercial API + webpage filter + 128K context",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
-      "rank": 44
+      "rank": 45
     },
     {
       "benchmark_id": "browsecomp-zh",
@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": "Codeforces Div1 rating in thinking mode",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
-      "rank": 30
+      "rank": 31
     },
     {
       "benchmark_id": "gpqa",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": "Non-thinking: 74.9%, Thinking: 80.1%",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
-      "rank": 75
+      "rank": 76
     },
     {
       "benchmark_id": "hmmt-2025",
@@ -86,7 +86,7 @@
       "is_self_reported": true,
       "other_info": "Thinking mode only, text-only subset",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
-      "rank": 92
+      "rank": 98
     },
     {
       "benchmark_id": "livecodebench",
@@ -94,7 +94,7 @@
       "is_self_reported": true,
       "other_info": "Non-thinking: 56.4%, Thinking: 74.8%",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
-      "rank": 39
+      "rank": 40
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -102,7 +102,7 @@
       "is_self_reported": true,
       "other_info": "Non-thinking: 83.7%, Thinking: 84.8%",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
-      "rank": 26
+      "rank": 28
     },
     {
       "benchmark_id": "mmlu-redux",
@@ -126,7 +126,7 @@
       "is_self_reported": true,
       "other_info": "Evaluated with internal code agent framework",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
-      "rank": 24
+      "rank": 25
     },
     {
       "benchmark_id": "swe-bench",
@@ -134,7 +134,7 @@
       "is_self_reported": true,
       "other_info": "Evaluated with internal code agent framework",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
-      "rank": 63
+      "rank": 67
     },
     {
       "benchmark_id": "terminal-bench",

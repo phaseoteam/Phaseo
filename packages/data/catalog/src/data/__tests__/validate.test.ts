@@ -46,7 +46,16 @@ describe('pricing safety checks', () => {
     });
 
     test('new canonical pricing meters are accepted', () => {
-        const allowed = ['input_characters', 'output_reasoning_tokens', 'bfl_credits', 'output_video'] as const;
+        const allowed = [
+            'input_characters',
+            'input_pages',
+            'input_audio_minutes',
+            'output_reasoning_tokens',
+            'bfl_credits',
+            'output_video',
+            'cached_write_text_tokens_5m',
+            'cached_write_text_tokens_1h',
+        ] as const;
         for (const meter of allowed) {
             const entry = {
                 key: 'foo:bar:baz',
@@ -241,5 +250,64 @@ describe('api provider model safety checks', () => {
         expect(
             result.warnings.some((warning) => warning.includes('no configured non-disabled capabilities'))
         ).toBe(false);
+    });
+
+    test('structured capability params are valid for video metadata', () => {
+        const row = {
+            api_model_id: 'minimax/hailuo-2.3',
+            provider_api_model_id: 'minimax:minimax/hailuo-2.3',
+            provider_model_slug: 'MiniMax-Hailuo-2.3',
+            internal_model_id: 'minimax/hailuo-2.3',
+            is_active_gateway: true,
+            input_modalities: ['text', 'image'],
+            output_modalities: ['video'],
+            capabilities: [{
+                capability_id: 'video.generate',
+                status: 'active',
+                params: {
+                    prompt: {},
+                    resolution: {
+                        type: 'string',
+                        values: ['768p', '1080p'],
+                        default: '768p',
+                    },
+                    seconds: {
+                        type: 'integer',
+                        values: [6, 10],
+                    },
+                    quality: ['standard', 'pro'],
+                },
+            }],
+        };
+        const result = checkApiProviderModelEntrySafety(row, { providerId: 'minimax' });
+        expect(result.errors).toEqual([]);
+    });
+
+    test('malformed capability params are reported before import', () => {
+        const row = {
+            api_model_id: 'minimax/hailuo-2.3',
+            provider_api_model_id: 'minimax:minimax/hailuo-2.3',
+            provider_model_slug: 'MiniMax-Hailuo-2.3',
+            internal_model_id: 'minimax/hailuo-2.3',
+            is_active_gateway: true,
+            input_modalities: ['text'],
+            output_modalities: ['video'],
+            capabilities: [{
+                capability_id: 'video.generate',
+                status: 'active',
+                params: [
+                    'prompt',
+                    { provider_min: 1 },
+                    123,
+                ],
+            }],
+        };
+        const result = checkApiProviderModelEntrySafety(row, { providerId: 'minimax' });
+        expect(result.errors).toEqual(
+            expect.arrayContaining([
+                expect.stringContaining('params[1] missing param_id'),
+                expect.stringContaining('params[2] must be a parameter name string or object'),
+            ])
+        );
     });
 });

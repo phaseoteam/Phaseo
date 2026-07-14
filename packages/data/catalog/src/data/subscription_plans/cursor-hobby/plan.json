@@ -1,0 +1,36 @@
+{
+  "plan_id": "cursor-hobby",
+  "name": "Cursor Hobby",
+  "organisation_id": "cursor",
+  "description": null,
+  "pricing_options": [
+    {
+      "frequency": "monthly",
+      "usd_price": 0,
+      "link": "https://cursor.com/pricing",
+      "other_info": null
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "Agent Requests",
+      "feature_value": "Limited",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Tab Completions",
+      "feature_value": "Limited",
+      "feature_description": null,
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "cursor/composer-2.5",
+      "model_info": "Cursor native agent model",
+      "rate_limit": "Limited Agent requests",
+      "other_info": null
+    }
+  ]
+}

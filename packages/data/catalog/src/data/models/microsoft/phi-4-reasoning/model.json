@@ -77,7 +77,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-reasoning",
-      "rank": 103
+      "rank": 109
     },
     {
       "benchmark_id": "arena-hard",
@@ -101,7 +101,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-reasoning",
-      "rank": 129
+      "rank": 130
     },
     {
       "benchmark_id": "humaneval+",
@@ -125,7 +125,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-reasoning",
-      "rank": 44
+      "rank": 45
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -133,7 +133,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-reasoning-plus",
-      "rank": 95
+      "rank": 98
     },
     {
       "benchmark_id": "omnimath",

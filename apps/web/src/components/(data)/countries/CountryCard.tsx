@@ -6,7 +6,7 @@ import { ArrowRight } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CountrySummary } from "@/lib/fetchers/countries/getCountrySummaries";
+import type { CountrySummary } from "@/lib/fetchers/countries/getCountrySummaries";
 
 export default function CountryCard({ country }: { country: CountrySummary }) {
 	const isoLower = country.iso?.toLowerCase() ?? "";

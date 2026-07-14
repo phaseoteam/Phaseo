@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from granite-4.0-tiny-preview (score=0.4700; benches=12)",
       "source_link": "https://www.ibm.com/new/announcements/ibm-granite-4-0-tiny-preview-sneak-peek",
-      "rank": 52
+      "rank": 53
     },
     {
       "benchmark_id": "humaneval",

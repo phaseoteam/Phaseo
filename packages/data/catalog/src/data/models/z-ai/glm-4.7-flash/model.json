@@ -30,7 +30,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://z.ai/blog/glm-4.7-flash",
-      "rank": 40
+      "rank": 41
     },
     {
       "benchmark_id": "gpqa",
@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://z.ai/blog/glm-4.7-flash",
-      "rank": 72
+      "rank": 73
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://z.ai/blog/glm-4.7-flash",
-      "rank": 100
+      "rank": 106
     },
     {
       "benchmark_id": "swe-bench",
@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://z.ai/blog/glm-4.7-flash",
-      "rank": 89
+      "rank": 93
     },
     {
       "benchmark_id": "tau-bench",

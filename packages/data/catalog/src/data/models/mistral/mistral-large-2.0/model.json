@@ -52,7 +52,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 30
+      "rank": 40
     },
     {
       "benchmark_id": "confabulations",
@@ -60,7 +60,7 @@
       "is_self_reported": false,
       "other_info": "Confab 32.2%; non-response 10.6%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 49
+      "rank": 17
     },
     {
       "benchmark_id": "elimination-game",
@@ -68,7 +68,7 @@
       "is_self_reported": false,
       "other_info": "sigma 0.137; games 1229; avg points 0.522",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 30
+      "rank": 28
     }
   ]
 }

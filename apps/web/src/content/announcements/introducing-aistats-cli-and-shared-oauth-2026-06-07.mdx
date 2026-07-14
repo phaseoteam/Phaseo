@@ -1,0 +1,92 @@
+---
+title: "Introducing the AI Stats CLI"
+description: "Browser OAuth, device code, key management, guardrails, and workspaces now have a first-party terminal workflow."
+publishedAt: 2026-06-07
+author: AI Stats Team
+tags:
+  - Release
+  - CLI
+  - OAuth
+  - Product
+draft: false
+---
+
+We now have a first-party `aistats` CLI for AI Stats.
+
+This release gives both humans and agents a direct terminal path into the AI Stats control plane, instead of forcing everything through the dashboard.
+
+## Install
+
+<CliInstallTabs packageName="@ai-stats/cli" />
+
+## What it does
+
+The CLI is built for the real workflows we already use internally:
+
+- sign in with **AI Stats browser OAuth**
+- fall back to **device code** for SSH, remote shells, and headless agents
+- inspect your current grant with `whoami`
+- create and manage regular API keys and management keys
+- manage workspaces, presets, settings, and guardrails
+- use first-party CLI OAuth while user-created OAuth apps remain in private testing
+- inspect models, providers, pricing, credits, activity, analytics, and generations
+
+## Built on the shared OAuth stack
+
+This is not a one-off auth shim.
+
+We built the CLI on the same shared OAuth/OIDC foundations that will also back user-created OAuth apps:
+
+- authorization code + PKCE
+- device authorization grant
+- refresh and revoke flows
+- consent and workspace-aware grants
+- OIDC discovery and JWKS
+
+That matters because it keeps first-party CLI login and future third-party app auth moving in the same direction instead of diverging into separate systems.
+
+## Two login paths
+
+`aistats login` now offers:
+
+- **Sign in with AI Stats** as the default interactive path
+- **Sign in with Device Code** as the fallback for remote and non-interactive environments
+
+The CLI will automatically prefer device code in SSH and CI-style environments so you do not get stuck on a localhost callback flow in the wrong place.
+
+## Get started
+
+```bash
+aistats login
+aistats whoami --json
+aistats keys create --name "My CLI Key" --json
+```
+
+User-created OAuth apps are coming soon. This release keeps OAuth client creation in private testing while we validate the first-party CLI OAuth path.
+
+## Versioning and updates
+
+The CLI now supports:
+
+- `aistats --version`
+- `aistats version`
+- automatic update notices when a newer published CLI version is available
+
+When you want to update manually:
+
+<CliInstallTabs packageName="@ai-stats/cli" mode="update" title="Update the CLI" />
+
+## Security and release shape
+
+We tightened the auth model while building this:
+
+- management keys now require explicit capabilities
+- logout revokes refresh tokens before clearing local state
+- regular inference keys stay policy- and guardrail-driven rather than growing a second scope system
+- CLI sessions prefer OS-backed secure storage where available
+
+## Why this matters
+
+The CLI closes a gap between dashboard-only control-plane actions and real automation.
+
+If you are building agents or internal tools, you can now do that work through a first-party terminal surface instead of reverse-engineering the product UI.

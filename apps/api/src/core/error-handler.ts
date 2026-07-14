@@ -68,6 +68,91 @@ function normalizeBoundedString(value: unknown, maxLength: number): string | nul
     return trimmed.length > maxLength ? trimmed.slice(0, maxLength) : trimmed;
 }
 
+function inferModelFromRawText(raw: string): string | null {
+    const match = raw.match(/"model"\s*:\s*"([^"]+)"/i);
+    return normalizeBoundedString(match?.[1] ?? null, 256);
+}
+
+function serializeFormDataValue(value: FormDataEntryValue): unknown {
+    if (typeof value === "string") return value;
+    return {
+        name: value.name,
+        type: value.type,
+        size: value.size,
+    };
+}
+
+async function collectRequestObservability(req?: Request): Promise<{
+    requestPayload: unknown;
+    requestedModel: string | null;
+}> {
+    if (!req || req.bodyUsed) {
+        return {
+            requestPayload: null,
+            requestedModel: null,
+        };
+    }
+
+    const contentType = (req.headers.get("content-type") ?? "").toLowerCase();
+    try {
+        if (
+            contentType.includes("multipart/form-data") ||
+            contentType.includes("application/x-www-form-urlencoded")
+        ) {
+            const form = await req.formData();
+            const payload: Record<string, unknown> = {};
+            for (const [key, value] of form.entries()) {
+                const serialized = serializeFormDataValue(value);
+                const current = payload[key];
+                if (current === undefined) {
+                    payload[key] = serialized;
+                    continue;
+                }
+                if (Array.isArray(current)) {
+                    current.push(serialized);
+                    continue;
+                }
+                payload[key] = [current, serialized];
+            }
+            return {
+                requestPayload: payload,
+                requestedModel: normalizeBoundedString(form.get("model"), 256),
+            };
+        }
+        const raw = await req.text();
+        const trimmed = raw.trim();
+        if (!trimmed) {
+            return {
+                requestPayload: null,
+                requestedModel: null,
+            };
+        }
+        try {
+            const parsed = JSON.parse(trimmed);
+            return {
+                requestPayload: parsed,
+                requestedModel: normalizeBoundedString((parsed as any)?.model, 256),
+            };
+        } catch {
+            const modelHint = inferModelFromRawText(trimmed);
+            return {
+                requestPayload: {
+                    _content_type: contentType || null,
+                    _invalid_json: contentType.includes("json") || trimmed.startsWith("{") || trimmed.startsWith("["),
+                    _body_length_chars: trimmed.length,
+                    _model_hint: modelHint,
+                },
+                requestedModel: modelHint,
+            };
+        }
+    } catch {
+        return {
+            requestPayload: null,
+            requestedModel: null,
+        };
+    }
+}
+
 function toExecuteFailureSample(
     value: unknown,
 ): Array<{
@@ -433,6 +518,11 @@ export function classifyErrorType(args: {
 }): "system" | "user" {
     const code = String(args.errorCode ?? "").toLowerCase();
     const status = Number(args.status ?? 0);
+    const bodyErrorType = String(args.body?.error_type ?? "").toLowerCase();
+
+    if (bodyErrorType === "system" || bodyErrorType === "user") {
+        return bodyErrorType;
+    }
 
     if (code.startsWith("user:")) return "user";
     if (code.startsWith("upstream:")) return "system";
@@ -498,6 +588,15 @@ export function classifyErrorOrigin(args: {
 }): "upstream" | "gateway" | "user" {
     const code = String(args.errorCode ?? "").toLowerCase();
     const status = Number(args.status ?? 0);
+    const bodyErrorOrigin = String(args.body?.error_origin ?? "").toLowerCase();
+
+    if (
+        bodyErrorOrigin === "upstream" ||
+        bodyErrorOrigin === "gateway" ||
+        bodyErrorOrigin === "user"
+    ) {
+        return bodyErrorOrigin;
+    }
 
     if (args.stage === "before") {
         if (status >= 500) return "gateway";
@@ -576,6 +675,9 @@ export async function handleError({
     let attribution = classifyAttribution({ stage, status: res.status, errorCode: errCode, body });
     let errorType = classifyErrorType({ stage, status: res.status, errorCode: errCode, body });
     let errorOrigin = classifyErrorOrigin({ stage, status: res.status, errorCode: errCode, body });
+    if (errorType === "system" || errorOrigin === "gateway" || errorOrigin === "upstream") {
+        attribution = "upstream";
+    }
     if (upstreamUnsupportedParamSignal) {
         // Unsupported-param failures returned by upstream are generally a gateway/provider
         // capability-mapping issue, not caller behavior.
@@ -639,7 +741,25 @@ export async function handleError({
             edgeAsn: edge.asn ?? null,
         };
     })();
+    const recoveredRequest = stage === "before"
+        ? await collectRequestObservability(req)
+        : { requestPayload: null, requestedModel: null };
     const statusCode = res.status ?? (stage === "before" ? 500 : 502);
+    const requestedModel =
+        normalizeBoundedString(ctx?.requestedModel, 256) ??
+        normalizeBoundedString((ctx?.rawBody as any)?.model, 256) ??
+        normalizeBoundedString((ctx?.body as any)?.model, 256) ??
+        normalizeBoundedString(body?.model, 256) ??
+        recoveredRequest.requestedModel;
+    const modelForObservability =
+        normalizeBoundedString(ctx?.model, 256) ??
+        normalizeBoundedString(body?.model, 256) ??
+        requestedModel;
+    const requestPayloadForObservability =
+        ctx?.rawBody ??
+        ctx?.body ??
+        recoveredRequest.requestPayload ??
+        null;
     const generationId =
         ctx?.requestId ??
         body?.generation_id ??
@@ -650,7 +770,8 @@ export async function handleError({
         stage,
         endpoint,
         requestId: generationId,
-        model: ctx?.model ?? body?.model ?? null,
+        model: modelForObservability,
+        requestedModel,
         errorCode: errCode,
         description: description ?? null,
         status: statusCode,
@@ -663,7 +784,7 @@ export async function handleError({
         void logDebugEvent("error.upstream", {
             requestId: generationId,
             endpoint,
-            model: ctx?.model ?? body?.model ?? null,
+            model: modelForObservability,
             upstream: body,
         });
     }
@@ -672,6 +793,7 @@ export async function handleError({
         (typeof body?.error === "string" ? body.error : null) ??
         res.statusText ??
         "An error occurred while processing the request.";
+    const operationalKind = normalizeBoundedString(body?.error_operational_kind, 128);
     const errorPayload: Record<string, unknown> = {
         generation_id: generationId,
         status_code: statusCode,
@@ -680,6 +802,9 @@ export async function handleError({
         error_origin: errorOrigin,
         description: fallbackDescription,
     };
+    if (operationalKind) {
+        errorPayload.error_operational_kind = operationalKind;
+    }
     if (
         stage === "execute" &&
         (errCode === "upstream_error" || errCode === "provider_payment_required")
@@ -768,7 +893,7 @@ export async function handleError({
     }
     const gatewayErrorPayload = sanitizeForAxiom(errorPayload);
     const providerResponseHeaders = sanitizeForAxiom(headersToRecord(res.headers));
-    const replayRequestPayload = ctx?.rawBody ?? ctx?.body ?? null;
+    const replayRequestPayload = requestPayloadForObservability;
 
     // Audit failure
     const auditExtraJson = (() => {
@@ -786,8 +911,8 @@ export async function handleError({
                 transform: {
                     protocol: ctx?.protocol ?? null,
                     endpoint,
-                    model: ctx?.model ?? body?.model ?? null,
-                    request_surface_sanitized: sanitizeForAxiom(ctx?.rawBody ?? ctx?.body ?? null),
+                    model: modelForObservability,
+                    request_surface_sanitized: sanitizeForAxiom(requestPayloadForObservability),
                     gateway_response_sanitized: gatewayErrorPayload,
                     gateway_response_present: true,
                     upstream_request_sanitized: null,
@@ -858,7 +983,8 @@ export async function handleError({
         requestId: ctx?.requestId ?? body?.request_id ?? "unknown",
         workspaceId: ctx?.workspaceId ?? body?.workspace_id ?? null,
         endpoint,
-        model: ctx?.model ?? body?.model,
+        model: modelForObservability,
+        requestedModel,
         appTitle: ctx?.meta?.appTitle ?? body?.meta?.appTitle ?? attributionHeaders.appTitle ?? null,
         referer: ctx?.meta?.referer ?? body?.meta?.referer ?? attributionHeaders.referer ?? null,
         appId: ctx?.meta?.appId ?? body?.meta?.appId ?? attributionHeaders.appId ?? null,
@@ -921,11 +1047,6 @@ export async function handleError({
                     typeof replayRequestPayload === "object"
             ),
         },
-        requestedModel:
-            ctx?.requestedModel ??
-            (typeof body?.model === "string" ? body.model : null) ??
-            ctx?.model ??
-            null,
     };
     if (stage === "execute") {
         auditArgs.stream = ctx?.stream;
@@ -946,7 +1067,8 @@ export async function handleError({
         requestId: auditArgs.requestId,
         workspaceId: auditArgs.workspaceId ?? "unknown",
         endpoint,
-        model: ctx?.model ?? body?.model ?? null,
+        model: modelForObservability,
+        requestedModel,
         provider: stage === "execute" ? providerForAudit : null,
         appTitle: ctx?.meta?.appTitle ?? body?.meta?.appTitle ?? attributionHeaders.appTitle ?? null,
         referer: ctx?.meta?.referer ?? body?.meta?.referer ?? attributionHeaders.referer ?? null,
@@ -976,6 +1098,7 @@ export async function handleError({
         unsupportedParam: upstreamUnsupportedParamSignal?.param ?? null,
         unsupportedParamPath: upstreamUnsupportedParamSignal?.path ?? null,
         errorDetails: body,
+        requestPayload: requestPayloadForObservability,
         providerResponse: body,
         providerResponseHeaders: headersToRecord(res.headers),
         gatewayResponse: errorPayload,

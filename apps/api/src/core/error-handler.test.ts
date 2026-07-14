@@ -1,5 +1,18 @@
-import { describe, expect, it } from "vitest";
-import { extractUpstreamUnsupportedParamSignal, handleError } from "./error-handler";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+const emitGatewayRequestEventMock = vi.fn(async () => {});
+vi.mock("@observability/events", () => ({
+	emitGatewayRequestEvent: (...args: unknown[]) => emitGatewayRequestEventMock(...args),
+}));
+import {
+	classifyErrorOrigin,
+	classifyErrorType,
+	extractUpstreamUnsupportedParamSignal,
+	handleError,
+} from "./error-handler";
+
+beforeEach(() => {
+	emitGatewayRequestEventMock.mockReset();
+});
 
 describe("extractUpstreamUnsupportedParamSignal", () => {
 	it("returns null for before-stage errors", () => {
@@ -85,6 +98,27 @@ describe("extractUpstreamUnsupportedParamSignal", () => {
 });
 
 describe("handleError", () => {
+	it("preserves before-stage system labels from provider candidate gaps", async () => {
+		expect(classifyErrorType({
+			stage: "before",
+			status: 400,
+			errorCode: "unsupported_model_or_endpoint",
+			body: {
+				error_type: "system",
+				error_origin: "gateway",
+			},
+		})).toBe("system");
+		expect(classifyErrorOrigin({
+			stage: "before",
+			status: 400,
+			errorCode: "unsupported_model_or_endpoint",
+			body: {
+				error_type: "system",
+				error_origin: "gateway",
+			},
+		})).toBe("gateway");
+	});
+
 	it("preserves execute upstream diagnostics for client debugging", async () => {
 		let capturedAuditArgs: any = null;
 		const upstream = new Response(
@@ -263,6 +297,9 @@ describe("handleError", () => {
 		const upstream = new Response(
 			JSON.stringify({
 				error: "unsupported_model_or_endpoint",
+				error_type: "system",
+				error_origin: "gateway",
+				error_operational_kind: "gateway_provider_availability_gap",
 				reason: "pricing_not_configured",
 				description: "Unsupported model or endpoint.",
 				provider_candidate_diagnostics: {
@@ -302,7 +339,9 @@ describe("handleError", () => {
 		});
 			const payload = await res.json();
 			expect(payload.error).toBe("unsupported_model_or_endpoint");
-			expect(payload.error_origin).toBe("user");
+			expect(payload.error_type).toBe("system");
+			expect(payload.error_origin).toBe("gateway");
+			expect(payload.error_operational_kind).toBe("gateway_provider_availability_gap");
 			expect(payload.reason).toBe("pricing_not_configured");
 			expect(payload.provider_candidate_diagnostics).toEqual({
 				totalProviders: 1,
@@ -325,6 +364,9 @@ describe("handleError", () => {
 		expect(payload.missing_pricing_providers).toEqual(["openai"]);
 		expect(capturedAuditArgs?.errorPayload).toMatchObject({
 			error: "unsupported_model_or_endpoint",
+			error_type: "system",
+			error_origin: "gateway",
+			error_operational_kind: "gateway_provider_availability_gap",
 			reason: "pricing_not_configured",
 			provider_candidate_diagnostics: {
 				totalProviders: 1,
@@ -338,6 +380,90 @@ describe("handleError", () => {
 			},
 			missing_pricing_providers: ["openai"],
 		});
+	});
+
+	it("recovers the requested model from the original before-stage request", async () => {
+		let capturedAuditArgs: any = null;
+		const upstream = new Response(
+			JSON.stringify({
+				error: "validation_error",
+				description: "Validation failed.",
+				details: [{ path: ["input"], message: "input is required", keyword: "invalid_type" }],
+			}),
+			{ status: 400, headers: { "content-type": "application/json" } },
+		);
+		const req = new Request("https://example.test/v1/responses", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				model: "openai/gpt-5-nano",
+				extra_field: true,
+			}),
+		});
+
+		await handleError({
+			stage: "before",
+			res: upstream,
+			endpoint: "responses",
+			req,
+			auditFailure: async (args) => {
+				capturedAuditArgs = args;
+			},
+		});
+
+		expect(capturedAuditArgs?.model).toBe("openai/gpt-5-nano");
+		expect(capturedAuditArgs?.requestedModel).toBe("openai/gpt-5-nano");
+		expect(capturedAuditArgs?.requestPayload).toEqual({
+			model: "openai/gpt-5-nano",
+			extra_field: true,
+		});
+		expect(emitGatewayRequestEventMock).toHaveBeenCalledWith(
+			expect.objectContaining({
+				model: "openai/gpt-5-nano",
+				requestedModel: "openai/gpt-5-nano",
+			}),
+		);
+	});
+
+	it("captures malformed early request payloads for observability", async () => {
+		let capturedAuditArgs: any = null;
+		const upstream = new Response(
+			JSON.stringify({
+				error: "invalid_json",
+				description: "Invalid JSON body.",
+			}),
+			{ status: 400, headers: { "content-type": "application/json" } },
+		);
+		const req = new Request("https://example.test/v1/responses", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: '{"model":"anthropic/claude-sonnet-4","input":"hi",}',
+		});
+
+		await handleError({
+			stage: "before",
+			res: upstream,
+			endpoint: "responses",
+			req,
+			auditFailure: async (args) => {
+				capturedAuditArgs = args;
+			},
+		});
+
+		expect(capturedAuditArgs?.model).toBe("anthropic/claude-sonnet-4");
+		expect(capturedAuditArgs?.requestedModel).toBe("anthropic/claude-sonnet-4");
+		expect(capturedAuditArgs?.requestPayload).toMatchObject({
+			_content_type: "application/json",
+			_invalid_json: true,
+			_body_length_chars: '{"model":"anthropic/claude-sonnet-4","input":"hi",}'.length,
+			_model_hint: "anthropic/claude-sonnet-4",
+		});
+		expect(emitGatewayRequestEventMock).toHaveBeenCalledWith(
+			expect.objectContaining({
+				model: "anthropic/claude-sonnet-4",
+				requestedModel: "anthropic/claude-sonnet-4",
+			}),
+		);
 	});
 
 	it("marks pipeline execution failures as gateway-origin errors", async () => {

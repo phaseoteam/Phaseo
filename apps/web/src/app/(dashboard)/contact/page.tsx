@@ -8,8 +8,7 @@ import {
 	getLondonInfo,
 } from "@/lib/support/schedule";
 import { ContactClient } from "@/components/contact/ContactClient";
-import { createClient } from "@/utils/supabase/server";
-import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
+import { fetchContactPersonalization } from "@/lib/fetchers/internal/fetchContactPersonalization";
 
 export const metadata: Metadata = buildMetadata({
 	title: "Contact AI Stats Support",
@@ -43,28 +42,11 @@ async function ContactPersonalization() {
 		: backOnlineLabel
 			? `Support will be back online in ${backOnlineLabel}. Replies may be delayed, but you will still get a direct human response from me as soon as possible.`
 			: "I'm away right now. Replies may be delayed, but you will still get a direct human response from me as soon as possible.";
-	const workspaceId = await getWorkspaceIdFromCookie();
-	const supabase = await createClient();
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
-
-	let tierLabel = "";
-	let defaultInternalId = "";
-	if (workspaceId) {
-		try {
-			const [{ data: prev }, { data: teamResult }] = await Promise.all([
-				supabase.rpc("monthly_spend_prev_cents", { p_team: workspaceId }).single(),
-				supabase.from("workspaces").select("slug").eq("id", workspaceId).single(),
-			]);
-			const lastMonthCents = Number(prev ?? 0);
-			const lastMonthUsd = lastMonthCents / 1_000_000_000;
-			tierLabel = lastMonthUsd >= 10000 ? "Enterprise" : "Basic";
-			defaultInternalId = teamResult?.slug ?? workspaceId ?? "";
-		} catch (error) {
-			console.warn("[contact] failed to load tier label", error);
-		}
-	}
+	const personalization = await fetchContactPersonalization().catch(() => ({
+		defaultInternalId: "",
+		tierLabel: "",
+		userEmail: null,
+	}));
 
 	return (
 		<ContactClient
@@ -73,9 +55,9 @@ async function ContactPersonalization() {
 			statusTone={statusTone}
 			waitText={waitText}
 			londonLabel={londonLabel}
-			userEmail={user?.email ?? null}
-			tierLabel={tierLabel}
-			defaultInternalId={defaultInternalId}
+			userEmail={personalization.userEmail}
+			tierLabel={personalization.tierLabel}
+			defaultInternalId={personalization.defaultInternalId}
 		/>
 	);
 }

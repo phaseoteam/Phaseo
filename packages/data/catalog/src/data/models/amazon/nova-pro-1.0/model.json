@@ -40,7 +40,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.amazon.science/publications/the-amazon-nova-family-of-models-technical-report-and-model-card",
-      "rank": 132
+      "rank": 138
     },
     {
       "benchmark_id": "lmarena-text",
@@ -56,7 +56,7 @@
       "is_self_reported": false,
       "other_info": "Confab 54.5%; non-response 5.6%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 62
+      "rank": 5
     },
     {
       "benchmark_id": "elimination-game",
@@ -64,7 +64,7 @@
       "is_self_reported": false,
       "other_info": "sigma 0.135; games 1253; avg points 0.477",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 41
+      "rank": 38
     }
   ]
 }

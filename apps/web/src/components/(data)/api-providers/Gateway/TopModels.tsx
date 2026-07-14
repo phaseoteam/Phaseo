@@ -1,8 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { Trophy } from "lucide-react";
-import { getTopModelsCached } from "@/lib/fetchers/api-providers/api-provider/top-models";
-import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
+import { fetchFrontendAPIProviderTopModels } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import {
 	Empty,
 	EmptyDescription,
@@ -18,8 +17,10 @@ export default async function TopModels({
 	count?: number;
 	apiProviderId: string;
 }) {
-	const includeHidden = await resolveIncludeHidden();
-	const topModels = await getTopModelsCached(apiProviderId, includeHidden, count);
+	const topModels = await fetchFrontendAPIProviderTopModels(
+		apiProviderId,
+		count,
+	);
 
 	return (
 		<section className="space-y-4">

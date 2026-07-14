@@ -47,7 +47,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from llama-3.2-11b-instruct (score=0.4200; benches=11)",
       "source_link": "https://huggingface.co/meta-llama/Llama-3.2-11B-Vision-Instruct",
-      "rank": 213
+      "rank": 214
     },
     {
       "benchmark_id": "math",
@@ -63,7 +63,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from llama-3.2-11b-instruct (score=0.4200; benches=11)",
       "source_link": "https://huggingface.co/meta-llama/Llama-3.2-11B-Vision-Instruct",
-      "rank": 58
+      "rank": 59
     },
     {
       "benchmark_id": "mgsm",
@@ -87,7 +87,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from llama-3.2-11b-instruct (score=0.4200; benches=11)",
       "source_link": "https://huggingface.co/meta-llama/Llama-3.2-11B-Vision-Instruct",
-      "rank": 117
+      "rank": 118
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -95,7 +95,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from llama-3.2-11b-instruct (score=0.4200; benches=11)",
       "source_link": "https://huggingface.co/meta-llama/Llama-3.2-11B-Vision-Instruct",
-      "rank": 103
+      "rank": 107
     },
     {
       "benchmark_id": "vqav2-(test)",

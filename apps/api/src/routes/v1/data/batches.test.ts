@@ -26,6 +26,7 @@ describe("splitGatewayBatchCreatePayload", () => {
 				url: "https://example.com/hooks/batch",
 				events: ["job.completed"],
 			},
+			invalidWebhook: false,
 		});
 	});
 
@@ -42,6 +43,7 @@ describe("splitGatewayBatchCreatePayload", () => {
 				endpoint: "/v1/responses",
 			},
 			webhook: null,
+			invalidWebhook: false,
 		});
 	});
 

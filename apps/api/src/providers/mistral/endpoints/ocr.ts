@@ -42,7 +42,7 @@ function buildUsageMeters(json: any): Record<string, number> {
 
     return {
         requests: 1,
-        ...(Number.isFinite(pagesProcessed) && pagesProcessed > 0 ? { pages_processed: pagesProcessed } : {}),
+        ...(Number.isFinite(pagesProcessed) && pagesProcessed > 0 ? { input_pages: pagesProcessed, pages_processed: pagesProcessed } : {}),
         ...(Number.isFinite(docSizeBytes) && docSizeBytes > 0 ? { doc_size_bytes: docSizeBytes } : {}),
     };
 }

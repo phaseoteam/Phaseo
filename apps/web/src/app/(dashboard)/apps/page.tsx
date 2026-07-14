@@ -4,14 +4,17 @@ import { TrendingUp, Trophy } from "lucide-react";
 import { RankingsEmptyState } from "@/components/(rankings)/RankingsEmptyState";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import TopAppsLeaderboardTable from "@/components/(data)/apps/TopAppsLeaderboardTable";
-import { getPublicAppIdsCached } from "@/lib/fetchers/apps/getAppDetails";
 import {
-	getAppImageUrlsByIds,
-	getTopApps,
-	getTrendingApps,
 	type TopAppData,
 	type TrendingAppData,
 } from "@/lib/fetchers/rankings/getRankingsData";
+import {
+	fetchFrontendAppsIndexability,
+	fetchFrontendAppImageUrls,
+	fetchFrontendPublicAppIds,
+	fetchFrontendTopApps,
+	fetchFrontendTrendingApps,
+} from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { buildMetadata } from "@/lib/seo";
 
 const TOP_APPS_QUERY_LIMIT = 300;
@@ -38,19 +41,26 @@ type TrendingPublicApp = {
 	imageUrl?: string | null;
 };
 
-export const metadata: Metadata = buildMetadata({
-	title: "AI App Rankings: Usage Trends & Top Apps",
-	description:
-		"See the most popular and fastest-growing AI apps on AI Stats Gateway, with leaderboard and token-usage trends.",
-	path: "/apps",
-	keywords: [
-		"AI apps",
-		"AI app rankings",
-		"app leaderboard",
-		"app usage trends",
-		"app trends",
-	],
-});
+export async function generateMetadata(): Promise<Metadata> {
+	const indexability = await fetchFrontendAppsIndexability();
+
+	return buildMetadata({
+		title: "AI App Rankings: Usage Trends & Top Apps",
+		description:
+			"See the most popular and fastest-growing AI apps on AI Stats Gateway, with leaderboard and token-usage trends.",
+		path: "/apps",
+		keywords: [
+			"AI apps",
+			"AI app rankings",
+			"app leaderboard",
+			"app usage trends",
+			"app trends",
+		],
+		robots: indexability.shouldIndex
+			? { index: true, follow: true }
+			: { index: false, follow: true },
+	});
+}
 
 function formatCompactNumber(value: number): string {
 	if (!Number.isFinite(value)) return "0";
@@ -169,9 +179,9 @@ function deriveTrendingFallbackApps(
 
 export default async function AppsPage() {
 	const [publicAppIds, top4wResult, trendingResult] = await Promise.all([
-		getPublicAppIdsCached(),
-		getTopApps("4w", TOP_APPS_QUERY_LIMIT),
-		getTrendingApps(TOP_APPS_QUERY_LIMIT),
+		fetchFrontendPublicAppIds(),
+		fetchFrontendTopApps("4w", TOP_APPS_QUERY_LIMIT),
+		fetchFrontendTrendingApps(TOP_APPS_QUERY_LIMIT),
 	]);
 
 	const publicAppSet = new Set(publicAppIds);
@@ -183,7 +193,7 @@ export default async function AppsPage() {
 	);
 
 	if (growthApps.length === 0) {
-		const weekResult = await getTopApps("week", TOP_APPS_QUERY_LIMIT);
+		const weekResult = await fetchFrontendTopApps("week", TOP_APPS_QUERY_LIMIT);
 		growthApps = deriveTrendingFallbackApps(
 			weekResult.data,
 			topApps,
@@ -197,7 +207,7 @@ export default async function AppsPage() {
 	const popularApps = leaderboardApps
 		.slice(0, MOST_POPULAR_LIMIT)
 		.map((app) => ({ ...app, growthPct: growthPctByAppId.get(app.appId) ?? null }));
-	let trendingApps = growthApps.slice(0, TRENDING_LIMIT);
+	const trendingApps = growthApps.slice(0, TRENDING_LIMIT);
 
 	const appIdsForImages = Array.from(
 		new Set([
@@ -205,7 +215,7 @@ export default async function AppsPage() {
 			...trendingApps.map((app) => app.appId),
 		]),
 	);
-	const imageUrlsById = await getAppImageUrlsByIds(appIdsForImages);
+	const imageUrlsById = await fetchFrontendAppImageUrls(appIdsForImages);
 
 	return (
 		<div className="container mx-auto py-8 space-y-12">

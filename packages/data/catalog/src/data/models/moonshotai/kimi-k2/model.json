@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": "Avg@8",
       "source_link": "https://huggingface.co/moonshotai/Kimi-K2-Instruct",
-      "rank": 75
+      "rank": 81
     },
     {
       "benchmark_id": "hmmt-2025",
@@ -94,7 +94,7 @@
       "is_self_reported": true,
       "other_info": "Text Only",
       "source_link": "https://huggingface.co/moonshotai/Kimi-K2-Instruct",
-      "rank": 148
+      "rank": 155
     },
     {
       "benchmark_id": "if-eval",
@@ -110,7 +110,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1",
       "source_link": "https://huggingface.co/moonshotai/Kimi-K2-Instruct",
-      "rank": 4
+      "rank": 6
     },
     {
       "benchmark_id": "livecodebench-v6",
@@ -118,7 +118,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1, Aug 24 - May 25",
       "source_link": "https://huggingface.co/moonshotai/Kimi-K2-Instruct",
-      "rank": 43
+      "rank": 44
     },
     {
       "benchmark_id": "math-500",
@@ -142,7 +142,7 @@
       "is_self_reported": true,
       "other_info": "EM",
       "source_link": "https://huggingface.co/moonshotai/Kimi-K2-Instruct",
-      "rank": 45
+      "rank": 47
     },
     {
       "benchmark_id": "mmlu-redux",
@@ -190,7 +190,7 @@
       "is_self_reported": true,
       "other_info": "Correct",
       "source_link": "https://huggingface.co/moonshotai/Kimi-K2-Instruct",
-      "rank": 48
+      "rank": 49
     },
     {
       "benchmark_id": "supergpqa",
@@ -206,7 +206,7 @@
       "is_self_reported": true,
       "other_info": "Multiple Attempts (Acc)",
       "source_link": "https://huggingface.co/moonshotai/Kimi-K2-Instruct",
-      "rank": 42
+      "rank": 46
     },
     {
       "benchmark_id": "swe-bench",
@@ -214,7 +214,7 @@
       "is_self_reported": true,
       "other_info": "Single Attempt (Acc)",
       "source_link": "https://huggingface.co/moonshotai/Kimi-K2-Instruct",
-      "rank": 65
+      "rank": 69
     },
     {
       "benchmark_id": "swe-bench",
@@ -222,7 +222,7 @@
       "is_self_reported": true,
       "other_info": "Single Patch w/o Test (Acc)",
       "source_link": "https://huggingface.co/moonshotai/Kimi-K2-Instruct",
-      "rank": 103
+      "rank": 106
     },
     {
       "benchmark_id": "swe-bench-multilingual",
@@ -230,7 +230,7 @@
       "is_self_reported": true,
       "other_info": "Single Attempt (Acc)",
       "source_link": "https://huggingface.co/moonshotai/Kimi-K2-Instruct",
-      "rank": 26
+      "rank": 27
     },
     {
       "benchmark_id": "tau-2-airline",
@@ -254,7 +254,7 @@
       "is_self_reported": true,
       "other_info": "Avg@4",
       "source_link": "https://huggingface.co/moonshotai/Kimi-K2-Instruct",
-      "rank": 28
+      "rank": 30
     },
     {
       "benchmark_id": "terminal-bench",
@@ -286,7 +286,7 @@
       "is_self_reported": false,
       "other_info": "Confab 30.2%; non-response 10.6%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 47
+      "rank": 18
     },
     {
       "benchmark_id": "elimination-game",
@@ -294,7 +294,7 @@
       "is_self_reported": false,
       "other_info": "sigma 0.252; games 378; avg points 0.455",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 45
+      "rank": 41
     }
   ]
 }

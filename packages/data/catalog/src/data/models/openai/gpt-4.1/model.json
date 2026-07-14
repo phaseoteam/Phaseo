@@ -108,7 +108,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 3
+      "rank": 5
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -116,7 +116,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1",
-      "rank": 99
+      "rank": 105
     },
     {
       "benchmark_id": "graphwalks-bfs-lt-128k",
@@ -140,7 +140,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://livebench.ai/#/",
-      "rank": 31
+      "rank": 45
     },
     {
       "benchmark_id": "lmarena-text",
@@ -172,7 +172,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 1
+      "rank": 6
     },
     {
       "benchmark_id": "longfact-objects-hallucination-rate",
@@ -180,7 +180,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 1
+      "rank": 7
     },
     {
       "benchmark_id": "openai-mrcr-2-needle-128k",
@@ -204,7 +204,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 24
+      "rank": 34
     },
     {
       "benchmark_id": "swe-bench",
@@ -212,7 +212,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 95
+      "rank": 98
     },
     {
       "benchmark_id": "swe-lancer",

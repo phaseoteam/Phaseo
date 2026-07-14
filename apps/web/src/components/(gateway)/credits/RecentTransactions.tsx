@@ -396,7 +396,7 @@ export default function RecentTransactions({
 	}, [transactions]);
 
 	const pathname = usePathname() || "/";
-	const searchParams = useSearchParams();
+	const searchParams = useSearchParams() ?? new URLSearchParams();
 
 	function buildHref(p: number) {
 		const params = new URLSearchParams(Array.from(searchParams.entries()));

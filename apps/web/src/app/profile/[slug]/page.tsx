@@ -4,7 +4,7 @@ import { notFound } from "next/navigation"
 import { connection } from "next/server"
 
 import ProfileDashboard from "@/components/(gateway)/settings/profile/ProfileDashboard"
-import { getPublicProfileSnapshot } from "@/lib/fetchers/profile/getProfileSnapshot"
+import { fetchFrontendPublicProfile } from "@/lib/fetchers/frontend/fetchPublicCatalog"
 
 type PageProps = {
 	params: Promise<{ slug: string }>
@@ -51,7 +51,7 @@ async function PublicProfileContent({
 }) {
 	await connection()
 	const { slug } = await params
-	const profile = await getPublicProfileSnapshot(slug)
+	const profile = await fetchFrontendPublicProfile(slug)
 
 	if (!profile || !profile.publicProfileEnabled) {
 		notFound()

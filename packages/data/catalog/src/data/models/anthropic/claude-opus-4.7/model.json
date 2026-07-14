@@ -48,7 +48,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
-      "rank": 2
+      "rank": 4
     },
     {
       "benchmark_id": "swe-bench",
@@ -56,7 +56,7 @@
       "is_self_reported": true,
       "other_info": "Verified",
       "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "terminal-bench-2.0",
@@ -64,7 +64,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
-      "rank": 8
+      "rank": 9
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -72,7 +72,7 @@
       "is_self_reported": true,
       "other_info": "No tools",
       "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
-      "rank": 25
+      "rank": 27
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -80,7 +80,7 @@
       "is_self_reported": true,
       "other_info": "With tools",
       "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
-      "rank": 6
+      "rank": 8
     },
     {
       "benchmark_id": "browsecomp",
@@ -88,7 +88,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
-      "rank": 11
+      "rank": 12
     },
     {
       "benchmark_id": "scale-mcp-atlas",
@@ -96,7 +96,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "os-world",
@@ -104,7 +104,7 @@
       "is_self_reported": true,
       "other_info": "OSWorld-Verified",
       "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
-      "rank": 3
+      "rank": 5
     },
     {
       "benchmark_id": "financeagent-v1.1",
@@ -152,7 +152,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "charxiv-reasoning",
@@ -160,7 +160,7 @@
       "is_self_reported": true,
       "other_info": "No tools",
       "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
-      "rank": 3
+      "rank": 4
     },
     {
       "benchmark_id": "charxiv-reasoning",
@@ -232,7 +232,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/",
-      "rank": 12
+      "rank": 10
     },
     {
       "benchmark_id": "lisanbench",
@@ -264,7 +264,7 @@
       "is_self_reported": false,
       "other_info": "No reasoning; 940 puzzles",
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 80
+      "rank": 79
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -272,7 +272,7 @@
       "is_self_reported": false,
       "other_info": "High reasoning; Top-1 accuracy 86.8%; cases 703",
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 7
+      "rank": 24
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -280,7 +280,7 @@
       "is_self_reported": false,
       "other_info": "No reasoning; Top-1 accuracy 71.6%; cases 703",
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 20
+      "rank": 11
     }
   ]
 }

@@ -619,6 +619,52 @@ function OutputModalityButtonRow({
 }) {
 	if (options.length === 0) return null;
 
+	const buttons = sortOutputModalityOptions(options).map((option) => {
+		const checked = selected.includes(option.value);
+		const Icon = getModalityIcon(option.value);
+		const tone = getModalityTone(option.value);
+
+		return (
+			<Button
+				key={option.value}
+				type="button"
+				variant="ghost"
+				size="sm"
+				onClick={() => onToggle(option.value)}
+				aria-pressed={checked}
+				className={cn(
+					"group h-9 shrink-0 rounded-md px-2 text-sm shadow-none transition-colors",
+					checked
+						? cn("bg-muted text-foreground hover:bg-muted", tone.badgeClassName)
+						: "text-muted-foreground hover:text-foreground",
+				)}
+			>
+				<span
+					className={cn(
+						"inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-sm",
+						checked
+							? tone.iconClassName
+							: cn(
+								"bg-transparent text-muted-foreground transition-colors",
+								tone.ghostIconHoverClassName,
+							),
+					)}
+				>
+					<Icon className="h-3.5 w-3.5" />
+				</span>
+				<span>{toTitleCase(option.value)}</span>
+				<span
+					className={cn(
+						"inline-flex min-w-5 items-center justify-center px-1 text-[11px] font-medium leading-none tabular-nums",
+						checked ? "text-current" : "text-muted-foreground",
+					)}
+				>
+					{option.count}
+				</span>
+			</Button>
+		);
+	});
+
 	return (
 		<ScrollArea
 			className="w-full [&>[data-orientation=horizontal]]:opacity-100 [&>[data-orientation=horizontal]]:transition-none"
@@ -626,53 +672,7 @@ function OutputModalityButtonRow({
 			viewportClassName="pb-3"
 		>
 			<div className="flex min-w-max items-center gap-1.5 pr-4">
-				{sortOutputModalityOptions(options).map((option) => {
-					const checked = selected.includes(option.value);
-					const Icon = getModalityIcon(option.value);
-					const tone = getModalityTone(option.value);
-
-					return (
-						<Button
-							key={option.value}
-							type="button"
-							variant="ghost"
-							size="sm"
-							onClick={() => onToggle(option.value)}
-							aria-pressed={checked}
-							className={cn(
-								"group h-9 shrink-0 rounded-md px-2 text-sm shadow-none transition-colors",
-								checked
-									? cn("bg-muted text-foreground hover:bg-muted", tone.badgeClassName)
-									: "text-muted-foreground hover:text-foreground",
-							)}
-						>
-							<span
-								className={cn(
-									"inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-sm",
-									checked
-										? tone.iconClassName
-										: cn(
-											"bg-transparent text-muted-foreground transition-colors",
-											tone.ghostIconHoverClassName,
-										),
-								)}
-							>
-								<Icon className="h-3.5 w-3.5" />
-							</span>
-							<span>{toTitleCase(option.value)}</span>
-							<span
-								className={cn(
-									"inline-flex min-w-5 items-center justify-center px-1 text-[11px] font-medium leading-none tabular-nums",
-									checked
-										? "text-current"
-										: "text-muted-foreground",
-								)}
-							>
-								{option.count}
-							</span>
-						</Button>
-					);
-				})}
+				{buttons}
 			</div>
 		</ScrollArea>
 	);
@@ -1739,14 +1739,14 @@ export default function ModelsDisplay({
 					</div>
 
 					<div className="hidden md:block">
-						<div className="grid grid-cols-1 gap-2 md:grid-cols-[minmax(0,1fr)_minmax(260px,460px)_minmax(0,1fr)] md:items-center md:gap-3">
-							<div className="min-w-0 md:flex md:h-8 md:items-center">
+						<div className="flex flex-wrap items-center gap-2 md:gap-3 2xl:grid 2xl:grid-cols-[1fr_minmax(24rem,32rem)_1fr] 2xl:items-center 2xl:gap-4">
+							<div className="min-w-0 shrink-0 md:flex md:h-8 md:items-center 2xl:justify-self-start">
 								{showPrimaryHeader ? (
 									<h1 className="font-bold text-xl leading-8">Models</h1>
 								) : null}
 							</div>
 
-							<div className="relative w-full md:justify-self-center">
+							<div className="relative min-w-[16rem] flex-1 md:max-w-[32rem] 2xl:w-full 2xl:max-w-[32rem] 2xl:justify-self-center">
 								<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
 								<Input
 									placeholder="Search"
@@ -1761,8 +1761,8 @@ export default function ModelsDisplay({
 								/>
 							</div>
 
-							<div className="flex items-center justify-end gap-2 md:justify-self-end">
-								<div className="hidden lg:flex items-center gap-2">
+							<div className="ml-auto flex shrink-0 items-center gap-2 2xl:ml-0 2xl:justify-self-end">
+								<div className="hidden 2xl:flex items-center gap-2">
 									<span className="inline-flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
 										<ArrowUpDown className="h-3.5 w-3.5" />
 										Sort
@@ -1775,7 +1775,7 @@ export default function ModelsDisplay({
 							</div>
 						</div>
 
-						<div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+						<div className="mt-1 flex flex-wrap items-center justify-between gap-2 2xl:hidden">
 							<div className="flex items-center gap-2">
 								<Button
 									type="button"
@@ -1792,7 +1792,7 @@ export default function ModelsDisplay({
 									) : null}
 								</Button>
 							</div>
-							<div className="flex items-center gap-2 lg:hidden">
+							<div className="flex items-center gap-2">
 								<span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
 									<ArrowUpDown className="h-3.5 w-3.5" />
 									Sort

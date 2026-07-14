@@ -1,14 +1,16 @@
 import React from "react";
 import { CircleAlert } from "lucide-react";
-import { getModelPricingCached } from "@/lib/fetchers/models/getModelPricing";
-import getModelOverviewHeader from "@/lib/fetchers/models/getModelOverviewHeader";
-import { getModelProviderRuntimeStatsCached } from "@/lib/fetchers/models/getModelProviderRuntimeStats";
-import { getModelSubscriptionPlansCached } from "@/lib/fetchers/models/getModelSubscriptionPlans";
-import { getModelProviderRoutingHealthCached } from "@/lib/fetchers/models/getModelProviderRoutingHealth";
+import {
+	fetchFrontendModelHeader,
+	fetchFrontendModelProviderRoutingHealth,
+	fetchFrontendModelProviderRuntimeStats,
+	fetchFrontendModelPricing,
+	fetchFrontendModelSubscriptionPlans,
+} from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import ModelPricingClient from "@/components/(data)/model/pricing/ModelPricingClient";
 import ModelPendingApiReleaseBanner from "@/components/(data)/model/overview/ModelPendingApiReleaseBanner";
-import { createClient as createServerClient } from "@/utils/supabase/server";
-import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
+import { fetchWorkspacePrivacySettings } from "@/lib/fetchers/internal/fetchWorkspacePrivacySettings";
+import type { WorkspacePrivacySettings } from "@/app/api/internal/workspace/privacy-settings/route";
 import {
 	Empty,
 	EmptyContent,
@@ -17,15 +19,6 @@ import {
 	EmptyMedia,
 	EmptyTitle,
 } from "@/components/ui/empty";
-
-type WorkspacePrivacySettings = {
-	isAuthenticated: boolean;
-	privacyEnablePaidMayTrain: boolean;
-	privacyEnableFreeMayTrain: boolean;
-	privacyZdrOnly: boolean;
-	providerRestrictionMode: "none" | "allowlist" | "blocklist";
-	providerRestrictionProviderIds: string[];
-};
 
 export default async function ModelPricing({
 	modelId,
@@ -37,63 +30,16 @@ export default async function ModelPricing({
 	showHeader?: boolean;
 }) {
 	const [providers, header, subscriptionPlans] = await Promise.all([
-		getModelPricingCached(modelId, includeHidden),
-		getModelOverviewHeader(modelId, includeHidden),
-		getModelSubscriptionPlansCached(modelId, includeHidden).catch((error) => {
-			console.warn("[pricing] failed to fetch subscription plans; continuing without plans", {
-				modelId,
-				error,
-			});
+		fetchFrontendModelPricing(modelId),
+		fetchFrontendModelHeader(modelId, includeHidden),
+		fetchFrontendModelSubscriptionPlans(modelId).catch(() => {
 			return [];
 		}),
 	]);
-	const supabase = await createServerClient();
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
-	const workspaceId = user?.id ? await getWorkspaceIdFromCookie() : undefined;
-	let workspacePrivacySettings: WorkspacePrivacySettings | null = null;
-	if (user?.id && workspaceId) {
-		const { data: settingsRow, error: settingsError } = await supabase
-			.from("workspace_settings")
-			.select(
-				"privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_zdr_only,provider_restriction_mode,provider_restriction_provider_ids",
-			)
-			.eq("workspace_id", workspaceId)
-			.maybeSingle();
-		if (settingsError) {
-			console.warn("[pricing] failed to load workspace privacy settings", {
-				workspaceId,
-				error: settingsError.message,
-			});
-		} else if (settingsRow) {
-			const rawMode = String(settingsRow.provider_restriction_mode ?? "")
-				.trim()
-				.toLowerCase();
-			const providerRestrictionMode =
-				rawMode === "allowlist" || rawMode === "blocklist" || rawMode === "none"
-					? rawMode
-					: "none";
-			workspacePrivacySettings = {
-				isAuthenticated: true,
-				privacyEnablePaidMayTrain: Boolean(
-					settingsRow.privacy_enable_paid_may_train ?? true,
-				),
-				privacyEnableFreeMayTrain: Boolean(
-					settingsRow.privacy_enable_free_may_train ?? true,
-				),
-				privacyZdrOnly: Boolean(settingsRow.privacy_zdr_only ?? false),
-				providerRestrictionMode,
-				providerRestrictionProviderIds: Array.isArray(
-					settingsRow.provider_restriction_provider_ids,
-				)
-					? settingsRow.provider_restriction_provider_ids
-							.map((value: unknown) => String(value ?? "").trim())
-							.filter(Boolean)
-					: [],
-			};
-		}
-	}
+	const workspacePrivacySettings: WorkspacePrivacySettings | null =
+		await fetchWorkspacePrivacySettings().catch(() => {
+			return null;
+		});
 
 	// Show providers with model mappings even when pricing rules are missing.
 	const providersForDisplay = (providers || []).filter(
@@ -119,7 +65,7 @@ export default async function ModelPricing({
 	const showPendingApiBanner =
 		header?.status === "Available" && !hasActiveApiProviders;
 
-	const runtimeStats = await getModelProviderRuntimeStatsCached({
+	const runtimeStats = await fetchFrontendModelProviderRuntimeStats({
 		modelId,
 		providerIds: providersForDisplay.map((p) => p.provider.api_provider_id),
 		modelAliases: providersForDisplay.flatMap((p) =>
@@ -129,7 +75,8 @@ export default async function ModelPricing({
 			])
 		),
 	});
-	const routingHealth = await getModelProviderRoutingHealthCached({
+	const routingHealth = await fetchFrontendModelProviderRoutingHealth({
+		modelId,
 		providerIds: providersForDisplay.map((p) => p.provider.api_provider_id),
 		windowHours: 24,
 	});

@@ -1,12 +1,11 @@
 import { Suspense } from "react";
 import ModelsDisplay from "@/components/(data)/models/Models/ModelsDisplay";
 import { ModelsPageSkeleton } from "@/components/(data)/models/Models/ModelsPageSkeleton";
+import type { ModelCard } from "@/lib/fetchers/models/getAllModels";
 import {
-	getAllModelsCached,
-	type ModelCard,
-} from "@/lib/fetchers/models/getAllModels";
-import { getFreeRouterOverview } from "@/lib/fetchers/models/getFreeRouterOverview";
-import { getMonitorModels } from "@/lib/fetchers/models/table-view/getMonitorModels";
+	fetchFrontendFreeRouterOverview,
+	fetchFrontendModels,
+} from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 import { featureOrder } from "@/lib/config/featureLabels";
@@ -284,6 +283,43 @@ function isActiveProviderStatus(status: string): boolean {
 	return ACTIVE_PROVIDER_STATUS_SET.has(status);
 }
 
+function firstNonEmptyString(
+	...values: Array<string | null | undefined>
+): string | null {
+	for (const value of values) {
+		const normalized = String(value ?? "").trim();
+		if (normalized) return normalized;
+	}
+	return null;
+}
+
+function buildCanonicalModelLookupCandidates(value: string): string[] {
+	const normalized = String(value ?? "").trim();
+	if (!normalized) return [];
+	if (normalized.toLowerCase().endsWith(":free")) {
+		return [normalized, normalized.slice(0, -":free".length)];
+	}
+	return [normalized];
+}
+
+function resolveBaseModel(
+	baseModelById: Map<string, ModelCard>,
+	modelId: string,
+	signals: GatewaySignals | undefined,
+): ModelCard | undefined {
+	const candidates = [
+		modelId,
+		...Array.from(signals?.apiModelIds ?? []),
+	].flatMap((value) => buildCanonicalModelLookupCandidates(value));
+
+	for (const candidate of candidates) {
+		const model = baseModelById.get(candidate);
+		if (model) return model;
+	}
+
+	return undefined;
+}
+
 function sortModalityOptions(
 	options: OptionCount[],
 	order: readonly string[],
@@ -508,7 +544,7 @@ function createEmptyGatewaySignals(): GatewaySignals {
 }
 
 function aggregateGatewaySignals(
-	monitorRows: Awaited<ReturnType<typeof getMonitorModels>>["models"],
+	monitorRows: NonNullable<ModelCard["gateway_monitor_rows"]>,
 ): Map<string, GatewaySignals> {
 	const byModelId = new Map<string, GatewaySignals>();
 
@@ -751,7 +787,7 @@ function normalizeRankingModelKey(value: string): string {
 }
 
 function buildWeeklyMetricsByModel(
-	monitorRows: Awaited<ReturnType<typeof getMonitorModels>>["models"],
+	monitorRows: NonNullable<ModelCard["gateway_monitor_rows"]>,
 ): Map<string, WeeklyRankingMetrics> {
 	const metricsByKey = new Map<string, WeeklyRankingMetrics>();
 
@@ -830,7 +866,7 @@ function resolveModelWeeklyMetrics(
 
 function withGatewayMetadata(
 	baseModels: ModelCard[],
-	monitorRows: Awaited<ReturnType<typeof getMonitorModels>>["models"],
+	monitorRows: NonNullable<ModelCard["gateway_monitor_rows"]>,
 ): ModelsPageModel[] {
 	const signalsByModelId = aggregateGatewaySignals(monitorRows);
 	const weeklyMetricsByKey = buildWeeklyMetricsByModel(monitorRows);
@@ -840,8 +876,8 @@ function withGatewayMetadata(
 	const canonicalModelIds = Array.from(signalsByModelId.keys()).filter(Boolean);
 
 	const enriched = canonicalModelIds.map((modelId) => {
-		const model = baseModelById.get(modelId);
 		const signals = signalsByModelId.get(modelId);
+		const model = resolveBaseModel(baseModelById, modelId, signals);
 		const weeklyMetrics = resolveModelWeeklyMetrics(
 			model ?? ({ model_id: modelId, name: modelId, organisation_id: "" } as ModelCard),
 			signals,
@@ -878,15 +914,18 @@ function withGatewayMetadata(
 				).padStart(2, "0")}`
 			: (model?.primary_group_key ?? null);
 		const fallbackName =
-			model?.name ??
-			Array.from(signals?.displayNames ?? [])[0] ??
-			modelId.split("/").slice(-1)[0] ??
-			modelId;
+			firstNonEmptyString(
+				model?.name,
+				Array.from(signals?.displayNames ?? [])[0],
+				modelId.split("/").slice(-1)[0],
+				modelId,
+			) ?? modelId;
 		const fallbackOrganisationId =
-			model?.organisation_id ??
-			Array.from(signals?.organisationIds ?? [])[0] ??
-			modelId.split("/")[0] ??
-			"";
+			firstNonEmptyString(
+				model?.organisation_id,
+				Array.from(signals?.organisationIds ?? [])[0],
+				modelId.split("/")[0],
+			) ?? "";
 
 		const compactModel: ModelsPageModel = {
 			model_id: modelId,
@@ -1079,7 +1118,7 @@ function withGatewayMetadata(
 }
 
 function buildFreeRouterModelsPageEntry(
-	overview: Awaited<ReturnType<typeof getFreeRouterOverview>>,
+	overview: Awaited<ReturnType<typeof fetchFrontendFreeRouterOverview>>,
 ): ModelsPageModel {
 	const inputModalities = Array.from(
 		new Set(overview.models.flatMap((model) => model.inputModalities ?? [])),
@@ -1138,20 +1177,20 @@ function buildFreeRouterModelsPageEntry(
 }
 
 async function ModelsPageDataSection() {
-	const includeHidden = false;
-	const [monitorResult, allModels, freeRouterOverview] = await Promise.all([
-		getMonitorModels({}, includeHidden),
-		getAllModelsCached(includeHidden),
-		getFreeRouterOverview(),
+	const [allModels, freeRouterOverview] = await Promise.all([
+		fetchFrontendModels(),
+		fetchFrontendFreeRouterOverview(),
 	]);
-	const models = withGatewayMetadata(allModels, monitorResult.models);
+	const monitorRows = allModels.flatMap(
+		(model) => model.gateway_monitor_rows ?? [],
+	);
+	const models = withGatewayMetadata(allModels, monitorRows);
 	const freeRouterModel = buildFreeRouterModelsPageEntry(freeRouterOverview);
 	const modelsWithFreeRouter = [
 		freeRouterModel,
 		...models.filter((model) => model.model_id !== FREE_ROUTER_MODEL_ID),
 	];
 	const facets = buildModelsFilterFacets(modelsWithFreeRouter);
-
 	return <ModelsDisplay models={modelsWithFreeRouter} facets={facets} />;
 }
 

@@ -11,6 +11,9 @@ if (process.env.NODE_ENV === "production" && !configuredSiteUrl) {
 
 const DEFAULT_SITE_URL = configuredSiteUrl ?? "http://localhost:3000";
 
+export const SITE_NAME = "AI Stats";
+export const PREFERRED_SITE_NAME = "AI Stats by Phaseo";
+export const SITE_ALTERNATE_NAME = SITE_NAME;
 export const SITE_URL = DEFAULT_SITE_URL.replace(/\/+$/, "");
 export const METADATA_BASE = new URL(SITE_URL);
 
@@ -55,13 +58,14 @@ export function buildMetadata({
 	return {
 		title,
 		description,
+		applicationName: PREFERRED_SITE_NAME,
 		metadataBase: METADATA_BASE,
 		keywords,
 		alternates: {
 			canonical,
 		},
 		openGraph: {
-			siteName: "AI Stats",
+			siteName: PREFERRED_SITE_NAME,
 			title,
 			description,
 			type,

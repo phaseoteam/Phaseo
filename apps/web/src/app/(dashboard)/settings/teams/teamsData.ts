@@ -338,3 +338,5 @@ export async function getTeamsSettingsData(preferredWorkspaceId?: string | null)
 		teamSsoSettingsByTeam,
 	};
 }
+
+export type TeamsSettingsData = Awaited<ReturnType<typeof getTeamsSettingsData>>;

@@ -471,6 +471,81 @@ describe("decodeAnthropicMessagesRequest", () => {
 		expect(ir.toolChoice).toEqual({ name: "web_search" });
 	});
 
+	it("should preserve native anthropic advisor tools and blocks", () => {
+		const request = {
+			model: "claude-sonnet-4.6",
+			max_tokens: 1024,
+			messages: [
+				{
+					role: "assistant",
+					content: [
+						{
+							type: "server_tool_use",
+							id: "srvu_123",
+							name: "advisor",
+							input: {},
+						},
+						{
+							type: "advisor_tool_result",
+							tool_use_id: "srvu_123",
+							content: [{ type: "text", text: "Use the smaller migration." }],
+						},
+					],
+				},
+				{ role: "user", content: "Continue" },
+			],
+			tools: [
+				{
+					type: "advisor_20260301",
+					name: "advisor",
+					model: "claude-opus-4-8",
+					max_tokens: 1400,
+				},
+			],
+			tool_choice: { type: "tool", name: "advisor" },
+		};
+
+		const ir: IRChatRequest = decodeAnthropicMessagesRequest(request as any);
+
+		expect(ir.tools).toEqual([
+			{
+				name: "advisor",
+				type: "advisor_20260301",
+				description: undefined,
+				parameters: {},
+				raw: {
+					type: "advisor_20260301",
+					name: "advisor",
+					model: "claude-opus-4-8",
+					max_tokens: 1400,
+				},
+			},
+		]);
+		expect(ir.messages[0]).toMatchObject({
+			role: "assistant",
+			content: [
+				{
+					type: "provider_block",
+					block: {
+						type: "server_tool_use",
+						id: "srvu_123",
+						name: "advisor",
+						input: {},
+					},
+				},
+				{
+					type: "provider_block",
+					block: {
+						type: "advisor_tool_result",
+						tool_use_id: "srvu_123",
+						content: [{ type: "text", text: "Use the smaller migration." }],
+					},
+				},
+			],
+		});
+		expect(ir.toolChoice).toEqual({ name: "advisor" });
+	});
+
 	it("should decode image_config and filter invalid font inputs", () => {
 		const request = {
 			model: "claude-3-5-sonnet-20241022",
@@ -509,7 +584,7 @@ describe("decodeAnthropicMessagesRequest", () => {
 		});
 	});
 
-	it("should map speed fast to priority service tier", () => {
+	it("should ignore text speed because service_tier is the public control", () => {
 		const request = {
 			model: "claude-3-5-sonnet-20241022",
 			max_tokens: 2048,
@@ -518,8 +593,7 @@ describe("decodeAnthropicMessagesRequest", () => {
 		};
 
 		const ir: IRChatRequest = decodeAnthropicMessagesRequest(request as any);
-		expect(ir.speed).toBe("fast");
-		expect(ir.serviceTier).toBe("priority");
+		expect(ir.serviceTier).toBeUndefined();
 	});
 
 	it("should decode reasoning.effort=max into IR reasoning effort xhigh", () => {
@@ -568,16 +642,16 @@ describe("decodeAnthropicMessagesRequest", () => {
 		expect(ir.reasoning?.maxTokens).toBe(512);
 	});
 
-	it("should preserve service_tier on decode", () => {
+	it("should preserve supported service_tier on decode", () => {
 		const request = {
 			model: "claude-3-5-sonnet-20241022",
 			max_tokens: 2048,
-			service_tier: "standard_only",
+			service_tier: "standard",
 			messages: [{ role: "user", content: "Hello" }],
 		};
 
 		const ir: IRChatRequest = decodeAnthropicMessagesRequest(request as any);
-		expect(ir.serviceTier).toBe("standard_only");
+		expect(ir.serviceTier).toBe("standard");
 	});
 
 	it("should decode inference geo controls into IR", () => {
@@ -729,5 +803,75 @@ describe("decodeAnthropicMessagesRequest cache control", () => {
 			expect((ir.messages[0].content[1] as any).cacheControl).toEqual({ type: "ephemeral", ttl: "1h" });
 		}
 	});
-});
 
+	it("preserves cache_control on system blocks, tool results, and tool definitions", () => {
+		const request = {
+			model: "claude-3-5-sonnet-20241022",
+			max_tokens: 512,
+			system: [{
+				type: "text",
+				text: "Stable system prompt",
+				cache_control: { type: "ephemeral", ttl: "1h" },
+			}],
+			messages: [
+				{
+					role: "user",
+					content: [{
+						type: "tool_result",
+						tool_use_id: "toolu_123",
+						content: "Tool output",
+						cache_control: { type: "ephemeral", ttl: "5m" },
+					}],
+				},
+			],
+			tools: [{
+				name: "lookup",
+				input_schema: { type: "object", properties: {} },
+				cache_control: { type: "ephemeral", ttl: "1h" },
+			}],
+		};
+
+		const ir: IRChatRequest = decodeAnthropicMessagesRequest(request as any);
+
+		expect(ir.messages[0].role).toBe("system");
+		if (ir.messages[0].role === "system") {
+			expect((ir.messages[0].content[0] as any).cacheControl).toEqual({ type: "ephemeral", ttl: "1h" });
+		}
+		expect(ir.messages[1].role).toBe("tool");
+		if (ir.messages[1].role === "tool") {
+			expect(ir.messages[1].toolResults[0].cacheControl).toEqual({ type: "ephemeral", ttl: "5m" });
+		}
+		expect(ir.tools?.[0].cacheControl).toEqual({ type: "ephemeral", ttl: "1h" });
+	});
+
+	it("decodes Anthropic cache defaults from provider options and top-level aliases", () => {
+		const providerOptionsRequest = {
+			model: "claude-3-5-sonnet-20241022",
+			max_tokens: 512,
+			messages: [{ role: "user", content: "Hello" }],
+			provider_options: {
+				anthropic: {
+					cache_control: { type: "ephemeral", ttl: "5m", scope: "last_user_message" },
+				},
+			},
+		};
+
+		const providerOptionsIr = decodeAnthropicMessagesRequest(providerOptionsRequest as any);
+		expect(providerOptionsIr.anthropicCacheControl).toEqual({
+			type: "ephemeral",
+			ttl: "5m",
+			scope: "last_user_message",
+		});
+
+		const camelAliasIr = decodeAnthropicMessagesRequest({
+			model: "claude-3-5-sonnet-20241022",
+			max_tokens: 512,
+			messages: [{ role: "user", content: "Hello" }],
+			cacheControl: { type: "ephemeral", ttl: "1h" },
+		} as any);
+		expect(camelAliasIr.anthropicCacheControl).toEqual({
+			type: "ephemeral",
+			ttl: "1h",
+		});
+	});
+});

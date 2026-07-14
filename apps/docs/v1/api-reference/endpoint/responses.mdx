@@ -8,8 +8,11 @@ openapi: "POST /responses"
 `/v1/responses` supports regular function tools and these gateway-managed server tools:
 
 - `gateway:datetime`
-- `gateway:web_search`
-- `gateway:web_fetch`
+- `ai-stats:web_search`
+- `ai-stats:web_fetch`
+- `ai-stats:advisor`
+- `ai-stats:image_generation`
+- `ai-stats:apply_patch`
 
 ### Datetime example
 
@@ -36,8 +39,11 @@ curl https://api.phaseo.app/v1/responses \
 When a server tool is used, usage includes the matching `usage.server_tool_use.*` counters.
 
 - `gateway:datetime` -> `datetime_requests`
-- `gateway:web_search` -> `web_search_requests`
-- `gateway:web_fetch` -> `web_fetch_requests`
+- `ai-stats:web_search` -> `web_search_requests`, `web_search_results`, `web_search_extra_results`
+- `ai-stats:web_fetch` -> `web_fetch_requests`
+- `ai-stats:advisor` -> `advisor_requests`
+- `ai-stats:image_generation` -> `image_generation_requests`
+- `ai-stats:apply_patch` -> `apply_patch_requests`
 
 ## Streaming note
 

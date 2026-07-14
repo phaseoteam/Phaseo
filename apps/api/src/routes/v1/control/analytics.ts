@@ -8,6 +8,8 @@ import type { Env } from "@/runtime/types";
 import { withRuntime, json } from "../../utils";
 import { getCache, getSupabaseAdmin } from "@/runtime/env";
 import { guardAuth, type GuardErr } from "@/pipeline/before/guards";
+import { CAPABILITIES } from "@/lib/authz/capabilities";
+import { requireCapability } from "./route-helpers";
 
 const COMPLETED_DAYS_WINDOW = 30;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -254,6 +256,8 @@ async function handleAnalytics(req: Request) {
 	if (!auth.ok) {
 		return (auth as GuardErr).response;
 	}
+	const scopeError = requireCapability(auth.value, CAPABILITIES.ANALYTICS_READ);
+	if (scopeError) return scopeError;
     const authValue = auth.value;
     const url = new URL(req.url);
     const teamScope = resolveScopedTeamId({

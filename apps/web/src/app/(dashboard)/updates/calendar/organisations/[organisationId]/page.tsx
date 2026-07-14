@@ -3,10 +3,8 @@ import { Rocket } from "lucide-react";
 import { headers } from "next/headers";
 import UpdateCard, { type UpdateBadge } from "@/components/updates/UpdateCard";
 import ModelCalendarRouteSwitch from "@/components/updates/ModelCalendarRouteSwitch";
-import {
-	getOrganisationReleaseEvents,
-	type ModelEvent,
-} from "@/lib/fetchers/updates/getModelUpdates";
+import type { ModelEvent } from "@/lib/fetchers/updates/getModelUpdates";
+import { fetchFrontendOrganisationReleaseEvents } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { buildMetadata } from "@/lib/seo";
 import type { Metadata } from "next";
 
@@ -123,7 +121,8 @@ export default async function OrganisationCalendarPage({
 			requestHeaders.get("x-time-zone")
 	);
 	const todayMonthDayKey = getMonthDayKeyForDate(new Date(), requestTimeZone);
-	const organisationEvents = await getOrganisationReleaseEvents(organisationId);
+	const organisationEvents =
+		await fetchFrontendOrganisationReleaseEvents(organisationId);
 
 	const organisationName =
 		organisationEvents.find((event) => event.model.organisation.name?.trim())

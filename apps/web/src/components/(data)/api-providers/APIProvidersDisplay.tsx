@@ -16,6 +16,7 @@ import type { APIProviderCard as APIProviderCardType } from "@/lib/fetchers/api-
 
 interface APIProvidersDisplayProps {
 	providers: APIProviderCardType[];
+	showPrimaryHeader?: boolean;
 }
 
 type ProviderSortOption =
@@ -40,6 +41,7 @@ function normalizeSortOption(
 
 export default function APIProvidersDisplay({
 	providers,
+	showPrimaryHeader = true,
 }: APIProvidersDisplayProps) {
 	const [search, setSearch] = useQueryState("search", {
 		defaultValue: "",
@@ -92,7 +94,11 @@ export default function APIProvidersDisplay({
 	return (
 		<>
 			<div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-				<h1 className="text-xl font-bold">API Providers</h1>
+				{showPrimaryHeader ? (
+					<h1 className="text-xl font-bold">API Providers</h1>
+				) : (
+					<div />
+				)}
 				<div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center lg:w-auto">
 					<div className="flex items-center gap-2 text-sm text-muted-foreground">
 						<ArrowUpDown className="h-4 w-4" />

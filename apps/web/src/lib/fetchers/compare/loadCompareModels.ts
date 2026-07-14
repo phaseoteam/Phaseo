@@ -1,8 +1,8 @@
 import { cacheLife, cacheTag } from "next/cache";
 
 import type { ExtendedModel, Provider } from "@/data/types";
-import { createClient } from "@/utils/supabase/client";
 import { applyHiddenFilter } from "@/lib/fetchers/models/visibility";
+import { createAdminClient } from "@/utils/supabase/admin";
 
 interface DbSimpleModel {
 	model_id: string;
@@ -24,7 +24,7 @@ interface DbSimpleModel {
 export async function loadCompareModels(
     includeHidden: boolean
 ): Promise<ExtendedModel[]> {
-	const supabase = await createClient();
+	const supabase = createAdminClient();
 	console.log("[loadCompareModels] Querying data_models");
 
 	const { data: models, error } = await applyHiddenFilter(
@@ -118,7 +118,9 @@ export async function loadCompareModelsCached(
 	"use cache";
 
 	cacheLife("days");
+	cacheTag("public-model-catalogue");
 	cacheTag("data:models");
+	cacheTag("frontend:compare-models");
 
 	console.log("[compare] HIT DB for compare models");
 	return loadCompareModels(includeHidden);

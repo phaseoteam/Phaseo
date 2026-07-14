@@ -31,7 +31,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/zai-org/GLM-5.1",
-      "rank": 57
+      "rank": 62
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -39,7 +39,7 @@
       "is_self_reported": true,
       "other_info": "With tools",
       "source_link": "https://huggingface.co/zai-org/GLM-5.1",
-      "rank": 9
+      "rank": 11
     },
     {
       "benchmark_id": "aime-2026",
@@ -63,7 +63,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/zai-org/GLM-5.1",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "imoanswerbench",
@@ -71,7 +71,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/zai-org/GLM-5.1",
-      "rank": 4
+      "rank": 5
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -79,7 +79,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/zai-org/GLM-5.1",
-      "rank": 25
+      "rank": 30
     },
     {
       "benchmark_id": "swe-bench-pro",
@@ -87,7 +87,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/zai-org/GLM-5.1",
-      "rank": 4
+      "rank": 8
     },
     {
       "benchmark_id": "nl2repo",
@@ -103,7 +103,7 @@
       "is_self_reported": true,
       "other_info": "Terminus-2",
       "source_link": "https://huggingface.co/zai-org/GLM-5.1",
-      "rank": 13
+      "rank": 16
     },
     {
       "benchmark_id": "terminal-bench-2.0",
@@ -111,7 +111,7 @@
       "is_self_reported": true,
       "other_info": "Best self-reported (Claude Code)",
       "source_link": "https://huggingface.co/zai-org/GLM-5.1",
-      "rank": 9
+      "rank": 10
     },
     {
       "benchmark_id": "cybergym",
@@ -127,7 +127,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/zai-org/GLM-5.1",
-      "rank": 23
+      "rank": 24
     },
     {
       "benchmark_id": "browsecomp",
@@ -135,7 +135,7 @@
       "is_self_reported": true,
       "other_info": "w/ Context Manage",
       "source_link": "https://huggingface.co/zai-org/GLM-5.1",
-      "rank": 12
+      "rank": 13
     },
     {
       "benchmark_id": "tau-2-bench",
@@ -151,7 +151,7 @@
       "is_self_reported": true,
       "other_info": "Public Set",
       "source_link": "https://huggingface.co/zai-org/GLM-5.1",
-      "rank": 4
+      "rank": 8
     },
     {
       "benchmark_id": "tool-decathlon",
@@ -173,9 +173,9 @@
       "benchmark_id": "deepswe",
       "score": 18,
       "is_self_reported": false,
-      "other_info": "mini-swe-agent; 18% +/-4%; avg cost $7.46; avg time 35m; out tok 49k",
+      "other_info": "mini-swe-agent; 18% +/-1%; avg cost $7.46; avg time 35m; out tok 49k",
       "source_link": "https://deepswe.datacurve.ai/",
-      "rank": 11
+      "rank": 12
     },
     {
       "benchmark_id": "creative-story-writing",
@@ -199,7 +199,7 @@
       "is_self_reported": false,
       "other_info": "Top-1 accuracy 85.9%; cases 703",
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 8
+      "rank": 23
     }
   ]
 }

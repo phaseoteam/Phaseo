@@ -1,9 +1,9 @@
 import { Suspense } from "react";
-import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import AuthorizedAppsPanel from "@/components/(gateway)/settings/authorized-apps/AuthorizedAppsPanel";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
+import { fetchSettingsAuthorizedAppsInitialData } from "@/lib/fetchers/internal/fetchSettingsAuthorizedAppsInitialData";
 
 export const metadata = {
 	title: "OAuth Integrations - Settings",
@@ -31,30 +31,16 @@ export default function AuthorizedAppsPage() {
 }
 
 async function AuthorizedAppsContent() {
-	const supabase = await createClient();
+	const initialData = await fetchSettingsAuthorizedAppsInitialData();
 
-	// Get current user
-	const {
-		data: { user },
-		error: userError,
-	} = await supabase.auth.getUser();
-
-	// If not authenticated, redirect to sign in
-	if (userError || !user) {
+	if (!initialData.signedIn || !initialData.userId) {
 		redirect("/sign-in");
 	}
 
-	// Fetch user's authorized apps using the view
-	const { data: authorizedApps, error: appsError } = await supabase
-		.from("user_authorized_apps")
-		.select("*")
-		.order("last_used_at", { ascending: false, nullsFirst: false });
-
-	if (appsError) {
-		console.error("Error fetching authorized apps:", appsError);
-	}
-
 	return (
-		<AuthorizedAppsPanel authorizedApps={authorizedApps ?? []} userId={user.id} />
+		<AuthorizedAppsPanel
+			authorizedApps={initialData.authorizedApps}
+			userId={initialData.userId}
+		/>
 	);
 }

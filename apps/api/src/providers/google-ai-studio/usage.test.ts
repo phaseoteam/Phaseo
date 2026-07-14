@@ -40,6 +40,27 @@ describe("googleUsageMetadataToIRUsage", () => {
 		expect(usage?.cachedReadTokensAreSubsetOfInput).toBeUndefined();
 	});
 
+	it("maps audio, video, and document modality token details", () => {
+		const usage = googleUsageMetadataToIRUsage({
+			promptTokensDetails: [
+				{ modality: "AUDIO", tokenCount: 12 },
+				{ modality: "VIDEO", tokenCount: 18 },
+				{ modality: "DOCUMENT", tokenCount: 30 },
+			],
+			candidatesTokensDetails: [
+				{ modality: "AUDIO", tokenCount: 7 },
+				{ modality: "VIDEO", tokenCount: 9 },
+			],
+		});
+
+		expect(usage?.inputTokens).toBe(60);
+		expect(usage?.outputTokens).toBe(16);
+		expect(usage?._ext?.inputAudioTokens).toBe(12);
+		expect(usage?._ext?.inputVideoTokens).toBe(18);
+		expect(usage?._ext?.outputAudioTokens).toBe(7);
+		expect(usage?._ext?.outputVideoTokens).toBe(9);
+	});
+
 	it("marks cached tokens as subset-of-input in IR usage", () => {
 		const usage = googleUsageMetadataToIRUsage({
 			promptTokenCount: 120,

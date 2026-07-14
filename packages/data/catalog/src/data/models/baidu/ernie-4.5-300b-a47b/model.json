@@ -87,7 +87,7 @@
       "is_self_reported": true,
       "other_info": "inferred version-family alias from ernie-4.5",
       "source_link": "https://www.hkubs.hku.hk/aimodelrankings_en/report/AdvancedReasoning.pdf",
-      "rank": 82
+      "rank": 83
     },
     {
       "benchmark_id": "gsm8k",
@@ -95,7 +95,7 @@
       "is_self_reported": true,
       "other_info": "inferred version-family alias from ernie-4.5",
       "source_link": "https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t",
-      "rank": 59
+      "rank": 60
     },
     {
       "benchmark_id": "hellaswag",
@@ -143,7 +143,7 @@
       "is_self_reported": true,
       "other_info": "inferred version-family alias from ernie-4.5",
       "source_link": "https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t",
-      "rank": 152
+      "rank": 155
     },
     {
       "benchmark_id": "mmlu-redux",
@@ -167,7 +167,7 @@
       "is_self_reported": true,
       "other_info": "inferred version-family alias from ernie-4.5",
       "source_link": "https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t",
-      "rank": 87
+      "rank": 88
     },
     {
       "benchmark_id": "winogrande",
@@ -183,7 +183,7 @@
       "is_self_reported": false,
       "other_info": "Confab 25.2%; non-response 6.7%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 30
+      "rank": 33
     }
   ]
 }

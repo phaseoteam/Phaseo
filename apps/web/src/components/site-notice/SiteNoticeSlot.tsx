@@ -2,14 +2,16 @@ import SiteNoticeBar from "@/components/site-notice/SiteNoticeBar";
 import {
 	getActiveSiteNotice,
 } from "@/lib/siteNotice";
-import { createClient } from "@/utils/supabase/server";
+import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
 
 export default async function SiteNoticeSlot() {
-	const supabase = await createClient();
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
-	const isAuthenticated = Boolean(user);
+	let isAuthenticated = false;
+	try {
+		const status = await fetchInternalAuthStatus();
+		isAuthenticated = status.signedIn;
+	} catch {
+		isAuthenticated = false;
+	}
 	const notice = getActiveSiteNotice(isAuthenticated);
 	if (!notice) return null;
 

@@ -23,7 +23,7 @@
       "is_self_reported": true,
       "other_info": "Public; xhigh reasoning",
       "source_link": "https://openai.com/index/introducing-gpt-5-3-codex/",
-      "rank": 8
+      "rank": 12
     },
     {
       "benchmark_id": "terminal-bench-2.0",
@@ -39,7 +39,7 @@
       "is_self_reported": true,
       "other_info": "OSWorld-Verified; xhigh reasoning",
       "source_link": "https://openai.com/index/introducing-gpt-5-3-codex/",
-      "rank": 12
+      "rank": 15
     },
     {
       "benchmark_id": "gdpval-aa",
@@ -47,7 +47,7 @@
       "is_self_reported": true,
       "other_info": "Wins or ties; xhigh reasoning",
       "source_link": "https://openai.com/index/introducing-gpt-5-3-codex/",
-      "rank": 25
+      "rank": 31
     },
     {
       "benchmark_id": "cybergym",

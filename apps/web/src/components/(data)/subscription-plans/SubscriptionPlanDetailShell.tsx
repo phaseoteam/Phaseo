@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import Link from "next/link";
-import { getSubscriptionPlanCached } from "@/lib/fetchers/subscription-plans/getSubscriptionPlan";
+import { fetchFrontendSubscriptionPlan } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import SubscriptionPlanTabs from "@/components/(data)/subscription-plans/SubscriptionPlanTabs";
 import { Logo } from "@/components/Logo";
 import RotatingPricing from "@/components/(data)/subscription-plans/RotatingPricing";
@@ -14,7 +14,7 @@ export default async function SubscriptionPlanDetailShell({
 	planId,
 	children,
 }: SubscriptionPlanDetailShellProps) {
-	const plan = await getSubscriptionPlanCached(planId, false);
+	const plan = await fetchFrontendSubscriptionPlan(planId);
 
 	if (!plan) {
 		return (

@@ -43,8 +43,21 @@ jobs:
                       1) a concise issue understanding, and
                       2) a short copy/paste prompt the maintainer can give to an AI coding agent.
 
-                      Always start with this exact sentence:
-                      We're super sorry about this issue you're facing! We'll have someone look at this as soon as possible.
+                      Determine the issue type from the title prefix, issue template, labels,
+                      body content, and whether this is an issue comment asking for follow-up.
+                      In this repo the main title prefixes are [Bug], [Chore], [Data Request],
+                      [Docs], [Feature], and [Incorrect Info].
+
+                      Opening-tone rules:
+                      - Default to neutral, direct task language.
+                      - For internal engineering tasks, chores, tests, data updates, model-discovery items, incorrect-info tickets, or automated maintenance, open with a concise summary such as "This issue tracks ..." or "This task is about ...".
+                      - For PR review or implementation follow-up prompts, open with what needs doing.
+                      - For feature requests, open with a concise request summary such as "This request is asking for ...".
+                      - For docs changes, open with direct docs framing such as "This docs issue covers ...".
+                      - For user-facing bugs or incidents with clear end-user impact, a brief acknowledgement is fine, but keep it factual and concise. Do not over-apologize.
+                      - For issues about OpenCode or the triage workflow itself, use a factual self-referential tone.
+                      - Never start by default with an apology.
+                      - Never say "we'll have someone look at this", "a team member will follow up shortly", or similar human-handoff promises.
 
                       Output rules:
                       - Keep the response short and practical.
@@ -59,12 +72,11 @@ jobs:
                       - For simple/normal issues, keep it short and direct.
                       - For genuinely complex issues, you may expand modestly to preserve clarity.
                       - The AI Agent Prompt must:
-                        - Summarize the bug.
+                        - Summarize the issue or task.
                         - Mention where it is likely happening (area/component/file path if known).
-                        - Suggest a possible fix direction.
-                        - Explicitly tell the agent to reproduce and inspect the codebase/logs/tests and not rely only on the bug report.
+                        - Suggest a likely fix, implementation, or triage direction.
+                        - Explicitly tell the agent to inspect the codebase/logs/tests and not rely only on the issue text.
+                        - Tell the agent to reproduce the problem first when the issue is actually a bug report.
                       - If key details are missing, make a reasonable assumption and continue. You may add at most 2 short clarifying questions after the prompt under:
                         ### Clarifying Questions (Optional)
-
-                      End every response with:
-                      *This is an automated response - a team member will follow up shortly.*
+                      - End after the prompt or optional clarifying questions. Do not add a boilerplate sign-off.

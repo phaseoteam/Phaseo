@@ -465,7 +465,7 @@ async function fetchLiveTextModelsByProvider(args: {
     let total = Number.POSITIVE_INFINITY;
 
     while (offset < total) {
-        const url = new URL(`${base}/gateway/models`);
+        const url = new URL(`${base}/models`);
         url.searchParams.set("limit", String(limit));
         url.searchParams.set("offset", String(offset));
 

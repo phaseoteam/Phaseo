@@ -1,6 +1,12 @@
 // Purpose: Shared OAuth route helper utilities.
 
 import { z } from "zod";
+import {
+	DEFAULT_MANAGEMENT_KEY_CAPABILITIES,
+	normalizeScopeList,
+	serializeScopeList,
+} from "@/lib/authz/capabilities";
+import { isThirdPartyOAuthEnabled } from "@/lib/oauth/service";
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { json } from "@/routes/utils";
 
@@ -80,18 +86,14 @@ export async function hmacSecret(secret: string, pepper: string): Promise<string
 }
 
 export function normalizeScopeInput(scopes: unknown): { ok: true; value: string } | { ok: false; message: string } {
-	if (scopes === undefined || scopes === null) {
-		return { ok: true, value: "[]" };
+	const normalized = normalizeScopeList(scopes, {
+		allowIdentityScopes: false,
+		defaultScopes: DEFAULT_MANAGEMENT_KEY_CAPABILITIES,
+	});
+	if (normalized.ok === false) {
+		return { ok: false, message: normalized.message };
 	}
-	if (typeof scopes === "string") {
-		const trimmed = scopes.trim();
-		return { ok: true, value: trimmed.length ? trimmed : "[]" };
-	}
-	if (Array.isArray(scopes)) {
-		const normalized = scopes.map((entry) => String(entry));
-		return { ok: true, value: JSON.stringify(normalized) };
-	}
-	return { ok: false, message: "scopes must be a string or string[]" };
+	return { ok: true, value: serializeScopeList(normalized.value) };
 }
 
 export function timingSafeEqual(a: string, b: string): boolean {
@@ -114,6 +116,21 @@ export function safeJsonParse(text: string): unknown {
 }
 
 export async function resolveOAuthApp(args: { clientId?: string | null; redirectUri: string }): Promise<ResolveOAuthAppResult> {
+	if (!isThirdPartyOAuthEnabled()) {
+		return {
+			ok: false,
+			response: json(
+				{
+					ok: false,
+					error: "third_party_oauth_disabled",
+					message: "OAuth client management is coming soon. The AI Stats CLI is available during the private OAuth beta.",
+				},
+				403,
+				{ "Cache-Control": "no-store" },
+			),
+		};
+	}
+
 	const supabase = getSupabaseAdmin();
 	const clientId = args.clientId?.trim() || null;
 	if (clientId) {

@@ -1,0 +1,178 @@
+---
+title: "Advisor Server Tool"
+description: "Let one model consult another model mid-generation."
+---
+
+Use `ai-stats:advisor` when the main model should be able to ask another model for a review, plan, sanity check, or specialist opinion before it finishes.
+
+The main model calls Advisor like any other tool. AI Stats runs the Advisor model server-side and returns the advice as the tool result. The main model then writes the final response.
+
+<Note>
+Advisor is gateway-managed across supported text models. It is not converted into Anthropic's native Advisor tool unless the client explicitly sends Anthropic's native tool shape.
+</Note>
+
+## Quick start
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "Design a rate limiter for a distributed API gateway." }
+    ],
+    "tools": [
+      {
+        "type": "ai-stats:advisor",
+        "parameters": {
+          "model": "anthropic/claude-opus-4-8",
+          "max_uses": 1,
+          "max_completion_tokens": 1400
+        }
+      }
+    ]
+  }'
+```
+
+## Choosing the Advisor model
+
+You can pin the Advisor model in the tool definition:
+
+```json
+{
+  "type": "ai-stats:advisor",
+  "parameters": {
+    "model": "anthropic/claude-opus-4-8"
+  }
+}
+```
+
+If `parameters.model` is omitted, the tool call may provide `model`. If neither is set, AI Stats falls back to the outer request model.
+
+## Parameters
+
+```json
+{
+  "type": "ai-stats:advisor",
+  "parameters": {
+    "name": "reviewer",
+    "model": "anthropic/claude-opus-4-8",
+    "instructions": "Review plans for correctness, missing edge cases, and implementation risk.",
+    "forward_transcript": true,
+    "max_uses": 2,
+    "max_completion_tokens": 1400,
+    "reasoning": { "effort": "high" },
+    "temperature": 0.2
+  }
+}
+```
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `name` | string | none | Optional Advisor name. Names must be unique after trimming and may contain letters, numbers, spaces, underscores, and dashes. |
+| `model` | string | outer model | Advisor model to call. If omitted, the tool call can provide `model`. |
+| `instructions` | string | default Advisor behavior | Extra instructions for the Advisor model. |
+| `forward_transcript` | boolean | `false` | Include the current conversation transcript in the Advisor request. |
+| `max_uses` | integer | `1` | Maximum calls for this Advisor during the server-tool loop. |
+| `max_completion_tokens` | integer | `1400` | Max output tokens for the Advisor response. |
+| `max_tokens` | integer | `1400` | Legacy alias for `max_completion_tokens`. |
+| `reasoning` | object | provider default | Reasoning config forwarded to the Advisor call when supported by the selected model/provider. |
+| `temperature` | number | provider default | Sampling temperature for the Advisor call. |
+
+## Tool-call arguments
+
+The model normally calls Advisor with a `prompt`:
+
+```json
+{
+  "prompt": "Review this migration plan and identify the riskiest assumptions."
+}
+```
+
+If the Advisor definition does not pin a model, the tool call may also include `model`:
+
+```json
+{
+  "model": "anthropic/claude-opus-4-8",
+  "prompt": "Check this security design for missing controls."
+}
+```
+
+When `forward_transcript` is `true`, AI Stats can execute a transcript-only Advisor call if the model does not supply a prompt.
+
+## Multiple advisors
+
+Add one `ai-stats:advisor` entry per advisor. Each named advisor becomes a distinct internal tool, such as `ai_stats_advisor_security_reviewer` or `ai_stats_advisor_architect`.
+
+```json
+{
+  "tools": [
+    {
+      "type": "ai-stats:advisor",
+      "parameters": {
+        "name": "security-reviewer",
+        "model": "anthropic/claude-opus-4-8",
+        "instructions": "Review for vulnerabilities, abuse cases, and missing mitigations."
+      }
+    },
+    {
+      "type": "ai-stats:advisor",
+      "parameters": {
+        "name": "architect",
+        "model": "openai/gpt-5",
+        "instructions": "Review system design tradeoffs and operational risks."
+      }
+    }
+  ]
+}
+```
+
+At most one Advisor entry may omit `name`. If you force `tool_choice: "ai-stats:advisor"` with multiple advisors, AI Stats maps that alias to the first configured Advisor.
+
+## What the tool returns
+
+Advisor returns JSON as the tool result:
+
+```json
+{
+  "status": "ok",
+  "name": "reviewer",
+  "model": "anthropic/claude-opus-4-8",
+  "advice": "Start with a smaller migration slice and define rollback criteria before changing traffic routing."
+}
+```
+
+If the Advisor request cannot run, AI Stats returns a tool error such as `advisor_invalid_request`, `advisor_max_uses_exceeded`, or `advisor_request_failed`.
+
+## Conversation memory
+
+Advisor does not keep hidden cross-request state. If you replay prior messages and tool results in the next request, the main model can see the prior consultation. If `forward_transcript` is enabled, the Advisor can also see the forwarded conversation transcript for that request.
+
+## Usage and pricing
+
+Advisor calls increment:
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "advisor_requests": 1
+    }
+  }
+}
+```
+
+The Advisor model's tokens are included in total usage and can be priced at the selected Advisor model's rates. Server-tool pricing can also use `server_tool_advisor_requests`.
+
+## Current limits
+
+- Advisor sub-agent tools are not enabled yet.
+- Advisor advice streaming is not enabled yet.
+- Recursive Advisor calls are blocked by the server-tool loop limits.
+
+## Related
+
+- [Server Tools](./index)
+- [Tool Calling](../tool-calling)
+

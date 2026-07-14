@@ -2,13 +2,13 @@
   "model_id": "mistral/magistral-medium-1.2",
   "organisation_id": "mistral",
   "name": "Magistral Medium 1.2",
-  "status": "Available",
+  "status": "Deprecated",
   "previous_model_id": null,
   "description": "Magistral Medium 1.2 is a multimodal model from Mistral that can work across text and visual inputs. It accepts text and image inputs and produces text outputs.",
   "announced_date": "2025-09-17T00:00:00",
   "release_date": "2025-09-17T00:00:00",
-  "deprecation_date": null,
-  "retirement_date": null,
+  "deprecation_date": "2026-05-22T00:00:00",
+  "retirement_date": "2026-07-31T00:00:00",
   "license": "Proprietary",
   "input_types": "text,image",
   "output_types": "text",
@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": "inferred version-family alias from magistral-medium",
       "source_link": "https://arxiv.org/pdf/2506.10910",
-      "rank": 99
+      "rank": 100
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": "inferred version-family alias from magistral-medium",
       "source_link": "https://arxiv.org/pdf/2506.10910",
-      "rank": 123
+      "rank": 129
     },
     {
       "benchmark_id": "livecodebench",
@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": "inferred version-family alias from magistral-medium",
       "source_link": "https://arxiv.org/pdf/2506.10910",
-      "rank": 49
+      "rank": 50
     }
   ]
 }

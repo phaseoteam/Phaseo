@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";
+import type { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";
 import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDisplay";
 
 type ModelCardLike = Omit<ModelCardType, "gateway_status"> & {
@@ -459,6 +459,7 @@ function ModelCardImpl({
 				? model.name
 				: `${organisationLabel}: ${model.name}`
 			: model.name;
+	const safeModelDisplayName = String(modelDisplayName ?? "").trim() || displayModelId;
 	const [copied, setCopied] = useState(false);
 	const providerCount = model.gateway_provider_count ?? 0;
 	const activeProviders = model.gateway_active_provider_count ?? 0;
@@ -838,7 +839,7 @@ function ModelCardImpl({
 		) {
 			return;
 		}
-		router.push(modelHref);
+		router.push(modelHref, { scroll: true });
 	};
 
 	return (
@@ -879,9 +880,10 @@ function ModelCardImpl({
 							<Link
 								href={modelHref}
 								prefetch={false}
+								scroll
 								className="font-semibold text-sm leading-[1.1] text-foreground hover:underline underline-offset-4 transition-colors duration-200 line-clamp-1"
 							>
-								{modelDisplayName}
+								{safeModelDisplayName}
 							</Link>
 							{apiModelId ? (
 								<Tooltip>
@@ -892,7 +894,7 @@ function ModelCardImpl({
 											variant="ghost"
 											onClick={copyModelId}
 											className="h-5 w-5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-											aria-label={`Copy API model ID for ${modelDisplayName}`}
+											aria-label={`Copy API model ID for ${safeModelDisplayName}`}
 										>
 											<span className="relative h-3 w-3">
 												<Copy
@@ -929,7 +931,8 @@ function ModelCardImpl({
 						<Link
 							href={modelHref}
 							prefetch={false}
-							aria-label={`Open ${modelDisplayName}`}
+							scroll
+							aria-label={`Open ${safeModelDisplayName}`}
 							className="group/open"
 						>
 							<ArrowUpRight

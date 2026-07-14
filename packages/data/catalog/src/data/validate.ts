@@ -219,6 +219,15 @@ export function checkApiProviderModelEntrySafety(
           )
         : [];
 
+    for (const capability of configuredCapabilities) {
+        const capabilityId = String(capability.capability_id).trim();
+        const paramsErrors = validateCapabilityParams((capability as Record<string, unknown>).params, {
+            rowLabel,
+            capabilityId,
+        });
+        errors.push(...paramsErrors);
+    }
+
     if (row?.is_active_gateway === true && configuredCapabilities.length === 0) {
         warnings.push(`API provider model ${rowLabel} is active on gateway but has no configured non-disabled capabilities`);
     }
@@ -246,6 +255,282 @@ export function checkApiProviderModelEntrySafety(
     return { errors, warnings };
 }
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+    return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isJsonScalar(value: unknown): boolean {
+    return (
+        value === null ||
+        typeof value === 'string' ||
+        typeof value === 'number' ||
+        typeof value === 'boolean'
+    );
+}
+
+function isJsonLike(value: unknown): boolean {
+    if (isJsonScalar(value)) return true;
+    if (Array.isArray(value)) return value.every(isJsonLike);
+    if (isPlainObject(value)) return Object.values(value).every(isJsonLike);
+    return false;
+}
+
+function validateCapabilityParams(
+    value: unknown,
+    context: { rowLabel: string; capabilityId: string }
+): string[] {
+    const errors: string[] = [];
+    const label = `API provider model ${context.rowLabel} capability ${context.capabilityId} params`;
+
+    if (value == null) return errors;
+    if (Array.isArray(value)) {
+        for (const [index, entry] of value.entries()) {
+            if (typeof entry === 'string') {
+                if (!entry.trim()) {
+                    errors.push(`${label}[${index}] has empty parameter name`);
+                }
+                continue;
+            }
+            if (!isPlainObject(entry)) {
+                errors.push(`${label}[${index}] must be a parameter name string or object`);
+                continue;
+            }
+            const paramId = normalizeReference(entry.param_id ?? entry.name ?? entry.id);
+            if (!paramId) {
+                errors.push(`${label}[${index}] missing param_id`);
+            }
+            if (!isJsonLike(entry)) {
+                errors.push(`${label}[${index}] contains non-JSON metadata`);
+            }
+        }
+        return errors;
+    }
+
+    if (!isPlainObject(value)) {
+        errors.push(`${label} must be an array or object`);
+        return errors;
+    }
+
+    for (const [paramName, detail] of Object.entries(value)) {
+        if (!paramName.trim()) {
+            errors.push(`${label} contains an empty parameter name`);
+            continue;
+        }
+        if (detail === undefined) {
+            errors.push(`${label}.${paramName} is undefined`);
+            continue;
+        }
+        if (!isJsonLike(detail)) {
+            errors.push(`${label}.${paramName} contains non-JSON metadata`);
+        }
+    }
+    return errors;
+}
+
+const VIDEO_CAPABILITIES_REQUIRING_STRUCTURED_PARAMS = new Set(['video.generate']);
+const VIDEO_PROVIDERS_WITH_EXECUTOR_METADATA = new Set([
+    'alibaba-cloud',
+    'byteplus',
+    'google-ai-studio',
+    'google-vertex',
+    'minimax',
+    'openai',
+    'atlascloud',
+    'runway',
+    'x-ai',
+]);
+
+function isEnabledCapabilityStatus(value: unknown): boolean {
+    const status = typeof value === 'string' ? value.trim().toLowerCase() : '';
+    return status.length === 0 || status === 'active' || status.startsWith('deranked_');
+}
+
+function getCapabilityParamsObject(value: unknown): Record<string, unknown> | null {
+    return isPlainObject(value) ? value : null;
+}
+
+function getEnumValues(value: unknown): unknown[] {
+    return isPlainObject(value) && Array.isArray(value.values) ? value.values : [];
+}
+
+function getStringArrayField(value: Record<string, unknown>, field: string): string[] {
+    return Array.isArray(value[field])
+        ? value[field].filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+        : [];
+}
+
+function validateVideoDurationParam(
+    detail: Record<string, unknown>,
+    label: string,
+    paramName: string
+): string[] {
+    const errors: string[] = [];
+    const type = normalizeReference(detail.type);
+    if (type !== 'number' && type !== 'enum') {
+        errors.push(`${label} params.${paramName}.type must be number or enum`);
+    }
+    if (type === 'enum') {
+        const values = getEnumValues(detail);
+        if (values.length === 0) {
+            errors.push(`${label} params.${paramName}.values must not be empty when present`);
+        }
+        for (const value of values) {
+            if (parseNumericValue(value) === undefined) {
+                errors.push(`${label} params.${paramName}.values must contain numeric durations`);
+                break;
+            }
+        }
+    }
+    const aliases = getStringArrayField(detail, 'aliases');
+    if (!aliases.includes('duration_seconds') && !aliases.includes('durationSeconds')) {
+        errors.push(`${label} params.${paramName}.aliases must include duration_seconds or durationSeconds`);
+    }
+    return errors;
+}
+
+function validateVideoSizeParam(
+    detail: Record<string, unknown>,
+    label: string,
+    paramName: string
+): string[] {
+    const errors: string[] = [];
+    const type = normalizeReference(detail.type);
+    if (type !== 'string' && type !== 'enum') {
+        errors.push(`${label} params.${paramName}.type must be string or enum`);
+    }
+    if (type === 'enum') {
+        const values = getEnumValues(detail);
+        if (values.length === 0) {
+            errors.push(`${label} params.${paramName}.values must not be empty when present`);
+        }
+        for (const value of values) {
+            if (typeof value !== 'string' || value.trim().length === 0) {
+                errors.push(`${label} params.${paramName}.values must contain string resolutions`);
+                break;
+            }
+        }
+    }
+    const aliases = getStringArrayField(detail, 'aliases');
+    if (!aliases.includes('resolution')) {
+        errors.push(`${label} params.${paramName}.aliases must include resolution`);
+    }
+    return errors;
+}
+
+function pricingCapabilitiesForBatchEndpoint(endpoint: unknown): string[] {
+    switch (endpoint) {
+        case '/v1/embeddings':
+        case '/embeddings':
+            return ['text.embed'];
+        case '/v1/videos':
+        case '/videos':
+            return ['video.generate', 'video.generation'];
+        case '/v1/images/generations':
+        case '/images/generations':
+            return ['image.generate', 'image.generations', 'images.generations', 'images.generate'];
+        case '/v1/images/edits':
+        case '/images/edits':
+            return ['image.edit', 'images.edits'];
+        case '/v1/moderations':
+        case '/moderations':
+            return ['text.moderate', 'moderations.create', 'moderation'];
+        case '/v1/responses':
+        case '/responses':
+        case '/v1/chat/completions':
+        case '/chat/completions':
+            return ['text.generate', 'batch'];
+        default:
+            return ['batch'];
+    }
+}
+
+function buildPricingCapabilityIndex(): Set<string> {
+    const pricingDir = path.join(DATA_ROOT, 'pricing');
+    const keys = new Set<string>();
+    for (const filePath of listPricingFiles(pricingDir)) {
+        const data = safeReadJson(filePath, [], 'Pricing');
+        const providerId = normalizeReference(data?.api_provider_id);
+        const modelId = normalizeReference(data?.api_model_id ?? data?.model_id);
+        const capabilityId = normalizeReference(data?.capability_id ?? data?.endpoint);
+        if (providerId && modelId && capabilityId) {
+            keys.add(`${providerId}:${modelId}:${capabilityId}`);
+        }
+    }
+    return keys;
+}
+
+function validateAsyncCapabilityMetadata(args: {
+    providerId: string;
+    apiModelId: string | null;
+    rowLabel: string;
+    capability: Record<string, unknown>;
+    pricingKeys: Set<string>;
+}): string[] {
+    const errors: string[] = [];
+    const capabilityId = normalizeReference(args.capability.capability_id);
+    if (!capabilityId || !isEnabledCapabilityStatus(args.capability.status)) return errors;
+    const label = `API provider model ${args.rowLabel} capability ${capabilityId}`;
+    const params = getCapabilityParamsObject(args.capability.params);
+
+    if (capabilityId === 'batch') {
+        if (!params) {
+            errors.push(`${label} must expose structured params with endpoint and completion_window metadata`);
+            return errors;
+        }
+        const endpoint = getCapabilityParamsObject(params.endpoint);
+        const completionWindow = getCapabilityParamsObject(params.completion_window);
+        const endpointValues = getEnumValues(endpoint);
+        const completionWindowValues = getEnumValues(completionWindow);
+
+        if (!endpoint || endpoint.type !== 'enum' || endpointValues.length === 0) {
+            errors.push(`${label} params.endpoint must be an enum with at least one supported endpoint`);
+        }
+        if (!completionWindow || completionWindow.type !== 'enum' || !completionWindowValues.includes('24h')) {
+            errors.push(`${label} params.completion_window must be an enum that includes 24h`);
+        }
+        if (args.apiModelId && endpointValues.length > 0) {
+            for (const endpointValue of endpointValues) {
+                if (
+                    !pricingCapabilitiesForBatchEndpoint(endpointValue).some((pricingCapability) =>
+                        args.pricingKeys.has(`${args.providerId}:${args.apiModelId}:${pricingCapability}`)
+                    )
+                ) {
+                    errors.push(
+                        `${label} endpoint ${String(endpointValue)} has no matching pricing capability for ${args.providerId}:${args.apiModelId}`
+                    );
+                }
+            }
+        }
+    }
+
+    if (
+        VIDEO_CAPABILITIES_REQUIRING_STRUCTURED_PARAMS.has(capabilityId) &&
+        VIDEO_PROVIDERS_WITH_EXECUTOR_METADATA.has(args.providerId)
+    ) {
+        if (!params) {
+            errors.push(`${label} must expose structured video params with duration and size metadata`);
+            return errors;
+        }
+        for (const paramName of ['duration', 'size']) {
+            const detail = getCapabilityParamsObject(params[paramName]);
+            if (!detail) {
+                errors.push(`${label} params.${paramName} must include structured metadata`);
+                continue;
+            }
+            if (Array.isArray(detail.values) && detail.values.length === 0) {
+                errors.push(`${label} params.${paramName}.values must not be empty when present`);
+            }
+            if (paramName === 'duration') {
+                errors.push(...validateVideoDurationParam(detail, label, paramName));
+            } else {
+                errors.push(...validateVideoSizeParam(detail, label, paramName));
+            }
+        }
+    }
+
+    return errors;
+}
+
 const MODEL_DATE_FIELDS = ['announced_date', 'release_date', 'deprecation_date', 'retirement_date'];
 const DETAIL_DATE_HINTS = ['date', 'cutoff'];
 const GENERIC_MODEL_DESCRIPTION_FALLBACK =
@@ -255,6 +540,19 @@ type ModelEntry = {
     filePath: string;
     data: Record<string, unknown>;
 };
+
+function isValidPageNotice(
+    notice: unknown
+): notice is { tone: "info" | "warning" | "critical"; markdown: string } {
+    if (!notice || typeof notice !== 'object') return false;
+    const tone = (notice as { tone?: unknown }).tone;
+    const markdown = (notice as { markdown?: unknown }).markdown;
+    return (
+        (tone === 'info' || tone === 'warning' || tone === 'critical') &&
+        typeof markdown === 'string' &&
+        markdown.trim().length > 0
+    );
+}
 
 interface ValidationState {
     organisationIds: Map<string, string>;
@@ -374,6 +672,21 @@ function looksLikeDateKey(name: string): boolean {
     return DETAIL_DATE_HINTS.some((hint) => lower.includes(hint));
 }
 
+const ALLOWED_ORGANISATION_LINK_PLATFORMS = new Set([
+    'website',
+    'x',
+    'github',
+    'hugging_face',
+    'linkedin',
+    'discord',
+    'facebook',
+    'instagram',
+    'youtube',
+    'tiktok',
+    'threads',
+    'reddit',
+]);
+
 function checkOrganisations(state: ValidationState): string[] {
     const errors: string[] = [];
     const organisationsDir = path.join(DATA_ROOT, 'organisations');
@@ -393,6 +706,36 @@ function checkOrganisations(state: ValidationState): string[] {
         state.organisationIds.set(organisationId, filePath);
         if (typeof data.name !== 'string' || !data.name.trim()) {
             errors.push(`Organisation ${organisationId} missing name`);
+        }
+        const links = Array.isArray(data.organisation_links) ? data.organisation_links : [];
+        const seenPlatforms = new Set<string>();
+        for (const [index, link] of links.entries()) {
+            const rawPlatform = typeof link?.platform === 'string' ? link.platform : '';
+            const platform = rawPlatform.trim();
+            const url = typeof link?.url === 'string' ? link.url.trim() : '';
+            if (!platform) {
+                errors.push(`Organisation ${organisationId} link ${index} missing platform`);
+                continue;
+            }
+            if (rawPlatform !== platform) {
+                errors.push(
+                    `Organisation ${organisationId} link ${index} has non-canonical platform '${rawPlatform}'`
+                );
+            }
+            if (!ALLOWED_ORGANISATION_LINK_PLATFORMS.has(platform)) {
+                errors.push(
+                    `Organisation ${organisationId} link ${index} has unsupported platform '${platform}'`
+                );
+            }
+            if (seenPlatforms.has(platform)) {
+                errors.push(
+                    `Organisation ${organisationId} has duplicate organisation_links platform '${platform}'`
+                );
+            }
+            seenPlatforms.add(platform);
+            if (!url) {
+                errors.push(`Organisation ${organisationId} link ${index} missing url`);
+            }
         }
     }
     return errors;
@@ -597,6 +940,7 @@ function checkApiProviderModels(
     const warnings: string[] = [];
     let entryCount = 0;
     const providersDir = path.join(DATA_ROOT, 'api_providers');
+    const pricingKeys = buildPricingCapabilityIndex();
     const providerModalityKnowledge = new Map<
         string,
         { input: Set<string>; output: Set<string> }
@@ -669,6 +1013,20 @@ function checkApiProviderModels(
             });
             errors.push(...entryChecks.errors);
             warnings.push(...entryChecks.warnings);
+            for (const capability of Array.isArray((row as Record<string, unknown>)?.capabilities)
+                ? ((row as Record<string, unknown>).capabilities as unknown[])
+                : []) {
+                if (!isPlainObject(capability)) continue;
+                errors.push(
+                    ...validateAsyncCapabilityMetadata({
+                        providerId: provider,
+                        apiModelId,
+                        rowLabel,
+                        capability,
+                        pricingKeys,
+                    })
+                );
+            }
 
             if (!apiModelId) {
                 errors.push(`API provider model ${rowLabel} missing api_model_id`);
@@ -769,6 +1127,10 @@ function checkModelReferences(state: ValidationState): { errors: string[]; warni
                     }
                 }
             }
+        }
+        const pageNotice = data.page_notice;
+        if (pageNotice !== undefined && pageNotice !== null && !isValidPageNotice(pageNotice)) {
+            errors.push(`${label} page_notice must include a valid tone and non-empty markdown`);
         }
         if (typeof data.name !== 'string' || !data.name.trim()) {
             errors.push(`${label} missing a name`);

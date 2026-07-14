@@ -1,0 +1,19 @@
+{
+  "model_id": "qwen/qwen3-tts-voicedesign",
+  "organisation_id": "qwen",
+  "name": "Qwen 3 TTS (1.7B)",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Qwen 3 TTS (1.7B) is a DigitalOcean-hosted text-to-speech model exposed through DigitalOcean Inference.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "audio",
+  "api_model_id": "qwen/qwen3-tts-voicedesign",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

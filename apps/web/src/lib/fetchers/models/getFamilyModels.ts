@@ -1,5 +1,5 @@
 import { cacheLife, cacheTag } from "next/cache";
-import { createClient } from "@/utils/supabase/client";
+import { createAdminClient } from "@/utils/supabase/admin";
 
 export type FamilyModelStatus =
     | "Rumoured"
@@ -34,7 +34,7 @@ export default async function getFamilyModels(
     familyId: string,
     includeHidden: boolean
 ): Promise<FamilyInfo | null> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data, error } = await supabase
         .from("data_model_families")
@@ -101,8 +101,11 @@ export async function getFamilyModelsCached(
     "use cache";
 
     cacheLife("days");
+    cacheTag("public-model-catalogue");
     cacheTag("data:models");
+    cacheTag("data:families");
     cacheTag(`data:families:${familyId}`);
+    cacheTag("frontend:families");
 
     console.log("[fetch] HIT DB for family models", familyId);
     return getFamilyModels(familyId, includeHidden);

@@ -1,0 +1,60 @@
+{
+  "plan_id": "windsurf-enterprise",
+  "name": "Windsurf Enterprise",
+  "organisation_id": "windsurf",
+  "description": "Custom Windsurf enterprise plan with contract-specific Agent Compute Unit allowances and controls.",
+  "pricing_options": [
+    {
+      "frequency": "custom",
+      "usd_price": 0,
+      "link": "https://windsurf.com/pricing",
+      "other_info": "Custom pricing; contact Windsurf sales"
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "Pricing",
+      "feature_value": "Custom",
+      "feature_description": "The current subscription-plan importer requires numeric prices, so this is represented as 0 with explicit custom-pricing metadata.",
+      "other_info": null
+    },
+    {
+      "feature_name": "Agent Compute Units",
+      "feature_value": "Contract Specific",
+      "feature_description": "Windsurf enterprise plans are billed in Agent Compute Units; exact included ACUs depend on the contract.",
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "windsurf/swe-1.6",
+      "model_info": "Windsurf native agent model",
+      "rate_limit": "Contract-specific ACUs",
+      "other_info": null
+    },
+    {
+      "model_id": "windsurf/swe-1.6-fast",
+      "model_info": "Fast Windsurf native agent model",
+      "rate_limit": "Contract-specific ACUs",
+      "other_info": null
+    },
+    {
+      "model_id": "windsurf/swe-1.5",
+      "model_info": "Windsurf native agent model",
+      "rate_limit": "Contract-specific ACUs",
+      "other_info": null
+    },
+    {
+      "model_id": "windsurf/swe-1-mini",
+      "model_info": "Tab completion model",
+      "rate_limit": "Unlimited Tab completions",
+      "other_info": null
+    },
+    {
+      "model_id": "windsurf/swe-grep",
+      "model_info": "Context retrieval model",
+      "rate_limit": "Included",
+      "other_info": null
+    }
+  ]
+}

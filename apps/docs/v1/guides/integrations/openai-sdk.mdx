@@ -1,0 +1,74 @@
+---
+title: "OpenAI SDK"
+description: "Use official OpenAI SDKs with AI Stats."
+---
+
+Use this guide when your app already calls OpenAI from TypeScript, JavaScript, or Python. Change only the API key, base URL, and model id.
+
+## TypeScript
+
+```bash
+npm install openai
+```
+
+```ts
+import OpenAI from "openai";
+
+const client = new OpenAI({
+	apiKey: process.env.AI_STATS_API_KEY,
+	baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.responses.create({
+	model: "openai/gpt-5-nano",
+	input: "Write one sentence about reliable model routing.",
+});
+
+console.log(response.output_text);
+```
+
+## Python
+
+```bash
+pip install openai
+```
+
+```python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["AI_STATS_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+
+response = client.responses.create(
+    model="openai/gpt-5-nano",
+    input="Write one sentence about reliable model routing.",
+)
+
+print(response.output_text)
+```
+
+## Chat Completions
+
+Older libraries may still call Chat Completions:
+
+```ts
+const completion = await client.chat.completions.create({
+	model: "openai/gpt-5-nano",
+	messages: [{ role: "user", content: "Reply with only: ok" }],
+});
+```
+
+## Notes
+
+- Use AI Stats model ids, including provider prefixes such as `openai/`, `anthropic/`, or `google/`.
+- Server tools use AI Stats tool names such as `ai-stats:web_search`.
+- For Anthropic-native clients, use the [Anthropic SDK](./anthropic-sdk.mdx) guide instead.
+
+## Related
+
+- [Responses API](../../api-reference/endpoint/responses.mdx)
+- [Chat Completions](../../api-reference/endpoint/chat-completions.mdx)
+- [Server Tools](../server-tools/index.mdx)

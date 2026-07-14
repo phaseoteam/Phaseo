@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "frontiercode-diamond",
+  "benchmark_name": "FrontierCode (Diamond)",
+  "category": "code",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": "https://cognition.ai/blog/frontier-code",
+  "total_models": 1
+}

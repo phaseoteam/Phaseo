@@ -76,7 +76,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/deepseek-ai/DeepSeek-V3",
-      "rank": 113
+      "rank": 119
     },
     {
       "benchmark_id": "lmarena-text",
@@ -92,7 +92,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 32
+      "rank": 42
     },
     {
       "benchmark_id": "elimination-game",
@@ -100,7 +100,7 @@
       "is_self_reported": false,
       "other_info": "sigma 0.140; games 1180; avg points 0.518",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 31
+      "rank": 29
     }
   ]
 }

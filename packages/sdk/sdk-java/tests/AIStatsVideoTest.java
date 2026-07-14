@@ -71,7 +71,7 @@ public class AIStatsVideoTest {
 	@Test
 	void videoLifecycleHelpersReturnPayloads() throws Exception {
 		HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
-		server.createContext("/data/models", new HttpHandler() {
+		server.createContext("/gateway/models", new HttpHandler() {
 			@Override
 			public void handle(HttpExchange exchange) throws IOException {
 				byte[] bytes = "{\"models\":[{\"model_id\":\"google/veo-3\",\"status\":\"active\"}]}".getBytes(StandardCharsets.UTF_8);

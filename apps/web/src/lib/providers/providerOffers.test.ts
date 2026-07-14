@@ -34,6 +34,25 @@ describe("providerOffers", () => {
                 offerLabel: "AWS US",
                 offerScope: "regional",
             }),
-        ).toBe("Anthropic on AWS US");
+        ).toBe("Anthropic on AWS (US)");
+    });
+
+    test("formats regional offers with bracketed regions", () => {
+        expect(
+            formatProviderOfferDisplayName({
+                providerId: "anthropic-us",
+                providerName: "Anthropic",
+                offerLabel: "US",
+                offerScope: "regional",
+            }),
+        ).toBe("Anthropic (US)");
+        expect(
+            formatProviderOfferDisplayName({
+                providerId: "openai-eu",
+                providerName: "OpenAI",
+                offerLabel: "EU",
+                offerScope: "regional",
+            }),
+        ).toBe("OpenAI (EU)");
     });
 });

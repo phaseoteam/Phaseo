@@ -371,7 +371,7 @@ function printUsage() {
     console.log("Flags:");
     console.log("  --provider <id>               Provider ID (repeatable or comma-separated)");
     console.log("  --providers <csv>             Provider IDs as CSV");
-    console.log("  --all-providers               Discover all active text.generate providers from /v1/gateway/models");
+    console.log("  --all-providers               Discover all active text.generate providers from /v1/models");
     console.log("  --all-api-providers           Discover all API providers from /v1/providers");
     console.log("  --scenario <id>               Scenario ID (repeatable or comma-separated)");
     console.log("  --scenarios <csv>             Scenario IDs as CSV");
@@ -389,7 +389,7 @@ function printUsage() {
 function resolveGatewayModelsUrl(base: string): string {
     const gatewayUrl = normalizeGatewayUrl(base);
     const normalized = gatewayUrl.endsWith("/") ? gatewayUrl.slice(0, -1) : gatewayUrl;
-    return `${normalized}/gateway/models`;
+    return `${normalized}/models`;
 }
 
 function resolveGatewayProvidersUrl(base: string): string {
@@ -429,7 +429,7 @@ async function discoverAllTextProviders(gatewayUrl: string, apiKey: string): Pro
         });
         const payload = await response.json() as ModelsResponse;
         if (!response.ok) {
-            throw new Error(`Failed to discover providers from /v1/gateway/models (${response.status}): ${JSON.stringify(payload)}`);
+            throw new Error(`Failed to discover providers from /v1/models (${response.status}): ${JSON.stringify(payload)}`);
         }
 
         const models = payload.models ?? [];
@@ -659,7 +659,7 @@ async function main() {
                 providers = await discoverAllTextProviders(gatewayUrl, apiKey);
             } catch (error) {
                 console.warn(
-                    `[live-provider-tests] /v1/gateway/models discovery failed, falling back to Supabase: ${String((error as Error)?.message ?? error)}`
+                    `[live-provider-tests] /v1/models discovery failed, falling back to Supabase: ${String((error as Error)?.message ?? error)}`
                 );
                 providers = await discoverAllTextProvidersFromSupabase();
             }
@@ -670,7 +670,7 @@ async function main() {
         if (args.allApiProviders) {
             throw new Error("No providers resolved. Ensure /v1/providers returns providers or pass --provider.");
         }
-        throw new Error("No providers resolved. Pass --provider or ensure /v1/gateway/models has active text.generate providers.");
+        throw new Error("No providers resolved. Pass --provider or ensure /v1/models has active text.generate providers.");
     }
 
     const env: NodeJS.ProcessEnv = {

@@ -1,0 +1,135 @@
+---
+title: "Web Fetch Server Tool"
+description: "Let models fetch and read specific URLs during a request."
+---
+
+Use `ai-stats:web_fetch` when the model needs to read a known URL, such as a documentation page, article, changelog, or PDF-like text source.
+
+The model decides when to fetch, provides the URL, and receives bounded page text back as tool context.
+
+## How it works
+
+1. Add `{ "type": "ai-stats:web_fetch" }` to `tools`.
+2. The model decides whether it needs to fetch a URL.
+3. AI Stats fetches and extracts the content using the configured engine.
+4. The extracted text, title, URL, and truncation metadata are returned to the model.
+5. The model writes the final response and may fetch more URLs if needed.
+
+## Quick start
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "Summarize https://docs.ai-stats.com/v1/guides/tool-calling" }
+    ],
+    "tools": [
+      { "type": "ai-stats:web_fetch" }
+    ]
+  }'
+```
+
+## Configuration
+
+```json
+{
+  "type": "ai-stats:web_fetch",
+  "parameters": {
+    "engine": "direct",
+    "max_chars": 12000,
+    "allowed_domains": ["docs.ai-stats.com"],
+    "blocked_domains": ["internal.example.com"]
+  }
+}
+```
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `engine` | string | surface-dependent | Fetch engine: `auto`, `native`, `direct`, `exa`, `parallel`, or `firecrawl`. |
+| `max_chars` | integer | `12000` | Maximum extracted characters returned to the model. |
+| `max_content_tokens` | integer | none | Token-style alias used when `max_chars` is omitted. |
+| `allowed_domains` | string[] | none | Only allow fetches from these domains. |
+| `blocked_domains` | string[] | none | Reject fetches from these domains. Alias: `excluded_domains`. |
+
+## Engine selection
+
+| Engine | Behavior |
+| --- | --- |
+| `auto` | Uses Anthropic native fetch on `/v1/messages`; otherwise Exa if configured; otherwise direct gateway fetch. |
+| `direct` | Fetches directly from the gateway runtime and extracts bounded text. |
+| `exa` | Uses Exa content extraction when configured. |
+| `parallel` | Uses Parallel Extract when configured. |
+| `firecrawl` | Uses Firecrawl Scrape when configured. |
+| `native` | Converts to Anthropic native `web_fetch_20260209` on `/v1/messages`. Other surfaces should use `direct` or a managed engine. |
+
+Only HTTP(S) URLs are supported. Direct gateway fetch accepts text-like content types and reduces HTML to plain text before returning it to the model.
+
+## Native Anthropic fetch
+
+```json
+{
+  "model": "claude-sonnet-4.6",
+  "max_tokens": 1024,
+  "messages": [
+    { "role": "user", "content": "Read the docs page and summarize the limits." }
+  ],
+  "tools": [
+    {
+      "type": "ai-stats:web_fetch",
+      "parameters": {
+        "engine": "native",
+        "max_content_tokens": 9000,
+        "allowed_domains": ["docs.ai-stats.com"]
+      }
+    }
+  ],
+  "tool_choice": { "type": "tool", "name": "ai-stats:web_fetch" }
+}
+```
+
+## Tool result
+
+Managed fetch returns a JSON tool result with fields such as:
+
+```json
+{
+  "provider": "fetch",
+  "engine": "direct",
+  "url": "https://docs.ai-stats.com/v1/guides/tool-calling",
+  "final_url": "https://docs.ai-stats.com/v1/guides/tool-calling",
+  "status": 200,
+  "content_type": "text/html",
+  "title": "Tool Calling",
+  "text": "...",
+  "truncated": false,
+  "returned_chars": 8421
+}
+```
+
+Check `truncated` before assuming the model received the full page.
+
+## Usage and pricing
+
+Web fetch calls increment:
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "web_fetch_requests": 1
+    }
+  }
+}
+```
+
+Managed fetch pricing can use `server_tool_web_fetch_requests`. Provider-native fetch usage can use `native_web_fetch_requests` where a model price card defines that meter.
+
+## Related
+
+- [Web Search](./web-search)
+- [Server Tools](./index)
+- [Tool grounding with web fetch](../../cookbook/tool-grounding-with-web-fetch)
+

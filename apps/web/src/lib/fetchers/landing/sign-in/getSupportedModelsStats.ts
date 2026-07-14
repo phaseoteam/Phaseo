@@ -1,6 +1,6 @@
 import { cacheLife, cacheTag } from 'next/cache';
-import { createClient } from '@/utils/supabase/client';
 import { applyHiddenFilter } from '@/lib/fetchers/models/visibility';
+import { createAdminClient } from "@/utils/supabase/admin";
 
 export interface SupportedModelsStats {
     modelsCount: number;
@@ -52,7 +52,7 @@ async function fetchAllRows<T>(
 }
 
 async function fetchStats(includeHidden: boolean): Promise<SupportedModelsStats> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const now = Date.now();
     const cutoff = new Date(now - 90 * 24 * 60 * 60 * 1000).toISOString();
@@ -119,7 +119,7 @@ async function fetchStats(includeHidden: boolean): Promise<SupportedModelsStats>
             apiCount: activeGatewayModels.size,
             recentCount,
         };
-    } catch (err) {
+    } catch {
         // swallow and return defaults; caller will handle fallback behaviour
         // Consider telemetry here
         return defaultStats;
@@ -132,7 +132,9 @@ export async function getSupportedModelsStatsCached(
     "use cache";
 
     cacheLife("days");
+    cacheTag("public-model-catalogue");
     cacheTag("data:sign-in:supported-models-stats");
+    cacheTag("frontend:sign-in-supported-models-stats");
 
     console.log("[fetch] HIT for supported models stats");
     return fetchStats(includeHidden);

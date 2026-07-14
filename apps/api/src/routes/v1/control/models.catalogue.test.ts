@@ -110,7 +110,10 @@ describe("fetchCatalogue", () => {
                             provider_api_model_id: "pam_1",
                             capability_id: "responses",
                             status: "active",
-                            params: { temperature: true },
+                            params: {
+                                temperature: { type: "number", minimum: 0, maximum: 2 },
+                                resolution: ["720p", "1080p"],
+                            },
                             effective_from: null,
                             effective_to: null,
                         },
@@ -145,6 +148,369 @@ describe("fetchCatalogue", () => {
         expect(state.emptyCapabilityInCalled).toBe(false);
         expect(models).toHaveLength(1);
         expect(models[0]?.model_id).toBe("test/model-1");
+        expect(models[0]?.supported_params).toEqual(["resolution", "temperature"]);
+        expect(models[0]?.supported_params_detail).toMatchObject({
+            resolution: {
+                supported: true,
+                values: ["1080p", "720p"],
+                providers: ["openai"],
+            },
+            temperature: {
+                supported: true,
+                type: "number",
+                minimum: 0,
+                maximum: 2,
+                providers: ["openai"],
+            },
+        });
+        expect(models[0]?.providers[0]).toMatchObject({
+            api_provider_id: "openai",
+            params: ["resolution", "temperature"],
+            params_detail: {
+                resolution: {
+                    supported: true,
+                    values: ["720p", "1080p"],
+                },
+            },
+        });
+    });
+
+    it("preserves legacy object-array capability parameter metadata", async () => {
+        const state: QueryState = { emptyCapabilityInCalled: false };
+        const responses: Record<string, QueryResult[]> = {
+            data_models: [{
+                data: [{
+                    model_id: "test/video-model",
+                    name: "Test Video Model",
+                    release_date: null,
+                    deprecation_date: null,
+                    retirement_date: null,
+                    status: "available",
+                    organisation_id: null,
+                    input_types: ["text"],
+                    output_types: ["video"],
+                    organisation: null,
+                }],
+                error: null,
+            }],
+            data_api_provider_models: [{
+                data: [{
+                    provider_api_model_id: "pam_video_1",
+                    provider_id: "runway",
+                    api_model_id: "test/video-model",
+                    model_id: "test/video-model",
+                    provider_model_slug: "test-video-model",
+                    is_active_gateway: true,
+                    routing_status: "active",
+                    input_modalities: ["text"],
+                    output_modalities: ["video"],
+                    effective_from: null,
+                    effective_to: null,
+                }],
+                error: null,
+            }],
+            data_api_provider_model_capabilities: [{
+                data: [{
+                    provider_api_model_id: "pam_video_1",
+                    capability_id: "video.generation",
+                    status: "active",
+                    params: [
+                        {
+                            param_id: "resolution",
+                            type: "enum",
+                            values: ["720p", "1080p"],
+                            default: "720p",
+                        },
+                        {
+                            param_id: "seconds",
+                            type: "integer",
+                            minimum: 5,
+                            maximum: 10,
+                            step: 5,
+                        },
+                    ],
+                    effective_from: null,
+                    effective_to: null,
+                }],
+                error: null,
+            }],
+            data_api_model_aliases: [{ data: [], error: null }],
+            data_api_providers: [{
+                data: [{
+                    api_provider_id: "runway",
+                    api_provider_name: "Runway",
+                    link: null,
+                    country_code: null,
+                    status: "active",
+                    routing_status: "active",
+                }],
+                error: null,
+            }],
+            data_api_pricing_rules: [{ data: [], error: null }],
+        };
+
+        getSupabaseAdminMock.mockReturnValue(buildSupabaseMock(responses, state));
+        const { fetchCatalogue } = await import("./models.catalogue");
+
+        const models = await fetchCatalogue({});
+
+        expect(models).toHaveLength(1);
+        expect(models[0]?.supported_params).toEqual(["resolution", "seconds"]);
+        expect(models[0]?.supported_params_detail).toMatchObject({
+            resolution: {
+                supported: true,
+                type: "enum",
+                values: ["1080p", "720p"],
+                default: "720p",
+                providers: ["runway"],
+            },
+            seconds: {
+                supported: true,
+                type: "integer",
+                minimum: 5,
+                maximum: 10,
+                step: 5,
+                providers: ["runway"],
+            },
+        });
+        expect(models[0]?.providers[0]?.params_detail).toMatchObject({
+            resolution: {
+                supported: true,
+                type: "enum",
+                values: ["720p", "1080p"],
+            },
+        });
+    });
+
+    it("matches public and route-style video filters to catalogue video.generate capabilities", async () => {
+        const buildResponses = (): { state: QueryState; responses: Record<string, QueryResult[]> } => ({
+            state: { emptyCapabilityInCalled: false },
+            responses: {
+                data_models: [{
+                    data: [{
+                        model_id: "test/mixed-video-model",
+                        name: "Mixed Video Model",
+                        release_date: null,
+                        deprecation_date: null,
+                        retirement_date: null,
+                        status: "available",
+                        organisation_id: null,
+                        input_types: ["text"],
+                        output_types: ["text", "video"],
+                        organisation: null,
+                    }],
+                    error: null,
+                }],
+                data_api_provider_models: [{
+                    data: [{
+                        provider_api_model_id: "pam_mixed_video_1",
+                        provider_id: "openai",
+                        api_model_id: "test/mixed-video-model",
+                        model_id: "test/mixed-video-model",
+                        provider_model_slug: "mixed-video-model",
+                        is_active_gateway: true,
+                        routing_status: "active",
+                        input_modalities: ["text"],
+                        output_modalities: ["text", "video"],
+                        effective_from: null,
+                        effective_to: null,
+                    }],
+                    error: null,
+                }],
+                data_api_provider_model_capabilities: [{
+                    data: [
+                        {
+                            provider_api_model_id: "pam_mixed_video_1",
+                            capability_id: "responses",
+                            status: "active",
+                            params: { temperature: true },
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                        {
+                            provider_api_model_id: "pam_mixed_video_1",
+                            capability_id: "video.generate",
+                            status: "active",
+                            params: {
+                                duration: { type: "enum", values: [4, 8, 12], aliases: ["duration_seconds"] },
+                                resolution: { type: "enum", values: ["720p", "1080p"], aliases: ["size"] },
+                            },
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                    ],
+                    error: null,
+                }],
+                data_api_model_aliases: [{ data: [], error: null }],
+                data_api_providers: [{
+                    data: [{
+                        api_provider_id: "openai",
+                        api_provider_name: "OpenAI",
+                        link: null,
+                        country_code: null,
+                        status: "active",
+                        routing_status: "active",
+                    }],
+                    error: null,
+                }],
+                data_api_pricing_rules: [{ data: [], error: null }],
+            },
+        });
+
+        const { fetchCatalogue } = await import("./models.catalogue");
+
+        for (const endpoint of ["video.generation", "videos", "/v1/videos"]) {
+            const { state, responses } = buildResponses();
+            getSupabaseAdminMock.mockReturnValueOnce(buildSupabaseMock(responses, state));
+
+            const models = await fetchCatalogue({ endpoints: [endpoint] });
+
+            expect(models).toHaveLength(1);
+            expect(models[0]?.endpoints).toEqual(["video.generate"]);
+            expect(models[0]?.supported_params).toEqual(["duration", "resolution"]);
+            expect(models[0]?.supported_params_detail).toMatchObject({
+                duration: {
+                    supported: true,
+                    type: "enum",
+                    values: [12, 4, 8],
+                    aliases: ["duration_seconds"],
+                    providers: ["openai"],
+                },
+                resolution: {
+                    supported: true,
+                    type: "enum",
+                    values: ["1080p", "720p"],
+                    aliases: ["size"],
+                    providers: ["openai"],
+                },
+            });
+            expect(models[0]?.providers[0]).toMatchObject({
+                api_provider_id: "openai",
+                endpoints: ["video.generate"],
+                params: ["duration", "resolution"],
+            });
+        }
+
+        for (const param of ["duration_seconds", "size"]) {
+            const { state, responses } = buildResponses();
+            getSupabaseAdminMock.mockReturnValueOnce(buildSupabaseMock(responses, state));
+
+            const models = await fetchCatalogue({ endpoints: ["video.generate"], params: [param] });
+
+            expect(models).toHaveLength(1);
+            expect(models[0]?.model_id).toBe("test/mixed-video-model");
+            expect(models[0]?.supported_params).toEqual(["duration", "resolution"]);
+        }
+    });
+
+    it("preserves voice and format capability metadata for audio speech models", async () => {
+        const state: QueryState = { emptyCapabilityInCalled: false };
+        const responses: Record<string, QueryResult[]> = {
+            data_models: [{
+                data: [{
+                    model_id: "x-ai/grok-tts",
+                    name: "Grok TTS",
+                    release_date: null,
+                    deprecation_date: null,
+                    retirement_date: null,
+                    status: "available",
+                    organisation_id: null,
+                    input_types: ["text"],
+                    output_types: ["audio_tts"],
+                    organisation: null,
+                }],
+                error: null,
+            }],
+            data_api_provider_models: [{
+                data: [{
+                    provider_api_model_id: "pam_voice_1",
+                    provider_id: "x-ai",
+                    api_model_id: "x-ai/grok-tts",
+                    model_id: "x-ai/grok-tts",
+                    provider_model_slug: "grok-tts",
+                    is_active_gateway: true,
+                    routing_status: "active",
+                    input_modalities: ["text"],
+                    output_modalities: ["audio"],
+                    effective_from: null,
+                    effective_to: null,
+                }],
+                error: null,
+            }],
+            data_api_provider_model_capabilities: [{
+                data: [{
+                    provider_api_model_id: "pam_voice_1",
+                    capability_id: "audio/speech",
+                    status: "active",
+                    params: [
+                        {
+                            param_id: "voice",
+                            type: "enum",
+                            values: ["aurora", "cedar", "orion"],
+                            default: "aurora",
+                        },
+                        {
+                            param_id: "response_format",
+                            type: "enum",
+                            values: ["mp3", "wav", "opus"],
+                            default: "mp3",
+                        },
+                    ],
+                    effective_from: null,
+                    effective_to: null,
+                }],
+                error: null,
+            }],
+            data_api_model_aliases: [{ data: [], error: null }],
+            data_api_providers: [{
+                data: [{
+                    api_provider_id: "x-ai",
+                    api_provider_name: "xAI",
+                    link: null,
+                    country_code: null,
+                    status: "active",
+                    routing_status: "active",
+                }],
+                error: null,
+            }],
+            data_api_pricing_rules: [{ data: [], error: null }],
+        };
+
+        getSupabaseAdminMock.mockReturnValue(buildSupabaseMock(responses, state));
+        const { fetchCatalogue } = await import("./models.catalogue");
+
+        const models = await fetchCatalogue({ endpoints: ["audio/speech"] as any });
+
+        expect(models).toHaveLength(1);
+        expect(models[0]?.supported_params).toEqual(["response_format", "voice"]);
+        expect(models[0]?.supported_params_detail).toMatchObject({
+            voice: {
+                supported: true,
+                type: "enum",
+                values: ["aurora", "cedar", "orion"],
+                default: "aurora",
+                providers: ["x-ai"],
+            },
+            response_format: {
+                supported: true,
+                type: "enum",
+                values: ["mp3", "opus", "wav"],
+                default: "mp3",
+                providers: ["x-ai"],
+            },
+        });
+        expect(models[0]?.providers[0]?.params_detail).toMatchObject({
+            voice: {
+                supported: true,
+                type: "enum",
+                values: ["aurora", "cedar", "orion"],
+            },
+            response_format: {
+                supported: true,
+                type: "enum",
+                values: ["mp3", "wav", "opus"],
+            },
+        });
     });
 
     it("falls back when capability effective window columns are missing from the schema", async () => {
@@ -1987,7 +2353,7 @@ describe("fetchCatalogue", () => {
         });
     });
 
-    it("forces batch capability mappings into coming_soon", async () => {
+    it("surfaces active batch capability mappings with supported parameter metadata", async () => {
         const state: QueryState = { emptyCapabilityInCalled: false };
         const responses: Record<string, QueryResult[]> = {
             data_models: [{
@@ -2026,7 +2392,18 @@ describe("fetchCatalogue", () => {
                     provider_api_model_id: "pam_batch",
                     capability_id: "batch",
                     status: "active",
-                    params: {},
+                    params: {
+                        endpoint: {
+                            type: "enum",
+                            values: ["/v1/responses", "/v1/chat/completions"],
+                            default: "/v1/responses",
+                        },
+                        completion_window: {
+                            type: "enum",
+                            values: ["24h"],
+                            default: "24h",
+                        },
+                    },
                     effective_from: null,
                     effective_to: null,
                 }],
@@ -2050,17 +2427,150 @@ describe("fetchCatalogue", () => {
         getSupabaseAdminMock.mockReturnValue(buildSupabaseMock(responses, state));
         const { fetchCatalogue } = await import("./models.catalogue");
 
-        const models = await fetchCatalogue({
-            availability: "all",
-            capabilityStatuses: ["coming_soon"],
-        });
+        const models = await fetchCatalogue({ endpoints: ["batch"] });
 
         expect(models).toHaveLength(1);
         expect(models[0]?.providers[0]).toMatchObject({
-            capability_status: "coming_soon",
-            availability_status: "coming_soon",
-            availability_reason: "coming_soon",
+            capability_status: "active",
+            availability_status: "active",
+            availability_reason: "active",
+            params: ["completion_window", "endpoint"],
+            params_detail: {
+                endpoint: {
+                    supported: true,
+                    type: "enum",
+                    values: ["/v1/responses", "/v1/chat/completions"],
+                    default: "/v1/responses",
+                },
+                completion_window: {
+                    supported: true,
+                    type: "enum",
+                    values: ["24h"],
+                    default: "24h",
+                },
+            },
         });
-        expect(models[0]?.availability.status).toBe("coming_soon");
+        expect(models[0]?.supported_params).toEqual(["completion_window", "endpoint"]);
+        expect(models[0]?.supported_params_detail).toMatchObject({
+            endpoint: {
+                supported: true,
+                type: "enum",
+                values: ["/v1/chat/completions", "/v1/responses"],
+                default: "/v1/responses",
+                providers: ["openai"],
+            },
+            completion_window: {
+                supported: true,
+                type: "enum",
+                values: ["24h"],
+                default: "24h",
+                providers: ["openai"],
+            },
+        });
+        expect(models[0]?.availability.status).toBe("active");
+    });
+
+    it("matches route-style batch endpoint filters to catalogue batch capabilities", async () => {
+        const buildResponses = (): { state: QueryState; responses: Record<string, QueryResult[]> } => ({
+            state: { emptyCapabilityInCalled: false },
+            responses: {
+                data_models: [{
+                    data: [{
+                        model_id: "test/model-batch-route",
+                        name: "Batch Route Model",
+                        release_date: null,
+                        deprecation_date: null,
+                        retirement_date: null,
+                        status: "active",
+                        organisation_id: null,
+                        input_types: ["text"],
+                        output_types: ["text"],
+                        organisation: null,
+                    }],
+                    error: null,
+                }],
+                data_api_provider_models: [{
+                    data: [{
+                        provider_api_model_id: "pam_batch_route",
+                        provider_id: "openai",
+                        api_model_id: "test/model-batch-route",
+                        model_id: "test/model-batch-route",
+                        provider_model_slug: "batch-route-model",
+                        is_active_gateway: true,
+                        routing_status: "active",
+                        input_modalities: ["text"],
+                        output_modalities: ["text"],
+                        effective_from: null,
+                        effective_to: null,
+                    }],
+                    error: null,
+                }],
+                data_api_provider_model_capabilities: [{
+                    data: [{
+                        provider_api_model_id: "pam_batch_route",
+                        capability_id: "batch",
+                        status: "active",
+                        params: {
+                            endpoint: {
+                                type: "enum",
+                                values: ["/v1/responses", "/v1/chat/completions"],
+                                default: "/v1/responses",
+                            },
+                            completion_window: {
+                                type: "enum",
+                                values: ["24h"],
+                                default: "24h",
+                            },
+                        },
+                        effective_from: null,
+                        effective_to: null,
+                    }],
+                    error: null,
+                }],
+                data_api_model_aliases: [{ data: [], error: null }],
+                data_api_providers: [{
+                    data: [{
+                        api_provider_id: "openai",
+                        api_provider_name: "OpenAI",
+                        link: null,
+                        country_code: null,
+                        status: "active",
+                        routing_status: "active",
+                    }],
+                    error: null,
+                }],
+                data_api_pricing_rules: [{ data: [], error: null }],
+            },
+        });
+
+        const { fetchCatalogue } = await import("./models.catalogue");
+
+        for (const endpoint of ["/v1/batches", "batches"]) {
+            const { state, responses } = buildResponses();
+            getSupabaseAdminMock.mockReturnValueOnce(buildSupabaseMock(responses, state));
+            const models = await fetchCatalogue({ endpoints: [endpoint] });
+            expect(models).toHaveLength(1);
+            expect(models[0]).toMatchObject({
+                model_id: "test/model-batch-route",
+                endpoints: ["batch"],
+                supported_params: ["completion_window", "endpoint"],
+                supported_params_detail: {
+                    endpoint: {
+                        supported: true,
+                        type: "enum",
+                        values: ["/v1/chat/completions", "/v1/responses"],
+                        default: "/v1/responses",
+                        providers: ["openai"],
+                    },
+                    completion_window: {
+                        supported: true,
+                        type: "enum",
+                        values: ["24h"],
+                        default: "24h",
+                        providers: ["openai"],
+                    },
+                },
+            });
+        }
     });
 });

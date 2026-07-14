@@ -41,7 +41,11 @@ import {
 	type ProviderMetadataEntry,
 } from "@/app/(dashboard)/gateway/usage/server-actions";
 import { cn } from "@/lib/utils";
-import { extractUsageMeters, formatUsageNumber } from "./usageMeters";
+import {
+	buildUsageFromNormalizedRequestFields,
+	extractUsageMeters,
+	formatUsageNumber,
+} from "./usageMeters";
 import {
 	DetailKeyValueGrid,
 	DetailMetricTile,
@@ -67,6 +71,7 @@ interface RequestDetailDialogProps {
 	providerName?: string | null;
 	providerNames?: Map<string, string>;
 	providerMetadata?: Map<string, ProviderMetadataEntry>;
+	headerActions?: React.ReactNode;
 }
 
 type ProviderAttemptRow = RequestRow["provider_attempts"][number];
@@ -821,13 +826,16 @@ export default function RequestDetailDialog({
 	providerName,
 	providerNames,
 	providerMetadata,
+	headerActions,
 }: RequestDetailDialogProps) {
+	const searchParams = useSearchParams();
+
 	if (!request) return null;
 
-	const searchParams = useSearchParams();
 	const metadata = modelMetadata ?? new Map();
-	const usageMeters = extractUsageMeters(request.usage);
-	const usageSummary = buildUsageSummary(request.usage);
+	const normalizedUsage = buildUsageFromNormalizedRequestFields(request.usage, request);
+	const usageMeters = extractUsageMeters(normalizedUsage);
+	const usageSummary = buildUsageSummary(normalizedUsage);
 	const timingLatency = Number(request.latency_ms ?? 0) || 0;
 	const timingGeneration = Number(request.generation_ms ?? 0) || 0;
 	const requestedModelId = getRequestedModelId(request);
@@ -1395,6 +1403,11 @@ export default function RequestDetailDialog({
 					providerName={providerName}
 					providerMetadata={providerMetadata}
 				/>
+				{headerActions ? (
+					<div className="border-b bg-muted/20 px-5 py-2 sm:px-6">
+						{headerActions}
+					</div>
+				) : null}
 
 				<div className="max-h-[calc(90vh-110px)] overflow-y-auto p-5 sm:p-6">
 					<div className="space-y-6">

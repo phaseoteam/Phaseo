@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { getModelCollections } from "@/lib/fetchers/collections/getCollections";
+import { fetchFrontendModelCollections } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import CollectionsDisplay from "@/components/(data)/models/Collections/CollectionsDisplay";
 
 export const metadata: Metadata = {
@@ -34,7 +34,7 @@ function CollectionSkeleton() {
 }
 
 async function CollectionsPageContent() {
-	const collections = await getModelCollections(10);
+	const collections = await fetchFrontendModelCollections(10);
 	return <CollectionsDisplay collections={collections} />;
 }
 

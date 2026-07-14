@@ -60,6 +60,7 @@ import { CLOUDFLARE_OPENAI_COMPAT_CONFIGS } from "../cloudflare/config";
 import { LIQUID_AI_OPENAI_COMPAT_CONFIGS } from "../liquid-ai/config";
 import { TENSORIX_OPENAI_COMPAT_CONFIGS } from "../tensorix/config";
 import { OVHCLOUD_OPENAI_COMPAT_CONFIGS } from "../ovhcloud/config";
+import { THINKING_MACHINES_OPENAI_COMPAT_CONFIGS } from "../thinking-machines/config";
 
 export const OPENAI_COMPAT_CONFIG = {
 	...OPENAI_OPENAI_COMPAT_CONFIGS,
@@ -123,4 +124,5 @@ export const OPENAI_COMPAT_CONFIG = {
 	...LIQUID_AI_OPENAI_COMPAT_CONFIGS,
 	...TENSORIX_OPENAI_COMPAT_CONFIGS,
 	...OVHCLOUD_OPENAI_COMPAT_CONFIGS,
+	...THINKING_MACHINES_OPENAI_COMPAT_CONFIGS,
 } satisfies Record<string, OpenAICompatConfig>;

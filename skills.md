@@ -87,7 +87,7 @@ Implement these modules (or equivalents):
 1. `config`: base URL, auth source, attribution headers
 2. `auth`: token provider (API key or OAuth), token refresh hook if OAuth
 3. `gatewayClient`: typed request wrapper + retries + error normalization
-4. `modelCatalog`: fetch + normalize model metadata from `/models` and `/gateway/models`
+4. `modelCatalog`: fetch + normalize model metadata from `/models`
 5. `capabilityRouter`: pick valid models by surface/modality
 6. `chatOrchestrator`: Responses API conversation state (`previous_response_id`)
 7. `asyncJobs`: poll/cancel/download flow for video/music jobs
@@ -99,7 +99,6 @@ Implement these modules (or equivalents):
 
 - `GET /health`
 - `GET /models`
-- `GET /gateway/models`
 - `GET /providers`
 - `GET /generations?id=<request_id>` (request lookup)
 
@@ -137,13 +136,12 @@ Implement these modules (or equivalents):
 
 ### Discovery sequence
 
-1. Fetch `GET /models` for broad catalog.
-2. Fetch `GET /gateway/models` for currently servable gateway set.
-3. Normalize identifiers:
+1. Fetch `GET /models` for the current gateway-served catalog.
+2. Normalize identifiers:
   - prioritize `id`
   - then `model_id`
   - then `model`
-4. Deduplicate and keep a single canonical model list for UI and routing.
+3. Deduplicate and keep a single canonical model list for UI and routing.
 
 ### Capability indexing
 
@@ -174,7 +172,7 @@ For each operation, pick model candidates in this order:
 Implement this exact flow for a robust chat product:
 
 1. On load:
-  - fetch `/models` and `/gateway/models`
+  - fetch `/models`
   - build model dropdown
 2. On first user prompt:
   - call `POST /responses` with:
@@ -360,24 +358,23 @@ At integration boundary, normalize to:
 
 1. `GET /health` success
 2. `GET /models` success
-3. `GET /gateway/models` success
-4. Model normalization produces non-empty list
+3. Model normalization produces non-empty list
 
 ### Text
 
-5. `POST /responses` success with selected model
-6. Follow-up request with `previous_response_id` success
-7. `POST /chat/completions` success for compatibility path
+4. `POST /responses` success with selected model
+5. Follow-up request with `previous_response_id` success
+6. `POST /chat/completions` success for compatibility path
 
 ### Additional modality checks (as in scope)
 
-8. Embeddings success
-9. Moderations success
-10. At least one image surface success
-11. At least one audio surface success
-12. OCR success
-13. Video create + status poll path works
-14. Music create + status poll path works
+7. Embeddings success
+8. Moderations success
+9. At least one image surface success
+10. At least one audio surface success
+11. OCR success
+12. Video create + status poll path works
+13. Music create + status poll path works
 
 ## Definition of Done
 

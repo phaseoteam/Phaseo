@@ -9,14 +9,20 @@ import { pickFirstFiniteNumber, resolveCanonicalTokenUsage, resolveRequestCountU
 
 const KNOWN_METERS = new Set<string>([
     "input_tokens",
-    "input_characters",
-    "input_text_tokens", "input_image_tokens", "input_audio_tokens", "input_video_tokens",
+    "input_characters", "input_pages",
+    "input_text_tokens", "input_image_tokens", "input_audio_minutes", "input_audio_tokens", "input_video_tokens",
     "output_tokens",
     "output_text_tokens", "output_reasoning_tokens", "output_image_tokens", "output_audio_tokens", "output_video_tokens",
     "output_image", "output_video", "output_video_seconds",
-    "cached_write_text_tokens", "cached_write_image_tokens", "cached_write_audio_tokens", "cached_write_video_tokens",
+    "implicit_cached_input_text_tokens",
+    "cached_write_text_tokens", "cached_write_text_tokens_5m", "cached_write_text_tokens_1h",
+    "cached_write_image_tokens", "cached_write_audio_tokens", "cached_write_video_tokens",
     "cached_read_text_tokens", "cached_read_image_tokens", "cached_read_video_tokens", "cached_read_audio_tokens",
-    "embedding_tokens", "bfl_credits", "requests",
+    "embedding_tokens", "bfl_credits",
+    "server_tool_web_search_requests", "server_tool_web_search_extra_results", "server_tool_web_fetch_requests", "server_tool_advisor_requests",
+    "server_tool_image_generation_requests", "server_tool_apply_patch_requests",
+    "native_web_search_requests", "native_web_fetch_requests",
+    "requests",
 ]);
 
 function isPricingDebugEnabled(): boolean {
@@ -180,6 +186,8 @@ function splitUsage(usageRaw: any, card: PriceCard): { meters: Record<string, nu
     const cachedReadTokens = pickFirstFiniteNumber(usageRaw, [
         "cached_read_text_tokens",
         "cache_read_input_tokens",
+        "cached_tokens",
+        "prompt_cache_hit_tokens",
         "cachedInputTokens",
         "cachedContentTokenCount",
         "input_tokens_details.cached_tokens",
@@ -189,9 +197,27 @@ function splitUsage(usageRaw: any, card: PriceCard): { meters: Record<string, nu
     const cachedWriteTokens = pickFirstFiniteNumber(usageRaw, [
         "cached_write_text_tokens",
         "cache_creation_input_tokens",
+        "input_tokens_details.cache_creation_input_tokens",
+        "prompt_tokens_details.cache_creation_input_tokens",
+        "input_tokens_details.cache_creation_tokens",
+        "prompt_tokens_details.cache_creation_tokens",
         "_ext.cachedWriteTokens",
         "output_tokens_details.cached_tokens",
         "completion_tokens_details.cached_tokens",
+    ]);
+    const cachedWrite5mTokens = pickFirstFiniteNumber(usageRaw, [
+        "cached_write_text_tokens_5m",
+        "_ext.cachedWriteTokens5m",
+        "cache_creation.ephemeral_5m_input_tokens",
+        "cache_creation_5m_input_tokens",
+        "cache_creation_ephemeral_5m_input_tokens",
+    ]);
+    const cachedWrite1hTokens = pickFirstFiniteNumber(usageRaw, [
+        "cached_write_text_tokens_1h",
+        "_ext.cachedWriteTokens1h",
+        "cache_creation.ephemeral_1h_input_tokens",
+        "cache_creation_1h_input_tokens",
+        "cache_creation_ephemeral_1h_input_tokens",
     ]);
     const reasoningTokens = pickFirstFiniteNumber(usageRaw, [
         "output_reasoning_tokens",
@@ -203,14 +229,136 @@ function splitUsage(usageRaw: any, card: PriceCard): { meters: Record<string, nu
     if (typeof cachedReadTokens === "number" && meters.cached_read_text_tokens == null) {
         meters.cached_read_text_tokens = cachedReadTokens;
     }
+    if (
+        typeof cachedReadTokens === "number" &&
+        card.rules.some((rule) => rule.meter === "implicit_cached_input_text_tokens") &&
+        meters.implicit_cached_input_text_tokens == null
+    ) {
+        meters.implicit_cached_input_text_tokens = cachedReadTokens;
+    }
     if (typeof cachedWriteTokens === "number" && meters.cached_write_text_tokens == null) {
         meters.cached_write_text_tokens = cachedWriteTokens;
+    }
+    if (typeof cachedWrite5mTokens === "number" && meters.cached_write_text_tokens_5m == null) {
+        meters.cached_write_text_tokens_5m = cachedWrite5mTokens;
+    }
+    if (typeof cachedWrite1hTokens === "number" && meters.cached_write_text_tokens_1h == null) {
+        meters.cached_write_text_tokens_1h = cachedWrite1hTokens;
+    }
+    if (
+        meters.cached_write_text_tokens == null &&
+        (typeof cachedWrite5mTokens === "number" || typeof cachedWrite1hTokens === "number")
+    ) {
+        meters.cached_write_text_tokens = (cachedWrite5mTokens ?? 0) + (cachedWrite1hTokens ?? 0);
+    }
+    const hasSplitCachedWriteRules = card.rules.some((rule) =>
+        rule.meter === "cached_write_text_tokens_5m" ||
+        rule.meter === "cached_write_text_tokens_1h"
+    );
+    if (
+        hasSplitCachedWriteRules &&
+        typeof cachedWriteTokens === "number" &&
+        typeof cachedWrite5mTokens !== "number" &&
+        typeof cachedWrite1hTokens !== "number"
+    ) {
+        const ttlHint = String(
+            usageRaw?.cache_ttl ??
+            usageRaw?.cache_ttl_seconds ??
+            usageRaw?.context?.cache_ttl ??
+            "5m",
+        ).trim().toLowerCase();
+        if (ttlHint === "1h" || ttlHint === "60m" || ttlHint === "3600") {
+            meters.cached_write_text_tokens_1h = cachedWriteTokens;
+        } else {
+            meters.cached_write_text_tokens_5m = cachedWriteTokens;
+        }
+    }
+    if (
+        hasSplitCachedWriteRules &&
+        (
+            (meters.cached_write_text_tokens_5m ?? 0) > 0 ||
+            (meters.cached_write_text_tokens_1h ?? 0) > 0
+        )
+    ) {
+        delete meters.cached_write_text_tokens;
     }
     if (typeof reasoningTokens === "number" && meters.output_reasoning_tokens == null) {
         meters.output_reasoning_tokens = reasoningTokens;
     }
     if (typeof requests === "number" && meters.requests == null) {
         meters.requests = requests;
+    }
+    const webSearchRequests = pickFirstFiniteNumber(usageRaw, [
+        "server_tool_web_search_requests",
+    ]);
+    const webSearchExtraResults = pickFirstFiniteNumber(usageRaw, [
+        "server_tool_web_search_extra_results",
+    ]);
+    const webFetchRequests = pickFirstFiniteNumber(usageRaw, [
+        "server_tool_web_fetch_requests",
+    ]);
+    const advisorRequests = pickFirstFiniteNumber(usageRaw, [
+        "server_tool_advisor_requests",
+        "server_tool_use.advisor_requests",
+        "serverToolUse.advisor_requests",
+    ]);
+    const imageGenerationRequests = pickFirstFiniteNumber(usageRaw, [
+        "server_tool_image_generation_requests",
+        "server_tool_use.image_generation_requests",
+        "serverToolUse.image_generation_requests",
+    ]);
+    const applyPatchRequests = pickFirstFiniteNumber(usageRaw, [
+        "server_tool_apply_patch_requests",
+        "server_tool_use.apply_patch_requests",
+        "serverToolUse.apply_patch_requests",
+    ]);
+    const nativeWebSearchRequests = pickFirstFiniteNumber(usageRaw, [
+        "native_web_search_requests",
+        "native_web_searches",
+        "server_tool_use.web_search_requests",
+        "serverToolUse.web_search_requests",
+    ]);
+    const nativeWebFetchRequests = pickFirstFiniteNumber(usageRaw, [
+        "native_web_fetch_requests",
+        "native_web_fetches",
+        "server_tool_use.web_fetch_requests",
+        "serverToolUse.web_fetch_requests",
+    ]);
+    if (typeof webSearchRequests === "number" && meters.server_tool_web_search_requests == null) {
+        meters.server_tool_web_search_requests = webSearchRequests;
+    }
+    if (typeof webSearchExtraResults === "number" && meters.server_tool_web_search_extra_results == null) {
+        meters.server_tool_web_search_extra_results = webSearchExtraResults;
+    }
+    if (typeof webFetchRequests === "number" && meters.server_tool_web_fetch_requests == null) {
+        meters.server_tool_web_fetch_requests = webFetchRequests;
+    }
+    if (typeof advisorRequests === "number" && meters.server_tool_advisor_requests == null) {
+        meters.server_tool_advisor_requests = advisorRequests;
+    }
+    if (typeof imageGenerationRequests === "number" && meters.server_tool_image_generation_requests == null) {
+        meters.server_tool_image_generation_requests = imageGenerationRequests;
+    }
+    if (typeof applyPatchRequests === "number" && meters.server_tool_apply_patch_requests == null) {
+        meters.server_tool_apply_patch_requests = applyPatchRequests;
+    }
+    const hasManagedWebSearchMeter =
+        typeof pickFirstFiniteNumber(usageRaw, ["server_tool_web_search_requests"]) === "number";
+    const hasManagedWebFetchMeter =
+        typeof pickFirstFiniteNumber(usageRaw, ["server_tool_web_fetch_requests"]) === "number";
+    if (
+        !hasManagedWebSearchMeter &&
+        typeof nativeWebSearchRequests === "number" &&
+        meters.native_web_search_requests == null
+    ) {
+        meters.native_web_search_requests = nativeWebSearchRequests;
+    }
+    if (
+        !hasManagedWebFetchMeter &&
+        typeof nativeWebFetchRequests === "number" &&
+        meters.native_web_fetch_requests == null
+    ) {
+        meters.native_web_fetch_requests = nativeWebFetchRequests;
     }
 
     const inputTextTokens = meters.input_text_tokens;
@@ -259,8 +407,11 @@ function splitUsage(usageRaw: any, card: PriceCard): { meters: Record<string, nu
     // Anthropic 1M pricing thresholds are based on input + cache read + cache write tokens.
     context.long_context_input_tokens =
         (meters.input_text_tokens ?? 0) +
+        (meters.implicit_cached_input_text_tokens ?? 0) +
         (meters.cached_read_text_tokens ?? 0) +
-        (meters.cached_write_text_tokens ?? 0);
+        (meters.cached_write_text_tokens ?? 0) +
+        (meters.cached_write_text_tokens_5m ?? 0) +
+        (meters.cached_write_text_tokens_1h ?? 0);
 
     logPricingDebug("splitUsage_output", {
         meters,
@@ -295,6 +446,37 @@ function priceWithRule(qty: number, rule: PriceRule) {
         lineCostUsd: formatUsdFromNanosExact(lineNanos),
         lineNanos,
     };
+}
+
+function nativeToolFallbackRule(card: PriceCard, meter: PricingDimensionKey): PriceRule | null {
+    const provider = String(card.provider ?? "").toLowerCase();
+    if (meter === "native_web_search_requests" && (provider === "openai" || provider === "anthropic")) {
+        return {
+            pricing_plan: "standard",
+            meter,
+            unit: "request",
+            unit_size: 1,
+            price_per_unit: "0.01",
+            currency: "USD",
+            match: [],
+            priority: -1000,
+            id: `${provider}_native_web_search_default`,
+        };
+    }
+    if (meter === "native_web_fetch_requests" && provider === "anthropic") {
+        return {
+            pricing_plan: "standard",
+            meter,
+            unit: "request",
+            unit_size: 1,
+            price_per_unit: "0",
+            currency: "USD",
+            match: [],
+            priority: -1000,
+            id: "anthropic_native_web_fetch_default",
+        };
+    }
+    return null;
 }
 
 /** Main public API -- build a full pricing summary from raw usage. */
@@ -348,6 +530,19 @@ export function computeBillSummary(
                     requestedPricingPlan: pricingPlan,
                     fallbackPricingPlan: "standard",
                     candidateRuleIds: candidates.map((r) => r.id),
+                });
+            }
+        }
+        if (!candidates.length) {
+            const nativeFallback = nativeToolFallbackRule(card, dim);
+            if (nativeFallback) {
+                candidates = [nativeFallback];
+                resolvedPlan = nativeFallback.pricing_plan;
+                logPricingDebug("meter_native_tool_default_pricing", {
+                    meter: dim,
+                    provider: card.provider,
+                    model: card.model,
+                    price_per_unit: nativeFallback.price_per_unit,
                 });
             }
         }
@@ -500,4 +695,3 @@ export function computeBill(
         },
     };
 }
-

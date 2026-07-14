@@ -84,7 +84,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-vision-instruct",
-      "rank": 63
+      "rank": 64
     },
     {
       "benchmark_id": "mmbench",
@@ -100,7 +100,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-vision-instruct",
-      "rank": 123
+      "rank": 124
     },
     {
       "benchmark_id": "pope",

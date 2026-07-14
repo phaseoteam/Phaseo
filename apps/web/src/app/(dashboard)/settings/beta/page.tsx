@@ -1,20 +1,13 @@
 import { Badge } from "@/components/ui/badge";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import BetaSettingsClient from "@/components/(gateway)/settings/beta/BetaSettingsClient";
-import { createClient } from "@/utils/supabase/server";
-import {
-	EMPTY_STATSIG_PROFILE,
-	WEB_BETA_FEATURES,
-	normalizeBetaFeatures,
-} from "@/lib/statsig/shared";
+import { WEB_BETA_FEATURES } from "@/lib/statsig/shared";
+import { fetchSettingsBetaInitialData } from "@/lib/fetchers/internal/fetchSettingsBetaInitialData";
 
 export default async function BetaSettingsPage() {
-	const supabase = await createClient();
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
+	const initialData = await fetchSettingsBetaInitialData();
 
-	if (!user) {
+	if (!initialData.signedIn) {
 		return (
 			<div className="space-y-6">
 				<SettingsPageHeader
@@ -27,15 +20,6 @@ export default async function BetaSettingsPage() {
 				</div>
 			</div>
 		);
-	}
-
-	const { data: profileRow, error } = await supabase
-		.from("users")
-		.select("beta_opt_in, beta_features")
-		.eq("user_id", user.id)
-		.maybeSingle();
-	if (error) {
-		throw new Error(`Failed to load beta preferences for ${user.id}: ${error.message}`);
 	}
 
 	return (
@@ -51,12 +35,7 @@ export default async function BetaSettingsPage() {
 				</div>
 			) : (
 				<BetaSettingsClient
-					initialProfile={{
-						betaOptIn: Boolean(profileRow?.beta_opt_in),
-						betaFeatures: normalizeBetaFeatures(
-							profileRow?.beta_features ?? EMPTY_STATSIG_PROFILE.betaFeatures
-						),
-					}}
+					initialProfile={initialData.profile}
 					features={WEB_BETA_FEATURES}
 				/>
 			)}

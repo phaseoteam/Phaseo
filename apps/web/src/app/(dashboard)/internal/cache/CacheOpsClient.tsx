@@ -9,12 +9,14 @@ import { Textarea } from "@/components/ui/textarea";
 import {
 	revalidateAppsDataAction,
 	revalidateBenchmarkScopeAction,
+	revalidateCountryDataAction,
 	revalidateCustomScopeAction,
 	revalidateGlobalModelAndProviderAction,
 	revalidateLandingDataAction,
 	revalidateModelScopeAction,
 	revalidateModelsGlobalDataAction,
 	revalidateOrganisationScopeAction,
+	revalidateProfileDataAction,
 	revalidateProviderScopeAction,
 	revalidateProvidersGlobalApiAction,
 	revalidatePublicModelCatalogueAction,
@@ -36,6 +38,8 @@ export default function CacheOpsClient() {
 	const [providerId, setProviderId] = useState("");
 	const [organisationId, setOrganisationId] = useState("");
 	const [appId, setAppId] = useState("");
+	const [countryIso, setCountryIso] = useState("");
+	const [profileSlug, setProfileSlug] = useState("");
 	const [customTagsText, setCustomTagsText] = useState("");
 	const [customPathsText, setCustomPathsText] = useState("");
 
@@ -348,6 +352,74 @@ export default function CacheOpsClient() {
 							onClick={() => runAction(() => revalidateAppsDataAction(appId))}
 						>
 							Revalidate This App
+						</Button>
+					</div>
+				</CardContent>
+			</Card>
+
+			<Card>
+				<CardHeader>
+					<CardTitle>Countries</CardTitle>
+					<CardDescription>
+						Revalidate country catalogue surfaces, or one country by ISO code.
+					</CardDescription>
+				</CardHeader>
+				<CardContent className="space-y-3">
+					<Input
+						value={countryIso}
+						onChange={(event) => setCountryIso(event.target.value)}
+						placeholder="Optional ISO code (leave empty for global)"
+					/>
+					<div className="flex flex-wrap gap-2">
+						<Button
+							type="button"
+							variant="outline"
+							disabled={isPending}
+							onClick={() => runAction(() => revalidateCountryDataAction())}
+						>
+							Revalidate Countries (Global)
+						</Button>
+						<Button
+							type="button"
+							disabled={isPending || !countryIso.trim()}
+							onClick={() =>
+								runAction(() => revalidateCountryDataAction(countryIso))
+							}
+						>
+							Revalidate This Country
+						</Button>
+					</div>
+				</CardContent>
+			</Card>
+
+			<Card>
+				<CardHeader>
+					<CardTitle>Profiles</CardTitle>
+					<CardDescription>
+						Revalidate public profile surfaces, or one specific profile by slug.
+					</CardDescription>
+				</CardHeader>
+				<CardContent className="space-y-3">
+					<Input
+						value={profileSlug}
+						onChange={(event) => setProfileSlug(event.target.value)}
+						placeholder="Optional profile slug (leave empty for global)"
+					/>
+					<div className="flex flex-wrap gap-2">
+						<Button
+							type="button"
+							variant="outline"
+							disabled={isPending}
+							onClick={() => runAction(() => revalidateProfileDataAction())}
+						>
+							Revalidate Profiles (Global)
+						</Button>
+						<Button
+							type="button"
+							disabled={isPending || !profileSlug.trim()}
+							onClick={() => runAction(() => revalidateProfileDataAction(profileSlug))}
+						>
+							Revalidate This Profile
 						</Button>
 					</div>
 				</CardContent>

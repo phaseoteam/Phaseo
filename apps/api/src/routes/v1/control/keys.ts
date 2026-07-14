@@ -8,8 +8,11 @@ import { getSupabaseAdmin, getCache, getBindings } from "@/runtime/env";
 import { guardAuth, guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
 import { json, withRuntime } from "@/routes/utils";
 import { setKeyVersion } from "@/core/kv";
-import { generateGatewayKey, hmacSecret, normalizeScopeInput, timingSafeEqual } from "@/routes/auth.helpers";
+import { generateGatewayKey, hmacSecret, timingSafeEqual } from "@/routes/auth.helpers";
 import { resolveActiveKeyPepper } from "@/lib/security/keyPepper";
+import { CAPABILITIES } from "@/lib/authz/capabilities";
+import { loadOAuthClient } from "@/lib/oauth/service";
+import { requireCapability, type ManagementRouteAuth } from "./route-helpers";
 import { CHAT_MANAGED_KEY_NAME, enforceWorkspaceKeyLimit } from "./management-helpers";
 
 type KeyRow = {
@@ -18,7 +21,6 @@ type KeyRow = {
 	name: string | null;
 	prefix: string | null;
 	status: string | null;
-	scopes: unknown;
 	created_by?: string | null;
 	created_at?: string | null;
 	updated_at?: string | null;
@@ -71,15 +73,6 @@ function resolveKeyLookupColumn(identifier: string): "id" | "hash" {
 	return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(identifier)
 		? "id"
 		: "hash";
-}
-
-function normalizeKeyScopes(scopes: unknown): unknown {
-	if (typeof scopes !== "string") return scopes ?? [];
-	try {
-		return JSON.parse(scopes);
-	} catch {
-		return scopes;
-	}
 }
 
 function nanosToUsd(value: unknown): number | null {
@@ -178,7 +171,6 @@ function formatApiKey(row: KeyRow) {
 		include_byok_in_limit: false,
 		limit,
 		limit_reset: limitReset,
-		scopes: normalizeKeyScopes(row.scopes),
 		created_by: row.created_by ?? null,
 		creator_user_id: row.created_by ?? null,
 		created_at: row.created_at ?? null,
@@ -212,6 +204,45 @@ function resolveScopedWorkspaceId(args: {
 		};
 	}
 	return { ok: true, workspaceId: requested };
+}
+
+async function requireOAuthWorkspaceAdmin(auth: ManagementRouteAuth, workspaceId: string): Promise<Response | null> {
+	if (auth.authMethod !== "oauth") return null;
+	const userId = auth.userId?.trim();
+	if (!userId) {
+		return json({ error: "forbidden", message: "OAuth user is required" }, 403, { "Cache-Control": "no-store" });
+	}
+	const supabase = getSupabaseAdmin();
+	const { data, error } = await supabase
+		.from("workspace_members")
+		.select("role")
+		.eq("workspace_id", workspaceId)
+		.eq("user_id", userId)
+		.maybeSingle();
+	if (error || !data) {
+		return json({ error: "forbidden", message: "Workspace membership is required" }, 403, { "Cache-Control": "no-store" });
+	}
+	const role = String((data as { role?: unknown }).role ?? "").toLowerCase();
+	if (role !== "owner" && role !== "admin") {
+		return json(
+			{ error: "forbidden", message: "Workspace owner or admin role is required" },
+			403,
+			{ "Cache-Control": "no-store" },
+		);
+	}
+	return null;
+}
+
+function rejectApiKeyScopes(body: Record<string, unknown>): Response | null {
+	if (body.scopes === undefined) return null;
+	return json(
+		{
+			error: "bad_request",
+			message: "API key scopes are not supported. Use guardrails, workspace settings, and related policy controls instead.",
+		},
+		400,
+		{ "Cache-Control": "no-store" },
+	);
 }
 
 async function resolveWorkspaceOwnerUserId(workspaceId: string): Promise<string> {
@@ -257,12 +288,50 @@ async function handleGetCurrentKey(req: Request) {
 	if (!auth.ok) {
 		return (auth as GuardErr).response;
 	}
+	const scopeError = requireCapability(auth.value, CAPABILITIES.KEYS_READ);
+	if (scopeError) return scopeError;
 
 	try {
+		if (auth.value.authMethod === "oauth") {
+			const client = await loadOAuthClient(auth.value.apiKeyId);
+			if (!client) {
+				return json({ error: "not_found", message: "OAuth client not found" }, 404, { "Cache-Control": "no-store" });
+			}
+			return json(
+				{
+					data: {
+						id: client.id,
+						hash: client.id,
+						workspace_id: auth.value.workspaceId,
+						name: client.name ?? "OAuth session",
+						label: client.name ?? "OAuth session",
+						prefix: null,
+						status: "active",
+						disabled: false,
+						soft_blocked: false,
+						include_byok_in_limit: false,
+						limit: null,
+						limit_reset: null,
+						created_by: auth.value.userId ?? null,
+						creator_user_id: auth.value.userId ?? null,
+						created_at: null,
+						updated_at: null,
+						last_used_at: null,
+						expires_at: null,
+						auth_method: "oauth",
+						oauth_client_id: client.id,
+						oauth_scopes: auth.value.oauthScopes ?? [],
+					},
+				},
+				200,
+				{ "Cache-Control": "no-store" },
+			);
+		}
+
 		const supabase = getSupabaseAdmin();
 		const { data, error } = await supabase
 			.from("keys")
-			.select("id, hash, workspace_id, name, prefix, status, scopes, created_by, created_at, last_used_at, soft_blocked, expires_at, daily_limit_cost_nanos, weekly_limit_cost_nanos, monthly_limit_cost_nanos")
+			.select("id, hash, workspace_id, name, prefix, status, created_by, created_at, last_used_at, soft_blocked, expires_at, daily_limit_cost_nanos, weekly_limit_cost_nanos, monthly_limit_cost_nanos")
 			.eq("id", auth.value.apiKeyId)
 			.eq("workspace_id", auth.value.workspaceId)
 			.maybeSingle();
@@ -292,6 +361,8 @@ async function handleListKeys(req: Request) {
 	if (!auth.ok) {
 		return (auth as GuardErr).response;
 	}
+	const scopeError = requireCapability(auth.value, CAPABILITIES.KEYS_READ);
+	if (scopeError) return scopeError;
 
 	const url = new URL(req.url);
 	const workspaceScope = resolveScopedWorkspaceId({
@@ -300,6 +371,8 @@ async function handleListKeys(req: Request) {
 		internal: auth.value.internal,
 	});
 	if (workspaceScope.ok === false) return workspaceScope.response;
+	const roleError = await requireOAuthWorkspaceAdmin(auth.value, workspaceScope.workspaceId);
+	if (roleError) return roleError;
 
 	const includeDisabled = parseBooleanFlag(url.searchParams.get("include_disabled"));
 	const offset = parseOffset(url.searchParams.get("offset"));
@@ -309,7 +382,7 @@ async function handleListKeys(req: Request) {
 		const supabase = getSupabaseAdmin();
 		let query = supabase
 			.from("keys")
-			.select("id, hash, workspace_id, name, prefix, status, scopes, created_by, created_at, last_used_at, soft_blocked, expires_at, daily_limit_cost_nanos, weekly_limit_cost_nanos, monthly_limit_cost_nanos")
+			.select("id, hash, workspace_id, name, prefix, status, created_by, created_at, last_used_at, soft_blocked, expires_at, daily_limit_cost_nanos, weekly_limit_cost_nanos, monthly_limit_cost_nanos")
 			.eq("workspace_id", workspaceScope.workspaceId)
 			.neq("name", CHAT_MANAGED_KEY_NAME)
 			.order("created_at", { ascending: false })
@@ -372,6 +445,8 @@ async function handleCreateKey(req: Request) {
 		}
 		throw error;
 	}
+	const scopeError = requireCapability(auth.value, CAPABILITIES.KEYS_WRITE);
+	if (scopeError) return scopeError;
 
 	const url = new URL(req.url);
 	const workspaceScope = resolveScopedWorkspaceId({
@@ -380,15 +455,15 @@ async function handleCreateKey(req: Request) {
 		internal: auth.value.internal,
 	});
 	if (workspaceScope.ok === false) return workspaceScope.response;
+	const roleError = await requireOAuthWorkspaceAdmin(auth.value, workspaceScope.workspaceId);
+	if (roleError) return roleError;
 
 	const name = String(body.name ?? "").trim();
 	if (!name) {
 		return json({ error: "bad_request", message: "name is required" }, 400, { "Cache-Control": "no-store" });
 	}
-	const scopes = normalizeScopeInput(body.scopes);
-	if (scopes.ok === false) {
-		return json({ error: "bad_request", message: scopes.message }, 400, { "Cache-Control": "no-store" });
-	}
+	const scopesError = rejectApiKeyScopes(body);
+	if (scopesError) return scopesError;
 	const limit = parseLimitNumber(body.limit);
 	if (limit.ok === false) {
 		return json({ error: "bad_request", message: limit.message }, 400, { "Cache-Control": "no-store" });
@@ -404,7 +479,10 @@ async function handleCreateKey(req: Request) {
 
 	try {
 		await enforceWorkspaceKeyLimit(workspaceScope.workspaceId);
-		const creatorUserId = await resolveWorkspaceOwnerUserId(workspaceScope.workspaceId);
+		const creatorUserId =
+			auth.value.authMethod === "oauth" && auth.value.userId
+				? auth.value.userId
+				: await resolveWorkspaceOwnerUserId(workspaceScope.workspaceId);
 		const pepper = resolveActiveKeyPepper(getBindings());
 		if (!pepper) {
 			return json(
@@ -421,11 +499,11 @@ async function handleCreateKey(req: Request) {
 		const insertPayload: Record<string, unknown> = {
 			workspace_id: workspaceScope.workspaceId,
 			name,
+			scopes: "[]",
 			kid: generated.kid,
 			hash,
 			prefix: generated.prefix,
 			status,
-			scopes: scopes.value,
 			created_by: creatorUserId,
 			daily_limit_requests: 0,
 			weekly_limit_requests: 0,
@@ -445,7 +523,7 @@ async function handleCreateKey(req: Request) {
 		const { data, error } = await supabase
 			.from("keys")
 			.insert(insertPayload)
-			.select("id, hash, workspace_id, name, prefix, status, scopes, created_by, created_at, last_used_at, soft_blocked, expires_at, daily_limit_cost_nanos, weekly_limit_cost_nanos, monthly_limit_cost_nanos")
+			.select("id, hash, workspace_id, name, prefix, status, created_by, created_at, last_used_at, soft_blocked, expires_at, daily_limit_cost_nanos, weekly_limit_cost_nanos, monthly_limit_cost_nanos")
 			.maybeSingle();
 		if (error) {
 			throw new Error(error.message || "Failed to create API key");
@@ -475,19 +553,23 @@ async function handleGetKey(req: Request) {
 	if (!auth.ok) {
 		return (auth as GuardErr).response;
 	}
+	const scopeError = requireCapability(auth.value, CAPABILITIES.KEYS_READ);
+	if (scopeError) return scopeError;
 
 	const url = new URL(req.url);
 	const keyId = parsePathId(url);
 	if (!keyId) {
 		return json({ error: "bad_request", message: "Key id is required" }, 400, { "Cache-Control": "no-store" });
 	}
+	const roleError = await requireOAuthWorkspaceAdmin(auth.value, auth.value.workspaceId);
+	if (roleError) return roleError;
 
 	try {
 		const supabase = getSupabaseAdmin();
 		const lookupColumn = resolveKeyLookupColumn(keyId);
 		const { data, error } = await supabase
 			.from("keys")
-			.select("id, hash, workspace_id, name, prefix, status, scopes, created_by, created_at, last_used_at, soft_blocked, expires_at, daily_limit_cost_nanos, weekly_limit_cost_nanos, monthly_limit_cost_nanos")
+			.select("id, hash, workspace_id, name, prefix, status, created_by, created_at, last_used_at, soft_blocked, expires_at, daily_limit_cost_nanos, weekly_limit_cost_nanos, monthly_limit_cost_nanos")
 			.eq("workspace_id", auth.value.workspaceId)
 			.neq("name", CHAT_MANAGED_KEY_NAME)
 			.eq(lookupColumn, keyId)
@@ -514,6 +596,8 @@ async function handleUpdateKey(req: Request) {
 	if (!auth.ok) {
 		return (auth as GuardErr).response;
 	}
+	const scopeError = requireCapability(auth.value, CAPABILITIES.KEYS_WRITE);
+	if (scopeError) return scopeError;
 
 	const url = new URL(req.url);
 	const keyId = parsePathId(url);
@@ -543,17 +627,17 @@ async function handleUpdateKey(req: Request) {
 	if (limitReset.ok === false) {
 		return json({ error: "bad_request", message: limitReset.message }, 400, { "Cache-Control": "no-store" });
 	}
-	const scopes = body.scopes === undefined ? null : normalizeScopeInput(body.scopes);
-	if (scopes && scopes.ok === false) {
-		return json({ error: "bad_request", message: scopes.message }, 400, { "Cache-Control": "no-store" });
-	}
+	const scopesError = rejectApiKeyScopes(body);
+	if (scopesError) return scopesError;
+	const roleError = await requireOAuthWorkspaceAdmin(auth.value, auth.value.workspaceId);
+	if (roleError) return roleError;
 
 	try {
 		const supabase = getSupabaseAdmin();
 		const lookupColumn = resolveKeyLookupColumn(keyId);
 		const { data: existing, error: fetchError } = await supabase
 			.from("keys")
-			.select("id, hash, workspace_id, kid, name, prefix, status, scopes, created_by, created_at, last_used_at, soft_blocked, expires_at, daily_limit_cost_nanos, weekly_limit_cost_nanos, monthly_limit_cost_nanos")
+			.select("id, hash, workspace_id, kid, name, prefix, status, created_by, created_at, last_used_at, soft_blocked, expires_at, daily_limit_cost_nanos, weekly_limit_cost_nanos, monthly_limit_cost_nanos")
 			.eq("workspace_id", auth.value.workspaceId)
 			.neq("name", CHAT_MANAGED_KEY_NAME)
 			.eq(lookupColumn, keyId)
@@ -582,9 +666,6 @@ async function handleUpdateKey(req: Request) {
 		if (expiresAt.value !== undefined) {
 			updatePayload.expires_at = expiresAt.value;
 		}
-		if (scopes && scopes.ok) {
-			updatePayload.scopes = scopes.value;
-		}
 		applyCostLimitFields(updatePayload, {
 			limit:
 				limit.value === undefined && limitReset.value !== undefined
@@ -606,7 +687,7 @@ async function handleUpdateKey(req: Request) {
 
 		const { data: updated, error: refetchError } = await supabase
 			.from("keys")
-			.select("id, hash, workspace_id, name, prefix, status, scopes, created_by, created_at, last_used_at, soft_blocked, expires_at, daily_limit_cost_nanos, weekly_limit_cost_nanos, monthly_limit_cost_nanos")
+			.select("id, hash, workspace_id, name, prefix, status, created_by, created_at, last_used_at, soft_blocked, expires_at, daily_limit_cost_nanos, weekly_limit_cost_nanos, monthly_limit_cost_nanos")
 			.eq("workspace_id", auth.value.workspaceId)
 			.eq("id", existing.id)
 			.maybeSingle();
@@ -629,12 +710,16 @@ async function handleDeleteKey(req: Request) {
 	if (!auth.ok) {
 		return (auth as GuardErr).response;
 	}
+	const scopeError = requireCapability(auth.value, CAPABILITIES.KEYS_DELETE);
+	if (scopeError) return scopeError;
 
 	const url = new URL(req.url);
 	const keyId = parsePathId(url);
 	if (!keyId) {
 		return json({ error: "bad_request", message: "Key id is required" }, 400, { "Cache-Control": "no-store" });
 	}
+	const roleError = await requireOAuthWorkspaceAdmin(auth.value, auth.value.workspaceId);
+	if (roleError) return roleError;
 
 	try {
 		const supabase = getSupabaseAdmin();

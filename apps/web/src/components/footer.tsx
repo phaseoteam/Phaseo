@@ -15,6 +15,7 @@ import {
 	LifeBuoy,
 	MessageSquare,
 	Megaphone,
+	MonitorDot,
 	Scale,
 	Server,
 	ShieldCheck,
@@ -35,6 +36,7 @@ const productLinks = [
 	{ href: "/api-providers", label: "Providers", icon: Server },
 	{ href: "/apps", label: "Apps", icon: AppWindow },
 	{ href: "/rankings", label: "Rankings", icon: Trophy },
+	{ href: "/monitor", label: "Monitor", icon: MonitorDot },
 ];
 
 const developerLinks = [
@@ -63,10 +65,9 @@ const developerLinks = [
 		external: true,
 	},
 	{
-		href: "https://ai-stats.instatus.com/",
-		label: "Status",
-		icon: Activity,
-		external: true,
+		href: "/methodology",
+		label: "Methodology",
+		icon: FileText,
 	},
 ];
 
@@ -239,7 +240,8 @@ export default function Footer() {
 							/>
 						</Link>
 						<p className="max-w-xs text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-							Unified model, provider, and gateway data for teams building with AI APIs.
+							AI Stats by Phaseo brings together model, provider, and gateway
+							data for teams building with AI APIs.
 						</p>
 						<div className="grid gap-2 sm:max-w-none sm:grid-cols-3 xl:max-w-sm xl:grid-cols-1">
 							{featuredLinks.map((link) => (

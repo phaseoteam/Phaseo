@@ -1,0 +1,45 @@
+{
+  "model_id": "cohere/north-mini-code-1-0",
+  "organisation_id": "cohere",
+  "name": "North Mini Code 1.0",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "North-Mini-Code-1.0 is Cohere's first North-family code agent model, a 30B total / 3B active Mixture-of-Experts model built for agentic coding, terminal workflows, and local deployment.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Apache 2.0",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "cohere/north-mini-code-1-0",
+  "links": [
+    {
+      "platform": "docs",
+      "url": "https://docs.cohere.com/docs/north-mini-code-1.0"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/CohereLabs/BLS-Mini-Code-1.0"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 256000
+    },
+    {
+      "name": "output_context_length",
+      "value": 64000
+    },
+    {
+      "name": "parameter_count",
+      "value": 30000000000
+    },
+    {
+      "name": "active_parameter_count",
+      "value": 3000000000
+    }
+  ],
+  "benchmarks": []
+}

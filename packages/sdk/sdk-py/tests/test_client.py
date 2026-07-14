@@ -3,6 +3,7 @@ from typing import Any
 import pytest
 
 from ai_stats import AIStats
+from gen import models
 from gen import operations as ops
 
 
@@ -183,6 +184,137 @@ def test_batches_resource_cancel_uses_parent_helper(monkeypatch):
     assert client.batches.cancel("batch_456") == {"id": "batch_456", "status": "cancelling"}
 
 
+def test_list_batches_uses_owned_batch_collection(monkeypatch):
+    captured: list[tuple[str, str, dict[str, Any] | None]] = []
+
+    def fake_request(method, path, *, query=None, headers=None, body=None):
+        captured.append((method, path, query))
+        return {
+            "object": "list",
+            "data": [
+                {
+                    "id": "batch_py_list_1",
+                    "object": "batch",
+                    "status": "in_progress",
+                    "websocket_url": "wss://example.test/v1/async/batch/batch_py_list_1/ws",
+                    "billing": {
+                        "state": "estimated",
+                        "reservation_status": "held",
+                    },
+                }
+            ],
+            "first_id": "batch_py_list_1",
+            "last_id": "batch_py_list_1",
+            "has_more": False,
+        }
+
+    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    monkeypatch.setattr(client, "request", fake_request)
+
+    response = client.list_batches({"status": "in_progress", "limit": 2})
+
+    assert response["data"][0]["id"] == "batch_py_list_1"
+    assert response["data"][0]["websocket_url"] == "wss://example.test/v1/async/batch/batch_py_list_1/ws"
+    assert response["data"][0]["billing"]["reservation_status"] == "held"
+    assert response["first_id"] == "batch_py_list_1"
+    assert response["has_more"] is False
+    assert captured == [("GET", "/batches", {"status": "in_progress", "limit": 2})]
+
+
+def test_async_generated_model_annotations_preserve_response_shapes():
+    def annotation_value(owner, field: str) -> str:
+        annotation = owner.__annotations__[field]
+        return getattr(annotation, "__forward_arg__", annotation)
+
+    assert annotation_value(models.BatchResponse, "billing") == "NotRequired[BatchBillingSummary]"
+    assert annotation_value(models.VideoGenerationResponse, "billing") == "NotRequired[VideoBillingSummary]"
+    assert annotation_value(models.BatchListResponse, "data") == "NotRequired[List[BatchResponse]]"
+    assert annotation_value(models.VideoListResponse, "data") == "NotRequired[List[VideoGenerationResponse]]"
+    assert annotation_value(models.BatchModelsResponse, "data") == "NotRequired[List[BatchModelCapability]]"
+    assert annotation_value(models.VideoModelsResponse, "data") == "NotRequired[List[VideoModelCapability]]"
+    assert annotation_value(models.BatchModelCapability, "providers") == "NotRequired[List[BatchModelProviderCapability]]"
+    assert annotation_value(models.VideoModelCapability, "providers") == "NotRequired[List[VideoModelProviderCapability]]"
+    assert ops.listBatches.__annotations__["return"] == "BatchListResponse"
+    assert ops.listVideos.__annotations__["return"] == "VideoListResponse"
+    assert ops.listBatchModels.__annotations__["return"] == "BatchModelsResponse"
+    assert ops.listVideoModels.__annotations__["return"] == "VideoModelsResponse"
+
+
+def test_batches_resource_list_uses_parent_helper(monkeypatch):
+    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    monkeypatch.setattr(client, "list_batches", lambda params=None: {"object": "list", "data": [], "params": params})
+
+    assert client.batches.list({"status": "completed"}) == {
+        "object": "list",
+        "data": [],
+        "params": {"status": "completed"},
+    }
+
+
+def test_list_batch_models_uses_batch_model_capability_endpoint(monkeypatch):
+    captured: list[tuple[str, str, dict[str, Any] | None]] = []
+
+    def fake_request(method, path, *, query=None, headers=None, body=None):
+        captured.append((method, path, query))
+        return {
+            "object": "list",
+            "data": [
+                {
+                    "model": "openai/gpt-5-mini",
+                    "supported_params_detail": {
+                        "endpoint": {
+                            "supported": True,
+                            "values": ["/v1/responses"],
+                        }
+                    },
+                    "supported_parameters_detail": {
+                        "endpoint": {
+                            "supported": True,
+                            "values": ["/v1/responses"],
+                        }
+                    },
+                }
+            ],
+        }
+
+    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    monkeypatch.setattr(client, "request", fake_request)
+
+    response = client.list_batch_models()
+
+    assert response["data"][0]["model"] == "openai/gpt-5-mini"
+    assert response["data"][0]["supported_parameters_detail"]["endpoint"]["values"] == ["/v1/responses"]
+    assert captured == [("GET", "/batches/models", None)]
+
+
+def test_generated_batch_model_operations_use_model_capability_paths():
+    captured: list[tuple[str, str]] = []
+
+    class FakeClient:
+        def request(self, method, path, *, query=None, headers=None, body=None):
+            captured.append((method, path))
+            return {"object": "list", "data": []}
+
+    client = FakeClient()
+
+    assert ops.listBatchModels(client)["object"] == "list"
+    assert ops.listBatchModelsAlias(client)["object"] == "list"
+    assert captured == [
+        ("GET", "/batches/models"),
+        ("GET", "/batch/models"),
+    ]
+
+
+def test_batches_resource_list_models_uses_parent_helper(monkeypatch):
+    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    monkeypatch.setattr(client, "list_batch_models", lambda: {"object": "list", "data": [{"model": "openai/gpt-5-mini"}]})
+
+    assert client.batches.list_models() == {
+        "object": "list",
+        "data": [{"model": "openai/gpt-5-mini"}],
+    }
+
+
 def test_batch_helpers_preserve_gateway_metadata(monkeypatch):
     captured: list[tuple[str, dict[str, Any] | dict[str, str]]] = []
 
@@ -192,6 +324,16 @@ def test_batch_helpers_preserve_gateway_metadata(monkeypatch):
             "id": "batch_py_1",
             "object": "batch",
             "status": "validating",
+            "websocket_url": "wss://example.test/v1/async/batch/batch_py_1/ws",
+            "webhook": {
+                "url": "https://example.com/hooks/batch",
+                "events": ["batch.completed"],
+                "has_secret": True,
+                "delivery": {
+                    "status": "pending",
+                    "attempt_count": 0,
+                },
+            },
             "provider": "openai",
             "request_id": "req_py_batch_1",
             "session_id": "session_py_batch_1",
@@ -220,12 +362,27 @@ def test_batch_helpers_preserve_gateway_metadata(monkeypatch):
         "endpoint": "/v1/responses",
         "completion_window": "24h",
         "session_id": "session_py_batch_1",
+        "webhook": {
+            "url": "https://example.com/hooks/batch",
+            "secret": "whsec_batch",
+            "events": ["batch.completed"],
+        },
     })
     retrieved = client.get_batch("batch_py_1")
 
     assert created["provider"] == "openai"
     assert created["request_id"] == "req_py_batch_1"
     assert created["session_id"] == "session_py_batch_1"
+    assert created["websocket_url"] == "wss://example.test/v1/async/batch/batch_py_1/ws"
+    assert created["webhook"] == {
+        "url": "https://example.com/hooks/batch",
+        "events": ["batch.completed"],
+        "has_secret": True,
+        "delivery": {
+            "status": "pending",
+            "attempt_count": 0,
+        },
+    }
     assert created["pricing_lines"] == [{"provider": "openai", "cost_usd": 0.03}]
 
     assert retrieved["provider"] == "openai"
@@ -239,6 +396,11 @@ def test_batch_helpers_preserve_gateway_metadata(monkeypatch):
             "endpoint": "/v1/responses",
             "completion_window": "24h",
             "session_id": "session_py_batch_1",
+            "webhook": {
+                "url": "https://example.com/hooks/batch",
+                "secret": "whsec_batch",
+                "events": ["batch.completed"],
+            },
         }),
         ("retrieveBatch", {"batch_id": "batch_py_1"}),
     ]
@@ -283,6 +445,16 @@ def test_video_helpers_preserve_gateway_metadata(monkeypatch):
             "id": "G-py-video-1",
             "object": "video",
             "status": "queued",
+            "websocket_url": "wss://example.test/v1/async/video/G-py-video-1/ws",
+            "webhook": {
+                "url": "https://example.com/hooks/video",
+                "events": ["video.completed", "video.failed"],
+                "has_secret": True,
+                "delivery": {
+                    "status": "pending",
+                    "attempt_count": 0,
+                },
+            },
             "provider": "google",
             "model": "google/veo-3",
             "request_id": "req_py_video_1",
@@ -298,6 +470,7 @@ def test_video_helpers_preserve_gateway_metadata(monkeypatch):
             "id": path["video_id"],
             "object": "video",
             "status": "completed",
+            "websocket_url": "wss://example.test/v1/async/video/G-py-video-1/ws",
             "provider": "google",
             "model": "google/veo-3",
             "request_id": "req_py_video_2",
@@ -319,7 +492,15 @@ def test_video_helpers_preserve_gateway_metadata(monkeypatch):
         },
     )
 
-    created = client.generate_video({"model": "google/veo-3", "prompt": "orbital reveal"})
+    created = client.generate_video({
+        "model": "google/veo-3",
+        "prompt": "orbital reveal",
+        "webhook": {
+            "url": "https://example.com/hooks/video",
+            "secret": "whsec_video",
+            "events": ["video.completed", "video.failed"],
+        },
+    })
     retrieved = client.get_video("G-py-video-1")
 
     assert created["provider"] == "google"
@@ -327,6 +508,16 @@ def test_video_helpers_preserve_gateway_metadata(monkeypatch):
     assert created["session_id"] == "session_py_video_1"
     assert created["generation_id"] == "req_py_video_1"
     assert created["output_access"] == "both"
+    assert created["websocket_url"] == "wss://example.test/v1/async/video/G-py-video-1/ws"
+    assert created["webhook"] == {
+        "url": "https://example.com/hooks/video",
+        "events": ["video.completed", "video.failed"],
+        "has_secret": True,
+        "delivery": {
+            "status": "pending",
+            "attempt_count": 0,
+        },
+    }
     assert created["billing"]["charged"] is False
 
     assert retrieved["provider"] == "google"
@@ -334,9 +525,18 @@ def test_video_helpers_preserve_gateway_metadata(monkeypatch):
     assert retrieved["session_id"] == "session_py_video_2"
     assert retrieved["generation_id"] == "req_py_video_1"
     assert retrieved["output_access"] == "both"
+    assert retrieved["websocket_url"] == "wss://example.test/v1/async/video/G-py-video-1/ws"
     assert retrieved["billing"]["charged"] is True
     assert captured == [
-        ("createVideo", {"model": "google/veo-3", "prompt": "orbital reveal"}),
+        ("createVideo", {
+            "model": "google/veo-3",
+            "prompt": "orbital reveal",
+            "webhook": {
+                "url": "https://example.com/hooks/video",
+                "secret": "whsec_video",
+                "events": ["video.completed", "video.failed"],
+            },
+        }),
         ("getVideo", {"video_id": "G-py-video-1"}),
     ]
 
@@ -349,8 +549,16 @@ def test_list_videos_uses_generated_operation(monkeypatch):
         return {
             "object": "list",
             "data": [
-                {"id": "G-py-video-1", "status": "queued"},
-                {"id": "G-py-video-2", "status": "completed"},
+                {
+                    "id": "G-py-video-1",
+                    "status": "queued",
+                    "websocket_url": "wss://example.test/v1/async/video/G-py-video-1/ws",
+                },
+                {
+                    "id": "G-py-video-2",
+                    "status": "completed",
+                    "websocket_url": "wss://example.test/v1/async/video/G-py-video-2/ws",
+                },
             ],
         }
 
@@ -361,6 +569,8 @@ def test_list_videos_uses_generated_operation(monkeypatch):
 
     assert response["object"] == "list"
     assert len(response["data"]) == 2
+    assert response["data"][0]["websocket_url"] == "wss://example.test/v1/async/video/G-py-video-1/ws"
+    assert response["data"][1]["websocket_url"] == "wss://example.test/v1/async/video/G-py-video-2/ws"
     assert captured == [("listVideos", {"status": "queued,completed", "limit": 2})]
 
 
@@ -376,6 +586,72 @@ def test_videos_resource_list_uses_parent_helper(monkeypatch):
         "object": "list",
         "data": [{"id": "G-py-video-1"}],
         "params": {"status": "queued"},
+    }
+
+
+def test_list_video_models_uses_video_model_capability_endpoint(monkeypatch):
+    captured: list[tuple[str, str, dict[str, Any] | None]] = []
+
+    def fake_request(method, path, *, query=None, headers=None, body=None):
+        captured.append((method, path, query))
+        return {
+            "object": "list",
+            "data": [
+                {
+                    "model": "openai/sora",
+                    "supported_params_detail": {
+                        "resolution": {
+                            "supported": True,
+                            "values": ["720p", "1080p"],
+                        }
+                    },
+                    "supported_parameters_detail": {
+                        "resolution": {
+                            "supported": True,
+                            "values": ["720p", "1080p"],
+                        }
+                    },
+                }
+            ],
+        }
+
+    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    monkeypatch.setattr(client, "request", fake_request)
+
+    response = client.list_video_models()
+
+    assert response["object"] == "list"
+    assert response["data"][0]["model"] == "openai/sora"
+    assert response["data"][0]["supported_params_detail"]["resolution"]["values"] == ["720p", "1080p"]
+    assert response["data"][0]["supported_parameters_detail"]["resolution"]["values"] == ["720p", "1080p"]
+    assert captured == [("GET", "/videos/models", None)]
+
+
+def test_generated_video_model_operations_include_alias(monkeypatch):
+    captured: list[tuple[str, str]] = []
+
+    def fake_request(method, path, *, query=None, headers=None, body=None):
+        captured.append((method, path))
+        return {"object": "list", "data": [{"model": "openai/sora"}]}
+
+    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    monkeypatch.setattr(client, "request", fake_request)
+
+    assert ops.listVideoModels(client)["object"] == "list"
+    assert ops.listVideoModelsAlias(client)["object"] == "list"
+    assert captured == [
+        ("GET", "/videos/models"),
+        ("GET", "/video/generations/models"),
+    ]
+
+
+def test_videos_resource_list_models_uses_parent_helper(monkeypatch):
+    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+    monkeypatch.setattr(client, "list_video_models", lambda: {"object": "list", "data": [{"model": "openai/sora"}]})
+
+    assert client.videos.list_models() == {
+        "object": "list",
+        "data": [{"model": "openai/sora"}],
     }
 
 
@@ -1019,5 +1295,58 @@ def test_api_key_mutation_helpers_use_generated_operations(monkeypatch):
     assert captured == [
         ("createApiKey", {"name": "Admin Key", "scopes": ["gateway:read"]}),
         ("updateApiKey", {"id": "key_123", "name": "Renamed Key", "disabled": True}),
+        ("deleteApiKey", {"id": "key_123"}),
+    ]
+
+
+def test_provisioning_key_aliases_delegate_to_api_key_helpers(monkeypatch):
+    captured: list[tuple[str, dict[str, object] | dict[str, str] | None]] = []
+
+    def fake_list_api_keys(_client, **kwargs):
+        captured.append(("listApiKeys", kwargs.get("query")))
+        return {"object": "list", "data": [{"id": "key_123"}]}
+
+    def fake_get_api_key(_client, **kwargs):
+        captured.append(("getApiKey", kwargs.get("path")))
+        return {"data": {"id": "key_123"}}
+
+    def fake_create_api_key(_client, **kwargs):
+        captured.append(("createApiKey", kwargs.get("body")))
+        return {"data": {"id": "key_123", "name": "Agent Key"}}
+
+    def fake_update_api_key(_client, **kwargs):
+        path = kwargs.get("path") or {}
+        body = kwargs.get("body") or {}
+        captured.append(("updateApiKey", {"id": path.get("id"), **body}))
+        return {"data": {"id": path.get("id"), "name": body.get("name")}}
+
+    def fake_delete_api_key(_client, **kwargs):
+        captured.append(("deleteApiKey", kwargs.get("path")))
+        return {"data": {"id": "key_123", "deleted": True}}
+
+    monkeypatch.setattr(ops, "listApiKeys", fake_list_api_keys)
+    monkeypatch.setattr(ops, "getApiKey", fake_get_api_key)
+    monkeypatch.setattr(ops, "createApiKey", fake_create_api_key)
+    monkeypatch.setattr(ops, "updateApiKey", fake_update_api_key)
+    monkeypatch.setattr(ops, "deleteApiKey", fake_delete_api_key)
+
+    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+
+    listed = client.list_provisioning_keys({"limit": "1"})
+    created = client.create_provisioning_key({"name": "Agent Key"})
+    fetched = client.get_provisioning_key("key_123")
+    updated = client.update_provisioning_key("key_123", {"name": "Renamed Key"})
+    deleted = client.delete_provisioning_key("key_123")
+
+    assert listed["data"][0]["id"] == "key_123"
+    assert created["data"]["name"] == "Agent Key"
+    assert fetched["data"]["id"] == "key_123"
+    assert updated["data"]["name"] == "Renamed Key"
+    assert deleted["data"]["deleted"] is True
+    assert captured == [
+        ("listApiKeys", {"limit": "1"}),
+        ("createApiKey", {"name": "Agent Key"}),
+        ("getApiKey", {"id": "key_123"}),
+        ("updateApiKey", {"id": "key_123", "name": "Renamed Key"}),
         ("deleteApiKey", {"id": "key_123"}),
     ]

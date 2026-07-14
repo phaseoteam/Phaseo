@@ -2,7 +2,7 @@
   "model_id": "google/gemini-2.0-flash-lite",
   "organisation_id": "google",
   "name": "Gemini 2.0 Flash Lite",
-  "status": "Deprecated",
+  "status": "Retired",
   "previous_model_id": "google/gemini-1-5-flash-8b-2024-03-15",
   "description": "Gemini 2.0 Flash Lite is a text-to-speech model from Google, and a substantial generational step up from Gemini 2.5 Flash TTS. It supports up to 1.0M of input context for long documents, codebases, and agent workflows.",
   "announced_date": "2025-02-05T00:00:00",
@@ -89,7 +89,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.google.dev/gemini-api/docs/models",
-      "rank": 178
+      "rank": 179
     },
     {
       "benchmark_id": "hiddenmath",
@@ -121,7 +121,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://developers.googleblog.com/en/gemini-2-family-expands/",
-      "rank": 106
+      "rank": 109
     },
     {
       "benchmark_id": "mmmu",
@@ -129,7 +129,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.google.dev/gemini-api/docs/models",
-      "rank": 76
+      "rank": 77
     },
     {
       "benchmark_id": "mrcr-1m",
@@ -145,7 +145,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.google.dev/gemini-api/docs/models",
-      "rank": 70
+      "rank": 71
     }
   ]
 }

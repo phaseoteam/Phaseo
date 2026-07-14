@@ -1,5 +1,5 @@
 import CountryCard from "./CountryCard";
-import { CountrySummary } from "@/lib/fetchers/countries/getCountrySummaries";
+import type { CountrySummary } from "@/lib/fetchers/countries/getCountrySummaries";
 
 interface CountriesGridProps {
 	countries: CountrySummary[];

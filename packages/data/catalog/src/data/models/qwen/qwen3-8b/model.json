@@ -86,7 +86,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.4600; benches=50)",
       "source_link": null,
-      "rank": 32
+      "rank": 33
     },
     {
       "benchmark_id": "creative-writing-v3",
@@ -118,7 +118,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.4600; benches=50)",
       "source_link": null,
-      "rank": 111
+      "rank": 112
     },
     {
       "benchmark_id": "hallusion-bench",
@@ -174,7 +174,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.4600; benches=50)",
       "source_link": null,
-      "rank": 32
+      "rank": 33
     },
     {
       "benchmark_id": "lvbench",
@@ -230,7 +230,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.4600; benches=50)",
       "source_link": null,
-      "rank": 63
+      "rank": 65
     },
     {
       "benchmark_id": "mmlu-prox",
@@ -262,7 +262,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.4600; benches=50)",
       "source_link": null,
-      "rank": 47
+      "rank": 51
     },
     {
       "benchmark_id": "mmmu-(val)",
@@ -342,7 +342,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.4600; benches=50)",
       "source_link": null,
-      "rank": 23
+      "rank": 26
     },
     {
       "benchmark_id": "polymath",
@@ -398,7 +398,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.4600; benches=50)",
       "source_link": null,
-      "rank": 19
+      "rank": 20
     },
     {
       "benchmark_id": "video-mmmu",
@@ -406,7 +406,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen3-vl-8b-thinking (score=0.4600; benches=50)",
       "source_link": null,
-      "rank": 24
+      "rank": 25
     },
     {
       "benchmark_id": "writingbench",

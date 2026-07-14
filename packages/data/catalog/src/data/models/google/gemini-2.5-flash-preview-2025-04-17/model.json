@@ -81,7 +81,7 @@
       "is_self_reported": true,
       "other_info": "Thinking, Single Attempt",
       "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
-      "rank": 62
+      "rank": 68
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -89,7 +89,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 61
+      "rank": 67
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -97,7 +97,7 @@
       "is_self_reported": true,
       "other_info": "Thinking, No Tools",
       "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
-      "rank": 105
+      "rank": 111
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -105,7 +105,7 @@
       "is_self_reported": true,
       "other_info": "No Tools",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 104
+      "rank": 110
     },
     {
       "benchmark_id": "lmarena-text",
@@ -161,7 +161,7 @@
       "is_self_reported": true,
       "other_info": "Thinking",
       "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
-      "rank": 52
+      "rank": 53
     },
     {
       "benchmark_id": "simpleqa",
@@ -169,7 +169,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 51
+      "rank": 52
     },
     {
       "benchmark_id": "confabulations",
@@ -177,7 +177,7 @@
       "is_self_reported": false,
       "other_info": "24K; Confab 4.5%; non-response 29.2%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 33
+      "rank": 31
     }
   ]
 }

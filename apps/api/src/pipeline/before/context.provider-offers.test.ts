@@ -108,4 +108,50 @@ describe("applyExplicitProviderModelRouting", () => {
 		]);
 		expect(Object.keys(result.pricing)).toEqual(["minimax", "minimax-lightning"]);
 	});
+
+	it("does not collapse ordinary canonical model ids to a single matching provider", () => {
+		const parsed = {
+			resolvedModel: "minimax/minimax-m3",
+			pricing: {
+				minimax: { provider: "minimax" },
+				novita: { provider: "novita" },
+				venice: { provider: "venice" },
+			},
+			providers: [
+				{
+					providerId: "minimax",
+					providerModelSlug: "MiniMax-M3",
+					supportsEndpoint: true,
+					baseWeight: 1,
+					byokMeta: [],
+				},
+				{
+					providerId: "novita",
+					providerModelSlug: "minimax/minimax-m3",
+					supportsEndpoint: true,
+					baseWeight: 1,
+					byokMeta: [],
+				},
+				{
+					providerId: "venice",
+					providerModelSlug: "minimax-m3",
+					supportsEndpoint: true,
+					baseWeight: 1,
+					byokMeta: [],
+				},
+			],
+		} as any;
+
+		const result = applyExplicitProviderModelRouting({
+			parsed,
+			requestedModel: "minimax/minimax-m3",
+		});
+
+		expect(result.providers.map((provider: any) => provider.providerId)).toEqual([
+			"minimax",
+			"novita",
+			"venice",
+		]);
+		expect(Object.keys(result.pricing)).toEqual(["minimax", "novita", "venice"]);
+	});
 });

@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen-2.5-72b-instruct (score=0.3060; benches=14)",
       "source_link": "https://qwenlm.github.io/blog/qwen2.5/",
-      "rank": 183
+      "rank": 184
     },
     {
       "benchmark_id": "gsm8k",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen-2.5-72b-instruct (score=0.3060; benches=14)",
       "source_link": "https://qwenlm.github.io/blog/qwen2.5/",
-      "rank": 33
+      "rank": 47
     },
     {
       "benchmark_id": "livecodebench",
@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen-2.5-72b-instruct (score=0.3060; benches=14)",
       "source_link": "https://qwenlm.github.io/blog/qwen2.5/",
-      "rank": 41
+      "rank": 42
     },
     {
       "benchmark_id": "math",
@@ -102,7 +102,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen-2.5-72b-instruct (score=0.3060; benches=14)",
       "source_link": "https://qwenlm.github.io/blog/qwen2.5-llm/",
-      "rank": 108
+      "rank": 111
     },
     {
       "benchmark_id": "mmlu-redux",

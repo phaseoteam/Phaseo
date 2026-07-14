@@ -5,7 +5,7 @@ This example is a complete external integration reference for AI Stats Gateway:
 - OAuth 2.1 + PKCE login
 - Session-backed token storage and refresh
 - Unified gateway proxy for control + generation routes
-- Model discovery (`/models` + `/gateway/models`)
+- Model discovery (`/models`)
 - Chat app powered by the Responses API
 - Endpoint tester for non-chat surfaces
 
@@ -18,7 +18,6 @@ If you need a script-first integration, use `examples/gateway-node-quickstart`.
 
 - `GET /health`
 - `GET /models`
-- `GET /gateway/models`
 - `GET /providers`
 - Any `control/*` route via the proxy allowlist
 
@@ -93,7 +92,7 @@ npm run dev
 
 The chat app flow in this example is:
 
-1. Fetch models from `/api/gateway/models` and `/api/gateway/gateway/models`
+1. Fetch models from `/api/gateway/models`
 2. Let user choose model
 3. Send prompt to `/api/gateway/responses`
 4. Reuse `previous_response_id` for conversational continuity

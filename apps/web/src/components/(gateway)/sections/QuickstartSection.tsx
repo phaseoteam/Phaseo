@@ -7,7 +7,8 @@ import React, {
 	useRef,
 	useState,
 } from "react";
-import { ChevronDown, Copy } from "lucide-react";
+import Link from "next/link";
+import { ChevronDown, Copy, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -572,22 +573,86 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 	}, [codeSnippets, selectedLanguage]);
 
 	return (
-		<section id="quickstart" className="py-16">
-			<div className="mx-auto max-w-7xl space-y-8 px-6 lg:px-8">
-				<div className="max-w-3xl space-y-3">
+		<section id="quickstart" className="py-12">
+			<div className="mx-auto max-w-7xl space-y-6 px-6 lg:px-8">
+				<div className="max-w-3xl space-y-2">
 					<h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
-						Every endpoint, one schema
+						Quickstart: key, endpoint, request
 					</h2>
 					<p className="text-sm text-slate-600 dark:text-slate-400">
-						Swap endpoints and models without touching your
-						integration. Use the TypeScript SDK (`@ai-stats/sdk`)
-						or Python SDK (`ai-stats-py-sdk`), or call the Gateway
-						directly from cURL/fetch.
+						Pick the endpoint you need, choose a sample model, and copy a
+						working request for the Gateway, SDKs, or OpenAI-compatible clients.
 					</p>
 				</div>
 
-				<Card className="border-slate-200">
-					<CardHeader className="space-y-4">
+				<div className="grid gap-5 lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)]">
+					<div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+						<div className="space-y-1">
+							<p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+								Setup steps
+							</p>
+							<h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+								From zero to first call
+							</h3>
+						</div>
+						<div className="mt-4 space-y-3">
+							<div className="flex gap-3">
+								<span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white dark:bg-slate-100 dark:text-slate-950">
+									1
+								</span>
+								<div className="space-y-1">
+									<p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+										Create or copy an API key
+									</p>
+									<p className="text-sm text-slate-600 dark:text-slate-400">
+										Use a server-side workspace key, then expose it to your
+										runtime as{" "}
+										<code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs dark:bg-slate-900">
+											AI_STATS_API_KEY
+										</code>
+										.
+									</p>
+									<Button asChild size="sm" variant="outline" className="h-8">
+										<Link href="/settings/keys">
+											<KeyRound className="h-3.5 w-3.5" />
+											API Keys
+										</Link>
+									</Button>
+								</div>
+							</div>
+							<div className="flex gap-3">
+								<span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white dark:bg-slate-100 dark:text-slate-950">
+									2
+								</span>
+								<div>
+									<p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+										Choose an endpoint and model
+									</p>
+									<p className="text-sm text-slate-600 dark:text-slate-400">
+										The endpoint selector updates path, payload, and supported
+										example models together.
+									</p>
+								</div>
+							</div>
+							<div className="flex gap-3">
+								<span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white dark:bg-slate-100 dark:text-slate-950">
+									3
+								</span>
+								<div>
+									<p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+										Copy the request
+									</p>
+									<p className="text-sm text-slate-600 dark:text-slate-400">
+										Switch language or SDK style, then copy the compact snippet
+										into your app or agent instructions.
+									</p>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<Card className="border-slate-200">
+					<CardHeader className="space-y-3">
 						<div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
 							<div className="space-y-1">
 								<CardTitle className="text-xl">
@@ -772,7 +837,8 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 							);
 						})()}
 					</CardContent>
-				</Card>
+					</Card>
+				</div>
 			</div>
 		</section>
 	);

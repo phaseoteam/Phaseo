@@ -2,7 +2,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { TrendingUp, TrendingDown, ExternalLink, Sparkles } from "lucide-react";
-import { createClient } from "@/utils/supabase/server";
+import { fetchCreditsTierSummary } from "@/lib/fetchers/internal/fetchCreditsTierSummary";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
@@ -22,33 +22,18 @@ interface Props {
 }
 
 export default async function TierOverview({ workspaceId }: Props) {
-	const supabase = await createClient();
-
-	// Fetch spending data
 	let lastMonthCents = 0;
 	let mtdCents = 0;
 	let teamTier: "basic" | "enterprise" = "basic";
 
 	if (workspaceId) {
 		try {
-			const [{ data: prev }, { data: mtd }, { data: team }] = await Promise.all([
-				supabase.rpc("monthly_spend_prev_cents", { p_team: workspaceId }).single(),
-				supabase.rpc("mtd_spend_cents", { p_team: workspaceId }).single(),
-				supabase
-					.from("workspaces")
-					.select("tier")
-					.eq("id", workspaceId)
-					.maybeSingle(),
-			]);
-
-			lastMonthCents = Number(prev ?? 0);
-			mtdCents = Number(mtd ?? 0);
-			teamTier =
-				String(team?.tier ?? "basic").toLowerCase() === "enterprise"
-					? "enterprise"
-					: "basic";
-		} catch (err) {
-			console.error("[TierOverview] Failed to fetch spend:", err);
+			const summary = await fetchCreditsTierSummary(workspaceId);
+			lastMonthCents = summary.lastMonthCents;
+			mtdCents = summary.mtdCents;
+			teamTier = summary.teamTier;
+		} catch {
+			// Keep the tier cards renderable with empty spend values.
 		}
 	}
 
@@ -229,7 +214,7 @@ export default async function TierOverview({ workspaceId }: Props) {
 						<div className="rounded-lg border border-orange-200 bg-orange-50 p-3 dark:border-orange-900 dark:bg-orange-950/30">
 							<p className="text-sm text-orange-900 dark:text-orange-100">
 								<strong>Heads up:</strong> Your spending is below $10k this
-								month. You'll keep Enterprise tier status with a 3-month grace
+								month. You will keep Enterprise tier status with a 3-month grace
 								period.
 							</p>
 						</div>

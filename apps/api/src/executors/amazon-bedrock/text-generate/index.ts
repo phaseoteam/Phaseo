@@ -666,9 +666,7 @@ async function irToBedrockConverse(
 		}
 	}
 
-	if (typeof ir.speed === "string" && ir.speed.toLowerCase() === "fast") {
-		request.performanceConfig = { latency: "optimized" };
-	} else if (typeof ir.serviceTier === "string") {
+	if (typeof ir.serviceTier === "string") {
 		const tier = ir.serviceTier.toLowerCase();
 		if (tier === "priority") request.performanceConfig = { latency: "optimized" };
 		if (tier === "standard") request.performanceConfig = { latency: "standard" };
@@ -864,7 +862,8 @@ function isBedrockOpenAIModel(model: string): boolean {
 		normalizedModel.startsWith("openai.") ||
 		normalizedModel.startsWith("us.openai.") ||
 		normalizedModel.startsWith("eu.openai.") ||
-		normalizedModel.startsWith("apac.openai.")
+		normalizedModel.startsWith("apac.openai.") ||
+		normalizedModel.startsWith("xai.")
 	);
 }
 
@@ -943,6 +942,5 @@ export const executor: ProviderExecutor = buildTextExecutor({
 	postprocess,
 	transformStream,
 });
-
 
 

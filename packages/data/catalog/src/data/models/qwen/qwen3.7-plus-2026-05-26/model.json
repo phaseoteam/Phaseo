@@ -1,0 +1,28 @@
+{
+  "model_id": "qwen/qwen3.7-plus-2026-05-26",
+  "organisation_id": "qwen",
+  "name": "Qwen 3.7 Plus (2026-05-26)",
+  "status": "Available",
+  "previous_model_id": "qwen/qwen3.7-plus-preview",
+  "description": "Qwen 3.7 Plus (2026-05-26) is a dated Qwen 3.7 Plus snapshot for multimodal reasoning, coding, tool use, and productivity workflows. It accepts text, image, and video input, produces text output, and reflects the May 26, 2026 snapshot exposed by Alibaba Cloud.",
+  "announced_date": "2026-05-26T00:00:00",
+  "release_date": "2026-05-26T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image,video",
+  "output_types": "text",
+  "api_model_id": "qwen/qwen3.7-plus-2026-05-26",
+  "links": [],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 1000000
+    },
+    {
+      "name": "output_context_length",
+      "value": 65536
+    }
+  ],
+  "benchmarks": []
+}

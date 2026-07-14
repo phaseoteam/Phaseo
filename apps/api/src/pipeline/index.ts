@@ -15,6 +15,26 @@ import {
 	logPipelineExecutionError,
 } from "./error-response";
 
+const EARLY_OBSERVABILITY_BODY_LIMIT_BYTES = 256 * 1024;
+
+function cloneRequestForEarlyObservability(req: Request): Request | undefined {
+    const contentType = (req.headers.get("content-type") ?? "").toLowerCase();
+    const capturesTextBody =
+        contentType.includes("application/json") ||
+        contentType.includes("application/x-www-form-urlencoded");
+    if (!capturesTextBody) return undefined;
+
+    const contentLengthHeader = req.headers.get("content-length");
+    if (contentLengthHeader) {
+        const contentLength = Number(contentLengthHeader);
+        if (Number.isFinite(contentLength) && contentLength > EARLY_OBSERVABILITY_BODY_LIMIT_BYTES) {
+            return undefined;
+        }
+    }
+
+    return req.clone() as unknown as Request;
+}
+
 export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) {
     const { endpoint, schema } = opts;
 
@@ -31,6 +51,7 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
 
         // Safely log the request body without consuming the original stream
         // req.clone().text().then(body => console.log("Request body:", body)).catch(err => console.error("Error logging request body:", err));
+        const observabilityReq = cloneRequestForEarlyObservability(req);
 
         timing.timer.mark("before_start");
         const pre = await beforeRequest(req, endpoint, timing.timer, schema);
@@ -48,7 +69,7 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
                 endpoint,
                 timingHeader: timing.timer.serverTiming(),
                 auditFailure,
-                req,
+                req: observabilityReq,
             });
         }
 

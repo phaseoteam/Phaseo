@@ -144,8 +144,11 @@ const METER_DEFAULTS: Record<string, { unit: string; unit_size: number }> = {
 	output_reasoning_tokens: { unit: "token", unit_size: 1_000_000 },
 	image_pixels: { unit: "pixel", unit_size: 1_000_000 },
 	video_pixels: { unit: "pixel", unit_size: 1_000_000 },
+	implicit_cached_input_text_tokens: { unit: "token", unit_size: 1_000_000 },
 	cached_read_text_tokens: { unit: "token", unit_size: 1_000_000 },
 	cached_write_text_tokens: { unit: "token", unit_size: 1_000_000 },
+	cached_write_text_tokens_5m: { unit: "token", unit_size: 1_000_000 },
+	cached_write_text_tokens_1h: { unit: "token", unit_size: 1_000_000 },
 	input_image_tokens: { unit: "token", unit_size: 1_000_000 },
 	output_image_tokens: { unit: "token", unit_size: 1_000_000 },
 	cached_read_image_tokens: { unit: "token", unit_size: 1_000_000 },
@@ -709,17 +712,18 @@ export default function NewModelForm({
 			<section className="space-y-3">
 				<h2 className="text-sm font-medium">Core</h2>
 				<div className="grid gap-4 lg:grid-cols-2">
-					<label className="text-sm">
+					<label htmlFor="new-model-model-id" className="text-sm">
 						<div className="mb-1 text-muted-foreground">Model ID</div>
-						<Input name="model_id" value={modelId} onChange={(event) => setModelId(event.target.value)} required />
+						<Input id="new-model-model-id" name="model_id" value={modelId} onChange={(event) => setModelId(event.target.value)} required />
 					</label>
-					<label className="text-sm">
+					<label htmlFor="new-model-name" className="text-sm">
 						<div className="mb-1 text-muted-foreground">Name</div>
-						<Input name="name" required />
+						<Input id="new-model-name" name="name" required />
 					</label>
-					<label className="text-sm lg:col-span-2">
+					<label htmlFor="new-model-organisation" className="text-sm lg:col-span-2">
 						<div className="mb-1 text-muted-foreground">Organisation</div>
 						<select
+							id="new-model-organisation"
 							name="organisation_id"
 							required
 							defaultValue=""
@@ -735,9 +739,9 @@ export default function NewModelForm({
 							))}
 						</select>
 					</label>
-					<label className="text-sm">
+					<label htmlFor="new-model-status" className="text-sm">
 						<div className="mb-1 text-muted-foreground">Status</div>
-						<select name="status" defaultValue="Released" className="w-full rounded-md border px-3 py-2 text-sm">
+						<select id="new-model-status" name="status" defaultValue="Released" className="w-full rounded-md border px-3 py-2 text-sm">
 							{STATUS_OPTIONS.map((status) => (
 								<option key={status} value={status}>
 									{status}
@@ -745,9 +749,9 @@ export default function NewModelForm({
 							))}
 						</select>
 					</label>
-					<label className="text-sm">
+					<label htmlFor="new-model-previous-model" className="text-sm">
 						<div className="mb-1 text-muted-foreground">Previous model</div>
-						<select name="previous_model_id" className="w-full rounded-md border px-3 py-2 text-sm">
+						<select id="new-model-previous-model" name="previous_model_id" className="w-full rounded-md border px-3 py-2 text-sm">
 							<option value="">None</option>
 							{previousModels.map((previousModel) => (
 								<option key={previousModel.model_id} value={previousModel.model_id}>
@@ -760,47 +764,53 @@ export default function NewModelForm({
 						<input type="checkbox" name="hidden" />
 						<span>Hidden</span>
 					</label>
-					<label className="text-sm">
+					<label htmlFor="new-model-release-date" className="text-sm">
 						<div className="mb-1 text-muted-foreground">Release date</div>
 						<DatePickerInput
+							id="new-model-release-date"
 							name="release_date"
 							value={releaseDate}
 							onChange={setReleaseDate}
 							placeholder="Release date"
 						/>
 					</label>
-					<label className="text-sm">
+					<label htmlFor="new-model-announcement-date" className="text-sm">
 						<div className="mb-1 text-muted-foreground">Announcement date</div>
 						<DatePickerInput
+							id="new-model-announcement-date"
 							name="announcement_date"
 							value={announcementDate}
 							onChange={setAnnouncementDate}
 							placeholder="Announcement date"
 						/>
 					</label>
-					<label className="text-sm">
+					<label htmlFor="new-model-deprecation-date" className="text-sm">
 						<div className="mb-1 text-muted-foreground">Deprecation date</div>
 						<DatePickerInput
+							id="new-model-deprecation-date"
 							name="deprecation_date"
 							value={deprecationDate}
 							onChange={setDeprecationDate}
 							placeholder="Deprecation date"
 						/>
 					</label>
-					<label className="text-sm">
+					<label htmlFor="new-model-retirement-date" className="text-sm">
 						<div className="mb-1 text-muted-foreground">Retirement date</div>
 						<DatePickerInput
+							id="new-model-retirement-date"
 							name="retirement_date"
 							value={retirementDate}
 							onChange={setRetirementDate}
 							placeholder="Retirement date"
 						/>
 					</label>
-					<label className="text-sm">
-						<div className="mb-1 text-muted-foreground">License</div>
-						<Input name="license" placeholder="e.g., Apache-2.0" />
-					</label>
-					<label className="text-sm">
+					<div className="text-sm">
+						<Label htmlFor="new-model-license" className="mb-1 block text-muted-foreground">
+							License
+						</Label>
+						<Input id="new-model-license" name="license" placeholder="e.g., Apache-2.0" />
+					</div>
+					<div className="text-sm">
 						<div className="mb-1 text-muted-foreground">Input types</div>
 						<div className="flex flex-wrap gap-2">
 							{MODALITY_OPTIONS.map((type) => {
@@ -819,8 +829,8 @@ export default function NewModelForm({
 								);
 							})}
 						</div>
-					</label>
-					<label className="text-sm">
+					</div>
+					<div className="text-sm">
 						<div className="mb-1 text-muted-foreground">Output types</div>
 						<div className="flex flex-wrap gap-2">
 							{MODALITY_OPTIONS.map((type) => {
@@ -839,7 +849,7 @@ export default function NewModelForm({
 								);
 							})}
 						</div>
-					</label>
+					</div>
 				</div>
 			</section>
 
@@ -907,9 +917,10 @@ export default function NewModelForm({
 					</div>
 					{newSubscriptionPlanRows.map((row, index) => (
 						<div key={`new-plan-${index}`} className="grid gap-2 rounded-md border p-2 lg:grid-cols-12">
-							<label className="text-xs lg:col-span-3">
+							<label htmlFor={`new-plan-id-${index}`} className="text-xs lg:col-span-3">
 								<div className="mb-1 text-muted-foreground">Plan ID</div>
 								<Input
+									id={`new-plan-id-${index}`}
 									value={row.plan_id}
 									onChange={(event) =>
 										setNewSubscriptionPlanRows((prev) =>
@@ -922,9 +933,10 @@ export default function NewModelForm({
 									placeholder="starter-monthly"
 								/>
 							</label>
-							<label className="text-xs lg:col-span-3">
+							<label htmlFor={`new-plan-name-${index}`} className="text-xs lg:col-span-3">
 								<div className="mb-1 text-muted-foreground">Name</div>
 								<Input
+									id={`new-plan-name-${index}`}
 									value={row.name}
 									onChange={(event) =>
 										setNewSubscriptionPlanRows((prev) =>
@@ -937,9 +949,10 @@ export default function NewModelForm({
 									placeholder="Starter"
 								/>
 							</label>
-							<label className="text-xs lg:col-span-2">
+							<label htmlFor={`new-plan-frequency-${index}`} className="text-xs lg:col-span-2">
 								<div className="mb-1 text-muted-foreground">Frequency</div>
 								<Input
+									id={`new-plan-frequency-${index}`}
 									value={row.frequency}
 									onChange={(event) =>
 										setNewSubscriptionPlanRows((prev) =>
@@ -952,9 +965,10 @@ export default function NewModelForm({
 									placeholder="monthly"
 								/>
 							</label>
-							<label className="text-xs lg:col-span-2">
+							<label htmlFor={`new-plan-price-${index}`} className="text-xs lg:col-span-2">
 								<div className="mb-1 text-muted-foreground">Price</div>
 								<Input
+									id={`new-plan-price-${index}`}
 									type="number"
 									step="0.01"
 									value={row.price}
@@ -970,9 +984,10 @@ export default function NewModelForm({
 								/>
 							</label>
 							<div className="flex items-end gap-2 lg:col-span-2">
-								<label className="w-full text-xs">
+								<label htmlFor={`new-plan-currency-${index}`} className="w-full text-xs">
 									<div className="mb-1 text-muted-foreground">Currency</div>
 									<Input
+										id={`new-plan-currency-${index}`}
 										value={row.currency}
 										onChange={(event) =>
 											setNewSubscriptionPlanRows((prev) =>
@@ -1024,9 +1039,12 @@ export default function NewModelForm({
 							))}
 						</select>
 					</label>
-					<label className="text-sm">
-						<div className="mb-1 text-muted-foreground">New family name</div>
+					<div className="text-sm">
+						<Label htmlFor="new-family-name" className="mb-1 block text-muted-foreground">
+							New family name
+						</Label>
 						<Input
+							id="new-family-name"
 							value={newFamilyName}
 							onChange={(event) => {
 								setNewFamilyName(event.target.value);
@@ -1034,23 +1052,30 @@ export default function NewModelForm({
 							}}
 							placeholder="e.g., GPT-4"
 						/>
-					</label>
-					<label className="text-sm">
-						<div className="mb-1 text-muted-foreground">New family ID (optional)</div>
+					</div>
+					<div className="text-sm">
+						<Label htmlFor="new-family-id" className="mb-1 block text-muted-foreground">
+							New family ID (optional)
+						</Label>
 						<Input
+							id="new-family-id"
 							value={newFamilyId}
 							onChange={(event) => setNewFamilyId(event.target.value)}
 							placeholder="gpt-4"
 						/>
-					</label>
-					<label className="text-sm lg:col-span-2">
-						<div className="mb-1 text-muted-foreground">New family description</div>
+					</div>
+					<div className="text-sm lg:col-span-2">
+						<Label htmlFor="new-family-description" className="mb-1 block text-muted-foreground">
+							New family description
+						</Label>
 						<textarea
+							id="new-family-description"
+							aria-label="New family description"
 							value={newFamilyDescription}
 							onChange={(event) => setNewFamilyDescription(event.target.value)}
 							className="min-h-20 w-full rounded-md border px-3 py-2 text-sm"
 						/>
-					</label>
+					</div>
 				</div>
 			</section>
 
@@ -1197,34 +1222,30 @@ export default function NewModelForm({
 										))}
 									</select>
 								</label>
-								<label className="text-xs">
-									<div className="mb-1 text-muted-foreground">Public model ID</div>
-									<>
-										<Input
-											list={`provider-model-ids-${providerRow.id}`}
-											value={providerRow.api_model_id}
-											onChange={(event) =>
-												setProviderRows((prev) =>
-													prev.map((row) =>
-														row.id === providerRow.id
-															? { ...row, api_model_id: event.target.value }
-															: row
-													)
-												)
-											}
-											className="h-8 text-xs"
-											placeholder="organisation/model-id"
-										/>
-										<datalist id={`provider-model-ids-${providerRow.id}`}>
-											{modelIdOptions.map((option) => (
-												<option key={`${providerRow.id}-${option}`} value={option} />
-											))}
-										</datalist>
-									</>
-								</label>
-								<label className="text-xs">
-									<div className="mb-1 text-muted-foreground">Provider model ID</div>
+								<div className="text-xs">
+									<Label htmlFor={`provider-public-model-${providerRow.id}`} className="mb-1 block text-muted-foreground">
+										Public model ID
+									</Label>
 									<Input
+										id={`provider-public-model-${providerRow.id}`}
+										value={providerRow.api_model_id}
+										onChange={(event) =>
+											setProviderRows((prev) =>
+												prev.map((row) =>
+													row.id === providerRow.id ? { ...row, api_model_id: event.target.value } : row
+												)
+											)
+										}
+										className="h-8 text-xs"
+										placeholder="organisation/model-id"
+									/>
+								</div>
+								<div className="text-xs">
+									<Label htmlFor={`provider-model-id-${providerRow.id}`} className="mb-1 block text-muted-foreground">
+										Provider model ID
+									</Label>
+									<Input
+										id={`provider-model-id-${providerRow.id}`}
 										value={providerRow.provider_model_slug}
 										onChange={(event) =>
 											setProviderRows((prev) =>
@@ -1235,14 +1256,17 @@ export default function NewModelForm({
 										}
 										className="h-8 text-xs"
 									/>
-								</label>
-								<label className="text-xs">
-									<div className="mb-1 text-muted-foreground">Internal model ID</div>
-									<Input value={modelId} readOnly disabled className="h-8 text-xs" />
-								</label>
+								</div>
+								<div className="text-xs">
+									<Label htmlFor={`provider-internal-model-${providerRow.id}`} className="mb-1 block text-muted-foreground">
+										Internal model ID
+									</Label>
+									<Input id={`provider-internal-model-${providerRow.id}`} value={modelId} readOnly disabled className="h-8 text-xs" />
+								</div>
 								<div className="flex items-end justify-between gap-2">
-									<label className="flex items-center gap-2 text-xs">
+									<label htmlFor={`provider-active-${providerRow.id}`} className="flex items-center gap-2 text-xs">
 										<Checkbox
+											id={`provider-active-${providerRow.id}`}
 											checked={providerRow.is_active_gateway}
 											onCheckedChange={(checked) =>
 												setProviderRows((prev) =>
@@ -1268,9 +1292,10 @@ export default function NewModelForm({
 							</div>
 
 							<div className="grid gap-2 lg:grid-cols-3">
-								<label className="text-xs">
+								<label htmlFor={`provider-quant-${providerRow.id}`} className="text-xs">
 									<div className="mb-1 text-muted-foreground">Quantisation</div>
 									<Input
+										id={`provider-quant-${providerRow.id}`}
 										value={providerRow.quantization_scheme}
 										onChange={(event) =>
 											setProviderRows((prev) =>
@@ -1285,9 +1310,10 @@ export default function NewModelForm({
 										placeholder="FP16, INT8, etc."
 									/>
 								</label>
-								<label className="text-xs">
+								<label htmlFor={`provider-context-${providerRow.id}`} className="text-xs">
 									<div className="mb-1 text-muted-foreground">Input context</div>
 									<Input
+										id={`provider-context-${providerRow.id}`}
 										type="number"
 										value={providerRow.context_length}
 										onChange={(event) =>
@@ -1303,9 +1329,10 @@ export default function NewModelForm({
 										placeholder="e.g. 200000"
 									/>
 								</label>
-								<label className="text-xs">
+								<label htmlFor={`provider-max-output-${providerRow.id}`} className="text-xs">
 									<div className="mb-1 text-muted-foreground">Max output</div>
 									<Input
+										id={`provider-max-output-${providerRow.id}`}
 										type="number"
 										value={providerRow.max_output_tokens}
 										onChange={(event) =>
@@ -1540,9 +1567,10 @@ export default function NewModelForm({
 				{benchmarkRows.map((row) => (
 					<div key={row.id} className="space-y-2 rounded-md border p-2">
 						<div className="grid gap-2 lg:grid-cols-12">
-							<label className="text-xs lg:col-span-5">
+							<label htmlFor={`benchmark-select-${row.id}`} className="text-xs lg:col-span-5">
 								<div className="mb-1 text-muted-foreground">Benchmark</div>
 								<select
+									id={`benchmark-select-${row.id}`}
 									value={row.benchmark_id}
 									onChange={(event) =>
 										setBenchmarkRows((prev) =>
@@ -1559,9 +1587,10 @@ export default function NewModelForm({
 									))}
 								</select>
 							</label>
-							<label className="text-xs lg:col-span-2">
+							<label htmlFor={`benchmark-score-${row.id}`} className="text-xs lg:col-span-2">
 								<div className="mb-1 text-muted-foreground">Score</div>
 								<Input
+									id={`benchmark-score-${row.id}`}
 									value={row.score}
 									onChange={(event) =>
 										setBenchmarkRows((prev) =>
@@ -1585,9 +1614,10 @@ export default function NewModelForm({
 						</div>
 
 						<div className="grid gap-2 lg:grid-cols-12">
-							<label className="text-xs lg:col-span-6">
+							<label htmlFor={`benchmark-source-${row.id}`} className="text-xs lg:col-span-6">
 								<div className="mb-1 text-muted-foreground">Source link</div>
 								<Input
+									id={`benchmark-source-${row.id}`}
 									value={row.source_link}
 									onChange={(event) =>
 										setBenchmarkRows((prev) =>
@@ -1598,9 +1628,10 @@ export default function NewModelForm({
 									className="h-8 text-xs"
 								/>
 							</label>
-							<label className="text-xs lg:col-span-3">
+							<label htmlFor={`benchmark-variant-${row.id}`} className="text-xs lg:col-span-3">
 								<div className="mb-1 text-muted-foreground">Variant</div>
 								<Input
+									id={`benchmark-variant-${row.id}`}
 									value={row.variant}
 									onChange={(event) =>
 										setBenchmarkRows((prev) =>
@@ -1612,8 +1643,9 @@ export default function NewModelForm({
 								/>
 							</label>
 							<div className="flex items-end lg:col-span-3">
-								<label className="flex items-center gap-1 pb-2 text-xs">
+								<label htmlFor={`benchmark-self-${row.id}`} className="flex items-center gap-1 pb-2 text-xs">
 									<Checkbox
+										id={`benchmark-self-${row.id}`}
 										checked={row.is_self_reported}
 										onCheckedChange={(checked) =>
 											setBenchmarkRows((prev) =>
@@ -1657,9 +1689,12 @@ export default function NewModelForm({
 					{newBenchmarkRows.map((row, index) => (
 						<div key={`new-benchmark-${index}`} className="space-y-2 rounded-md border p-2">
 							<div className="grid gap-2 lg:grid-cols-12">
-								<label className="text-xs lg:col-span-3">
-									<div className="mb-1 text-muted-foreground">Benchmark ID</div>
+								<div className="text-xs lg:col-span-3">
+									<Label htmlFor={`new-benchmark-id-${row.id}`} className="mb-1 block text-muted-foreground">
+										Benchmark ID
+									</Label>
 									<Input
+										id={`new-benchmark-id-${row.id}`}
 										value={row.id}
 										onChange={(event) =>
 											setNewBenchmarkRows((prev) =>
@@ -1671,10 +1706,13 @@ export default function NewModelForm({
 										placeholder="benchmark_id"
 										className="h-8 text-xs"
 									/>
-								</label>
-								<label className="text-xs lg:col-span-3">
-									<div className="mb-1 text-muted-foreground">Name</div>
+								</div>
+								<div className="text-xs lg:col-span-3">
+									<Label htmlFor={`new-benchmark-name-${row.id}`} className="mb-1 block text-muted-foreground">
+										Name
+									</Label>
 									<Input
+										id={`new-benchmark-name-${row.id}`}
 										value={row.name}
 										onChange={(event) =>
 											setNewBenchmarkRows((prev) =>
@@ -1686,10 +1724,13 @@ export default function NewModelForm({
 										placeholder="Name"
 										className="h-8 text-xs"
 									/>
-								</label>
-								<label className="text-xs lg:col-span-3">
-									<div className="mb-1 text-muted-foreground">Category</div>
+								</div>
+								<div className="text-xs lg:col-span-3">
+									<Label htmlFor={`new-benchmark-category-${row.id}`} className="mb-1 block text-muted-foreground">
+										Category
+									</Label>
 									<Input
+										id={`new-benchmark-category-${row.id}`}
 										value={row.category}
 										onChange={(event) =>
 											setNewBenchmarkRows((prev) =>
@@ -1701,10 +1742,13 @@ export default function NewModelForm({
 										placeholder="Category"
 										className="h-8 text-xs"
 									/>
-								</label>
-								<label className="text-xs lg:col-span-3">
-									<div className="mb-1 text-muted-foreground">Direction</div>
+								</div>
+								<div className="text-xs lg:col-span-3">
+									<Label htmlFor={`new-benchmark-direction-${row.id}`} className="mb-1 block text-muted-foreground">
+										Direction
+									</Label>
 									<select
+										id={`new-benchmark-direction-${row.id}`}
 										value={row.ascending_order}
 										onChange={(event) =>
 											setNewBenchmarkRows((prev) =>
@@ -1724,12 +1768,15 @@ export default function NewModelForm({
 										<option value="higher">Higher is better</option>
 										<option value="lower">Lower is better</option>
 									</select>
-								</label>
+								</div>
 							</div>
 							<div className="grid gap-2 lg:grid-cols-12">
-								<label className="text-xs lg:col-span-11">
-									<div className="mb-1 text-muted-foreground">Link</div>
+								<div className="text-xs lg:col-span-11">
+									<Label htmlFor={`new-benchmark-link-${row.id}`} className="mb-1 block text-muted-foreground">
+										Link
+									</Label>
 									<Input
+										id={`new-benchmark-link-${row.id}`}
 										value={row.link}
 										onChange={(event) =>
 											setNewBenchmarkRows((prev) =>
@@ -1741,7 +1788,7 @@ export default function NewModelForm({
 										placeholder="https://..."
 										className="h-8 text-xs"
 									/>
-								</label>
+								</div>
 								<div className="flex items-end justify-end lg:col-span-1">
 									<Button
 										type="button"
@@ -1799,11 +1846,12 @@ export default function NewModelForm({
 							<div className="space-y-2">
 								{group.rows.map((row) => (
 									<div key={row.id} className="grid gap-2 rounded-md border bg-background p-2 lg:grid-cols-8">
-										<select
-											value={row.provider_id}
-											onChange={(event) => setPricingField(row.id, "provider_id", event.target.value)}
-											className="rounded-md border px-2 py-1.5 text-xs"
-										>
+									<select
+										aria-label="Pricing provider"
+										value={row.provider_id}
+										onChange={(event) => setPricingField(row.id, "provider_id", event.target.value)}
+										className="rounded-md border px-2 py-1.5 text-xs"
+									>
 											<option value="">Provider</option>
 											{pricingProviderOptions.map((provider) => (
 												<option key={provider.api_provider_id} value={provider.api_provider_id}>
@@ -1811,65 +1859,66 @@ export default function NewModelForm({
 												</option>
 											))}
 										</select>
-										<Input
-											list={`pricing-model-ids-${row.id}`}
-											value={row.api_model_id}
-											onChange={(event) => setPricingField(row.id, "api_model_id", event.target.value)}
-											placeholder="api_model_id"
-											className="h-8 text-xs"
-										/>
-										<datalist id={`pricing-model-ids-${row.id}`}>
-											{modelIdOptions.map((option) => (
-												<option key={`pricing-${row.id}-${option}`} value={option} />
-											))}
-										</datalist>
-										<select
-											value={row.capability_id}
-											onChange={(event) => setPricingField(row.id, "capability_id", event.target.value)}
-											className="rounded-md border px-2 py-1.5 text-xs"
-										>
+									<Input
+										aria-label="Pricing model ID"
+										value={row.api_model_id}
+										onChange={(event) => setPricingField(row.id, "api_model_id", event.target.value)}
+										placeholder="api_model_id"
+										className="h-8 text-xs"
+									/>
+									<select
+										aria-label="Pricing capability"
+										value={row.capability_id}
+										onChange={(event) => setPricingField(row.id, "capability_id", event.target.value)}
+										className="rounded-md border px-2 py-1.5 text-xs"
+									>
 											{COMMON_CAPABILITIES.map((capability) => (
 												<option key={capability} value={capability}>
 													{capability}
 												</option>
 											))}
 										</select>
-										<select
-											value={row.meter}
-											onChange={(event) => setPricingField(row.id, "meter", event.target.value)}
-											className="rounded-md border px-2 py-1.5 text-xs"
-										>
+									<select
+										aria-label="Pricing meter"
+										value={row.meter}
+										onChange={(event) => setPricingField(row.id, "meter", event.target.value)}
+										className="rounded-md border px-2 py-1.5 text-xs"
+									>
 											{PRICING_METER_OPTIONS.map((meter) => (
 												<option key={meter.value} value={meter.value}>
 													{meter.label}
 												</option>
 											))}
 										</select>
+									<Input
+										aria-label="Pricing price per unit"
+										value={row.price_per_unit}
+										onChange={(event) => setPricingField(row.id, "price_per_unit", event.target.value)}
+										placeholder="Price"
+										className="h-8 text-xs"
+									/>
+									<Input
+										aria-label="Pricing unit"
+										value={row.unit}
+										onChange={(event) => setPricingField(row.id, "unit", event.target.value)}
+										placeholder="Unit"
+										className="h-8 text-xs"
+									/>
+									<Input
+										aria-label="Pricing unit size"
+										value={row.unit_size}
+										onChange={(event) => setPricingField(row.id, "unit_size", event.target.value)}
+										placeholder="Unit size"
+										className="h-8 text-xs"
+									/>
+									<div className="flex items-center justify-between gap-2">
 										<Input
-											value={row.price_per_unit}
-											onChange={(event) => setPricingField(row.id, "price_per_unit", event.target.value)}
-											placeholder="Price"
+											aria-label="Pricing currency"
+											value={row.currency}
+											onChange={(event) => setPricingField(row.id, "currency", event.target.value)}
+											placeholder="USD"
 											className="h-8 text-xs"
 										/>
-										<Input
-											value={row.unit}
-											onChange={(event) => setPricingField(row.id, "unit", event.target.value)}
-											placeholder="Unit"
-											className="h-8 text-xs"
-										/>
-										<Input
-											value={row.unit_size}
-											onChange={(event) => setPricingField(row.id, "unit_size", event.target.value)}
-											placeholder="Unit size"
-											className="h-8 text-xs"
-										/>
-										<div className="flex items-center justify-between gap-2">
-											<Input
-												value={row.currency}
-												onChange={(event) => setPricingField(row.id, "currency", event.target.value)}
-												placeholder="USD"
-												className="h-8 text-xs"
-											/>
 											<Button
 												type="button"
 												variant="ghost"
@@ -1890,6 +1939,7 @@ export default function NewModelForm({
 							{groupedPricingRows.unassignedRows.map((row) => (
 								<div key={row.id} className="grid gap-2 rounded-md border bg-background p-2 lg:grid-cols-8">
 									<select
+										aria-label="Pricing provider"
 										value={row.provider_id}
 										onChange={(event) => setPricingField(row.id, "provider_id", event.target.value)}
 										className="rounded-md border px-2 py-1.5 text-xs"
@@ -1902,18 +1952,14 @@ export default function NewModelForm({
 										))}
 									</select>
 									<Input
-										list={`pricing-model-ids-${row.id}`}
+										aria-label="Pricing model ID"
 										value={row.api_model_id}
 										onChange={(event) => setPricingField(row.id, "api_model_id", event.target.value)}
 										placeholder="api_model_id"
 										className="h-8 text-xs"
 									/>
-									<datalist id={`pricing-model-ids-${row.id}`}>
-										{modelIdOptions.map((option) => (
-											<option key={`pricing-${row.id}-${option}`} value={option} />
-										))}
-									</datalist>
 									<select
+										aria-label="Pricing capability"
 										value={row.capability_id}
 										onChange={(event) => setPricingField(row.id, "capability_id", event.target.value)}
 										className="rounded-md border px-2 py-1.5 text-xs"
@@ -1925,6 +1971,7 @@ export default function NewModelForm({
 										))}
 									</select>
 									<select
+										aria-label="Pricing meter"
 										value={row.meter}
 										onChange={(event) => setPricingField(row.id, "meter", event.target.value)}
 										className="rounded-md border px-2 py-1.5 text-xs"
@@ -1936,18 +1983,21 @@ export default function NewModelForm({
 										))}
 									</select>
 									<Input
+										aria-label="Pricing price per unit"
 										value={row.price_per_unit}
 										onChange={(event) => setPricingField(row.id, "price_per_unit", event.target.value)}
 										placeholder="Price"
 										className="h-8 text-xs"
 									/>
 									<Input
+										aria-label="Pricing unit"
 										value={row.unit}
 										onChange={(event) => setPricingField(row.id, "unit", event.target.value)}
 										placeholder="Unit"
 										className="h-8 text-xs"
 									/>
 									<Input
+										aria-label="Pricing unit size"
 										value={row.unit_size}
 										onChange={(event) => setPricingField(row.id, "unit_size", event.target.value)}
 										placeholder="Unit size"
@@ -1955,6 +2005,7 @@ export default function NewModelForm({
 									/>
 									<div className="flex items-center justify-between gap-2">
 										<Input
+											aria-label="Pricing currency"
 											value={row.currency}
 											onChange={(event) => setPricingField(row.id, "currency", event.target.value)}
 											placeholder="USD"

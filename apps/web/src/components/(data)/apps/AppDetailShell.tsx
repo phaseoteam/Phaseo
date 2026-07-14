@@ -1,9 +1,8 @@
 import Link from "next/link";
-import { createClient } from "@/utils/supabase/server";
-import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ExternalLink } from "lucide-react";
+import { fetchFrontendAppDetails } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 
 export default async function AppDetailShell({
 	appId,
@@ -17,16 +16,9 @@ export default async function AppDetailShell({
 	let appData = app;
 
 	if (!appData) {
-		const supabase = await createClient();
+		const fetchedApp = await fetchFrontendAppDetails(appId).catch(() => null);
 
-		// Verify the app exists (public access)
-		const { data: fetchedApp, error } = await supabase
-			.from("api_apps")
-			.select("id, title")
-			.eq("id", appId)
-			.single();
-
-		if (error || !fetchedApp) {
+		if (!fetchedApp) {
 			return (
 				<main className="flex min-h-screen flex-col">
 					<div className="container mx-auto px-4 py-8">
@@ -36,7 +28,7 @@ export default async function AppDetailShell({
 							</CardHeader>
 							<CardContent>
 								<p className="text-sm text-muted-foreground">
-									The app you're looking for doesn't exist.
+									The app you&apos;re looking for doesn&apos;t exist.
 								</p>
 							</CardContent>
 						</Card>
@@ -45,7 +37,11 @@ export default async function AppDetailShell({
 			);
 		}
 
-		appData = fetchedApp;
+		appData = {
+			id: fetchedApp.id,
+			title: fetchedApp.title,
+			url: fetchedApp.url ?? null,
+		};
 	}
 
 	return (

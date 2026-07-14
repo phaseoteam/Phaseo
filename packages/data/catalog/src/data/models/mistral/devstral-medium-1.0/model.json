@@ -2,7 +2,7 @@
   "model_id": "mistral/devstral-medium-1.0",
   "organisation_id": "mistral",
   "name": "Devstral Medium 1.0",
-  "status": "Deprecated",
+  "status": "Retired",
   "previous_model_id": null,
   "description": "Devstral Medium 1.0 is a coding model from Mistral for code generation, edits, and software tasks. It accepts text inputs and produces text outputs.",
   "announced_date": "2025-07-10T00:00:00",
@@ -27,7 +27,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mistral.ai/news/devstral-2507",
-      "rank": 75
+      "rank": 79
     }
   ]
 }

@@ -1,6 +1,6 @@
 import { cacheLife, cacheTag } from "next/cache";
-import { createClient } from "@/utils/supabase/client";
 import { applyHiddenFilter } from "@/lib/fetchers/models/visibility";
+import { createAdminClient } from "@/utils/supabase/admin";
 
 export interface PricingMeter {
     meter: string;
@@ -64,7 +64,7 @@ export default async function getPricingModels(
     includeHidden: boolean
 ): Promise<PricingModel[]> {
     try {
-        const supabase = await createClient();
+        const supabase = createAdminClient();
         const nowIso = new Date().toISOString();
         const activeWindowClause = [
             "and(effective_from.is.null,effective_to.is.null)",
@@ -255,9 +255,11 @@ export async function getPricingModelsCached(
     "use cache";
 
     cacheLife("hours"); // Cache for shorter time since pricing can change
+    cacheTag("public-model-catalogue");
     cacheTag("data:data_api_pricing_rules");
     cacheTag("data:data_api_provider_models");
     cacheTag("data:models");
+    cacheTag("frontend:pricing-models");
 
     return getPricingModels(includeHidden);
 }

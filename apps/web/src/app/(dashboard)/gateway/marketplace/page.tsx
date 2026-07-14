@@ -30,10 +30,8 @@ import {
 } from "@/components/ui/carousel";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import {
-	getPublicMarketplacePresetsCached,
-	type MarketplacePreset,
-} from "@/lib/fetchers/gateway/marketplace";
+import { fetchFrontendMarketplacePresets } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import type { MarketplacePreset } from "@/lib/fetchers/gateway/marketplace";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
@@ -49,7 +47,7 @@ export const metadata: Metadata = buildMetadata({
 });
 
 export default async function GatewayMarketplacePage() {
-	const presets = await getPublicMarketplacePresetsCached();
+	const presets = await fetchFrontendMarketplacePresets();
 	const featured = presets.slice(0, 6);
 	const community = presets.slice(6, 14);
 	const trending = presets.slice(0, 3);

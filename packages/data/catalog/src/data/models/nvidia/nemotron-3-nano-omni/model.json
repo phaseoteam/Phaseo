@@ -1,0 +1,19 @@
+{
+  "model_id": "nvidia/nemotron-3-nano-omni",
+  "organisation_id": "nvidia",
+  "name": "Nemotron 3 Nano Omni",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Nemotron 3 Nano Omni is a DigitalOcean-hosted NVIDIA model exposed through DigitalOcean Inference.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "nvidia/nemotron-3-nano-omni",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

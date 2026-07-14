@@ -1,4 +1,4 @@
-import { SubscriptionPlanFeature } from "@/lib/fetchers/subscription-plans/getSubscriptionPlan";
+import type { SubscriptionPlanFeature } from "@/lib/fetchers/subscription-plans/getSubscriptionPlan";
 
 interface SubscriptionPlanFeaturesTableProps {
 	features?: SubscriptionPlanFeature[] | null;

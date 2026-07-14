@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 17
+      "rank": 18
     },
     {
       "benchmark_id": "giantsteps-tempo",
@@ -94,7 +94,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 221
+      "rank": 222
     },
     {
       "benchmark_id": "gsm8k",
@@ -102,7 +102,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 28
+      "rank": 29
     },
     {
       "benchmark_id": "humaneval",
@@ -118,7 +118,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 45
+      "rank": 59
     },
     {
       "benchmark_id": "math",
@@ -142,7 +142,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 22
+      "rank": 23
     },
     {
       "benchmark_id": "mbpp",
@@ -214,7 +214,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 142
+      "rank": 145
     },
     {
       "benchmark_id": "mmlu-redux",
@@ -238,7 +238,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 100
+      "rank": 101
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -246,7 +246,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 98
+      "rank": 102
     },
     {
       "benchmark_id": "mmstar",

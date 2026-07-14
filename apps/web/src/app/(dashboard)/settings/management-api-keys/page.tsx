@@ -1,14 +1,12 @@
 import { Suspense } from "react";
-import { createClient } from "@/utils/supabase/server";
-import { createAdminClient } from "@/utils/supabase/admin";
 import CreateManagementKeyDialog from "@/components/(gateway)/settings/management-api-keys/CreateManagementKeyDialog";
 import ManagementKeysPanel from "@/components/(gateway)/settings/management-api-keys/ManagementKeysPanel";
-import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { ShieldAlert } from "lucide-react";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
+import { fetchSettingsManagementApiKeysInitialData } from "@/lib/fetchers/internal/fetchSettingsManagementApiKeysInitialData";
 
 export const metadata = {
 	title: "Management API Keys - Settings",
@@ -46,24 +44,10 @@ async function ManagementApiKeysContent({
 }: {
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-	const supabase = await createClient();
-	let adminClient: ReturnType<typeof createAdminClient> | null = null;
-	try {
-		adminClient = createAdminClient();
-	} catch {
-		adminClient = null;
-	}
-	const readClient: any = adminClient ?? supabase;
-
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
-	const resolvedWorkspaceId = await getWorkspaceIdFromCookie();
 	await searchParams;
+	const initialData = await fetchSettingsManagementApiKeysInitialData();
 
-	const activeWorkspaceId = String(resolvedWorkspaceId ?? "").trim();
-
-	if (!activeWorkspaceId) {
+	if (!initialData.workspace) {
 		return (
 			<div className="space-y-6">
 				<SettingsPageHeader
@@ -81,28 +65,6 @@ async function ManagementApiKeysContent({
 		);
 	}
 
-	const [{ data: activeWorkspace }, { data: managementKeys }] = await Promise.all([
-		readClient
-			.from("workspaces")
-			.select("id, name")
-			.eq("id", activeWorkspaceId)
-			.maybeSingle(),
-		readClient
-			.from("management_keys")
-			.select("*")
-			.eq("workspace_id", activeWorkspaceId)
-			.order("created_at", { ascending: false }),
-	]);
-
-	const workspaceName = String((activeWorkspace as any)?.name ?? "").trim() || "Current Workspace";
-	const teamsWithKeys = [
-		{
-			id: activeWorkspaceId,
-			name: workspaceName,
-			keys: (managementKeys ?? []).map((key: any) => ({ ...key })),
-		},
-	];
-
 	return (
 		<div className="space-y-6">
 			<SettingsPageHeader
@@ -111,15 +73,15 @@ async function ManagementApiKeysContent({
 				description="Manage elevated keys for automated workspace and key management."
 				actions={
 					<CreateManagementKeyDialog
-						currentUserId={user?.id}
-						currentWorkspaceId={activeWorkspaceId}
-						workspaces={[{ id: activeWorkspaceId, name: workspaceName }]}
+						currentUserId={initialData.currentUserId}
+						currentWorkspaceId={initialData.workspace.id}
+						workspaces={[initialData.workspace]}
 					/>
 				}
 			/>
 			<ManagementKeysPanel
-				teamsWithKeys={teamsWithKeys}
-				currentUserId={user?.id}
+				teamsWithKeys={initialData.teamsWithKeys}
+				currentUserId={initialData.currentUserId}
 			/>
 		</div>
 	);

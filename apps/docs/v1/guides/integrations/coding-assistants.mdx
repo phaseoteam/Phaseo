@@ -1,0 +1,159 @@
+---
+title: "Coding Assistants"
+description: "Add AI Stats as a model provider in Cursor, VS Code, Codex, Claude Code, and other coding tools."
+---
+
+Use this guide to add AI Stats as the model provider in coding assistants that support custom OpenAI-compatible or Anthropic-compatible endpoints.
+
+## Provider settings
+
+Use these values unless the tool asks for a different field name:
+
+| Setting | Value |
+| --- | --- |
+| Provider type | OpenAI Compatible |
+| Base URL | `https://api.phaseo.app/v1` |
+| API key | Your AI Stats API key |
+| Model | An AI Stats model id, such as `openai/gpt-5-nano` |
+
+For Anthropic-compatible tools, use:
+
+| Setting | Value |
+| --- | --- |
+| Base URL | `https://api.phaseo.app` |
+| Auth token | Your AI Stats API key |
+| Model | An AI Stats model id, such as `anthropic/claude-sonnet-4.5` |
+
+## Cursor
+
+Cursor supports custom OpenAI-compatible endpoints through its OpenAI API key settings.
+
+1. Open `Cursor Settings`.
+2. Go to `Models`.
+3. Enable or add the `OpenAI API Key` entry.
+4. Paste your AI Stats API key.
+5. Enable `Override OpenAI Base URL`.
+6. Set the base URL to `https://api.phaseo.app/v1`.
+7. Add a custom model using an AI Stats model id, for example `openai/gpt-5-nano`.
+8. Enable the model and verify it from the Cursor model picker.
+
+If Cursor rejects a model id with `/`, create the closest local alias the UI allows and route that alias to the AI Stats model in your own config when the client supports aliases.
+
+## VS Code
+
+VS Code supports adding models through the Language Models editor when the OpenAI-compatible provider is available in your VS Code or Insiders build.
+
+1. Open the Command Palette.
+2. Run `Chat: Manage Language Models`.
+3. Choose `OpenAI Compatible` or `OAI Compatible`.
+4. Enter your AI Stats API key.
+5. Set the endpoint or base URL to `https://api.phaseo.app/v1`.
+6. Add an AI Stats model id, for example `openai/gpt-5-nano`.
+7. Select the new model from the chat model picker.
+
+If your VS Code build does not show an OpenAI-compatible provider, use an extension that supports custom providers, such as Continue, Cline, Roo Code, or Kilo Code.
+
+## Continue
+
+Continue can use AI Stats through its OpenAI provider with a custom API base.
+
+```yaml
+name: AI Stats
+version: 0.0.1
+schema: v1
+
+models:
+  - name: AI Stats GPT-5 Nano
+    provider: openai
+    model: openai/gpt-5-nano
+    apiKey: ${{ secrets.AI_STATS_API_KEY }}
+    apiBase: https://api.phaseo.app/v1
+    roles:
+      - chat
+      - edit
+      - apply
+```
+
+For models where Continue defaults to Responses but your workflow needs Chat Completions compatibility, set `useResponsesApi: false`.
+
+## Cline, Roo Code, and Kilo Code
+
+These tools expose similar provider settings.
+
+1. Open the extension settings.
+2. Choose `OpenAI Compatible` as the provider.
+3. Set the base URL to `https://api.phaseo.app/v1`.
+4. Paste your AI Stats API key.
+5. Enter an AI Stats model id.
+6. Save and run a small chat request before using file-editing tools.
+
+## Aider
+
+Set OpenAI-compatible environment variables and pass the model on launch:
+
+```bash
+export OPENAI_API_BASE="https://api.phaseo.app/v1"
+export OPENAI_API_KEY="your_ai_stats_api_key"
+aider --model openai/openai/gpt-5-nano
+```
+
+Aider often expects OpenAI-compatible custom models to be prefixed with `openai/`. Because AI Stats model ids already include provider prefixes, the full Aider model string may look like `openai/openai/gpt-5-nano`.
+
+## Codex
+
+Use the dedicated [Codex guide](./codex.mdx). The short version is:
+
+```toml
+model = "openai/gpt-5-3-codex-2026-02-05"
+model_provider = "ai_stats"
+
+[model_providers.ai_stats]
+name = "AI Stats"
+base_url = "https://api.phaseo.app/v1"
+env_key = "AI_STATS_API_KEY"
+wire_api = "responses"
+```
+
+## Claude Code
+
+Use the dedicated [Claude Code guide](./claude-code.mdx). Claude Code uses Anthropic-compatible gateway environment variables:
+
+```bash
+export ANTHROPIC_BASE_URL="https://api.phaseo.app"
+export ANTHROPIC_AUTH_TOKEN="your_ai_stats_api_key"
+export ANTHROPIC_API_KEY=""
+```
+
+Then start Claude Code from the same shell:
+
+```bash
+claude
+```
+
+## Claude Desktop
+
+Claude Desktop supports MCP servers, but it does not expose the same custom model-provider setup as coding assistants such as Cursor, Codex, or Claude Code. Use [Docs MCP](./docs-mcp.mdx) to add AI Stats documentation context to Claude Desktop. Use Claude Code when you need AI Stats to be the model gateway.
+
+## Deep Agents CLI and LangChain tools
+
+Use the same base URL and API key settings as [LangChain](./langchain.mdx). If the tool reads OpenAI environment variables, set:
+
+```bash
+export OPENAI_API_KEY="your_ai_stats_api_key"
+export OPENAI_BASE_URL="https://api.phaseo.app/v1"
+```
+
+Then pass an AI Stats model id in the tool's model field.
+
+## Notes
+
+- Coding assistants vary in how they handle slashes in model ids. If the UI rejects `openai/gpt-5-nano`, create a local alias if the tool supports aliases.
+- Test file-editing workflows carefully. `ai-stats:apply_patch` is Responses-only.
+- Add [Docs MCP](./docs-mcp.mdx) when you want the assistant to read AI Stats docs during a session.
+- Prefer Chat Completions for older coding tools unless the tool explicitly supports Responses events and server tools.
+
+## Related
+
+- [Server Tools](../server-tools/index.mdx)
+- [Responses](../../api-reference/endpoint/responses.mdx)
+- [Chat Completions](../../api-reference/endpoint/chat-completions.mdx)

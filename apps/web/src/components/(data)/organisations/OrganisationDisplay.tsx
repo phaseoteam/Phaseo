@@ -1,5 +1,5 @@
 import OrganisationCard from "./OrganisationCard";
-import { OrganisationCard as OrganisationCardType } from "@/lib/fetchers/organisations/getAllOrganisations";
+import type { OrganisationCard as OrganisationCardType } from "@/lib/fetchers/organisations/getAllOrganisations";
 
 interface OrganisationDisplayProps {
 	organisations: OrganisationCardType[];

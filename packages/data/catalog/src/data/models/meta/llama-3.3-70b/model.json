@@ -23,7 +23,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/meta-llama/llama-models/blob/main/models/llama3_3/MODEL_CARD.md",
-      "rank": 125
+      "rank": 131
     },
     {
       "benchmark_id": "lmarena-text",
@@ -39,7 +39,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 31
+      "rank": 41
     },
     {
       "benchmark_id": "confabulations",
@@ -47,7 +47,7 @@
       "is_self_reported": false,
       "other_info": "Confab 17.8%; non-response 27.8%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 54
+      "rank": 13
     },
     {
       "benchmark_id": "elimination-game",
@@ -55,7 +55,7 @@
       "is_self_reported": false,
       "other_info": "sigma 0.166; games 836; avg points 0.493",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 40
+      "rank": 37
     }
   ]
 }

@@ -59,7 +59,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 121
+      "rank": 122
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -67,7 +67,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 129
+      "rank": 135
     },
     {
       "benchmark_id": "livecodebench",
@@ -75,7 +75,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 36
+      "rank": 37
     },
     {
       "benchmark_id": "longbench-v2",
@@ -99,7 +99,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 47
+      "rank": 49
     },
     {
       "benchmark_id": "multi-challenge",
@@ -131,7 +131,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 73
+      "rank": 74
     },
     {
       "benchmark_id": "swe-bench",
@@ -139,7 +139,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 93
+      "rank": 96
     },
     {
       "benchmark_id": "tau-bench-airline",

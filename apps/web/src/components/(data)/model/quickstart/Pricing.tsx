@@ -6,8 +6,8 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGatewayMetadata";
-import { getModelPricingCached } from "@/lib/fetchers/models/getModelPricing";
 import type { PricingRule } from "@/lib/fetchers/models/getModelPricing";
+import { fetchFrontendModelPricing } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 
 interface PricingProps {
 	metadata: ModelGatewayMetadata;
@@ -92,8 +92,25 @@ function formatPrice(price: number, unit: string, unitSize: number): string {
 	return `$${price.toFixed(price < 0.01 ? 4 : 2)} per ${perUnit}`;
 }
 
+function formatPricingMeterLabel(meter: string): string {
+	switch (meter) {
+		case "cached_read_text_tokens":
+			return "Cache read";
+		case "cached_write_text_tokens":
+			return "Cache write";
+		case "cached_write_text_tokens_5m":
+			return "Cache write (5 min TTL)";
+		case "cached_write_text_tokens_1h":
+			return "Cache write (1 hour TTL)";
+		case "implicit_cached_input_text_tokens":
+			return "Implicit cached input";
+		default:
+			return meter.replace(/_/g, " ");
+	}
+}
+
 export default async function Pricing({ metadata, includeHidden }: PricingProps) {
-	const pricingData = await getModelPricingCached(metadata.modelId, includeHidden);
+	const pricingData = await fetchFrontendModelPricing(metadata.modelId);
 
 	if (!pricingData || pricingData.length === 0) {
 		return null;
@@ -132,7 +149,7 @@ export default async function Pricing({ metadata, includeHidden }: PricingProps)
 														<div key={rule.id} className="rounded-lg border p-3 bg-muted/20">
 															<div className="flex justify-between items-start">
 																<div>
-																	<h5 className="font-medium">{rule.meter.replace(/_/g, ' ')}</h5>
+																	<h5 className="font-medium">{formatPricingMeterLabel(rule.meter)}</h5>
 																	<p className="text-sm text-muted-foreground">{priceStr}</p>
 																</div>
 															</div>

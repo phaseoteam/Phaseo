@@ -27,6 +27,8 @@ For a clean public `skills.sh` source, publish only the AI Stats skills you want
 - `ai-stats-agent-sdk-typescript`: long-running agent loops with `@ai-stats/agent-sdk`
 - `ai-stats-sdk-python`: Python usage with `ai-stats-py-sdk`
 - `ai-stats-product-docs`: product-facing rewrite workflow for docs, cookbook pages, and guides
+- `ai-stats-release-spotlight`: monthly recap and release spotlight writing workflow
+- `ai-stats-changelog`: combined, product, SDK, and data changelog writing workflow
 - `next-cache-components`: Next.js cache-component guidance
 - `openrouter-to-ai-stats-migration`: focused migration playbook for existing gateway swaps
 

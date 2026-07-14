@@ -36,7 +36,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from llama-3.3-70b-instruct (score=0.3129; benches=9)",
       "source_link": "https://github.com/meta-llama/llama-models/blob/main/models/llama3_3/MODEL_CARD.md",
-      "rank": 182
+      "rank": 183
     },
     {
       "benchmark_id": "humaneval",
@@ -92,7 +92,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from llama-3.3-70b-instruct (score=0.3129; benches=9)",
       "source_link": "https://github.com/meta-llama/llama-models/blob/main/models/llama3_3/MODEL_CARD.md",
-      "rank": 114
+      "rank": 117
     }
   ]
 }

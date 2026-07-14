@@ -119,7 +119,7 @@
       "is_self_reported": true,
       "other_info": "Single Attempt",
       "source_link": "https://storage.googleapis.com/gweb-uniblog-publish-prod/original_images/gemini_2-5_procomp_benchmarks_cropped_light_3.gif",
-      "rank": 24
+      "rank": 29
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -127,7 +127,7 @@
       "is_self_reported": true,
       "other_info": "No Tools",
       "source_link": "https://storage.googleapis.com/gweb-uniblog-publish-prod/original_images/gemini_2-5_procomp_benchmarks_cropped_light_3.gif",
-      "rank": 70
+      "rank": 75
     },
     {
       "benchmark_id": "lmarena-text",
@@ -167,7 +167,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 2
+      "rank": 9
     },
     {
       "benchmark_id": "simpleqa",
@@ -183,7 +183,7 @@
       "is_self_reported": true,
       "other_info": "Multiple Attempts",
       "source_link": "https://storage.googleapis.com/gweb-uniblog-publish-prod/original_images/gemini_2-5_procomp_benchmarks_cropped_light_3.gif",
-      "rank": 59
+      "rank": 63
     },
     {
       "benchmark_id": "swe-bench",
@@ -191,7 +191,7 @@
       "is_self_reported": true,
       "other_info": "Single Attempt",
       "source_link": "https://storage.googleapis.com/gweb-uniblog-publish-prod/original_images/gemini_2-5_procomp_benchmarks_cropped_light_3.gif",
-      "rank": 88
+      "rank": 92
     },
     {
       "benchmark_id": "matharena-apex",

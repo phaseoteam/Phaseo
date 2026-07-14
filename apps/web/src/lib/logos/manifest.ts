@@ -117,6 +117,9 @@ export const logoManifest = {
 	deepseek: {
 		color: "/logos/deepseek.svg",
 	},
+	digitalocean: {
+		color: "/logos/digitalocean.svg",
+	},
 	"eleven-labs": {
 		light: "/logos/eleven-labs_light.svg",
 		dark: "/logos/eleven-labs_dark.svg",
@@ -245,6 +248,10 @@ export const logoManifest = {
 	},
 	"naver-hyperclova": {
 		color: "/logos/naver-hyperclova.svg",
+	},
+	"nex-agi": {
+		light: "/logos/nex-agi_light.svg",
+		dark: "/logos/nex-agi_dark.svg",
 	},
 	"nebius-token-factory": {
 		light: "/logos/nebius-token-factory_light.svg",

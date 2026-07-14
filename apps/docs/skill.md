@@ -75,7 +75,7 @@ Before making assumptions:
 
 Useful discovery endpoints:
 
-- `GET /v1/gateway/models`
+- `GET /v1/models`
 - `GET /v1/providers`
 - `GET /v1/pricing/models`
 
@@ -111,7 +111,7 @@ Do not assume async endpoints return final content immediately.
 
 AI Stats supports agentic workflows through:
 
-- gateway-native tools like `gateway:web_search`, `gateway:web_fetch`, and `gateway:datetime`
+- gateway-native tools like `ai-stats:web_search`, `ai-stats:web_fetch`, and `gateway:datetime`
 - Agent SDK docs and examples
 - structured-output and response-healing workflows
 

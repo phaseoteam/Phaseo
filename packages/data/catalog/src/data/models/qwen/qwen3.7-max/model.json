@@ -36,7 +36,7 @@
       "is_self_reported": true,
       "other_info": "SWE-Pro; refined benchmark; internal agent scaffold",
       "source_link": "https://www.alibabacloud.com/blog/qwen3-7-the-agent-frontier_603154",
-      "rank": null
+      "rank": 5
     },
     {
       "benchmark_id": "swe-bench",
@@ -44,7 +44,7 @@
       "is_self_reported": true,
       "other_info": "SWE-Verified; internal agent scaffold",
       "source_link": "https://www.alibabacloud.com/blog/qwen3-7-the-agent-frontier_603154",
-      "rank": null
+      "rank": 9
     },
     {
       "benchmark_id": "swe-bench-multilingual",
@@ -52,7 +52,7 @@
       "is_self_reported": true,
       "other_info": "Internal agent scaffold",
       "source_link": "https://www.alibabacloud.com/blog/qwen3-7-the-agent-frontier_603154",
-      "rank": null
+      "rank": 3
     },
     {
       "benchmark_id": "scicode",
@@ -60,7 +60,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.alibabacloud.com/blog/qwen3-7-the-agent-frontier_603154",
-      "rank": null
+      "rank": 2
     },
     {
       "benchmark_id": "terminal-bench-2.0",
@@ -68,7 +68,7 @@
       "is_self_reported": true,
       "other_info": "Harbor/Terminus-2 harness; avg of 5 runs",
       "source_link": "https://www.alibabacloud.com/blog/qwen3-7-the-agent-frontier_603154",
-      "rank": null
+      "rank": 8
     },
     {
       "benchmark_id": "mcp-mark",
@@ -76,7 +76,7 @@
       "is_self_reported": true,
       "other_info": "GitHub MCP v0.30.3; Playwright responses truncated at 32K tokens",
       "source_link": "https://www.alibabacloud.com/blog/qwen3-7-the-agent-frontier_603154",
-      "rank": null
+      "rank": 1
     },
     {
       "benchmark_id": "scale-mcp-atlas",
@@ -84,7 +84,7 @@
       "is_self_reported": true,
       "other_info": "MCP-Atlas public set; Gemini 2.5 Pro judge",
       "source_link": "https://www.alibabacloud.com/blog/qwen3-7-the-agent-frontier_603154",
-      "rank": null
+      "rank": 3
     },
     {
       "benchmark_id": "skillsbench",
@@ -92,7 +92,7 @@
       "is_self_reported": true,
       "other_info": "Evaluated via OpenCode on 78 tasks; avg of 5 runs",
       "source_link": "https://www.alibabacloud.com/blog/qwen3-7-the-agent-frontier_603154",
-      "rank": null
+      "rank": 1
     },
     {
       "benchmark_id": "bfcl-v4",
@@ -100,7 +100,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.alibabacloud.com/blog/qwen3-7-the-agent-frontier_603154",
-      "rank": null
+      "rank": 1
     },
     {
       "benchmark_id": "claw-eval",
@@ -108,7 +108,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.alibabacloud.com/blog/qwen3-7-the-agent-frontier_603154",
-      "rank": null
+      "rank": 3
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -116,7 +116,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.alibabacloud.com/blog/qwen3-7-the-agent-frontier_603154",
-      "rank": null
+      "rank": 12
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -124,7 +124,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.alibabacloud.com/blog/qwen3-7-the-agent-frontier_603154",
-      "rank": null
+      "rank": 41
     },
     {
       "benchmark_id": "hmmt-feb-2026",
@@ -132,7 +132,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.alibabacloud.com/blog/qwen3-7-the-agent-frontier_603154",
-      "rank": null
+      "rank": 1
     },
     {
       "benchmark_id": "imoanswerbench",
@@ -140,7 +140,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.alibabacloud.com/blog/qwen3-7-the-agent-frontier_603154",
-      "rank": null
+      "rank": 1
     },
     {
       "benchmark_id": "apex",
@@ -148,7 +148,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.alibabacloud.com/blog/qwen3-7-the-agent-frontier_603154",
-      "rank": null
+      "rank": 1
     },
     {
       "benchmark_id": "ifbench",
@@ -156,7 +156,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.alibabacloud.com/blog/qwen3-7-the-agent-frontier_603154",
-      "rank": null
+      "rank": 3
     },
     {
       "benchmark_id": "simplebench",
@@ -164,7 +164,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/",
-      "rank": 5
+      "rank": 4
     },
     {
       "benchmark_id": "livebench",
@@ -172,7 +172,7 @@
       "is_self_reported": false,
       "other_info": "2026-01-08 release",
       "source_link": "https://livebench.ai/#/",
-      "rank": 17
+      "rank": 20
     },
     {
       "benchmark_id": "creative-story-writing",
@@ -180,7 +180,7 @@
       "is_self_reported": false,
       "other_info": "win prob 0.25; 95% CI -2.0..-1.6",
       "source_link": "https://github.com/lechmazur/writing",
-      "rank": 25
+      "rank": 24
     },
     {
       "benchmark_id": "nyt-connections",

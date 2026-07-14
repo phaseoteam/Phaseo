@@ -1,0 +1,72 @@
+{
+  "plan_id": "google-antigravity-individual",
+  "name": "Google Antigravity Individual",
+  "organisation_id": "google",
+  "description": "Free individual Google Antigravity plan with included agent usage and model access subject to weekly rate limits.",
+  "pricing_options": [
+    {
+      "frequency": "monthly",
+      "usd_price": 0,
+      "link": "https://antigravity.google/pricing",
+      "other_info": null
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "Tab Completions",
+      "feature_value": "Unlimited",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Command Requests",
+      "feature_value": "Unlimited",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Rate Limits",
+      "feature_value": "Weekly",
+      "feature_description": "Free individual usage is subject to weekly rate limits.",
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "google/gemini-3.5-flash",
+      "model_info": "Agent model access",
+      "rate_limit": "Subject to weekly rate limits",
+      "other_info": null
+    },
+    {
+      "model_id": "google/gemini-3.1-pro-preview",
+      "model_info": "Agent model access",
+      "rate_limit": "Subject to weekly rate limits",
+      "other_info": "Antigravity lists Gemini 3.1 Pro; this catalog currently tracks the preview model ID."
+    },
+    {
+      "model_id": "google/gemini-3-flash-preview",
+      "model_info": "Agent model access",
+      "rate_limit": "Subject to weekly rate limits",
+      "other_info": "Antigravity lists Gemini 3 Flash; this catalog currently tracks the preview model ID."
+    },
+    {
+      "model_id": "anthropic/claude-sonnet-4.6",
+      "model_info": "Agent model access",
+      "rate_limit": "Subject to weekly rate limits",
+      "other_info": null
+    },
+    {
+      "model_id": "anthropic/claude-opus-4.6",
+      "model_info": "Agent model access",
+      "rate_limit": "Subject to weekly rate limits",
+      "other_info": null
+    },
+    {
+      "model_id": "openai/gpt-oss-120b",
+      "model_info": "Agent model access",
+      "rate_limit": "Subject to weekly rate limits",
+      "other_info": null
+    }
+  ]
+}

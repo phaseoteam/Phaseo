@@ -1,0 +1,60 @@
+{
+  "plan_id": "cursor-teams",
+  "name": "Cursor Teams",
+  "organisation_id": "cursor",
+  "description": null,
+  "pricing_options": [
+    {
+      "frequency": "monthly",
+      "usd_price": 40,
+      "link": "https://cursor.com/pricing",
+      "other_info": "Per user"
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "Team Billing",
+      "feature_value": "Included",
+      "feature_description": "Centralized team billing and administration.",
+      "other_info": null
+    },
+    {
+      "feature_name": "Frontier Models",
+      "feature_value": "Included",
+      "feature_description": "Everything on Individual plus team collaboration features.",
+      "other_info": "Exact available model list may vary"
+    },
+    {
+      "feature_name": "Team Privacy Mode",
+      "feature_value": "Included",
+      "feature_description": null,
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "cursor/composer-2.5",
+      "model_info": "Cursor native agent model",
+      "rate_limit": "Consumes included usage at model rates",
+      "other_info": null
+    },
+    {
+      "model_id": "openai/gpt-5.5",
+      "model_info": "Frontier model access",
+      "rate_limit": "Consumes included usage at model rates",
+      "other_info": "Representative OpenAI frontier model; exact availability may vary"
+    },
+    {
+      "model_id": "anthropic/claude-sonnet-4.6",
+      "model_info": "Frontier model access",
+      "rate_limit": "Consumes included usage at model rates",
+      "other_info": "Representative Anthropic frontier model; exact availability may vary"
+    },
+    {
+      "model_id": "google/gemini-3.5-flash",
+      "model_info": "Frontier model access",
+      "rate_limit": "Consumes included usage at model rates",
+      "other_info": "Representative Gemini frontier model; exact availability may vary"
+    }
+  ]
+}

@@ -14,7 +14,7 @@ const LINKS = [
 ];
 
 export default function MainNav() {
-	const pathname = usePathname();
+	const pathname = usePathname() ?? "/";
 
 	return (
 		<nav className="flex items-center gap-1 xl:gap-1.5">

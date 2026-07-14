@@ -6,7 +6,7 @@
   "previous_model_id": null,
   "description": "Mistral Small 24b 2501 is a language model from Mistral for chat, writing, analysis, and general-purpose automation. It is a smaller-footprint option suited to tighter latency or deployment budgets.",
   "announced_date": null,
-  "release_date": null,
+  "release_date": "2025-01-30T00:00:00",
   "deprecation_date": null,
   "retirement_date": null,
   "license": null,

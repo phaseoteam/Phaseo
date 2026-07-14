@@ -1,4 +1,4 @@
-import { OrganisationOverview as OrganisationOverviewType } from "@/lib/fetchers/organisations/getOrganisation";
+import type { OrganisationOverview as OrganisationOverviewType } from "@/lib/fetchers/organisations/getOrganisation";
 import OrganisationLinks from "./OrganisationLinks";
 import ModelsDisplay from "./ModelsDisplay";
 
