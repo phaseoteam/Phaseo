@@ -279,7 +279,7 @@ publicModelsRouter.get("/", async (c) => {
 			if (search) {
 				query = query.ilike(
 					catalogueVersion === "v2" ? "full_name" : "name",
-					`%${search.replace(/[%_]/g, "\\$&")}%`,
+					`%${search.replace(/[\\%_]/g, "\\$&")}%`,
 				);
 			}
 			return query;
