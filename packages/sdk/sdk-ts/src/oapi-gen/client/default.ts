@@ -6741,6 +6741,56 @@ export async function listBatchesAlias(
   });
 }
 
+export type ListBatchFilesParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns an error because listing shared gateway-key files is not supported. Retrieve workspace-owned files directly by id instead.
+ */
+export async function listBatchFiles(
+  client: Client,
+  args: ListBatchFilesParams = {},
+): Promise<unknown> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/batches/files";
+  return client.request<unknown>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ListBatchFilesAliasParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Alias of GET /batches/files.
+ */
+export async function listBatchFilesAlias(
+  client: Client,
+  args: ListBatchFilesAliasParams = {},
+): Promise<unknown> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/batch/files";
+  return client.request<unknown>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type ListBatchModelsParams = {
   path?: Record<string, never>;
   query?: {

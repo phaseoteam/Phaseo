@@ -360,6 +360,20 @@ function listBatchesAlias(Client $client, ?array $path = null, ?array $query = n
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
+function listBatchFiles(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/batches/files";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listBatchFilesAlias(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/batch/files";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
 function listBatchModels(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];

@@ -62,6 +62,8 @@ create policy gateway_webhook_endpoints_update_workspace_admins
   using (public.is_workspace_admin(workspace_id))
   with check (public.is_workspace_admin(workspace_id));
 
+-- Endpoint removal is backend-only and uses status = 'deleted'; authenticated
+-- clients never issue hard deletes directly against this table.
 grant select on public.gateway_webhook_endpoints to authenticated;
 grant select, insert, update, delete on public.gateway_webhook_endpoints to service_role;
 
@@ -81,7 +83,9 @@ create table if not exists public.gateway_batch_requests (
   method text null,
   endpoint text null,
   model text null,
-  status text not null default 'queued',
+  status text not null default 'queued'
+    constraint gateway_batch_requests_status_check
+    check (status in ('queued', 'validating', 'in_progress', 'completed', 'failed', 'cancelled', 'expired')),
   request_body_hash text null,
   response_status integer null,
   response_body jsonb null,

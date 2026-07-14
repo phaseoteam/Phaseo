@@ -329,11 +329,29 @@ export async function getWebhookEndpointSigningConfig(args: {
 	if (!data || String((data as any).status ?? "") !== "active") return null;
 	const validatedUrl = await validateWebhookEndpointUrlForDelivery((data as any).url);
 	if (!validatedUrl.ok) return null;
-	const secret = await decryptWebhookSecret({
-		secretCiphertext: String((data as any).secret_ciphertext ?? ""),
-		secretIv: String((data as any).secret_iv ?? ""),
-		secretKeyVersion: normalizeText((data as any).secret_key_version),
-	});
+	const secretCiphertext = normalizeText((data as any).secret_ciphertext);
+	const secretIv = normalizeText((data as any).secret_iv);
+	if (!secretCiphertext || !secretIv) {
+		console.warn("webhook_endpoint_missing_secret_material", {
+			workspaceId: args.workspaceId,
+			endpointId,
+		});
+		return null;
+	}
+	let secret: string;
+	try {
+		secret = await decryptWebhookSecret({
+			secretCiphertext,
+			secretIv,
+			secretKeyVersion: normalizeText((data as any).secret_key_version),
+		});
+	} catch {
+		console.warn("webhook_endpoint_secret_decryption_failed", {
+			workspaceId: args.workspaceId,
+			endpointId,
+		});
+		return null;
+	}
 	return {
 		id: String((data as any).id ?? ""),
 		url: validatedUrl.url,

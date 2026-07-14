@@ -7,6 +7,7 @@ import {
 	findAsyncOperationByNativeId,
 	getAsyncOperation,
 	isAsyncOperationBilled,
+	listTeamAsyncOperations,
 	markAsyncOperationBilled,
 	patchAsyncOperationMeta,
 	setAsyncOperationStatus,
@@ -408,6 +409,25 @@ export async function listPendingBatchJobs(
 				status === "canceled"
 			);
 		});
+}
+
+export async function listTeamBatchJobs(args: {
+	workspaceId: string;
+	limit?: number;
+	statuses?: Array<string | null>;
+}): Promise<BatchJobRecord[]> {
+	if (!args.workspaceId) return [];
+	const records = await listTeamAsyncOperations({
+		workspaceId: args.workspaceId,
+		kind: "batch",
+		limit: args.limit ? Math.max(args.limit * 3, args.limit + 50) : undefined,
+		statuses: args.statuses,
+	});
+	return records
+		.map((record) => toBatchJobRecord(record))
+		.filter((record): record is BatchJobRecord => Boolean(record))
+		.filter((record) => !record.batchId.startsWith(BATCH_FILE_INTERNAL_PREFIX))
+		.slice(0, args.limit);
 }
 
 export async function setBatchJobStatus(

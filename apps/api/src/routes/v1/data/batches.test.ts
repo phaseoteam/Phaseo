@@ -66,6 +66,7 @@ describe("splitGatewayBatchCreatePayload", () => {
 			webhook: {
 				endpoint_id: "we_123",
 			},
+			invalidWebhook: false,
 		});
 	});
 
@@ -84,6 +85,7 @@ describe("splitGatewayBatchCreatePayload", () => {
 			webhook: {
 				endpoint_id: "we_123",
 			},
+			invalidWebhook: false,
 		});
 	});
 });

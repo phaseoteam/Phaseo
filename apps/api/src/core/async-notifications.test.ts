@@ -116,7 +116,7 @@ describe("parseAsyncWebhookConfig", () => {
 		).toEqual({
 			url: "http://localhost:4010/webhooks/video",
 			secret: null,
-			events: ["job.completed", "job.failed", "job.cancelled", "job.expired"],
+			events: [],
 		});
 		expect(
 			parseAsyncWebhookConfig("video", {

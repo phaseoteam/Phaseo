@@ -10,6 +10,7 @@ const getWebhookEndpointSigningConfigMock = vi.fn();
 
 vi.mock("@/runtime/env", () => ({
 	dispatchBackground: (promise: Promise<unknown>) => void promise,
+	getBindings: () => ({}),
 }));
 
 vi.mock("@core/async-operations", () => ({
@@ -389,5 +390,34 @@ describe("async webhook dispatch", () => {
 				String(init?.body),
 			),
 		);
+	});
+
+	it("inherits managed endpoint event filters when the request does not override them", async () => {
+		getAsyncOperationMock.mockResolvedValueOnce(
+			batchRecord({
+				meta: {
+					webhook: {
+						endpoint_id: "we_1",
+					},
+				},
+			}),
+		);
+		getWebhookEndpointSigningConfigMock.mockResolvedValue({
+			id: "we_1",
+			url: "https://managed-receiver.test/webhook",
+			secret: "whsec_managed",
+			events: ["batch.failed"],
+		});
+
+		const delivered = await dispatchAsyncWebhookEvent({
+			workspaceId: "ws_1",
+			kind: "batch",
+			internalId: "batch_1",
+			phase: "completed",
+			baseUrl: "https://gateway.test",
+		});
+
+		expect(delivered).toBe(false);
+		expect(fetch).not.toHaveBeenCalled();
 	});
 });

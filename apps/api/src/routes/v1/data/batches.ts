@@ -31,6 +31,7 @@ import {
 import {
 	getBatchFileMeta,
 	getBatchJobMeta,
+	listTeamBatchJobs,
 	resolveBatchProviderNativeId,
 	saveBatchFileMeta,
 	saveBatchJobMeta,
@@ -51,6 +52,7 @@ import { releaseWalletReservation } from "@core/wallet-reservations";
 import { getBatchApiFeatureGateName, isBatchApiAccessEnabled } from "@core/feature-flags";
 import { getWebhookEndpointSigningConfig } from "@core/webhook-endpoints";
 import { filesRoutes as batchFilesRoutes } from "./files";
+import { fetchCatalogue } from "../control/models.catalogue";
 
 const OPENAI_PROVIDER_ID = "openai";
 const ANTHROPIC_PROVIDER_ID = "anthropic";
@@ -1091,8 +1093,10 @@ function decorateBatchPayload(args: {
 export function splitGatewayBatchCreatePayload(payload: Record<string, unknown>): {
 	upstreamPayload: Record<string, unknown>;
 	webhook: Record<string, unknown> | null;
+	invalidWebhook: boolean;
 } {
 	const upstreamPayload = { ...payload };
+	const hasWebhook = Object.prototype.hasOwnProperty.call(upstreamPayload, "webhook");
 	const rawWebhook = upstreamPayload.webhook;
 	delete upstreamPayload.webhook;
 	delete upstreamPayload.webhook_endpoint_id;
@@ -1106,14 +1110,16 @@ export function splitGatewayBatchCreatePayload(payload: Record<string, unknown>)
 	delete upstreamPayload.sessionId;
 	delete upstreamPayload.provider;
 	delete upstreamPayload.model;
+	const webhook =
+		rawWebhook && typeof rawWebhook === "object" && !Array.isArray(rawWebhook)
+			? (rawWebhook as Record<string, unknown>)
+			: typeof payload.webhook_endpoint_id === "string" && payload.webhook_endpoint_id.trim().length > 0
+				? { endpoint_id: payload.webhook_endpoint_id }
+				: null;
 	return {
 		upstreamPayload,
-		webhook:
-			rawWebhook && typeof rawWebhook === "object" && !Array.isArray(rawWebhook)
-				? (rawWebhook as Record<string, unknown>)
-				: typeof payload.webhook_endpoint_id === "string" && payload.webhook_endpoint_id.trim().length > 0
-					? { endpoint_id: payload.webhook_endpoint_id }
-				: null,
+		webhook,
+		invalidWebhook: hasWebhook && rawWebhook != null && !webhook,
 	};
 }
 
@@ -1172,6 +1178,127 @@ async function persistBatchFileOwnership(workspaceId: string, providerId: string
 	}
 }
 
+function parseBatchListLimit(url: URL): number {
+	const raw = Number(url.searchParams.get("limit") ?? "");
+	if (!Number.isFinite(raw)) return 20;
+	return Math.max(1, Math.min(100, Math.trunc(raw)));
+}
+
+function parseBatchListStatuses(url: URL): string[] {
+	const values = [
+		...url.searchParams.getAll("status"),
+		...String(url.searchParams.get("statuses") ?? "").split(","),
+	].map((value) => value.trim().toLowerCase()).filter(Boolean);
+	const statuses = values.flatMap((value) => {
+		switch (value) {
+			case "queued":
+			case "pending":
+				return ["pending", "queued", "validating"];
+			case "running":
+			case "in_progress":
+			case "processing":
+				return ["in_progress", "finalizing", "cancelling"];
+			case "cancelled":
+			case "canceled":
+				return ["cancelled", "canceled"];
+			case "completed":
+			case "failed":
+			case "expired":
+				return [value];
+			default:
+				return [];
+		}
+	});
+	return [...new Set(statuses)];
+}
+
+function parseModelQueryValues(url: URL, name: string): string[] {
+	return [...new Set(url.searchParams.getAll(name).flatMap((value) =>
+		value.split(",").map((part) => part.trim()).filter(Boolean),
+	))];
+}
+
+async function handleList(req: Request) {
+	const requestId = generatePublicId();
+	const auth = await authenticate(req);
+	if (!auth.ok) {
+		return err("unauthorised", { reason: (auth as AuthFailure).reason, request_id: requestId });
+	}
+	const accessDenied = await requireBatchApiAccess(auth, requestId);
+	if (accessDenied) return accessDenied;
+	const url = new URL(req.url);
+	const limit = parseBatchListLimit(url);
+	const statuses = parseBatchListStatuses(url);
+	const records = await listTeamBatchJobs({
+		workspaceId: auth.workspaceId,
+		limit,
+		statuses: statuses.length > 0 ? statuses : undefined,
+	});
+	const data = records.map((record) => decorateBatchPayload({
+		requestUrl: req.url,
+		publicBatchId: record.batchId,
+		meta: record.meta,
+		payload: {
+			id: record.batchId,
+			object: "batch",
+			status: record.status ?? record.meta?.status ?? "pending",
+			endpoint: record.meta?.endpoint ?? null,
+			completion_window: record.meta?.completionWindow ?? null,
+			input_file_id: record.meta?.inputFileId ?? null,
+			output_file_id: record.meta?.outputFileId ?? null,
+			error_file_id: record.meta?.errorFileId ?? null,
+			request_counts: record.meta?.requestCounts ?? null,
+			created_at: record.createdAt,
+			updated_at: record.updatedAt,
+		},
+	}));
+	return jsonPayload({
+		object: "list",
+		data,
+		first_id: typeof data[0]?.id === "string" ? data[0].id : null,
+		last_id: typeof data[data.length - 1]?.id === "string" ? data[data.length - 1].id : null,
+		has_more: false,
+	});
+}
+
+async function handleModels(req: Request) {
+	const requestId = generatePublicId();
+	const auth = await authenticate(req);
+	if (!auth.ok) {
+		return err("unauthorised", { reason: (auth as AuthFailure).reason, request_id: requestId });
+	}
+	const accessDenied = await requireBatchApiAccess(auth, requestId);
+	if (accessDenied) return accessDenied;
+	const url = new URL(req.url);
+	const catalogue = await fetchCatalogue({
+		endpoints: ["batch"],
+		params: parseModelQueryValues(url, "params"),
+		statuses: ["active"],
+	});
+	return jsonPayload({
+		object: "list",
+		data: catalogue.map((model) => ({
+			model: model.model_id,
+			name: model.name,
+			status: model.status,
+			input_types: model.input_types,
+			output_types: model.output_types,
+			supported_params: model.supported_params,
+			supported_parameters: model.supported_params,
+			supported_params_detail: model.supported_params_detail,
+			supported_parameters_detail: model.supported_params_detail,
+			providers: model.providers.map((provider) => ({
+				id: provider.api_provider_id,
+				supported_params: provider.params,
+				supported_parameters: provider.params,
+				supported_params_detail: provider.params_detail,
+				supported_parameters_detail: provider.params_detail,
+			})),
+			pricing: model.pricing,
+		})),
+	});
+}
+
 async function handleCreate(req: Request) {
 	const requestId = generatePublicId();
 	const auth = await authenticate(req);
@@ -1199,7 +1326,14 @@ async function handleCreate(req: Request) {
 			workspace_id: auth.workspaceId,
 		});
 	}
-	const { upstreamPayload, webhook } = splitGatewayBatchCreatePayload(payload);
+	const { upstreamPayload, webhook, invalidWebhook } = splitGatewayBatchCreatePayload(payload);
+	if (invalidWebhook) {
+		return err("validation_error", {
+			reason: "invalid_batch_webhook",
+			request_id: requestId,
+			workspace_id: auth.workspaceId,
+		});
+	}
 	const webhookConfigError = validateBatchWebhookConfig({
 		webhook,
 		requestId,
@@ -1943,6 +2077,8 @@ async function handleListRequests(req: Request, id: string) {
 export const batchRoutes = new Hono<Env>();
 
 batchRoutes.post("/", withRuntime(handleCreate));
+batchRoutes.get("/", withRuntime(handleList));
+batchRoutes.get("/models", withRuntime(handleModels));
 batchRoutes.get("/capabilities", withRuntime(handleCapabilities));
 batchRoutes.route("/files", batchFilesRoutes);
 batchRoutes.get("/:id/requests", withRuntime((req) => handleListRequests(req, (req as any).param?.("id") ?? req.url.split("/").slice(-2, -1)[0] ?? "")));

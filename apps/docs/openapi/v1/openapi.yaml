@@ -1443,6 +1443,28 @@ paths:
                     items:
                       $ref: '#/components/schemas/BatchProviderCapability'
   /batches/files:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatchFiles
+      summary: List batch files
+      description: >-
+        Returns an error because listing shared gateway-key files is not
+        supported. Retrieve workspace-owned files directly by id instead.
+      responses:
+        '400':
+          description: File listing is not supported
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     post:
       x-beta: true
       tags:
@@ -2984,6 +3006,26 @@ paths:
                     items:
                       $ref: '#/components/schemas/BatchProviderCapability'
   /batch/files:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatchFilesAlias
+      summary: List batch files (alias)
+      description: Alias of GET /batches/files.
+      responses:
+        '400':
+          description: File listing is not supported
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     post:
       x-beta: true
       tags:
@@ -6443,7 +6485,8 @@ components:
         debug:
           $ref: '#/components/schemas/DebugOptions'
         provider:
-          $ref: '#/components/schemas/ProviderRoutingOptions'
+          allOf:
+            - $ref: '#/components/schemas/ProviderRoutingOptions'
           description: >-
             Advanced routing constraint. Most requests should rely on
             model-based provider inference.
