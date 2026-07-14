@@ -23,10 +23,17 @@ routes = []
 [env.staging.vars]
 ENV = "staging"
 
-# phaseo.app remains served by Vercel. The initial production rollout intercepts
-# only model catalogue requests; every other web path and API remains on Vercel.
+# Cloudflare owns only explicitly migrated API paths during this transition.
 [[routes]]
 pattern = "phaseo.app/api/public/models*"
+zone_name = "phaseo.app"
+
+[[routes]]
+pattern = "phaseo.app/api/frontend/search"
+zone_name = "phaseo.app"
+
+[[routes]]
+pattern = "phaseo.app/favicon.svg"
 zone_name = "phaseo.app"
 
 [observability]
