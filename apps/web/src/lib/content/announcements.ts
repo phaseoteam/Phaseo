@@ -19,6 +19,7 @@ const EXCLUDED_ANNOUNCEMENT_SLUGS = new Set([
 
 type AnnouncementFrontmatterInput = {
 	title?: unknown;
+	shortTitle?: unknown;
 	description?: unknown;
 	publishedAt?: unknown;
 	updatedAt?: unknown;
@@ -35,6 +36,7 @@ export type AnnouncementCategory = "announcements" | "guides" | "data";
 export type AnnouncementSummary = {
 	slug: string;
 	title: string;
+	shortTitle: string | null;
 	description: string;
 	excerpt: string;
 	publishedAt: string;
@@ -272,6 +274,7 @@ async function loadAnnouncements(): Promise<AnnouncementPost[]> {
 			const stats = await fs.stat(filePath);
 			const fallbackDate = stats.mtime.toISOString();
 			const title = toStringOrFallback(frontmatter.title, toTitleFromSlug(slug));
+			const shortTitle = toOptionalString(frontmatter.shortTitle);
 			const description = toStringOrFallback(
 				frontmatter.description,
 				toExcerpt(content, 180)
@@ -286,6 +289,7 @@ async function loadAnnouncements(): Promise<AnnouncementPost[]> {
 			return {
 				slug,
 				title,
+				shortTitle,
 				description,
 				excerpt: toExcerpt(content),
 				publishedAt,

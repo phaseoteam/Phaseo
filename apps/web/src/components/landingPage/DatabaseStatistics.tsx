@@ -43,7 +43,7 @@ export default async function DatabaseStats() {
 		{
 			label: "Monthly Tokens",
 			value: `${formatCompact(monthlyTokenTotal ?? 0)}+`,
-			route: "/",
+			route: "/rankings",
 		},
 	] as const;
 

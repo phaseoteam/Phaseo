@@ -6,7 +6,7 @@ import { METHODOLOGY_ENTRIES } from "@/lib/content/methodology";
 import { Separator } from "@/components/ui/separator";
 
 export const metadata: Metadata = buildMetadata({
-	title: "Phaseo Methodology",
+	title: "Methodology",
 	description:
 		"Source-of-truth methodology pages covering how Phaseo calculates pricing, measures latency and throughput, normalises benchmarks, and tracks provider availability.",
 	path: "/methodology",

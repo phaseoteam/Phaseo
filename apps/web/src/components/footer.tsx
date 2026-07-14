@@ -1,86 +1,48 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
-import type { LucideIcon } from "lucide-react";
-import {
-	AppWindow,
-	ArrowUpRight,
-	BookOpenText,
-	Boxes,
-	Code2,
-	FileText,
-	GitBranch,
-	LifeBuoy,
-	MessageSquare,
-	Megaphone,
-	MonitorDot,
-	Scale,
-	Server,
-	ShieldCheck,
-	Sparkles,
-	Trophy,
-} from "lucide-react";
-import { motion, useReducedMotion } from "motion/react";
-import { ThemeSelector } from "@/components/theme-toggle";
 import { FooterStatusIndicator } from "@/components/FooterStatusIndicator";
-import { Logo } from "./Logo";
+import { ThemeSelector } from "@/components/theme-toggle";
+import { Logo } from "@/components/Logo";
 import { FooterYearRange } from "./FooterYearRange";
 
 const startYear = 2025;
 
 const productLinks = [
-	{ href: "/models", label: "Models", icon: Boxes },
-	{ href: "/chat", label: "Chat", icon: MessageSquare },
-	{ href: "/compare", label: "Compare", icon: Scale },
-	{ href: "/api-providers", label: "Providers", icon: Server },
-	{ href: "/apps", label: "Apps", icon: AppWindow },
-	{ href: "/rankings", label: "Rankings", icon: Trophy },
-	{ href: "/monitor", label: "Monitor", icon: MonitorDot },
+	{ href: "/models", label: "Models" },
+	{ href: "/chat", label: "Chat" },
+	{ href: "/compare", label: "Compare" },
+	{ href: "/api-providers", label: "Providers" },
+	{ href: "/apps", label: "Apps" },
+	{ href: "/rankings", label: "Rankings" },
+	{ href: "/monitor", label: "Monitor" },
 ];
 
 const developerLinks = [
-	{
-		href: "https://phaseo.app/docs/v1",
-		label: "Documentation",
-		icon: BookOpenText,
-		external: true,
-	},
+	{ href: "https://phaseo.app/docs/v1", label: "Documentation", external: true },
 	{
 		href: "https://phaseo.app/docs/v1/api-reference/introduction",
 		label: "API Reference",
-		icon: Code2,
 		external: true,
 	},
-	{
-		href: "https://phaseo.app/docs/v1/quickstart",
-		label: "Quickstart",
-		icon: Sparkles,
-		external: true,
-	},
+	{ href: "https://phaseo.app/docs/v1/quickstart", label: "Quickstart", external: true },
 	{
 		href: "https://phaseo.app/docs/v1/sdk-reference/typescript/overview",
 		label: "SDKs",
-		icon: GitBranch,
 		external: true,
 	},
-	{
-		href: "/methodology",
-		label: "Methodology",
-		icon: FileText,
-	},
+	{ href: "/methodology", label: "Methodology" },
 ];
 
 const companyLinks = [
-	{ href: "/blog", label: "Blog", icon: Megaphone },
-	{ href: "/pricing", label: "Pricing", icon: Sparkles },
-	{ href: "/works-with", label: "Works With", icon: AppWindow },
-	{ href: "/contact", label: "Support", icon: LifeBuoy },
-	{ href: "/privacy", label: "Privacy", icon: ShieldCheck },
-	{ href: "/terms", label: "Terms", icon: FileText },
+	{ href: "/blog", label: "Blog" },
+	{ href: "/pricing", label: "Pricing" },
+	{ href: "/works-with", label: "Works With" },
+	{ href: "/contact", label: "Support" },
+	{ href: "/privacy", label: "Privacy" },
+	{ href: "/terms", label: "Terms" },
 ];
 
-const connectLinks = [
+const communityLinks = [
 	{
 		href: "https://discord.gg/aQyywCvgZ5",
 		label: "Discord",
@@ -105,18 +67,12 @@ const connectLinks = [
 		logoId: "reddit",
 		external: true,
 	},
-	{
-		href: "https://x.com/phaseoteam",
-		label: "X",
-		logoId: "x",
-		external: true,
-	},
+	{ href: "https://x.com/phaseoteam", label: "X", logoId: "x", external: true },
 ];
 
 type FooterLink = {
 	href: string;
 	label: string;
-	icon?: LucideIcon;
 	logoId?: string;
 	external?: boolean;
 };
@@ -128,91 +84,38 @@ function FooterLinkList({
 	title: string;
 	links: FooterLink[];
 }) {
-	const reduceMotion = useReducedMotion();
-
 	return (
-		<div className="flex flex-col gap-3">
+		<div className="flex flex-col gap-2">
 			<h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
 				{title}
 			</h3>
 			<ul className="space-y-1.5">
 				{links.map((link) => (
-					<motion.li
-						key={`${title}-${link.href}`}
-						whileHover={reduceMotion ? undefined : { x: 3 }}
-						transition={
-							reduceMotion
-								? { duration: 0 }
-								: {
-										type: "spring",
-										stiffness: 320,
-										damping: 26,
-										mass: 0.7,
-									}
-						}
-					>
+					<li key={`${title}-${link.href}`}>
 						<Link
 							href={link.href}
 							prefetch={link.external ? undefined : false}
 							target={link.external ? "_blank" : undefined}
 							rel={link.external ? "noopener noreferrer" : undefined}
-							className="group inline-flex items-center gap-2 rounded-md py-1 text-sm text-zinc-600 transition-colors hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-50"
+							className={`group inline-flex items-center text-sm text-zinc-600 hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/70 dark:text-zinc-400 dark:hover:text-zinc-50 ${link.logoId ? "lg:w-28" : ""}`}
 						>
-							<motion.span
-								className="flex h-[1.5rem] w-[1.5rem] shrink-0 items-center justify-center rounded-md bg-zinc-100 p-1 text-zinc-500 transition-colors group-hover:bg-zinc-200 group-hover:text-zinc-900 dark:bg-zinc-900 dark:text-zinc-400 dark:group-hover:bg-zinc-800 dark:group-hover:text-zinc-100"
-								whileHover={
-									reduceMotion
-										? undefined
-										: { scale: 1.08, y: -1, rotate: link.logoId ? 0 : -4 }
-								}
-								transition={
-									reduceMotion
-										? { duration: 0 }
-										: {
-												type: "spring",
-												stiffness: 360,
-												damping: 24,
-												mass: 0.7,
-											}
-								}
-							>
-								{link.logoId ? (
+							{link.logoId ? (
+								<span
+									aria-hidden="true"
+									className="mr-0 hidden h-4 w-0 -translate-x-1 items-center justify-center overflow-hidden opacity-0 transition-all duration-300 ease-out lg:inline-flex group-hover:mr-2 group-hover:w-4 group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:mr-2 group-focus-visible:w-4 group-focus-visible:translate-x-0 group-focus-visible:opacity-100 motion-reduce:transition-none"
+								>
 									<Logo
 										id={link.logoId}
-										alt={link.label}
-										width={12}
-										height={12}
-										className="h-3 w-3"
+										alt=""
+										width={14}
+										height={14}
+										className="h-3.5 w-3.5 object-contain"
 									/>
-								) : link.icon ? (
-									<link.icon className="h-3.5 w-3.5" />
-								) : null}
-							</motion.span>
-							{link.label}
-							{link.external ? (
-								<motion.span
-									className="flex"
-									whileHover={
-										reduceMotion
-											? undefined
-											: { x: 1.5, y: -1.5, opacity: 1 }
-									}
-									initial={reduceMotion ? undefined : { opacity: 0.5 }}
-									transition={
-										reduceMotion
-											? { duration: 0 }
-											: {
-													type: "spring",
-													stiffness: 340,
-													damping: 24,
-												}
-									}
-								>
-									<ArrowUpRight className="h-3.5 w-3.5 text-zinc-400 opacity-0 transition-opacity group-hover:opacity-100" />
-								</motion.span>
+								</span>
 							) : null}
+							{link.label}
 						</Link>
-					</motion.li>
+					</li>
 				))}
 			</ul>
 		</div>
@@ -221,75 +124,91 @@ function FooterLinkList({
 
 export default function Footer() {
 	return (
-		<footer className="mt-auto w-full border-t border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-950">
-			<div className="mx-auto flex w-full max-w-[1280px] flex-col gap-10 px-4 py-10 sm:px-6 lg:px-8">
-				<div className="grid items-start gap-10 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.2fr)_repeat(4,minmax(0,0.8fr))] xl:grid-rows-[auto_auto]">
-					<div className="flex flex-col gap-4 sm:col-span-2 xl:col-span-1 xl:row-span-2">
-						<Link href="/" className="inline-flex w-fit items-center">
-							<Image
-								src="/wordmark_light.svg"
-								alt="Phaseo"
-								width={154}
-								height={40}
-								className="h-8 w-auto dark:hidden"
-								style={{ width: "auto" }}
-							/>
-							<Image
-								src="/wordmark_dark.svg"
-								alt="Phaseo"
-								width={154}
-								height={40}
-								className="hidden h-8 w-auto dark:block"
-								style={{ width: "auto" }}
-							/>
-						</Link>
+		<footer className="mt-auto w-full overflow-x-clip border-t border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+			<div className="mx-auto flex w-full max-w-[1280px] flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
+				<div className="grid items-start gap-6 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.3fr)_repeat(4,minmax(0,0.8fr))]">
+					<div className="flex flex-col gap-2 sm:col-span-2 lg:col-span-1">
+						<div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+							<Link href="/" className="inline-flex w-fit items-center">
+								<Image
+									src="/wordmark_light.svg"
+									alt="Phaseo"
+									width={154}
+									height={40}
+									className="h-7 w-auto dark:hidden"
+									style={{ width: "auto" }}
+								/>
+								<Image
+									src="/wordmark_dark.svg"
+									alt="Phaseo"
+									width={154}
+									height={40}
+									className="hidden h-7 w-auto dark:block"
+									style={{ width: "auto" }}
+								/>
+							</Link>
+							<div className="relative top-px">
+								<FooterStatusIndicator />
+							</div>
+							<div className="md:hidden sm:ml-auto">
+								<ThemeSelector className="py-0" labelSize="sm" showSelectedLabel={false} />
+							</div>
+						</div>
 					</div>
-
 					<FooterLinkList title="Explore" links={productLinks} />
 					<FooterLinkList title="Build" links={developerLinks} />
 					<FooterLinkList title="Company" links={companyLinks} />
-					<div className="grid gap-4">
-						<FooterLinkList title="Community" links={connectLinks} />
-						<div className="pt-2 xl:hidden">
-							<ThemeSelector
-								className="py-1"
-								labelSize="sm"
-							/>
-						</div>
-					</div>
-					<div className="hidden xl:flex xl:col-start-5 xl:row-start-2 xl:self-end">
-						<ThemeSelector
-							className="py-1"
-							labelSize="sm"
-						/>
+					<div className="grid gap-3">
+						<FooterLinkList title="Community" links={communityLinks} />
 					</div>
 				</div>
 
-				<div className="flex flex-col gap-3 border-t border-zinc-200/80 pt-5 text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 sm:flex-row sm:items-center sm:justify-between">
-					<div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-						<p className="inline-flex items-center py-1 font-medium tracking-[0.01em] text-zinc-500 dark:text-zinc-400">
+				<div className="flex flex-col gap-2 border-t border-zinc-200/80 pt-4 text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 sm:flex-row sm:items-center sm:justify-between">
+					<div className="flex flex-nowrap items-center gap-x-3">
+						<p className="whitespace-nowrap font-medium tracking-[0.01em] text-zinc-500 dark:text-zinc-400">
 							&copy; <FooterYearRange startYear={startYear} /> {"\u2022"} Phaseo
 						</p>
-						<FooterStatusIndicator />
+						<div className="hidden md:block lg:hidden">
+							<ThemeSelector className="py-0" labelSize="sm" showSelectedLabel={false} />
+						</div>
+						<div className="hidden lg:block">
+							<ThemeSelector className="py-0" labelSize="sm" />
+						</div>
 					</div>
-					<p className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-1">
+					<p className="hidden shrink-0 items-center gap-x-1.5 text-xs sm:max-md:inline-flex">
+						<span>Report:</span>
+						<Link
+							href="https://github.com/phaseoteam/Phaseo/issues"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-zinc-700 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-zinc-50"
+						>
+							Issue
+						</Link>
+						<span aria-hidden="true">·</span>
+						<Link
+							href="/contact"
+							className="text-zinc-700 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-zinc-50"
+						>
+							Support
+						</Link>
+					</p>
+					<p className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-1 sm:max-md:hidden">
 						<span>Spotted a data issue or broken page?</span>
 						<Link
 							href="https://github.com/phaseoteam/Phaseo/issues"
 							target="_blank"
 							rel="noopener noreferrer"
-							className="group inline-flex items-center gap-1 text-zinc-700 transition-colors hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-zinc-50"
+							className="text-zinc-700 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-zinc-50"
 						>
-							<span>Open an issue</span>
-							<ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+							Open an issue
 						</Link>
 						<span>or</span>
 						<Link
 							href="/contact"
-							className="group inline-flex items-center gap-1 text-zinc-700 transition-colors hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-zinc-50"
+							className="text-zinc-700 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-zinc-50"
 						>
-							<span>contact support</span>
-							<ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+							contact support
 						</Link>
 					</p>
 				</div>

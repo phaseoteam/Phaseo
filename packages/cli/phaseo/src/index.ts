@@ -306,7 +306,7 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	"management-keys": {
 		usage: [
 			"phaseo management-keys list [--json]",
-			"phaseo management-keys create --name <name> [--show-secret] [--json]",
+			"phaseo management-keys create --name <name> [--template raycast-readonly|read-only|read-write|full-control] [--scopes scope_a,scope_b] [--show-secret] [--json]",
 			"phaseo management-keys get <id> [--json]",
 			"phaseo management-keys update <id> [--name <name>] [--paused true|false] [--json]",
 			"phaseo management-keys delete <id> [--json]",
@@ -315,7 +315,7 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	"management-keys list": { usage: ["phaseo management-keys list [--json]"] },
 	"management-keys create": { usage: ["phaseo management-keys create --name <name> [--show-secret] [--json]"] },
 	"management-keys get": { usage: ["phaseo management-keys get <id> [--json]"] },
-	"management-keys update": { usage: ["phaseo management-keys update <id> [--name <name>] [--paused true|false] [--json]"] },
+	"management-keys update": { usage: ["phaseo management-keys update <id> [--name <name>] [--template raycast-readonly|read-only|read-write|full-control] [--paused true|false] [--json]"] },
 	"management-keys delete": { usage: ["phaseo management-keys delete <id> [--json]"] },
 	models: { usage: ["phaseo models list [--limit <n>] [--offset <n>] [--all] [--json]"] },
 	"models list": { usage: ["phaseo models list [--limit <n>] [--offset <n>] [--all] [--json]"] },
@@ -1368,6 +1368,7 @@ async function createManagementKey(flags: Record<string, string | boolean>) {
 		method: "POST",
 		body: compact({
 			name,
+			template: flagString(flags, "template"),
 			scopes: flagString(flags, "scopes")?.split(",").map((scope) => scope.trim()).filter(Boolean),
 			expires_at: flagString(flags, "expires-at"),
 			paused: flagBool(flags, "paused") || undefined,
@@ -1390,6 +1391,7 @@ async function updateManagementKey(id: string | undefined, flags: Record<string,
 	if (!id) throw new Error("Management key id is required");
 	const payload: Record<string, unknown> = {};
 	if (flagString(flags, "name")) payload.name = flagString(flags, "name");
+	if (flagString(flags, "template")) payload.template = flagString(flags, "template");
 	if (flags.paused !== undefined) payload.paused = flagBool(flags, "paused");
 	if (flagString(flags, "expires-at")) payload.expires_at = flagString(flags, "expires-at");
 	Object.assign(payload, parseJsonFlag(flags, "body-json"));

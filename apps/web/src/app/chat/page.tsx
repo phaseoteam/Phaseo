@@ -7,7 +7,7 @@ import ChatPlayground from "@/components/(chat)/ChatPlayground";
 import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
 
 export const metadata: Metadata = buildMetadata({
-	title: "AI Chat Playground: Compare Models Side by Side",
+	title: "AI Chat",
 	description:
 		"Compare gateway models side by side with multimodal inputs, parameter controls, and local chat history.",
 	path: "/chat",

@@ -90,7 +90,7 @@ export async function generateRankingsMetadata(): Promise<Metadata> {
 	const indexability = await fetchFrontendRankingsIndexability();
 
 	return buildMetadata({
-		title: "AI Model Leaderboards: Usage, Pricing, Benchmarks & Reliability",
+		title: "Rankings",
 		description:
 			"Compare AI models across gateway usage, effective pricing, caching value, benchmark scores, value metrics, latency, throughput and provider breakdowns.",
 		path: "/rankings",

@@ -1,5 +1,5 @@
 import { afterAll, afterEach, describe, expect, it } from "vitest";
-import { fetchProviderModels, resolveProviderModelsEndpoint } from "./helpers";
+import { buildDiscordMessage, extractDiscoveredModels, extractProviderApiModelSnapshot, fetchProviderModels, resolveProviderModelsEndpoint } from "./helpers";
 import { installFetchMock, jsonResponse } from "../../../tests/helpers/mock-fetch";
 import { setupRuntimeFromEnv, teardownTestRuntime } from "../../../tests/helpers/runtime";
 
@@ -157,5 +157,61 @@ describe("fetchProviderModels", () => {
 		} finally {
 			fetchMock.restore();
 		}
+	});
+});
+
+describe("extractProviderApiModelSnapshot", () => {
+	it("retains media pricing alongside normalized token rates", () => {
+		const snapshot = extractProviderApiModelSnapshot(
+			"deepinfra",
+			{
+				metadata: {
+					pricing: {
+						input_tokens: 0.2,
+						output_tokens: 1,
+						per_image_unit: 0.04,
+					},
+				},
+			},
+			{ metadata: { pricing: { input_tokens: 0.2, output_tokens: 1, per_image_unit: 0.04 } } },
+		);
+
+		expect(snapshot.pricingDetails).toEqual({
+			normalized: {
+				currency: "USD",
+				unit: "per_1m_tokens",
+				meters: { input_text_tokens: 0.2, output_text_tokens: 1 },
+			},
+			sourcePricing: { metadata: { pricing: { input_tokens: 0.2, output_tokens: 1, per_image_unit: 0.04 } } },
+		});
+	});
+});
+
+describe("extractDiscoveredModels", () => {
+	it("extracts model pricing from top-level array responses", () => {
+		const models = extractDiscoveredModels("together", [
+			{
+				id: "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+				pricing: { input: 0.88, output: 0.88 },
+			},
+		]);
+
+		expect(models).toHaveLength(1);
+		expect(models[0]).toMatchObject({
+			id: "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+			pricingDetails: { pricing: { input: 0.88, output: 0.88 } },
+		});
+	});
+});
+
+describe("buildDiscordMessage", () => {
+	it("does not include pricing-only changes", () => {
+		setupRuntimeFromEnv({} as any);
+		expect(buildDiscordMessage({
+			modelChanges: [],
+			pricing: { updatesDetected: 1, providerChanges: [{ providerId: "crofai", updates: 1, samples: ["glm-5.2 | price changed"] }] },
+			providerApiPricing: { updatesDetected: 1, providerChanges: [{ providerId: "deepinfra", updates: 1, samples: ["model | price changed"] }] },
+			configuredModelCoverage: { updatesDetected: 0, providerChanges: [] },
+		} as any)).toBe("");
 	});
 });

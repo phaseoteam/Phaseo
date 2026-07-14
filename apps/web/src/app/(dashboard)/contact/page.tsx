@@ -12,7 +12,7 @@ import { createClient } from "@/utils/supabase/server";
 import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 
 export const metadata: Metadata = buildMetadata({
-	title: "Contact Phaseo Support",
+	title: "Contact",
 	description:
 		"Contact Phaseo support for account, billing, and product questions, with direct human responses from the founder plus docs, community resources, and current support availability.",
 	path: "/contact",

@@ -134,7 +134,7 @@ function formatExpiry(value?: string | null) {
 
 function formatKeyReference(prefix?: string | null) {
 	const ref = typeof prefix === "string" ? prefix.trim() : "";
-	return ref ? `phaseo_v1_sk_...${ref}` : "phaseo_v1_sk_...";
+	return ref ? `Management key · …${ref}` : "Management key";
 }
 
 export default function ManagementKeysPanel({ teamsWithKeys }: any) {

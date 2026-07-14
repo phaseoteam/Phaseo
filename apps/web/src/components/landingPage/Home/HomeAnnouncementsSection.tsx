@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import {
@@ -12,7 +13,7 @@ import {
 	getAnnouncementPosts,
 } from "@/lib/content/announcements";
 
-const ANNOUNCEMENT_LIMIT = 3;
+const ANNOUNCEMENT_LIMIT = 4;
 
 export function HomeAnnouncementsSectionFallback() {
 	return (
@@ -52,18 +53,28 @@ export default async function HomeAnnouncementsSection() {
 				</div>
 
 				{latest.length > 0 ? (
-					<div className="grid grid-cols-1 gap-3">
+					<div className="grid grid-cols-1 gap-4 sm:max-lg:mx-auto sm:max-lg:max-w-[38rem] sm:max-xl:gap-3 lg:max-xl:grid-cols-2 xl:grid-cols-4">
 						{latest.map((post) => (
 							<Link key={post.slug} href={`/blog/${post.slug}`} className="block">
-								<Card className="gap-0 rounded-[20px] py-0 [--card-spacing:0px] transition hover:-translate-y-0.5 hover:shadow-sm">
-									<CardHeader className="space-y-1.5 p-3">
-										<div className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+								<Card className="h-full gap-0 overflow-hidden rounded-[20px] py-0 sm:max-xl:h-auto sm:max-xl:flex-row sm:max-xl:rounded-2xl [--card-spacing:0px]">
+									<div className="relative aspect-[16/9] border-b border-zinc-200/80 bg-zinc-100 sm:max-xl:w-40 sm:max-xl:shrink-0 sm:max-xl:self-center sm:max-xl:border-b-0 sm:max-xl:border-r dark:border-zinc-800 dark:bg-zinc-900">
+										<Image
+											src={post.coverImage}
+											alt=""
+											fill
+											quality={90}
+											sizes="(min-width: 1280px) 25vw, (min-width: 640px) 50vw, 100vw"
+											className="object-cover"
+										/>
+									</div>
+									<CardHeader className="space-y-1.5 p-3 sm:max-xl:min-w-0 sm:max-xl:flex-1 sm:max-xl:space-y-1 sm:max-xl:p-2.5">
+										<div className="text-xs font-medium text-zinc-500 sm:max-xl:text-[11px] dark:text-zinc-400">
 											{formatAnnouncementDate(post.publishedAt)}
 										</div>
-										<CardTitle className="text-base leading-snug underline decoration-transparent underline-offset-4 transition hover:decoration-current">
-											{post.title}
+										<CardTitle className="text-base leading-snug sm:max-xl:text-sm">
+											{post.shortTitle ?? post.title}
 										</CardTitle>
-										<CardDescription className="line-clamp-2 text-sm leading-5">
+										<CardDescription className="line-clamp-2 text-sm leading-5 sm:max-xl:line-clamp-1 sm:max-xl:text-xs sm:max-xl:leading-4">
 											{post.description}
 										</CardDescription>
 									</CardHeader>

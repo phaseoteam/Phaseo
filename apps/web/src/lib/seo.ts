@@ -106,7 +106,7 @@ export function buildMetadata({
 			images: [imageUrl],
 			...twitterOverrides,
 		},
-		robots: robots ?? { index: true, follow: true },
+		...(robots ? { robots } : {}),
 	};
 }
 

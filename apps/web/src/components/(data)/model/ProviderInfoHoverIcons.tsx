@@ -269,7 +269,7 @@ function getDataPolicyIcon(state: ProviderDataPolicyTier | "mixed") {
 		case "private":
 			return <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />;
 		case "logs":
-			return <Shield className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400" />;
+			return <ShieldAlert className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400" />;
 		case "trains":
 			return <ShieldAlert className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />;
 		case "mixed":
@@ -497,6 +497,7 @@ export default function ProviderInfoHoverIcons({
 	residency = [],
 	pricingPolicy,
 	showQuantizationTrigger = true,
+	showModelMappingTrigger = true,
 	className,
 }: {
 	providerId: string;
@@ -509,6 +510,7 @@ export default function ProviderInfoHoverIcons({
 	residency?: ResidencyEntryInput[];
 	pricingPolicy?: PricingPolicyInput;
 	showQuantizationTrigger?: boolean;
+	showModelMappingTrigger?: boolean;
 	className?: string;
 }) {
 	const slugs = uniqueDefined(providerModelSlugs);
@@ -619,7 +621,7 @@ export default function ProviderInfoHoverIcons({
 		),
 	);
 	const hasQuantization = showQuantizationTrigger && Boolean(quantization);
-	const hasSlug = displayModelIds.length > 0;
+	const hasModelMapping = showModelMappingTrigger && displayModelIds.length > 0;
 	const hasPromptTraining = promptTrainingEntries.length > 0;
 	const hasDataPolicy = dataPolicyEntries.some(
 		(entry) =>
@@ -640,7 +642,7 @@ export default function ProviderInfoHoverIcons({
 			Boolean(entry.sourceUrl),
 	);
 
-	if (!hasQuantization && !hasSlug && !hasPromptTraining && !hasResidency && !hasDataPolicy) return null;
+	if (!hasQuantization && !hasModelMapping && !hasPromptTraining && !hasResidency && !hasDataPolicy) return null;
 
 	return (
 		<div className={cn("flex items-center gap-1.5", className)}>
@@ -936,7 +938,7 @@ export default function ProviderInfoHoverIcons({
 				</IconHover>
 			) : null}
 
-			{hasSlug ? (
+			{hasModelMapping ? (
 				<IconHover
 					ariaLabel="Provider label"
 					content={

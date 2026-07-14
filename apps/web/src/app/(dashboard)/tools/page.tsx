@@ -3,7 +3,7 @@ import { buildMetadata } from "@/lib/seo";
 import ToolsGrid from "@/components/(tools)/ToolsGrid";
 
 export const metadata: Metadata = buildMetadata({
-	title: "Developer tools - Utilities for AI & LLM workflows",
+	title: "Developer Tools",
 	description:
 		"Browse free developer tools from Phaseo for working with AI models and APIs, including token counting, request building, JSON formatting and more.",
 	path: "/tools",

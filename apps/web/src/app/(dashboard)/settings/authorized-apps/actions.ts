@@ -84,9 +84,10 @@ export async function getAuthorizationDetailsAction(
 
 		// Fetch authorization details
 		const { data: authorization, error: authError } = await supabase
-			.from("user_authorized_apps")
-			.select("*")
-			.eq("authorization_id", authorizationId)
+			.from("oauth_authorizations")
+			.select("id, client_id, workspace_id, scopes, created_at, last_used_at")
+			.eq("id", authorizationId)
+			.eq("user_id", user.id)
 			.single();
 
 		if (authError || !authorization) {

@@ -32,7 +32,7 @@ import type {
 } from "@/components/(data)/models/Models/modelsDisplay.types";
 
 export const metadata: Metadata = buildMetadata({
-	title: "Compare AI Models: Benchmarks, Pricing & Providers",
+	title: "Models",
 	description:
 		"Browse AI models by benchmark scores, providers, modalities and pricing to find the right model for your use case.",
 	path: "/models",

@@ -23,7 +23,7 @@ import { z } from "zod";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
 import { CAPABILITIES, normalizeScopeList } from "@/lib/authz/capabilities";
 import { requireCapability, requireOAuthWorkspaceRole } from "./route-helpers";
-import { createOpaqueCode, hashOAuthSecret, isThirdPartyOAuthEnabled } from "@/lib/oauth/service";
+import { createOpaqueCode, hashOAuthClientSecret, isThirdPartyOAuthEnabled } from "@/lib/oauth/service";
 
 const app = new Hono<Env>();
 const PAGE_SIZE = 5000;
@@ -352,7 +352,7 @@ app.post("/", async (c) => {
 
 		const clientSecretHash =
 			typeof oauthClient.client_secret === "string" && oauthClient.client_secret.trim().length > 0
-				? await hashOAuthSecret(oauthClient.client_secret)
+				? await hashOAuthClientSecret(oauthClient.client_secret)
 				: null;
 
 		// Store metadata in database
@@ -700,7 +700,7 @@ app.post("/:clientId/regenerate-secret", async (c) => {
 		}
 
 		const nextSecret = createOpaqueCode();
-		const nextSecretHash = await hashOAuthSecret(nextSecret);
+		const nextSecretHash = await hashOAuthClientSecret(nextSecret);
 		const { error: secretError } = await supabase
 			.from("oauth_app_metadata")
 			.update({

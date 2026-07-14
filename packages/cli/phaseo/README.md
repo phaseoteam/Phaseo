@@ -88,7 +88,7 @@ phaseo guardrails create --name "Production Safety" --body-json '{"enabled":true
 phaseo guardrails add-keys <guardrail-id> --key-ids <key-id,key-id>
 phaseo guardrails add-members <guardrail-id> --user-ids <user-id,user-id>
 
-phaseo management-keys create --name "Automation"
+phaseo management-keys create --name "Raycast" --template raycast-readonly
 phaseo models list --limit 20
 phaseo providers list
 phaseo pricing models
@@ -136,7 +136,7 @@ User-created OAuth apps are coming soon. This release keeps OAuth client creatio
   - macOS: Keychain
   - Linux: Secret Service via `secret-tool`
 - `phaseo logout` revokes the stored refresh token before clearing local state.
-- Management keys now require explicit scopes; legacy empty-scope management keys are rejected.
+- Management keys use `phaseo_v1_mk_` and require explicit scopes; `phaseo_v1_sk_` keys are inference-only.
 - Regular inference/API keys are policy- and guardrail-driven rather than scope-driven.
 
 Override behavior when needed:

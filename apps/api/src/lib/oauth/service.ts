@@ -152,6 +152,35 @@ export async function hashOAuthSecretCandidates(value: string): Promise<string[]
 	return Promise.all(resolveOAuthTokenPeppers().map((pepper) => sha256Base64Url(`${pepper}:${value}`)));
 }
 
+export async function hashOAuthClientSecret(value: string): Promise<string> {
+	const [pepper] = resolveOAuthTokenPeppers();
+	const iterations = 600_000;
+	const salt = randomBase64Url(16);
+	const key = await crypto.subtle.importKey("raw", encoder.encode(value), "PBKDF2", false, ["deriveBits"]);
+	const bits = await crypto.subtle.deriveBits(
+		{ name: "PBKDF2", hash: "SHA-256", salt: encoder.encode(`${pepper}:${salt}`), iterations },
+		key,
+		256,
+	);
+	return `pbkdf2-sha256$${iterations}$${salt}$${base64UrlEncodeBytes(new Uint8Array(bits))}`;
+}
+
+async function verifyPbkdf2OAuthClientSecret(value: string, stored: string): Promise<boolean> {
+	const [, rawIterations, salt, expected] = stored.split("$");
+	const iterations = Number(rawIterations);
+	if (!Number.isSafeInteger(iterations) || iterations < 100_000 || !salt || !expected) return false;
+	const key = await crypto.subtle.importKey("raw", encoder.encode(value), "PBKDF2", false, ["deriveBits"]);
+	const candidates = await Promise.all(resolveOAuthTokenPeppers().map(async (pepper) => {
+		const bits = await crypto.subtle.deriveBits(
+			{ name: "PBKDF2", hash: "SHA-256", salt: encoder.encode(`${pepper}:${salt}`), iterations },
+			key,
+			256,
+		);
+		return base64UrlEncodeBytes(new Uint8Array(bits));
+	}));
+	return candidates.some((candidate) => timingSafeEqual(candidate, expected));
+}
+
 export async function verifyClientSecret(
 	client: Pick<OAuthClient, "client_type" | "client_secret_hash">,
 	providedSecret: string | null | undefined,
@@ -159,6 +188,9 @@ export async function verifyClientSecret(
 	if (client.client_type !== "confidential") return true;
 	const normalizedSecret = String(providedSecret ?? "").trim();
 	if (!normalizedSecret || !client.client_secret_hash) return false;
+	if (client.client_secret_hash.startsWith("pbkdf2-sha256$")) {
+		return verifyPbkdf2OAuthClientSecret(normalizedSecret, client.client_secret_hash);
+	}
 	const candidates = await hashOAuthSecretCandidates(normalizedSecret);
 	return candidates.some((candidate) => timingSafeEqual(candidate, client.client_secret_hash as string));
 }
