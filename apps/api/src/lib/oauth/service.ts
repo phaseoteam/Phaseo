@@ -147,6 +147,12 @@ export async function hashOAuthSecret(value: string): Promise<string> {
 	return base64UrlEncodeBytes(new Uint8Array(signature));
 }
 
+// PKCE code challenges are specified as SHA-256 digests, not password hashes.
+async function sha256Base64Url(value: string): Promise<string> {
+	const digest = await crypto.subtle.digest("SHA-256", encoder.encode(value));
+	return base64UrlEncodeBytes(new Uint8Array(digest));
+}
+
 export async function hashOAuthClientSecret(value: string): Promise<string> {
 	const bindings = getBindings();
 	const pepper = String(bindings.PHASEO_OAUTH_TOKEN_PEPPER ?? bindings.KEY_PEPPER_ACTIVE ?? bindings.KEY_PEPPER ?? "");
