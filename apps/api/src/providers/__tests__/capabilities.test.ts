@@ -51,7 +51,6 @@ describe("provider capability profiles", () => {
 		const providers = [
 			"openai",
 			"amazon-bedrock",
-			"amazon-bedrock-mantle",
 			"x-ai",
 			"xai",
 			"deepseek",

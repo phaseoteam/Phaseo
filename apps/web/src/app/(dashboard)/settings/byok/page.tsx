@@ -35,8 +35,7 @@ type ProviderItem = {
 const FALLBACK_PROVIDERS: ProviderItem[] = [
 	{ id: "ai21", name: "AI21", logoId: "ai21" },
 	{ id: "alibaba", name: "Alibaba", logoId: "alibaba" },
-	{ id: "amazon-bedrock", name: "Amazon Bedrock (Converse)", logoId: "amazon-bedrock" },
-	{ id: "amazon-bedrock-mantle", name: "Amazon Bedrock (Mantle)", logoId: "amazon-bedrock-mantle" },
+	{ id: "amazon-bedrock", name: "Amazon Bedrock", logoId: "amazon-bedrock" },
 	{ id: "anthropic", name: "Anthropic", logoId: "anthropic" },
 	{ id: "atlas-cloud", name: "Atlas Cloud", logoId: "atlas-cloud" },
 	{ id: "azure", name: "Azure", logoId: "azure" },
