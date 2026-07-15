@@ -63,7 +63,7 @@ async function main() {
 	);
 
 	const health = await client.getHealth();
-	console.log(`Gateway health: ${health.status} (${health.timestamp})`);
+	console.log(`Gateway health: ${health.status}`);
 	console.log("");
 
 	const results: Array<{

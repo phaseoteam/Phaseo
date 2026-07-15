@@ -3,20 +3,23 @@
 
 import { describe, it, expect, beforeAll } from "vitest";
 import Anthropic from "@anthropic-ai/sdk";
+import { normalizeGatewayBaseUrl } from "./test-config";
 
 /**
  * These tests verify that our gateway is fully compatible with the official Anthropic SDK.
  *
  * To run these tests:
  * 1. Set GATEWAY_API_KEY environment variable (your gateway API key)
- * 2. Set GATEWAY_BASE_URL environment variable (e.g., http://localhost:8787)
+ * 2. Set GATEWAY_BASE_URL environment variable (e.g., http://localhost:8787/v1)
  * 3. Ensure gateway is running
  *
  * Example:
- * GATEWAY_API_KEY=gw_test123 GATEWAY_BASE_URL=http://localhost:8787 pnpm test tests/sdk/anthropic-sdk-compat
+ * GATEWAY_API_KEY=gw_test123 GATEWAY_BASE_URL=http://localhost:8787/v1 pnpm test tests/sdk/anthropic-sdk-compat
  */
 
-const GATEWAY_BASE_URL = process.env.GATEWAY_BASE_URL;
+const GATEWAY_BASE_URL = normalizeGatewayBaseUrl(
+	process.env.GATEWAY_BASE_URL,
+);
 const GATEWAY_API_KEY = process.env.GATEWAY_API_KEY;
 
 // Skip tests if environment variables not set
@@ -377,7 +380,7 @@ if (shouldSkip) {
 ⚠️  Skipping Anthropic SDK compatibility tests
 
 To run these tests, set:
-  GATEWAY_BASE_URL=http://localhost:8787
+  GATEWAY_BASE_URL=http://localhost:8787/v1
   GATEWAY_API_KEY=your_gateway_key
 	`);
 }
