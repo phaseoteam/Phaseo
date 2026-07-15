@@ -2,7 +2,7 @@
   "model_id": "moonshotai/kimi-k3",
   "organisation_id": "moonshotai",
   "name": "Kimi K3",
-  "status": "Limited Access",
+  "status": "Rumoured",
   "previous_model_id": "moonshotai/kimi-k2.6",
   "description": "Kimi K3 is Moonshot AI's forthcoming multimodal model with text and image input, text output, and a rumored 1M-token context window. Pricing and final release metadata are not yet confirmed.",
   "announced_date": null,
