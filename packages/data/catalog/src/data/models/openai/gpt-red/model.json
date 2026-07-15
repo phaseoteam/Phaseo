@@ -1,0 +1,38 @@
+{
+  "model_id": "openai/gpt-red",
+  "organisation_id": "openai",
+  "name": "GPT-Red",
+  "status": "Withheld",
+  "previous_model_id": null,
+  "description": "GPT-Red is OpenAI's internal automated red-teaming model for discovering prompt-injection vulnerabilities and improving the robustness of deployed models.",
+  "announced_date": "2026-07-15T00:00:00",
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "openai/gpt-red",
+  "links": [
+    {
+      "title": "GPT-Red: Unlocking Self-Improvement for Robustness",
+      "kind": "announcement",
+      "url": "https://openai.com/index/unlocking-self-improvement-gpt-red/"
+    }
+  ],
+  "details": [
+    {
+      "name": "availability",
+      "value": "Internal-only OpenAI safety research model; not available through public APIs or hosted providers."
+    },
+    {
+      "name": "purpose",
+      "value": "Automated red-teaming and adversarial training for prompt-injection robustness."
+    },
+    {
+      "name": "withheld_reason",
+      "value": "OpenAI keeps GPT-Red separate from deployed models because it is trained to generate malicious prompt-injection attacks."
+    }
+  ],
+  "benchmarks": []
+}
