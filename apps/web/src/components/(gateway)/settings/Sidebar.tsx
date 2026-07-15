@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ExternalLink, PanelLeftClose } from "lucide-react";
+import { ExternalLink, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +25,7 @@ import { getSettingsSidebar } from "./Sidebar.config";
 
 function getBadgeClassName(badge: string) {
 	return cn(
-		"ml-auto h-5 shrink-0 px-1.5 text-[10px] font-semibold tracking-normal",
+		"ml-auto h-5 shrink-0 px-1.5 text-[10px] font-semibold tracking-normal group-data-[collapsible=icon]:hidden",
 		badge === "Beta" &&
 			"border-sky-500/30 bg-sky-500/10 text-sky-700 dark:border-sky-400/30 dark:bg-sky-400/10 dark:text-sky-300",
 		badge === "Alpha" &&
@@ -50,7 +50,8 @@ export default function SettingsSidebar({
 	showWebhooks?: boolean;
 }) {
 	const pathname = usePathname();
-	const { isMobile, setOpenMobile, toggleSidebar } = useSidebar();
+	const { isMobile, setOpenMobile, state, toggleSidebar } = useSidebar();
+	const isCollapsed = state === "collapsed" && !isMobile;
 	const navGroups = getSettingsSidebar({ showBroadcast, showWebhooks });
 
 	function matchScore(item: NavItem) {
@@ -124,7 +125,9 @@ export default function SettingsSidebar({
 						className="h-4 w-4 shrink-0 text-muted-foreground/85"
 					/>
 				) : null}
-				<span className="min-w-0 flex-1 truncate">{item.label}</span>
+				<span className="min-w-0 flex-1 truncate group-data-[collapsible=icon]:hidden">
+					{item.label}
+				</span>
 				{item.badge && (
 					<Badge
 						variant="outline"
@@ -133,11 +136,11 @@ export default function SettingsSidebar({
 						{item.badge}
 					</Badge>
 				)}
-				{item.href === "/settings/usage" ? children : null}
+				{item.href === "/settings/usage" && !isCollapsed ? children : null}
 				{item.external && (
 					<ExternalLink
 						aria-hidden="true"
-						className="ml-2 h-4 w-4 shrink-0 text-muted-foreground"
+						className="ml-2 h-4 w-4 shrink-0 text-muted-foreground group-data-[collapsible=icon]:hidden"
 					/>
 				)}
 			</>
@@ -149,6 +152,7 @@ export default function SettingsSidebar({
 					disabled
 					aria-disabled="true"
 					className="cursor-not-allowed"
+					tooltip={item.label}
 				>
 					{content}
 				</SidebarMenuButton>
@@ -157,7 +161,7 @@ export default function SettingsSidebar({
 
 		if (item.external) {
 			return (
-				<SidebarMenuButton asChild>
+				<SidebarMenuButton asChild tooltip={item.label}>
 					<a
 						href={item.href}
 						target="_blank"
@@ -172,7 +176,7 @@ export default function SettingsSidebar({
 		}
 
 		return (
-			<SidebarMenuButton asChild isActive={active}>
+			<SidebarMenuButton asChild isActive={active} tooltip={item.label}>
 				<Link
 					href={item.href}
 					prefetch={false}
@@ -188,18 +192,23 @@ export default function SettingsSidebar({
 	return (
 		<>
 			<SidebarHeader className="relative h-12 flex-shrink-0 gap-0 px-0 py-0">
-				<div className="flex h-12 items-center gap-2 px-4">
-					<div className="-translate-y-px text-sm font-semibold text-foreground">
+				<div className="flex h-12 items-center gap-2 px-4 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+					<div className="-translate-y-px text-sm font-semibold text-foreground group-data-[collapsible=icon]:hidden">
 						Settings
 					</div>
 					<Button
 						variant="ghost"
 						size="icon"
-						className="ml-auto lg:hidden"
+						className="ml-auto group-data-[collapsible=icon]:ml-0"
 						onClick={toggleSidebar}
-						aria-label="Close sidebar"
+						aria-label={isCollapsed ? "Expand settings sidebar" : "Collapse settings sidebar"}
+						title={isCollapsed ? "Expand settings sidebar" : "Collapse settings sidebar"}
 					>
-						<PanelLeftClose className="h-4 w-4" />
+						{isCollapsed ? (
+							<PanelLeftOpen className="h-4 w-4" />
+						) : (
+							<PanelLeftClose className="h-4 w-4" />
+						)}
 					</Button>
 				</div>
 				<div className="absolute inset-x-0 bottom-0 h-px bg-border" />

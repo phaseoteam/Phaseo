@@ -233,7 +233,7 @@ async function handleOAuthCleanupScheduledEvent(env: GatewayBindings): Promise<v
 	try {
 		const { error } = await getSupabaseAdmin().rpc("cleanup_expired_oauth_artifacts");
 		if (error) throw new Error(error.message || "Failed to clean up expired OAuth artifacts");
- 	} finally {
+	} finally {
 		clearRuntime();
 	}
 }
