@@ -1,0 +1,60 @@
+{
+  "model_id": "thinking-machines/inkling-64k",
+  "organisation_id": "thinking-machines",
+  "name": "Inkling 64K",
+  "status": "Available",
+  "previous_model_id": "thinking-machines/inkling",
+  "description": "Inkling 64K is Tinker's shorter-context sampling variant of Thinking Machines Lab's open-weights Inkling model.",
+  "announced_date": "2026-07-15T00:00:00",
+  "release_date": "2026-07-15T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Apache 2.0",
+  "input_types": "text,image,audio",
+  "output_types": "text",
+  "api_model_id": "thinking-machines/inkling-64k",
+  "links": [
+    {
+      "title": "Introducing Inkling",
+      "kind": "announcement",
+      "url": "https://thinkingmachines.ai/news/introducing-inkling/"
+    },
+    {
+      "title": "Inkling model card",
+      "kind": "documentation",
+      "url": "https://thinkingmachines.ai/model-card/inkling/"
+    },
+    {
+      "title": "Inkling on Hugging Face",
+      "kind": "model",
+      "url": "https://huggingface.co/thinkingmachines/inkling"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 65536
+    },
+    {
+      "name": "parameters",
+      "value": "975B total; 41B active"
+    },
+    {
+      "name": "training_tokens",
+      "value": "45T tokens across text, images, audio, and video"
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2026-04-01T00:00:00"
+    },
+    {
+      "name": "provider_variant",
+      "value": "Tinker model ID thinkingmachines/Inkling"
+    },
+    {
+      "name": "availability_note",
+      "value": "Confirmed in Tinker's public model and pricing table. The 64K context variant is exposed through Tinker; the underlying Hugging Face weights support up to 1M tokens."
+    }
+  ],
+  "benchmarks": []
+}

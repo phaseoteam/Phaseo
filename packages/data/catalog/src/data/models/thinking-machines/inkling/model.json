@@ -1,0 +1,64 @@
+{
+  "model_id": "thinking-machines/inkling",
+  "organisation_id": "thinking-machines",
+  "name": "Inkling",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Inkling is Thinking Machines Lab's open-weights multimodal mixture-of-experts model for customizable AI systems. It accepts text, image, and audio inputs and produces text outputs.",
+  "announced_date": "2026-07-15T00:00:00",
+  "release_date": "2026-07-15T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Apache 2.0",
+  "input_types": "text,image,audio",
+  "output_types": "text",
+  "api_model_id": "thinking-machines/inkling",
+  "links": [
+    {
+      "title": "Introducing Inkling",
+      "kind": "announcement",
+      "url": "https://thinkingmachines.ai/news/introducing-inkling/"
+    },
+    {
+      "title": "Inkling model card",
+      "kind": "documentation",
+      "url": "https://thinkingmachines.ai/model-card/inkling/"
+    },
+    {
+      "title": "Inkling on Hugging Face",
+      "kind": "model",
+      "url": "https://huggingface.co/thinkingmachines/inkling"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 1000000
+    },
+    {
+      "name": "parameters",
+      "value": "975B total; 41B active"
+    },
+    {
+      "name": "training_tokens",
+      "value": "45T tokens across text, images, audio, and video"
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2026-04-01T00:00:00"
+    },
+    {
+      "name": "availability_note",
+      "value": "Full weights are available on Hugging Face. Tinker currently exposes Inkling for sampling and fine-tuning, but its provider is not yet active in the gateway."
+    },
+    {
+      "name": "confirmed_api_providers",
+      "value": "Tinker (beta sampling and fine-tuning API)"
+    },
+    {
+      "name": "weights_distribution",
+      "value": "Hugging Face (weights distribution; no hosted inference provider currently listed)"
+    }
+  ],
+  "benchmarks": []
+}

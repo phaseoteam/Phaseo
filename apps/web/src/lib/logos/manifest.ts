@@ -366,6 +366,12 @@ export const logoManifest = {
 	together: {
 		color: "/logos/together.svg",
 	},
+	tinker: {
+		color: "/logos/tinker.svg",
+	},
+	"thinking-machines": {
+		color: "/logos/thinking-machines.svg",
+	},
 	upstage: {
 		color: "/logos/upstage.svg",
 	},
