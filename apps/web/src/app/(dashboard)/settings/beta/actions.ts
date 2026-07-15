@@ -9,21 +9,17 @@ import {
 	type StatsigProfile,
 } from "@/lib/statsig/shared";
 
-function sanitizeBetaFeatures(
-	value: unknown,
-	options: { isAdmin: boolean },
-): Record<string, boolean> {
+const ALLOWED_BETA_FEATURE_KEYS = new Set<string>(
+	(WEB_BETA_FEATURES as readonly { key: string }[]).map((feature) => feature.key),
+);
+
+function sanitizeBetaFeatures(value: unknown): Record<string, boolean> {
 	const normalized = normalizeBetaFeatures(value);
-	const allowedKeys = new Set<string>(
-		WEB_BETA_FEATURES.filter(
-			(feature) => !feature.adminOnly || options.isAdmin,
-		).map((feature) => feature.key),
-	);
 
 	return Object.fromEntries(
 		Object.entries(normalized).filter(
 			([key, enabled]) =>
-				allowedKeys.has(key) && enabled === true
+				ALLOWED_BETA_FEATURE_KEYS.has(key) && enabled === true
 		)
 	);
 }
@@ -41,16 +37,7 @@ export async function updateBetaPreferences(payload: {
 		throw new Error("Not authenticated");
 	}
 
-	const { data: userRow, error: roleError } = await supabase
-		.from("users")
-		.select("role")
-		.eq("user_id", user.id)
-		.maybeSingle();
-	if (roleError) throw new Error(roleError.message);
-
-	const betaFeatures = sanitizeBetaFeatures(payload.beta_features, {
-		isAdmin: String(userRow?.role ?? "").toLowerCase() === "admin",
-	});
+	const betaFeatures = sanitizeBetaFeatures(payload.beta_features);
 	const profile: StatsigProfile = {
 		betaOptIn: Object.keys(betaFeatures).length > 0,
 		betaFeatures,
@@ -72,7 +59,6 @@ export async function updateBetaPreferences(payload: {
 	revalidatePath("/settings/beta");
 	revalidatePath("/");
 	revalidatePath("/gateway");
-	revalidatePath("/models");
 
 	return { ok: true, profile };
 }

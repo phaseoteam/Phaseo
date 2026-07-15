@@ -37,7 +37,7 @@ function ModelCardSkeleton() {
 	);
 }
 
-export function ModelsGridSkeleton() {
+function ModelCardsSkeletonGrid() {
 	const getSkeletonCellClass = (index: number) => {
 		const isSecondColumn = index % 2 === 1;
 		const isThirdColumnAt2xl = index % 3 === 2;
@@ -118,7 +118,7 @@ export function ModelsPageSkeleton() {
 						</div>
 					</div>
 
-					<ModelsGridSkeleton />
+					<ModelCardsSkeletonGrid />
 				</div>
 			</section>
 		</div>

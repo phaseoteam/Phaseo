@@ -1,3 +1,5 @@
-export default function WorksWithLayout({ children }: LayoutProps<"/works-with">) {
+import type { ReactNode } from "react";
+
+export default function WorksWithLayout({ children }: { children: ReactNode }) {
 	return children;
 }
