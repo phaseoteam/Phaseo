@@ -16,24 +16,36 @@ function pathMatches(template: string, actual: string): boolean {
   const actualSegments = actual.split("/").filter(Boolean);
   return templateSegments.length === actualSegments.length && templateSegments.every((segment, index) => {
     const actualSegment = actualSegments[index];
-    const literals = segment.split(/\{[^}]+\}/g);
-    if (literals.length === 1) return segment === actualSegment;
+    let templateOffset = 0;
+    let actualOffset = 0;
 
-    let offset = 0;
-    for (let literalIndex = 0; literalIndex < literals.length; literalIndex += 1) {
-      const literal = literals[literalIndex];
-      if (!actualSegment.startsWith(literal, offset)) return false;
-      offset += literal.length;
-      if (literalIndex < literals.length - 1) {
-        const nextLiteral = literals[literalIndex + 1];
-        const nextOffset = nextLiteral
-          ? actualSegment.indexOf(nextLiteral, offset)
-          : actualSegment.length;
-        if (nextOffset <= offset) return false;
-        offset = nextOffset;
+    while (templateOffset < segment.length) {
+      const placeholderStart = segment.indexOf("{", templateOffset);
+      if (placeholderStart === -1) {
+        return actualSegment.slice(actualOffset) === segment.slice(templateOffset);
       }
+
+      const prefix = segment.slice(templateOffset, placeholderStart);
+      if (!actualSegment.startsWith(prefix, actualOffset)) return false;
+      actualOffset += prefix.length;
+
+      const placeholderEnd = segment.indexOf("}", placeholderStart + 1);
+      if (placeholderEnd === -1 || placeholderEnd === placeholderStart + 1) return false;
+
+      const nextPlaceholder = segment.indexOf("{", placeholderEnd + 1);
+      const suffix = segment.slice(
+        placeholderEnd + 1,
+        nextPlaceholder === -1 ? segment.length : nextPlaceholder,
+      );
+      if (!suffix) return nextPlaceholder === -1 && actualOffset < actualSegment.length;
+
+      const suffixOffset = actualSegment.indexOf(suffix, actualOffset);
+      if (suffixOffset <= actualOffset) return false;
+      actualOffset = suffixOffset + suffix.length;
+      templateOffset = nextPlaceholder === -1 ? segment.length : nextPlaceholder;
     }
-    return offset === actualSegment.length;
+
+    return actualOffset === actualSegment.length;
   });
 }
 
