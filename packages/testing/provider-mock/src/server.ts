@@ -7,8 +7,8 @@ import { validateSchema } from "./schema.js";
 const METHODS = new Set(["get", "post", "put", "patch", "delete"]);
 
 function joinPath(...parts: Array<string | undefined>): string {
-  const joined = parts.filter(Boolean).join("/").replace(/\/+/g, "/");
-  return `/${joined.replace(/^\/+|\/+$/g, "")}`;
+  const segments = parts.flatMap((part) => part?.split("/").filter(Boolean) ?? []);
+  return `/${segments.join("/")}`;
 }
 
 function pathMatches(template: string, actual: string): boolean {
