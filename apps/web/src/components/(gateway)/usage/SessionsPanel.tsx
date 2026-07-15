@@ -8,10 +8,15 @@ import {
 	fetchModelMetadata,
 	fetchProviderMetadata,
 	fetchProviderNames,
+	fetchSessionObservabilitySummary,
 	fetchSessionRequests,
+	investigateGeneration,
 	type AppMetadata,
+	type InvestigateGenerationResult,
 	type ProviderMetadataEntry,
+	type RequestRow,
 	fetchSessionRollups,
+	type SessionObservabilitySummary,
 	type SessionRequestRow,
 	type SessionRollupRow,
 } from "@/app/(dashboard)/gateway/usage/server-actions";
@@ -45,12 +50,15 @@ import { formatErrorListSummary } from "@/lib/gateway/usage/errorListSummary";
 import { cn } from "@/lib/utils";
 import {
 	AppWindow,
+	Database,
 	Check,
 	Clock3,
 	Coins,
 	Copy,
+	MessageSquare,
 	Layers3,
 	RefreshCw,
+	Signal,
 } from "lucide-react";
 import {
 	formatDateTime,
@@ -75,6 +83,34 @@ const RequestDetailDialog = dynamic(() => import("./RequestDetailDialog"));
 function formatMoneyFromNanos(value: number | null | undefined): string {
 	if (value == null || !Number.isFinite(value)) return "-";
 	return `$${(value / 1e9).toFixed(5)}`;
+}
+
+function formatBytes(value: number | null | undefined): string {
+	if (value == null || !Number.isFinite(value) || value <= 0) return "-";
+	const units = ["B", "KB", "MB", "GB", "TB"];
+	let size = value;
+	let unitIndex = 0;
+	while (size >= 1024 && unitIndex < units.length - 1) {
+		size /= 1024;
+		unitIndex += 1;
+	}
+	return `${size >= 10 || unitIndex === 0 ? size.toFixed(0) : size.toFixed(1)} ${units[unitIndex]}`;
+}
+
+function formatScorePercent(value: number | null | undefined): string {
+	if (typeof value !== "number" || !Number.isFinite(value)) return "-";
+	return `${Math.round(value * 100)}%`;
+}
+
+function countByRequestId<T extends { request_id: string | null }>(
+	rows: T[],
+): Map<string, number> {
+	const counts = new Map<string, number>();
+	for (const row of rows) {
+		if (!row.request_id) continue;
+		counts.set(row.request_id, (counts.get(row.request_id) ?? 0) + 1);
+	}
+	return counts;
 }
 
 function getModelDetailsHref(modelId: string | null): string | null {
@@ -444,6 +480,8 @@ function SessionModelsCell({
 function SessionDetailDialog({
 	session,
 	requests,
+	observability,
+	isLoadingObservability,
 	appMetadata,
 	modelMetadata,
 	providerNames,
@@ -453,6 +491,8 @@ function SessionDetailDialog({
 }: {
 	session: SessionRollupRow | null;
 	requests: SessionRequestRow[];
+	observability: SessionObservabilitySummary | null;
+	isLoadingObservability: boolean;
 	appMetadata: Map<string, AppMetadata>;
 	modelMetadata: ModelMetadataMap;
 	providerNames: Map<string, string>;
@@ -467,7 +507,19 @@ function SessionDetailDialog({
 	const [relativeNowMs, setRelativeNowMs] = React.useState<number | null>(null);
 	const [requestDetailOpen, setRequestDetailOpen] = React.useState(false);
 	const [selectedRequest, setSelectedRequest] =
-		React.useState<SessionRequestRow | null>(null);
+		React.useState<RequestRow | null>(null);
+	const [requestDetailAppName, setRequestDetailAppName] =
+		React.useState<string | null>(null);
+	const [requestDetailModelMetadata, setRequestDetailModelMetadata] =
+		React.useState<ModelMetadataMap>(new Map());
+	const [requestDetailProviderNames, setRequestDetailProviderNames] =
+		React.useState<Map<string, string>>(new Map());
+	const [requestDetailProviderMetadata, setRequestDetailProviderMetadata] =
+		React.useState<Map<string, ProviderMetadataEntry>>(new Map());
+	const [isLoadingRequestDetail, startLoadingRequestDetail] = React.useTransition();
+	const requestDetailCacheRef = React.useRef(
+		new Map<string, InvestigateGenerationResult>(),
+	);
 
 	React.useEffect(() => {
 		const updateNow = () => setRelativeNowMs(Date.now());
@@ -482,6 +534,14 @@ function SessionDetailDialog({
 	const modelCounts =
 		session.model_counts ??
 		(session.model_ids ?? []).map((modelId) => ({ model_id: modelId, request_count: 0 }));
+	const ioLogs = observability?.io_logs ?? [];
+	const feedback = observability?.feedback ?? [];
+	const events = observability?.events ?? [];
+	const ioLogByRequestId = new Map(
+		ioLogs.map((entry) => [entry.request_id, entry] as const),
+	);
+	const feedbackCountsByRequestId = countByRequestId(feedback);
+	const eventCountsByRequestId = countByRequestId(events);
 	const subtitle = [
 		formatWordyRange(session.first_request_at, session.last_request_at),
 		`${session.request_count.toLocaleString()} reqs`,
@@ -538,13 +598,57 @@ function SessionDetailDialog({
 		},
 	];
 
-	const selectedRequestAppName =
-		selectedRequest?.app_id
+	const openRequestDetail = React.useCallback((request: SessionRequestRow) => {
+		const requestId = request.request_id?.trim();
+		if (!requestId) return;
+		const fallbackAppName = request.app_id
 			? buildAppLabel(
-					appMetadata.get(selectedRequest.app_id),
-					selectedRequest.app_title ?? selectedRequest.app_id,
+					appMetadata.get(request.app_id),
+					request.app_title ?? request.app_id,
 				)
-			: selectedRequest?.app_title ?? null;
+			: request.app_title ?? null;
+
+		setSelectedRequest(request);
+		setRequestDetailAppName(fallbackAppName);
+		setRequestDetailModelMetadata(new Map(modelMetadata));
+		setRequestDetailProviderNames(new Map(providerNames));
+		setRequestDetailProviderMetadata(new Map(providerMetadata));
+		setRequestDetailOpen(true);
+
+		const cached = requestDetailCacheRef.current.get(requestId);
+		if (cached) {
+			setSelectedRequest(cached.request);
+			setRequestDetailAppName(cached.appName ?? fallbackAppName);
+			setRequestDetailModelMetadata(new Map(cached.modelMetadata ?? []));
+			setRequestDetailProviderNames(new Map(cached.providerNames ?? []));
+			setRequestDetailProviderMetadata(new Map(cached.providerMetadata ?? []));
+			return;
+		}
+
+		startLoadingRequestDetail(async () => {
+			const response = await investigateGeneration(requestId);
+			if (!response.success || !response.data) return;
+			requestDetailCacheRef.current.set(requestId, response.data);
+			setSelectedRequest(response.data.request);
+			setRequestDetailAppName(response.data.appName ?? fallbackAppName);
+			setRequestDetailModelMetadata(new Map(response.data.modelMetadata ?? []));
+			setRequestDetailProviderNames(new Map(response.data.providerNames ?? []));
+			setRequestDetailProviderMetadata(new Map(response.data.providerMetadata ?? []));
+		});
+	}, [appMetadata, modelMetadata, providerMetadata, providerNames]);
+
+	const mergedRequestModelMetadata = new Map([
+		...modelMetadata,
+		...requestDetailModelMetadata,
+	]);
+	const mergedRequestProviderNames = new Map([
+		...providerNames,
+		...requestDetailProviderNames,
+	]);
+	const mergedRequestProviderMetadata = new Map([
+		...providerMetadata,
+		...requestDetailProviderMetadata,
+	]);
 
 	return (
 		<>
@@ -642,6 +746,197 @@ function SessionDetailDialog({
 								/>
 							</DetailSection>
 
+							<DetailSection title="Observability signals">
+								{isLoadingObservability && !observability ? (
+									<div className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">
+										Loading session signals...
+									</div>
+								) : observability ? (
+									<div className="space-y-4">
+										<div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+											<DetailMetricTile
+												icon={Database}
+												label="I/O logs"
+												value={`${observability.io_log_stored_count}/${ioLogs.length}`}
+												sub={`${formatBytes(observability.io_log_total_bytes)} stored`}
+												tone="slate"
+												compact
+											/>
+											<DetailMetricTile
+												icon={MessageSquare}
+												label="Feedback"
+												value={feedback.length.toLocaleString()}
+												sub={
+													observability.feedback_rating_counts.length > 0
+														? observability.feedback_rating_counts
+																.slice(0, 2)
+																.map((entry) => `${entry.rating} ${entry.count}`)
+																.join(" | ")
+														: undefined
+												}
+												tone="sky"
+												compact
+											/>
+											<DetailMetricTile
+												icon={Signal}
+												label="Events"
+												value={events.length.toLocaleString()}
+												tone="violet"
+												compact
+											/>
+											<DetailMetricTile
+												icon={Check}
+												label="Avg score"
+												value={formatScorePercent(observability.average_feedback_score)}
+												tone="emerald"
+												compact
+											/>
+										</div>
+
+										{observability.metadata_dimension_keys.length > 0 ||
+										observability.preset_ids.length > 0 ||
+										observability.test_run_ids.length > 0 ? (
+											<div className="grid gap-3 md:grid-cols-3">
+												<div className="rounded-lg border border-border/60 bg-muted/20 p-3">
+													<div className="text-xs font-medium uppercase text-muted-foreground">
+														Cohort dimensions
+													</div>
+													<div className="mt-2 flex flex-wrap gap-1.5">
+														{observability.metadata_dimension_keys.length > 0 ? (
+															observability.metadata_dimension_keys.map((key) => (
+																<Badge key={key} variant="outline" className="rounded-md">
+																	{key}
+																</Badge>
+															))
+														) : (
+															<span className="text-sm text-muted-foreground">-</span>
+														)}
+													</div>
+												</div>
+												<div className="rounded-lg border border-border/60 bg-muted/20 p-3">
+													<div className="text-xs font-medium uppercase text-muted-foreground">
+														Presets
+													</div>
+													<div className="mt-2 flex flex-wrap gap-1.5">
+														{observability.preset_ids.length > 0 ? (
+															observability.preset_ids.slice(0, 6).map((presetId) => (
+																<code
+																	key={presetId}
+																	className="rounded-md border bg-background px-1.5 py-0.5 font-mono text-[11px]"
+																>
+																	{shortenIdentifier(presetId)}
+																</code>
+															))
+														) : (
+															<span className="text-sm text-muted-foreground">-</span>
+														)}
+													</div>
+												</div>
+												<div className="rounded-lg border border-border/60 bg-muted/20 p-3">
+													<div className="text-xs font-medium uppercase text-muted-foreground">
+														Experiment runs
+													</div>
+													<div className="mt-2 flex flex-wrap gap-1.5">
+														{observability.test_run_ids.length > 0 ? (
+															observability.test_run_ids.slice(0, 6).map((runId) => (
+																<code
+																	key={runId}
+																	className="rounded-md border bg-background px-1.5 py-0.5 font-mono text-[11px]"
+																>
+																	{shortenIdentifier(runId)}
+																</code>
+															))
+														) : (
+															<span className="text-sm text-muted-foreground">-</span>
+														)}
+													</div>
+												</div>
+											</div>
+										) : null}
+
+										{feedback.length > 0 || events.length > 0 ? (
+											<div className="grid gap-3 lg:grid-cols-2">
+												<div className="rounded-lg border border-border/60 bg-muted/20 p-3">
+													<div className="text-xs font-medium uppercase text-muted-foreground">
+														Recent feedback
+													</div>
+													<div className="mt-3 space-y-2">
+														{feedback.slice(0, 4).map((entry) => (
+															<div
+																key={entry.id}
+																className="rounded-md border bg-background px-3 py-2"
+															>
+																<div className="flex flex-wrap items-center justify-between gap-2">
+																	<div className="flex min-w-0 items-center gap-2">
+																		<Badge variant="outline" className="rounded-md">
+																			{entry.rating ?? "unrated"}
+																		</Badge>
+																		{typeof entry.score === "number" ? (
+																			<span className="text-xs text-muted-foreground">
+																				{formatScorePercent(entry.score)}
+																			</span>
+																		) : null}
+																	</div>
+																	{entry.created_at ? (
+																		<span className="text-xs text-muted-foreground">
+																			{formatWordyDateTime(entry.created_at, { includeTime: true })}
+																		</span>
+																	) : null}
+																</div>
+																{entry.comment ?? entry.reason ? (
+																	<p className="mt-2 line-clamp-2 text-sm">
+																		{entry.comment ?? entry.reason}
+																	</p>
+																) : null}
+															</div>
+														))}
+													</div>
+												</div>
+												<div className="rounded-lg border border-border/60 bg-muted/20 p-3">
+													<div className="text-xs font-medium uppercase text-muted-foreground">
+														Recent events
+													</div>
+													<div className="mt-3 space-y-2">
+														{events.slice(0, 4).map((entry) => (
+															<div
+																key={entry.id}
+																className="rounded-md border bg-background px-3 py-2"
+															>
+																<div className="flex flex-wrap items-center justify-between gap-2">
+																	<div className="flex min-w-0 items-center gap-2">
+																		<Badge variant="outline" className="rounded-md">
+																			{entry.event_name ?? "event"}
+																		</Badge>
+																		{entry.category ? (
+																			<span className="text-xs text-muted-foreground">
+																				{entry.category}
+																			</span>
+																		) : null}
+																	</div>
+																	{entry.occurred_at ? (
+																		<span className="text-xs text-muted-foreground">
+																			{formatWordyDateTime(entry.occurred_at, { includeTime: true })}
+																		</span>
+																	) : null}
+																</div>
+															</div>
+														))}
+													</div>
+												</div>
+											</div>
+										) : (
+											<div className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">
+												No feedback or custom events have been linked to this session yet.
+											</div>
+										)}
+									</div>
+								) : (
+									<div className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">
+										No session observability data is available.
+									</div>
+								)}
+							</DetailSection>
+
 							<DetailSection title="Request timeline">
 								{requests.length === 0 ? (
 									<div className="rounded-lg border border-dashed px-4 py-8 text-sm text-muted-foreground">
@@ -660,6 +955,7 @@ function SessionDetailDialog({
 											<TableHead className="text-right">Out</TableHead>
 											<TableHead className="text-right">Cost</TableHead>
 											<TableHead>Status</TableHead>
+											<TableHead>Signals</TableHead>
 											<TableHead className="text-right">Inspect</TableHead>
 										</TableRow>
 									</TableHeader>
@@ -687,6 +983,11 @@ function SessionDetailDialog({
 											const errorSummary = request.success
 												? null
 												: formatErrorListSummary(request);
+											const ioSignal = ioLogByRequestId.get(request.request_id);
+											const feedbackCount =
+												feedbackCountsByRequestId.get(request.request_id) ?? 0;
+											const eventCount =
+												eventCountsByRequestId.get(request.request_id) ?? 0;
 
 											return (
 												<TableRow
@@ -790,18 +1091,54 @@ function SessionDetailDialog({
 															) : null}
 														</div>
 													</TableCell>
+													<TableCell className="py-2">
+														<div className="flex max-w-[220px] flex-wrap gap-1.5">
+															{ioSignal ? (
+																<Badge
+																	variant="outline"
+																	className={cn(
+																		"rounded-md",
+																		ioSignal.status === "stored"
+																			? "border-emerald-200 bg-emerald-50 text-emerald-700"
+																			: "border-amber-200 bg-amber-50 text-amber-700",
+																	)}
+																	title={
+																		ioSignal.bytes
+																			? `${formatBytes(ioSignal.bytes)} captured`
+																			: ioSignal.status ?? "I/O log"
+																	}
+																>
+																	I/O {ioSignal.status ?? "log"}
+																</Badge>
+															) : null}
+															{feedbackCount > 0 ? (
+																<Badge variant="outline" className="rounded-md">
+																	{feedbackCount} feedback
+																</Badge>
+															) : null}
+															{eventCount > 0 ? (
+																<Badge variant="outline" className="rounded-md">
+																	{eventCount} event{eventCount === 1 ? "" : "s"}
+																</Badge>
+															) : null}
+															{!ioSignal && feedbackCount === 0 && eventCount === 0 ? (
+																<span className="text-xs text-muted-foreground">-</span>
+															) : null}
+														</div>
+													</TableCell>
 													<TableCell className="py-2 text-right">
 														<Button
 															type="button"
 															variant="ghost"
 															size="sm"
 															className="h-7 px-2 text-xs"
-															onClick={() => {
-																setSelectedRequest(request);
-																setRequestDetailOpen(true);
-															}}
+															disabled={isLoadingRequestDetail}
+															onClick={() => openRequestDetail(request)}
 														>
-															Inspect
+															{isLoadingRequestDetail &&
+															selectedRequest?.request_id === request.request_id
+																? "Loading..."
+																: "Inspect"}
 														</Button>
 													</TableCell>
 												</TableRow>
@@ -823,18 +1160,22 @@ function SessionDetailDialog({
 					setRequestDetailOpen(nextOpen);
 					if (!nextOpen) {
 						setSelectedRequest(null);
+						setRequestDetailAppName(null);
+						setRequestDetailModelMetadata(new Map());
+						setRequestDetailProviderNames(new Map());
+						setRequestDetailProviderMetadata(new Map());
 					}
 				}}
 				request={selectedRequest}
-				appName={selectedRequestAppName}
-				modelMetadata={modelMetadata}
+				appName={requestDetailAppName}
+				modelMetadata={mergedRequestModelMetadata}
 				providerName={
 					selectedRequest?.provider
-						? providerNames.get(selectedRequest.provider) ?? selectedRequest.provider
+						? mergedRequestProviderNames.get(selectedRequest.provider) ?? selectedRequest.provider
 						: null
 				}
-				providerNames={providerNames}
-				providerMetadata={providerMetadata}
+				providerNames={mergedRequestProviderNames}
+				providerMetadata={mergedRequestProviderMetadata}
 			/>
 		</>
 	);
@@ -889,12 +1230,19 @@ export default function SessionsPanel({
 	const [selectedSession, setSelectedSession] =
 		React.useState<SessionRollupRow | null>(null);
 	const [selectedRequests, setSelectedRequests] = React.useState<SessionRequestRow[]>([]);
+	const [selectedObservability, setSelectedObservability] =
+		React.useState<SessionObservabilitySummary | null>(null);
 	const [open, setOpen] = React.useState(false);
 	const [isRefreshing, setIsRefreshing] = React.useState(false);
 	const [isLoadingDetail, startLoadingDetail] = React.useTransition();
+	const [isLoadingObservability, startLoadingObservability] =
+		React.useTransition();
 	const [relativeNowMs, setRelativeNowMs] = React.useState<number | null>(null);
 	const [copiedSessionId, setCopiedSessionId] = React.useState<string | null>(null);
 	const detailCacheRef = React.useRef(new Map<string, SessionRequestRow[]>());
+	const observabilityCacheRef = React.useRef(
+		new Map<string, SessionObservabilitySummary>(),
+	);
 
 	React.useEffect(() => {
 		setSessions(initialSessions);
@@ -1013,73 +1361,88 @@ export default function SessionsPanel({
 			const cached = detailCacheRef.current.get(cacheKey);
 			if (cached) {
 				setSelectedRequests(cached);
-				return;
-			}
-			setSelectedRequests([]);
-			startLoadingDetail(async () => {
-				const requests = await fetchSessionRequests({
-					sessionId: session.session_id,
-					timeRange,
+			} else {
+				setSelectedRequests([]);
+				startLoadingDetail(async () => {
+					const requests = await fetchSessionRequests({
+						sessionId: session.session_id,
+						timeRange,
+					});
+					detailCacheRef.current.set(cacheKey, requests);
+					setSelectedRequests(requests);
+
+					const requestAppIds = Array.from(
+						new Set(
+							requests
+								.map((request) => request.app_id)
+								.filter(
+									(appId): appId is string =>
+										typeof appId === "string" && appId.trim().length > 0,
+								),
+						),
+					);
+					const requestModelIds = Array.from(
+						new Set(
+							requests
+								.map((request) => request.model_id)
+								.filter(
+									(modelId): modelId is string =>
+										typeof modelId === "string" && modelId.trim().length > 0,
+								),
+						),
+					);
+					const requestProviderIds = Array.from(
+						new Set(
+							requests
+								.map((request) => request.provider)
+								.filter(
+									(providerId): providerId is string =>
+										typeof providerId === "string" && providerId.trim().length > 0,
+								),
+						),
+					);
+
+					const [nextAppMetadata, nextModelMetadata, nextProviderNames, nextProviderMetadata] =
+						await Promise.all([
+							fetchAppMetadata(
+								requestAppIds.filter((appId) => !appMetadata.has(appId)),
+							),
+							fetchModelMetadata(
+								requestModelIds.filter((modelId) => !modelMetadata.has(modelId)),
+							),
+							fetchProviderNames(
+								requestProviderIds.filter(
+									(providerId) => !providerNames.has(providerId),
+								),
+							),
+							fetchProviderMetadata(
+								requestProviderIds.filter(
+									(providerId) => !providerMetadata.has(providerId),
+								),
+							),
+						]);
+
+					setAppMetadata((prev) => new Map([...prev, ...nextAppMetadata]));
+					setModelMetadata((prev) => new Map([...prev, ...nextModelMetadata]));
+					setProviderNames((prev) => new Map([...prev, ...nextProviderNames]));
+					setProviderMetadata((prev) => new Map([...prev, ...nextProviderMetadata]));
 				});
-				detailCacheRef.current.set(cacheKey, requests);
-				setSelectedRequests(requests);
+			}
 
-				const requestAppIds = Array.from(
-					new Set(
-						requests
-							.map((request) => request.app_id)
-							.filter(
-								(appId): appId is string =>
-									typeof appId === "string" && appId.trim().length > 0,
-							),
-					),
-				);
-				const requestModelIds = Array.from(
-					new Set(
-						requests
-							.map((request) => request.model_id)
-							.filter(
-								(modelId): modelId is string =>
-									typeof modelId === "string" && modelId.trim().length > 0,
-							),
-					),
-				);
-				const requestProviderIds = Array.from(
-					new Set(
-						requests
-							.map((request) => request.provider)
-							.filter(
-								(providerId): providerId is string =>
-									typeof providerId === "string" && providerId.trim().length > 0,
-							),
-					),
-				);
-
-				const [nextAppMetadata, nextModelMetadata, nextProviderNames, nextProviderMetadata] =
-					await Promise.all([
-						fetchAppMetadata(
-							requestAppIds.filter((appId) => !appMetadata.has(appId)),
-						),
-						fetchModelMetadata(
-							requestModelIds.filter((modelId) => !modelMetadata.has(modelId)),
-						),
-						fetchProviderNames(
-							requestProviderIds.filter(
-								(providerId) => !providerNames.has(providerId),
-							),
-						),
-						fetchProviderMetadata(
-							requestProviderIds.filter(
-								(providerId) => !providerMetadata.has(providerId),
-							),
-						),
-					]);
-
-				setAppMetadata((prev) => new Map([...prev, ...nextAppMetadata]));
-				setModelMetadata((prev) => new Map([...prev, ...nextModelMetadata]));
-				setProviderNames((prev) => new Map([...prev, ...nextProviderNames]));
-				setProviderMetadata((prev) => new Map([...prev, ...nextProviderMetadata]));
-			});
+			const cachedObservability = observabilityCacheRef.current.get(cacheKey);
+			if (cachedObservability) {
+				setSelectedObservability(cachedObservability);
+			} else {
+				setSelectedObservability(null);
+				startLoadingObservability(async () => {
+					const summary = await fetchSessionObservabilitySummary({
+						sessionId: session.session_id,
+						timeRange,
+					});
+					observabilityCacheRef.current.set(cacheKey, summary);
+					setSelectedObservability(summary);
+				});
+			}
 		},
 		[appMetadata, modelMetadata, providerMetadata, providerNames, timeRange],
 	);
@@ -1270,6 +1633,8 @@ export default function SessionsPanel({
 			<SessionDetailDialog
 				session={selectedSession}
 				requests={selectedRequests}
+				observability={selectedObservability}
+				isLoadingObservability={isLoadingObservability}
 				appMetadata={appMetadata}
 				modelMetadata={modelMetadata}
 				providerNames={providerNames}
@@ -1280,6 +1645,7 @@ export default function SessionsPanel({
 					if (!nextOpen) {
 						setSelectedSession(null);
 						setSelectedRequests([]);
+						setSelectedObservability(null);
 					}
 				}}
 			/>

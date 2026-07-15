@@ -23,6 +23,11 @@ import { presetsRoutes } from "./presets";
 import { settingsRoutes } from "./settings";
 import { guardrailsRoutes } from "./guardrails";
 import { managementKeysRoutes } from "./management-keys";
+import {
+	feedbackRoutes,
+	observabilityEventsRoutes,
+	presetTestRunsRoutes,
+} from "./feedback";
 
 export const platformRouter = new Hono<Env>();
 
@@ -41,6 +46,9 @@ platformRouter.route("/keys", keysRoutes);
 platformRouter.route("/workspaces", workspacesRoutes);
 platformRouter.route("/oauth-clients", oauthClientsRoutes);
 platformRouter.route("/presets", presetsRoutes);
+platformRouter.route("/feedback", feedbackRoutes);
+platformRouter.route("/events", observabilityEventsRoutes);
+platformRouter.route("/preset-test-runs", presetTestRunsRoutes);
 platformRouter.route("/settings", settingsRoutes);
 platformRouter.route("/guardrails", guardrailsRoutes);
 platformRouter.route("/management-keys", managementKeysRoutes);

@@ -49,6 +49,11 @@ type TeamGlobalRow = {
 	privacy_enable_free_may_publish_prompts?: boolean | null;
 	privacy_enable_input_output_logging?: boolean | null;
 	privacy_zdr_only?: boolean | null;
+	io_logging_enabled?: boolean | null;
+	io_logging_retention_days?: number | null;
+	io_logging_include_provider_payloads?: boolean | null;
+	io_logging_billing_status?: string | null;
+	io_logging_grace_until?: string | null;
 	provider_restriction_mode?: string | null;
 	provider_restriction_provider_ids?: string[] | null;
 	provider_restriction_enforce_allowed?: boolean | null;
@@ -63,6 +68,12 @@ function normalizeMode(value: unknown): ProviderRestrictionMode {
 
 function uniqStrings(items: string[]): string[] {
 	return Array.from(new Set(items.filter(Boolean)));
+}
+
+function normalizeIoRetentionDays(value: unknown): number {
+	const numeric = typeof value === "number" ? value : Number(value ?? "");
+	if (!Number.isFinite(numeric)) return 90;
+	return Math.max(90, Math.min(365, Math.trunc(numeric)));
 }
 
 function summarizeList(values: string[], limit = 3): string {
@@ -240,6 +251,7 @@ function ToggleRow(props: {
 	label: string;
 	description: string;
 	checked: boolean;
+	disabled?: boolean;
 	onCheckedChange: (checked: boolean) => void;
 }) {
 	return (
@@ -248,7 +260,11 @@ function ToggleRow(props: {
 				<p className="text-sm font-medium">{props.label}</p>
 				<p className="text-xs text-muted-foreground">{props.description}</p>
 			</div>
-			<Switch checked={props.checked} onCheckedChange={props.onCheckedChange} />
+			<Switch
+				checked={props.checked}
+				disabled={props.disabled}
+				onCheckedChange={props.onCheckedChange}
+			/>
 		</div>
 	);
 }
@@ -444,6 +460,9 @@ export default function PrivacySettingsClient(props: {
 	initialGlobal: TeamGlobalRow | null;
 	providers: ProviderOption[];
 	activeProviderModels: ActiveProviderModel[];
+	walletAvailableNanos: number;
+	ioLoggingEnableMinAvailableNanos: number;
+	ioLoggingFeatureEnabled: boolean;
 }) {
 	const providerLabelById = useMemo(() => {
 		const map = new Map<string, string>();
@@ -464,6 +483,13 @@ export default function PrivacySettingsClient(props: {
 				props.initialGlobal?.privacy_enable_input_output_logging ?? true,
 			),
 			privacyZdrOnly: Boolean(props.initialGlobal?.privacy_zdr_only ?? false),
+			ioLoggingEnabled: Boolean(props.initialGlobal?.io_logging_enabled ?? false),
+			ioLoggingRetentionDays: normalizeIoRetentionDays(
+				props.initialGlobal?.io_logging_retention_days ?? 90,
+			),
+			ioLoggingIncludeProviderPayloads: Boolean(
+				props.initialGlobal?.io_logging_include_provider_payloads ?? true,
+			),
 			providerRestrictionMode: normalizeMode(
 				props.initialGlobal?.provider_restriction_mode,
 			),
@@ -524,7 +550,11 @@ export default function PrivacySettingsClient(props: {
 						privacyEnableFreeMayPublishPrompts:
 							global.privacyEnableFreeMayPublishPrompts,
 						privacyEnableInputOutputLogging:
-							global.privacyEnableInputOutputLogging,
+							global.ioLoggingEnabled,
+						ioLoggingEnabled: global.ioLoggingEnabled,
+						ioLoggingRetentionDays: global.ioLoggingRetentionDays,
+						ioLoggingIncludeProviderPayloads:
+							global.ioLoggingIncludeProviderPayloads,
 						privacyZdrOnly: global.privacyZdrOnly,
 						providerRestrictionMode: global.providerRestrictionMode,
 						providerRestrictionProviderIds:
@@ -535,11 +565,18 @@ export default function PrivacySettingsClient(props: {
 					{
 						loading: "Saving privacy settings...",
 						success: "Privacy settings updated",
-						error: "Failed to update privacy settings",
+						error: (error) =>
+							error instanceof Error && error.message
+								? error.message
+								: "Failed to update privacy settings",
 					},
 				);
 				if (saveSeq === globalSaveSeqRef.current) {
 					setSavedGlobal(global);
+				}
+			} catch {
+				if (saveSeq === globalSaveSeqRef.current) {
+					setGlobal(savedGlobal);
 				}
 			} finally {
 				if (saveSeq === globalSaveSeqRef.current) setSavingGlobal(false);
@@ -589,6 +626,15 @@ export default function PrivacySettingsClient(props: {
 		}
 		return counts;
 	}, [props.activeProviderModels]);
+	const ioLoggingFeatureBlocked =
+		!savedGlobal.ioLoggingEnabled && !props.ioLoggingFeatureEnabled;
+	const ioLoggingEnableBlocked =
+		!savedGlobal.ioLoggingEnabled &&
+		(ioLoggingFeatureBlocked ||
+			props.walletAvailableNanos <= props.ioLoggingEnableMinAvailableNanos);
+	const formattedIoLoggingMinimum = (
+		props.ioLoggingEnableMinAvailableNanos / 1_000_000_000
+	).toLocaleString(undefined, { style: "currency", currency: "USD" });
 
 	return (
 		<div className="space-y-6">
@@ -643,16 +689,88 @@ export default function PrivacySettingsClient(props: {
 						}
 					/>
 					<ToggleRow
-						label="Enable input/output logging for all requests"
-						description="When disabled, the Gateway should avoid storing prompt/response bodies where supported."
-						checked={global.privacyEnableInputOutputLogging}
+						label="Store Gateway I/O logs"
+						description="Persist request and response bodies for generation details and observability."
+						checked={global.ioLoggingEnabled}
+						disabled={ioLoggingEnableBlocked}
 						onCheckedChange={(checked) =>
-							setGlobal((prev) => ({
-								...prev,
-								privacyEnableInputOutputLogging: checked,
-							}))
+							setGlobal((prev) => {
+								if (checked && ioLoggingFeatureBlocked) {
+									toast.error("Gateway I/O logs are not available for this workspace yet.");
+									return prev;
+								}
+								if (checked && ioLoggingEnableBlocked) {
+									toast.error(
+										`Add more than ${formattedIoLoggingMinimum} in available credits before enabling Gateway I/O logs.`,
+									);
+									return prev;
+								}
+								return {
+									...prev,
+									privacyEnableInputOutputLogging: checked,
+									ioLoggingEnabled: checked,
+								};
+							})
 						}
 					/>
+					{ioLoggingFeatureBlocked ? (
+						<div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950 dark:border-amber-900/60 dark:bg-amber-900/20 dark:text-amber-50">
+							Gateway I/O logs are not available for this workspace yet.
+						</div>
+					) : ioLoggingEnableBlocked ? (
+						<div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950 dark:border-amber-900/60 dark:bg-amber-900/20 dark:text-amber-50">
+							Add more than {formattedIoLoggingMinimum} in available credits to
+							enable Gateway I/O logs.
+						</div>
+					) : null}
+					{global.ioLoggingEnabled ? (
+						<div className="grid gap-3 rounded-lg border bg-muted/10 px-3 py-3 md:grid-cols-[220px_1fr] md:items-center">
+							<div className="space-y-1">
+								<Label className="text-sm font-medium">I/O log retention</Label>
+								<p className="text-xs text-muted-foreground">
+									90 days included; extended retention is credit-metered.
+								</p>
+							</div>
+							<div className="grid gap-3 sm:grid-cols-[220px_1fr] sm:items-center">
+								<Select
+									value={String(global.ioLoggingRetentionDays)}
+									onValueChange={(value) =>
+										setGlobal((prev) => ({
+											...prev,
+											ioLoggingRetentionDays: normalizeIoRetentionDays(value),
+										}))
+									}
+								>
+									<SelectTrigger>
+										<SelectValue placeholder="Retention" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="90">90 days</SelectItem>
+										<SelectItem value="180">180 days</SelectItem>
+										<SelectItem value="365">365 days</SelectItem>
+									</SelectContent>
+								</Select>
+								<div className="flex items-center justify-between gap-3 rounded-md border bg-background px-3 py-2">
+									<div className="min-w-0">
+										<p className="text-sm font-medium">Provider payloads</p>
+										<p className="text-xs text-muted-foreground">
+											Include provider-side request and response payloads.
+										</p>
+									</div>
+									<Switch
+										checked={global.ioLoggingIncludeProviderPayloads}
+										onCheckedChange={(checked) =>
+											setGlobal((prev) => ({
+												...prev,
+												ioLoggingIncludeProviderPayloads: checked,
+											}))
+										}
+										aria-label="Include provider payloads in I/O logs"
+									/>
+								</div>
+							</div>
+						</div>
+					) : null}
 					<ToggleRow
 						label="Enable ZDR endpoints only"
 						description="Restrict routing to endpoints that meet ZDR requirements (may reduce availability)."

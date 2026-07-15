@@ -127,6 +127,52 @@ function formatRequestPricingLine(line: RequestRow["pricing_lines"][number]): st
 	return parts.length > 0 ? parts.join(" | ") : JSON.stringify(line);
 }
 
+function formatJsonBlock(value: unknown): string | null {
+	if (value === null || value === undefined) return null;
+	try {
+		return JSON.stringify(value, null, 2);
+	} catch {
+		return String(value);
+	}
+}
+
+function hasJsonBlockValue(value: unknown): boolean {
+	if (value === null || value === undefined) return false;
+	if (Array.isArray(value)) return value.length > 0;
+	if (typeof value === "object") return Object.keys(value as Record<string, unknown>).length > 0;
+	return true;
+}
+
+function IoLogJsonBlock({
+	title,
+	value,
+}: {
+	title: string;
+	value: unknown;
+}) {
+	const content = formatJsonBlock(value);
+	if (!content) return null;
+	return (
+		<div className="rounded-lg border border-border/60 bg-muted/30">
+			<div className="flex items-center justify-between gap-3 border-b border-border/60 px-3 py-2">
+				<div className="text-xs font-medium uppercase text-muted-foreground">
+					{title}
+				</div>
+				<CopyButton
+					size="sm"
+					variant="ghost"
+					className="text-muted-foreground hover:text-foreground"
+					content={content}
+					aria-label={`Copy ${title}`}
+				/>
+			</div>
+			<pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words p-3 text-xs leading-relaxed">
+				<code>{content}</code>
+			</pre>
+		</div>
+	);
+}
+
 function formatDiagnosticLabel(value: string): string {
 	return value
 		.split("_")
@@ -1055,6 +1101,17 @@ export default function RequestDetailDialog({
 	const webFetchObservability = extractWebFetchObservability(
 		request.detail_metadata ?? null,
 	);
+	const ioLog = request.io_log;
+	const ioLogPayloadSections = ioLog
+		? [
+				{ title: "Client request", value: ioLog.request_payload },
+				{ title: "Gateway response", value: ioLog.gateway_response },
+				{ title: "Provider request", value: ioLog.provider_request },
+				{ title: "Provider response", value: ioLog.provider_response },
+		  ].filter((section) => hasJsonBlockValue(section.value))
+		: [];
+	const requestFeedback = request.feedback ?? [];
+	const requestEvents = request.events ?? [];
 	const requestDetailItems = [
 		{
 			label: "Routed model",
@@ -2598,6 +2655,189 @@ export default function RequestDetailDialog({
 						>
 							<DetailKeyValueGrid columns={2} items={requestDetailItems} />
 						</DetailSection>
+
+						{ioLog ? (
+							<DetailSection title="I/O log">
+								<div className="space-y-4">
+									<DetailKeyValueGrid
+										columns={3}
+										items={[
+											{ label: "Status", value: ioLog.status ?? "-" },
+											{
+												label: "Storage",
+												value: ioLog.storage_provider ?? "-",
+											},
+											{
+												label: "Bytes",
+												value:
+													typeof ioLog.bytes === "number"
+														? ioLog.bytes.toLocaleString()
+														: "-",
+											},
+											{
+												label: "Object key",
+												value: ioLog.object_key ? (
+													<div className="flex min-w-0 items-center gap-2">
+														<code className="min-w-0 truncate font-mono text-xs">
+															{ioLog.object_key}
+														</code>
+														<CopyButton
+															size="sm"
+															variant="ghost"
+															className="text-muted-foreground hover:text-foreground"
+															content={ioLog.object_key}
+															aria-label="Copy I/O log object key"
+														/>
+													</div>
+												) : (
+													"-"
+												),
+											},
+											{
+												label: "Retention until",
+												value: ioLog.retention_until
+													? formatWordyDateTime(ioLog.retention_until)
+													: "-",
+											},
+											{
+												label: "SHA-256",
+												value: ioLog.sha256 ? (
+													<code className="font-mono text-xs">{ioLog.sha256}</code>
+												) : (
+													"-"
+												),
+											},
+										]}
+									/>
+									{ioLog.error ? (
+										<div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+											{ioLog.error}
+										</div>
+									) : null}
+									{ioLogPayloadSections.length > 0 ? (
+										<div className="grid gap-4 xl:grid-cols-2">
+											{ioLogPayloadSections.map((section) => (
+												<IoLogJsonBlock
+													key={section.title}
+													title={section.title}
+													value={section.value}
+												/>
+											))}
+										</div>
+									) : (
+										<div className="text-sm text-muted-foreground">
+											No captured payloads are available for this request.
+										</div>
+									)}
+								</div>
+							</DetailSection>
+						) : null}
+
+						{requestFeedback.length > 0 || requestEvents.length > 0 ? (
+							<DetailSection title="Feedback & outcome signals">
+								<div className="space-y-4">
+									{requestFeedback.length > 0 ? (
+										<div className="space-y-2">
+											<div className="text-xs font-medium uppercase text-muted-foreground">
+												Feedback
+											</div>
+											<div className="grid gap-2">
+												{requestFeedback.map((entry) => (
+													<div
+														key={entry.id}
+														className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2"
+													>
+														<div className="flex flex-wrap items-center justify-between gap-2">
+															<div className="flex min-w-0 flex-wrap items-center gap-2">
+																<span className="rounded-md bg-background px-2 py-1 text-xs font-medium">
+																	{entry.rating ?? "unrated"}
+																</span>
+																{typeof entry.score === "number" ? (
+																	<span className="text-xs text-muted-foreground">
+																		Score {(entry.score * 100).toFixed(0)}%
+																	</span>
+																) : null}
+																{entry.reason ? (
+																	<span className="text-xs text-muted-foreground">
+																		{entry.reason}
+																	</span>
+																) : null}
+															</div>
+															{entry.created_at ? (
+																<span className="text-xs text-muted-foreground">
+																	{formatWordyDateTime(entry.created_at)}
+																</span>
+															) : null}
+														</div>
+														{entry.reason_tags.length > 0 ? (
+															<div className="mt-2 flex flex-wrap gap-1">
+																{entry.reason_tags.map((tag) => (
+																	<span
+																		key={`${entry.id}-${tag}`}
+																		className="rounded-md border bg-background px-1.5 py-0.5 text-[11px] text-muted-foreground"
+																	>
+																		{tag}
+																	</span>
+																))}
+															</div>
+														) : null}
+														{entry.comment ? (
+															<p className="mt-2 text-sm text-foreground">
+																{entry.comment}
+															</p>
+														) : null}
+													</div>
+												))}
+											</div>
+										</div>
+									) : null}
+
+									{requestEvents.length > 0 ? (
+										<div className="space-y-2">
+											<div className="text-xs font-medium uppercase text-muted-foreground">
+												Events
+											</div>
+											<div className="grid gap-2">
+												{requestEvents.map((entry) => (
+													<div
+														key={entry.id}
+														className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2"
+													>
+														<div className="flex flex-wrap items-center justify-between gap-2">
+															<div className="flex min-w-0 flex-wrap items-center gap-2">
+																<span className="rounded-md bg-background px-2 py-1 text-xs font-medium">
+																	{entry.event_name ?? "event"}
+																</span>
+																{entry.category ? (
+																	<span className="text-xs text-muted-foreground">
+																		{entry.category}
+																	</span>
+																) : null}
+																{typeof entry.numeric_value === "number" ? (
+																	<span className="text-xs text-muted-foreground">
+																		{entry.numeric_value.toLocaleString()}
+																	</span>
+																) : null}
+															</div>
+															{entry.occurred_at ? (
+																<span className="text-xs text-muted-foreground">
+																	{formatWordyDateTime(entry.occurred_at)}
+																</span>
+															) : null}
+														</div>
+														{hasJsonBlockValue(entry.value) ? (
+															<pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-md bg-background px-2 py-2 font-mono text-xs">
+																{formatJsonBlock(entry.value)}
+															</pre>
+														) : null}
+													</div>
+												))}
+											</div>
+										</div>
+									) : null}
+								</div>
+							</DetailSection>
+						) : null}
 
 						<DetailSection title="Usage breakdown">
 							{usageMeters.length > 0 ? (

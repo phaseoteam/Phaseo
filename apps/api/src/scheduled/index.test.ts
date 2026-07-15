@@ -7,6 +7,7 @@ const runBatchReconciliationJobMock = vi.fn();
 const runVideoReconciliationJobMock = vi.fn();
 const drainEmailOutboxMock = vi.fn();
 const runModelDiscoveryJobMock = vi.fn();
+const runGatewayIoRetentionBillingJobMock = vi.fn();
 
 vi.mock("@/runtime/env", () => ({
 	clearRuntime: (...args: unknown[]) => clearRuntimeMock(...args),
@@ -36,6 +37,10 @@ vi.mock("@/pipeline/model-discovery", () => ({
 	runModelDiscoveryJob: (...args: unknown[]) => runModelDiscoveryJobMock(...args),
 }));
 
+vi.mock("@/pipeline/audit/io-retention-billing", () => ({
+	runGatewayIoRetentionBillingJob: (...args: unknown[]) => runGatewayIoRetentionBillingJobMock(...args),
+}));
+
 import { handleScheduledEvent } from "./index";
 
 function scheduledEventAt(iso: string): ScheduledController {
@@ -55,6 +60,7 @@ describe("handleScheduledEvent", () => {
 		runVideoReconciliationJobMock.mockReset();
 		drainEmailOutboxMock.mockReset();
 		runModelDiscoveryJobMock.mockReset();
+		runGatewayIoRetentionBillingJobMock.mockReset();
 		runAsyncWebhookRetriesJobMock.mockResolvedValue({
 			startedAt: "2026-06-10T00:05:00.000Z",
 			finishedAt: "2026-06-10T00:05:01.000Z",
@@ -68,6 +74,16 @@ describe("handleScheduledEvent", () => {
 		runVideoReconciliationJobMock.mockResolvedValue({});
 		drainEmailOutboxMock.mockResolvedValue({ processed: 0, failed: 0 });
 		runModelDiscoveryJobMock.mockResolvedValue({});
+		runGatewayIoRetentionBillingJobMock.mockResolvedValue({
+			processed: 0,
+			charged: 0,
+			grace: 0,
+			suspended: 0,
+			skipped: 0,
+			prunedObjects: 0,
+			warningsQueued: 0,
+			failed: 0,
+		});
 	});
 
 	it("runs async webhook retries on five-minute core job ticks by default", async () => {
@@ -104,5 +120,25 @@ describe("handleScheduledEvent", () => {
 		expect(runAsyncWebhookRetriesJobMock).not.toHaveBeenCalled();
 		expect(runBatchReconciliationJobMock).not.toHaveBeenCalled();
 		expect(runVideoReconciliationJobMock).not.toHaveBeenCalled();
+	});
+
+	it("runs I/O retention billing on the daily billing tick", async () => {
+		const env = {
+			GATEWAY_IO_RETENTION_BILLING_LIMIT: "12",
+			GATEWAY_IO_RETENTION_GRACE_DAYS: "9",
+			GATEWAY_IO_RETENTION_PRICE_PER_MILLION_UNITS_NANOS: "7000000000",
+			GATEWAY_IO_RETENTION_PRUNE_LIMIT: "44",
+		} as any;
+
+		await handleScheduledEvent(scheduledEventAt("2026-06-10T00:10:00.000Z"), env);
+
+		expect(runGatewayIoRetentionBillingJobMock).toHaveBeenCalledWith({
+			asOf: new Date("2026-06-10T00:10:00.000Z"),
+			limit: 12,
+			graceDays: 9,
+			pricePerMillionUnitsNanos: 7000000000,
+			pruneLimit: 44,
+		});
+		expect(configureRuntimeMock).toHaveBeenCalledWith(env);
 	});
 });

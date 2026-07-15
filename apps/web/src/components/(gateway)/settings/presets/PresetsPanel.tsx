@@ -9,7 +9,7 @@ import {
 	DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { MoreVertical, Copy, AtSign } from "lucide-react";
+import { MoreVertical, Copy, AtSign, CheckCircle2, Route } from "lucide-react";
 import EditPresetItem from "./EditPresetItem";
 import DeletePresetItem from "./DeletePresetItem";
 import { Logo } from "@/components/Logo";
@@ -72,10 +72,39 @@ function PresetLogo({ name, className }: { name: string; className?: string }) {
 
 	return (
 		<div
-			className={`${className} flex items-center justify-center font-bold text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400`}
+			className={`${className} flex items-center justify-center border border-border/70 bg-muted/40 font-mono text-[11px] font-semibold text-muted-foreground`}
 		>
 			{initials}
 		</div>
+	);
+}
+
+function ConfigPill({
+	children,
+	tone = "neutral",
+}: {
+	children: React.ReactNode;
+	tone?: "neutral" | "blue" | "green" | "amber" | "violet" | "cyan";
+}) {
+	const toneClass =
+		tone === "blue"
+			? "border-sky-500/20 bg-sky-500/10 text-sky-700 dark:text-sky-300"
+			: tone === "green"
+				? "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+				: tone === "amber"
+					? "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+					: tone === "violet"
+						? "border-violet-500/20 bg-violet-500/10 text-violet-700 dark:text-violet-300"
+						: tone === "cyan"
+							? "border-cyan-500/20 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300"
+							: "border-border/70 bg-muted/40 text-muted-foreground";
+
+	return (
+		<span
+			className={`inline-flex h-6 items-center gap-1.5 rounded-md border px-2 text-xs font-medium ${toneClass}`}
+		>
+			{children}
+		</span>
 	);
 }
 
@@ -119,10 +148,20 @@ export default function PresetsPanel({
 	}
 
 	return (
-		<div className="mt-6 space-y-6">
+		<div className="mt-6 space-y-8">
 			{sortedTeams.map((team: any) => (
 				<div key={team.id ?? "personal"}>
-					<div className="font-medium mb-2">{team.name}</div>
+					<div className="mb-3 flex items-center justify-between gap-3">
+						<div>
+							<h2 className="text-sm font-semibold text-foreground">
+								{team.name}
+							</h2>
+							<p className="mt-0.5 text-xs text-muted-foreground">
+								{team.presets?.length ?? 0} preset
+								{(team.presets?.length ?? 0) === 1 ? "" : "s"}
+							</p>
+						</div>
+					</div>
 					{!team.presets || team.presets.length === 0 ? (
 						<Empty
 							size="compact"
@@ -139,89 +178,105 @@ export default function PresetsPanel({
 							</EmptyHeader>
 						</Empty>
 					) : (
-						<div className="overflow-hidden rounded-xl border border-border/70">
+						<div className="overflow-hidden rounded-xl border border-border/70 bg-card/25">
 							{team.presets.map((p: any) => (
 								<div
 									key={p.id}
-									className="relative border-b border-border/70 px-4 py-4 transition-colors last:border-b-0 hover:bg-muted/20"
+									className="relative border-b border-border/70 px-4 py-4 transition-colors last:border-b-0 hover:bg-muted/20 sm:px-5"
 								>
-								<div className="flex items-start justify-between gap-4">
-										<div className="flex items-start gap-3 flex-1 min-w-0">
-											<div className="flex-shrink-0 mt-0.5">
-												<PresetLogo name={p.name} className="w-10 h-10 rounded-lg" />
+									<div className="flex items-start justify-between gap-4">
+										<div className="flex min-w-0 flex-1 items-start gap-4">
+											<div className="mt-0.5 flex-shrink-0">
+												<PresetLogo name={p.name} className="h-9 w-9 rounded-md" />
 											</div>
-											<div className="min-w-0 flex-1">
-												<div className="font-medium flex items-center gap-2 mb-1">
-													<span className="truncate">{p.name}</span>
+											<div className="min-w-0 flex-1 space-y-2">
+												<div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+													<h3 className="min-w-0 truncate text-base font-semibold text-foreground">
+														{p.name}
+													</h3>
 													{p.visibility && (
-														<Badge variant="outline" className="text-[10px] uppercase">
+														<Badge
+															variant="outline"
+															className="h-5 px-1.5 text-[10px] font-semibold uppercase tracking-normal text-muted-foreground"
+														>
 															{p.visibility}
 														</Badge>
 													)}
 													{p.source_preset_id && (
-														<Badge variant="secondary" className="text-[10px] uppercase">
+														<Badge
+															variant="secondary"
+															className="h-5 px-1.5 text-[10px] font-semibold uppercase tracking-normal"
+														>
 															Fork
 														</Badge>
 													)}
 												</div>
+												{p.slug ? (
+													<button
+														type="button"
+														onClick={() => onCopyPresetName(p.name)}
+														className="inline-flex max-w-full items-center gap-2 rounded-md border border-border/70 bg-background/50 px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-border hover:bg-muted/40 hover:text-foreground"
+													>
+														<AtSign className="h-3.5 w-3.5 shrink-0" />
+														<span className="truncate font-mono">@{p.slug}</span>
+														<Copy className="h-3.5 w-3.5 shrink-0" />
+													</button>
+												) : null}
 												{p.description && (
-													<p className="text-sm text-muted-foreground line-clamp-2">
+													<p className="max-w-3xl text-sm leading-6 text-muted-foreground">
 														{p.description}
 													</p>
 												)}
-												{p.slug && (
-													<p className="mt-1 text-xs text-muted-foreground">
-														Invoke with <span className="font-mono">@{p.slug}</span>
-													</p>
-												)}
-												<div className="mt-3 flex flex-wrap gap-1.5">
+												<div className="flex flex-wrap gap-1.5 pt-1">
 													{p.config?.provider && (
-														<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
+														<ConfigPill>
 															<Logo
 																id={getProviderLogoId(p.config.provider)}
-																className="w-4 h-4 rounded-full"
+																className="h-4 w-4 rounded-full"
 																alt={p.config.provider}
 																width={16}
 																height={16}
 															/>
 															{p.config.provider}
-														</span>
+														</ConfigPill>
 													)}
 													{p.config?.model && (
-														<span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
+														<ConfigPill>
 															{p.config.model}
-														</span>
+														</ConfigPill>
 													)}
 													{p.config?.temperature !== null && p.config?.temperature !== undefined && (
-														<span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
+														<ConfigPill>
 															temp: {p.config.temperature}
-														</span>
+														</ConfigPill>
 													)}
 													{p.config?.max_tokens && (
-														<span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
+														<ConfigPill>
 															max: {p.config.max_tokens}
-														</span>
+														</ConfigPill>
 													)}
 													{p.config?.system_prompt && (
-														<span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
-															has system prompt
-														</span>
+														<ConfigPill tone="blue">
+															<CheckCircle2 className="h-3.5 w-3.5" />
+															System prompt
+														</ConfigPill>
 													)}
 													{p.config?.routing_mode && (
-														<span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
-															route: {p.config.routing_mode}
-														</span>
+														<ConfigPill tone="green">
+															<Route className="h-3.5 w-3.5" />
+															{p.config.routing_mode}
+														</ConfigPill>
 													)}
 													{p.config?.provider_preferences &&
 														Object.keys(p.config.provider_preferences).length > 0 && (
-															<span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
+															<ConfigPill tone="amber">
 																weights: {Object.keys(p.config.provider_preferences).length}
-															</span>
+															</ConfigPill>
 														)}
 													{p.config?.response_caching?.enabled && (
-														<span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300">
+														<ConfigPill tone="cyan">
 															cache: {p.config?.response_caching?.ttl_seconds ?? 300}s
-														</span>
+														</ConfigPill>
 													)}
 													{Array.isArray(p.config?.plugins) &&
 														p.config.plugins.some(
@@ -231,7 +286,7 @@ export default function PresetsPanel({
 																plugin.id === "response-healing" &&
 																plugin.enabled !== false,
 														) && (
-															<span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300">
+															<ConfigPill tone="violet">
 																response healing
 																{(() => {
 																	const plugin = p.config.plugins.find(
@@ -245,19 +300,28 @@ export default function PresetsPanel({
 																		? " (strict)"
 																		: "";
 																})()}
-															</span>
+															</ConfigPill>
 														)}
 												</div>
 											</div>
 										</div>
-										<div className="ml-2 flex-shrink-0">
+										<div className="ml-2 flex flex-shrink-0 items-center gap-1">
+											<Button
+												variant="ghost"
+												size="sm"
+												className="hidden h-8 gap-2 px-2 text-muted-foreground hover:text-foreground sm:inline-flex"
+												onClick={() => onCopyPresetName(p.name)}
+											>
+												<Copy className="h-4 w-4" />
+												Copy
+											</Button>
 											<DropdownMenu>
 												<DropdownMenuTrigger asChild>
 													<Button
 														variant="ghost"
 														size="icon"
 														aria-label="Actions"
-														className="h-8 w-8"
+														className="h-8 w-8 text-muted-foreground hover:text-foreground"
 													>
 														<MoreVertical className="h-4 w-4" />
 													</Button>

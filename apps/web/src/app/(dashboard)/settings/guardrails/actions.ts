@@ -1,11 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { gatewayIoLoggingEnabled } from "@/lib/flags";
 import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import {
 	requireAuthenticatedUser,
 	requireWorkspaceMembership,
 } from "@/utils/serverActionAuth";
+
+const IO_LOGGING_ENABLE_MIN_AVAILABLE_NANOS = 5_000_000_000;
 
 export type ProviderRestrictionMode = "none" | "allowlist" | "blocklist";
 export type SensitiveInfoAction = "flag" | "redact" | "block";
@@ -46,6 +49,9 @@ export type GlobalGuardrailsSettingsPayload = {
 	privacyEnableFreeMayPublishPrompts?: boolean;
 	privacyEnableInputOutputLogging?: boolean;
 	privacyZdrOnly?: boolean;
+	ioLoggingEnabled?: boolean;
+	ioLoggingRetentionDays?: number;
+	ioLoggingIncludeProviderPayloads?: boolean;
 	providerRestrictionMode?: ProviderRestrictionMode;
 	providerRestrictionProviderIds?: string[];
 	providerRestrictionEnforceAllowed?: boolean;
@@ -77,6 +83,58 @@ export async function updateGlobalGuardrailsSettings(
 	if (typeof payload.privacyEnableInputOutputLogging === "boolean") {
 		update.privacy_enable_input_output_logging =
 			payload.privacyEnableInputOutputLogging;
+	}
+	const ioLoggingEnabled =
+		typeof payload.ioLoggingEnabled === "boolean"
+			? payload.ioLoggingEnabled
+			: payload.privacyEnableInputOutputLogging;
+	if (ioLoggingEnabled === true) {
+		const [{ data: currentSettings, error: settingsError }, { data: wallet, error: walletError }] =
+			await Promise.all([
+				supabase
+					.from("workspace_settings")
+					.select("io_logging_enabled")
+					.eq("workspace_id", workspaceId)
+					.maybeSingle(),
+				supabase
+					.from("wallets")
+					.select("balance_nanos,reserved_nanos")
+					.eq("workspace_id", workspaceId)
+					.maybeSingle(),
+			]);
+		if (settingsError) throw settingsError;
+		if (walletError) throw walletError;
+
+		const isAlreadyEnabled = currentSettings?.io_logging_enabled === true;
+		if (!isAlreadyEnabled && !(await gatewayIoLoggingEnabled())) {
+			throw new Error("Gateway I/O logs are not available for this workspace yet.");
+		}
+		const balanceNanos = Number((wallet as any)?.balance_nanos ?? 0);
+		const reservedNanos = Number((wallet as any)?.reserved_nanos ?? 0);
+		const availableNanos = Math.max(
+			0,
+			(Number.isFinite(balanceNanos) ? balanceNanos : 0) -
+				(Number.isFinite(reservedNanos) ? reservedNanos : 0),
+		);
+		if (!isAlreadyEnabled && availableNanos <= IO_LOGGING_ENABLE_MIN_AVAILABLE_NANOS) {
+			throw new Error("Add more than $5 in available credits before enabling Gateway I/O logs.");
+		}
+	}
+	if (typeof ioLoggingEnabled === "boolean") {
+		update.io_logging_enabled = ioLoggingEnabled;
+		update.io_logging_updated_at = update.updated_at;
+	}
+	if (typeof payload.ioLoggingRetentionDays === "number") {
+		update.io_logging_retention_days = Math.max(
+			90,
+			Math.min(365, Math.trunc(payload.ioLoggingRetentionDays)),
+		);
+		update.io_logging_updated_at = update.updated_at;
+	}
+	if (typeof payload.ioLoggingIncludeProviderPayloads === "boolean") {
+		update.io_logging_include_provider_payloads =
+			payload.ioLoggingIncludeProviderPayloads;
+		update.io_logging_updated_at = update.updated_at;
 	}
 	if (typeof payload.privacyZdrOnly === "boolean") {
 		update.privacy_zdr_only = payload.privacyZdrOnly;

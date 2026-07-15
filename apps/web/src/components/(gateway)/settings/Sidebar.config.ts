@@ -71,11 +71,6 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 					"/settings/tiers",
 				],
 			},
-		],
-	},
-	{
-		heading: "Workspace",
-		items: [
 			{
 				href: "/settings/workspaces/members",
 				label: "Members",
@@ -94,20 +89,27 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 			},
 			{
 				href: "/settings/workspaces/settings",
-				label: "Settings",
+				label: "Workspace",
 				icon: Workflow,
 				match: ["/settings/teams/settings"],
 			},
 		],
 	},
 	{
-		heading: "Gateway",
+		heading: "Workspace",
 		items: [
 			{
 				href: "/settings/keys",
 				label: "API Keys",
 				icon: KeyRound,
 				match: ["/settings/keys"],
+			},
+			{
+				href: "/settings/management-api-keys",
+				label: "Management Keys",
+				icon: WalletCards,
+				badge: "Beta",
+				match: ["/settings/management-api-keys", "/settings/provisioning-keys"],
 			},
 			{
 				href: "/settings/apps",
@@ -134,6 +136,13 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				match: ["/settings/routing"],
 			},
 			{
+				href: "/settings/presets",
+				label: "Presets",
+				icon: Workflow,
+				badge: "Beta",
+				match: ["/settings/presets"],
+			},
+			{
 				href: "/settings/byok",
 				label: "BYOK",
 				icon: KeyRound,
@@ -144,25 +153,6 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				label: "Guardrails",
 				icon: ShieldCheck,
 				match: ["/settings/guardrails"],
-			},
-		],
-	},
-	{
-		heading: "Advanced",
-		items: [
-			{
-				href: "/settings/management-api-keys",
-				label: "Management Keys",
-				icon: WalletCards,
-				badge: "Beta",
-				match: ["/settings/management-api-keys", "/settings/provisioning-keys"],
-			},
-			{
-				href: "/settings/presets",
-				label: "Presets",
-				icon: Workflow,
-				badge: "Beta",
-				match: ["/settings/presets"],
 			},
 			{
 				href: "/settings/privacy",
@@ -185,16 +175,10 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				badge: "Pre-Release",
 				match: ["/settings/broadcast", "/settings/observability"],
 			},
-		],
-	},
-	{
-		heading: "Experimental",
-		items: [
 			{
 				href: "/settings/beta",
 				label: "Feature Preview",
 				icon: Beaker,
-				badge: "Preview",
 				match: ["/settings/beta"],
 			},
 		],

@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import PrivacySettingsClient from "@/components/(gateway)/settings/privacy/PrivacySettingsClient";
+import { gatewayIoLoggingEnabled } from "@/lib/flags";
 import { fetchSettingsPrivacyInitialData } from "@/lib/fetchers/internal/fetchSettingsPrivacyInitialData";
 
 export const metadata = {
@@ -23,7 +24,10 @@ export default function PrivacySettingsPage() {
 }
 
 async function PrivacySettingsContent() {
-	const initialData = await fetchSettingsPrivacyInitialData();
+	const [initialData, ioLoggingFeatureEnabled] = await Promise.all([
+		fetchSettingsPrivacyInitialData(),
+		gatewayIoLoggingEnabled(),
+	]);
 
 	if (!initialData.workspaceId) {
 		return (
@@ -39,6 +43,9 @@ async function PrivacySettingsContent() {
 			initialGlobal={initialData.initialGlobal}
 			providers={initialData.providers}
 			activeProviderModels={initialData.activeProviderModels}
+			walletAvailableNanos={initialData.walletAvailableNanos}
+			ioLoggingEnableMinAvailableNanos={initialData.ioLoggingEnableMinAvailableNanos}
+			ioLoggingFeatureEnabled={ioLoggingFeatureEnabled}
 		/>
 	);
 }
