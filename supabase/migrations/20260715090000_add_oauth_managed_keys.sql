@@ -48,11 +48,11 @@ begin
   -- codes exchanged concurrently could each revoke the prior key then create
   -- a new active one.
   perform 1
-  from public.oauth_authorizations grant
-  where grant.user_id = p_user_id
-    and grant.workspace_id = p_workspace_id
-    and grant.client_id = p_client_id
-    and grant.revoked_at is null
+  from public.oauth_authorizations authorization_row
+  where authorization_row.user_id = p_user_id
+    and authorization_row.workspace_id = p_workspace_id
+    and authorization_row.client_id = p_client_id
+    and authorization_row.revoked_at is null
   for update;
 
   if not found then
