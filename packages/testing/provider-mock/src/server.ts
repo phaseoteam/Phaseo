@@ -12,8 +12,29 @@ function joinPath(...parts: Array<string | undefined>): string {
 }
 
 function pathMatches(template: string, actual: string): boolean {
-  const escaped = template.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\\\{[^/]+\\\}/g, "[^/]+");
-  return new RegExp(`^${escaped}/?$`).test(actual);
+  const templateSegments = template.split("/").filter(Boolean);
+  const actualSegments = actual.split("/").filter(Boolean);
+  return templateSegments.length === actualSegments.length && templateSegments.every((segment, index) => {
+    const actualSegment = actualSegments[index];
+    const literals = segment.split(/\{[^}]+\}/g);
+    if (literals.length === 1) return segment === actualSegment;
+
+    let offset = 0;
+    for (let literalIndex = 0; literalIndex < literals.length; literalIndex += 1) {
+      const literal = literals[literalIndex];
+      if (!actualSegment.startsWith(literal, offset)) return false;
+      offset += literal.length;
+      if (literalIndex < literals.length - 1) {
+        const nextLiteral = literals[literalIndex + 1];
+        const nextOffset = nextLiteral
+          ? actualSegment.indexOf(nextLiteral, offset)
+          : actualSegment.length;
+        if (nextOffset <= offset) return false;
+        offset = nextOffset;
+      }
+    }
+    return offset === actualSegment.length;
+  });
 }
 
 async function readBody(request: import("node:http").IncomingMessage): Promise<unknown> {
