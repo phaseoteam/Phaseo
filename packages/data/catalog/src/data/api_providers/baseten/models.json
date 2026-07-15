@@ -1,5 +1,26 @@
 [
   {
+    "api_model_id": "thinking-machines/inkling",
+    "provider_api_model_id": "baseten:thinkingmachines/inkling",
+    "provider_model_slug": "thinkingmachines/inkling",
+    "internal_model_id": "thinking-machines/inkling",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": 32768,
+    "effective_from": "2026-07-15T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "deepseek/deepseek-v3-0324",
     "provider_api_model_id": "baseten:deepseek/deepseek-v3-0324",
     "provider_model_slug": "deepseek-ai/DeepSeek-V3-0324",
