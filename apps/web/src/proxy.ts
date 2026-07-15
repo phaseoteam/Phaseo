@@ -111,7 +111,12 @@ export const config = {
 		},
 		"/blog/:path*",
 		"/settings/:path*",
+		"/apps/:path*",
+		"/gateway/:path*",
+		"/onboarding/:path*",
+		"/internal/:path*",
 		"/chat/:path*",
+		"/api/internal/:path*",
 		"/api/chat/:path*",
 	],
 };

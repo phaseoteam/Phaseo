@@ -121,7 +121,7 @@ export default function OAuthButtons({
 				<div className="flex-1 border-t border-border" />
 			</div>
 
-			<div className="grid grid-cols-3 gap-3 pb-2">
+			<div className="grid grid-cols-3 gap-3">
 				{SOCIAL_PROVIDER_IDS.map((id) => {
 					const meta = META[id];
 					return (

@@ -32,5 +32,26 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(url)
     }
 
+    if (user) {
+        const [{ data: factorsData }, { data: aalData }] = await Promise.all([
+            supabase.auth.mfa.listFactors(),
+            supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
+        ])
+        const hasVerifiedFactor = Object.values(factorsData ?? {}).some((factors) =>
+            Array.isArray(factors) && factors.some((factor) => factor.status === 'verified')
+        )
+        const mustVerifyMfa =
+            hasVerifiedFactor &&
+            aalData?.currentLevel === 'aal1' &&
+            aalData?.nextLevel === 'aal2'
+
+        if (mustVerifyMfa) {
+            const url = request.nextUrl.clone()
+            url.pathname = '/auth/verify-mfa'
+            url.searchParams.set('returnUrl', pathname + request.nextUrl.search)
+            return NextResponse.redirect(url)
+        }
+    }
+
     return supabaseResponse
 }
