@@ -257,6 +257,7 @@ export type GatewayBindings = {
     STATSIG_SERVER_KEY?: string;
     STATSIG_SERVER_API_KEY?: string;
     STATSIG_BATCH_API_GATE?: string;
+    STATSIG_GATEWAY_IO_LOGGING_GATE?: string;
     STATSIG_ENVIRONMENT_TIER?: string;
     ASYNC_WEBHOOK_RETRIES_ENABLED?: string;
     ASYNC_WEBHOOK_RETRIES_LIMIT_PER_KIND?: string;

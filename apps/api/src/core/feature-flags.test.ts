@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { getBatchApiFeatureGateName, isBatchApiAccessEnabled } from "./feature-flags";
+import {
+	getBatchApiFeatureGateName,
+	getGatewayIoLoggingFeatureGateName,
+	isBatchApiAccessEnabled,
+	isGatewayIoLoggingFeatureEnabled,
+} from "./feature-flags";
 import type { AuthSuccess } from "@pipeline/before/auth";
 
 const auth: AuthSuccess = {
@@ -21,6 +26,8 @@ describe("batch API feature gate", () => {
 	it("uses the configured Statsig gate name", () => {
 		expect(getBatchApiFeatureGateName({ STATSIG_BATCH_API_GATE: "custom_batch_gate" })).toBe("custom_batch_gate");
 		expect(getBatchApiFeatureGateName({})).toBe("gateway_batch_api");
+		expect(getGatewayIoLoggingFeatureGateName({ STATSIG_GATEWAY_IO_LOGGING_GATE: "custom_io_gate" })).toBe("custom_io_gate");
+		expect(getGatewayIoLoggingFeatureGateName({})).toBe("gateway_io_logging");
 	});
 
 	it("checks the Statsig gate with workspace and API key identifiers", async () => {
@@ -73,5 +80,34 @@ describe("batch API feature gate", () => {
 		await expect(isBatchApiAccessEnabled(auth, {
 			STATSIG_SERVER_KEY: "secret-statsig-key",
 		})).resolves.toBe(false);
+	});
+
+	it("checks I/O logging against the staged gate and authenticated owner", async () => {
+		const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+			const body = JSON.parse(String(init?.body));
+			expect(body).toMatchObject({
+				gateName: "gateway_io_logging",
+				user: {
+					userID: "workspace_owner",
+					custom: {
+						workspace_id: "ws_io",
+						surface: "gateway_io_logging",
+					},
+					statsigEnvironment: { tier: "staging" },
+				},
+			});
+			return new Response(JSON.stringify({ name: "gateway_io_logging", value: true }), {
+				headers: { "Content-Type": "application/json" },
+			});
+		});
+		vi.stubGlobal("fetch", fetchMock);
+
+		await expect(isGatewayIoLoggingFeatureEnabled({
+			workspaceId: "ws_io",
+			userId: "workspace_owner",
+		}, {
+			STATSIG_SERVER_KEY: "secret-statsig-key",
+			STATSIG_ENVIRONMENT_TIER: "staging",
+		})).resolves.toBe(true);
 	});
 });

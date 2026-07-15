@@ -1,4 +1,5 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
+import { isGatewayIoLoggingFeatureEnabled } from "@/core/feature-flags";
 
 export type GatewayIoLogStatus = "not_enabled" | "stored" | "missing_bucket" | "too_large" | "error" | "deleted";
 
@@ -196,12 +197,20 @@ async function finalizeGatewayIoLog(
 }
 
 export async function persistGatewayIoLog(input: GatewayIoLogInput): Promise<GatewayIoLogColumns> {
+	const bindings = getBindings();
+	const enabledForWorkspace = await isGatewayIoLoggingFeatureEnabled({
+		workspaceId: input.workspaceId,
+		apiKeyId: input.keyId ?? null,
+	}, bindings);
+	if (!enabledForWorkspace) {
+		return finalizeGatewayIoLog(input, { io_log_status: "not_enabled" });
+	}
+
     const settings = await getWorkspaceIoLoggingSettings(input.workspaceId);
     if (!settings.enabled) {
         return finalizeGatewayIoLog(input, { io_log_status: "not_enabled" });
     }
 
-    const bindings = getBindings();
     const bucket = bindings.GATEWAY_IO_LOGS_BUCKET;
     const bucketName = bindings.GATEWAY_IO_LOGS_BUCKET_NAME ?? "gateway-io-logs";
     if (!bucket) {

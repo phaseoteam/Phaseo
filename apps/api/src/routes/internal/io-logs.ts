@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 
 import { readGatewayIoLogObject } from "@/pipeline/audit/io-logging";
+import { isGatewayIoLoggingFeatureEnabled } from "@/core/feature-flags";
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import type { Env } from "@/runtime/types";
 import { json, withRuntime } from "@/routes/utils";
@@ -43,6 +44,9 @@ async function handleIoLogRequest(req: Request) {
 	const workspaceId = url.searchParams.get("workspace_id")?.trim();
 	if (!requestId || !workspaceId || requestId.length > 256 || workspaceId.length > 128) {
 		return json({ ok: false, error: "invalid_request" }, 400, { "Cache-Control": "no-store" });
+	}
+	if (!(await isGatewayIoLoggingFeatureEnabled({ workspaceId }))) {
+		return json({ ok: true, io_log: null }, 200, { "Cache-Control": "no-store" });
 	}
 
 	const { data, error } = await getSupabaseAdmin()

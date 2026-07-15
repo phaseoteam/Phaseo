@@ -8,6 +8,7 @@ import { authenticate } from "@pipeline/before/auth";
 import type { AuthFailure } from "@pipeline/before/auth";
 import { getSupabaseAdmin } from "@/runtime/env";
 import { readGatewayIoLogObject } from "@pipeline/audit/io-logging";
+import { isGatewayIoLoggingFeatureEnabled } from "@core/feature-flags";
 import { json, withRuntime } from "../../utils";
 
 function resolveReplayRequest(value: unknown): Record<string, unknown> | null {
@@ -62,11 +63,17 @@ async function handleGeneration(req: Request) {
         return json({ ok: false, error: "not_found" }, 404, { "Cache-Control": "no-store" });
     }
 
-    const { data: ioLogData, error: ioLogError } = await fetchGenerationIoLog(
-        supabase,
-        auth.workspaceId,
-        id,
-    );
+	const ioLoggingFeatureEnabled = await isGatewayIoLoggingFeatureEnabled({
+		workspaceId: auth.workspaceId,
+		apiKeyId: auth.apiKeyId,
+		apiKeyRef: auth.apiKeyRef,
+		apiKeyKid: auth.apiKeyKid,
+		userId: auth.userId,
+		internal: auth.internal,
+	});
+	const { data: ioLogData, error: ioLogError } = ioLoggingFeatureEnabled
+		? await fetchGenerationIoLog(supabase, auth.workspaceId, id)
+		: { data: null, error: null };
 
     if (ioLogError) {
         return json({ ok: false, error: "db_error", message: ioLogError.message }, 500, { "Cache-Control": "no-store" });

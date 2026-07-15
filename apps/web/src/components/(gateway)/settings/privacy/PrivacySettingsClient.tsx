@@ -447,6 +447,7 @@ export default function PrivacySettingsClient(props: {
 	initialGlobal: TeamGlobalRow | null;
 	providers: ProviderOption[];
 	activeProviderModels: ActiveProviderModel[];
+	ioLoggingFeatureEnabled: boolean;
 }) {
 	const providerLabelById = useMemo(() => {
 		const map = new Map<string, string>();
@@ -529,11 +530,14 @@ export default function PrivacySettingsClient(props: {
 						privacyEnableFreeMayTrain: global.privacyEnableFreeMayTrain,
 						privacyEnableFreeMayPublishPrompts:
 							global.privacyEnableFreeMayPublishPrompts,
-						privacyEnableInputOutputLogging:
-							global.ioLoggingEnabled,
-						ioLoggingEnabled: global.ioLoggingEnabled,
-						ioLoggingRetentionDays: global.ioLoggingRetentionDays,
-						ioLoggingIncludeProviderPayloads: global.ioLoggingIncludeProviderPayloads,
+						...(props.ioLoggingFeatureEnabled
+							? {
+								privacyEnableInputOutputLogging: global.ioLoggingEnabled,
+								ioLoggingEnabled: global.ioLoggingEnabled,
+								ioLoggingRetentionDays: global.ioLoggingRetentionDays,
+								ioLoggingIncludeProviderPayloads: global.ioLoggingIncludeProviderPayloads,
+							}
+							: {}),
 						privacyZdrOnly: global.privacyZdrOnly,
 						providerRestrictionMode: global.providerRestrictionMode,
 						providerRestrictionProviderIds:
@@ -651,19 +655,43 @@ export default function PrivacySettingsClient(props: {
 							}))
 						}
 					/>
-					<ToggleRow
-						label="Store Gateway I/O logs"
-						description="Store request prompts and completions in private R2 storage for the Logs detail view."
-						checked={global.ioLoggingEnabled}
-						onCheckedChange={(checked) =>
-							setGlobal((prev) => ({ ...prev, privacyEnableInputOutputLogging: checked, ioLoggingEnabled: checked }))
-						}
-					/>
-					{global.ioLoggingEnabled ? (
-						<div className="grid gap-3 rounded-lg border bg-muted/10 p-3 md:grid-cols-2">
-							<label className="space-y-1 text-sm"><span className="font-medium">Retention</span><select className="flex h-9 w-full rounded-md border bg-background px-3 text-sm" value={String(global.ioLoggingRetentionDays)} onChange={(event) => setGlobal((prev) => ({ ...prev, ioLoggingRetentionDays: Number(event.target.value) }))}><option value="90">90 days</option><option value="180">180 days</option><option value="365">365 days</option></select></label>
-							<ToggleRow label="Include provider payloads" description="Also retain the upstream provider request and response." checked={global.ioLoggingIncludeProviderPayloads} onCheckedChange={(checked) => setGlobal((prev) => ({ ...prev, ioLoggingIncludeProviderPayloads: checked }))} />
-						</div>
+					{props.ioLoggingFeatureEnabled ? (
+						<>
+							<ToggleRow
+								label="Store Gateway I/O logs"
+								description="Store request prompts and completions in private R2 storage for the Logs detail view."
+								checked={global.ioLoggingEnabled}
+								onCheckedChange={(checked) =>
+									setGlobal((prev) => ({ ...prev, privacyEnableInputOutputLogging: checked, ioLoggingEnabled: checked }))
+								}
+							/>
+							{global.ioLoggingEnabled ? (
+								<div className="grid gap-3 rounded-lg border bg-muted/10 p-3 md:grid-cols-2">
+									<label className="space-y-1 text-sm">
+										<span className="font-medium">Retention</span>
+										<select
+											className="flex h-9 w-full rounded-md border bg-background px-3 text-sm"
+											value={String(global.ioLoggingRetentionDays)}
+											onChange={(event) =>
+												setGlobal((prev) => ({ ...prev, ioLoggingRetentionDays: Number(event.target.value) }))
+											}
+										>
+											<option value="90">90 days</option>
+											<option value="180">180 days</option>
+											<option value="365">365 days</option>
+										</select>
+									</label>
+									<ToggleRow
+										label="Include provider payloads"
+										description="Also retain the upstream provider request and response."
+										checked={global.ioLoggingIncludeProviderPayloads}
+										onCheckedChange={(checked) =>
+											setGlobal((prev) => ({ ...prev, ioLoggingIncludeProviderPayloads: checked }))
+										}
+									/>
+								</div>
+							) : null}
+						</>
 					) : null}
 					<ToggleRow
 						label="Enable ZDR endpoints only"
