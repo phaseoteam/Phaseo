@@ -213,7 +213,7 @@ async function pruneSuspendedExtendedRetention(args: {
 	const supabase = getSupabaseAdmin();
 	const cutoff = subtractDays(args.asOf, INCLUDED_RETENTION_DAYS);
 	const { data, error } = await supabase
-		.from("gateway_request_details")
+		.from("gateway_io_logs")
 		.select("id,io_log_object_key")
 		.eq("workspace_id", args.workspaceId)
 		.eq("io_log_status", "stored")
@@ -246,7 +246,7 @@ async function pruneSuspendedExtendedRetention(args: {
 
 	if (deletedIds.length > 0) {
 		await supabase
-			.from("gateway_request_details")
+			.from("gateway_io_logs")
 			.update({
 				io_log_status: "deleted",
 				io_log_error: "extended_retention_suspended",

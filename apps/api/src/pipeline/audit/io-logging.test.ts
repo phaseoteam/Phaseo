@@ -148,4 +148,20 @@ describe("persistGatewayIoLog", () => {
 		expect(retentionUntil).toBeGreaterThanOrEqual(startedAt + 89 * 24 * 60 * 60 * 1000);
 		expect(retentionUntil).toBeLessThanOrEqual(startedAt + 91 * 24 * 60 * 60 * 1000);
 	});
+
+	it("keeps configured extended retention while billing is in grace", async () => {
+		state.settings.io_logging_billing_status = "grace";
+		const { persistGatewayIoLog } = await import("./io-logging");
+		const startedAt = Date.now();
+
+		const result = await persistGatewayIoLog({
+			requestId: "req_grace",
+			workspaceId: "workspace_1",
+			success: true,
+		});
+
+		const retentionUntil = Date.parse(result.io_log_retention_until ?? "");
+		expect(retentionUntil).toBeGreaterThanOrEqual(startedAt + 364 * 24 * 60 * 60 * 1000);
+		expect(retentionUntil).toBeLessThanOrEqual(startedAt + 366 * 24 * 60 * 60 * 1000);
+	});
 });

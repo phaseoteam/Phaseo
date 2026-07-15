@@ -100,6 +100,28 @@ create policy gateway_io_retention_billing_runs_update_service
 
 grant select, insert, update on public.gateway_io_retention_billing_runs to service_role;
 
+-- The retention billing function below must be valid when this migration is
+-- applied on a clean database. The later production activation migration keeps
+-- this definition idempotent and adds its indexes and RLS policy.
+create table if not exists public.gateway_io_logs (
+  id uuid primary key default gen_random_uuid(),
+  workspace_id uuid not null references public.workspaces(id) on delete cascade,
+  request_id text not null,
+  created_at timestamptz not null default now(),
+  io_log_status text not null default 'not_enabled',
+  io_log_storage_provider text,
+  io_log_bucket text,
+  io_log_object_key text,
+  io_log_bytes bigint,
+  io_log_sha256 text,
+  io_log_content_type text,
+  io_log_retention_until timestamptz,
+  io_log_error text,
+  constraint gateway_io_logs_status_check
+    check (io_log_status in ('not_enabled', 'stored', 'missing_bucket', 'too_large', 'error', 'deleted')),
+  constraint gateway_io_logs_workspace_request_key unique (workspace_id, request_id)
+);
+
 create or replace function public.gateway_io_retention_usage_snapshot(
   p_workspace_id uuid,
   p_as_of timestamptz default now(),
@@ -116,15 +138,15 @@ stable
 set search_path = public
 as $$
   select
-    coalesce(sum(ceil(greatest(coalesce(d.io_log_bytes, 0), 0)::numeric / greatest(p_event_unit_bytes, 1))::bigint), 0)::bigint as event_units,
-    coalesce(sum(greatest(coalesce(d.io_log_bytes, 0), 0)), 0)::bigint as billable_bytes,
+    coalesce(sum(ceil(greatest(coalesce(l.io_log_bytes, 0), 0)::numeric / greatest(p_event_unit_bytes, 1))::bigint), 0)::bigint as event_units,
+    coalesce(sum(greatest(coalesce(l.io_log_bytes, 0), 0)), 0)::bigint as billable_bytes,
     count(*)::bigint as object_count
-  from public.gateway_request_details d
-  where d.workspace_id = p_workspace_id
-    and d.io_log_status = 'stored'
-    and d.io_log_object_key is not null
-    and d.io_log_retention_until > p_as_of
-    and d.created_at < p_as_of - make_interval(days => greatest(p_included_days, 0));
+  from public.gateway_io_logs l
+  where l.workspace_id = p_workspace_id
+    and l.io_log_status = 'stored'
+    and l.io_log_object_key is not null
+    and l.io_log_retention_until > p_as_of
+    and l.created_at < p_as_of - make_interval(days => greatest(p_included_days, 0));
 $$;
 
 revoke all on function public.gateway_io_retention_usage_snapshot(uuid, timestamptz, integer, integer) from public;
@@ -291,7 +313,16 @@ begin
   v_wallet_found := found;
 
   if not v_wallet_found or coalesce(v_wallet.balance_nanos, 0) < p_amount_nanos then
-    if coalesce(v_settings.io_logging_billing_status, 'active') = 'grace'
+    if coalesce(v_settings.io_logging_billing_status, 'active') = 'suspended' then
+      v_status := 'suspended';
+      v_grace_until := null;
+
+      update public.workspace_settings
+      set io_logging_billing_status = 'suspended',
+          io_logging_grace_until = null,
+          updated_at = now()
+      where workspace_id = p_workspace_id;
+    elsif coalesce(v_settings.io_logging_billing_status, 'active') = 'grace'
        and v_settings.io_logging_grace_until is not null
        and v_settings.io_logging_grace_until <= now() then
       v_status := 'suspended';

@@ -144,9 +144,9 @@ async function getWorkspaceIoLoggingSettings(workspaceId: string): Promise<Works
                 : "active";
         const value = {
             enabled: row.io_logging_enabled === true,
-            retentionDays: billingStatus === "active"
-                ? normalizeRetentionDays(row.io_logging_retention_days)
-                : DEFAULT_RETENTION_DAYS,
+            retentionDays: billingStatus === "suspended"
+                ? DEFAULT_RETENTION_DAYS
+                : normalizeRetentionDays(row.io_logging_retention_days),
             includeProviderPayloads: row.io_logging_include_provider_payloads !== false,
             billingStatus,
         };
