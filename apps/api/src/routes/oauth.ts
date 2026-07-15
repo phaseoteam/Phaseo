@@ -24,6 +24,7 @@ import {
 	hashOAuthSecretCandidates,
 	hasActiveOAuthWorkspaceAccess,
 	issueTokenPairForGrant,
+	issueOAuthManagedKeyForAuthorizationCode,
 	loadOAuthClient,
 	makeAuthCodeExpiry,
 	makeDeviceCodeExpiry,
@@ -482,8 +483,8 @@ oauthRouter.post(
 			}))) {
 				return oauthError("invalid_grant", "OAuth workspace access is no longer active");
 			}
-			const tokens = await issueTokenPairForGrant(
-				{ type: "authorization_code", id: String(data.id) },
+			const tokens = await issueOAuthManagedKeyForAuthorizationCode(
+				String(data.id),
 				{
 					userId: String(data.user_id),
 					workspaceId: String(data.workspace_id),
