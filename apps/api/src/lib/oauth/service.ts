@@ -474,16 +474,16 @@ export async function ensureGrant(args: {
 	if (error) throw new Error(error.message || "Failed to create OAuth authorization");
 }
 
-export async function hasActiveOAuthWorkspaceAccess(args: {
+export async function getActiveOAuthWorkspaceScopes(args: {
 	userId: string;
 	workspaceId: string;
 	clientId: string;
-}): Promise<boolean> {
+}): Promise<string[] | null> {
 	const supabase = getSupabaseAdmin();
 	const [authorization, membership] = await Promise.all([
 		supabase
 			.from("oauth_authorizations")
-			.select("id, revoked_at")
+			.select("scopes, revoked_at")
 			.eq("user_id", args.userId)
 			.eq("workspace_id", args.workspaceId)
 			.eq("client_id", args.clientId)
@@ -495,9 +495,21 @@ export async function hasActiveOAuthWorkspaceAccess(args: {
 			.eq("workspace_id", args.workspaceId)
 			.maybeSingle(),
 	]);
-	return !authorization.error && !membership.error && Boolean(
-		authorization.data && authorization.data.revoked_at === null && membership.data,
-	);
+	if (authorization.error || membership.error || !authorization.data || authorization.data.revoked_at !== null || !membership.data) {
+		return null;
+	}
+
+	return Array.isArray(authorization.data.scopes)
+		? authorization.data.scopes.map(String).filter(Boolean)
+		: [];
+}
+
+export async function hasActiveOAuthWorkspaceAccess(args: {
+	userId: string;
+	workspaceId: string;
+	clientId: string;
+}): Promise<boolean> {
+	return (await getActiveOAuthWorkspaceScopes(args)) !== null;
 }
 
 async function createTokenPairMaterial(input: TokenIssueInput) {

@@ -257,7 +257,8 @@ describe("OAuth refresh rotation security", () => {
 		);
 
 		expect(result?.access_token).toMatch(/^phaseo_v1_sk_/);
-		expect(state.rpcCalls.at(-1)).toMatchObject({
+		const rpcCall = state.rpcCalls.at(-1);
+		expect(rpcCall).toMatchObject({
 			name: "consume_oauth_code_and_issue_managed_key",
 			args: {
 				p_code_id: "00000000-0000-0000-0000-000000000002",
@@ -267,6 +268,13 @@ describe("OAuth refresh rotation security", () => {
 				p_scopes: ["models:read"],
 			},
 		});
+		expect(rpcCall?.args).toMatchObject({
+			p_key_kid: expect.any(String),
+			p_key_prefix: expect.stringMatching(/^[A-Za-z0-9]{6}$/),
+			p_key_name: "OAuth: phaseo_cli",
+			p_key_hash: expect.stringMatching(/^[a-f0-9]{64}$/),
+		});
+		expect(rpcCall?.args.p_key_hash).not.toBe(result?.access_token);
 	});
 
 	it("fails authorization approval when the grant cannot be persisted", async () => {

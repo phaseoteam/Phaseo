@@ -36,6 +36,19 @@ const runtime = vi.hoisted(() => {
 
 	const supabase = {
 		from: vi.fn((table: string) => {
+			if (table === "keys") {
+				return {
+					select: () => ({
+						eq: () => ({
+							maybeSingle,
+						}),
+					}),
+					update: (payload: Record<string, unknown>) => {
+						updatePayloads.push(payload);
+						return { eq: updateEq };
+					},
+				};
+			}
 			if (table === "oauth_authorizations") {
 				return {
 					select: () => ({
@@ -106,6 +119,7 @@ vi.mock("@/runtime/env", () => ({
 
 vi.mock("@/lib/oauth/service", () => ({
 	hasActiveOAuthWorkspaceAccess: vi.fn(async () => true),
+	getActiveOAuthWorkspaceScopes: vi.fn(async () => ["keys:read", "keys:write"]),
 	validateLocalAccessToken: vi.fn(async () => ({
 		valid: true,
 		claims: {
@@ -218,13 +232,21 @@ describe("authenticateManagement", () => {
 		expect(runtime.supabase.from).not.toHaveBeenCalled();
 	});
 
-	it("rejects inference and legacy management key formats before querying the database", async () => {
+	it("rejects user-created inference and legacy management key formats", async () => {
 		const kid = "MGMTLEGACY1";
 		const secret = "secret_legacy_management_key";
+		runtime.dbRow.value = {
+			id: "standard_key",
+			workspace_id: "team_standard",
+			status: "active",
+			hash: hashSecret(secret),
+		};
 		const { authenticateManagement } = await import("./auth");
 
+		const standardResult = await authenticateManagement(buildRequest(`phaseo_v1_sk_${kid}_${secret}`));
+		expect(standardResult).toEqual({ ok: false, reason: "management_key_required" });
+
 		for (const token of [
-			`phaseo_v1_sk_${kid}_${secret}`,
 			`aistats_v1_sk_${kid}_${secret}`,
 			`aistats_v1_mk_${kid}_${secret}`,
 		]) {
@@ -232,7 +254,8 @@ describe("authenticateManagement", () => {
 			expect(result).toEqual({ ok: false, reason: "management_key_required" });
 		}
 
-		expect(runtime.supabase.from).not.toHaveBeenCalled();
+		expect(runtime.supabase.from).toHaveBeenCalledTimes(2);
+		expect(runtime.supabase.from).toHaveBeenNthCalledWith(1, "keys");
 	});
 
 	it("rejects soft-blocked management keys", async () => {

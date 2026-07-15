@@ -5,12 +5,23 @@ alter table public.keys
   add column if not exists key_kind text not null default 'standard'
     check (key_kind in ('standard', 'oauth_delegated')),
   add column if not exists oauth_client_id text,
-  add column if not exists oauth_user_id uuid references auth.users(id) on delete set null,
+  add column if not exists oauth_user_id uuid,
   add column if not exists oauth_scopes text[],
   add column if not exists issued_via text not null default 'dashboard'
     check (issued_via in ('dashboard', 'oauth_pkce', 'cli'));
 
-create index if not exists keys_oauth_delegated_active_idx
+-- The column is new and starts NULL, but keep the FK addition non-blocking for
+-- production writes. Validation uses a lighter lock than adding a validated FK.
+alter table public.keys
+  add constraint keys_oauth_user_id_fkey
+  foreign key (oauth_user_id) references auth.users(id) on delete set null not valid;
+
+alter table public.keys validate constraint keys_oauth_user_id_fkey;
+
+-- A unique partial index is a final invariant guard in addition to the grant
+-- row lock in the issuance RPC. There are no delegated rows before this
+-- migration, so building it is bounded to an empty partial index at rollout.
+create unique index if not exists keys_oauth_delegated_active_idx
   on public.keys (oauth_user_id, workspace_id, oauth_client_id)
   where key_kind = 'oauth_delegated' and status = 'active';
 
@@ -33,6 +44,21 @@ security definer
 set search_path = ''
 as $$
 begin
+  -- Serialise exchanges for this consent grant. Without this lock, two valid
+  -- codes exchanged concurrently could each revoke the prior key then create
+  -- a new active one.
+  perform 1
+  from public.oauth_authorizations grant
+  where grant.user_id = p_user_id
+    and grant.workspace_id = p_workspace_id
+    and grant.client_id = p_client_id
+    and grant.revoked_at is null
+  for update;
+
+  if not found then
+    return 'invalid';
+  end if;
+
   update public.oauth_authorization_codes code
   set used_at = now()
   where code.id = p_code_id
@@ -41,13 +67,6 @@ begin
     and code.user_id = p_user_id
     and code.workspace_id = p_workspace_id
     and code.client_id = p_client_id
-    and exists (
-      select 1 from public.oauth_authorizations grant
-      where grant.user_id = p_user_id
-        and grant.workspace_id = p_workspace_id
-        and grant.client_id = p_client_id
-        and grant.revoked_at is null
-    )
     and exists (
       select 1 from public.workspace_members member
       where member.user_id = p_user_id

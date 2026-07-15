@@ -7,6 +7,10 @@ type KeyRow = {
     status: string;
     hash: string;
     expires_at?: string | null;
+	key_kind?: string | null;
+	oauth_client_id?: string | null;
+	oauth_user_id?: string | null;
+	oauth_scopes?: string[] | null;
 };
 
 const runtime = vi.hoisted(() => {
@@ -19,6 +23,14 @@ const runtime = vi.hoisted(() => {
         data: dbRow.value,
         error: null,
     }));
+	const authorizationMaybeSingle = vi.fn(async () => ({
+		data: { scopes: ["models:read"], revoked_at: null },
+		error: null,
+	}));
+	const membershipMaybeSingle = vi.fn(async () => ({
+		data: { workspace_id: "team_oauth" },
+		error: null,
+	}));
     const updateEq = vi.fn(async () => ({ error: null }));
 
     const cache = {
@@ -38,9 +50,18 @@ const runtime = vi.hoisted(() => {
 
     const supabase = {
         from: vi.fn((table: string) => {
-            if (table !== "keys") {
-                throw new Error(`Unexpected table: ${table}`);
-            }
+			if (table === "oauth_authorizations") {
+				return {
+					select: () => ({ eq: () => ({ eq: () => ({ eq: () => ({ maybeSingle: authorizationMaybeSingle }) }) }) }),
+					update: () => ({ eq: () => ({ eq: () => ({ eq: updateEq }) }) }),
+				};
+			}
+			if (table === "workspace_members") {
+				return {
+					select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: membershipMaybeSingle }) }) }),
+				};
+			}
+			if (table !== "keys") throw new Error(`Unexpected table: ${table}`);
             return {
                 select: () => ({
                     eq: () => ({
@@ -62,6 +83,8 @@ const runtime = vi.hoisted(() => {
         backgroundTasks,
         dbRow,
         maybeSingle,
+		authorizationMaybeSingle,
+		membershipMaybeSingle,
         updateEq,
         cache,
         supabase,
@@ -120,6 +143,8 @@ describe("authenticate hot-path caching", () => {
         runtime.cache.delete.mockClear();
         runtime.supabase.from.mockClear();
         runtime.maybeSingle.mockClear();
+		runtime.authorizationMaybeSingle.mockClear();
+		runtime.membershipMaybeSingle.mockClear();
         runtime.updateEq.mockClear();
         vi.resetModules();
     });
@@ -204,6 +229,57 @@ describe("authenticate hot-path caching", () => {
             expect.objectContaining({ hash: migratedHash }),
         );
     });
+
+	it("does not accept a cached OAuth-managed key after it is revoked", async () => {
+		const kid = "KIDOAUTHREVOKE";
+		const secret = "secret_oauth_revoked";
+		const token = `phaseo_v1_sk_${kid}_${secret}`;
+		const cachedRow: KeyRow = {
+			id: "key_oauth",
+			workspace_id: "team_oauth",
+			status: "active",
+			hash: hashSecret(secret),
+			key_kind: "oauth_delegated",
+			oauth_user_id: "user_oauth",
+			oauth_client_id: "client_oauth",
+			oauth_scopes: ["models:read"],
+		};
+		runtime.dbRow.value = { ...cachedRow, status: "revoked" };
+		await runtime.cache.put(`gateway:keyver:kid:${kid}`, "1");
+		await runtime.cache.put(`gateway:key:${kid}:v1`, JSON.stringify(cachedRow));
+
+		const { authenticate } = await import("./auth");
+		const result = await authenticate(buildRequest(token), { useKvCache: true });
+
+		expect(result).toEqual({ ok: false, reason: "key_not_found_or_revoked" });
+		expect(runtime.maybeSingle).toHaveBeenCalledTimes(1);
+	});
+
+	it("enforces the current consent scope for an OAuth-managed key", async () => {
+		const kid = "KIDOAUTHSCOPE";
+		const secret = "secret_oauth_scope";
+		runtime.dbRow.value = {
+			id: "key_oauth_scope",
+			workspace_id: "team_oauth",
+			status: "active",
+			hash: hashSecret(secret),
+			key_kind: "oauth_delegated",
+			oauth_user_id: "user_oauth",
+			oauth_client_id: "client_oauth",
+			oauth_scopes: ["models:read", "logs:read"],
+		};
+
+		const { authenticateManagement } = await import("./auth");
+		const result = await authenticateManagement(buildRequest(`phaseo_v1_sk_${kid}_${secret}`), { useKvCache: false });
+		await flushBackground();
+
+		expect(result).toMatchObject({
+			ok: true,
+			authMethod: "oauth",
+			oauthScopes: ["models:read"],
+			scopes: ["models:read"],
+		});
+	});
 
     it("rejects expired keys when expires_at has passed", async () => {
         const kid = "KIDEXPIRED001";
