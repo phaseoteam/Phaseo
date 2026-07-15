@@ -1,0 +1,21 @@
+{
+  "organisation_id": "thinking-machines",
+  "name": "Thinking Machines Lab",
+  "country_code": "US",
+  "description": "Thinking Machines Lab is an AI research and product company focused on customizable AI systems.",
+  "colour": "#111111",
+  "organisation_links": [
+    {
+      "platform": "hugging_face",
+      "url": "https://huggingface.co/thinkingmachines"
+    },
+    {
+      "platform": "website",
+      "url": "https://thinkingmachines.ai"
+    },
+    {
+      "platform": "x",
+      "url": "https://x.com/ThinkingMachines"
+    }
+  ]
+}
