@@ -14,6 +14,8 @@ export const CAPABILITIES = {
 	ACTIVITY_READ: "activity:read",
 	ANALYTICS_READ: "analytics:read",
 	GENERATIONS_READ: "generations:read",
+	FEEDBACK_READ: "feedback:read",
+	FEEDBACK_WRITE: "feedback:write",
 	WORKSPACES_READ: "workspaces:read",
 	WORKSPACES_WRITE: "workspaces:write",
 	WORKSPACES_DELETE: "workspaces:delete",
