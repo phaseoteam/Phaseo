@@ -110,8 +110,6 @@ function ConfigPill({
 
 export default function PresetsPanel({
 	teamsWithPresets,
-	initialTeamId,
-	currentUserId,
 	providers = [],
 }: PresetsPanelProps) {
 	const sortedTeams = useMemo(() => {
