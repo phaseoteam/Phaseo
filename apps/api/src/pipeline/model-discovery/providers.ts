@@ -107,7 +107,7 @@ const PROVIDER_OVERRIDES: Record<string, ProviderOverride> = {
 	streamlake: { providerName: "StreamLake" },
 	"thinking-machines": {
 		providerName: "Thinking Machines",
-		apiKeyEnv: "TINKER_API_KEY",
+		apiKeyEnv: ["TINKER_API_KEY"],
 		baseUrlEnv: ["THINKING_MACHINES_BASE_URL", "TINKER_BASE_URL"],
 	},
 	together: { providerName: "Together" },
