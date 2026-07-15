@@ -158,16 +158,12 @@ export async function hashOAuthSecretCandidates(value: string): Promise<string[]
 }
 
 export async function hashOAuthClientSecret(value: string): Promise<string> {
-	const [pepper] = resolveOAuthTokenPeppers();
-	const iterations = 600_000;
-	const salt = randomBase64Url(16);
-	const key = await crypto.subtle.importKey("raw", encoder.encode(value), "PBKDF2", false, ["deriveBits"]);
-	const bits = await crypto.subtle.deriveBits(
-		{ name: "PBKDF2", hash: "SHA-256", salt: encoder.encode(`${pepper}:${salt}`), iterations },
-		key,
-		256,
-	);
-	return `pbkdf2-sha256$${iterations}$${salt}$${base64UrlEncodeBytes(new Uint8Array(bits))}`;
+	// OAuth client secrets are generated opaque values, not user-chosen passwords.
+	// A peppered SHA-256 hash therefore retains the required secret-at-rest and
+	// rotation properties without consuming a Worker CPU budget on every client
+	// registration or token exchange. verifyClientSecret still accepts legacy
+	// PBKDF2 records so this format change is backwards compatible.
+	return hashOAuthSecret(value);
 }
 
 async function verifyPbkdf2OAuthClientSecret(value: string, stored: string): Promise<boolean> {

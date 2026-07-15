@@ -294,15 +294,20 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	"guardrails set-keys": { usage: ["phaseo guardrails set-keys <id> --key-ids <id,id> [--json]"] },
 	"oauth-clients": {
 		usage: [
-			"User-created OAuth apps are coming soon during the first-party CLI OAuth beta.",
+			"phaseo oauth-clients list [--json]",
+			"phaseo oauth-clients create --name <name> --redirect-uri <uri> [--client-type public|confidential] [--scopes scope_a,scope_b] [--json]",
+			"phaseo oauth-clients get <client-id> [--json]",
+			"phaseo oauth-clients update <client-id> [--name <name>] [--redirect-uri <uri>] [--scopes scope_a,scope_b] [--json]",
+			"phaseo oauth-clients delete <client-id> [--json]",
+			"phaseo oauth-clients regenerate-secret <client-id> [--json]",
 		],
 	},
-	"oauth-clients list": { usage: ["User-created OAuth apps are coming soon during the first-party CLI OAuth beta."] },
-	"oauth-clients create": { usage: ["User-created OAuth apps are coming soon during the first-party CLI OAuth beta."] },
-	"oauth-clients get": { usage: ["User-created OAuth apps are coming soon during the first-party CLI OAuth beta."] },
-	"oauth-clients update": { usage: ["User-created OAuth apps are coming soon during the first-party CLI OAuth beta."] },
-	"oauth-clients delete": { usage: ["User-created OAuth apps are coming soon during the first-party CLI OAuth beta."] },
-	"oauth-clients regenerate-secret": { usage: ["User-created OAuth apps are coming soon during the first-party CLI OAuth beta."] },
+	"oauth-clients list": { usage: ["phaseo oauth-clients list [--json]"] },
+	"oauth-clients create": { usage: ["phaseo oauth-clients create --name <name> --redirect-uri <uri> [--client-type public|confidential] [--scopes scope_a,scope_b] [--json]"] },
+	"oauth-clients get": { usage: ["phaseo oauth-clients get <client-id> [--json]"] },
+	"oauth-clients update": { usage: ["phaseo oauth-clients update <client-id> [--name <name>] [--redirect-uri <uri>] [--scopes scope_a,scope_b] [--json]"] },
+	"oauth-clients delete": { usage: ["phaseo oauth-clients delete <client-id> [--json]"] },
+	"oauth-clients regenerate-secret": { usage: ["phaseo oauth-clients regenerate-secret <client-id> [--json]"] },
 	"management-keys": {
 		usage: [
 			"phaseo management-keys list [--json]",
