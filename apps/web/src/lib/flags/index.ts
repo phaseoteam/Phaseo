@@ -53,3 +53,19 @@ export const batchApiFlag = statsigAdapter
 			key: BATCH_API_GATE,
 			decide: () => false,
 		});
+
+/**
+ * Temporary production rollout gate for passkey enrollment and management.
+ * The gate itself targets approved admin user IDs in Statsig; callers must
+ * still verify the Phaseo admin role before exposing account controls.
+ */
+export const passkeysAdminBetaFlag = statsigAdapter
+	? flag<boolean, StatsigUser>({
+			key: "passkeys_admin_beta",
+			identify,
+			adapter: statsigAdapter.featureGate((gate) => gate.value),
+		})
+	: flag<boolean>({
+			key: "passkeys_admin_beta",
+			decide: () => false,
+		});

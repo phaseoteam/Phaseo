@@ -431,8 +431,12 @@ export async function finalizePostLogin(
 		aalData?.currentLevel === "aal1" &&
 		aalData?.nextLevel === "aal2"
 	) {
+		const verifyMfaPath =
+			input.returnUrl === "/"
+				? "/auth/verify-mfa"
+				: `/auth/verify-mfa?returnUrl=${encodeURIComponent(input.returnUrl)}`;
 		return {
-			redirectPath: "/auth/verify-mfa",
+			redirectPath: verifyMfaPath,
 			userId: user.id,
 			createdPersonalTeam: false,
 		};

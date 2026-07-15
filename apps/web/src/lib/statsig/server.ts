@@ -22,9 +22,20 @@ import {
 const statsigServerKey =
 	process.env.STATSIG_SERVER_KEY ?? process.env.STATSIG_SERVER_API_KEY ?? null;
 
+const statsigEnvironmentTier =
+	process.env.STATSIG_ENVIRONMENT_TIER ??
+	(process.env.VERCEL_ENV === "production"
+		? "production"
+		: process.env.VERCEL_ENV === "preview"
+			? "staging"
+			: "development");
+
 const statsigFlagsAdapter = statsigServerKey
 	? createStatsigAdapter({
 			statsigServerApiKey: statsigServerKey,
+			statsigOptions: {
+				environment: { tier: statsigEnvironmentTier },
+			},
 		})
 	: null;
 

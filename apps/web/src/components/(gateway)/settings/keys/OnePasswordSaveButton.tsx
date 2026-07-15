@@ -26,6 +26,21 @@ export function OnePasswordSaveButton({
 	urls,
 }: OnePasswordSaveButtonProps) {
 	const [encodedValue, setEncodedValue] = React.useState<string | null>(null);
+	const [theme, setTheme] = React.useState<"light" | "dark">("light");
+	const [isReady, setIsReady] = React.useState(false);
+	const buttonRef = React.useRef<HTMLElement | null>(null);
+
+	React.useEffect(() => {
+		const root = document.documentElement;
+		const syncTheme = () => {
+			setTheme(root.classList.contains("dark") ? "dark" : "light");
+		};
+
+		syncTheme();
+		const observer = new MutationObserver(syncTheme);
+		observer.observe(root, { attributes: true, attributeFilter: ["class"] });
+		return () => observer.disconnect();
+	}, []);
 
 	React.useEffect(() => {
 		let cancelled = false;
@@ -61,13 +76,36 @@ export function OnePasswordSaveButton({
 		};
 	}, [title, secret, notes, urls]);
 
+	React.useEffect(() => {
+		if (!encodedValue) return;
+
+		const interval = window.setInterval(() => {
+			const nativeButton = buttonRef.current?.shadowRoot?.querySelector("button");
+			if (nativeButton && !nativeButton.disabled) {
+				setIsReady(true);
+				window.clearInterval(interval);
+			}
+		}, 200);
+
+		return () => window.clearInterval(interval);
+	}, [encodedValue]);
+
 	if (!encodedValue) return null;
 
-	return React.createElement("onepassword-save-button", {
-		"data-onepassword-type": "api-key",
-		value: encodedValue,
-		lang: "en",
-		"data-theme": "light",
-		padding: "compact",
-	});
+	return React.createElement(
+		"div",
+		{
+			className: isReady ? "block" : "hidden",
+			"aria-hidden": !isReady,
+		},
+		React.createElement("onepassword-save-button", {
+			ref: buttonRef,
+			"data-onepassword-type": "api-key",
+			value: encodedValue,
+			lang: "en",
+			class: "black",
+			"data-theme": theme,
+			padding: "compact",
+		})
+	);
 }
