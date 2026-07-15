@@ -5,6 +5,7 @@ import {
 	CLI_DEFAULT_SCOPES,
 	createUserCode,
 	filterAllowedScopes,
+	hashOAuthClientSecret,
 	hashOAuthSecret,
 	normalizeScopes,
 	normalizeUserCode,
@@ -110,6 +111,16 @@ describe("OAuth service helpers", () => {
 		await expect(verifyClientSecret(client, secret)).resolves.toBe(true);
 		await expect(verifyClientSecret(client, "wrong-secret")).resolves.toBe(false);
 		await expect(verifyClientSecret(client, null)).resolves.toBe(false);
+	});
+
+	it("hashes generated OAuth client secrets with the OAuth pepper", async () => {
+		const secret = "generated-opaque-client-secret";
+		const hash = await hashOAuthClientSecret(secret);
+		expect(hash).toBe(await hashOAuthSecret(secret));
+		await expect(verifyClientSecret({
+			client_type: "confidential",
+			client_secret_hash: hash,
+		}, secret)).resolves.toBe(true);
 	});
 
 	it("keeps OAuth hashes independent from API-key pepper rotation", async () => {

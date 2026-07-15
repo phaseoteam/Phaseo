@@ -186,6 +186,21 @@ describe("OAuth route security", () => {
 		expect(state.updateFilters).toEqual([]);
 	});
 
+	it("rejects oversized OAuth request bodies before parsing them", async () => {
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/token", {
+			method: "POST",
+			headers: {
+				"content-type": "application/json",
+				"content-length": "16385",
+			},
+			body: "{}",
+		});
+
+		expect(response.status).toBe(413);
+		await expect(response.json()).resolves.toMatchObject({ error: "invalid_request" });
+	});
+
 	it("returns slow_down when the atomic device poll check rejects the cadence", async () => {
 		state.deviceRow = {
 			id: "device_1",

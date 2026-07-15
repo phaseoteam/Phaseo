@@ -3,8 +3,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({
 	thirdPartyOAuthEnabled: false,
 	metadataRows: [] as Array<Record<string, unknown> | null>,
+	operations: [] as string[],
 	createClient: vi.fn(async () => ({ data: { client_id: "client_1" }, error: null })),
 	updateClient: vi.fn(async () => ({ error: null })),
+	deleteClient: vi.fn(async () => {
+		state.operations.push("delete-upstream");
+		return { error: null };
+	}),
 }));
 
 vi.mock("@/runtime/env", () => ({
@@ -16,25 +21,37 @@ vi.mock("@/runtime/env", () => ({
 	getSupabaseAdmin: () => ({
 		auth: {
 			admin: {
-				oauth: {
-					createClient: state.createClient,
-					updateClient: state.updateClient,
+					oauth: {
+						createClient: state.createClient,
+						updateClient: state.updateClient,
+						deleteClient: state.deleteClient,
 				},
 			},
 		},
 		from(table: string) {
-			if (table !== "oauth_app_metadata") {
-				throw new Error(`Unexpected table: ${table}`);
+			if (table === "oauth_authorizations") {
+				return {
+					update: () => ({
+						eq: () => ({
+							is: () => {
+								state.operations.push("revoke-authorizations");
+								return { error: null };
+							},
+						}),
+					}),
+				};
 			}
+			if (table !== "oauth_app_metadata") throw new Error(`Unexpected table: ${table}`);
 			return {
 				select: () => ({
 					eq: () => ({
-						eq: () => ({
-							maybeSingle: async () => ({
+						eq: () => {
+							const result = async () => ({
 								data: state.metadataRows.shift() ?? null,
 								error: null,
-							}),
-						}),
+							});
+							return { maybeSingle: result, single: result };
+						},
 					}),
 				}),
 				update: () => ({
@@ -49,6 +66,14 @@ vi.mock("@/runtime/env", () => ({
 						}),
 					}),
 				}),
+				delete: () => ({
+					eq: () => ({
+						eq: () => {
+							state.operations.push("delete-metadata");
+							return { error: null };
+						},
+					}),
+				}),
 			};
 		},
 	}),
@@ -61,7 +86,7 @@ vi.mock("@/pipeline/before/guards", () => ({
 			workspaceId: "ws_attacker",
 			apiKeyId: "mgmt_1",
 			authMethod: "api_key",
-			scopes: ["oauth_clients:write"],
+			scopes: ["oauth_clients:write", "oauth_clients:delete"],
 		},
 	})),
 }));
@@ -70,8 +95,10 @@ describe("OAuth client management security", () => {
 	beforeEach(() => {
 		state.thirdPartyOAuthEnabled = false;
 		state.metadataRows.length = 0;
+		state.operations.length = 0;
 		state.createClient.mockClear();
 		state.updateClient.mockClear();
+		state.deleteClient.mockClear();
 		vi.resetModules();
 	});
 
@@ -108,5 +135,21 @@ describe("OAuth client management security", () => {
 		expect(response.status).toBe(404);
 		expect(body.error).toBe("OAuth app not found");
 		expect(state.updateClient).not.toHaveBeenCalled();
+	});
+
+	it("revokes delegated authorizations before deleting an OAuth client", async () => {
+		state.thirdPartyOAuthEnabled = true;
+		state.metadataRows.push({ client_id: "owned_client" });
+		const { default: oauthClientsRoutes } = await import("./oauth-clients");
+		const response = await oauthClientsRoutes.request("https://example.com/owned_client", {
+			method: "DELETE",
+		});
+
+		expect(response.status).toBe(200);
+		expect(state.operations).toEqual([
+			"revoke-authorizations",
+			"delete-upstream",
+			"delete-metadata",
+		]);
 	});
 });

@@ -43,14 +43,55 @@ import {
 } from "@/lib/oauth/service";
 
 export const oauthRouter = new Hono<Env>();
+const MAX_OAUTH_REQUEST_BODY_BYTES = 16 * 1024;
+
+class OAuthRequestBodyTooLarge extends Error {}
 
 function noStore(status = 200) {
 	return { status, headers: { "Cache-Control": "no-store" } };
 }
 
 async function readBody(req: Request): Promise<Record<string, unknown>> {
-	const text = await req.text();
+	const contentLength = Number(req.headers.get("content-length"));
+	if (Number.isFinite(contentLength) && contentLength > MAX_OAUTH_REQUEST_BODY_BYTES) {
+		throw new OAuthRequestBodyTooLarge();
+	}
+	if (!req.body) return {};
+
+	const reader = req.body.getReader();
+	const chunks: Uint8Array[] = [];
+	let total = 0;
+	try {
+		while (true) {
+			const { value, done } = await reader.read();
+			if (done) break;
+			if (!value) continue;
+			total += value.byteLength;
+			if (total > MAX_OAUTH_REQUEST_BODY_BYTES) {
+				await reader.cancel();
+				throw new OAuthRequestBodyTooLarge();
+			}
+			chunks.push(value);
+		}
+	} finally {
+		reader.releaseLock();
+	}
+
+	const bytes = new Uint8Array(total);
+	let offset = 0;
+	for (const chunk of chunks) {
+		bytes.set(chunk, offset);
+		offset += chunk.byteLength;
+	}
+	const text = new TextDecoder().decode(bytes);
 	return parseTokenRequestBody(text, req.headers.get("content-type"));
+}
+
+function invalidBodyError(error: unknown) {
+	if (error instanceof OAuthRequestBodyTooLarge) {
+		return oauthError("invalid_request", "OAuth request body is too large", 413);
+	}
+	return oauthError("invalid_request", "Request body must be JSON or form encoded");
 }
 
 function oauthError(error: string, description: string, status = 400, headers: Record<string, string> = {}) {
@@ -116,8 +157,8 @@ oauthRouter.post(
 		let body: Record<string, unknown>;
 		try {
 			body = await readBody(req);
-		} catch {
-			return oauthError("invalid_request", "Request body must be JSON or form encoded");
+		} catch (error) {
+			return invalidBodyError(error);
 		}
 
 		const clientId = String(body.client_id ?? CLI_CLIENT_ID).trim();
@@ -211,8 +252,8 @@ oauthRouter.post(
 		let body: Record<string, unknown>;
 		try {
 			body = await readBody(req);
-		} catch {
-			return oauthError("invalid_request", "Request body must be JSON or form encoded");
+		} catch (error) {
+			return invalidBodyError(error);
 		}
 
 		const clientId = String(body.client_id ?? "").trim();
@@ -289,8 +330,8 @@ oauthRouter.post(
 		let body: Record<string, unknown>;
 		try {
 			body = await readBody(req);
-		} catch {
-			return oauthError("invalid_request", "Request body must be JSON or form encoded");
+		} catch (error) {
+			return invalidBodyError(error);
 		}
 
 		const userCode = normalizeUserCode(String(body.user_code ?? ""));
@@ -381,8 +422,8 @@ oauthRouter.post(
 		let body: Record<string, unknown>;
 		try {
 			body = await readBody(req);
-		} catch {
-			return oauthError("invalid_request", "Request body must be JSON or form encoded");
+		} catch (error) {
+			return invalidBodyError(error);
 		}
 		const grantType = String(body.grant_type ?? "").trim();
 		if (!(await checkOAuthRateLimit(req, "token", grantType || "unknown-grant"))) {
@@ -531,8 +572,8 @@ oauthRouter.post(
 		let body: Record<string, unknown>;
 		try {
 			body = await readBody(req);
-		} catch {
-			return oauthError("invalid_request", "Request body must be JSON or form encoded");
+		} catch (error) {
+			return invalidBodyError(error);
 		}
 		const token = String(body.token ?? "").trim();
 		if (token) await revokeToken(token);
