@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
+import { createAdminClient } from "@/utils/supabase/admin";
 import {
 	requireAuthenticatedUser,
 	requireWorkspaceMembership,
@@ -109,7 +110,7 @@ export async function updateGlobalGuardrailsSettings(
 			payload.providerRestrictionEnforceAllowed;
 	}
 
-	const { error } = await supabase
+	const { error } = await createAdminClient()
 		.from("workspace_settings")
 		.upsert(update, { onConflict: "workspace_id" });
 	if (error) throw error;

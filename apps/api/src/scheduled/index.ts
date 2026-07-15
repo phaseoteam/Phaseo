@@ -238,7 +238,7 @@ async function handleGatewayIoRetentionBillingScheduledEvent(
 	event: ScheduledController,
 	env: GatewayBindings,
 ): Promise<void> {
-	if (!toBool(env.GATEWAY_IO_RETENTION_BILLING_ENABLED, true)) {
+	if (!toBool(env.GATEWAY_IO_RETENTION_BILLING_ENABLED, false)) {
 		return;
 	}
 

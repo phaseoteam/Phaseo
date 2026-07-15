@@ -19,37 +19,16 @@ function resolveReplayRequest(value: unknown): Record<string, unknown> | null {
     return Object.fromEntries(entries);
 }
 
-function isMissingIoLogColumnError(error: unknown): boolean {
-	const record = error && typeof error === "object" ? error as Record<string, unknown> : null;
-	const code = String(record?.code ?? "");
-	const message = String(record?.message ?? "").toLowerCase();
-	return (code === "PGRST204" || code === "42703") && message.includes("io_log_");
-}
-
-async function fetchGenerationDetail(
+async function fetchGenerationIoLog(
 	supabase: ReturnType<typeof getSupabaseAdmin>,
 	workspaceId: string,
 	requestId: string,
 ) {
-	const query = () => supabase
-		.from("gateway_request_details")
-		.select("request_payload,gateway_response,provider_request,provider_response,io_log_status,io_log_storage_provider,io_log_bucket,io_log_object_key,io_log_bytes,io_log_sha256,io_log_content_type,io_log_retention_until,io_log_error")
-		.eq("workspace_id", workspaceId)
-		.eq("request_id", requestId)
-		.order("created_at", { ascending: false })
-		.limit(1)
-		.maybeSingle();
-
-	const result = await query();
-	if (!result.error || !isMissingIoLogColumnError(result.error)) return result;
-
 	return supabase
-		.from("gateway_request_details")
-		.select("request_payload,gateway_response,provider_request,provider_response")
+		.from("gateway_io_logs")
+		.select("io_log_status,io_log_storage_provider,io_log_bucket,io_log_object_key,io_log_bytes,io_log_sha256,io_log_content_type,io_log_retention_until,io_log_error")
 		.eq("workspace_id", workspaceId)
 		.eq("request_id", requestId)
-		.order("created_at", { ascending: false })
-		.limit(1)
 		.maybeSingle();
 }
 
@@ -83,47 +62,43 @@ async function handleGeneration(req: Request) {
         return json({ ok: false, error: "not_found" }, 404, { "Cache-Control": "no-store" });
     }
 
-    const { data: detailData, error: detailError } = await fetchGenerationDetail(
+    const { data: ioLogData, error: ioLogError } = await fetchGenerationIoLog(
         supabase,
         auth.workspaceId,
         id,
     );
 
-    if (detailError) {
-        return json({ ok: false, error: "db_error", message: detailError.message }, 500, { "Cache-Control": "no-store" });
+    if (ioLogError) {
+        return json({ ok: false, error: "db_error", message: ioLogError.message }, 500, { "Cache-Control": "no-store" });
     }
 
-    const detail = detailData as Record<string, any> | null;
-    const replayRequest = resolveReplayRequest(detail?.request_payload);
+    const ioLog = ioLogData as Record<string, any> | null;
     let ioLogPayload: Record<string, unknown> | null = null;
-    if (detail?.io_log_status === "stored" && typeof detail.io_log_object_key === "string") {
+    if (ioLog?.io_log_status === "stored" && typeof ioLog.io_log_object_key === "string") {
         try {
-            ioLogPayload = await readGatewayIoLogObject(detail.io_log_object_key);
+            ioLogPayload = await readGatewayIoLogObject(ioLog.io_log_object_key);
         } catch {
             ioLogPayload = null;
         }
     }
+    const replayRequest = resolveReplayRequest(ioLogPayload?.request_payload);
 
     return json(
         {
             ...data,
             replay_supported: Boolean(replayRequest),
             replay_request: replayRequest,
-			io_log: detail ? {
-				status: detail.io_log_status ?? "not_enabled",
-				storage_provider: detail.io_log_storage_provider ?? null,
-				bucket: detail.io_log_bucket ?? null,
-				object_key: detail.io_log_object_key ?? null,
-				bytes: detail.io_log_bytes ?? null,
-				sha256: detail.io_log_sha256 ?? null,
-				content_type: detail.io_log_content_type ?? null,
-				retention_until: detail.io_log_retention_until ?? null,
-				error: detail.io_log_error ?? null,
+			io_log: ioLog ? {
+				status: ioLog.io_log_status ?? "not_enabled",
+				storage_provider: ioLog.io_log_storage_provider ?? null,
+				bucket: ioLog.io_log_bucket ?? null,
+				object_key: ioLog.io_log_object_key ?? null,
+				bytes: ioLog.io_log_bytes ?? null,
+				sha256: ioLog.io_log_sha256 ?? null,
+				content_type: ioLog.io_log_content_type ?? null,
+				retention_until: ioLog.io_log_retention_until ?? null,
+				error: ioLog.io_log_error ?? null,
 				payload: ioLogPayload,
-				request_payload: detail.request_payload ?? null,
-				gateway_response: detail.gateway_response ?? null,
-				provider_request: detail.provider_request ?? null,
-				provider_response: detail.provider_response ?? null,
 			} : null,
         },
         200,

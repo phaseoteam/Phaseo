@@ -196,19 +196,32 @@ export type GatewayIoLog = {
 	payload: Record<string, unknown> | null;
 };
 
-function gatewayInternalBaseUrl(): string {
-	return (process.env.GATEWAY_INTERNAL_BASE_URL ?? process.env.GATEWAY_PUBLIC_BASE_URL ?? process.env.NEXT_PUBLIC_GATEWAY_BASE_URL ?? "https://api.phaseo.app").replace(/\/v1\/?$/, "").replace(/\/+$/, "");
+function gatewayInternalBaseUrls(): string[] {
+	const candidates = [
+		process.env.GATEWAY_INTERNAL_BASE_URL,
+		process.env.GATEWAY_PUBLIC_BASE_URL,
+		process.env.NEXT_PUBLIC_GATEWAY_BASE_URL,
+		"https://api.phaseo.app",
+	];
+	return Array.from(new Set(candidates
+		.map((value) => String(value ?? "").trim().replace(/\/v1\/?$/, "").replace(/\/+$/, ""))
+		.filter(Boolean)));
 }
 
 async function fetchGatewayIoLog(workspaceId: string, requestId: string): Promise<GatewayIoLog | null> {
 	const token = (process.env.GATEWAY_INTERNAL_TEST_TOKEN ?? process.env.INTERNAL_GATEWAY_TOKEN ?? process.env.INTERNAL_API_TOKEN ?? "").trim();
 	if (!token) return null;
-	try {
-		const response = await fetch(`${gatewayInternalBaseUrl()}/internal/io-logs/${encodeURIComponent(requestId)}?workspace_id=${encodeURIComponent(workspaceId)}`, { cache: "no-store", headers: { "x-phaseo-internal-token": token } });
-		if (!response.ok) return null;
-		const body = await response.json() as { io_log?: GatewayIoLog | null };
-		return body.io_log ?? null;
-	} catch { return null; }
+	for (const baseUrl of gatewayInternalBaseUrls()) {
+		try {
+			const response = await fetch(`${baseUrl}/internal/io-logs/${encodeURIComponent(requestId)}?workspace_id=${encodeURIComponent(workspaceId)}`, { cache: "no-store", headers: { "x-phaseo-internal-token": token } });
+			if (!response.ok) continue;
+			const body = await response.json() as { io_log?: GatewayIoLog | null };
+			return body.io_log ?? null;
+		} catch {
+			// A local Worker may not be running while the web app is developed.
+		}
+	}
+	return null;
 }
 
 export interface PaginatedRequestsResult {

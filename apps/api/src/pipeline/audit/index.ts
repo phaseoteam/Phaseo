@@ -22,7 +22,6 @@ const DEFAULT_RETRY_DELAY_MS = 250;
 let gatewayRequestsSupportsErrorPayloadColumn: boolean | null = null;
 let gatewayRequestsSupportsUsageColumns: boolean | null = null;
 let gatewayRequestDetailsTableAvailable: boolean | null = null;
-let gatewayRequestDetailsSupportsIoLogColumns: boolean | null = null;
 let warnedMissingGatewayRequestDetailsTable = false;
 
 async function sleep(ms: number) {
@@ -183,10 +182,7 @@ async function insertGatewayRequestDetails(row: any) {
         return;
     }
     const client = supaAdmin();
-    const payload =
-        gatewayRequestDetailsSupportsIoLogColumns === false
-            ? stripGatewayRequestDetailsIoLogColumns(row)
-            : row;
+    const payload = row;
     const { error } = await client
         .from("gateway_request_details")
         .insert(payload);
@@ -204,23 +200,12 @@ async function insertGatewayRequestDetails(row: any) {
             }
             return;
         }
-        if (
-            gatewayRequestDetailsSupportsIoLogColumns !== false &&
-            isMissingColumnError(error, "io_log_", "gateway_request_details")
-        ) {
-            gatewayRequestDetailsSupportsIoLogColumns = false;
-            await insertGatewayRequestDetails(stripGatewayRequestDetailsIoLogColumns(row));
-            return;
-        }
         const err = new Error(`[audit] insert gateway_request_details error: ${error?.message ?? "unknown"}`);
         (err as any).cause = error;
         throw err;
     }
     if (gatewayRequestDetailsTableAvailable === null) {
         gatewayRequestDetailsTableAvailable = true;
-    }
-    if (gatewayRequestDetailsSupportsIoLogColumns === null && "io_log_status" in row) {
-        gatewayRequestDetailsSupportsIoLogColumns = true;
     }
 }
 
@@ -263,16 +248,6 @@ async function insertGatewayRequestDetailsNonBlocking(
             error: error instanceof Error ? error.message : String(error),
         });
     }
-}
-
-function stripGatewayRequestDetailsIoLogColumns(row: Record<string, unknown>) {
-    const next = { ...row };
-    for (const key of Object.keys(next)) {
-        if (key.startsWith("io_log_")) {
-            delete next[key];
-        }
-    }
-    return next;
 }
 
 function buildSupaRow(args: {
@@ -470,7 +445,7 @@ export async function auditSuccess(args: {
                 "supabase_audit_success_insert",
             );
             await syncInsertedRequestRollup(insertedRow, "audit_success");
-            const ioLogColumns = await persistGatewayIoLog({
+            await persistGatewayIoLog({
                 requestId: args.requestId,
                 workspaceId: args.workspaceId,
                 appId,
@@ -506,7 +481,6 @@ export async function auditSuccess(args: {
                     provider_request: normalizeJsonValue(args.providerRequest),
                     provider_response: normalizeJsonValue(args.providerResponse),
                     metadata: normalizeJsonValue(args.detailMetadata) ?? {},
-                    ...ioLogColumns,
                 },
                 "supabase_audit_success_details_insert",
             );
@@ -670,7 +644,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                         "supabase_audit_failure_before_insert",
                     );
                     await syncInsertedRequestRollup(insertedRow, "audit_failure_before");
-                    const ioLogColumns = await persistGatewayIoLog({
+                    await persistGatewayIoLog({
                         requestId: args.requestId,
                         workspaceId: args.workspaceId,
                         appId: resolvedAppId ?? null,
@@ -706,7 +680,6 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                             provider_request: null,
                             provider_response: normalizeJsonValue(args.providerResponse),
                             metadata: normalizeJsonValue(args.detailMetadata) ?? {},
-                            ...ioLogColumns,
                         },
                         "supabase_audit_failure_before_details_insert",
                     );
@@ -773,7 +746,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                     "supabase_audit_failure_execute_insert",
                 );
                 await syncInsertedRequestRollup(insertedRow, "audit_failure_execute");
-                const ioLogColumns = await persistGatewayIoLog({
+                await persistGatewayIoLog({
                     requestId: args.requestId,
                     workspaceId: args.workspaceId,
                     appId: resolvedAppId ?? null,
@@ -809,7 +782,6 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                         provider_request: normalizeJsonValue(args.providerRequest),
                         provider_response: normalizeJsonValue(args.providerResponse),
                         metadata: normalizeJsonValue(args.detailMetadata) ?? {},
-                        ...ioLogColumns,
                     },
                     "supabase_audit_failure_execute_details_insert",
                 );

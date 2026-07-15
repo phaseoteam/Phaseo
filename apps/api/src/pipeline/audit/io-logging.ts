@@ -31,6 +31,11 @@ type GatewayIoLogInput = {
     metadata?: unknown;
 };
 
+type GatewayIoLogMetadataRow = GatewayIoLogColumns & {
+    workspace_id: string;
+    request_id: string;
+};
+
 type WorkspaceIoLoggingSettings = {
     enabled: boolean;
     retentionDays: number;
@@ -152,22 +157,60 @@ async function getWorkspaceIoLoggingSettings(workspaceId: string): Promise<Works
     }
 }
 
+async function persistGatewayIoLogMetadata(
+    input: GatewayIoLogInput,
+    columns: GatewayIoLogColumns,
+): Promise<void> {
+    const row: GatewayIoLogMetadataRow = {
+        workspace_id: input.workspaceId,
+        request_id: input.requestId,
+        ...columns,
+    };
+    const { error } = await getSupabaseAdmin()
+        .from("gateway_io_logs")
+        .upsert(row, { onConflict: "workspace_id,request_id" });
+    if (error) {
+        throw new Error(`gateway_io_log_metadata_upsert_error:${error.message ?? "unknown"}`);
+    }
+}
+
+async function finalizeGatewayIoLog(
+    input: GatewayIoLogInput,
+    columns: GatewayIoLogColumns,
+): Promise<GatewayIoLogColumns> {
+    try {
+        await persistGatewayIoLogMetadata(input, columns);
+        return columns;
+    } catch (error) {
+        console.error("[io-logging] failed to persist R2 metadata", {
+            workspaceId: input.workspaceId,
+            requestId: input.requestId,
+            error: error instanceof Error ? error.message : String(error),
+        });
+        return {
+            ...columns,
+            io_log_status: "error",
+            io_log_error: "Failed to persist I/O log metadata",
+        };
+    }
+}
+
 export async function persistGatewayIoLog(input: GatewayIoLogInput): Promise<GatewayIoLogColumns> {
     const settings = await getWorkspaceIoLoggingSettings(input.workspaceId);
     if (!settings.enabled) {
-        return { io_log_status: "not_enabled" };
+        return finalizeGatewayIoLog(input, { io_log_status: "not_enabled" });
     }
 
     const bindings = getBindings();
     const bucket = bindings.GATEWAY_IO_LOGS_BUCKET;
     const bucketName = bindings.GATEWAY_IO_LOGS_BUCKET_NAME ?? "gateway-io-logs";
     if (!bucket) {
-        return {
+        return finalizeGatewayIoLog(input, {
             io_log_status: "missing_bucket",
             io_log_storage_provider: "cloudflare_r2",
             io_log_bucket: bucketName,
             io_log_error: "GATEWAY_IO_LOGS_BUCKET binding is not configured",
-        };
+        });
     }
 
     const now = new Date();
@@ -194,7 +237,7 @@ export async function persistGatewayIoLog(input: GatewayIoLogInput): Promise<Gat
     const bytes = new TextEncoder().encode(JSON.stringify(body));
     const maxBytes = normalizeMaxBytes(bindings.GATEWAY_IO_LOGGING_MAX_BYTES);
     if (bytes.byteLength > maxBytes) {
-        return {
+        return finalizeGatewayIoLog(input, {
             io_log_status: "too_large",
             io_log_storage_provider: "cloudflare_r2",
             io_log_bucket: bucketName,
@@ -202,7 +245,7 @@ export async function persistGatewayIoLog(input: GatewayIoLogInput): Promise<Gat
             io_log_content_type: "application/json",
             io_log_retention_until: retentionUntil.toISOString(),
             io_log_error: `I/O log exceeded ${maxBytes} bytes`,
-        };
+        });
     }
 
     const hash = await sha256Hex(bytes);
@@ -218,7 +261,7 @@ export async function persistGatewayIoLog(input: GatewayIoLogInput): Promise<Gat
                 sha256: hash,
             },
         });
-        return {
+        return finalizeGatewayIoLog(input, {
             io_log_status: "stored",
             io_log_storage_provider: "cloudflare_r2",
             io_log_bucket: bucketName,
@@ -227,9 +270,9 @@ export async function persistGatewayIoLog(input: GatewayIoLogInput): Promise<Gat
             io_log_sha256: hash,
             io_log_content_type: "application/json",
             io_log_retention_until: retentionUntil.toISOString(),
-        };
+        });
     } catch (error) {
-        return {
+        return finalizeGatewayIoLog(input, {
             io_log_status: "error",
             io_log_storage_provider: "cloudflare_r2",
             io_log_bucket: bucketName,
@@ -238,7 +281,7 @@ export async function persistGatewayIoLog(input: GatewayIoLogInput): Promise<Gat
             io_log_content_type: "application/json",
             io_log_retention_until: retentionUntil.toISOString(),
             io_log_error: error instanceof Error ? error.message : String(error),
-        };
+        });
     }
 }
 

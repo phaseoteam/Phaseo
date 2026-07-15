@@ -10,6 +10,7 @@ const state = vi.hoisted(() => ({
 	bucket: {
 		put: vi.fn(async () => null),
 	},
+	metadataRows: [] as Array<Record<string, unknown>>,
 }));
 
 vi.mock("@/runtime/env", () => ({
@@ -19,13 +20,26 @@ vi.mock("@/runtime/env", () => ({
 		GATEWAY_IO_LOGGING_MAX_BYTES: "5242880",
 	}),
 	getSupabaseAdmin: () => ({
-		from: () => ({
-			select: () => ({
-				eq: () => ({
-					maybeSingle: async () => ({ data: state.settings, error: null }),
-				}),
-			}),
-		}),
+		from: (table: string) => {
+			if (table === "workspace_settings") {
+				return {
+					select: () => ({
+						eq: () => ({
+							maybeSingle: async () => ({ data: state.settings, error: null }),
+						}),
+					}),
+				};
+			}
+			if (table === "gateway_io_logs") {
+				return {
+					upsert: async (row: Record<string, unknown>) => {
+						state.metadataRows.push(row);
+						return { error: null };
+					},
+				};
+			}
+			throw new Error(`unexpected table: ${table}`);
+		},
 	}),
 }));
 
@@ -38,6 +52,7 @@ describe("persistGatewayIoLog", () => {
 			io_logging_billing_status: "active",
 		};
 		state.bucket.put.mockClear();
+		state.metadataRows = [];
 		vi.resetModules();
 	});
 
@@ -53,6 +68,13 @@ describe("persistGatewayIoLog", () => {
 
 		expect(result).toEqual({ io_log_status: "not_enabled" });
 		expect(state.bucket.put).not.toHaveBeenCalled();
+		expect(state.metadataRows).toEqual([
+			expect.objectContaining({
+				workspace_id: "workspace_1",
+				request_id: "req_disabled",
+				io_log_status: "not_enabled",
+			}),
+		]);
 	});
 
 	it("stores private structured payloads with durable object metadata", async () => {
@@ -86,6 +108,13 @@ describe("persistGatewayIoLog", () => {
 			io_log_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
 		});
 		expect(state.bucket.put).toHaveBeenCalledTimes(1);
+		expect(state.metadataRows).toEqual([
+			expect.objectContaining({
+				workspace_id: "workspace_1",
+				request_id: "req_123",
+				io_log_status: "stored",
+			}),
+		]);
 
 		const [, bytes, options] = state.bucket.put.mock.calls[0] ?? [];
 		const payload = JSON.parse(new TextDecoder().decode(bytes as Uint8Array));
