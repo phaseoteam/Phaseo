@@ -1,6 +1,7 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { DEFAULT_CLI_OAUTH_CAPABILITIES, parseStoredScopeList } from "@/lib/authz/capabilities";
-import { timingSafeEqual } from "@/routes/auth.helpers";
+import { resolveActiveKeyPepper } from "@/lib/security/keyPepper";
+import { generateGatewayKey, hmacSecret, timingSafeEqual } from "@/routes/auth.helpers";
 import { validateOAuthToken, type JWTClaims } from "./jwt";
 
 const encoder = new TextEncoder();
@@ -574,6 +575,34 @@ export async function issueTokenPairForGrant(
 	if (error) throw new Error(error.message || "Failed to consume OAuth grant and persist refresh token");
 	if (data !== "issued") return null;
 	return material.response;
+}
+
+export async function issueOAuthManagedKeyForAuthorizationCode(
+	grantId: string,
+	input: TokenIssueInput,
+) {
+	const pepper = resolveActiveKeyPepper(getBindings());
+	if (!pepper) throw new Error("KEY_PEPPER_ACTIVE is not configured");
+
+	const generated = generateGatewayKey();
+	const { data, error } = await getSupabaseAdmin().rpc("consume_oauth_code_and_issue_managed_key", {
+		p_code_id: grantId,
+		p_key_hash: await hmacSecret(generated.secret, pepper),
+		p_key_kid: generated.kid,
+		p_key_prefix: generated.prefix,
+		p_key_name: `OAuth: ${input.clientId}`,
+		p_user_id: input.userId,
+		p_workspace_id: input.workspaceId,
+		p_client_id: input.clientId,
+		p_scopes: input.scopes,
+	});
+	if (error) throw new Error(error.message || "Failed to consume OAuth code and issue key");
+	if (data !== "issued") return null;
+	return {
+		access_token: generated.plaintext,
+		token_type: "Bearer",
+		scope: input.scopes.join(" "),
+	};
 }
 
 export async function rotateRefreshToken(

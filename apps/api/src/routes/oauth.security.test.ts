@@ -110,6 +110,10 @@ vi.mock("@/lib/oauth/service", () => ({
 		state.issuedTokenPairs.push(input);
 		return { access_token: "token" };
 	}),
+	issueOAuthManagedKeyForAuthorizationCode: vi.fn(async (_grantId: string, input: Record<string, unknown>) => {
+		state.issuedTokenPairs.push(input);
+		return { access_token: "phaseo_v1_sk_test", token_type: "Bearer" };
+	}),
 	loadOAuthClient: vi.fn(async () => ({ id: "phaseo_cli", name: "Phaseo CLI", client_type: "public" })),
 	makeAuthCodeExpiry: vi.fn(() => "2026-06-10T16:00:00.000Z"),
 	makeDeviceCodeExpiry: vi.fn(() => "2026-06-10T16:00:00.000Z"),

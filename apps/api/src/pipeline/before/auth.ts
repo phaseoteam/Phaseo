@@ -208,6 +208,10 @@ type KeyRow = {
     expires_at?: string | null;
     soft_blocked?: boolean | null;
     scopes?: unknown;
+	key_kind?: string | null;
+	oauth_client_id?: string | null;
+	oauth_user_id?: string | null;
+	oauth_scopes?: unknown;
 };
 
 type CachedKeyLookup = KeyRow | "missing" | null;
@@ -485,6 +489,53 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
         let workspaceId = keyRow.workspace_id;
         const internal = isInternalRequestAuthorized(req, bindings);
         const hasHashMigration = Boolean(nextHash) && nextHash !== stored;
+		const keyKind = String(keyRow.key_kind ?? "standard");
+
+		if (keyKind === "oauth_delegated") {
+			const userId = String(keyRow.oauth_user_id ?? "").trim();
+			const clientId = String(keyRow.oauth_client_id ?? "").trim();
+			const oauthScopes = Array.isArray(keyRow.oauth_scopes)
+				? keyRow.oauth_scopes.map(String).filter(Boolean)
+				: [];
+			if (!userId || !clientId || oauthScopes.length === 0) {
+				return { ok: false, reason: "oauth_managed_key_invalid" };
+			}
+			const { hasActiveOAuthWorkspaceAccess } = await import("@/lib/oauth/service");
+			if (!(await hasActiveOAuthWorkspaceAccess({ userId, workspaceId, clientId }))) {
+				return { ok: false, reason: "oauth_authorization_revoked" };
+			}
+
+			dispatchBackground((async () => {
+				configureRuntime(bindings);
+				try {
+					const updatePayload: Record<string, unknown> = { last_used_at: new Date().toISOString() };
+					if (hasHashMigration) updatePayload.hash = nextHash;
+					await supabase.from("keys").update(updatePayload).eq("id", keyRow.id);
+					await supabase
+						.from("oauth_authorizations")
+						.update({ last_used_at: new Date().toISOString() })
+						.eq("user_id", userId)
+						.eq("client_id", clientId)
+						.eq("workspace_id", workspaceId);
+				} finally {
+					clearRuntime();
+				}
+			})());
+
+			return {
+				ok: true,
+				apiKeyId: keyRow.id,
+				apiKeyRef: `kid_${parsed.kid}`,
+				apiKeyKid: parsed.kid,
+				workspaceId,
+				userId,
+				internal,
+				authMethod: "oauth",
+				oauthClientId: clientId,
+				oauthScopes,
+				scopes: oauthScopes,
+			};
+		}
 
         // Fire-and-forget update of last_used_at timestamp (+ hash migration when needed).
         dispatchBackground((async () => {

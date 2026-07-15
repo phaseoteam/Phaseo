@@ -247,6 +247,28 @@ describe("OAuth refresh rotation security", () => {
 		});
 	});
 
+	it("only returns an OAuth-managed key after the database atomically consumes its code", async () => {
+		state.rotationStatus = "issued";
+		const { issueOAuthManagedKeyForAuthorizationCode } = await import("./service");
+
+		const result = await issueOAuthManagedKeyForAuthorizationCode(
+			"00000000-0000-0000-0000-000000000002",
+			{ userId: "user_1", workspaceId: "ws_1", clientId: "phaseo_cli", scopes: ["models:read"] },
+		);
+
+		expect(result?.access_token).toMatch(/^phaseo_v1_sk_/);
+		expect(state.rpcCalls.at(-1)).toMatchObject({
+			name: "consume_oauth_code_and_issue_managed_key",
+			args: {
+				p_code_id: "00000000-0000-0000-0000-000000000002",
+				p_user_id: "user_1",
+				p_workspace_id: "ws_1",
+				p_client_id: "phaseo_cli",
+				p_scopes: ["models:read"],
+			},
+		});
+	});
+
 	it("fails authorization approval when the grant cannot be persisted", async () => {
 		state.authorizationUpdateError = { message: "grant update failed" };
 		const { ensureGrant } = await import("./service");
