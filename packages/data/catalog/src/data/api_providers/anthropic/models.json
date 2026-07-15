@@ -1790,5 +1790,40 @@
       "notes": null
     },
     "rate_limits": []
+  },
+  {
+    "api_model_id": "anthropic/claude-opus-5",
+    "provider_api_model_id": "anthropic:anthropic/claude-opus-5",
+    "provider_model_slug": "claude-opus-5",
+    "internal_model_id": "anthropic/claude-opus-5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 128000,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [{
+      "capability_id": "text.generate",
+      "status": "coming_soon",
+      "params": [],
+      "reasoning": null,
+      "tool_call": null,
+      "structured_output": null,
+      "temperature": null,
+      "attachment": null,
+      "input_modalities": null,
+      "output_modalities": null,
+      "modes": []
+    }],
+    "routing_status": "active",
+    "routable": true,
+    "regions": { "execution": ["global", "us"], "data": ["us"] },
+    "service_tiers": [],
+    "api": { "formats": [], "endpoint": null, "deployment": null },
+    "sources": [],
+    "verification": { "status": "unverified", "checked_at": null, "notes": null },
+    "rate_limits": []
   }
 ]
