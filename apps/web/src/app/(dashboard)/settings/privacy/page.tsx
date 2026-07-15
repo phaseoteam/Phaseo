@@ -3,6 +3,7 @@ import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHead
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import PrivacySettingsClient from "@/components/(gateway)/settings/privacy/PrivacySettingsClient";
 import { fetchSettingsPrivacyInitialData } from "@/lib/fetchers/internal/fetchSettingsPrivacyInitialData";
+import { gatewayIoLoggingFlag } from "@/lib/flags";
 
 export const metadata = {
 	title: "Privacy - Settings",
@@ -23,7 +24,10 @@ export default function PrivacySettingsPage() {
 }
 
 async function PrivacySettingsContent() {
-	const initialData = await fetchSettingsPrivacyInitialData();
+	const [initialData, ioLoggingFeatureEnabled] = await Promise.all([
+		fetchSettingsPrivacyInitialData(),
+		gatewayIoLoggingFlag(),
+	]);
 
 	if (!initialData.workspaceId) {
 		return (
@@ -39,6 +43,7 @@ async function PrivacySettingsContent() {
 			initialGlobal={initialData.initialGlobal}
 			providers={initialData.providers}
 			activeProviderModels={initialData.activeProviderModels}
+			ioLoggingFeatureEnabled={ioLoggingFeatureEnabled}
 		/>
 	);
 }

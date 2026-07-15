@@ -31,8 +31,8 @@ import { generationsRoutes } from "./generations";
 function buildSupabaseMock(options: {
 	requestData?: Record<string, unknown> | null;
 	requestError?: { message: string } | null;
-	detailData?: Record<string, unknown> | null;
-	detailError?: { message: string } | null;
+	ioLogData?: Record<string, unknown> | null;
+	ioLogError?: { message: string } | null;
 }) {
 	return {
 		from: vi.fn((table: string) => {
@@ -51,18 +51,14 @@ function buildSupabaseMock(options: {
 				};
 			}
 
-			if (table === "gateway_request_details") {
+			if (table === "gateway_io_logs") {
 				return {
 					select: vi.fn(() => ({
 						eq: vi.fn(() => ({
 							eq: vi.fn(() => ({
-								order: vi.fn(() => ({
-									limit: vi.fn(() => ({
-										maybeSingle: vi.fn(async () => ({
-											data: options.detailData ?? null,
-											error: options.detailError ?? null,
-										})),
-									})),
+								maybeSingle: vi.fn(async () => ({
+									data: options.ioLogData ?? null,
+									error: options.ioLogError ?? null,
 								})),
 							})),
 						})),
@@ -85,7 +81,7 @@ describe("generationsRoutes", () => {
 		});
 	});
 
-	it("returns replay-ready payloads when request details exist", async () => {
+	it("does not expose replay data when no R2 I/O object exists", async () => {
 		getSupabaseAdminMock.mockReturnValue(
 			buildSupabaseMock({
 				requestData: {
@@ -95,13 +91,7 @@ describe("generationsRoutes", () => {
 					success: true,
 					status_code: 200,
 				},
-				detailData: {
-					request_payload: {
-						model: "openai/gpt-5-nano",
-						messages: [{ role: "user", content: "hello" }],
-						temperature: 0.2,
-					},
-				},
+			ioLogData: null,
 			}),
 		);
 
@@ -111,12 +101,8 @@ describe("generationsRoutes", () => {
 		await expect(response.json()).resolves.toEqual(
 			expect.objectContaining({
 				request_id: "gen_123",
-				replay_supported: true,
-				replay_request: {
-					model: "openai/gpt-5-nano",
-					messages: [{ role: "user", content: "hello" }],
-					temperature: 0.2,
-				},
+				replay_supported: false,
+				replay_request: null,
 			}),
 		);
 	});
@@ -131,7 +117,7 @@ describe("generationsRoutes", () => {
 					success: false,
 					status_code: 500,
 				},
-				detailData: null,
+			ioLogData: null,
 			}),
 		);
 

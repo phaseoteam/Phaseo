@@ -184,6 +184,44 @@ export interface InvestigateGenerationResult {
 	modelMetadata: Array<[string, SerializableModelMetadataEntry]>;
 	providerNames: Array<[string, string]>;
 	providerMetadata: Array<[string, ProviderMetadataEntry]>;
+	ioLog: GatewayIoLog | null;
+}
+
+export type GatewayIoLog = {
+	status: string;
+	storage_provider: string | null;
+	bytes: number | null;
+	retention_until: string | null;
+	error: string | null;
+	payload: Record<string, unknown> | null;
+};
+
+function gatewayInternalBaseUrls(): string[] {
+	const candidates = [
+		process.env.GATEWAY_INTERNAL_BASE_URL,
+		process.env.GATEWAY_PUBLIC_BASE_URL,
+		process.env.NEXT_PUBLIC_GATEWAY_BASE_URL,
+		"https://api.phaseo.app",
+	];
+	return Array.from(new Set(candidates
+		.map((value) => String(value ?? "").trim().replace(/\/v1\/?$/, "").replace(/\/+$/, ""))
+		.filter(Boolean)));
+}
+
+async function fetchGatewayIoLog(workspaceId: string, requestId: string): Promise<GatewayIoLog | null> {
+	const token = (process.env.GATEWAY_INTERNAL_TEST_TOKEN ?? process.env.INTERNAL_GATEWAY_TOKEN ?? process.env.INTERNAL_API_TOKEN ?? "").trim();
+	if (!token) return null;
+	for (const baseUrl of gatewayInternalBaseUrls()) {
+		try {
+			const response = await fetch(`${baseUrl}/internal/io-logs/${encodeURIComponent(requestId)}?workspace_id=${encodeURIComponent(workspaceId)}`, { cache: "no-store", headers: { "x-phaseo-internal-token": token } });
+			if (!response.ok) continue;
+			const body = await response.json() as { io_log?: GatewayIoLog | null };
+			return body.io_log ?? null;
+		} catch {
+			// A local Worker may not be running while the web app is developed.
+		}
+	}
+	return null;
 }
 
 export interface PaginatedRequestsResult {
@@ -1774,6 +1812,7 @@ export async function investigateGeneration(
 		const appName = request.app_id
 			? appMetadata.get(request.app_id)?.title ?? null
 			: null;
+		const ioLog = await fetchGatewayIoLog(workspaceId, trimmedRequestId);
 
 		return {
 			success: true,
@@ -1783,6 +1822,7 @@ export async function investigateGeneration(
 				modelMetadata: Array.from(modelMetadata.entries()),
 				providerNames: Array.from(providerNames.entries()),
 				providerMetadata: Array.from(providerMetadata.entries()),
+				ioLog,
 			},
 		};
 	}
@@ -1825,6 +1865,7 @@ export async function investigateGeneration(
 			: request.app_id
 				? appMetadata.get(request.app_id)?.title ?? null
 				: null;
+	const ioLog = await fetchGatewayIoLog(workspaceId, trimmedRequestId);
 
 	return {
 		success: true,
@@ -1834,6 +1875,7 @@ export async function investigateGeneration(
 			modelMetadata: Array.from(modelMetadata.entries()),
 			providerNames: Array.from(providerNames.entries()),
 			providerMetadata: Array.from(providerMetadata.entries()),
+			ioLog,
 		},
 	};
 }

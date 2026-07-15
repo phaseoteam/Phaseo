@@ -1,0 +1,50 @@
+name = "phaseo-gateway-staging"
+main = "src/index.ts"
+compatibility_date = "2025-10-01"
+compatibility_flags = ["global_fetch_strictly_public"]
+workers_dev = true
+preview_urls = false
+
+[vars]
+ENV = "staging"
+STATSIG_ENVIRONMENT_TIER = "staging"
+STATSIG_GATEWAY_IO_LOGGING_GATE = "gateway_io_logging"
+GATEWAY_IO_LOGS_BUCKET_NAME = "phaseo-gateway-io-logs-preview"
+GATEWAY_IO_LOGGING_MAX_BYTES = "5242880"
+GATEWAY_IO_RETENTION_BILLING_ENABLED = "false"
+
+[placement]
+mode = "smart"
+
+[triggers]
+crons = ["* * * * *"]
+
+[observability]
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = true
+
+[[kv_namespaces]]
+binding = "GATEWAY_CACHE"
+id = "4ffdeda1a87c45b38c697f78232526be"
+
+[[r2_buckets]]
+binding = "GATEWAY_IO_LOGS_BUCKET"
+bucket_name = "phaseo-gateway-io-logs-preview"
+
+[[ratelimits]]
+name = "OAUTH_STRICT_RATE_LIMITER"
+namespace_id = "41001"
+
+[ratelimits.simple]
+limit = 10
+period = 60
+
+[[ratelimits]]
+name = "OAUTH_TOKEN_RATE_LIMITER"
+namespace_id = "41002"
+
+[ratelimits.simple]
+limit = 60
+period = 60

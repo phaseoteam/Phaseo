@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { formatProviderOfferDisplayName } from "@/lib/providers/providerOffers";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { createClient } from "@/utils/supabase/server";
 import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 
@@ -9,6 +10,9 @@ type PrivacyGlobalSettings = {
 	privacy_enable_free_may_publish_prompts?: boolean | null;
 	privacy_enable_input_output_logging?: boolean | null;
 	privacy_zdr_only?: boolean | null;
+	io_logging_enabled?: boolean | null;
+	io_logging_retention_days?: number | null;
+	io_logging_include_provider_payloads?: boolean | null;
 	provider_restriction_mode?: string | null;
 	provider_restriction_provider_ids?: string[] | null;
 	provider_restriction_enforce_allowed?: boolean | null;
@@ -42,22 +46,29 @@ export async function GET() {
 			workspaceId: null,
 		} satisfies SettingsPrivacyInitialData);
 	}
+	let adminClient: ReturnType<typeof createAdminClient> | null = null;
+	try {
+		adminClient = createAdminClient();
+	} catch {
+		adminClient = null;
+	}
+	const readClient: any = adminClient ?? supabase;
 
 	const [teamResult, settingsResult, providersResult, activeProviderModelsResult] =
 		await Promise.all([
-			supabase.from("workspaces").select("id, name").eq("id", workspaceId).maybeSingle(),
-			supabase
+			readClient.from("workspaces").select("id, name").eq("id", workspaceId).maybeSingle(),
+			readClient
 				.from("workspace_settings")
 				.select(
-					"privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_free_may_publish_prompts,privacy_enable_input_output_logging,privacy_zdr_only,provider_restriction_mode,provider_restriction_provider_ids,provider_restriction_enforce_allowed",
+					"privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_free_may_publish_prompts,privacy_enable_input_output_logging,privacy_zdr_only,io_logging_enabled,io_logging_retention_days,io_logging_include_provider_payloads,provider_restriction_mode,provider_restriction_provider_ids,provider_restriction_enforce_allowed",
 				)
 				.eq("workspace_id", workspaceId)
 				.maybeSingle(),
-			supabase
+			readClient
 				.from("data_api_providers")
 				.select("api_provider_id, api_provider_name, offer_label, offer_scope")
 				.order("api_provider_name", { ascending: true }),
-			supabase
+			readClient
 				.from("data_api_provider_models")
 				.select("provider_id, api_model_id, internal_model_id, is_active_gateway")
 				.eq("is_active_gateway", true),

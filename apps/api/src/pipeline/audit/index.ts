@@ -11,6 +11,7 @@ import {
 	buildGatewayRequestUsageColumns,
 	stripGatewayRequestUsageColumns,
 } from "../usage-columns";
+import { persistGatewayIoLog } from "./io-logging";
 
 function supaAdmin() {
     return getSupabaseAdmin();
@@ -181,9 +182,10 @@ async function insertGatewayRequestDetails(row: any) {
         return;
     }
     const client = supaAdmin();
+    const payload = row;
     const { error } = await client
         .from("gateway_request_details")
-        .insert(row);
+        .insert(payload);
     if (error) {
         if (
             isLocalTestingModeEnabled() &&
@@ -443,6 +445,22 @@ export async function auditSuccess(args: {
                 "supabase_audit_success_insert",
             );
             await syncInsertedRequestRollup(insertedRow, "audit_success");
+            await persistGatewayIoLog({
+                requestId: args.requestId,
+                workspaceId: args.workspaceId,
+                appId,
+                keyId: args.keyId ?? null,
+                endpoint: args.endpoint,
+                modelId: args.model,
+                provider: args.provider ?? null,
+                statusCode: args.statusCode,
+                success: true,
+                requestPayload: args.requestPayload,
+                gatewayResponse: args.gatewayResponse,
+                providerRequest: args.providerRequest,
+                providerResponse: args.providerResponse,
+                metadata: args.detailMetadata ?? {},
+            });
             await insertGatewayRequestDetailsNonBlocking(
                 {
                     gateway_request_id: insertedRow.id,
@@ -626,6 +644,22 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                         "supabase_audit_failure_before_insert",
                     );
                     await syncInsertedRequestRollup(insertedRow, "audit_failure_before");
+                    await persistGatewayIoLog({
+                        requestId: args.requestId,
+                        workspaceId: args.workspaceId,
+                        appId: resolvedAppId ?? null,
+                        keyId: args.keyId ?? null,
+                        endpoint: args.endpoint,
+                        modelId: args.requestedModel ?? args.model ?? "unknown",
+                        provider: null,
+                        statusCode: args.statusCode,
+                        success: false,
+                        requestPayload: args.requestPayload,
+                        gatewayResponse: args.gatewayResponse,
+                        providerRequest: null,
+                        providerResponse: args.providerResponse,
+                        metadata: args.detailMetadata ?? {},
+                    });
                     await insertGatewayRequestDetailsNonBlocking(
                         {
                             gateway_request_id: insertedRow.id,
@@ -712,6 +746,22 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                     "supabase_audit_failure_execute_insert",
                 );
                 await syncInsertedRequestRollup(insertedRow, "audit_failure_execute");
+                await persistGatewayIoLog({
+                    requestId: args.requestId,
+                    workspaceId: args.workspaceId,
+                    appId: resolvedAppId ?? null,
+                    keyId: args.keyId ?? null,
+                    endpoint: args.endpoint,
+                    modelId: args.model,
+                    provider: args.provider ?? null,
+                    statusCode: args.statusCode,
+                    success: false,
+                    requestPayload: args.requestPayload,
+                    gatewayResponse: args.gatewayResponse,
+                    providerRequest: args.providerRequest,
+                    providerResponse: args.providerResponse,
+                    metadata: args.detailMetadata ?? {},
+                });
                 await insertGatewayRequestDetailsNonBlocking(
                     {
                         gateway_request_id: insertedRow.id,

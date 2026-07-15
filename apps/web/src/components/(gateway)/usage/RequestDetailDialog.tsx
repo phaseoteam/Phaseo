@@ -38,6 +38,7 @@ import {
 import { Logo } from "@/components/Logo";
 import {
 	RequestRow,
+	type GatewayIoLog,
 	type ProviderMetadataEntry,
 } from "@/app/(dashboard)/gateway/usage/server-actions";
 import { cn } from "@/lib/utils";
@@ -72,6 +73,7 @@ interface RequestDetailDialogProps {
 	providerNames?: Map<string, string>;
 	providerMetadata?: Map<string, ProviderMetadataEntry>;
 	headerActions?: React.ReactNode;
+	ioLog?: GatewayIoLog | null;
 }
 
 type ProviderAttemptRow = RequestRow["provider_attempts"][number];
@@ -827,6 +829,7 @@ export default function RequestDetailDialog({
 	providerNames,
 	providerMetadata,
 	headerActions,
+	ioLog,
 }: RequestDetailDialogProps) {
 	const searchParams = useSearchParams();
 
@@ -2614,6 +2617,24 @@ export default function RequestDetailDialog({
 								</div>
 							)}
 						</DetailSection>
+
+						{ioLog ? (
+							<DetailSection title="Gateway I/O">
+								<div className="space-y-4 text-sm">
+									<div className="flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground">
+										<span>Status: <span className="font-medium text-foreground">{ioLog.status}</span></span>
+										{ioLog.bytes ? <span>{ioLog.bytes.toLocaleString()} bytes</span> : null}
+										{ioLog.retention_until ? <span>Retained until {formatWordyDateTime(ioLog.retention_until)}</span> : null}
+									</div>
+									{ioLog.payload ? (
+										<div className="grid gap-4 xl:grid-cols-2">
+											<div className="min-w-0"><p className="mb-2 font-medium">Prompt</p><pre className="max-h-96 overflow-auto rounded-md border bg-muted/30 p-3 text-xs leading-5 whitespace-pre-wrap break-words">{JSON.stringify(ioLog.payload.request_payload ?? ioLog.payload.provider_request ?? null, null, 2)}</pre></div>
+											<div className="min-w-0"><p className="mb-2 font-medium">Completion</p><pre className="max-h-96 overflow-auto rounded-md border bg-muted/30 p-3 text-xs leading-5 whitespace-pre-wrap break-words">{JSON.stringify(ioLog.payload.gateway_response ?? ioLog.payload.provider_response ?? null, null, 2)}</pre></div>
+										</div>
+									) : <p className="text-muted-foreground">{ioLog.error ?? "No I/O payload is available for this request."}</p>}
+								</div>
+							</DetailSection>
+						) : null}
 
 						{request.pricing_lines.length > 0 ? (
 							<DetailSection title="Pricing lines">

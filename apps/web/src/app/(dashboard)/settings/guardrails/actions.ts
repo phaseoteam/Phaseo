@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
+import { createAdminClient } from "@/utils/supabase/admin";
 import {
 	requireAuthenticatedUser,
 	requireWorkspaceMembership,
@@ -46,6 +47,9 @@ export type GlobalGuardrailsSettingsPayload = {
 	privacyEnableFreeMayPublishPrompts?: boolean;
 	privacyEnableInputOutputLogging?: boolean;
 	privacyZdrOnly?: boolean;
+	ioLoggingEnabled?: boolean;
+	ioLoggingRetentionDays?: number;
+	ioLoggingIncludeProviderPayloads?: boolean;
 	providerRestrictionMode?: ProviderRestrictionMode;
 	providerRestrictionProviderIds?: string[];
 	providerRestrictionEnforceAllowed?: boolean;
@@ -78,6 +82,18 @@ export async function updateGlobalGuardrailsSettings(
 		update.privacy_enable_input_output_logging =
 			payload.privacyEnableInputOutputLogging;
 	}
+	if (typeof payload.ioLoggingEnabled === "boolean") {
+		update.io_logging_enabled = payload.ioLoggingEnabled;
+		update.io_logging_updated_at = update.updated_at;
+	}
+	if (typeof payload.ioLoggingRetentionDays === "number") {
+		update.io_logging_retention_days = Math.max(90, Math.min(365, Math.trunc(payload.ioLoggingRetentionDays)));
+		update.io_logging_updated_at = update.updated_at;
+	}
+	if (typeof payload.ioLoggingIncludeProviderPayloads === "boolean") {
+		update.io_logging_include_provider_payloads = payload.ioLoggingIncludeProviderPayloads;
+		update.io_logging_updated_at = update.updated_at;
+	}
 	if (typeof payload.privacyZdrOnly === "boolean") {
 		update.privacy_zdr_only = payload.privacyZdrOnly;
 	}
@@ -94,7 +110,7 @@ export async function updateGlobalGuardrailsSettings(
 			payload.providerRestrictionEnforceAllowed;
 	}
 
-	const { error } = await supabase
+	const { error } = await createAdminClient()
 		.from("workspace_settings")
 		.upsert(update, { onConflict: "workspace_id" });
 	if (error) throw error;
