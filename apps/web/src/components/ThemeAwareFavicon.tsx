@@ -14,6 +14,9 @@ function upsertFaviconLink(rel: string, href: string) {
 		link.rel = rel;
 		link.type = "image/svg+xml";
 		link.dataset.themeAwareFavicon = "true";
+		if (rel === "icon") {
+			link.setAttribute("sizes", "any");
+		}
 		document.head.appendChild(link);
 	}
 
