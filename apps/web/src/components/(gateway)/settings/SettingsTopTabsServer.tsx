@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown, ChevronRight, PanelLeftIcon } from "lucide-react";
+import { ChevronDown, PanelLeftIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -34,7 +34,10 @@ function getBillingTabs(): Tab[] {
 }
 
 const USAGE_TABS: Tab[] = [
-	{ href: "/settings/usage", label: "Usage" },
+	{ href: "/settings/usage/overview", label: "Overview" },
+	{ href: "/settings/usage/trends", label: "Trends" },
+	{ href: "/settings/usage/explore", label: "Explore" },
+	{ href: "/settings/usage/guardrails", label: "Guardrails" },
 	{ href: "/settings/usage/logs", label: "Logs" },
 	{ href: "/settings/usage/alerts", label: "Alerts" },
 ];
@@ -43,6 +46,20 @@ const OAUTH_TABS: Tab[] = [
 	{ href: "/settings/oauth-apps", label: "OAuth Apps" },
 	{ href: "/settings/authorized-apps", label: "OAuth Integrations" },
 ];
+
+function getSettingsBadgeClassName(badge: string, className?: string) {
+	return cn(
+		"h-5 px-1.5 text-[10px] font-semibold tracking-normal",
+		badge === "Beta" &&
+			"border-sky-500/30 bg-sky-500/10 text-sky-700 dark:border-sky-400/30 dark:bg-sky-400/10 dark:text-sky-300",
+		badge === "Alpha" &&
+			"border-amber-500/30 bg-amber-500/10 text-amber-700 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300",
+		badge !== "Beta" &&
+			badge !== "Alpha" &&
+			"border-border bg-transparent text-muted-foreground",
+		className,
+	);
+}
 
 function resolveTabs(pathname: string): Tab[] | null {
 	// Account
@@ -87,7 +104,6 @@ function resolveTabs(pathname: string): Tab[] | null {
 			{
 				href: "/settings/beta",
 				label: "Feature Preview",
-				badge: "Preview",
 			},
 		];
 	}
@@ -130,6 +146,18 @@ export default function SettingsTopTabsServer({
 		() => getActiveSettingsNav(pathname, { showBroadcast, showWebhooks }),
 		[pathname, showBroadcast, showWebhooks],
 	);
+	const visibleTabs =
+		tabs && tabs.length > 0
+			? tabs
+			: activeNav?.item
+				? [
+						{
+							href: activeNav.item.href,
+							label: activeNav.item.label,
+							badge: activeNav.item.badge,
+						},
+					]
+				: [];
 
 	const containerRef = React.useRef<HTMLDivElement | null>(null);
 	const linkRefs = React.useRef<Record<string, HTMLAnchorElement | null>>({});
@@ -156,14 +184,14 @@ export default function SettingsTopTabsServer({
 	}, [pathname]);
 
 	const activeTab =
-		tabs && tabs.length > 0
-			? tabs
+		visibleTabs.length > 0
+			? visibleTabs
 					.map((t) => ({ t, score: matchScore(t) }))
 					.filter((x) => x.score !== null)
 					.sort((a, b) => {
 						if (a.score!.exact !== b.score!.exact) return a.score!.exact ? -1 : 1;
 						return b.score!.len - a.score!.len;
-					})[0]?.t ?? tabs[0]
+					})[0]?.t ?? visibleTabs[0]
 			: null;
 
 	const setIndicatorToHref = React.useCallback((href: string | null) => {
@@ -191,37 +219,20 @@ export default function SettingsTopTabsServer({
 		};
 	}, [activeTab?.href, setIndicatorToHref]);
 
-	if (!tabs?.length) {
+	if (!visibleTabs.length) {
 		return (
-			<>
-				<SettingsSidebarTrigger showBroadcast={showBroadcast} showWebhooks={showWebhooks} />
-				<div className="hidden lg:flex items-center border-b border-border text-sm">
-					<span className="px-2 pb-2 font-medium text-muted-foreground">
-						{activeNav?.group.heading ?? "Settings"}
-					</span>
-					<ChevronRight
-						aria-hidden="true"
-						className="mb-2 mx-1 h-3.5 w-3.5 shrink-0 text-muted-foreground/70"
-					/>
-					<span className="pb-2 font-semibold text-foreground">
-						{activeNav?.item.label ?? "Settings"}
-					</span>
-					{activeNav?.item.badge ? (
-						<Badge
-							variant="outline"
-							className="mb-2 h-5 px-1.5 text-[10px] uppercase tracking-wide"
-						>
-							{activeNav.item.badge}
-						</Badge>
-					) : null}
-				</div>
-			</>
+			<nav className="lg:hidden" aria-label="Settings section navigation">
+				<SettingsSidebarTrigger
+					showBroadcast={showBroadcast}
+					showWebhooks={showWebhooks}
+				/>
+			</nav>
 		);
 	}
 
 	return (
 		<>
-			<nav className="md:hidden" aria-label="Settings section navigation">
+			<nav className="lg:hidden" aria-label="Settings section navigation">
 				<div className="flex items-center gap-2">
 					<Button
 						variant="outline"
@@ -247,7 +258,7 @@ export default function SettingsTopTabsServer({
 							align="end"
 							className="w-[min(20rem,calc(100vw-1rem))]"
 						>
-							{tabs.map((tab) => {
+							{visibleTabs.map((tab) => {
 								const active = tab.href === activeTab?.href;
 								return (
 									<DropdownMenuItem key={tab.href}  render={<Link
@@ -262,7 +273,10 @@ export default function SettingsTopTabsServer({
 											{tab.badge ? (
 												<Badge
 													variant="outline"
-													className="h-4 px-1 text-[9px] uppercase tracking-wide"
+													className={getSettingsBadgeClassName(
+														tab.badge,
+														"h-4 px-1 text-[9px]",
+													)}
 												>
 													{tab.badge}
 												</Badge>
@@ -278,7 +292,7 @@ export default function SettingsTopTabsServer({
 
 			<nav
 				ref={containerRef}
-				className="relative hidden md:flex gap-4 border-b border-border"
+				className="relative hidden h-12 gap-4 lg:flex"
 				onMouseLeave={() => setIndicatorToHref(activeTab?.href ?? null)}
 				aria-label="Settings section navigation"
 			>
@@ -292,7 +306,7 @@ export default function SettingsTopTabsServer({
 					}}
 				/>
 
-				{tabs.map((tab) => {
+				{visibleTabs.map((tab) => {
 					const active = tab.href === activeTab?.href;
 					return (
 						<Link
@@ -306,7 +320,7 @@ export default function SettingsTopTabsServer({
 							onMouseEnter={() => setIndicatorToHref(tab.href)}
 							onFocus={() => setIndicatorToHref(tab.href)}
 							className={cn(
-								"pb-2 px-2 text-sm font-medium transition-colors duration-150",
+								"flex h-12 items-center px-2 text-sm font-medium transition-colors duration-150",
 								active ? "text-primary" : "text-muted-foreground hover:text-primary",
 							)}
 						>
@@ -315,7 +329,7 @@ export default function SettingsTopTabsServer({
 								{tab.badge ? (
 									<Badge
 										variant="outline"
-										className="h-5 px-1.5 text-[10px] uppercase tracking-wide"
+										className={getSettingsBadgeClassName(tab.badge)}
 									>
 										{tab.badge}
 									</Badge>

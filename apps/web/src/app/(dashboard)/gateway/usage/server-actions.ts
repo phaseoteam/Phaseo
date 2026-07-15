@@ -79,6 +79,81 @@ export interface RequestDetailMetadata {
 	[key: string]: unknown;
 }
 
+export interface GatewayRequestIoLog {
+	status: string | null;
+	storage_provider: string | null;
+	bucket: string | null;
+	object_key: string | null;
+	bytes: number | null;
+	sha256: string | null;
+	content_type: string | null;
+	retention_until: string | null;
+	error: string | null;
+	request_payload: unknown;
+	gateway_response: unknown;
+	provider_request: unknown;
+	provider_response: unknown;
+}
+
+export interface GatewayRequestFeedback {
+	id: string;
+	request_id: string | null;
+	session_id: string | null;
+	preset_id: string | null;
+	test_run_id: string | null;
+	source: string | null;
+	rating: string | null;
+	score: number | null;
+	reason: string | null;
+	reason_tags: string[];
+	comment: string | null;
+	metadata: unknown;
+	metadata_dimensions: unknown;
+	end_user_id: string | null;
+	created_at: string | null;
+}
+
+export interface GatewayRequestObservabilityEvent {
+	id: string;
+	request_id: string | null;
+	session_id: string | null;
+	preset_id: string | null;
+	test_run_id: string | null;
+	category: string | null;
+	event_name: string | null;
+	value: unknown;
+	numeric_value: number | null;
+	metadata: unknown;
+	metadata_dimensions: unknown;
+	end_user_id: string | null;
+	source: string | null;
+	occurred_at: string | null;
+	created_at: string | null;
+}
+
+export interface SessionIoLogSignal {
+	request_id: string;
+	status: string | null;
+	bytes: number | null;
+	retention_until: string | null;
+	object_key: string | null;
+	error: string | null;
+}
+
+export interface SessionObservabilitySummary {
+	io_logs: SessionIoLogSignal[];
+	io_log_status_counts: Array<{ status: string; count: number }>;
+	io_log_total_bytes: number;
+	io_log_stored_count: number;
+	feedback: GatewayRequestFeedback[];
+	events: GatewayRequestObservabilityEvent[];
+	feedback_rating_counts: Array<{ rating: string; count: number }>;
+	average_feedback_score: number | null;
+	metadata_dimension_keys: string[];
+	preset_ids: string[];
+	test_run_ids: string[];
+}
+
 export interface NormalizedRequestUsageColumns {
 	usage_total_tokens?: number | string | null;
 	usage_input_tokens?: number | string | null;
@@ -155,6 +230,9 @@ export interface RequestRow extends NormalizedRequestUsageColumns {
 	error_message: string | null;
 	error_payload: Record<string, unknown> | null;
 	detail_metadata: RequestDetailMetadata | null;
+	io_log: GatewayRequestIoLog | null;
+	feedback: GatewayRequestFeedback[];
+	events: GatewayRequestObservabilityEvent[];
 	key_id: string | null;
 	pricing_lines: AsyncJobRequestPricingLine[];
 	provider_attempts: Array<{
@@ -349,8 +427,170 @@ function toRequestRow(row: any): RequestRow {
 		pricing_lines: normalizePricingLines(row?.pricing_lines),
 		error_payload: normalizePlainObject(row?.error_payload),
 		detail_metadata: normalizePlainObject(row?.detail_metadata) as RequestDetailMetadata | null,
+		io_log: normalizeGatewayRequestIoLog(row?.io_log),
+		feedback: normalizeGatewayRequestFeedbackList(row?.feedback),
+		events: normalizeGatewayRequestEventList(row?.events),
 		provider_attempts: normalizeProviderAttempts(row?.provider_attempts),
 	} as RequestRow;
+}
+
+function normalizeGatewayRequestFeedbackList(value: unknown): GatewayRequestFeedback[] {
+	if (!Array.isArray(value)) return [];
+	return value.map((row: any) => ({
+		id: normalizeText(row?.id) ?? "",
+		request_id: normalizeText(row?.request_id),
+		session_id: normalizeText(row?.session_id),
+		preset_id: normalizeText(row?.preset_id),
+		test_run_id: normalizeText(row?.test_run_id),
+		source: normalizeText(row?.source),
+		rating: normalizeText(row?.rating),
+		score: normalizeFiniteNumber(row?.score),
+		reason: normalizeText(row?.reason),
+		reason_tags: Array.isArray(row?.reason_tags)
+			? row.reason_tags.map((tag: unknown) => normalizeText(tag)).filter(Boolean) as string[]
+			: [],
+		comment: normalizeText(row?.comment),
+		metadata: row?.metadata ?? {},
+		metadata_dimensions: row?.metadata_dimensions ?? {},
+		end_user_id: normalizeText(row?.end_user_id),
+		created_at: normalizeIsoDate(row?.created_at),
+	})).filter((row) => row.id);
+}
+
+function normalizeGatewayRequestEventList(value: unknown): GatewayRequestObservabilityEvent[] {
+	if (!Array.isArray(value)) return [];
+	return value.map((row: any) => ({
+		id: normalizeText(row?.id) ?? "",
+		request_id: normalizeText(row?.request_id),
+		session_id: normalizeText(row?.session_id),
+		preset_id: normalizeText(row?.preset_id),
+		test_run_id: normalizeText(row?.test_run_id),
+		category: normalizeText(row?.category),
+		event_name: normalizeText(row?.event_name),
+		value: row?.value ?? null,
+		numeric_value: normalizeFiniteNumber(row?.numeric_value),
+		metadata: row?.metadata ?? {},
+		metadata_dimensions: row?.metadata_dimensions ?? {},
+		end_user_id: normalizeText(row?.end_user_id),
+		source: normalizeText(row?.source),
+		occurred_at: normalizeIsoDate(row?.occurred_at),
+		created_at: normalizeIsoDate(row?.created_at),
+	})).filter((row) => row.id);
+}
+
+function normalizeGatewayRequestIoLog(value: unknown): GatewayRequestIoLog | null {
+	if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+	const row = value as Record<string, unknown>;
+	return {
+		status: normalizeText(row.status),
+		storage_provider: normalizeText(row.storage_provider),
+		bucket: normalizeText(row.bucket),
+		object_key: normalizeText(row.object_key),
+		bytes: normalizeFiniteNumber(row.bytes),
+		sha256: normalizeText(row.sha256),
+		content_type: normalizeText(row.content_type),
+		retention_until: normalizeIsoDate(row.retention_until),
+		error: normalizeText(row.error),
+		request_payload: row.request_payload ?? null,
+		gateway_response: row.gateway_response ?? null,
+		provider_request: row.provider_request ?? null,
+		provider_response: row.provider_response ?? null,
+	};
+}
+
+function isMissingIoLogColumnError(error: unknown): boolean {
+	const record = error && typeof error === "object" ? error as Record<string, unknown> : null;
+	const code = String(record?.code ?? "");
+	const message = String(record?.message ?? "").toLowerCase();
+	return (code === "PGRST204" || code === "42703") && message.includes("io_log_");
+}
+
+async function fetchGatewayRequestIoLogDetails(
+	workspaceId: string,
+	requestId: string,
+): Promise<GatewayRequestIoLog | null> {
+	const admin = createAdminClient();
+	const queryDetail = () => admin
+		.from("gateway_request_details")
+		.select("request_payload,gateway_response,provider_request,provider_response,io_log_status,io_log_storage_provider,io_log_bucket,io_log_object_key,io_log_bytes,io_log_sha256,io_log_content_type,io_log_retention_until,io_log_error")
+		.eq("workspace_id", workspaceId)
+		.eq("request_id", requestId)
+		.order("created_at", { ascending: false })
+		.limit(1)
+		.maybeSingle();
+	const primary = await queryDetail();
+	let data: any = primary.data;
+	let error = primary.error;
+
+	if (error && isMissingIoLogColumnError(error)) {
+		const fallback = await admin
+			.from("gateway_request_details")
+			.select("request_payload,gateway_response,provider_request,provider_response")
+			.eq("workspace_id", workspaceId)
+			.eq("request_id", requestId)
+			.order("created_at", { ascending: false })
+			.limit(1)
+			.maybeSingle();
+		data = fallback.data;
+		error = fallback.error;
+	}
+
+	if (error || !data) {
+		if (error) console.warn("Error fetching gateway request I/O details:", error);
+		return null;
+	}
+
+	return normalizeGatewayRequestIoLog({
+		status: data.io_log_status ?? "not_enabled",
+		storage_provider: data.io_log_storage_provider ?? null,
+		bucket: data.io_log_bucket ?? null,
+		object_key: data.io_log_object_key ?? null,
+		bytes: data.io_log_bytes ?? null,
+		sha256: data.io_log_sha256 ?? null,
+		content_type: data.io_log_content_type ?? null,
+		retention_until: data.io_log_retention_until ?? null,
+		error: data.io_log_error ?? null,
+		request_payload: data.request_payload ?? null,
+		gateway_response: data.gateway_response ?? null,
+		provider_request: data.provider_request ?? null,
+		provider_response: data.provider_response ?? null,
+	});
+}
+
+async function fetchGatewayRequestSignals(
+	workspaceId: string,
+	requestId: string,
+): Promise<{
+	feedback: GatewayRequestFeedback[];
+	events: GatewayRequestObservabilityEvent[];
+}> {
+	const admin = createAdminClient();
+	const [feedbackResult, eventsResult] = await Promise.all([
+		admin
+			.from("gateway_feedback")
+			.select("id,request_id,session_id,preset_id,test_run_id,source,rating,score,reason,reason_tags,comment,metadata,metadata_dimensions,end_user_id,created_at")
+			.eq("workspace_id", workspaceId)
+			.eq("request_id", requestId)
+			.order("created_at", { ascending: false })
+			.limit(50),
+		admin
+			.from("gateway_observability_events")
+			.select("id,request_id,session_id,preset_id,test_run_id,category,event_name,value,numeric_value,metadata,metadata_dimensions,end_user_id,source,occurred_at,created_at")
+			.eq("workspace_id", workspaceId)
+			.eq("request_id", requestId)
+			.order("occurred_at", { ascending: false })
+			.limit(50),
+	]);
+	if (feedbackResult.error) {
+		console.warn("Error fetching gateway request feedback:", feedbackResult.error);
+	}
+	if (eventsResult.error) {
+		console.warn("Error fetching gateway request events:", eventsResult.error);
+	}
+	return {
+		feedback: normalizeGatewayRequestFeedbackList(feedbackResult.data ?? []),
+		events: normalizeGatewayRequestEventList(eventsResult.data ?? []),
+	};
 }
 
 /**
@@ -1656,6 +1896,8 @@ export async function investigateGeneration(
 		created_at,
 		endpoint,
 		model_id,
+		requested_model_id,
+		routed_model_id,
 		provider,
 		native_response_id,
 		stream,
@@ -1677,6 +1919,8 @@ export async function investigateGeneration(
 		status_code,
 		error_code,
 		error_message,
+		error_payload,
+		detail_metadata,
 		key_id,
 		pricing_lines,
 		throughput,
@@ -1702,6 +1946,8 @@ export async function investigateGeneration(
 				created_at,
 				endpoint,
 				model_id,
+				requested_model_id,
+				routed_model_id,
 				provider,
 				native_response_id,
 				stream,
@@ -1716,6 +1962,8 @@ export async function investigateGeneration(
 				status_code,
 				error_code,
 				error_message,
+				error_payload,
+				detail_metadata,
 				key_id,
 				pricing_lines,
 				throughput,
@@ -1749,6 +1997,13 @@ export async function investigateGeneration(
 		}
 
 		const request = toRequestRow(fallbackData);
+		const [ioLog, signals] = await Promise.all([
+			fetchGatewayRequestIoLogDetails(workspaceId, trimmedRequestId),
+			fetchGatewayRequestSignals(workspaceId, trimmedRequestId),
+		]);
+		request.io_log = ioLog;
+		request.feedback = signals.feedback;
+		request.events = signals.events;
 		const providerIds = Array.from(
 			new Set(
 				[
@@ -1795,6 +2050,13 @@ export async function investigateGeneration(
 	}
 
 	const request = toRequestRow(data);
+	const [ioLog, signals] = await Promise.all([
+		fetchGatewayRequestIoLogDetails(workspaceId, trimmedRequestId),
+		fetchGatewayRequestSignals(workspaceId, trimmedRequestId),
+	]);
+	request.io_log = ioLog;
+	request.feedback = signals.feedback;
+	request.events = signals.events;
 	const providerIds = Array.from(
 		new Set(
 			[
@@ -2791,6 +3053,206 @@ export async function fetchSessionRequests(params: {
 			} as SessionRequestRow;
 		}) ?? []
 	);
+}
+
+function collectMetadataDimensionKeys(...values: unknown[]): string[] {
+	const keys = new Set<string>();
+	for (const value of values) {
+		if (!value || typeof value !== "object" || Array.isArray(value)) continue;
+		for (const key of Object.keys(value as Record<string, unknown>)) {
+			if (key.trim()) keys.add(key.trim());
+		}
+	}
+	return Array.from(keys).sort((a, b) => a.localeCompare(b));
+}
+
+function countByText<T>(
+	rows: T[],
+	getValue: (row: T) => string | null | undefined,
+	fallback: string,
+): Array<{ status: string; count: number }> {
+	const counts = new Map<string, number>();
+	for (const row of rows) {
+		const value = getValue(row)?.trim() || fallback;
+		counts.set(value, (counts.get(value) ?? 0) + 1);
+	}
+	return Array.from(counts.entries())
+		.map(([status, count]) => ({ status, count }))
+		.sort((a, b) => {
+			if (b.count !== a.count) return b.count - a.count;
+			return a.status.localeCompare(b.status);
+		});
+}
+
+function uniqueText(values: Array<string | null | undefined>): string[] {
+	return Array.from(
+		new Set(
+			values
+				.map((value) => (typeof value === "string" ? value.trim() : ""))
+				.filter(Boolean),
+		),
+	).sort((a, b) => a.localeCompare(b));
+}
+
+export async function fetchSessionObservabilitySummary(params: {
+	sessionId: string;
+	timeRange?: { from: string; to: string } | null;
+}): Promise<SessionObservabilitySummary> {
+	const supabase = await createClient();
+	const { workspaceId } = await requireAuthedTeamContext(supabase);
+	const sessionId = params.sessionId.trim();
+	const empty: SessionObservabilitySummary = {
+		io_logs: [],
+		io_log_status_counts: [],
+		io_log_total_bytes: 0,
+		io_log_stored_count: 0,
+		feedback: [],
+		events: [],
+		feedback_rating_counts: [],
+		average_feedback_score: null,
+		metadata_dimension_keys: [],
+		preset_ids: [],
+		test_run_ids: [],
+	};
+
+	if (!workspaceId || sessionId.length === 0) return empty;
+
+	const admin = createAdminClient();
+	let requestQuery = admin
+		.from("gateway_requests")
+		.select("request_id")
+		.eq("workspace_id", workspaceId)
+		.eq("session_id", sessionId)
+		.order("created_at", { ascending: true })
+		.limit(500);
+
+	if (params.timeRange?.from) {
+		requestQuery = requestQuery.gte("created_at", params.timeRange.from);
+	}
+	if (params.timeRange?.to) {
+		requestQuery = requestQuery.lte("created_at", params.timeRange.to);
+	}
+
+	const { data: requestRows, error: requestError } = await requestQuery;
+	if (requestError) {
+		console.warn("Error fetching session request ids for observability:", requestError);
+	}
+
+	const requestIds = uniqueText(
+		((requestRows ?? []) as Array<{ request_id: string | null }>).map(
+			(row) => row.request_id,
+		),
+	);
+
+	let feedbackQuery = admin
+		.from("gateway_feedback")
+		.select("id,request_id,session_id,preset_id,test_run_id,source,rating,score,reason,reason_tags,comment,metadata,metadata_dimensions,end_user_id,created_at")
+		.eq("workspace_id", workspaceId)
+		.eq("session_id", sessionId)
+		.order("created_at", { ascending: false })
+		.limit(100);
+
+	let eventsQuery = admin
+		.from("gateway_observability_events")
+		.select("id,request_id,session_id,preset_id,test_run_id,category,event_name,value,numeric_value,metadata,metadata_dimensions,end_user_id,source,occurred_at,created_at")
+		.eq("workspace_id", workspaceId)
+		.eq("session_id", sessionId)
+		.order("occurred_at", { ascending: false })
+		.limit(100);
+
+	if (params.timeRange?.from) {
+		feedbackQuery = feedbackQuery.gte("created_at", params.timeRange.from);
+		eventsQuery = eventsQuery.gte("occurred_at", params.timeRange.from);
+	}
+	if (params.timeRange?.to) {
+		feedbackQuery = feedbackQuery.lte("created_at", params.timeRange.to);
+		eventsQuery = eventsQuery.lte("occurred_at", params.timeRange.to);
+	}
+
+	const [feedbackResult, eventsResult, ioLogResult] = await Promise.all([
+		feedbackQuery,
+		eventsQuery,
+		requestIds.length > 0
+			? admin
+					.from("gateway_request_details")
+					.select("request_id,io_log_status,io_log_bytes,io_log_retention_until,io_log_object_key,io_log_error,created_at")
+					.eq("workspace_id", workspaceId)
+					.in("request_id", requestIds)
+					.order("created_at", { ascending: false })
+					.limit(500)
+			: Promise.resolve({ data: [], error: null }),
+	]);
+
+	if (feedbackResult.error) {
+		console.warn("Error fetching session feedback:", feedbackResult.error);
+	}
+	if (eventsResult.error) {
+		console.warn("Error fetching session events:", eventsResult.error);
+	}
+	if (ioLogResult.error && !isMissingIoLogColumnError(ioLogResult.error)) {
+		console.warn("Error fetching session I/O log summary:", ioLogResult.error);
+	}
+
+	const ioLogRowsByRequest = new Map<string, SessionIoLogSignal>();
+	if (!ioLogResult.error || isMissingIoLogColumnError(ioLogResult.error)) {
+		for (const row of (ioLogResult.data ?? []) as Array<Record<string, unknown>>) {
+			const requestId = normalizeText(row.request_id);
+			if (!requestId || ioLogRowsByRequest.has(requestId)) continue;
+			ioLogRowsByRequest.set(requestId, {
+				request_id: requestId,
+				status: normalizeText(row.io_log_status),
+				bytes: normalizeFiniteNumber(row.io_log_bytes),
+				retention_until: normalizeIsoDate(row.io_log_retention_until),
+				object_key: normalizeText(row.io_log_object_key),
+				error: normalizeText(row.io_log_error),
+			});
+		}
+	}
+
+	const ioLogs = Array.from(ioLogRowsByRequest.values());
+	const feedback = normalizeGatewayRequestFeedbackList(feedbackResult.data ?? []);
+	const events = normalizeGatewayRequestEventList(eventsResult.data ?? []);
+	const feedbackScores = feedback
+		.map((row) => row.score)
+		.filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+
+	return {
+		io_logs: ioLogs,
+		io_log_status_counts: countByText(
+			ioLogs,
+			(row) => row.status,
+			"unknown",
+		),
+		io_log_total_bytes: ioLogs.reduce(
+			(total, row) => total + (Number(row.bytes ?? 0) || 0),
+			0,
+		),
+		io_log_stored_count: ioLogs.filter((row) => row.status === "stored").length,
+		feedback,
+		events,
+		feedback_rating_counts: countByText(
+			feedback,
+			(row) => row.rating,
+			"unrated",
+		).map(({ status, count }) => ({ rating: status, count })),
+		average_feedback_score:
+			feedbackScores.length > 0
+				? feedbackScores.reduce((total, value) => total + value, 0) /
+					feedbackScores.length
+				: null,
+		metadata_dimension_keys: collectMetadataDimensionKeys(
+			...feedback.map((row) => row.metadata_dimensions),
+			...events.map((row) => row.metadata_dimensions),
+		),
+		preset_ids: uniqueText([
+			...feedback.map((row) => row.preset_id),
+			...events.map((row) => row.preset_id),
+		]),
+		test_run_ids: uniqueText([
+			...feedback.map((row) => row.test_run_id),
+			...events.map((row) => row.test_run_id),
+		]),
+	};
 }
 
 export interface JobsRollupParams {

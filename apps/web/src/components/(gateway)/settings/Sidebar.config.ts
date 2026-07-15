@@ -10,7 +10,6 @@ import {
 	KeyRound,
 	Package,
 	RadioTower,
-	Shield,
 	ShieldCheck,
 	User,
 	Users,
@@ -47,8 +46,8 @@ export type ResolvedSettingsNav = {
 
 const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 	{
-		heading: "General",
-	items: [
+		heading: "Account",
+		items: [
 			{
 				href: "/settings/profile",
 				label: "Profile",
@@ -62,13 +61,6 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				match: ["/settings/account"],
 			},
 			{
-				href: "/settings/beta",
-				label: "Feature Preview",
-				icon: Beaker,
-				badge: "Preview",
-				match: ["/settings/beta"],
-			},
-			{
 				href: "/settings/credits",
 				label: "Billing",
 				icon: CreditCard,
@@ -80,17 +72,6 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 					"/settings/tiers",
 				],
 			},
-			{
-				href: "/settings/usage",
-				label: "Usage",
-				icon: BarChart3,
-				match: ["/settings/usage", "/settings/usage/logs", "/settings/usage/alerts"],
-			},
-		],
-	},
-	{
-		heading: "Workspace",
-		items: [
 			{
 				href: "/settings/workspaces/members",
 				label: "Members",
@@ -109,26 +90,20 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 			},
 			{
 				href: "/settings/workspaces/settings",
-				label: "Settings",
+				label: "Workspace",
 				icon: Workflow,
 				match: ["/settings/teams/settings"],
 			},
 		],
 	},
 	{
-		heading: "Gateway",
+		heading: "Workspace",
 		items: [
 			{
 				href: "/settings/keys",
 				label: "API Keys",
 				icon: KeyRound,
 				match: ["/settings/keys"],
-			},
-			{
-				href: "/settings/apps",
-				label: "Apps",
-				icon: AppWindow,
-				match: ["/settings/apps"],
 			},
 			{
 				href: "/settings/management-api-keys",
@@ -138,16 +113,28 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				match: ["/settings/management-api-keys", "/settings/provisioning-keys"],
 			},
 			{
+				href: "/settings/apps",
+				label: "Apps",
+				icon: AppWindow,
+				match: ["/settings/apps"],
+			},
+			{
+				href: "/settings/sdk",
+				label: "SDKs",
+				icon: Package,
+				match: ["/settings/sdk"],
+			},
+			{
+				href: "/settings/usage",
+				label: "Observability",
+				icon: BarChart3,
+				match: ["/settings/usage", "/settings/usage/logs", "/settings/usage/alerts"],
+			},
+			{
 				href: "/settings/routing",
 				label: "Routing",
 				icon: Waypoints,
 				match: ["/settings/routing"],
-			},
-			{
-				href: "/settings/byok",
-				label: "BYOK",
-				icon: KeyRound,
-				match: ["/settings/byok"],
 			},
 			{
 				href: "/settings/presets",
@@ -157,11 +144,10 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				match: ["/settings/presets"],
 			},
 			{
-				href: "/settings/privacy",
-				label: "Privacy",
-				icon: EyeOff,
-				badge: "Alpha",
-				match: ["/settings/privacy"],
+				href: "/settings/byok",
+				label: "BYOK",
+				icon: KeyRound,
+				match: ["/settings/byok"],
 			},
 			{
 				href: "/settings/guardrails",
@@ -169,11 +155,13 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				icon: ShieldCheck,
 				match: ["/settings/guardrails"],
 			},
-		],
-	},
-	{
-		heading: "Developer",
-		items: [
+			{
+				href: "/settings/privacy",
+				label: "Privacy",
+				icon: EyeOff,
+				badge: "Alpha",
+				match: ["/settings/privacy"],
+			},
 			{
 				href: "/settings/oauth-apps",
 				label: "OAuth Apps",
@@ -195,7 +183,12 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				badge: "Beta",
 				match: ["/settings/webhooks"],
 			},
-			{ href: "/settings/sdk", label: "SDKs", icon: Package, match: ["/settings/sdk"] },
+			{
+				href: "/settings/beta",
+				label: "Feature Preview",
+				icon: Beaker,
+				match: ["/settings/beta"],
+			},
 		],
 	},
 
@@ -257,4 +250,5 @@ export function getActiveSettingsNav(
 
 export const SETTINGS_SIDEBAR: NavGroup[] = getSettingsSidebar({
 	showBroadcast: true,
+	showWebhooks: true,
 });

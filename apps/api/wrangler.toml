@@ -28,6 +28,13 @@ VIDEO_API_ENABLED = "true"
 PRICING_MONITOR_ENABLED = "true"
 ENTERPRISE_INVOICING_ENABLED = "true"
 GATEWAY_PUBLIC_BASE_URL = "https://api.phaseo.app"
+GATEWAY_IO_LOGS_BUCKET_NAME = "ai-stats-gateway-io-logs"
+GATEWAY_IO_LOGGING_MAX_BYTES = "5242880"
+GATEWAY_IO_RETENTION_BILLING_ENABLED = "true"
+GATEWAY_IO_RETENTION_BILLING_LIMIT = "100"
+GATEWAY_IO_RETENTION_GRACE_DAYS = "14"
+GATEWAY_IO_RETENTION_PRICE_PER_MILLION_UNITS_NANOS = "0"
+GATEWAY_IO_RETENTION_PRUNE_LIMIT = "250"
 
 [triggers]
 crons = ["* * * * *"]
@@ -67,3 +74,8 @@ namespace_id = "41002"
 [ratelimits.simple]
 limit = 60
 period = 60
+
+[[r2_buckets]]
+binding = "GATEWAY_IO_LOGS_BUCKET"
+bucket_name = "ai-stats-gateway-io-logs"
+preview_bucket_name = "ai-stats-gateway-io-logs-preview"

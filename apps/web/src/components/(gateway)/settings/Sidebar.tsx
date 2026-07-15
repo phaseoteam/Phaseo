@@ -7,6 +7,7 @@ import type { ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
 	SidebarContent,
 	SidebarGroup,
@@ -21,6 +22,19 @@ import {
 
 import type { NavGroup, NavItem } from "./Sidebar.config";
 import { getSettingsSidebar } from "./Sidebar.config";
+
+function getBadgeClassName(badge: string) {
+	return cn(
+		"ml-auto h-5 shrink-0 px-1.5 text-[10px] font-semibold tracking-normal",
+		badge === "Beta" &&
+			"border-sky-500/30 bg-sky-500/10 text-sky-700 dark:border-sky-400/30 dark:bg-sky-400/10 dark:text-sky-300",
+		badge === "Alpha" &&
+			"border-amber-500/30 bg-amber-500/10 text-amber-700 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300",
+		badge !== "Beta" &&
+			badge !== "Alpha" &&
+			"border-border bg-transparent text-muted-foreground",
+	);
+}
 
 export default function SettingsSidebar({
 	children,
@@ -76,10 +90,14 @@ export default function SettingsSidebar({
 	function NavBlock({ group }: { group: NavGroup }) {
 		const heading = (group.heading ?? "").trim();
 		return (
-			<SidebarGroup className="pt-0">
-				{heading ? <SidebarGroupLabel>{heading}</SidebarGroupLabel> : null}
+			<SidebarGroup className="px-2 py-1.5">
+				{heading ? (
+					<SidebarGroupLabel className="h-6 px-2 text-xs font-medium tracking-normal text-muted-foreground">
+						{heading}
+					</SidebarGroupLabel>
+				) : null}
 				<SidebarGroupContent>
-					<SidebarMenu>
+					<SidebarMenu className="gap-0.5">
 						{group.items.map((item) => (
 							<SidebarMenuItem
 								key={`${heading || "group"}-${item.href}`}
@@ -103,14 +121,14 @@ export default function SettingsSidebar({
 				{Icon ? (
 					<Icon
 						aria-hidden="true"
-						className="h-4 w-4 shrink-0 text-muted-foreground"
+						className="h-4 w-4 shrink-0 text-muted-foreground/85"
 					/>
 				) : null}
 				<span className="min-w-0 flex-1 truncate">{item.label}</span>
 				{item.badge && (
 					<Badge
 						variant="outline"
-						className="ml-auto h-5 px-1.5 text-[10px] uppercase tracking-wide"
+						className={getBadgeClassName(item.badge)}
 					>
 						{item.badge}
 					</Badge>
@@ -169,9 +187,9 @@ export default function SettingsSidebar({
 
 	return (
 		<>
-			<SidebarHeader className="gap-0 px-2 pt-6 flex-shrink-0">
-				<div className="flex items-center gap-2 px-2 pb-3">
-					<div className="text-sm font-semibold text-foreground">
+			<SidebarHeader className="relative h-12 flex-shrink-0 gap-0 px-0 py-0">
+				<div className="flex h-12 items-center gap-2 px-4">
+					<div className="-translate-y-px text-sm font-semibold text-foreground">
 						Settings
 					</div>
 					<Button
@@ -184,11 +202,10 @@ export default function SettingsSidebar({
 						<PanelLeftClose className="h-4 w-4" />
 					</Button>
 				</div>
-				<div className="h-px w-full bg-border" />
+				<div className="absolute inset-x-0 bottom-0 h-px bg-border" />
 			</SidebarHeader>
-			{/* Mobile can scroll the menu if needed; desktop stays fixed (no sidebar scroll). */}
-			<SidebarContent className="overflow-y-auto md:overflow-y-hidden">
-				<div className="pb-4">
+			<SidebarContent className="overflow-y-auto overscroll-contain [scrollbar-gutter:stable]">
+				<div className="pb-5 pt-0">
 					{navGroups.map((group, idx) => (
 						<div key={`${group.heading ?? "group"}-${idx}`}>
 							<NavBlock group={group} />
