@@ -1,8 +1,8 @@
-import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { loadBundledProviderContract } from "./load.js";
+import { getCanonicalBundleHash } from "./contract-hash.js";
 import { ProviderContractRegistry } from "./registry.js";
 import { ProviderMockServer } from "./server.js";
 import { registerNovitaProvider } from "./providers/novita.js";
@@ -24,7 +24,7 @@ describe("Novita Mintlify contract", () => {
     const provenance = JSON.parse(await readFile(path.join(contractDir, "provenance.json"), "utf8"));
     const bundle = await readFile(path.join(contractDir, "openapi.json"));
     expect(provenance.pages).toHaveLength(6);
-    expect(createHash("sha256").update(bundle).digest("hex")).toBe(provenance.bundleSha256);
+    expect(getCanonicalBundleHash(bundle)).toBe(provenance.bundleSha256);
   });
 
   it("validates Novita tools and returns deterministic tool calls", async () => {

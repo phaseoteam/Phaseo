@@ -1,8 +1,8 @@
-import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { ProviderContractRegistry } from "./registry.js";
+import { getCanonicalBundleHash } from "./contract-hash.js";
 import { ProviderMockServer } from "./server.js";
 import { registerOpenAIProvider } from "./providers/openai.js";
 import type { OpenApiDocument } from "./types.js";
@@ -24,7 +24,7 @@ afterAll(() => server.stop());
 describe("OpenAI provider contract", () => {
   it("is reproducible and covers every declared Phaseo OpenAI operation", async () => {
     const raw = await readFile(path.join(contractDir, "openapi.json"));
-    expect(createHash("sha256").update(raw).digest("hex")).toBe(provenance.bundleSha256);
+    expect(getCanonicalBundleHash(raw)).toBe(provenance.bundleSha256);
     expect(manifest.operations).toHaveLength(17);
     expect(Object.keys(document.paths ?? {})).toHaveLength(16);
   });
