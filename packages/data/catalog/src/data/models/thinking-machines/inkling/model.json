@@ -40,6 +40,10 @@
       "value": "975B total; 41B active"
     },
     {
+      "name": "knowledge_cutoff",
+      "value": "2026-04-01T00:00:00"
+    },
+    {
       "name": "availability_note",
       "value": "Full weights are available on Hugging Face. Tinker currently exposes Inkling for sampling and fine-tuning, but its provider is not yet active in the gateway."
     },
