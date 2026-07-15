@@ -340,7 +340,7 @@ describe("OAuth route security", () => {
 			user_id: "user_1",
 			workspace_id: "ws_1",
 			redirect_uri: "https://example.com/callback",
-			scopes: ["models:read"],
+			scopes: ["gateway:access", "models:read"],
 			code_challenge: "challenge",
 			code_challenge_method: "S256",
 			expires_at: FUTURE_EXPIRES_AT,
@@ -368,7 +368,44 @@ describe("OAuth route security", () => {
 			userId: "user_1",
 			workspaceId: "ws_1",
 			clientId: "third_party",
-			scopes: ["models:read"],
+			scopes: ["gateway:access", "models:read"],
 		});
+	});
+
+	it("does not issue a delegated key from identity-only consent", async () => {
+		state.client = { id: "third_party", name: "Third Party", client_type: "confidential" };
+		state.authorizationCodeRow = {
+			id: "authorization_code_identity_only",
+			client_id: "third_party",
+			user_id: "user_1",
+			workspace_id: "ws_1",
+			redirect_uri: "https://example.com/callback",
+			scopes: ["openid"],
+			code_challenge: "challenge",
+			code_challenge_method: "S256",
+			expires_at: FUTURE_EXPIRES_AT,
+			used_at: null,
+		};
+		state.authorizationRow = { id: "auth_1", revoked_at: null };
+
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/token", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				grant_type: "authorization_code",
+				client_id: "third_party",
+				code: "authorization-code",
+				redirect_uri: "https://example.com/callback",
+				code_verifier: "verifier",
+			}),
+		});
+
+		expect(response.status).toBe(400);
+		expect(await response.json()).toMatchObject({
+			error: "invalid_scope",
+			error_description: "gateway:access consent is required for a delegated key",
+		});
+		expect(state.issuedManagedKeys).toEqual([]);
 	});
 });

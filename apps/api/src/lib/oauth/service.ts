@@ -1,5 +1,9 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
-import { DEFAULT_CLI_OAUTH_CAPABILITIES, parseStoredScopeList } from "@/lib/authz/capabilities";
+import {
+	DEFAULT_CLI_OAUTH_CAPABILITIES,
+	GATEWAY_ACCESS_SCOPE,
+	parseStoredScopeList,
+} from "@/lib/authz/capabilities";
 import { resolveActiveKeyPepper } from "@/lib/security/keyPepper";
 import { generateGatewayKey, hmacSecret, timingSafeEqual } from "@/routes/auth.helpers";
 import { validateOAuthToken, type JWTClaims } from "./jwt";
@@ -602,6 +606,10 @@ export async function issueOAuthManagedKeyForAuthorizationCode(
 	grantId: string,
 	input: TokenIssueInput,
 ) {
+	// A delegated key can spend workspace credits. Never mint one from an
+	// identity-only or control-plane-only consent grant.
+	if (!input.scopes.includes(GATEWAY_ACCESS_SCOPE)) return null;
+
 	const pepper = resolveActiveKeyPepper(getBindings());
 	if (!pepper) throw new Error("KEY_PEPPER_ACTIVE is not configured");
 

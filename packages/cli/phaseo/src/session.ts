@@ -42,7 +42,7 @@ export function preferredSessionBackend(
 		if (platform === "win32") return "dpapi-file";
 		if (platform === "darwin") return "keychain";
 		if (platform === "linux") return "secret-service";
-		return "file";
+		return "unavailable";
 	}
 	if (platform === "win32") return "dpapi-file";
 	if (platform === "darwin") return "keychain";
@@ -65,7 +65,18 @@ function storageError(backend: SessionBackend, cause?: unknown): Error {
 function parseSession(raw: string): Session | null {
 	try {
 		const parsed = JSON.parse(raw) as Partial<Session>;
-		if (!parsed.accessToken || !parsed.refreshToken || !parsed.expiresAt || !parsed.apiUrl) return null;
+		if (
+			typeof parsed.accessToken !== "string" ||
+			!parsed.accessToken ||
+			typeof parsed.refreshToken !== "string" ||
+			!parsed.refreshToken ||
+			typeof parsed.expiresAt !== "number" ||
+			!Number.isFinite(parsed.expiresAt) ||
+			parsed.expiresAt <= 0 ||
+			typeof parsed.apiUrl !== "string" ||
+			!parsed.apiUrl
+		) return null;
+		if (parsed.scope !== undefined && typeof parsed.scope !== "string") return null;
 		return parsed as Session;
 	} catch {
 		return null;
@@ -113,7 +124,7 @@ async function writeSessionFile(session: Session): Promise<void> {
 	const file = sessionPath();
 	await mkdir(dirname(file), { recursive: true, mode: 0o700 });
 	await writeFile(file, `${JSON.stringify(session, null, 2)}\n`, { mode: 0o600 });
-	await chmod(file, 0o600).catch(() => undefined);
+	await chmod(file, 0o600);
 }
 
 async function clearSessionFile(): Promise<void> {
@@ -130,7 +141,7 @@ async function readDpapiSession(): Promise<Session | null> {
 				"-NoProfile",
 				"-NonInteractive",
 				"-Command",
-				"$base64 = [Console]::In.ReadToEnd().Trim(); if (-not $base64) { exit 1 }; $bytes = [Convert]::FromBase64String($base64); $plain = [System.Security.Cryptography.ProtectedData]::Unprotect($bytes, $null, [System.Security.Cryptography.DataProtectionScope]::CurrentUser); [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; [Console]::Write([System.Text.Encoding]::UTF8.GetString($plain))",
+				"Add-Type -AssemblyName System.Security; $base64 = [Console]::In.ReadToEnd().Trim(); if (-not $base64) { exit 1 }; $bytes = [Convert]::FromBase64String($base64); $plain = [System.Security.Cryptography.ProtectedData]::Unprotect($bytes, $null, [System.Security.Cryptography.DataProtectionScope]::CurrentUser); [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; [Console]::Write([System.Text.Encoding]::UTF8.GetString($plain))",
 			],
 			base64,
 		);
@@ -150,12 +161,12 @@ async function writeDpapiSession(session: Session): Promise<void> {
 			"-NoProfile",
 			"-NonInteractive",
 			"-Command",
-			"$text = [Console]::In.ReadToEnd(); $bytes = [System.Text.Encoding]::UTF8.GetBytes($text); $protected = [System.Security.Cryptography.ProtectedData]::Protect($bytes, $null, [System.Security.Cryptography.DataProtectionScope]::CurrentUser); [Console]::Write([Convert]::ToBase64String($protected))",
+			"Add-Type -AssemblyName System.Security; $text = [Console]::In.ReadToEnd(); $bytes = [System.Text.Encoding]::UTF8.GetBytes($text); $protected = [System.Security.Cryptography.ProtectedData]::Protect($bytes, $null, [System.Security.Cryptography.DataProtectionScope]::CurrentUser); [Console]::Write([Convert]::ToBase64String($protected))",
 		],
 		payload,
 	);
 	await writeFile(file, `${protectedPayload.trim()}\n`, { mode: 0o600 });
-	await chmod(file, 0o600).catch(() => undefined);
+	await chmod(file, 0o600);
 }
 
 async function clearDpapiSession(): Promise<void> {

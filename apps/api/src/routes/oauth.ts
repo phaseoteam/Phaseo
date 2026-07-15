@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin } from "@/runtime/env";
-import { ALL_SUPPORTED_SCOPES } from "@/lib/authz/capabilities";
+import { ALL_SUPPORTED_SCOPES, GATEWAY_ACCESS_SCOPE } from "@/lib/authz/capabilities";
 import { checkOAuthRateLimit } from "@/lib/oauth/rateLimit";
 import { json, withRuntime } from "@/routes/utils";
 import {
@@ -227,10 +227,18 @@ oauthRouter.get(
 			return oauthError("invalid_client", "OAuth client or redirect_uri is invalid", 401);
 		}
 
-		const requestedScopes = normalizeScopes(url.searchParams.get("scope"), ["openid", "profile", "email"]);
+		const requestedScopes = normalizeScopes(
+			url.searchParams.get("scope"),
+			isFirstPartyCliClient(client.id)
+				? ["openid", "profile", "email"]
+				: ["openid", "profile", "email", GATEWAY_ACCESS_SCOPE],
+		);
 		const scopes = filterAllowedScopes(client, requestedScopes);
 		if (scopes.length !== requestedScopes.length) {
 			return oauthError("invalid_scope", "One or more requested scopes are not allowed for this client");
+		}
+		if (!isFirstPartyCliClient(client.id) && !scopes.includes(GATEWAY_ACCESS_SCOPE)) {
+			return oauthError("invalid_scope", `${GATEWAY_ACCESS_SCOPE} is required for third-party OAuth`);
 		}
 
 		const params = new URLSearchParams();
@@ -275,7 +283,19 @@ oauthRouter.post(
 		if (!client || !assertRedirectAllowed(client, redirectUri)) {
 			return oauthError("invalid_client", "OAuth client or redirect_uri is invalid", 401);
 		}
-		const scopes = filterAllowedScopes(client, normalizeScopes(body.scopes, ["openid", "profile", "email"]));
+		const requestedScopes = normalizeScopes(
+			body.scopes,
+			isFirstPartyCliClient(client.id)
+				? ["openid", "profile", "email"]
+				: ["openid", "profile", "email", GATEWAY_ACCESS_SCOPE],
+		);
+		const scopes = filterAllowedScopes(client, requestedScopes);
+		if (scopes.length !== requestedScopes.length) {
+			return oauthError("invalid_scope", "One or more requested scopes are not allowed for this client");
+		}
+		if (!isFirstPartyCliClient(client.id) && !scopes.includes(GATEWAY_ACCESS_SCOPE)) {
+			return oauthError("invalid_scope", `${GATEWAY_ACCESS_SCOPE} is required for third-party OAuth`);
+		}
 		const selectedWorkspaceIds = Array.from(new Set([...workspaceIds, workspaceId]));
 		const supabase = getSupabaseAdmin();
 		const memberships = await supabase
@@ -531,6 +551,9 @@ oauthRouter.post(
 				clientId: String(data.client_id),
 				scopes: Array.isArray(data.scopes) ? data.scopes.map(String) : [],
 			};
+			if (!isFirstPartyCliClient(client.id) && !tokenInput.scopes.includes(GATEWAY_ACCESS_SCOPE)) {
+				return oauthError("invalid_scope", `${GATEWAY_ACCESS_SCOPE} consent is required for a delegated key`);
+			}
 			// The CLI retains refreshable sessions for `login`, logout, and token
 			// renewal. Third-party PKCE clients receive durable user-funded keys.
 			const tokens = isFirstPartyCliClient(client.id)

@@ -9,7 +9,7 @@ import {
 	resolveKeyPepperCandidates,
 	type KeyPepperCandidate,
 } from "@/lib/security/keyPepper";
-import { parseStoredScopeList } from "@/lib/authz/capabilities";
+import { GATEWAY_ACCESS_SCOPE, parseStoredScopeList } from "@/lib/authz/capabilities";
 
 const enc = new TextEncoder();
 const KEY_CACHE_PREFIX = "gateway:key";
@@ -529,7 +529,9 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
 				return { ok: false, reason: "oauth_authorization_revoked" };
 			}
 			const effectiveScopes = oauthScopes.filter((scope) => activeAuthorizationScopes.includes(scope));
-			if (effectiveScopes.length === 0) return { ok: false, reason: "oauth_managed_key_invalid" };
+			if (!effectiveScopes.includes(GATEWAY_ACCESS_SCOPE)) {
+				return { ok: false, reason: "oauth_gateway_scope_required" };
+			}
 
 			dispatchBackground((async () => {
 				configureRuntime(bindings);

@@ -96,8 +96,18 @@ function isPhaseoInvalidateControlToken(token: string, bindings: ReturnType<type
 	const phaseoBindings = bindings as Record<string, unknown>;
 	const candidates = [
 		String(phaseoBindings.PHASEO_CONTROL_KEY ?? "").trim(),
+		String(phaseoBindings.GATEWAY_CONTROL_KEY ?? "").trim(),
+		String(phaseoBindings.AI_STATS_GATEWAY_KEY ?? "").trim(),
 	].filter(Boolean);
 	return candidates.some((candidate) => timingSafeEqual(token, candidate));
+}
+
+function getInvalidateControlSecrets(bindings: ReturnType<typeof getBindings>): string[] {
+	const phaseoBindings = bindings as Record<string, unknown>;
+	return [
+		String(phaseoBindings.PHASEO_CONTROL_SECRET ?? "").trim(),
+		String(phaseoBindings.GATEWAY_CONTROL_SECRET ?? "").trim(),
+	].filter(Boolean);
 }
 
 function resolveLimitWindow(row: KeyRow): { limit: number | null; limitReset: "daily" | "weekly" | "monthly" | null } {
@@ -773,23 +783,6 @@ async function handleDeleteKey(req: Request) {
 
 async function handleInvalidateKey(req: Request) {
 	const bindings = getBindings();
-	const controlSecret = bindings.PHASEO_CONTROL_SECRET?.trim();
-	if (!controlSecret) {
-		return json(
-			{ ok: false, error: "control_secret_missing", message: "PHASEO_CONTROL_SECRET is not configured" },
-			503,
-			{ "Cache-Control": "no-store" },
-		);
-	}
-	const providedSecret = req.headers.get("x-control-secret")?.trim() ?? "";
-	if (!timingSafeEqual(providedSecret, controlSecret)) {
-		return json(
-			{ ok: false, error: "forbidden", message: "Invalid control secret" },
-			403,
-			{ "Cache-Control": "no-store" },
-		);
-	}
-
 	const auth = await guardManagementAuth(req, { useKvCache: false });
 	const bearerToken = readBearerToken(req);
 	const phaseoControlAuthorised =
@@ -797,6 +790,24 @@ async function handleInvalidateKey(req: Request) {
 
 	if (!auth.ok && !phaseoControlAuthorised) {
 		return (auth as GuardErr).response;
+	}
+	if (!auth.ok) {
+		const controlSecrets = getInvalidateControlSecrets(bindings);
+		if (controlSecrets.length === 0) {
+			return json(
+				{ ok: false, error: "control_secret_missing", message: "Key cache invalidation control secret is not configured" },
+				503,
+				{ "Cache-Control": "no-store" },
+			);
+		}
+		const providedSecret = req.headers.get("x-control-secret")?.trim() ?? "";
+		if (!controlSecrets.some((candidate) => timingSafeEqual(providedSecret, candidate))) {
+			return json(
+				{ ok: false, error: "forbidden", message: "Invalid control secret" },
+				403,
+				{ "Cache-Control": "no-store" },
+			);
+		}
 	}
 
 	const scopedWorkspaceId = auth.ok ? auth.value.workspaceId : null;

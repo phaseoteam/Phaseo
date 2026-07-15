@@ -2,13 +2,14 @@ export type OAuthScopeOption = {
 	value: string;
 	label: string;
 	description: string;
-	group: "Identity" | "Read" | "Write" | "Delete";
+	group: "Identity" | "Access" | "Read" | "Write" | "Delete";
 };
 
 export const DEFAULT_THIRD_PARTY_OAUTH_SCOPES = [
 	"openid",
 	"profile",
 	"email",
+	"gateway:access",
 	"me:read",
 	"workspaces:read",
 	"models:read",
@@ -20,6 +21,7 @@ export const OAUTH_SCOPE_OPTIONS: OAuthScopeOption[] = [
 	{ value: "openid", label: "Confirm identity", description: "Verify the signed-in account.", group: "Identity" },
 	{ value: "profile", label: "Read profile", description: "Read the user's basic profile.", group: "Identity" },
 	{ value: "email", label: "Read email", description: "Read the user's email address.", group: "Identity" },
+	{ value: "gateway:access", label: "Use AI Gateway", description: "Run model inference using the user's workspace credits.", group: "Access" },
 	{ value: "me:read", label: "Read current account", description: "Inspect the current user and workspace context.", group: "Read" },
 	{ value: "models:read", label: "Read models", description: "Inspect the model catalogue.", group: "Read" },
 	{ value: "providers:read", label: "Read providers", description: "Inspect provider availability and metadata.", group: "Read" },

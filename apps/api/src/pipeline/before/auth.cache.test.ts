@@ -24,7 +24,7 @@ const runtime = vi.hoisted(() => {
         error: null,
     }));
 	const authorizationMaybeSingle = vi.fn(async () => ({
-		data: { scopes: ["models:read"], revoked_at: null },
+		data: { scopes: ["gateway:access", "models:read"], revoked_at: null },
 		error: null,
 	}));
 	const membershipMaybeSingle = vi.fn(async () => ({
@@ -266,7 +266,7 @@ describe("authenticate hot-path caching", () => {
 			key_kind: "oauth_delegated",
 			oauth_user_id: "user_oauth",
 			oauth_client_id: "client_oauth",
-			oauth_scopes: ["models:read", "logs:read"],
+			oauth_scopes: ["gateway:access", "models:read", "logs:read"],
 		};
 
 		const { authenticateManagement } = await import("./auth");
@@ -276,9 +276,33 @@ describe("authenticate hot-path caching", () => {
 		expect(result).toMatchObject({
 			ok: true,
 			authMethod: "oauth",
-			oauthScopes: ["models:read"],
-			scopes: ["models:read"],
+			oauthScopes: ["gateway:access", "models:read"],
+			scopes: ["gateway:access", "models:read"],
 		});
+	});
+
+	it("rejects an identity-only OAuth-managed key", async () => {
+		const kid = "KIDOAUTHIDENT";
+		const secret = "secret_oauth_identity";
+		runtime.dbRow.value = {
+			id: "key_oauth_identity",
+			workspace_id: "team_oauth",
+			status: "active",
+			hash: hashSecret(secret),
+			key_kind: "oauth_delegated",
+			oauth_user_id: "user_oauth",
+			oauth_client_id: "client_oauth",
+			oauth_scopes: ["openid"],
+		};
+		runtime.authorizationMaybeSingle.mockResolvedValueOnce({
+			data: { scopes: ["openid"], revoked_at: null },
+			error: null,
+		});
+
+		const { authenticate } = await import("./auth");
+		const result = await authenticate(buildRequest(`phaseo_v1_sk_${kid}_${secret}`), { useKvCache: false });
+
+		expect(result).toEqual({ ok: false, reason: "oauth_gateway_scope_required" });
 	});
 
     it("rejects expired keys when expires_at has passed", async () => {

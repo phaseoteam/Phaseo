@@ -17,6 +17,10 @@ export type GatewayBindings = {
     KV?: KVNamespace;
     DB?: D1Database;
     PHASEO_CONTROL_SECRET?: string;
+    PHASEO_CONTROL_KEY?: string;
+    GATEWAY_CONTROL_SECRET?: string;
+    GATEWAY_CONTROL_KEY?: string;
+    AI_STATS_GATEWAY_KEY?: string;
     NEXT_PUBLIC_GATEWAY_VERSION?: string;
     AXIOM_API_KEY?: string;
     AXIOM_DATASET?: string;
