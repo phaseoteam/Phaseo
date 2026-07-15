@@ -167,6 +167,12 @@ oauthRouter.post(
 		if (!client || client.client_type !== "public") {
 			return oauthError("invalid_client", "Unknown or unsupported OAuth client", 401);
 		}
+		// Device authorization creates a refreshable control-plane session and is
+		// reserved for the trusted Phaseo CLI. Third-party apps use PKCE and
+		// receive gateway-scoped delegated keys instead.
+		if (!isFirstPartyCliClient(client.id)) {
+			return oauthError("invalid_client", "Device authorization is only available to the Phaseo CLI", 401);
+		}
 
 		const requestedScopes = normalizeScopes(body.scope, CLI_DEFAULT_SCOPES);
 		const scopes = filterAllowedScopes(client, requestedScopes);
@@ -371,6 +377,9 @@ oauthRouter.post(
 		}
 		const client = await loadOAuthClient(String(device.client_id));
 		if (!client) return oauthError("invalid_client", "OAuth client is unavailable", 400);
+		if (!isFirstPartyCliClient(client.id)) {
+			return oauthError("invalid_client", "Device authorization is only available to the Phaseo CLI", 400);
+		}
 
 		if (action === "lookup") {
 			return json(
@@ -464,6 +473,9 @@ oauthRouter.post(
 			if (error) return oauthError("server_error", error.message, 500);
 			if (!data || Date.parse(String(data.expires_at)) <= Date.now()) {
 				return oauthError("expired_token", "Device code has expired");
+			}
+			if (!isFirstPartyCliClient(String(data.client_id))) {
+				return oauthError("invalid_grant", "Device authorization is only available to the Phaseo CLI");
 			}
 			if (data.status === "denied") return oauthError("access_denied", "The user denied this device request");
 			if (data.status !== "approved") {

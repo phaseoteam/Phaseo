@@ -201,6 +201,23 @@ describe("OAuth route security", () => {
 		await expect(response.json()).resolves.toMatchObject({ error: "invalid_request" });
 	});
 
+	it("reserves device authorization for the first-party CLI", async () => {
+		state.client = { id: "third_party", name: "Third Party", client_type: "public" };
+
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/device/code", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ client_id: "third_party", scope: "openid" }),
+		});
+
+		expect(response.status).toBe(401);
+		expect(await response.json()).toMatchObject({
+			error: "invalid_client",
+			error_description: "Device authorization is only available to the Phaseo CLI",
+		});
+	});
+
 	it("returns slow_down when the atomic device poll check rejects the cadence", async () => {
 		state.deviceRow = {
 			id: "device_1",
@@ -291,6 +308,39 @@ describe("OAuth route security", () => {
 				scopes: ["openid"],
 			},
 		]);
+	});
+
+	it("does not exchange a legacy third-party device code for a refreshable session", async () => {
+		state.client = { id: "third_party", name: "Third Party", client_type: "public" };
+		state.deviceRow = {
+			id: "device_third_party",
+			client_id: "third_party",
+			user_id: "user_1",
+			workspace_id: "ws_1",
+			scopes: ["openid"],
+			status: "approved",
+			expires_at: FUTURE_EXPIRES_AT,
+			consumed_at: null,
+		};
+		state.authorizationRow = { id: "auth_1", revoked_at: null };
+
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/token", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				grant_type: "urn:ietf:params:oauth:grant-type:device_code",
+				device_code: "device-code",
+				client_id: "third_party",
+			}),
+		});
+
+		expect(response.status).toBe(400);
+		expect(await response.json()).toMatchObject({
+			error: "invalid_grant",
+			error_description: "Device authorization is only available to the Phaseo CLI",
+		});
+		expect(state.issuedTokenPairs).toEqual([]);
 	});
 
 	it("keeps browser-based CLI login on a refreshable token pair", async () => {
