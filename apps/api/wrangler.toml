@@ -29,6 +29,13 @@ PRICING_MONITOR_ENABLED = "true"
 ENTERPRISE_INVOICING_ENABLED = "true"
 GATEWAY_PUBLIC_BASE_URL = "https://api.phaseo.app"
 PHASEO_THIRD_PARTY_OAUTH_ENABLED = "true"
+GATEWAY_IO_LOGS_BUCKET_NAME = "phaseo-gateway-io-logs"
+GATEWAY_IO_LOGGING_MAX_BYTES = "5242880"
+GATEWAY_IO_RETENTION_BILLING_ENABLED = "false"
+GATEWAY_IO_RETENTION_BILLING_LIMIT = "100"
+GATEWAY_IO_RETENTION_GRACE_DAYS = "14"
+GATEWAY_IO_RETENTION_PRICE_PER_MILLION_UNITS_NANOS = "0"
+GATEWAY_IO_RETENTION_PRUNE_LIMIT = "250"
 
 [triggers]
 crons = ["* * * * *"]
@@ -50,6 +57,11 @@ invocation_logs = true
 binding = "GATEWAY_CACHE"
 id = "f5e23068fcd94125ad9860c817c543d9"
 preview_id = "f5e23068fcd94125ad9860c817c543d9"
+
+[[r2_buckets]]
+binding = "GATEWAY_IO_LOGS_BUCKET"
+bucket_name = "phaseo-gateway-io-logs"
+preview_bucket_name = "phaseo-gateway-io-logs-preview"
 
 # Native per-location Workers rate limiting. Application-level device polling
 # checks remain authoritative because these counters are intentionally approximate.
