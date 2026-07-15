@@ -3,10 +3,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({
 	deviceRow: null as Record<string, unknown> | null,
 	authorizationRow: null as Record<string, unknown> | null,
+	authorizationCodeRow: null as Record<string, unknown> | null,
+	client: { id: "phaseo_cli", name: "Phaseo CLI", client_type: "public" } as Record<string, unknown>,
 	updateResult: null as Record<string, unknown> | null,
 	updatePayloads: [] as Array<Record<string, unknown>>,
 	updateFilters: [] as Array<Array<{ column: string; value: unknown }>>,
 	issuedTokenPairs: [] as Array<Record<string, unknown>>,
+	issuedManagedKeys: [] as Array<Record<string, unknown>>,
 	pollStatus: "ok" as string,
 }));
 
@@ -27,6 +30,17 @@ vi.mock("@/runtime/env", () => ({
 	getSupabaseAdmin: () => ({
 		rpc: async () => ({ data: state.pollStatus, error: null }),
 		from(table: string) {
+			if (table === "oauth_authorization_codes") {
+				return {
+					select: () => ({
+						in: () => ({
+							eq: () => ({
+								maybeSingle: async () => ({ data: state.authorizationCodeRow, error: null }),
+							}),
+						}),
+					}),
+				};
+			}
 			if (table === "oauth_authorizations") {
 				return {
 					select: () => ({
@@ -111,10 +125,11 @@ vi.mock("@/lib/oauth/service", () => ({
 		return { access_token: "token" };
 	}),
 	issueOAuthManagedKeyForAuthorizationCode: vi.fn(async (_grantId: string, input: Record<string, unknown>) => {
-		state.issuedTokenPairs.push(input);
+		state.issuedManagedKeys.push(input);
 		return { access_token: "phaseo_v1_sk_test", token_type: "Bearer" };
 	}),
-	loadOAuthClient: vi.fn(async () => ({ id: "phaseo_cli", name: "Phaseo CLI", client_type: "public" })),
+	isFirstPartyCliClient: vi.fn((clientId: string) => clientId === "phaseo_cli" || clientId === "aistats_cli"),
+	loadOAuthClient: vi.fn(async () => state.client),
 	makeAuthCodeExpiry: vi.fn(() => "2026-06-10T16:00:00.000Z"),
 	makeDeviceCodeExpiry: vi.fn(() => "2026-06-10T16:00:00.000Z"),
 	normalizeScopes: vi.fn((raw, fallback) => fallback ?? []),
@@ -134,10 +149,13 @@ describe("OAuth route security", () => {
 	beforeEach(() => {
 		state.deviceRow = null;
 		state.authorizationRow = null;
+		state.authorizationCodeRow = null;
+		state.client = { id: "phaseo_cli", name: "Phaseo CLI", client_type: "public" };
 		state.updateResult = null;
 		state.updatePayloads.length = 0;
 		state.updateFilters.length = 0;
 		state.issuedTokenPairs.length = 0;
+		state.issuedManagedKeys.length = 0;
 		state.pollStatus = "ok";
 		vi.resetModules();
 	});
@@ -258,5 +276,84 @@ describe("OAuth route security", () => {
 				scopes: ["openid"],
 			},
 		]);
+	});
+
+	it("keeps browser-based CLI login on a refreshable token pair", async () => {
+		state.authorizationCodeRow = {
+			id: "authorization_code_1",
+			client_id: "phaseo_cli",
+			user_id: "user_1",
+			workspace_id: "ws_1",
+			redirect_uri: "http://127.0.0.1:8976/callback",
+			scopes: ["openid"],
+			code_challenge: "challenge",
+			code_challenge_method: "S256",
+			expires_at: FUTURE_EXPIRES_AT,
+			used_at: null,
+		};
+		state.authorizationRow = { id: "auth_1", revoked_at: null };
+
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/token", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				grant_type: "authorization_code",
+				client_id: "phaseo_cli",
+				code: "authorization-code",
+				redirect_uri: "http://127.0.0.1:8976/callback",
+				code_verifier: "verifier",
+			}),
+		});
+
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({ access_token: "token" });
+		expect(state.issuedTokenPairs).toContainEqual({
+			userId: "user_1",
+			workspaceId: "ws_1",
+			clientId: "phaseo_cli",
+			scopes: ["openid"],
+		});
+		expect(state.issuedManagedKeys).toEqual([]);
+	});
+
+	it("issues a managed key only for a third-party PKCE client", async () => {
+		state.client = { id: "third_party", name: "Third Party", client_type: "confidential" };
+		state.authorizationCodeRow = {
+			id: "authorization_code_2",
+			client_id: "third_party",
+			user_id: "user_1",
+			workspace_id: "ws_1",
+			redirect_uri: "https://example.com/callback",
+			scopes: ["models:read"],
+			code_challenge: "challenge",
+			code_challenge_method: "S256",
+			expires_at: FUTURE_EXPIRES_AT,
+			used_at: null,
+		};
+		state.authorizationRow = { id: "auth_1", revoked_at: null };
+
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/token", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				grant_type: "authorization_code",
+				client_id: "third_party",
+				code: "authorization-code",
+				redirect_uri: "https://example.com/callback",
+				code_verifier: "verifier",
+			}),
+		});
+
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({ access_token: "phaseo_v1_sk_test" });
+		expect(state.issuedTokenPairs).toEqual([]);
+		expect(state.issuedManagedKeys).toContainEqual({
+			userId: "user_1",
+			workspaceId: "ws_1",
+			clientId: "third_party",
+			scopes: ["models:read"],
+		});
 	});
 });
