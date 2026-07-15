@@ -1,0 +1,20 @@
+{
+  "providerId": "moonshot-ai-turbo",
+  "displayName": "Moonshot AI Turbo canonical",
+  "source": {
+    "kind": "phaseo-overlay",
+    "url": "https://platform.moonshot.ai/docs/api/chat"
+  },
+  "operations": [
+    {
+      "capability": "chat",
+      "method": "post",
+      "path": "/v1/chat/completions",
+      "operationId": "moonshot_ai_chat",
+      "notes": "Reconstructed from the provider's documented OpenAI-compatible API surface; provider-specific restrictions belong in overlays."
+    }
+  ],
+  "overlays": [
+    "Inherits moonshot-ai; this enabled ID changes routing, residency, performance tier, or transport policy without changing the request schema."
+  ]
+}

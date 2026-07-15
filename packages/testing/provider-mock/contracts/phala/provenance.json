@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://docs.phala.com/",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "ba489548eec9707b36fc89ff34bc01d1cce149e027048cc081a5755a08633227",
+  "gatewayPathPrefix": "/v1"
+}

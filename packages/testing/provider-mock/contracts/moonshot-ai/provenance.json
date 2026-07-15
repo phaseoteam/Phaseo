@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://platform.moonshot.ai/docs/api/chat",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "51c7336d41f9e5f54a4ed605ad9f67b61acaeecdbac09bbea568c86d0dbc3ebb",
+  "gatewayPathPrefix": "/v1"
+}

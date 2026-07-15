@@ -1,0 +1,8 @@
+{
+  "inheritedFrom": "arcee-ai",
+  "parentSource": {
+    "kind": "official-docs",
+    "url": "https://docs.arcee.ai/"
+  },
+  "bundleSha256": "8fc704f5420eafcdb585f858f78a0a451ca2b1d17cb7f23a8a5de1b49222c200"
+}

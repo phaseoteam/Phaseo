@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://developers.inflection.ai/docs",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "05f9ae21888ea90cdc40737e6a3c9ca737519b94db7f87ae0befc6f144bb0218",
+  "gatewayPathPrefix": "/v1"
+}

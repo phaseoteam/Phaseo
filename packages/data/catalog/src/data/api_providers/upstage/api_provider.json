@@ -1,0 +1,14 @@
+{
+  "api_provider_id": "upstage",
+  "api_provider_name": "Upstage",
+  "description": "Solar OpenAI-compatible inference API.",
+  "link": "https://www.upstage.ai/products/solar-pro-preview",
+  "country_code": "KR",
+  "status": "Active",
+  "colour": "#DC2626",
+  "privacy_policy_url": "https://www.upstage.ai/policy/privacy",
+  "terms_of_service_url": "https://www.upstage.ai/policy/terms",
+  "prompt_training_policy": "unknown",
+  "prompt_training_notes": null,
+  "prompt_training_source_url": null
+}

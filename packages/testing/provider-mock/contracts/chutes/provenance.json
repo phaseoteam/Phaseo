@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://chutes.ai/docs",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "ab4c5e618a909a04543a46a5f86dcd2e2d81111c913984acaed8967575d86a83",
+  "gatewayPathPrefix": "/v1"
+}

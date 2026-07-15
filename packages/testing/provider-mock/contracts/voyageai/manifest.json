@@ -1,0 +1,32 @@
+{
+  "providerId": "voyageai",
+  "displayName": "Voyage AI compatibility alias",
+  "source": {
+    "kind": "phaseo-overlay",
+    "url": "https://docs.voyageai.com/reference/embeddings-api"
+  },
+  "operations": [
+    {
+      "capability": "voyage_embeddings",
+      "method": "post",
+      "path": "/v1/embeddings",
+      "operationId": "voyage_embeddings"
+    },
+    {
+      "capability": "voyage_rerank",
+      "method": "post",
+      "path": "/v1/rerank",
+      "operationId": "voyage_rerank"
+    },
+    {
+      "capability": "text.generate",
+      "method": "post",
+      "path": "/v1/chat/completions",
+      "operationId": "voyage_text_generate_1",
+      "notes": "Derived from the enabled Phaseo executor URL and provider API reference."
+    }
+  ],
+  "overlays": [
+    "Inherits voyage; this enabled ID changes routing, residency, performance tier, or transport policy without changing the request schema."
+  ]
+}

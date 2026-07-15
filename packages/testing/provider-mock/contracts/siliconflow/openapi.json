@@ -1,0 +1,1976 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "SiliconFlow API",
+    "description": "The SiliconFlow REST API",
+    "version": "1.0.0",
+    "contact": {
+      "name": "SiliconFlow Support",
+      "url": "https://www.siliconflow.com/"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://github.com/siliconflow-inc/siliconflow-api/blob/main/LICENSE"
+    }
+  },
+  "paths": {
+    "/v1/chat/completions": {
+      "post": {
+        "summary": "Chat Completions",
+        "operationId": "chat-completions",
+        "description": "Creates a model response for the given chat conversation.",
+        "tags": [
+          "Chat Completions"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ChatCompletionRequest"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ChatCompletionVLMRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatCompletionResponse"
+                }
+              },
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatCompletionStream"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRquestData"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedData"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundData"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RateLimit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitData"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Overloaded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OverloadedtData"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimeoutData"
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/v1/embeddings": {
+      "post": {
+        "summary": "Create Embeddings",
+        "description": "Creates an embedding vector representing the input text.",
+        "operationId": "createEmbedding",
+        "tags": [
+          "Embeddings"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmbeddingsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmbeddingsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRquestData"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedData"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundData"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RateLimit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitData"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Overloaded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OverloadedtData"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimeoutData"
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/v1/rerank": {
+      "post": {
+        "summary": "Create Rerank",
+        "description": "Creates a rerank request.",
+        "operationId": "createRerank",
+        "tags": [
+          "Rerank"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RerankRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RerankResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRquestData"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedData"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundData"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RateLimit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitData"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Overloaded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OverloadedtData"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimeoutData"
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/v1/messages": {
+      "post": {
+        "summary": "Chat Completions",
+        "operationId": "chat-completions",
+        "description": "Creates a model response for the given chat conversation.",
+        "tags": [
+          "messages"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "apiKey": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ChatMessagesRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessgesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRquestData"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedData"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundData"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RateLimit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitData"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Overloaded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OverloadedtData"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimeoutData"
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/v1/models": {
+      "get": {
+        "summary": "Get Model List",
+        "operationId": "Retrieve a list of models.",
+        "description": "Retrieve models information.",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "description": "The type of models",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "text",
+                "image",
+                "audio",
+                "video"
+              ]
+            }
+          },
+          {
+            "name": "sub_type",
+            "in": "query",
+            "description": "The sub type of models. You can use it to filter models individually without setting type.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "chat",
+                "embedding",
+                "reranker",
+                "text-to-image",
+                "image-to-image",
+                "speech-to-text",
+                "text-to-video"
+              ]
+            }
+          }
+        ],
+        "tags": [
+          "Models"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "object": {
+                      "type": "string",
+                      "example": "list"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "example": "stabilityai/stable-diffusion-xl-base-1.0"
+                          },
+                          "object": {
+                            "type": "string",
+                            "example": "model"
+                          },
+                          "created": {
+                            "type": "integer",
+                            "example": 0
+                          },
+                          "owned_by": {
+                            "type": "string",
+                            "example": ""
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StringData"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StringData"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StringData"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RateLimit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StringData"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Overloaded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StringData"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StringData"
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ChatCompletionRequest": {
+        "title": "LLM",
+        "type": "object",
+        "required": [
+          "model",
+          "messages"
+        ],
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "Corresponding Model Name. To better enhance service quality, we will make periodic changes to the models provided by this service, including but not limited to model on/offlining and adjustments to model service capabilities. We will notify you of such changes through appropriate means such as announcements or message pushes where feasible.",
+            "example": "Qwen/Qwen3-32B",
+            "enum": [
+              "deepseek-ai/DeepSeek-R1",
+              "deepseek-ai/DeepSeek-V3",
+              "deepseek-ai/DeepSeek-V3.1",
+              "deepseek-ai/DeepSeek-V3.1-Terminus",
+              "deepseek-ai/DeepSeek-V3.2-Exp",
+              "deepseek-ai/DeepSeek-V3.2",
+              "deepseek-ai/deepseek-vl2",
+              "deepseek-ai/DeepSeek-V4-Flash",
+              "deepseek-ai/DeepSeek-V4-Pro",
+              "nex-agi/DeepSeek-V3.1-Nex-N1",
+              "baidu/ERNIE-4.5-300B-A47B",
+              "THUDM/GLM-4-32B-0414",
+              "THUDM/GLM-4-9B-0414",
+              "zai-org/GLM-4.5",
+              "zai-org/GLM-4.5-Air",
+              "zai-org/GLM-4.5V",
+              "zai-org/GLM-5",
+              "zai-org/GLM-5.1",
+              "zai-org/GLM-4.7",
+              "zai-org/GLM-4.6",
+              "zai-org/GLM-4.6V",
+              "zai-org/GLM-5V-Turbo",
+              "THUDM/GLM-Z1-32B-0414",
+              "THUDM/GLM-Z1-9B-0414",
+              "tencent/Hunyuan-A13B-Instruct",
+              "tencent/Hunyuan-MT-7B",
+              "tencent/Hy3-preview",
+              "moonshotai/Kimi-K2.5",
+              "moonshotai/Kimi-K2.6",
+              "moonshotai/Kimi-K2-Instruct",
+              "moonshotai/Kimi-K2-Instruct-0905",
+              "moonshotai/Kimi-K2-Thinking",
+              "inclusionAI/Ling-flash-2.0",
+              "inclusionAI/Ling-mini-2.0",
+              "inclusionAI/Ring-flash-2.0",
+              "meta-llama/Meta-Llama-3.1-8B-Instruct",
+              "MiniMaxAI/MiniMax-M2.5",
+              "MiniMaxAI/MiniMax-M2.1",
+              "Qwen/Qwen2.5-14B-Instruct",
+              "Qwen/Qwen2.5-32B-Instruct",
+              "Qwen/Qwen2.5-72B-Instruct",
+              "Qwen/Qwen2.5-72B-Instruct-128K",
+              "Qwen/Qwen2.5-7B-Instruct",
+              "Qwen/Qwen2.5-VL-7B-Instruct",
+              "Qwen/Qwen3-14B",
+              "Qwen/Qwen3-235B-A22B",
+              "Qwen/Qwen3-235B-A22B-Instruct-2507",
+              "Qwen/Qwen3-235B-A22B-Thinking-2507",
+              "Qwen/Qwen3-30B-A3B-Instruct-2507",
+              "Qwen/Qwen3-30B-A3B-Thinking-2507",
+              "Qwen/Qwen3-32B",
+              "Qwen/Qwen3-8B",
+              "Qwen/Qwen3-Coder-30B-A3B-Instruct",
+              "Qwen/Qwen3-Coder-480B-A35B-Instruct",
+              "Qwen/Qwen3-Next-80B-A3B-Instruct",
+              "Qwen/Qwen3-Next-80B-A3B-Thinking",
+              "Qwen/Qwen3-Omni-30B-A3B-Captioner",
+              "Qwen/Qwen3-Omni-30B-A3B-Instruct",
+              "Qwen/Qwen3-Omni-30B-A3B-Thinking",
+              "Qwen/Qwen3.5-122B-A10B",
+              "Qwen/Qwen3.5-27B",
+              "Qwen/Qwen3.5-35B-A3B",
+              "Qwen/Qwen3.5-397B-A17B",
+              "Qwen/Qwen3.5-9B",
+              "Qwen/Qwen3.6-27B",
+              "Qwen/Qwen3.6-35B-A3B",
+              "ByteDance-Seed/Seed-OSS-36B-Instruct",
+              "google/gemma-4-26B-A4B-it",
+              "google/gemma-4-31B-it",
+              "openai/gpt-oss-120b",
+              "openai/gpt-oss-20b"
+            ]
+          },
+          "messages": {
+            "type": "array",
+            "description": "A list of messages comprising the conversation so far.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "description": "The role of the messages author. Choice between: system, user, or assistant.",
+                  "example": "user",
+                  "default": "user",
+                  "enum": [
+                    "user",
+                    "assistant",
+                    "system"
+                  ]
+                },
+                "content": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "description": "The contents of the message.",
+                      "example": "What opportunities and challenges will the Chinese large model industry face in 2025?",
+                      "default": "What opportunities and challenges will the Chinese large model industry face in 2025?"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "role",
+                "content"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 10
+          },
+          "stream": {
+            "type": "boolean",
+            "description": "If set, tokens are returned as Server-Sent Events as they are made available. Stream terminates with `data: [DONE]`",
+            "example": false
+          },
+          "max_tokens": {
+            "type": "integer",
+            "description": "The maximum number of tokens to generate. Ensure that input tokens + max_tokens do not exceed the model’s context window. As some services are still being updated, avoid setting max_tokens to the window’s upper bound; reserve ~10k tokens as buffer for input and system overhead. See Models(https://cloud.siliconflow.cn/models) for details. \n",
+            "example": 4096
+          },
+          "enable_thinking": {
+            "type": "boolean",
+            "description": "Switches between thinking and non-thinking modes. Default is True.  This field supports the following models: \n\n    - Qwen/Qwen3-8B\n    - Qwen/Qwen3-14B\n    - Qwen/Qwen3-32B\n    - wen/Qwen3-30B-A3B\n    - Qwen/Qwen3-235B-A22B\n    - tencent/Hunyuan-A13B-Instruct\n    - zai-org/GLM-5V-Turbo\n    - zai-org/GLM-4.6V\n    - zai-org/GLM-4.5V\n    - deepseek-ai/DeepSeek-V3.1\n    - deepseek-ai/DeepSeek-V3.1-Terminus\n    - deepseek-ai/DeepSeek-V3.2-Exp\n    - deepseek-ai/DeepSeek-V3.2\n\nIf you want to use the function call feature for deepseek-ai/DeepSeek-V3.1, you need to set enable_thinking to false. \n",
+            "example": false
+          },
+          "thinking_budget": {
+            "type": "integer",
+            "description": "Maximum number of tokens for chain-of-thought output. This field applies to all Reasoning models.",
+            "example": 4096,
+            "default": 4096,
+            "minimum": 128,
+            "maximum": 32768
+          },
+          "min_p": {
+            "type": "number",
+            "description": "Dynamic filtering threshold that adapts based on token probabilities.This field only applies to Qwen3.",
+            "format": "float",
+            "example": 0.05,
+            "minimum": 0,
+            "maximum": 1
+          },
+          "stop": {
+            "description": "Up to 4 sequences where the API will stop generating further tokens. The returned text will not contain the stop sequence.\n",
+            "nullable": true,
+            "oneOf": [
+              {
+                "type": "string",
+                "example": null,
+                "nullable": true
+              },
+              {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 4,
+                "items": {
+                  "type": "string",
+                  "example": "null"
+                }
+              }
+            ]
+          },
+          "temperature": {
+            "type": "number",
+            "description": "Determines the degree of randomness in the response.",
+            "format": "float",
+            "example": 0.7
+          },
+          "top_p": {
+            "type": "number",
+            "description": "The `top_p` (nucleus) parameter is used to dynamically adjust the number of choices for each predicted token based on the cumulative probabilities.",
+            "format": "float",
+            "example": 0.7,
+            "default": 0.7
+          },
+          "top_k": {
+            "type": "number",
+            "format": "float",
+            "example": 50
+          },
+          "frequency_penalty": {
+            "type": "number",
+            "format": "float",
+            "example": 0.5
+          },
+          "n": {
+            "type": "integer",
+            "description": "Number of generations to return",
+            "example": 1
+          },
+          "response_format": {
+            "type": "object",
+            "description": "An object specifying the format that the model must output.",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "The type of the response format.",
+                "example": "text"
+              }
+            }
+          },
+          "tools": {
+            "type": "array",
+            "description": "A list of tools the model may call. Currently, only functions are supported as a tool. Use this to provide a list of functions the model may generate JSON inputs for. A max of 128 functions are supported.\n",
+            "items": {
+              "$ref": "#/components/schemas/ChatCompletionTool"
+            }
+          }
+        }
+      },
+      "ChatCompletionVLMRequest": {
+        "title": "VLM",
+        "type": "object",
+        "required": [
+          "model",
+          "messages"
+        ],
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "Corresponding Model Name. To better enhance service quality, we will make periodic changes to the models provided by this service, including but not limited to model on/offlining and adjustments to model service capabilities. We will notify you of such changes through appropriate means such as announcements or message pushes where feasible.",
+            "example": "Qwen/Qwen3-VL-32B-Instruct",
+            "default": "Qwen/Qwen3-VL-32B-Instruct",
+            "enum": [
+              "Qwen/Qwen3-VL-32B-Instruct",
+              "Qwen/Qwen3-VL-32B-Thinking",
+              "Qwen/Qwen3-VL-8B-Instruct",
+              "Qwen/Qwen3-VL-8B-Thinking",
+              "Qwen/Qwen3-VL-235B-A22B-Instruct",
+              "Qwen/Qwen3-VL-235B-A22B-Thinking",
+              "Qwen/Qwen3-VL-30B-A3B-Thinking",
+              "Qwen/Qwen3-VL-30B-A3B-Instruct",
+              "deepseek-ai/deepseek-vl2",
+              "zai-org/GLM-5V-Turbo",
+              "zai-org/GLM-4.6V",
+              "zai-org/GLM-4.5V",
+              "Qwen/Qwen2.5-VL-7B-Instruct",
+              "Qwen/Qwen3-Omni-30B-A3B-Captioner",
+              "Qwen/Qwen3-Omni-30B-A3B-Instruct",
+              "Qwen/Qwen3-Omni-30B-A3B-Thinking"
+            ]
+          },
+          "messages": {
+            "type": "array",
+            "description": "A list of messages comprising the conversation so far.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "description": "The role of the messages author. Choice between: system, user, or assistant.",
+                  "example": "user",
+                  "default": "user",
+                  "enum": [
+                    "user",
+                    "assistant",
+                    "system"
+                  ]
+                },
+                "content": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "description": "An array of content parts with a defined type, each can be of type `text` or `image_url` when passing in images. You can pass multiple images by adding multiple `image_url` content parts. The Qwen3-Omni series supports `video_url` and `audio_url`, enabling the recognition of video and audio content. The Qwen3-VL model also supports `video_url`, allowing it to recognize video content. Recommend videos and audio within 30 seconds.",
+                      "items": {
+                        "$ref": "#/components/schemas/ChatCompletionRequestUserMessageContentPart"
+                      },
+                      "minItems": 1
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "role",
+                "content"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 10
+          },
+          "stream": {
+            "type": "boolean",
+            "description": "If set, tokens are returned as Server-Sent Events as they are made available. Stream terminates with `data: [DONE]`",
+            "example": false,
+            "default": false
+          },
+          "max_tokens": {
+            "type": "integer",
+            "description": "The maximum number of tokens to generate. Ensure that input tokens + max_tokens do not exceed the model’s context window. As some services are still being updated, avoid setting max_tokens to the window’s upper bound; reserve ~10k tokens as buffer for input and system overhead. See Models(https://cloud.siliconflow.cn/models) for details. \n"
+          },
+          "stop": {
+            "description": "Up to 4 sequences where the API will stop generating further tokens. The returned text will not contain the stop sequence.\n",
+            "default": [],
+            "nullable": true,
+            "oneOf": [
+              {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 4,
+                "items": {
+                  "type": "string",
+                  "example": "null"
+                }
+              },
+              {
+                "type": "string",
+                "default": "<|endoftext|>",
+                "example": "\n",
+                "nullable": true
+              },
+              {
+                "type": "string",
+                "default": "<|endoftext|>",
+                "example": "",
+                "nullable": true
+              }
+            ]
+          },
+          "temperature": {
+            "type": "number",
+            "description": "Determines the degree of randomness in the response.",
+            "format": "float",
+            "example": 0.7,
+            "default": 0.7
+          },
+          "top_p": {
+            "type": "number",
+            "description": "The `top_p` (nucleus) parameter is used to dynamically adjust the number of choices for each predicted token based on the cumulative probabilities.",
+            "format": "float",
+            "example": 0.7,
+            "default": 0.7
+          },
+          "top_k": {
+            "type": "number",
+            "format": "float",
+            "example": 50,
+            "default": 50
+          },
+          "frequency_penalty": {
+            "type": "number",
+            "format": "float",
+            "example": 0.5,
+            "default": 0.5
+          },
+          "n": {
+            "type": "integer",
+            "description": "Number of generations to return",
+            "example": 1,
+            "default": 1
+          },
+          "response_format": {
+            "type": "object",
+            "description": "An object specifying the format that the model must output.",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "The type of the response format.",
+                "example": "text"
+              }
+            }
+          }
+        }
+      },
+      "ChatCompletionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "choices": {
+            "$ref": "#/components/schemas/ChatCompletionChoicesData"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/UsageData"
+          },
+          "created": {
+            "type": "integer"
+          },
+          "model": {
+            "type": "string"
+          },
+          "object": {
+            "type": "string",
+            "enum": [
+              "chat.completion"
+            ]
+          }
+        }
+      },
+      "ChatCompletionStream": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "choices": {
+            "$ref": "#/components/schemas/ChatCompletionChoicesData"
+          },
+          "created": {
+            "type": "integer"
+          },
+          "model": {
+            "type": "string"
+          },
+          "object": {
+            "type": "string",
+            "enum": [
+              "chat.completion.chunk"
+            ]
+          }
+        }
+      },
+      "BadRquestData": {
+        "type": "object",
+        "required": [
+          "message",
+          "data",
+          "code"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "nullable": true,
+            "default": false,
+            "example": 20012
+          },
+          "message": {
+            "type": "string",
+            "nullable": false
+          },
+          "data": {
+            "type": "string",
+            "nullable": false
+          }
+        }
+      },
+      "UnauthorizedData": {
+        "type": "string",
+        "default": false,
+        "example": "Invalid token"
+      },
+      "NotFoundData": {
+        "type": "string",
+        "default": false,
+        "example": "404 page not found"
+      },
+      "RateLimitData": {
+        "type": "object",
+        "required": [
+          "message",
+          "data"
+        ],
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Request was rejected due to rate limiting. If you want more, please contact contact@siliconflow.com. Details:TPM limit reached."
+          },
+          "data": {
+            "type": "string"
+          }
+        }
+      },
+      "OverloadedtData": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 50505
+          },
+          "message": {
+            "type": "string",
+            "example": "Model service overloaded. Please try again later."
+          },
+          "data": {
+            "type": "string",
+            "nullable": false
+          }
+        }
+      },
+      "TimeoutData": {
+        "type": "string"
+      },
+      "EmbeddingsRequest": {
+        "type": "object",
+        "required": [
+          "model",
+          "input"
+        ],
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "Corresponding Model Name. To better enhance service quality, we will make periodic changes to the models provided by this service, including but not limited to model on/offlining and adjustments to model service capabilities. We will notify you of such changes through appropriate means such as announcements or message pushes where feasible.",
+            "example": "Qwen/Qwen3-Embedding-8B",
+            "default": "Qwen/Qwen3-Embedding-8B",
+            "enum": [
+              "Qwen/Qwen3-Embedding-8B",
+              "Qwen/Qwen3-Embedding-4B",
+              "Qwen/Qwen3-Embedding-0.6B"
+            ]
+          },
+          "input": {
+            "description": "Input text to embed must be provided as a string or an array of tokens. To process multiple inputs in a single request, pass an array of strings or an array of token arrays. The input length must not exceed the model's maximum token limit and should not be an empty string.\nThe maximum input tokens for each model are as follows:\n\nBAAI/bge-large-zh-v1.5, BAAI/bge-large-en-v1.5, netease-youdao/bce-embedding-base_v1: 512\nBAAI/bge-m3: 8192\nQwen/Qwen3-Embedding-8B, Qwen/Qwen3-Embedding-4B, Qwen/Qwen3-Embedding-0.6B: 32768\n",
+            "default": "Silicon flow embedding online: fast, affordable, and high-quality embedding services. come try it out!",
+            "oneOf": [
+              {
+                "type": "string",
+                "title": "string",
+                "description": "The string that will be turned into an embedding. the item must not exceed the max models tokens limitation.",
+                "default": "Silicon flow embedding online: fast, affordable, and high-quality embedding services. come try it out!",
+                "example": "Silicon flow embedding online: fast, affordable, and high-quality embedding services. come try it out!"
+              },
+              {
+                "type": "array",
+                "title": "array",
+                "description": "The array of strings that will be turned into an embedding. The array length must not exceed the max size, and the item must not exceed the max models tokens limitation.\nCurrent, the maximum array size is 32 , At the same time every item must not exceed 512 tokens for current models.\n",
+                "minItems": 1,
+                "maxItems": 32,
+                "items": {
+                  "type": "string",
+                  "default": "['LLM', 'Embedding', 'RAG']",
+                  "example": "['LLM', 'Embedding', 'RAG']"
+                }
+              }
+            ]
+          },
+          "encoding_format": {
+            "description": "\"The format to return the embeddings in. Can be either `float` or [`base64`](https://pypi.org/project/pybase64/). \"\n",
+            "example": "float",
+            "default": "float",
+            "type": "string",
+            "enum": [
+              "float",
+              "base64"
+            ]
+          },
+          "dimensions": {
+            "description": "The number of dimensions the resulting output embeddings should have. Only supported in `Qwen/Qwen3` series.  - Qwen/Qwen3-Embedding-8B: [64,128,256,512,768,1024,2048,4096] -  Qwen/Qwen3-Embedding-4B:[64,128,256,512,768,1024,2048] - Qwen/Qwen3-Embedding-0.6B: [64,128,256,512,768,1024]\n",
+            "type": "integer",
+            "example": 1024
+          }
+        }
+      },
+      "EmbeddingsResponse": {
+        "type": "object",
+        "required": [
+          "object",
+          "model",
+          "data",
+          "usage"
+        ],
+        "properties": {
+          "object": {
+            "type": "string",
+            "description": "The object type, which is always \"list\".",
+            "enum": [
+              [
+                "list"
+              ]
+            ]
+          },
+          "model": {
+            "description": "The name of the model used to generate the embedding.",
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "description": "The list of embeddings generated by the model.",
+            "items": {
+              "type": "object",
+              "required": [
+                "index",
+                "object",
+                "embedding"
+              ],
+              "properties": {
+                "object": {
+                  "type": "string",
+                  "enum": [
+                    "embedding"
+                  ]
+                },
+                "embedding": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "index": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "usage": {
+            "type": "object",
+            "description": "The usage information for the request.",
+            "properties": {
+              "prompt_tokens": {
+                "type": "integer",
+                "description": "The number of tokens used by the prompt."
+              },
+              "completion_tokens": {
+                "type": "integer",
+                "description": "The number of tokens used by the completion."
+              },
+              "total_tokens": {
+                "type": "integer",
+                "description": "The total number of tokens used by the request."
+              }
+            },
+            "required": [
+              "prompt_tokens",
+              "total_tokens",
+              "completion_tokens"
+            ]
+          }
+        }
+      },
+      "RerankRequest": {
+        "type": "object",
+        "required": [
+          "model",
+          "query",
+          "documents"
+        ],
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "Corresponding Model Name. To better enhance service quality, we will make periodic changes to the models provided by this service, including but not limited to model on/offlining and adjustments to model service capabilities. We will notify you of such changes through appropriate means such as announcements or message pushes where feasible.",
+            "example": "Qwen/Qwen3-Reranker-8B",
+            "default": "Qwen/Qwen3-Reranker-8B",
+            "enum": [
+              "Qwen/Qwen3-Reranker-8B",
+              "Qwen/Qwen3-Reranker-4B",
+              "Qwen/Qwen3-Reranker-0.6B"
+            ]
+          },
+          "query": {
+            "type": "string",
+            "description": "Required. The search query.",
+            "example": "Apple"
+          },
+          "documents": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            },
+            "description": "Currently, only string lists are supported. Document objects will be supported in the future.",
+            "example": [
+              "apple",
+              "banana",
+              "fruit",
+              "vegetable"
+            ],
+            "default": [
+              "apple",
+              "banana",
+              "fruit",
+              "vegetable"
+            ]
+          },
+          "top_n": {
+            "type": "integer",
+            "example": 4,
+            "description": "Number of most relevant documents or indices to return."
+          },
+          "return_documents": {
+            "type": "boolean",
+            "description": "If false, the response does not include document text; if true, it includes the input document text."
+          },
+          "max_chunks_per_doc": {
+            "type": "integer",
+            "description": "Maximum number of chunks generated from within a document. Long documents are divided into multiple chunks for calculation, and the highest score among the chunks is taken as the document's score. only BAAI/bge-reranker-v2-m3, netease-youdao/bce-reranker-base_v1 support this field."
+          },
+          "overlap_tokens": {
+            "type": "integer",
+            "maximum": 80,
+            "description": "Number of token overlaps between adjacent chunks when documents are chunked. only BAAI/bge-reranker-v2-m3, netease-youdao/bce-reranker-base_v1 support this field."
+          }
+        }
+      },
+      "RerankResponse": {
+        "type": "object",
+        "required": [
+          "id",
+          "results",
+          "tokens"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "document": {
+                  "type": "object",
+                  "properties": {
+                    "text": {
+                      "type": "string"
+                    }
+                  },
+                  "description": "Original document content."
+                },
+                "index": {
+                  "type": "integer",
+                  "description": "The index value of the position in the input candidate doc array."
+                },
+                "relevance_score": {
+                  "type": "number",
+                  "description": "Similarity score."
+                }
+              }
+            }
+          },
+          "tokens": {
+            "type": "object",
+            "properties": {
+              "input_tokens": {
+                "type": "integer"
+              },
+              "output_tokens": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "ChatMessagesRequest": {
+        "title": "LLM",
+        "type": "object",
+        "required": [
+          "model",
+          "messages",
+          "max_tokens"
+        ],
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "Corresponding Model Name. To better enhance service quality, we will make periodic changes to the models provided by this service, including but not limited to model on/offlining and adjustments to model service capabilities. We will notify you of such changes through appropriate means such as announcements or message pushes where feasible.",
+            "example": "moonshotai/Kimi-K2-Instruct",
+            "default": null,
+            "enum": [
+              "deepseek-ai/DeepSeek-V3.2",
+              "deepseek-ai/DeepSeek-V3.2-Exp",
+              "deepseek-ai/DeepSeek-V3.1-Terminus",
+              "deepseek-ai/DeepSeek-V3.1",
+              "deepseek-ai/DeepSeek-V3",
+              "nex-agi/DeepSeek-V3.1-Nex-N1",
+              "moonshotai/Kimi-K2.5",
+              "moonshotai/Kimi-K2-Instruct-0905",
+              "moonshotai/Kimi-K2-Instruct",
+              "moonshotai/Kimi-K2-Thinking",
+              "baidu/ERNIE-4.5-300B-A47B"
+            ]
+          },
+          "messages": {
+            "type": "array",
+            "description": "A list of messages comprising the conversation so far.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "description": "The role of the messages author. Choice between: system, user.",
+                  "example": "user",
+                  "enum": [
+                    "user",
+                    "system",
+                    "assistant"
+                  ]
+                },
+                "content": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "description": "The contents of the message.",
+                      "example": "What opportunities and challenges will the Chinese large model industry face in 2025?"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "role",
+                "content"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 10
+          },
+          "system": {
+            "allOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "items": {
+                      "$ref": "#/components/schemas/RequestTextBlock"
+                    },
+                    "type": "array"
+                  }
+                ],
+                "description": "System prompt.\n\nA system prompt is a way of providing context and instructions to llm, such as specifying a particular goal or role. ",
+                "title": "System"
+              }
+            ]
+          },
+          "stop_sequences": {
+            "allOf": [
+              {
+                "description": "Custom text sequences that will cause the model to stop generating.\n\nOur models will normally stop when they have naturally completed their turn, which will result in a response `stop_reason` of `\"end_turn\"`.\n\nIf you want the model to stop generating when it encounters custom strings of text, you can use the `stop_sequences` parameter. If the model encounters one of the custom sequences, the response `stop_reason` value will be `\"stop_sequence\"` and the response `stop_sequence` value will contain the matched stop sequence.",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Stop Sequences",
+                "type": "array"
+              }
+            ]
+          },
+          "stream": {
+            "type": "boolean",
+            "description": "If set, tokens are returned as Server-Sent Events as they are made available. Stream terminates with `data: [DONE]`",
+            "example": true
+          },
+          "max_tokens": {
+            "type": "integer",
+            "description": "The maximum number of tokens to generate before stopping.\n\nNote that our models may stop _before_ reaching this maximum. This parameter only specifies the absolute maximum number of tokens to generate.\n\nDifferent models have different maximum values for this parameter.  See [models](https://docs.siliconflow.com/cn/userguide/capabilities/text-generation) for details.",
+            "example": 8192
+          },
+          "temperature": {
+            "type": "number",
+            "description": "Determines the degree of randomness in the response.",
+            "format": "float",
+            "example": 0.7,
+            "maximum": 2,
+            "minimum": 0
+          },
+          "top_p": {
+            "type": "number",
+            "description": "The `top_p` (nucleus) parameter is used to dynamically adjust the number of choices for each predicted token based on the cumulative probabilities.",
+            "format": "float",
+            "example": 0.7,
+            "minimum": 0.1,
+            "maximum": 1
+          },
+          "top_k": {
+            "type": "number",
+            "format": "float",
+            "example": 50,
+            "minimum": 0,
+            "maximum": 50
+          },
+          "tools": {
+            "type": "array",
+            "description": "Each tool definition includes:\n\n\n  * `name`: Name of the tool.\n\n  * `description`: Optional, but strongly-recommended\n  description of the tool.\n\n  * `input_schema`: [JSON\n  schema](https://json-schema.org/draft/2020-12) for the\n  tool `input` shape that the model will produce in\n  `tool_use` output content blocks.\n",
+            "items": {
+              "$ref": "#/components/schemas/MessagesTool"
+            }
+          },
+          "tool_choice": {
+            "allOf": [
+              {
+                "description": "How the model should use the provided tools. The model can use a specific tool, any available tool, decide by itself, or not use tools at all.",
+                "discriminator": {
+                  "mapping": {
+                    "auto": "#/components/schemas/ToolChoiceAuto",
+                    "none": "#/components/schemas/ToolChoiceNone",
+                    "tool": "#/components/schemas/ToolChoiceTool"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ToolChoiceAuto"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ToolChoiceTool"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ToolChoiceNone"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "MessgesResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "default": "message",
+            "description": "Object type.\n\nFor Messages, this is always `\"message\"`.",
+            "enum": [
+              "message"
+            ],
+            "title": "Type",
+            "type": "string"
+          },
+          "role": {
+            "default": "assistant",
+            "description": "Conversational role of the generated message.\n\nThis will always be `\"assistant\"`.",
+            "enum": [
+              "assistant"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "content": {
+            "description": "Content generated by the model.\n\nThis is an array of content blocks, each of which has a `type` that determines its shape.\n\nExample:\n\n```json\n[{\"type\": \"text\", \"text\": \"Hi\"}]\n```\n\nIf the request input `messages` ended with an `assistant` turn, then the response `content` will continue directly from that last turn. You can use this to constrain the model's output.\n\nFor example, if the input `messages` were:\n```json\n[\n  {\"role\": \"user\", \"content\": \"What's the Greek name for Sun? (A) Sol (B) Helios (C) Sun\"},\n  {\"role\": \"assistant\", \"content\": \"The best answer is (\"}\n]\n```\n\nThen the response `content` might be:\n\n```json\n[{\"type\": \"text\", \"text\": \"B)\"}]\n```",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ResponseToolUseBlock"
+                }
+              ]
+            },
+            "title": "Content",
+            "type": "array"
+          },
+          "model": {
+            "description": "The model that handled the request.",
+            "title": "Model",
+            "type": "string"
+          },
+          "stop_reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "end_turn",
+                  "max_tokens",
+                  "tool_use",
+                  "refusal"
+                ],
+                "type": "string"
+              }
+            ],
+            "description": "The reason that we stopped.\n\nThis may be one the following values:\n* `\"end_turn\"`: the model reached a natural stopping point or one of your provided custom `stop_sequences` was generated\n* `\"max_tokens\"`: we exceeded the requested `max_tokens` or the model's maximum\n* `\"tool_use\"`: the model invoked one or more tools\n* `\"refusal\"`: when streaming classifiers intervene to handle potential policy violations\n\nIn non-streaming mode this value is always non-null. In streaming mode, it is null in the `message_start` event and non-null otherwise.",
+            "title": "Stop Reason"
+          },
+          "stop_sequence": {
+            "anyOf": [
+              {
+                "type": "string"
+              }
+            ],
+            "default": null,
+            "description": "Which custom stop sequence was generated, if any.\n\nThis value will be a non-null string if one of your custom stop sequences was generated.",
+            "title": "Stop Sequence"
+          },
+          "usage": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Usage",
+                "description": "Billing and rate-limit usage.",
+                "examples": [
+                  {
+                    "input_tokens": 2095,
+                    "output_tokens": 503
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "StringData": {
+        "type": "string"
+      },
+      "ChatCompletionTool": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "function"
+            ],
+            "description": "The type of the tool. Currently, only `function` is supported."
+          },
+          "function": {
+            "$ref": "#/components/schemas/FunctionObject"
+          }
+        },
+        "required": [
+          "type",
+          "function"
+        ]
+      },
+      "ChatCompletionRequestUserMessageContentPart": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ChatCompletionRequestMessageContentPartImage"
+          },
+          {
+            "$ref": "#/components/schemas/ChatCompletionRequestMessageContentPartText"
+          }
+        ],
+        "x-oaiExpandable": true
+      },
+      "ChatCompletionChoicesData": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "message": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "example": "assistant"
+                },
+                "content": {
+                  "type": "string"
+                },
+                "reasoning_content": {
+                  "description": "Only the DeepSeek-R1 series models support reasoning_content. This part returns the reasoning content, which is at the same level as the content. In each round of the conversation, the model outputs the reasoning chain content (reasoning_content) and the final answer (content). In the next round of the conversation, the reasoning chain content from previous rounds will not be appended to the context.",
+                  "type": "string"
+                },
+                "tool_calls": {
+                  "type": "array",
+                  "description": "The tool calls generated by the model, such as function calls.",
+                  "items": {
+                    "$ref": "#/components/schemas/ChatCompletionMessageToolCall"
+                  }
+                }
+              }
+            },
+            "finish_reason": {
+              "$ref": "#/components/schemas/FinishReason"
+            }
+          }
+        }
+      },
+      "UsageData": {
+        "type": "object",
+        "properties": {
+          "prompt_tokens": {
+            "type": "integer"
+          },
+          "completion_tokens": {
+            "type": "integer"
+          },
+          "total_tokens": {
+            "type": "integer"
+          }
+        }
+      },
+      "RequestTextBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "text": {
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "text"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "type"
+        ],
+        "title": "Text",
+        "type": "object"
+      },
+      "MessagesTool": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "Name of the tool.\n\nThis is how the tool will be called by the model and in `tool_use` blocks.",
+            "title": "Name",
+            "type": "string"
+          },
+          "input_schema": {
+            "$ref": "#/components/schemas/InputSchema",
+            "description": "[JSON schema](https://json-schema.org/draft/2020-12) for this tool's input.\nThis defines the shape of the `input` that your tool accepts and that the model will produce."
+          }
+        },
+        "required": [
+          "name",
+          "input_schema"
+        ]
+      },
+      "ToolChoiceAuto": {
+        "additionalProperties": false,
+        "description": "The model will automatically decide whether to use tools.",
+        "properties": {
+          "disable_parallel_tool_use": {
+            "description": "Whether to disable parallel tool use.\n\nDefaults to `false`. If set to `true`, the model will output at most one tool use.",
+            "title": "Disable Parallel Tool Use",
+            "type": "boolean"
+          },
+          "type": {
+            "enum": [
+              "auto"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "Auto",
+        "type": "object"
+      },
+      "ToolChoiceTool": {
+        "additionalProperties": false,
+        "description": "The model will use the specified tool with `tool_choice.name`.",
+        "properties": {
+          "disable_parallel_tool_use": {
+            "description": "Whether to disable parallel tool use.\n\nDefaults to `false`. If set to `true`, the model will output exactly one tool use.",
+            "title": "Disable Parallel Tool Use",
+            "type": "boolean"
+          },
+          "name": {
+            "description": "The name of the tool to use.",
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "tool"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "type"
+        ],
+        "title": "Tool",
+        "type": "object"
+      },
+      "ToolChoiceNone": {
+        "additionalProperties": false,
+        "description": "The model will not be allowed to use tools.",
+        "properties": {
+          "type": {
+            "enum": [
+              "none"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "None",
+        "type": "object"
+      },
+      "ResponseToolUseBlock": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "input": {
+            "title": "Input",
+            "type": "object"
+          },
+          "name": {
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "default": "tool_use",
+            "enum": [
+              "tool_use"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "input",
+          "name",
+          "type"
+        ],
+        "title": "Tool use",
+        "type": "object"
+      },
+      "Usage": {
+        "properties": {
+          "input_tokens": {
+            "description": "The number of input tokens which were used.",
+            "minimum": 0,
+            "title": "Input Tokens",
+            "type": "integer"
+          },
+          "output_tokens": {
+            "description": "The number of output tokens which were used.",
+            "minimum": 0,
+            "title": "Output Tokens",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "input_tokens",
+          "output_tokens"
+        ],
+        "title": "Usage",
+        "type": "object"
+      },
+      "FunctionObject": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "description": "A description of what the function does, used by the model to choose when and how to call the function."
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the function to be called. Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 64."
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/FunctionParameters"
+          },
+          "strict": {
+            "type": "boolean",
+            "nullable": true,
+            "default": false,
+            "description": "Whether to enable strict schema adherence when generating the function call. If set to true, the model will follow the exact schema defined in the `parameters` field. Only a subset of JSON Schema is supported when `strict` is `true`. Learn more about Structured Outputs in the [function calling guide](docs/guides/function-calling)."
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "ChatCompletionRequestMessageContentPartImage": {
+        "type": "object",
+        "title": "Image content part",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "image_url"
+            ],
+            "description": "The type of the content part.",
+            "default": "image_url"
+          },
+          "image_url": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "description": "Either a URL of the image or the base64 encoded image data. TeleAI/TeleMM only support the base64 encoded image data.",
+                "default": "https://sf-maas.s3.us-east-1.amazonaws.com/images/recu6XreBFQ0st.png",
+                "example": "https://sf-maas.s3.us-east-1.amazonaws.com/images/recu6XreBFQ0st.png"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Specifies the detail level of the image.",
+                "enum": [
+                  "auto",
+                  "low",
+                  "high"
+                ],
+                "default": "auto"
+              }
+            },
+            "required": [
+              "url"
+            ]
+          }
+        },
+        "required": [
+          "type",
+          "image_url"
+        ]
+      },
+      "ChatCompletionRequestMessageContentPartText": {
+        "type": "object",
+        "title": "Text content part",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "text"
+            ],
+            "description": "The type of the content part.",
+            "default": "text"
+          },
+          "text": {
+            "type": "string",
+            "description": "The text content.",
+            "default": "Describe this picture."
+          }
+        },
+        "required": [
+          "type",
+          "text"
+        ]
+      },
+      "ChatCompletionMessageToolCall": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The ID of the tool call."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "function"
+            ],
+            "description": "The type of the tool. Currently, only `function` is supported."
+          },
+          "function": {
+            "type": "object",
+            "description": "The function that the model called.",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "The name of the function to call."
+              },
+              "arguments": {
+                "type": "string",
+                "description": "The arguments to call the function with, as generated by the model in JSON format. Note that the model does not always generate valid JSON, and may hallucinate parameters not defined by your function schema. Validate the arguments in your code before calling your function."
+              }
+            },
+            "required": [
+              "name",
+              "arguments"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "function"
+        ]
+      },
+      "FinishReason": {
+        "type": "string",
+        "enum": [
+          "stop",
+          "eos",
+          "length",
+          "tool_calls"
+        ]
+      },
+      "InputSchema": {
+        "type": "object",
+        "properties": {
+          "properties": {
+            "anyOf": [
+              {
+                "type": "object"
+              }
+            ],
+            "title": "Properties"
+          },
+          "required": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Required"
+          },
+          "type": {
+            "enum": [
+              "object"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "FunctionParameters": {
+        "type": "object",
+        "description": "The parameters the functions accepts, described as a JSON Schema object. See the [guide](/guides/function_calling) for examples, and the [JSON Schema reference](https://json-schema.org/understanding-json-schema/) for documentation about the format. \n\nOmitting `parameters` defines a function with an empty parameter list.",
+        "additionalProperties": true
+      }
+    }
+  }
+}

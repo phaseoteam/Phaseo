@@ -1,0 +1,1618 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "DeepInfra API",
+    "description": "The DeepInfra API provides serverless AI inference, custom model deployments, and GPU rentals.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/v1/openai/chat/completions": {
+      "post": {
+        "tags": [
+          "Chat Completions"
+        ],
+        "summary": "Openai Chat Completions",
+        "operationId": "openai_chat_completions_v1_chat_completions_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "x-deepinfra-source",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Deepinfra-Source"
+            }
+          },
+          {
+            "name": "xi-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Xi-Api-Key"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpenAIChatCompletionsIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/openai/embeddings": {
+      "post": {
+        "tags": [
+          "Embeddings"
+        ],
+        "summary": "Openai Embeddings",
+        "operationId": "openai_embeddings_v1_embeddings_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "x-deepinfra-source",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Deepinfra-Source"
+            }
+          },
+          {
+            "name": "user-agent",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User-Agent"
+            }
+          },
+          {
+            "name": "xi-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Xi-Api-Key"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpenAIEmbeddingsIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/openai/models": {
+      "get": {
+        "tags": [
+          "Models"
+        ],
+        "summary": "Openai Models",
+        "operationId": "openai_models_v1_models_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sort By"
+            }
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Filter"
+            }
+          },
+          {
+            "name": "xi-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Xi-Api-Key"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenAIModelsOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "OpenAIChatCompletionsIn": {
+        "properties": {
+          "service_tier": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ServiceTier"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The service tier used for processing the request. 'priority' processes the request with higher priority (premium rate); 'flex' processes it at lower priority for a discount, served only when spare capacity exists and may be retried/timed out under load. Both apply only to models that support the respective tier."
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "model name",
+            "examples": [
+              "meta-llama/Llama-2-70b-chat-hf"
+            ]
+          },
+          "messages": {
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ChatCompletionToolMessage"
+                },
+                {
+                  "$ref": "#/components/schemas/ChatCompletionAssistantMessage"
+                },
+                {
+                  "$ref": "#/components/schemas/ChatCompletionUserMessage"
+                },
+                {
+                  "$ref": "#/components/schemas/ChatCompletionSystemMessage"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Messages",
+            "description": "conversation messages: (user,assistant,tool)*,user including one system message anywhere"
+          },
+          "stream": {
+            "type": "boolean",
+            "title": "Stream",
+            "description": "whether to stream the output via SSE or return the full response",
+            "default": false
+          },
+          "temperature": {
+            "type": "number",
+            "maximum": 2,
+            "minimum": 0,
+            "title": "Temperature",
+            "description": "What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic",
+            "default": 1
+          },
+          "top_p": {
+            "type": "number",
+            "maximum": 1,
+            "exclusiveMinimum": 0,
+            "title": "Top P",
+            "description": "An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered.",
+            "default": 1
+          },
+          "min_p": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Min P",
+            "description": "Float that represents the minimum probability for a token to be considered, relative to the probability of the most likely token. Must be in [0, 1]. Set to 0 to disable this.",
+            "default": 0
+          },
+          "top_k": {
+            "type": "integer",
+            "exclusiveMaximum": 1000,
+            "minimum": 0,
+            "title": "Top K",
+            "description": "Sample from the best k (number of) tokens. 0 means off",
+            "default": 0
+          },
+          "max_tokens": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 10000000,
+                "exclusiveMinimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Tokens",
+            "description": "The maximum number of tokens to generate in the chat completion.\n\nThe total length of input tokens and generated tokens is limited by the model's context length. If explicitly set to None it will be the model's max context length minus input length or 65536, whichever is smaller."
+          },
+          "stop": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stop",
+            "description": "up to 16 sequences where the API will stop generating further tokens"
+          },
+          "stop_token_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stop Token Ids",
+            "description": "Up to 16 token IDs where the API will stop generating further tokens. Merged with the model's built-in stop tokens. Intended for private deployments."
+          },
+          "n": {
+            "type": "integer",
+            "maximum": 4,
+            "minimum": 1,
+            "title": "N",
+            "description": "number of sequences to return",
+            "default": 1
+          },
+          "presence_penalty": {
+            "type": "number",
+            "maximum": 2,
+            "minimum": -2,
+            "title": "Presence Penalty",
+            "description": "Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics.",
+            "default": 0
+          },
+          "frequency_penalty": {
+            "type": "number",
+            "maximum": 2,
+            "minimum": -2,
+            "title": "Frequency Penalty",
+            "description": "Positive values penalize new tokens based on how many times they appear in the text so far, increasing the model's likelihood to talk about new topics.",
+            "default": 0
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ChatTools"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools",
+            "description": "A list of tools the model may call. Currently, only functions are supported as a tool."
+          },
+          "tool_choice": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/ChatTools"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Choice",
+            "description": "Controls which (if any) function is called by the model. none means the model will not call a function and instead generates a message. auto means the model can pick between generating a message or calling a function. required means the model must call a function. defined tool means the model must call that specific tool. none is the default when no functions are present. auto is the default if functions are present."
+          },
+          "response_format": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TextResponseFormat"
+              },
+              {
+                "$ref": "#/components/schemas/JsonObjectResponseFormat"
+              },
+              {
+                "$ref": "#/components/schemas/JsonSchemaResponseFormat"
+              },
+              {
+                "$ref": "#/components/schemas/RegexResponseFormat"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Format",
+            "description": "The format of the response. Currently, only json is supported."
+          },
+          "repetition_penalty": {
+            "type": "number",
+            "maximum": 5,
+            "minimum": 0.01,
+            "title": "Repetition Penalty",
+            "description": "Alternative penalty for repetition, but multiplicative instead of additive (> 1 penalize, < 1 encourage)",
+            "default": 1
+          },
+          "user": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User",
+            "description": "A unique identifier representing your end-user, which can help monitor and detect abuse. Avoid sending us any identifying information. We recommend hashing user identifiers."
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMaximum": 18446744073709552000,
+                "minimum": -9223372036854776000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "Seed for random number generator. If not provided, a random seed is used. Determinism is not guaranteed."
+          },
+          "logprobs": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logprobs",
+            "description": "Whether to return log probabilities of the output tokens or not.If true, returns the log probabilities of each output token returned in the `content` of `message`."
+          },
+          "stream_options": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StreamOptions"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "streaming options"
+          },
+          "reasoning_effort": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high",
+                  "xhigh",
+                  "none"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoning Effort",
+            "description": "Constrains effort on reasoning for reasoning models. Currently supported values are none, low, medium, high, and xhigh. Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response. Setting to none disables reasoning entirely if the model supports."
+          },
+          "reasoning": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChatReasoningSettings"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Reasoning configuration."
+          },
+          "prompt_cache_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt Cache Key",
+            "description": "A key to identify prompt cache for reuse across requests. If provided, the prompt will be cached and can be reused in subsequent requests with the same key."
+          },
+          "chat_template_kwargs": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chat Template Kwargs",
+            "description": "Chat template kwargs."
+          },
+          "continue_final_message": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Continue Final Message",
+            "description": "If set, the final assistant message is used as a prefix for the model to continue generating from, rather than starting a new turn. Only applicable when the last message in the conversation is an assistant message."
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "messages"
+        ],
+        "title": "OpenAIChatCompletionsIn"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "OpenAIEmbeddingsIn": {
+        "properties": {
+          "service_tier": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ServiceTier"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The service tier used for processing the request. 'priority' processes the request with higher priority (premium rate); 'flex' processes it at lower priority for a discount, served only when spare capacity exists and may be retried/timed out under load. Both apply only to models that support the respective tier."
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "model name",
+            "examples": [
+              "thenlper/gte-large"
+            ]
+          },
+          "input": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "items": {
+                        "oneOf": [
+                          {
+                            "$ref": "#/components/schemas/ChatCompletionContentPartText"
+                          },
+                          {
+                            "$ref": "#/components/schemas/ChatCompletionContentPartImage"
+                          }
+                        ],
+                        "discriminator": {
+                          "propertyName": "type",
+                          "mapping": {
+                            "image_url": "#/components/schemas/ChatCompletionContentPartImage",
+                            "text": "#/components/schemas/ChatCompletionContentPartText"
+                          }
+                        }
+                      },
+                      "type": "array"
+                    }
+                  ]
+                },
+                "type": "array"
+              }
+            ],
+            "maxLength": 1024,
+            "title": "Input",
+            "description": "text or multimodal content to embed. Each item is either a string, or a list of content parts ({\"type\":\"text\"} / {\"type\":\"image_url\"}) for multimodal embedding models such as nvidia/llama-nemotron-embed-vl-1b-v2.",
+            "examples": [
+              [
+                "I like chocolate"
+              ]
+            ],
+            "soft_required": true
+          },
+          "input_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "query",
+                  "passage",
+                  "document"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Type",
+            "description": "Role hint for asymmetric retrieval models: 'query' embeds a search query, 'passage'/'document' embeds a document. Controls the query:/passage: prefix on VL embedding models; ignored by symmetric models."
+          },
+          "encoding_format": {
+            "type": "string",
+            "enum": [
+              "float",
+              "base64"
+            ],
+            "title": "Encoding Format",
+            "description": "format used when encoding",
+            "default": "float"
+          },
+          "dimensions": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 32
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dimensions",
+            "description": "The number of dimensions in the embedding. If not provided, the model's default will be used.If provided bigger than model's default, the embedding will be padded with zeros.",
+            "examples": [
+              1536,
+              1024,
+              768,
+              512,
+              256,
+              128,
+              64
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "input"
+        ],
+        "title": "OpenAIEmbeddingsIn"
+      },
+      "OpenAIModelsOut": {
+        "properties": {
+          "object": {
+            "type": "string",
+            "title": "Object",
+            "default": "list"
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/OpenAIModelOut"
+            },
+            "type": "array",
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "title": "OpenAIModelsOut"
+      },
+      "ServiceTier": {
+        "type": "string",
+        "enum": [
+          "default",
+          "priority",
+          "flex"
+        ],
+        "title": "ServiceTier"
+      },
+      "ChatCompletionToolMessage": {
+        "properties": {
+          "cache_control": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cache Control",
+            "description": "Cache control for prompt caching"
+          },
+          "role": {
+            "type": "string",
+            "const": "tool",
+            "title": "Role",
+            "description": "the role of the author of this message",
+            "default": "tool"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ChatCompletionContentPartText"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Content",
+            "description": "the message content"
+          },
+          "tool_call_id": {
+            "type": "string",
+            "title": "Tool Call Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "content",
+          "tool_call_id"
+        ],
+        "title": "ChatCompletionToolMessage"
+      },
+      "ChatCompletionAssistantMessage": {
+        "properties": {
+          "cache_control": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cache Control",
+            "description": "Cache control for prompt caching"
+          },
+          "role": {
+            "type": "string",
+            "const": "assistant",
+            "title": "Role",
+            "description": "the role of the author of this message",
+            "default": "assistant"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ChatCompletionContentPartText"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content",
+            "description": "the message content"
+          },
+          "reasoning_content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoning Content",
+            "description": "the reasoning content"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "tool_calls": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ChatCompletionMessageToolCall"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Calls",
+            "description": "the tool calls generated by the mode"
+          }
+        },
+        "type": "object",
+        "title": "ChatCompletionAssistantMessage"
+      },
+      "ChatCompletionUserMessage": {
+        "properties": {
+          "cache_control": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cache Control",
+            "description": "Cache control for prompt caching"
+          },
+          "role": {
+            "type": "string",
+            "const": "user",
+            "title": "Role",
+            "description": "the role of the author of this message",
+            "default": "user"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ChatCompletionContentPartText"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ChatCompletionContentPartImage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ChatCompletionContentPartAudio"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ChatCompletionContentPartVideo"
+                    }
+                  ]
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Content",
+            "description": "the message content"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "ChatCompletionUserMessage"
+      },
+      "ChatCompletionSystemMessage": {
+        "properties": {
+          "cache_control": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cache Control",
+            "description": "Cache control for prompt caching"
+          },
+          "role": {
+            "type": "string",
+            "const": "system",
+            "title": "Role",
+            "description": "the role of the author of this message",
+            "default": "system"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ChatCompletionContentPartText"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Content",
+            "description": "the message content"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "ChatCompletionSystemMessage"
+      },
+      "ChatTools": {
+        "properties": {
+          "cache_control": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cache Control",
+            "description": "Cache control for prompt caching"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "default": "function"
+          },
+          "function": {
+            "$ref": "#/components/schemas/FunctionDefinition"
+          }
+        },
+        "type": "object",
+        "required": [
+          "function"
+        ],
+        "title": "ChatTools"
+      },
+      "TextResponseFormat": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "text",
+            "title": "Type",
+            "default": "text"
+          }
+        },
+        "type": "object",
+        "title": "TextResponseFormat"
+      },
+      "JsonObjectResponseFormat": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "json_object",
+            "title": "Type",
+            "default": "json_object"
+          }
+        },
+        "type": "object",
+        "title": "JsonObjectResponseFormat"
+      },
+      "JsonSchemaResponseFormat": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "json_schema",
+            "title": "Type",
+            "default": "json_schema"
+          },
+          "json_schema": {
+            "$ref": "#/components/schemas/JsonSchema",
+            "description": "JSON schema for structured output when type is 'json_schema'"
+          }
+        },
+        "type": "object",
+        "required": [
+          "json_schema"
+        ],
+        "title": "JsonSchemaResponseFormat"
+      },
+      "RegexResponseFormat": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "regex",
+            "title": "Type",
+            "default": "regex"
+          },
+          "regex": {
+            "type": "string",
+            "title": "Regex",
+            "description": "Regex pattern for structured output when type is 'regex'"
+          }
+        },
+        "type": "object",
+        "required": [
+          "regex"
+        ],
+        "title": "RegexResponseFormat"
+      },
+      "StreamOptions": {
+        "properties": {
+          "include_usage": {
+            "type": "boolean",
+            "title": "Include Usage",
+            "description": "whether to include usage data",
+            "default": true
+          },
+          "continuous_usage_stats": {
+            "type": "boolean",
+            "title": "Continuous Usage Stats",
+            "description": "whether to include usage stats continuously with each streaming event",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "StreamOptions"
+      },
+      "ChatReasoningSettings": {
+        "properties": {
+          "effort": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high",
+                  "xhigh",
+                  "none"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effort",
+            "description": "Constrains effort on reasoning for reasoning models. Set to none to disable reasoning entirely if the model supports it."
+          },
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled",
+            "description": "Enable or disable reasoning with default parameters."
+          }
+        },
+        "type": "object",
+        "title": "ChatReasoningSettings"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "ChatCompletionContentPartText": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "text",
+            "title": "Type"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "text"
+        ],
+        "title": "ChatCompletionContentPartText"
+      },
+      "ChatCompletionContentPartImage": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "image_url",
+            "title": "Type"
+          },
+          "image_url": {
+            "$ref": "#/components/schemas/ImageURL"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "image_url"
+        ],
+        "title": "ChatCompletionContentPartImage"
+      },
+      "OpenAIModelOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "object": {
+            "type": "string",
+            "title": "Object",
+            "default": "model"
+          },
+          "created": {
+            "type": "integer",
+            "title": "Created"
+          },
+          "owned_by": {
+            "type": "string",
+            "title": "Owned By"
+          },
+          "root": {
+            "type": "string",
+            "title": "Root"
+          },
+          "parent": {
+            "type": "null",
+            "title": "Parent"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelMetadata"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created",
+          "owned_by",
+          "root"
+        ],
+        "title": "OpenAIModelOut"
+      },
+      "ChatCompletionMessageToolCall": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "the id of the tool call"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "the type of the tool call. only function is supported currently"
+          },
+          "function": {
+            "$ref": "#/components/schemas/Function",
+            "description": "the function that the model called"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "function"
+        ],
+        "title": "ChatCompletionMessageToolCall"
+      },
+      "ChatCompletionContentPartAudio": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "input_audio",
+            "title": "Type"
+          },
+          "input_audio": {
+            "$ref": "#/components/schemas/InputAudio"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "input_audio"
+        ],
+        "title": "ChatCompletionContentPartAudio"
+      },
+      "ChatCompletionContentPartVideo": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "video_url",
+            "title": "Type"
+          },
+          "video_url": {
+            "$ref": "#/components/schemas/VideoURL"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "video_url"
+        ],
+        "title": "ChatCompletionContentPartVideo"
+      },
+      "FunctionDefinition": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "parameters": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parameters"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "FunctionDefinition"
+      },
+      "JsonSchema": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Name identifier for the JSON schema"
+          },
+          "schema": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Schema",
+            "description": "The actual JSON schema definition"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "schema"
+        ],
+        "title": "JsonSchema"
+      },
+      "ImageURL": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "detail": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "low",
+              "high"
+            ],
+            "title": "Detail",
+            "default": "auto"
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "ImageURL"
+      },
+      "ModelMetadata": {
+        "properties": {
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "context_length": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Length"
+          },
+          "max_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Tokens"
+          },
+          "pricing": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Pricing"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "default_width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Width"
+          },
+          "default_height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Height"
+          },
+          "default_iterations": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Iterations"
+          }
+        },
+        "type": "object",
+        "required": [
+          "description",
+          "pricing",
+          "tags"
+        ],
+        "title": "ModelMetadata",
+        "description": "Per-model metadata exposed by ``/v1/openai/models``.\n\nPricing key names are surface-specific:\n\n- chat / vlm:  {\"input_tokens\", \"output_tokens\", \"cache_read_tokens\"}  ($/1M tokens)\n- embed:       {\"input_tokens\"}                                        ($/1M tokens)\n- image-gen:   {\"per_image_unit\"}                                      ($/image at default geometry)\n- video-gen:   {\"output_seconds\"}                                      ($/sec generated)\n- tts:         {\"input_characters\"}                                    ($/1M input chars)\n- stt:         {\"input_seconds\"}                                       ($/sec input audio)\n\n``tags`` always carries the surface short alias (e.g. ``'chat'``,\n``'image-gen'``) and, for chat models, any of ``'vision'``,\n``'prompt_cache'``, ``'reasoning_effort'``, ``'reasoning'``."
+      },
+      "Function": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "the name of the function to call"
+          },
+          "arguments": {
+            "type": "string",
+            "title": "Arguments",
+            "description": "the function arguments, generated by the model in JSON format. the model does not always generate valid JSON, and may hallucinate parameters not defined by your function schema"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "arguments"
+        ],
+        "title": "Function"
+      },
+      "InputAudio": {
+        "properties": {
+          "data": {
+            "type": "string",
+            "title": "Data"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "wav",
+              "mp3"
+            ],
+            "title": "Format",
+            "default": "wav"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "InputAudio"
+      },
+      "VideoURL": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "VideoURL"
+      }
+    }
+  }
+}

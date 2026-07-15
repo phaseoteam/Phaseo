@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://platform.xiaomimimo.com/docs",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "31e6478b8d5ad470b91422b5f6f93f556eecd338e9ff62926e4ce541a6729422",
+  "gatewayPathPrefix": "/v1"
+}

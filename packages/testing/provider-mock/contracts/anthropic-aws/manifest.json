@@ -1,0 +1,16 @@
+{
+  "providerId": "anthropic-aws",
+  "displayName": "Anthropic on AWS",
+  "source": {
+    "kind": "official-docs",
+    "url": "https://docs.anthropic.com/en/api/claude-on-amazon-bedrock"
+  },
+  "operations": [
+    {
+      "capability": "anthropic_aws_messages",
+      "method": "post",
+      "path": "/v1/messages",
+      "operationId": "anthropic_aws_messages"
+    }
+  ]
+}

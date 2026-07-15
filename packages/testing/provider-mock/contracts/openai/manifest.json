@@ -1,0 +1,119 @@
+{
+  "providerId": "openai",
+  "displayName": "OpenAI",
+  "source": {
+    "kind": "official-openapi",
+    "url": "https://raw.githubusercontent.com/openai/openai-openapi/master/openapi.yaml",
+    "repository": "https://github.com/openai/openai-openapi",
+    "license": "MIT"
+  },
+  "operations": [
+    {
+      "capability": "text.generate",
+      "method": "post",
+      "path": "/responses",
+      "operationId": "createResponse"
+    },
+    {
+      "capability": "text.generate",
+      "method": "post",
+      "path": "/chat/completions",
+      "operationId": "createChatCompletion"
+    },
+    {
+      "capability": "embeddings",
+      "method": "post",
+      "path": "/embeddings",
+      "operationId": "createEmbedding"
+    },
+    {
+      "capability": "moderations",
+      "method": "post",
+      "path": "/moderations",
+      "operationId": "createModeration"
+    },
+    {
+      "capability": "image.generate",
+      "method": "post",
+      "path": "/images/generations",
+      "operationId": "createImage"
+    },
+    {
+      "capability": "image.edit",
+      "method": "post",
+      "path": "/images/edits",
+      "operationId": "createImageEdit"
+    },
+    {
+      "capability": "audio.speech",
+      "method": "post",
+      "path": "/audio/speech",
+      "operationId": "createSpeech"
+    },
+    {
+      "capability": "audio.transcription",
+      "method": "post",
+      "path": "/audio/transcriptions",
+      "operationId": "createTranscription"
+    },
+    {
+      "capability": "audio.translations",
+      "method": "post",
+      "path": "/audio/translations",
+      "operationId": "createTranslation"
+    },
+    {
+      "capability": "video.generate",
+      "method": "post",
+      "path": "/videos",
+      "operationId": "createVideo"
+    },
+    {
+      "capability": "video.status",
+      "method": "get",
+      "path": "/videos/{video_id}",
+      "operationId": "GetVideo"
+    },
+    {
+      "capability": "video.content",
+      "method": "get",
+      "path": "/videos/{video_id}/content",
+      "operationId": "RetrieveVideoContent"
+    },
+    {
+      "capability": "video.cancel",
+      "method": "delete",
+      "path": "/videos/{video_id}",
+      "operationId": "DeleteVideo"
+    },
+    {
+      "capability": "batch.create",
+      "method": "post",
+      "path": "/batches",
+      "operationId": "createBatch"
+    },
+    {
+      "capability": "batch.status",
+      "method": "get",
+      "path": "/batches/{batch_id}",
+      "operationId": "retrieveBatch"
+    },
+    {
+      "capability": "batch.cancel",
+      "method": "post",
+      "path": "/batches/{batch_id}/cancel",
+      "operationId": "cancelBatch"
+    },
+    {
+      "capability": "rerank",
+      "method": "post",
+      "path": "/rerank",
+      "operationId": "openai_rerank_1",
+      "notes": "Derived from the enabled Phaseo executor URL and provider API reference."
+    }
+  ],
+  "overlays": [
+    "OpenAPI cannot model SSE event ordering, binary response bodies, async polling transitions, or model-specific parameter restrictions.",
+    "Enabled capability operations derived from Phaseo executor routing."
+  ]
+}

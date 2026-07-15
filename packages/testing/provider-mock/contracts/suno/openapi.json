@@ -1,0 +1,77 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Suno Phaseo contract",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/v1/generate": {
+      "post": {
+        "operationId": "suno_generate_music",
+        "description": "Submit asynchronous music generation.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "prompt": {
+                    "type": "string"
+                  },
+                  "customMode": {
+                    "type": "boolean"
+                  },
+                  "instrumental": {
+                    "type": "boolean"
+                  },
+                  "model": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "style": {
+                    "type": "string"
+                  },
+                  "negativeTags": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "customMode",
+                  "instrumental",
+                  "model"
+                ],
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deterministic mock success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Provider validation error"
+          },
+          "429": {
+            "description": "Provider rate limit"
+          },
+          "500": {
+            "description": "Provider failure"
+          }
+        }
+      }
+    }
+  }
+}

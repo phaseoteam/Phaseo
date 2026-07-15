@@ -1,0 +1,8 @@
+{
+  "sourceUrl": "https://platform.minimax.io/docs/api-reference/text-openai-api",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "e0a90aca2096e0f425709b403cb03f9e391c460b83a9fd913b3551783f3fb527",
+  "gatewayPathPrefix": "/v1",
+  "capabilityOverlay": true
+}

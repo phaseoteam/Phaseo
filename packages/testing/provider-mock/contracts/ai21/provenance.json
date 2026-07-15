@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://docs.ai21.com/reference/chat-completions-api",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "1150a6ff7f7697a8d9d55599358b020cc6e404f5b749d4acf929220836886a58",
+  "gatewayPathPrefix": "/studio/v1"
+}

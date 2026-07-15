@@ -1,0 +1,8 @@
+{
+  "inheritedFrom": "runway",
+  "parentSource": {
+    "kind": "official-docs",
+    "url": "https://docs.dev.runwayml.com/api/"
+  },
+  "bundleSha256": "2a044df80895a2aca31cea37f7d6809915281d7ad6ed60db8d5c11da70749c9a"
+}

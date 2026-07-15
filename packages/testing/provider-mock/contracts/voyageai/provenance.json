@@ -1,0 +1,8 @@
+{
+  "inheritedFrom": "voyage",
+  "parentSource": {
+    "kind": "official-docs",
+    "url": "https://docs.voyageai.com/reference/embeddings-api"
+  },
+  "bundleSha256": "dea352a18e987dc8eb0be139a281f67dfd9183eaa91e040061b4b7ce2bf57d83"
+}

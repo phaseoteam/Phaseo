@@ -1,0 +1,27 @@
+{
+  "providerId": "atlas-cloud",
+  "displayName": "Atlas Cloud compatibility alias",
+  "source": {
+    "kind": "phaseo-overlay",
+    "url": "https://docs.atlascloud.ai/"
+  },
+  "operations": [
+    {
+      "capability": "chat",
+      "method": "post",
+      "path": "/v1/chat/completions",
+      "operationId": "atlascloud_chat",
+      "notes": "Reconstructed from the provider's documented OpenAI-compatible API surface; provider-specific restrictions belong in overlays."
+    },
+    {
+      "capability": "video.generate",
+      "method": "post",
+      "path": "/api/v1/model/generateVideo",
+      "operationId": "atlascloud_video_generate_1",
+      "notes": "Derived from the enabled Phaseo executor URL and provider API reference."
+    }
+  ],
+  "overlays": [
+    "Inherits atlascloud; this enabled ID changes routing, residency, performance tier, or transport policy without changing the request schema."
+  ]
+}

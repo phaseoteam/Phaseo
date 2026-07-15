@@ -1,0 +1,6 @@
+{
+  "sourceUrl": "https://ai.google.dev/api/generate-content",
+  "reconstruction": "official-docs-overlay",
+  "bundleSha256": "3d01c9626665311a83f8b86de39b1d07c3882d01b69fc383016ee9c45ae48fcb",
+  "capabilityOverlay": true
+}

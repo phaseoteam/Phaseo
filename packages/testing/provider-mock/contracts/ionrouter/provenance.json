@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://docs.ionrouter.io/",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "548adcda4fe6fb3514313c7ba0dea0af80a26bc263c1c3151f80f53eb5726c7a",
+  "gatewayPathPrefix": "/v1"
+}

@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://console.groq.com/docs/api-reference",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "d78a71809ec528af730d9decffa05b992ec706d1edf40942d0fe5ec59094c777",
+  "gatewayPathPrefix": "/openai/v1"
+}

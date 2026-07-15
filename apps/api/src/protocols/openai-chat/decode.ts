@@ -192,6 +192,7 @@ function decodeOpenAITool(tool: any): IRTool {
 		name: extractToolNameOrType(tool) ?? "tool",
 		description: tool.function?.description || tool.description,
 		parameters: tool.function?.parameters || tool.parameters || {},
+		strict: tool.function?.strict ?? tool.strict,
 	};
 }
 

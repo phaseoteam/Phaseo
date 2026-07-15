@@ -1,0 +1,174 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "xAI compatibility alias inherited provider contract",
+    "version": "2026-07-12"
+  },
+  "paths": {
+    "/responses": {
+      "post": {
+        "operationId": "createResponse",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResponseRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response"
+          }
+        }
+      }
+    },
+    "/chat/completions": {
+      "post": {
+        "operationId": "createChatCompletion",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Chat completion"
+          }
+        }
+      }
+    },
+    "/v1/videos/generations": {
+      "post": {
+        "operationId": "x_ai_video_generate_1",
+        "description": "Phaseo executor-derived video.generate operation.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deterministic mock success"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "429": {
+            "description": "Rate limit"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "FunctionTool": {
+        "type": "object",
+        "required": [
+          "type",
+          "name",
+          "parameters"
+        ],
+        "properties": {
+          "type": {
+            "const": "function"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "parameters": {
+            "type": "object"
+          },
+          "strict": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ResponseRequest": {
+        "type": "object",
+        "required": [
+          "model",
+          "input"
+        ],
+        "properties": {
+          "model": {
+            "type": "string"
+          },
+          "input": {},
+          "stream": {
+            "type": "boolean"
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FunctionTool"
+            }
+          },
+          "tool_choice": {},
+          "parallel_tool_calls": {
+            "type": "boolean"
+          },
+          "max_output_tokens": {
+            "type": "integer"
+          },
+          "temperature": {
+            "type": "number"
+          },
+          "top_p": {
+            "type": "number"
+          },
+          "metadata": {
+            "type": "object"
+          },
+          "store": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": true
+      },
+      "ChatRequest": {
+        "type": "object",
+        "required": [
+          "model",
+          "messages"
+        ],
+        "properties": {
+          "model": {
+            "type": "string"
+          },
+          "messages": {
+            "type": "array"
+          },
+          "stream": {
+            "type": "boolean"
+          },
+          "tools": {
+            "type": "array"
+          },
+          "tool_choice": {},
+          "parallel_tool_calls": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  }
+}

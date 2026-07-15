@@ -1,0 +1,8 @@
+{
+  "inheritedFrom": "z-ai",
+  "parentSource": {
+    "kind": "official-openapi",
+    "url": "https://docs.z.ai/openapi.json"
+  },
+  "bundleSha256": "6b5558bdfa5f1d36538e486afb8ec98e36130058ae0cd2593151743528ae65c1"
+}

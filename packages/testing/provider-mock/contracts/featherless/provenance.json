@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://featherless.ai/docs",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "6bb6f826f39f4eaff10b1c5d433101756caf1bc3f76ab918334192e8cb43466e",
+  "gatewayPathPrefix": "/v1"
+}

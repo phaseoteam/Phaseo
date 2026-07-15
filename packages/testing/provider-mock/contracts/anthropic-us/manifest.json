@@ -1,0 +1,19 @@
+{
+  "providerId": "anthropic-us",
+  "displayName": "Anthropic US",
+  "source": {
+    "kind": "phaseo-overlay",
+    "url": "https://docs.anthropic.com/en/api/messages"
+  },
+  "operations": [
+    {
+      "capability": "text.generate",
+      "method": "post",
+      "path": "/messages",
+      "operationId": "createMessage"
+    }
+  ],
+  "overlays": [
+    "Inherits anthropic; this enabled ID changes routing, residency, performance tier, or transport policy without changing the request schema."
+  ]
+}

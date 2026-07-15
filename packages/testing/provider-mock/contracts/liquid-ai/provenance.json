@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://docs.liquid.ai/api-reference",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "b768a6f4800d867bea6324a56a42a257ec257c7b857a0007e1624ec55f6ddb01",
+  "gatewayPathPrefix": "/v1"
+}

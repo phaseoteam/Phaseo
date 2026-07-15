@@ -1,0 +1,19 @@
+{
+  "providerId": "runwayml",
+  "displayName": "RunwayML compatibility alias",
+  "source": {
+    "kind": "phaseo-overlay",
+    "url": "https://docs.dev.runwayml.com/api/"
+  },
+  "operations": [
+    {
+      "capability": "runway_text_to_video",
+      "method": "post",
+      "path": "/v1/text_to_video",
+      "operationId": "runway_text_to_video"
+    }
+  ],
+  "overlays": [
+    "Inherits runway; this enabled ID changes routing, residency, performance tier, or transport policy without changing the request schema."
+  ]
+}

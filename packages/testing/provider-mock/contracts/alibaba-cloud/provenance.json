@@ -1,0 +1,8 @@
+{
+  "sourceUrl": "https://www.alibabacloud.com/help/en/model-studio/compatibility-of-openai-with-dashscope",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "7c2d8fcbd9e88555b4385ca453bae6cded29782f3c1ae485afc26a909dcd49b0",
+  "gatewayPathPrefix": "/compatible-mode/v1",
+  "capabilityOverlay": true
+}

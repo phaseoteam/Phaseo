@@ -1,0 +1,52 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "Anthropic Messages Phaseo contract overlay", "version": "2026-07-12" },
+  "paths": {
+    "/messages": {
+      "post": {
+        "operationId": "createMessage",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["model", "messages", "max_tokens"],
+                "properties": {
+                  "model": { "type": "string" },
+                  "messages": { "type": "array", "items": { "type": "object" } },
+                  "max_tokens": { "type": "integer" },
+                  "stream": { "type": "boolean" },
+                  "system": {},
+                  "temperature": { "type": "number" },
+                  "top_p": { "type": "number" },
+                  "top_k": { "type": "integer" },
+                  "stop_sequences": { "type": "array", "items": { "type": "string" } },
+                  "metadata": { "type": "object" },
+                  "thinking": { "type": "object" },
+                  "tools": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["name"],
+                      "properties": {
+                        "name": { "type": "string" },
+                        "description": { "type": "string" },
+                        "input_schema": { "type": "object" },
+                        "type": { "type": "string" },
+                        "cache_control": { "type": "object" }
+                      }
+                    }
+                  },
+                  "tool_choice": { "type": "object" }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Message" } }
+      }
+    }
+  }
+}

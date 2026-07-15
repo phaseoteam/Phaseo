@@ -10,8 +10,8 @@ import {
 	diffModelIds,
 	extractProviderApiModelSnapshot,
 	fetchProviderModels,
-	hasProviderApiSnapshotValue,
 	hasDiscordNotifiableChanges,
+	hasProviderApiSnapshotValue,
 	loadConfiguredProviderModelIds,
 	loadLatestConfiguredCoverageState,
 	loadLatestPricingTableState,
@@ -33,6 +33,7 @@ import {
 	syncUpstreamDiscoveryIssues,
 } from "./github-issues";
 import { fetchPricingTableSnapshots, type PricingTableSnapshot } from "./pricing-tables";
+import { MODEL_DISCOVERY_PROVIDERS, type ProviderConfig } from "./providers";
 
 type DiscoveryTrigger = "scheduled" | "manual";
 
@@ -44,17 +45,6 @@ type RunArgs = {
 	shardCount?: number;
 	notify?: boolean;
 	prune?: boolean;
-};
-
-type ProviderConfig = {
-	providerId: string;
-	providerName: string;
-	modelsEndpoint: string;
-	pathPrefix?: string;
-	modelsPath?: string;
-	baseUrlEnv?: string[];
-	apiKeyEnv?: string[];
-	authStyle?: "bearer" | "anthropic" | "google_api_key_query" | "clarifai_key" | "elevenlabs" | "api_key_authorization" | "none";
 };
 
 type ProviderChange = {
@@ -255,6 +245,7 @@ const PROVIDER_API_PRICING_WATCH_PROVIDER_IDS = new Set<string>([
 	"crofai",
 	"deepinfra",
 	"nebius-token-factory",
+	"elevenlabs",
 	"gmicloud",
 	"groq",
 	"inception",
@@ -265,109 +256,7 @@ const PROVIDER_API_PRICING_WATCH_PROVIDER_IDS = new Set<string>([
 	"venice",
 ]);
 
-const PROVIDERS: ProviderConfig[] = [
-	{ providerId: "ai21", providerName: "AI21", modelsEndpoint: "https://api.ai21.com/studio/v1/models", apiKeyEnv: ["AI21_API_KEY"] },
-	{ providerId: "akashml", providerName: "AkashML", modelsEndpoint: "https://api.akashml.com/v1/models", apiKeyEnv: ["AKASHML_API_KEY"] },
-	{ providerId: "aion-labs", providerName: "AionLabs", modelsEndpoint: "https://api.aionlabs.ai/v1/models", apiKeyEnv: ["AION_LABS_API_KEY"] },
-	{
-		providerId: "alibaba",
-		providerName: "Alibaba Cloud",
-		modelsEndpoint: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/models",
-		apiKeyEnv: ["ALIBABA_CLOUD_API_KEY"],
-	},
-	{
-		providerId: "anthropic",
-		providerName: "Anthropic",
-		modelsEndpoint: "https://api.anthropic.com/v1/models",
-		apiKeyEnv: ["ANTHROPIC_API_KEY"],
-		authStyle: "anthropic",
-	},
-	{ providerId: "arcee-ai", providerName: "Arcee AI", modelsEndpoint: "https://api.arcee.ai/api/v1/models", apiKeyEnv: ["ARCEE_AI_API_KEY", "ARCEE_API_KEY"] },
-	{ providerId: "atlascloud", providerName: "AtlasCloud", modelsEndpoint: "https://api.atlascloud.ai/api/v1/models", apiKeyEnv: ["ATLAS_CLOUD_API_KEY"] },
-	{ providerId: "crofai", providerName: "CrofAI", modelsEndpoint: "https://crof.ai/v1/models", authStyle: "none" },
-	{
-		providerId: "baseten",
-		providerName: "Baseten",
-		modelsEndpoint: "https://inference.baseten.co/v1/models",
-		apiKeyEnv: ["BASETEN_API_KEY"],
-		authStyle: "api_key_authorization",
-	},
-	{
-		providerId: "byteplus",
-		providerName: "BytePlus",
-		modelsEndpoint: "https://ark.ap-southeast.bytepluses.com/api/v3/models",
-		apiKeyEnv: ["BYTEPLUS_API_KEY", "BYTEDANCE_SEED_API_KEY", "ARK_API_KEY"],
-	},
-	{ providerId: "cerebras", providerName: "Cerebras", modelsEndpoint: "https://api.cerebras.ai/v1/models", apiKeyEnv: ["CEREBRAS_API_KEY"] },
-	{ providerId: "chutes", providerName: "Chutes", modelsEndpoint: "https://llm.chutes.ai/v1/models", apiKeyEnv: ["CHUTES_API_KEY"] },
-	{
-		providerId: "clarifai",
-		providerName: "Clarifai",
-		modelsEndpoint: "https://api.clarifai.com/v2/models",
-		apiKeyEnv: ["CLARIFAI_PAT"],
-		authStyle: "clarifai_key",
-	},
-	{ providerId: "cohere", providerName: "Cohere", modelsEndpoint: "https://api.cohere.ai/compatibility/v1/models", apiKeyEnv: ["COHERE_API_KEY"] },
-	{ providerId: "deepinfra", providerName: "DeepInfra", modelsEndpoint: "https://api.deepinfra.com/v1/openai/models", apiKeyEnv: ["DEEPINFRA_API_KEY"] },
-	{ providerId: "deepseek", providerName: "DeepSeek", modelsEndpoint: "https://api.deepseek.com/models", apiKeyEnv: ["DEEPSEEK_API_KEY"] },
-	{
-		providerId: "elevenlabs",
-		providerName: "ElevenLabs",
-		modelsEndpoint: "https://api.elevenlabs.io/v1/models",
-		apiKeyEnv: ["ELEVEN_LABS_API_KEY", "ELEVENLABS_API_KEY"],
-		authStyle: "elevenlabs",
-	},
-	{ providerId: "fireworks", providerName: "Fireworks", modelsEndpoint: "https://api.fireworks.ai/inference/v1/models", apiKeyEnv: ["FIREWORKS_API_KEY"] },
-	{
-		providerId: "gmicloud",
-		providerName: "GMICloud",
-		modelsEndpoint: "https://api.gmi-serving.com/v1/models",
-		apiKeyEnv: ["GMI_CLOUD_API_KEY", "GMI_API_KEY"],
-	},
-	{
-		providerId: "google-ai-studio",
-		providerName: "Google AI Studio",
-		modelsEndpoint: "https://generativelanguage.googleapis.com/v1beta/models",
-		apiKeyEnv: ["GOOGLE_AI_STUDIO_API_KEY"],
-		authStyle: "google_api_key_query",
-	},
-	{ providerId: "groq", providerName: "Groq", modelsEndpoint: "https://api.groq.com/openai/v1/models", apiKeyEnv: ["GROQ_API_KEY"] },
-	{ providerId: "inception", providerName: "Inception", modelsEndpoint: "https://api.inceptionlabs.ai/v1/models", apiKeyEnv: ["INCEPTION_API_KEY"] },
-	{ providerId: "ionrouter", providerName: "IonRouter", modelsEndpoint: "https://api.ionrouter.io/v1/models", apiKeyEnv: ["IONROUTER_API_KEY"] },
-	{ providerId: "mistral", providerName: "Mistral", modelsEndpoint: "https://api.mistral.ai/v1/models", apiKeyEnv: ["MISTRAL_AI_API_KEY"] },
-	{ providerId: "moonshot-ai", providerName: "Moonshot AI", modelsEndpoint: "https://api.moonshot.ai/v1/models", apiKeyEnv: ["MOONSHOT_AI_API_KEY"] },
-	{
-		providerId: "nebius-token-factory",
-		providerName: "Nebius Token Factory",
-		modelsEndpoint: "https://api.tokenfactory.nebius.com/v1/models?verbose=true",
-		apiKeyEnv: ["NEBIUS_TOKEN_FACTORY_API_KEY", "NEBIUS_API_KEY"],
-	},
-	{ providerId: "nextbit", providerName: "NextBit", modelsEndpoint: "https://api.nextbit256.com/v1/models", apiKeyEnv: ["NEXTBIT_API_KEY"] },
-	{ providerId: "novitaai", providerName: "NovitaAI", modelsEndpoint: "https://api.novita.ai/openai/v1/models", apiKeyEnv: ["NOVITA_API_KEY"] },
-	{ providerId: "openai", providerName: "OpenAI", modelsEndpoint: "https://api.openai.com/v1/models", apiKeyEnv: ["OPENAI_API_KEY"] },
-	{ providerId: "perplexity", providerName: "Perplexity", modelsEndpoint: "https://api.perplexity.ai/v1/models", apiKeyEnv: ["PERPLEXITY_API_KEY"] },
-	{
-		providerId: "poolside",
-		providerName: "Poolside",
-		modelsEndpoint: "https://inference.poolside.ai/openai/v1/models",
-		pathPrefix: "/openai/v1",
-		baseUrlEnv: ["POOLSIDE_BASE_URL"],
-		apiKeyEnv: ["POOLSIDE_API_KEY"],
-	},
-	{ providerId: "voyage", providerName: "Voyage", modelsEndpoint: "https://api.voyageai.com/v1/models", apiKeyEnv: ["VOYAGE_API_KEY"] },
-	{ providerId: "stepfun", providerName: "StepFun", modelsEndpoint: "https://api.stepfun.ai/v1/models", apiKeyEnv: ["STEPFUN_API_KEY"] },
-	{ providerId: "together", providerName: "Together", modelsEndpoint: "https://api.together.xyz/v1/models", apiKeyEnv: ["TOGETHER_API_KEY"] },
-	{ providerId: "venice", providerName: "Venice", modelsEndpoint: "https://api.venice.ai/api/v1/models", apiKeyEnv: ["VENICE_API_KEY"] },
-		{
-			providerId: "weights-and-biases",
-			providerName: "Weights & Biases",
-			modelsEndpoint: "https://api.inference.wandb.ai/v1/models",
-			apiKeyEnv: ["WEIGHTSANDBIASES_API_KEY", "WANDB_API_KEY"],
-		},
-	{ providerId: "spacex-ai", providerName: "SpaceXAI", modelsEndpoint: "https://api.x.ai/v1/models", apiKeyEnv: ["X_AI_API_KEY"] },
-	{ providerId: "xiaomi", providerName: "Xiaomi", modelsEndpoint: "https://api.xiaomimimo.com/v1/models", apiKeyEnv: ["XIAOMI_MIMO_API_KEY"] },
-	{ providerId: "z-ai", providerName: "z.AI", modelsEndpoint: "https://api.z.ai/api/paas/v4/models", apiKeyEnv: ["ZAI_API_KEY"] },
-];
+const PROVIDERS: ProviderConfig[] = MODEL_DISCOVERY_PROVIDERS;
 
 const PROVIDER_NAMES_BY_ID = new Map(PROVIDERS.map((provider) => [provider.providerId, provider.providerName]));
 
@@ -982,6 +871,8 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			try {
 				notificationSummary = await sendDiscordNotification({
 					modelChanges: changes,
+					pricing: pricingMonitor,
+					providerApiPricing: providerApiPricingMonitor,
 					configuredModelCoverage: configuredModelCoverageNotificationSummary,
 				});
 			} catch (error) {

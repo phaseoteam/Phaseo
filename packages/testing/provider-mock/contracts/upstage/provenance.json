@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://console.upstage.ai/docs/capabilities/chat",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "ff30590a4d1e237c647574191f86bd5d3455079d2606016bf1b7c5052f681a22",
+  "gatewayPathPrefix": "/v1/solar"
+}

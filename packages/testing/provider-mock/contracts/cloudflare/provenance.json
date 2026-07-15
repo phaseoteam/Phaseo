@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://developers.cloudflare.com/ai-gateway/usage/providers/openai-compatible/",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "eea01f2168735cabe0b835316b3434aea7237960d84b8363f6c3bbb4d1977f9e",
+  "gatewayPathPrefix": ""
+}

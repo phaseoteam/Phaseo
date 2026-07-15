@@ -1,0 +1,8 @@
+{
+  "sourceUrl": "https://docs.byteplus.com/en/docs/ModelArk/ChatCompletions",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "969d5da6aee1ab0a94bda995825fb8ec3f53f7a4193c470cdcdbb49d8b52fdd3",
+  "gatewayPathPrefix": "/api/v3",
+  "capabilityOverlay": true
+}

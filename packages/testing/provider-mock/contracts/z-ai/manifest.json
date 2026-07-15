@@ -1,0 +1,15 @@
+{
+  "providerId": "z-ai",
+  "displayName": "Z.AI",
+  "source": {
+    "kind": "official-openapi",
+    "url": "https://docs.z.ai/openapi.json"
+  },
+  "operations": [
+    {
+      "capability": "chat",
+      "method": "post",
+      "path": "/api/paas/v4/chat/completions"
+    }
+  ]
+}

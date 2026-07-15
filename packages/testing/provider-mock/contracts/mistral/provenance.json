@@ -1,0 +1,29 @@
+{
+  "sourceUrl": "https://docs.mistral.ai/openapi.yaml",
+  "sourceSha256": "5a5c361558bb93e7abde3b7b0d2a2a9eaaa3ab870c77dc199565bc0107cf3282",
+  "bundleSha256": "fdbbb5c809cfb0018421f68f55fa532aa72c012f53179c4a0c3b6c413a60c6d2",
+  "openapiVersion": "3.1.0",
+  "apiVersion": "1.0.0",
+  "gatewayPathMappings": [
+    {
+      "sourcePath": "/v1/chat/completions",
+      "gatewayPath": "/v1/chat/completions"
+    },
+    {
+      "sourcePath": "/v1/embeddings",
+      "gatewayPath": "/v1/embeddings"
+    },
+    {
+      "sourcePath": "/v1/models",
+      "gatewayPath": "/v1/models"
+    },
+    {
+      "sourcePath": "/v1/ocr",
+      "gatewayPath": "/v1/ocr"
+    },
+    {
+      "sourcePath": "/v1/audio/transcriptions",
+      "gatewayPath": "/v1/audio/transcriptions"
+    }
+  ]
+}

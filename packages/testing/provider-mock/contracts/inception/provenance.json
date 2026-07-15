@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://docs.inceptionlabs.ai/",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "88f2a55f7b2216e0c7d61039856ed3c2a721554488708f34b4bd25ea1930d003",
+  "gatewayPathPrefix": "/v1"
+}

@@ -1,0 +1,14 @@
+{
+  "api_provider_id": "switchpoint",
+  "api_provider_name": "Switchpoint",
+  "description": "OpenAI-compatible text-generation router.",
+  "link": "https://www.switchpoint.dev/dev-api",
+  "country_code": "US",
+  "status": "Active",
+  "colour": "#7C3AED",
+  "privacy_policy_url": null,
+  "terms_of_service_url": null,
+  "prompt_training_policy": "unknown",
+  "prompt_training_notes": null,
+  "prompt_training_source_url": null
+}

@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://akash.network/docs/api-documentation/",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "5d19fc33ef731f89e95799440f516d02545c2c9b5f83700c64bd906a71b8bf4f",
+  "gatewayPathPrefix": "/v1"
+}

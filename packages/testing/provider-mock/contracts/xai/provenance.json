@@ -1,0 +1,8 @@
+{
+  "inheritedFrom": "x-ai",
+  "parentSource": {
+    "kind": "official-docs",
+    "url": "https://docs.x.ai/developers/tools/function-calling"
+  },
+  "bundleSha256": "0bb84155e23905d39ccf0b2ccbe074a741e1f2b18c10b19837a59ece2c3e75d0"
+}

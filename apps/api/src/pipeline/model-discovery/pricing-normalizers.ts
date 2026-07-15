@@ -123,10 +123,6 @@ export function normalizeProviderModelPricing(providerId: string, modelDetails: 
 			const pricing = Array.isArray(model.pricing) ? asRecord(model.pricing[0]) : null;
 			return pricing ? promptCompletionPricing(pricing, true) : null;
 		}
-		case "nebius-token-factory": {
-			const pricing = asRecord(model.pricing);
-			return pricing ? promptCompletionPricing(pricing, true) : null;
-		}
 		case "novitaai":
 			return fromMeters({
 				input_text_tokens: asNumber(model.input_token_price_per_m),

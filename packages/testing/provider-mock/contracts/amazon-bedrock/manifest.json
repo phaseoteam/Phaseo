@@ -1,0 +1,16 @@
+{
+  "providerId": "amazon-bedrock",
+  "displayName": "Amazon Bedrock compatibility endpoint",
+  "source": {
+    "kind": "official-docs",
+    "url": "https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-openai.html"
+  },
+  "operations": [
+    {
+      "capability": "amazon_bedrock_chat",
+      "method": "post",
+      "path": "/v1/chat/completions",
+      "operationId": "amazon_bedrock_chat"
+    }
+  ]
+}

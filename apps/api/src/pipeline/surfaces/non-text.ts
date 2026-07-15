@@ -175,6 +175,8 @@ function decodeNonTextRequest(endpoint: NonTextEndpoint, body: any): NonTextIRRe
 				size: body?.size,
 				n: body?.n,
 				quality: body?.quality,
+				stream: body?.stream,
+				partialImages: body?.partial_images,
 				responseFormat: body?.response_format,
 				outputFormat: body?.output_format,
 				outputCompression: body?.output_compression,

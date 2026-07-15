@@ -1,0 +1,12 @@
+{
+  "providerId": "digitalocean",
+  "displayName": "DigitalOcean Gradient AI",
+  "source": {
+    "kind": "official-docs",
+    "url": "https://docs.digitalocean.com/products/inference/"
+  },
+  "operations": [],
+  "overlays": [
+    "Catalog provider status is NotReady and no Phaseo executor is registered."
+  ]
+}

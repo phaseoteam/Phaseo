@@ -64,6 +64,12 @@ export type GatewayBindings = {
     ARCEE_BASE_URL?: string;
     ATLAS_CLOUD_API_KEY?: string;
     ATLAS_CLOUD_BASE_URL?: string;
+    AMBIENT_API_KEY?: string;
+    AMBIENT_BASE_URL?: string;
+    AVIAN_API_KEY?: string;
+    AVIAN_BASE_URL?: string;
+    BAIDU_QIANFAN_API_KEY?: string;
+    BAIDU_QIANFAN_BASE_URL?: string;
     BASETEN_API_KEY?: string;
     BASETEN_BASE_URL?: string;
     LONGCAT_API_KEY?: string;
@@ -96,6 +102,8 @@ export type GatewayBindings = {
     DEEPINFRA_BASE_URL?: string;
     DEEPSEEK_API_KEY?: string;
     DEEPSEEK_BASE_URL?: string;
+    DARKBLOOM_API_KEY?: string;
+    DARKBLOOM_BASE_URL?: string;
     DIGITALOCEAN_TOKEN?: string;
     EXA_API_KEY?: string;
     EXA_BASE_URL?: string;
@@ -125,6 +133,8 @@ export type GatewayBindings = {
     INFERMATIC_BASE_URL?: string;
     INFLECTION_API_KEY?: string;
     INFLECTION_BASE_URL?: string;
+    INFERENCE_NET_API_KEY?: string;
+    INFERENCE_NET_BASE_URL?: string;
     IONROUTER_API_KEY?: string;
     IONROUTER_BASE_URL?: string;
     LIQUID_API_KEY?: string;
@@ -133,6 +143,8 @@ export type GatewayBindings = {
     LIQUID_AI_BASE_URL?: string;
     MANCER_API_KEY?: string;
     MANCER_BASE_URL?: string;
+    MARA_API_KEY?: string;
+    MARA_BASE_URL?: string;
     META_MODEL_API_KEY?: string;
     META_MODEL_BASE_URL?: string;
     MINIMAX_API_KEY?: string;
@@ -195,6 +207,8 @@ export type GatewayBindings = {
     OVH_AI_ENDPOINTS_URL?: string;
     RELACE_API_KEY?: string;
     RELACE_BASE_URL?: string;
+    REKA_API_KEY?: string;
+    REKA_BASE_URL?: string;
     SAKANA_API_KEY?: string;
     SAKANA_BASE_URL?: string;
     SAMBANOVA_API_KEY?: string;
@@ -205,8 +219,16 @@ export type GatewayBindings = {
     SILICONFLOW_BASE_URL?: string;
     SOURCEFUL_API_KEY?: string;
     SOURCEFUL_BASE_URL?: string;
+    STREAMLAKE_API_KEY?: string;
+    STREAMLAKE_BASE_URL?: string;
+    SWITCHPOINT_API_KEY?: string;
+    SWITCHPOINT_BASE_URL?: string;
     TOGETHER_API_KEY?: string;
     TOGETHER_BASE_URL?: string;
+    UPSTAGE_API_KEY?: string;
+    UPSTAGE_BASE_URL?: string;
+    WAFER_API_KEY?: string;
+    WAFER_BASE_URL?: string;
     WANDB_BASE_URL?: string;
     AION_LABS_API_KEY?: string;
     AION_LABS_BASE_URL?: string;

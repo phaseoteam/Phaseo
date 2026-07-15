@@ -1,0 +1,53 @@
+{
+  "providerId": "google-ai-studio",
+  "displayName": "Google AI Studio",
+  "source": {
+    "kind": "official-docs",
+    "url": "https://ai.google.dev/api/generate-content"
+  },
+  "operations": [
+    {
+      "capability": "text.generate",
+      "method": "post",
+      "path": "/models/{model}:generateContent",
+      "operationId": "generateContent"
+    },
+    {
+      "capability": "text.generate.stream",
+      "method": "post",
+      "path": "/models/{model}:streamGenerateContent",
+      "operationId": "streamGenerateContent"
+    },
+    {
+      "capability": "embeddings",
+      "method": "post",
+      "path": "/v1beta/models/{model}:embedContent",
+      "operationId": "google_ai_studio_embeddings_1"
+    },
+    {
+      "capability": "embeddings",
+      "method": "post",
+      "path": "/v1beta/models/{model}:batchEmbedContents",
+      "operationId": "google_ai_studio_embeddings_2",
+      "notes": "Derived from the enabled Phaseo executor URL and provider API reference."
+    },
+    {
+      "capability": "music.generate",
+      "method": "post",
+      "path": "/v1beta/models/{model}:generateContent",
+      "operationId": "google_ai_studio_music_generate_1",
+      "notes": "Derived from the enabled Phaseo executor URL and provider API reference."
+    },
+    {
+      "capability": "audio.speech",
+      "method": "post",
+      "path": "/v1beta/models/{model}:generateContent",
+      "operationId": "google_ai_studio_music_generate_1",
+      "notes": "Derived from the enabled Phaseo executor URL and provider API reference."
+    }
+  ],
+  "overlays": [
+    "Reconstructed from official Google AI Studio API references and enabled Phaseo executor routing.",
+    "Enabled capability operations derived from Phaseo executor routing."
+  ]
+}

@@ -908,7 +908,7 @@ export async function loadLatestPricingTableState(source?: string): Promise<Pric
 	const sourceValue = typeof source === "string" ? source.trim() : "";
 	if (sourceValue) query = query.eq("source", sourceValue);
 
-	const { data, error } = await query.limit(100);
+	const { data, error } = await query.limit(200);
 	if (error) throw new Error(error.message || "Failed to load pricing table state");
 	const latestByProvider = new Map<string, PricingTableSnapshotState>();
 	for (const row of data ?? []) {
@@ -1269,6 +1269,8 @@ export function buildDiscordMessage(args: {
 
 export async function sendDiscordNotification(args: {
 	modelChanges: ProviderChange[];
+	pricing: PricingMonitorSummary;
+	providerApiPricing: ProviderApiPricingMonitorSummary;
 	configuredModelCoverage: ConfiguredModelCoverageMonitorSummary;
 }): Promise<{ delivered: boolean; skipped: boolean; reason?: string | null }> {
 	if (!hasDiscordNotifiableChanges(args)) {

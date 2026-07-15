@@ -1,0 +1,35 @@
+{
+  "providerId": "friendli",
+  "displayName": "FriendliAI",
+  "source": {
+    "kind": "official-openapi",
+    "url": "https://raw.githubusercontent.com/friendliai/friendli-openapi/refs/heads/main/openapi.yaml",
+    "repository": "https://github.com/friendliai/friendli-openapi"
+  },
+  "operations": [
+    {
+      "capability": "chat",
+      "method": "post",
+      "path": "/serverless/v1/chat/completions",
+      "operationId": "serverlessChatComplete"
+    },
+    {
+      "capability": "responses",
+      "method": "post",
+      "path": "/serverless/v1/responses",
+      "operationId": "serverlessResponses"
+    },
+    {
+      "capability": "messages",
+      "method": "post",
+      "path": "/serverless/v1/messages",
+      "operationId": "serverlessMessages"
+    },
+    {
+      "capability": "models",
+      "method": "get",
+      "path": "/serverless/v1/models",
+      "operationId": "serverlessModelList"
+    }
+  ]
+}

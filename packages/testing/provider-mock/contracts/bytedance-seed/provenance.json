@@ -1,0 +1,8 @@
+{
+  "inheritedFrom": "byteplus",
+  "parentSource": {
+    "kind": "official-docs",
+    "url": "https://docs.byteplus.com/en/docs/ModelArk/ChatCompletions"
+  },
+  "bundleSha256": "93fb80e0a1cfcc6f55a1d267df3c476490cd3fc277b5097da5c2b3731b4e1f1e"
+}

@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://docs.crusoecloud.com/ai/",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "0359ad8ddba4928fd9cf87d5c3e09049773def69d8dd9044caf5dea14e55e524",
+  "gatewayPathPrefix": "/v1"
+}

@@ -1,0 +1,16 @@
+{
+  "providerId": "baseten",
+  "displayName": "Baseten",
+  "source": {
+    "kind": "official-openapi",
+    "url": "https://docs.baseten.co/reference/inference-api/llm-openapi-spec.json"
+  },
+  "operations": [
+    {
+      "capability": "chat",
+      "method": "post",
+      "path": "/v1/chat/completions",
+      "operationId": "createChatCompletion"
+    }
+  ]
+}
