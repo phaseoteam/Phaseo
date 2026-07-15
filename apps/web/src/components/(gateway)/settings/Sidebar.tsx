@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ExternalLink, PanelLeftClose } from "lucide-react";
+import { ExternalLink, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -36,7 +36,8 @@ export default function SettingsSidebar({
 	showWebhooks?: boolean;
 }) {
 	const pathname = usePathname();
-	const { isMobile, setOpenMobile, toggleSidebar } = useSidebar();
+	const { isMobile, setOpenMobile, state, toggleSidebar } = useSidebar();
+	const isCollapsed = state === "collapsed" && !isMobile;
 	const navGroups = getSettingsSidebar({ showBroadcast, showWebhooks });
 
 	function matchScore(item: NavItem) {
@@ -106,20 +107,22 @@ export default function SettingsSidebar({
 						className="h-4 w-4 shrink-0 text-muted-foreground"
 					/>
 				) : null}
-				<span className="min-w-0 flex-1 truncate">{item.label}</span>
+				<span className="min-w-0 flex-1 truncate group-data-[collapsible=icon]:hidden">
+					{item.label}
+				</span>
 				{item.badge && (
 					<Badge
 						variant="outline"
-						className="ml-auto h-5 px-1.5 text-[10px] uppercase tracking-wide"
+						className="ml-auto h-5 px-1.5 text-[10px] uppercase tracking-wide group-data-[collapsible=icon]:hidden"
 					>
 						{item.badge}
 					</Badge>
 				)}
-				{item.href === "/settings/usage" ? children : null}
+				{item.href === "/settings/usage" && !isCollapsed ? children : null}
 				{item.external && (
 					<ExternalLink
 						aria-hidden="true"
-						className="ml-2 h-4 w-4 shrink-0 text-muted-foreground"
+						className="ml-2 h-4 w-4 shrink-0 text-muted-foreground group-data-[collapsible=icon]:hidden"
 					/>
 				)}
 			</>
@@ -131,6 +134,7 @@ export default function SettingsSidebar({
 					disabled
 					aria-disabled="true"
 					className="cursor-not-allowed"
+					tooltip={item.label}
 				>
 					{content}
 				</SidebarMenuButton>
@@ -139,7 +143,7 @@ export default function SettingsSidebar({
 
 		if (item.external) {
 			return (
-				<SidebarMenuButton asChild>
+				<SidebarMenuButton asChild tooltip={item.label}>
 					<a
 						href={item.href}
 						target="_blank"
@@ -154,7 +158,7 @@ export default function SettingsSidebar({
 		}
 
 		return (
-			<SidebarMenuButton asChild isActive={active}>
+			<SidebarMenuButton asChild isActive={active} tooltip={item.label}>
 				<Link
 					href={item.href}
 					prefetch={false}
@@ -169,19 +173,24 @@ export default function SettingsSidebar({
 
 	return (
 		<>
-			<SidebarHeader className="gap-0 px-2 pt-6 flex-shrink-0">
-				<div className="flex items-center gap-2 px-2 pb-3">
-					<div className="text-sm font-semibold text-foreground">
+			<SidebarHeader className="gap-0 px-2 pt-6 flex-shrink-0 group-data-[collapsible=icon]:px-2">
+				<div className="flex items-center gap-2 px-2 pb-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+					<div className="text-sm font-semibold text-foreground group-data-[collapsible=icon]:hidden">
 						Settings
 					</div>
 					<Button
 						variant="ghost"
 						size="icon"
-						className="ml-auto lg:hidden"
+						className="ml-auto group-data-[collapsible=icon]:ml-0"
 						onClick={toggleSidebar}
-						aria-label="Close sidebar"
+						aria-label={isCollapsed ? "Expand settings sidebar" : "Collapse settings sidebar"}
+						title={isCollapsed ? "Expand settings sidebar" : "Collapse settings sidebar"}
 					>
-						<PanelLeftClose className="h-4 w-4" />
+						{isCollapsed ? (
+							<PanelLeftOpen className="h-4 w-4" />
+						) : (
+							<PanelLeftClose className="h-4 w-4" />
+						)}
 					</Button>
 				</div>
 				<div className="h-px w-full bg-border" />
