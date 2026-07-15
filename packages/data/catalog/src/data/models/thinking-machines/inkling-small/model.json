@@ -2,7 +2,7 @@
   "model_id": "thinking-machines/inkling-small",
   "organisation_id": "thinking-machines",
   "name": "Inkling Small",
-  "status": "Limited Access",
+  "status": "Coming Soon",
   "previous_model_id": "thinking-machines/inkling",
   "description": "Inkling-Small is Thinking Machines Lab's preview of a lighter-weight Inkling-family model with 12B active parameters, designed for lower cost and latency.",
   "announced_date": "2026-07-15T00:00:00",
