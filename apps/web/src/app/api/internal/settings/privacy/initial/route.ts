@@ -9,6 +9,9 @@ type PrivacyGlobalSettings = {
 	privacy_enable_free_may_publish_prompts?: boolean | null;
 	privacy_enable_input_output_logging?: boolean | null;
 	privacy_zdr_only?: boolean | null;
+	io_logging_enabled?: boolean | null;
+	io_logging_retention_days?: number | null;
+	io_logging_include_provider_payloads?: boolean | null;
 	provider_restriction_mode?: string | null;
 	provider_restriction_provider_ids?: string[] | null;
 	provider_restriction_enforce_allowed?: boolean | null;
@@ -49,7 +52,7 @@ export async function GET() {
 			supabase
 				.from("workspace_settings")
 				.select(
-					"privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_free_may_publish_prompts,privacy_enable_input_output_logging,privacy_zdr_only,provider_restriction_mode,provider_restriction_provider_ids,provider_restriction_enforce_allowed",
+					"privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_free_may_publish_prompts,privacy_enable_input_output_logging,privacy_zdr_only,io_logging_enabled,io_logging_retention_days,io_logging_include_provider_payloads,provider_restriction_mode,provider_restriction_provider_ids,provider_restriction_enforce_allowed",
 				)
 				.eq("workspace_id", workspaceId)
 				.maybeSingle(),
