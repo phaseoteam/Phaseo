@@ -16,7 +16,7 @@ echo ""
 # Check if environment variables are set
 if [ -z "$GATEWAY_BASE_URL" ]; then
     echo -e "${YELLOW}[WARN]  GATEWAY_BASE_URL not set${NC}"
-    echo "   Please set: export GATEWAY_BASE_URL=http://localhost:8787"
+    echo "   Please set: export GATEWAY_BASE_URL=http://localhost:8787/v1"
     echo ""
 fi
 
@@ -30,12 +30,23 @@ if [ -z "$GATEWAY_BASE_URL" ] || [ -z "$GATEWAY_API_KEY" ]; then
     echo -e "${RED}[FAIL] Missing required environment variables${NC}"
     echo ""
     echo "Quick setup:"
-    echo "  export GATEWAY_BASE_URL=http://localhost:8787"
+    echo "  export GATEWAY_BASE_URL=http://localhost:8787/v1"
     echo "  export GATEWAY_API_KEY=gw_test123"
     echo "  ./tests/sdk/run-sdk-tests.sh"
     echo ""
     exit 1
 fi
+
+# SDKs expect the versioned API base. Accept the server origin for convenience,
+# but normalize it before both the health probe and the compatibility tests.
+while [ "${GATEWAY_BASE_URL%/}" != "$GATEWAY_BASE_URL" ]; do
+    GATEWAY_BASE_URL="${GATEWAY_BASE_URL%/}"
+done
+case "$GATEWAY_BASE_URL" in
+    */v1) ;;
+    *) GATEWAY_BASE_URL="$GATEWAY_BASE_URL/v1" ;;
+esac
+export GATEWAY_BASE_URL
 
 echo -e "${GREEN}[OK] Environment variables configured${NC}"
 echo "  GATEWAY_BASE_URL: $GATEWAY_BASE_URL"

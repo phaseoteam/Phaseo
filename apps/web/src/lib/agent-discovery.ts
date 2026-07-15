@@ -9,6 +9,11 @@ function normalizeUrl(value: string): string {
 	return value.replace(/\/+$/, "");
 }
 
+export function normalizeGatewayApiBaseUrl(value: string): string {
+	const normalized = normalizeUrl(value);
+	return normalized.endsWith("/v1") ? normalized : `${normalized}/v1`;
+}
+
 function normalizeSupabaseBaseUrl(value: string): string {
 	const trimmed = normalizeUrl(value);
 	if (trimmed.endsWith("/auth/v1")) {
@@ -20,7 +25,7 @@ function normalizeSupabaseBaseUrl(value: string): string {
 export const DOCS_BASE_URL = normalizeUrl(
 	process.env.NEXT_PUBLIC_DOCS_URL ?? DEFAULT_DOCS_BASE_URL,
 );
-export const API_BASE_URL = normalizeUrl(
+export const API_BASE_URL = normalizeGatewayApiBaseUrl(
 	process.env.NEXT_PUBLIC_GATEWAY_API_URL ?? DEFAULT_GATEWAY_API_BASE_URL,
 );
 export const API_ORIGIN = new URL(API_BASE_URL).origin;
