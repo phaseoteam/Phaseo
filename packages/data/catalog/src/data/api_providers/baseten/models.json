@@ -179,7 +179,7 @@
     "context_length": 262000,
     "max_output_tokens": 262000,
     "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-07-25T00:00:00Z",
     "capabilities": [
       {
         "capability_id": "text.generate",
@@ -242,7 +242,7 @@
     "context_length": 202800,
     "max_output_tokens": 202800,
     "effective_from": "2026-03-11T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-07-25T00:00:00Z",
     "capabilities": [
       {
         "capability_id": "text.generate",
@@ -404,7 +404,7 @@
     "context_length": 202800,
     "max_output_tokens": 202800,
     "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-07-25T00:00:00Z",
     "capabilities": [
       {
         "capability_id": "text.generate",
@@ -425,7 +425,7 @@
     "context_length": 202000,
     "max_output_tokens": 202000,
     "effective_from": "2026-05-27T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-07-25T00:00:00Z",
     "capabilities": [
       {
         "capability_id": "text.generate",
