@@ -2,7 +2,7 @@
   "model_id": "anthropic/claude-opus-5",
   "organisation_id": "anthropic",
   "name": "Claude Opus 5",
-  "status": "Limited Access",
+  "status": "Rumoured",
   "previous_model_id": "anthropic/claude-opus-4.8",
   "description": "Claude Opus 5 is Anthropic's forthcoming Opus model. This coming-soon entry stages the model for Anthropic, Google Vertex AI, and Amazon Bedrock while release metadata and pricing remain unconfirmed.",
   "announced_date": null,
