@@ -268,7 +268,7 @@ async function ensureRequestAccess(workspaceId: string, requestId: string | null
 	const { data, error } = await getSupabaseAdmin()
 		.from("gateway_requests")
 		.select("id")
-		.eq("team_id", workspaceId)
+		.eq("workspace_id", workspaceId)
 		.eq("request_id", requestId)
 		.maybeSingle();
 	if (error) return json({ error: "failed", message: error.message }, 500, { "Cache-Control": "no-store" });

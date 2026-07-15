@@ -438,30 +438,35 @@ async function loadPresetFeedbackData(filters: Filters) {
 
 	let feedback: FeedbackRow[] = [];
 	if (presetIds.length > 0) {
-		let query = supabase
-			.from("gateway_feedback")
-			.select(
-				"id,request_id,session_id,preset_id,rating,score,reason,reason_tags,comment,metadata_dimensions,end_user_id,created_at",
-			)
-			.eq("workspace_id", workspaceId)
-			.in("preset_id", presetIds)
-			.gte("created_at", filters.fromIso)
-			.lte("created_at", filters.toIso)
-			.order("created_at", { ascending: false })
-			.limit(10000);
-		if (filters.rating === "unrated") {
-			query = query.is("rating", null);
-		} else if (filters.rating !== "all") {
-			query = query.eq("rating", filters.rating);
+		const pageSize = 1_000;
+		for (let offset = 0; ; offset += pageSize) {
+			let query = supabase
+				.from("gateway_feedback")
+				.select(
+					"id,request_id,session_id,preset_id,rating,score,reason,reason_tags,comment,metadata_dimensions,end_user_id,created_at",
+				)
+				.eq("workspace_id", workspaceId)
+				.in("preset_id", presetIds)
+				.gte("created_at", filters.fromIso)
+				.lte("created_at", filters.toIso)
+				.order("created_at", { ascending: false })
+				.range(offset, offset + pageSize - 1);
+			if (filters.rating === "unrated") {
+				query = query.is("rating", null);
+			} else if (filters.rating !== "all") {
+				query = query.eq("rating", filters.rating);
+			}
+			if (filters.metadataKey && filters.metadataValue) {
+				query = query.contains("metadata_dimensions", {
+					[filters.metadataKey]: filters.metadataValue,
+				});
+			}
+			const { data, error } = await query;
+			if (error) throw error;
+			const page = (data ?? []) as FeedbackRow[];
+			feedback.push(...page);
+			if (page.length < pageSize) break;
 		}
-		if (filters.metadataKey && filters.metadataValue) {
-			query = query.contains("metadata_dimensions", {
-				[filters.metadataKey]: filters.metadataValue,
-			});
-		}
-		const { data, error } = await query;
-		if (error) throw error;
-		feedback = (data ?? []) as FeedbackRow[];
 	}
 
 	return { workspaceId, presets, feedback };

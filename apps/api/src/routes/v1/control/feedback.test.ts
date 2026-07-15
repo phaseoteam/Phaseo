@@ -259,6 +259,11 @@ describe("feedback control routes", () => {
 				created_by_user_id: "44444444-4444-4444-8444-444444444444",
 			}),
 		});
+		expect(state.queryCalls).toContainEqual({
+			table: "gateway_requests",
+			method: "eq",
+			args: ["workspace_id", "33333333-3333-4333-8333-333333333333"],
+		});
 	});
 
 	it("links feedback to the test run preset when only the test run is supplied", async () => {
