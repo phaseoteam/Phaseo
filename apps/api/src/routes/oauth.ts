@@ -25,6 +25,7 @@ import {
 	hasActiveOAuthWorkspaceAccess,
 	issueTokenPairForGrant,
 	issueOAuthManagedKeyForAuthorizationCode,
+	isFirstPartyCliClient,
 	loadOAuthClient,
 	makeAuthCodeExpiry,
 	makeDeviceCodeExpiry,
@@ -483,15 +484,20 @@ oauthRouter.post(
 			}))) {
 				return oauthError("invalid_grant", "OAuth workspace access is no longer active");
 			}
-			const tokens = await issueOAuthManagedKeyForAuthorizationCode(
-				String(data.id),
-				{
-					userId: String(data.user_id),
-					workspaceId: String(data.workspace_id),
-					clientId: String(data.client_id),
-					scopes: Array.isArray(data.scopes) ? data.scopes.map(String) : [],
-				},
-			);
+			const tokenInput = {
+				userId: String(data.user_id),
+				workspaceId: String(data.workspace_id),
+				clientId: String(data.client_id),
+				scopes: Array.isArray(data.scopes) ? data.scopes.map(String) : [],
+			};
+			// The CLI retains refreshable sessions for `login`, logout, and token
+			// renewal. Third-party PKCE clients receive durable user-funded keys.
+			const tokens = isFirstPartyCliClient(client.id)
+				? await issueTokenPairForGrant(
+					{ type: "authorization_code", id: String(data.id) },
+					tokenInput,
+				)
+				: await issueOAuthManagedKeyForAuthorizationCode(String(data.id), tokenInput);
 			if (!tokens) return oauthError("invalid_grant", "Authorization code is invalid or expired");
 			return json(tokens, 200, { "Cache-Control": "no-store" });
 		}

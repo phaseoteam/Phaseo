@@ -19,6 +19,10 @@ export const CLI_CLIENT_ID = "phaseo_cli";
 export const LEGACY_CLI_CLIENT_ID = "aistats_cli";
 const CLI_CLIENT_IDS = new Set([CLI_CLIENT_ID, LEGACY_CLI_CLIENT_ID]);
 
+export function isFirstPartyCliClient(clientId: string): boolean {
+	return CLI_CLIENT_IDS.has(clientId.trim());
+}
+
 export const CLI_DEFAULT_SCOPES = DEFAULT_CLI_OAUTH_CAPABILITIES;
 
 type OAuthClient = {
@@ -101,7 +105,7 @@ export function isThirdPartyOAuthEnabled(): boolean {
 }
 
 export function isOAuthClientUsable(clientId: string): boolean {
-	return CLI_CLIENT_IDS.has(clientId.trim()) || isThirdPartyOAuthEnabled();
+	return isFirstPartyCliClient(clientId) || isThirdPartyOAuthEnabled();
 }
 
 export function normalizeScopes(raw: unknown, fallback: readonly string[] = []): string[] {
