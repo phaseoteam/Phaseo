@@ -253,7 +253,7 @@ describe("OAuth refresh rotation security", () => {
 
 		const result = await issueOAuthManagedKeyForAuthorizationCode(
 			"00000000-0000-0000-0000-000000000002",
-			{ userId: "user_1", workspaceId: "ws_1", clientId: "phaseo_cli", scopes: ["models:read"] },
+			{ userId: "user_1", workspaceId: "ws_1", clientId: "phaseo_cli", scopes: ["gateway:access", "models:read"] },
 		);
 
 		expect(result?.access_token).toMatch(/^phaseo_v1_sk_/);
@@ -265,7 +265,7 @@ describe("OAuth refresh rotation security", () => {
 				p_user_id: "user_1",
 				p_workspace_id: "ws_1",
 				p_client_id: "phaseo_cli",
-				p_scopes: ["models:read"],
+				p_scopes: ["gateway:access", "models:read"],
 			},
 		});
 		expect(rpcCall?.args).toMatchObject({
@@ -275,6 +275,19 @@ describe("OAuth refresh rotation security", () => {
 			p_key_hash: expect.stringMatching(/^[a-f0-9]{64}$/),
 		});
 		expect(rpcCall?.args.p_key_hash).not.toBe(result?.access_token);
+	});
+
+	it("refuses to mint an OAuth-managed key without gateway access consent", async () => {
+		const { issueOAuthManagedKeyForAuthorizationCode } = await import("./service");
+		const rpcCallCount = state.rpcCalls.length;
+
+		const result = await issueOAuthManagedKeyForAuthorizationCode(
+			"00000000-0000-0000-0000-000000000003",
+			{ userId: "user_1", workspaceId: "ws_1", clientId: "third_party", scopes: ["openid"] },
+		);
+
+		expect(result).toBeNull();
+		expect(state.rpcCalls).toHaveLength(rpcCallCount);
 	});
 
 	it("fails authorization approval when the grant cannot be persisted", async () => {

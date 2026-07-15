@@ -5,6 +5,8 @@ export const IDENTITY_SCOPES = [
 	"email",
 ] as const;
 
+export const GATEWAY_ACCESS_SCOPE = "gateway:access" as const;
+
 export const CAPABILITIES = {
 	ME_READ: "me:read",
 	MODELS_READ: "models:read",
@@ -49,6 +51,7 @@ export const DEFAULT_MANAGEMENT_KEY_CAPABILITIES = Object.freeze([
 
 export const ALL_SUPPORTED_SCOPES = Object.freeze([
 	...IDENTITY_SCOPES,
+	GATEWAY_ACCESS_SCOPE,
 	...CONTROL_CAPABILITIES,
 ]);
 

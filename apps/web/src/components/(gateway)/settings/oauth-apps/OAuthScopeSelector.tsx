@@ -20,7 +20,7 @@ export default function OAuthScopeSelector({
 			: selectedScopes.filter((entry) => entry !== scope);
 		onChange(next);
 	};
-	const groups: OAuthScopeOption["group"][] = ["Identity", "Read", "Write", "Delete"];
+	const groups: OAuthScopeOption["group"][] = ["Identity", "Access", "Read", "Write", "Delete"];
 
 	return (
 		<div className="space-y-4">

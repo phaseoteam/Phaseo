@@ -295,19 +295,19 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	"oauth-clients": {
 		usage: [
 			"phaseo oauth-clients list [--json]",
-			"phaseo oauth-clients create --name <name> --redirect-uri <uri>|--redirect-uris <uri,uri> [--client-type public|confidential] [--scopes scope_a,scope_b] [--json]",
+			"phaseo oauth-clients create --name <name> --redirect-uri <uri>|--redirect-uris <uri,uri> [--client-type public|confidential] [--scopes scope_a,scope_b] [--show-secret] [--json]",
 			"phaseo oauth-clients get <client-id> [--json]",
 			"phaseo oauth-clients update <client-id> [--name <name>] [--redirect-uri <uri>|--redirect-uris <uri,uri>] [--scopes scope_a,scope_b] [--json]",
 			"phaseo oauth-clients delete <client-id> [--json]",
-			"phaseo oauth-clients regenerate-secret <client-id> [--json]",
+			"phaseo oauth-clients regenerate-secret <client-id> [--show-secret] [--json]",
 		],
 	},
 	"oauth-clients list": { usage: ["phaseo oauth-clients list [--json]"] },
-	"oauth-clients create": { usage: ["phaseo oauth-clients create --name <name> --redirect-uri <uri>|--redirect-uris <uri,uri> [--client-type public|confidential] [--scopes scope_a,scope_b] [--json]"] },
+	"oauth-clients create": { usage: ["phaseo oauth-clients create --name <name> --redirect-uri <uri>|--redirect-uris <uri,uri> [--client-type public|confidential] [--scopes scope_a,scope_b] [--show-secret] [--json]"] },
 	"oauth-clients get": { usage: ["phaseo oauth-clients get <client-id> [--json]"] },
 	"oauth-clients update": { usage: ["phaseo oauth-clients update <client-id> [--name <name>] [--redirect-uri <uri>|--redirect-uris <uri,uri>] [--scopes scope_a,scope_b] [--json]"] },
 	"oauth-clients delete": { usage: ["phaseo oauth-clients delete <client-id> [--json]"] },
-	"oauth-clients regenerate-secret": { usage: ["phaseo oauth-clients regenerate-secret <client-id> [--json]"] },
+	"oauth-clients regenerate-secret": { usage: ["phaseo oauth-clients regenerate-secret <client-id> [--show-secret] [--json]"] },
 	"management-keys": {
 		usage: [
 			"phaseo management-keys list [--json]",
@@ -501,13 +501,14 @@ export function prefersDeviceCodeByEnvironment(
 }
 
 export function windowsBrowserOpenArgs(url: string): string[] {
-	const escapedUrl = url.replace(/'/g, "''");
-	return [
-		"-NoProfile",
-		"-NonInteractive",
-		"-Command",
-		`Start-Process -FilePath '${escapedUrl}'`,
-	];
+	return ["url.dll,FileProtocolHandler", url];
+}
+
+export function renderOneTimeClientSecret(secret: unknown, showSecret: boolean): string {
+	if (typeof secret !== "string" || !secret) return "";
+	return showSecret
+		? `Client secret: ${secret}\n`
+		: "Client secret hidden. Re-run with --json or --show-secret to capture it once.\n";
 }
 
 function loginOptionIndex(method: LoginMethod): number {
@@ -608,7 +609,8 @@ function openUrl(url: string): boolean {
 	}
 	try {
 		if (platform === "win32") {
-			spawn("powershell.exe", windowsBrowserOpenArgs(url), {
+			// Pass the authorization URL as data, never through a command interpreter.
+			spawn("rundll32.exe", windowsBrowserOpenArgs(url), {
 				detached: true,
 				stdio: "ignore",
 			}).unref();
@@ -1326,7 +1328,7 @@ async function createOauthClient(flags: Record<string, string | boolean>) {
 	const body = await request("/oauth-clients", { method: "POST", body: payload });
 	if (flagBool(flags, "json")) return printJson(body);
 	process.stdout.write(`Created OAuth client: ${body.name ?? payload.name}\nClient ID: ${body.client_id}\n`);
-	if (body.client_secret) process.stdout.write(`Client secret: ${body.client_secret}\n`);
+	process.stdout.write(renderOneTimeClientSecret(body.client_secret, flagBool(flags, "show-secret")));
 }
 
 async function getOauthClient(id: string | undefined, flags: Record<string, string | boolean>) {
@@ -1357,7 +1359,7 @@ async function regenerateOauthClientSecret(id: string | undefined, flags: Record
 	const body = await request(`/oauth-clients/${encodeURIComponent(id)}/regenerate-secret`, { method: "POST" });
 	if (flagBool(flags, "json")) return printJson(body);
 	process.stdout.write(`Regenerated secret for ${body.client_id}\n`);
-	if (body.client_secret) process.stdout.write(`Client secret: ${body.client_secret}\n`);
+	process.stdout.write(renderOneTimeClientSecret(body.client_secret, flagBool(flags, "show-secret")));
 }
 
 async function listManagementKeys(flags: Record<string, string | boolean>) {
@@ -1413,15 +1415,19 @@ async function deleteManagementKey(id: string | undefined, flags: Record<string,
 	process.stdout.write("Deleted management key.\n");
 }
 
-async function listModels(flags: Record<string, string | boolean>) {
+export function buildModelsListPath(flags: Record<string, string | boolean>): string {
 	const mine = flagBool(flags, "mine");
-	const body = await request(appendQuery(mine ? "/gateway/models/me" : "/gateway/models", {
+	return appendQuery(mine ? "/models/me" : "/models", {
 		limit: flagString(flags, "limit"),
 		offset: flagString(flags, "offset"),
 		availability: flagBool(flags, "all") ? "all" : undefined,
-	}));
+	});
+}
+
+async function listModels(flags: Record<string, string | boolean>) {
+	const body = await request(buildModelsListPath(flags));
 	if (flagBool(flags, "json")) return printJson(body);
-	printList(body.data ?? [], (model) => `${model.id ?? model.model_id} ${model.name ?? ""}`.trim());
+	printList(body.models ?? body.data ?? [], (model) => `${model.id ?? model.model_id} ${model.name ?? ""}`.trim());
 }
 
 async function listProviders(flags: Record<string, string | boolean>) {

@@ -21,7 +21,7 @@ import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin, configureRuntime, clearRuntime } from "@/runtime/env";
 import { z } from "zod";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
-import { CAPABILITIES, normalizeScopeList } from "@/lib/authz/capabilities";
+import { CAPABILITIES, GATEWAY_ACCESS_SCOPE, normalizeScopeList } from "@/lib/authz/capabilities";
 import { requireCapability, requireOAuthWorkspaceRole } from "./route-helpers";
 import { createOpaqueCode, hashOAuthClientSecret, isThirdPartyOAuthEnabled } from "@/lib/oauth/service";
 
@@ -31,6 +31,7 @@ const DEFAULT_THIRD_PARTY_ALLOWED_SCOPES = [
 	"openid",
 	"profile",
 	"email",
+	GATEWAY_ACCESS_SCOPE,
 	CAPABILITIES.ME_READ,
 	CAPABILITIES.WORKSPACES_READ,
 	CAPABILITIES.MODELS_READ,

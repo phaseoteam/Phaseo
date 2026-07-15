@@ -60,6 +60,12 @@ const SCOPE_META: Record<string, ScopeMeta> = {
 		icon: Shield,
 		tone: "identity",
 	},
+	"gateway:access": {
+		label: "Use AI Gateway with your credits",
+		description: "Lets the app run model inference billed to the workspace you select.",
+		icon: KeyRound,
+		tone: "write",
+	},
 	"me:read": {
 		label: "Read current account",
 		description: "Lets the app inspect the current user and active workspace context.",

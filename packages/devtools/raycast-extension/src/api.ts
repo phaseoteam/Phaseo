@@ -2,7 +2,9 @@ import { Cache, getPreferenceValues } from "@raycast/api";
 import type { Preferences, ModelsResponse, ModelFilters } from "./types";
 
 const DEFAULT_API_URL = "https://api.phaseo.app/v1";
-const LEGACY_API_URL = "https://api.phaseo.app/v1";
+// Keep this exact retired value so stored preferences are migrated before an
+// Authorization header is attached to the request.
+const LEGACY_API_URL = "https://api.phaseo.ai/v1";
 const apiCache = new Cache({ namespace: "phaseo-api" });
 
 const CACHE_TTL = {
