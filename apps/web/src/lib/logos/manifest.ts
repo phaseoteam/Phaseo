@@ -370,7 +370,7 @@ export const logoManifest = {
 		color: "/logos/tinker.svg",
 	},
 	"thinking-machines": {
-		color: "/logos/tinker.svg",
+		color: "/logos/thinking-machines.svg",
 	},
 	upstage: {
 		color: "/logos/upstage.svg",
