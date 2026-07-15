@@ -295,17 +295,17 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	"oauth-clients": {
 		usage: [
 			"phaseo oauth-clients list [--json]",
-			"phaseo oauth-clients create --name <name> --redirect-uri <uri> [--client-type public|confidential] [--scopes scope_a,scope_b] [--json]",
+			"phaseo oauth-clients create --name <name> --redirect-uri <uri>|--redirect-uris <uri,uri> [--client-type public|confidential] [--scopes scope_a,scope_b] [--json]",
 			"phaseo oauth-clients get <client-id> [--json]",
-			"phaseo oauth-clients update <client-id> [--name <name>] [--redirect-uri <uri>] [--scopes scope_a,scope_b] [--json]",
+			"phaseo oauth-clients update <client-id> [--name <name>] [--redirect-uri <uri>|--redirect-uris <uri,uri>] [--scopes scope_a,scope_b] [--json]",
 			"phaseo oauth-clients delete <client-id> [--json]",
 			"phaseo oauth-clients regenerate-secret <client-id> [--json]",
 		],
 	},
 	"oauth-clients list": { usage: ["phaseo oauth-clients list [--json]"] },
-	"oauth-clients create": { usage: ["phaseo oauth-clients create --name <name> --redirect-uri <uri> [--client-type public|confidential] [--scopes scope_a,scope_b] [--json]"] },
+	"oauth-clients create": { usage: ["phaseo oauth-clients create --name <name> --redirect-uri <uri>|--redirect-uris <uri,uri> [--client-type public|confidential] [--scopes scope_a,scope_b] [--json]"] },
 	"oauth-clients get": { usage: ["phaseo oauth-clients get <client-id> [--json]"] },
-	"oauth-clients update": { usage: ["phaseo oauth-clients update <client-id> [--name <name>] [--redirect-uri <uri>] [--scopes scope_a,scope_b] [--json]"] },
+	"oauth-clients update": { usage: ["phaseo oauth-clients update <client-id> [--name <name>] [--redirect-uri <uri>|--redirect-uris <uri,uri>] [--scopes scope_a,scope_b] [--json]"] },
 	"oauth-clients delete": { usage: ["phaseo oauth-clients delete <client-id> [--json]"] },
 	"oauth-clients regenerate-secret": { usage: ["phaseo oauth-clients regenerate-secret <client-id> [--json]"] },
 	"management-keys": {

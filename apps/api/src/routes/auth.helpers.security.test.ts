@@ -6,7 +6,8 @@ const state = vi.hoisted(() => ({
 
 vi.mock("@/runtime/env", () => ({
 	getBindings: () => ({
-		PHASEO_THIRD_PARTY_OAUTH_ENABLED: undefined,
+		PHASEO_THIRD_PARTY_OAUTH_ENABLED: "true",
+		PHASEO_LEGACY_OAUTH_EXCHANGE_ENABLED: undefined,
 	}),
 	getSupabaseAdmin: () => ({
 		from(table: string) {
@@ -17,7 +18,7 @@ vi.mock("@/runtime/env", () => ({
 }));
 
 describe("OAuth app resolution security", () => {
-	it("keeps redirect-URI based third-party OAuth app resolution closed during the CLI beta", async () => {
+	it("keeps the legacy exchange closed even when third-party OAuth is enabled", async () => {
 		const { resolveOAuthApp } = await import("./auth.helpers");
 
 		const result = await resolveOAuthApp({
@@ -29,7 +30,7 @@ describe("OAuth app resolution security", () => {
 
 		expect(result.response.status).toBe(403);
 		await expect(result.response.json()).resolves.toMatchObject({
-			error: "third_party_oauth_disabled",
+			error: "legacy_oauth_exchange_disabled",
 		});
 		expect(state.fromCalls).toEqual([]);
 	});

@@ -13,17 +13,18 @@ export async function checkOAuthRateLimit(
 	bucket: OAuthRateLimitBucket,
 	discriminator: string,
 ): Promise<boolean> {
+	const bindings = getBindings();
+	const production = String(bindings.ENV ?? "").trim().toLowerCase() === "prod";
 	try {
-		const bindings = getBindings();
 		const limiter = bucket === "strict"
 			? bindings.OAUTH_STRICT_RATE_LIMITER
 			: bindings.OAUTH_TOKEN_RATE_LIMITER;
-		if (!limiter) return true;
+		if (!limiter) return !production;
 		const clientAddress = req.headers.get("cf-connecting-ip") ?? "unknown";
 		const key = await digestKey(`${bucket}:${clientAddress}:${discriminator}`);
 		return (await limiter.limit({ key })).success;
 	} catch (error) {
 		console.error("OAuth rate limiter unavailable", error);
-		return true;
+		return !production;
 	}
 }

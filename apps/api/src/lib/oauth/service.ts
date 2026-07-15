@@ -104,6 +104,15 @@ export function isThirdPartyOAuthEnabled(): boolean {
 	return TRUTHY_VALUES.has(String(raw ?? "").trim().toLowerCase());
 }
 
+// The older /auth exchange flow mints keys that predate delegated-key
+// revocation metadata. Keep it independently disabled unless it is migrated.
+export function isLegacyOAuthExchangeEnabled(): boolean {
+	const bindings = getBindings();
+	const raw = bindings.PHASEO_LEGACY_OAUTH_EXCHANGE_ENABLED;
+	if (typeof raw === "boolean") return raw;
+	return TRUTHY_VALUES.has(String(raw ?? "").trim().toLowerCase());
+}
+
 export function isOAuthClientUsable(clientId: string): boolean {
 	return isFirstPartyCliClient(clientId) || isThirdPartyOAuthEnabled();
 }
