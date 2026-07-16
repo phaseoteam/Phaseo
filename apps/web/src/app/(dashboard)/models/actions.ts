@@ -19,6 +19,10 @@ import {
   normalizeModelStatus,
   type CapabilityStatusOption,
 } from "@/lib/models/editorOptions"
+import {
+  addPricingSkuMetadata,
+  buildPricingSkuRows,
+} from "@/lib/pricing/pricingMetadata"
 
 const CORE_TYPE_OPTIONS = MODEL_MODALITY_OPTIONS
 const MODEL_DETAIL_NAME_OPTIONS = [
@@ -255,6 +259,17 @@ async function deletePricingRulesForProviderPairs(
     if (error) {
       console.error("[updateModel] Error deleting pricing rules for pair:", pair, error)
       throw new Error(error.message)
+    }
+
+    const { error: skuError } = await supabase
+      .from("data_api_pricing_skus")
+      .delete()
+      .gte("model_key", modelKeyPrefix)
+      .lt("model_key", `${modelKeyPrefix}\uffff`)
+
+    if (skuError) {
+      console.error("[updateModel] Error deleting pricing SKUs for pair:", pair, skuError)
+      throw new Error(skuError.message)
     }
   }
 }
@@ -546,7 +561,7 @@ export async function updateModel(payload: ModelUpdatePayload) {
   const normalizedPricingRules =
     pricing_rules === undefined
       ? undefined
-      : pricing_rules
+      : addPricingSkuMetadata(pricing_rules
           .filter((rule) => rule.provider_id && rule.meter)
           .map((rule) => {
             const capabilityId = rule.capability_id?.trim() || "text.generate"
@@ -576,7 +591,7 @@ export async function updateModel(payload: ModelUpdatePayload) {
               effective_to: rule.effective_to ?? null,
               updated_at: nowIso,
             }
-          })
+          }))
 
   if (provider_models !== undefined) {
     const { data: existingProviderModelRows, error: existingProviderModelRowsError } = await supabase
@@ -900,6 +915,16 @@ export async function updateModel(payload: ModelUpdatePayload) {
     }
 
     if (normalizedPricingRules.length > 0) {
+      const pricingSkuRows = buildPricingSkuRows(normalizedPricingRules)
+      const { error: skuUpsertError } = await supabase
+        .from("data_api_pricing_skus")
+        .upsert(pricingSkuRows, { onConflict: "model_key,sku_id" })
+
+      if (skuUpsertError) {
+        console.error("[updateModel] Error upserting pricing SKUs:", skuUpsertError)
+        throw new Error(skuUpsertError.message)
+      }
+
       const { error: insertPricingError } = await supabase
         .from("data_api_pricing_rules")
         .insert(
@@ -917,6 +942,10 @@ export async function updateModel(payload: ModelUpdatePayload) {
             priority: rule.priority,
             effective_from: rule.effective_from,
             effective_to: rule.effective_to,
+            sku_id: rule.sku_id,
+            tier_id: rule.tier_id,
+            tier_label: rule.tier_label,
+            tier_order: rule.tier_order,
             updated_at: rule.updated_at,
           }))
         )

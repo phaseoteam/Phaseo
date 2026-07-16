@@ -52,13 +52,52 @@ function formatSupabaseError(error: any): string {
     if (/fetch failed|network|timed out|timeout/i.test(normalized)) {
         return `${normalized} | network_hint=check Supabase reachability and NEXT_PUBLIC_SUPABASE_URL`;
     }
+    if (/ux_model_links_model_platform/i.test(normalized)) {
+        return `${normalized} | schema_hint=production is missing migration 20260708110000_add_model_link_titles.sql`;
+    }
     return normalized;
+}
+
+export class ImporterDatabaseError extends Error {
+    readonly code: string | null;
+    readonly status: number | null;
+
+    constructor(ctx: string, error: any) {
+        super(`${ctx}: ${formatSupabaseError(error)}`);
+        this.name = "ImporterDatabaseError";
+        this.code = typeof error?.code === "string" ? error.code : null;
+        this.status = typeof error?.status === "number" ? error.status : null;
+        this.cause = error;
+    }
+}
+
+export function isTransientImporterError(error: unknown): boolean {
+    const value = error as { code?: unknown; status?: unknown; message?: unknown; cause?: any };
+    const code = typeof value?.code === "string"
+        ? value.code
+        : typeof value?.cause?.code === "string"
+            ? value.cause.code
+            : "";
+    const status = typeof value?.status === "number"
+        ? value.status
+        : typeof value?.cause?.status === "number"
+            ? value.cause.status
+            : null;
+    const message = typeof value?.message === "string" ? value.message : String(error);
+
+    return (
+        /^(08|40P01|40001|53|57P0)/.test(code) ||
+        status === 408 ||
+        status === 429 ||
+        (status !== null && status >= 500) ||
+        /fetch failed|network|timed out|timeout|connection reset|socket hang up/i.test(message)
+    );
 }
 
 /** Small helper to throw on Supabase errors with context */
 export function assertOk<T>(res: { data: T | null, error: any }, ctx: string) {
     if (res.error) {
-        throw new Error(`${ctx}: ${formatSupabaseError(res.error)}`);
+        throw new ImporterDatabaseError(ctx, res.error);
     }
     return res.data as T;
 }
