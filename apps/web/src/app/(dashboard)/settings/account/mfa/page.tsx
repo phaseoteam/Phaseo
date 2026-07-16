@@ -4,7 +4,6 @@ import AccountMFAClient from "@/components/(gateway)/settings/account/AccountMFA
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import { fetchSettingsAccountMfaInitialData } from "@/lib/fetchers/internal/fetchSettingsAccountMfaInitialData";
 import { passkeysAdminBetaFlag } from "@/lib/flags";
-import { isAdminViewer } from "@/lib/auth/getViewerRole";
 
 export const metadata = {
 	title: "MFA - Settings",
@@ -35,16 +34,13 @@ async function AccountMFAContent() {
 		);
 	}
 
-	const [isAdmin, passkeysEnabledForAdmin] = await Promise.all([
-		isAdminViewer(),
-		passkeysAdminBetaFlag(),
-	]);
+	const passkeysEnabled = await passkeysAdminBetaFlag();
 
 	return (
 		<AccountMFAClient
 			mfaEnabled={initialData.mfaEnabled}
 			mfaFactorId={initialData.mfaFactorId}
-			showPasskeyManagement={isAdmin && passkeysEnabledForAdmin}
+			showPasskeyManagement={passkeysEnabled}
 		/>
 	);
 }
