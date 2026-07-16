@@ -145,7 +145,7 @@ jobs:
 
             - name: Web validation
               if: matrix.app == 'web'
-              run: pnpm run web:build
+              run: pnpm --filter @phaseo/web exec next build --experimental-build-mode compile
 
     api-aimock:
         name: API AIMock matrix
