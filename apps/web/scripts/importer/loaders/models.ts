@@ -162,10 +162,6 @@ export async function loadModels(
     tracker: ChangeTracker,
     { modelId }: { modelId: string | null }
 ) {
-    const supa = client();
-    const nowIso = new Date().toISOString();
-    const hasApiModelIdColumn = await dataModelsHasApiModelIdColumn(supa);
-    const existingBenchmarkIds = await loadExistingBenchmarkIds(supa);
     if (!modelId) tracker.touchPrefix(DIR_MODELS);
 
     // ---------- 1) Read ALL JSON up front (no DB reads) ----------
@@ -228,8 +224,17 @@ export async function loadModels(
     }
 
     const hasChanges = changedModels.size > 0 || deletedModels.length > 0;
-    const shouldReconcileAllModels = !modelId;
+    const shouldReconcileAllModels = tracker.isFullImport();
     if (!hasChanges && !shouldReconcileAllModels) return;
+
+    const supa = client();
+    const nowIso = new Date().toISOString();
+    const hasApiModelIdColumn = await dataModelsHasApiModelIdColumn(supa);
+    const existingBenchmarkIds = await loadExistingBenchmarkIds(supa);
+
+    console.log(
+        `[models-import] changed_models=${changedModels.size} deleted_models=${deletedModels.length} full_mode=${shouldReconcileAllModels ? "yes" : "no"}`
+    );
 
     // ---------- 2) UPSERT core models ----------
     const flushCoreRows = async (rows: Array<Record<string, any>>) => {
@@ -552,7 +557,7 @@ export async function loadModels(
 
     await flushCoreRows(coreRows);
 
-    if (!modelId) {
+    if (!modelId && (shouldReconcileAllModels || deletedModels.length > 0)) {
         await pruneRowsByColumn(supa, "data_model_links", "model_id", modelIds, "data_model_links");
         await pruneRowsByColumn(
             supa,

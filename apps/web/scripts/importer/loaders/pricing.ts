@@ -11,6 +11,7 @@ import {
 } from "../supa";
 import { createHash } from "crypto";
 import { ChangeTracker } from "../state";
+import { addPricingSkuMetadata, buildPricingSkuRows } from "../pricingMetadata";
 
 function toFixed10(n: number) {
     // match numeric(20,10) for pricing rules storage
@@ -300,6 +301,10 @@ type PricingRuleRow = {
     effective_to: string | null;
     billing_timestamp_basis: PricingTimestampBasis;
     time_windows: PricingTimeWindow[];
+    sku_id: string;
+    tier_id: string;
+    tier_label: string;
+    tier_order: number;
 };
 
 export async function loadPricing(
@@ -370,7 +375,7 @@ export async function loadPricing(
                 if (ruleRows.length) pricingRuleKeys.add(computedKey);
 
                 const seenBuckets = new Map<string, number>(); // key: provider||model|capability|meter|prio|digest
-                const desiredRules: PricingRuleRow[] = [];
+                const desiredRulesWithoutSku: Omit<PricingRuleRow, "sku_id" | "tier_id" | "tier_label" | "tier_order">[] = [];
 
                 for (const r of ruleRows) {
                     const prio = r.priority ?? 100;
@@ -384,7 +389,7 @@ export async function loadPricing(
                     const unit = r.unit ?? "token";
                     const price_val = (r.price_per_unit ?? r.price_usd_per_unit ?? 0) as number;
 
-                    desiredRules.push({
+                    desiredRulesWithoutSku.push({
                         model_key: computedKey,
                         capability_id,
                         pricing_plan,
@@ -402,6 +407,7 @@ export async function loadPricing(
                         time_windows: normalizeTimeWindows(r.time_windows),
                     });
                 }
+                const desiredRules = addPricingSkuMetadata(desiredRulesWithoutSku);
 
                 if (modelId || forceFull || change.status !== "unchanged") {
                     capabilityState.ruleReplacements.push({ model_key: computedKey, rows: desiredRules });
@@ -455,6 +461,7 @@ export async function loadPricing(
         for (const del of deletedEntries) if (del.model_key) ruleDeletes.add(del.model_key);
 
         const rowsToInsert = ruleReplacements.flatMap(r => r.rows);
+        const skuRowsToInsert = buildPricingSkuRows(rowsToInsert);
 
         if (isDryRun()) {
             for (const key of ruleDeletes) {
@@ -462,6 +469,9 @@ export async function loadPricing(
             }
             for (const row of rowsToInsert) {
                 logWrite("public.data_api_pricing_rules", "INSERT", row, { onConflict: null });
+            }
+            for (const row of skuRowsToInsert) {
+                logWrite("public.data_api_pricing_skus", "UPSERT", row, { onConflict: "model_key,sku_id" });
             }
         } else {
             if (ruleDeletes.size) {
@@ -471,6 +481,23 @@ export async function loadPricing(
                         .delete()
                         .in("model_key", [...ruleDeletes]),
                     "prune data_api_pricing_rules (targeted)"
+                );
+                assertOk(
+                    await supa
+                        .from("data_api_pricing_skus")
+                        .delete()
+                        .in("model_key", [...ruleDeletes]),
+                    "prune data_api_pricing_skus (targeted)"
+                );
+            }
+
+            for (const group of chunk(skuRowsToInsert, 500)) {
+                if (!group.length) continue;
+                assertOk(
+                    await supa
+                        .from("data_api_pricing_skus")
+                        .upsert(group, { onConflict: "model_key,sku_id" }),
+                    "upsert data_api_pricing_skus"
                 );
             }
 

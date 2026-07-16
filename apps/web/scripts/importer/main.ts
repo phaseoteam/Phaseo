@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { isDryRun } from "./supa";
+import { isDryRun, isTransientImporterError } from "./supa";
 import { ChangeTracker } from "./state";
 import { cleanDeleted } from "./cleanup";
 import { loadModels } from "./loaders/models";
@@ -19,9 +19,10 @@ const getArgValue = (name: string) =>
 
 async function main() {
     const modelFilter = getArgValue("model");
-    const forcePricing = process.argv.includes("--full-pricing") || process.argv.includes("--full");
+    const forceFull = process.argv.includes("--full");
+    const forcePricing = process.argv.includes("--full-pricing") || forceFull;
     if (!modelFilter) await cleanDeleted();
-    const tracker = await ChangeTracker.init();
+    const tracker = await ChangeTracker.init(undefined, { forceFull });
     const requestedSection =
         process.argv.find(a => a.startsWith("--section="))?.split("=")[1] || "all";
     const section =
@@ -34,37 +35,46 @@ async function main() {
         process.exit(1);
     }
 
+    const timed = async (name: string, task: () => Promise<void>) => {
+        const startedAt = performance.now();
+        try {
+            await task();
+        } finally {
+            console.log(`[importer-timing] section=${name} duration_ms=${Math.round(performance.now() - startedAt)}`);
+        }
+    };
+
     const tasks: Record<string, (tracker: ChangeTracker) => Promise<void>> = {
-        families: loadFamilies,
-        models: tracker => loadModels(tracker, { modelId: modelFilter ?? null }),
+        families: tracker => timed("families", () => loadFamilies(tracker)),
+        models: tracker => timed("models", () => loadModels(tracker, { modelId: modelFilter ?? null })),
         pricing: tracker =>
-            loadPricing(tracker, { modelId: modelFilter ?? null, forceFull: forcePricing }),
+            timed("pricing", () => loadPricing(tracker, { modelId: modelFilter ?? null, forceFull: forcePricing })),
         model: async tracker => {
-            await loadModels(tracker, { modelId: modelFilter ?? null });
-            await loadProviders(tracker, { modelId: modelFilter ?? null });
-            await loadPricing(tracker, {
+            await timed("models", () => loadModels(tracker, { modelId: modelFilter ?? null }));
+            await timed("providers", () => loadProviders(tracker, { modelId: modelFilter ?? null }));
+            await timed("pricing", () => loadPricing(tracker, {
                 modelId: modelFilter ?? null,
                 forceFull: forcePricing,
-            });
+            }));
         },
-        benchmarks: loadBenchmarks,
-        organisations: loadOrganisations,
+        benchmarks: tracker => timed("benchmarks", () => loadBenchmarks(tracker)),
+        organisations: tracker => timed("organisations", () => loadOrganisations(tracker)),
         providers: async tracker => {
             // Keep provider model references valid by refreshing data_models first.
-            await loadModels(tracker, { modelId: null });
-            await loadProviders(tracker);
+            await timed("models", () => loadModels(tracker, { modelId: null }));
+            await timed("providers", () => loadProviders(tracker));
         },
-        aliases: loadAliases,
-        subscription_plans: loadSubscriptionPlans,
+        aliases: tracker => timed("aliases", () => loadAliases(tracker)),
+        subscription_plans: tracker => timed("subscription_plans", () => loadSubscriptionPlans(tracker)),
         all: async tracker => {
-            await loadOrganisations(tracker);
-            await loadBenchmarks(tracker);
-            await loadFamilies(tracker);
-            await loadModels(tracker, { modelId: null });
-            await loadAliases(tracker); // optional: if you have the aliases loader
-            await loadProviders(tracker);
-            await loadPricing(tracker, { modelId: null, forceFull: forcePricing });
-            await loadSubscriptionPlans(tracker);
+            await timed("organisations", () => loadOrganisations(tracker));
+            await timed("benchmarks", () => loadBenchmarks(tracker));
+            await timed("families", () => loadFamilies(tracker));
+            await timed("models", () => loadModels(tracker, { modelId: null }));
+            await timed("aliases", () => loadAliases(tracker));
+            await timed("providers", () => loadProviders(tracker));
+            await timed("pricing", () => loadPricing(tracker, { modelId: null, forceFull: forcePricing }));
+            await timed("subscription_plans", () => loadSubscriptionPlans(tracker));
         },
     };
     const fn = tasks[section];
@@ -78,7 +88,8 @@ async function main() {
 
     console.log(`>> Importing: ${section}`);
     if (modelFilter) console.log(`>> Model filter: ${modelFilter}`);
-    if (forcePricing) console.log(">> Full pricing import mode enabled.");
+    if (forceFull) console.log(">> Full import mode enabled; hashes will be ignored.");
+    else if (forcePricing) console.log(">> Full pricing import mode enabled.");
     await fn(tracker);
     await tracker.persist({ dryRun: isDryRun() });
     console.log(">> Done.");
@@ -91,5 +102,5 @@ main()
     })
     .catch(err => {
         console.error(err);
-        process.exit(1);
+        process.exit(isTransientImporterError(err) ? 75 : 1);
     });

@@ -47,14 +47,25 @@ export class ChangeTracker {
     private next: PersistedState;
     private touchedPrefixes = new Set<string>();
 
-    private constructor(prev: PersistedState, private statePath: string) {
+    private constructor(
+        prev: PersistedState,
+        private statePath: string,
+        private forceFull: boolean
+    ) {
         this.prev = prev;
         this.next = { version: prev.version, files: {} };
     }
 
-    static async init(statePath: string = DEFAULT_STATE_PATH) {
+    static async init(
+        statePath: string = DEFAULT_STATE_PATH,
+        { forceFull = false }: { forceFull?: boolean } = {}
+    ) {
         const prev = await loadPersistedState(statePath);
-        return new ChangeTracker(prev, statePath);
+        return new ChangeTracker(prev, statePath, forceFull);
+    }
+
+    isFullImport() {
+        return this.forceFull;
     }
 
     touchPrefix(prefix: string) {
@@ -70,6 +81,9 @@ export class ChangeTracker {
         const previous = this.prev.files[norm];
         if (!previous) {
             return { path: norm, status: "added", current };
+        }
+        if (this.forceFull) {
+            return { path: norm, status: "changed", previous, current };
         }
         if (previous.hash !== hash) {
             return { path: norm, status: "changed", previous, current };

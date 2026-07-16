@@ -212,6 +212,9 @@ jobs:
     importer:
         name: Run importer on main
         runs-on: ubuntu-latest
+        concurrency:
+            group: importer-main
+            cancel-in-progress: false
         needs:
             - data
             - check-paths
@@ -239,6 +242,15 @@ jobs:
             - name: Install dependencies
               run: corepack pnpm install --frozen-lockfile
 
+            - name: Restore importer hash state
+              id: importer-state-cache
+              uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+              with:
+                  path: packages/data/catalog/src/data/.import-state.json
+                  key: importer-state-main-${{ github.run_id }}
+                  restore-keys: |
+                      importer-state-main-
+
             - name: Run importer (all sections)
               if: ${{ env.SUPABASE_SERVICE_ROLE_KEY != '' && env.NEXT_PUBLIC_SUPABASE_URL != '' }}
               env:
@@ -249,9 +261,17 @@ jobs:
                   set -euo pipefail
                   for attempt in 1 2 3; do
                     echo "Running importer attempt ${attempt}/3"
-                    if (cd apps/web && pnpm exec tsx scripts/importer/main.ts --section=all); then
+                    set +e
+                    (cd apps/web && pnpm exec tsx scripts/importer/main.ts --section=all)
+                    exit_code=$?
+                    set -e
+                    if [ "${exit_code}" -eq 0 ]; then
                       echo "Importer succeeded on attempt ${attempt}"
                       exit 0
+                    fi
+                    if [ "${exit_code}" -ne 75 ]; then
+                      echo "Importer failed with a deterministic error (exit ${exit_code}); not retrying."
+                      exit "${exit_code}"
                     fi
                     if [ "${attempt}" -lt 3 ]; then
                       sleep_for=$((attempt * 15))
@@ -261,6 +281,13 @@ jobs:
                   done
                   echo "Importer failed after 3 attempts"
                   exit 1
+
+            - name: Save importer hash state
+              if: success()
+              uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+              with:
+                  path: packages/data/catalog/src/data/.import-state.json
+                  key: ${{ steps.importer-state-cache.outputs.cache-primary-key }}
 
     sdk-gen:
         name: Generate SDKs
