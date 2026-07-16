@@ -1034,7 +1034,7 @@ export async function loadProviders(
         );
     }
 
-    const deletions = tracker.getDeleted(DIR_PROVIDERS);
+    const deletions = modelFilter ? [] : tracker.getDeleted(DIR_PROVIDERS);
     for (const deletion of deletions) {
         const linkedModelIds = Array.isArray(deletion.info.meta?.linked_model_ids)
             ? deletion.info.meta.linked_model_ids
