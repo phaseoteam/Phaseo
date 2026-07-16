@@ -300,7 +300,13 @@ export function ModelSettingsDialog({
                 delete textCommitTimersRef.current[key];
             }
         }
-        setTextDraft(textDraftFromSettings(settings));
+        const nextDraft = textDraftFromSettings(settings);
+        setTextDraft((current) =>
+            current.displayName === nextDraft.displayName &&
+            current.systemPrompt === nextDraft.systemPrompt
+                ? current
+                : nextDraft
+        );
     }, [selectedModelId, settings.displayName, settings.systemPrompt]);
     useEffect(() => {
         return () => {
@@ -315,11 +321,15 @@ export function ModelSettingsDialog({
             }
         };
     }, []);
-    useEffect(() => {
-        if (!open) {
-            for (const key of TEXT_SETTING_KEYS) flushTextDraft(key);
-        }
-    }, [flushTextDraft, open]);
+    const handleDialogOpenChange = useCallback(
+        (nextOpen: boolean) => {
+            if (!nextOpen) {
+                for (const key of TEXT_SETTING_KEYS) flushTextDraft(key);
+            }
+            onOpenChange(nextOpen);
+        },
+        [flushTextDraft, onOpenChange]
+    );
     const filteredProviderOptions = supportedProvidersForModel
         ? providerOptions.filter((provider) =>
               supportedProvidersForModel.includes(provider.id)
@@ -426,7 +436,7 @@ export function ModelSettingsDialog({
     );
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={handleDialogOpenChange}>
             <DialogContent
                 className={
                     modelPickerOpen

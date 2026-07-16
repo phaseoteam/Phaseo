@@ -4465,7 +4465,8 @@ function ChatPlaygroundContent({
 					responseLayout={responseLayout}
 				/>
 			</SidebarInset>
-			<ModelSettingsDialog
+			{modelSettingsOpen ? (
+				<ModelSettingsDialog
 				open={modelSettingsOpen}
 				onOpenChange={(open) => {
 					setModelSettingsOpen(open);
@@ -4504,7 +4505,8 @@ function ChatPlaygroundContent({
 				onReset={resetModelSettings}
 				onApplyToAll={applyModelSettingsToAll}
 				canApplyToAll={selectedModelIds.length > 1}
-			/>
+				/>
+			) : null}
 			<ChatSearchDialog
 				open={searchOpen}
 				onOpenChange={setSearchOpen}
