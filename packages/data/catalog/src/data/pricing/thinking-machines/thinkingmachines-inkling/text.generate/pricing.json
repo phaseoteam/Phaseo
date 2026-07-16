@@ -1,10 +1,46 @@
 {
-  "key": "thinking-machines:thinkingmachines/Inkling:peft:262144:text.generate",
+  "key": "thinking-machines:thinking-machines/inkling:text.generate",
   "api_provider_id": "thinking-machines",
   "provider_slug": "thinking-machines",
-  "api_model_id": "thinkingmachines/Inkling:peft:262144",
+  "api_model_id": "thinking-machines/inkling",
   "capability_id": "text.generate",
   "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 7.48,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Undiscounted list price implied by Thinking Machines' advertised 50% Inkling launch promotion; retained as the comparison and fallback rate.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-15T00:00:00Z"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.496,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Undiscounted list price implied by Thinking Machines' advertised 50% Inkling launch promotion; retained as the comparison and fallback rate.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-15T00:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 18.72,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Undiscounted list price implied by Thinking Machines' advertised 50% Inkling launch promotion; retained as the comparison and fallback rate.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-15T00:00:00Z"
+    },
     {
       "meter": "input_text_tokens",
       "unit": "token",
@@ -12,9 +48,21 @@
       "price_per_unit": 3.74,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Mapped from Tinker Prefill pricing for Inkling (256K).",
+      "note": "Limited-time 50% Inkling launch promotion; Thinking Machines has not published an end date.",
       "match": [],
-      "priority": 100,
+      "priority": 200,
+      "effective_from": "2026-07-15T00:00:00Z"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.748,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Limited-time 50% Inkling launch promotion; Thinking Machines has not published an end date.",
+      "match": [],
+      "priority": 200,
       "effective_from": "2026-07-15T00:00:00Z"
     },
     {
@@ -24,9 +72,9 @@
       "price_per_unit": 9.36,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Mapped from Tinker Sample pricing for Inkling (256K).",
+      "note": "Limited-time 50% Inkling launch promotion; Thinking Machines has not published an end date.",
       "match": [],
-      "priority": 100,
+      "priority": 200,
       "effective_from": "2026-07-15T00:00:00Z"
     }
   ]

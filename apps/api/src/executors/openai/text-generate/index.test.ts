@@ -525,6 +525,57 @@ describe("openai text executor HTTP mode", () => {
 		});
 	});
 
+	it("preserves pro mode when requested on the canonical GPT-5.6 slug", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/responses",
+			response: jsonResponse({
+				id: "resp_http_7",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model: "gpt-5.6-sol",
+				status: "completed",
+				output: [{
+					type: "message",
+					role: "assistant",
+					content: [{ type: "output_text", text: "ok" }],
+				}],
+				usage: {
+					input_tokens: 2,
+					output_tokens: 9,
+					output_tokens_details: { reasoning_tokens: 8 },
+					total_tokens: 11,
+				},
+			}, { status: 200 }),
+		}]);
+
+		const result = await executor({
+			...buildArgs({
+				model: "openai/gpt-5.6-sol",
+				reasoning: { effort: "max", mode: "pro" },
+			}),
+			providerModelSlug: "gpt-5.6-sol",
+			capabilityParams: {
+				request: {
+					allowlist: ["reasoning.effort", "reasoning.mode", "max_tokens"],
+				},
+			},
+		});
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect(mock.calls).toHaveLength(1);
+		expect(mock.calls[0]?.bodyJson?.model).toBe("gpt-5.6-sol");
+		expect(mock.calls[0]?.bodyJson?.reasoning).toMatchObject({
+			effort: "max",
+			mode: "pro",
+		});
+		if (result.kind !== "completed") return;
+		expect(result.bill.usage).toMatchObject({
+			output_text_tokens: 9,
+			reasoning_tokens: 8,
+		});
+	});
+
 	it("prices cached input as subset (no double count)", async () => {
 		const pricingCard = {
 			provider: "openai",
