@@ -266,6 +266,10 @@ export function shouldSyncProviderDiscoveryIssues(): boolean {
 	return toBool(readBindingEnv(["MODEL_DISCOVERY_ISSUE_SYNC_ENABLED"]) ?? "true", true);
 }
 
+export function shouldSyncPricingDiscoveryIssues(): boolean {
+	return toBool(readBindingEnv(["MODEL_DISCOVERY_PRICING_ISSUE_SYNC_ENABLED"]) ?? "false", false);
+}
+
 export function buildProviderIssueEntries(args: {
 	changes: Array<{ providerId: string; providerName: string; added: string[]; removed: string[] }>;
 	detectedAt: string;

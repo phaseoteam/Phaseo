@@ -30,6 +30,7 @@ import {
 	buildProviderPricingIssueEntries,
 	buildProviderIssueEntries,
 	shouldSyncProviderDiscoveryIssues,
+	shouldSyncPricingDiscoveryIssues,
 	syncUpstreamDiscoveryIssues,
 } from "./github-issues";
 import { fetchPricingTableSnapshots, type PricingTableSnapshot } from "./pricing-tables";
@@ -414,6 +415,7 @@ function compactSummary(summary: DiscoveryRunSummary, extra: { notificationError
 			fingerprint: summary.configuredModelCoverageMonitor.fingerprint,
 			error: summary.configuredModelCoverageMonitor.error ?? undefined,
 		},
+		issueSync: summary.issueSync,
 		notificationError: extra.notificationError ?? undefined,
 		error: extra.error ?? undefined,
 	};
@@ -967,29 +969,34 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			} else {
 				try {
 					const detectedAt = new Date().toISOString();
+					const pricingIssueEntries = shouldSyncPricingDiscoveryIssues()
+						? [
+								...buildCatalogPricingIssueEntries({
+									changes: pricingMonitor.providerChanges.map((change) => ({
+										...change,
+										providerName: PROVIDER_NAMES_BY_ID.get(change.providerId) ?? change.providerId,
+									})),
+									detectedAt,
+									detectionSource: args.source,
+								}),
+								...buildProviderPricingIssueEntries({
+									changes: providerApiPricingMonitor.providerChanges.map((change) => ({
+										...change,
+										providerName: PROVIDER_NAMES_BY_ID.get(change.providerId) ?? change.providerId,
+									})),
+									detectedAt,
+									detectionSource: args.source,
+								}),
+								...buildPricingTableIssueEntries({
+									changes: pricingTableMonitor.providerChanges,
+									detectedAt,
+									detectionSource: args.source,
+								}),
+							]
+						: [];
 					const issueEntries = [
 						...buildProviderIssueEntries({ changes, detectedAt, detectionSource: args.source }),
-						...buildCatalogPricingIssueEntries({
-							changes: pricingMonitor.providerChanges.map((change) => ({
-								...change,
-								providerName: PROVIDER_NAMES_BY_ID.get(change.providerId) ?? change.providerId,
-							})),
-							detectedAt,
-							detectionSource: args.source,
-						}),
-						...buildProviderPricingIssueEntries({
-							changes: providerApiPricingMonitor.providerChanges.map((change) => ({
-								...change,
-								providerName: PROVIDER_NAMES_BY_ID.get(change.providerId) ?? change.providerId,
-							})),
-							detectedAt,
-							detectionSource: args.source,
-						}),
-						...buildPricingTableIssueEntries({
-							changes: pricingTableMonitor.providerChanges,
-							detectedAt,
-							detectionSource: args.source,
-						}),
+						...pricingIssueEntries,
 					];
 					issueSyncSummary = await syncUpstreamDiscoveryIssues(issueEntries);
 					if (issueSyncSummary.skipped) {
