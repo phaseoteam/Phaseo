@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mmmu-pro-python",
+  "benchmark_name": "MMMU Pro with Python",
+  "category": "multimodal",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": "https://mmmu-benchmark.github.io/",
+  "total_models": 1
+}

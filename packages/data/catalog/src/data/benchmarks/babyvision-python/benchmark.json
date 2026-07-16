@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "babyvision-python",
+  "benchmark_name": "BabyVision with Python",
+  "category": "multimodal",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": "https://www.kimi.com/blog/kimi-k3",
+  "total_models": 1
+}

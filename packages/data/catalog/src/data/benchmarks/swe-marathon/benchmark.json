@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "swe-marathon",
+  "benchmark_name": "SWE Marathon",
+  "category": "code",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": "https://www.swemarathon.org/",
+  "total_models": 1
+}

@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "mathvision-python",
+  "benchmark_name": "MathVision with Python",
+  "category": "math",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": "https://mathvision-cuhk.github.io/",
+  "total_models": 1
+}

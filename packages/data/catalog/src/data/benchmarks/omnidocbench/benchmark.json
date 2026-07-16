@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "omnidocbench",
+  "benchmark_name": "OmniDocBench",
+  "category": "multimodal",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": "https://github.com/opendatalab/OmniDocBench",
+  "total_models": 1
+}
