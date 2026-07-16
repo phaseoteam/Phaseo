@@ -5,12 +5,15 @@ compatibility_flags = ["global_fetch_strictly_public"]
 workers_dev = false
 preview_urls = false
 
+[limits]
+cpu_ms = 30000
+
 [vars]
 ENV = "prod"
 SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
 MODEL_DISCOVERY_ENABLED = "true"
 MODEL_DISCOVERY_RETENTION_DAYS = "7"
-MODEL_DISCOVERY_SHARD_SIZE = "20"
+MODEL_DISCOVERY_CONCURRENCY = "5"
 VIDEO_RECONCILIATION_ENABLED = "true"
 VIDEO_RECONCILIATION_LIMIT = "1000"
 VIDEO_RECONCILIATION_CONCURRENCY = "24"

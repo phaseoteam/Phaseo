@@ -28,9 +28,6 @@ vi.mock("@/pipeline/video-reconciliation", () => ({
 }));
 
 vi.mock("@/pipeline/model-discovery", () => ({
-	DEFAULT_MODEL_DISCOVERY_SHARD_SIZE: 250,
-	getModelDiscoveryShardCount: vi.fn(() => 4),
-	normalizeModelDiscoveryShardSize: vi.fn((value: number) => value),
 	runModelDiscoveryJob: (...args: unknown[]) => runModelDiscoveryJobMock(...args),
 }));
 
@@ -124,7 +121,13 @@ describe("handleScheduledEvent", () => {
 	it("prioritizes model discovery before core jobs when both are due", async () => {
 		await handleScheduledEvent(scheduledEventAt("2026-06-10T00:15:00.000Z"), {} as any);
 
-		expect(runModelDiscoveryJobMock).toHaveBeenCalledOnce();
+		expect(runModelDiscoveryJobMock).toHaveBeenCalledWith({
+			trigger: "scheduled",
+			source: "cloudflare_cron:full-sweep",
+			scheduledAtIso: "2026-06-10T00:15:00.000Z",
+			notify: true,
+			prune: true,
+		});
 		expect(runAsyncWebhookRetriesJobMock).toHaveBeenCalledOnce();
 		expect(runModelDiscoveryJobMock.mock.invocationCallOrder[0]).toBeLessThan(
 			runAsyncWebhookRetriesJobMock.mock.invocationCallOrder[0]!,

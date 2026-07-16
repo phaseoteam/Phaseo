@@ -1,24 +1,15 @@
 // src/scheduled/index.ts
 // Purpose: Scheduled event handlers.
 // Why: Keep cron logic out of the main app routing entrypoint.
-// How: Runs one deterministic model discovery shard per cron invocation.
+// How: Runs one complete model discovery sweep on each configured watcher tick.
 
 import type { GatewayBindings } from "@/runtime/env";
 import { clearRuntime, configureRuntime, getSupabaseAdmin } from "@/runtime/env";
-import {
-	DEFAULT_MODEL_DISCOVERY_SHARD_SIZE,
-	getModelDiscoveryShardCount,
-	normalizeModelDiscoveryShardSize,
-	runModelDiscoveryJob,
-} from "@/pipeline/model-discovery";
+import { runModelDiscoveryJob } from "@/pipeline/model-discovery";
 import { runAsyncWebhookRetriesJob } from "@/core/async-notifications";
 import { runBatchReconciliationJob } from "@/pipeline/batch-reconciliation";
 import { runVideoReconciliationJob } from "@/pipeline/video-reconciliation";
 import { runGatewayIoRetentionBillingJob } from "@/pipeline/audit/io-retention-billing";
-
-const MODEL_DISCOVERY_TICKS_PER_DAY = Array.from({ length: 24 }, (_value, hour) =>
-	60 / getModelDiscoveryStepMinutesUtc(hour),
-).reduce((total, ticks) => total + ticks, 0);
 
 function serializeError(error: unknown): Record<string, unknown> {
 	if (error instanceof Error) {
@@ -101,42 +92,15 @@ function isDailyRetentionBillingTick(event: ScheduledController): boolean {
 	return scheduledAt.getUTCHours() === 0 && scheduledAt.getUTCMinutes() === 10;
 }
 
-function getModelDiscoveryExecutionIndex(event: ScheduledController): number {
-	const scheduledAt = new Date(event.scheduledTime);
-	const hour = scheduledAt.getUTCHours();
-	const minute = scheduledAt.getUTCMinutes();
-	const dayNumber = Math.floor(event.scheduledTime / (24 * 60 * 60 * 1000));
-
-	let ticksBeforeHour = 0;
-	for (let currentHour = 0; currentHour < hour; currentHour += 1) {
-		ticksBeforeHour += 60 / getModelDiscoveryStepMinutesUtc(currentHour);
-	}
-
-	return (
-		dayNumber * MODEL_DISCOVERY_TICKS_PER_DAY +
-		ticksBeforeHour +
-		Math.floor(minute / getModelDiscoveryStepMinutesUtc(hour))
-	);
-}
-
 async function handleModelDiscoveryScheduledEvent(event: ScheduledController, env: GatewayBindings): Promise<void> {
-	const shardSize = normalizeModelDiscoveryShardSize(
-		toInt(env.MODEL_DISCOVERY_SHARD_SIZE, DEFAULT_MODEL_DISCOVERY_SHARD_SIZE),
-	);
-	const shardCount = getModelDiscoveryShardCount(shardSize);
-	const executionIndex = getModelDiscoveryExecutionIndex(event);
-	const shardIndex = executionIndex % shardCount;
-
 	configureRuntime(env);
 	try {
 		await runModelDiscoveryJob({
 			trigger: "scheduled",
-			source: `cloudflare_cron:shard-${shardIndex + 1}-of-${shardCount}`,
+			source: "cloudflare_cron:full-sweep",
 			scheduledAtIso: new Date(event.scheduledTime).toISOString(),
-			shardIndex,
-			shardCount,
 			notify: true,
-			prune: shardIndex === 0,
+			prune: true,
 		});
 	} finally {
 		clearRuntime();

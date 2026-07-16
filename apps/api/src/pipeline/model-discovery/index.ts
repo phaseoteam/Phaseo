@@ -216,6 +216,8 @@ type RunStatus = "completed" | "completed_with_errors" | "failed";
 const DISCOVERY_TIMEOUT_MS = 30_000;
 const ABANDONED_RUN_AFTER_MS = 20 * 60 * 1000;
 const DEFAULT_RETENTION_DAYS = 7;
+const DEFAULT_DISCOVERY_CONCURRENCY = 5;
+const MAX_DISCOVERY_CONCURRENCY = 5;
 export const DEFAULT_MODEL_DISCOVERY_SHARD_SIZE = 20;
 export const MAX_MODEL_DISCOVERY_SHARD_SIZE = 25;
 const UPSERT_BATCH_SIZE = 500;
@@ -622,7 +624,19 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		let providerApiModelsWithPricing = 0;
 		let providerApiPricingBaselineInitialized = false;
 
-		for (const provider of providers) {
+		const providerOrder = new Map(providers.map((provider, index) => [provider.providerId, index]));
+		const discoveryConcurrency = Math.min(
+			MAX_DISCOVERY_CONCURRENCY,
+			toInt(
+				readBindingEnv(["MODEL_DISCOVERY_CONCURRENCY"]) ?? String(DEFAULT_DISCOVERY_CONCURRENCY),
+				DEFAULT_DISCOVERY_CONCURRENCY,
+			),
+		);
+		let nextProviderIndex = 0;
+		const runProviderWorker = async (): Promise<void> => {
+			while (nextProviderIndex < providers.length) {
+				const provider = providers[nextProviderIndex++];
+				if (!provider) return;
 			const requiresApiKey = (provider.authStyle ?? "bearer") !== "none";
 			const apiKey = provider.apiKeyEnv ? readBindingEnv(provider.apiKeyEnv) : null;
 			if (requiresApiKey && !apiKey) {
@@ -738,7 +752,20 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 					durationMs: Date.now() - providerStarted,
 				});
 			}
-		}
+			}
+		};
+		await Promise.all(
+			Array.from(
+				{ length: Math.min(discoveryConcurrency, providers.length) },
+				() => runProviderWorker(),
+			),
+		);
+		results.sort(
+			(a, b) => (providerOrder.get(a.providerId) ?? 0) - (providerOrder.get(b.providerId) ?? 0),
+		);
+		changes.sort(
+			(a, b) => (providerOrder.get(a.providerId) ?? 0) - (providerOrder.get(b.providerId) ?? 0),
+		);
 
 		let pricingMonitor: PricingMonitorSummary = {
 			enabled: pricingEnabled,
