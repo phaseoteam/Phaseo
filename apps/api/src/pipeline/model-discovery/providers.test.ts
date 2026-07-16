@@ -45,6 +45,7 @@ describe("MODEL_DISCOVERY_PROVIDERS", () => {
 		expect(providerIds.has("atlas-cloud")).toBe(false);
 		expect(providerIds.has("liquid")).toBe(false);
 		expect(providerIds.has("moonshot-ai")).toBe(false);
+		expect(providerIds.has("moonshotai-turbo")).toBe(false);
 		expect(providerIds.has("novitaai")).toBe(false);
 		expect(providerIds.has("voyage")).toBe(false);
 		expect(providerIds.has("voyageai")).toBe(false);

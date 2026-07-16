@@ -39,6 +39,7 @@ const PROVIDER_ID_ALIASES_TO_SKIP = new Set<string>([
 	"liquid",
 	"moonshot-ai",
 	"moonshot-ai-turbo",
+	"moonshotai-turbo",
 	"novitaai",
 	"qwen",
 	"relace",
@@ -83,7 +84,6 @@ const PROVIDER_OVERRIDES: Record<string, ProviderOverride> = {
 	ionrouter: { providerName: "IonRouter" },
 	moonshotai: { providerName: "Moonshot AI", apiKeyEnv: ["MOONSHOT_AI_API_KEY"] },
 	mara: { providerName: "MARA" },
-	"moonshotai-turbo": { providerName: "Moonshot AI Turbo", apiKeyEnv: ["MOONSHOT_AI_API_KEY"] },
 	"nebius-token-factory": { providerName: "Nebius Token Factory", apiKeyEnv: ["NEBIUS_API_KEY", "NEBIUS_TOKEN_FACTORY_API_KEY"] },
 	"nebius-token-factory-eu-north-1": {
 		providerName: "Nebius Token Factory EU North 1",
