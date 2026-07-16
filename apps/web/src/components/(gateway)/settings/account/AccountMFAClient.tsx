@@ -37,11 +37,9 @@ import { Loader2, Shield, ShieldCheck } from "lucide-react";
 export default function AccountMFAClient({
 	mfaEnabled,
 	mfaFactorId,
-	showPasskeyManagement,
 }: {
 	mfaEnabled: boolean;
 	mfaFactorId: string | null;
-	showPasskeyManagement: boolean;
 }) {
 	const router = useRouter();
 
@@ -170,7 +168,7 @@ export default function AccountMFAClient({
 				onOpenChange={handleMFADialogClose}
 				onSuccess={handleMFASuccess}
 			/>
-			{showPasskeyManagement ? <PasskeyManager /> : null}
+			<PasskeyManager />
 		</div>
 	);
 }

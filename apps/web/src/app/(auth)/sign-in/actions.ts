@@ -13,7 +13,6 @@ import {
 } from "@/lib/auth/authOrigin";
 import { sanitizeReturnUrl } from "@/lib/auth/return-url";
 import { finalizePostLogin } from "@/lib/auth/post-login";
-import { passkeysAdminBetaFlag } from "@/lib/flags";
 import {
 	buildStartSsoRequest,
 	mapSsoAuthErrorMessage,
@@ -137,11 +136,6 @@ export async function completePasskeySignIn(returnUrl?: string) {
 	} = await supabase.auth.getUser();
 	if (!user) {
 		throw new Error("Passkey sign-in did not create a session");
-	}
-
-	if (!(await passkeysAdminBetaFlag())) {
-		await supabase.auth.signOut();
-		throw new Error("passkey_disabled");
 	}
 
 	const {
