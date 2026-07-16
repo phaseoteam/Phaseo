@@ -69,7 +69,7 @@
     },
     {
       "name": "availability_note",
-      "value": "Moonshot AI has published Kimi K3 API documentation and pricing. Full model weights and the technical report are still forthcoming. Additional coming-soon routes are staged for Akash ML, AtlasCloud, Baseten, Cloudflare, CrofAI, DeepInfra, Fireworks AI, GMI Cloud, Novita AI, SiliconFlow, Together AI, and Venice; those routes remain inactive until each provider publishes its final model ID and pricing."
+      "value": "Moonshot AI has published Kimi K3 API documentation and pricing. Moonshot AI is the only confirmed API provider currently listed; full model weights and the technical report are still forthcoming."
     }
   ],
   "benchmarks": []
