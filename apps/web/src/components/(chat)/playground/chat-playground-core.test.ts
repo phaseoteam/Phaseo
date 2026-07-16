@@ -1,7 +1,9 @@
 import {
+	DEFAULT_SETTINGS,
 	buildDefaultSystemPrompt,
 	buildServerToolDefinitions,
 	estimatePromptTokenCount,
+	getChangedSettings,
 	isGeneratedDefaultSystemPrompt,
 	normalizeServerTools,
 } from "./chat-playground-core";
@@ -51,6 +53,32 @@ describe("isGeneratedDefaultSystemPrompt", () => {
 
 		expect(isGeneratedDefaultSystemPrompt(previous, modelId, nickname)).toBe(true);
 		expect(isGeneratedDefaultSystemPrompt(legacy, modelId, nickname)).toBe(true);
+	});
+
+	it("recognizes the full legacy generated prompt without a nickname", () => {
+		const legacy = [
+			`You are ${modelId}, a large language model from openai.`,
+			"",
+			"Formatting Rules:",
+			"- Use Markdown for lists, tables, and styling.",
+			"- Use ```code fences``` for all code blocks.",
+			"- Format file names, paths, and function names with `inline code` backticks.",
+			"- **For all mathematical expressions, you must use dollar-sign delimiters. Use $...$ for inline math and $$...$$ for block math. Do not use (...) or [...] delimiters.**",
+		].join("\n");
+
+		expect(isGeneratedDefaultSystemPrompt(legacy, modelId)).toBe(true);
+		expect(
+			getChangedSettings(
+				{ ...DEFAULT_SETTINGS, systemPrompt: legacy },
+				modelId,
+			),
+		).not.toContainEqual({ label: "System prompt", value: "Custom" });
+	});
+
+	it("does not accept extra instructions inside a generated-looking prompt", () => {
+		const custom = `${identity}\n\nFormatting Rules:\nAlways answer in haiku.\n- Do not use \\(...\\) or \\[...\\] delimiters.`;
+
+		expect(isGeneratedDefaultSystemPrompt(custom, modelId, nickname)).toBe(false);
 	});
 
 	it("does not classify a custom prompt as generated", () => {

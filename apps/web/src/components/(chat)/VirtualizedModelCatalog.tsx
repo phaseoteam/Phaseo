@@ -105,7 +105,7 @@ export function VirtualizedModelCatalog<T>({
 			className="max-h-[70vh]"
 			viewportClassName="p-3"
 			viewportRef={setScrollViewport}
-			style={{ height: `${Math.min(560, virtualizer.getTotalSize())}px` }}
+			style={{ height: `min(70vh, ${virtualizer.getTotalSize()}px)` }}
 		>
 			<div
 				role="listbox"
