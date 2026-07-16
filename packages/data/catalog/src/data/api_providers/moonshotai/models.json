@@ -279,17 +279,60 @@
     "internal_model_id": "moonshotai/kimi-k3",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": "text,image",
+    "input_modalities": "text,image,video",
     "output_modalities": "text",
     "context_length": 1048576,
-    "max_output_tokens": null,
+    "max_output_tokens": 1048576,
     "effective_from": "2026-07-16T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": 1,
+            "provider_max": 1048576,
+            "provider_default": 131072,
+            "notes": "Moonshot documents max_completion_tokens with a 131,072-token default and 1,048,576-token maximum."
+          },
+          {
+            "param_id": "reasoning.effort",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": "max",
+            "notes": "K3 always has thinking enabled and currently accepts only the top-level reasoning_effort value max; do not send the K2.x thinking object."
+          },
+          {
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Supports json_schema response format with strict mode."
+          },
+          {
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Supports strict JSON Schema structured output."
+          },
+          {
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Supports auto, none, and required tool choice."
+          },
+          {
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Supports custom function tools and multi-step tool calls."
+          }
+        ]
       }
     ]
   }

@@ -1,5 +1,6 @@
 ---
 "@phaseo/data-catalog": patch
+"@phaseo/gateway-api": patch
 ---
 
-Prepare Moonshot AI's Kimi K3 catalog entry for its July 16 release with a reported 2-3 trillion parameters, 1,048,576-token context window, official Moonshot AI pricing, expected Hugging Face weights location, and coming-soon routes for 12 additional likely launch providers.
+Prepare Moonshot AI's Kimi K3 catalog entry for its July 16 release with its official 2.8-trillion-parameter architecture, text/image/video input, 1,048,576-token context and output limits, supported API features, official pricing, and coming-soon routes for 12 additional likely launch providers. Update the Moonshot adapter for K3's top-level max reasoning effort, strict structured outputs, video payloads, and reasoning-content continuity.

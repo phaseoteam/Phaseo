@@ -4,7 +4,7 @@
   "name": "Kimi K3",
   "status": "Available",
   "previous_model_id": "moonshotai/kimi-k2.7-code",
-  "description": "Kimi K3 is Moonshot AI's next-generation multimodal model. Pre-release reporting places it between 2 and 3 trillion total parameters, while Moonshot AI lists a 1,048,576-token context window and official API pricing of $3 per 1M uncached input tokens, $0.30 per 1M cached input tokens, and $15 per 1M output tokens.",
+  "description": "Kimi K3 is Moonshot AI's 2.8-trillion-parameter native multimodal model for software engineering, knowledge work, and deep reasoning. It uses Kimi Delta Attention, Attention Residuals, and a Stable LatentMoE architecture that activates 16 of 896 experts, accepts text, image, and video input, and supports a 1,048,576-token context window.",
   "announced_date": "2026-07-16T00:00:00",
   "release_date": "2026-07-16T00:00:00",
   "deprecation_date": null,
@@ -16,9 +16,14 @@
   "family_id": "moonshotai/kimi-k2",
   "links": [
     {
-      "title": "Weights",
-      "kind": "weights",
-      "url": "https://huggingface.co/moonshotai/Kimi-K3"
+      "title": "API Reference",
+      "kind": "api_reference",
+      "url": "https://platform.kimi.ai/docs/guide/kimi-k3-quickstart"
+    },
+    {
+      "title": "Pricing",
+      "kind": "pricing",
+      "url": "https://platform.kimi.ai/docs/pricing/chat-k3"
     }
   ],
   "details": [
@@ -28,11 +33,43 @@
     },
     {
       "name": "parameter_count",
-      "value": "2-3 trillion (reported)"
+      "value": 2800000000000
+    },
+    {
+      "name": "max_output_tokens",
+      "value": 1048576
+    },
+    {
+      "name": "supports_tools",
+      "value": true
+    },
+    {
+      "name": "supports_structured_outputs",
+      "value": true
+    },
+    {
+      "name": "supports_partial_mode",
+      "value": true
+    },
+    {
+      "name": "requires_thinking",
+      "value": true
+    },
+    {
+      "name": "reasoning_effort",
+      "value": "max only (default)"
+    },
+    {
+      "name": "architecture",
+      "value": "Kimi Delta Attention and Attention Residuals with Stable LatentMoE; 16 of 896 experts activate per token."
+    },
+    {
+      "name": "context_caching",
+      "value": "Automatic for regular requests; no cache ID, TTL, or extra parameter is required."
     },
     {
       "name": "availability_note",
-      "value": "Moonshot AI has published Kimi K3 pricing and a 1,048,576-token context window. Additional coming-soon routes are staged for Akash ML, AtlasCloud, Baseten, Cloudflare, CrofAI, DeepInfra, Fireworks AI, GMI Cloud, Novita AI, SiliconFlow, Together AI, and Venice; those routes remain inactive until each provider publishes its final model ID and pricing."
+      "value": "Moonshot AI has published Kimi K3 API documentation and pricing. Full model weights and the technical report are still forthcoming. Additional coming-soon routes are staged for Akash ML, AtlasCloud, Baseten, Cloudflare, CrofAI, DeepInfra, Fireworks AI, GMI Cloud, Novita AI, SiliconFlow, Together AI, and Venice; those routes remain inactive until each provider publishes its final model ID and pricing."
     }
   ],
   "benchmarks": []
