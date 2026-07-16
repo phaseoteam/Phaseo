@@ -1,5 +1,6 @@
 ---
 "@phaseo/data-catalog": patch
+"@phaseo/gateway-api": patch
 ---
 
-Prepare a coming-soon Moonshot AI catalog entry for Kimi K3 with text/image input, text output, and a 1M-token context window. Pricing remains unset until Moonshot publishes the final rate card, and the provider capability is inactive pending release confirmation.
+Prepare Moonshot AI's Kimi K3 catalog entry for its July 16 release with its official 2.8-trillion-parameter architecture, text/image/video input, 1,048,576-token context and output limits, supported API features, and official Moonshot pricing. Update the Moonshot adapter for K3's top-level max reasoning effort, strict structured outputs, video payloads, and reasoning-content continuity.

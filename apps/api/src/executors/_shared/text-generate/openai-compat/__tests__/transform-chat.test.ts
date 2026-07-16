@@ -898,5 +898,47 @@ describe("irToOpenAIChat", () => {
 		expect(request.messages[0].reasoning_content).toBe("analysis");
 		expect(request.response_format).toEqual({ type: "json_object" });
 	});
+
+	it("maps Kimi K3 reasoning and preserves assistant reasoning_content", () => {
+		const request = irToOpenAIChat({
+			model: "moonshotai/kimi-k3",
+			messages: [
+				{
+					role: "assistant",
+					content: [
+						{ type: "reasoning_text", text: "prior reasoning" },
+						{ type: "text", text: "prior answer" },
+					],
+				},
+				{
+					role: "user",
+					content: [{ type: "video", url: "ms://file_123" }],
+				},
+			],
+			stream: false,
+			maxTokens: 131072,
+			reasoning: { effort: "low" },
+			responseFormat: {
+				type: "json_schema",
+				name: "answer",
+				strict: true,
+				schema: {
+					type: "object",
+					properties: { answer: { type: "string" } },
+					required: ["answer"],
+					additionalProperties: false,
+				},
+			},
+		} as any, "kimi-k3", "moonshotai");
+
+		expect(request.messages[0].content).toBe("prior answer");
+		expect(request.messages[0].reasoning_content).toBe("prior reasoning");
+		expect(request.messages[1].content[0].type).toBe("video_url");
+		expect(request.reasoning_effort).toBe("max");
+		expect(request.max_completion_tokens).toBe(131072);
+		expect(request.max_tokens).toBeUndefined();
+		expect(request.response_format.type).toBe("json_schema");
+		expect(request.response_format.json_schema.strict).toBe(true);
+	});
 });
 
