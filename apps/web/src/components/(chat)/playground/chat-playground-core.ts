@@ -31,6 +31,7 @@ const SUPPORTED_CHAT_SERVER_TOOLS = new Set<ChatServerToolType>([
 ]);
 
 export type ChatResponseLayout = "sequential" | "side-by-side";
+export type NewChatModelPreference = "blank" | "selected";
 
 export function normalizeServerTools(
 	serverTools?: ChatServerToolType[],
@@ -211,6 +212,10 @@ export function getRoomStorageKeys(roomId: ChatRoomId) {
 		notifyOnComplete: getRoomScopedStorageKey(roomId, "notify-on-complete"),
 		debugMode: getRoomScopedStorageKey(roomId, "debug"),
 		responseLayout: getRoomScopedStorageKey(roomId, "response-layout"),
+		newChatModelPreference: getRoomScopedStorageKey(
+			roomId,
+			"new-chat-model-preference",
+		),
 	};
 }
 

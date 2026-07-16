@@ -6,6 +6,7 @@ import {
 	useMemo,
 	useRef,
 	useState,
+	startTransition,
 	type KeyboardEvent,
 } from "react";
 import {
@@ -78,6 +79,7 @@ import { cn } from "@/lib/utils";
 import type {
 	ChatApiTarget,
 	ChatResponseLayout,
+	NewChatModelPreference,
 } from "@/components/(chat)/playground/chat-playground-core";
 import {
 	LOCAL_CHAT_API_BASE_URL,
@@ -265,6 +267,8 @@ type ChatHeaderProps = {
 	onSaveSettings: () => void;
 	personalization: PersonalizationSettings;
 	onPersonalizationChange: (next: PersonalizationSettings) => void;
+	newChatModelPreference: NewChatModelPreference;
+	onNewChatModelPreferenceChange: (value: NewChatModelPreference) => void;
 	onExportChats: () => void;
 	isAdmin: boolean;
 	debugEnabled: boolean;
@@ -313,6 +317,8 @@ export function ChatHeader({
 	onSaveSettings,
 	personalization,
 	onPersonalizationChange,
+	newChatModelPreference,
+	onNewChatModelPreferenceChange,
 	onExportChats,
 	isAdmin,
 	debugEnabled,
@@ -705,30 +711,32 @@ export function ChatHeader({
 		setActiveBrowseModelId(null);
 		onModelPickerOpenChange(false);
 	};
+	const commitModelPickerSelection = (commit: () => void) => {
+		closeModelPicker();
+		startTransition(commit);
+	};
 	const handleModelSelect = (modelId: string) => {
 		if (!isModelCapabilityCompatible(modelId)) {
 			return;
 		}
 		if (!allowModelCompare) {
-			onUpdateModel(modelId);
-			closeModelPicker();
+			commitModelPickerSelection(() => onUpdateModel(modelId));
 			return;
 		}
 		if (!activeThread?.modelId) {
-			onUpdateModel(modelId);
-			closeModelPicker();
+			commitModelPickerSelection(() => onUpdateModel(modelId));
 			return;
 		}
 		if (activeThread.modelId === modelId) {
 			if (selectedModelIds.length > 0) {
-				onRemoveModel?.(modelId);
+				commitModelPickerSelection(() => onRemoveModel?.(modelId));
+				return;
 			}
 			closeModelPicker();
 			return;
 		}
 		if (!onCompareModelIdsChange) {
-			onUpdateModel(modelId);
-			closeModelPicker();
+			commitModelPickerSelection(() => onUpdateModel(modelId));
 			return;
 		}
 		const nextSet = new Set(compareModelIdSet);
@@ -737,8 +745,10 @@ export function ChatHeader({
 		} else {
 			nextSet.add(modelId);
 		}
-		onCompareModelIdsChange(Array.from(nextSet));
-		closeModelPicker();
+		const nextModelIds = Array.from(nextSet);
+		commitModelPickerSelection(() =>
+			onCompareModelIdsChange(nextModelIds),
+		);
 	};
 	const handleModelPickerDialogOpenChange = (open: boolean) => {
 		if (!open) {
@@ -1873,7 +1883,7 @@ export function ChatHeader({
 															</div>
 														) : null}
 													</div>
-													<SelectContent>
+												<SelectContent>
 														{ACCENT_COLORS.map(
 															(color) => (
 																<SelectItem
@@ -1915,10 +1925,42 @@ export function ChatHeader({
 																Custom
 															</span>
 														</SelectItem>
-													</SelectContent>
-												</Select>
-											</div>
+												</SelectContent>
+											</Select>
 										</div>
+										<div className="grid gap-2">
+											<Label htmlFor="new-chat-model-preference">
+												New chats
+											</Label>
+											<Select
+												value={newChatModelPreference}
+												onValueChange={(value) =>
+													onNewChatModelPreferenceChange(
+														value as NewChatModelPreference,
+													)
+												}
+											>
+												<SelectTrigger
+													id="new-chat-model-preference"
+													className="w-full sm:w-64"
+												>
+													<SelectValue />
+												</SelectTrigger>
+												<SelectContent>
+													<SelectItem value="blank">
+														Start without models
+													</SelectItem>
+													<SelectItem value="selected">
+														Keep selected model(s)
+													</SelectItem>
+												</SelectContent>
+											</Select>
+											<p className="text-xs text-muted-foreground">
+												Choose whether a new chat starts empty or reuses
+												the current model selection.
+											</p>
+										</div>
+									</div>
 									)}
 									{settingsTab === "data-controls" && (
 										<div className="grid gap-3">

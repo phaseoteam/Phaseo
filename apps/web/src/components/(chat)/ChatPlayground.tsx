@@ -83,6 +83,7 @@ import {
 	shouldRequestImageModalities,
 	type ChatResponseLayout,
 	type ChatApiTarget,
+	type NewChatModelPreference,
 	type PersonalizationSettings,
 	type SettingChange,
 } from "@/components/(chat)/playground/chat-playground-core";
@@ -500,8 +501,11 @@ function ChatPlaygroundContent({
 	const [pendingNewChat, setPendingNewChat] = useState<{
 		modelId: string;
 		settings: ChatSettings;
+		defaultSettings: ChatSettings;
 		changes: SettingChange[];
 	} | null>(null);
+	const [newChatModelPreference, setNewChatModelPreference] =
+		useState<NewChatModelPreference>("blank");
 	const [temporaryMode, setTemporaryMode] = useState(false);
 	const [composerRequiresAudioInput, setComposerRequiresAudioInput] =
 		useState(false);
@@ -706,6 +710,9 @@ function ChatPlaygroundContent({
 				window.localStorage.getItem(
 					STORAGE_KEYS.personalizationAccent,
 				) ?? "#111111";
+			const storedNewChatModelPreference = window.localStorage.getItem(
+				STORAGE_KEYS.newChatModelPreference,
+			);
 			if (!mounted) return;
 			window.localStorage.removeItem(STORAGE_KEYS.apiKey);
 			setApiTarget(storedApiTarget);
@@ -720,6 +727,9 @@ function ChatPlaygroundContent({
 				notes: storedPersonalNotes,
 				accentColor: storedAccent,
 			});
+			setNewChatModelPreference(
+				storedNewChatModelPreference === "selected" ? "selected" : "blank",
+			);
 
 			const [chats, storedTags] = await Promise.all([
 				getAllChats("text"),
@@ -841,7 +851,20 @@ function ChatPlaygroundContent({
 	);
 
 	const createThread = useCallback(async () => {
-		const selectedModel = "";
+		const shouldKeepSelectedModels =
+			newChatModelPreference === "selected" && Boolean(activeThread?.modelId);
+		const selectedModel = shouldKeepSelectedModels
+			? (activeThread?.modelId ?? "")
+			: "";
+		const selectedCompareModelIds = shouldKeepSelectedModels
+			? (activeThread?.settings.compareModelIds ?? [])
+			: [];
+		const defaultSettings: ChatSettings = {
+			...DEFAULT_SETTINGS,
+			systemPrompt: buildDefaultSystemPrompt(selectedModel),
+			compareMode: selectedCompareModelIds.length > 0,
+			compareModelIds: selectedCompareModelIds,
+		};
 		if (activeThread) {
 			const comparisonModelId = activeThread.modelId || selectedModel;
 			const comparisonModelDisplayName =
@@ -860,18 +883,20 @@ function ChatPlaygroundContent({
 				setPendingNewChat({
 					modelId: selectedModel,
 					settings: activeThread.settings,
+					defaultSettings,
 					changes,
 				});
 				setNewChatDialogOpen(true);
 				return;
 			}
 		}
-		const defaults: ChatSettings = {
-			...DEFAULT_SETTINGS,
-			systemPrompt: buildDefaultSystemPrompt(selectedModel),
-		};
-		await createThreadWithSettings(selectedModel, defaults);
-	}, [activeThread, createThreadWithSettings, modelDisplayNameById]);
+		await createThreadWithSettings(selectedModel, defaultSettings);
+	}, [
+		activeThread,
+		createThreadWithSettings,
+		modelDisplayNameById,
+		newChatModelPreference,
+	]);
 
 	const handleNewChatDecision = useCallback(
 		(useCurrent: boolean) => {
@@ -882,15 +907,25 @@ function ChatPlaygroundContent({
 			const modelId = pendingNewChat.modelId;
 			const settings = useCurrent
 				? pendingNewChat.settings
-				: {
-						...DEFAULT_SETTINGS,
-						systemPrompt: buildDefaultSystemPrompt(modelId),
-					};
+				: pendingNewChat.defaultSettings;
 			setNewChatDialogOpen(false);
 			setPendingNewChat(null);
 			void createThreadWithSettings(modelId, settings);
 		},
 		[pendingNewChat, createThreadWithSettings],
+	);
+
+	const handleNewChatModelPreferenceChange = useCallback(
+		(value: NewChatModelPreference) => {
+			setNewChatModelPreference(value);
+			if (typeof window !== "undefined") {
+				window.localStorage.setItem(
+					STORAGE_KEYS.newChatModelPreference,
+					value,
+				);
+			}
+		},
+		[],
 	);
 
 	const updateStoredThread = useCallback(
@@ -4333,6 +4368,10 @@ function ChatPlaygroundContent({
 					onSaveSettings={handleSaveSettings}
 					personalization={personalization}
 					onPersonalizationChange={setPersonalization}
+					newChatModelPreference={newChatModelPreference}
+					onNewChatModelPreferenceChange={
+						handleNewChatModelPreferenceChange
+					}
 					onExportChats={handleExportChats}
 					isAdmin={isAdmin}
 					debugEnabled={debugEnabled}
