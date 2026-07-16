@@ -76,7 +76,154 @@ export interface RequestDetailMetadata {
 	provider_candidate_diagnostics?: unknown;
 	provider_enablement_diagnostics?: unknown;
 	routing_diagnostics?: unknown;
+	upstream_exchanges?: UpstreamExchangeRow[];
 	[key: string]: unknown;
+}
+
+export interface UpstreamExchangeRow {
+	id?: string;
+	sequence: number;
+	stage: "routing" | "upstream" | string;
+	round_number: number;
+	attempt_number: number;
+	internal_attempt_number?: number | null;
+	upstream_route?: string | null;
+	provider: string | null;
+	model: string | null;
+	api_model_id: string | null;
+	provider_model_slug: string | null;
+	outcome: string | null;
+	status: number | null;
+	status_text: string | null;
+	duration_ms: number | null;
+	latency_ms: number | null;
+	generation_ms: number | null;
+	total_ms: number | null;
+	native_response_id: string | null;
+	provider_finish_reason: string | null;
+	finish_reason: string | null;
+	usage?: Record<string, unknown> | null;
+	cost_nanos?: number | string | null;
+	currency?: string | null;
+	response_source: string | null;
+	upstream_request: unknown;
+	upstream_response: unknown;
+	error: Record<string, unknown> | null;
+}
+
+export async function fetchGatewayUpstreamRequests(
+	requestId: string,
+	requestCreatedAt?: string | null,
+): Promise<{ success: boolean; data: UpstreamExchangeRow[]; error?: string }> {
+	const supabase = await createClient();
+	const { workspaceId } = await requireAuthedTeamContext(supabase);
+	if (!workspaceId) return { success: false, data: [], error: "Not authenticated" };
+	const trimmedRequestId = requestId.trim();
+	if (!trimmedRequestId) return { success: false, data: [], error: "Request ID required" };
+
+	const admin = createAdminClient();
+	let query = admin
+		.from("gateway_upstream_requests")
+		.select(`
+			id,
+			sequence,
+			round_number,
+			attempt_number,
+			internal_attempt_number,
+			stage,
+			model_id,
+			provider,
+			api_model_id,
+			provider_model_slug,
+			upstream_route,
+			status_code,
+			status_text,
+			outcome,
+			duration_ms,
+			latency_ms,
+			generation_ms,
+			total_ms,
+			native_response_id,
+			provider_finish_reason,
+			finish_reason,
+			usage,
+			cost_nanos,
+			currency,
+			error_code,
+			error_type,
+			error_message,
+			error_description,
+			error_param,
+			request_payload,
+			response_payload,
+			metadata
+		`)
+		.eq("workspace_id", workspaceId)
+		.eq("request_id", trimmedRequestId)
+		.order("sequence", { ascending: true });
+	if (requestCreatedAt) {
+		query = query.eq("gateway_request_created_at", requestCreatedAt);
+	}
+	const { data, error } = await query;
+	if (error) {
+		if (error.code === "PGRST205" || error.code === "42P01") {
+			return { success: true, data: [] };
+		}
+		return { success: false, data: [], error: error.message };
+	}
+
+	const rows = (data ?? []) as Array<Record<string, any>>;
+	return {
+		success: true,
+		data: rows.map((row) => {
+			const metadata = row.metadata && typeof row.metadata === "object"
+				? row.metadata as Record<string, unknown>
+				: {};
+			const hasError = [
+				row.error_code,
+				row.error_type,
+				row.error_message,
+				row.error_description,
+				row.error_param,
+			].some((value) => value != null);
+			return {
+				id: typeof row.id === "string" ? row.id : undefined,
+				sequence: Number(row.sequence) || 0,
+				stage: typeof row.stage === "string" ? row.stage : "upstream",
+				round_number: Number(row.round_number) || 1,
+				attempt_number: Number(row.attempt_number) || 1,
+				internal_attempt_number: Number(row.internal_attempt_number) || null,
+				upstream_route: typeof row.upstream_route === "string" ? row.upstream_route : null,
+				provider: typeof row.provider === "string" ? row.provider : null,
+				model: typeof row.model_id === "string" ? row.model_id : null,
+				api_model_id: typeof row.api_model_id === "string" ? row.api_model_id : null,
+				provider_model_slug: typeof row.provider_model_slug === "string" ? row.provider_model_slug : null,
+				outcome: typeof row.outcome === "string" ? row.outcome : null,
+				status: Number.isFinite(Number(row.status_code)) ? Number(row.status_code) : null,
+				status_text: typeof row.status_text === "string" ? row.status_text : null,
+				duration_ms: Number.isFinite(Number(row.duration_ms)) ? Number(row.duration_ms) : null,
+				latency_ms: Number.isFinite(Number(row.latency_ms)) ? Number(row.latency_ms) : null,
+				generation_ms: Number.isFinite(Number(row.generation_ms)) ? Number(row.generation_ms) : null,
+				total_ms: Number.isFinite(Number(row.total_ms)) ? Number(row.total_ms) : null,
+				native_response_id: typeof row.native_response_id === "string" ? row.native_response_id : null,
+				provider_finish_reason: typeof row.provider_finish_reason === "string" ? row.provider_finish_reason : null,
+				finish_reason: typeof row.finish_reason === "string" ? row.finish_reason : null,
+				usage: row.usage && typeof row.usage === "object" ? row.usage : null,
+				cost_nanos: row.cost_nanos ?? null,
+				currency: typeof row.currency === "string" ? row.currency : null,
+				response_source: typeof metadata.response_source === "string" ? metadata.response_source : null,
+				upstream_request: row.request_payload ?? null,
+				upstream_response: row.response_payload ?? null,
+				error: hasError ? {
+					code: row.error_code ?? null,
+					type: row.error_type ?? null,
+					message: row.error_message ?? null,
+					description: row.error_description ?? null,
+					param: row.error_param ?? null,
+				} : null,
+			};
+		}),
+	};
 }
 
 export interface NormalizedRequestUsageColumns {
@@ -159,6 +306,7 @@ export interface RequestRow extends NormalizedRequestUsageColumns {
 	pricing_lines: AsyncJobRequestPricingLine[];
 	provider_attempts: Array<{
 		attempt_number: number | null;
+		round_number?: number | null;
 		provider: string | null;
 		api_model_id: string | null;
 		provider_model_slug: string | null;
@@ -169,6 +317,8 @@ export interface RequestRow extends NormalizedRequestUsageColumns {
 		upstream_error_code: string | null;
 		upstream_error_message: string | null;
 		upstream_error_description: string | null;
+		provider_finish_reason?: string | null;
+		finish_reason?: string | null;
 	}>;
 }
 
@@ -291,6 +441,12 @@ function normalizeProviderAttempts(
 				: typeof attempt?.attempt_number === "string"
 					? Number(attempt.attempt_number)
 					: null,
+		round_number:
+			typeof attempt?.round_number === "number"
+				? attempt.round_number
+				: typeof attempt?.round_number === "string"
+					? Number(attempt.round_number)
+					: null,
 		provider:
 			typeof attempt?.provider === "string" ? attempt.provider : null,
 		api_model_id:
@@ -328,6 +484,14 @@ function normalizeProviderAttempts(
 		upstream_error_description:
 			typeof attempt?.upstream_error_description === "string"
 				? attempt.upstream_error_description
+				: null,
+		provider_finish_reason:
+			typeof attempt?.provider_finish_reason === "string"
+				? attempt.provider_finish_reason
+				: null,
+		finish_reason:
+			typeof attempt?.finish_reason === "string"
+				? attempt.finish_reason
 				: null,
 	}));
 }

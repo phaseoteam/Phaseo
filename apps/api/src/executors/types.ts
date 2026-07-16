@@ -79,6 +79,29 @@ export type Bill = {
 	finish_reason?: string | null;
 };
 
+export type ExecutorTiming = {
+	latencyMs?: number;
+	generationMs?: number;
+	totalMs?: number;
+	streamTimingSource?: "provider" | "executor";
+	requestBuildMs?: number;
+	upstreamHeadersMs?: number;
+	transientRetryDelayMs?: number;
+};
+
+export type ExecutorUpstreamAttempt = {
+	sequence: number;
+	route?: string | null;
+	request?: string | null;
+	response?: unknown;
+	status?: number | null;
+	statusText?: string | null;
+	url?: string | null;
+	durationMs: number;
+	outcome: "success" | "upstream_non_2xx" | "network_error";
+	errorMessage?: string | null;
+};
+
 export type ExecutorCompletedResult = {
 	kind: "completed";
 	ir?:
@@ -99,13 +122,8 @@ export type ExecutorCompletedResult = {
 	byokKeyId?: string | null;
 	mappedRequest?: string;
 	rawResponse?: any;
-	timing?: {
-		latencyMs?: number;
-		generationMs?: number;
-		requestBuildMs?: number;
-		upstreamHeadersMs?: number;
-		transientRetryDelayMs?: number;
-	};
+	timing?: ExecutorTiming;
+	upstreamAttempts?: ExecutorUpstreamAttempt[];
 };
 
 export type ExecutorStreamingResult = {
@@ -118,13 +136,8 @@ export type ExecutorStreamingResult = {
 	byokKeyId?: string | null;
 	mappedRequest?: string;
 	rawResponse?: any;
-	timing?: {
-		latencyMs?: number;
-		generationMs?: number;
-		requestBuildMs?: number;
-		upstreamHeadersMs?: number;
-		transientRetryDelayMs?: number;
-	};
+	timing?: ExecutorTiming;
+	upstreamAttempts?: ExecutorUpstreamAttempt[];
 };
 
 export type ExecutorResult = ExecutorCompletedResult | ExecutorStreamingResult;

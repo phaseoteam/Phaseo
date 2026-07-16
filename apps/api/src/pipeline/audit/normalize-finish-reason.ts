@@ -15,6 +15,36 @@ export type NormalizedFinishReason =
 	| "other" // Unknown/other
 	| null; // No finish reason provided
 
+export function extractProviderFinishReason(payload: unknown): string | null {
+	if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
+	const record = payload as Record<string, any>;
+	const nestedResponse = record.response && typeof record.response === "object"
+		? extractProviderFinishReason(record.response)
+		: null;
+	if (nestedResponse) return nestedResponse;
+	for (const value of [record.finish_reason, record.finishReason, record.stop_reason]) {
+		if (typeof value === "string" && value.trim()) return value.trim();
+	}
+	if (Array.isArray(record.choices)) {
+		const choice = record.choices.find((entry: any) =>
+			typeof entry?.finish_reason === "string" || typeof entry?.finishReason === "string"
+		);
+		const value = choice?.finish_reason ?? choice?.finishReason;
+		if (typeof value === "string" && value.trim()) return value.trim();
+	}
+	if (Array.isArray(record.candidates)) {
+		const candidate = record.candidates.find((entry: any) =>
+			typeof entry?.finishReason === "string" || typeof entry?.finish_reason === "string"
+		);
+		const value = candidate?.finishReason ?? candidate?.finish_reason;
+		if (typeof value === "string" && value.trim()) return value.trim();
+	}
+	const incompleteReason = record.incomplete_details?.reason;
+	return typeof incompleteReason === "string" && incompleteReason.trim()
+		? incompleteReason.trim()
+		: null;
+}
+
 /**
  * Normalize finish_reason from provider-specific value to canonical value
  */
@@ -25,6 +55,11 @@ export function normalizeFinishReason(
 	if (!finishReason) return null;
 
 	const lower = finishReason.toLowerCase();
+	const normalizedProvider = provider.toLowerCase();
+	const isGoogleProvider =
+		normalizedProvider === "google" ||
+		normalizedProvider === "google-ai-studio" ||
+		normalizedProvider.startsWith("google-vertex");
 
 	// OpenAI & OpenAI-compatible providers
 	if (
@@ -57,11 +92,25 @@ export function normalizeFinishReason(
 	}
 
 	// Google (Gemini/Vertex)
-	if (provider === "google-ai-studio" || provider === "google-vertex") {
+	if (isGoogleProvider) {
 		if (lower === "stop") return "stop";
 		if (lower === "max_tokens") return "length";
 		if (lower === "safety") return "safety";
 		if (lower === "recitation") return "recitation";
+		if (
+			lower === "blocklist" ||
+			lower === "prohibited_content" ||
+			lower === "spii" ||
+			lower === "language" ||
+			lower === "image_safety" ||
+			lower === "image_prohibited_content"
+		) return "content_filter";
+		if (
+			lower === "malformed_function_call" ||
+			lower === "malformed_response" ||
+			lower === "missing_thought_signature"
+		) return "error";
+		if (lower === "unexpected_tool_call" || lower === "too_many_tool_calls") return "tool_calls";
 		if (lower === "other") return "other";
 		if (lower === "finish_reason_unspecified") return null;
 	}

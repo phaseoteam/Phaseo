@@ -37,9 +37,11 @@ import {
 } from "@/components/ui/table";
 import { Logo } from "@/components/Logo";
 import {
+	fetchGatewayUpstreamRequests,
 	RequestRow,
 	type GatewayIoLog,
 	type ProviderMetadataEntry,
+	type UpstreamExchangeRow,
 } from "@/app/(dashboard)/gateway/usage/server-actions";
 import { cn } from "@/lib/utils";
 import {
@@ -77,6 +79,18 @@ interface RequestDetailDialogProps {
 }
 
 type ProviderAttemptRow = RequestRow["provider_attempts"][number];
+
+function extractUpstreamExchanges(
+	metadata: RequestRow["detail_metadata"],
+): UpstreamExchangeRow[] {
+	const exchanges = metadata?.upstream_exchanges;
+	if (!Array.isArray(exchanges)) return [];
+	return exchanges
+		.filter((entry): entry is UpstreamExchangeRow =>
+			Boolean(entry) && typeof entry === "object" && !Array.isArray(entry),
+		)
+		.sort((left, right) => Number(left.sequence ?? 0) - Number(right.sequence ?? 0));
+}
 
 function formatRequestPricingLine(line: RequestRow["pricing_lines"][number]): string {
 	if (line == null) return "null";
@@ -832,6 +846,32 @@ export default function RequestDetailDialog({
 	ioLog,
 }: RequestDetailDialogProps) {
 	const searchParams = useSearchParams();
+	const requestId = request?.request_id ?? null;
+	const requestCreatedAt = request?.created_at ?? null;
+	const legacyUpstreamExchanges = React.useMemo(
+		() => extractUpstreamExchanges(request?.detail_metadata ?? null),
+		[request?.detail_metadata],
+	);
+	const [persistedUpstreamState, setPersistedUpstreamState] = React.useState<{
+		requestId: string;
+		data: UpstreamExchangeRow[];
+	} | null>(null);
+	React.useEffect(() => {
+		if (!open || !requestId) return;
+		let cancelled = false;
+		void fetchGatewayUpstreamRequests(requestId, requestCreatedAt)
+			.then((response) => {
+				if (!cancelled && response.success) {
+					setPersistedUpstreamState({ requestId, data: response.data });
+				}
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, [open, requestCreatedAt, requestId]);
+	const persistedUpstreamExchanges = persistedUpstreamState?.requestId === requestId
+		? persistedUpstreamState.data
+		: null;
 
 	if (!request) return null;
 
@@ -853,9 +893,29 @@ export default function RequestDetailDialog({
 				normalizeProviderPromptTrainingPolicy(providerMeta.promptTrainingPolicy)
 			]
 		: null;
-	const attempts = Array.isArray(request.provider_attempts)
-		? request.provider_attempts
-		: [];
+	const upstreamExchanges = persistedUpstreamExchanges?.length
+		? persistedUpstreamExchanges
+		: legacyUpstreamExchanges;
+	const attempts = upstreamExchanges.length > 0
+		? upstreamExchanges.map((exchange) => ({
+			attempt_number: exchange.attempt_number ?? null,
+			round_number: exchange.round_number ?? null,
+			provider: exchange.provider,
+			api_model_id: exchange.api_model_id,
+			provider_model_slug: exchange.provider_model_slug,
+			outcome: exchange.outcome,
+			status: exchange.status,
+			status_text: exchange.status_text,
+			duration_ms: exchange.total_ms ?? exchange.duration_ms,
+			provider_finish_reason: exchange.provider_finish_reason,
+			finish_reason: exchange.finish_reason,
+			upstream_error_code: typeof exchange.error?.code === "string" ? exchange.error.code : null,
+			upstream_error_message: typeof exchange.error?.message === "string" ? exchange.error.message : null,
+			upstream_error_description: typeof exchange.error?.description === "string" ? exchange.error.description : null,
+		}))
+		: Array.isArray(request.provider_attempts)
+			? request.provider_attempts
+			: [];
 	const finalSuccessAttempt = [...attempts]
 		.reverse()
 		.find(
@@ -885,7 +945,7 @@ export default function RequestDetailDialog({
 						providerModelSlug: attempt.provider_model_slug,
 					});
 					const providerRow = {
-						key: `provider-${attempt.attempt_number ?? index}`,
+						key: `provider-${attempt.round_number ?? 1}-${attempt.attempt_number ?? index}`,
 						label: (
 							<div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
 								{attemptProviderId ? (
@@ -897,12 +957,17 @@ export default function RequestDetailDialog({
 									/>
 								) : null}
 								<div className="min-w-0">
-									<div className="min-w-0 break-words">{attemptProviderName}</div>
+								<div className="min-w-0 break-words">
+									{attemptProviderName}
+									{attempt.round_number && attempt.round_number > 1
+										? ` · Round ${attempt.round_number}`
+										: ""}
+								</div>
 									{attemptModelParts.length > 0 ? (
 										<div className="mt-0.5 flex flex-wrap gap-1">
 											{attemptModelParts.map((value) => (
 												<code
-													key={`${attempt.attempt_number ?? index}-${value}`}
+											key={`${attempt.round_number ?? 1}-${attempt.attempt_number ?? index}-${value}`}
 													className="rounded bg-rose-100 px-1 py-0.5 text-[10px]"
 												>
 													{value}
@@ -954,7 +1019,7 @@ export default function RequestDetailDialog({
 								duration: timingLatency,
 							},
 							{
-								key: `generation-${attempt.attempt_number ?? index}`,
+								key: `generation-${attempt.round_number ?? 1}-${attempt.attempt_number ?? index}`,
 								label: (
 									<div className="flex min-w-0 items-center gap-2 pl-5">
 										<span className="truncate">Generation</span>
@@ -2653,9 +2718,100 @@ export default function RequestDetailDialog({
 							</DetailSection>
 						) : null}
 
-						<DetailSection title="Provider response">
+						<DetailSection title="Upstream exchanges">
 							<div className="space-y-4">
 								<DetailTimingBar items={responseTimelineItems} />
+								{upstreamExchanges.length > 0 ? (
+									<div className="space-y-3">
+										{upstreamExchanges.map((exchange, index) => {
+											const providerId = exchange.provider ?? "unknown";
+											const succeeded =
+												exchange.outcome === "success" ||
+												(typeof exchange.status === "number" &&
+													exchange.status >= 200 && exchange.status < 300);
+											const exchangeUsage = exchange.usage ?? {};
+											const exchangeTokens = Number(
+												exchangeUsage.total_tokens ??
+												exchangeUsage.totalTokens ??
+												(Number(exchangeUsage.input_tokens ?? exchangeUsage.inputTokens ?? exchangeUsage.prompt_tokens ?? 0) +
+													Number(exchangeUsage.output_tokens ?? exchangeUsage.outputTokens ?? exchangeUsage.completion_tokens ?? 0)),
+											);
+											const exchangeCostNanos = Number(exchange.cost_nanos ?? 0);
+											return (
+												<div
+													key={`${exchange.sequence ?? index}-${providerId}-${exchange.round_number ?? 1}-${exchange.attempt_number ?? index + 1}`}
+													className="rounded-xl border border-border/70 bg-muted/20 p-3"
+												>
+													<div className="flex flex-wrap items-center justify-between gap-2">
+														<div className="flex min-w-0 items-center gap-2">
+															{exchange.provider ? <Logo id={exchange.provider} width={16} height={16} /> : null}
+															<span className="font-medium">
+																{providerNames?.get(providerId) ?? providerId}
+															</span>
+													<span className="text-xs text-muted-foreground">
+														Round {exchange.round_number ?? 1}, attempt {exchange.attempt_number ?? index + 1}
+														{exchange.internal_attempt_number
+															? `, HTTP ${exchange.internal_attempt_number}`
+															: ""}
+													</span>
+													<code className="rounded bg-muted px-1.5 py-0.5 text-[10px]">{exchange.stage}</code>
+													{exchange.upstream_route ? (
+														<code className="rounded bg-muted px-1.5 py-0.5 text-[10px]">/{exchange.upstream_route}</code>
+													) : null}
+														</div>
+														<div className="flex flex-wrap items-center gap-2 text-xs">
+															{exchange.status != null ? <code>{exchange.status}</code> : null}
+															<span className={cn(
+																"rounded-full px-2 py-0.5 font-medium",
+																succeeded
+																	? "bg-emerald-100 text-emerald-800"
+																	: "bg-rose-100 text-rose-800",
+															)}>
+																{exchange.outcome ?? (succeeded ? "success" : "failed")}
+															</span>
+																	<span>{formatDuration(exchange.total_ms ?? exchange.duration_ms)}</span>
+																	{Number.isFinite(exchangeTokens) && exchangeTokens > 0 ? (
+																		<span>{exchangeTokens.toLocaleString()} tokens</span>
+																	) : null}
+																	{Number.isFinite(exchangeCostNanos) && exchangeCostNanos > 0 ? (
+																		<span className="font-mono">{formatCost(exchangeCostNanos)}</span>
+																	) : null}
+														</div>
+													</div>
+													<div className="mt-2 flex flex-wrap gap-2 text-xs">
+														{exchange.api_model_id ? <code className="rounded bg-muted px-1.5 py-0.5">{exchange.api_model_id}</code> : null}
+														{exchange.provider_finish_reason ? (
+															<code className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-900">
+																Provider: {exchange.provider_finish_reason}
+															</code>
+														) : null}
+														{exchange.finish_reason ? (
+															<code className="rounded bg-sky-100 px-1.5 py-0.5 text-sky-900">
+																Normalized: {exchange.finish_reason}
+															</code>
+														) : null}
+														{exchange.native_response_id ? <code className="rounded bg-muted px-1.5 py-0.5">{exchange.native_response_id}</code> : null}
+													</div>
+													{exchange.error ? (
+														<pre className="mt-3 max-h-48 overflow-auto rounded-md border border-rose-200 bg-rose-50 p-2 text-xs whitespace-pre-wrap break-words">{JSON.stringify(exchange.error, null, 2)}</pre>
+													) : null}
+													<div className="mt-3 grid gap-3 xl:grid-cols-2">
+														<div className="min-w-0">
+															<p className="mb-1 text-xs font-medium text-muted-foreground">Upstream request</p>
+															<pre className="max-h-64 overflow-auto rounded-md border bg-background p-2 text-xs whitespace-pre-wrap break-words">{JSON.stringify(exchange.upstream_request ?? null, null, 2)}</pre>
+														</div>
+														<div className="min-w-0">
+															<p className="mb-1 text-xs font-medium text-muted-foreground">Upstream response</p>
+															<pre className="max-h-64 overflow-auto rounded-md border bg-background p-2 text-xs whitespace-pre-wrap break-words">{JSON.stringify(exchange.upstream_response ?? null, null, 2)}</pre>
+														</div>
+													</div>
+												</div>
+											);
+										})}
+									</div>
+								) : (
+									<p className="text-sm text-muted-foreground">No upstream exchange details were captured for this request.</p>
+								)}
 							</div>
 						</DetailSection>
 					</div>

@@ -403,6 +403,7 @@ export type ProviderEnablementDiagnostics = {
 
 export type ProviderAttemptLog = {
     attempt_number: number;
+    round_number?: number | null;
     provider: string;
     endpoint: Endpoint;
     model: string;
@@ -436,6 +437,44 @@ export type ProviderAttemptLog = {
     request_build_ms?: number | null;
     upstream_headers_ms?: number | null;
     retry_delay_ms?: number | null;
+    native_response_id?: string | null;
+    provider_finish_reason?: string | null;
+    finish_reason?: string | null;
+    upstream_request?: unknown;
+    upstream_response?: unknown;
+    upstream_attempts?: Array<{
+        sequence: number;
+        route?: string | null;
+        request?: unknown;
+        response?: unknown;
+        status?: number | null;
+        status_text?: string | null;
+        url?: string | null;
+        duration_ms: number;
+        outcome: "success" | "upstream_non_2xx" | "network_error";
+        error_message?: string | null;
+    }>;
+};
+
+export type ProviderRoundLog = {
+    round_number: number;
+    request_payload?: unknown;
+    provider: string;
+    api_model_id: string | null;
+    pricing_key: string | null;
+    provider_finish_reason: string | null;
+    finish_reason: string | null;
+    usage: Record<string, unknown> | null;
+    native_response_id: string | null;
+    generation_ms: number | null;
+    latency_ms: number | null;
+    total_ms: number | null;
+    mapped_request: unknown;
+    raw_response: unknown;
+    status_code: number;
+    key_source: "gateway" | "byok" | null;
+    byok_key_id: string | null;
+    provider_attempts: ProviderAttemptLog[];
 };
 
 export type WorkspacePolicy = {
@@ -628,6 +667,7 @@ export type PipelineContext = {
     responseCache?: ResponseCacheDiagnostics | null;
     attemptErrors?: Array<Record<string, unknown>>;
     providerAttempts?: ProviderAttemptLog[];
+    providerRounds?: ProviderRoundLog[];
     // Enrichment data for observability (wide events)
     teamEnrichment?: TeamEnrichment | null;
     keyEnrichment?: KeyEnrichment | null;

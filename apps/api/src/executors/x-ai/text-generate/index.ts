@@ -3,7 +3,13 @@
 // How: Transforms IR to SpaceXAI Responses API and normalizes usage.
 
 import type { IRChatRequest } from "@core/ir";
-import type { ExecutorExecuteArgs, ExecutorResult, Bill, ProviderExecutor } from "@executors/types";
+import type {
+	ExecutorExecuteArgs,
+	ExecutorResult,
+	ExecutorUpstreamAttempt,
+	Bill,
+	ProviderExecutor,
+} from "@executors/types";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { irToOpenAIResponses } from "@executors/_shared/text-generate/openai-compat/transform";
 import { resolveStreamForProtocol, bufferStreamToIR } from "@executors/_shared/text-generate/openai-compat";
@@ -24,6 +30,7 @@ const XAI_MAX_ADAPTIVE_RETRIES = 0;
 
 async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	const upstreamStartMs = args.meta.upstreamStartMs ?? Date.now();
+	const upstreamAttempts: ExecutorUpstreamAttempt[] = [];
 	const irRequest = args.ir as IRChatRequest;
 	const quirks = getProviderQuirks(args.providerId);
 	const keyInfo = resolveProviderKey(
@@ -86,7 +93,9 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 			// ignore if readonly
 		}
 		const requestBody = JSON.stringify(sanitized.request);
-			const response = await fetch(openAICompatUrl(args.providerId, "/responses"), {
+		const url = openAICompatUrl(args.providerId, "/responses");
+		const startedAt = Date.now();
+		const response = await fetch(url, {
 				method: "POST",
 				headers: openAICompatHeaders(args.providerId, keyInfo.key, {
 					"x-grok-conv-id": irRequest.xaiConversationId,
@@ -94,7 +103,23 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 					...upstreamTestHeaders(args.meta),
 				}),
 				body: requestBody,
-			});
+		});
+		let responsePayload: unknown;
+		if (!response.ok) {
+			const failure = await readErrorPayload(response);
+			responsePayload = failure.errorPayload ?? failure.errorText ?? null;
+		}
+		upstreamAttempts.push({
+			sequence: upstreamAttempts.length + 1,
+			route: "responses",
+			request: requestBody,
+			response: responsePayload,
+			status: response.status,
+			statusText: response.statusText || null,
+			url: response.url || url,
+			durationMs: Math.max(0, Date.now() - startedAt),
+			outcome: response.ok ? "success" : "upstream_non_2xx",
+		});
 		return {
 			response,
 			request: sanitized.request,
@@ -162,6 +187,7 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 			keySource: keyInfo.source,
 			byokKeyId: keyInfo.byokId,
 			mappedRequest,
+			upstreamAttempts,
 		};
 	}
 
@@ -176,6 +202,7 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 			keySource: keyInfo.source,
 			byokKeyId: keyInfo.byokId,
 			mappedRequest,
+			upstreamAttempts,
 			timing: {
 				latencyMs: undefined,
 				generationMs: undefined,
@@ -223,6 +250,7 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 		byokKeyId: keyInfo.byokId,
 		mappedRequest,
 		rawResponse: rawResponse ?? null,
+		upstreamAttempts,
 		timing: {
 			latencyMs: firstByteMs ?? totalMs,
 			generationMs: firstByteMs === null ? 0 : Math.max(0, totalMs - firstByteMs),

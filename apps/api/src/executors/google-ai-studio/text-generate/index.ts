@@ -7,7 +7,11 @@
 // Uses Google's native Gemini API format (NOT OpenAI-compatible)
 
 import type { IRChatRequest, IRChatResponse, IRContentPart, IRChoice, IRStreamChunk, IRStreamDelta } from "@core/ir";
-import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
+import type {
+	ExecutorExecuteArgs,
+	ExecutorResult,
+	ExecutorUpstreamAttempt,
+} from "@executors/types";
 import type { ProviderExecutor } from "../../types";
 import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-generate/shared";
 import { getBindings } from "@/runtime/env";
@@ -485,6 +489,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const baseUrl = /\/v1(beta)?$/i.test(baseRoot) ? baseRoot : `${baseRoot}/v1beta`;
 
 	const upstreamStartMs = meta.upstreamStartMs ?? Date.now();
+	const upstreamAttempts: ExecutorUpstreamAttempt[] = [];
 
 	const makeEndpoint = (candidateModel: string, stream: boolean) =>
 		stream
@@ -508,6 +513,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				candidateModel,
 				Boolean(ir.stream) && !forceSyntheticImageStream,
 			);
+			const startedAt = Date.now();
+			const serializedRequest = JSON.stringify(requestBody);
 			const response = await fetch(endpoint, {
 				method: "POST",
 				headers: {
@@ -515,7 +522,27 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 					"x-goog-api-key": keyInfo.key,
 					...upstreamTestHeaders(meta),
 				},
-				body: JSON.stringify(requestBody),
+				body: serializedRequest,
+			});
+			let responsePayload: unknown;
+			if (!response.ok) {
+				try {
+					const text = await response.clone().text();
+					responsePayload = text ? JSON.parse(text) : null;
+				} catch {
+					responsePayload = null;
+				}
+			}
+			upstreamAttempts.push({
+				sequence: upstreamAttempts.length + 1,
+				route: ir.stream && !forceSyntheticImageStream ? "streamGenerateContent" : "generateContent",
+				request: serializedRequest,
+				response: responsePayload,
+				status: response.status,
+				statusText: response.statusText || null,
+				url: response.url || endpoint,
+				durationMs: Math.max(0, Date.now() - startedAt),
+				outcome: response.ok ? "success" : "upstream_non_2xx",
 			});
 			return { candidateModel, requestBody, response };
 		};
@@ -564,6 +591,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				keySource: keyInfo.source,
 				byokKeyId: keyInfo.byokId,
 				mappedRequest,
+				upstreamAttempts,
 			};
 		}
 
@@ -608,6 +636,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				keySource: keyInfo.source,
 				byokKeyId: keyInfo.byokId,
 				mappedRequest,
+				upstreamAttempts,
 				usageFinalizer: async () => bill.usage ?? null,
 				timing: {
 					latencyMs: totalMs,
@@ -634,6 +663,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 					keySource: keyInfo.source,
 					byokKeyId: keyInfo.byokId,
 					mappedRequest,
+					upstreamAttempts,
 					usageFinalizer: async () => null,
 				};
 			}
@@ -688,6 +718,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				byokKeyId: keyInfo.byokId,
 				mappedRequest,
 				rawResponse,
+				upstreamAttempts,
 				timing: {
 					latencyMs: firstByteMs ?? totalMs,
 					generationMs: firstByteMs === null ? 0 : Math.max(0, totalMs - firstByteMs),
@@ -722,6 +753,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			byokKeyId: keyInfo.byokId,
 			mappedRequest,
 			rawResponse: rawData,
+			upstreamAttempts,
 			timing: {
 				latencyMs: totalMs,
 				generationMs: 0,
@@ -745,6 +777,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			keySource: keyInfo.source,
 			byokKeyId: keyInfo.byokId,
 			mappedRequest,
+			upstreamAttempts,
 		};
 	}
 }

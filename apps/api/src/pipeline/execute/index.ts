@@ -67,13 +67,16 @@ import type {
 	IRVideoGenerationRequest,
 	IRVideoGenerationResponse,
 } from "@core/ir";
-import type { ExecutorExecuteArgs } from "@executors/types";
+import type { ExecutorExecuteArgs, ExecutorTiming } from "@executors/types";
 import { normalizeIRForProvider } from "./normalize";
 import { normalizeCapability } from "@/executors";
 import { filterCandidatesByModalities, filterEmbeddingCandidatesByModalities } from "./modalities";
 import { loadPriceCard } from "../pricing";
 import { stripUsagePricing } from "../usage";
 import { getEffectiveRoutingHints } from "../requestRouting";
+import { instrumentTextExecutorTiming } from "./executor-timing";
+import { sanitizeForAxiom, sanitizeJsonStringForAxiom } from "@observability/privacy";
+import { extractProviderFinishReason, normalizeFinishReason } from "../audit/normalize-finish-reason";
 
 function shouldFallbackFromByok(status: number | null | undefined): boolean {
 	const code = Number(status ?? 0);
@@ -308,6 +311,7 @@ export type IRRequestResult = {
 	byokKeyId?: string | null;
 	mappedRequest?: string;
 	rawResponse?: any;
+	timing?: ExecutorTiming;
 };
 
 export type RequestResult = IRRequestResult;
@@ -648,6 +652,12 @@ async function attemptProviderWithIR(
 				},
 			}) as ExecutorExecuteArgs;
 
+		let executorInvocationStartedAtMs = ctx.meta.upstreamStartMs ?? Date.now();
+		const invokeExecutor = (forceGatewayKey: boolean, byokMeta: any[]) => {
+			executorInvocationStartedAtMs = Date.now();
+			ctx.meta.upstreamStartMs = executorInvocationStartedAtMs;
+			return executor(buildExecutorArgs(forceGatewayKey, byokMeta));
+		};
 		const executeWithRetry = async () => {
 			let lastErr: unknown = null;
 			const maxRetries = allowSingleProviderRetry
@@ -655,7 +665,7 @@ async function attemptProviderWithIR(
 				: MAX_RETRYABLE_EXECUTOR_RETRIES;
 			for (let retryAttempt = 0; retryAttempt <= maxRetries; retryAttempt += 1) {
 				try {
-					let nextResult = await executor(buildExecutorArgs(false, candidate.byokMeta || []));
+					let nextResult = await invokeExecutor(false, candidate.byokMeta || []);
 					if (
 						allowByokFallback &&
 						nextResult.keySource === "byok" &&
@@ -663,7 +673,7 @@ async function attemptProviderWithIR(
 						shouldFallbackFromByok(nextResult.upstream.status)
 					) {
 						(nextResult as any).fallbackAttempted = true;
-						nextResult = await executor(buildExecutorArgs(true, []));
+						nextResult = await invokeExecutor(true, []);
 					}
 					const shouldRetryStatus =
 						allowSingleProviderRetry &&
@@ -689,9 +699,15 @@ async function attemptProviderWithIR(
 			throw (lastErr instanceof Error ? lastErr : new Error("executor_retry_exhausted"));
 		};
 
-		const executorResult = await timing.timer.span(`${attemptPrefix}_executor_total`, () =>
+		let executorResult = await timing.timer.span(`${attemptPrefix}_executor_total`, () =>
 			executeWithRetry(),
 		);
+		if (isTextGenerate) {
+			executorResult = instrumentTextExecutorTiming(
+				executorResult,
+				executorInvocationStartedAtMs,
+			);
+		}
 
 		if (executorResult.timing) {
 			if (typeof executorResult.timing.latencyMs === "number") {
@@ -810,6 +826,20 @@ async function attemptProviderWithIR(
 				request_build_ms: executorResult.timing?.requestBuildMs ?? null,
 				upstream_headers_ms: executorResult.timing?.upstreamHeadersMs ?? null,
 				retry_delay_ms: executorResult.timing?.transientRetryDelayMs ?? null,
+				upstream_request: sanitizeJsonStringForAxiom(executorResult.mappedRequest),
+				upstream_response: sanitizeForAxiom(upstreamFailure.payload),
+				upstream_attempts: executorResult.upstreamAttempts?.map((attempt) => ({
+					sequence: attempt.sequence,
+					route: attempt.route ?? null,
+					request: sanitizeJsonStringForAxiom(attempt.request ?? null),
+					response: sanitizeForAxiom(attempt.response),
+					status: attempt.status ?? null,
+					status_text: attempt.statusText ?? null,
+					url: attempt.url ?? null,
+					duration_ms: attempt.durationMs,
+					outcome: attempt.outcome,
+					error_message: attempt.errorMessage ?? null,
+				})),
 			});
 			return { ok: false };
 		}
@@ -838,6 +868,7 @@ async function attemptProviderWithIR(
 			byokKeyId: executorResult.byokKeyId,
 			mappedRequest: executorResult.mappedRequest,
 			rawResponse: executorResult.rawResponse,
+			timing: executorResult.timing,
 		};
 		(result as any).healthContext = {
 			provider: candidate.providerId,
@@ -861,6 +892,7 @@ async function attemptProviderWithIR(
 			});
 		}
 
+		const providerFinishReason = extractProviderFinishReason(executorResult.rawResponse);
 		recordProviderAttempt(ctx, {
 			attempt_number: attemptNumber,
 			provider: candidate.providerId,
@@ -882,6 +914,26 @@ async function attemptProviderWithIR(
 			request_build_ms: executorResult.timing?.requestBuildMs ?? null,
 			upstream_headers_ms: executorResult.timing?.upstreamHeadersMs ?? null,
 			retry_delay_ms: executorResult.timing?.transientRetryDelayMs ?? null,
+			native_response_id: executorResult.bill?.upstream_id ?? null,
+			provider_finish_reason: providerFinishReason,
+			finish_reason: normalizeFinishReason(
+				providerFinishReason ?? executorResult.bill?.finish_reason ?? null,
+				candidate.providerId,
+			),
+			upstream_request: sanitizeJsonStringForAxiom(executorResult.mappedRequest),
+			upstream_response: sanitizeForAxiom(executorResult.rawResponse),
+			upstream_attempts: executorResult.upstreamAttempts?.map((attempt) => ({
+				sequence: attempt.sequence,
+				route: attempt.route ?? null,
+				request: sanitizeJsonStringForAxiom(attempt.request ?? null),
+				response: sanitizeForAxiom(attempt.response),
+				status: attempt.status ?? null,
+				status_text: attempt.statusText ?? null,
+				url: attempt.url ?? null,
+				duration_ms: attempt.durationMs,
+				outcome: attempt.outcome,
+				error_message: attempt.errorMessage ?? null,
+			})),
 		});
 
 		return { ok: true, result };

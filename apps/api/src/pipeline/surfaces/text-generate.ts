@@ -54,6 +54,10 @@ import {
 import { fetchGatewayContext } from "../before/context";
 import { buildProviderCandidatesWithDiagnostics } from "../before/utils";
 import type { PipelineContext } from "../before/types";
+import {
+	extractProviderFinishReason,
+	normalizeFinishReason,
+} from "../audit/normalize-finish-reason";
 
 function createJsonErrorResponse(
 	status: number,
@@ -577,6 +581,88 @@ async function materializeStreamResultToCompleted(args: {
 	};
 }
 
+function readProviderGenerationMs(result: any): number {
+	const measured = result?.timing?.generationMs;
+	if (typeof measured === "number" && Number.isFinite(measured)) {
+		return Math.max(0, measured);
+	}
+	const fallback = result?.generationTimeMs;
+	return typeof fallback === "number" && Number.isFinite(fallback)
+		? Math.max(0, fallback)
+		: 0;
+}
+
+function readProviderOutputTokens(result: any): number {
+	const usage = result?.ir?.usage;
+	const value = usage?.outputTokens ?? usage?.output_tokens ?? usage?.completion_tokens;
+	const outputTokens = Number(value);
+	return Number.isFinite(outputTokens) && outputTokens > 0 ? outputTokens : 0;
+}
+
+function captureProviderRound(
+	result: any,
+	roundNumber: number,
+	providerAttempts: PipelineContext["providerAttempts"],
+	requestPayload: unknown,
+): NonNullable<PipelineContext["providerRounds"]>[number] {
+	const generationMs = readProviderGenerationMs(result);
+	const totalMs = Number(result?.timing?.totalMs);
+	const measuredLatencyMs = Number(result?.timing?.latencyMs);
+	const latencyMs = Number.isFinite(measuredLatencyMs)
+		? Math.max(0, measuredLatencyMs)
+		: Number.isFinite(totalMs)
+			? Math.max(0, totalMs - generationMs)
+			: null;
+	const rawFinishReason =
+		result?.ir?.choices?.[0]?.finishReason ?? result?.bill?.finish_reason ?? null;
+	const providerFinishReason = extractProviderFinishReason(result?.rawResponse);
+	return {
+		round_number: roundNumber,
+		request_payload: requestPayload,
+		provider: result.provider,
+		api_model_id: result?.apiModelId ?? null,
+		pricing_key: result?.pricingKey ?? null,
+		provider_finish_reason: providerFinishReason,
+		finish_reason: normalizeFinishReason(
+			rawFinishReason ?? providerFinishReason,
+			result.provider,
+		),
+		usage:
+			result?.bill?.usage && typeof result.bill.usage === "object"
+				? { ...result.bill.usage }
+				: result?.ir?.usage && typeof result.ir.usage === "object"
+					? { ...result.ir.usage }
+				: null,
+		native_response_id:
+			result?.bill?.upstream_id ?? result?.ir?.nativeId ?? null,
+		generation_ms: Number.isFinite(generationMs) ? Math.max(0, generationMs) : null,
+		latency_ms: latencyMs,
+		total_ms: Number.isFinite(totalMs) ? Math.max(0, totalMs) : null,
+		mapped_request: result?.mappedRequest ?? null,
+		raw_response: result?.rawResponse ?? null,
+		status_code: result?.upstream?.status ?? 200,
+		key_source: result?.keySource ?? null,
+		byok_key_id: result?.byokKeyId ?? null,
+		provider_attempts: Array.isArray(providerAttempts)
+			? providerAttempts.map((attempt) => ({ ...attempt }))
+			: [],
+	};
+}
+
+function assignProviderAttemptRound(
+	ctx: PipelineContext,
+	start: number,
+	end: number,
+	roundNumber: number,
+): void {
+	if (!Array.isArray(ctx.providerAttempts)) return;
+	for (let index = start; index < end; index += 1) {
+		if (ctx.providerAttempts[index]) {
+			ctx.providerAttempts[index].round_number = roundNumber;
+		}
+	}
+}
+
 export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise<Response> {
 	const { pre, req, endpoint, timing } = args;
 
@@ -785,6 +871,18 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 				});
 			}
 		}
+		let accumulatedProviderGenerationMs = readProviderGenerationMs(exec.result);
+		let providerCallCount = 1;
+		let finalProviderOutputTokens = readProviderOutputTokens(exec.result);
+		const providerRounds: NonNullable<PipelineContext["providerRounds"]> = [];
+		let providerAttemptCursor = pre.ctx.providerAttempts?.length ?? 0;
+		assignProviderAttemptRound(pre.ctx, 0, providerAttemptCursor, 1);
+		providerRounds.push(captureProviderRound(
+			exec.result,
+			1,
+			pre.ctx.providerAttempts?.slice(0, providerAttemptCursor),
+			irForExecution,
+		));
 
 		const serverToolTrace: Array<{
 			id: string;
@@ -923,6 +1021,14 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 				};
 
 				const followUpExec = await doRequestWithIR(pre.ctx, nextIrRequest, timing);
+				const nextProviderAttemptCursor =
+					pre.ctx.providerAttempts?.length ?? providerAttemptCursor;
+				assignProviderAttemptRound(
+					pre.ctx,
+					providerAttemptCursor,
+					nextProviderAttemptCursor,
+					providerCallCount + 1,
+				);
 				if (followUpExec instanceof Response) {
 					const header = timing.timer.header();
 					pre.ctx.timing = timing.timer.snapshot();
@@ -981,6 +1087,16 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 					});
 				}
 
+				accumulatedProviderGenerationMs += readProviderGenerationMs(followUpResult);
+				providerCallCount += 1;
+				providerRounds.push(captureProviderRound(
+					followUpResult,
+					providerCallCount,
+					pre.ctx.providerAttempts?.slice(providerAttemptCursor, nextProviderAttemptCursor),
+					nextIrRequest,
+				));
+				providerAttemptCursor = nextProviderAttemptCursor;
+				finalProviderOutputTokens = readProviderOutputTokens(followUpResult);
 				exec.result = followUpResult;
 				latestIrResponse = followUpResult.ir as IRChatResponse;
 				aggregateUsage = mergeIRUsageTotals(aggregateUsage, latestIrResponse.usage);
@@ -993,6 +1109,9 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 
 			pre.ctx.searchObservability = searchObservability;
 			pre.ctx.webFetchObservability = webFetchObservability;
+			if (providerRounds.length > 1) {
+				pre.ctx.providerRounds = providerRounds;
+			}
 
 			if (
 				serverToolUsage.datetimeRequests > 0 ||
@@ -1048,29 +1167,30 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 			protocolResponse
 		) {
 			const requestStartMs =
-				typeof pre.ctx.meta.upstreamStartMs === "number"
-					? pre.ctx.meta.upstreamStartMs
-					: typeof pre.ctx.meta.startedAtMs === "number"
-						? pre.ctx.meta.startedAtMs
+				typeof pre.ctx.meta.startedAtMs === "number"
+					? pre.ctx.meta.startedAtMs
+					: typeof pre.ctx.meta.upstreamStartMs === "number"
+						? pre.ctx.meta.upstreamStartMs
 						: null;
 			const endToEndMs =
 				requestStartMs !== null
 					? Math.max(0, Math.round(Date.now() - requestStartMs))
 					: Math.max(0, Math.round(timing.timer.elapsed("execute_start")));
-			const resultTiming = (exec.result as { timing?: { generationMs?: number } }).timing;
 			const generationMs = Math.max(
 				0,
-				Math.round(
-					typeof resultTiming?.generationMs === "number"
-						? resultTiming.generationMs
-						: typeof exec.result.generationTimeMs === "number"
-							? exec.result.generationTimeMs
-							: 0,
-				),
+				Math.round(readProviderGenerationMs(exec.result)),
 			);
 			pre.ctx.meta.end_to_end_ms = endToEndMs;
 			pre.ctx.meta.generation_ms = generationMs;
 			pre.ctx.meta.latency_ms = Math.max(0, endToEndMs - generationMs);
+			pre.ctx.meta.throughput_tps = generationMs > 0 && finalProviderOutputTokens > 0
+				? finalProviderOutputTokens / (generationMs / 1000)
+				: undefined;
+			pre.ctx.meta.provider_generation_total_ms = Math.max(
+				0,
+				Math.round(accumulatedProviderGenerationMs),
+			);
+			pre.ctx.meta.provider_call_count = providerCallCount;
 			pre.ctx.meta.preserve_stream_timing = true;
 
 			const stream = buildSyntheticServerToolStream({

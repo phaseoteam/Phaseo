@@ -312,6 +312,15 @@ describe("amazon-bedrock text executor", () => {
 		expect(mock.calls[1]?.url.endsWith("/openai/v1/chat/completions")).toBe(true);
 		expect(result.kind).toBe("completed");
 		expect(result.ir?.choices?.[0]?.message?.content?.[0]?.type).toBe("text");
+		expect(result.upstreamAttempts).toHaveLength(2);
+		expect(result.upstreamAttempts?.map((attempt) => ({
+			route: attempt.route,
+			status: attempt.status,
+			outcome: attempt.outcome,
+		}))).toEqual([
+			{ route: "responses", status: 404, outcome: "upstream_non_2xx" },
+			{ route: "chat", status: 200, outcome: "success" },
+		]);
 	});
 
 });
