@@ -2,7 +2,7 @@
   "model_id": "google/gemini-embedding-001",
   "organisation_id": "google",
   "name": "Gemini Embedding 001",
-  "status": "Available",
+  "status": "Retired",
   "previous_model_id": null,
   "description": "gemini-embedding-001 provides a unified cutting edge experience across domains, including science, legal, finance, and coding. It is aimed at semantic search, retrieval, clustering, and RAG pipelines.",
   "announced_date": "2025-05-20T00:00:00",
