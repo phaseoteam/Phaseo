@@ -1,0 +1,28 @@
+{
+  "providerId": "azure",
+  "displayName": "Azure OpenAI",
+  "source": {
+    "kind": "official-docs",
+    "url": "https://learn.microsoft.com/en-us/azure/ai-foundry/openai/reference"
+  },
+  "operations": [
+    {
+      "capability": "azure_chat",
+      "method": "post",
+      "path": "/openai/deployments/{deployment}/chat/completions",
+      "operationId": "azure_chat"
+    },
+    {
+      "capability": "azure_embeddings",
+      "method": "post",
+      "path": "/openai/deployments/{deployment}/embeddings",
+      "operationId": "azure_embeddings"
+    },
+    {
+      "capability": "azure_responses",
+      "method": "post",
+      "path": "/openai/v1/responses",
+      "operationId": "azure_responses"
+    }
+  ]
+}

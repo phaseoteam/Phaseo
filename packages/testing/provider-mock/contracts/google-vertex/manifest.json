@@ -1,0 +1,34 @@
+{
+  "providerId": "google-vertex",
+  "displayName": "Google Vertex AI",
+  "source": {
+    "kind": "official-docs",
+    "url": "https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/inference"
+  },
+  "operations": [
+    {
+      "capability": "vertex_gemini_stream",
+      "method": "post",
+      "path": "/v1/projects/{project}/locations/{location}/publishers/google/models/{model}:streamGenerateContent",
+      "operationId": "vertex_gemini_stream"
+    },
+    {
+      "capability": "vertex_anthropic_raw_predict",
+      "method": "post",
+      "path": "/v1/projects/{project}/locations/{location}/publishers/anthropic/models/{model}:rawPredict",
+      "operationId": "vertex_anthropic_raw_predict"
+    },
+    {
+      "capability": "vertex_openapi_chat",
+      "method": "post",
+      "path": "/v1/projects/{project}/locations/{location}/endpoints/openapi/chat/completions",
+      "operationId": "vertex_openapi_chat"
+    },
+    {
+      "capability": "vertex_video_generate",
+      "method": "post",
+      "path": "/v1/projects/{project}/locations/{location}/publishers/google/models/{model}:predictLongRunning",
+      "operationId": "vertex_video_generate"
+    }
+  ]
+}

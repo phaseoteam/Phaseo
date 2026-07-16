@@ -1,0 +1,8 @@
+{
+  "inheritedFrom": "alibaba-cloud",
+  "parentSource": {
+    "kind": "official-docs",
+    "url": "https://www.alibabacloud.com/help/en/model-studio/compatibility-of-openai-with-dashscope"
+  },
+  "bundleSha256": "80ab1a5acfcdbcb4fd79ca881ba305eb9c6d3a2e86696027fdb49c9284b1259e"
+}

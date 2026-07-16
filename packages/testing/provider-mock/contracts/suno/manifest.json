@@ -1,0 +1,16 @@
+{
+  "providerId": "suno",
+  "displayName": "Suno",
+  "source": {
+    "kind": "official-docs",
+    "url": "https://docs.sunoapi.org/suno-api/generate-music"
+  },
+  "operations": [
+    {
+      "capability": "suno_generate_music",
+      "method": "post",
+      "path": "/api/v1/generate",
+      "operationId": "suno_generate_music"
+    }
+  ]
+}

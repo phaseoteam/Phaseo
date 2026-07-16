@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://docs.relace.ai/api-reference",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "776636cf026a296fa243dcbb68fa3cec2db6bc4b0b4271e519aa795282c735cd",
+  "gatewayPathPrefix": "/v1"
+}

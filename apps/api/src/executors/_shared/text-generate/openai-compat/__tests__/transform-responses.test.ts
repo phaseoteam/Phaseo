@@ -779,6 +779,23 @@ describe("irToOpenAIResponses", () => {
 		});
 	});
 
+	it("preserves function-tool strictness for OpenAI Responses", () => {
+		const request = irToOpenAIResponses({
+			model: "openai/gpt-5.4-nano",
+			messages: [{ role: "user", content: [{ type: "text", text: "weather" }] }],
+			stream: false,
+			tools: [{ name: "lookup_weather", parameters: { type: "object" }, strict: true }],
+		} as any, "gpt-5.4-nano", "openai");
+
+		expect(request.tools).toEqual([{
+			type: "function",
+			name: "lookup_weather",
+			description: undefined,
+			parameters: { type: "object" },
+			strict: true,
+		}]);
+	});
+
 	it("normalizes Groq responses payload shape", () => {
 		const request = irToOpenAIResponses({
 			model: "groq/llama",

@@ -1,0 +1,25 @@
+{
+  "sourceUrl": "https://raw.githubusercontent.com/friendliai/friendli-openapi/refs/heads/main/openapi.yaml",
+  "sourceSha256": "e354750f15a5410ef64b48af841930cacb85514b0b3022ae41df49d21f2b6793",
+  "bundleSha256": "004bfdeb3a4b8345d49e17a522ab044b2677c2a91a0906f0a45b7e663bf04fbe",
+  "openapiVersion": "3.1.0",
+  "apiVersion": "0.1.0",
+  "gatewayPathMappings": [
+    {
+      "sourcePath": "/serverless/v1/chat/completions",
+      "gatewayPath": "/serverless/v1/chat/completions"
+    },
+    {
+      "sourcePath": "/serverless/v1/responses",
+      "gatewayPath": "/serverless/v1/responses"
+    },
+    {
+      "sourcePath": "/serverless/v1/messages",
+      "gatewayPath": "/serverless/v1/messages"
+    },
+    {
+      "sourcePath": "/serverless/v1/models",
+      "gatewayPath": "/serverless/v1/models"
+    }
+  ]
+}

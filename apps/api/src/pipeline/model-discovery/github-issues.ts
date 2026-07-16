@@ -127,7 +127,7 @@ function formatModelReference(entry: Pick<UpstreamDiscoveryIssueEntry, "modelId"
 }
 
 function formatModelList(entries: UpstreamDiscoveryIssueEntry[]): string[] {
-	return entries.map((entry) => `- ${formatModelReference(entry)}${entry.reason?.trim() ? ` ? ${entry.reason.trim()}` : ""}`);
+	return entries.map((entry) => `- ${formatModelReference(entry)}${entry.reason?.trim() ? ` — ${entry.reason.trim()}` : ""}`);
 }
 
 function buildIssueBody(group: GitHubIssueGroup): string {
@@ -146,7 +146,7 @@ function buildIssueBody(group: GitHubIssueGroup): string {
 		`- Action: ${actionNoun(group.action)}`,
 		`- Latest detected at: ${latest ? formatDateTime(latest.detectedAt) : "Unknown"}`,
 		`- Detection source: \`${latest?.detectionSource ?? "unknown"}\``,
-		`- Signals in this change: ${group.entries.length}`,
+		`- Models in this signal: ${group.entries.length}`,
 		"",
 		"## Signals in this change",
 		...formatModelList(group.entries),

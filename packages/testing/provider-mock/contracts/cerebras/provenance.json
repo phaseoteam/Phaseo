@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://inference-docs.cerebras.ai/api-reference/chat-completions",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "b537d9438af16985c1186ccf783b65bd65c2b062c97e268dc562b0e956acd13a",
+  "gatewayPathPrefix": "/v1"
+}

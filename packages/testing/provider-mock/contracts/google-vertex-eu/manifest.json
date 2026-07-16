@@ -1,0 +1,32 @@
+{
+  "providerId": "google-vertex-eu",
+  "displayName": "Google Vertex AI EU",
+  "source": {
+    "kind": "official-docs",
+    "url": "https://cloud.google.com/vertex-ai/generative-ai/docs/learn/locations"
+  },
+  "operations": [
+    {
+      "capability": "vertex_eu_gemini_stream",
+      "method": "post",
+      "path": "/v1/projects/{project}/locations/{location}/publishers/google/models/{model}:streamGenerateContent",
+      "operationId": "vertex_eu_gemini_stream"
+    },
+    {
+      "capability": "vertex_eu_anthropic_raw_predict",
+      "method": "post",
+      "path": "/v1/projects/{project}/locations/{location}/publishers/anthropic/models/{model}:rawPredict",
+      "operationId": "vertex_eu_anthropic_raw_predict"
+    },
+    {
+      "capability": "video.generate",
+      "method": "post",
+      "path": "/v1/projects/{project}/locations/{location}/publishers/google/models/{model}:predictLongRunning",
+      "operationId": "google_vertex_eu_video_generate_1",
+      "notes": "Derived from the enabled Phaseo executor URL and provider API reference."
+    }
+  ],
+  "overlays": [
+    "Enabled capability operations derived from Phaseo executor routing."
+  ]
+}

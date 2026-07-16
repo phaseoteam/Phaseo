@@ -1,0 +1,14 @@
+{
+  "api_provider_id": "featherless",
+  "api_provider_name": "Featherless",
+  "description": "OpenAI-compatible serverless inference API.",
+  "link": "https://featherless.ai/docs/api-overview-and-common-options",
+  "country_code": "US",
+  "status": "Active",
+  "colour": "#EA580C",
+  "privacy_policy_url": "https://featherless.ai/privacy",
+  "terms_of_service_url": "https://featherless.ai/terms",
+  "prompt_training_policy": "unknown",
+  "prompt_training_notes": null,
+  "prompt_training_source_url": null
+}

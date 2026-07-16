@@ -1,0 +1,13 @@
+{
+  "sourceUrl": "https://docs.z.ai/openapi.json",
+  "sourceSha256": "62622aa47d1007a2751a45f6d97c8eb8ae61a16d94ff962bb4d2bab6938d2bd9",
+  "bundleSha256": "0d4a0b0ab76bf218d540ac4a6aa93d256834fba72ab66b207ad6e4527cd7aa95",
+  "openapiVersion": "3.0.1",
+  "apiVersion": "1.0.0",
+  "gatewayPathMappings": [
+    {
+      "sourcePath": "/paas/v4/chat/completions",
+      "gatewayPath": "/api/paas/v4/chat/completions"
+    }
+  ]
+}

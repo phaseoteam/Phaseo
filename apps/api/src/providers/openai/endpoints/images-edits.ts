@@ -8,7 +8,7 @@ import { buildAdapterPayload } from "../../utils";
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "../../openai-compatible/config";
 import { computeBill } from "@pipeline/pricing/engine";
 import { resolveUploadableFromString } from "./uploadable";
-import { buildImagePricingRequestOptions } from "@core/image-request-options";
+import { buildImagePricingRequestOptions, normalizeOpenAIImageTokenUsage } from "@core/image-request-options";
 
 function resolveOutputImageCount(body: ImagesEditRequest, normalized: any): number {
     const fromPayload = Array.isArray(normalized?.data) ? normalized.data.length : 0;
@@ -20,6 +20,10 @@ function resolveOutputImageCount(body: ImagesEditRequest, normalized: any): numb
     }
 
     return 1;
+}
+
+function usesGptImageTokenPricing(...modelIds: Array<string | null | undefined>): boolean {
+	return modelIds.some((modelId) => /(?:gpt-image-|chatgpt-image-latest)/i.test(modelId?.trim() ?? ""));
 }
 
 
@@ -135,16 +139,20 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 
     if (res.ok && args.pricingCard) {
         const outputImageCount = resolveOutputImageCount(body, normalized);
-        const usageMeters: Record<string, number> = normalized?.usage && typeof normalized.usage === "object"
-            ? { ...(normalized.usage as Record<string, number>) }
-            : { total_tokens: 0 };
+        const usageMeters: Record<string, unknown> = usesGptImageTokenPricing(args.model, body.model)
+            ? normalizeOpenAIImageTokenUsage(normalized?.usage)
+            : normalized?.usage && typeof normalized.usage === "object"
+                ? { ...(normalized.usage as Record<string, unknown>) }
+                : { total_tokens: 0 };
         if (typeof usageMeters.requests !== "number") usageMeters.requests = 1;
-        if (typeof usageMeters.output_image !== "number") usageMeters.output_image = outputImageCount;
+        if (!usesGptImageTokenPricing(args.model, body.model) && typeof usageMeters.output_image !== "number") {
+            usageMeters.output_image = outputImageCount;
+        }
 
         const pricedUsage = computeBill(
             usageMeters,
             args.pricingCard,
-            buildImagePricingRequestOptions(body),
+            buildImagePricingRequestOptions(body, usageMeters),
         );
         bill.cost_cents = pricedUsage.pricing.total_cents;
         bill.currency = pricedUsage.pricing.currency;

@@ -14,6 +14,9 @@ type ImageOptionInput = {
 };
 
 type ImagePricingUsage = {
+	input_tokens?: unknown;
+	input_text_tokens?: unknown;
+	input_image_tokens?: unknown;
 	size?: unknown;
 	resolution?: unknown;
 	quality?: unknown;
@@ -24,8 +27,13 @@ type ImagePricingUsage = {
 	} | null;
 	output_image_tokens?: unknown;
 	output_tokens?: unknown;
+	input_tokens_details?: {
+		text_tokens?: unknown;
+		image_tokens?: unknown;
+	} | null;
 	output_tokens_details?: {
 		output_images?: unknown;
+		image_tokens?: unknown;
 	} | null;
 	completion_tokens_details?: {
 		output_images?: unknown;
@@ -59,9 +67,34 @@ function readOutputImageTokens(usage: ImagePricingUsage): number | undefined {
 	return (
 		toFiniteNumber(usage.output_image_tokens) ??
 		toFiniteNumber(usage.output_tokens_details?.output_images) ??
+		toFiniteNumber(usage.output_tokens_details?.image_tokens) ??
 		toFiniteNumber(usage.completion_tokens_details?.output_images) ??
 		toFiniteNumber(usage.output_tokens)
 	);
+}
+
+/**
+ * The Images API reports generic input/output tokens even though GPT Image 2
+ * uses them for image generation. Convert that provider shape to the canonical
+ * image token meters before pricing it.
+ */
+export function normalizeOpenAIImageTokenUsage(usage: ImagePricingUsage): Record<string, unknown> {
+	const meters: Record<string, unknown> = usage && typeof usage === "object" ? { ...usage } : { total_tokens: 0 };
+	const inputTextTokens =
+		toFiniteNumber(usage?.input_text_tokens) ??
+		toFiniteNumber(usage?.input_tokens_details?.text_tokens) ??
+		toFiniteNumber(usage?.input_tokens);
+	const inputImageTokens =
+		toFiniteNumber(usage?.input_image_tokens) ??
+		toFiniteNumber(usage?.input_tokens_details?.image_tokens);
+	const outputImageTokens = readOutputImageTokens(usage);
+
+	if (inputTextTokens !== undefined) meters.input_text_tokens = inputTextTokens;
+	if (inputImageTokens !== undefined) meters.input_image_tokens = inputImageTokens;
+	if (outputImageTokens !== undefined) meters.output_image_tokens = outputImageTokens;
+	delete meters.output_tokens;
+
+	return meters;
 }
 
 function normalizeAutoOption(value: string | undefined): string | undefined {

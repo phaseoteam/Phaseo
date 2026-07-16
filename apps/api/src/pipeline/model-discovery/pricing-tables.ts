@@ -45,20 +45,20 @@ export const PRICING_TABLE_SOURCES: PricingTableSource[] = [
 
 const TABLE_PATTERN = /<table\b[^>]*>[\s\S]*?<\/table>/gi;
 const TAG_PATTERN = /<[^>]+>/g;
-const PRICE_TEXT_PATTERN = /(?:pricing|price|\$\s*\d|usd\s*\d|\d\s*usd|per\s*(?:million|1m|mtok)|\/\s*(?:m|mtok)|\u00A5|\u20AC|\u00A3|cny|rmb|\u5143)/i;
+const PRICE_TEXT_PATTERN = /(?:pricing|price|\$\s*\d|usd\s*\d|\d\s*usd|per\s*(?:million|1m|mtok)|\/\s*(?:m|mtok)|¥|cny|rmb|元)/i;
 const NON_CONTENT_PATTERN = /<(?:script|style|svg|noscript|template)\b[^>]*>[\s\S]*?<\/(?:script|style|svg|noscript|template)\b[^>]*>/gi;
-const PRICE_VALUE_PATTERN = /(?:\$|\u00A5|\u20AC|\u00A3)\s*\d+(?:\.\d+)?(?:\s*\/?\s*(?:1?m|million|mtok|month|mo|hour|user|1000))?/gi;
+const PRICE_VALUE_PATTERN = /(?:\$|¥|€)\s*\d+(?:\.\d+)?(?:\s*\/?\s*(?:1?m|million|mtok|month|mo|hour|user|1000))?/gi;
 const MDX_TABLE_PATTERN = /<DocTable\b[\s\S]*?\n\s*\/>/gi;
 const MAX_PRICING_SAMPLES = 6;
 
 function decodeHtml(value: string): string {
 	return value
 		.replace(/&nbsp;/gi, " ")
+		.replace(/&amp;/gi, "&")
 		.replace(/&lt;/gi, "<")
 		.replace(/&gt;/gi, ">")
 		.replace(/&#39;|&apos;/gi, "'")
-		.replace(/&quot;/gi, '"')
-		.replace(/&amp;/gi, "&");
+		.replace(/&quot;/gi, '"');
 }
 
 function tableText(tableHtml: string): string {

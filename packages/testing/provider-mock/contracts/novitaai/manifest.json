@@ -1,0 +1,49 @@
+{
+  "providerId": "novitaai",
+  "displayName": "Novita AI compatibility alias",
+  "source": {
+    "kind": "phaseo-overlay",
+    "url": "https://novita.ai/docs/api-reference/api-reference-overview"
+  },
+  "operations": [
+    {
+      "capability": "text.generate",
+      "method": "post",
+      "path": "/openai/v1/chat/completions",
+      "operationId": "createChatCompletion"
+    },
+    {
+      "capability": "text.generate",
+      "method": "post",
+      "path": "/openai/v1/completions",
+      "operationId": "createCompletion"
+    },
+    {
+      "capability": "embeddings",
+      "method": "post",
+      "path": "/openai/v1/embeddings",
+      "operationId": "createEmbedding"
+    },
+    {
+      "capability": "rerank",
+      "method": "post",
+      "path": "/openai/v1/rerank",
+      "operationId": "createRerank"
+    },
+    {
+      "capability": "models.list",
+      "method": "get",
+      "path": "/openai/v1/models",
+      "operationId": "listModels"
+    },
+    {
+      "capability": "models.retrieve",
+      "method": "get",
+      "path": "/openai/v1/models/{model}",
+      "operationId": "retrieveModel"
+    }
+  ],
+  "overlays": [
+    "Inherits novita; this enabled ID changes routing, residency, performance tier, or transport policy without changing the request schema."
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://docs.sakana.ai/",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "ab4e3231ee46b80818aa9abd8b05f062e23bd0442bb1a801dc0e80a6d5a372c1",
+  "gatewayPathPrefix": "/v1"
+}

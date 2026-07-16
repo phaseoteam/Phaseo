@@ -1,0 +1,40 @@
+{
+  "providerId": "mistral",
+  "displayName": "Mistral AI",
+  "source": {
+    "kind": "official-openapi",
+    "url": "https://docs.mistral.ai/openapi.yaml"
+  },
+  "operations": [
+    {
+      "capability": "chat",
+      "method": "post",
+      "path": "/v1/chat/completions",
+      "operationId": "chat_completion_v1_chat_completions_post"
+    },
+    {
+      "capability": "embeddings",
+      "method": "post",
+      "path": "/v1/embeddings",
+      "operationId": "embeddings_v1_embeddings_post"
+    },
+    {
+      "capability": "models",
+      "method": "get",
+      "path": "/v1/models",
+      "operationId": "list_models_v1_models_get"
+    },
+    {
+      "capability": "ocr",
+      "method": "post",
+      "path": "/v1/ocr",
+      "operationId": "ocr_v1_ocr_post"
+    },
+    {
+      "capability": "audio-transcription",
+      "method": "post",
+      "path": "/v1/audio/transcriptions",
+      "operationId": "audio_api_v1_transcriptions_post"
+    }
+  ]
+}

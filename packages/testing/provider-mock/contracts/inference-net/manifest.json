@@ -1,0 +1,20 @@
+{
+  "providerId": "inference-net",
+  "displayName": "Inference.net",
+  "source": {
+    "kind": "official-docs",
+    "url": "https://docs.inference.net/"
+  },
+  "operations": [
+    {
+      "capability": "chat",
+      "method": "post",
+      "path": "/v1/chat/completions",
+      "operationId": "inference_net_chat",
+      "notes": "Reconstructed from the provider's documented OpenAI-compatible API surface; provider-specific restrictions belong in overlays."
+    }
+  ],
+  "overlays": [
+    "OpenAI-compatible request schema baseline; narrowed and extended by deterministic provider scenarios as documented behavior is identified."
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "providerId": "runway",
+  "displayName": "Runway",
+  "source": {
+    "kind": "official-docs",
+    "url": "https://docs.dev.runwayml.com/api/"
+  },
+  "operations": [
+    {
+      "capability": "runway_text_to_video",
+      "method": "post",
+      "path": "/v1/text_to_video",
+      "operationId": "runway_text_to_video"
+    }
+  ]
+}

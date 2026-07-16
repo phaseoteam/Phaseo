@@ -63,7 +63,12 @@ function readExecutableResponseToolCall(item: any): { id: string | null; name: s
 }
 
 function usesOpenAIResponsesShape(providerId?: string): boolean {
-	return providerId === "openai" || providerId === "meta" || providerId === "amazon-bedrock";
+	return (
+		providerId === "openai" ||
+		providerId === "openai-eu" ||
+		providerId === "meta" ||
+		providerId === "amazon-bedrock"
+	);
 }
 
 function addMetaWebSearchTool(request: any, ir: IRChatRequest): void {
@@ -418,6 +423,7 @@ function toOpenAIResponsesTool(tool: IRTool, useOpenAIShape: boolean): any {
 			name: tool.name,
 			description: tool.description,
 			parameters: tool.parameters,
+			...(tool.strict !== undefined ? { strict: tool.strict } : {}),
 		};
 	}
 
@@ -427,6 +433,7 @@ function toOpenAIResponsesTool(tool: IRTool, useOpenAIShape: boolean): any {
 			name: tool.name,
 			description: tool.description,
 			parameters: tool.parameters,
+			...(tool.strict !== undefined ? { strict: tool.strict } : {}),
 		},
 	};
 }

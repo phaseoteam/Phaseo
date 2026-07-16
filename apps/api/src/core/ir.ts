@@ -68,6 +68,7 @@ export type IRTool = {
 	type?: string; // Provider-native tool type (for example web_search_preview)
 	description?: string;
 	parameters: Record<string, any>; // JSON Schema
+	strict?: boolean; // OpenAI/xAI function-schema strictness
 	cacheControl?: IRCacheControl;
 	raw?: Record<string, any>; // Original provider-native tool payload for passthrough
 };
@@ -443,6 +444,8 @@ export type IRImageGenerationRequest = {
 	size?: string;
 	n?: number;
 	quality?: string;
+	stream?: boolean;
+	partialImages?: number;
 	responseFormat?: string;
 	outputFormat?: "png" | "jpeg" | "webp";
 	outputCompression?: number;

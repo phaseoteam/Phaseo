@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://docs.cohere.com/docs/compatibility-api",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "5b56ce743760b6e657f8125d78a2ff5a563167b757db633cfcd1ed5407e5859e",
+  "gatewayPathPrefix": "/compatibility/v1"
+}

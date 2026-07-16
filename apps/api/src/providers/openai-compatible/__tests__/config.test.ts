@@ -206,6 +206,33 @@ describe("openAICompatUrl", () => {
 		);
 	});
 
+	it("builds Wafer and Ambient chat-completions endpoints with /v1 prefixes", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			WAFER_API_KEY: "test-wafer-key",
+			AMBIENT_API_KEY: "test-ambient-key",
+		} as any);
+
+		expect(openAICompatUrl("wafer", "/chat/completions")).toBe(
+			"https://pass.wafer.ai/v1/chat/completions",
+		);
+		expect(openAICompatUrl("ambient", "/chat/completions")).toBe(
+			"https://api.ambient.xyz/v1/chat/completions",
+		);
+		expect(openAICompatHeaders("wafer", "test-wafer-key")).toEqual(
+			expect.objectContaining({ Authorization: "Bearer test-wafer-key" }),
+		);
+	});
+
+	it("builds StreamLake's endpoint-bound OpenAI-compatible chat URL", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({ STREAMLAKE_API_KEY: "test-streamlake-key" } as any);
+
+		expect(openAICompatUrl("streamlake", "/chat/completions")).toBe(
+			"https://vanchin.streamlake.ai/api/gateway/v1/endpoints/chat/completions",
+		);
+	});
+
 	it("builds longcat chat-completions endpoint with /openai/v1 prefix", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({

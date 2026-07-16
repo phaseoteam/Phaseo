@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://docs.reka.ai/api-reference/chat",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "0e565d68279d484a8549e22ce500cf300625ae4ba5210b8b8a3a3cff5a984d4c",
+  "gatewayPathPrefix": "/v1"
+}

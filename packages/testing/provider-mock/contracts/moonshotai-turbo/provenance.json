@@ -1,0 +1,8 @@
+{
+  "inheritedFrom": "moonshot-ai",
+  "parentSource": {
+    "kind": "official-docs",
+    "url": "https://platform.moonshot.ai/docs/api/chat"
+  },
+  "bundleSha256": "48ab7e8f2c84a7dcfe5e490aedb1917cc4383374ae4b53df157fec326540f77e"
+}

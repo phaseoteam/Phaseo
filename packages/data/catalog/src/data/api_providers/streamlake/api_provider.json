@@ -1,0 +1,14 @@
+{
+  "api_provider_id": "streamlake",
+  "api_provider_name": "StreamLake",
+  "description": "Endpoint-based OpenAI-compatible model inference API.",
+  "link": "https://www.streamlake.ai/document/DOC/mg6k6nlp8j6qxicx4c9",
+  "country_code": "SG",
+  "status": "Active",
+  "colour": "#2563EB",
+  "privacy_policy_url": null,
+  "terms_of_service_url": "https://www.streamlake.ai/document/DOC/mgkchnd89grpt1961fw",
+  "prompt_training_policy": "unknown",
+  "prompt_training_notes": null,
+  "prompt_training_source_url": null
+}

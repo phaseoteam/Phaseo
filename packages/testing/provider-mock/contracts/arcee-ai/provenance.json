@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://docs.arcee.ai/",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "38b214f4e7e3fdc03b234ee6682014bf6e51a0fd7cb2bc3b21f821c4c4a0bba3",
+  "gatewayPathPrefix": "/api/v1"
+}

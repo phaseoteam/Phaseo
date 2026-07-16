@@ -1,0 +1,6 @@
+{
+  "sourceUrl": "https://docs.digitalocean.com/products/inference/",
+  "reconstruction": "phaseo-executor-and-official-reference",
+  "unsupportedReason": "Catalog provider status is NotReady and no Phaseo executor is registered.",
+  "bundleSha256": "5617f147b62734a024da48e2d4d5d04f022feccf66c014cda98c9e1717cc411d"
+}

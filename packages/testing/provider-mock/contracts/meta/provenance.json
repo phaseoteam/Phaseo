@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://llama.developer.meta.com/docs/api",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "988d2e8260e2e63164cd8e1b45521fab396abf49d66a91a23692bdad973990b6",
+  "gatewayPathPrefix": "/v1"
+}

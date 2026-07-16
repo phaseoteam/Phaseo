@@ -1,0 +1,78 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Anthropic on AWS US Phaseo contract",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/v1/messages": {
+      "post": {
+        "operationId": "anthropic_aws_us_messages",
+        "description": "Anthropic Messages payload pinned to AWS US inference geography.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "model": {
+                    "type": "string"
+                  },
+                  "max_tokens": {
+                    "type": "integer"
+                  },
+                  "messages": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {},
+                      "additionalProperties": true
+                    }
+                  },
+                  "tools": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {},
+                      "additionalProperties": true
+                    }
+                  }
+                },
+                "required": [
+                  "model",
+                  "max_tokens",
+                  "messages"
+                ],
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deterministic mock success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Provider validation error"
+          },
+          "429": {
+            "description": "Provider rate limit"
+          },
+          "500": {
+            "description": "Provider failure"
+          }
+        }
+      }
+    }
+  }
+}

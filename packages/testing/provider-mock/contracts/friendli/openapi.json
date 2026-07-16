@@ -1,0 +1,4466 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Friendli Suite API Reference",
+    "description": "This is an OpenAPI reference of Friendli Suite API.",
+    "termsOfService": "https://friendli.ai/terms-of-service",
+    "contact": {
+      "name": "FriendliAI Support Team",
+      "email": "support@friendli.ai"
+    },
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/serverless/v1/chat/completions": {
+      "post": {
+        "tags": [
+          "Serverless.Chat"
+        ],
+        "summary": "Chat completions",
+        "description": "Generate a model response from a list of messages comprising a conversation. Compatible with the OpenAI Chat Completions API, with support for streaming, tool calls, and structured outputs.",
+        "operationId": "serverlessChatComplete",
+        "security": [
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Friendli-Team",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ID of team to run requests as (optional parameter).",
+              "title": "X-Friendli-Team"
+            },
+            "description": "ID of team to run requests as (optional parameter)."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServerlessChatCompletionBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully generated a chat response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerlessChatCompleteSuccess"
+                },
+                "examples": {
+                  "Example": {
+                    "value": {
+                      "id": "chatcmpl-4b71d12c86d94e719c7e3984a7bb7941",
+                      "model": "zai-org/GLM-5.2",
+                      "object": "chat.completion",
+                      "choices": [
+                        {
+                          "index": 0,
+                          "message": {
+                            "role": "assistant",
+                            "content": "Hello there, how may I assist you today?"
+                          },
+                          "finish_reason": "stop"
+                        }
+                      ],
+                      "usage": {
+                        "prompt_tokens": 9,
+                        "completion_tokens": 11,
+                        "total_tokens": 20
+                      },
+                      "created": 1735722153
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity"
+          }
+        },
+        "x-speakeasy-name-override": "complete",
+        "x-speakeasy-usage-example": {
+          "title": "Chat completions",
+          "description": "Generate a model response from a list of messages comprising a conversation. Compatible with the OpenAI Chat Completions API, with support for streaming, tool calls, and structured outputs.",
+          "position": 1,
+          "tags": [
+            "usage",
+            "security",
+            "retries",
+            "server"
+          ]
+        },
+        "x-mint": {
+          "metadata": {
+            "title": "Model APIs Chat Completions",
+            "sidebarTitle": "Chat Completions",
+            "og:title": "Model APIs Chat Completions",
+            "description": "Generate a model response from a list of messages comprising a conversation. Compatible with the OpenAI Chat Completions API, with support for streaming, tool calls, and structured outputs.",
+            "og:description": "Generate a model response from a list of messages comprising a conversation. Compatible with the OpenAI Chat Completions API, with support for streaming, tool calls, and structured outputs."
+          },
+          "href": "/openapi/model-apis/chat-completions",
+          "content": "Generate a model response from a list of messages comprising a conversation. Compatible with the OpenAI Chat Completions API, with support for streaming, tool calls, and structured outputs.\n\nSee available models at [this pricing table](/guides/model-apis/pricing#billing-methods).\n\nTo request successfully, it is mandatory to enter a **Personal API Key** (e.g. flp_XXX) value in the **Bearer Token** field.\nRefer to the [authentication section](/openapi/introduction#authentication) on our introduction page to learn how to acquire this variable and [visit here](https://friendli.ai/suite/~/setting/keys) to generate your API Key.\n\nWhen streaming mode is used (i.e., `stream` option is set to `true`), the response is in MIME type `text/event-stream`. Otherwise, the content type is `application/json`.\nYou can view the schema of the streamed sequence of chunk objects in streaming mode [here](/openapi/model-apis/chat-completions-chunk-object).\n\n<Tip>You can explore examples on the [Friendli Model APIs](https://friendli.ai/get-started/model-apis) playground and adjust settings with just a few clicks.</Tip>"
+        }
+      }
+    },
+    "/serverless/v1/responses": {
+      "post": {
+        "tags": [
+          "Serverless.Responses"
+        ],
+        "summary": "Responses",
+        "description": "Generate a model response from text or image inputs. Follows the OpenAI Responses API format, with support for streaming, function and custom tool calls, structured outputs, and reasoning controls.",
+        "operationId": "serverlessResponses",
+        "security": [
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Friendli-Team",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ID of team to run requests as (optional parameter).",
+              "title": "X-Friendli-Team"
+            },
+            "description": "ID of team to run requests as (optional parameter)."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServerlessResponsesBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully generated a response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerlessResponsesSuccess"
+                },
+                "examples": {
+                  "Example": {
+                    "value": {
+                      "id": "resp_4b71d12c86d94e719c7e3984a7bb7941",
+                      "object": "response",
+                      "created_at": 1735722153,
+                      "status": "completed",
+                      "output": [
+                        {
+                          "type": "message",
+                          "id": "msg_4b71d12c86d94e719c7e3984a7bb7941",
+                          "status": "completed",
+                          "role": "assistant",
+                          "content": [
+                            {
+                              "type": "output_text",
+                              "text": "Hello there, how may I assist you today?"
+                            }
+                          ]
+                        }
+                      ],
+                      "usage": {
+                        "input_tokens": 9,
+                        "input_tokens_details": {
+                          "cached_tokens": 0
+                        },
+                        "output_tokens": 11,
+                        "output_tokens_details": {
+                          "reasoning_tokens": 0
+                        },
+                        "total_tokens": 20
+                      },
+                      "model": "zai-org/GLM-5.2"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity"
+          }
+        },
+        "x-speakeasy-name-override": "responses",
+        "x-mint": {
+          "metadata": {
+            "title": "Model APIs Responses",
+            "sidebarTitle": "Responses",
+            "og:title": "Model APIs Responses",
+            "description": "Generate a model response from text or image inputs. Follows the OpenAI Responses API format, with support for streaming, function and custom tool calls, structured outputs, and reasoning controls.",
+            "og:description": "Generate a model response from text or image inputs. Follows the OpenAI Responses API format, with support for streaming, function and custom tool calls, structured outputs, and reasoning controls.",
+            "tag": "Beta"
+          },
+          "href": "/openapi/model-apis/responses",
+          "content": "Generate a model response from text or image inputs. Follows the OpenAI Responses API format, with support for streaming, function and custom tool calls, structured outputs, and reasoning controls.\n\nSee available models at [this pricing table](/guides/model-apis/pricing#billing-methods).\n\n<Note>\nThe Responses API may not be supported by all models available on Model APIs.\n</Note>\n\nTo request successfully, it is mandatory to enter a **Personal API Key** (e.g. flp_XXX) value in the **Bearer Token** field.\nRefer to the [authentication section](/openapi/introduction#authentication) on our introduction page to learn how to acquire this variable and [visit here](https://friendli.ai/suite/~/setting/keys) to generate your API Key.\n\nWhen streaming mode is used (i.e., `stream` option is set to `true`), the response is in MIME type `text/event-stream`. Otherwise, the content type is `application/json`.\nYou can view the schema of the streamed sequence of chunk objects in streaming mode [here](/openapi/model-apis/responses-chunk-object).\n\n<Info>\nThis API is currently in **Beta**.\nWhile we strive to provide a stable and reliable experience, this feature is still under active development.\nAs a result, you may encounter unexpected behavior or limitations.\nWe encourage you to provide feedback to help us improve the feature before its official release.\n\n- [Feature request & feedback](mailto:support@friendli.ai)\n- [Contact support](mailto:support@friendli.ai)\n\n</Info>"
+        }
+      }
+    },
+    "/serverless/v1/messages": {
+      "post": {
+        "tags": [
+          "Serverless.Messages"
+        ],
+        "summary": "Messages",
+        "description": "Generate a model response from a conversation using the Anthropic Messages API format. Supports streaming, function tool calls, and extended thinking.",
+        "operationId": "serverlessMessages",
+        "security": [
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Friendli-Team",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ID of team to run requests as (optional parameter).",
+              "title": "X-Friendli-Team"
+            },
+            "description": "ID of team to run requests as (optional parameter)."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServerlessMessagesBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully generated a Messages-style response. For streaming (`text/event-stream`) event and chunk details, see [Messages chunk object](/openapi/model-apis/messages-chunk-object).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerlessMessagesSuccess"
+                },
+                "examples": {
+                  "Example": {
+                    "value": {
+                      "id": "msg_4b71d12c86d94e719c7e3984a7bb7941",
+                      "type": "message",
+                      "role": "assistant",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "I can answer questions, generate text, and help with coding tasks."
+                        }
+                      ],
+                      "stop_reason": "end_turn",
+                      "usage": {
+                        "input_tokens": 17,
+                        "output_tokens": 14,
+                        "cache_read_input_tokens": 0
+                      },
+                      "model": "zai-org/GLM-5.2"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Invalid request error": {
+                    "value": {
+                      "type": "error",
+                      "error": {
+                        "type": "invalid_request_error",
+                        "message": "..."
+                      },
+                      "request_id": "req_..."
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MessagesErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-speakeasy-name-override": "messages",
+        "x-speakeasy-usage-example": {
+          "tags": [
+            "errors"
+          ]
+        },
+        "x-mint": {
+          "metadata": {
+            "title": "Model APIs Messages",
+            "sidebarTitle": "Messages",
+            "og:title": "Model APIs Messages",
+            "description": "Generate a model response from a conversation using the Anthropic Messages API format. Supports streaming, function tool calls, and extended thinking.",
+            "og:description": "Generate a model response from a conversation using the Anthropic Messages API format. Supports streaming, function tool calls, and extended thinking.",
+            "tag": "Beta"
+          },
+          "href": "/openapi/model-apis/messages",
+          "content": "Generate a model response from a conversation using the Anthropic Messages API format. Supports streaming, function tool calls, and extended thinking.\n\nSee available models at [this pricing table](/guides/model-apis/pricing#billing-methods).\n\n<Note>\nThe Messages API may not be supported by all models available on Model APIs.\n</Note>\n\nTo request successfully, it is mandatory to enter a **Personal API Key** (e.g. flp_XXX) value in the **Bearer Token** field.\nRefer to the [authentication section](/openapi/introduction#authentication) on our introduction page to learn how to acquire this variable and [visit here](https://friendli.ai/suite/~/setting/keys) to generate your API Key.\n\nWhen streaming mode is used (i.e., `stream` option is set to `true`), the response is in MIME type `text/event-stream`. Otherwise, the content type is `application/json`.\nYou can view the schema of the streamed sequence of chunk objects in streaming mode [here](/openapi/model-apis/messages-chunk-object).\n\n<Warning>Server-side tools are not supported in the Messages API. In `tools`, only custom/client function tools are used; non-`custom` tool types are ignored.</Warning>\n\n<Info>\nThis API is currently in **Beta**.\nWhile we strive to provide a stable and reliable experience, this feature is still under active development.\nAs a result, you may encounter unexpected behavior or limitations.\nWe encourage you to provide feedback to help us improve the feature before its official release.\n\n- [Feature request & feedback](mailto:support@friendli.ai)\n- [Contact support](mailto:support@friendli.ai)\n\n</Info>"
+        }
+      }
+    },
+    "/serverless/v1/models": {
+      "get": {
+        "tags": [
+          "Serverless.Model"
+        ],
+        "summary": "Retrieve serverless models",
+        "description": "Retrieve list of serverless models.",
+        "operationId": "serverlessModelList",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerlessModelListSuccess"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "422": {
+            "description": "Unprocessable Entity"
+          }
+        },
+        "x-speakeasy-name-override": "list",
+        "x-speakeasy-ignore": true
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ServerlessChatCompletionBody": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "Code of the model to use. See [available model list](https://friendli.ai/docs/guides/model-apis/pricing#billing-methods).",
+            "examples": [
+              "zai-org/GLM-5.2"
+            ]
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/Message"
+            },
+            "type": "array",
+            "title": "Messages",
+            "description": "A list of messages comprising the conversation so far.",
+            "examples": [
+              [
+                {
+                  "content": "You are a helpful assistant.",
+                  "role": "system"
+                },
+                {
+                  "content": "Hello!",
+                  "role": "user"
+                }
+              ]
+            ]
+          },
+          "chat_template_kwargs": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chat Template Kwargs",
+            "description": "Additional keyword arguments supplied to the template renderer. These parameters will be available for use within the chat template."
+          },
+          "eos_token": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eos Token",
+            "description": "A list of endpoint sentence tokens."
+          },
+          "frequency_penalty": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Frequency Penalty",
+            "description": "Number between -2.0 and 2.0. Positive values penalizes tokens that have been sampled, taking into account their frequency in the preceding text. This penalization diminishes the model's tendency to reproduce identical lines verbatim."
+          },
+          "logit_bias": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logit Bias",
+            "description": "Accepts a JSON object that maps tokens to an associated bias value. Mathematically, the bias is added to the logits generated by the model prior to sampling. The exact effect will vary per model."
+          },
+          "logprobs": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logprobs",
+            "description": "Whether to return log probabilities of the output tokens or not."
+          },
+          "max_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Tokens",
+            "description": "The maximum number of tokens to generate. For decoder-only models like GPT, the length of your input tokens plus `max_tokens` should not exceed the model's maximum length (e.g., 2048 for OpenAI GPT-3). For encoder-decoder models like T5 or BlenderBot, `max_tokens` should not exceed the model's maximum output length. This is similar to Hugging Face's [`max_new_tokens`](https://huggingface.co/docs/transformers/v4.26.0/en/main_classes/text_generation#transformers.GenerationConfig.max_new_tokens) argument."
+          },
+          "min_p": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min P",
+            "description": "A scaling factor used to determine the minimum token probability threshold. This threshold is calculated as `min_p` multiplied by the probability of the most likely token. Tokens with probabilities below this scaled threshold are excluded from sampling. Values range from 0.0 (inclusive) to 1.0 (inclusive). Higher values result in stricter filtering, while lower values allow for greater diversity. The default value of 0.0 disables filtering, allowing all tokens to be considered for sampling."
+          },
+          "n": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "N",
+            "description": "The number of independently generated results for the prompt. Defaults to 1. This is similar to Hugging Face's [`num_return_sequences`](https://huggingface.co/docs/transformers/v4.26.0/en/main_classes/text_generation#transformers.GenerationConfig.num_return_sequences) argument."
+          },
+          "parallel_tool_calls": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parallel Tool Calls",
+            "description": "Whether to enable parallel function calling."
+          },
+          "presence_penalty": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Presence Penalty",
+            "description": "Number between -2.0 and 2.0. Positive values penalizes tokens that have been sampled at least once in the existing text."
+          },
+          "repetition_penalty": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repetition Penalty",
+            "description": "Penalizes tokens that have already appeared in the generated result (plus the input tokens for decoder-only models). Should be positive value (1.0 means no penalty). See [keskar et al., 2019](https://arxiv.org/abs/1909.05858) for more details. This is similar to Hugging Face's [`repetition_penalty`](https://huggingface.co/docs/transformers/v4.26.0/en/main_classes/text_generation#transformers.generationconfig.repetition_penalty) argument."
+          },
+          "reasoning_effort": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "minimal",
+                  "low",
+                  "medium",
+                  "high",
+                  "xhigh",
+                  "max",
+                  "ultracode"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoning Effort",
+            "description": "Sets how much reasoning the model does before answering. Higher values give more thorough responses but take longer. This affects reasoning models only, and the available options depend on the model."
+          },
+          "reasoning_budget": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoning Budget",
+            "description": "Specifies a positive integer that defines a limit on the number of tokens used for internal reasoning tokens. This parameter is only effective for reasoning models."
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "Seed to control random procedure. If nothing is given, random seed is used for sampling, and return the seed along with the generated result. When using the `n` argument, you can pass a list of seed values to control all of the independent generations."
+          },
+          "stop": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stop",
+            "description": "When one of the stop phrases appears in the generation result, the API will stop generation. The stop phrases are excluded from the result. Defaults to empty list."
+          },
+          "stream": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stream",
+            "description": "Whether to stream the generation result. When set to `true`, each token is sent as [server-sent events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#event_stream_format) once generated.",
+            "default": false
+          },
+          "stream_options": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StreamOptions"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Options related to stream.\nIt can only be used when `stream: true`."
+          },
+          "parse_reasoning": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parse Reasoning",
+            "description": "Parses model reasoning into `reasoning_content` while keeping the answer in `content`. Default value may vary between endpoints.\n\nFor more detailed information, please refer [here](https://friendli.ai/docs/guides/reasoning#reasoning-parsing-with-friendli)."
+          },
+          "include_reasoning": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Include Reasoning",
+            "description": "When `parse_reasoning=true`, include parsed reasoning (`reasoning_content`). Defaults to true.\n\nFor more detailed information, please refer [here](https://friendli.ai/docs/guides/reasoning#reasoning-parsing-with-friendli)."
+          },
+          "temperature": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature",
+            "description": "Sampling temperature. Smaller temperature makes the generation result closer to greedy, argmax (i.e., `top_k = 1`) sampling. Defaults to 1.0. This is similar to Hugging Face's [`temperature`](https://huggingface.co/docs/transformers/v4.26.0/en/main_classes/text_generation#transformers.generationconfig.temperature) argument."
+          },
+          "tool_choice": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChatCompleteBodyToolChoice"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Tool Choice",
+            "description": "Determines the tool calling behavior of the model.\nWhen set to `none`, the model will bypass tool execution and generate a response directly.\nIn `auto` mode (the default), the model dynamically decides whether to call a tool or respond with a message.\nAlternatively, setting `required` ensures that the model invokes at least one tool before responding to the user.\nYou can also specify a particular tool by `{\"type\": \"function\", \"function\": {\"name\": \"my_function\"}}`.\n"
+          },
+          "top_k": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top K",
+            "description": "Limits sampling to the top k tokens with the highest probabilities. Values range from 0 (no filtering) to the model's vocabulary size (inclusive). The default value of 0 applies no filtering, allowing all tokens."
+          },
+          "top_logprobs": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Logprobs",
+            "description": "The number of most likely tokens to return at each token position, each with an associated log probability. `logprobs` must be set to true if this parameter is used."
+          },
+          "top_p": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top P",
+            "description": "Keeps only the smallest set of tokens whose cumulative probabilities reach `top_p` or higher. Values range from 0.0 (exclusive) to 1.0 (inclusive). The default value of 1.0 includes all tokens, allowing maximum diversity."
+          },
+          "xtc_threshold": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Xtc Threshold",
+            "description": "A probability threshold used to identify “top choice” tokens for exclusion in XTC (Exclude Top Choices) sampling. Tokens with probabilities at or above this threshold are considered viable candidates, and all but the least likely viable token are excluded from sampling. This option reduces the dominance of highly probable tokens while preserving some diversity by keeping the least confident “top choice.” Values range from 0.0 (inclusive) to 1.0 (inclusive). Higher values make the filtering more selective by requiring higher probabilities to trigger exclusion, while lower values apply filtering more broadly. The default value of 0.0 disables XTC filtering entirely."
+          },
+          "xtc_probability": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Xtc Probability",
+            "description": "The probability that XTC (Exclude Top Choices) filtering will be applied for each sampling decision. When XTC is triggered, high-probability tokens above the `xtc_threshold` are excluded except for the least likely viable token. This stochastic activation allows for a balance between standard sampling and creativity-boosting exclusion filtering. Values range from 0.0 (inclusive) to 1.0 (inclusive), where 0.0 means XTC is never applied, 1.0 means XTC is always applied when viable tokens exist, and intermediate values provide probabilistic activation. The default value of 0.0 disables XTC filtering."
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/Tool"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools",
+            "description": "A list of tools the model may call.\nUse this to provide a list of functions the model may generate JSON inputs for.\n\n**When `tools` is specified, `min_tokens` and `response_format` fields are unsupported.**"
+          },
+          "min_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Tokens",
+            "description": "The minimum number of tokens to generate. Default value is 0. This is similar to Hugging Face's [`min_new_tokens`](https://huggingface.co/docs/transformers/v4.26.0/en/main_classes/text_generation#transformers.generationconfig.min_new_tokens) argument.\n\n**This field is unsupported when `tools` or `response_format` is specified.**"
+          },
+          "response_format": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResponseFormat"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The enforced format of the model's output.\n\nNote that the content of the output message may be truncated if it exceeds the `max_tokens`. You can check this by verifying that the `finish_reason` of the output message is `length`.\n\nFor more detailed information, please refer [here](https://friendli.ai/docs/guides/structured-outputs).\n\n***Important***\nYou must explicitly instruct the model to produce the desired output format using a system prompt or user message (e.g., `You are an API generating a valid JSON as output.`).\nOtherwise, the model may result in an unending stream of whitespace or other characters.\n\n**This field is unsupported when `tools` is specified.**\n**When `response_format` is specified, `min_tokens` field is unsupported.**"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "messages"
+        ],
+        "title": "ServerlessChatCompletionBody",
+        "example": {
+          "messages": [
+            {
+              "content": "You are a helpful assistant.",
+              "role": "system"
+            },
+            {
+              "content": "Hello!",
+              "role": "user"
+            }
+          ],
+          "model": "zai-org/GLM-5.2"
+        }
+      },
+      "ServerlessChatCompleteSuccess": {
+        "$ref": "#/components/schemas/ChatResult",
+        "title": "ServerlessChatCompleteSuccess"
+      },
+      "ServerlessResponsesBody": {
+        "properties": {
+          "input": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ResponsesInputItem"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Input",
+            "description": "Text or image inputs to the model, used to generate a response."
+          },
+          "instructions": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instructions",
+            "description": "A system (or developer) message inserted into the model's context."
+          },
+          "max_output_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Output Tokens",
+            "description": "An upper bound for the number of tokens that can be generated for a response, including visible output tokens and reasoning tokens."
+          },
+          "temperature": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature",
+            "description": "What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. We generally recommend altering this or `top_p` but not both."
+          },
+          "top_p": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top P",
+            "description": "An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with `top_p` probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. We generally recommend altering this or `temperature` but not both."
+          },
+          "parallel_tool_calls": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parallel Tool Calls",
+            "description": "Whether to allow the model to run tool calls in parallel."
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ResponsesTool"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools",
+            "description": "An array of tools the model may call while generating a response. You can specify which tool to use by setting the `tool_choice` parameter."
+          },
+          "tool_choice": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "none",
+                      "auto",
+                      "required"
+                    ]
+                  },
+                  {
+                    "$ref": "#/components/schemas/ResponsesToolChoiceFunction"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ResponsesToolChoiceCustom"
+                  }
+                ],
+                "description": "Controls which (if any) tool is called by the model. `none` means the model will not call any tool and instead generates a message. `auto` means the model can pick between generating a message or calling one or more tools. `required` means the model must call one or more tools. An object can be used to force the model to call a specific function or custom tool."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Choice",
+            "description": "How the model should select which tool (or tools) to use when generating a response. See the `tools` parameter to see how to specify which tools the model can call."
+          },
+          "text": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResponsesTextConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Configuration options for a text response from the model. Can be plain text or structured JSON data."
+          },
+          "reasoning": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResponsesReasoningConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Configuration options for reasoning models."
+          },
+          "stream": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stream",
+            "description": "Whether to stream the generation result. When set to `true`, the response is sent as [server-sent events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#event_stream_format) once generated.",
+            "default": false
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "Code of the model to use. See [available model list](https://friendli.ai/docs/guides/model-apis/pricing#billing-methods).",
+            "examples": [
+              "zai-org/GLM-5.2"
+            ]
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "input",
+          "model"
+        ],
+        "title": "ServerlessResponsesBody",
+        "example": {
+          "input": "Hello!",
+          "model": "zai-org/GLM-5.2"
+        }
+      },
+      "ServerlessResponsesSuccess": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Unique identifier for this response."
+          },
+          "object": {
+            "type": "string",
+            "const": "response",
+            "title": "Object",
+            "description": "The object type of this resource - always set to `response`."
+          },
+          "created_at": {
+            "type": "integer",
+            "title": "Created At",
+            "description": "Unix timestamp (in seconds) of when this response was created."
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResponsesError"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "An error object returned when the model fails to generate a Response."
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "completed",
+                  "failed",
+                  "in_progress",
+                  "cancelled",
+                  "queued",
+                  "incomplete"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status",
+            "description": "The status of the response generation. One of `completed`, `failed`, `in_progress`, `cancelled`, `queued`, or `incomplete`."
+          },
+          "output": {
+            "items": {
+              "$ref": "#/components/schemas/ResponsesOutputItem"
+            },
+            "type": "array",
+            "title": "Output",
+            "description": "An array of content items generated by the model."
+          },
+          "usage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResponsesUsage"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Represents token usage details including input tokens, output tokens, a breakdown of output tokens, and the total tokens used."
+          },
+          "incomplete_details": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResponsesIncompleteDetails"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Details about why the response is incomplete."
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "Model ID used to generate the response."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id",
+          "object",
+          "created_at",
+          "output"
+        ],
+        "title": "ServerlessResponsesSuccess"
+      },
+      "ServerlessMessagesBody": {
+        "properties": {
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/MessagesInputMessage"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Messages",
+            "description": "A list of conversation messages ordered from oldest to newest. Must contain at least one item.",
+            "examples": [
+              [
+                {
+                  "content": "Explain top_p in one sentence.",
+                  "role": "user"
+                }
+              ]
+            ]
+          },
+          "max_tokens": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Tokens",
+            "description": "Maximum number of tokens to generate for the assistant response. Must be greater than 0 when provided."
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "Code of the model to use. See [available model list](https://friendli.ai/docs/guides/model-apis/pricing#billing-methods).",
+            "examples": [
+              "zai-org/GLM-5.2"
+            ]
+          },
+          "system": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "items": {
+                      "$ref": "#/components/schemas/MessagesSystemTextBlock"
+                    },
+                    "type": "array"
+                  }
+                ],
+                "description": "Payload format for the top-level `system` instruction."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "System",
+            "description": "Optional top-level system instruction applied before conversation turns. Supports a plain string or an array of text blocks."
+          },
+          "stream": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stream",
+            "description": "Whether to stream the response. When set to `true`, events are sent as [server-sent events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#event_stream_format) once generated.",
+            "default": false
+          },
+          "temperature": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature",
+            "description": "Sampling temperature. Lower values make outputs more deterministic; higher values increase diversity."
+          },
+          "top_p": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top P",
+            "description": "Nucleus sampling parameter. The model samples from the smallest token set whose cumulative probability reaches `top_p`."
+          },
+          "top_k": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top K",
+            "description": "Limits sampling to the `k` most likely tokens at each decoding step."
+          },
+          "stop_sequences": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stop Sequences",
+            "description": "Stop strings that terminate generation when matched in output. The matched value is returned in `stop_sequence` when applicable."
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MessagesToolDefinition"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools",
+            "description": "Tool definitions available to the model. Use this to allow tool calls with structured arguments."
+          },
+          "tool_choice": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesToolChoice"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Controls tool-calling behavior (`auto`, `any`, `tool`, `none`) and optional parallel-call behavior."
+          },
+          "thinking": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesThinkingConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Controls reasoning behavior with mode (`enabled`, `disabled`, `adaptive`). `enabled` requires `budget_tokens`; `disabled` and `adaptive` must not include it."
+          },
+          "output_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesOutputConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Output generation options including effort level and structured output format settings."
+          },
+          "cache_control": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cache Control",
+            "description": "Compatibility field accepted for request portability. Parsed but not used for generation."
+          },
+          "container": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Container",
+            "description": "Compatibility field accepted for request portability. Parsed but not used for generation."
+          },
+          "context_manager": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Manager",
+            "description": "Compatibility field accepted for request portability. Parsed but not used for generation."
+          },
+          "inference_geo": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inference Geo",
+            "description": "Compatibility field accepted for request portability. Parsed but not used for generation."
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "Compatibility field accepted for request portability. Parsed but not used for generation."
+          },
+          "service_tier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Service Tier",
+            "description": "Compatibility field accepted for request portability. Parsed but not used for generation."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "messages",
+          "model"
+        ],
+        "title": "ServerlessMessagesBody",
+        "example": {
+          "messages": [
+            {
+              "content": "Hello, summarize what you can do in one sentence.",
+              "role": "user"
+            }
+          ],
+          "model": "zai-org/GLM-5.2"
+        }
+      },
+      "ServerlessMessagesSuccess": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Unique identifier for this message response."
+          },
+          "type": {
+            "type": "string",
+            "const": "message",
+            "title": "Type",
+            "description": "Response object type (`message`)."
+          },
+          "role": {
+            "type": "string",
+            "const": "assistant",
+            "title": "Role",
+            "description": "Role of the output message author (`assistant`)."
+          },
+          "content": {
+            "items": {
+              "$ref": "#/components/schemas/MessagesResponseContentBlock"
+            },
+            "type": "array",
+            "title": "Content",
+            "description": "Assistant output blocks in generation order."
+          },
+          "stop_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "end_turn",
+                  "max_tokens",
+                  "tool_use",
+                  "stop_sequence"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stop Reason",
+            "description": "Why generation stopped (`end_turn`, `max_tokens`, `tool_use`, `stop_sequence`)."
+          },
+          "stop_sequence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stop Sequence",
+            "description": "Matched stop string when `stop_reason` is `stop_sequence`; otherwise null."
+          },
+          "usage": {
+            "$ref": "#/components/schemas/MessagesUsage",
+            "description": "Token usage details for this response."
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "Model used to generate the response."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "role",
+          "content",
+          "usage"
+        ],
+        "title": "ServerlessMessagesSuccess"
+      },
+      "MessagesErrorResponse": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "error",
+            "title": "Type",
+            "description": "Top-level response type for Messages API errors."
+          },
+          "error": {
+            "$ref": "#/components/schemas/MessagesErrorObject",
+            "description": "Structured error object."
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id",
+            "description": "Request identifier for debugging and support. It may be omitted in some failure paths."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "error"
+        ],
+        "title": "MessagesErrorResponse"
+      },
+      "ServerlessModelListSuccess": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/ModelCatalogResponseItem"
+            },
+            "type": "array",
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "ServerlessModelListSuccess",
+        "description": "`/v1/models` API response."
+      },
+      "Message": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/SystemMessage",
+            "title": "System"
+          },
+          {
+            "$ref": "#/components/schemas/UserMessage",
+            "title": "User"
+          },
+          {
+            "$ref": "#/components/schemas/AssistantMessage",
+            "title": "Assistant"
+          },
+          {
+            "$ref": "#/components/schemas/ToolMessage",
+            "title": "Tool"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "role",
+          "mapping": {
+            "assistant": "#/components/schemas/AssistantMessage",
+            "system": "#/components/schemas/SystemMessage",
+            "tool": "#/components/schemas/ToolMessage",
+            "user": "#/components/schemas/UserMessage"
+          }
+        }
+      },
+      "StreamOptions": {
+        "properties": {
+          "include_usage": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Include Usage",
+            "description": "When set to `true`,\nthe number of tokens used will be included at the end of the stream result in the form of\n`\"usage\": {\"completion_tokens\": number, \"prompt_tokens\": number, \"total_tokens\": number}`.\n"
+          }
+        },
+        "type": "object",
+        "title": "StreamOptions"
+      },
+      "ChatCompleteBodyToolChoice": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "function",
+            "title": "Type",
+            "description": "The type of the tool. Currently, only `function` is supported."
+          },
+          "function": {
+            "$ref": "#/components/schemas/ChatCompleteBodyToolChoiceFunction"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "function"
+        ],
+        "title": "ChatCompleteBodyToolChoice"
+      },
+      "Tool": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "function",
+            "title": "Type",
+            "description": "The type of the tool. Currently, only `function` is supported."
+          },
+          "function": {
+            "$ref": "#/components/schemas/Function"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "function"
+        ],
+        "title": "Tool"
+      },
+      "ResponseFormat": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ResponseFormatJsonSchema",
+            "title": "Json Schema"
+          },
+          {
+            "$ref": "#/components/schemas/ResponseFormatJsonObject",
+            "title": "Json Object"
+          },
+          {
+            "$ref": "#/components/schemas/ResponseFormatRegex",
+            "title": "Regex"
+          },
+          {
+            "$ref": "#/components/schemas/ResponseFormatText",
+            "title": "Text"
+          }
+        ],
+        "description": "The enforced format of the model's output.\n\nNote that the content of the output message may be truncated if it exceeds the `max_tokens`. You can check this by verifying that the `finish_reason` of the output message is `length`.\n\nFor more detailed information, please refer [here](https://friendli.ai/docs/guides/structured-outputs).\n\n***Important***\nYou must explicitly instruct the model to produce the desired output format using a system prompt or user message (e.g., `You are an API generating a valid JSON as output.`).\nOtherwise, the model may result in an unending stream of whitespace or other characters.\n\n**When `response_format` is specified, `min_tokens` field is unsupported.**",
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "json_object": "#/components/schemas/ResponseFormatJsonObject",
+            "json_schema": "#/components/schemas/ResponseFormatJsonSchema",
+            "regex": "#/components/schemas/ResponseFormatRegex",
+            "text": "#/components/schemas/ResponseFormatText"
+          }
+        }
+      },
+      "ChatResult": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "A unique ID of the chat completion."
+          },
+          "choices": {
+            "items": {
+              "$ref": "#/components/schemas/ChatChoice"
+            },
+            "type": "array",
+            "title": "Choices"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/ChatUsage"
+          },
+          "object": {
+            "type": "string",
+            "const": "chat.completion",
+            "title": "Object",
+            "description": "The object type, which is always set to `chat.completion`."
+          },
+          "created": {
+            "type": "integer",
+            "title": "Created",
+            "description": "The Unix timestamp (in seconds) for when the generation completed."
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "The model to generate the completion. For dedicated endpoints, it returns the endpoint ID."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "choices",
+          "usage",
+          "object",
+          "created"
+        ],
+        "title": "ChatResult"
+      },
+      "ResponsesInputItem": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/ResponsesInputMessage"
+          },
+          {
+            "$ref": "#/components/schemas/ResponsesFunctionCall"
+          },
+          {
+            "$ref": "#/components/schemas/ResponsesFunctionCallOutput"
+          },
+          {
+            "$ref": "#/components/schemas/ResponsesCustomToolCall"
+          },
+          {
+            "$ref": "#/components/schemas/ResponsesCustomToolCallOutput"
+          },
+          {
+            "$ref": "#/components/schemas/ResponsesReasoningItem"
+          }
+        ],
+        "title": "ResponsesInputItem"
+      },
+      "ResponsesTool": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ResponsesFunctionTool",
+            "title": "Function"
+          },
+          {
+            "$ref": "#/components/schemas/ResponsesCustomTool",
+            "title": "Custom"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "custom": "#/components/schemas/ResponsesCustomTool",
+            "function": "#/components/schemas/ResponsesFunctionTool"
+          }
+        }
+      },
+      "ResponsesToolChoiceFunction": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "function",
+            "title": "Type",
+            "description": "For function calling, the type is always `function`."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the function to call."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "name"
+        ],
+        "title": "ResponsesToolChoiceFunction"
+      },
+      "ResponsesToolChoiceCustom": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "custom",
+            "title": "Type",
+            "description": "For custom tool calling, the type is always `custom`."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the custom tool to call."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "name"
+        ],
+        "title": "ResponsesToolChoiceCustom"
+      },
+      "ResponsesTextConfig": {
+        "properties": {
+          "format": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResponsesTextFormat"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "An object specifying the format that the model must output. Configuring `{ \"type\": \"json_schema\" }` enables Structured Outputs. The default format is `{ \"type\": \"text\" }`."
+          }
+        },
+        "type": "object",
+        "title": "ResponsesTextConfig"
+      },
+      "ResponsesReasoningConfig": {
+        "properties": {
+          "effort": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "minimal",
+                  "low",
+                  "medium",
+                  "high",
+                  "xhigh",
+                  "max",
+                  "ultracode"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effort",
+            "description": "Constrains effort on reasoning for reasoning models. Currently supported values are `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`, and `ultracode`. Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response."
+          }
+        },
+        "type": "object",
+        "title": "ResponsesReasoningConfig"
+      },
+      "ResponsesError": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "server_error",
+              "rate_limit_exceeded",
+              "invalid_prompt",
+              "vector_store_timeout",
+              "invalid_image",
+              "invalid_image_format",
+              "invalid_base64_image",
+              "invalid_image_url",
+              "image_too_large",
+              "image_too_small",
+              "image_parse_error",
+              "image_content_policy_violation",
+              "invalid_image_mode",
+              "image_file_too_large",
+              "unsupported_image_media_type",
+              "empty_image_file",
+              "failed_to_download_image",
+              "image_file_not_found"
+            ],
+            "title": "Code",
+            "description": "The error code for the response."
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "A human-readable description of the error."
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ResponsesError"
+      },
+      "ResponsesOutputItem": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ResponsesOutputMessage",
+            "title": "Message"
+          },
+          {
+            "$ref": "#/components/schemas/ResponsesReasoningItem",
+            "title": "Reasoning"
+          },
+          {
+            "$ref": "#/components/schemas/ResponsesFunctionCall",
+            "title": "Function Tool Call"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "function_call": "#/components/schemas/ResponsesFunctionCall",
+            "message": "#/components/schemas/ResponsesOutputMessage",
+            "reasoning": "#/components/schemas/ResponsesReasoningItem"
+          }
+        }
+      },
+      "ResponsesUsage": {
+        "properties": {
+          "input_tokens": {
+            "type": "integer",
+            "title": "Input Tokens",
+            "description": "The number of input tokens."
+          },
+          "input_tokens_details": {
+            "$ref": "#/components/schemas/ResponsesInputTokensDetails",
+            "description": "A detailed breakdown of the input tokens."
+          },
+          "output_tokens": {
+            "type": "integer",
+            "title": "Output Tokens",
+            "description": "The number of output tokens."
+          },
+          "output_tokens_details": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResponsesOutputTokensDetails"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A detailed breakdown of the output tokens."
+          },
+          "total_tokens": {
+            "type": "integer",
+            "title": "Total Tokens",
+            "description": "The total number of tokens used."
+          }
+        },
+        "type": "object",
+        "required": [
+          "input_tokens",
+          "input_tokens_details",
+          "output_tokens",
+          "total_tokens"
+        ],
+        "title": "ResponsesUsage"
+      },
+      "ResponsesIncompleteDetails": {
+        "properties": {
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "max_output_tokens"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "description": "The reason why the response is incomplete."
+          }
+        },
+        "type": "object",
+        "title": "ResponsesIncompleteDetails"
+      },
+      "MessagesInputMessage": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ],
+            "title": "Role",
+            "description": "Author role for this message turn. Use `user` for user input and `assistant` for prior assistant turns."
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MessagesContentBlock"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Content",
+            "description": "Message payload. Supports plain string shorthand or a typed block array."
+          }
+        },
+        "type": "object",
+        "required": [
+          "role",
+          "content"
+        ],
+        "title": "MessagesInputMessage"
+      },
+      "MessagesSystemTextBlock": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "text",
+            "title": "Type",
+            "description": "System block type. Must be `text`."
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "System instruction text content."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "text"
+        ],
+        "title": "MessagesSystemTextBlock"
+      },
+      "MessagesToolDefinition": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Tool identifier used in model tool-call outputs. Keep this name stable and unique within the request."
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type",
+            "description": "Tool category. If missing, empty, or `custom`, it is converted to a function tool. Any non-empty value other than `custom` is treated as a server-side tool and skipped."
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Natural-language description of what the tool does and when to call it."
+          },
+          "input_schema": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Schema",
+            "description": "JSON Schema describing tool arguments. The model uses this schema to construct the tool input object."
+          },
+          "strict": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Strict",
+            "description": "If true, applies stricter schema adherence when generating tool arguments."
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "MessagesToolDefinition"
+      },
+      "MessagesToolChoice": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "any",
+              "tool",
+              "none"
+            ],
+            "title": "Type",
+            "description": "Tool-calling mode. `auto` lets the model decide, `any` requires at least one tool call, `tool` forces a named tool, and `none` disables tool calls."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Tool name to force when `type=tool`. Ignored for other `type` values."
+          },
+          "disable_parallel_tool_use": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disable Parallel Tool Use",
+            "description": "If true, restricts the model to at most one tool call at a time. Must not be provided when `type=none`."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "MessagesToolChoice"
+      },
+      "MessagesThinkingConfig": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "enabled",
+              "disabled",
+              "adaptive"
+            ],
+            "title": "Type",
+            "description": "Reasoning mode. `enabled` forces reasoning, `disabled` suppresses it, and `adaptive` lets the system decide."
+          },
+          "budget_tokens": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Tokens",
+            "description": "Reasoning token budget. Required when `type=enabled`; must not be provided when `type=disabled` or `type=adaptive`. If `max_tokens` is set, this must be smaller than `max_tokens`."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "MessagesThinkingConfig"
+      },
+      "MessagesOutputConfig": {
+        "properties": {
+          "effort": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "minimal",
+                  "low",
+                  "medium",
+                  "high",
+                  "xhigh",
+                  "max",
+                  "ultracode"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effort",
+            "description": "Relative generation effort level. Higher effort can improve quality on harder prompts at the cost of additional compute."
+          },
+          "format": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesOutputFormat"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Structured output settings. Currently supports only `json_schema`."
+          }
+        },
+        "type": "object",
+        "title": "MessagesOutputConfig"
+      },
+      "MessagesResponseContentBlock": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/MessagesResponseThinkingBlock",
+            "title": "Thinking"
+          },
+          {
+            "$ref": "#/components/schemas/MessagesResponseTextBlock",
+            "title": "Text"
+          },
+          {
+            "$ref": "#/components/schemas/MessagesResponseToolUseBlock",
+            "title": "Tool Use"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "text": "#/components/schemas/MessagesResponseTextBlock",
+            "thinking": "#/components/schemas/MessagesResponseThinkingBlock",
+            "tool_use": "#/components/schemas/MessagesResponseToolUseBlock"
+          }
+        }
+      },
+      "MessagesUsage": {
+        "properties": {
+          "input_tokens": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Input Tokens",
+            "description": "Number of billed input tokens for this request."
+          },
+          "output_tokens": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Output Tokens",
+            "description": "Number of billed output tokens generated by the model."
+          },
+          "cache_read_input_tokens": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cache Read Input Tokens",
+            "description": "Number of input tokens served from cache, when cache reads are applicable."
+          }
+        },
+        "type": "object",
+        "required": [
+          "input_tokens",
+          "output_tokens"
+        ],
+        "title": "MessagesUsage"
+      },
+      "MessagesErrorObject": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "Error category. For HTTP 422 in Messages API, this is `invalid_request_error`."
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "Human-readable error message."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "message"
+        ],
+        "title": "MessagesErrorObject"
+      },
+      "ModelCatalogResponseItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "max_completion_tokens": {
+            "type": "integer",
+            "title": "Max Completion Tokens"
+          },
+          "context_length": {
+            "type": "integer",
+            "title": "Context Length"
+          },
+          "functionality": {
+            "$ref": "#/components/schemas/Functionality",
+            "description": "Model functionality"
+          },
+          "pricing": {
+            "$ref": "#/components/schemas/PricingModel",
+            "title": "Pricing",
+            "description": "Token prices for input and output"
+          },
+          "hugging_face_url": {
+            "type": "string",
+            "minLength": 1,
+            "format": "uri",
+            "title": "Hugging Face Url"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "license": {
+            "type": "string",
+            "minLength": 1,
+            "format": "uri",
+            "title": "License"
+          },
+          "policy": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Policy"
+          },
+          "created": {
+            "type": "integer",
+            "title": "Created"
+          },
+          "deprecation_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deprecation Date",
+            "description": "YYYY-MM-DD (UTC date)"
+          },
+          "discount_to_user": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discount To User",
+            "description": "Fractional discount applied to user-facing pricing"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "max_completion_tokens",
+          "context_length",
+          "functionality",
+          "pricing",
+          "hugging_face_url",
+          "description",
+          "license",
+          "created"
+        ],
+        "title": "ModelCatalogResponseItem",
+        "description": "Model listing in `/v1/models` API."
+      },
+      "SystemMessage": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "const": "system",
+            "title": "Role",
+            "description": "The role of the messages author."
+          },
+          "content": {
+            "type": "string",
+            "title": "Content",
+            "description": "The content of system message."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The name for the participant to distinguish between participants with the same role."
+          }
+        },
+        "type": "object",
+        "required": [
+          "role",
+          "content"
+        ],
+        "title": "SystemMessage"
+      },
+      "UserMessage": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "const": "user",
+            "title": "Role",
+            "description": "The role of the message's author."
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "The content of user message, which is plain text.\n\nFor **multi-modal format**, use `object[]` type. Support for non-text input is currently in **Beta**."
+              },
+              {
+                "items": {
+                  "$ref": "#/components/schemas/UserMessageContentMultiModal"
+                },
+                "type": "array",
+                "description": "The content of user message.\n\n**Multi-modal format** can handle not just text, but also audio, image, and video content, allowing for more complex message structures. Support for non-text input is currently in **Beta**."
+              }
+            ],
+            "title": "Content"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The name for the participant to distinguish between participants with the same role."
+          }
+        },
+        "type": "object",
+        "required": [
+          "role",
+          "content"
+        ],
+        "title": "UserMessage"
+      },
+      "AssistantMessage": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "const": "assistant",
+            "title": "Role",
+            "description": "The role of the messages author."
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content",
+            "description": "The content of assistant message. Required unless `tool_calls` is specified."
+          },
+          "reasoning_content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoning Content",
+            "description": "The intermediate reasoning content of assistant message."
+          },
+          "reasoning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoning",
+            "description": "The intermediate reasoning content of assistant message. This field is a compatible option for the 'reasoning_content' field."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The name for the participant to distinguish between participants with the same role."
+          },
+          "tool_calls": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/AssistantMessageToolCall"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Calls"
+          }
+        },
+        "type": "object",
+        "required": [
+          "role"
+        ],
+        "title": "AssistantMessage"
+      },
+      "ToolMessage": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "const": "tool",
+            "title": "Role",
+            "description": "The role of the messages author."
+          },
+          "content": {
+            "type": "string",
+            "title": "Content",
+            "description": "The content of tool message that contains the result of tool calling."
+          },
+          "tool_call_id": {
+            "type": "string",
+            "title": "Tool Call Id",
+            "description": "The ID of tool call corresponding to this message."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "An optional name of the tool call corresponding to this message."
+          }
+        },
+        "type": "object",
+        "required": [
+          "role",
+          "content",
+          "tool_call_id"
+        ],
+        "title": "ToolMessage"
+      },
+      "ChatCompleteBodyToolChoiceFunction": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the function to be called. Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 64."
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "ChatCompleteBodyToolChoiceFunction"
+      },
+      "Function": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "A description of what the function does, used by the model to choose when and how to call the function."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the function to be called. Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 64."
+          },
+          "parameters": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Parameters",
+            "description": "The parameters the functions accepts, described as a JSON Schema object.\nTo represent a function with no parameters, use the value `{\"type\": \"object\", \"properties\": {}}`.\n"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "parameters"
+        ],
+        "title": "Function"
+      },
+      "ResponseFormatJsonSchema": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "json_schema",
+            "title": "Type",
+            "description": "The type of the response format: `json_schema`"
+          },
+          "json_schema": {
+            "$ref": "#/components/schemas/ResponseFormatJsonSchemaSchema"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "json_schema"
+        ],
+        "title": "ResponseFormatJsonSchema"
+      },
+      "ResponseFormatJsonObject": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "json_object",
+            "title": "Type",
+            "description": "The type of the response format: `json_object`"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "ResponseFormatJsonObject"
+      },
+      "ResponseFormatRegex": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "regex",
+            "title": "Type",
+            "description": "The type of the response format: `regex`"
+          },
+          "schema": {
+            "type": "string",
+            "title": "Schema",
+            "description": "The schema of the output. Lookaheads or lookbehinds (e.g., `\\a`, `\\z`, `^`, `$`, `(?=)`, `(?!)`, `(?<=...)`, `(?<!...)`) are not supported. Group specials (e.g., `\\w`, `\\W`, `\\d`, `\\D`, `\\s`, `\\S`) do not support non-ASCII characters. Unicode escape patterns (e.g., `\\N`, `\\p`, `\\P`) are not supported. Additionally, conditional matching (`(?(`) and back-references can cause inefficiency."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "schema"
+        ],
+        "title": "ResponseFormatRegex"
+      },
+      "ResponseFormatText": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "text",
+            "title": "Type",
+            "description": "The type of the response format: `text`"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "ResponseFormatText"
+      },
+      "ChatChoice": {
+        "properties": {
+          "index": {
+            "type": "integer",
+            "title": "Index",
+            "description": "The index of the choice in the list of generated choices.",
+            "examples": [
+              0
+            ]
+          },
+          "logprobs": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChatLogprobs"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "$ref": "#/components/schemas/ChatChoiceMessage"
+          },
+          "finish_reason": {
+            "type": "string",
+            "enum": [
+              "stop",
+              "length",
+              "tool_calls"
+            ],
+            "title": "Finish Reason",
+            "description": "Termination condition of the generation. `stop` means the API returned the full chat completions generated by the model without running into any limits.\n`length` means the generation exceeded `max_tokens` or the conversation exceeded the max context length.\n`tool_calls` means the API has generated tool calls."
+          }
+        },
+        "type": "object",
+        "required": [
+          "index",
+          "message",
+          "finish_reason"
+        ],
+        "title": "ChatChoice"
+      },
+      "ChatUsage": {
+        "properties": {
+          "prompt_tokens": {
+            "type": "integer",
+            "title": "Prompt Tokens",
+            "description": "Number of tokens in the prompt.",
+            "examples": [
+              5
+            ]
+          },
+          "completion_tokens": {
+            "type": "integer",
+            "title": "Completion Tokens",
+            "description": "Number of tokens in the generated chat completions.",
+            "examples": [
+              7
+            ]
+          },
+          "total_tokens": {
+            "type": "integer",
+            "title": "Total Tokens",
+            "description": "Total number of tokens used in the request (`prompt_tokens` + `completion_tokens`).",
+            "examples": [
+              12
+            ]
+          },
+          "prompt_tokens_details": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PromptTokensDetails"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Breakdown of tokens used in the prompt."
+          }
+        },
+        "type": "object",
+        "required": [
+          "prompt_tokens",
+          "completion_tokens",
+          "total_tokens"
+        ],
+        "title": "ChatUsage"
+      },
+      "ResponsesInputMessage": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant",
+              "system",
+              "developer"
+            ],
+            "title": "Role",
+            "description": "The role of the message input. One of `user`, `assistant`, `system`, or `developer`."
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ResponsesContentBlock"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Content",
+            "description": "Text or image input to the model. Can also contain previous assistant responses."
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "message"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type",
+            "description": "The type of the message input. Always `message`."
+          }
+        },
+        "type": "object",
+        "required": [
+          "role",
+          "content"
+        ],
+        "title": "ResponsesInputMessage"
+      },
+      "ResponsesFunctionCall": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "function_call",
+            "title": "Type",
+            "description": "The type of the function tool call. Always `function_call`."
+          },
+          "call_id": {
+            "type": "string",
+            "title": "Call Id",
+            "description": "The unique ID of the function tool call generated by the model."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the function to run."
+          },
+          "arguments": {
+            "type": "string",
+            "title": "Arguments",
+            "description": "A JSON string of the arguments to pass to the function."
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id",
+            "description": "The unique ID of the function tool call."
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "in_progress",
+                  "completed",
+                  "incomplete"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status",
+            "description": "The status of the item. One of `in_progress`, `completed`, or `incomplete`."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "call_id",
+          "name",
+          "arguments"
+        ],
+        "title": "ResponsesFunctionCall"
+      },
+      "ResponsesFunctionCallOutput": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "function_call_output",
+            "title": "Type",
+            "description": "The type of the function tool call output. Always `function_call_output`."
+          },
+          "call_id": {
+            "type": "string",
+            "title": "Call Id",
+            "description": "The unique ID of the function tool call generated by the model."
+          },
+          "output": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ResponsesFunctionCallOutputContent"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Output",
+            "description": "Text or image output of the function tool call. Can be a JSON string of the output, or an array of content parts (text or image)."
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id",
+            "description": "The unique ID of the function tool call output."
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "in_progress",
+                  "completed",
+                  "incomplete"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status",
+            "description": "The status of the item. One of `in_progress`, `completed`, or `incomplete`."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "call_id",
+          "output"
+        ],
+        "title": "ResponsesFunctionCallOutput"
+      },
+      "ResponsesCustomToolCall": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "custom_tool_call",
+            "title": "Type",
+            "description": "The type of the custom tool call. Always `custom_tool_call`."
+          },
+          "call_id": {
+            "type": "string",
+            "title": "Call Id",
+            "description": "An identifier used to map this custom tool call to a tool call output."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the custom tool being called."
+          },
+          "input": {
+            "type": "string",
+            "title": "Input",
+            "description": "The input for the custom tool call generated by the model."
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id",
+            "description": "The unique ID of the custom tool call."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "call_id",
+          "name",
+          "input"
+        ],
+        "title": "ResponsesCustomToolCall"
+      },
+      "ResponsesCustomToolCallOutput": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "custom_tool_call_output",
+            "title": "Type",
+            "description": "The type of the custom tool call output. Always `custom_tool_call_output`."
+          },
+          "call_id": {
+            "type": "string",
+            "title": "Call Id",
+            "description": "The call ID, used to map this custom tool call output to a custom tool call."
+          },
+          "output": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ResponsesCustomToolCallOutputContent"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Output",
+            "description": "Text or image output of the custom tool call generated by your code. Can be a string of the output, or an array of content parts (text or image)."
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id",
+            "description": "The unique ID of the custom tool call output."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "call_id",
+          "output"
+        ],
+        "title": "ResponsesCustomToolCallOutput"
+      },
+      "ResponsesReasoningItem": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "reasoning",
+            "title": "Type",
+            "description": "The type of the object. Always `reasoning`."
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The unique identifier of the reasoning content."
+          },
+          "summary": {
+            "items": {
+              "$ref": "#/components/schemas/ResponsesReasoningSummaryText"
+            },
+            "type": "array",
+            "title": "Summary",
+            "description": "Reasoning summary content."
+          },
+          "content": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ResponsesReasoningText"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content",
+            "description": "Reasoning text content."
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "in_progress",
+                  "completed",
+                  "incomplete"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status",
+            "description": "The status of the item. One of `in_progress`, `completed`, or `incomplete`."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "id",
+          "summary"
+        ],
+        "title": "ResponsesReasoningItem"
+      },
+      "ResponsesFunctionTool": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "function",
+            "title": "Type",
+            "description": "The type of the function tool. Always `function`."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the function to call."
+          },
+          "parameters": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Parameters",
+            "description": "A JSON schema object describing the parameters of the function."
+          },
+          "strict": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Strict",
+            "description": "Whether to enforce strict parameter validation. Default `true`."
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "A description of the function. Used by the model to determine whether or not to call the function."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "name",
+          "parameters"
+        ],
+        "title": "ResponsesFunctionTool"
+      },
+      "ResponsesCustomTool": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "custom",
+            "title": "Type",
+            "description": "The type of the custom tool. Always `custom`."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the custom tool, used to identify it in tool calls."
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Optional description of the custom tool, used to provide more context."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "name"
+        ],
+        "title": "ResponsesCustomTool"
+      },
+      "ResponsesTextFormat": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ResponsesTextFormatText",
+            "title": "Text"
+          },
+          {
+            "$ref": "#/components/schemas/ResponsesTextFormatJsonSchema",
+            "title": "JSON Schema"
+          },
+          {
+            "$ref": "#/components/schemas/ResponsesTextFormatJsonObject",
+            "title": "JSON Object"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "json_object": "#/components/schemas/ResponsesTextFormatJsonObject",
+            "json_schema": "#/components/schemas/ResponsesTextFormatJsonSchema",
+            "text": "#/components/schemas/ResponsesTextFormatText"
+          }
+        }
+      },
+      "ResponsesOutputMessage": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "message",
+            "title": "Type",
+            "description": "The type of the output message. Always `message`."
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The unique ID of the output message."
+          },
+          "role": {
+            "type": "string",
+            "const": "assistant",
+            "title": "Role",
+            "description": "The role of the output message. Always `assistant`."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "in_progress",
+              "completed",
+              "incomplete"
+            ],
+            "title": "Status",
+            "description": "The status of the message. One of `in_progress`, `completed`, or `incomplete`."
+          },
+          "content": {
+            "items": {
+              "$ref": "#/components/schemas/ResponsesOutputText"
+            },
+            "type": "array",
+            "title": "Content",
+            "description": "The content of the output message."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "id",
+          "role",
+          "status",
+          "content"
+        ],
+        "title": "ResponsesOutputMessage"
+      },
+      "ResponsesInputTokensDetails": {
+        "properties": {
+          "cached_tokens": {
+            "type": "integer",
+            "title": "Cached Tokens",
+            "description": "The number of tokens that were retrieved from the cache."
+          }
+        },
+        "type": "object",
+        "required": [
+          "cached_tokens"
+        ],
+        "title": "ResponsesInputTokensDetails"
+      },
+      "ResponsesOutputTokensDetails": {
+        "properties": {
+          "reasoning_tokens": {
+            "type": "integer",
+            "title": "Reasoning Tokens",
+            "description": "The number of reasoning tokens."
+          }
+        },
+        "type": "object",
+        "required": [
+          "reasoning_tokens"
+        ],
+        "title": "ResponsesOutputTokensDetails"
+      },
+      "MessagesContentBlock": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/MessagesTextBlock",
+            "title": "Text"
+          },
+          {
+            "$ref": "#/components/schemas/MessagesImageBlock",
+            "title": "Image"
+          },
+          {
+            "$ref": "#/components/schemas/MessagesThinkingBlock",
+            "title": "Thinking"
+          },
+          {
+            "$ref": "#/components/schemas/MessagesToolUseBlock",
+            "title": "Tool Use"
+          },
+          {
+            "$ref": "#/components/schemas/MessagesToolResultBlock",
+            "title": "Tool Result"
+          },
+          {
+            "$ref": "#/components/schemas/MessagesCompatibilityBlock",
+            "title": "Compatibility Block"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "bash_code_execution_tool_result": "#/components/schemas/MessagesCompatibilityBlock",
+            "code_execution_tool_result": "#/components/schemas/MessagesCompatibilityBlock",
+            "container_upload": "#/components/schemas/MessagesCompatibilityBlock",
+            "document": "#/components/schemas/MessagesCompatibilityBlock",
+            "image": "#/components/schemas/MessagesImageBlock",
+            "redacted_thinking": "#/components/schemas/MessagesCompatibilityBlock",
+            "search_result": "#/components/schemas/MessagesCompatibilityBlock",
+            "server_tool_use": "#/components/schemas/MessagesCompatibilityBlock",
+            "text": "#/components/schemas/MessagesTextBlock",
+            "text_editor_code_execution_tool_result": "#/components/schemas/MessagesCompatibilityBlock",
+            "thinking": "#/components/schemas/MessagesThinkingBlock",
+            "tool_result": "#/components/schemas/MessagesToolResultBlock",
+            "tool_search_tool_result": "#/components/schemas/MessagesCompatibilityBlock",
+            "tool_use": "#/components/schemas/MessagesToolUseBlock",
+            "web_fetch_tool_result": "#/components/schemas/MessagesCompatibilityBlock",
+            "web_search_tool_result": "#/components/schemas/MessagesCompatibilityBlock"
+          }
+        }
+      },
+      "MessagesOutputFormat": {
+        "properties": {
+          "type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "json_schema"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type",
+            "description": "Output format type. Set to `json_schema` to constrain output to a JSON schema."
+          },
+          "schema": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schema",
+            "description": "JSON Schema object applied when `type` is `json_schema`."
+          }
+        },
+        "type": "object",
+        "title": "MessagesOutputFormat"
+      },
+      "MessagesResponseThinkingBlock": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "thinking",
+            "title": "Type",
+            "description": "Content block type."
+          },
+          "thinking": {
+            "type": "string",
+            "title": "Thinking",
+            "description": "Reasoning content returned by the model."
+          },
+          "signature": {
+            "type": "string",
+            "title": "Signature",
+            "description": "Signature associated with the reasoning content."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "thinking",
+          "signature"
+        ],
+        "title": "MessagesResponseThinkingBlock"
+      },
+      "MessagesResponseTextBlock": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "text",
+            "title": "Type",
+            "description": "Content block type."
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "Assistant-generated text for this block."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "text"
+        ],
+        "title": "MessagesResponseTextBlock"
+      },
+      "MessagesResponseToolUseBlock": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "tool_use",
+            "title": "Type",
+            "description": "Content block type."
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Identifier of the tool call emitted by the model."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Name of the invoked tool."
+          },
+          "input": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Input",
+            "description": "Parsed tool argument object generated by the model."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "id",
+          "name",
+          "input"
+        ],
+        "title": "MessagesResponseToolUseBlock"
+      },
+      "Functionality": {
+        "properties": {
+          "tool_call": {
+            "type": "boolean",
+            "title": "Tool Call"
+          },
+          "builtin_tool": {
+            "type": "boolean",
+            "title": "Built-in Tool"
+          },
+          "parallel_tool_call": {
+            "type": "boolean",
+            "title": "Tool Call Parallel"
+          },
+          "structured_output": {
+            "type": "boolean",
+            "title": "Structured Output",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "tool_call",
+          "builtin_tool",
+          "parallel_tool_call"
+        ],
+        "title": "Functionality",
+        "description": "Functionality of the model."
+      },
+      "PricingModel": {
+        "properties": {
+          "input": {
+            "type": "number",
+            "minimum": 0,
+            "title": "Input",
+            "description": "Price per input token"
+          },
+          "output": {
+            "type": "number",
+            "minimum": 0,
+            "title": "Output",
+            "description": "Price per output token"
+          },
+          "prompt": {
+            "type": "number",
+            "minimum": 0,
+            "title": "Prompt",
+            "description": "Price per input token (alias of input)"
+          },
+          "completion": {
+            "type": "number",
+            "minimum": 0,
+            "title": "Completion",
+            "description": "Price per output token (alias of output)"
+          },
+          "input_cache_read": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Cache Read",
+            "description": "Price per cached input token read"
+          },
+          "response_time": {
+            "type": "number",
+            "minimum": 0,
+            "title": "Response Time",
+            "description": "Price per response time in seconds",
+            "default": 0
+          },
+          "audio_minute": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Minute",
+            "description": "Price per audio minute"
+          },
+          "unit_type": {
+            "$ref": "#/components/schemas/ServerlessPriceUnitType",
+            "description": "Pricing unit type (TOKEN / SECOND / AUDIO_MINUTE)",
+            "default": "TOKEN"
+          }
+        },
+        "type": "object",
+        "required": [
+          "input",
+          "output",
+          "prompt",
+          "completion"
+        ],
+        "title": "PricingModel",
+        "description": "Pricing model supporting both token-based and time-based pricing."
+      },
+      "UserMessageContentMultiModal": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/TextContent",
+            "title": "Text"
+          },
+          {
+            "$ref": "#/components/schemas/AudioContent",
+            "title": "Audio"
+          },
+          {
+            "$ref": "#/components/schemas/ImageContent",
+            "title": "Image"
+          },
+          {
+            "$ref": "#/components/schemas/VideoContent",
+            "title": "Video"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "audio_url": "#/components/schemas/AudioContent",
+            "image_url": "#/components/schemas/ImageContent",
+            "text": "#/components/schemas/TextContent",
+            "video_url": "#/components/schemas/VideoContent"
+          }
+        }
+      },
+      "AssistantMessageToolCall": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The ID of tool call."
+          },
+          "type": {
+            "type": "string",
+            "const": "function",
+            "title": "Type",
+            "description": "The type of tool call."
+          },
+          "function": {
+            "$ref": "#/components/schemas/AssistantMessageToolCallFunction",
+            "description": "The function specification"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "function"
+        ],
+        "title": "AssistantMessageToolCall"
+      },
+      "ResponseFormatJsonSchemaSchema": {
+        "properties": {
+          "schema": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Schema",
+            "description": "The schema for the response format, described as a JSON Schema object."
+          }
+        },
+        "type": "object",
+        "required": [
+          "schema"
+        ],
+        "title": "ResponseFormatJsonSchemaSchema"
+      },
+      "ChatLogprobs": {
+        "properties": {
+          "content": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ChatLogprobsContent"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content",
+            "description": "A list of message content tokens with log probability information."
+          }
+        },
+        "type": "object",
+        "title": "ChatLogprobs"
+      },
+      "ChatChoiceMessage": {
+        "properties": {
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content",
+            "description": "The contents of the assistant message."
+          },
+          "role": {
+            "type": "string",
+            "title": "Role",
+            "description": "Role of the generated message author, in this case `assistant`."
+          },
+          "tool_calls": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ToolCallResult"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Calls"
+          }
+        },
+        "type": "object",
+        "required": [
+          "role"
+        ],
+        "title": "ChatChoiceMessage"
+      },
+      "PromptTokensDetails": {
+        "properties": {
+          "cached_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cached Tokens",
+            "description": "Cached tokens present in the prompt."
+          }
+        },
+        "type": "object",
+        "title": "PromptTokensDetails"
+      },
+      "ResponsesContentBlock": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ResponsesInputText",
+            "title": "Input Text"
+          },
+          {
+            "$ref": "#/components/schemas/ResponsesInputImage",
+            "title": "Input Image"
+          },
+          {
+            "$ref": "#/components/schemas/ResponsesOutputText",
+            "title": "Output Text"
+          },
+          {
+            "$ref": "#/components/schemas/ResponsesRefusal",
+            "title": "Refusal"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "input_image": "#/components/schemas/ResponsesInputImage",
+            "input_text": "#/components/schemas/ResponsesInputText",
+            "output_text": "#/components/schemas/ResponsesOutputText",
+            "refusal": "#/components/schemas/ResponsesRefusal"
+          }
+        }
+      },
+      "ResponsesFunctionCallOutputContent": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ResponsesInputText",
+            "title": "Input Text"
+          },
+          {
+            "$ref": "#/components/schemas/ResponsesInputImage",
+            "title": "Input Image"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "input_image": "#/components/schemas/ResponsesInputImage",
+            "input_text": "#/components/schemas/ResponsesInputText"
+          }
+        }
+      },
+      "ResponsesCustomToolCallOutputContent": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ResponsesInputText",
+            "title": "Input Text"
+          },
+          {
+            "$ref": "#/components/schemas/ResponsesInputImage",
+            "title": "Input Image"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "input_image": "#/components/schemas/ResponsesInputImage",
+            "input_text": "#/components/schemas/ResponsesInputText"
+          }
+        }
+      },
+      "ResponsesReasoningSummaryText": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "summary_text",
+            "title": "Type",
+            "description": "The type of the object. Always `summary_text`."
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "A summary of the reasoning output from the model so far."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "text"
+        ],
+        "title": "ResponsesReasoningSummaryText"
+      },
+      "ResponsesReasoningText": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "reasoning_text",
+            "title": "Type",
+            "description": "The type of the reasoning text. Always `reasoning_text`."
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "The reasoning text from the model."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "text"
+        ],
+        "title": "ResponsesReasoningText"
+      },
+      "ResponsesTextFormatText": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "text",
+            "title": "Type",
+            "description": "The type of response format being defined. Always `text`."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "ResponsesTextFormatText"
+      },
+      "ResponsesTextFormatJsonSchema": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "json_schema",
+            "title": "Type",
+            "description": "The type of response format being defined. Always `json_schema`."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the response format. Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 64."
+          },
+          "schema": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Schema",
+            "description": "The schema for the response format, described as a JSON Schema object."
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "A description of what the response format is for, used by the model to determine how to respond in the format."
+          },
+          "strict": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Strict",
+            "description": "Whether to enable strict schema adherence when generating the output. If set to true, the model will always follow the exact schema defined in the `schema` field. Only a subset of JSON Schema is supported when `strict` is `true`."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "name",
+          "schema"
+        ],
+        "title": "ResponsesTextFormatJsonSchema"
+      },
+      "ResponsesTextFormatJsonObject": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "json_object",
+            "title": "Type",
+            "description": "The type of response format being defined. Always `json_object`."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "ResponsesTextFormatJsonObject"
+      },
+      "ResponsesOutputText": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "output_text",
+            "title": "Type",
+            "description": "The type of the output text. Always `output_text`."
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "The text output from the model."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "text"
+        ],
+        "title": "ResponsesOutputText"
+      },
+      "MessagesTextBlock": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "text",
+            "title": "Type",
+            "description": "Content block type. Must be `text`."
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "Text content for this block."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "text"
+        ],
+        "title": "MessagesTextBlock"
+      },
+      "MessagesImageBlock": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "image",
+            "title": "Type",
+            "description": "Content block type. Must be `image`."
+          },
+          "source": {
+            "$ref": "#/components/schemas/MessagesImageSource",
+            "description": "Image source descriptor (`url` or `base64`)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "source"
+        ],
+        "title": "MessagesImageBlock"
+      },
+      "MessagesThinkingBlock": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "thinking",
+            "title": "Type",
+            "description": "Content block type. Must be `thinking`."
+          },
+          "thinking": {
+            "type": "string",
+            "title": "Thinking",
+            "description": "Reasoning content for this block."
+          },
+          "signature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signature",
+            "description": "Optional signature associated with the reasoning content."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "thinking"
+        ],
+        "title": "MessagesThinkingBlock"
+      },
+      "MessagesToolUseBlock": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "tool_use",
+            "title": "Type",
+            "description": "Content block type. Must be `tool_use`."
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id",
+            "description": "Optional tool call identifier. Use this value to link follow-up `tool_result` blocks."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Name of the tool to invoke."
+          },
+          "input": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Input",
+            "description": "Tool input argument object."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "name",
+          "input"
+        ],
+        "title": "MessagesToolUseBlock"
+      },
+      "MessagesToolResultBlock": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "tool_result",
+            "title": "Type",
+            "description": "Content block type. Must be `tool_result`."
+          },
+          "tool_use_id": {
+            "type": "string",
+            "title": "Tool Use Id",
+            "description": "Identifier of the related `tool_use` block this result answers."
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content",
+            "description": "Tool result payload. Can be plain text, a list of objects, or null when no body is returned."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "tool_use_id"
+        ],
+        "title": "MessagesToolResultBlock"
+      },
+      "MessagesCompatibilityBlock": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "document",
+              "search_result",
+              "redacted_thinking",
+              "server_tool_use",
+              "web_search_tool_result",
+              "web_fetch_tool_result",
+              "code_execution_tool_result",
+              "bash_code_execution_tool_result",
+              "text_editor_code_execution_tool_result",
+              "tool_search_tool_result",
+              "container_upload"
+            ],
+            "title": "Type",
+            "description": "Compatibility block type. These blocks are accepted for parsing compatibility and ignored for generation."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "MessagesCompatibilityBlock"
+      },
+      "ServerlessPriceUnitType": {
+        "type": "string",
+        "enum": [
+          "TOKEN",
+          "SECOND",
+          "AUDIO_MINUTE"
+        ],
+        "title": "ServerlessPriceUnitType",
+        "description": "Serverless price unit type."
+      },
+      "TextContent": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "text",
+            "title": "Type",
+            "description": "The type of the message content."
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "The text content of the message."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "text"
+        ],
+        "title": "TextContent"
+      },
+      "AudioContent": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "audio_url",
+            "title": "Type",
+            "description": "The type of the message content."
+          },
+          "audio_url": {
+            "$ref": "#/components/schemas/AudioData",
+            "description": "The audio URL data."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "audio_url"
+        ],
+        "title": "AudioContent"
+      },
+      "ImageContent": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "image_url",
+            "title": "Type",
+            "description": "The type of the message content."
+          },
+          "image_url": {
+            "$ref": "#/components/schemas/ImageData",
+            "description": "The image URL data."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "image_url"
+        ],
+        "title": "ImageContent"
+      },
+      "VideoContent": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "video_url",
+            "title": "Type",
+            "description": "The type of the message content."
+          },
+          "video_url": {
+            "$ref": "#/components/schemas/VideoData",
+            "description": "The video URL data."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "video_url"
+        ],
+        "title": "VideoContent"
+      },
+      "AssistantMessageToolCallFunction": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of function"
+          },
+          "arguments": {
+            "type": "string",
+            "title": "Arguments",
+            "description": "The arguments of function in JSON schema format to call the function."
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "arguments"
+        ],
+        "title": "AssistantMessageToolCallFunction"
+      },
+      "ChatLogprobsContent": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "title": "Token",
+            "description": "The token."
+          },
+          "logprob": {
+            "type": "number",
+            "title": "Logprob",
+            "description": "The log probability of this token."
+          },
+          "bytes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bytes",
+            "description": "A list of integers representing the UTF-8 bytes representation of the token. Useful in instances where characters are represented by multiple tokens and their byte representations must be combined to generate the correct text representation. Can be `null` if there is no bytes representation for the token."
+          },
+          "top_logprobs": {
+            "items": {
+              "$ref": "#/components/schemas/ChatLogprobsContentTopLogprob"
+            },
+            "type": "array",
+            "title": "Top Logprobs",
+            "description": "List of the most likely tokens and their log probability, at this token position."
+          }
+        },
+        "type": "object",
+        "required": [
+          "token",
+          "logprob",
+          "top_logprobs"
+        ],
+        "title": "ChatLogprobsContent"
+      },
+      "ToolCallResult": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "function",
+            "title": "Type",
+            "description": "The type of the tool."
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The ID of the tool call."
+          },
+          "function": {
+            "$ref": "#/components/schemas/FunctionResult"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "id",
+          "function"
+        ],
+        "title": "ToolCallResult"
+      },
+      "ResponsesInputText": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "input_text",
+            "title": "Type",
+            "description": "The type of the input item. Always `input_text`."
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "The text input to the model."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "text"
+        ],
+        "title": "ResponsesInputText"
+      },
+      "ResponsesInputImage": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "input_image",
+            "title": "Type",
+            "description": "The type of the input item. Always `input_image`."
+          },
+          "image_url": {
+            "type": "string",
+            "title": "Image Url",
+            "description": "The URL of the image to be sent to the model. A fully qualified URL or base64 encoded image in a data URL."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "image_url"
+        ],
+        "title": "ResponsesInputImage"
+      },
+      "ResponsesRefusal": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "refusal",
+            "title": "Type",
+            "description": "The type of the refusal. Always `refusal`."
+          },
+          "refusal": {
+            "type": "string",
+            "title": "Refusal",
+            "description": "The refusal explanation from the model."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "refusal"
+        ],
+        "title": "ResponsesRefusal"
+      },
+      "MessagesImageSource": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/MessagesBase64ImageSource",
+            "title": "Base64"
+          },
+          {
+            "$ref": "#/components/schemas/MessagesUrlImageSource",
+            "title": "URL"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "base64": "#/components/schemas/MessagesBase64ImageSource",
+            "url": "#/components/schemas/MessagesUrlImageSource"
+          }
+        }
+      },
+      "AudioData": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url",
+            "description": "The URL of the audio."
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "AudioData"
+      },
+      "ImageData": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url",
+            "description": "The URL of the image."
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "ImageData"
+      },
+      "VideoData": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url",
+            "description": "The URL of the video."
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "VideoData"
+      },
+      "ChatLogprobsContentTopLogprob": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "title": "Token",
+            "description": "The token."
+          },
+          "logprob": {
+            "type": "number",
+            "title": "Logprob",
+            "description": "The log probability of this token."
+          },
+          "bytes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bytes",
+            "description": "A list of integers representing the UTF-8 bytes representation of the token. Useful in instances where characters are represented by multiple tokens and their byte representations must be combined to generate the correct text representation. Can be `null` if there is no bytes representation for the token."
+          }
+        },
+        "type": "object",
+        "required": [
+          "token",
+          "logprob"
+        ],
+        "title": "ChatLogprobsContentTopLogprob"
+      },
+      "FunctionResult": {
+        "properties": {
+          "arguments": {
+            "type": "string",
+            "title": "Arguments",
+            "description": "The arguments for calling the function, generated by the model in JSON format.\nEnsure to validate these arguments in your code before invoking the function since the model may not always produce valid JSON."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the function to call."
+          }
+        },
+        "type": "object",
+        "required": [
+          "arguments",
+          "name"
+        ],
+        "title": "FunctionResult"
+      },
+      "MessagesBase64ImageSource": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "base64",
+            "title": "Type",
+            "description": "Image source type. Must be `base64`."
+          },
+          "data": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Data",
+            "description": "Base64-encoded image bytes (without data URL prefix)."
+          },
+          "media_type": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Media Type",
+            "description": "MIME type, for example `image/png`."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "data",
+          "media_type"
+        ],
+        "title": "MessagesBase64ImageSource"
+      },
+      "MessagesUrlImageSource": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "url",
+            "title": "Type",
+            "description": "Image source type. Must be `url`."
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Url",
+            "description": "Publicly accessible image URL that the service can fetch."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "url"
+        ],
+        "title": "MessagesUrlImageSource"
+      }
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://docs.sambanova.ai/cloud/docs/api-reference",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "93812c8ee5e44b312c9f9664ce071dbbb2cfbdfe1658358d589ca0ff49a3d8ee",
+  "gatewayPathPrefix": "/v1"
+}

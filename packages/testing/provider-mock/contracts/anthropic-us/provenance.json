@@ -1,0 +1,8 @@
+{
+  "inheritedFrom": "anthropic",
+  "parentSource": {
+    "kind": "official-docs",
+    "url": "https://docs.anthropic.com/en/api/messages"
+  },
+  "bundleSha256": "2a5dc2e262c508762e40b6e764023da71fa4310b8f38240a2480fcc3643c1a59"
+}

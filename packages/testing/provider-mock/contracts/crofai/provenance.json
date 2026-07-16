@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://docs.crof.ai/",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "d7fde972b81295fad2f9d87ecfd199e8a5cadbcdef3b878dd6687e4bbbc8da82",
+  "gatewayPathPrefix": "/v1"
+}

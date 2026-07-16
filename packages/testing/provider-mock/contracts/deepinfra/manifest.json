@@ -1,0 +1,28 @@
+{
+  "providerId": "deepinfra",
+  "displayName": "DeepInfra",
+  "source": {
+    "kind": "official-openapi",
+    "url": "https://api.deepinfra.com/openapi.json"
+  },
+  "operations": [
+    {
+      "capability": "chat",
+      "method": "post",
+      "path": "/v1/openai/chat/completions",
+      "operationId": "openai_chat_completions_v1_chat_completions_post"
+    },
+    {
+      "capability": "embeddings",
+      "method": "post",
+      "path": "/v1/openai/embeddings",
+      "operationId": "openai_embeddings_v1_embeddings_post"
+    },
+    {
+      "capability": "models",
+      "method": "get",
+      "path": "/v1/openai/models",
+      "operationId": "openai_models_v1_models_get"
+    }
+  ]
+}

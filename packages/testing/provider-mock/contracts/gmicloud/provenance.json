@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://docs.gmicloud.ai/",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "fd03217dae4f7dc23cab88139a09e4172f10ca2e7965abcc8eb5833a5bdb18e9",
+  "gatewayPathPrefix": "/v1"
+}

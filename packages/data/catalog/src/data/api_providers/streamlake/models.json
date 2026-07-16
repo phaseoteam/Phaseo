@@ -1,0 +1,86 @@
+[
+  {
+    "api_model_id": "kwaipilot/kat-coder-air-v2.5",
+    "provider_api_model_id": "streamlake:ep-cbso5h-1784044408030577927",
+    "provider_model_slug": "ep-cbso5h-1784044408030577927",
+    "internal_model_id": "kwaipilot/kat-coder-air-v2.5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": 80000,
+    "effective_from": "2026-07-14T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "inactive",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "kwaipilot/kat-coder-pro-v2.5",
+    "provider_api_model_id": "streamlake:ep-nixvpn-1784044408036465292",
+    "provider_model_slug": "ep-nixvpn-1784044408036465292",
+    "internal_model_id": "kwaipilot/kat-coder-pro-v2.5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": 80000,
+    "effective_from": "2026-07-14T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "inactive",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "kwaipilot/kat-coder-air-v1",
+    "provider_api_model_id": "streamlake:ep-4h5nbl-1774876422125631516",
+    "provider_model_slug": "ep-4h5nbl-1774876422125631516",
+    "internal_model_id": "kwaipilot/kat-coder-air-v1",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": null,
+    "effective_from": "2026-07-14T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "inactive",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "kwaipilot/kat-coder-pro-v1",
+    "provider_api_model_id": "streamlake:ep-ykledc-1774876422131960912",
+    "provider_model_slug": "ep-ykledc-1774876422131960912",
+    "internal_model_id": "kwaipilot/kat-coder-pro-v1",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": null,
+    "effective_from": "2026-07-14T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "inactive",
+        "params": []
+      }
+    ]
+  }
+]

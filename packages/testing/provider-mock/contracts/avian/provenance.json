@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://docs.avian.io/",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "9d974113b067336a7d815b721415bbd6839384fc34e37098d909d7205113ad0a",
+  "gatewayPathPrefix": "/v1"
+}

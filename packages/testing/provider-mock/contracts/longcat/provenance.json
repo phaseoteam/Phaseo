@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://longcat.chat/platform/docs",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "59b9549c88f02af8ed91216657fe8c9647017566ed381a86409214e09ad0c5ca",
+  "gatewayPathPrefix": "/openai/v1"
+}

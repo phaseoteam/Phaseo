@@ -589,7 +589,7 @@ export function resolveAnthropicInferenceGeo(
 	if (requiredExecutionRegion === "us") return "us";
 	if (requiredExecutionRegion === "global") return "global";
 
-	if (providerId === "anthropic-us") return "us";
+	if (providerId === "anthropic-us" || providerId === "anthropic-aws-us") return "us";
 	return null;
 }
 

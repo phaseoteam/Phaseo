@@ -1,0 +1,32 @@
+{
+  "name": "@phaseo/provider-mock",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "sync:openai": "node scripts/sync-openai-contract.mjs",
+    "sync:novita": "node scripts/sync-novita-contract.mjs",
+    "sync:mintlify": "node scripts/sync-mintlify-openapi-contracts.mjs",
+    "sync:references": "node scripts/sync-reference-overlays.mjs",
+    "sync:aliases": "node scripts/sync-provider-aliases.mjs",
+    "sync:native": "node scripts/sync-native-overlays.mjs",
+    "sync:capabilities": "node scripts/sync-capability-overlays.mjs"
+  },
+  "dependencies": {
+    "yaml": "^2.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.7"
+  }
+}

@@ -919,6 +919,8 @@ export const ImagesGenerationSchema = z.object({
     size: z.string().optional(),
     n: z.number().int().min(1).max(10).optional(),
     quality: z.string().optional(),
+    stream: z.boolean().optional(),
+    partial_images: z.number().int().min(0).max(3).optional(),
     response_format: z.string().optional(),
     output_format: z.enum(["png", "jpeg", "webp"]).optional(),
     output_compression: z.number().int().min(0).max(100).optional(),

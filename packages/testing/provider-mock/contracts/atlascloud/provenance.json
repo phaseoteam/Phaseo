@@ -1,0 +1,8 @@
+{
+  "sourceUrl": "https://docs.atlascloud.ai/",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "b4f6c7d40e632fd5f6936bb8ead255245c1ee544885c934637174f4cc7de15f1",
+  "gatewayPathPrefix": "/v1",
+  "capabilityOverlay": true
+}

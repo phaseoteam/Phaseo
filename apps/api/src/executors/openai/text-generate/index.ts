@@ -74,6 +74,10 @@ const OPENAI_WEBSOCKET_MAX_RECONNECTS = 1;
 const OPENAI_WEBSOCKET_HANDSHAKE_MAX_RETRIES = 1;
 const OPENAI_INTERNAL_REQUEST_ID_METADATA_KEY = "phaseo_request_id";
 
+function isOpenAIProviderOffer(providerId: string): boolean {
+	return providerId === "openai" || providerId === "openai-eu";
+}
+
 function buildOpenAIResponsesWebSocketUrl(providerId: string): string {
 	// Cloudflare Workers WebSocket fetch upgrade expects https:// URL.
 	return openAICompatUrl(providerId, "/responses");
@@ -425,7 +429,7 @@ function withOpenAIProReasoningMode(
 	providerId: string,
 	modelForRouting: string | null | undefined,
 ): IRChatRequest {
-	if (providerId !== "openai") return ir;
+	if (!isOpenAIProviderOffer(providerId)) return ir;
 	const routed = normalizeOpenAIGpt56ProModelSlug(modelForRouting);
 	const requested = normalizeOpenAIGpt56ProModelSlug(ir.model);
 	if (!routed.proMode && !requested.proMode) return ir;
@@ -748,7 +752,7 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 	const normalizedRoutingModel = normalizeOpenAIGpt56ProModelSlug(requestedRoutingModel);
 	const modelForRouting = normalizedRoutingModel.model ?? requestedRoutingModel;
 	const useNativeChatRoute =
-		args.providerId === "openai" &&
+		isOpenAIProviderOffer(args.providerId) &&
 		args.protocol === "openai.chat.completions" &&
 		!(args.ir as IRChatRequest).reasoning;
 	const irWithRequestMetadata = withOpenAIRequestMetadata(
@@ -758,7 +762,7 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 		args.workspaceId,
 		{ includeMetadata: !useNativeChatRoute },
 	);
-	const route = args.providerId === "openai"
+	const route = isOpenAIProviderOffer(args.providerId)
 		? (useNativeChatRoute ? "chat" : "responses")
 		: resolveOpenAICompatRoute(args.providerId, modelForRouting);
 	const endpoint = route === "responses" ? "/responses" : "/chat/completions";

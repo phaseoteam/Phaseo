@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
 	buildImagePricingRequestOptions,
 	inferImagePricingVariant,
+	normalizeOpenAIImageTokenUsage,
 	resolveImageResolution,
 	resolveImageSize,
 } from "./image-request-options";
@@ -70,6 +71,20 @@ describe("image-request-options", () => {
 		).toEqual({
 			quality: "medium",
 			resolution: "1024x1536",
+		});
+	});
+
+	it("maps OpenAI Images API usage to image-token meters", () => {
+		expect(
+			normalizeOpenAIImageTokenUsage({
+				input_tokens: 110,
+				output_tokens: 6594,
+				input_tokens_details: { text_tokens: 10, image_tokens: 100 },
+			}),
+		).toMatchObject({
+			input_text_tokens: 10,
+			input_image_tokens: 100,
+			output_image_tokens: 6594,
 		});
 	});
 

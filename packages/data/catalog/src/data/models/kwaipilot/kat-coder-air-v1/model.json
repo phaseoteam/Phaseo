@@ -1,0 +1,19 @@
+{
+  "model_id": "kwaipilot/kat-coder-air-v1",
+  "organisation_id": "kwaipilot",
+  "name": "Kat Coder Air V1",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Kat Coder Air V1 is a lightweight coding model in the KwaiKAT KAT-Coder series.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": ["text"],
+  "output_types": ["text"],
+  "api_model_id": "kwaipilot/kat-coder-air-v1",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

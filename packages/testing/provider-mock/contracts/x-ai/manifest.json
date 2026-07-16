@@ -1,0 +1,33 @@
+{
+  "providerId": "x-ai",
+  "displayName": "xAI",
+  "source": {
+    "kind": "official-docs",
+    "url": "https://docs.x.ai/developers/tools/function-calling"
+  },
+  "operations": [
+    {
+      "capability": "text.generate",
+      "method": "post",
+      "path": "/responses",
+      "operationId": "createResponse"
+    },
+    {
+      "capability": "text.generate",
+      "method": "post",
+      "path": "/chat/completions",
+      "operationId": "createChatCompletion"
+    },
+    {
+      "capability": "video.generate",
+      "method": "post",
+      "path": "/v1/videos/generations",
+      "operationId": "x_ai_video_generate_1",
+      "notes": "Derived from the enabled Phaseo executor URL and provider API reference."
+    }
+  ],
+  "overlays": [
+    "xAI documents OpenAI-compatible Responses and Chat Completions APIs but does not publish a downloadable OpenAPI document for this surface; this overlay covers the Phaseo executor's request shape.",
+    "Enabled capability operations derived from Phaseo executor routing."
+  ]
+}

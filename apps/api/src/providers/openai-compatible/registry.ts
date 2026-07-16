@@ -63,6 +63,17 @@ import { TENSORIX_OPENAI_COMPAT_CONFIGS } from "../tensorix/config";
 import { OVHCLOUD_OPENAI_COMPAT_CONFIGS } from "../ovhcloud/config";
 import { THINKING_MACHINES_OPENAI_COMPAT_CONFIGS } from "../thinking-machines/config";
 import { META_OPENAI_COMPAT_CONFIGS } from "../meta/config";
+import { AVIAN_OPENAI_COMPAT_CONFIGS } from "../avian/config";
+import { BAIDU_OPENAI_COMPAT_CONFIGS } from "../baidu/config";
+import { DARKBLOOM_OPENAI_COMPAT_CONFIGS } from "../darkbloom/config";
+import { INFERENCE_NET_OPENAI_COMPAT_CONFIGS } from "../inference-net/config";
+import { MARA_OPENAI_COMPAT_CONFIGS } from "../mara/config";
+import { REKA_OPENAI_COMPAT_CONFIGS } from "../reka/config";
+import { UPSTAGE_OPENAI_COMPAT_CONFIGS } from "../upstage/config";
+import { AMBIENT_OPENAI_COMPAT_CONFIGS } from "../ambient/config";
+import { STREAMLAKE_OPENAI_COMPAT_CONFIGS } from "../streamlake/config";
+import { SWITCHPOINT_OPENAI_COMPAT_CONFIGS } from "../switchpoint/config";
+import { WAFER_OPENAI_COMPAT_CONFIGS } from "../wafer/config";
 
 export const OPENAI_COMPAT_CONFIG = {
 	...OPENAI_OPENAI_COMPAT_CONFIGS,
@@ -129,4 +140,15 @@ export const OPENAI_COMPAT_CONFIG = {
 	...OVHCLOUD_OPENAI_COMPAT_CONFIGS,
 	...THINKING_MACHINES_OPENAI_COMPAT_CONFIGS,
 	...META_OPENAI_COMPAT_CONFIGS,
+	...AVIAN_OPENAI_COMPAT_CONFIGS,
+	...BAIDU_OPENAI_COMPAT_CONFIGS,
+	...DARKBLOOM_OPENAI_COMPAT_CONFIGS,
+	...INFERENCE_NET_OPENAI_COMPAT_CONFIGS,
+	...MARA_OPENAI_COMPAT_CONFIGS,
+	...REKA_OPENAI_COMPAT_CONFIGS,
+	...UPSTAGE_OPENAI_COMPAT_CONFIGS,
+	...AMBIENT_OPENAI_COMPAT_CONFIGS,
+	...STREAMLAKE_OPENAI_COMPAT_CONFIGS,
+	...SWITCHPOINT_OPENAI_COMPAT_CONFIGS,
+	...WAFER_OPENAI_COMPAT_CONFIGS,
 } satisfies Record<string, OpenAICompatConfig>;

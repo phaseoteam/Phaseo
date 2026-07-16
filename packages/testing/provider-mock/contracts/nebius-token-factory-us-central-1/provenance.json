@@ -1,0 +1,8 @@
+{
+  "inheritedFrom": "nebius-token-factory",
+  "parentSource": {
+    "kind": "official-docs",
+    "url": "https://docs.nebius.com/studio/inference/quickstart"
+  },
+  "bundleSha256": "083b3100a304db3ed7de6efef667b8c6c40754111d2dc9ffbc470f90a9ff6115"
+}

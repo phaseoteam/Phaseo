@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://docs.perplexity.ai/api-reference/chat-completions-post",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "a7c086c7fdd4d548700875ce35a2e05cdca997af8b73affbb29e4274143395ec",
+  "gatewayPathPrefix": "/v1"
+}

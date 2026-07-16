@@ -8,7 +8,7 @@ import { ImagesGenerationSchema, type ImagesGenerationRequest } from "@core/sche
 import { sanitizePayload } from "../../utils";
 import { computeBill } from "@pipeline/pricing/engine";
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "../../openai-compatible/config";
-import { buildImagePricingRequestOptions } from "@core/image-request-options";
+import { buildImagePricingRequestOptions, normalizeOpenAIImageTokenUsage } from "@core/image-request-options";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 
 function shouldLogRawImageResponse(args: ProviderExecuteArgs): boolean {
@@ -93,6 +93,8 @@ function mapGatewayToOpenAIImages(body: ImagesGenerationRequest) {
         model: body.model,
         n: body.n,
         quality: body.quality,
+        stream: body.stream,
+        partial_images: body.partial_images,
         response_format: body.response_format,
         output_format: body.output_format,
         output_compression: body.output_compression,
@@ -127,6 +129,41 @@ function resolveOutputImageCount(body: ImagesGenerationRequest, normalized: any)
     return 1;
 }
 
+async function collectStreamUsage(stream: ReadableStream<Uint8Array>): Promise<Record<string, unknown>> {
+	const reader = stream.getReader();
+	const decoder = new TextDecoder();
+	let buffer = "";
+	let usage: Record<string, unknown> = {};
+	const consume = (frame: string) => {
+		const lines = frame.split(/\r?\n/);
+		const data = lines.filter((line) => line.startsWith("data:")).map((line) => line.slice(5).trim()).join("\n");
+		if (!data || data === "[DONE]") return;
+		try {
+			const payload = JSON.parse(data);
+			if (payload?.usage && typeof payload.usage === "object") usage = payload.usage;
+		} catch {
+			// Forward malformed upstream frames unchanged; they cannot be priced.
+		}
+	};
+	while (true) {
+		const { done, value } = await reader.read();
+		buffer += decoder.decode(value ?? new Uint8Array(), { stream: !done });
+		let boundary: number;
+		while ((boundary = buffer.search(/\r?\n\r?\n/)) >= 0) {
+			const frame = buffer.slice(0, boundary);
+			buffer = buffer.slice(boundary).replace(/^\r?\n\r?\n/, "");
+			consume(frame);
+		}
+		if (done) break;
+	}
+	if (buffer.trim()) consume(buffer);
+	return usage;
+}
+
+function usesGptImageTokenPricing(...modelIds: Array<string | null | undefined>): boolean {
+	return modelIds.some((modelId) => /(?:gpt-image-|chatgpt-image-latest)/i.test(modelId?.trim() ?? ""));
+}
+
 export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     const keyInfo = await resolveOpenAICompatKey(args);
     const key = keyInfo.key;
@@ -148,6 +185,24 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         upstream_id: res.headers.get("x-request-id"),
         finish_reason: null,
     };
+    if (res.ok && args.stream && res.body) {
+        const [clientStream, accountingStream] = res.body.tee();
+        const usageFinalizer = async () => {
+            const completedUsage = await collectStreamUsage(accountingStream);
+            const usageMeters = usesGptImageTokenPricing(args.model, modifiedBody.model)
+                ? normalizeOpenAIImageTokenUsage(completedUsage)
+                : completedUsage;
+            usageMeters.requests = 1;
+            const pricedUsage = computeBill(usageMeters as Record<string, any>, args.pricingCard, buildImagePricingRequestOptions(modifiedBody, usageMeters));
+            return {
+                ...bill,
+                cost_cents: pricedUsage.pricing.total_cents,
+                currency: pricedUsage.pricing.currency,
+                usage: pricedUsage,
+            };
+        };
+        return { kind: "stream", upstream: res, stream: clientStream, usageFinalizer, bill, keySource: keyInfo.source, byokKeyId: keyInfo.byokId };
+    }
     const contentType = res.headers.get("content-type");
     const rawText = shouldLogRawImageResponse(args)
         ? await res.clone().text().catch(() => null)
@@ -173,11 +228,15 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     if (res.ok && args.pricingCard) {
         const outputImageCount = resolveOutputImageCount(modifiedBody, normalized);
         // Image providers are commonly priced by request count.
-        const usageMeters: Record<string, unknown> = normalized?.usage && typeof normalized.usage === "object"
-            ? { ...(normalized.usage as Record<string, unknown>) }
-            : { total_tokens: 0 };
+        const usageMeters: Record<string, unknown> = usesGptImageTokenPricing(args.model, modifiedBody.model)
+            ? normalizeOpenAIImageTokenUsage(normalized?.usage)
+            : normalized?.usage && typeof normalized.usage === "object"
+                ? { ...(normalized.usage as Record<string, unknown>) }
+                : { total_tokens: 0 };
         if (typeof usageMeters.requests !== "number") usageMeters.requests = 1;
-        if (typeof usageMeters.output_image !== "number") usageMeters.output_image = outputImageCount;
+        if (!usesGptImageTokenPricing(args.model, modifiedBody.model) && typeof usageMeters.output_image !== "number") {
+            usageMeters.output_image = outputImageCount;
+        }
         if (typeof normalized?.size === "string") usageMeters.size = normalized.size;
         if (typeof normalized?.quality === "string") usageMeters.quality = normalized.quality;
         if (typeof normalized?.output_format === "string") usageMeters.output_format = normalized.output_format;

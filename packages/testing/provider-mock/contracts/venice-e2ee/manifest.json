@@ -1,0 +1,37 @@
+{
+  "providerId": "venice-e2ee",
+  "displayName": "Venice E2EE",
+  "source": {
+    "kind": "phaseo-overlay",
+    "url": "https://docs.venice.ai/swagger.yaml"
+  },
+  "operations": [
+    {
+      "capability": "chat",
+      "method": "post",
+      "path": "/api/v1/chat/completions",
+      "operationId": "createChatCompletion"
+    },
+    {
+      "capability": "responses",
+      "method": "post",
+      "path": "/api/v1/responses",
+      "operationId": "createResponse"
+    },
+    {
+      "capability": "embeddings",
+      "method": "post",
+      "path": "/api/v1/embeddings",
+      "operationId": "createEmbedding"
+    },
+    {
+      "capability": "models",
+      "method": "get",
+      "path": "/api/v1/models",
+      "operationId": "listModels"
+    }
+  ],
+  "overlays": [
+    "Inherits venice; this enabled ID changes routing, residency, performance tier, or transport policy without changing the request schema."
+  ]
+}

@@ -227,6 +227,7 @@ function toOpenAIChatTool(tool: IRTool): any {
 			name: tool.name,
 			description: tool.description,
 			parameters: tool.parameters,
+			...(tool.strict !== undefined ? { strict: tool.strict } : {}),
 		},
 	};
 }

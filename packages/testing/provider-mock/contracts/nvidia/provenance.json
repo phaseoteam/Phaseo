@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://docs.nvidia.com/nim/large-language-models/latest/api-reference.html",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "7a7549f33b49460ad959342da4fa6a52575841c3e09bb5f14114a0d14d58eb7a",
+  "gatewayPathPrefix": "/v1"
+}

@@ -1,0 +1,1344 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Baseten LLM Inference API",
+    "version": "1.0.0",
+    "description": "OpenAI-compatible API for Baseten Model APIs. Use this endpoint to interact with hosted LLMs."
+  },
+  "paths": {
+    "/v1/chat/completions": {
+      "post": {
+        "operationId": "createChatCompletion",
+        "summary": "Create a chat completion",
+        "description": "Creates a chat completion for the provided conversation. This endpoint is fully compatible with the OpenAI Chat Completions API, allowing you to use standard OpenAI SDKs by changing only the base URL and API key.",
+        "tags": [
+          "Chat Completions"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatCompletionRequest"
+              },
+              "example": {
+                "model": "deepseek-ai/DeepSeek-V4-Pro",
+                "messages": [
+                  {
+                    "role": "system",
+                    "content": "You are a helpful assistant."
+                  },
+                  {
+                    "role": "user",
+                    "content": "Hello!"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatCompletionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request: invalid parameters."
+          },
+          "401": {
+            "description": "Unauthorized: invalid or missing API key."
+          },
+          "429": {
+            "description": "Rate limit exceeded."
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "python",
+            "label": "Python",
+            "source": "from openai import OpenAI\nimport os\n\nclient = OpenAI(\n    base_url=\"https://inference.baseten.co/v1\",\n    api_key=os.environ.get(\"BASETEN_API_KEY\"),\n)\n\nresponse = client.chat.completions.create(\n    model=\"deepseek-ai/DeepSeek-V4-Pro\",\n    messages=[\n        {\"role\": \"system\", \"content\": \"You are a helpful assistant.\"},\n        {\"role\": \"user\", \"content\": \"Hello!\"},\n    ],\n)\n\nprint(response.choices[0].message.content)"
+          },
+          {
+            "lang": "javascript",
+            "label": "JavaScript",
+            "source": "import OpenAI from \"openai\";\n\nconst client = new OpenAI({\n    baseURL: \"https://inference.baseten.co/v1\",\n    apiKey: process.env.BASETEN_API_KEY,\n});\n\nconst response = await client.chat.completions.create({\n    model: \"deepseek-ai/DeepSeek-V4-Pro\",\n    messages: [\n        { role: \"system\", content: \"You are a helpful assistant.\" },\n        { role: \"user\", content: \"Hello!\" },\n    ],\n});\n\nconsole.log(response.choices[0].message.content);"
+          },
+          {
+            "lang": "bash",
+            "label": "cURL",
+            "source": "curl https://inference.baseten.co/v1/chat/completions \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Authorization: Bearer $BASETEN_API_KEY\" \\\n  -d '{\n    \"model\": \"deepseek-ai/DeepSeek-V4-Pro\",\n    \"messages\": [\n      {\"role\": \"system\", \"content\": \"You are a helpful assistant.\"},\n      {\"role\": \"user\", \"content\": \"Hello!\"}\n    ]\n  }'"
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ChatCompletionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatCompletionMessage"
+            },
+            "description": "A list of messages representing the conversation history. Supports roles: `system`, `user`, `assistant`, and `tool`."
+          },
+          "model": {
+            "title": "Model",
+            "type": "string",
+            "description": "The model slug to use for completion, such as `deepseek-ai/DeepSeek-V4-Pro`. Find available models at [Model APIs](https://app.baseten.co/model-apis/create)."
+          },
+          "frequency_penalty": {
+            "default": 0,
+            "title": "Frequency Penalty",
+            "description": "Penalizes tokens based on how frequently they appear in the text so far. Positive values decrease repetition. Support varies by model.",
+            "type": "number"
+          },
+          "logit_bias": {
+            "default": null,
+            "title": "Logit Bias",
+            "description": "A map of token IDs to bias values (-100 to 100). Use this to increase or decrease the likelihood of specific tokens appearing in the output.",
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object"
+          },
+          "logprobs": {
+            "default": false,
+            "title": "Logprobs",
+            "description": "If `true`, returns log probabilities of the output tokens. Log probability support varies by model.",
+            "type": "boolean"
+          },
+          "top_logprobs": {
+            "default": 0,
+            "title": "Top Logprobs",
+            "description": "Number of most likely tokens to return at each position (0-20). Requires `logprobs: true`. Log probability support varies by model.",
+            "type": "integer"
+          },
+          "max_tokens": {
+            "default": 4096,
+            "maximum": 262144,
+            "minimum": 1,
+            "title": "Max Tokens",
+            "type": "integer",
+            "description": "Maximum number of tokens to generate. If your request input plus `max_tokens` exceeds the model's context length, `max_tokens` is truncated. If your request exceeds the context length by more than 16k tokens or if `max_tokens` signals no preference, context reservation is throttled to 49512 tokens. Higher `max_tokens` values slightly deprioritize request scheduling."
+          },
+          "n": {
+            "default": 1,
+            "title": "N",
+            "description": "Number of completions to generate. Only `1` is supported.",
+            "type": "integer"
+          },
+          "presence_penalty": {
+            "default": 0,
+            "title": "Presence Penalty",
+            "description": "Penalizes tokens based on whether they have appeared in the text so far. Positive values encourage the model to discuss new topics. Support varies by model.",
+            "type": "number"
+          },
+          "response_format": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResponseFormatText"
+              },
+              {
+                "$ref": "#/components/schemas/ResponseFormatJson"
+              },
+              {
+                "$ref": "#/components/schemas/ResponseFormatJsonObject"
+              },
+              {
+                "$ref": "#/components/schemas/ResponseFormatGrammar"
+              },
+              {
+                "$ref": "#/components/schemas/ResponseFormatStructuralTag"
+              }
+            ],
+            "default": null,
+            "title": "Response Format",
+            "description": "Specifies the output format. Use `{\"type\": \"json_object\"}` for JSON mode, or `{\"type\": \"json_schema\", \"json_schema\": {...}}` for structured outputs with a specific schema."
+          },
+          "seed": {
+            "default": null,
+            "title": "Seed",
+            "description": "Random seed for deterministic generation. Determinism is not guaranteed across different hardware or model versions.",
+            "type": "integer"
+          },
+          "stop": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "items": {
+                  "maxLength": 1000,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "maxItems": 32,
+                "type": "array"
+              }
+            ],
+            "title": "Stop",
+            "description": "Up to 32 sequences where the API stops generating further tokens. Can be a string or array of strings."
+          },
+          "stream": {
+            "default": false,
+            "title": "Stream",
+            "description": "If `true`, responses are streamed back as server-sent events (SSE) as they are generated.",
+            "type": "boolean"
+          },
+          "stream_options": {
+            "default": null,
+            "description": "Options for streaming responses. Set `include_usage: true` to receive token usage statistics in the final chunk. Requires `stream: true` to be set to non-null. ",
+            "$ref": "#/components/schemas/StreamOptions"
+          },
+          "temperature": {
+            "default": null,
+            "title": "Temperature",
+            "description": "Controls randomness in the output. Lower values like 0.2 produce more focused and deterministic responses. Higher values like 1.5 produce more creative and varied output.",
+            "maximum": 4,
+            "minimum": 0,
+            "type": "number"
+          },
+          "top_p": {
+            "default": 1,
+            "title": "Top P",
+            "description": "Nucleus sampling: only consider tokens with cumulative probability up to this value. Lower values like 0.1 produce more focused output.",
+            "exclusiveMinimum": 0,
+            "maximum": 1,
+            "type": "number"
+          },
+          "tools": {
+            "default": null,
+            "title": "Tools",
+            "description": "A list of tools (functions) the model may call. Each tool should have a `type: \"function\"` and a `function` object with `name`, `description`, and `parameters`.",
+            "items": {
+              "$ref": "#/components/schemas/ChatCompletionToolsParam"
+            },
+            "type": "array"
+          },
+          "tool_choice": {
+            "anyOf": [
+              {
+                "enum": [
+                  "none",
+                  "required",
+                  "auto"
+                ],
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/ChatCompletionNamedToolChoiceParam"
+              }
+            ],
+            "default": null,
+            "title": "Tool Choice",
+            "description": "Controls which tool (if any) the model calls.\n\n- `none`: Never call a tool.\n- `auto`: Model decides whether to call a tool.\n- `required`: Model must call at least one tool.\n- `{\"type\": \"function\", \"function\": {\"name\": \"...\"}}`: Call a specific function."
+          },
+          "parallel_tool_calls": {
+            "default": true,
+            "title": "Parallel Tool Calls",
+            "description": "If `true`, the model can call multiple tools in a single response.",
+            "type": "boolean"
+          },
+          "user": {
+            "default": null,
+            "title": "User",
+            "description": "A unique identifier for the end-user, useful for tracking and abuse detection.",
+            "type": "string"
+          },
+          "best_of": {
+            "default": null,
+            "title": "Best Of",
+            "description": "Number of candidate sequences to generate and return the best from. Only a value of 1 is supported.",
+            "maximum": 1,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "top_k": {
+            "default": 50,
+            "title": "Top K",
+            "description": "Limits token selection to the top K most probable tokens at each step. Lower values like 10 produce more focused output. Set to -1 to disable.",
+            "type": "integer"
+          },
+          "top_p_min": {
+            "default": 0,
+            "title": "Top P Min",
+            "type": "number",
+            "description": "Minimum value for dynamic `top_p`. When set, `top_p` dynamically adjusts but does not go below this value."
+          },
+          "min_p": {
+            "default": 0,
+            "title": "Min P",
+            "type": "number",
+            "description": "Minimum probability threshold for token selection. Filters out tokens with probability below `min_p * max_probability`."
+          },
+          "repetition_penalty": {
+            "default": 1,
+            "title": "Repetition Penalty",
+            "type": "number",
+            "description": "Multiplicative penalty for repeated tokens. Values greater than 1.0 discourage repetition, values less than 1.0 encourage it."
+          },
+          "length_penalty": {
+            "default": 1,
+            "title": "Length Penalty",
+            "type": "number",
+            "description": "Exponential penalty applied to sequence length during beam search. Values greater than 1.0 favor longer sequences."
+          },
+          "early_stopping": {
+            "default": false,
+            "title": "Early Stopping",
+            "type": "boolean",
+            "description": "If `true`, stops generation when at least `n` complete candidates are found."
+          },
+          "bad": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Bad",
+            "description": "Words or phrases to avoid in the output. Support varies by model."
+          },
+          "bad_token_ids": {
+            "title": "Bad Token Ids",
+            "description": "Token IDs to avoid in the output. Support varies by model.",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "stop_token_ids": {
+            "title": "Stop Token Ids",
+            "description": "List of token IDs that cause generation to stop when encountered.",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "include_stop_str_in_output": {
+            "default": false,
+            "title": "Include Stop Str In Output",
+            "type": "boolean",
+            "description": "If `true`, includes the matched stop string in the output."
+          },
+          "ignore_eos": {
+            "default": false,
+            "title": "Ignore Eos",
+            "type": "boolean",
+            "description": "If `true`, continues generating past the end-of-sequence token."
+          },
+          "min_tokens": {
+            "default": 0,
+            "title": "Min Tokens",
+            "type": "integer",
+            "description": "Minimum number of tokens to generate before stopping. Useful for ensuring responses are not too short."
+          },
+          "skip_special_tokens": {
+            "default": true,
+            "title": "Skip Special Tokens",
+            "type": "boolean",
+            "description": "If `true`, removes special tokens from the generated output."
+          },
+          "spaces_between_special_tokens": {
+            "default": true,
+            "title": "Spaces Between Special Tokens",
+            "type": "boolean",
+            "description": "If `true`, adds spaces between special tokens in the output."
+          },
+          "truncate_prompt_tokens": {
+            "default": null,
+            "title": "Truncate Prompt Tokens",
+            "description": "If set, truncates the prompt to this many tokens. Useful for handling inputs that may exceed context limits.",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "echo": {
+            "default": false,
+            "description": "If `true` and the last message role matches the generation role, prepends that message to the output.",
+            "title": "Echo",
+            "type": "boolean"
+          },
+          "add_generation_prompt": {
+            "default": true,
+            "description": "If `true`, adds the generation prompt from the chat template, such as `<|assistant|>`. Set to `false` for completion-style generation.",
+            "title": "Add Generation Prompt",
+            "type": "boolean"
+          },
+          "add_special_tokens": {
+            "default": false,
+            "description": "If `true`, adds special tokens like BOS to the prompt beyond what the chat template adds. For most models, the chat template handles special tokens, so this should be `false`.",
+            "title": "Add Special Tokens",
+            "type": "boolean"
+          },
+          "documents": {
+            "default": null,
+            "description": "A list of documents for RAG (retrieval-augmented generation). Each document is a dict with string keys and values that the model can reference.",
+            "title": "Documents",
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "chat_template": {
+            "default": null,
+            "description": "A custom Jinja template for formatting the conversation. If not provided, uses the model's default template.",
+            "title": "Chat Template",
+            "type": "string"
+          },
+          "chat_template_args": {
+            "default": null,
+            "description": "Additional arguments to pass to the chat template renderer.",
+            "title": "Chat Template Args",
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "disaggregated_params": {
+            "default": null,
+            "description": "Advanced parameters for disaggregated serving. Used internally for distributed inference.",
+            "$ref": "#/components/schemas/DisaggregatedParams"
+          }
+        },
+        "required": [
+          "messages",
+          "model"
+        ],
+        "title": "ChatCompletionRequest",
+        "type": "object",
+        "description": "Request body for creating a chat completion."
+      },
+      "ChatCompletionResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string",
+            "description": "A unique identifier for the chat completion."
+          },
+          "object": {
+            "const": "chat.completion.chunk",
+            "default": "chat.completion.chunk",
+            "title": "Object",
+            "type": "string",
+            "description": "The object type, always `chat.completion` or `chat.completion.chunk` for streaming."
+          },
+          "created": {
+            "title": "Created",
+            "type": "integer",
+            "description": "The Unix timestamp (in seconds) of when the completion was created."
+          },
+          "model": {
+            "title": "Model",
+            "type": "string",
+            "description": "The model used for the completion."
+          },
+          "choices": {
+            "items": {
+              "$ref": "#/components/schemas/ChatCompletionResponseStreamChoice"
+            },
+            "title": "Choices",
+            "type": "array",
+            "description": "A list of chat completion choices."
+          },
+          "usage": {
+            "default": null,
+            "description": "Token usage statistics for the request. Only present when streaming with `stream_options.include_usage: true`.",
+            "$ref": "#/components/schemas/UsageInfo"
+          }
+        },
+        "required": [
+          "model",
+          "choices"
+        ],
+        "title": "ChatCompletionStreamResponse",
+        "type": "object",
+        "description": "A chat completion response returned by the model."
+      },
+      "ChatCompletionMessage": {
+        "type": "object",
+        "required": [
+          "role"
+        ],
+        "description": "A message in the conversation. Supports roles: `system`, `user`, `assistant`, and `tool`.",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "system",
+              "user",
+              "assistant",
+              "tool"
+            ],
+            "description": "The role of the message author: `system` (instructions), `user` (input), `assistant` (model response), or `tool` (tool result)."
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ChatCompletionContentPartTextParam"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ChatCompletionContentPartImageParam"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ChatCompletionContentPartInputAudioParam"
+                    }
+                  ]
+                }
+              }
+            ],
+            "description": "The message content. Can be a string or an array of content parts (text, image, audio) for multimodal inputs."
+          },
+          "name": {
+            "type": "string",
+            "description": "An optional name for the participant. Useful for distinguishing between multiple users or assistants."
+          },
+          "tool_calls": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatCompletionMessageToolCallParam"
+            },
+            "description": "Tool calls generated by the model (for assistant messages)."
+          },
+          "tool_call_id": {
+            "type": "string",
+            "description": "The ID of the tool call this message responds to (required for tool messages)."
+          }
+        }
+      },
+      "ResponseFormatText": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "const": "text",
+            "title": "Type",
+            "type": "string",
+            "description": "The response format type, always `text`."
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "ResponseFormatText",
+        "type": "object",
+        "description": "Plain text response format."
+      },
+      "ResponseFormatJson": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "const": "json_schema",
+            "title": "Type",
+            "type": "string",
+            "description": "The response format type, always `json_schema`."
+          },
+          "json_schema": {
+            "$ref": "#/components/schemas/JsonSchema",
+            "description": "The JSON schema definition."
+          }
+        },
+        "required": [
+          "type",
+          "json_schema"
+        ],
+        "title": "ResponseFormatJson",
+        "type": "object",
+        "description": "JSON schema response format for structured outputs."
+      },
+      "ResponseFormatJsonObject": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "const": "json_object",
+            "title": "Type",
+            "type": "string",
+            "description": "The response format type, always `json_object`."
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "ResponseFormatJsonObject",
+        "type": "object",
+        "description": "JSON object response format."
+      },
+      "ResponseFormatGrammar": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "const": "grammar",
+            "title": "Type",
+            "type": "string",
+            "description": "The response format type, always `grammar`."
+          },
+          "grammar": {
+            "title": "Grammar",
+            "type": "string",
+            "description": "The grammar definition string."
+          }
+        },
+        "required": [
+          "type",
+          "grammar"
+        ],
+        "title": "ResponseFormatGrammar",
+        "type": "object",
+        "description": "Grammar-based response format."
+      },
+      "ResponseFormatStructuralTag": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "const": "structural_tag",
+            "title": "Type",
+            "type": "string",
+            "description": "The response format type, always `structural_tag`."
+          },
+          "structural_tag": {
+            "title": "Structural Tag",
+            "type": "string",
+            "description": "The structural tag definition."
+          }
+        },
+        "required": [
+          "type",
+          "structural_tag"
+        ],
+        "title": "ResponseFormatStructuralTag",
+        "type": "object",
+        "description": "Structural tag response format."
+      },
+      "StreamOptions": {
+        "additionalProperties": false,
+        "properties": {
+          "include_usage": {
+            "default": true,
+            "title": "Include Usage",
+            "description": "If `true`, includes token usage statistics in the final streaming chunk.",
+            "type": "boolean"
+          },
+          "continuous_usage_stats": {
+            "default": true,
+            "title": "Continuous Usage Stats",
+            "description": "If `true`, includes running token usage statistics in each streaming chunk.",
+            "type": "boolean"
+          }
+        },
+        "title": "StreamOptions",
+        "type": "object",
+        "description": "Options for streaming responses."
+      },
+      "ChatCompletionToolsParam": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "const": "function",
+            "default": "function",
+            "title": "Type",
+            "type": "string",
+            "description": "The type of tool, always `function`."
+          },
+          "function": {
+            "$ref": "#/components/schemas/FunctionDefinition",
+            "description": "The function definition."
+          }
+        },
+        "required": [
+          "function"
+        ],
+        "title": "ChatCompletionToolsParam",
+        "type": "object",
+        "description": "A tool that the model can call."
+      },
+      "ChatCompletionNamedToolChoiceParam": {
+        "additionalProperties": false,
+        "properties": {
+          "function": {
+            "$ref": "#/components/schemas/ChatCompletionNamedFunction",
+            "description": "The function to call."
+          },
+          "type": {
+            "const": "function",
+            "default": "function",
+            "title": "Type",
+            "type": "string",
+            "description": "The type, always `function`."
+          }
+        },
+        "required": [
+          "function"
+        ],
+        "title": "ChatCompletionNamedToolChoiceParam",
+        "type": "object",
+        "description": "Forces the model to call a specific function."
+      },
+      "DisaggregatedParams": {
+        "additionalProperties": false,
+        "properties": {
+          "request_type": {
+            "title": "Request Type",
+            "type": "string",
+            "description": "The type of disaggregated request."
+          },
+          "first_gen_tokens": {
+            "default": null,
+            "title": "First Gen Tokens",
+            "description": "First generation tokens for continuation.",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "ctx_request_id": {
+            "default": null,
+            "title": "Ctx Request Id",
+            "description": "Context request identifier.",
+            "type": "integer"
+          },
+          "opaque_state": {
+            "default": null,
+            "title": "Opaque State",
+            "description": "Opaque state for continuation.",
+            "type": "string"
+          },
+          "draft_tokens": {
+            "default": null,
+            "title": "Draft Tokens",
+            "description": "Draft tokens for speculative decoding.",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "multimodal_embedding_handles": {
+            "default": null,
+            "title": "Multimodal Embedding Handles",
+            "description": "Handles for multimodal embeddings.",
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "multimodal_hashes": {
+            "default": null,
+            "title": "Multimodal Hashes",
+            "description": "Hashes for multimodal content.",
+            "items": {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "request_type"
+        ],
+        "title": "DisaggregatedParams",
+        "type": "object",
+        "description": "Advanced parameters for disaggregated serving. Used internally."
+      },
+      "ChatCompletionResponseStreamChoice": {
+        "additionalProperties": false,
+        "properties": {
+          "index": {
+            "title": "Index",
+            "type": "integer",
+            "description": "The index of this choice in the list of choices."
+          },
+          "delta": {
+            "$ref": "#/components/schemas/DeltaMessage",
+            "description": "The delta content for streaming responses."
+          },
+          "logprobs": {
+            "default": null,
+            "description": "Log probability information for the choice.",
+            "$ref": "#/components/schemas/ChatCompletionLogProbs"
+          },
+          "finish_reason": {
+            "default": null,
+            "title": "Finish Reason",
+            "description": "The reason the model stopped generating: `stop` (natural stop or stop sequence), `length` (max tokens reached), or `tool_calls` (model called a tool).",
+            "type": "string"
+          },
+          "stop_reason": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "default": null,
+            "title": "Stop Reason",
+            "description": "The specific stop sequence or token ID that caused generation to stop."
+          }
+        },
+        "required": [
+          "index",
+          "delta"
+        ],
+        "title": "ChatCompletionResponseStreamChoice",
+        "type": "object",
+        "description": "A choice in the chat completion response."
+      },
+      "UsageInfo": {
+        "additionalProperties": false,
+        "properties": {
+          "completion_tokens": {
+            "default": 0,
+            "title": "Completion Tokens",
+            "type": "integer",
+            "description": "Number of tokens in the generated completion."
+          },
+          "prompt_tokens": {
+            "default": 0,
+            "title": "Prompt Tokens",
+            "type": "integer",
+            "description": "Number of tokens in the prompt."
+          },
+          "total_tokens": {
+            "default": 0,
+            "title": "Total Tokens",
+            "type": "integer",
+            "description": "Total number of tokens used (prompt + completion)."
+          },
+          "completion_tokens_details": {
+            "$ref": "#/components/schemas/CompletionTokensDetails",
+            "description": "Breakdown of completion token usage."
+          },
+          "prompt_tokens_details": {
+            "$ref": "#/components/schemas/PromptTokensDetails",
+            "description": "Breakdown of prompt token usage."
+          }
+        },
+        "title": "UsageInfo",
+        "type": "object",
+        "description": "Token usage statistics for the request."
+      },
+      "ChatCompletionContentPartTextParam": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "const": "text",
+            "title": "Type",
+            "type": "string",
+            "description": "The content type, always `text`."
+          },
+          "text": {
+            "title": "Text",
+            "type": "string",
+            "description": "The text content."
+          }
+        },
+        "required": [
+          "type",
+          "text"
+        ],
+        "title": "ChatCompletionContentPartTextParam",
+        "type": "object",
+        "description": "Text content part."
+      },
+      "ChatCompletionContentPartImageParam": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "const": "image_url",
+            "title": "Type",
+            "type": "string",
+            "description": "The content type, always `image_url`."
+          },
+          "image_url": {
+            "$ref": "#/components/schemas/ImageURL",
+            "description": "The image URL and detail settings."
+          }
+        },
+        "required": [
+          "type",
+          "image_url"
+        ],
+        "title": "ChatCompletionContentPartImageParam",
+        "type": "object",
+        "description": "Image content part for vision models."
+      },
+      "ChatCompletionContentPartInputAudioParam": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "const": "input_audio",
+            "title": "Type",
+            "type": "string",
+            "description": "The content type, always `input_audio`."
+          },
+          "input_audio": {
+            "$ref": "#/components/schemas/InputAudio",
+            "description": "The audio data and format."
+          }
+        },
+        "required": [
+          "type",
+          "input_audio"
+        ],
+        "title": "ChatCompletionContentPartInputAudioParam",
+        "type": "object",
+        "description": "Audio content part for audio-capable models."
+      },
+      "ChatCompletionMessageToolCallParam": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string",
+            "description": "The ID of the tool call."
+          },
+          "index": {
+            "title": "Index",
+            "description": "The index of the tool call.",
+            "type": "integer"
+          },
+          "function": {
+            "$ref": "#/components/schemas/Function",
+            "description": "The function that was called."
+          },
+          "type": {
+            "const": "function",
+            "title": "Type",
+            "type": "string",
+            "description": "The type, always `function`."
+          }
+        },
+        "required": [
+          "id",
+          "function",
+          "type"
+        ],
+        "title": "ChatCompletionMessageToolCallParam",
+        "type": "object",
+        "description": "A tool call in an assistant message."
+      },
+      "JsonSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string",
+            "description": "The name of the schema."
+          },
+          "description": {
+            "default": null,
+            "title": "Description",
+            "description": "A description of the schema.",
+            "type": "string"
+          },
+          "schema": {
+            "additionalProperties": true,
+            "title": "Schema",
+            "type": "object",
+            "description": "The JSON Schema definition."
+          },
+          "strict": {
+            "default": true,
+            "title": "Strict",
+            "description": "If `true`, enables strict schema adherence.",
+            "const": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "schema"
+        ],
+        "title": "JsonSchema",
+        "type": "object",
+        "description": "A JSON schema for structured output."
+      },
+      "FunctionDefinition": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string",
+            "description": "The name of the function."
+          },
+          "description": {
+            "default": null,
+            "title": "Description",
+            "description": "A description of what the function does.",
+            "type": "string"
+          },
+          "parameters": {
+            "default": null,
+            "title": "Parameters",
+            "description": "The parameters the function accepts, as a JSON Schema object.",
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "strict": {
+            "default": false,
+            "title": "Strict",
+            "description": "If `true`, enables strict schema adherence.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "FunctionDefinition",
+        "type": "object",
+        "description": "A function definition that the model can call."
+      },
+      "ChatCompletionNamedFunction": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string",
+            "description": "The name of the function to call."
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "ChatCompletionNamedFunction",
+        "type": "object",
+        "description": "Specifies a function to call by name."
+      },
+      "DeltaMessage": {
+        "additionalProperties": false,
+        "properties": {
+          "role": {
+            "default": null,
+            "title": "Role",
+            "description": "The role of the message author (typically `assistant`).",
+            "type": "string"
+          },
+          "content": {
+            "default": null,
+            "title": "Content",
+            "description": "The content chunk generated by the model.",
+            "type": "string"
+          },
+          "tool_calls": {
+            "items": {
+              "$ref": "#/components/schemas/ToolCall"
+            },
+            "title": "Tool Calls",
+            "type": "array",
+            "description": "Tool calls generated by the model."
+          }
+        },
+        "title": "DeltaMessage",
+        "type": "object",
+        "description": "A delta message chunk in a streaming response."
+      },
+      "ChatCompletionLogProbs": {
+        "additionalProperties": false,
+        "properties": {
+          "content": {
+            "default": null,
+            "title": "Content",
+            "description": "A list of log probability information for each token in the content.",
+            "items": {
+              "$ref": "#/components/schemas/ChatCompletionLogProbsContent"
+            },
+            "type": "array"
+          }
+        },
+        "title": "ChatCompletionLogProbs",
+        "type": "object",
+        "description": "Log probability information for the completion."
+      },
+      "CompletionTokensDetails": {
+        "additionalProperties": false,
+        "properties": {
+          "accepted_prediction_tokens": {
+            "default": 0,
+            "title": "Accepted Prediction Tokens",
+            "type": "integer",
+            "description": "Number of tokens in accepted predictions (for speculative decoding)."
+          },
+          "audio_tokens": {
+            "default": 0,
+            "title": "Audio Tokens",
+            "type": "integer",
+            "description": "Number of audio tokens generated."
+          },
+          "reasoning_tokens": {
+            "default": 0,
+            "title": "Reasoning Tokens",
+            "type": "integer",
+            "description": "Number of tokens used for reasoning (for models that support extended thinking)."
+          },
+          "rejected_prediction_tokens": {
+            "default": 0,
+            "title": "Rejected Prediction Tokens",
+            "type": "integer",
+            "description": "Number of tokens in rejected predictions (for speculative decoding)."
+          }
+        },
+        "title": "CompletionTokensDetails",
+        "type": "object",
+        "description": "Breakdown of tokens used in the completion."
+      },
+      "PromptTokensDetails": {
+        "additionalProperties": false,
+        "properties": {
+          "audio_tokens": {
+            "default": 0,
+            "title": "Audio Tokens",
+            "type": "integer",
+            "description": "Number of audio tokens in the prompt."
+          },
+          "cached_tokens": {
+            "default": 0,
+            "title": "Cached Tokens",
+            "type": "integer",
+            "description": "Number of tokens retrieved from cache."
+          }
+        },
+        "title": "PromptTokensDetails",
+        "type": "object",
+        "description": "Breakdown of tokens used in the prompt."
+      },
+      "ImageURL": {
+        "additionalProperties": false,
+        "properties": {
+          "url": {
+            "title": "Url",
+            "type": "string",
+            "description": "The URL of the image, or a base64-encoded data URL."
+          },
+          "detail": {
+            "default": null,
+            "title": "Detail",
+            "description": "The detail level: `auto` (default), `low` (512px max), or `high` (full resolution).",
+            "enum": [
+              "auto",
+              "low",
+              "high"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "ImageURL",
+        "type": "object",
+        "description": "An image URL with optional detail settings."
+      },
+      "InputAudio": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "title": "Data",
+            "type": "string",
+            "description": "Base64-encoded audio data."
+          },
+          "format": {
+            "enum": [
+              "wav",
+              "mp3"
+            ],
+            "title": "Format",
+            "type": "string",
+            "description": "The audio format: `wav` or `mp3`."
+          }
+        },
+        "required": [
+          "data",
+          "format"
+        ],
+        "title": "InputAudio",
+        "type": "object",
+        "description": "Audio input data."
+      },
+      "Function": {
+        "additionalProperties": false,
+        "properties": {
+          "arguments": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            ],
+            "title": "Arguments",
+            "description": "The function arguments as a JSON string or object."
+          },
+          "name": {
+            "title": "Name",
+            "type": "string",
+            "description": "The name of the function."
+          }
+        },
+        "required": [
+          "arguments",
+          "name"
+        ],
+        "title": "Function",
+        "type": "object",
+        "description": "The arguments to call the function with, as generated by the model in JSON format. The model may not always generate valid JSON and may hallucinate parameters not defined by your function schema. Validate the arguments in your code before calling your function."
+      },
+      "ToolCall": {
+        "additionalProperties": false,
+        "properties": {
+          "index": {
+            "title": "Index",
+            "type": "integer",
+            "description": "The index of this tool call in the list of tool calls."
+          },
+          "id": {
+            "title": "Id",
+            "type": "string",
+            "description": "A unique identifier for this tool call."
+          },
+          "type": {
+            "const": "function",
+            "default": "function",
+            "title": "Type",
+            "type": "string",
+            "description": "The type of tool call (always `function`)."
+          },
+          "function": {
+            "$ref": "#/components/schemas/FunctionCall",
+            "description": "The function that the model called."
+          }
+        },
+        "required": [
+          "index",
+          "function"
+        ],
+        "title": "ToolCall",
+        "type": "object",
+        "description": "A tool call generated by the model."
+      },
+      "ChatCompletionLogProbsContent": {
+        "additionalProperties": false,
+        "properties": {
+          "token": {
+            "title": "Token",
+            "type": "string",
+            "description": "The token string."
+          },
+          "logprob": {
+            "default": -9999,
+            "title": "Logprob",
+            "type": "number",
+            "description": "The log probability of the token."
+          },
+          "bytes": {
+            "default": null,
+            "title": "Bytes",
+            "description": "The UTF-8 byte representation of the token.",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "top_logprobs": {
+            "default": null,
+            "title": "Top Logprobs",
+            "description": "List of the most likely tokens and their log probabilities at this position.",
+            "items": {
+              "$ref": "#/components/schemas/ChatCompletionLogProb"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "ChatCompletionLogProbsContent",
+        "type": "object",
+        "description": "Log probability information for a token in the content."
+      },
+      "FunctionCall": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "default": null,
+            "title": "Name",
+            "description": "The name of the function to call.",
+            "type": "string"
+          },
+          "arguments": {
+            "title": "Arguments",
+            "type": "string",
+            "description": "The arguments to call the function with, as a JSON string."
+          }
+        },
+        "required": [
+          "arguments"
+        ],
+        "title": "FunctionCall",
+        "type": "object",
+        "description": "The name and arguments of a function that should be called, as generated by the model."
+      },
+      "ChatCompletionLogProb": {
+        "additionalProperties": false,
+        "properties": {
+          "token": {
+            "title": "Token",
+            "type": "string",
+            "description": "The token string."
+          },
+          "logprob": {
+            "default": -9999,
+            "title": "Logprob",
+            "type": "number",
+            "description": "The log probability of the token."
+          },
+          "bytes": {
+            "default": null,
+            "title": "Bytes",
+            "description": "The UTF-8 byte representation of the token.",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "ChatCompletionLogProb",
+        "type": "object",
+        "description": "Log probability information for a token."
+      }
+    }
+  }
+}

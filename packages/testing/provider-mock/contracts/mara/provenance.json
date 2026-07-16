@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://docs.mara.com/",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "fc1251b4463172f571a1d9e3e23449db4da8157a0e6a6ffa8854c32bf86db4dd",
+  "gatewayPathPrefix": "/v1"
+}

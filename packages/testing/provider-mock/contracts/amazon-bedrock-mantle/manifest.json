@@ -1,0 +1,12 @@
+{
+  "providerId": "amazon-bedrock-mantle",
+  "displayName": "Amazon Bedrock Mantle",
+  "source": {
+    "kind": "official-docs",
+    "url": "https://docs.aws.amazon.com/bedrock/"
+  },
+  "operations": [],
+  "overlays": [
+    "Catalog transport variant; no distinct Phaseo executor is currently registered."
+  ]
+}

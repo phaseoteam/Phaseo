@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://docs.hyperbolic.xyz/docs/getting-started",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "a5f1dd5300c6f1729ecf3f309bb98b0763205bca3d5fb861c019b97c3606acd6",
+  "gatewayPathPrefix": "/v1"
+}

@@ -1,0 +1,40 @@
+{
+  "providerId": "siliconflow",
+  "displayName": "SiliconFlow",
+  "source": {
+    "kind": "official-openapi",
+    "url": "https://docs.siliconflow.com/cn/api-reference/openapi.yaml"
+  },
+  "operations": [
+    {
+      "capability": "chat",
+      "method": "post",
+      "path": "/v1/chat/completions",
+      "operationId": "chat-completions"
+    },
+    {
+      "capability": "embeddings",
+      "method": "post",
+      "path": "/v1/embeddings",
+      "operationId": "createEmbedding"
+    },
+    {
+      "capability": "rerank",
+      "method": "post",
+      "path": "/v1/rerank",
+      "operationId": "createRerank"
+    },
+    {
+      "capability": "messages",
+      "method": "post",
+      "path": "/v1/messages",
+      "operationId": "chat-completions"
+    },
+    {
+      "capability": "models",
+      "method": "get",
+      "path": "/v1/models",
+      "operationId": "Retrieve a list of models."
+    }
+  ]
+}

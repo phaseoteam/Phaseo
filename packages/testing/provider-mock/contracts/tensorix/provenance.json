@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://tensorix.ai/docs",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "30ceb53d0e6565f5e2c0a43b7cc390e7361705b328d3f4964dedf3378b735fff",
+  "gatewayPathPrefix": "/v1"
+}

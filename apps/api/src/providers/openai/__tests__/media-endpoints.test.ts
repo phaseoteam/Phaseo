@@ -68,6 +68,57 @@ const IMAGE_DIMENSION_PRICING_CARD = {
 	],
 } as any;
 
+const GPT_IMAGE_2_TOKEN_PRICING_CARD = {
+	provider: "openai",
+	model: "openai/gpt-image-2",
+	endpoint: "images.generations",
+	effective_from: null,
+	effective_to: null,
+	currency: "USD",
+	version: null,
+	rules: [
+		{
+			meter: "input_text_tokens",
+			unit: "token",
+			unit_size: 1_000_000,
+			price_per_unit: 5,
+			currency: "USD",
+			pricing_plan: "standard",
+			note: null,
+			match: [],
+			priority: 100,
+			effective_from: null,
+			effective_to: null,
+		},
+		{
+			meter: "output_image_tokens",
+			unit: "token",
+			unit_size: 1_000_000,
+			price_per_unit: 32,
+			currency: "USD",
+			pricing_plan: "standard",
+			note: null,
+			match: [],
+			priority: 100,
+			effective_from: null,
+			effective_to: null,
+		},
+		{
+			meter: "input_image_tokens",
+			unit: "token",
+			unit_size: 1_000_000,
+			price_per_unit: 8,
+			currency: "USD",
+			pricing_plan: "standard",
+			note: null,
+			match: [],
+			priority: 100,
+			effective_from: null,
+			effective_to: null,
+		},
+	],
+} as any;
+
 beforeAll(() => {
 	setupTestRuntime();
 });
@@ -172,9 +223,9 @@ describe("OpenAI media endpoints", () => {
 
 		const result = await execImages({
 			endpoint: "images.generations",
-			model: "openai/gpt-image-1-mini",
+			model: "openai/dall-e-3",
 			body: {
-				model: "openai/gpt-image-1-mini",
+				model: "openai/dall-e-3",
 				prompt: "A stylized mountain scene",
 				size: "1024x1024",
 				quality: "high",
@@ -194,6 +245,56 @@ describe("OpenAI media endpoints", () => {
 		expect(result.bill.usage?.output_image).toBe(1);
 		expect(result.bill.usage?.pricing?.lines?.some((line: any) => line.dimension === "output_image")).toBe(true);
 		expect(result.bill.usage?.pricing?.total_nanos).toBe(36_000_000);
+	});
+
+	it("prices GPT Image 2 from image tokens for every documented preset resolution", async () => {
+		const sizes = ["2048x2048", "2048x1152", "3840x2160", "2160x3840"];
+
+		for (const size of sizes) {
+			let capturedBody: any = null;
+			const mock = installFetchMock([
+				{
+					match: (url) => url.includes("/images/generations"),
+					response: jsonResponse({
+						created: 1700000000,
+						data: [{ b64_json: "abc" }],
+						usage: {
+							input_tokens: 10,
+							output_tokens: 6594,
+							total_tokens: 6604,
+							input_tokens_details: { text_tokens: 10 },
+						},
+					}),
+					onRequest: (call) => {
+						capturedBody = call.bodyJson;
+					},
+				},
+			]);
+
+			const result = await execImages({
+				endpoint: "images.generations",
+				model: "openai/gpt-image-2",
+				body: { model: "openai/gpt-image-2", prompt: "A poster", size, quality: "high" },
+				meta: REQUEST_META,
+				workspaceId: "team_test",
+				providerId: "openai",
+				byokMeta: [],
+				pricingCard: GPT_IMAGE_2_TOKEN_PRICING_CARD,
+				providerModelSlug: null,
+				stream: false,
+			} as any);
+
+			mock.restore();
+			expect(capturedBody.size).toBe(size);
+			expect(result.bill.usage?.output_image_tokens).toBe(6594);
+			expect(result.bill.usage?.pricing?.lines).toEqual(
+				expect.arrayContaining([
+					expect.objectContaining({ dimension: "output_image_tokens", line_nanos: 211_008_000 }),
+				]),
+			);
+			expect(result.bill.usage?.pricing?.lines?.some((line: any) => line.dimension === "output_image")).toBe(false);
+			expect(result.bill.usage?.pricing?.total_nanos).toBe(211_058_000);
+		}
 	});
 
 	it("prefers resolved native quality and size when request uses auto defaults", async () => {
@@ -217,9 +318,9 @@ describe("OpenAI media endpoints", () => {
 
 		const result = await execImages({
 			endpoint: "images.generations",
-			model: "openai/gpt-image-1-mini",
+			model: "openai/dall-e-3",
 			body: {
-				model: "openai/gpt-image-1-mini",
+				model: "openai/dall-e-3",
 				prompt: "A posterized night sky",
 				size: "auto",
 				quality: "auto",
@@ -312,6 +413,45 @@ describe("OpenAI media endpoints", () => {
 		expect(outputCompression).toBe("90");
 		expect(moderation).toBe("low");
 		expect(inputFidelity).toBe("high");
+	});
+
+	it("prices GPT Image 2 edits from image tokens", async () => {
+		const mock = installFetchMock([
+			{
+				match: (url) => url.includes("/images/edits"),
+				response: jsonResponse({
+					created: 1700000001,
+					data: [{ b64_json: "xyz" }],
+					usage: {
+						input_tokens: 110,
+						output_tokens: 6594,
+						total_tokens: 6704,
+						input_tokens_details: { text_tokens: 10, image_tokens: 100 },
+					},
+				}),
+			},
+		]);
+
+		const pngData = `data:image/png;base64,${Buffer.from("png").toString("base64")}`;
+		const result = await execImageEdits({
+			endpoint: "images.edits",
+			model: "openai/gpt-image-2",
+			body: { model: "openai/gpt-image-2", image: pngData, prompt: "Make it dusk", size: "2048x1152" },
+			meta: REQUEST_META,
+			workspaceId: "team_test",
+			providerId: "openai",
+			byokMeta: [],
+			pricingCard: { ...GPT_IMAGE_2_TOKEN_PRICING_CARD, endpoint: "images.edits" },
+			providerModelSlug: null,
+			stream: false,
+		} as any);
+
+		mock.restore();
+		expect(result.bill.usage?.input_text_tokens).toBe(10);
+		expect(result.bill.usage?.input_image_tokens).toBe(100);
+		expect(result.bill.usage?.output_image_tokens).toBe(6594);
+		expect(result.bill.usage?.pricing?.lines?.some((line: any) => line.dimension === "output_image")).toBe(false);
+		expect(result.bill.usage?.pricing?.total_nanos).toBe(211_858_000);
 	});
 
 	it("uses OpenAI-native response_format for speech", async () => {

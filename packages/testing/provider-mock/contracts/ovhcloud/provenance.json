@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://help.ovhcloud.com/csm/en-public-cloud-ai-endpoints-openai-compatibility?id=kb_article_view&sysparm_article=KB0065400",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "44b4b490c4158879403f556c67daf962785a05308714463c858779bf1a608f4a",
+  "gatewayPathPrefix": "/v1"
+}

@@ -1,0 +1,73 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "RunwayML compatibility alias inherited provider contract",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/v1/text_to_video": {
+      "post": {
+        "operationId": "runway_text_to_video",
+        "description": "Submit asynchronous Runway text-to-video generation.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "model": {
+                    "type": "string"
+                  },
+                  "promptText": {
+                    "type": "string"
+                  },
+                  "duration": {
+                    "type": "integer"
+                  },
+                  "ratio": {
+                    "type": "string"
+                  },
+                  "seed": {
+                    "type": "integer"
+                  },
+                  "promptImage": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "model",
+                  "promptText"
+                ],
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deterministic mock success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Provider validation error"
+          },
+          "429": {
+            "description": "Provider rate limit"
+          },
+          "500": {
+            "description": "Provider failure"
+          }
+        }
+      }
+    }
+  }
+}

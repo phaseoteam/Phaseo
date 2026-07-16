@@ -1,0 +1,14 @@
+{
+  "api_provider_id": "ambient",
+  "api_provider_name": "Ambient",
+  "description": "OpenAI-compatible and Anthropic-compatible verifiable inference API.",
+  "link": "https://docs.ambient.xyz/API-27ee653486a3808f8393faae8960d0aa",
+  "country_code": "US",
+  "status": "Active",
+  "colour": "#0EA5E9",
+  "privacy_policy_url": null,
+  "terms_of_service_url": null,
+  "prompt_training_policy": "unknown",
+  "prompt_training_notes": null,
+  "prompt_training_source_url": null
+}

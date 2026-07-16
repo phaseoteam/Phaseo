@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://docs.parasail.io/",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "0d23a0bacc38cac73ed6a6cce5df577eb11c84c31bc028e474a70aeabf7a8a40",
+  "gatewayPathPrefix": "/v1"
+}

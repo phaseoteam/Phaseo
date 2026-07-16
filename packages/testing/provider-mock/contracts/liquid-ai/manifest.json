@@ -1,0 +1,20 @@
+{
+  "providerId": "liquid-ai",
+  "displayName": "Liquid AI",
+  "source": {
+    "kind": "official-docs",
+    "url": "https://docs.liquid.ai/api-reference"
+  },
+  "operations": [
+    {
+      "capability": "chat",
+      "method": "post",
+      "path": "/v1/chat/completions",
+      "operationId": "liquid_ai_chat",
+      "notes": "Reconstructed from the provider's documented OpenAI-compatible API surface; provider-specific restrictions belong in overlays."
+    }
+  ],
+  "overlays": [
+    "OpenAI-compatible request schema baseline; narrowed and extended by deterministic provider scenarios as documented behavior is identified."
+  ]
+}
