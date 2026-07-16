@@ -480,6 +480,7 @@ jobs:
             cancel-in-progress: true
         if: >
             github.event_name == 'workflow_dispatch' ||
+            github.event_name == 'merge_group' ||
             (
                 github.event_name == 'pull_request' &&
                 !startsWith(github.head_ref, 'chore/auto-model-statuses') &&
