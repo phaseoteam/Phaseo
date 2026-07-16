@@ -72,7 +72,7 @@ describe("google-ai-studio irToGemini", () => {
 			},
 		} as any);
 
-		expect(request.response_modalities).toEqual(["image"]);
+		expect(request.response_modalities).toBeUndefined();
 		expect(request.generation_config?.thinking_summaries).toBe("none");
 		expect(request.response_format).toEqual({
 			type: "image",
@@ -83,17 +83,21 @@ describe("google-ai-studio irToGemini", () => {
 		});
 	});
 
-	it("defaults Gemini image models to TEXT+IMAGE modalities when caller omits them", async () => {
+	it("uses response_format for default Gemini image output", async () => {
 		const request = await irToGemini({
 			model: "google/gemini-2.5-flash-image",
 			stream: false,
 			messages: [{ role: "user", content: [{ type: "text", text: "draw a blue square" }] }],
 		} as any);
 
-		expect(request.response_modalities).toEqual(["text", "image"]);
+		expect(request.response_modalities).toBeUndefined();
+		expect(request.response_format).toEqual([
+			{ type: "text" },
+			{ type: "image", mime_type: "image/jpeg", delivery: "inline" },
+		]);
 	});
 
-	it("maps audio modality for Gemini responseModalities", async () => {
+	it("uses response_format for multi-modal audio output", async () => {
 		const request = await irToGemini({
 			model: "lyria-3-pro",
 			stream: false,
@@ -101,7 +105,23 @@ describe("google-ai-studio irToGemini", () => {
 			modalities: ["text", "audio"],
 		} as any);
 
-		expect(request.response_modalities).toEqual(["text", "audio"]);
+		expect(request.response_modalities).toBeUndefined();
+		expect(request.response_format).toEqual([
+			{ type: "text" },
+			{ type: "audio", delivery: "inline" },
+		]);
+	});
+
+	it("preserves Google v1 interaction IDs for continuation", async () => {
+		const request = await irToGemini({
+			model: "gemini-3.5-flash",
+			stream: false,
+			previousResponseId: "v1_interaction_123",
+			messages: [{ role: "user", content: [{ type: "text", text: "continue" }] }],
+		} as any);
+
+		expect(request.previous_interaction_id).toBe("v1_interaction_123");
+		expect(request.store).toBe(true);
 	});
 
 	it("maps reasoning.effort to thinkingLevel for Gemini 3.1 image preview", async () => {
@@ -132,8 +152,12 @@ describe("google-ai-studio irToGemini", () => {
 					},
 				} as any);
 
-				expect(request.response_format?.image_size).toBe(size === "0.5K" ? "512" : size);
-				expect(request.response_format?.aspect_ratio).toBe(ratio);
+				const formats = Array.isArray(request.response_format)
+					? request.response_format
+					: [request.response_format];
+				const imageFormat = formats.find((format) => format?.type === "image");
+				expect(imageFormat?.image_size).toBe(size === "0.5K" ? "512" : size);
+				expect(imageFormat?.aspect_ratio).toBe(ratio);
 			}
 		}
 	});

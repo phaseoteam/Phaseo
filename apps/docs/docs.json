@@ -309,6 +309,7 @@
 										"expanded": true,
 										"pages": [
 											"v1/api-reference/endpoint/responses",
+											"v1/api-reference/endpoint/interactions",
 											"v1/api-reference/endpoint/chat-completions",
 											"v1/api-reference/endpoint/anthropic-messages"
 										]

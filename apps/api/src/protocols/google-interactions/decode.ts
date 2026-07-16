@@ -477,7 +477,6 @@ export function decodeGoogleInteractionsRequest(req: InteractionsRequest): IRCha
 		maxTokens: generationConfig.max_output_tokens ?? generationConfig.maxOutputTokens,
 		temperature: generationConfig.temperature,
 		topP: generationConfig.top_p ?? generationConfig.topP,
-		topK: generationConfig.top_k ?? generationConfig.topK,
 		seed: generationConfig.seed,
 		frequencyPenalty: generationConfig.frequency_penalty ?? generationConfig.frequencyPenalty,
 		presencePenalty: generationConfig.presence_penalty ?? generationConfig.presencePenalty,

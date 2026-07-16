@@ -130,7 +130,7 @@ describe("providerSupportsParam", () => {
 					max_output_tokens: 100,
 					thinking_level: "high",
 				},
-				response_modalities: ["text", "image"],
+				response_modalities: "image",
 			}),
 		).toEqual(["modalities", "temperature", "max_tokens", "reasoning"]);
 	});

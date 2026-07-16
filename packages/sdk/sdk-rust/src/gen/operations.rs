@@ -70,6 +70,11 @@ pub fn createImageEdit<T: Transport>(client: &Client<T>, path: &HashMap<String, 
 	client.request("POST", &resolved_path, body)
 }
 
+pub fn createInteraction<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/interactions");
+	client.request("POST", &resolved_path, body)
+}
+
 pub fn createModeration<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/moderations");
 	client.request("POST", &resolved_path, body)
@@ -257,6 +262,16 @@ pub fn listBatches<T: Transport>(client: &Client<T>, path: &HashMap<String, Stri
 
 pub fn listBatchesAlias<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/batch");
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn listBatchFiles<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/batches/files");
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn listBatchFilesAlias<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/batch/files");
 	client.request("GET", &resolved_path, body)
 }
 

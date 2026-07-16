@@ -132,7 +132,6 @@ export function extractRequestedParams(endpoint: Endpoint, rawBody: any): string
 			tool_choice: "tool_choice",
 			temperature: "temperature",
 			top_p: "top_p",
-			top_k: "top_k",
 			max_output_tokens: "max_tokens",
 			stop_sequences: "stop",
 			frequency_penalty: "frequency_penalty",

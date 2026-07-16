@@ -11,7 +11,11 @@ vi.mock("@supabase/supabase-js", () => ({
 
 function buildArgs(
 	overrides?: Partial<IRChatRequest>,
-	options?: { providerModelSlug?: string },
+	options?: {
+		providerModelSlug?: string;
+		endpoint?: "responses" | "interactions";
+		protocol?: "openai.responses" | "google.interactions";
+	},
 ): ExecutorExecuteArgs {
 	const ir: IRChatRequest = {
 		model: "google/gemma-3-27b:free",
@@ -24,8 +28,8 @@ function buildArgs(
 		requestId: "req_google_usage_fallback",
 		workspaceId: "team_test",
 		providerId: "google-ai-studio",
-		endpoint: "responses",
-		protocol: "openai.responses",
+		endpoint: options?.endpoint ?? "responses",
+		protocol: options?.protocol ?? "openai.responses",
 		capability: "text.generate",
 		providerModelSlug: options?.providerModelSlug ?? "gemma-3-27b-it",
 		capabilityParams: null,
@@ -236,5 +240,55 @@ describe("google-ai-studio execute usage fallback", () => {
 			},
 		]);
 		expect(result.ir?.usage?.totalTokens).toBe(1127);
+	});
+
+	it("uses the current Interactions route and preserves streamed lifecycle frames", async () => {
+		const stream = [
+			`data: ${JSON.stringify({
+				event_type: "interaction.created",
+				interaction: { id: "v1_current_stream", object: "interaction", status: "in_progress" },
+			})}`,
+			`data: ${JSON.stringify({
+				event_type: "step.delta",
+				index: 1,
+				delta: { type: "text", text: "streamed current API output" },
+			})}`,
+			`data: ${JSON.stringify({
+				event_type: "interaction.completed",
+				interaction: {
+					id: "v1_current_stream",
+					object: "interaction",
+					status: "completed",
+					usage: { total_input_tokens: 3, total_output_tokens: 4, total_tokens: 7 },
+				},
+			})}`,
+			"data: [DONE]",
+			"",
+		].join("\n\n");
+		const mock = installFetchMock([{
+			match: (url) => url.endsWith("/v1beta/interactions"),
+			response: new Response(stream, {
+				status: 200,
+				headers: { "Content-Type": "text/event-stream" },
+			}),
+		}]);
+
+		const result = await executor(buildArgs(
+			{ stream: true },
+			{ endpoint: "interactions", protocol: "google.interactions" },
+		));
+		mock.restore();
+
+		expect(result.kind).toBe("stream");
+		if (result.kind !== "stream") return;
+		expect(mock.calls).toHaveLength(1);
+		expect(mock.calls[0]?.bodyJson).toMatchObject({
+			model: "gemma-3-27b-it",
+			stream: true,
+		});
+		const output = await new Response(result.stream).text();
+		expect(output).toContain("v1_current_stream");
+		expect(output).toContain("streamed current API output");
+		expect(output).toContain("interaction.completed");
 	});
 });

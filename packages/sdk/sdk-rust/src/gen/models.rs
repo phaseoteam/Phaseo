@@ -777,6 +777,61 @@ pub struct ImagesGenerationResponse {
 	pub data: Option<Vec<HashMap<String, String>>>,
 }
 
+pub struct InteractionContentBlock {
+	pub data: Option<String>,
+	pub mime_type: Option<String>,
+	pub text: Option<String>,
+	pub r#type: String,
+	pub uri: Option<String>,
+}
+
+pub struct InteractionResponse {
+	pub created: Option<i64>,
+	pub id: String,
+	pub model: String,
+	pub object: String,
+	pub output_text: Option<String>,
+	pub status: String,
+	pub steps: Vec<HashMap<String, String>>,
+	pub usage: Option<HashMap<String, String>>,
+}
+
+pub struct InteractionsRequest {
+	pub background: Option<bool>,
+	pub cached_content: Option<String>,
+	pub debug: Option<HashMap<String, String>>,
+	pub echo_upstream_request: Option<bool>,
+	pub generation_config: Option<HashMap<String, String>>,
+	pub input: Option<String>,
+	pub meta: Option<bool>,
+	pub metadata: Option<HashMap<String, String>>,
+	pub model: String,
+	pub previous_interaction_id: Option<String>,
+	pub provider: Option<HashMap<String, String>>,
+	pub response_format: Option<String>,
+	pub response_modalities: Option<String>,
+	pub service_tier: Option<String>,
+	pub session_id: Option<String>,
+	pub store: Option<bool>,
+	pub stream: Option<bool>,
+	pub system_instruction: Option<String>,
+	pub tool_choice: Option<String>,
+	pub tools: Option<Vec<HashMap<String, String>>>,
+}
+
+pub struct InteractionStep {
+	pub arguments: Option<String>,
+	pub call_id: Option<String>,
+	pub content: Option<String>,
+	pub id: Option<String>,
+	pub is_error: Option<bool>,
+	pub name: Option<String>,
+	pub result: Option<String>,
+	pub signature: Option<String>,
+	pub summary: Option<String>,
+	pub r#type: String,
+}
+
 pub struct InvalidRequestResponse {
 	pub error: String,
 	pub max_offset: Option<i64>,

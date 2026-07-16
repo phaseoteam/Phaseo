@@ -309,11 +309,20 @@ export const InteractionsSchema = z.object({
         z.record(z.string(), z.any()),
     ]).optional(),
     system_instruction: z.union([z.string(), z.array(z.any()), z.record(z.string(), z.any())]).optional(),
-    generation_config: z.record(z.string(), z.any()).optional(),
+    generation_config: z.record(z.string(), z.any()).superRefine((config, ctx) => {
+        for (const key of ["top_k", "thinking_budget"]) {
+            if (config[key] === undefined) continue;
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: [key],
+                message: `generation_config.${key} is not supported by the Google Interactions API`,
+            });
+        }
+    }).optional(),
     tools: z.array(z.record(z.string(), z.any())).optional(),
     tool_choice: z.union([z.string(), z.record(z.string(), z.any())]).optional(),
     response_format: z.union([z.record(z.string(), z.any()), z.array(z.record(z.string(), z.any()))]).optional(),
-    response_modalities: z.union([z.string(), z.array(z.string())]).optional(),
+    response_modalities: z.enum(["text", "image", "audio", "video", "document"]).optional(),
     previous_interaction_id: z.string().optional(),
     store: z.boolean().optional(),
     stream: z.boolean().optional(),

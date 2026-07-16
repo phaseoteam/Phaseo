@@ -69,6 +69,11 @@ inline Response CreateImageEdit(Client& client, const std::map<std::string, std:
 	return client.request("POST", resolved_path, body);
 }
 
+inline Response CreateInteraction(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/interactions";
+	return client.request("POST", resolved_path, body);
+}
+
 inline Response CreateModeration(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/moderations";
 	return client.request("POST", resolved_path, body);
@@ -256,6 +261,16 @@ inline Response ListBatches(Client& client, const std::map<std::string, std::str
 
 inline Response ListBatchesAlias(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/batch";
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response ListBatchFiles(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/batches/files";
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response ListBatchFilesAlias(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/batch/files";
 	return client.request("GET", resolved_path, body);
 }
 

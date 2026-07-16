@@ -1,0 +1,27 @@
+---
+title: "Interactions"
+openapi: "POST /interactions"
+description: "Google Interactions-compatible endpoint at /v1/interactions."
+---
+
+`/v1/interactions` accepts Google Interactions-style input and returns Interaction resources.
+
+```bash
+curl https://api.phaseo.app/v1/interactions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "google/gemini-3-flash-preview",
+    "input": "Summarise the benefits of prompt caching.",
+    "generation_config": {
+      "temperature": 0.4,
+      "max_output_tokens": 512,
+      "thinking_level": "medium",
+      "thinking_summaries": "auto"
+    }
+  }'
+```
+
+Set `stream: true` to receive Interaction SSE frames. Continue a stored conversation with the `previous_interaction_id` returned by the preceding interaction.
+
+Use `response_format` for structured JSON, image, or audio output. Multiple output formats are expressed as an array of response-format entries.

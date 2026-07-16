@@ -231,7 +231,6 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 			.filter((mode) => mode === "text" || mode === "image" || mode === "audio");
 		if (mapped.length > 0) {
 			mappedResponseModalities = mapped;
-			request.response_modalities = mapped;
 		}
 	}
 
@@ -267,6 +266,13 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 			type: "audio",
 			delivery: "inline",
 		});
+	}
+	if (
+		mappedResponseModalities.includes("text") &&
+		mappedResponseModalities.some((modality) => modality !== "text") &&
+		!responseFormatEntries.some((entry) => entry?.type === "text")
+	) {
+		responseFormatEntries.unshift({ type: "text" });
 	}
 
 	if (Object.keys(generationConfig).length > 0) {
@@ -410,14 +416,15 @@ function parseToolCallArguments(value: string): Record<string, any> {
 
 function resolvePreviousInteractionId(ir: IRChatRequest): string | undefined {
 	const vendorGoogle = (ir.vendor as any)?.google;
+	const isGoogleInteractionId = (value: unknown): value is string =>
+		typeof value === "string" &&
+		(value.startsWith("v1_") || value.startsWith("interactions/"));
 	const candidates = [
 		vendorGoogle?.previous_interaction_id,
 		vendorGoogle?.previousInteractionId,
 		vendorGoogle?.interaction_id,
 		vendorGoogle?.interactionId,
-		typeof ir.previousResponseId === "string" && ir.previousResponseId.startsWith("interactions/")
-			? ir.previousResponseId
-			: undefined,
+		isGoogleInteractionId(ir.previousResponseId) ? ir.previousResponseId : undefined,
 	];
 	return candidates.find((value): value is string => typeof value === "string" && value.length > 0);
 }
@@ -512,7 +519,8 @@ function isInteractionPayload(json: any): boolean {
 		(
 			Array.isArray(json.steps) ||
 			json.object === "interaction" ||
-			typeof json.id === "string" && json.id.startsWith("interactions/")
+			(typeof json.id === "string" &&
+				(json.id.startsWith("v1_") || json.id.startsWith("interactions/")))
 		),
 	);
 }
@@ -1232,6 +1240,13 @@ export function transformStream(
 	stream: ReadableStream<Uint8Array>,
 	args: ExecutorExecuteArgs,
 ): ReadableStream<Uint8Array> {
+	const protocol = args.protocol ?? (args.endpoint === "responses" ? "openai.responses" : "openai.chat.completions");
+	// Google already emits the requested Interactions stream format. Preserving it
+	// avoids round-tripping protocol frames through OpenAI chat chunks.
+	if (protocol === "google.interactions") {
+		return stream;
+	}
+
 	const reader = stream.getReader();
 	const decoder = new TextDecoder();
 	const encoder = new TextEncoder();
@@ -1664,7 +1679,6 @@ export function transformStream(
 		},
 	});
 
-	const protocol = args.protocol ?? (args.endpoint === "responses" ? "openai.responses" : "openai.chat.completions");
 	if (protocol === "openai.chat.completions") {
 		return openAIStream;
 	}

@@ -79,7 +79,8 @@ function normalizeProtocol(args: StreamEventExtractArgs):
 			args.frame.event_type.startsWith("interaction.") ||
 			args.frame.event_type.startsWith("step.")
 		) ||
-		typeof args.frame?.id === "string" && args.frame.id.startsWith("interactions/")
+		typeof args.frame?.id === "string" &&
+			(args.frame.id.startsWith("v1_") || args.frame.id.startsWith("interactions/"))
 	) {
 		return "google.interactions";
 	}
@@ -695,7 +696,6 @@ function extractGoogleInteractionsEvents(
 				toolCallId: typeof step?.id === "string" ? step.id : undefined,
 				toolName: typeof step?.name === "string" ? step.name : undefined,
 				arguments: googleArgumentsToString(step?.arguments ?? step?.args),
-				choiceIndex: typeof frame?.index === "number" ? frame.index : undefined,
 				payload: frame,
 			});
 		}
@@ -706,7 +706,6 @@ function extractGoogleInteractionsEvents(
 						type: "delta_text",
 						channel: "output_text",
 						text: block.text,
-						choiceIndex: typeof frame?.index === "number" ? frame.index : undefined,
 						payload: frame,
 					});
 					continue;
@@ -716,7 +715,6 @@ function extractGoogleInteractionsEvents(
 					events.push({
 						type: "delta_content_part",
 						part: mediaPart,
-						choiceIndex: typeof frame?.index === "number" ? frame.index : undefined,
 						payload: frame,
 					});
 				}
@@ -733,7 +731,6 @@ function extractGoogleInteractionsEvents(
 				type: "delta_text",
 				channel: "output_text",
 				text: delta.text,
-				choiceIndex: typeof frame?.index === "number" ? frame.index : undefined,
 				payload: frame,
 			});
 			return events;
@@ -745,7 +742,6 @@ function extractGoogleInteractionsEvents(
 					type: "delta_text",
 					channel: "reasoning_text",
 					text,
-					choiceIndex: typeof frame?.index === "number" ? frame.index : undefined,
 					payload: frame,
 				});
 			}
@@ -760,7 +756,6 @@ function extractGoogleInteractionsEvents(
 						: typeof delta?.arguments_delta === "string"
 							? delta.arguments_delta
 							: undefined,
-				choiceIndex: typeof frame?.index === "number" ? frame.index : undefined,
 				payload: frame,
 			});
 			return events;
@@ -770,7 +765,6 @@ function extractGoogleInteractionsEvents(
 			events.push({
 				type: "delta_content_part",
 				part: mediaPart,
-				choiceIndex: typeof frame?.index === "number" ? frame.index : undefined,
 				payload: frame,
 			});
 		}

@@ -81,6 +81,12 @@ module Phaseo
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.createInteraction(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/interactions"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.createModeration(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/moderations"
