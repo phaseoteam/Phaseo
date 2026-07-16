@@ -54,7 +54,7 @@ type GitHubIssueClient = {
 
 const DEFAULT_GITHUB_API_BASE_URL = "https://api.github.com";
 const DEFAULT_GITHUB_REQUEST_TIMEOUT_MS = 30_000;
-const DEFAULT_GITHUB_REPOSITORY = "AI-Stats/AI-Stats";
+const DEFAULT_GITHUB_REPOSITORY = "phaseoteam/Phaseo";
 const DEFAULT_GITHUB_USER_AGENT = "phaseo-gateway-model-discovery";
 
 function toBool(value: string | null | undefined, fallback = false): boolean {

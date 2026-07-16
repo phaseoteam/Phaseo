@@ -11,10 +11,11 @@ concurrency:
 
 env:
     NODE_VERSION: 22
-    MODEL_DISCOVERY_HF_GITHUB_ISSUES: "false"
+    MODEL_DISCOVERY_HF_GITHUB_ISSUES: "true"
 
 permissions:
     contents: read
+    issues: write
 
 jobs:
     huggingface-model-discovery:
@@ -61,6 +62,7 @@ jobs:
                   DISCORD_ROLE_ID: ${{ secrets.DISCORD_ROLE_ID }}
                   DISCORD_USER_ID: ${{ secrets.DISCORD_USER_ID }}
                   HF_TOKEN: ${{ secrets.HF_TOKEN }}
+                  GITHUB_TOKEN: ${{ github.token }}
               run: >
                   pnpm exec tsx scripts/model-discovery/run-hf-private.ts
                   --discord-role-id "${DISCORD_ROLE_ID}"

@@ -259,6 +259,8 @@ export const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "HF_TOKEN",
     "GITHUB_TOKEN",
     "GH_TOKEN",
+    "GITHUB_REPOSITORY",
+    "GITHUB_API_URL",
     "GATEWAY_PUBLIC_BASE_URL",
     "PHASEO_WEB_BASE_URL",
     "PHASEO_OAUTH_PRIVATE_JWK",

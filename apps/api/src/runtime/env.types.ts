@@ -251,6 +251,8 @@ export type GatewayBindings = {
     HF_TOKEN?: string;
     GITHUB_TOKEN?: string;
     GH_TOKEN?: string;
+    GITHUB_REPOSITORY?: string;
+    GITHUB_API_URL?: string;
     GATEWAY_PUBLIC_BASE_URL?: string;
     PHASEO_WEB_BASE_URL?: string;
     PHASEO_OAUTH_PRIVATE_JWK?: string;
