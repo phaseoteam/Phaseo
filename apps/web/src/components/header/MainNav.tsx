@@ -25,7 +25,6 @@ export default function MainNav() {
 					<Link
 						key={href}
 						href={href}
-						prefetch={false}
 						aria-current={isActive ? "page" : undefined}
 						className={cn(
 							"inline-flex h-[var(--site-header-control-h,2.5rem)] items-center whitespace-nowrap rounded-lg px-[var(--site-header-nav-px,0.75rem)] text-[13px] font-medium leading-none xl:text-sm",

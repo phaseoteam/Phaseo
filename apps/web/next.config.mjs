@@ -32,6 +32,7 @@ const nextConfig = {
     ? { allowedDevOrigins: configuredAllowedDevOrigins }
     : {}),
   cacheComponents: true,
+  partialPrefetching: true,
   images: {
     qualities: [75, 90],
   },
