@@ -29613,11 +29613,11 @@
       }
     },
     "../../packages/data/catalog/src/data/models/moonshotai/kimi-k3/model.json": {
-      "hash": "84ac547bb79bc4595cbdb4f5662f8ce7",
+      "hash": "1ee94008acb7883c93f671c4b8059f50",
       "meta": {
         "model_id": "moonshotai/kimi-k3",
         "organisation_id": "moonshotai",
-        "previous_model_id": "moonshotai/kimi-k2.6",
+        "previous_model_id": "moonshotai/kimi-k2.7-code",
         "api_model_id": "moonshotai/kimi-k3",
         "has_page_notice": false
       }
@@ -32712,6 +32712,15 @@
           "windsurf/swe-1-mini",
           "windsurf/swe-grep"
         ]
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/moonshotai/moonshotai-kimi-k3/text.generate/pricing.json": {
+      "hash": "9dec6867c29d1703c8850b3bd2285e3b",
+      "meta": {
+        "api_provider_id": "moonshotai",
+        "capability_id": "text.generate",
+        "model_id": "moonshotai/kimi-k3",
+        "model_key": "moonshotai:moonshotai/kimi-k3:text.generate"
       }
     }
   }
