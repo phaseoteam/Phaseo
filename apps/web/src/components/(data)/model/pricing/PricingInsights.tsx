@@ -725,10 +725,22 @@ export default function PricingInsights({
 				? calculateEffectivePriceSummaryForUsage(usage, matchingRules)
 				: null;
 			const listSections = buildProviderSections(provider, plan);
+			const listInputPrice = buildProviderTablePriceSummary(
+				listSections,
+				"input",
+			).primary;
+			const listOutputPrice = buildProviderTablePriceSummary(
+				listSections,
+				"output",
+			).primary;
 			const listInputPricePer1M =
-				buildProviderTablePriceSummary(listSections, "input").primary?.price ?? null;
+				listInputPrice?.unitLabel === "Per 1M tokens"
+					? listInputPrice.price
+					: null;
 			const listOutputPricePer1M =
-				buildProviderTablePriceSummary(listSections, "output").primary?.price ?? null;
+				listOutputPrice?.unitLabel === "Per 1M tokens"
+					? listOutputPrice.price
+					: null;
 
 			return {
 				providerId,
