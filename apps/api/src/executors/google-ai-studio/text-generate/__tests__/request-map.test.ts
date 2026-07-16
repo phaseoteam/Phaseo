@@ -124,6 +124,27 @@ describe("google-ai-studio irToGemini", () => {
 		expect(request.store).toBe(true);
 	});
 
+	it("forwards current Google interaction request controls", async () => {
+		const request = await irToGemini({
+			model: "gemini-3.5-flash",
+			stream: false,
+			messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
+			vendor: {
+				google: {
+					environment: "environments/test",
+					labels: { cohort: "pro" },
+					safety_settings: [{ category: "harassment", threshold: "block_medium_and_above" }],
+				},
+			},
+		} as any);
+
+		expect(request).toMatchObject({
+			environment: "environments/test",
+			labels: { cohort: "pro" },
+			safety_settings: [{ category: "harassment", threshold: "block_medium_and_above" }],
+		});
+	});
+
 	it("maps reasoning.effort to thinkingLevel for Gemini 3.1 image preview", async () => {
 		const request = await irToGemini({
 			model: "gemini-3.1-flash-image-preview",

@@ -805,8 +805,10 @@ struct InteractionsRequest {
 	std::string cached_content;
 	std::map<std::string, std::any> debug;
 	std::optional<bool> echo_upstream_request;
+	std::any environment;
 	std::map<std::string, std::any> generation_config;
 	std::any input;
+	std::map<std::string, std::any> labels;
 	std::optional<bool> meta;
 	std::map<std::string, std::any> metadata;
 	std::string model;
@@ -814,6 +816,7 @@ struct InteractionsRequest {
 	std::map<std::string, std::any> provider;
 	std::any response_format;
 	std::any response_modalities;
+	std::vector<std::map<std::string, std::any>> safety_settings;
 	std::any service_tier;
 	std::string session_id;
 	std::optional<bool> store;

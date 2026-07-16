@@ -536,6 +536,12 @@ export function presentInteractionUsageForClient(usage: any): any {
         ...(Array.isArray(usage.output_tokens_by_modality)
             ? { output_tokens_by_modality: usage.output_tokens_by_modality }
             : {}),
+        ...(usage.total_tool_use_tokens != null
+            ? { total_tool_use_tokens: usage.total_tool_use_tokens }
+            : {}),
+        ...(usage.server_tool_use != null
+            ? { server_tool_use: usage.server_tool_use }
+            : {}),
         ...(generic?.pricing_breakdown ? { pricing_breakdown: generic.pricing_breakdown } : {}),
     };
 }

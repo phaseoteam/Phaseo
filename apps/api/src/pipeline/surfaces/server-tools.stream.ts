@@ -372,7 +372,7 @@ function buildUnifiedEventsFromGoogleInteractionsPayload(payload: any): UnifiedS
 						type: "delta_text",
 						channel: "output_text",
 						text: block.text,
-						choiceIndex: stepIndex,
+						choiceIndex: 0,
 					});
 					continue;
 				}
@@ -381,7 +381,7 @@ function buildUnifiedEventsFromGoogleInteractionsPayload(payload: any): UnifiedS
 					events.push({
 						type: "delta_content_part",
 						part: mediaPart,
-						choiceIndex: stepIndex,
+						choiceIndex: 0,
 					});
 				}
 			}
@@ -393,7 +393,7 @@ function buildUnifiedEventsFromGoogleInteractionsPayload(payload: any): UnifiedS
 					type: "delta_text",
 					channel: "reasoning_text",
 					text,
-					choiceIndex: stepIndex,
+					choiceIndex: 0,
 				});
 			}
 		}
@@ -406,7 +406,8 @@ function buildUnifiedEventsFromGoogleInteractionsPayload(payload: any): UnifiedS
 					step?.arguments != null
 						? (typeof step.arguments === "string" ? step.arguments : JSON.stringify(step.arguments))
 						: undefined,
-				choiceIndex: stepIndex,
+				choiceIndex: 0,
+				toolIndex: stepIndex,
 			});
 		}
 	}

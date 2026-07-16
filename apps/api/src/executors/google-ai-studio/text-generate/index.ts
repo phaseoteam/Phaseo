@@ -142,6 +142,7 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 	}
 
 	const previousInteractionId = resolvePreviousInteractionId(ir);
+	const vendorGoogle = (ir.vendor as any)?.google;
 	const request: any = {
 		model: modelOverride ?? ir.model,
 		input,
@@ -150,6 +151,15 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 
 	if (ir.googleCachedContent !== undefined) {
 		request.cached_content = ir.googleCachedContent;
+	}
+	if (vendorGoogle?.environment !== undefined) {
+		request.environment = vendorGoogle.environment;
+	}
+	if (vendorGoogle?.labels !== undefined) {
+		request.labels = vendorGoogle.labels;
+	}
+	if (vendorGoogle?.safety_settings !== undefined) {
+		request.safety_settings = vendorGoogle.safety_settings;
 	}
 
 	if (previousInteractionId) {

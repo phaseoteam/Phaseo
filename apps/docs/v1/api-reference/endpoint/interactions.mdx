@@ -4,7 +4,7 @@ openapi: "POST /interactions"
 description: "Google Interactions-compatible endpoint at /v1/interactions."
 ---
 
-`/v1/interactions` accepts Google Interactions-style input and returns Interaction resources.
+`/v1/interactions` accepts model-backed Google Interactions-style input and returns Interaction resources. A `model` and `input` are required. Google managed agents and webhook configuration are not currently available through Phaseo.
 
 ```bash
 curl https://api.phaseo.app/v1/interactions \
@@ -25,3 +25,5 @@ curl https://api.phaseo.app/v1/interactions \
 Set `stream: true` to receive Interaction SSE frames. Continue a stored conversation with the `previous_interaction_id` returned by the preceding interaction.
 
 Use `response_format` for structured JSON, image, or audio output. Multiple output formats are expressed as an array of response-format entries.
+
+`labels`, `safety_settings`, and `environment` are forwarded to Google. Supported service tiers are `standard`, `priority`, and `flex`.

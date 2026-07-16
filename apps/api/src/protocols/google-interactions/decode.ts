@@ -447,6 +447,7 @@ export function decodeGoogleInteractionsRequest(req: InteractionsRequest): IRCha
 
 	const metadata = {
 		...((req as any).metadata ?? {}),
+		...((req as any).labels ?? {}),
 		...(((req as any).user_metadata && typeof (req as any).user_metadata === "object")
 			? Object.fromEntries(
 				Object.entries((req as any).user_metadata)
@@ -465,6 +466,8 @@ export function decodeGoogleInteractionsRequest(req: InteractionsRequest): IRCha
 		"response_modalities",
 		"system_instruction",
 		"environment",
+		"labels",
+		"safety_settings",
 		"user_metadata",
 	]) {
 		if ((req as any)[key] !== undefined) vendorGoogle[key] = (req as any)[key];

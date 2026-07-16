@@ -307,7 +307,7 @@ export const InteractionsSchema = z.object({
         z.string(),
         z.array(z.any()),
         z.record(z.string(), z.any()),
-    ]).optional(),
+    ]),
     system_instruction: z.union([z.string(), z.array(z.any()), z.record(z.string(), z.any())]).optional(),
     generation_config: z.record(z.string(), z.any()).superRefine((config, ctx) => {
         for (const key of ["top_k", "thinking_budget"]) {
@@ -327,9 +327,11 @@ export const InteractionsSchema = z.object({
     store: z.boolean().optional(),
     stream: z.boolean().optional(),
     background: z.boolean().optional(),
-    service_tier: ServiceTierSchema.optional(),
+    service_tier: z.enum(["standard", "priority", "flex"]).optional(),
     cached_content: z.string().optional(),
     environment: z.union([z.string(), z.record(z.string(), z.any())]).optional(),
+    labels: z.record(z.string(), z.string()).optional(),
+    safety_settings: z.array(z.record(z.string(), z.any())).optional(),
     metadata: z.record(z.string(), z.string()).optional(),
     user_metadata: z.record(z.string(), z.any()).optional(),
     usage: z.boolean().optional(),
@@ -340,7 +342,16 @@ export const InteractionsSchema = z.object({
     debug: DebugOptionsSchema,
     beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
-}).passthrough();
+}).passthrough().superRefine((request, ctx) => {
+    for (const key of ["agent", "agent_config", "webhook_config"]) {
+        if ((request as Record<string, unknown>)[key] === undefined) continue;
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [key],
+            message: `${key} is not supported by Phaseo's model-backed Interactions endpoint`,
+        });
+    }
+});
 export type InteractionsRequest = z.infer<typeof InteractionsSchema>;
 
 // Embeddings schema

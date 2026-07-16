@@ -9,6 +9,11 @@ export interface InteractionsRequest {
     trace_level?: "summary" | "full";
   };
   echo_upstream_request?: boolean;
+  environment?:
+    | string
+    | {
+        [key: string]: unknown;
+      };
   generation_config?: {
     max_output_tokens?: number;
     seed?: number;
@@ -19,7 +24,7 @@ export interface InteractionsRequest {
     top_p?: number;
     [key: string]: unknown;
   };
-  input?:
+  input:
     | string
     | {
         data?: string;
@@ -79,6 +84,9 @@ export interface InteractionsRequest {
     | {
         [key: string]: unknown;
       };
+  labels?: {
+    [key: string]: string;
+  };
   meta?: boolean;
   metadata?: {
     [key: string]: string;
@@ -130,7 +138,10 @@ export interface InteractionsRequest {
         [key: string]: unknown;
       }[];
   response_modalities?: "text" | "image" | "audio" | "video" | "document";
-  service_tier?: "standard" | "priority" | "flex" | "batch";
+  safety_settings?: {
+    [key: string]: unknown;
+  }[];
+  service_tier?: "standard" | "priority" | "flex";
   session_id?: string;
   store?: boolean;
   stream?: boolean;

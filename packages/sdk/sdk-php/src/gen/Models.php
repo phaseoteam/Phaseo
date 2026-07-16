@@ -1435,10 +1435,14 @@ class InteractionsRequest
 	public $debug;
 	/** @var bool|null */
 	public $echo_upstream_request;
+	/** @var string|array<string, mixed>|null */
+	public $environment;
 	/** @var array<string, mixed>|null */
 	public $generation_config;
-	/** @var string|array|array<string, mixed>|null */
+	/** @var string|array|array<string, mixed> */
 	public $input;
+	/** @var array<string, mixed>|null */
+	public $labels;
 	/** @var bool|null */
 	public $meta;
 	/** @var array<string, mixed>|null */
@@ -1453,6 +1457,8 @@ class InteractionsRequest
 	public $response_format;
 	/** @var string|null */
 	public $response_modalities;
+	/** @var array|null */
+	public $safety_settings;
 	/** @var string|null */
 	public $service_tier;
 	/** @var string|null */

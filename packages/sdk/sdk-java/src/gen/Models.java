@@ -805,8 +805,10 @@ public final class Models {
 		public String cached_content;
 		public Object debug;
 		public Boolean echo_upstream_request;
+		public Object environment;
 		public Object generation_config;
 		public Object input;
+		public Object labels;
 		public Boolean meta;
 		public Object metadata;
 		public String model;
@@ -814,6 +816,7 @@ public final class Models {
 		public Object provider;
 		public Object response_format;
 		public Object response_modalities;
+		public java.util.List<Object> safety_settings;
 		public Object service_tier;
 		public String session_id;
 		public Boolean store;

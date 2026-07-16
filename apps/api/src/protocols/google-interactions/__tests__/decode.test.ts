@@ -54,7 +54,9 @@ describe("decodeGoogleInteractionsRequest", () => {
 				{ type: "text", mime_type: "application/json", schema: { type: "object" } },
 				{ type: "image", image_size: "512", aspect_ratio: "1:1" },
 			],
-			response_modalities: ["text", "image"],
+			response_modalities: "image",
+			labels: { cohort: "pro" },
+			safety_settings: [{ category: "harassment", threshold: "block_medium_and_above" }],
 			previous_interaction_id: "interactions/prev",
 			stream: true,
 		} as any);
@@ -73,12 +75,16 @@ describe("decodeGoogleInteractionsRequest", () => {
 			type: "json_schema",
 			schema: { type: "object" },
 		});
-		expect(ir.modalities).toEqual(["text", "image"]);
+		expect(ir.modalities).toEqual(["image"]);
 		expect(ir.imageConfig).toEqual({
 			aspectRatio: "1:1",
 			imageSize: "0.5K",
 		});
 		expect(ir.previousResponseId).toBe("interactions/prev");
+		expect(ir.metadata).toMatchObject({ cohort: "pro" });
+		expect((ir.vendor as any)?.google?.safety_settings).toEqual([
+			{ category: "harassment", threshold: "block_medium_and_above" },
+		]);
 		expect(ir.tools?.[0]).toMatchObject({
 			name: "lookup",
 			description: "Lookup data",

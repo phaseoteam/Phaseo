@@ -2874,6 +2874,11 @@ export type CreateInteractionParams = {
       trace_level?: "summary" | "full";
     };
     echo_upstream_request?: boolean;
+    environment?:
+      | string
+      | {
+          [key: string]: unknown;
+        };
     generation_config?: {
       max_output_tokens?: number;
       seed?: number;
@@ -2884,7 +2889,7 @@ export type CreateInteractionParams = {
       top_p?: number;
       [key: string]: unknown;
     };
-    input?:
+    input:
       | string
       | {
           data?: string;
@@ -2944,6 +2949,9 @@ export type CreateInteractionParams = {
       | {
           [key: string]: unknown;
         };
+    labels?: {
+      [key: string]: string;
+    };
     meta?: boolean;
     metadata?: {
       [key: string]: string;
@@ -2995,7 +3003,10 @@ export type CreateInteractionParams = {
           [key: string]: unknown;
         }[];
     response_modalities?: "text" | "image" | "audio" | "video" | "document";
-    service_tier?: "standard" | "priority" | "flex" | "batch";
+    safety_settings?: {
+      [key: string]: unknown;
+    }[];
+    service_tier?: "standard" | "priority" | "flex";
     session_id?: string;
     store?: boolean;
     stream?: boolean;
@@ -3022,7 +3033,7 @@ export type CreateInteractionParams = {
 };
 
 /**
- * Creates a response using the Google Interactions-compatible API.
+ * Creates a model-backed response using the Google Interactions-compatible API. Google managed agents and webhook configuration are not supported.
  */
 export async function createInteraction(
   client: Client,

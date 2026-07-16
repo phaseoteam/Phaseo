@@ -1431,8 +1431,10 @@ type InteractionsRequest struct {
 	CachedContent *string `json:"cached_content,omitempty"`
 	Debug *map[string]interface{} `json:"debug,omitempty"`
 	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
+	Environment interface{} `json:"environment,omitempty"`
 	GenerationConfig *map[string]interface{} `json:"generation_config,omitempty"`
-	Input interface{} `json:"input,omitempty"`
+	Input interface{} `json:"input"`
+	Labels *map[string]interface{} `json:"labels,omitempty"`
 	Meta *bool `json:"meta,omitempty"`
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 	Model string `json:"model"`
@@ -1440,6 +1442,7 @@ type InteractionsRequest struct {
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 	ResponseFormat interface{} `json:"response_format,omitempty"`
 	ResponseModalities *string `json:"response_modalities,omitempty"`
+	SafetySettings *[]map[string]interface{} `json:"safety_settings,omitempty"`
 	ServiceTier *string `json:"service_tier,omitempty"`
 	SessionId *string `json:"session_id,omitempty"`
 	Store *bool `json:"store,omitempty"`

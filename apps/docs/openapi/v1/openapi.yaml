@@ -562,7 +562,9 @@ paths:
         - Gateway
       operationId: createInteraction
       summary: Create interaction
-      description: Creates a response using the Google Interactions-compatible API.
+      description: >-
+        Creates a model-backed response using the Google Interactions-compatible
+        API. Google managed agents and webhook configuration are not supported.
       requestBody:
         required: true
         content:
@@ -4881,6 +4883,7 @@ components:
       type: object
       required:
         - model
+        - input
       properties:
         model:
           type: string
@@ -4971,9 +4974,22 @@ components:
             - standard
             - priority
             - flex
-            - batch
         cached_content:
           type: string
+        environment:
+          oneOf:
+            - type: string
+            - type: object
+              additionalProperties: true
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+        safety_settings:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
         metadata:
           type: object
           additionalProperties:

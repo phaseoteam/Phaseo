@@ -1187,10 +1187,14 @@ module Phaseo
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] echo_upstream_request
     #   @return [Boolean, nil]
+    # @!attribute [rw] environment
+    #   @return [String, Hash{String => Object}, nil]
     # @!attribute [rw] generation_config
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] input
-    #   @return [String, Array<Hash{String => Object}>, Hash{String => Object}, nil]
+    #   @return [String, Array<Hash{String => Object}>, Hash{String => Object}]
+    # @!attribute [rw] labels
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] meta
     #   @return [Boolean, nil]
     # @!attribute [rw] metadata
@@ -1205,6 +1209,8 @@ module Phaseo
     #   @return [Hash{String => Object}, Array<Hash{String => Object}>, nil]
     # @!attribute [rw] response_modalities
     #   @return [String, nil]
+    # @!attribute [rw] safety_settings
+    #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] service_tier
     #   @return [String, nil]
     # @!attribute [rw] session_id
@@ -1219,7 +1225,7 @@ module Phaseo
     #   @return [String, Hash{String => Object}, nil]
     # @!attribute [rw] tools
     #   @return [Array<Hash{String => Object}>, nil]
-    InteractionsRequest = Struct.new(:background, :cached_content, :debug, :echo_upstream_request, :generation_config, :input, :meta, :metadata, :model, :previous_interaction_id, :provider, :response_format, :response_modalities, :service_tier, :session_id, :store, :stream, :system_instruction, :tool_choice, :tools, keyword_init: true)
+    InteractionsRequest = Struct.new(:background, :cached_content, :debug, :echo_upstream_request, :environment, :generation_config, :input, :labels, :meta, :metadata, :model, :previous_interaction_id, :provider, :response_format, :response_modalities, :safety_settings, :service_tier, :session_id, :store, :stream, :system_instruction, :tool_choice, :tools, keyword_init: true)
     # @!attribute [rw] arguments
     #   @return [String, Hash{String => Object}, nil]
     # @!attribute [rw] call_id

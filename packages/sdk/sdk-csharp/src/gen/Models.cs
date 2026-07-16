@@ -1988,11 +1988,17 @@ public sealed class InteractionsRequest
 	[JsonPropertyName("echo_upstream_request")]
 	public bool? EchoUpstreamRequest { get; set; }
 
+	[JsonPropertyName("environment")]
+	public object? Environment { get; set; }
+
 	[JsonPropertyName("generation_config")]
 	public Dictionary<string, object>? GenerationConfig { get; set; }
 
 	[JsonPropertyName("input")]
-	public object? Input { get; set; }
+	public object Input { get; set; }
+
+	[JsonPropertyName("labels")]
+	public Dictionary<string, object>? Labels { get; set; }
 
 	[JsonPropertyName("meta")]
 	public bool? Meta { get; set; }
@@ -2014,6 +2020,9 @@ public sealed class InteractionsRequest
 
 	[JsonPropertyName("response_modalities")]
 	public string? ResponseModalities { get; set; }
+
+	[JsonPropertyName("safety_settings")]
+	public List<Dictionary<string, object>>? SafetySettings { get; set; }
 
 	[JsonPropertyName("service_tier")]
 	public string? ServiceTier { get; set; }

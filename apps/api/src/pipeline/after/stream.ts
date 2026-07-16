@@ -381,13 +381,16 @@ export async function handleStreamResponse(
             const matchedTimingFrame =
                 next?.object === "chat.completion" ||
                 next?.object === "response" ||
+                next?.object === "interaction" ||
                 next?.response?.object === "response" ||
                 next?.response?.object === "chat.completion" ||
+                next?.interaction?.object === "interaction" ||
                 next?.type === "message_delta" ||
                 next?.type === "message_stop";
             const timingUsage =
                 next.usage ??
                 next.response?.usage ??
+                next.interaction?.usage ??
                 next.message?.usage ??
                 (next?.type === "message_stop" ? latestStreamUsageRaw : null) ??
                 null;
@@ -432,12 +435,12 @@ export async function handleStreamResponse(
             }
             if (
                 shouldAttachRoutingDiagnostics(ctx) &&
-                (next?.usage || next?.response?.usage || next?.object === "chat.completion" || next?.object === "response")
+                (next?.usage || next?.response?.usage || next?.interaction?.usage || next?.object === "chat.completion" || next?.object === "response" || next?.object === "interaction")
             ) {
                 next.routing_diagnostics = (ctx as any).routingDiagnostics ?? null;
             }
             if (ctx.meta?.echoUpstreamRequest && result.mappedRequest) {
-                if (next.usage || next.response?.usage || next.object === "chat.completion" || next.object === "response") {
+                if (next.usage || next.response?.usage || next.interaction?.usage || next.object === "chat.completion" || next.object === "response" || next.object === "interaction") {
                     next.upstream_request = result.mappedRequest;
                 }
             }
@@ -445,6 +448,8 @@ export async function handleStreamResponse(
                 latestStreamUsageRaw = stripUsagePricing(next.usage);
             } else if (next.response?.usage) {
                 latestStreamUsageRaw = stripUsagePricing(next.response.usage);
+            } else if (next.interaction?.usage) {
+                latestStreamUsageRaw = stripUsagePricing(next.interaction.usage);
             }
             return next;
         },
