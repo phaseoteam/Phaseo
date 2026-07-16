@@ -118,6 +118,33 @@ describe("generationsRoutes", () => {
 		expect(isGatewayIoLoggingFeatureEnabledMock).not.toHaveBeenCalled();
 	});
 
+	it("does not expose raw generation payloads to activity-only credentials", async () => {
+		authenticateMock.mockResolvedValue({
+			ok: true,
+			workspaceId: "ws_test",
+			apiKeyId: "key_test",
+			apiKeyRef: "key_test",
+			apiKeyKid: "kid_test",
+			scopes: ["activity:read"],
+		});
+		getSupabaseAdminMock.mockReturnValue(buildSupabaseMock({
+			requestData: { request_id: "gen_123", status_code: 200 },
+			ioLogData: {
+				io_log_status: "stored",
+				io_log_object_key: "private/ws_test/gen_123.json",
+			},
+		}));
+
+		const response = await generationsRoutes.request("https://example.com/?id=gen_123");
+		const body = await response.json() as Record<string, unknown>;
+
+		expect(response.status).toBe(200);
+		expect(body.io_log).toBeNull();
+		expect(body.replay_request).toBeNull();
+		expect(readGatewayIoLogObjectMock).not.toHaveBeenCalled();
+		expect(isGatewayIoLoggingFeatureEnabledMock).not.toHaveBeenCalled();
+	});
+
 	it("returns raw I/O logs only with an explicit log-read capability", async () => {
 		authenticateMock.mockResolvedValue({
 			ok: true,

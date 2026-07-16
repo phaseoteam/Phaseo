@@ -10,14 +10,12 @@ with ranked_spacexai_keys as (
     row_number() over (
       partition by workspace_id
       order by
-        -- Preserve the key the workspace is actually using before preferring
-        -- the canonical spelling. Provider ids are normalized below.
+        case when lower(btrim(provider_id)) = 'spacex-ai' then 0 else 1 end,
         always_use desc,
         enabled desc,
         last_verified_at desc nulls last,
         last_used_at desc nulls last,
         created_at desc,
-        case when lower(btrim(provider_id)) = 'spacex-ai' then 0 else 1 end,
         case lower(btrim(provider_id)) when 'x-ai' then 0 when 'xai' then 1 else 2 end,
         id
     ) as keep_rank

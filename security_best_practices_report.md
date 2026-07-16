@@ -21,7 +21,7 @@ No open GitHub secret-scanning alerts were present. This review does not prove t
 | Medium | Webhook validation misses IPv4-mapped IPv6 | Fixed here for mapped, compatible, canonical hexadecimal, and NAT64 representations, including DNS answers. |
 | Medium | Rebrand drops legacy key-cache invalidation | Already fixed on `main` with legacy binding support and immediate local invalidation. |
 | Medium | Meta `web_search_options` injects arbitrary tools | Fixed here with an allowlist and server-owned tool/location types. |
-| Medium | SpaceXAI BYOK migration can delete the active legacy key | Fixed for future database rebuilds by ranking active/always-use keys before provider spelling. A read-only production check found no SpaceXAI/xAI BYOK rows requiring recovery. |
+| Medium | SpaceXAI BYOK migration can delete the active legacy key | Fixed for existing and fresh environments. The original applied migration remains immutable; a new locked, idempotent corrective migration ranks active/always-use keys before provider spelling and then normalizes the keeper. A read-only production check found no SpaceXAI/xAI BYOK rows requiring recovery. |
 | Medium | API-model route exposes hidden model metadata | Fixed here by applying hidden-model visibility checks after provider/API-model resolution. |
 | Low | Passkey management no longer checks the administrator role | Fixed here. The server-rendered account page exposes passkey management only when the viewer is an administrator and the rollout flag is enabled, and post-ceremony passkey sign-in enforces the same server-side policy before retaining the session. All four authorization combinations are covered by tests. |
 | Informational | Tinker and Baseten pricing mismatches, OpenAI Pro-mode metadata, pricing expiry placement, and provider discovery errors | Reviewed; these are catalog/availability correctness findings and do not create a security boundary bypass. |
@@ -72,6 +72,7 @@ Both migrations were executed against the linked production schema inside explic
 3. **The repository has an accepted single-maintainer review exception.** Main still requires PRs and status checks through an active ruleset. A mandatory non-author approval is not feasible while there is only one maintainer, so that governance setting was intentionally left unchanged.
 4. **Webhook DNS rebinding remains a bounded defense-in-depth concern.** Delivery requires HTTPS, rejects private/local literals and private DNS answers immediately before use, disallows redirects, and runs in a Worker with no VPC/private-network binding. Cloudflare's `global_fetch_strictly_public` flag only controls same-zone routing and `resolveOverride` cannot pin arbitrary third-party origins. Fully eliminating the remaining DNS time-of-check/time-of-use window would require a managed egress policy or an outbound proxy that pins the validated destination; adding a VPC binding without such a deny policy would increase rather than reduce exposure.
 5. The dashboard now shows 12 open findings. Seven have verified fixes only in this branch and remain open until merge and scanner confirmation; the other five are informational catalog/availability observations. Five findings whose fixes are already on `main` were closed as already fixed during this review.
+6. **Linked Supabase migration history needs reconciliation before deployment.** A linked dry run reports 17 older local migration files missing from the remote history table and refuses the normal push. Do not use `--include-all` blindly; reconcile which migrations are already represented in production, repair history deliberately, then apply the three new security migrations.
 
 ## Validation performed
 
@@ -92,6 +93,7 @@ Both migrations were executed against the linked production schema inside explic
 - Devtools viewer production build passed on the patched Vite version.
 - Root and isolated scanner frozen-lock installs passed.
 - The guarded `pg_net` relocation passed against the linked production schema inside `BEGIN`/`ROLLBACK`; production remained on its original extension namespace with empty request/response queues after the test.
+- A linked Supabase dry run discovered the pre-existing migration-history gap described above; no migration was applied.
 - Targeted ESLint completed with no errors; existing warnings remain.
 - `git diff --check` passed.
 

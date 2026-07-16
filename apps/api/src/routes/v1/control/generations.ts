@@ -15,7 +15,7 @@ import { json, withRuntime } from "../../utils";
 function canReadGenerationIoLog(auth: AuthSuccess): boolean {
 	if (auth.internal) return true;
 	const scopes = new Set([...(auth.scopes ?? []), ...(auth.oauthScopes ?? [])]);
-	return scopes.has(CAPABILITIES.GENERATIONS_READ) || scopes.has(CAPABILITIES.ACTIVITY_READ);
+	return scopes.has(CAPABILITIES.GENERATIONS_READ);
 }
 
 function resolveReplayRequest(value: unknown): Record<string, unknown> | null {
