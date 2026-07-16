@@ -71,6 +71,11 @@ public final class Operations {
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
+	public static Object createInteraction(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/interactions";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
 	public static Object createModeration(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/moderations";
 		return client.request("POST", resolvedPath, query, headers, body);
