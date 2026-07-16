@@ -31,7 +31,11 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Logo } from "@/components/Logo";
-import { fmtUSD } from "@/components/(data)/model/pricing/pricingHelpers";
+import {
+	buildProviderSections,
+	buildProviderTablePriceSummary,
+	fmtUSD,
+} from "@/components/(data)/model/pricing/pricingHelpers";
 import { assignSeriesColours, keyForSeries } from "@/components/(rankings)/chart-colors";
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import type { ModelPricingHistoryRule } from "@/lib/fetchers/models/getModelPricingHistoryRules";
@@ -720,6 +724,23 @@ export default function PricingInsights({
 			const effectivePrices = usage
 				? calculateEffectivePriceSummaryForUsage(usage, matchingRules)
 				: null;
+			const listSections = buildProviderSections(provider, plan);
+			const listInputPrice = buildProviderTablePriceSummary(
+				listSections,
+				"input",
+			).primary;
+			const listOutputPrice = buildProviderTablePriceSummary(
+				listSections,
+				"output",
+			).primary;
+			const listInputPricePer1M =
+				listInputPrice?.unitLabel === "Per 1M tokens"
+					? listInputPrice.price
+					: null;
+			const listOutputPricePer1M =
+				listOutputPrice?.unitLabel === "Per 1M tokens"
+					? listOutputPrice.price
+					: null;
 
 			return {
 				providerId,
@@ -727,8 +748,10 @@ export default function PricingInsights({
 				logoProviderId,
 				seriesKey: keyForSeries(providerId),
 				color: providerColours[providerId]?.stroke ?? "hsl(210 70% 55%)",
-				inputPricePer1M: effectivePrices?.weightedInputPricePer1M ?? null,
-				outputPricePer1M: effectivePrices?.weightedOutputPricePer1M ?? null,
+				inputPricePer1M:
+					effectivePrices?.weightedInputPricePer1M ?? listInputPricePer1M,
+				outputPricePer1M:
+					effectivePrices?.weightedOutputPricePer1M ?? listOutputPricePer1M,
 				cacheHitRatePct:
 					usage && usage.inputWeightTokens30d > 0
 						? (usage.cachedReadInputTokens30d / usage.inputWeightTokens30d) * 100
@@ -742,7 +765,7 @@ export default function PricingInsights({
 				outputWeightTokens30d: usage?.outputWeightTokens30d ?? 0,
 			} satisfies EffectiveRow;
 		});
-	}, [filteredHistoryRules, providerColours, providers, usageByProvider]);
+	}, [filteredHistoryRules, plan, providerColours, providers, usageByProvider]);
 
 	const effectiveSummary = useMemo(() => {
 		let inputCostUsd = 0;
@@ -870,7 +893,8 @@ export default function PricingInsights({
 				<div className="space-y-1">
 					<h3 className="text-sm font-medium text-foreground">Effective pricing</h3>
 					<p className="text-xs text-muted-foreground">
-						Weighted by routed usage over the last 30 days.
+						Weighted by routed usage over the last 30 days; provider list prices are shown
+						until usage is available.
 					</p>
 				</div>
 				{!showPlanInEffectiveHeader && availablePlans.length > 1 && onPlanChange ? (
