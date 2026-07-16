@@ -109,4 +109,48 @@ describe("pricing engine aggregate token meters", () => {
 		expect(result.lines.find((line) => line.dimension === "output_text_tokens")?.quantity).toBe(75);
 		expect(result.lines.find((line) => line.dimension === "output_reasoning_tokens")?.quantity).toBe(25);
 	});
+
+	it("bills reasoning tokens exactly once when they are included in output tokens", () => {
+		const openAICard: PriceCard = {
+			provider: "openai",
+			model: "openai/gpt-5.6-sol",
+			endpoint: "text.generate",
+			effective_from: null,
+			effective_to: null,
+			currency: "USD",
+			version: null,
+			rules: [
+				{
+					id: "openai-output",
+					pricing_plan: "standard",
+					meter: "output_text_tokens",
+					unit: "token",
+					unit_size: 1_000_000,
+					price_per_unit: "30",
+					currency: "USD",
+					match: [],
+					priority: 100,
+				},
+			],
+		};
+
+		const result = computeBillSummary(
+			{
+				output_tokens: 100,
+				output_text_tokens: 100,
+				reasoning_tokens: 80,
+			},
+			openAICard,
+			{},
+			"standard",
+		);
+
+		expect(result.lines).toHaveLength(1);
+		expect(result.lines[0]).toMatchObject({
+			dimension: "output_text_tokens",
+			quantity: 100,
+			line_cost_usd: "0.003000000",
+		});
+		expect(result.cost_usd_str).toBe("0.003000000");
+	});
 });

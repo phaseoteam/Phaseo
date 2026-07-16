@@ -1,8 +1,8 @@
 {
-  "key": "baseten:thinkingmachines/inkling:text.generate",
+  "key": "baseten:thinking-machines/inkling:text.generate",
   "api_provider_id": "baseten",
   "provider_slug": "baseten",
-  "api_model_id": "thinkingmachines/inkling",
+  "api_model_id": "thinking-machines/inkling",
   "capability_id": "text.generate",
   "rules": [
     {
