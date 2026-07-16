@@ -214,6 +214,7 @@ type ConfiguredProviderModelRow = {
 type RunStatus = "completed" | "completed_with_errors" | "failed";
 
 const DISCOVERY_TIMEOUT_MS = 30_000;
+const ABANDONED_RUN_AFTER_MS = 20 * 60 * 1000;
 const DEFAULT_RETENTION_DAYS = 7;
 export const DEFAULT_MODEL_DISCOVERY_SHARD_SIZE = 20;
 export const MAX_MODEL_DISCOVERY_SHARD_SIZE = 25;
@@ -307,6 +308,24 @@ async function insertRunStart(runId: string, args: RunArgs, startedAt: string): 
 		started_at: startedAt,
 	});
 	if (error) throw new Error(error.message || "Failed to insert model discovery run row");
+}
+
+async function failAbandonedRuns(startedAt: Date): Promise<void> {
+	const cutoff = new Date(startedAt.getTime() - ABANDONED_RUN_AFTER_MS).toISOString();
+	const finishedAt = startedAt.toISOString();
+	const supabase = getSupabaseAdmin();
+	const { error } = await supabase
+		.from("model_discovery_runs")
+		.update({
+			status: "failed",
+			finished_at: finishedAt,
+			error: "Scheduled invocation ended before model discovery could finalize",
+		})
+		.eq("status", "running")
+		.lt("started_at", cutoff);
+	if (error) {
+		throw new Error(error.message || "Failed to mark abandoned model discovery runs");
+	}
 }
 
 function compactSummary(summary: DiscoveryRunSummary, extra: { notificationError?: string | null; error?: string | null } = {}): Record<string, unknown> {
@@ -582,6 +601,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 	const pricingEnabled = toBool(readBindingEnv(["PRICING_MONITOR_ENABLED"]) ?? "true", true);
 	const pricingExecuted = pricingEnabled && shouldRunPricingMonitor(args);
 
+	await failAbandonedRuns(startedAt);
 	await insertRunStart(runId, args, startedAt.toISOString());
 
 	try {

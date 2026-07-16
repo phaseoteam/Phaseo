@@ -13,7 +13,6 @@ import {
 } from "@/pipeline/model-discovery";
 import { runAsyncWebhookRetriesJob } from "@/core/async-notifications";
 import { runBatchReconciliationJob } from "@/pipeline/batch-reconciliation";
-import { drainEmailOutbox } from "@/pipeline/notifications/email-outbox";
 import { runVideoReconciliationJob } from "@/pipeline/video-reconciliation";
 import { runGatewayIoRetentionBillingJob } from "@/pipeline/audit/io-retention-billing";
 
@@ -214,26 +213,6 @@ async function handleAsyncWebhookRetriesScheduledEvent(_event: ScheduledControll
 	}
 }
 
-async function handleEmailOutboxScheduledEvent(_event: ScheduledController, env: GatewayBindings): Promise<void> {
-	if (!toBool(env.EMAIL_OUTBOX_DRAIN_ENABLED, true)) {
-		return;
-	}
-	if (!env.RESEND_API_KEY?.trim()) {
-		return;
-	}
-
-	const limit = toInt(env.EMAIL_OUTBOX_DRAIN_LIMIT, 25);
-	configureRuntime(env);
-	try {
-		const summary = await drainEmailOutbox(limit);
-		if (summary.processed > 0 || summary.failed > 0) {
-			console.log("email_outbox_drain_completed", summary);
-		}
-	} finally {
-		clearRuntime();
-	}
-}
-
 async function handleGatewayIoRetentionBillingScheduledEvent(
 	event: ScheduledController,
 	env: GatewayBindings,
@@ -283,6 +262,16 @@ async function handleOAuthCleanupScheduledEvent(env: GatewayBindings): Promise<v
 }
 
 export async function handleScheduledEvent(event: ScheduledController, env: GatewayBindings): Promise<void> {
+	// Model discovery is the time-sensitive job on this shared cron. Run it before
+	// reconciliation and cleanup work so an unrelated job cannot consume the
+	// invocation's CPU budget before provider polling starts.
+	if (isModelDiscoveryTick(event)) {
+		try {
+			await handleModelDiscoveryScheduledEvent(event, env);
+		} catch (error) {
+			console.error("model_discovery_scheduled_failed", serializeError(error));
+		}
+	}
 	if (isDailyRetentionBillingTick(event)) {
 		try {
 			await handleGatewayIoRetentionBillingScheduledEvent(event, env);
@@ -295,11 +284,6 @@ export async function handleScheduledEvent(event: ScheduledController, env: Gate
 			await handleOAuthCleanupScheduledEvent(env);
 		} catch (error) {
 			console.error("oauth_cleanup_scheduled_failed", serializeError(error));
-		}
-		try {
-			await handleEmailOutboxScheduledEvent(event, env);
-		} catch (error) {
-			console.error("email_outbox_scheduled_failed", serializeError(error));
 		}
 		try {
 			await handleAsyncWebhookRetriesScheduledEvent(event, env);
@@ -315,13 +299,6 @@ export async function handleScheduledEvent(event: ScheduledController, env: Gate
 			await handleBatchReconciliationScheduledEvent(event, env);
 		} catch (error) {
 			console.error("batch_reconciliation_scheduled_failed", serializeError(error));
-		}
-	}
-	if (isModelDiscoveryTick(event)) {
-		try {
-			await handleModelDiscoveryScheduledEvent(event, env);
-		} catch (error) {
-			console.error("model_discovery_scheduled_failed", serializeError(error));
 		}
 	}
 }

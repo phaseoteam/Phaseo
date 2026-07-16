@@ -5,7 +5,6 @@ const configureRuntimeMock = vi.fn();
 const runAsyncWebhookRetriesJobMock = vi.fn();
 const runBatchReconciliationJobMock = vi.fn();
 const runVideoReconciliationJobMock = vi.fn();
-const drainEmailOutboxMock = vi.fn();
 const runModelDiscoveryJobMock = vi.fn();
 const oauthCleanupRpcMock = vi.fn();
 const runGatewayIoRetentionBillingJobMock = vi.fn();
@@ -26,10 +25,6 @@ vi.mock("@/pipeline/batch-reconciliation", () => ({
 
 vi.mock("@/pipeline/video-reconciliation", () => ({
 	runVideoReconciliationJob: (...args: unknown[]) => runVideoReconciliationJobMock(...args),
-}));
-
-vi.mock("@/pipeline/notifications/email-outbox", () => ({
-	drainEmailOutbox: (...args: unknown[]) => drainEmailOutboxMock(...args),
 }));
 
 vi.mock("@/pipeline/model-discovery", () => ({
@@ -61,7 +56,6 @@ describe("handleScheduledEvent", () => {
 		runAsyncWebhookRetriesJobMock.mockReset();
 		runBatchReconciliationJobMock.mockReset();
 		runVideoReconciliationJobMock.mockReset();
-		drainEmailOutboxMock.mockReset();
 		runModelDiscoveryJobMock.mockReset();
 		oauthCleanupRpcMock.mockReset();
 		runGatewayIoRetentionBillingJobMock.mockReset();
@@ -77,7 +71,6 @@ describe("handleScheduledEvent", () => {
 		});
 		runBatchReconciliationJobMock.mockResolvedValue({});
 		runVideoReconciliationJobMock.mockResolvedValue({});
-		drainEmailOutboxMock.mockResolvedValue({ processed: 0, failed: 0 });
 		runModelDiscoveryJobMock.mockResolvedValue({});
 		runGatewayIoRetentionBillingJobMock.mockResolvedValue({
 			processed: 0,
@@ -128,8 +121,19 @@ describe("handleScheduledEvent", () => {
 		expect(runVideoReconciliationJobMock).not.toHaveBeenCalled();
 	});
 
+	it("prioritizes model discovery before core jobs when both are due", async () => {
+		await handleScheduledEvent(scheduledEventAt("2026-06-10T00:15:00.000Z"), {} as any);
+
+		expect(runModelDiscoveryJobMock).toHaveBeenCalledOnce();
+		expect(runAsyncWebhookRetriesJobMock).toHaveBeenCalledOnce();
+		expect(runModelDiscoveryJobMock.mock.invocationCallOrder[0]).toBeLessThan(
+			runAsyncWebhookRetriesJobMock.mock.invocationCallOrder[0]!,
+		);
+	});
+
 	it("runs I/O retention billing on the daily billing tick", async () => {
 		const env = {
+			GATEWAY_IO_RETENTION_BILLING_ENABLED: "true",
 			GATEWAY_IO_RETENTION_BILLING_LIMIT: "12",
 			GATEWAY_IO_RETENTION_GRACE_DAYS: "9",
 			GATEWAY_IO_RETENTION_PRICE_PER_MILLION_UNITS_NANOS: "7000000000",
