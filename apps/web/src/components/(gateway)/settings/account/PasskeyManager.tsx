@@ -3,6 +3,11 @@
 import * as React from "react";
 import { KeyRound, Loader2, LogIn, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import {
+	deletePasskeyAction,
+	startPasskeyRegistrationAction,
+	verifyPasskeyRegistrationAction,
+} from "@/app/(dashboard)/settings/account/actions";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -15,9 +20,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-	hasRecentInteractiveAuthentication,
-	hasRecentSignIn,
-} from "@/lib/auth/method";
+	parsePasskeyCreationOptions,
+	serializePasskeyRegistrationCredential,
+} from "@/lib/auth/passkeyWebAuthn";
 import { createClient } from "@/utils/supabase/client";
 
 type Passkey = {
@@ -65,24 +70,42 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 		};
 	}, [load]);
 
-	async function executeAction(action: PendingPasskeyAction) {
-		const supabase = createClient();
+	async function executeAction(
+		action: PendingPasskeyAction,
+		password?: string,
+	) {
 		if (action.type === "register") {
-			const { error } = await supabase.auth.registerPasskey();
-			if (error) throw error;
+			const startResult = await startPasskeyRegistrationAction(password);
+			if (!startResult.ok) return startResult;
+
+			const publicKey = parsePasskeyCreationOptions(startResult.data.options);
+			const credential = await navigator.credentials.create({ publicKey });
+			if (!(credential instanceof PublicKeyCredential)) {
+				throw new Error("Passkey registration was cancelled");
+			}
+
+			const verifyResult = await verifyPasskeyRegistrationAction(
+				startResult.data.challengeId,
+				serializePasskeyRegistrationCredential(credential),
+				password,
+			);
+			if (!verifyResult.ok) return verifyResult;
+
 			toast.success("Passkey added");
 			await load();
-			return;
+			return verifyResult;
 		}
 
-		const { error } = await supabase.auth.passkey.delete({
-			passkeyId: action.passkeyId,
-		});
-		if (error) throw error;
+		const deleteResult = await deletePasskeyAction(
+			action.passkeyId,
+			password,
+		);
+		if (!deleteResult.ok) return deleteResult;
 		setPasskeys((items) =>
 			items.filter((item) => item.id !== action.passkeyId),
 		);
 		toast.success("Passkey removed");
+		return deleteResult;
 	}
 
 	function requestAction(action: PendingPasskeyAction) {
@@ -102,36 +125,21 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 
 		setPending(true);
 		try {
-			const supabase = createClient();
-			const { data: userData, error: userError } =
-				await supabase.auth.getUser();
-			const user = userData.user;
-			if (userError || !user) throw new Error("Your session has expired");
-
-			if (hasPassword) {
-				if (!user.email) throw new Error("No sign-in email is available");
-				const { data, error } = await supabase.auth.signInWithPassword({
-					email: user.email,
-					password: currentPassword,
-				});
-				if (error || data.user?.id !== user.id) {
-					throw new Error("Current password is incorrect");
-				}
-			} else {
-				const { data: claimsData, error: claimsError } =
-					await supabase.auth.getClaims();
-				const recentAuthentication =
-					!claimsError &&
-					(hasRecentInteractiveAuthentication(
-						claimsData?.claims as Record<string, unknown> | undefined,
-					) || hasRecentSignIn(user.last_sign_in_at));
-				if (!recentAuthentication) {
+			const result = await executeAction(
+				requestedAction,
+				hasPassword ? currentPassword : undefined,
+			);
+			if (!result.ok) {
+				if (
+					result.code === "fresh_sign_in_required" ||
+					result.code === "not_authenticated"
+				) {
 					setFreshSignInRequired(true);
 					return;
 				}
+				throw new Error(result.message);
 			}
 
-			await executeAction(requestedAction);
 			setReauthOpen(false);
 			setRequestedAction(null);
 			setCurrentPassword("");

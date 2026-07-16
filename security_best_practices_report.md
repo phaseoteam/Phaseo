@@ -23,7 +23,7 @@ No open GitHub secret-scanning alerts were present. This review does not prove t
 | Medium | Meta `web_search_options` injects arbitrary tools | Fixed here with an allowlist and server-owned tool/location types. |
 | Medium | SpaceXAI BYOK migration can delete the active legacy key | Fixed for existing and fresh environments. The original applied migration remains immutable; a new locked, idempotent corrective migration ranks active/always-use keys before provider spelling and then normalizes the keeper. A read-only production check found no SpaceXAI/xAI BYOK rows requiring recovery. |
 | Medium | API-model route exposes hidden model metadata | Fixed here by applying hidden-model visibility checks after provider/API-model resolution. |
-| Medium | Passkey enrollment exposed without reauthentication | Fixed in the follow-up branch. Password-backed accounts must re-enter their current password before adding or deleting a passkey. Passwordless, social, SSO, and existing-passkey accounts require an interactive sign-in no more than five minutes old; token refreshes do not satisfy the check. |
+| Medium | Passkey enrollment exposed without reauthentication | Fixed in the follow-up branch. Passkey registration start/verify and deletion now run through server actions that enforce step-up authentication. Password-backed accounts must re-enter their current password; passwordless, social, SSO, and existing-passkey accounts require an interactive sign-in no more than five minutes old. Token refreshes do not satisfy the check. |
 | Low | Passkey management no longer checks the administrator role | Superseded by the intentional general-availability release on `main`. Passkeys are personal account credentials, not workspace administration; the temporary admin-only rollout gate has been removed consistently from enrollment, management, and sign-in. Supabase Auth scopes passkey operations to the authenticated user. |
 | Informational | Tinker and Baseten pricing mismatches, OpenAI Pro-mode metadata, pricing expiry placement, and provider discovery errors | Reviewed; these are catalog/availability correctness findings and do not create a security boundary bypass. |
 
@@ -39,7 +39,7 @@ No open GitHub secret-scanning alerts were present. This review does not prove t
 - Removed OAuth E2E result details from stdout; detailed results remain in the sanitized report.
 - Removed exception messages and stack fields from gateway and route responses, including debug mode and pricing cron results.
 - Reconciled the temporary passkey admin-beta gate with the subsequent general-availability release so enrollment, management, and sign-in use one consistent account-level policy.
-- Added step-up authentication before passkey enrollment or deletion: current-password verification for password accounts and a five-minute interactive-authentication window for passwordless accounts.
+- Moved passkey registration start/verify and deletion behind server actions with step-up authentication: current-password verification for password accounts and a five-minute interactive-authentication window for passwordless accounts.
 - Rejected prototype-pollution path segments in both pricing simulator implementations.
 - Replaced backtracking OpenAPI path-template parsing with a linear scanner and escaped generated literals/parameter keys across C++, C#, Go, Java, PHP, Python, Ruby, Rust, and TypeScript backends.
 
@@ -75,14 +75,15 @@ Both migrations were executed against the linked production schema inside explic
 4. **Webhook DNS rebinding remains a bounded defense-in-depth concern.** Delivery requires HTTPS, rejects private/local literals and private DNS answers immediately before use, disallows redirects, and runs in a Worker with no VPC/private-network binding. Cloudflare's `global_fetch_strictly_public` flag only controls same-zone routing and `resolveOverride` cannot pin arbitrary third-party origins. Fully eliminating the remaining DNS time-of-check/time-of-use window would require a managed egress policy or an outbound proxy that pins the validated destination; adding a VPC binding without such a deny policy would increase rather than reduce exposure.
 5. The dashboard now shows six open findings. The passkey reauthentication finding has a verified fix in this follow-up branch and remains open until merge; the other five are informational catalog/availability observations rather than security boundary bypasses.
 6. **Linked Supabase migration history needs reconciliation before deployment.** A linked dry run reports 17 older local migration files missing from the remote history table and refuses the normal push. Do not use `--include-all` blindly; reconcile which migrations are already represented in production, repair history deliberately, then apply the three new security migrations.
+7. **Supabase's experimental passkey API still accepts a valid project session at its public Auth endpoint.** Phaseo's management UI now routes registration verification and deletion through server actions with step-up authentication, but a holder of a raw Supabase session can address the hosted Auth endpoint directly. Full provider-level enforcement requires native Supabase support for recent-authentication/AAL requirements on passkey mutations or placing the entire Auth surface behind an enforcing proxy. Keep the upstream experimental API under review.
 
 ## Validation performed
 
 - API security regression suite: 49 tests passed.
 - Targeted webhook URL and delivery regression suite: 12 tests passed.
 - Web security regression suite: 5 tests passed.
-- Passkey recent-authentication regression suite: 5 tests passed.
-- Full web regression suite after the general-availability merge: 79 suites and 342 tests passed.
+- Passkey server-action and recent-authentication regression suites: 11 tests passed.
+- Full web regression suite after the passkey step-up remediation: 82 suites and 353 tests passed.
 - CI secret-boundary regression suite: 2 tests passed, and the live workflow validation passed.
 - Python devtools tests: 9 passed.
 - API and web TypeScript checks passed (web after Next route type generation).
