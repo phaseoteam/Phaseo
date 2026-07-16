@@ -27,6 +27,17 @@ describe("MODEL_DISCOVERY_PROVIDERS", () => {
 		expect(providerIds.has("google-vertex-eu")).toBe(true);
 	});
 
+	it("accepts the production secret aliases for GMICloud and Nebius", () => {
+		const providers = new Map(
+			MODEL_DISCOVERY_PROVIDERS.map((provider) => [provider.providerId, provider]),
+		);
+
+		expect(providers.get("gmicloud")?.apiKeyEnv).toContain("GMI_CLOUD_API_KEY");
+		expect(providers.get("nebius-token-factory")?.apiKeyEnv).toContain(
+			"NEBIUS_TOKEN_FACTORY_API_KEY",
+		);
+	});
+
 	it("does not include known alias-only provider ids", () => {
 		const providerIds = new Set(MODEL_DISCOVERY_PROVIDERS.map((provider) => provider.providerId));
 

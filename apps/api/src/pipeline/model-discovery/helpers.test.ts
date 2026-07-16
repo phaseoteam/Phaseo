@@ -1,5 +1,5 @@
 import { afterAll, afterEach, describe, expect, it } from "vitest";
-import { buildDiscordMessage, extractDiscoveredModels, extractProviderApiModelSnapshot, fetchProviderModels, resolveProviderModelsEndpoint } from "./helpers";
+import { buildDiscordMessage, extractDiscoveredModels, extractProviderApiModelSnapshot, fetchProviderModels, formatPricingSample, pricingRuleIdentity, resolveProviderModelsEndpoint, summarizePricingChanges } from "./helpers";
 import { installFetchMock, jsonResponse } from "../../../tests/helpers/mock-fetch";
 import { setupRuntimeFromEnv, teardownTestRuntime } from "../../../tests/helpers/runtime";
 
@@ -213,5 +213,28 @@ describe("buildDiscordMessage", () => {
 			providerApiPricing: { updatesDetected: 1, providerChanges: [{ providerId: "deepinfra", updates: 1, samples: ["model | price changed"] }] },
 			configuredModelCoverage: { updatesDetected: 0, providerChanges: [] },
 		} as any)).toBe("");
+	});
+});
+
+describe("pricing monitor schema", () => {
+	it("uses model_key rows from the current pricing table", () => {
+		const row = {
+			rule_id: null,
+			model_key: "openai:gpt-5:chat.completions",
+			capability_id: "chat.completions",
+			pricing_plan: "standard",
+			meter: "input_text_tokens",
+			price_per_unit: "0.000001",
+			currency: "USD",
+			effective_from: null,
+			effective_to: null,
+			updated_at: "2026-07-16T00:00:00.000Z",
+		};
+
+		expect(pricingRuleIdentity(row)).toContain("openai:gpt-5:chat.completions");
+		expect(formatPricingSample(row)).toContain("openai:gpt-5:chat.completions");
+		expect(summarizePricingChanges([row])).toMatchObject([
+			{ providerId: "openai", updates: 1 },
+		]);
 	});
 });

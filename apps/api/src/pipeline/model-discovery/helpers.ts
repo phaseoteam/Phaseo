@@ -40,8 +40,7 @@ type ProviderApiModelSnapshot = {
 
 type PricingRuleRow = {
 	rule_id: string | null;
-	provider_id: string | null;
-	api_model_id: string | null;
+	model_key: string | null;
 	capability_id: string | null;
 	pricing_plan: string | null;
 	meter: string | null;
@@ -402,8 +401,7 @@ export function normalizePrice(value: number | string | null): string {
 export function pricingRuleIdentity(row: PricingRuleRow): string {
 	if (row.rule_id && row.rule_id.trim()) return row.rule_id.trim();
 	return [
-		safeId(row.provider_id),
-		safeId(row.api_model_id),
+		safeId(row.model_key),
 		safeId(row.capability_id),
 		safeId(row.pricing_plan),
 		safeId(row.meter),
@@ -426,7 +424,7 @@ export function isSameTimestamp(a: string, b: string): boolean {
 }
 
 export function formatPricingSample(row: PricingRuleRow): string {
-	const model = safeId(row.api_model_id);
+	const model = safeId(row.model_key);
 	const capability = safeId(row.capability_id);
 	const plan = safeId(row.pricing_plan);
 	const meter = safeId(row.meter);
@@ -943,7 +941,7 @@ export async function fetchPricingRuleIdsAtTimestamp(updatedAt: string): Promise
 		const to = from + PRICING_PAGE_SIZE - 1;
 		const { data, error } = await supabase
 			.from("data_api_pricing_rules")
-			.select("rule_id,provider_id,api_model_id,capability_id,pricing_plan,meter,price_per_unit,currency,effective_from,effective_to,updated_at")
+			.select("rule_id,model_key,capability_id,pricing_plan,meter,price_per_unit,currency,effective_from,effective_to,updated_at")
 			.eq("updated_at", updatedAt)
 			.order("rule_id", { ascending: true })
 			.range(from, to);
@@ -966,7 +964,7 @@ export async function fetchPricingRowsSince(sinceInclusive: string): Promise<Pri
 		const to = from + PRICING_PAGE_SIZE - 1;
 		const { data, error } = await supabase
 			.from("data_api_pricing_rules")
-			.select("rule_id,provider_id,api_model_id,capability_id,pricing_plan,meter,price_per_unit,currency,effective_from,effective_to,updated_at")
+			.select("rule_id,model_key,capability_id,pricing_plan,meter,price_per_unit,currency,effective_from,effective_to,updated_at")
 			.gte("updated_at", sinceInclusive)
 			.order("updated_at", { ascending: true })
 			.range(from, to);
@@ -1066,7 +1064,7 @@ export function summarizeMissingConfiguredProviderModels(args: {
 export function summarizePricingChanges(rows: PricingRuleRow[]): PricingProviderChange[] {
 	const providerMap = new Map<string, PricingProviderChange>();
 	for (const row of rows) {
-		const providerId = safeId(row.provider_id);
+		const providerId = safeId(row.model_key).split(":")[0] || "?";
 		const existing = providerMap.get(providerId) ?? { providerId, updates: 0, samples: [] };
 		existing.updates += 1;
 		if (existing.samples.length < MAX_PRICING_SAMPLE_LINES) {
@@ -1247,8 +1245,8 @@ export function hasDiscordNotifiableChanges(args: {
 	);
 }
 
-const PRIVATE_MODEL_DISCOVERY_USERNAME = "Phaseo Private Model Discovery";
-const PRIVATE_MODEL_DISCOVERY_AVATAR_URL = "https://phaseo.app/png_logo_dark.png";
+const PRIVATE_MODEL_DISCOVERY_USERNAME = "Phaseo New Models (Internal)";
+const PRIVATE_MODEL_DISCOVERY_AVATAR_URL = "https://phaseo.app/png_logo_light.png";
 
 export function buildDiscordMessage(args: {
 	modelChanges: ProviderChange[];
