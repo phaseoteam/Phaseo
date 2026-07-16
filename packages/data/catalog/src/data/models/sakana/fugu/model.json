@@ -2,7 +2,7 @@
   "model_id": "sakana/fugu",
   "organisation_id": "sakana",
   "name": "Fugu",
-  "status": "Coming Soon",
+  "status": "Available",
   "previous_model_id": null,
   "description": "Fugu is Sakana AI's multi-agent orchestration model for everyday coding, code review, research, and interactive work, balancing answer quality with lower latency through a single OpenAI-compatible API.",
   "announced_date": "2026-06-22T00:00:00",
