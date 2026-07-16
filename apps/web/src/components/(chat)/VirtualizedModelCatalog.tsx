@@ -22,6 +22,7 @@ export function buildVirtualizedModelCatalogRows<T>(
 	getItemKey: (item: T) => string,
 ): VirtualizedModelCatalogRow<T>[] {
 	return sections.flatMap((section) => {
+		if (section.items.length === 0) return [];
 		const rows: VirtualizedModelCatalogRow<T>[] = [];
 		if (section.separatorBefore) {
 			rows.push({ type: "separator", key: `${section.key}-separator` });
@@ -105,7 +106,7 @@ export function VirtualizedModelCatalog<T>({
 			className="max-h-[70vh]"
 			viewportClassName="p-3"
 			viewportRef={setScrollViewport}
-			style={{ height: `min(70vh, ${virtualizer.getTotalSize()}px)` }}
+			style={{ height: `min(70vh, ${virtualizer.getTotalSize() + 24}px)` }}
 		>
 			<div
 				role="listbox"

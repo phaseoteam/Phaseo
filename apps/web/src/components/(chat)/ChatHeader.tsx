@@ -536,24 +536,6 @@ export function ChatHeader({
 		}));
 		return [...activeSections, ...comingSoonSections];
 	}, [favoriteActiveOptions, groupedActiveOptions, groupedComingSoonOptions]);
-	const selectableBrowseModelOptions = useMemo(
-		() => [
-			...favoriteActiveOptions,
-			...groupedActiveOptions.flatMap((group) => group.items),
-		],
-		[favoriteActiveOptions, groupedActiveOptions],
-	);
-	const resolvedActiveBrowseModelId = useMemo(() => {
-		if (
-			activeBrowseModelId &&
-			selectableBrowseModelOptions.some(
-				(option) => option.modelId === activeBrowseModelId,
-			)
-		) {
-			return activeBrowseModelId;
-		}
-		return selectableBrowseModelOptions[0]?.modelId ?? null;
-	}, [activeBrowseModelId, selectableBrowseModelOptions]);
 	const allModelOptions = useMemo(
 		() => [
 			...filteredActive,
@@ -691,6 +673,48 @@ export function ChatHeader({
 		(!requiredCapability ||
 			getModelCapabilities(modelId).includes(requiredCapability)) &&
 		(!requireAudioInput || supportsModelAudioInput(modelId));
+	const selectableBrowseModelOptions = useMemo(() => {
+		const seenModelIds = new Set<string>();
+		return [
+			...favoriteActiveOptions,
+			...groupedActiveOptions.flatMap((group) => group.items),
+		].filter((option) => {
+			const capabilityEndpoints =
+				modelCapabilitiesById?.[option.modelId] ?? ["responses"];
+			const capabilityCompatible =
+				(!requiredCapability ||
+					capabilityEndpoints.includes(requiredCapability)) &&
+				(!requireAudioInput ||
+					modelSupportsAudioInputById?.[option.modelId] === true);
+			if (
+				seenModelIds.has(option.modelId) ||
+				option.gatewayStatus === "inactive" ||
+				!capabilityCompatible
+			) {
+				return false;
+			}
+			seenModelIds.add(option.modelId);
+			return true;
+		});
+	}, [
+		favoriteActiveOptions,
+		groupedActiveOptions,
+		modelCapabilitiesById,
+		modelSupportsAudioInputById,
+		requireAudioInput,
+		requiredCapability,
+	]);
+	const resolvedActiveBrowseModelId = useMemo(() => {
+		if (
+			activeBrowseModelId &&
+			selectableBrowseModelOptions.some(
+				(option) => option.modelId === activeBrowseModelId,
+			)
+		) {
+			return activeBrowseModelId;
+		}
+		return selectableBrowseModelOptions[0]?.modelId ?? null;
+	}, [activeBrowseModelId, selectableBrowseModelOptions]);
 	const getIncompatibleCapabilityLabel = (modelId: string) => {
 		if (requireAudioInput && !supportsModelAudioInput(modelId)) {
 			return "Audio input";

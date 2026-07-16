@@ -794,6 +794,8 @@ function ChatPlaygroundContent({
 		async (modelId: string, settings: ChatSettings) => {
 			setError(null);
 			const previousActiveId = activeId;
+			const previousTemporaryMode = temporaryMode;
+			const previousTemporaryThread = temporaryThread;
 			const id = generateId();
 			const createdAt = nowIso();
 			const normalizedSettings =
@@ -829,6 +831,10 @@ function ChatPlaygroundContent({
 				await upsertChat(newThread, "text");
 			} catch (error) {
 				setThreads((prev) => prev.filter((thread) => thread.id !== id));
+				if (previousTemporaryMode && previousTemporaryThread) {
+					setTemporaryMode(true);
+					setTemporaryThread(previousTemporaryThread);
+				}
 				setActiveId((current) =>
 					current === id ? previousActiveId : current,
 				);
@@ -848,7 +854,12 @@ function ChatPlaygroundContent({
 				throw error;
 			}
 		},
-		[activeId, setActiveThread],
+		[
+			activeId,
+			setActiveThread,
+			temporaryMode,
+			temporaryThread,
+		],
 	);
 
 	const createThread = useCallback(async () => {

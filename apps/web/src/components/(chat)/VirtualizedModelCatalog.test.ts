@@ -30,4 +30,20 @@ describe("buildVirtualizedModelCatalogRows", () => {
 			},
 		]);
 	});
+
+	it("omits empty sections and their separators", () => {
+		const rows = buildVirtualizedModelCatalogRows(
+			[
+				{
+					key: "empty",
+					heading: "Coming soon",
+					items: [],
+					separatorBefore: true,
+				},
+			],
+			(item: { modelId: string }) => item.modelId,
+		);
+
+		expect(rows).toEqual([]);
+	});
 });
