@@ -4,6 +4,13 @@ on:
     push:
         branches:
             - main
+    workflow_dispatch:
+        inputs:
+            send_test_notification:
+                description: Send a public Discord formatting test instead of running discovery
+                required: false
+                default: true
+                type: boolean
 
 concurrency:
     group: check-internal-models
@@ -43,10 +50,18 @@ jobs:
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
 
+            - name: Send public Discord formatting test
+              if: github.event_name == 'workflow_dispatch' && inputs.send_test_notification
+              env:
+                  DISCORD_ROLE_ID: "1377690778478055584"
+              run: pnpm exec tsx scripts/model-discovery/send-public-discord-test.ts
+
             - name: Ensure state directory exists
+              if: github.event_name != 'workflow_dispatch' || !inputs.send_test_notification
               run: mkdir -p scripts/model-discovery/state
 
             - name: Restore internal model state cache
+              if: github.event_name != 'workflow_dispatch' || !inputs.send_test_notification
               id: internal-model-state-cache
               uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
               with:
@@ -56,6 +71,7 @@ jobs:
                       internal-model-state-${{ github.ref_name }}-
 
             - name: Check for internal models
+              if: github.event_name != 'workflow_dispatch' || !inputs.send_test_notification
               run: |
                   pnpm exec tsx scripts/model-discovery/run-internal-public.ts \
                     --discord-role-id "1377690778478055584" \
@@ -63,7 +79,7 @@ jobs:
                     --skip-hf
 
             - name: Save internal model state cache
-              if: always()
+              if: always() && (github.event_name != 'workflow_dispatch' || !inputs.send_test_notification)
               uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
               with:
                   path: scripts/model-discovery/state
