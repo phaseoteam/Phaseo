@@ -3,7 +3,6 @@ import { Suspense } from "react";
 import { Login } from "@/components/(gateway)/auth/Login";
 import { AuthWordmark } from "@/components/(gateway)/auth/AuthWordmark";
 import { sanitizeReturnUrl } from "@/lib/auth/return-url";
-import { passkeysAdminBetaFlag } from "@/lib/flags";
 import { AuthSuspenseFallback } from "../AuthSuspenseFallback";
 
 type SignInPageProps = {
@@ -41,7 +40,6 @@ async function SignInPageContent({ searchParams }: SignInPageProps) {
 		"/",
 	);
 	const returnUrl = sanitizedReturnUrl === "/" ? undefined : sanitizedReturnUrl;
-	const showPasskeySignIn = await passkeysAdminBetaFlag();
 
 	return (
 		<div className="min-h-svh">
@@ -54,7 +52,6 @@ async function SignInPageContent({ searchParams }: SignInPageProps) {
 						signupNotice={signupNotice}
 						authError={authError}
 						returnUrl={returnUrl}
-						showPasskeySignIn={showPasskeySignIn}
 					/>
 				</div>
 			</div>
