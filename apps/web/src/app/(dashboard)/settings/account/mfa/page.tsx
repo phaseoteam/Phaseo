@@ -35,6 +35,7 @@ async function AccountMFAContent() {
 
 	return (
 		<AccountMFAClient
+			hasPassword={initialData.hasPassword}
 			mfaEnabled={initialData.mfaEnabled}
 			mfaFactorId={initialData.mfaFactorId}
 		/>
