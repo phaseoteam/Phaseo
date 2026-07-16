@@ -727,14 +727,20 @@ function ChatPlaygroundContent({
 			]);
 			const normalized = await ensureInitialThread(chats);
 			if (!mounted) return;
-			setThreads(normalized);
+			setThreads((current) => {
+				const currentIds = new Set(current.map((thread) => thread.id));
+				return [
+					...current,
+					...normalized.filter((thread) => !currentIds.has(thread.id)),
+				];
+			});
 			setChatTags(storedTags.sort(compareChatTags));
 
 			const initialId =
 				storedActive && normalized.some((t) => t.id === storedActive)
 					? storedActive
 					: (normalized[0]?.id ?? null);
-			setActiveId(initialId);
+			setActiveId((current) => current ?? initialId);
 		})();
 		return () => {
 			mounted = false;
