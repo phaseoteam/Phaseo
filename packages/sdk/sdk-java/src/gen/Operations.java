@@ -131,11 +131,6 @@ public final class Operations {
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
-	public static Object createWebhookEndpoint(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/webhook-endpoints";
-		return client.request("POST", resolvedPath, query, headers, body);
-	}
-
 	public static Object createWorkspace(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/workspaces";
 		return client.request("POST", resolvedPath, query, headers, body);
@@ -153,11 +148,6 @@ public final class Operations {
 
 	public static Object deleteVideoAlias(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/video/generations/" + (path != null && path.containsKey("video_id") ? path.get("video_id") : "");
-		return client.request("DELETE", resolvedPath, query, headers, body);
-	}
-
-	public static Object deleteWebhookEndpoint(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/webhook-endpoints/" + (path != null && path.containsKey("endpoint_id") ? path.get("endpoint_id") : "");
 		return client.request("DELETE", resolvedPath, query, headers, body);
 	}
 
@@ -246,11 +236,6 @@ public final class Operations {
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
-	public static Object getWebhookEndpoint(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/webhook-endpoints/" + (path != null && path.containsKey("endpoint_id") ? path.get("endpoint_id") : "");
-		return client.request("GET", resolvedPath, query, headers, body);
-	}
-
 	public static Object getWorkspace(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/workspaces/" + (path != null && path.containsKey("id") ? path.get("id") : "");
 		return client.request("GET", resolvedPath, query, headers, body);
@@ -268,6 +253,36 @@ public final class Operations {
 
 	public static Object listBatchCapabilitiesAlias(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/batch/capabilities";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object listBatches(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/batches";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object listBatchesAlias(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/batch";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object listBatchFiles(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/batches/files";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object listBatchFilesAlias(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/batch/files";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object listBatchModels(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/batches/models";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object listBatchModelsAlias(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/batch/models";
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
@@ -341,13 +356,13 @@ public final class Operations {
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
-	public static Object listWebhookEndpoints(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/webhook-endpoints";
+	public static Object listWorkspaces(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/workspaces";
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
-	public static Object listWorkspaces(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/workspaces";
+	public static Object openAsyncJobWebSocket(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/async/" + (path != null && path.containsKey("kind") ? path.get("kind") : "") + "/" + (path != null && path.containsKey("id") ? path.get("id") : "") + "/ws";
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
@@ -391,18 +406,8 @@ public final class Operations {
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
-	public static Object rotateWebhookEndpointSecret(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/webhook-endpoints/" + (path != null && path.containsKey("endpoint_id") ? path.get("endpoint_id") : "") + "/rotate-secret";
-		return client.request("POST", resolvedPath, query, headers, body);
-	}
-
 	public static Object updateApiKey(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/keys/" + (path != null && path.containsKey("id") ? path.get("id") : "");
-		return client.request("PATCH", resolvedPath, query, headers, body);
-	}
-
-	public static Object updateWebhookEndpoint(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/webhook-endpoints/" + (path != null && path.containsKey("endpoint_id") ? path.get("endpoint_id") : "");
 		return client.request("PATCH", resolvedPath, query, headers, body);
 	}
 
