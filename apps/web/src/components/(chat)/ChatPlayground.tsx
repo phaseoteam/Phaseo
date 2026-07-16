@@ -782,6 +782,7 @@ function ChatPlaygroundContent({
 	const createThreadWithSettings = useCallback(
 		async (modelId: string, settings: ChatSettings) => {
 			setError(null);
+			const previousActiveId = activeId;
 			const id = generateId();
 			const createdAt = nowIso();
 			const normalizedSettings =
@@ -811,11 +812,32 @@ function ChatPlaygroundContent({
 					modelOverridesById,
 				},
 			};
-			await upsertChat(newThread, "text");
 			setThreads((prev) => [newThread, ...prev]);
 			setActiveThread(newThread);
+			try {
+				await upsertChat(newThread, "text");
+			} catch (error) {
+				setThreads((prev) => prev.filter((thread) => thread.id !== id));
+				setActiveId((current) =>
+					current === id ? previousActiveId : current,
+				);
+				if (
+					typeof window !== "undefined" &&
+					window.localStorage.getItem(STORAGE_KEYS.activeChatId) === id
+				) {
+					if (previousActiveId) {
+						window.localStorage.setItem(
+							STORAGE_KEYS.activeChatId,
+							previousActiveId,
+						);
+					} else {
+						window.localStorage.removeItem(STORAGE_KEYS.activeChatId);
+					}
+				}
+				throw error;
+			}
 		},
-		[setActiveThread],
+		[activeId, setActiveThread],
 	);
 
 	const createThread = useCallback(async () => {

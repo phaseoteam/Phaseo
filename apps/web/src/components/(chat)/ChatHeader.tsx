@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+	type KeyboardEvent,
+} from "react";
 import {
 	ModelSelector,
 	ModelSelectorContent,
@@ -9,7 +16,6 @@ import {
 	ModelSelectorInput,
 	ModelSelectorItem,
 	ModelSelectorList,
-	ModelSelectorSeparator,
 	ModelSelectorTrigger,
 } from "@/components/ai-elements/model-selector";
 import {
@@ -56,6 +62,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Logo } from "@/components/Logo";
 import { ChatShortcutReference } from "@/components/(chat)/ChatShortcutReference";
+import {
+	getVirtualizedModelCatalogItemId,
+	VirtualizedModelCatalog,
+	type VirtualizedModelCatalogSection,
+} from "@/components/(chat)/VirtualizedModelCatalog";
 import {
 	compareByReleaseDateDesc,
 	groupModelsByReleaseMonth,
@@ -125,6 +136,8 @@ type ModelOptions = {
 	active: ModelOption[];
 	comingSoon: ModelOption[];
 };
+
+const getModelOptionKey = (option: ModelOption) => option.modelId;
 
 type PersonalizationSettings = {
 	name: string;
@@ -326,6 +339,9 @@ export function ChatHeader({
 		"personalization" | "data-controls" | "shortcuts" | "admin"
 	>("personalization");
 	const [modelSearchValue, setModelSearchValue] = useState("");
+	const [activeBrowseModelId, setActiveBrowseModelId] = useState<string | null>(
+		null,
+	);
 	const modelSearchInputRef = useRef<HTMLInputElement | null>(null);
 	const [quickFilters, setQuickFilters] = useState({
 		free: false,
@@ -487,10 +503,51 @@ export function ChatHeader({
 		() => groupModelsByReleaseMonth(filteredComingSoonEntries),
 		[filteredComingSoonEntries],
 	);
-	const comingSoonCount = useMemo(
-		() => filteredComingSoonEntries.length,
-		[filteredComingSoonEntries]
+	const virtualizedModelSections = useMemo<
+		VirtualizedModelCatalogSection<ModelOption>[]
+	>(() => {
+		const activeSections: VirtualizedModelCatalogSection<ModelOption>[] = [
+			...(favoriteActiveOptions.length > 0
+				? [
+						{
+							key: "favorites",
+							heading: "Favourites",
+							items: favoriteActiveOptions,
+						},
+					]
+				: []),
+			...groupedActiveOptions.map((group, index) => ({
+				key: `active-${group.heading}-${index}`,
+				heading: group.heading,
+				items: group.items,
+			})),
+		];
+		const comingSoonSections = groupedComingSoonOptions.map((group, index) => ({
+			key: `coming-soon-${group.heading}-${index}`,
+			heading: `Coming soon · ${group.heading}`,
+			items: group.items,
+			separatorBefore: index === 0,
+		}));
+		return [...activeSections, ...comingSoonSections];
+	}, [favoriteActiveOptions, groupedActiveOptions, groupedComingSoonOptions]);
+	const selectableBrowseModelOptions = useMemo(
+		() => [
+			...favoriteActiveOptions,
+			...groupedActiveOptions.flatMap((group) => group.items),
+		],
+		[favoriteActiveOptions, groupedActiveOptions],
 	);
+	const resolvedActiveBrowseModelId = useMemo(() => {
+		if (
+			activeBrowseModelId &&
+			selectableBrowseModelOptions.some(
+				(option) => option.modelId === activeBrowseModelId,
+			)
+		) {
+			return activeBrowseModelId;
+		}
+		return selectableBrowseModelOptions[0]?.modelId ?? null;
+	}, [activeBrowseModelId, selectableBrowseModelOptions]);
 	const allModelOptions = useMemo(
 		() => [
 			...filteredActive,
@@ -643,30 +700,35 @@ export function ChatHeader({
 		if (labels.length === 1) return labels[0];
 		return labels.slice(0, 2).join("/");
 	};
+	const closeModelPicker = () => {
+		setModelSearchValue("");
+		setActiveBrowseModelId(null);
+		onModelPickerOpenChange(false);
+	};
 	const handleModelSelect = (modelId: string) => {
 		if (!isModelCapabilityCompatible(modelId)) {
 			return;
 		}
 		if (!allowModelCompare) {
 			onUpdateModel(modelId);
-			onModelPickerOpenChange(false);
+			closeModelPicker();
 			return;
 		}
 		if (!activeThread?.modelId) {
 			onUpdateModel(modelId);
-			onModelPickerOpenChange(false);
+			closeModelPicker();
 			return;
 		}
 		if (activeThread.modelId === modelId) {
 			if (selectedModelIds.length > 0) {
 				onRemoveModel?.(modelId);
 			}
-			onModelPickerOpenChange(false);
+			closeModelPicker();
 			return;
 		}
 		if (!onCompareModelIdsChange) {
 			onUpdateModel(modelId);
-			onModelPickerOpenChange(false);
+			closeModelPicker();
 			return;
 		}
 		const nextSet = new Set(compareModelIdSet);
@@ -676,13 +738,14 @@ export function ChatHeader({
 			nextSet.add(modelId);
 		}
 		onCompareModelIdsChange(Array.from(nextSet));
-		onModelPickerOpenChange(false);
+		closeModelPicker();
 	};
 	const handleModelPickerDialogOpenChange = (open: boolean) => {
-		onModelPickerOpenChange(open);
 		if (!open) {
-			setModelSearchValue("");
+			closeModelPicker();
+			return;
 		}
+		onModelPickerOpenChange(true);
 	};
 	const focusModelSearchInput = useCallback(() => {
 		const input =
@@ -693,28 +756,9 @@ export function ChatHeader({
 		input?.focus({ preventScroll: true });
 	}, []);
 	const scheduleModelSearchFocus = useCallback(() => {
-		const timeoutIds: number[] = [];
-		let secondFrame: number | null = null;
-		focusModelSearchInput();
-		for (const delay of [0, 25, 75, 150, 250, 400]) {
-			timeoutIds.push(window.setTimeout(focusModelSearchInput, delay));
-		}
-		const firstFrame = requestAnimationFrame(() => {
-			secondFrame = requestAnimationFrame(() => {
-				focusModelSearchInput();
-				for (const delay of [25, 75, 150, 250, 400]) {
-					timeoutIds.push(window.setTimeout(focusModelSearchInput, delay));
-				}
-			});
-		});
+		const frame = requestAnimationFrame(focusModelSearchInput);
 		return () => {
-			cancelAnimationFrame(firstFrame);
-			if (secondFrame !== null) {
-				cancelAnimationFrame(secondFrame);
-			}
-			for (const timeoutId of timeoutIds) {
-				window.clearTimeout(timeoutId);
-			}
+			cancelAnimationFrame(frame);
 		};
 	}, [focusModelSearchInput]);
 	useEffect(() => {
@@ -1205,6 +1249,65 @@ export function ChatHeader({
 			</ModelSelectorItem>
 		);
 	};
+	const renderVirtualizedModelOption = (option: ModelOption) => (
+		<>
+			<Logo
+				id={option.orgId}
+				alt={option.orgId}
+				width={16}
+				height={16}
+				className={cn(
+					"shrink-0 rounded-none",
+					option.gatewayStatus === "inactive" && "grayscale",
+				)}
+			/>
+			{renderModelOptionContent(
+				option,
+				option.gatewayStatus === "inactive",
+			)}
+		</>
+	);
+	const handleModelSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+		if (hasModelSearchValue || selectableBrowseModelOptions.length === 0) {
+			return;
+		}
+		const currentIndex = Math.max(
+			0,
+			selectableBrowseModelOptions.findIndex(
+				(option) => option.modelId === resolvedActiveBrowseModelId,
+			),
+		);
+		let nextIndex = currentIndex;
+		switch (event.key) {
+			case "ArrowDown":
+				nextIndex = Math.min(
+					currentIndex + 1,
+					selectableBrowseModelOptions.length - 1,
+				);
+				break;
+			case "ArrowUp":
+				nextIndex = Math.max(currentIndex - 1, 0);
+				break;
+			case "Home":
+				nextIndex = 0;
+				break;
+			case "End":
+				nextIndex = selectableBrowseModelOptions.length - 1;
+				break;
+			case "Enter":
+				if (resolvedActiveBrowseModelId) {
+					event.preventDefault();
+					event.stopPropagation();
+					handleModelSelect(resolvedActiveBrowseModelId);
+				}
+				return;
+			default:
+				return;
+		}
+		event.preventDefault();
+		event.stopPropagation();
+		setActiveBrowseModelId(selectableBrowseModelOptions[nextIndex]?.modelId ?? null);
+	};
 
 	return (
 		<header className="flex items-center justify-between gap-2 border-b border-border px-3 py-3 md:px-5">
@@ -1279,6 +1382,14 @@ export function ChatHeader({
 							placeholder="Search models..."
 							value={modelSearchValue}
 							onValueChange={setModelSearchValue}
+							onKeyDown={handleModelSearchKeyDown}
+							aria-activedescendant={
+								hasModelSearchValue || !resolvedActiveBrowseModelId
+									? undefined
+									: getVirtualizedModelCatalogItemId(
+											resolvedActiveBrowseModelId,
+										)
+							}
 						/>
 						<div className="flex items-center gap-1 border-b border-border px-3 py-2">
 							<Button
@@ -1312,11 +1423,14 @@ export function ChatHeader({
 								New
 							</Button>
 						</div>
-						<ModelSelectorList className="max-h-[70vh]" viewportClassName="p-3">
-							<ModelSelectorEmpty>
-								No models found.
-							</ModelSelectorEmpty>
-							{hasModelSearchValue ? (
+						{hasModelSearchValue ? (
+							<ModelSelectorList
+								className="max-h-[70vh]"
+								viewportClassName="p-3"
+							>
+								<ModelSelectorEmpty>
+									No models found.
+								</ModelSelectorEmpty>
 								<ModelSelectorGroup
 									heading={`Results (${Math.min(25, searchResultTotalCount)}${searchResultTotalCount > 25 ? ` of ${searchResultTotalCount}` : ""})`}
 									className="pb-2 [&_[cmdk-group-heading]]:text-foreground [&_[cmdk-group-heading]]:font-semibold"
@@ -1327,48 +1441,23 @@ export function ChatHeader({
 										}),
 									)}
 								</ModelSelectorGroup>
-							) : null}
-							{!hasModelSearchValue && favoriteActiveOptions.length > 0 && (
-								<ModelSelectorGroup
-									heading="Favourites"
-									className="pb-2 [&_[cmdk-group-heading]]:text-foreground [&_[cmdk-group-heading]]:font-semibold"
-								>
-									{favoriteActiveOptions.map((option) =>
-										renderModelOptionItem(option),
-									)}
-								</ModelSelectorGroup>
-							)}
-							{!hasModelSearchValue &&
-								groupedActiveOptions.map((group, index) => (
-									<ModelSelectorGroup
-										key={`active-${group.heading}-${index}`}
-										heading={group.heading}
-										className="pb-2 [&_[cmdk-group-heading]]:text-foreground [&_[cmdk-group-heading]]:font-semibold"
-									>
-										{group.items.map((option) =>
-											renderModelOptionItem(option),
-										)}
-									</ModelSelectorGroup>
-								))}
-							{!hasModelSearchValue && comingSoonCount > 0 && (
-								<>
-									<ModelSelectorSeparator />
-									{groupedComingSoonOptions.map((group, index) => (
-										<ModelSelectorGroup
-											key={`coming-soon-${group.heading}-${index}`}
-											heading={`Coming soon · ${group.heading}`}
-											className="pb-2"
-										>
-											{group.items.map((option) =>
-												renderModelOptionItem(option, {
-													withComingSoonBadge: true,
-												}),
-											)}
-										</ModelSelectorGroup>
-									))}
-								</>
-							)}
-						</ModelSelectorList>
+							</ModelSelectorList>
+						) : (
+							<VirtualizedModelCatalog
+								sections={virtualizedModelSections}
+								getItemKey={getModelOptionKey}
+								activeItemKey={resolvedActiveBrowseModelId}
+								isItemDisabled={(option) =>
+									isModelDisabledForPicker(
+										option,
+										option.gatewayStatus === "inactive",
+									)
+								}
+								onActiveItemChange={setActiveBrowseModelId}
+								onSelectItem={(option) => handleModelSelect(option.modelId)}
+								renderItem={renderVirtualizedModelOption}
+							/>
+						)}
 					</ModelSelectorContent>
 				</ModelSelector>
 			</div>
