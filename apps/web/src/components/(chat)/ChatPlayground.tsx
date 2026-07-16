@@ -727,14 +727,20 @@ function ChatPlaygroundContent({
 			]);
 			const normalized = await ensureInitialThread(chats);
 			if (!mounted) return;
-			setThreads(normalized);
+			setThreads((current) => {
+				const currentIds = new Set(current.map((thread) => thread.id));
+				return [
+					...current,
+					...normalized.filter((thread) => !currentIds.has(thread.id)),
+				];
+			});
 			setChatTags(storedTags.sort(compareChatTags));
 
 			const initialId =
 				storedActive && normalized.some((t) => t.id === storedActive)
 					? storedActive
 					: (normalized[0]?.id ?? null);
-			setActiveId(initialId);
+			setActiveId((current) => current ?? initialId);
 		})();
 		return () => {
 			mounted = false;
@@ -3225,7 +3231,25 @@ function ChatPlaygroundContent({
 
 	const updateActiveModel = useCallback(
 		(modelId: string) => {
-			if (!activeThread) return;
+			if (!activeThread) {
+				const defaults: ChatSettings = {
+					...DEFAULT_SETTINGS,
+					systemPrompt: buildDefaultSystemPrompt(modelId),
+				};
+				void createThreadWithSettings(modelId, defaults)
+					.then(() => {
+						if (typeof window !== "undefined") {
+							window.localStorage.setItem(
+								STORAGE_KEYS.lastModelId,
+								modelId,
+							);
+						}
+					})
+					.catch(() => {
+						setError("Unable to create a chat for the selected model.");
+					});
+				return;
+			}
 			const requiredCapability = getPrimaryCapabilityForModel(modelId);
 			const currentModelDisplayName =
 				activeThread.settings.modelOverridesById?.[
@@ -3301,6 +3325,7 @@ function ChatPlaygroundContent({
 		},
 		[
 			activeThread,
+			createThreadWithSettings,
 			getPrimaryCapabilityForModel,
 			isProviderSupportedForModel,
 			isModelSelectableForContext,
