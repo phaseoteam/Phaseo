@@ -55,6 +55,12 @@ describe("isGeneratedDefaultSystemPrompt", () => {
 		expect(isGeneratedDefaultSystemPrompt(legacy, modelId, nickname)).toBe(true);
 	});
 
+	it("recognizes a generated blank-chat prompt before model selection", () => {
+		expect(
+			isGeneratedDefaultSystemPrompt(buildDefaultSystemPrompt(""), ""),
+		).toBe(true);
+	});
+
 	it("recognizes the full legacy generated prompt without a nickname", () => {
 		const legacy = [
 			`You are ${modelId}, a large language model from openai.`,

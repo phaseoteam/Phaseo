@@ -77,6 +77,7 @@ import {
 	getChangedSettings,
 	getEffectiveModelSettings,
 	getOrgId,
+	isGeneratedDefaultSystemPrompt,
 	normalizeServerTools,
 	normalizeBaseUrl,
 	nowIso,
@@ -2686,13 +2687,13 @@ function ChatPlaygroundContent({
 					currentOverrides[thread.modelId]?.displayName ?? "";
 				const nextDisplayName =
 					currentOverrides[primaryResolution.modelId]?.displayName ?? "";
-				const previousDefaultPrompt = buildDefaultSystemPrompt(
-					thread.modelId,
-					previousDisplayName,
-				);
 				if (
-					(thread.settings.systemPrompt ?? "").trim() ===
-					previousDefaultPrompt.trim()
+					!thread.settings.systemPrompt ||
+					isGeneratedDefaultSystemPrompt(
+						thread.settings.systemPrompt,
+						thread.modelId,
+						previousDisplayName,
+					)
 				) {
 					nextSystemPrompt = buildDefaultSystemPrompt(
 						primaryResolution.modelId,
@@ -3325,10 +3326,6 @@ function ChatPlaygroundContent({
 			const nextModelDisplayName =
 				activeThread.settings.modelOverridesById?.[modelId]
 					?.displayName ?? "";
-			const previousDefault = buildDefaultSystemPrompt(
-				activeThread.modelId,
-				currentModelDisplayName,
-			);
 			const nextCompareModelIds = Array.from(
 				new Set(
 					(activeThread.settings.compareModelIds ?? []).filter(
@@ -3345,7 +3342,11 @@ function ChatPlaygroundContent({
 			);
 			const nextSystemPrompt =
 				!activeThread.settings.systemPrompt ||
-				activeThread.settings.systemPrompt === previousDefault
+				isGeneratedDefaultSystemPrompt(
+					activeThread.settings.systemPrompt,
+					activeThread.modelId,
+					currentModelDisplayName,
+				)
 					? buildDefaultSystemPrompt(modelId, nextModelDisplayName)
 					: activeThread.settings.systemPrompt;
 			const nextModelOverrides = ensureModelOverridesForIds(
@@ -3539,13 +3540,13 @@ function ChatPlaygroundContent({
 				activeThread.settings.modelOverridesById?.[
 					nextPrimaryModelId
 				]?.displayName ?? "";
-			const previousDefault = buildDefaultSystemPrompt(
-				activeThread.modelId,
-				currentModelDisplayName,
-			);
 			const nextSystemPrompt =
 				!activeThread.settings.systemPrompt ||
-				activeThread.settings.systemPrompt === previousDefault
+				isGeneratedDefaultSystemPrompt(
+					activeThread.settings.systemPrompt,
+					activeThread.modelId,
+					currentModelDisplayName,
+				)
 					? buildDefaultSystemPrompt(
 							nextPrimaryModelId,
 							nextModelDisplayName,
@@ -3608,13 +3609,13 @@ function ChatPlaygroundContent({
 				activeThread.settings.modelOverridesById?.[
 					nextPrimaryModelId
 				]?.displayName ?? "";
-			const previousDefault = buildDefaultSystemPrompt(
-				activeThread.modelId,
-				currentModelDisplayName,
-			);
 			const nextSystemPrompt =
 				!activeThread.settings.systemPrompt ||
-				activeThread.settings.systemPrompt === previousDefault
+				isGeneratedDefaultSystemPrompt(
+					activeThread.settings.systemPrompt,
+					activeThread.modelId,
+					currentModelDisplayName,
+				)
 					? buildDefaultSystemPrompt(
 							nextPrimaryModelId,
 							nextModelDisplayName,
@@ -4197,10 +4198,6 @@ function ChatPlaygroundContent({
 						? existingModelOverrides.displayName
 						: "";
 				const nextDisplayName = partial.displayName;
-				const previousDefaultPrompt = buildDefaultSystemPrompt(
-					modelId,
-					previousDisplayName,
-				);
 				const nextDefaultPrompt = buildDefaultSystemPrompt(
 					modelId,
 					nextDisplayName,
@@ -4212,8 +4209,11 @@ function ChatPlaygroundContent({
 				const hasExplicitModelPrompt =
 					existingModelOverrides.systemPrompt !== undefined;
 				const isStillOnDefaultTemplate =
-					(currentEffectiveSystemPrompt ?? "").trim() ===
-					previousDefaultPrompt.trim();
+					isGeneratedDefaultSystemPrompt(
+						currentEffectiveSystemPrompt,
+						modelId,
+						previousDisplayName,
+					);
 				if (!hasExplicitModelPrompt || isStillOnDefaultTemplate) {
 					nextPartial.systemPrompt = nextDefaultPrompt;
 				}
