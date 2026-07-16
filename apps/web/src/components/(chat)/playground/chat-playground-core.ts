@@ -31,6 +31,7 @@ const SUPPORTED_CHAT_SERVER_TOOLS = new Set<ChatServerToolType>([
 ]);
 
 export type ChatResponseLayout = "sequential" | "side-by-side";
+export type NewChatModelPreference = "blank" | "selected";
 
 export function normalizeServerTools(
 	serverTools?: ChatServerToolType[],
@@ -211,6 +212,10 @@ export function getRoomStorageKeys(roomId: ChatRoomId) {
 		notifyOnComplete: getRoomScopedStorageKey(roomId, "notify-on-complete"),
 		debugMode: getRoomScopedStorageKey(roomId, "debug"),
 		responseLayout: getRoomScopedStorageKey(roomId, "response-layout"),
+		newChatModelPreference: getRoomScopedStorageKey(
+			roomId,
+			"new-chat-model-preference",
+		),
 	};
 }
 
@@ -325,6 +330,19 @@ const LEGACY_MATH_FORMATTING_RULE =
 const PREVIOUS_MATH_FORMATTING_RULE =
 	"- Do not use \\(...\\) or \\[...\\] delimiters.";
 
+const PREVIOUS_MATH_FORMATTING_RULES = [
+	"- Use dollar-sign delimiters for all mathematical expressions: $...$ for inline math and $$...$$ for block math.",
+	"- Put the $$ block-math delimiters on their own lines.",
+	"- Use valid LaTeX inside delimiters. Escape special characters: write percentages as $80\\%$, never $80%$.",
+	PREVIOUS_MATH_FORMATTING_RULE,
+] as const;
+
+const HISTORIC_FORMATTING_RULES = [
+	"- Use Markdown for lists, tables, and styling.",
+	"- Use ```code fences``` for all code blocks.",
+	"- Format file names, paths, and function names with `inline code` backticks.",
+] as const;
+
 const COMPACT_FORMATTING_RULE =
 	"Markdown; ```code fences```; `backticks` for code, filenames, paths, and functions. Use $...$ or $$...$$ only for typeset math; put $$ delimiters on their own lines. Keep numbers, percentages, and currency plain. Use valid LaTeX: escape % in math (e.g. $80\\%$); no \\(...\\) or \\[...\\].";
 
@@ -365,18 +383,30 @@ export function isGeneratedDefaultSystemPrompt(
 
 	const safeModelId = modelId || "AI model";
 	const orgLabel = formatOrgLabel(getOrgId(safeModelId));
-	const generatedPrefix = `You are ${safeModelId}, known as: `;
-	const generatedSuffixes = [
-		`, a large language model from ${orgLabel}.\n\nFormatting:`,
-		`, a large language model from ${orgLabel}.\n\nFormatting Rules:`,
-	];
-	return (
-		normalizedPrompt.startsWith(generatedPrefix) &&
-		generatedSuffixes.some((suffix) => normalizedPrompt.includes(suffix)) &&
-		(normalizedPrompt.endsWith(COMPACT_FORMATTING_RULE) ||
-			normalizedPrompt.endsWith(PREVIOUS_MATH_FORMATTING_RULE) ||
-			normalizedPrompt.endsWith(LEGACY_MATH_FORMATTING_RULE))
-	);
+	const separatorIndex = normalizedPrompt.indexOf("\n\n");
+	if (separatorIndex < 0) return false;
+
+	const identityLine = normalizedPrompt.slice(0, separatorIndex);
+	const formattingSection = normalizedPrompt.slice(separatorIndex + 2);
+	const identitySuffix = `, a large language model from ${orgLabel}.`;
+	const hasGeneratedIdentity =
+		identityLine === `You are ${safeModelId}${identitySuffix}` ||
+		(identityLine.startsWith(`You are ${safeModelId}, known as: `) &&
+			identityLine.endsWith(identitySuffix));
+	if (!hasGeneratedIdentity) return false;
+
+	const historicFormattingSections = new Set([
+		`Formatting: ${COMPACT_FORMATTING_RULE}`,
+		["Formatting Rules:", ...HISTORIC_FORMATTING_RULES, LEGACY_MATH_FORMATTING_RULE].join("\n"),
+		[
+			"Formatting Rules:",
+			...HISTORIC_FORMATTING_RULES,
+			...PREVIOUS_MATH_FORMATTING_RULES,
+		].join("\n"),
+		["Formatting Rules:", LEGACY_MATH_FORMATTING_RULE].join("\n"),
+		["Formatting Rules:", PREVIOUS_MATH_FORMATTING_RULE].join("\n"),
+	]);
+	return historicFormattingSections.has(formattingSection);
 }
 
 export function shouldRequestImageModalities(modelId: string) {

@@ -77,12 +77,14 @@ import {
 	getChangedSettings,
 	getEffectiveModelSettings,
 	getOrgId,
+	isGeneratedDefaultSystemPrompt,
 	normalizeServerTools,
 	normalizeBaseUrl,
 	nowIso,
 	shouldRequestImageModalities,
 	type ChatResponseLayout,
 	type ChatApiTarget,
+	type NewChatModelPreference,
 	type PersonalizationSettings,
 	type SettingChange,
 } from "@/components/(chat)/playground/chat-playground-core";
@@ -500,8 +502,11 @@ function ChatPlaygroundContent({
 	const [pendingNewChat, setPendingNewChat] = useState<{
 		modelId: string;
 		settings: ChatSettings;
+		defaultSettings: ChatSettings;
 		changes: SettingChange[];
 	} | null>(null);
+	const [newChatModelPreference, setNewChatModelPreference] =
+		useState<NewChatModelPreference>("blank");
 	const [temporaryMode, setTemporaryMode] = useState(false);
 	const [composerRequiresAudioInput, setComposerRequiresAudioInput] =
 		useState(false);
@@ -706,6 +711,9 @@ function ChatPlaygroundContent({
 				window.localStorage.getItem(
 					STORAGE_KEYS.personalizationAccent,
 				) ?? "#111111";
+			const storedNewChatModelPreference = window.localStorage.getItem(
+				STORAGE_KEYS.newChatModelPreference,
+			);
 			if (!mounted) return;
 			window.localStorage.removeItem(STORAGE_KEYS.apiKey);
 			setApiTarget(storedApiTarget);
@@ -720,6 +728,9 @@ function ChatPlaygroundContent({
 				notes: storedPersonalNotes,
 				accentColor: storedAccent,
 			});
+			setNewChatModelPreference(
+				storedNewChatModelPreference === "selected" ? "selected" : "blank",
+			);
 
 			const [chats, storedTags] = await Promise.all([
 				getAllChats("text"),
@@ -782,6 +793,9 @@ function ChatPlaygroundContent({
 	const createThreadWithSettings = useCallback(
 		async (modelId: string, settings: ChatSettings) => {
 			setError(null);
+			const previousActiveId = activeId;
+			const previousTemporaryMode = temporaryMode;
+			const previousTemporaryThread = temporaryThread;
 			const id = generateId();
 			const createdAt = nowIso();
 			const normalizedSettings =
@@ -811,15 +825,58 @@ function ChatPlaygroundContent({
 					modelOverridesById,
 				},
 			};
-			await upsertChat(newThread, "text");
 			setThreads((prev) => [newThread, ...prev]);
 			setActiveThread(newThread);
+			try {
+				await upsertChat(newThread, "text");
+			} catch (error) {
+				setThreads((prev) => prev.filter((thread) => thread.id !== id));
+				if (previousTemporaryMode && previousTemporaryThread) {
+					setTemporaryMode(true);
+					setTemporaryThread(previousTemporaryThread);
+				}
+				setActiveId((current) =>
+					current === id ? previousActiveId : current,
+				);
+				if (
+					typeof window !== "undefined" &&
+					window.localStorage.getItem(STORAGE_KEYS.activeChatId) === id
+				) {
+					if (previousActiveId) {
+						window.localStorage.setItem(
+							STORAGE_KEYS.activeChatId,
+							previousActiveId,
+						);
+					} else {
+						window.localStorage.removeItem(STORAGE_KEYS.activeChatId);
+					}
+				}
+				throw error;
+			}
 		},
-		[setActiveThread],
+		[
+			activeId,
+			setActiveThread,
+			temporaryMode,
+			temporaryThread,
+		],
 	);
 
 	const createThread = useCallback(async () => {
-		const selectedModel = "";
+		const shouldKeepSelectedModels =
+			newChatModelPreference === "selected" && Boolean(activeThread?.modelId);
+		const selectedModel = shouldKeepSelectedModels
+			? (activeThread?.modelId ?? "")
+			: "";
+		const selectedCompareModelIds = shouldKeepSelectedModels
+			? (activeThread?.settings.compareModelIds ?? [])
+			: [];
+		const defaultSettings: ChatSettings = {
+			...DEFAULT_SETTINGS,
+			systemPrompt: buildDefaultSystemPrompt(selectedModel),
+			compareMode: selectedCompareModelIds.length > 0,
+			compareModelIds: selectedCompareModelIds,
+		};
 		if (activeThread) {
 			const comparisonModelId = activeThread.modelId || selectedModel;
 			const comparisonModelDisplayName =
@@ -838,18 +895,20 @@ function ChatPlaygroundContent({
 				setPendingNewChat({
 					modelId: selectedModel,
 					settings: activeThread.settings,
+					defaultSettings,
 					changes,
 				});
 				setNewChatDialogOpen(true);
 				return;
 			}
 		}
-		const defaults: ChatSettings = {
-			...DEFAULT_SETTINGS,
-			systemPrompt: buildDefaultSystemPrompt(selectedModel),
-		};
-		await createThreadWithSettings(selectedModel, defaults);
-	}, [activeThread, createThreadWithSettings, modelDisplayNameById]);
+		await createThreadWithSettings(selectedModel, defaultSettings);
+	}, [
+		activeThread,
+		createThreadWithSettings,
+		modelDisplayNameById,
+		newChatModelPreference,
+	]);
 
 	const handleNewChatDecision = useCallback(
 		(useCurrent: boolean) => {
@@ -860,15 +919,25 @@ function ChatPlaygroundContent({
 			const modelId = pendingNewChat.modelId;
 			const settings = useCurrent
 				? pendingNewChat.settings
-				: {
-						...DEFAULT_SETTINGS,
-						systemPrompt: buildDefaultSystemPrompt(modelId),
-					};
+				: pendingNewChat.defaultSettings;
 			setNewChatDialogOpen(false);
 			setPendingNewChat(null);
 			void createThreadWithSettings(modelId, settings);
 		},
 		[pendingNewChat, createThreadWithSettings],
+	);
+
+	const handleNewChatModelPreferenceChange = useCallback(
+		(value: NewChatModelPreference) => {
+			setNewChatModelPreference(value);
+			if (typeof window !== "undefined") {
+				window.localStorage.setItem(
+					STORAGE_KEYS.newChatModelPreference,
+					value,
+				);
+			}
+		},
+		[],
 	);
 
 	const updateStoredThread = useCallback(
@@ -2629,13 +2698,13 @@ function ChatPlaygroundContent({
 					currentOverrides[thread.modelId]?.displayName ?? "";
 				const nextDisplayName =
 					currentOverrides[primaryResolution.modelId]?.displayName ?? "";
-				const previousDefaultPrompt = buildDefaultSystemPrompt(
-					thread.modelId,
-					previousDisplayName,
-				);
 				if (
-					(thread.settings.systemPrompt ?? "").trim() ===
-					previousDefaultPrompt.trim()
+					!thread.settings.systemPrompt ||
+					isGeneratedDefaultSystemPrompt(
+						thread.settings.systemPrompt,
+						thread.modelId,
+						previousDisplayName,
+					)
 				) {
 					nextSystemPrompt = buildDefaultSystemPrompt(
 						primaryResolution.modelId,
@@ -3268,10 +3337,6 @@ function ChatPlaygroundContent({
 			const nextModelDisplayName =
 				activeThread.settings.modelOverridesById?.[modelId]
 					?.displayName ?? "";
-			const previousDefault = buildDefaultSystemPrompt(
-				activeThread.modelId,
-				currentModelDisplayName,
-			);
 			const nextCompareModelIds = Array.from(
 				new Set(
 					(activeThread.settings.compareModelIds ?? []).filter(
@@ -3288,7 +3353,11 @@ function ChatPlaygroundContent({
 			);
 			const nextSystemPrompt =
 				!activeThread.settings.systemPrompt ||
-				activeThread.settings.systemPrompt === previousDefault
+				isGeneratedDefaultSystemPrompt(
+					activeThread.settings.systemPrompt,
+					activeThread.modelId,
+					currentModelDisplayName,
+				)
 					? buildDefaultSystemPrompt(modelId, nextModelDisplayName)
 					: activeThread.settings.systemPrompt;
 			const nextModelOverrides = ensureModelOverridesForIds(
@@ -3482,13 +3551,13 @@ function ChatPlaygroundContent({
 				activeThread.settings.modelOverridesById?.[
 					nextPrimaryModelId
 				]?.displayName ?? "";
-			const previousDefault = buildDefaultSystemPrompt(
-				activeThread.modelId,
-				currentModelDisplayName,
-			);
 			const nextSystemPrompt =
 				!activeThread.settings.systemPrompt ||
-				activeThread.settings.systemPrompt === previousDefault
+				isGeneratedDefaultSystemPrompt(
+					activeThread.settings.systemPrompt,
+					activeThread.modelId,
+					currentModelDisplayName,
+				)
 					? buildDefaultSystemPrompt(
 							nextPrimaryModelId,
 							nextModelDisplayName,
@@ -3551,13 +3620,13 @@ function ChatPlaygroundContent({
 				activeThread.settings.modelOverridesById?.[
 					nextPrimaryModelId
 				]?.displayName ?? "";
-			const previousDefault = buildDefaultSystemPrompt(
-				activeThread.modelId,
-				currentModelDisplayName,
-			);
 			const nextSystemPrompt =
 				!activeThread.settings.systemPrompt ||
-				activeThread.settings.systemPrompt === previousDefault
+				isGeneratedDefaultSystemPrompt(
+					activeThread.settings.systemPrompt,
+					activeThread.modelId,
+					currentModelDisplayName,
+				)
 					? buildDefaultSystemPrompt(
 							nextPrimaryModelId,
 							nextModelDisplayName,
@@ -4140,10 +4209,6 @@ function ChatPlaygroundContent({
 						? existingModelOverrides.displayName
 						: "";
 				const nextDisplayName = partial.displayName;
-				const previousDefaultPrompt = buildDefaultSystemPrompt(
-					modelId,
-					previousDisplayName,
-				);
 				const nextDefaultPrompt = buildDefaultSystemPrompt(
 					modelId,
 					nextDisplayName,
@@ -4155,8 +4220,11 @@ function ChatPlaygroundContent({
 				const hasExplicitModelPrompt =
 					existingModelOverrides.systemPrompt !== undefined;
 				const isStillOnDefaultTemplate =
-					(currentEffectiveSystemPrompt ?? "").trim() ===
-					previousDefaultPrompt.trim();
+					isGeneratedDefaultSystemPrompt(
+						currentEffectiveSystemPrompt,
+						modelId,
+						previousDisplayName,
+					);
 				if (!hasExplicitModelPrompt || isStillOnDefaultTemplate) {
 					nextPartial.systemPrompt = nextDefaultPrompt;
 				}
@@ -4311,6 +4379,10 @@ function ChatPlaygroundContent({
 					onSaveSettings={handleSaveSettings}
 					personalization={personalization}
 					onPersonalizationChange={setPersonalization}
+					newChatModelPreference={newChatModelPreference}
+					onNewChatModelPreferenceChange={
+						handleNewChatModelPreferenceChange
+					}
 					onExportChats={handleExportChats}
 					isAdmin={isAdmin}
 					debugEnabled={debugEnabled}
@@ -4404,7 +4476,8 @@ function ChatPlaygroundContent({
 					responseLayout={responseLayout}
 				/>
 			</SidebarInset>
-			<ModelSettingsDialog
+			{modelSettingsOpen ? (
+				<ModelSettingsDialog
 				open={modelSettingsOpen}
 				onOpenChange={(open) => {
 					setModelSettingsOpen(open);
@@ -4443,7 +4516,8 @@ function ChatPlaygroundContent({
 				onReset={resetModelSettings}
 				onApplyToAll={applyModelSettingsToAll}
 				canApplyToAll={selectedModelIds.length > 1}
-			/>
+				/>
+			) : null}
 			<ChatSearchDialog
 				open={searchOpen}
 				onOpenChange={setSearchOpen}

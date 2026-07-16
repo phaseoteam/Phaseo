@@ -1,6 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+	startTransition,
+	type KeyboardEvent,
+} from "react";
 import {
 	ModelSelector,
 	ModelSelectorContent,
@@ -9,7 +17,6 @@ import {
 	ModelSelectorInput,
 	ModelSelectorItem,
 	ModelSelectorList,
-	ModelSelectorSeparator,
 	ModelSelectorTrigger,
 } from "@/components/ai-elements/model-selector";
 import {
@@ -57,6 +64,11 @@ import { useSidebar } from "@/components/ui/sidebar";
 import { Logo } from "@/components/Logo";
 import { ChatShortcutReference } from "@/components/(chat)/ChatShortcutReference";
 import {
+	getVirtualizedModelCatalogItemId,
+	VirtualizedModelCatalog,
+	type VirtualizedModelCatalogSection,
+} from "@/components/(chat)/VirtualizedModelCatalog";
+import {
 	compareByReleaseDateDesc,
 	groupModelsByReleaseMonth,
 	getDefaultFavoriteModelIds,
@@ -67,6 +79,7 @@ import { cn } from "@/lib/utils";
 import type {
 	ChatApiTarget,
 	ChatResponseLayout,
+	NewChatModelPreference,
 } from "@/components/(chat)/playground/chat-playground-core";
 import {
 	LOCAL_CHAT_API_BASE_URL,
@@ -125,6 +138,8 @@ type ModelOptions = {
 	active: ModelOption[];
 	comingSoon: ModelOption[];
 };
+
+const getModelOptionKey = (option: ModelOption) => option.modelId;
 
 type PersonalizationSettings = {
 	name: string;
@@ -252,6 +267,8 @@ type ChatHeaderProps = {
 	onSaveSettings: () => void;
 	personalization: PersonalizationSettings;
 	onPersonalizationChange: (next: PersonalizationSettings) => void;
+	newChatModelPreference: NewChatModelPreference;
+	onNewChatModelPreferenceChange: (value: NewChatModelPreference) => void;
 	onExportChats: () => void;
 	isAdmin: boolean;
 	debugEnabled: boolean;
@@ -300,6 +317,8 @@ export function ChatHeader({
 	onSaveSettings,
 	personalization,
 	onPersonalizationChange,
+	newChatModelPreference,
+	onNewChatModelPreferenceChange,
 	onExportChats,
 	isAdmin,
 	debugEnabled,
@@ -326,6 +345,9 @@ export function ChatHeader({
 		"personalization" | "data-controls" | "shortcuts" | "admin"
 	>("personalization");
 	const [modelSearchValue, setModelSearchValue] = useState("");
+	const [activeBrowseModelId, setActiveBrowseModelId] = useState<string | null>(
+		null,
+	);
 	const modelSearchInputRef = useRef<HTMLInputElement | null>(null);
 	const [quickFilters, setQuickFilters] = useState({
 		free: false,
@@ -487,10 +509,33 @@ export function ChatHeader({
 		() => groupModelsByReleaseMonth(filteredComingSoonEntries),
 		[filteredComingSoonEntries],
 	);
-	const comingSoonCount = useMemo(
-		() => filteredComingSoonEntries.length,
-		[filteredComingSoonEntries]
-	);
+	const virtualizedModelSections = useMemo<
+		VirtualizedModelCatalogSection<ModelOption>[]
+	>(() => {
+		const activeSections: VirtualizedModelCatalogSection<ModelOption>[] = [
+			...(favoriteActiveOptions.length > 0
+				? [
+						{
+							key: "favorites",
+							heading: "Favourites",
+							items: favoriteActiveOptions,
+						},
+					]
+				: []),
+			...groupedActiveOptions.map((group, index) => ({
+				key: `active-${group.heading}-${index}`,
+				heading: group.heading,
+				items: group.items,
+			})),
+		];
+		const comingSoonSections = groupedComingSoonOptions.map((group, index) => ({
+			key: `coming-soon-${group.heading}-${index}`,
+			heading: `Coming soon · ${group.heading}`,
+			items: group.items,
+			separatorBefore: index === 0,
+		}));
+		return [...activeSections, ...comingSoonSections];
+	}, [favoriteActiveOptions, groupedActiveOptions, groupedComingSoonOptions]);
 	const allModelOptions = useMemo(
 		() => [
 			...filteredActive,
@@ -628,6 +673,48 @@ export function ChatHeader({
 		(!requiredCapability ||
 			getModelCapabilities(modelId).includes(requiredCapability)) &&
 		(!requireAudioInput || supportsModelAudioInput(modelId));
+	const selectableBrowseModelOptions = useMemo(() => {
+		const seenModelIds = new Set<string>();
+		return [
+			...favoriteActiveOptions,
+			...groupedActiveOptions.flatMap((group) => group.items),
+		].filter((option) => {
+			const capabilityEndpoints =
+				modelCapabilitiesById?.[option.modelId] ?? ["responses"];
+			const capabilityCompatible =
+				(!requiredCapability ||
+					capabilityEndpoints.includes(requiredCapability)) &&
+				(!requireAudioInput ||
+					modelSupportsAudioInputById?.[option.modelId] === true);
+			if (
+				seenModelIds.has(option.modelId) ||
+				option.gatewayStatus === "inactive" ||
+				!capabilityCompatible
+			) {
+				return false;
+			}
+			seenModelIds.add(option.modelId);
+			return true;
+		});
+	}, [
+		favoriteActiveOptions,
+		groupedActiveOptions,
+		modelCapabilitiesById,
+		modelSupportsAudioInputById,
+		requireAudioInput,
+		requiredCapability,
+	]);
+	const resolvedActiveBrowseModelId = useMemo(() => {
+		if (
+			activeBrowseModelId &&
+			selectableBrowseModelOptions.some(
+				(option) => option.modelId === activeBrowseModelId,
+			)
+		) {
+			return activeBrowseModelId;
+		}
+		return selectableBrowseModelOptions[0]?.modelId ?? null;
+	}, [activeBrowseModelId, selectableBrowseModelOptions]);
 	const getIncompatibleCapabilityLabel = (modelId: string) => {
 		if (requireAudioInput && !supportsModelAudioInput(modelId)) {
 			return "Audio input";
@@ -643,30 +730,37 @@ export function ChatHeader({
 		if (labels.length === 1) return labels[0];
 		return labels.slice(0, 2).join("/");
 	};
+	const closeModelPicker = () => {
+		setModelSearchValue("");
+		setActiveBrowseModelId(null);
+		onModelPickerOpenChange(false);
+	};
+	const commitModelPickerSelection = (commit: () => void) => {
+		closeModelPicker();
+		startTransition(commit);
+	};
 	const handleModelSelect = (modelId: string) => {
 		if (!isModelCapabilityCompatible(modelId)) {
 			return;
 		}
 		if (!allowModelCompare) {
-			onUpdateModel(modelId);
-			onModelPickerOpenChange(false);
+			commitModelPickerSelection(() => onUpdateModel(modelId));
 			return;
 		}
 		if (!activeThread?.modelId) {
-			onUpdateModel(modelId);
-			onModelPickerOpenChange(false);
+			commitModelPickerSelection(() => onUpdateModel(modelId));
 			return;
 		}
 		if (activeThread.modelId === modelId) {
 			if (selectedModelIds.length > 0) {
-				onRemoveModel?.(modelId);
+				commitModelPickerSelection(() => onRemoveModel?.(modelId));
+				return;
 			}
-			onModelPickerOpenChange(false);
+			closeModelPicker();
 			return;
 		}
 		if (!onCompareModelIdsChange) {
-			onUpdateModel(modelId);
-			onModelPickerOpenChange(false);
+			commitModelPickerSelection(() => onUpdateModel(modelId));
 			return;
 		}
 		const nextSet = new Set(compareModelIdSet);
@@ -675,14 +769,17 @@ export function ChatHeader({
 		} else {
 			nextSet.add(modelId);
 		}
-		onCompareModelIdsChange(Array.from(nextSet));
-		onModelPickerOpenChange(false);
+		const nextModelIds = Array.from(nextSet);
+		commitModelPickerSelection(() =>
+			onCompareModelIdsChange(nextModelIds),
+		);
 	};
 	const handleModelPickerDialogOpenChange = (open: boolean) => {
-		onModelPickerOpenChange(open);
 		if (!open) {
-			setModelSearchValue("");
+			closeModelPicker();
+			return;
 		}
+		onModelPickerOpenChange(true);
 	};
 	const focusModelSearchInput = useCallback(() => {
 		const input =
@@ -693,28 +790,9 @@ export function ChatHeader({
 		input?.focus({ preventScroll: true });
 	}, []);
 	const scheduleModelSearchFocus = useCallback(() => {
-		const timeoutIds: number[] = [];
-		let secondFrame: number | null = null;
-		focusModelSearchInput();
-		for (const delay of [0, 25, 75, 150, 250, 400]) {
-			timeoutIds.push(window.setTimeout(focusModelSearchInput, delay));
-		}
-		const firstFrame = requestAnimationFrame(() => {
-			secondFrame = requestAnimationFrame(() => {
-				focusModelSearchInput();
-				for (const delay of [25, 75, 150, 250, 400]) {
-					timeoutIds.push(window.setTimeout(focusModelSearchInput, delay));
-				}
-			});
-		});
+		const frame = requestAnimationFrame(focusModelSearchInput);
 		return () => {
-			cancelAnimationFrame(firstFrame);
-			if (secondFrame !== null) {
-				cancelAnimationFrame(secondFrame);
-			}
-			for (const timeoutId of timeoutIds) {
-				window.clearTimeout(timeoutId);
-			}
+			cancelAnimationFrame(frame);
 		};
 	}, [focusModelSearchInput]);
 	useEffect(() => {
@@ -1205,6 +1283,65 @@ export function ChatHeader({
 			</ModelSelectorItem>
 		);
 	};
+	const renderVirtualizedModelOption = (option: ModelOption) => (
+		<>
+			<Logo
+				id={option.orgId}
+				alt={option.orgId}
+				width={16}
+				height={16}
+				className={cn(
+					"shrink-0 rounded-none",
+					option.gatewayStatus === "inactive" && "grayscale",
+				)}
+			/>
+			{renderModelOptionContent(
+				option,
+				option.gatewayStatus === "inactive",
+			)}
+		</>
+	);
+	const handleModelSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+		if (hasModelSearchValue || selectableBrowseModelOptions.length === 0) {
+			return;
+		}
+		const currentIndex = Math.max(
+			0,
+			selectableBrowseModelOptions.findIndex(
+				(option) => option.modelId === resolvedActiveBrowseModelId,
+			),
+		);
+		let nextIndex = currentIndex;
+		switch (event.key) {
+			case "ArrowDown":
+				nextIndex = Math.min(
+					currentIndex + 1,
+					selectableBrowseModelOptions.length - 1,
+				);
+				break;
+			case "ArrowUp":
+				nextIndex = Math.max(currentIndex - 1, 0);
+				break;
+			case "Home":
+				nextIndex = 0;
+				break;
+			case "End":
+				nextIndex = selectableBrowseModelOptions.length - 1;
+				break;
+			case "Enter":
+				if (resolvedActiveBrowseModelId) {
+					event.preventDefault();
+					event.stopPropagation();
+					handleModelSelect(resolvedActiveBrowseModelId);
+				}
+				return;
+			default:
+				return;
+		}
+		event.preventDefault();
+		event.stopPropagation();
+		setActiveBrowseModelId(selectableBrowseModelOptions[nextIndex]?.modelId ?? null);
+	};
 
 	return (
 		<header className="flex items-center justify-between gap-2 border-b border-border px-3 py-3 md:px-5">
@@ -1279,6 +1416,14 @@ export function ChatHeader({
 							placeholder="Search models..."
 							value={modelSearchValue}
 							onValueChange={setModelSearchValue}
+							onKeyDown={handleModelSearchKeyDown}
+							aria-activedescendant={
+								hasModelSearchValue || !resolvedActiveBrowseModelId
+									? undefined
+									: getVirtualizedModelCatalogItemId(
+											resolvedActiveBrowseModelId,
+										)
+							}
 						/>
 						<div className="flex items-center gap-1 border-b border-border px-3 py-2">
 							<Button
@@ -1312,11 +1457,14 @@ export function ChatHeader({
 								New
 							</Button>
 						</div>
-						<ModelSelectorList className="max-h-[70vh]" viewportClassName="p-3">
-							<ModelSelectorEmpty>
-								No models found.
-							</ModelSelectorEmpty>
-							{hasModelSearchValue ? (
+						{hasModelSearchValue ? (
+							<ModelSelectorList
+								className="max-h-[70vh]"
+								viewportClassName="p-3"
+							>
+								<ModelSelectorEmpty>
+									No models found.
+								</ModelSelectorEmpty>
 								<ModelSelectorGroup
 									heading={`Results (${Math.min(25, searchResultTotalCount)}${searchResultTotalCount > 25 ? ` of ${searchResultTotalCount}` : ""})`}
 									className="pb-2 [&_[cmdk-group-heading]]:text-foreground [&_[cmdk-group-heading]]:font-semibold"
@@ -1327,48 +1475,23 @@ export function ChatHeader({
 										}),
 									)}
 								</ModelSelectorGroup>
-							) : null}
-							{!hasModelSearchValue && favoriteActiveOptions.length > 0 && (
-								<ModelSelectorGroup
-									heading="Favourites"
-									className="pb-2 [&_[cmdk-group-heading]]:text-foreground [&_[cmdk-group-heading]]:font-semibold"
-								>
-									{favoriteActiveOptions.map((option) =>
-										renderModelOptionItem(option),
-									)}
-								</ModelSelectorGroup>
-							)}
-							{!hasModelSearchValue &&
-								groupedActiveOptions.map((group, index) => (
-									<ModelSelectorGroup
-										key={`active-${group.heading}-${index}`}
-										heading={group.heading}
-										className="pb-2 [&_[cmdk-group-heading]]:text-foreground [&_[cmdk-group-heading]]:font-semibold"
-									>
-										{group.items.map((option) =>
-											renderModelOptionItem(option),
-										)}
-									</ModelSelectorGroup>
-								))}
-							{!hasModelSearchValue && comingSoonCount > 0 && (
-								<>
-									<ModelSelectorSeparator />
-									{groupedComingSoonOptions.map((group, index) => (
-										<ModelSelectorGroup
-											key={`coming-soon-${group.heading}-${index}`}
-											heading={`Coming soon · ${group.heading}`}
-											className="pb-2"
-										>
-											{group.items.map((option) =>
-												renderModelOptionItem(option, {
-													withComingSoonBadge: true,
-												}),
-											)}
-										</ModelSelectorGroup>
-									))}
-								</>
-							)}
-						</ModelSelectorList>
+							</ModelSelectorList>
+						) : (
+							<VirtualizedModelCatalog
+								sections={virtualizedModelSections}
+								getItemKey={getModelOptionKey}
+								activeItemKey={resolvedActiveBrowseModelId}
+								isItemDisabled={(option) =>
+									isModelDisabledForPicker(
+										option,
+										option.gatewayStatus === "inactive",
+									)
+								}
+								onActiveItemChange={setActiveBrowseModelId}
+								onSelectItem={(option) => handleModelSelect(option.modelId)}
+								renderItem={renderVirtualizedModelOption}
+							/>
+						)}
 					</ModelSelectorContent>
 				</ModelSelector>
 			</div>
@@ -1784,7 +1907,7 @@ export function ChatHeader({
 															</div>
 														) : null}
 													</div>
-													<SelectContent>
+												<SelectContent>
 														{ACCENT_COLORS.map(
 															(color) => (
 																<SelectItem
@@ -1826,10 +1949,42 @@ export function ChatHeader({
 																Custom
 															</span>
 														</SelectItem>
-													</SelectContent>
-												</Select>
-											</div>
+												</SelectContent>
+											</Select>
 										</div>
+										<div className="grid gap-2">
+											<Label htmlFor="new-chat-model-preference">
+												New chats
+											</Label>
+											<Select
+												value={newChatModelPreference}
+												onValueChange={(value) =>
+													onNewChatModelPreferenceChange(
+														value as NewChatModelPreference,
+													)
+												}
+											>
+												<SelectTrigger
+													id="new-chat-model-preference"
+													className="w-full sm:w-64"
+												>
+													<SelectValue />
+												</SelectTrigger>
+												<SelectContent>
+													<SelectItem value="blank">
+														Start without models
+													</SelectItem>
+													<SelectItem value="selected">
+														Keep selected model(s)
+													</SelectItem>
+												</SelectContent>
+											</Select>
+											<p className="text-xs text-muted-foreground">
+												Choose whether a new chat starts empty or reuses
+												the current model selection.
+											</p>
+										</div>
+									</div>
 									)}
 									{settingsTab === "data-controls" && (
 										<div className="grid gap-3">
