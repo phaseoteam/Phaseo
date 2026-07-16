@@ -3225,7 +3225,25 @@ function ChatPlaygroundContent({
 
 	const updateActiveModel = useCallback(
 		(modelId: string) => {
-			if (!activeThread) return;
+			if (!activeThread) {
+				const defaults: ChatSettings = {
+					...DEFAULT_SETTINGS,
+					systemPrompt: buildDefaultSystemPrompt(modelId),
+				};
+				void createThreadWithSettings(modelId, defaults)
+					.then(() => {
+						if (typeof window !== "undefined") {
+							window.localStorage.setItem(
+								STORAGE_KEYS.lastModelId,
+								modelId,
+							);
+						}
+					})
+					.catch(() => {
+						setError("Unable to create a chat for the selected model.");
+					});
+				return;
+			}
 			const requiredCapability = getPrimaryCapabilityForModel(modelId);
 			const currentModelDisplayName =
 				activeThread.settings.modelOverridesById?.[
@@ -3301,6 +3319,7 @@ function ChatPlaygroundContent({
 		},
 		[
 			activeThread,
+			createThreadWithSettings,
 			getPrimaryCapabilityForModel,
 			isProviderSupportedForModel,
 			isModelSelectableForContext,
