@@ -8,12 +8,10 @@ export function Login({
 	signupNotice = null,
 	authError = null,
 	returnUrl,
-	showPasskeySignIn = false,
 }: {
 	signupNotice?: SignupNotice;
 	authError?: "auth-failed" | null;
 	returnUrl?: string;
-	showPasskeySignIn?: boolean;
 }) {
 	const signupNoticeText =
 		signupNotice === "check-email"
@@ -44,7 +42,7 @@ export function Login({
 
 			<div className="flex flex-col gap-2">
 				<OAuthButtons returnUrl={returnUrl} />
-				{showPasskeySignIn ? <PasskeySignInButton returnUrl={returnUrl} /> : null}
+				<PasskeySignInButton returnUrl={returnUrl} />
 			</div>
 			<EmailPassword returnUrl={returnUrl} />
 		</div>

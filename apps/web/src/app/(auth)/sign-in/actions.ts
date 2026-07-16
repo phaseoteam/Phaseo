@@ -11,11 +11,8 @@ import {
 	resolveLocalDevAuthOrigin,
 	stripTrailingSlash,
 } from "@/lib/auth/authOrigin";
-import { isAdminViewer } from "@/lib/auth/getViewerRole";
-import { canManagePasskeys } from "@/lib/auth/passkeyAuthorization";
 import { sanitizeReturnUrl } from "@/lib/auth/return-url";
 import { finalizePostLogin } from "@/lib/auth/post-login";
-import { passkeysAdminBetaFlag } from "@/lib/flags";
 import {
 	buildStartSsoRequest,
 	mapSsoAuthErrorMessage,
@@ -139,15 +136,6 @@ export async function completePasskeySignIn(returnUrl?: string) {
 	} = await supabase.auth.getUser();
 	if (!user) {
 		throw new Error("Passkey sign-in did not create a session");
-	}
-
-	const [isAdmin, rolloutEnabled] = await Promise.all([
-		isAdminViewer(),
-		passkeysAdminBetaFlag(),
-	]);
-	if (!canManagePasskeys({ isAdmin, rolloutEnabled })) {
-		await supabase.auth.signOut();
-		throw new Error("passkey_disabled");
 	}
 
 	const {

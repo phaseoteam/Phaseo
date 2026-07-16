@@ -23,7 +23,7 @@ No open GitHub secret-scanning alerts were present. This review does not prove t
 | Medium | Meta `web_search_options` injects arbitrary tools | Fixed here with an allowlist and server-owned tool/location types. |
 | Medium | SpaceXAI BYOK migration can delete the active legacy key | Fixed for existing and fresh environments. The original applied migration remains immutable; a new locked, idempotent corrective migration ranks active/always-use keys before provider spelling and then normalizes the keeper. A read-only production check found no SpaceXAI/xAI BYOK rows requiring recovery. |
 | Medium | API-model route exposes hidden model metadata | Fixed here by applying hidden-model visibility checks after provider/API-model resolution. |
-| Low | Passkey management no longer checks the administrator role | Fixed here. The server-rendered account page exposes passkey management only when the viewer is an administrator and the rollout flag is enabled, and post-ceremony passkey sign-in enforces the same server-side policy before retaining the session. All four authorization combinations are covered by tests. |
+| Low | Passkey management no longer checks the administrator role | Superseded by the intentional general-availability release on `main`. Passkeys are personal account credentials, not workspace administration; the temporary admin-only rollout gate has been removed consistently from enrollment, management, and sign-in. Supabase Auth scopes passkey operations to the authenticated user. |
 | Informational | Tinker and Baseten pricing mismatches, OpenAI Pro-mode metadata, pricing expiry placement, and provider discovery errors | Reviewed; these are catalog/availability correctness findings and do not create a security boundary bypass. |
 
 ## Additional security remediations
@@ -37,7 +37,7 @@ No open GitHub secret-scanning alerts were present. This review does not prove t
 - Redacted credential-shaped request/response fields before Python devtools telemetry reaches disk and applies owner-only file modes where supported.
 - Removed OAuth E2E result details from stdout; detailed results remain in the sanitized report.
 - Removed exception messages and stack fields from gateway and route responses, including debug mode and pricing cron results.
-- Restored server-side administrator authorization for passkey management and post-ceremony sign-in in addition to the rollout flag.
+- Reconciled the temporary passkey admin-beta gate with the subsequent general-availability release so enrollment, management, and sign-in use one consistent account-level policy.
 - Rejected prototype-pollution path segments in both pricing simulator implementations.
 - Replaced backtracking OpenAPI path-template parsing with a linear scanner and escaped generated literals/parameter keys across C++, C#, Go, Java, PHP, Python, Ruby, Rust, and TypeScript backends.
 
@@ -79,8 +79,7 @@ Both migrations were executed against the linked production schema inside explic
 - API security regression suite: 49 tests passed.
 - Targeted webhook URL and delivery regression suite: 12 tests passed.
 - Web security regression suite: 5 tests passed.
-- Passkey authorization regression suite: 4 tests passed.
-- Full web regression suite: 80 suites and 346 tests passed.
+- Full web regression suite after the general-availability merge: 79 suites and 342 tests passed.
 - CI secret-boundary regression suite: 2 tests passed, and the live workflow validation passed.
 - Python devtools tests: 9 passed.
 - API and web TypeScript checks passed (web after Next route type generation).
