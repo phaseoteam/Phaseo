@@ -182,6 +182,8 @@ export const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "STEPFUN_BASE_URL",
     "TENSORIX_API_KEY",
     "TENSORIX_BASE_URL",
+    "TINKER_API_KEY",
+    "TINKER_BASE_URL",
     "VENICE_API_KEY",
     "VENICE_BASE_URL",
     "WEIGHTSANDBIASES_API_KEY",
