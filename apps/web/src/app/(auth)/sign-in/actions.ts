@@ -12,7 +12,6 @@ import {
 	stripTrailingSlash,
 } from "@/lib/auth/authOrigin";
 import { sanitizeReturnUrl } from "@/lib/auth/return-url";
-import { isAdminViewer } from "@/lib/auth/getViewerRole";
 import { finalizePostLogin } from "@/lib/auth/post-login";
 import { passkeysAdminBetaFlag } from "@/lib/flags";
 import {
@@ -140,11 +139,7 @@ export async function completePasskeySignIn(returnUrl?: string) {
 		throw new Error("Passkey sign-in did not create a session");
 	}
 
-	const [isAdmin, passkeysEnabledForAdmin] = await Promise.all([
-		isAdminViewer(),
-		passkeysAdminBetaFlag(),
-	]);
-	if (!isAdmin || !passkeysEnabledForAdmin) {
+	if (!(await passkeysAdminBetaFlag())) {
 		await supabase.auth.signOut();
 		throw new Error("passkey_disabled");
 	}
