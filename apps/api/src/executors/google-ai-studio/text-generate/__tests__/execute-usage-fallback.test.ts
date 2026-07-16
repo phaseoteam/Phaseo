@@ -67,7 +67,10 @@ describe("google-ai-studio execute usage fallback", () => {
 			}),
 		}]);
 
-		const result = await executor(buildArgs());
+		const result = await executor(buildArgs(undefined, {
+			endpoint: "interactions",
+			protocol: "google.interactions",
+		}));
 		mock.restore();
 
 		expect(result.kind).toBe("completed");
@@ -118,7 +121,11 @@ describe("google-ai-studio execute usage fallback", () => {
 
 		const result = await executor(buildArgs(
 			{ model: "google/lyria-3-pro-preview" },
-			{ providerModelSlug: "google/lyria-3-pro-preview" },
+			{
+				providerModelSlug: "google/lyria-3-pro-preview",
+				endpoint: "interactions",
+				protocol: "google.interactions",
+			},
 		));
 		mock.restore();
 
@@ -169,7 +176,11 @@ describe("google-ai-studio execute usage fallback", () => {
 
 		const result = await executor(buildArgs(
 			{ model: "google/lyria-3-pro" },
-			{ providerModelSlug: "google/lyria-3-pro" },
+			{
+				providerModelSlug: "google/lyria-3-pro",
+				endpoint: "interactions",
+				protocol: "google.interactions",
+			},
 		));
 		mock.restore();
 
@@ -217,7 +228,11 @@ describe("google-ai-studio execute usage fallback", () => {
 
 		const result = await executor(buildArgs(
 			{ model: "google/lyria-3-clip-preview" },
-			{ providerModelSlug: "google/lyria-3-clip-preview" },
+			{
+				providerModelSlug: "google/lyria-3-clip-preview",
+				endpoint: "interactions",
+				protocol: "google.interactions",
+			},
 		));
 		mock.restore();
 

@@ -61,6 +61,120 @@ async function sleep(ms: number): Promise<void> {
 	await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+async function irToLegacyGemini(ir: IRChatRequest, modelOverride?: string | null): Promise<any> {
+	const contents: any[] = [];
+	const systemInstructionParts: any[] = [];
+	const toolNamesById = new Map<string, string>();
+
+	for (const message of ir.messages) {
+		if (message.role !== "assistant") continue;
+		for (const toolCall of message.toolCalls ?? []) {
+			if (toolCall.id && toolCall.name) toolNamesById.set(toolCall.id, toolCall.name);
+		}
+	}
+
+	for (const message of ir.messages) {
+		if (message.role === "system" || message.role === "developer") {
+			systemInstructionParts.push(...await irPartsToGeminiParts(message.content, { preserveReasoningAsThought: true }));
+			continue;
+		}
+
+		if (message.role === "user" || message.role === "assistant") {
+			contents.push({
+				role: message.role === "assistant" ? "model" : "user",
+				parts: await irPartsToGeminiParts(message.content, { preserveReasoningAsThought: true }),
+			});
+			continue;
+		}
+
+		if (message.role === "tool") {
+			for (const toolResult of message.toolResults) {
+				let response: any = toolResult.content;
+				if (typeof response === "string") {
+					try {
+						response = JSON.parse(response);
+					} catch {
+						response = { content: response };
+					}
+				}
+				contents.push({
+					role: "user",
+					parts: [{
+						functionResponse: {
+							name: toolNamesById.get(toolResult.toolCallId) ?? toolResult.toolCallId,
+							response,
+						},
+					}],
+				});
+			}
+		}
+	}
+
+	const request: any = { contents };
+	if (ir.googleCachedContent !== undefined) request.cachedContent = ir.googleCachedContent;
+	if (systemInstructionParts.length > 0) request.systemInstruction = { parts: systemInstructionParts };
+
+	const generationConfig: any = {};
+	if (ir.temperature !== undefined) generationConfig.temperature = ir.temperature;
+	if (ir.maxTokens !== undefined) generationConfig.maxOutputTokens = ir.maxTokens;
+	if (ir.topP !== undefined) generationConfig.topP = ir.topP;
+	if (ir.topK !== undefined) generationConfig.topK = ir.topK;
+	if (ir.stop) generationConfig.stopSequences = Array.isArray(ir.stop) ? ir.stop : [ir.stop];
+
+	if (ir.reasoning?.enabled || ir.reasoning?.effort || ir.reasoning?.maxTokens !== undefined || ir.reasoning?.includeThoughts !== undefined) {
+		const thinkingConfig: any = { includeThoughts: ir.reasoning?.includeThoughts ?? true };
+		const modelName = modelOverride ?? ir.model;
+		if (ir.reasoning?.effort && modelSupportsGoogleThinkingLevels(modelName ?? "")) {
+			const level = resolveGoogleThinkingLevelForEffort(modelName ?? "", ir.reasoning.effort);
+			if (level) thinkingConfig.thinkingLevel = level;
+		} else if (ir.reasoning?.maxTokens !== undefined) {
+			thinkingConfig.thinkingBudget = ir.reasoning.maxTokens;
+		} else if (ir.reasoning?.enabled) {
+			thinkingConfig.thinkingBudget = -1;
+		}
+		generationConfig.thinkingConfig = thinkingConfig;
+	}
+
+	if (ir.responseFormat?.type === "json_object") {
+		generationConfig.responseMimeType = "application/json";
+	} else if (ir.responseFormat?.type === "json_schema") {
+		generationConfig.responseMimeType = "application/json";
+		generationConfig.responseSchema = ir.responseFormat.schema;
+	}
+
+	const modalities = (ir.modalities ?? [])
+		.map((modality) => String(modality).toUpperCase())
+		.filter((modality) => modality === "TEXT" || modality === "IMAGE" || modality === "AUDIO");
+	if (modalities.length > 0) generationConfig.responseModalities = modalities;
+
+	if (ir.imageConfig) {
+		const imageConfig: any = {};
+		if (ir.imageConfig.aspectRatio) imageConfig.aspectRatio = ir.imageConfig.aspectRatio;
+		if (ir.imageConfig.imageSize) imageConfig.imageSize = ir.imageConfig.imageSize;
+		if (typeof ir.imageConfig.includeRaiReason === "boolean") imageConfig.includeRaiReason = ir.imageConfig.includeRaiReason;
+		if (ir.imageConfig.referenceImages?.length) imageConfig.referenceImages = ir.imageConfig.referenceImages;
+		if (Object.keys(imageConfig).length > 0) generationConfig.imageConfig = imageConfig;
+	}
+
+	if (Object.keys(generationConfig).length > 0) request.generationConfig = generationConfig;
+
+	if (ir.tools?.length) {
+		request.tools = [{ functionDeclarations: ir.tools.map((tool) => ({
+			name: tool.name,
+			description: tool.description,
+			parameters: tool.parameters,
+		})) }];
+		if (ir.toolChoice === "auto") request.toolConfig = { functionCallingConfig: { mode: "AUTO" } };
+		if (ir.toolChoice === "none") request.toolConfig = { functionCallingConfig: { mode: "NONE" } };
+		if (ir.toolChoice === "required") request.toolConfig = { functionCallingConfig: { mode: "ANY" } };
+		if (typeof ir.toolChoice === "object" && "name" in ir.toolChoice) {
+			request.toolConfig = { functionCallingConfig: { mode: "ANY", allowedFunctionNames: [ir.toolChoice.name] } };
+		}
+	}
+
+	return request;
+}
+
 /**
  * Transform IR request to Google's Interactions API format.
  *
@@ -860,6 +974,7 @@ export function preprocess(ir: IRChatRequest, args: ExecutorExecuteArgs): IRChat
  */
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	const { ir, providerId, providerModelSlug, requestId, pricingCard, meta } = args;
+	const isInteractionsRequest = args.protocol === "google.interactions";
 	const bindings = getBindings() as any;
 
 	// Resolve API key: prefer decrypted BYOK for this provider, else use gateway keys.
@@ -869,7 +984,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	// Determine model candidates (must be in URL, not body)
 	const requestedModel = providerModelSlug || ir.model || "gemini-2.0-flash-exp";
-	const forceSyntheticImageStream = Boolean(ir.stream) && isGeminiImageModelName(requestedModel);
+	const forceSyntheticImageStream = !isInteractionsRequest && Boolean(ir.stream) && isGeminiImageModelName(requestedModel);
 	const modelCandidates = resolveGoogleModelCandidates(requestedModel);
 	let model = modelCandidates[0] || "gemini-2.0-flash-exp";
 
@@ -883,7 +998,12 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	const upstreamStartMs = meta.upstreamStartMs ?? Date.now();
 
-	const makeEndpoint = () => `${baseUrl}/interactions`;
+	const makeEndpoint = (candidateModel: string) => {
+		if (isInteractionsRequest) return `${baseUrl}/interactions`;
+		return Boolean(ir.stream) && !forceSyntheticImageStream
+			? `${baseUrl}/models/${encodeURIComponent(candidateModel)}:streamGenerateContent?alt=sse`
+			: `${baseUrl}/models/${encodeURIComponent(candidateModel)}:generateContent`;
+	};
 
 	const lyriaRetryAttempts = parsePositiveInt(
 		bindings.GOOGLE_AI_STUDIO_LYRIA_RETRY_ATTEMPTS,
@@ -897,11 +1017,13 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	try {
 		const doRequest = async (candidateModel: string) => {
-			const requestBody = await irToGemini(ir, candidateModel);
-			if (Boolean(ir.stream) && !forceSyntheticImageStream) {
+			const requestBody = isInteractionsRequest
+				? await irToGemini(ir, candidateModel)
+				: await irToLegacyGemini(ir, candidateModel);
+			if (isInteractionsRequest && Boolean(ir.stream) && !forceSyntheticImageStream) {
 				requestBody.stream = true;
 			}
-			const endpoint = makeEndpoint();
+			const endpoint = makeEndpoint(candidateModel);
 			const response = await fetch(endpoint, {
 				method: "POST",
 				headers: {
