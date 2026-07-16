@@ -81,7 +81,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-reasoning",
-      "rank": 109
+      "rank": 113
     },
     {
       "benchmark_id": "arena-hard",

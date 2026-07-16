@@ -35,7 +35,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 172
+      "rank": 176
     },
     {
       "benchmark_id": "ai2d",
@@ -155,7 +155,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 52
+      "rank": 54
     },
     {
       "benchmark_id": "mathvista",
@@ -267,7 +267,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 105
+      "rank": 107
     },
     {
       "benchmark_id": "mmstar",

@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://fireworks.ai/models/fireworks/kimi-k2p5",
-      "rank": 19
+      "rank": 23
     },
     {
       "benchmark_id": "charxiv-r",
@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.kimi.com/blog/kimi-k2-5.html",
-      "rank": 5
+      "rank": 6
     },
     {
       "benchmark_id": "finsearchcomp-t2-t3",
@@ -110,7 +110,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://fireworks.ai/models/fireworks/kimi-k2p5",
-      "rank": 19
+      "rank": 23
     },
     {
       "benchmark_id": "imoanswerbench",
@@ -166,7 +166,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://fireworks.ai/models/fireworks/kimi-k2p5",
-      "rank": 7
+      "rank": 8
     },
     {
       "benchmark_id": "mathvista-mini",
@@ -190,7 +190,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://fireworks.ai/models/fireworks/kimi-k2p5",
-      "rank": 15
+      "rank": 16
     },
     {
       "benchmark_id": "mmvu",
@@ -326,7 +326,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.kimi.com/blog/kimi-k2-5.html",
-      "rank": 3
+      "rank": 4
     },
     {
       "benchmark_id": "zerobench",

@@ -51,21 +51,24 @@
       "score": 88.1,
       "is_self_reported": true,
       "other_info": "MCP Atlas; scaled tool use",
-      "source_link": "https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/"
+      "source_link": "https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/",
+      "rank": 1
     },
     {
       "benchmark_id": "jobbench",
       "score": 54.7,
       "is_self_reported": true,
       "other_info": "Professional tool use",
-      "source_link": "https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/"
+      "source_link": "https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/",
+      "rank": 1
     },
     {
       "benchmark_id": "toolathlon",
       "score": 75.6,
       "is_self_reported": true,
       "other_info": "Toolathlon-Verified; personal tool use",
-      "source_link": "https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/"
+      "source_link": "https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/",
+      "rank": 1
     },
     {
       "benchmark_id": "os-world",
@@ -79,7 +82,8 @@
       "score": 62.1,
       "is_self_reported": true,
       "other_info": "With tools; multidisciplinary reasoning",
-      "source_link": "https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/"
+      "source_link": "https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/",
+      "rank": 4
     },
     {
       "benchmark_id": "financeagent-v2",
@@ -93,7 +97,8 @@
       "score": 80,
       "is_self_reported": true,
       "other_info": "Agentic terminal coding",
-      "source_link": "https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/"
+      "source_link": "https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/",
+      "rank": 7
     },
     {
       "benchmark_id": "swe-bench-pro",
@@ -107,7 +112,8 @@
       "score": 53.3,
       "is_self_reported": true,
       "other_info": "DeepSWE 1.1; long-horizon agentic coding",
-      "source_link": "https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/"
+      "source_link": "https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/",
+      "rank": 7
     },
     {
       "benchmark_id": "charxiv-reasoning",

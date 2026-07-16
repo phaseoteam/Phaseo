@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3.2-exp (score=0.3809; benches=14)",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 42
+      "rank": 46
     },
     {
       "benchmark_id": "browsecomp-zh",
@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3.2-exp (score=0.3809; benches=14)",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 78
+      "rank": 86
     },
     {
       "benchmark_id": "livecodebench",

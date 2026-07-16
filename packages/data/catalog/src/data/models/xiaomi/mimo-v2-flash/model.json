@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mimo.xiaomi.com/blog/mimo-v2-flash",
-      "rank": 32
+      "rank": 36
     },
     {
       "benchmark_id": "gpqa",
@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mimo.xiaomi.com/blog/mimo-v2-flash",
-      "rank": 73
+      "rank": 81
     },
     {
       "benchmark_id": "livecodebench-v6",

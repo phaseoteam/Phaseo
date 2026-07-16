@@ -150,7 +150,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 107
+      "rank": 115
     },
     {
       "benchmark_id": "hypersim",
@@ -222,7 +222,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 10
+      "rank": 11
     },
     {
       "benchmark_id": "mathvista-mini",
@@ -310,7 +310,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 39
+      "rank": 40
     },
     {
       "benchmark_id": "mmmuval",

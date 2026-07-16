@@ -102,7 +102,7 @@
       "is_self_reported": true,
       "other_info": "Image understanding benchmark from official MiMo-V2.5 model card image",
       "source_link": "https://huggingface.co/XiaomiMiMo/MiMo-V2.5/blob/main/assets/mimo-v2.5-multimodal-bench.png",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -110,7 +110,7 @@
       "is_self_reported": true,
       "other_info": "Image understanding benchmark from official MiMo-V2.5 model card image",
       "source_link": "https://huggingface.co/XiaomiMiMo/MiMo-V2.5/blob/main/assets/mimo-v2.5-multimodal-bench.png",
-      "rank": 19
+      "rank": 20
     },
     {
       "benchmark_id": "hr-bench-4k",

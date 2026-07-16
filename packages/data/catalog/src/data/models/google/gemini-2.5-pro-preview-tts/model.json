@@ -79,7 +79,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 86
+      "rank": 94
     },
     {
       "benchmark_id": "livecodebench-v5",

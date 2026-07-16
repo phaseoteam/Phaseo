@@ -95,7 +95,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from llama-3.2-11b-instruct (score=0.5873; benches=11)",
       "source_link": "https://huggingface.co/meta-llama/Llama-3.2-11B-Vision-Instruct",
-      "rank": 106
+      "rank": 108
     },
     {
       "benchmark_id": "vqav2-(test)",

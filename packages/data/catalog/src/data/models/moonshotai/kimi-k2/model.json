@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": "Avg@8",
       "source_link": "https://huggingface.co/moonshotai/Kimi-K2-Instruct",
-      "rank": 81
+      "rank": 84
     },
     {
       "benchmark_id": "hmmt-2025",
@@ -94,7 +94,7 @@
       "is_self_reported": true,
       "other_info": "Text Only",
       "source_link": "https://huggingface.co/moonshotai/Kimi-K2-Instruct",
-      "rank": 155
+      "rank": 165
     },
     {
       "benchmark_id": "if-eval",

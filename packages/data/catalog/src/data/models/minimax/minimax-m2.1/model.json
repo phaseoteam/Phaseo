@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.minimax.io/news/minimax-m2-1",
-      "rank": 27
+      "rank": 31
     },
     {
       "benchmark_id": "gpqa",
@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.minimax.io/news/minimax-m2-1",
-      "rank": 74
+      "rank": 82
     },
     {
       "benchmark_id": "ifbench",
@@ -166,7 +166,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.minimax.io/news/minimax-m2-1",
-      "rank": 10
+      "rank": 13
     },
     {
       "benchmark_id": "vibe",

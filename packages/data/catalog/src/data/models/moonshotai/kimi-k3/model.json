@@ -110,7 +110,7 @@
       "is_self_reported": true,
       "other_info": "KimiCode harness; Moonshot release-table score. The official DeepSWE leaderboard reports a separate 67.3 result with mini-SWE-agent.",
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 2
     },
     {
       "benchmark_id": "deepswe",
@@ -118,7 +118,7 @@
       "is_self_reported": false,
       "other_info": "Official DeepSWE leaderboard result using mini-SWE-agent; not directly interchangeable with Moonshot's 67.5 KimiCode-harness result.",
       "source_link": "https://deepswe.datacurve.ai/",
-      "rank": null
+      "rank": 3
     },
     {
       "benchmark_id": "program-bench",
@@ -126,7 +126,7 @@
       "is_self_reported": true,
       "other_info": "KimiCode harness.",
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 1
     },
     {
       "benchmark_id": "terminal-bench-2.1",
@@ -134,7 +134,7 @@
       "is_self_reported": true,
       "other_info": "KimiCode harness; other models in Moonshot's comparison use their best reported score across different harnesses.",
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 1
     },
     {
       "benchmark_id": "frontierswe",
@@ -142,7 +142,7 @@
       "is_self_reported": true,
       "other_info": "KimiCode harness; dominance score recomputed from raw scores with the official evaluation script, current July 16, 2026.",
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 1
     },
     {
       "benchmark_id": "swe-marathon",
@@ -150,7 +150,7 @@
       "is_self_reported": true,
       "other_info": "Claude Code harness.",
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 1
     },
     {
       "benchmark_id": "posttrain-bench",
@@ -158,7 +158,7 @@
       "is_self_reported": true,
       "other_info": "Claude Code harness; official Harbor implementation at max reasoning effort; average of three runs.",
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 1
     },
     {
       "benchmark_id": "mls-bench-lite",
@@ -166,7 +166,7 @@
       "is_self_reported": true,
       "other_info": "MLS Bench Lite; KimiCode harness.",
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 1
     },
     {
       "benchmark_id": "kimi-code-bench-2",
@@ -174,7 +174,7 @@
       "is_self_reported": true,
       "other_info": "Internal Kimi Code Bench 2.0; evaluated with both KimiCode and Claude Code harnesses.",
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 1
     },
     {
       "benchmark_id": "gdpval-aa",
@@ -182,7 +182,7 @@
       "is_self_reported": false,
       "other_info": "GDPval-AA v2 Elo score; cited by Moonshot from Artificial Analysis.",
       "source_link": "https://artificialanalysis.ai/",
-      "rank": null
+      "rank": 4
     },
     {
       "benchmark_id": "browsecomp",
@@ -190,7 +190,7 @@
       "is_self_reported": true,
       "other_info": "Uses context compaction at 300K tokens, following the strategy used in Claude model cards. Moonshot separately reports 90.4 with a 1M context and no context management.",
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 1
     },
     {
       "benchmark_id": "browsecomp",
@@ -198,7 +198,7 @@
       "is_self_reported": true,
       "other_info": "1M-token context with no context management; separate from the 91.2 result using compaction at 300K tokens.",
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 2
     },
     {
       "benchmark_id": "deepsearchqa",
@@ -206,7 +206,7 @@
       "is_self_reported": true,
       "other_info": "F1 score.",
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 1
     },
     {
       "benchmark_id": "toolathlon",
@@ -214,7 +214,7 @@
       "is_self_reported": true,
       "other_info": "Toolathlon-Verified variant.",
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 2
     },
     {
       "benchmark_id": "scale-mcp-atlas",
@@ -222,7 +222,7 @@
       "is_self_reported": true,
       "other_info": "500-task public subset; 100-turn limit; Gemini 3.1 Pro judge.",
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 2
     },
     {
       "benchmark_id": "automationbench",
@@ -230,7 +230,7 @@
       "is_self_reported": true,
       "other_info": "600-task public subset; otherwise follows the official GitHub setup.",
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 1
     },
     {
       "benchmark_id": "jobbench",
@@ -238,7 +238,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 2
     },
     {
       "benchmark_id": "aa-briefcase",
@@ -246,7 +246,7 @@
       "is_self_reported": false,
       "other_info": "Elo score; cited by Moonshot from Artificial Analysis.",
       "source_link": "https://artificialanalysis.ai/",
-      "rank": null
+      "rank": 1
     },
     {
       "benchmark_id": "apex-agents",
@@ -254,7 +254,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 1
     },
     {
       "benchmark_id": "officeqa-pro",
@@ -262,7 +262,7 @@
       "is_self_reported": true,
       "other_info": "Claude Code harness.",
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 2
     },
     {
       "benchmark_id": "spreadsheetbench-2",
@@ -270,7 +270,7 @@
       "is_self_reported": true,
       "other_info": "Claude Code harness.",
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 1
     },
     {
       "benchmark_id": "deck-bench",
@@ -278,7 +278,7 @@
       "is_self_reported": true,
       "other_info": "Internal DECK-Bench.",
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 1
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -286,7 +286,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 11
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -294,7 +294,7 @@
       "is_self_reported": true,
       "other_info": "HLE-Full without tools.",
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 40
     },
     {
       "benchmark_id": "humanitys-last-exam-tools",
@@ -302,7 +302,7 @@
       "is_self_reported": true,
       "other_info": "HLE-Full with tools.",
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 1
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -310,7 +310,7 @@
       "is_self_reported": true,
       "other_info": "Average of three runs; official protocol preserves input order and prepends images to text input.",
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 3
     },
     {
       "benchmark_id": "mmmu-pro-python",
@@ -318,7 +318,7 @@
       "is_self_reported": true,
       "other_info": "With Python tools; average of three runs; official protocol preserves input order and prepends images to text input.",
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 1
     },
     {
       "benchmark_id": "charxiv-rq",
@@ -326,7 +326,7 @@
       "is_self_reported": true,
       "other_info": "RQ variant; average of three runs.",
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 1
     },
     {
       "benchmark_id": "charxiv-rq-python",
@@ -334,7 +334,7 @@
       "is_self_reported": true,
       "other_info": "RQ variant with Python tools; average of three runs.",
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 1
     },
     {
       "benchmark_id": "mathvision",
@@ -342,7 +342,7 @@
       "is_self_reported": true,
       "other_info": "Average of three runs.",
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 1
     },
     {
       "benchmark_id": "mathvision-python",
@@ -350,7 +350,7 @@
       "is_self_reported": true,
       "other_info": "With Python tools; average of three runs.",
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 1
     },
     {
       "benchmark_id": "babyvision-python",
@@ -358,7 +358,7 @@
       "is_self_reported": true,
       "other_info": "With Python tools; average of three runs.",
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 1
     },
     {
       "benchmark_id": "zerobench-main",
@@ -366,7 +366,7 @@
       "is_self_reported": true,
       "other_info": "pass@5; official setting; run five times.",
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 1
     },
     {
       "benchmark_id": "zerobench-main-python",
@@ -374,7 +374,7 @@
       "is_self_reported": true,
       "other_info": "With Python tools; pass@5; official setting; run five times.",
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 1
     },
     {
       "benchmark_id": "worldvqa",
@@ -382,7 +382,7 @@
       "is_self_reported": true,
       "other_info": "ForceAnswer variant; average of three runs.",
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 1
     },
     {
       "benchmark_id": "omnidocbench",
@@ -390,7 +390,7 @@
       "is_self_reported": true,
       "other_info": "Moonshot labels this OmniDocBench without a version; average of three runs.",
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 1
     },
     {
       "benchmark_id": "perceptionbench",
@@ -398,7 +398,7 @@
       "is_self_reported": true,
       "other_info": "Internal benchmark focused on atomic visual-perception capabilities; average of three runs.",
       "source_link": "https://www.kimi.com/blog/kimi-k3",
-      "rank": null
+      "rank": 1
     }
   ]
 }

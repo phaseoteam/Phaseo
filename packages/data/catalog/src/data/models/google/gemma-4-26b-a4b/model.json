@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.google.dev/gemma/docs/core/model_card_4",
-      "rank": 47
+      "rank": 50
     },
     {
       "benchmark_id": "tau-2-bench",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": "Without tools",
       "source_link": "https://ai.google.dev/gemma/docs/core/model_card_4",
-      "rank": 131
+      "rank": 141
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": "With search",
       "source_link": "https://ai.google.dev/gemma/docs/core/model_card_4",
-      "rank": 91
+      "rank": 99
     },
     {
       "benchmark_id": "mmmlu",
@@ -94,7 +94,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.google.dev/gemma/docs/core/model_card_4",
-      "rank": 36
+      "rank": 37
     },
     {
       "benchmark_id": "omnidocbench-1.5",

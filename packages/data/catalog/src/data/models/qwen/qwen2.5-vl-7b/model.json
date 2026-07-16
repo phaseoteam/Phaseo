@@ -135,7 +135,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct",
-      "rank": 45
+      "rank": 47
     },
     {
       "benchmark_id": "mathvista-mini",
@@ -183,7 +183,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-VL",
-      "rank": 98
+      "rank": 100
     },
     {
       "benchmark_id": "mmstar",

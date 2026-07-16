@@ -105,7 +105,7 @@
       "is_self_reported": true,
       "other_info": "With Thinking, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 33
+      "rank": 37
     },
     {
       "benchmark_id": "browsecomp-long-context-128k",
@@ -201,7 +201,7 @@
       "is_self_reported": true,
       "other_info": "Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 25
+      "rank": 28
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -209,7 +209,7 @@
       "is_self_reported": true,
       "other_info": "With Thinking, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 32
+      "rank": 35
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -217,7 +217,7 @@
       "is_self_reported": true,
       "other_info": "Without Thinking, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 71
+      "rank": 74
     },
     {
       "benchmark_id": "graphwalks-bfs-lt-128k",
@@ -289,7 +289,7 @@
       "is_self_reported": true,
       "other_info": "Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 57
+      "rank": 65
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -297,7 +297,7 @@
       "is_self_reported": true,
       "other_info": "With Thinking, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 70
+      "rank": 78
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -305,7 +305,7 @@
       "is_self_reported": true,
       "other_info": "Without Thinking, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 139
+      "rank": 149
     },
     {
       "benchmark_id": "longfact-concepts-hallucination-rate",
@@ -345,7 +345,7 @@
       "is_self_reported": true,
       "other_info": "With Thinking, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 16
+      "rank": 17
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -353,7 +353,7 @@
       "is_self_reported": true,
       "other_info": "Without Thinking, Pass @ 1",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 48
+      "rank": 49
     },
     {
       "benchmark_id": "multi-challenge",

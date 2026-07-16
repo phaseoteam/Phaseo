@@ -29,7 +29,7 @@
       "is_self_reported": true,
       "other_info": "No Tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-2/",
-      "rank": 9
+      "rank": 12
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -37,7 +37,7 @@
       "is_self_reported": true,
       "other_info": "No Tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-2/",
-      "rank": 56
+      "rank": 64
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -45,7 +45,7 @@
       "is_self_reported": true,
       "other_info": "With Search + Python",
       "source_link": "https://openai.com/index/introducing-gpt-5-2/",
-      "rank": 20
+      "rank": 24
     },
     {
       "benchmark_id": "hmmt-2025",

@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.5",
-      "rank": 28
+      "rank": 32
     },
     {
       "benchmark_id": "browsecomp-zh",
@@ -206,7 +206,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.5",
-      "rank": 22
+      "rank": 27
     },
     {
       "benchmark_id": "hypersim",
@@ -278,7 +278,7 @@
       "is_self_reported": true,
       "other_info": "Highest reported variant uses fixed boxed-answer prompt.",
       "source_link": "https://qwen.ai/blog?id=qwen3.5",
-      "rank": 5
+      "rank": 6
     },
     {
       "benchmark_id": "mathvista-mini",
@@ -374,7 +374,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.5",
-      "rank": 31
+      "rank": 32
     },
     {
       "benchmark_id": "mmstar",

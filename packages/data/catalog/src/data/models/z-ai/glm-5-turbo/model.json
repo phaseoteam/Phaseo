@@ -30,7 +30,7 @@
       "is_self_reported": false,
       "other_info": "Artificial Analysis structured model metrics",
       "source_link": "https://artificialanalysis.ai/models/glm-5-turbo",
-      "rank": 14
+      "rank": 17
     },
     {
       "benchmark_id": "tau-2-telecom",
@@ -94,7 +94,7 @@
       "is_self_reported": false,
       "other_info": "Artificial Analysis structured model metrics",
       "source_link": "https://artificialanalysis.ai/models/glm-5-turbo",
-      "rank": 35
+      "rank": 38
     },
     {
       "benchmark_id": "critpt",

@@ -47,7 +47,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/Qwen/Qwen3-235B-A22B-Thinking-2507",
-      "rank": 52
+      "rank": 55
     },
     {
       "benchmark_id": "hmmt-2025",
@@ -63,7 +63,7 @@
       "is_self_reported": true,
       "other_info": "Text Only",
       "source_link": "https://huggingface.co/Qwen/Qwen3-235B-A22B-Thinking-2507",
-      "rank": 82
+      "rank": 90
     },
     {
       "benchmark_id": "if-eval",

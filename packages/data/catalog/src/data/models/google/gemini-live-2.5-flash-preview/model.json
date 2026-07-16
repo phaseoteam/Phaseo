@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gemini-2.5-flash (score=0.5083; benches=14)",
       "source_link": "https://developers.googleblog.com/en/start-building-with-gemini-25-flash/",
-      "rank": 122
+      "rank": 132
     },
     {
       "benchmark_id": "livecodebench-v5",
