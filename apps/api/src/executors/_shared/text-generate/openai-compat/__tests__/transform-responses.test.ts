@@ -544,6 +544,37 @@ describe("irToOpenAIResponses", () => {
 		}]);
 	});
 
+	it("does not allow Meta web_search_options to inject an arbitrary tool", () => {
+		const request = irToOpenAIResponses({
+			model: "meta/muse-spark-1.1",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "Find the latest news." }],
+			}],
+			stream: false,
+			webSearchOptions: {
+				type: "function",
+				name: "attacker_tool",
+				parameters: { type: "object" },
+				search_context_size: "high",
+				user_location: {
+					type: "approximate",
+					country: "GB",
+					secret: "must-not-pass-through",
+				},
+			},
+		} as any, "muse-spark-1.1", "meta");
+
+		expect(request.tools).toEqual([{
+			type: "web_search_preview",
+			search_context_size: "high",
+			user_location: {
+				type: "approximate",
+				country: "GB",
+			},
+		}]);
+	});
+
 	it("maps Meta reasoning effort and stateful responses fields", () => {
 		const request = irToOpenAIResponses({
 			model: "meta/muse-spark-1.1",

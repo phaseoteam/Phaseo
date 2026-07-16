@@ -7,6 +7,7 @@ import type {
 	IROperation,
 	IRSchema
 } from "@phaseo/oapi-core";
+import { splitPathTemplate } from "@phaseo/oapi-core";
 
 export const backendRuby: Backend = {
 	id: "ruby",
@@ -147,17 +148,21 @@ function renderOperation(operation: IROperation): string {
 
 function renderPathTemplate(path: string, params: IROperation["params"]): string {
 	if (params.length === 0) {
-		return `"${path}"`;
+		return `"${escapeRubyDoubleQuoted(path)}"`;
 	}
-	const segments = path.split(/({[^}]+})/g).filter(Boolean);
+	const segments = splitPathTemplate(path);
 	const parts = segments.map((segment) => {
 		if (segment.startsWith("{") && segment.endsWith("}")) {
 			const name = sanitizeIdentifier(segment.slice(1, -1));
 			return `#{path["${name}"]}`;
 		}
-		return segment.replace(/"/g, '\\"');
+		return escapeRubyDoubleQuoted(segment);
 	});
 	return `"${parts.join("")}"`;
+}
+
+function escapeRubyDoubleQuoted(value: string): string {
+	return value.replace(/\\/g, "\\\\").replace(/#/g, "\\#").replace(/"/g, '\\"');
 }
 
 function sanitizeIdentifier(name: string): string {

@@ -5,11 +5,18 @@
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { authenticate } from "@pipeline/before/auth";
-import type { AuthFailure } from "@pipeline/before/auth";
+import type { AuthFailure, AuthSuccess } from "@pipeline/before/auth";
 import { getSupabaseAdmin } from "@/runtime/env";
 import { readGatewayIoLogObject } from "@pipeline/audit/io-logging";
 import { isGatewayIoLoggingFeatureEnabled } from "@core/feature-flags";
+import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { json, withRuntime } from "../../utils";
+
+function canReadGenerationIoLog(auth: AuthSuccess): boolean {
+	if (auth.internal) return true;
+	const scopes = new Set([...(auth.scopes ?? []), ...(auth.oauthScopes ?? [])]);
+	return scopes.has(CAPABILITIES.GENERATIONS_READ);
+}
 
 function resolveReplayRequest(value: unknown): Record<string, unknown> | null {
     if (!value || typeof value !== "object" || Array.isArray(value)) return null;
@@ -63,7 +70,7 @@ async function handleGeneration(req: Request) {
         return json({ ok: false, error: "not_found" }, 404, { "Cache-Control": "no-store" });
     }
 
-	const ioLoggingFeatureEnabled = await isGatewayIoLoggingFeatureEnabled({
+	const ioLoggingFeatureEnabled = canReadGenerationIoLog(auth) && await isGatewayIoLoggingFeatureEnabled({
 		workspaceId: auth.workspaceId,
 		apiKeyId: auth.apiKeyId,
 		apiKeyRef: auth.apiKeyRef,

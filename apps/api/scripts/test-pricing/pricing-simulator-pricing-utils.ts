@@ -79,13 +79,22 @@ export function normalizeConditionValue(value: unknown): unknown {
     return value;
 }
 
-export function setNestedValue(target: Record<string, any>, path: string, value: unknown): void {
-    if (!path) return;
+const UNSAFE_PATH_SEGMENTS = new Set(["__proto__", "prototype", "constructor"]);
+
+function safePathParts(path: string): string[] | null {
     const parts = path.split(".");
+    return parts.length > 0 && parts.every((part) => part.length > 0 && !UNSAFE_PATH_SEGMENTS.has(part))
+        ? parts
+        : null;
+}
+
+export function setNestedValue(target: Record<string, any>, path: string, value: unknown): void {
+    const parts = safePathParts(path);
+    if (!parts) return;
     let current = target;
     for (let i = 0; i < parts.length - 1; i++) {
         const key = parts[i];
-        if (typeof current[key] !== "object" || current[key] === null) {
+        if (!Object.prototype.hasOwnProperty.call(current, key) || typeof current[key] !== "object" || current[key] === null) {
             current[key] = {};
         }
         current = current[key];
@@ -94,12 +103,12 @@ export function setNestedValue(target: Record<string, any>, path: string, value:
 }
 
 export function unsetNestedValue(target: Record<string, any>, path: string): void {
-    if (!path) return;
-    const parts = path.split(".");
+    const parts = safePathParts(path);
+    if (!parts) return;
     let current = target;
     for (let i = 0; i < parts.length - 1; i++) {
         const key = parts[i];
-        if (typeof current[key] !== "object" || current[key] === null) {
+        if (!Object.prototype.hasOwnProperty.call(current, key) || typeof current[key] !== "object" || current[key] === null) {
             return;
         }
         current = current[key];

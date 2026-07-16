@@ -3,7 +3,7 @@
 // How: Builds sanitized error payloads and logs scoped pipeline failures.
 
 import type { PipelineContext } from "./before/types";
-import { safeJsonStringify, sanitizeErrorMessage } from "@/lib/safe-json";
+import { safeJsonStringify } from "@/lib/safe-json";
 
 export function buildPipelineExecutionErrorResponse(
 	error: unknown,
@@ -18,12 +18,9 @@ export function buildPipelineExecutionErrorResponse(
 		payload.request_id = ctx.requestId;
 	}
 
-	// Only include raw error text when debug mode is explicitly enabled.
-	if (ctx?.meta?.debug?.enabled) {
-		payload.message = sanitizeErrorMessage(
-			error instanceof Error ? error.message : String(error),
-		);
-	}
+	// Never return exception text to callers. Debug mode may add request-scoped
+	// diagnostics elsewhere, but implementation errors remain server-only.
+	void error;
 
 	return new Response(safeJsonStringify(payload), {
 		status: 500,

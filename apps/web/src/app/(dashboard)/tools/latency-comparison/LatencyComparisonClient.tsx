@@ -44,8 +44,6 @@ interface SavedConfig {
 	id: string;
 	name: string;
 	gatewayUrl: string;
-	gatewayApiKey: string;
-	openaiApiKey: string;
 	prompts: string[];
 	numRuns: number;
 	createdAt: number;
@@ -437,7 +435,18 @@ export default function LatencyComparisonClient() {
 		const saved = localStorage.getItem("latency-comparison-configs");
 		if (saved) {
 			try {
-				setSavedConfigs(JSON.parse(saved));
+				const parsed = JSON.parse(saved) as SavedConfig[];
+				const sanitized = parsed.map((config) => ({
+					id: config.id,
+					name: config.name,
+					gatewayUrl: config.gatewayUrl,
+					prompts: config.prompts,
+					numRuns: config.numRuns,
+					createdAt: config.createdAt,
+				}));
+				setSavedConfigs(sanitized);
+				// Remove credentials persisted by versions before this security fix.
+				localStorage.setItem("latency-comparison-configs", JSON.stringify(sanitized));
 			} catch {
 				// Ignore
 			}
@@ -493,8 +502,6 @@ export default function LatencyComparisonClient() {
 			id: Date.now().toString(),
 			name: configName,
 			gatewayUrl,
-			gatewayApiKey,
-			openaiApiKey,
 			prompts: [...prompts],
 			numRuns,
 			createdAt: Date.now(),
@@ -508,8 +515,6 @@ export default function LatencyComparisonClient() {
 
 	const loadConfig = (config: SavedConfig) => {
 		setGatewayUrl(config.gatewayUrl);
-		setGatewayApiKey(config.gatewayApiKey);
-		setOpenaiApiKey(config.openaiApiKey);
 		setPrompts(config.prompts.length > 0 ? config.prompts : ["Write a short haiku about coding."]);
 		setNumRuns(config.numRuns);
 	};

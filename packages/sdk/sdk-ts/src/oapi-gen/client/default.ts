@@ -168,7 +168,7 @@ export async function cancelBatch(
   websocket_url?: string;
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/batches/${encodeURIComponent(String(path?.batch_id))}/cancel`;
+  const resolvedPath = `/batches/${encodeURIComponent(String(path?.["batch_id"]))}/cancel`;
   return client.request<{
     billing?: {
       billed?: boolean;
@@ -413,7 +413,7 @@ export async function cancelBatchAlias(
   websocket_url?: string;
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/batch/${encodeURIComponent(String(path?.id))}/cancel`;
+  const resolvedPath = `/batch/${encodeURIComponent(String(path?.["id"]))}/cancel`;
   return client.request<{
     billing?: {
       billed?: boolean;
@@ -669,7 +669,7 @@ export async function cancelVideo(
   websocket_url?: string;
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/videos/${encodeURIComponent(String(path?.video_id))}/cancel`;
+  const resolvedPath = `/videos/${encodeURIComponent(String(path?.["video_id"]))}/cancel`;
   return client.request<{
     asset?: {
       bytes?: number;
@@ -936,7 +936,7 @@ export async function cancelVideoAlias(
   websocket_url?: string;
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/video/generations/${encodeURIComponent(String(path?.video_id))}/cancel`;
+  const resolvedPath = `/video/generations/${encodeURIComponent(String(path?.["video_id"]))}/cancel`;
   return client.request<{
     asset?: {
       bytes?: number;
@@ -4481,7 +4481,7 @@ export async function createVideoDownloadUrl(
   expires_at?: number;
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/videos/${encodeURIComponent(String(path?.video_id))}/download_url`;
+  const resolvedPath = `/videos/${encodeURIComponent(String(path?.["video_id"]))}/download_url`;
   return client.request<{
     download_url?: string;
     expires_at?: number;
@@ -4518,7 +4518,7 @@ export async function createVideoDownloadUrlAlias(
   expires_at?: number;
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/video/generations/${encodeURIComponent(String(path?.video_id))}/download_url`;
+  const resolvedPath = `/video/generations/${encodeURIComponent(String(path?.["video_id"]))}/download_url`;
   return client.request<{
     download_url?: string;
     expires_at?: number;
@@ -4596,7 +4596,7 @@ export async function deleteApiKey(
   deleted: true;
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/keys/${encodeURIComponent(String(path?.id))}`;
+  const resolvedPath = `/keys/${encodeURIComponent(String(path?.["id"]))}`;
   return client.request<{
     deleted: true;
   }>({
@@ -4629,7 +4629,7 @@ export async function deleteVideo(
   object?: string;
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/videos/${encodeURIComponent(String(path?.video_id))}`;
+  const resolvedPath = `/videos/${encodeURIComponent(String(path?.["video_id"]))}`;
   return client.request<{
     deleted?: boolean;
     id?: string;
@@ -4664,7 +4664,7 @@ export async function deleteVideoAlias(
   object?: string;
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/video/generations/${encodeURIComponent(String(path?.video_id))}`;
+  const resolvedPath = `/video/generations/${encodeURIComponent(String(path?.["video_id"]))}`;
   return client.request<{
     deleted?: boolean;
     id?: string;
@@ -4697,7 +4697,7 @@ export async function deleteWorkspace(
   deleted: true;
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/workspaces/${encodeURIComponent(String(path?.id))}`;
+  const resolvedPath = `/workspaces/${encodeURIComponent(String(path?.["id"]))}`;
   return client.request<{
     deleted: true;
   }>({
@@ -5077,7 +5077,7 @@ export async function getApiKey(
   };
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/keys/${encodeURIComponent(String(path?.id))}`;
+  const resolvedPath = `/keys/${encodeURIComponent(String(path?.["id"]))}`;
   return client.request<{
     data: {
       created_at: string | null;
@@ -5350,7 +5350,7 @@ export async function getMusicGeneration(
   [key: string]: unknown;
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/music/generate/${encodeURIComponent(String(path?.music_id))}`;
+  const resolvedPath = `/music/generate/${encodeURIComponent(String(path?.["music_id"]))}`;
   return client.request<{
     [key: string]: unknown;
   }>({
@@ -5381,7 +5381,7 @@ export async function getMusicGenerationAlias(
   [key: string]: unknown;
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/music/generations/${encodeURIComponent(String(path?.music_id))}`;
+  const resolvedPath = `/music/generations/${encodeURIComponent(String(path?.["music_id"]))}`;
   return client.request<{
     [key: string]: unknown;
   }>({
@@ -5416,7 +5416,7 @@ export async function getProviderDerankStatus(
   [key: string]: unknown;
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/health/providers/${encodeURIComponent(String(path?.provider_id))}/derank`;
+  const resolvedPath = `/health/providers/${encodeURIComponent(String(path?.["provider_id"]))}/derank`;
   return client.request<{
     [key: string]: unknown;
   }>({
@@ -5565,7 +5565,7 @@ export async function getVideo(
   websocket_url?: string;
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/videos/${encodeURIComponent(String(path?.video_id))}`;
+  const resolvedPath = `/videos/${encodeURIComponent(String(path?.["video_id"]))}`;
   return client.request<{
     asset?: {
       bytes?: number;
@@ -5832,7 +5832,7 @@ export async function getVideoAlias(
   websocket_url?: string;
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/video/generations/${encodeURIComponent(String(path?.video_id))}`;
+  const resolvedPath = `/video/generations/${encodeURIComponent(String(path?.["video_id"]))}`;
   return client.request<{
     asset?: {
       bytes?: number;
@@ -5979,7 +5979,7 @@ export async function getVideoContent(
   args: GetVideoContentParams = {},
 ): Promise<Blob> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/videos/${encodeURIComponent(String(path?.video_id))}/content`;
+  const resolvedPath = `/videos/${encodeURIComponent(String(path?.["video_id"]))}/content`;
   return client.request<Blob>({
     method: "GET",
     path: resolvedPath,
@@ -6006,7 +6006,7 @@ export async function getVideoContentAlias(
   args: GetVideoContentAliasParams = {},
 ): Promise<Blob> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/video/generations/${encodeURIComponent(String(path?.video_id))}/content`;
+  const resolvedPath = `/video/generations/${encodeURIComponent(String(path?.["video_id"]))}/content`;
   return client.request<Blob>({
     method: "GET",
     path: resolvedPath,
@@ -6042,7 +6042,7 @@ export async function getWorkspace(
   };
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/workspaces/${encodeURIComponent(String(path?.id))}`;
+  const resolvedPath = `/workspaces/${encodeURIComponent(String(path?.["id"]))}`;
   return client.request<{
     data: {
       created_at: string | null;
@@ -7053,7 +7053,7 @@ export async function listBatchRequests(
   object?: string;
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/batches/${encodeURIComponent(String(path?.batch_id))}/requests`;
+  const resolvedPath = `/batches/${encodeURIComponent(String(path?.["batch_id"]))}/requests`;
   return client.request<{
     batch_id?: string;
     data?: {
@@ -7150,7 +7150,7 @@ export async function listBatchRequestsAlias(
   object?: string;
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/batch/${encodeURIComponent(String(path?.id))}/requests`;
+  const resolvedPath = `/batch/${encodeURIComponent(String(path?.["id"]))}/requests`;
   return client.request<{
     batch_id?: string;
     data?: {
@@ -9337,7 +9337,7 @@ export async function openAsyncJobWebSocket(
   args: OpenAsyncJobWebSocketParams = {},
 ): Promise<unknown> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/async/${encodeURIComponent(String(path?.kind))}/${encodeURIComponent(String(path?.id))}/ws`;
+  const resolvedPath = `/async/${encodeURIComponent(String(path?.["kind"]))}/${encodeURIComponent(String(path?.["id"]))}/ws`;
   return client.request<unknown>({
     method: "GET",
     path: resolvedPath,
@@ -9473,7 +9473,7 @@ export async function retrieveBatch(
   websocket_url?: string;
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/batches/${encodeURIComponent(String(path?.batch_id))}`;
+  const resolvedPath = `/batches/${encodeURIComponent(String(path?.["batch_id"]))}`;
   return client.request<{
     billing?: {
       billed?: boolean;
@@ -9718,7 +9718,7 @@ export async function retrieveBatchAlias(
   websocket_url?: string;
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/batch/${encodeURIComponent(String(path?.id))}`;
+  const resolvedPath = `/batch/${encodeURIComponent(String(path?.["id"]))}`;
   return client.request<{
     billing?: {
       billed?: boolean;
@@ -9863,7 +9863,7 @@ export async function retrieveBatchFile(
   status_details?: {};
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/batches/files/${encodeURIComponent(String(path?.file_id))}`;
+  const resolvedPath = `/batches/files/${encodeURIComponent(String(path?.["file_id"]))}`;
   return client.request<{
     bytes?: number;
     created_at?: number;
@@ -9908,7 +9908,7 @@ export async function retrieveBatchFileAlias(
   status_details?: {};
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/batch/files/${encodeURIComponent(String(path?.file_id))}`;
+  const resolvedPath = `/batch/files/${encodeURIComponent(String(path?.["file_id"]))}`;
   return client.request<{
     bytes?: number;
     created_at?: number;
@@ -9944,7 +9944,7 @@ export async function retrieveBatchFileContent(
   args: RetrieveBatchFileContentParams = {},
 ): Promise<Blob> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/batches/files/${encodeURIComponent(String(path?.file_id))}/content`;
+  const resolvedPath = `/batches/files/${encodeURIComponent(String(path?.["file_id"]))}/content`;
   return client.request<Blob>({
     method: "GET",
     path: resolvedPath,
@@ -9971,7 +9971,7 @@ export async function retrieveBatchFileContentAlias(
   args: RetrieveBatchFileContentAliasParams = {},
 ): Promise<Blob> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/batch/files/${encodeURIComponent(String(path?.file_id))}/content`;
+  const resolvedPath = `/batch/files/${encodeURIComponent(String(path?.["file_id"]))}/content`;
   return client.request<Blob>({
     method: "GET",
     path: resolvedPath,
@@ -10007,7 +10007,7 @@ export async function retrieveFile(
   status_details?: {};
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/files/${encodeURIComponent(String(path?.file_id))}`;
+  const resolvedPath = `/files/${encodeURIComponent(String(path?.["file_id"]))}`;
   return client.request<{
     bytes?: number;
     created_at?: number;
@@ -10043,7 +10043,7 @@ export async function retrieveFileContent(
   args: RetrieveFileContentParams = {},
 ): Promise<Blob> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/files/${encodeURIComponent(String(path?.file_id))}/content`;
+  const resolvedPath = `/files/${encodeURIComponent(String(path?.["file_id"]))}/content`;
   return client.request<Blob>({
     method: "GET",
     path: resolvedPath,
@@ -10097,7 +10097,7 @@ export async function updateApiKey(
   };
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/keys/${encodeURIComponent(String(path?.id))}`;
+  const resolvedPath = `/keys/${encodeURIComponent(String(path?.["id"]))}`;
   return client.request<{
     data: {
       created_at: string | null;
@@ -10154,7 +10154,7 @@ export async function updateWorkspace(
   };
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/workspaces/${encodeURIComponent(String(path?.id))}`;
+  const resolvedPath = `/workspaces/${encodeURIComponent(String(path?.["id"]))}`;
   return client.request<{
     data: {
       created_at: string | null;

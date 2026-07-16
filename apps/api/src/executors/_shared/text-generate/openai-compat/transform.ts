@@ -76,11 +76,30 @@ function addMetaWebSearchTool(request: any, ir: IRChatRequest): void {
 	});
 	if (hasWebSearchTool) return;
 
+	const options = ir.webSearchOptions && typeof ir.webSearchOptions === "object"
+		? ir.webSearchOptions as Record<string, unknown>
+		: {};
+	const searchContextSize = typeof options.search_context_size === "string"
+		&& ["low", "medium", "high"].includes(options.search_context_size)
+		? options.search_context_size
+		: undefined;
+	const rawLocation = options.user_location;
+	const userLocationFields = rawLocation && typeof rawLocation === "object" && !Array.isArray(rawLocation)
+		? Object.fromEntries(Object.entries(rawLocation as Record<string, unknown>).filter(
+			([key, value]) => ["country", "region", "city", "timezone"].includes(key)
+				&& typeof value === "string"
+				&& value.length <= 128,
+		))
+		: {};
+	const userLocation = Object.keys(userLocationFields).length > 0
+		? { type: "approximate", ...userLocationFields }
+		: undefined;
+
 	tools.push({
+		...(searchContextSize ? { search_context_size: searchContextSize } : {}),
+		...(userLocation ? { user_location: userLocation } : {}),
+		// Keep the fixed type last so no caller-controlled field can replace it.
 		type: "web_search_preview",
-		...(ir.webSearchOptions && typeof ir.webSearchOptions === "object"
-			? ir.webSearchOptions
-			: {}),
 	});
 	request.tools = tools;
 }

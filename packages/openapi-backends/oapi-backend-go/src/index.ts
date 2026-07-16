@@ -7,6 +7,7 @@ import type {
 	IROperation,
 	IRSchema
 } from "@phaseo/oapi-core";
+import { splitPathTemplate } from "@phaseo/oapi-core";
 
 export const backendGo: Backend = {
 	id: "go",
@@ -211,11 +212,11 @@ function renderPathTemplate(path: string, params: IROperation["params"]): string
 	if (params.length === 0) {
 		return JSON.stringify(path);
 	}
-	const segments = path.split(/({[^}]+})/g).filter(Boolean);
+	const segments = splitPathTemplate(path);
 	const parts = segments.map((segment) => {
 		if (segment.startsWith("{") && segment.endsWith("}")) {
-			const name = segment.slice(1, -1);
-			return `url.PathEscape(path["${name}"])`;
+			const name = JSON.stringify(segment.slice(1, -1));
+			return `url.PathEscape(path[${name}])`;
 		}
 		return JSON.stringify(segment);
 	});

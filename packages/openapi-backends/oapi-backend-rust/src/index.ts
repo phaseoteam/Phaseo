@@ -7,6 +7,7 @@ import type {
 	IROperation,
 	IRSchema
 } from "@phaseo/oapi-core";
+import { splitPathTemplate } from "@phaseo/oapi-core";
 
 export const backendRust: Backend = {
 	id: "rust",
@@ -135,24 +136,28 @@ function renderOperation(operation: IROperation): string {
 
 function renderPathTemplate(path: string, params: IROperation["params"]): string {
 	if (params.length === 0) {
-		return `String::from("${path}")`;
+		return `String::from(${JSON.stringify(path)})`;
 	}
-	const segments = path.split(/({[^}]+})/g).filter(Boolean);
+	const segments = splitPathTemplate(path);
 	const formatParts: string[] = [];
 	const args: string[] = [];
 	for (const segment of segments) {
 		if (segment.startsWith("{") && segment.endsWith("}")) {
-			const name = segment.slice(1, -1);
+			const name = JSON.stringify(segment.slice(1, -1));
 			formatParts.push("{}");
-			args.push(`path.get("${name}").cloned().unwrap_or_default()`);
+			args.push(`path.get(${name}).cloned().unwrap_or_default()`);
 		} else {
-			const escaped = segment.replace(/{/g, "{{").replace(/}/g, "}}");
+			const escaped = segment
+				.replace(/\\/g, "\\\\")
+				.replace(/"/g, '\\"')
+				.replace(/{/g, "{{")
+				.replace(/}/g, "}}");
 			formatParts.push(escaped);
 		}
 	}
 	const formatString = formatParts.join("");
 	return args.length === 0
-		? `String::from("${path}")`
+		? `String::from(${JSON.stringify(path)})`
 		: `format!("${formatString}", ${args.join(", ")})`;
 }
 

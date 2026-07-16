@@ -51,6 +51,38 @@ def test_devtools_records_chat_completion(tmp_path, monkeypatch):
     assert rows[0]["metadata"]["latency_ms"] == 120
 
 
+def test_devtools_redacts_credential_shaped_fields_before_persisting(tmp_path, monkeypatch):
+    def fake_create_chat_completion(_client, *, body):
+        return {
+            "id": "response_123",
+            "access_token": "response-secret",
+            "nested": {"client_secret": "nested-secret"},
+        }
+
+    monkeypatch.setattr(ops, "createChatCompletion", fake_create_chat_completion)
+    client = Phaseo(
+        api_key="sk_test_123",
+        base_url="https://example.test",
+        devtools=create_phaseo_devtools(enabled=True, directory=str(tmp_path)),
+    )
+
+    client.generate_text({
+        "model": "openai/gpt-5-nano",
+        "messages": [{"role": "user", "content": "hi"}],
+        "password": "request-secret",
+        "api_key": "request-key",
+    })
+
+    rows = [
+        json.loads(line)
+        for line in (tmp_path / "generations.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    assert rows[0]["request"]["password"] == "[REDACTED]"
+    assert rows[0]["request"]["api_key"] == "[REDACTED]"
+    assert rows[0]["response"]["access_token"] == "[REDACTED]"
+    assert rows[0]["response"]["nested"]["client_secret"] == "[REDACTED]"
+
+
 def test_devtools_records_errors(tmp_path, monkeypatch):
     def fake_create_chat_completion(client, body):
         request = httpx.Request("POST", "https://example.test/chat/completions")
