@@ -24,6 +24,16 @@
       "title": "Pricing",
       "kind": "pricing",
       "url": "https://platform.kimi.ai/docs/pricing/chat-k3"
+    },
+    {
+      "title": "Venice API Models",
+      "kind": "docs",
+      "url": "https://docs.venice.ai/models/overview"
+    },
+    {
+      "title": "Venice API Pricing",
+      "kind": "pricing",
+      "url": "https://docs.venice.ai/overview/pricing"
     }
   ],
   "details": [
@@ -69,7 +79,7 @@
     },
     {
       "name": "availability_note",
-      "value": "Moonshot AI has published Kimi K3 API documentation and pricing. Moonshot AI is the only confirmed API provider currently listed; full model weights and the technical report are still forthcoming."
+      "value": "Moonshot AI and Venice provide Kimi K3 API access. Venice currently exposes the standard kimi-k3 route; its live model catalog does not yet expose an E2EE Kimi K3 model ID. Full model weights and the technical report are still forthcoming."
     }
   ],
   "benchmarks": []
