@@ -1010,15 +1010,6 @@ async function sendAsyncWebhookRequest(args: {
 	attemptNumber: number;
 	maxAttempts: number;
 }): Promise<AsyncWebhookRequestResult> {
-	const validatedUrl = await validateWebhookEndpointUrlForDelivery(args.url);
-	if (validatedUrl.ok === false) {
-		return {
-			ok: false,
-			statusCode: null,
-			bodyPreview: null,
-			errorMessage: `Webhook URL rejected: ${validatedUrl.reason}`,
-		};
-	}
 	const headers: Record<string, string> = {
 		"Content-Type": "application/json",
 		"User-Agent": "Phaseo-Async-Webhook/1.0",
@@ -1032,6 +1023,18 @@ async function sendAsyncWebhookRequest(args: {
 		const timestamp = String(Math.floor(Date.now() / 1000));
 		headers["x-phaseo-timestamp"] = timestamp;
 		headers["x-phaseo-signature"] = await signWebhook(args.secret, timestamp, args.body);
+	}
+	// Keep DNS validation as close as possible to the network operation. Any
+	// asynchronous preparation before this point would unnecessarily widen the
+	// DNS-rebinding time-of-check/time-of-use window.
+	const validatedUrl = await validateWebhookEndpointUrlForDelivery(args.url);
+	if (validatedUrl.ok === false) {
+		return {
+			ok: false,
+			statusCode: null,
+			bodyPreview: null,
+			errorMessage: `Webhook URL rejected: ${validatedUrl.reason}`,
+		};
 	}
 	const timeoutMs = resolveWebhookDeliveryTimeoutMs();
 	const controller = new AbortController();

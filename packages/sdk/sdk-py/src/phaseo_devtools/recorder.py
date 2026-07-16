@@ -16,6 +16,36 @@ SDK_VERSION = "2.0.5"
 
 SDK_NAME = "python"
 
+_REDACTED = "[REDACTED]"
+_SENSITIVE_FIELD_NAMES = {
+    "apikey",
+    "authorization",
+    "clientsecret",
+    "cookie",
+    "password",
+    "refreshtoken",
+    "secret",
+    "setcookie",
+    "token",
+    "accesstoken",
+}
+
+
+def _is_sensitive_field(name: Any) -> bool:
+    normalized = "".join(character for character in str(name).lower() if character.isalnum())
+    return normalized in _SENSITIVE_FIELD_NAMES or normalized.endswith(("apikey", "password", "secret"))
+
+
+def _redact_sensitive_fields(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return {
+            str(key): _REDACTED if _is_sensitive_field(key) else _redact_sensitive_fields(entry)
+            for key, entry in value.items()
+        }
+    if isinstance(value, (list, tuple)):
+        return [_redact_sensitive_fields(entry) for entry in value]
+    return value
+
 
 def _env_enabled(default: bool) -> bool:
     raw = os.getenv("PHASEO_DEVTOOLS")
@@ -176,9 +206,11 @@ class TelemetryRecorder:
             entry["metadata"].pop("headers", None)
 
         self._ensure_layout()
-        line = json.dumps(entry, ensure_ascii=False, default=str)
+        safe_entry = _redact_sensitive_fields(entry)
+        line = json.dumps(safe_entry, ensure_ascii=False, default=str)
         with self._generations_file.open("a", encoding="utf-8") as f:
             f.write(line + "\n")
+        self._restrict_file_permissions(self._generations_file)
 
     def _ensure_layout(self) -> None:
         self._directory.mkdir(parents=True, exist_ok=True)
@@ -201,6 +233,16 @@ class TelemetryRecorder:
         }
         with self._metadata_file.open("w", encoding="utf-8") as f:
             json.dump(payload, f, ensure_ascii=False, indent=2)
+        self._restrict_file_permissions(self._metadata_file)
+
+    @staticmethod
+    def _restrict_file_permissions(path: Path) -> None:
+        try:
+            path.chmod(0o600)
+        except OSError:
+            # Some filesystems (notably Windows ACL-backed mounts) do not map
+            # POSIX modes exactly. Credential-shaped fields are still redacted.
+            pass
 
     def _extract_usage(self, response: Any) -> Optional[Dict[str, Any]]:
         if not isinstance(response, Mapping):

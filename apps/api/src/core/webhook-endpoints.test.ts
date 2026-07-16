@@ -108,6 +108,21 @@ describe("webhook endpoint helpers", () => {
 			ok: false,
 			reason: "webhook_url_private_network_not_allowed",
 		});
+		for (const url of [
+			"https://[::ffff:127.0.0.1]/hooks",
+			"https://[::ffff:7f00:1]/hooks",
+			"https://[::7f00:1]/hooks",
+			"https://[64:ff9b::7f00:1]/hooks",
+		]) {
+			expect(validateWebhookEndpointUrl(url)).toEqual({
+				ok: false,
+				reason: "webhook_url_private_network_not_allowed",
+			});
+		}
+		expect(validateWebhookEndpointUrl("https://[::ffff:808:808]/hooks")).toEqual({
+			ok: true,
+			url: "https://[::ffff:808:808]/hooks",
+		});
 	});
 
 	it("rejects webhook URLs whose DNS answers resolve to private networks", async () => {
@@ -131,6 +146,13 @@ describe("webhook endpoint helpers", () => {
 		})).resolves.toEqual({
 			ok: false,
 			reason: "webhook_url_dns_resolution_failed",
+		});
+		await expect(validateWebhookEndpointUrlForDelivery("https://customer.example/hooks", {
+			forceDns: true,
+			resolveAddresses: async () => ["::ffff:7f00:1"],
+		})).resolves.toEqual({
+			ok: false,
+			reason: "webhook_url_private_network_not_allowed",
 		});
 	});
 });

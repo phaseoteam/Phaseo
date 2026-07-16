@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const authenticateMock = vi.fn();
 const getSupabaseAdminMock = vi.fn();
+const readGatewayIoLogObjectMock = vi.fn();
+const isGatewayIoLoggingFeatureEnabledMock = vi.fn();
 
 vi.mock("@pipeline/before/auth", () => ({
 	authenticate: (...args: any[]) => authenticateMock(...args),
@@ -9,6 +11,14 @@ vi.mock("@pipeline/before/auth", () => ({
 
 vi.mock("@/runtime/env", () => ({
 	getSupabaseAdmin: (...args: any[]) => getSupabaseAdminMock(...args),
+}));
+
+vi.mock("@pipeline/audit/io-logging", () => ({
+	readGatewayIoLogObject: (...args: any[]) => readGatewayIoLogObjectMock(...args),
+}));
+
+vi.mock("@core/feature-flags", () => ({
+	isGatewayIoLoggingFeatureEnabled: (...args: any[]) => isGatewayIoLoggingFeatureEnabledMock(...args),
 }));
 
 vi.mock("../../utils", () => ({
@@ -75,10 +85,67 @@ describe("generationsRoutes", () => {
 	beforeEach(() => {
 		authenticateMock.mockReset();
 		getSupabaseAdminMock.mockReset();
+		readGatewayIoLogObjectMock.mockReset();
+		isGatewayIoLoggingFeatureEnabledMock.mockReset();
+		isGatewayIoLoggingFeatureEnabledMock.mockResolvedValue(true);
 		authenticateMock.mockResolvedValue({
 			ok: true,
 			workspaceId: "ws_test",
+			apiKeyId: "key_test",
+			apiKeyRef: "key_test",
+			apiKeyKid: "kid_test",
+			scopes: [],
 		});
+	});
+
+	it("does not read or expose raw I/O logs to an unscoped API key", async () => {
+		const supabase = buildSupabaseMock({
+			requestData: { request_id: "gen_123", status_code: 200 },
+			ioLogData: {
+				io_log_status: "stored",
+				io_log_object_key: "private/ws_test/gen_123.json",
+			},
+		});
+		getSupabaseAdminMock.mockReturnValue(supabase);
+
+		const response = await generationsRoutes.request("https://example.com/?id=gen_123");
+		const body = await response.json() as Record<string, unknown>;
+
+		expect(response.status).toBe(200);
+		expect(body.io_log).toBeNull();
+		expect(body.replay_request).toBeNull();
+		expect(readGatewayIoLogObjectMock).not.toHaveBeenCalled();
+		expect(isGatewayIoLoggingFeatureEnabledMock).not.toHaveBeenCalled();
+	});
+
+	it("returns raw I/O logs only with an explicit log-read capability", async () => {
+		authenticateMock.mockResolvedValue({
+			ok: true,
+			workspaceId: "ws_test",
+			apiKeyId: "key_test",
+			apiKeyRef: "key_test",
+			apiKeyKid: "kid_test",
+			scopes: ["generations:read"],
+		});
+		getSupabaseAdminMock.mockReturnValue(buildSupabaseMock({
+			requestData: { request_id: "gen_123", status_code: 200 },
+			ioLogData: {
+				io_log_status: "stored",
+				io_log_object_key: "private/ws_test/gen_123.json",
+			},
+		}));
+		readGatewayIoLogObjectMock.mockResolvedValue({
+			request_payload: { model: "openai/gpt-5-nano", messages: [{ role: "user", content: "hello" }] },
+			gateway_response: { output_text: "hi" },
+		});
+
+		const response = await generationsRoutes.request("https://example.com/?id=gen_123");
+		const body = await response.json() as any;
+
+		expect(response.status).toBe(200);
+		expect(body.replay_supported).toBe(true);
+		expect(body.io_log.payload.gateway_response.output_text).toBe("hi");
+		expect(readGatewayIoLogObjectMock).toHaveBeenCalledWith("private/ws_test/gen_123.json");
 	});
 
 	it("does not expose replay data when no R2 I/O object exists", async () => {

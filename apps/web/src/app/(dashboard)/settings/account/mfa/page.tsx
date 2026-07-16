@@ -2,6 +2,8 @@ import { Suspense } from "react";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import AccountMFAClient from "@/components/(gateway)/settings/account/AccountMFAClient";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
+import { canManagePasskeys } from "@/lib/auth/passkeyAuthorization";
+import { isAdminViewer } from "@/lib/auth/getViewerRole";
 import { fetchSettingsAccountMfaInitialData } from "@/lib/fetchers/internal/fetchSettingsAccountMfaInitialData";
 import { passkeysAdminBetaFlag } from "@/lib/flags";
 
@@ -34,13 +36,16 @@ async function AccountMFAContent() {
 		);
 	}
 
-	const passkeysEnabled = await passkeysAdminBetaFlag();
+	const [isAdmin, rolloutEnabled] = await Promise.all([
+		isAdminViewer(),
+		passkeysAdminBetaFlag(),
+	]);
 
 	return (
 		<AccountMFAClient
 			mfaEnabled={initialData.mfaEnabled}
 			mfaFactorId={initialData.mfaFactorId}
-			showPasskeyManagement={passkeysEnabled}
+			showPasskeyManagement={canManagePasskeys({ isAdmin, rolloutEnabled })}
 		/>
 	);
 }

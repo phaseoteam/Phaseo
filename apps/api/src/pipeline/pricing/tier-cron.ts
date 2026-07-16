@@ -61,7 +61,7 @@ export async function executeDormantTeamCleanup(): Promise<TierCleanupResult> {
                 teams_downgraded: 0,
                 downgraded_teams: [],
                 processed_at: new Date().toISOString(),
-                error: error.message,
+                error: "compatibility_cleanup_failed",
             };
         }
 
@@ -85,7 +85,7 @@ export async function executeDormantTeamCleanup(): Promise<TierCleanupResult> {
             teams_downgraded: 0,
             downgraded_teams: [],
             processed_at: new Date().toISOString(),
-            error: err instanceof Error ? err.message : String(err),
+            error: "compatibility_cleanup_failed",
         };
     }
 }

@@ -37,6 +37,9 @@ jobs:
             - name: Restore lockfile (guard setup-node cache mutation)
               run: git checkout -- pnpm-lock.yaml
 
+            - name: Validate CI secret boundaries
+              run: pnpm run validate:ci-security
+
             - name: Install dependencies
               run: corepack pnpm install --frozen-lockfile
 
@@ -153,17 +156,17 @@ jobs:
         needs: openapi-lint
         if: github.event_name == 'push' || !startsWith(github.head_ref, 'chore/auto-model-statuses')
         steps:
-            - uses: actions/checkout@v7
+            - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@v5
+              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
 
             - name: Setup Node.js
-              uses: actions/setup-node@v6
+              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
               with:
                   node-version: 24
 
@@ -478,9 +481,10 @@ jobs:
         concurrency:
             group: deploy-preview-web-${{ github.event.pull_request.number || github.ref }}
             cancel-in-progress: true
+        # Merge-queue commits can contain PR-controlled code. Keep merge_group
+        # for validation jobs, but never give it this job's Vercel credentials.
         if: >
             github.event_name == 'workflow_dispatch' ||
-            github.event_name == 'merge_group' ||
             (
                 github.event_name == 'pull_request' &&
                 !startsWith(github.head_ref, 'chore/auto-model-statuses') &&
@@ -676,8 +680,7 @@ jobs:
         env:
             NPM_CONFIG_PROVENANCE: true
         permissions:
-            contents: write
-            pull-requests: write
+            contents: read
             id-token: write
         steps:
             - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0

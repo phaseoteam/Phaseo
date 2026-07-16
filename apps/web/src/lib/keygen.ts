@@ -4,11 +4,9 @@ import crypto from "crypto";
 const BASE62 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
 function rand62(n: number) {
-    // Uses crypto.randomBytes for secure randomness
-    const bytes = crypto.randomBytes(n);
     let out = "";
     for (let i = 0; i < n; i++) {
-        out += BASE62[bytes[i] % 62];
+        out += BASE62[crypto.randomInt(BASE62.length)];
     }
     return out;
 }

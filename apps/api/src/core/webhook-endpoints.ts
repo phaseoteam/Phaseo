@@ -78,15 +78,57 @@ function isPrivateIpv4(hostname: string): boolean {
 	);
 }
 
+function parseIpv6Words(hostnameRaw: string): number[] | null {
+	let hostname = normalizeHostname(hostnameRaw);
+	if (!hostname || hostname.includes("%") || (hostname.match(/::/g)?.length ?? 0) > 1) return null;
+
+	if (hostname.includes(".")) {
+		const separator = hostname.lastIndexOf(":");
+		if (separator < 0) return null;
+		const ipv4 = hostname.slice(separator + 1);
+		const octets = ipv4.split(".").map((part) => Number(part));
+		if (octets.length !== 4 || octets.some((value, index) =>
+			!/^\d+$/.test(ipv4.split(".")[index] ?? "") || !Number.isInteger(value) || value < 0 || value > 255
+		)) return null;
+		hostname = `${hostname.slice(0, separator)}:${((octets[0] << 8) | octets[1]).toString(16)}:${((octets[2] << 8) | octets[3]).toString(16)}`;
+	}
+
+	const hasCompression = hostname.includes("::");
+	const [leftRaw, rightRaw = ""] = hostname.split("::");
+	const parseSide = (side: string): number[] | null => {
+		if (!side) return [];
+		const words = side.split(":");
+		if (words.some((word) => !/^[0-9a-f]{1,4}$/i.test(word))) return null;
+		return words.map((word) => Number.parseInt(word, 16));
+	};
+	const left = parseSide(leftRaw);
+	const right = parseSide(rightRaw);
+	if (!left || !right) return null;
+	if (!hasCompression) return left.length === 8 ? left : null;
+	const missing = 8 - left.length - right.length;
+	if (missing < 1) return null;
+	return [...left, ...Array<number>(missing).fill(0), ...right];
+}
+
+function embeddedIpv4(words: number[]): string {
+	const high = words[6];
+	const low = words[7];
+	return `${high >> 8}.${high & 0xff}.${low >> 8}.${low & 0xff}`;
+}
+
 function isPrivateIpv6(hostnameRaw: string): boolean {
-	const hostname = normalizeHostname(hostnameRaw);
-	if (!hostname) return true;
-	if (hostname === "::" || hostname === "::1") return true;
-	if (hostname.startsWith("fc") || hostname.startsWith("fd")) return true;
-	if (hostname.startsWith("fe8") || hostname.startsWith("fe9") || hostname.startsWith("fea") || hostname.startsWith("feb")) return true;
-	if (hostname.startsWith("ff")) return true;
-	const mappedIpv4 = hostname.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/i)?.[1];
-	return mappedIpv4 ? isPrivateIpv4(mappedIpv4) : false;
+	const words = parseIpv6Words(hostnameRaw);
+	if (!words) return false;
+	if (words.every((word) => word === 0)) return true;
+	if (words.slice(0, 7).every((word) => word === 0) && words[7] === 1) return true;
+	if ((words[0] & 0xfe00) === 0xfc00) return true;
+	if ((words[0] & 0xffc0) === 0xfe80) return true;
+	if ((words[0] & 0xff00) === 0xff00) return true;
+
+	const mapped = words.slice(0, 5).every((word) => word === 0) && words[5] === 0xffff;
+	const compatible = words.slice(0, 6).every((word) => word === 0);
+	const nat64 = words[0] === 0x64 && words[1] === 0xff9b && words.slice(2, 6).every((word) => word === 0);
+	return (mapped || compatible || nat64) && isPrivateIpv4(embeddedIpv4(words));
 }
 
 function isPrivateOrLocalhostLiteral(hostnameRaw: string): boolean {
@@ -100,7 +142,7 @@ function isPrivateOrLocalhostLiteral(hostnameRaw: string): boolean {
 
 function isIpLiteral(hostnameRaw: string): boolean {
 	const hostname = normalizeHostname(hostnameRaw);
-	return isPrivateIpv4(hostname) || /^\d+\.\d+\.\d+\.\d+$/.test(hostname) || hostname.includes(":");
+	return isPrivateIpv4(hostname) || /^\d+\.\d+\.\d+\.\d+$/.test(hostname) || parseIpv6Words(hostname) !== null;
 }
 
 export function validateWebhookEndpointUrl(value: unknown): WebhookEndpointUrlValidation {

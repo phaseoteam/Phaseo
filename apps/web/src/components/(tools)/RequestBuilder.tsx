@@ -161,7 +161,7 @@ export default function RequestBuilder({ models }: RequestBuilderProps) {
 	};
 
 	const escapeForSingleQuotedShell = (json: string) =>
-		json.replace(/'/g, "\\'");
+		json.replace(/'/g, "'\\''");
 
 	const jsonToPythonLiteral = (json: string) =>
 		json

@@ -27,7 +27,7 @@ describe("buildPipelineExecutionErrorResponse", () => {
 		expect(payload.message).toBeUndefined();
 	});
 
-	it("includes raw message only when debug mode is enabled", async () => {
+	it("does not expose exception text when debug mode is enabled", async () => {
 		const response = buildPipelineExecutionErrorResponse(
 			new Error("provider timed out"),
 			{
@@ -38,7 +38,8 @@ describe("buildPipelineExecutionErrorResponse", () => {
 		const payload = await response.json();
 
 		expect(payload.request_id).toBe("req_debug");
-		expect(payload.message).toBe("provider timed out");
+		expect(payload.message).toBeUndefined();
+		expect(JSON.stringify(payload)).not.toContain("provider timed out");
 	});
 });
 

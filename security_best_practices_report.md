@@ -1,81 +1,98 @@
-# Security Best Practices Report
+# Security audit report — 16 July 2026
 
-## Executive Summary
+## Executive summary
 
-The highest-risk issues are authorization failures, not cryptographic or parsing bugs. The API control plane currently collapses data-plane and admin-plane trust: a normal gateway API key can reach management and OAuth-administration endpoints without any scope or role enforcement. On the web side, several sensitive workspace operations are protected only by basic workspace membership instead of owner/admin privileges, including OAuth app management and Stripe-backed billing/payment flows. I did not find a pre-auth remote code execution path in the reviewed surface, and some critical ingress paths are implemented correctly, notably Stripe webhook signature verification and the internal video/model-discovery webhook/token checks.
+The audit reviewed the 17 open Codex Security dashboard findings, the current application and SDK code, GitHub code-scanning and Dependabot alerts, CI permissions and action pinning, tracked build artifacts, and the linked production Supabase security advisor.
 
-## Critical Findings
+Five OAuth/CLI findings were already remediated on `main` and have now been closed in the dashboard as already fixed. This branch remediates the other five previously open actionable medium findings, the newly reported merge-queue secret-exposure and passkey-authorization findings, the actionable high/medium GitHub code-scanning findings, all currently fixable dependency alerts identified during the audit, and two additional live database authorization issues. The five Codex informational findings are availability or catalog-data observations rather than security vulnerabilities.
 
-### SA-001: API control-plane endpoints are reachable with ordinary gateway API keys
-- Severity: Critical
-- Impact: Compromise or over-distribution of any normal workspace gateway key can escalate directly into workspace-wide administrative actions, including management-key CRUD and OAuth client administration.
-- Evidence:
-  - [apps/api/src/pipeline/before/auth.ts](apps/api/src/pipeline/before/auth.ts) lines 293-345 and 432-450 authenticate Bearer tokens by loading rows from the `keys` table and return only `workspaceId`/key references; there is no scope or role evaluation in the auth result.
-  - [apps/api/src/routes/v1/control/management.ts](apps/api/src/routes/v1/control/management.ts) lines 209-236, 275-340, and 438-470 gate management-key listing/creation/read with `guardAuth(...)` and then immediately operate on `management_keys`.
-  - [apps/api/src/routes/v1/control/oauth-clients.ts](apps/api/src/routes/v1/control/oauth-clients.ts) lines 1-8 state “appropriate permissions,” but lines 51-66 only apply `guardAuth(...)`; update/delete flows then act on workspace-owned OAuth clients at lines 418-444 and 456-470 without any additional role or scope checks.
-- Why this is dangerous:
-  - The system has a separate `management_keys` concept, but control routes are authenticated by ordinary gateway keys from `keys`, not by management keys or scoped claims.
-  - A key intended for inference traffic is typically more widely distributed than an admin credential. Treating it as an admin credential makes any downstream leakage materially worse.
-- Recommended fix:
-  - Split control-plane auth from data-plane auth.
-  - Require either management-key authentication or explicit scope/role claims for `/v1/management/*`, `/v1/keys/*`, `/v1/oauth-clients/*`, and similar admin routes.
-  - Extend `authenticate()` / `guardAuth()` to return validated scopes and enforce them per route.
+No open GitHub secret-scanning alerts were present. This review does not prove the absence of vulnerabilities; it records the tested controls and the residual risks below.
 
-## High Findings
+## Codex Security dashboard findings
 
-### SA-002: Web OAuth app administration is member-level, not admin-level
-- Severity: High
-- Impact: Any workspace member can create OAuth apps, rotate client secrets, update redirect URIs, or delete apps, allowing a low-privilege user to backdoor or disrupt third-party integrations.
-- Evidence:
-  - [apps/web/src/app/(dashboard)/settings/oauth-apps/actions.ts](apps/web/src/app/(dashboard)/settings/oauth-apps/actions.ts) lines 165-170 only verify that the caller is present in `workspace_members` before app creation.
-  - The same file uses the same member-only check for updates at lines 290-299, secret regeneration at lines 356-370, deletion at lines 430-448, and listing at lines 481-487.
-  - By contrast, [apps/web/src/app/(dashboard)/settings/management-api-keys/actions.ts](apps/web/src/app/(dashboard)/settings/management-api-keys/actions.ts) lines 51-54 correctly require `["owner", "admin"]`.
-- Recommended fix:
-  - Replace direct membership checks in OAuth app server actions with `requireWorkspaceMembership(..., ["owner", "admin"])`.
-  - Apply the same admin-only rule to secret regeneration and redirect-URI changes.
+| Severity | Finding | Current status |
+| --- | --- | --- |
+| High | Merge-queue preview deploy exposes Vercel secrets to PR code | Fixed here. Merge-queue commits still run ordinary validation, but the Vercel-token job is limited to manual dispatches and trusted same-repository pull requests. A CI regression validator rejects reintroduction. |
+| High | Third-party OAuth keys bypass gateway scope | Already fixed on `main`: delegated spend keys require `gateway:access`, and third-party device flow is disabled. |
+| High | Identity-only OAuth grants mint spend keys | Already fixed by the same authorization and token-exchange enforcement. |
+| Medium | Generation lookup exposes raw R2 I/O logs | Fixed here. Raw input/output and replay data now require an internal caller or explicit `generations:read`/`activity:read`. |
+| Medium | OAuth refresh rotation can deadlock during member removal | Already fixed on `main` by consistent refresh/revocation lock ordering. |
+| Medium | Raycast extension legacy URL rewrite | Already fixed on `main`; the legacy host is rewritten before the authorization header is attached. |
+| Medium | Webhook validation misses IPv4-mapped IPv6 | Fixed here for mapped, compatible, canonical hexadecimal, and NAT64 representations, including DNS answers. |
+| Medium | Rebrand drops legacy key-cache invalidation | Already fixed on `main` with legacy binding support and immediate local invalidation. |
+| Medium | Meta `web_search_options` injects arbitrary tools | Fixed here with an allowlist and server-owned tool/location types. |
+| Medium | SpaceXAI BYOK migration can delete the active legacy key | Fixed for future database rebuilds by ranking active/always-use keys before provider spelling. A read-only production check found no SpaceXAI/xAI BYOK rows requiring recovery. |
+| Medium | API-model route exposes hidden model metadata | Fixed here by applying hidden-model visibility checks after provider/API-model resolution. |
+| Low | Passkey management no longer checks the administrator role | Fixed here. The server-rendered account page exposes passkey management only when the viewer is an administrator and the rollout flag is enabled, and post-ceremony passkey sign-in enforces the same server-side policy before retaining the session. All four authorization combinations are covered by tests. |
+| Informational | Tinker and Baseten pricing mismatches, OpenAI Pro-mode metadata, pricing expiry placement, and provider discovery errors | Reviewed; these are catalog/availability correctness findings and do not create a security boundary bypass. |
 
-### SA-003: Stripe billing and payment routes are member-level, not admin-level
-- Severity: High
-- Impact: Any workspace member can interact with the shared billing customer, including viewing payment-method metadata, changing the default card, detaching payment methods, starting billing-portal sessions, initiating top-ups, and requesting refunds.
-- Evidence:
-  - [apps/web/src/lib/server/activeTeamStripe.ts](apps/web/src/lib/server/activeTeamStripe.ts) lines 77-109 resolve the active Stripe customer after only `requireWorkspaceMembership(...)` with no owner/admin restriction.
-  - [apps/web/src/app/api/stripe/payment-methods/route.ts](apps/web/src/app/api/stripe/payment-methods/route.ts) lines 90-95 expose payment-method listing, lines 108-129 create setup sessions, lines 142-170 update default payment methods, and lines 183-210 detach methods, all via `requireActiveWorkspaceStripeCustomer(...)`.
-  - [apps/web/src/app/api/stripe/billing-portal/route.ts](apps/web/src/app/api/stripe/billing-portal/route.ts) lines 25-34 create billing-portal sessions with the same helper.
-  - [apps/web/src/app/api/stripe/refunds/request/route.ts](apps/web/src/app/api/stripe/refunds/request/route.ts) lines 59-70 allow refund initiation with the same helper.
-  - This conflicts with the admin-only web settings flows in [apps/web/src/app/(dashboard)/settings/credits/actions.ts](apps/web/src/app/(dashboard)/settings/credits/actions.ts) lines 37-40 and 145-152, which do require owner/admin for billing mutations.
-- Recommended fix:
-  - Introduce a dedicated billing authorization helper that requires owner/admin for all payment-method, refund, billing-portal, and checkout mutation routes.
-  - Limit member access, if needed, to read-only views that do not expose shared billing controls.
+## Additional security remediations
 
-## Medium Findings
+### Application and SDK code
 
-### SA-004: No application-level CSP or baseline security headers are visible in the Next.js app
-- Severity: Medium
-- Impact: If the edge/CDN layer is not adding these headers, the web app lacks baseline browser hardening against XSS amplification, clickjacking, and MIME confusion.
-- Evidence:
-  - [apps/web/next.config.mjs](apps/web/next.config.mjs) lines 13-38 define env, tracing, and rewrites, but there is no `headers()` configuration for CSP, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, or `X-Content-Type-Options`.
-  - [apps/web/src/proxy.ts](apps/web/src/proxy.ts) lines 8-13 only scope session middleware to selected routes; no browser security headers are set there either.
-- False-positive note:
-  - This may be mitigated outside the repo by Vercel/CDN/WAF config. I did not see app-code evidence of that, so verify runtime response headers in production.
-- Recommended fix:
-  - Add a baseline header policy in Next config or at the edge:
-    - `Content-Security-Policy`
-    - `X-Content-Type-Options: nosniff`
-    - `Referrer-Policy`
-    - clickjacking protection via `frame-ancestors` or `X-Frame-Options`
-    - a constrained `Permissions-Policy`
+- Removed browser persistence of Phaseo and OpenAI API keys from saved latency-test configurations and actively strips credentials written by earlier versions.
+- Restricted iframe previews to absolute HTTP(S), removed same-origin sandbox privilege, and disabled referrer forwarding.
+- Replaced modulo-biased key and PKCE random selection with unbiased generation.
+- Corrected POSIX single-quote escaping in generated shell commands.
+- Redacted credential-shaped request/response fields before Python devtools telemetry reaches disk and applies owner-only file modes where supported.
+- Removed OAuth E2E result details from stdout; detailed results remain in the sanitized report.
+- Removed exception messages and stack fields from gateway and route responses, including debug mode and pricing cron results.
+- Restored server-side administrator authorization for passkey management and post-ceremony sign-in in addition to the rollout flag.
+- Rejected prototype-pollution path segments in both pricing simulator implementations.
+- Replaced backtracking OpenAPI path-template parsing with a linear scanner and escaped generated literals/parameter keys across C++, C#, Go, Java, PHP, Python, Ruby, Rust, and TypeScript backends.
 
-## Validated Controls
+### Dependencies, CI, and repository contents
 
-- Stripe webhook signature verification is implemented before event handling in [apps/web/src/app/api/webhooks/stripe-checkout/route.ts](apps/web/src/app/api/webhooks/stripe-checkout/route.ts) lines 291-300.
-- Internal model-discovery execution requires a dedicated high-entropy token and rejects short tokens in [apps/api/src/routes/internal/model-discovery.ts](apps/api/src/routes/internal/model-discovery.ts) lines 84-117.
-- Async video webhook handlers verify provider signatures before processing in [apps/api/src/routes/internal/video-webhooks.ts](apps/api/src/routes/internal/video-webhooks.ts) lines 21-31 and 74-83.
-- Return URL sanitization for auth redirects is present in [apps/web/src/lib/auth/return-url.ts](apps/web/src/lib/auth/return-url.ts).
+- Updated vulnerable Hono, Undici, Vite, form-data, DOMPurify, OpenTelemetry, protobufjs, js-yaml, ECharts, tar, Next/PostCSS, Guzzle/PSR-7, Jackson Databind, and scanner dependencies.
+- Pinned the remaining floating GitHub Actions references to full commit SHAs.
+- Reduced publish and stale-workflow token permissions; CodeQL's `security-events: write` remains because uploading CodeQL results requires it.
+- Kept `merge_group` validation for the merge queue while excluding it from the Vercel preview job that receives deployment credentials. The preview job continues to require a same-repository pull request and a trusted author association, and a repository validator now enforces those boundaries in CI.
+- Removed tracked compiler outputs, Python bytecode, Rust targets, C++ executables, Java/C# build directories, and the committed PHP `vendor` tree; ignore rules now prevent reintroduction.
 
-## Recommended Remediation Order
+### Database authorization
 
-1. Lock down API control-plane auth so ordinary gateway keys cannot call admin routes.
-2. Change web OAuth app actions to owner/admin only.
-3. Change billing/payment/refund routes to owner/admin only.
-4. Add and verify baseline security headers/CSP at the app or edge layer.
+The new hardening migration:
 
+- removes the obsolete `WITH CHECK (true)` join-request policy, which otherwise ORed with and bypassed the constrained invite policy;
+- recreates the insert policy with user, invite, membership, and state checks;
+- revokes PUBLIC/anonymous access to all reviewed `SECURITY DEFINER` functions;
+- limits internal gateway, wallet, Stripe, maintenance, and trigger functions to `service_role`;
+- retains authenticated access only for RPCs that validate `auth.uid()` and are required by workspace UI/RLS flows;
+- pins mutable public-function search paths to non-user-writable schemas; and
+- revokes PUBLIC function execution in future `postgres` default privileges.
+
+A second guarded migration moves `pg_net` out of the `public` extension catalog namespace. Because the installed `pg_net` version is not relocatable, the migration takes exclusive locks on its request and response tables, refuses to run if either contains pending work, and then recreates the extension with `extensions` as its catalog namespace. The extension's `net` API schema and the existing signup function remain intact.
+
+Both migrations were executed against the linked production schema inside explicit transactions followed by `ROLLBACK`. Parsing and object/signature resolution succeeded; the `pg_net` test confirmed the new catalog namespace and the continued presence of `enqueue_welcome_email()` and `net.http_post(...)`. Production state was not changed.
+
+## Residual risks and follow-up
+
+1. **Leaked-password protection is an operator action.** The repository cannot enable Supabase's hosted HaveIBeenPwned check through SQL; the owner will enable it in Auth settings. See <https://supabase.com/docs/guides/auth/password-security>.
+2. **Authenticated `SECURITY DEFINER` advisories will remain for the explicit allowlist.** Those functions are intentionally callable and perform `auth.uid()`/workspace checks. They should continue receiving targeted authorization tests.
+3. **The repository has an accepted single-maintainer review exception.** Main still requires PRs and status checks through an active ruleset. A mandatory non-author approval is not feasible while there is only one maintainer, so that governance setting was intentionally left unchanged.
+4. **Webhook DNS rebinding remains a bounded defense-in-depth concern.** Delivery requires HTTPS, rejects private/local literals and private DNS answers immediately before use, disallows redirects, and runs in a Worker with no VPC/private-network binding. Cloudflare's `global_fetch_strictly_public` flag only controls same-zone routing and `resolveOverride` cannot pin arbitrary third-party origins. Fully eliminating the remaining DNS time-of-check/time-of-use window would require a managed egress policy or an outbound proxy that pins the validated destination; adding a VPC binding without such a deny policy would increase rather than reduce exposure.
+5. The dashboard now shows 12 open findings. Seven have verified fixes only in this branch and remain open until merge and scanner confirmation; the other five are informational catalog/availability observations. Five findings whose fixes are already on `main` were closed as already fixed during this review.
+
+## Validation performed
+
+- API security regression suite: 49 tests passed.
+- Targeted webhook URL and delivery regression suite: 12 tests passed.
+- Web security regression suite: 5 tests passed.
+- Passkey authorization regression suite: 4 tests passed.
+- Full web regression suite: 80 suites and 346 tests passed.
+- CI secret-boundary regression suite: 2 tests passed, and the live workflow validation passed.
+- Python devtools tests: 9 passed.
+- API and web TypeScript checks passed (web after Next route type generation).
+- The production web build passed with the restored passkey gate.
+- API Worker dry-run build passed and confirmed both OAuth rate-limit bindings.
+- OpenAPI core and all nine backend packages built; the new adversarial path parser tests passed.
+- Java Maven tests passed with Jackson 2.22.1.
+- PHP Composer install, audit, and 22 lifecycle suites passed; Composer reported no advisories.
+- Both Next.js OAuth/chat examples installed with zero npm audit findings and built successfully.
+- Devtools viewer production build passed on the patched Vite version.
+- Root and isolated scanner frozen-lock installs passed.
+- The guarded `pg_net` relocation passed against the linked production schema inside `BEGIN`/`ROLLBACK`; production remained on its original extension namespace with empty request/response queues after the test.
+- Targeted ESLint completed with no errors; existing warnings remain.
+- `git diff --check` passed.
+
+Two pre-existing OpenAPI package tests remain red independently of these changes: the package test command still uses Node's removed `--loader tsx` form, and when invoked manually one legacy stable-file-set assertion does not match the generator's current output. The modified OpenAPI packages themselves compile successfully and the new security parser tests pass.

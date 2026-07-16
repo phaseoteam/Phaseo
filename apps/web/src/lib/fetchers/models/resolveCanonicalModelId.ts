@@ -240,10 +240,30 @@ async function resolveCanonicalModelIdUncached(
 	const providerMappingCandidate = normalizeId(providerByApiRes.data?.[0]?.model_id);
 	const providerApiModelCandidate = normalizeId(providerByApiRes.data?.[0]?.api_model_id);
 	if (providerApiModelCandidate === modelId && providerMappingCandidate) {
-		return buildResult(modelId, "api_model", providerMappingCandidate);
+		const visibleProviderModels = await getVisibleModelIds(
+			supabase,
+			[providerMappingCandidate],
+			includeHidden,
+		);
+		if (visibleProviderModels.has(providerMappingCandidate)) {
+			return buildResult(modelId, "api_model", providerMappingCandidate);
+		}
+		return {
+			requestedModelId: modelId,
+			canonicalModelId: null,
+			internalModelId: null,
+			source: "unresolved",
+		};
 	}
 	if (providerMappingCandidate) {
-		return buildResult(providerMappingCandidate, "provider_mapping");
+		const visibleProviderModels = await getVisibleModelIds(
+			supabase,
+			[providerMappingCandidate],
+			includeHidden,
+		);
+		if (visibleProviderModels.has(providerMappingCandidate)) {
+			return buildResult(providerMappingCandidate, "provider_mapping", providerMappingCandidate);
+		}
 	}
 
 	return {
