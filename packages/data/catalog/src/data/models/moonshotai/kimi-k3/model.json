@@ -2,11 +2,11 @@
   "model_id": "moonshotai/kimi-k3",
   "organisation_id": "moonshotai",
   "name": "Kimi K3",
-  "status": "Rumoured",
-  "previous_model_id": "moonshotai/kimi-k2.6",
-  "description": "Kimi K3 is Moonshot AI's forthcoming multimodal model with text and image input, text output, and a rumored 1M-token context window. Pricing and final release metadata are not yet confirmed.",
-  "announced_date": null,
-  "release_date": null,
+  "status": "Available",
+  "previous_model_id": "moonshotai/kimi-k2.7-code",
+  "description": "Kimi K3 is Moonshot AI's next-generation multimodal model. Pre-release reporting places it between 2 and 3 trillion total parameters with a 1M-token context window; final architecture details, API pricing, and benchmarks are awaiting Moonshot AI's release materials.",
+  "announced_date": "2026-07-16T00:00:00",
+  "release_date": "2026-07-16T00:00:00",
   "deprecation_date": null,
   "retirement_date": null,
   "license": "Modified MIT",
@@ -14,15 +14,25 @@
   "output_types": "text",
   "api_model_id": "moonshotai/kimi-k3",
   "family_id": "moonshotai/kimi-k2",
-  "links": [],
+  "links": [
+    {
+      "title": "Weights",
+      "kind": "weights",
+      "url": "https://huggingface.co/moonshotai/Kimi-K3"
+    }
+  ],
   "details": [
     {
       "name": "input_context_length",
       "value": 1000000
     },
     {
+      "name": "parameter_count",
+      "value": "2-3 trillion (reported)"
+    },
+    {
       "name": "availability_note",
-      "value": "Coming-soon catalog entry; provider availability is staged for Moonshot AI only and pricing is intentionally unknown."
+      "value": "Release-day catalog entry staged for Moonshot AI. The provider route remains inactive until the final API model ID and pricing are published; the weights URL follows Moonshot AI's recent Hugging Face naming convention."
     }
   ],
   "benchmarks": []
