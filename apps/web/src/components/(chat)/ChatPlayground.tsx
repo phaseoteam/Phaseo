@@ -2211,6 +2211,15 @@ function ChatPlaygroundContent({
 									if (typeof partText === "string") {
 										responseText = partText;
 									}
+								} else if (
+									frameType === "error" ||
+									frameType === "response.failed"
+								) {
+									const streamError = parseChatStreamErrorFrame(
+										parsed,
+										frameType,
+									);
+									if (streamError) throw streamError;
 								} else if (frameType === "response.completed") {
 									responseText = extractResponseText(
 										parsed?.response ?? parsed,
@@ -2325,8 +2334,9 @@ function ChatPlaygroundContent({
 								} else if (toolCallUpdated) {
 									scheduleUpdate(buildStreamingMetaPartial());
 								}
-						} catch {
-							// ignore malformed chunks
+						} catch (error) {
+							if (error instanceof SyntaxError) continue;
+							throw error;
 						}
 					}
 				}
