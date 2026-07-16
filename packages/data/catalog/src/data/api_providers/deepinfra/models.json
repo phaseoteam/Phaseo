@@ -1478,7 +1478,7 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": 1000000,
+    "context_length": 1048576,
     "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,

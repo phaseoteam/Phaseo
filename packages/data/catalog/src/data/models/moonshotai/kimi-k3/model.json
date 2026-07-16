@@ -4,7 +4,7 @@
   "name": "Kimi K3",
   "status": "Available",
   "previous_model_id": "moonshotai/kimi-k2.7-code",
-  "description": "Kimi K3 is Moonshot AI's next-generation multimodal model. Pre-release reporting places it between 2 and 3 trillion total parameters with a 1M-token context window; final architecture details, API pricing, and benchmarks are awaiting Moonshot AI's release materials.",
+  "description": "Kimi K3 is Moonshot AI's next-generation multimodal model. Pre-release reporting places it between 2 and 3 trillion total parameters, while Moonshot AI lists a 1,048,576-token context window and official API pricing of $3 per 1M uncached input tokens, $0.30 per 1M cached input tokens, and $15 per 1M output tokens.",
   "announced_date": "2026-07-16T00:00:00",
   "release_date": "2026-07-16T00:00:00",
   "deprecation_date": null,
@@ -24,7 +24,7 @@
   "details": [
     {
       "name": "input_context_length",
-      "value": 1000000
+      "value": 1048576
     },
     {
       "name": "parameter_count",
@@ -32,7 +32,7 @@
     },
     {
       "name": "availability_note",
-      "value": "Release-day catalog entry with coming-soon provider routes staged for Akash ML, AtlasCloud, Baseten, Cloudflare, CrofAI, DeepInfra, Fireworks AI, GMI Cloud, Moonshot AI, Novita AI, SiliconFlow, Together AI, and Venice. All routes remain inactive until each provider publishes its final model ID and pricing; the weights URL follows Moonshot AI's recent Hugging Face naming convention."
+      "value": "Moonshot AI has published Kimi K3 pricing and a 1,048,576-token context window. Additional coming-soon routes are staged for Akash ML, AtlasCloud, Baseten, Cloudflare, CrofAI, DeepInfra, Fireworks AI, GMI Cloud, Novita AI, SiliconFlow, Together AI, and Venice; those routes remain inactive until each provider publishes its final model ID and pricing."
     }
   ],
   "benchmarks": []
