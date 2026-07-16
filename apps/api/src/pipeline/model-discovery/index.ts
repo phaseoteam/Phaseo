@@ -222,6 +222,7 @@ const MAX_DISCOVERY_CONCURRENCY = 5;
 export const DEFAULT_MODEL_DISCOVERY_SHARD_SIZE = 20;
 export const MAX_MODEL_DISCOVERY_SHARD_SIZE = 25;
 const UPSERT_BATCH_SIZE = 500;
+const SEEN_MODELS_PAGE_SIZE = 1_000;
 const MAX_DISCORD_LINES = 30;
 const MAX_LIST_ITEMS = 8;
 const MAX_SUMMARY_MODEL_SAMPLES = 5;
@@ -481,18 +482,28 @@ async function fetchPreviousModelsByProviders(providerIds: string[]): Promise<Pr
 	}
 
 	const supabase = getSupabaseAdmin();
-	const { data, error } = await supabase
-		.from("model_discovery_seen_models")
-		.select("provider_id,model_id,model_details,pricing_details")
-		.in("provider_id", providerIds);
+	const rows: SupabaseSeenModelRow[] = [];
+	for (let from = 0; ; from += SEEN_MODELS_PAGE_SIZE) {
+		const { data, error } = await supabase
+			.from("model_discovery_seen_models")
+			.select("provider_id,model_id,model_details,pricing_details")
+			.in("provider_id", providerIds)
+			.order("provider_id", { ascending: true })
+			.order("model_id", { ascending: true })
+			.range(from, from + SEEN_MODELS_PAGE_SIZE - 1);
 
-	if (error) {
-		throw new Error(error.message || "Failed to load previous discovered models");
+		if (error) {
+			throw new Error(error.message || "Failed to load previous discovered models");
+		}
+
+		const page = (data ?? []) as SupabaseSeenModelRow[];
+		rows.push(...page);
+		if (page.length < SEEN_MODELS_PAGE_SIZE) break;
 	}
 
 	const providerApiSnapshotReadyByProvider = new Set<string>();
 
-	for (const row of (data ?? []) as SupabaseSeenModelRow[]) {
+	for (const row of rows) {
 		if (typeof row.provider_id !== "string" || typeof row.model_id !== "string") continue;
 		const state = map.get(row.provider_id);
 		if (!state) continue;
