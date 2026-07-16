@@ -619,10 +619,14 @@ function normalizeProviderResponseErrorDetail(value: unknown): string | null {
 		return trimmed || null;
 	}
 	if (typeof value === "number" && Number.isFinite(value)) {
-		return String(value);
+		return value === 0 ? null : String(value);
 	}
 	const record = asRecord(value);
 	if (!record) return null;
+	const errorCode = toNullableInteger(
+		record.code ?? record.status_code ?? record.statusCode
+	);
+	if (errorCode === 0) return null;
 
 	for (const key of ["message", "msg", "detail", "error"]) {
 		const nested = record[key];
@@ -630,12 +634,12 @@ function normalizeProviderResponseErrorDetail(value: unknown): string | null {
 			const trimmed = nested.trim();
 			if (trimmed) return trimmed;
 		}
-		if (typeof nested === "number" && Number.isFinite(nested)) {
+		if (typeof nested === "number" && Number.isFinite(nested) && nested !== 0) {
 			return String(nested);
 		}
 	}
 
-	return null;
+	return errorCode === null ? null : `code ${errorCode}`;
 }
 
 function extractProviderResponseErrorMessage(payload: unknown): string | null {
