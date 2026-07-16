@@ -189,6 +189,7 @@ export type KnownModelId =
   | "moonshotai/kimi-k2.5-lightning"
   | "moonshotai/kimi-k2.6"
   | "moonshotai/kimi-k2.7-code"
+  | "moonshotai/kimi-k3"
   | "moonshotai/moonshot-v1-128k"
   | "moonshotai/moonshot-v1-128k-vision-preview"
   | "moonshotai/moonshot-v1-32k"
