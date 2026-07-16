@@ -754,5 +754,26 @@
         "params": []
       }
     ]
+  },
+  {
+    "api_model_id": "moonshotai/kimi-k3",
+    "provider_api_model_id": "crofai:kimi-k3",
+    "provider_model_slug": "kimi-k3",
+    "internal_model_id": "moonshotai/kimi-k3",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "inactive",
+        "params": []
+      }
+    ]
   }
 ]

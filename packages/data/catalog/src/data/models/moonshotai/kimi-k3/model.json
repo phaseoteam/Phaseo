@@ -32,7 +32,7 @@
     },
     {
       "name": "availability_note",
-      "value": "Release-day catalog entry staged for Moonshot AI. The provider route remains inactive until the final API model ID and pricing are published; the weights URL follows Moonshot AI's recent Hugging Face naming convention."
+      "value": "Release-day catalog entry with coming-soon provider routes staged for Akash ML, AtlasCloud, Baseten, Cloudflare, CrofAI, DeepInfra, Fireworks AI, GMI Cloud, Moonshot AI, Novita AI, SiliconFlow, Together AI, and Venice. All routes remain inactive until each provider publishes its final model ID and pricing; the weights URL follows Moonshot AI's recent Hugging Face naming convention."
     }
   ],
   "benchmarks": []
