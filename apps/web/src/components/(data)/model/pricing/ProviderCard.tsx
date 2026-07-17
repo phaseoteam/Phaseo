@@ -372,6 +372,7 @@ function UptimeSparkline({
 function renderCompactTierSummary(
 	tiers?: TokenTier[] | null,
 	valueClassName?: string,
+	billingTimestampBasis?: string | null,
 ) {
 	const orderedTiers = [...(tiers ?? [])].sort((a, b) => {
 		if (a.isCurrent !== b.isCurrent) return a.isCurrent ? -1 : 1;
@@ -405,6 +406,13 @@ function renderCompactTierSummary(
 							scheduleLabel: null,
 							isCurrent: true,
 						}];
+				const scheduledPeriods = Array.from(
+					new Set(
+						prices
+							.map((price) => price.scheduleLabel)
+							.filter((schedule): schedule is string => Boolean(schedule)),
+					),
+				);
 
 				return (
 					<div key={`${tier.label}-${tier.per1M}-${index}`} className="space-y-0.5">
@@ -417,7 +425,6 @@ function renderCompactTierSummary(
 								<div
 									key={`${price.label}-${price.per1M}-${priceIndex}`}
 									className="flex min-w-0 items-baseline gap-1.5"
-									title={price.scheduleLabel ?? undefined}
 								>
 									{hasComparison && priceIndex === 0 ? (
 										<span className="text-[11px] tabular-nums text-muted-foreground line-through">
@@ -433,7 +440,15 @@ function renderCompactTierSummary(
 									>
 										{fmtUSD(price.per1M)}
 									</span>
-									{periodLabel ? (
+									{periodLabel && tier.timeWindowPrices?.length ? (
+										<PricingPeriodHoverCard
+											label={price.label}
+											isCurrent={price.isCurrent}
+											scheduleLabel={price.scheduleLabel}
+											scheduledPeriods={scheduledPeriods}
+											billingTimestampBasis={billingTimestampBasis}
+										/>
+									) : periodLabel ? (
 										<span className="truncate text-[10px] text-muted-foreground">
 											{periodLabel}
 										</span>
@@ -445,6 +460,92 @@ function renderCompactTierSummary(
 				);
 			})}
 		</div>
+	);
+}
+
+function formatPricingScheduleForDisplay(schedule: string): string {
+	return schedule
+		.replace(/(\d{2}:\d{2})-(\d{2}:\d{2})/g, "$1–$2")
+		.replace(/,\s*/g, " · ")
+		.replace(/\s+UTC$/, "");
+}
+
+function PricingPeriodHoverCard({
+	label,
+	isCurrent,
+	scheduleLabel,
+	scheduledPeriods,
+	billingTimestampBasis,
+}: {
+	label: string;
+	isCurrent: boolean;
+	scheduleLabel: string | null;
+	scheduledPeriods: string[];
+	billingTimestampBasis?: string | null;
+}) {
+	const scheduledDisplay = scheduledPeriods
+		.map(formatPricingScheduleForDisplay)
+		.join(" · ");
+	const schedule = scheduleLabel
+		? formatPricingScheduleForDisplay(scheduleLabel)
+		: scheduledDisplay
+			? `Outside ${scheduledDisplay}`
+			: "All other times";
+	const timestampBasis = formatBillingTimestampBasis(billingTimestampBasis);
+
+	return (
+		<HoverCard openDelay={120} closeDelay={80}>
+			<HoverCardTrigger asChild>
+				<button
+					type="button"
+					className="group/period inline-flex min-w-0 items-center gap-1 truncate text-[10px] text-muted-foreground underline decoration-dotted underline-offset-4 transition-colors hover:text-foreground focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+					aria-label={`View ${label} pricing period details`}
+				>
+					<span className="truncate">{label}{isCurrent ? " · now" : ""}</span>
+					<Info className="h-2.5 w-2.5 shrink-0 opacity-55 transition-opacity group-hover/period:opacity-100" />
+				</button>
+			</HoverCardTrigger>
+			<HoverCardContent
+				side="top"
+				align="start"
+				sideOffset={8}
+				className="w-[18rem] overflow-hidden rounded-2xl bg-popover p-0 shadow-xl ring-1 ring-foreground/10"
+			>
+				<div className="flex items-center justify-between gap-3 border-b border-border/70 px-4 py-3">
+					<div className="flex min-w-0 items-center gap-2.5">
+						<div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-foreground/[0.06] text-foreground">
+							<Clock3 className="h-3.5 w-3.5" />
+						</div>
+						<div className="min-w-0">
+							<div className="truncate text-xs font-semibold text-foreground">{label} pricing</div>
+							<div className="text-[10px] text-muted-foreground">Time-based rate</div>
+						</div>
+					</div>
+					{isCurrent ? (
+						<span className="shrink-0 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[9px] font-semibold text-emerald-700 dark:text-emerald-300">
+							Active now
+						</span>
+					) : null}
+				</div>
+				<dl className="space-y-2.5 px-4 py-3 text-[11px]">
+					<div className="grid grid-cols-[5.25rem_minmax(0,1fr)] gap-3">
+						<dt className="text-muted-foreground">Schedule</dt>
+						<dd className="font-medium tabular-nums text-foreground">{schedule}</dd>
+					</div>
+					<div className="grid grid-cols-[5.25rem_minmax(0,1fr)] gap-3">
+						<dt className="text-muted-foreground">Timezone</dt>
+						<dd className="font-medium text-foreground">UTC</dd>
+					</div>
+					<div className="grid grid-cols-[5.25rem_minmax(0,1fr)] gap-3">
+						<dt className="text-muted-foreground">Rate selected</dt>
+						<dd className="font-medium text-foreground">At {timestampBasis}</dd>
+					</div>
+				</dl>
+				<p className="border-t border-border/70 bg-muted/35 px-4 py-2.5 text-[10px] leading-relaxed text-muted-foreground">
+					The selected rate stays with the request after it is sent upstream.
+				</p>
+			</HoverCardContent>
+		</HoverCard>
 	);
 }
 
@@ -604,9 +705,6 @@ function renderTablePriceSummary(
 	}
 
 	const detailParts: string[] = [];
-	if (summary.primary.periodLabel) {
-		detailParts.push(summary.primary.periodLabel);
-	}
 	if (!summary.secondary && summary.primary.label !== "text") {
 		detailParts.push(summary.primary.label);
 	}
@@ -619,21 +717,12 @@ function renderTablePriceSummary(
 	const detailLabel = detailParts.join(" / ");
 
 	return (
-		<div
-			className="flex flex-col items-end gap-0.5"
-			title={summary.primary.periodScheduleLabel ?? undefined}
-		>
+		<div className="flex flex-col items-end gap-0.5">
 			<div className={cn("font-medium tabular-nums", accentClassName)}>
 				{summary.primary.formattedPrice}
 			</div>
 			{summary.secondary ? (
 				<div className="truncate text-[10px] text-muted-foreground">
-					{summary.primary.periodLabel ? (
-						<>
-							<span>{summary.primary.periodLabel}</span>
-							<span>{" / "}</span>
-						</>
-					) : null}
 					<span>{summary.secondary.label}</span>
 					{" "}
 					<span className="tabular-nums">{summary.secondary.formattedPrice}</span>
@@ -1445,6 +1534,21 @@ export default function ProviderCard({
 
 	const planRules = getProviderPricingRulesForPlan(provider, selectedPlan);
 	const hasPlanPricing = planRules.length > 0;
+	const timeWindowPricingRules = planRules
+		.filter((rule) => isRuleActiveNow(rule, pricingTimeMs))
+		.map((rule) => ({
+			rule,
+			windows: (rule.time_windows ?? []).filter(
+				(window) =>
+					window &&
+					window.timezone === "UTC" &&
+					window.price_per_unit !== undefined &&
+					window.price_per_unit !== null,
+			),
+		}))
+		.filter((entry) => entry.windows.length > 0);
+	const timeWindowBillingTimestampBasis =
+		timeWindowPricingRules[0]?.rule.billing_timestamp_basis ?? null;
 	const providerModelsInScope = getProviderModelScopeForPlan(
 		provider,
 		selectedPlan,
@@ -2201,7 +2305,11 @@ export default function ProviderCard({
 								</div>
 								{tile.tiers ? (
 									<>
-										{renderCompactTierSummary(tile.tiers, selectedPlanTheme.accent)}
+										{renderCompactTierSummary(
+											tile.tiers,
+											selectedPlanTheme.accent,
+											timeWindowBillingTimestampBasis,
+										)}
 										<div className="mt-0.5 text-[10px] text-muted-foreground">
 											{tile.unitLabel}
 										</div>
@@ -2392,19 +2500,6 @@ export default function ProviderCard({
 			</div>
 		) : null;
 
-	const timeWindowPricingRules = planRules
-		.filter((rule) => isRuleActiveNow(rule, pricingTimeMs))
-		.map((rule) => ({
-			rule,
-			windows: (rule.time_windows ?? []).filter(
-				(window) =>
-					window &&
-					window.timezone === "UTC" &&
-					window.price_per_unit !== undefined &&
-					window.price_per_unit !== null,
-			),
-		}))
-		.filter((entry) => entry.windows.length > 0);
 	const sheetSectionPrefix = `provider-${sec.providerId.replace(/[^a-z0-9_-]/gi, "-")}-${selectedPlan}`;
 	const pricingSectionId = `${sheetSectionPrefix}-pricing`;
 	const performanceSectionId = `${sheetSectionPrefix}-performance`;
@@ -2813,16 +2908,11 @@ export default function ProviderCard({
 													{discountTimeRemaining}
 												</span>
 											) : null}
+										</div>
+									) : null}
 								</div>
-							) : null}
-						</div>
-						{pricingPrimaryContent}
-						{pricingGeneratedOutputContent}
-						{timeWindowPricingRules.length > 0 ? (
-							<div className="pb-2 text-[10px] text-muted-foreground">
-								Current UTC period is shown first. Rates switch by {formatBillingTimestampBasis(timeWindowPricingRules[0]?.rule.billing_timestamp_basis)} time; hover a period label for its schedule.
-							</div>
-								) : null}
+								{pricingPrimaryContent}
+								{pricingGeneratedOutputContent}
 								{pricingAdditionalContent}
 							</section>
 
