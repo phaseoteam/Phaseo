@@ -8,6 +8,12 @@ alter table public.oauth_authorization_codes
 alter table public.keys
   add column if not exists oauth_resource text;
 
+-- Remove the legacy unbound overload so application code cannot accidentally
+-- downgrade to issuing a delegated key without the requested resource.
+drop function if exists public.consume_oauth_code_and_issue_managed_key(
+  uuid, text, text, text, text, uuid, uuid, text, text[]
+);
+
 create or replace function public.consume_oauth_code_and_issue_managed_key(
   p_code_id uuid,
   p_key_hash text,
@@ -86,10 +92,10 @@ begin
 
   insert into public.keys (
     workspace_id, name, hash, prefix, status, scopes, created_by, kid,
-    key_kind, oauth_client_id, oauth_user_id, oauth_scopes, oauth_resource, issued_via
+    key_kind, oauth_client_id, oauth_user_id, oauth_scopes, oauth_resource, issued_via, expires_at
   ) values (
     p_workspace_id, p_key_name, p_key_hash, p_key_prefix, 'active', '[]', p_user_id, p_key_kid,
-    'oauth_delegated', p_client_id, p_user_id, granted_scopes, granted_resource, 'oauth_pkce'
+    'oauth_delegated', p_client_id, p_user_id, granted_scopes, granted_resource, 'oauth_pkce', now() + interval '7 days'
   );
 
   return 'issued';

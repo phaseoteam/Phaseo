@@ -4,4 +4,4 @@
 "@phaseo/cli": patch
 ---
 
-Unify Phaseo OAuth discovery, consent, identity, revocation, and protected-resource binding across the first-party CLI, user-created applications, and dynamically registered MCP clients.
+Unify and harden Phaseo OAuth discovery, consent, identity, revocation, PKCE, protected-resource binding, and confidential MCP-to-API token exchange across the first-party CLI, user-created applications, and dynamically registered MCP clients.

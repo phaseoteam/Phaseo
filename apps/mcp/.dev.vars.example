@@ -1,2 +1,6 @@
 # Optional when testing against a local or preview Phaseo API.
 # PHASEO_API_BASE_URL="http://127.0.0.1:8787"
+# Generate a 64+ character random value and configure the identical secret on
+# the API Worker. Never commit the real value.
+PHASEO_MCP_RESOURCE_SERVER_SECRET="<generate-a-random-64-plus-character-secret>"
+PHASEO_MCP_WRITE_TOOLS_ENABLED="false"

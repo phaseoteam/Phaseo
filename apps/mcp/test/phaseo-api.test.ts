@@ -4,6 +4,8 @@ import { createApiKey, getModel, listApiKeys, listModels, listProviders } from "
 
 const env = {
 	PHASEO_API_BASE_URL: "https://api.phaseo.app",
+	PHASEO_MCP_WRITE_TOOLS_ENABLED: "false",
+	PHASEO_MCP_RESOURCE_SERVER_SECRET: "s".repeat(64),
 };
 
 const fetchMock = vi.fn();
@@ -19,8 +21,10 @@ describe("Phaseo API client", () => {
 		vi.stubGlobal("fetch", fetchMock);
 
 		await expect(listModels(env, 250, { accessToken: "oauth-token" })).resolves.toEqual([]);
-		expect((fetchMock.mock.calls[0]?.[0] as URL).href).toBe("https://api.phaseo.app/v1/models?limit=250");
-		expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({ headers: { Authorization: "Bearer oauth-token" }, method: "GET" });
+		const request = fetchMock.mock.calls[0]?.[0] as Request;
+		expect(request.url).toBe("https://api.phaseo.app/v1/models?limit=250");
+		expect(request.method).toBe("GET");
+		expect(request.headers.get("authorization")).toBe("Bearer oauth-token");
 	});
 
 	it("uses the user's OAuth token for authenticated key operations", async () => {
@@ -32,12 +36,13 @@ describe("Phaseo API client", () => {
 		await expect(listApiKeys(env, { accessToken: "oauth-token" })).resolves.toEqual([]);
 		await expect(createApiKey(env, { accessToken: "oauth-token" }, { name: "MCP" })).resolves.toMatchObject({ id: "key-1", key: "phaseo_v1_sk_secret" });
 
-		expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({ headers: { Authorization: "Bearer oauth-token" } });
-		expect(fetchMock.mock.calls[1]?.[1]).toMatchObject({
-			method: "POST",
-			headers: { Authorization: "Bearer oauth-token", "Content-Type": "application/json" },
-			body: JSON.stringify({ name: "MCP" }),
-		});
+		const listRequest = fetchMock.mock.calls[0]?.[0] as Request;
+		const createRequest = fetchMock.mock.calls[1]?.[0] as Request;
+		expect(listRequest.headers.get("authorization")).toBe("Bearer oauth-token");
+		expect(createRequest.method).toBe("POST");
+		expect(createRequest.headers.get("authorization")).toBe("Bearer oauth-token");
+		expect(createRequest.headers.get("content-type")).toBe("application/json");
+		expect(await createRequest.clone().text()).toBe(JSON.stringify({ name: "MCP" }));
 	});
 
 	it("uses the canonical model filter for a model lookup", async () => {
@@ -45,7 +50,7 @@ describe("Phaseo API client", () => {
 		vi.stubGlobal("fetch", fetchMock);
 
 		await expect(getModel(env, "openai/gpt-5", { accessToken: "oauth-token" })).resolves.toBeNull();
-		expect(fetchMock.mock.calls[0]?.[0].href).toBe("https://api.phaseo.app/v1/models?id=openai%2Fgpt-5&limit=1");
+		expect((fetchMock.mock.calls[0]?.[0] as Request).url).toBe("https://api.phaseo.app/v1/models?id=openai%2Fgpt-5&limit=1");
 	});
 
 	it("uses the provider read endpoint", async () => {
@@ -53,6 +58,6 @@ describe("Phaseo API client", () => {
 		vi.stubGlobal("fetch", fetchMock);
 
 		await expect(listProviders(env, { accessToken: "oauth-token" })).resolves.toEqual([]);
-		expect(fetchMock.mock.calls[0]?.[0].href).toBe("https://api.phaseo.app/v1/providers?limit=250");
+		expect((fetchMock.mock.calls[0]?.[0] as Request).url).toBe("https://api.phaseo.app/v1/providers?limit=250");
 	});
 });

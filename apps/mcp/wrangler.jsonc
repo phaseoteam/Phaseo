@@ -1,14 +1,33 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "phaseo-mcp",
+  "name": "phaseo-mcp-preview",
   "main": "src/index.ts",
-  "compatibility_date": "2026-05-28",
+  "compatibility_date": "2026-07-17",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
   "observability": {
-    "enabled": true
+    "enabled": true,
+    "logs": { "head_sampling_rate": 1 },
+    "traces": { "enabled": true, "head_sampling_rate": 0.01 }
   },
   "vars": {
-    "PHASEO_API_BASE_URL": "https://api.phaseo.app"
+    "PHASEO_API_BASE_URL": "https://api.phaseo.app",
+    "PHASEO_MCP_WRITE_TOOLS_ENABLED": "false"
+  },
+  "env": {
+    "production": {
+      "name": "phaseo-mcp",
+      "workers_dev": false,
+      "routes": [
+        { "pattern": "mcp.phaseo.app", "custom_domain": true }
+      ],
+      "services": [
+        { "binding": "PHASEO_API", "service": "phaseo-gateway" }
+      ],
+      "vars": {
+        "PHASEO_API_BASE_URL": "https://api.phaseo.app",
+        "PHASEO_MCP_WRITE_TOOLS_ENABLED": "false"
+      }
+    }
   }
 }

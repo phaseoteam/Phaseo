@@ -244,12 +244,16 @@ export async function approveAuthorizationAction(
  */
 export async function denyAuthorizationAction(input: {
 	authorization_id?: string;
+	client_id?: string;
 	redirect_uri?: string;
 	state?: string;
 }): Promise<ConsentResult> {
 	try {
+		const supabase = await createClient();
+		const { data: { user } } = await supabase.auth.getUser();
+		if (!user) return { error: "Unauthorized" };
+
 		if (input.authorization_id) {
-			const supabase = await createClient();
 			const oauthClient = supabase.auth.oauth as any;
 			const { data: redirectData, error } = await oauthClient.denyAuthorization(
 				input.authorization_id,
@@ -271,11 +275,53 @@ export async function denyAuthorizationAction(input: {
 			};
 		}
 
-		if (!input.redirect_uri) {
+		const clientId = input.client_id?.trim();
+		if (!input.redirect_uri || !clientId) {
 			return {
 				error:
-					"Missing authorization_id. Please restart the OAuth flow from the client application.",
+					"Missing authorization request details. Please restart the OAuth flow from the client application.",
 			};
+		}
+
+		const readRedirectUris = (value: unknown): string[] => {
+			if (Array.isArray(value)) return value.filter((entry): entry is string => typeof entry === "string");
+			if (typeof value !== "string") return [];
+			try {
+				const parsed = JSON.parse(value);
+				return Array.isArray(parsed) ? parsed.filter((entry): entry is string => typeof entry === "string") : [];
+			} catch {
+				return [];
+			}
+		};
+		const metadata = await supabase
+			.from("oauth_app_metadata")
+			.select("redirect_uris")
+			.eq("client_id", clientId)
+			.eq("status", "active")
+			.maybeSingle();
+		const client = metadata.data
+			? null
+			: await supabase
+				.from("oauth_clients")
+				.select("redirect_uris")
+				.eq("id", clientId)
+				.eq("status", "active")
+				.maybeSingle();
+		const registeredRedirectUris = readRedirectUris(metadata.data?.redirect_uris ?? client?.data?.redirect_uris);
+		let isCliLoopback = false;
+		if (clientId === "phaseo_cli" || clientId === "aistats_cli") {
+			try {
+				const redirect = new URL(input.redirect_uri);
+				isCliLoopback = redirect.protocol === "http:" &&
+					["127.0.0.1", "localhost", "::1", "[::1]"].includes(redirect.hostname) &&
+					redirect.pathname === "/callback" &&
+					!redirect.username && !redirect.password && !redirect.search && !redirect.hash;
+			} catch {
+				isCliLoopback = false;
+			}
+		}
+		if (!registeredRedirectUris.includes(input.redirect_uri) && !isCliLoopback) {
+			return { error: "OAuth client or redirect URI is invalid" };
 		}
 
 		// Build redirect URL with error

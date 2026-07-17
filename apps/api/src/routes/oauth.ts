@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
-import { getSupabaseAdmin } from "@/runtime/env";
+import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { ALL_SUPPORTED_SCOPES, GATEWAY_ACCESS_SCOPE } from "@/lib/authz/capabilities";
 import { checkOAuthRateLimit } from "@/lib/oauth/rateLimit";
 import { authenticateManagement } from "@/pipeline/before/auth";
@@ -25,6 +25,8 @@ import {
 	hasActiveOAuthWorkspaceAccess,
 	issueTokenPairForGrant,
 	issueOAuthManagedKeyForAuthorizationCode,
+	issueMcpUpstreamToken,
+	isValidPkceChallenge,
 	isFirstPartyCliClient,
 	isThirdPartyOAuthEnabled,
 	loadOAuthClient,
@@ -57,7 +59,9 @@ const DYNAMIC_MCP_SCOPES = [
 	"keys:read",
 	"keys:write",
 ] as const;
+const DYNAMIC_MCP_DEFAULT_SCOPES = DYNAMIC_MCP_SCOPES.filter((scope) => scope !== "keys:write");
 const DYNAMIC_MCP_SCOPE_SET = new Set<string>(DYNAMIC_MCP_SCOPES);
+const MCP_RESOURCE_SERVER_CLIENT_ID = "phaseo_mcp_resource_server";
 
 class OAuthRequestBodyTooLarge extends Error {}
 
@@ -139,7 +143,9 @@ function readClientCredentials(
 	const authorization = req.headers.get("authorization") ?? "";
 	if (authorization.toLowerCase().startsWith("basic ")) {
 		try {
-			const decoded = atob(authorization.slice(6).trim());
+			const encoded = authorization.slice(6).trim();
+			if (encoded.length > 2048) throw new Error("OAuth client credentials are too large");
+			const decoded = atob(encoded);
 			const separatorIndex = decoded.indexOf(":");
 			if (separatorIndex >= 0) {
 				return {
@@ -159,6 +165,19 @@ function readClientCredentials(
 	};
 }
 
+function constantTimeEqualText(left: string, right: string): boolean {
+	const length = Math.max(left.length, right.length);
+	let difference = left.length === right.length ? 0 : 1;
+	for (let index = 0; index < length; index += 1) {
+		difference |= (left.charCodeAt(index) || 0) ^ (right.charCodeAt(index) || 0);
+	}
+	return difference === 0;
+}
+
+function hasUnsafeMetadataCharacters(value: string): boolean {
+	return /[\u0000-\u001F\u007F]/.test(value);
+}
+
 async function requireSupabaseActor(req: Request) {
 	const token = bearerToken(req);
 	if (!token) return null;
@@ -166,7 +185,7 @@ async function requireSupabaseActor(req: Request) {
 }
 
 function isDynamicClientRedirectUriAllowed(value: unknown): value is string {
-	if (typeof value !== "string") return false;
+	if (typeof value !== "string" || value.length > 2048) return false;
 	try {
 		const url = new URL(value);
 		if (url.username || url.password || url.hash) return false;
@@ -179,7 +198,7 @@ function isDynamicClientRedirectUriAllowed(value: unknown): value is string {
 }
 
 function isDynamicClientMetadataUrlAllowed(value: unknown): value is string {
-	if (typeof value !== "string") return false;
+	if (typeof value !== "string" || value.length > 2048) return false;
 	try {
 		const url = new URL(value);
 		return url.protocol === "https:" && !url.username && !url.password && !url.hash;
@@ -189,6 +208,7 @@ function isDynamicClientMetadataUrlAllowed(value: unknown): value is string {
 }
 
 function isProtectedResourceAllowed(value: string): boolean {
+	if (value.length > 2048) return false;
 	try {
 		const url = new URL(value);
 		if (url.username || url.password || url.hash) return false;
@@ -258,9 +278,15 @@ oauthRouter.post(
 			return oauthError("invalid_client_metadata", "logo_uri must be an HTTPS URL");
 		}
 
-		const clientName = String(body.client_name ?? "Phaseo MCP client").trim();
-		if (clientName.length < 3 || clientName.length > 100) {
+		const clientName = String(body.client_name ?? "Phaseo MCP client").normalize("NFKC").trim();
+		if (clientName.length < 3 || clientName.length > 100 || hasUnsafeMetadataCharacters(clientName)) {
 			return oauthError("invalid_client_metadata", "client_name must contain 3-100 characters");
+		}
+		const clientDescription = typeof body.client_description === "string"
+			? body.client_description.normalize("NFKC").trim()
+			: "";
+		if (clientDescription.length > 500 || hasUnsafeMetadataCharacters(clientDescription)) {
+			return oauthError("invalid_client_metadata", "client_description must contain at most 500 characters without control characters");
 		}
 		if (String(body.token_endpoint_auth_method ?? "none") !== "none") {
 			return oauthError("invalid_client_metadata", "Only public clients using token_endpoint_auth_method=none are supported");
@@ -272,7 +298,7 @@ oauthRouter.post(
 			return oauthError("invalid_client_metadata", "Dynamically registered clients support authorization_code with code responses");
 		}
 
-		const requestedScopes = normalizeScopes(body.scope, DYNAMIC_MCP_SCOPES);
+		const requestedScopes = normalizeScopes(body.scope, DYNAMIC_MCP_DEFAULT_SCOPES);
 		if (requestedScopes.length === 0 || !requestedScopes.every((scope) => DYNAMIC_MCP_SCOPE_SET.has(scope))) {
 			return oauthError("invalid_scope", "One or more requested scopes are not supported for dynamically registered MCP clients");
 		}
@@ -285,7 +311,7 @@ oauthRouter.post(
 		const { error } = await getSupabaseAdmin().from("oauth_clients").insert({
 			id: clientId,
 			name: clientName,
-			description: typeof body.client_description === "string" ? body.client_description.slice(0, 500) : null,
+			description: clientDescription || null,
 			logo_url: typeof body.logo_uri === "string" ? body.logo_uri : null,
 			homepage_url: typeof body.client_uri === "string" ? body.client_uri : null,
 			client_type: "public",
@@ -380,13 +406,17 @@ oauthRouter.get(
 		const codeChallenge = url.searchParams.get("code_challenge")?.trim() ?? "";
 		const codeChallengeMethod = url.searchParams.get("code_challenge_method")?.trim() ?? "S256";
 		const resource = url.searchParams.get("resource")?.trim() ?? "";
+		const state = url.searchParams.get("state") ?? "";
 		if (!(await checkOAuthRateLimit(req, "token", "authorize"))) return rateLimitError();
 
 		if (responseType !== "code") {
 			return oauthError("unsupported_response_type", "Only response_type=code is supported");
 		}
-		if (!clientId || !redirectUri || !codeChallenge || codeChallengeMethod !== "S256") {
+		if (!clientId || !redirectUri || !isValidPkceChallenge(codeChallenge) || codeChallengeMethod !== "S256") {
 			return oauthError("invalid_request", "client_id, redirect_uri, and S256 PKCE are required");
+		}
+		if (clientId.length > 256 || redirectUri.length > 2048 || state.length > 2048) {
+			return oauthError("invalid_request", "OAuth request parameters are too large");
 		}
 		if (resource && !isProtectedResourceAllowed(resource)) {
 			return oauthError("invalid_target", "resource must be an HTTPS or loopback protected resource URL");
@@ -445,8 +475,11 @@ oauthRouter.post(
 		const codeChallengeMethod = String(body.code_challenge_method ?? "S256").trim();
 		const resource = String(body.resource ?? "").trim();
 		const state = typeof body.state === "string" ? body.state : null;
-		if (!clientId || !redirectUri || !workspaceId || !codeChallenge || codeChallengeMethod !== "S256") {
+		if (!clientId || !redirectUri || !workspaceId || !isValidPkceChallenge(codeChallenge) || codeChallengeMethod !== "S256") {
 			return oauthError("invalid_request", "client_id, redirect_uri, workspace_id, and S256 PKCE are required");
+		}
+		if (clientId.length > 256 || redirectUri.length > 2048 || (state?.length ?? 0) > 2048) {
+			return oauthError("invalid_request", "OAuth request parameters are too large");
 		}
 		if (resource && !isProtectedResourceAllowed(resource)) {
 			return oauthError("invalid_target", "resource must be an HTTPS or loopback protected resource URL");
@@ -775,6 +808,71 @@ oauthRouter.post(
 );
 
 oauthRouter.post(
+	"/mcp/token-exchange",
+	withRuntime(async (req) => {
+		if (!(await checkOAuthRateLimit(req, "token", "mcp-token-exchange"))) return rateLimitError();
+		let body: Record<string, unknown>;
+		try {
+			body = await readBody(req);
+		} catch (error) {
+			return invalidBodyError(error);
+		}
+
+		const configuredSecret = String(getBindings().PHASEO_MCP_RESOURCE_SERVER_SECRET ?? "").trim();
+		const credentials = readClientCredentials(req, body);
+		if (
+			configuredSecret.length < 64 ||
+			credentials.clientId !== MCP_RESOURCE_SERVER_CLIENT_ID ||
+			!credentials.clientSecret ||
+			credentials.clientSecret.length > 512 ||
+			!constantTimeEqualText(credentials.clientSecret, configuredSecret)
+		) {
+			return oauthError("invalid_client", "MCP resource server authentication failed", 401, {
+				"WWW-Authenticate": 'Basic realm="Phaseo MCP token exchange"',
+			});
+		}
+
+		const subjectToken = String(body.subject_token ?? "").trim();
+		const resource = String(body.resource ?? "").trim();
+		if (!subjectToken || !resource || !isProtectedResourceAllowed(resource)) {
+			return oauthError("invalid_request", "subject_token and a valid protected resource are required");
+		}
+		const tokenRequest = new Request(req.url, {
+			headers: { Authorization: `Bearer ${subjectToken}` },
+		});
+		const auth = await authenticateManagement(tokenRequest, {
+			useKvCache: false,
+			allowResourceBoundOAuthKey: true,
+		});
+		if (
+			!auth.ok ||
+			auth.authMethod !== "oauth" ||
+			!auth.userId ||
+			!auth.oauthClientId ||
+			auth.oauthResource !== resource
+		) {
+			return json({ active: false }, 200, { "Cache-Control": "no-store" });
+		}
+		const scopes = auth.oauthScopes ?? auth.scopes ?? [];
+		const upstream = await issueMcpUpstreamToken({
+			userId: auth.userId,
+			workspaceId: auth.workspaceId,
+			clientId: auth.oauthClientId,
+			scopes,
+		});
+		return json({
+			active: true,
+			resource,
+			workspace_id: auth.workspaceId,
+			scope: scopes.join(" "),
+			upstream_access_token: upstream.access_token,
+			token_type: upstream.token_type,
+			expires_in: upstream.expires_in,
+		}, 200, { "Cache-Control": "no-store" });
+	}),
+);
+
+oauthRouter.post(
 	"/revoke",
 	withRuntime(async (req) => {
 		if (!(await checkOAuthRateLimit(req, "token", "revoke"))) return rateLimitError();
@@ -793,7 +891,10 @@ oauthRouter.post(
 oauthRouter.get(
 	"/userinfo",
 	withRuntime(async (req) => {
-		const auth = await authenticateManagement(req, { useKvCache: false });
+		const auth = await authenticateManagement(req, {
+			useKvCache: false,
+			allowResourceBoundOAuthKey: true,
+		});
 		if (!auth.ok || auth.authMethod !== "oauth" || !auth.userId || !auth.oauthClientId) {
 			return oauthError("invalid_token", "Bearer OAuth token is invalid or expired", 401);
 		}

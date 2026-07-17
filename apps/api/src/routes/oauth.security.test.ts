@@ -28,7 +28,7 @@ function json(body: unknown, status = 200, headers: Record<string, string> = {})
 }
 
 vi.mock("@/runtime/env", () => ({
-	getBindings: () => ({}),
+	getBindings: () => ({ PHASEO_MCP_RESOURCE_SERVER_SECRET: "s".repeat(64) }),
 	getSupabaseAdmin: () => ({
 		auth: {
 			admin: {
@@ -154,6 +154,8 @@ vi.mock("@/lib/oauth/service", () => ({
 		state.issuedManagedKeys.push(input);
 		return { access_token: "phaseo_v1_sk_test", token_type: "Bearer" };
 	}),
+	issueMcpUpstreamToken: vi.fn(async () => ({ access_token: "upstream-jwt", token_type: "Bearer", expires_in: 300 })),
+	isValidPkceChallenge: vi.fn((value: string) => /^[A-Za-z0-9_-]{43}$/.test(value)),
 	isFirstPartyCliClient: vi.fn((clientId: string) => clientId === "phaseo_cli" || clientId === "aistats_cli"),
 	isThirdPartyOAuthEnabled: vi.fn(() => true),
 	loadOAuthClient: vi.fn(async () => state.client),
@@ -520,6 +522,36 @@ describe("OAuth route security", () => {
 		});
 	});
 
+	it("defaults dynamic MCP registration to read-only scopes", async () => {
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/register", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				client_name: "Read-only MCP",
+				redirect_uris: ["https://client.example/callback"],
+			}),
+		});
+
+		expect(response.status).toBe(201);
+		expect(state.registeredClients[0]?.allowed_scopes).not.toContain("keys:write");
+	});
+
+	it("rejects control characters in dynamic client metadata", async () => {
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/register", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				client_name: "Bad\nClient",
+				redirect_uris: ["https://client.example/callback"],
+			}),
+		});
+
+		expect(response.status).toBe(400);
+		expect(await response.json()).toMatchObject({ error: "invalid_client_metadata" });
+	});
+
 	it("advertises dynamic registration and public-client token exchange", async () => {
 		const { oauthRouter } = await import("./oauth");
 		const response = await oauthRouter.request("https://example.com/.well-known/oauth-authorization-server");
@@ -614,6 +646,43 @@ describe("OAuth route security", () => {
 			clientId: "mcp_client",
 			scopes: ["openid", "gateway:access", "me:read"],
 			resource: "https://mcp.phaseo.app/mcp",
+		});
+	});
+
+	it("exchanges an MCP audience token for a separate short-lived API token", async () => {
+		state.oauthAuth = {
+			ok: true,
+			workspaceId: "workspace_1",
+			apiKeyId: "key_1",
+			apiKeyRef: "oauth_client_1",
+			apiKeyKid: "kid_1",
+			userId: "user_1",
+			authMethod: "oauth",
+			oauthClientId: "client_1",
+			oauthScopes: ["openid", "gateway:access", "models:read"],
+			oauthResource: "https://mcp.phaseo.app/mcp",
+		};
+		const credentials = btoa(`phaseo_mcp_resource_server:${"s".repeat(64)}`);
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/mcp/token-exchange", {
+			method: "POST",
+			headers: {
+				Authorization: `Basic ${credentials}`,
+				"content-type": "application/json",
+			},
+			body: JSON.stringify({
+				subject_token: "resource-bound-token",
+				resource: "https://mcp.phaseo.app/mcp",
+			}),
+		});
+
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({
+			active: true,
+			resource: "https://mcp.phaseo.app/mcp",
+			workspace_id: "workspace_1",
+			upstream_access_token: "upstream-jwt",
+			expires_in: 300,
 		});
 	});
 });

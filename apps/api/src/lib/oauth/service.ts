@@ -17,6 +17,8 @@ const DEFAULT_DEVICE_INTERVAL_SECONDS = 5;
 const DEFAULT_WEB_BASE_URL = "https://phaseo.app";
 const DEFAULT_API_BASE_URL = "https://api.phaseo.app";
 const ACCESS_TOKEN_AUDIENCE = "phaseo-api";
+const MCP_UPSTREAM_TOKEN_TTL_SECONDS = 5 * 60;
+const DELEGATED_ACCESS_TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
 const TRUTHY_VALUES = new Set(["1", "true", "yes", "on"]);
 
 export const CLI_CLIENT_ID = "phaseo_cli";
@@ -320,6 +322,27 @@ async function signJwt(payload: Record<string, unknown>): Promise<string> {
 export async function validateLocalAccessToken(token: string) {
 	const jwks = await getLocalJwks();
 	return validateOAuthToken(token, jwks.keys, getIssuer(), ACCESS_TOKEN_AUDIENCE);
+}
+
+export async function issueMcpUpstreamToken(input: TokenIssueInput) {
+	const now = Math.floor(Date.now() / 1000);
+	return {
+		access_token: await signJwt({
+			iss: getIssuer(),
+			sub: input.userId,
+			aud: ACCESS_TOKEN_AUDIENCE,
+			exp: now + MCP_UPSTREAM_TOKEN_TTL_SECONDS,
+			iat: now,
+			jti: crypto.randomUUID(),
+			user_id: input.userId,
+			workspace_id: input.workspaceId,
+			client_id: input.clientId,
+			scope: input.scopes.join(" "),
+		}),
+		token_type: "Bearer" as const,
+		expires_in: MCP_UPSTREAM_TOKEN_TTL_SECONDS,
+		scope: input.scopes.join(" "),
+	};
 }
 
 async function fetchUserProfile(userId: string): Promise<{ email?: string | null; name?: string | null }> {
@@ -632,6 +655,7 @@ export async function issueOAuthManagedKeyForAuthorizationCode(
 	return {
 		access_token: generated.plaintext,
 		token_type: "Bearer",
+		expires_in: DELEGATED_ACCESS_TOKEN_TTL_SECONDS,
 		scope: input.scopes.join(" "),
 		...(input.resource ? { resource: input.resource } : {}),
 	};
@@ -804,8 +828,20 @@ export function createOpaqueCode(): string {
 	return randomBase64Url(32);
 }
 
+export function isValidPkceChallenge(value: string): boolean {
+	return /^[A-Za-z0-9_-]{43}$/.test(value);
+}
+
+export function isValidPkceVerifier(value: string): boolean {
+	return /^[A-Za-z0-9._~-]{43,128}$/.test(value);
+}
+
 export async function verifyPkce(args: { codeVerifier: string; codeChallenge: string; method: string }) {
-	if (args.method !== "S256") return false;
+	if (
+		args.method !== "S256" ||
+		!isValidPkceVerifier(args.codeVerifier) ||
+		!isValidPkceChallenge(args.codeChallenge)
+	) return false;
 	const expected = await sha256Base64Url(args.codeVerifier);
 	return expected === args.codeChallenge;
 }

@@ -276,6 +276,7 @@ describe("OAuth refresh rotation security", () => {
 		);
 
 		expect(result?.access_token).toMatch(/^phaseo_v1_sk_/);
+		expect(result?.expires_in).toBe(7 * 24 * 60 * 60);
 		const rpcCall = state.rpcCalls.at(-1);
 		expect(rpcCall).toMatchObject({
 			name: "consume_oauth_code_and_issue_managed_key",

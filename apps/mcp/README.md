@@ -3,56 +3,81 @@
 Authenticated, stateless MCP server for live Phaseo model, provider, pricing,
 and workspace key-management information.
 
-It reuses Phaseo's existing OAuth server and control-plane permissions rather
-than creating a second account or API-key system.
+It reuses Phaseo's OAuth server and control-plane permissions rather than
+creating a second identity or API-key system.
 
 ## Authentication and permissions
 
 `/mcp` requires a Phaseo OAuth access token. The Worker advertises protected
-resource metadata at `/.well-known/oauth-protected-resource/mcp`, then validates
-the bearer token through Phaseo's `/v1/me` endpoint. The OAuth `resource` value
-must exactly match the MCP endpoint, preventing a token issued for another
-connector from being accepted. Phaseo remains the enforcement point for token
-scopes, revocation, and workspace role checks.
+resource metadata at `/.well-known/oauth-protected-resource/mcp`. The OAuth
+`resource` value must exactly match the MCP endpoint.
 
-The initial authenticated tool set is:
+The MCP bearer token is never forwarded to Phaseo's normal APIs. The Worker
+exchanges it through the confidential `/oauth/mcp/token-exchange` endpoint for
+a separate five-minute API JWT. Resource-bound MCP tokens are rejected by
+ordinary Phaseo API routes, preventing cross-service replay and OAuth token
+passthrough.
 
-- `api_keys_list` — requires `keys:read`; secrets are never returned.
-- `api_key_create` — requires `keys:write` and an owner/admin role. The caller
-  must explicitly set `confirm: true`; the new secret is returned exactly once.
+The read-only tool set includes model search, model lookup, provider listing,
+cost estimation, and `api_keys_list` when the user granted `keys:read`.
 
-When `PHASEO_THIRD_PARTY_OAUTH_ENABLED=true`, Phaseo advertises a dynamic client
-registration endpoint from its OAuth metadata. A compatible MCP host can then
-register its own callback URI, request only the scopes it needs, and send the
-resulting Phaseo access token to this Worker. The initial registration allowlist
-is deliberately narrow: identity, model catalogue, workspace read, and API-key
-read/write scopes only.
+`api_key_create` is compiled in but disabled by default. It is registered only
+when both conditions are true:
+
+- `PHASEO_MCP_WRITE_TOOLS_ENABLED=true` on the MCP Worker.
+- The user explicitly granted `keys:write`.
+
+Leave it disabled for public deployment until Phaseo has a secure one-time
+secret-delivery UI that does not place the new key in model-readable output.
+
+When `PHASEO_THIRD_PARTY_OAUTH_ENABLED=true`, Phaseo advertises dynamic client
+registration. Registrations default to the read-only scope set; write scopes
+must be requested explicitly and remain subject to user consent, workspace
+membership, and route-level authorization.
 
 The Phaseo CLI remains a fixed first-party client with device authorization,
 short-lived JWT access tokens, and rotating refresh tokens. MCP hosts and
-user-created third-party applications use authorization code plus PKCE and
-receive a revocable opaque delegated key as their OAuth access token.
+user-created third-party applications use authorization code plus strict S256
+PKCE. Delegated API credentials expire after seven days and are revocable.
 
-Do not use a Management API key as the MCP bearer token: it cannot authenticate
-ordinary `/v1/models` or `/v1/keys` requests.
+## Required secrets
+
+Set the same randomly generated value (at least 64 characters) as the Wrangler
+secret `PHASEO_MCP_RESOURCE_SERVER_SECRET` on both the API Worker and the MCP
+Worker. Do not put it in `wrangler.jsonc`, `.dev.vars.example`, logs, or source.
+
+Production also uses a Cloudflare Service Binding named `PHASEO_API` to reach
+the `phaseo-gateway` Worker without traversing the public internet.
 
 ## Run locally
 
-1. Copy `.dev.vars.example` to `.dev.vars` only when you need to point the MCP
-   Worker at a local or preview Phaseo API. No static Phaseo API key is needed.
-2. Run `pnpm --filter @phaseo/mcp dev`.
-3. Connect MCP Inspector or another OAuth-capable MCP client to
-   `http://localhost:8787/mcp`. The client discovers Phaseo OAuth, registers a
-   public client, opens the consent screen, and echoes
-   `resource=http://localhost:8787/mcp` through code exchange.
+1. Copy `.dev.vars.example` to `.dev.vars` and replace the placeholder with a
+   random local secret. Configure the identical secret for the local API.
+2. Run the API and MCP Workers with their normal development commands.
+3. Connect MCP Inspector to `http://localhost:8787/mcp` (or the MCP port shown
+   by Wrangler).
+4. Complete Phaseo login and consent. The client must echo the exact local MCP
+   URL in `resource` at authorization and token exchange.
 
-## Deploy preview
+Run validation with:
 
-Deploy with `pnpm --filter @phaseo/mcp exec wrangler deploy`. The generated
-`workers.dev` URL is suitable for MCP Inspector testing. Attach
-`mcp.phaseo.app` only after the preview is validated.
+```bash
+pnpm --filter @phaseo/mcp cf-typegen
+pnpm --filter @phaseo/mcp typecheck
+pnpm --filter @phaseo/mcp test
+pnpm --filter @phaseo/mcp build
+```
 
-The hosted API config enables `PHASEO_THIRD_PARTY_OAUTH_ENABLED`. Before
-enabling a public ChatGPT app, apply the OAuth resource-binding migration and
-validate the complete authorization-code flow with MCP Inspector. Keep the
-scope and workspace-role checks in place for every write tool.
+## Deploy
+
+Preview deployments use the separate `phaseo-mcp-preview` Worker from the
+top-level Wrangler environment. Production uses:
+
+```bash
+pnpm --filter @phaseo/mcp exec wrangler deploy --env production
+```
+
+The production environment disables `workers.dev`, binds the custom domain
+`mcp.phaseo.app`, and connects privately to `phaseo-gateway`. Apply the OAuth
+resource-binding migration and configure the shared exchange secret before the
+first deployment.

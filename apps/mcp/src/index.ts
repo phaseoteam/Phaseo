@@ -6,7 +6,7 @@ import {
 	createApiKey,
 	authenticatePhaseoUser,
 	type AuthenticatedPhaseoUser,
-	type Env,
+	type PhaseoEnv,
 	getModel,
 	listApiKeys,
 	listModels,
@@ -15,6 +15,7 @@ import {
 } from "./phaseo-api";
 
 const MAX_RESULTS = 20;
+const MAX_MCP_REQUEST_BODY_BYTES = 1024 * 1024;
 
 function normalise(value: string | null | undefined): string {
 	return value?.trim().toLowerCase() ?? "";
@@ -47,7 +48,7 @@ function errorResult(error: unknown) {
 	return { isError: true as const, content: [{ type: "text" as const, text: message }] };
 }
 
-function createServer(env: Env, authenticatedUser?: AuthenticatedPhaseoUser): McpServer {
+function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPhaseoUser): McpServer {
 	const server = new McpServer({
 		name: "Phaseo",
 		version: "0.2.0",
@@ -73,7 +74,7 @@ function createServer(env: Env, authenticatedUser?: AuthenticatedPhaseoUser): Mc
 		async ({ query, provider, modality, minimumContextTokens, maximumInputPricePerMillion, limit }) => {
 			try {
 				const queryTerms = normalise(query).split(/\s+/).filter(Boolean);
-				const models = (await listModels(env, 250, { accessToken: authenticatedUser?.accessToken })).filter((model) => {
+				const models = (await listModels(env, 250, { accessToken: authenticatedUser.accessToken })).filter((model) => {
 					const searchable = normalise([model.id, model.name, model.description, model.organisation?.name].filter(Boolean).join(" "));
 					const inputPrice = Number(model.pricing.prompt);
 					return (
@@ -103,7 +104,7 @@ function createServer(env: Env, authenticatedUser?: AuthenticatedPhaseoUser): Mc
 		},
 		async ({ modelId }) => {
 			try {
-				const model = await getModel(env, modelId, { accessToken: authenticatedUser?.accessToken });
+				const model = await getModel(env, modelId, { accessToken: authenticatedUser.accessToken });
 				if (!model) return { isError: true as const, content: [{ type: "text" as const, text: `No Phaseo model exists with ID "${modelId}".` }] };
 				return { content: [{ type: "text" as const, text: `Retrieved ${model.name} from Phaseo.` }], structuredContent: { model: modelSummary(model) } };
 			} catch (error) { return errorResult(error); }
@@ -120,7 +121,7 @@ function createServer(env: Env, authenticatedUser?: AuthenticatedPhaseoUser): Mc
 		},
 		async () => {
 			try {
-				const providers = await listProviders(env, { accessToken: authenticatedUser?.accessToken });
+				const providers = await listProviders(env, { accessToken: authenticatedUser.accessToken });
 				return { content: [{ type: "text" as const, text: `Phaseo currently lists ${providers.length} providers.` }], structuredContent: { providers } };
 			} catch (error) { return errorResult(error); }
 		},
@@ -141,7 +142,7 @@ function createServer(env: Env, authenticatedUser?: AuthenticatedPhaseoUser): Mc
 		},
 		async ({ modelId, inputTokens, cachedInputTokens, outputTokens }) => {
 			try {
-				const model = await getModel(env, modelId, { accessToken: authenticatedUser?.accessToken });
+				const model = await getModel(env, modelId, { accessToken: authenticatedUser.accessToken });
 				if (!model) return { isError: true as const, content: [{ type: "text" as const, text: `No Phaseo model exists with ID "${modelId}".` }] };
 				const inputRate = tokenRate(model.pricing.prompt);
 				const cachedRate = tokenRate(model.pricing.input_cache_read);
@@ -159,9 +160,7 @@ function createServer(env: Env, authenticatedUser?: AuthenticatedPhaseoUser): Mc
 		},
 	);
 
-	if (!authenticatedUser) return server;
-
-	server.registerTool(
+	if (authenticatedUser.scopes.includes("keys:read")) server.registerTool(
 		"api_keys_list",
 		{
 			title: "List Phaseo Gateway API keys",
@@ -181,7 +180,10 @@ function createServer(env: Env, authenticatedUser?: AuthenticatedPhaseoUser): Mc
 		},
 	);
 
-	server.registerTool(
+	if (
+		env.PHASEO_MCP_WRITE_TOOLS_ENABLED?.trim().toLowerCase() === "true" &&
+		authenticatedUser.scopes.includes("keys:write")
+	) server.registerTool(
 		"api_key_create",
 		{
 			title: "Create a Phaseo Gateway API key",
@@ -213,7 +215,7 @@ function createServer(env: Env, authenticatedUser?: AuthenticatedPhaseoUser): Mc
 	return server;
 }
 
-function resourceMetadata(request: Request, env: Env): Response {
+function resourceMetadata(request: Request, env: PhaseoEnv): Response {
 	const origin = new URL(request.url).origin;
 	return Response.json({
 		resource: `${origin}/mcp`,
@@ -229,7 +231,7 @@ function resourceMetadata(request: Request, env: Env): Response {
 			"pricing:read",
 			"workspaces:read",
 			"keys:read",
-			"keys:write",
+			...(env.PHASEO_MCP_WRITE_TOOLS_ENABLED?.trim().toLowerCase() === "true" ? ["keys:write"] : []),
 		],
 		bearer_methods_supported: ["header"],
 	}, { headers: { "Cache-Control": "public, max-age=300" } });
@@ -240,23 +242,37 @@ function unauthorised(request: Request): Response {
 	return new Response("Phaseo login is required.", {
 		status: 401,
 		headers: {
-			"WWW-Authenticate": `Bearer resource_metadata="${origin}/.well-known/oauth-protected-resource/mcp", scope="openid gateway:access me:read models:read providers:read pricing:read workspaces:read keys:read keys:write"`,
+			"WWW-Authenticate": `Bearer resource_metadata="${origin}/.well-known/oauth-protected-resource/mcp", scope="openid gateway:access me:read models:read providers:read pricing:read workspaces:read keys:read"`,
 			"Cache-Control": "no-store",
+			"X-Content-Type-Options": "nosniff",
 		},
 	});
 }
 
+function secureResponse(response: Response): Response {
+	const headers = new Headers(response.headers);
+	headers.set("X-Content-Type-Options", "nosniff");
+	headers.set("Referrer-Policy", "no-referrer");
+	return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
 export default {
-	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+	async fetch(request: Request, env: PhaseoEnv, ctx: ExecutionContext): Promise<Response> {
 		const url = new URL(request.url);
-		if (url.pathname === "/health") return Response.json({ status: "ok", service: "phaseo-mcp", mode: "oauth-preview" });
-		if (url.pathname === "/.well-known/oauth-protected-resource/mcp") return resourceMetadata(request, env);
-		if (url.pathname !== "/mcp") return new Response("Not found", { status: 404 });
+		if (url.pathname === "/health") return secureResponse(Response.json({ status: "ok", service: "phaseo-mcp" }));
+		if (url.pathname === "/.well-known/oauth-protected-resource/mcp") return secureResponse(resourceMetadata(request, env));
+		if (url.pathname !== "/mcp") return secureResponse(new Response("Not found", { status: 404 }));
+		if (url.searchParams.has("access_token")) return secureResponse(new Response("Bearer tokens must use the Authorization header.", { status: 400 }));
+		const contentLength = Number(request.headers.get("content-length"));
+		if (Number.isFinite(contentLength) && contentLength > MAX_MCP_REQUEST_BODY_BYTES) {
+			return secureResponse(new Response("MCP request body is too large.", { status: 413 }));
+		}
 		const authenticatedUser = await authenticatePhaseoUser(request, env);
-		if (!authenticatedUser) return unauthorised(request);
-		return createMcpHandler(createServer(env, authenticatedUser), {
+		if (!authenticatedUser) return secureResponse(unauthorised(request));
+		const response = await createMcpHandler(createServer(env, authenticatedUser), {
 			route: "/mcp",
 			authContext: { props: { workspaceId: authenticatedUser.workspaceId } },
 		})(request, env, ctx);
+		return secureResponse(response);
 	},
-} satisfies ExportedHandler<Env>;
+} satisfies ExportedHandler<PhaseoEnv>;

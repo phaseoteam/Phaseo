@@ -378,6 +378,7 @@ export default function ConsentForm({
 
 			const result = await denyAuthorizationAction({
 				authorization_id: authorizationId,
+				client_id: clientId,
 				redirect_uri: redirectUri,
 				state,
 			});

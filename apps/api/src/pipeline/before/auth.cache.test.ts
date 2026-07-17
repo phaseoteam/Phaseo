@@ -255,7 +255,7 @@ describe("authenticate hot-path caching", () => {
 		expect(runtime.maybeSingle).toHaveBeenCalledTimes(1);
 	});
 
-	it("enforces the current consent scope for an OAuth-managed key", async () => {
+	it("keeps resource-bound OAuth keys off normal API routes", async () => {
 		const kid = "KIDOAUTHSCOPE";
 		const secret = "secret_oauth_scope";
 		runtime.dbRow.value = {
@@ -271,10 +271,16 @@ describe("authenticate hot-path caching", () => {
 		};
 
 		const { authenticateManagement } = await import("./auth");
-		const result = await authenticateManagement(buildRequest(`phaseo_v1_sk_${kid}_${secret}`), { useKvCache: false });
+		const request = buildRequest(`phaseo_v1_sk_${kid}_${secret}`);
+		const result = await authenticateManagement(request, { useKvCache: false });
+		const exchangeResult = await authenticateManagement(request, {
+			useKvCache: false,
+			allowResourceBoundOAuthKey: true,
+		});
 		await flushBackground();
 
-		expect(result).toMatchObject({
+		expect(result).toEqual({ ok: false, reason: "oauth_resource_token_not_valid_for_api" });
+		expect(exchangeResult).toMatchObject({
 			ok: true,
 			authMethod: "oauth",
 			oauthScopes: ["gateway:access", "models:read"],
