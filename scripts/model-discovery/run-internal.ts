@@ -75,10 +75,10 @@ const LEGACY_MODELS_ROOT_PREFIX = "apps/web/src/data/models/";
 const CANONICAL_MODELS_ROOT_PREFIX = "packages/data/catalog/src/data/models/";
 const HUGGING_FACE_API_ORIGIN = "https://huggingface.co";
 const HUGGING_FACE_MODELS_API_PATH = "/api/models";
-const PUBLIC_MODEL_DISCOVERY_USERNAME = "Phaseo Public Model Discovery";
-const PRIVATE_MODEL_DISCOVERY_USERNAME = "Phaseo Private Model Discovery";
+const PUBLIC_MODEL_DISCOVERY_USERNAME = "Phaseo Model Updates";
+const PRIVATE_MODEL_DISCOVERY_USERNAME = "Phaseo New Models (Internal)";
 const PUBLIC_MODEL_DISCOVERY_AVATAR_URL = "https://phaseo.app/png_logo_light.png";
-const PRIVATE_MODEL_DISCOVERY_AVATAR_URL = "https://phaseo.app/png_logo_dark.png";
+const PRIVATE_MODEL_DISCOVERY_AVATAR_URL = "https://phaseo.app/png_logo_light.png";
 
 function nowIso(): string {
     return new Date().toISOString();

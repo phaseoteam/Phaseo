@@ -16,9 +16,6 @@ GATEWAY_IO_RETENTION_BILLING_ENABLED = "false"
 [placement]
 mode = "smart"
 
-[triggers]
-crons = ["* * * * *"]
-
 [observability]
 [observability.logs]
 enabled = true

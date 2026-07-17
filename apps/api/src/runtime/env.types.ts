@@ -251,6 +251,8 @@ export type GatewayBindings = {
     HF_TOKEN?: string;
     GITHUB_TOKEN?: string;
     GH_TOKEN?: string;
+    GITHUB_REPOSITORY?: string;
+    GITHUB_API_URL?: string;
     GATEWAY_PUBLIC_BASE_URL?: string;
     PHASEO_WEB_BASE_URL?: string;
     PHASEO_OAUTH_PRIVATE_JWK?: string;
@@ -269,7 +271,9 @@ export type GatewayBindings = {
     GATEWAY_LOCAL_TESTING_MODE?: string;
     MODEL_DISCOVERY_RETENTION_DAYS?: string;
     MODEL_DISCOVERY_SHARD_SIZE?: string;
+    MODEL_DISCOVERY_CONCURRENCY?: string;
     MODEL_DISCOVERY_ISSUE_SYNC_ENABLED?: string;
+    MODEL_DISCOVERY_PRICING_ISSUE_SYNC_ENABLED?: string;
     VIDEO_RECONCILIATION_ENABLED?: string;
     VIDEO_RECONCILIATION_LIMIT?: string;
     VIDEO_RECONCILIATION_CONCURRENCY?: string;
@@ -292,8 +296,6 @@ export type GatewayBindings = {
     ASYNC_WEBHOOK_RETRIES_MAX_DELIVERIES?: string;
     ASYNC_WEBHOOK_DELIVERY_TIMEOUT_MS?: string;
     ASYNC_WEBHOOK_TIMEOUT_MS?: string;
-    EMAIL_OUTBOX_DRAIN_ENABLED?: string;
-    EMAIL_OUTBOX_DRAIN_LIMIT?: string;
     LEAKED_KEY_REPORT_MODE?: string;
     VIDEO_API_ENABLED?: string;
     BATCH_API_ENABLED?: string;

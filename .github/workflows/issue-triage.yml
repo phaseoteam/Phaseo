@@ -13,11 +13,14 @@ jobs:
     triage:
         name: AI issue triage
         if: |
-            github.event_name == 'issues' ||
+            !contains(github.event.issue.labels.*.name, 'phaseo-upstream-discovery') &&
             (
-              github.event_name == 'issue_comment' &&
-              github.event.issue.pull_request == null &&
-              !endsWith(github.actor, '[bot]')
+              github.event_name == 'issues' ||
+              (
+                github.event_name == 'issue_comment' &&
+                github.event.issue.pull_request == null &&
+                !endsWith(github.actor, '[bot]')
+              )
             )
         runs-on: ubuntu-latest
         permissions:

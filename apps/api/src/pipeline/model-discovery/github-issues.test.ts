@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { buildCatalogPricingIssueEntries, buildPricingTableIssueEntries, buildProviderPricingIssueEntries } from "./github-issues";
+import {
+	buildCatalogPricingIssueEntries,
+	buildPricingTableIssueEntries,
+	buildProviderPricingIssueEntries,
+	getUpstreamDiscoveryIssueGroupCount,
+	MAX_UPSTREAM_DISCOVERY_ISSUE_GROUPS_PER_RUN,
+} from "./github-issues";
 
 describe("pricing issue entries", () => {
 	it("turns provider API price diffs into a deduplicable pricing signal", () => {
@@ -55,5 +61,38 @@ describe("pricing issue entries", () => {
 				reason: "text.generate | input: 0.5 -> 0.3 USD / 1M tokens",
 			},
 		]);
+	});
+});
+
+describe("GitHub issue circuit breaker", () => {
+	it("allows five provider groups but rejects larger batches", () => {
+		const entries = Array.from({ length: 6 }, (_, index) => ({
+			source: "provider-api" as const,
+			providerId: `provider-${index}`,
+			providerName: `Provider ${index}`,
+			action: "create" as const,
+			modelId: `model-${index}`,
+			detectedAt: "2026-07-17T00:00:00Z",
+			detectionSource: "test",
+		}));
+
+		expect(MAX_UPSTREAM_DISCOVERY_ISSUE_GROUPS_PER_RUN).toBe(5);
+		expect(getUpstreamDiscoveryIssueGroupCount(entries.slice(0, 5))).toBe(5);
+		expect(getUpstreamDiscoveryIssueGroupCount(entries)).toBe(6);
+	});
+
+	it("groups multiple models for the same provider into one issue", () => {
+		const base = {
+			source: "provider-api" as const,
+			providerId: "openai",
+			providerName: "OpenAI",
+			action: "create" as const,
+			detectedAt: "2026-07-17T00:00:00Z",
+			detectionSource: "test",
+		};
+		expect(getUpstreamDiscoveryIssueGroupCount([
+			{ ...base, modelId: "model-a" },
+			{ ...base, modelId: "model-b" },
+		])).toBe(1);
 	});
 });

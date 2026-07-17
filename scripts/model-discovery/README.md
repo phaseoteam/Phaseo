@@ -65,7 +65,7 @@ pnpm run data:check-new-models:test
 - `DISCORD_WEBHOOK_NEW_MODELS_PUBLIC` (public webhook URL for internal website model additions)
 - `DISCORD_WEBHOOK_URL` (private/default webhook URL for provider and Hugging Face tracking alerts)
 - `DISCORD_PUBLIC_MODEL_DISCOVERY_AVATAR_URL` (optional public bot avatar override; defaults to `https://phaseo.app/png_logo_light.png`)
-- `DISCORD_PRIVATE_MODEL_DISCOVERY_AVATAR_URL` (optional private bot avatar override; defaults to `https://phaseo.app/png_logo_dark.png`)
+- `DISCORD_PRIVATE_MODEL_DISCOVERY_AVATAR_URL` (optional private bot avatar override; defaults to `https://phaseo.app/png_logo_light.png`)
 - `DISCORD_MODEL_DISCOVERY_AVATAR_URL` (legacy fallback avatar override when calling internal runner scripts with `--discord-avatar-url`)
 - Watched Hugging Face orgs for the GitHub Actions scheduled runner are currently passed in `.github/workflows/huggingface-model-discovery.yml`
 - `HF_TOKEN` (optional Hugging Face token for orgs/models that require authenticated API access)

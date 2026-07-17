@@ -24,6 +24,9 @@ type GitHubIssue = {
 	number: number;
 	html_url: string;
 	state: string;
+	title?: string;
+	body?: string;
+	labels?: Array<string | { name?: string | null }>;
 };
 
 type GitHubSearchResponse = {
@@ -47,15 +50,18 @@ type GitHubIssueGroup = {
 };
 
 type GitHubIssueClient = {
+	getIssue(issueNumber: number): Promise<GitHubIssue | null>;
 	searchOpenIssue(query: string): Promise<GitHubIssue | null>;
-	createIssue(input: { title: string; body: string }): Promise<GitHubIssue>;
-	updateIssue(issueNumber: number, input: { title?: string; body?: string }): Promise<GitHubIssue>;
+	createIssue(input: { title: string; body: string; labels?: string[] }): Promise<GitHubIssue>;
+	updateIssue(issueNumber: number, input: { title?: string; body?: string; labels?: string[] }): Promise<GitHubIssue>;
 };
 
 const DEFAULT_GITHUB_API_BASE_URL = "https://api.github.com";
 const DEFAULT_GITHUB_REQUEST_TIMEOUT_MS = 30_000;
-const DEFAULT_GITHUB_REPOSITORY = "AI-Stats/AI-Stats";
+const DEFAULT_GITHUB_REPOSITORY = "phaseoteam/Phaseo";
 const DEFAULT_GITHUB_USER_AGENT = "phaseo-gateway-model-discovery";
+const MANAGED_ISSUE_LABEL = "phaseo-upstream-discovery";
+const MAX_ISSUE_GROUPS_PER_RUN = 5;
 
 function toBool(value: string | null | undefined, fallback = false): boolean {
 	if (value === undefined || value === null) return fallback;
@@ -229,6 +235,15 @@ function createGitHubIssueClient(args: {
 	};
 
 	return {
+		async getIssue(issueNumber) {
+			try {
+				return await requestJson<GitHubIssue>(`/repos/${owner}/${repo}/issues/${issueNumber}`);
+			} catch (error) {
+				const message = error instanceof Error ? error.message : String(error);
+				if (message.includes("HTTP 404")) return null;
+				throw error;
+			}
+		},
 		async searchOpenIssue(query) {
 			const response = await requestJson<GitHubSearchResponse>(`/search/issues?q=${encodeURIComponent(query)}&per_page=5`);
 			return response.items?.find((issue) => issue.state === "open") ?? null;
@@ -264,6 +279,25 @@ function shouldSkipIssueSync(entries: UpstreamDiscoveryIssueEntry[]): GitHubIssu
 
 export function shouldSyncProviderDiscoveryIssues(): boolean {
 	return toBool(readBindingEnv(["MODEL_DISCOVERY_ISSUE_SYNC_ENABLED"]) ?? "true", true);
+}
+
+function labelNames(issue: Pick<GitHubIssue, "labels">): string[] {
+	return (issue.labels ?? [])
+		.map((label) => typeof label === "string" ? label : label.name ?? "")
+		.filter(Boolean);
+}
+
+function isTrustedManagedIssue(issue: GitHubIssue | null, marker: string): issue is GitHubIssue {
+	return Boolean(
+		issue &&
+		issue.state === "open" &&
+		labelNames(issue).includes(MANAGED_ISSUE_LABEL) &&
+		(issue.body?.includes(marker) || issue.title?.includes(marker)),
+	);
+}
+
+export function shouldSyncPricingDiscoveryIssues(): boolean {
+	return toBool(readBindingEnv(["MODEL_DISCOVERY_PRICING_ISSUE_SYNC_ENABLED"]) ?? "false", false);
 }
 
 export function buildProviderIssueEntries(args: {
@@ -371,6 +405,16 @@ export async function syncUpstreamDiscoveryIssues(entries: UpstreamDiscoveryIssu
 		return { created: 0, updated: 0, skipped: false, reason: "no entries" };
 	}
 
+	const groups = groupIssueEntries(entries);
+	if (groups.length > MAX_ISSUE_GROUPS_PER_RUN) {
+		return {
+			created: 0,
+			updated: 0,
+			skipped: true,
+			reason: `circuit breaker: ${groups.length} issue groups exceeds limit of ${MAX_ISSUE_GROUPS_PER_RUN}`,
+		};
+	}
+
 	const skipped = shouldSkipIssueSync(entries);
 	if (skipped) return skipped;
 
@@ -381,21 +425,35 @@ export async function syncUpstreamDiscoveryIssues(entries: UpstreamDiscoveryIssu
 
 	let created = 0;
 	let updated = 0;
-	for (const group of groupIssueEntries(entries)) {
+	for (const group of groups) {
 		const marker = markerForKey(group.key);
-		const existing = await client.searchOpenIssue(`repo:${repository} is:issue is:open "${marker}"`);
+		const candidate = await client.searchOpenIssue(
+			`repo:${repository} is:issue is:open in:body label:${MANAGED_ISSUE_LABEL} "${marker}"`,
+		);
+		const candidateIssue = candidate ? await client.getIssue(candidate.number) : null;
+		const existing = isTrustedManagedIssue(candidateIssue, marker) ? candidateIssue : null;
 		const title = issueTitleForGroup(group);
 		const body = buildIssueBody(group);
 
 		if (existing) {
-			await client.updateIssue(existing.number, { title, body });
+			await client.updateIssue(existing.number, {
+				title,
+				body,
+				labels: Array.from(new Set([...labelNames(existing), MANAGED_ISSUE_LABEL])),
+			});
 			updated += 1;
 			continue;
 		}
 
-		await client.createIssue({ title, body });
+		await client.createIssue({ title, body, labels: [MANAGED_ISSUE_LABEL, "Source: Upstream", "Area: Data"] });
 		created += 1;
 	}
 
 	return { created, updated, skipped: false };
 }
+
+export function getUpstreamDiscoveryIssueGroupCount(entries: UpstreamDiscoveryIssueEntry[]): number {
+	return groupIssueEntries(entries).length;
+}
+
+export const MAX_UPSTREAM_DISCOVERY_ISSUE_GROUPS_PER_RUN = MAX_ISSUE_GROUPS_PER_RUN;

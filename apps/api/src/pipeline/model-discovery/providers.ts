@@ -32,6 +32,7 @@ type ProviderOverride = Partial<Omit<ProviderConfig, "providerId" | "providerNam
 
 const PROVIDER_ID_ALIASES_TO_SKIP = new Set<string>([
 	"alibaba-cloud",
+	"anthropic-us",
 	"arcee",
 	"atlas-cloud",
 	"aionlabs",
@@ -39,10 +40,17 @@ const PROVIDER_ID_ALIASES_TO_SKIP = new Set<string>([
 	"liquid",
 	"moonshot-ai",
 	"moonshot-ai-turbo",
+	"moonshotai-turbo",
+	"minimax-lightning",
+	"nebius-token-factory-eu-north-1",
+	"nebius-token-factory-fast",
+	"nebius-token-factory-us-central-1",
 	"novitaai",
+	"openai-eu",
 	"qwen",
 	"relace",
 	"voyageai",
+	"venice-e2ee",
 	"x-ai",
 	"xai",
 	"zai",
@@ -74,7 +82,7 @@ const PROVIDER_OVERRIDES: Record<string, ProviderOverride> = {
 	featherless: { providerName: "Featherless" },
 	fireworks: { providerName: "Fireworks" },
 	friendli: { providerName: "Friendli" },
-	gmicloud: { providerName: "GMICloud", apiKeyEnv: ["GMI_API_KEY"] },
+	gmicloud: { providerName: "GMICloud", apiKeyEnv: ["GMI_API_KEY", "GMI_CLOUD_API_KEY"] },
 	"google-ai-studio": { disabled: true },
 	"google-vertex": { providerName: "Google Vertex", disabled: true },
 	"google-vertex-eu": { providerName: "Google Vertex EU", disabled: true },
@@ -83,19 +91,18 @@ const PROVIDER_OVERRIDES: Record<string, ProviderOverride> = {
 	ionrouter: { providerName: "IonRouter" },
 	moonshotai: { providerName: "Moonshot AI", apiKeyEnv: ["MOONSHOT_AI_API_KEY"] },
 	mara: { providerName: "MARA" },
-	"moonshotai-turbo": { providerName: "Moonshot AI Turbo", apiKeyEnv: ["MOONSHOT_AI_API_KEY"] },
-	"nebius-token-factory": { providerName: "Nebius Token Factory", apiKeyEnv: ["NEBIUS_API_KEY"] },
+	"nebius-token-factory": { providerName: "Nebius Token Factory", apiKeyEnv: ["NEBIUS_API_KEY", "NEBIUS_TOKEN_FACTORY_API_KEY"] },
 	"nebius-token-factory-eu-north-1": {
 		providerName: "Nebius Token Factory EU North 1",
-		apiKeyEnv: ["NEBIUS_API_KEY"],
+		apiKeyEnv: ["NEBIUS_API_KEY", "NEBIUS_TOKEN_FACTORY_API_KEY"],
 	},
 	"nebius-token-factory-fast": {
 		providerName: "Nebius Token Factory Fast",
-		apiKeyEnv: ["NEBIUS_API_KEY"],
+		apiKeyEnv: ["NEBIUS_API_KEY", "NEBIUS_TOKEN_FACTORY_API_KEY"],
 	},
 	"nebius-token-factory-us-central-1": {
 		providerName: "Nebius Token Factory US Central 1",
-		apiKeyEnv: ["NEBIUS_API_KEY"],
+		apiKeyEnv: ["NEBIUS_API_KEY", "NEBIUS_TOKEN_FACTORY_API_KEY"],
 	},
 	novita: { providerName: "Novita", apiKeyEnv: ["NOVITA_API_KEY"] },
 	openai: { providerName: "OpenAI", apiKeyEnv: ["OPENAI_API_KEY"] },
@@ -173,13 +180,6 @@ const NATIVE_DISCOVERY_PROVIDERS: ProviderConfig[] = [
 		authStyle: "anthropic",
 	},
 	{
-		providerId: "anthropic-us",
-		providerName: "Anthropic US",
-		modelsEndpoint: "https://api.anthropic.com/v1/models",
-		apiKeyEnv: ["ANTHROPIC_API_KEY"],
-		authStyle: "anthropic",
-	},
-	{
 		providerId: "google-ai-studio",
 		providerName: "Google AI Studio",
 		modelsEndpoint: "https://generativelanguage.googleapis.com/v1beta/models",
@@ -189,14 +189,6 @@ const NATIVE_DISCOVERY_PROVIDERS: ProviderConfig[] = [
 	{
 		providerId: "google-vertex",
 		providerName: "Google Vertex",
-		modelsEndpoint:
-			"https://aiplatform.googleapis.com/v1beta1/publishers/google/models?listAllVersions=true&pageSize=1000",
-		apiKeyEnv: ["GOOGLE_VERTEX_ACCESS_TOKEN", "GOOGLE_VERTEX_API_KEY"],
-		authStyle: "google_vertex",
-	},
-	{
-		providerId: "google-vertex-eu",
-		providerName: "Google Vertex EU",
 		modelsEndpoint:
 			"https://aiplatform.googleapis.com/v1beta1/publishers/google/models?listAllVersions=true&pageSize=1000",
 		apiKeyEnv: ["GOOGLE_VERTEX_ACCESS_TOKEN", "GOOGLE_VERTEX_API_KEY"],
