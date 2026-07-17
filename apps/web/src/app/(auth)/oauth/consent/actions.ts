@@ -33,6 +33,33 @@ interface ConsentResult {
 	error?: string;
 }
 
+interface RegisteredOAuthClient {
+	client_id: string;
+	redirect_uris: string[];
+}
+
+async function loadRegisteredOAuthClient(
+	accessToken: string,
+	clientId: string,
+): Promise<RegisteredOAuthClient | null> {
+	const response = await fetch(
+		`${apiBaseUrl()}/oauth/client-metadata?client_id=${encodeURIComponent(clientId)}`,
+		{
+			headers: { Authorization: `Bearer ${accessToken}` },
+			cache: "no-store",
+		},
+	);
+	if (!response.ok) return null;
+	const payload = await response.json().catch(() => null) as Record<string, unknown> | null;
+	if (!payload || String(payload.client_id ?? "") !== clientId) return null;
+	return {
+		client_id: clientId,
+		redirect_uris: Array.isArray(payload.redirect_uris)
+			? payload.redirect_uris.filter((value): value is string => typeof value === "string")
+			: [],
+	};
+}
+
 /**
  * Approve OAuth authorization request
  *
@@ -153,31 +180,6 @@ export async function approveAuthorizationAction(
 			};
 		}
 
-		// User-owned applications live in oauth_app_metadata. First-party and
-		// dynamically registered MCP clients live in oauth_clients. The API-owned
-		// authorization server accepts both stores, so consent must do the same.
-		const { data: oauthApp } = await supabase
-			.from("oauth_app_metadata")
-			.select("client_id")
-			.eq("client_id", resolvedClientId)
-			.eq("status", "active")
-			.maybeSingle();
-		let registeredClient = null;
-		if (!oauthApp) {
-			const result = await supabase
-				.from("oauth_clients")
-				.select("id")
-				.eq("id", resolvedClientId)
-				.eq("status", "active")
-				.maybeSingle();
-			registeredClient = result.data;
-		}
-		const isFirstPartyCli =
-			resolvedClientId === "phaseo_cli" || resolvedClientId === "aistats_cli";
-		if (!oauthApp && !registeredClient && !isFirstPartyCli) {
-			return { error: "OAuth application not found or inactive" };
-		}
-
 		const resolvedRedirectUri = input.redirect_uri?.trim() || null;
 		if (!resolvedRedirectUri) {
 			return {
@@ -191,6 +193,9 @@ export async function approveAuthorizationAction(
 		} = await supabase.auth.getSession();
 		if (!session?.access_token) {
 			return { error: "Unauthorized" };
+		}
+		if (!(await loadRegisteredOAuthClient(session.access_token, resolvedClientId))) {
+			return { error: "OAuth application not found or inactive" };
 		}
 
 		const response = await fetch(`${apiBaseUrl()}/oauth/authorize/approve`, {
@@ -229,12 +234,13 @@ export async function approveAuthorizationAction(
 				redirect_url: payload.redirect_url,
 			},
 		};
-	} catch (error: any) {
+	} catch {
+		const requestId = crypto.randomUUID();
 		console.error("oauth_consent_approve_authorization_failed", {
 			operation: "approveAuthorizationAction",
-			error,
+			request_id: requestId,
 		});
-		return { error: error.message || "Failed to approve authorization" };
+		return { error: `Failed to approve authorization. Reference: ${requestId}` };
 	}
 }
 
@@ -295,21 +301,10 @@ export async function denyAuthorizationAction(input: {
 				return [];
 			}
 		};
-		const metadata = await supabase
-			.from("oauth_app_metadata")
-			.select("redirect_uris")
-			.eq("client_id", clientId)
-			.eq("status", "active")
-			.maybeSingle();
-		const client = metadata.data
-			? null
-			: await supabase
-				.from("oauth_clients")
-				.select("redirect_uris")
-				.eq("id", clientId)
-				.eq("status", "active")
-				.maybeSingle();
-		const registeredRedirectUris = readRedirectUris(metadata.data?.redirect_uris ?? client?.data?.redirect_uris);
+		const { data: { session } } = await supabase.auth.getSession();
+		if (!session?.access_token) return { error: "Unauthorized" };
+		const registeredClient = await loadRegisteredOAuthClient(session.access_token, clientId);
+		const registeredRedirectUris = readRedirectUris(registeredClient?.redirect_uris);
 		let isCliLoopback = false;
 		if (clientId === "phaseo_cli" || clientId === "aistats_cli") {
 			try {
@@ -342,12 +337,13 @@ export async function denyAuthorizationAction(input: {
 				redirect_url: redirectUrl.toString(),
 			},
 		};
-	} catch (error: any) {
+	} catch {
+		const requestId = crypto.randomUUID();
 		console.error("oauth_consent_deny_authorization_failed", {
 			operation: "denyAuthorizationAction",
-			error,
+			request_id: requestId,
 		});
-		return { error: error.message || "Failed to deny authorization" };
+		return { error: `Failed to deny authorization. Reference: ${requestId}` };
 	}
 }
 
@@ -382,16 +378,17 @@ export async function revokeAuthorizationAction(
 
 		if (revokeError) {
 			return {
-				error: `Failed to revoke authorization: ${revokeError.message}`,
+				error: "Failed to revoke authorization",
 			};
 		}
 
 		return { data: {} };
-	} catch (error: any) {
+	} catch {
+		const requestId = crypto.randomUUID();
 		console.error("oauth_consent_revoke_authorization_failed", {
 			operation: "revokeAuthorizationAction",
-			error,
+			request_id: requestId,
 		});
-		return { error: error.message || "Failed to revoke authorization" };
+		return { error: `Failed to revoke authorization. Reference: ${requestId}` };
 	}
 }
