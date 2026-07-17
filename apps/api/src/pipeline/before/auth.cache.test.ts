@@ -255,7 +255,7 @@ describe("authenticate hot-path caching", () => {
 		expect(runtime.maybeSingle).toHaveBeenCalledTimes(1);
 	});
 
-	it("enforces the current consent scope for an OAuth-managed key", async () => {
+	it("keeps non-API resource-bound OAuth keys off normal API routes", async () => {
 		const kid = "KIDOAUTHSCOPE";
 		const secret = "secret_oauth_scope";
 		runtime.dbRow.value = {
@@ -266,18 +266,57 @@ describe("authenticate hot-path caching", () => {
 			key_kind: "oauth_delegated",
 			oauth_user_id: "user_oauth",
 			oauth_client_id: "client_oauth",
-			oauth_scopes: ["gateway:access", "models:read", "logs:read"],
+			oauth_scopes: ["models:read", "logs:read"],
+			oauth_resource: "https://mcp.phaseo.app/mcp",
 		};
 
 		const { authenticateManagement } = await import("./auth");
-		const result = await authenticateManagement(buildRequest(`phaseo_v1_sk_${kid}_${secret}`), { useKvCache: false });
+		const request = buildRequest(`phaseo_v1_sk_${kid}_${secret}`);
+		const result = await authenticateManagement(request, { useKvCache: false });
+		const exchangeResult = await authenticateManagement(request, {
+			useKvCache: false,
+			allowResourceBoundOAuthKey: true,
+		});
+		await flushBackground();
+
+		expect(result).toEqual({ ok: false, reason: "oauth_resource_token_not_valid_for_api" });
+		expect(exchangeResult).toMatchObject({
+			ok: true,
+			authMethod: "oauth",
+			oauthScopes: ["models:read"],
+			oauthResource: "https://mcp.phaseo.app/mcp",
+			scopes: ["models:read"],
+		});
+	});
+
+	it("accepts OAuth keys bound to the advertised Gateway API resource", async () => {
+		const kid = "KIDOAUTHAPIRES";
+		const secret = "secret_oauth_api_resource";
+		runtime.dbRow.value = {
+			id: "key_oauth_api_resource",
+			workspace_id: "team_oauth",
+			status: "active",
+			hash: hashSecret(secret),
+			key_kind: "oauth_delegated",
+			oauth_user_id: "user_oauth",
+			oauth_client_id: "client_oauth",
+			oauth_scopes: ["models:read"],
+			oauth_resource: "https://api.phaseo.app/v1",
+		};
+
+		const { authenticateManagement } = await import("./auth");
+		const result = await authenticateManagement(
+			buildRequest(`phaseo_v1_sk_${kid}_${secret}`),
+			{ useKvCache: false },
+		);
 		await flushBackground();
 
 		expect(result).toMatchObject({
 			ok: true,
 			authMethod: "oauth",
-			oauthScopes: ["gateway:access", "models:read"],
-			scopes: ["gateway:access", "models:read"],
+			oauthScopes: ["models:read"],
+			oauthResource: "https://api.phaseo.app/v1",
+			scopes: ["models:read"],
 		});
 	});
 

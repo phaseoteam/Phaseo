@@ -23,6 +23,7 @@
 		"sync:capabilities": "node ./scripts/sync-capabilities.mjs",
 		"build": "pnpm run sync:capabilities && tsc -p tsconfig.json",
 		"test": "pnpm run sync:capabilities && node --test --import tsx tests/*.test.ts",
+		"smoke:oauth-client": "node ./scripts/oauth-client-smoke.mjs",
 		"prepublishOnly": "pnpm run build"
 	},
 	"dependencies": {},

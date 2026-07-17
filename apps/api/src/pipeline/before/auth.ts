@@ -17,6 +17,20 @@ const KEY_CACHE_TTL_SECONDS = 60;
 const KEY_VERSION_L1_TTL_MS = 1_000;
 const KEY_LOOKUP_L1_TTL_MS = 1_000;
 const KEY_LOOKUP_L1_MAX_ENTRIES = 2_000;
+const DEFAULT_GATEWAY_PUBLIC_BASE_URL = "https://api.phaseo.app";
+
+function removeTrailingSlashes(value: string): string {
+	let end = value.length;
+	while (end > 0 && value.charCodeAt(end - 1) === 47) end -= 1;
+	return value.slice(0, end);
+}
+
+function gatewayOAuthResource(bindings: ReturnType<typeof getBindings>): string {
+	const configured = removeTrailingSlashes(
+		String(bindings.GATEWAY_PUBLIC_BASE_URL ?? DEFAULT_GATEWAY_PUBLIC_BASE_URL).trim(),
+	);
+	return configured.endsWith("/v1") ? configured : `${configured}/v1`;
+}
 
 /* -------------------- Web Crypto HMAC helpers -------------------- */
 
@@ -193,11 +207,13 @@ export type AuthSuccess = {
     authMethod?: "api_key" | "oauth";
     oauthClientId?: string | null;
     oauthScopes?: string[];
+    oauthResource?: string | null;
     scopes?: string[];
 };
 
 type AuthenticateOptions = {
     useKvCache?: boolean;
+    allowResourceBoundOAuthKey?: boolean;
 };
 
 type KeyRow = {
@@ -212,6 +228,7 @@ type KeyRow = {
 	oauth_client_id?: string | null;
 	oauth_user_id?: string | null;
 	oauth_scopes?: unknown;
+	oauth_resource?: string | null;
 };
 
 type CachedKeyLookup = KeyRow | "missing" | null;
@@ -529,8 +546,13 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
 				return { ok: false, reason: "oauth_authorization_revoked" };
 			}
 			const effectiveScopes = oauthScopes.filter((scope) => activeAuthorizationScopes.includes(scope));
-			if (!effectiveScopes.includes(GATEWAY_ACCESS_SCOPE)) {
+			const oauthResource = String(keyRow.oauth_resource ?? "").trim() || null;
+			if (!oauthResource && !effectiveScopes.includes(GATEWAY_ACCESS_SCOPE)) {
 				return { ok: false, reason: "oauth_gateway_scope_required" };
+			}
+			const isGatewayApiResource = oauthResource === gatewayOAuthResource(bindings);
+			if (oauthResource && !isGatewayApiResource && !options.allowResourceBoundOAuthKey) {
+				return { ok: false, reason: "oauth_resource_token_not_valid_for_api" };
 			}
 
 			dispatchBackground((async () => {
@@ -561,6 +583,7 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
 				authMethod: "oauth",
 				oauthClientId: clientId,
 				oauthScopes: effectiveScopes,
+				oauthResource,
 				scopes: effectiveScopes,
 			};
 		}

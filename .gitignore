@@ -5,6 +5,8 @@ build
 .mint
 .out
 .env*
+apps/mcp/.dev.vars
+apps/mcp/.wrangler/
 pnpm-debug.log
 .turbo/
 **/.turbo/

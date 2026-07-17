@@ -345,10 +345,7 @@ app.post("/", async (c) => {
 
 		if (clientError || !oauthClient) {
 			console.error("Error creating OAuth client:", clientError);
-			return c.json(
-				{ error: `Failed to create OAuth client: ${clientError?.message || 'Unknown error'}` },
-				500
-			);
+			return c.json({ error: "Failed to create OAuth client" }, 500);
 		}
 
 		const clientSecretHash =
@@ -382,10 +379,7 @@ app.post("/", async (c) => {
 			// Rollback: delete OAuth client if metadata insert failed
 			await oauthAdmin.deleteClient(oauthClient.client_id);
 			console.error("Error storing OAuth metadata:", metadataError);
-			return c.json(
-				{ error: `Failed to create OAuth app: ${metadataError.message}` },
-				500
-			);
+			return c.json({ error: "Failed to create OAuth app" }, 500);
 		}
 
 		return c.json(

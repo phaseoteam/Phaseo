@@ -12,6 +12,8 @@ const state = vi.hoisted(() => ({
 	refreshLookupHashes: [] as string[],
 	authorizationRow: { id: "auth_1", scopes: ["openid"], revoked_at: null } as Record<string, unknown> | null,
 	authorizationUpdateError: null as { message?: string } | null,
+	delegatedKeyRow: null as Record<string, unknown> | null,
+	revokedDelegatedKeyIds: [] as string[],
 }));
 
 vi.mock("@/runtime/env", () => ({
@@ -132,6 +134,21 @@ vi.mock("@/runtime/env", () => ({
 					}),
 				};
 			}
+			if (table === "keys") {
+				return {
+					select: () => ({
+						eq: () => ({
+							maybeSingle: async () => ({ data: state.delegatedKeyRow, error: null }),
+						}),
+					}),
+					update: () => ({
+						eq(column: string, value: unknown) {
+							if (column === "id") state.revokedDelegatedKeyIds.push(String(value));
+							return this;
+						},
+					}),
+				};
+			}
 			throw new Error(`Unexpected table: ${table}`);
 		},
 	}),
@@ -159,6 +176,8 @@ describe("OAuth refresh rotation security", () => {
 		state.refreshLookupHashes.length = 0;
 		state.authorizationRow = { id: "auth_1", scopes: ["openid"], revoked_at: null };
 		state.authorizationUpdateError = null;
+		state.delegatedKeyRow = null;
+		state.revokedDelegatedKeyIds.length = 0;
 		vi.resetModules();
 	});
 
@@ -257,6 +276,7 @@ describe("OAuth refresh rotation security", () => {
 		);
 
 		expect(result?.access_token).toMatch(/^phaseo_v1_sk_/);
+		expect(result?.expires_in).toBe(7 * 24 * 60 * 60);
 		const rpcCall = state.rpcCalls.at(-1);
 		expect(rpcCall).toMatchObject({
 			name: "consume_oauth_code_and_issue_managed_key",
@@ -288,6 +308,65 @@ describe("OAuth refresh rotation security", () => {
 
 		expect(result).toBeNull();
 		expect(state.rpcCalls).toHaveLength(rpcCallCount);
+	});
+
+	it("mints a least-privilege OAuth-managed key for an MCP resource", async () => {
+		state.rotationStatus = "issued";
+		const { issueOAuthManagedKeyForAuthorizationCode } = await import("./service");
+
+		const result = await issueOAuthManagedKeyForAuthorizationCode(
+			"00000000-0000-0000-0000-000000000004",
+			{
+				userId: "user_1",
+				workspaceId: "ws_1",
+				clientId: "mcp_client",
+				scopes: ["models:read", "pricing:read"],
+				resource: "https://mcp.phaseo.app/mcp",
+			},
+		);
+
+		expect(result?.access_token).toMatch(/^phaseo_v1_sk_/);
+		expect(state.rpcCalls.at(-1)).toMatchObject({
+			name: "consume_oauth_code_and_issue_managed_key",
+			args: {
+				p_scopes: ["models:read", "pricing:read"],
+				p_resource: "https://mcp.phaseo.app/mcp",
+			},
+		});
+	});
+
+	it("revokes a delegated access token after verifying its secret", async () => {
+		const kid = "AbCdEf123456";
+		const secret = "AbCdEf123456AbCdEf123456AbCdEf123456AbCd";
+		const { hmacSecret } = await import("@/routes/auth.helpers");
+		state.delegatedKeyRow = {
+			id: "delegated_key_1",
+			hash: await hmacSecret(secret, "test-pepper"),
+			key_kind: "oauth_delegated",
+			status: "active",
+		};
+		const { revokeToken } = await import("./service");
+
+		await revokeToken(`phaseo_v1_sk_${kid}_${secret}`);
+
+		expect(state.revokedDelegatedKeyIds).toEqual(["delegated_key_1"]);
+	});
+
+	it("does not revoke a delegated key for the wrong secret", async () => {
+		const kid = "AbCdEf123456";
+		const secret = "AbCdEf123456AbCdEf123456AbCdEf123456AbCd";
+		const { hmacSecret } = await import("@/routes/auth.helpers");
+		state.delegatedKeyRow = {
+			id: "delegated_key_1",
+			hash: await hmacSecret("Z".repeat(40), "test-pepper"),
+			key_kind: "oauth_delegated",
+			status: "active",
+		};
+		const { revokeToken } = await import("./service");
+
+		await revokeToken(`phaseo_v1_sk_${kid}_${secret}`);
+
+		expect(state.revokedDelegatedKeyIds).toEqual([]);
 	});
 
 	it("fails authorization approval when the grant cannot be persisted", async () => {

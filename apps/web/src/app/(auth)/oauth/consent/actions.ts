@@ -22,6 +22,7 @@ interface ApproveAuthorizationInput {
 	state?: string;
 	code_challenge?: string;
 	code_challenge_method?: string;
+	resource?: string;
 }
 
 interface ConsentResult {
@@ -128,8 +129,6 @@ export async function approveAuthorizationAction(
 			return { error: "The active team must also be selected for authorization" };
 		}
 
-		const isBuiltInFirstPartyClient = resolvedClientId === "phaseo_cli";
-
 		// Verify user is a member of every selected team
 		const { data: memberships, error: membershipError } = await supabase
 			.from("workspace_members")
@@ -154,18 +153,29 @@ export async function approveAuthorizationAction(
 			};
 		}
 
-		if (!isBuiltInFirstPartyClient) {
-			// Verify OAuth app exists and is active
-			const { data: oauthApp, error: appError } = await supabase
-				.from("oauth_app_metadata")
-				.select("id, status")
-				.eq("client_id", resolvedClientId)
+		// User-owned applications live in oauth_app_metadata. First-party and
+		// dynamically registered MCP clients live in oauth_clients. The API-owned
+		// authorization server accepts both stores, so consent must do the same.
+		const { data: oauthApp } = await supabase
+			.from("oauth_app_metadata")
+			.select("client_id")
+			.eq("client_id", resolvedClientId)
+			.eq("status", "active")
+			.maybeSingle();
+		let registeredClient = null;
+		if (!oauthApp) {
+			const result = await supabase
+				.from("oauth_clients")
+				.select("id")
+				.eq("id", resolvedClientId)
 				.eq("status", "active")
-				.single();
-
-			if (appError || !oauthApp) {
-				return { error: "OAuth application not found or inactive" };
-			}
+				.maybeSingle();
+			registeredClient = result.data;
+		}
+		const isFirstPartyCli =
+			resolvedClientId === "phaseo_cli" || resolvedClientId === "aistats_cli";
+		if (!oauthApp && !registeredClient && !isFirstPartyCli) {
+			return { error: "OAuth application not found or inactive" };
 		}
 
 		const resolvedRedirectUri = input.redirect_uri?.trim() || null;
@@ -199,6 +209,7 @@ export async function approveAuthorizationAction(
 				state: input.state,
 				code_challenge: input.code_challenge,
 				code_challenge_method: input.code_challenge_method,
+				resource: input.resource,
 			}),
 			cache: "no-store",
 		});
@@ -235,12 +246,16 @@ export async function approveAuthorizationAction(
  */
 export async function denyAuthorizationAction(input: {
 	authorization_id?: string;
+	client_id?: string;
 	redirect_uri?: string;
 	state?: string;
 }): Promise<ConsentResult> {
 	try {
+		const supabase = await createClient();
+		const { data: { user } } = await supabase.auth.getUser();
+		if (!user) return { error: "Unauthorized" };
+
 		if (input.authorization_id) {
-			const supabase = await createClient();
 			const oauthClient = supabase.auth.oauth as any;
 			const { data: redirectData, error } = await oauthClient.denyAuthorization(
 				input.authorization_id,
@@ -262,11 +277,53 @@ export async function denyAuthorizationAction(input: {
 			};
 		}
 
-		if (!input.redirect_uri) {
+		const clientId = input.client_id?.trim();
+		if (!input.redirect_uri || !clientId) {
 			return {
 				error:
-					"Missing authorization_id. Please restart the OAuth flow from the client application.",
+					"Missing authorization request details. Please restart the OAuth flow from the client application.",
 			};
+		}
+
+		const readRedirectUris = (value: unknown): string[] => {
+			if (Array.isArray(value)) return value.filter((entry): entry is string => typeof entry === "string");
+			if (typeof value !== "string") return [];
+			try {
+				const parsed = JSON.parse(value);
+				return Array.isArray(parsed) ? parsed.filter((entry): entry is string => typeof entry === "string") : [];
+			} catch {
+				return [];
+			}
+		};
+		const metadata = await supabase
+			.from("oauth_app_metadata")
+			.select("redirect_uris")
+			.eq("client_id", clientId)
+			.eq("status", "active")
+			.maybeSingle();
+		const client = metadata.data
+			? null
+			: await supabase
+				.from("oauth_clients")
+				.select("redirect_uris")
+				.eq("id", clientId)
+				.eq("status", "active")
+				.maybeSingle();
+		const registeredRedirectUris = readRedirectUris(metadata.data?.redirect_uris ?? client?.data?.redirect_uris);
+		let isCliLoopback = false;
+		if (clientId === "phaseo_cli" || clientId === "aistats_cli") {
+			try {
+				const redirect = new URL(input.redirect_uri);
+				isCliLoopback = redirect.protocol === "http:" &&
+					["127.0.0.1", "localhost", "::1", "[::1]"].includes(redirect.hostname) &&
+					redirect.pathname === "/callback" &&
+					!redirect.username && !redirect.password && !redirect.search && !redirect.hash;
+			} catch {
+				isCliLoopback = false;
+			}
+		}
+		if (!registeredRedirectUris.includes(input.redirect_uri) && !isCliLoopback) {
+			return { error: "OAuth client or redirect URI is invalid" };
 		}
 
 		// Build redirect URL with error
