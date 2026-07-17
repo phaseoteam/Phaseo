@@ -7,11 +7,9 @@ import {
 	asRecord,
 	buildProviderApiModelSnapshotDiff,
 	computeConfiguredModelCoverageFingerprint,
-	diffModelIds,
 	extractProviderApiModelSnapshot,
 	fetchProviderModels,
 	hasDiscordNotifiableChanges,
-	hasProviderApiSnapshotValue,
 	loadConfiguredProviderModelIds,
 	loadLatestConfiguredCoverageState,
 	loadLatestPricingTableState,
@@ -221,8 +219,6 @@ const DEFAULT_DISCOVERY_CONCURRENCY = 5;
 const MAX_DISCOVERY_CONCURRENCY = 5;
 export const DEFAULT_MODEL_DISCOVERY_SHARD_SIZE = 20;
 export const MAX_MODEL_DISCOVERY_SHARD_SIZE = 25;
-const UPSERT_BATCH_SIZE = 500;
-const SEEN_MODELS_PAGE_SIZE = 1_000;
 const MAX_DISCORD_LINES = 30;
 const MAX_LIST_ITEMS = 8;
 const MAX_SUMMARY_MODEL_SAMPLES = 5;
@@ -452,14 +448,7 @@ type SeenModelUpsertRow = {
 	last_run_id: string;
 };
 
-type SeenModelDeleteRow = {
-	provider_id: string;
-	model_id: string;
-};
-
 type PreviousProviderModels = {
-	modelIds: string[];
-	pricingByModelId: Map<string, string | null>;
 	providerApiSnapshotByModelId: Map<string, ProviderApiModelSnapshot>;
 };
 
@@ -468,110 +457,100 @@ type PreviousModelsState = {
 	providerApiSnapshotReadyByProvider: Set<string>;
 };
 
-async function fetchPreviousModelsByProviders(providerIds: string[]): Promise<PreviousModelsState> {
+type DatabaseProviderDiff = {
+	providerId: string;
+	previousCount: number;
+	currentCount: number;
+	added: string[];
+	removed: string[];
+};
+
+type DatabaseSnapshotComparison = {
+	diffsByProvider: Map<string, DatabaseProviderDiff>;
+	previousState: PreviousModelsState;
+};
+
+function toStringArray(value: unknown): string[] {
+	return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+async function compareCurrentModels(
+	providerIds: string[],
+	currentModels: SeenModelUpsertRow[],
+): Promise<DatabaseSnapshotComparison> {
 	const map = new Map<string, PreviousProviderModels>();
 	for (const providerId of providerIds) {
 		map.set(providerId, {
-			modelIds: [],
-			pricingByModelId: new Map<string, string | null>(),
 			providerApiSnapshotByModelId: new Map<string, ProviderApiModelSnapshot>(),
 		});
 	}
 	if (providerIds.length === 0) {
-		return { byProvider: map, providerApiSnapshotReadyByProvider: new Set<string>() };
+		return {
+			diffsByProvider: new Map<string, DatabaseProviderDiff>(),
+			previousState: { byProvider: map, providerApiSnapshotReadyByProvider: new Set<string>() },
+		};
 	}
 
 	const supabase = getSupabaseAdmin();
-	const rows: SupabaseSeenModelRow[] = [];
-	for (let from = 0; ; from += SEEN_MODELS_PAGE_SIZE) {
-		const { data, error } = await supabase
-			.from("model_discovery_seen_models")
-			.select("provider_id,model_id,model_details,pricing_details")
-			.in("provider_id", providerIds)
-			.order("provider_id", { ascending: true })
-			.order("model_id", { ascending: true })
-			.range(from, from + SEEN_MODELS_PAGE_SIZE - 1);
+	const { data, error } = await supabase.rpc("compare_model_discovery_snapshot", {
+		p_provider_ids: providerIds,
+		p_snapshot_provider_ids: providerIds.filter((providerId) =>
+			PROVIDER_API_PRICING_WATCH_PROVIDER_IDS.has(providerId)
+		),
+		p_current_models: currentModels,
+	});
+	if (error) throw new Error(error.message || "Failed to compare model discovery snapshot");
 
-		if (error) {
-			throw new Error(error.message || "Failed to load previous discovered models");
-		}
-
-		const page = (data ?? []) as SupabaseSeenModelRow[];
-		rows.push(...page);
-		if (page.length < SEEN_MODELS_PAGE_SIZE) break;
-	}
-
-	const providerApiSnapshotReadyByProvider = new Set<string>();
-
+	const payload = asRecord(data);
+	const providerApiSnapshotReadyByProvider = new Set<string>(
+		toStringArray(payload.snapshot_baseline_provider_ids),
+	);
+	const rows = Array.isArray(payload.changed_snapshots)
+		? (payload.changed_snapshots as SupabaseSeenModelRow[])
+		: [];
 	for (const row of rows) {
 		if (typeof row.provider_id !== "string" || typeof row.model_id !== "string") continue;
 		const state = map.get(row.provider_id);
 		if (!state) continue;
-		state.modelIds.push(row.model_id);
 		const pricingDetails = row.pricing_details ?? null;
-		const fingerprint = toPricingFingerprint(pricingDetails);
-		state.pricingByModelId.set(row.model_id, fingerprint);
-		if (PROVIDER_API_PRICING_WATCH_PROVIDER_IDS.has(row.provider_id)) {
-			const snapshot = extractProviderApiModelSnapshot(row.provider_id, asRecord(row.model_details), pricingDetails);
-			state.providerApiSnapshotByModelId.set(row.model_id, snapshot);
-			if (hasProviderApiSnapshotValue(snapshot)) {
-				providerApiSnapshotReadyByProvider.add(row.provider_id);
-			}
-		}
+		const snapshot = extractProviderApiModelSnapshot(row.provider_id, asRecord(row.model_details), pricingDetails);
+		state.providerApiSnapshotByModelId.set(row.model_id, snapshot);
 	}
 
-	for (const [, state] of map) {
-		state.modelIds.sort((a, b) => a.localeCompare(b));
+	const diffsByProvider = new Map<string, DatabaseProviderDiff>();
+	const providerDiffs = Array.isArray(payload.providers) ? payload.providers : [];
+	for (const value of providerDiffs) {
+		const row = asRecord(value);
+		if (typeof row.provider_id !== "string") continue;
+		diffsByProvider.set(row.provider_id, {
+			providerId: row.provider_id,
+			previousCount: typeof row.previous_count === "number" ? row.previous_count : Number(row.previous_count) || 0,
+			currentCount: typeof row.current_count === "number" ? row.current_count : Number(row.current_count) || 0,
+			added: toStringArray(row.added),
+			removed: toStringArray(row.removed),
+		});
 	}
 
-	return { byProvider: map, providerApiSnapshotReadyByProvider };
+	return {
+		diffsByProvider,
+		previousState: { byProvider: map, providerApiSnapshotReadyByProvider },
+	};
 }
 
-async function upsertCurrentModels(rows: SeenModelUpsertRow[]): Promise<void> {
-	if (rows.length === 0) return;
+async function commitCurrentModels(
+	runId: string,
+	providerIds: string[],
+	rows: SeenModelUpsertRow[],
+): Promise<number> {
+	if (providerIds.length === 0) return 0;
 	const supabase = getSupabaseAdmin();
-
-	for (let i = 0; i < rows.length; i += UPSERT_BATCH_SIZE) {
-		const batch = rows.slice(i, i + UPSERT_BATCH_SIZE);
-		const { error } = await supabase
-			.from("model_discovery_seen_models")
-			.upsert(batch, { onConflict: "provider_id,model_id" });
-		if (error) throw new Error(error.message || "Failed to persist discovered models");
-	}
-}
-
-async function deleteRemovedModels(rows: SeenModelDeleteRow[]): Promise<number> {
-	if (rows.length === 0) return 0;
-
-	const supabase = getSupabaseAdmin();
-	const modelIdsByProvider = new Map<string, string[]>();
-
-	for (const row of rows) {
-		const existing = modelIdsByProvider.get(row.provider_id) ?? [];
-		existing.push(row.model_id);
-		modelIdsByProvider.set(row.provider_id, existing);
-	}
-
-	let deletedCount = 0;
-	for (const [providerId, modelIds] of modelIdsByProvider.entries()) {
-		for (let index = 0; index < modelIds.length; index += UPSERT_BATCH_SIZE) {
-			const batch = modelIds.slice(index, index + UPSERT_BATCH_SIZE);
-			const { data, error } = await supabase
-				.from("model_discovery_seen_models")
-				.delete()
-				.eq("provider_id", providerId)
-				.in("model_id", batch)
-				.select("model_id");
-
-			if (error) {
-				throw new Error(error.message || "Failed to remove deleted discovered models");
-			}
-
-			deletedCount += Array.isArray(data) ? data.length : 0;
-		}
-	}
-
-	return deletedCount;
+	const { data, error } = await supabase.rpc("commit_model_discovery_snapshot", {
+		p_run_id: runId,
+		p_provider_ids: providerIds,
+		p_current_models: rows,
+	});
+	if (error) throw new Error(error.message || "Failed to persist model discovery snapshot");
+	return typeof data === "number" ? data : Number(data) || 0;
 }
 
 async function pruneOldRows(cutoffIso: string): Promise<number> {
@@ -629,9 +608,8 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			reason: "not attempted",
 		};
 		const upsertRows: SeenModelUpsertRow[] = [];
-		const deleteRows: SeenModelDeleteRow[] = [];
 		const discoveredModelIdsByProvider = new Map<string, string[]>();
-		const previousState = await fetchPreviousModelsByProviders(providers.map((provider) => provider.providerId));
+		const discoveredModelsByProvider = new Map<string, DiscoveredModel[]>();
 		const providerApiPricingChangesByProvider = new Map<string, PricingProviderChange>();
 		const providerApiProvidersWithoutPricing = new Set<string>();
 		let providerApiModelsWithPricing = 0;
@@ -661,19 +639,12 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 				});
 				continue;
 			}
-			const hasProviderApiSnapshotBaseline = previousState.providerApiSnapshotReadyByProvider.has(provider.providerId);
-			if (PROVIDER_API_PRICING_WATCH_PROVIDER_IDS.has(provider.providerId) && !hasProviderApiSnapshotBaseline) {
-				providerApiPricingBaselineInitialized = true;
-			}
-
 			const providerStarted = Date.now();
 			try {
 				const discoveredModels = await fetchProviderModels(provider, apiKey);
+				discoveredModelsByProvider.set(provider.providerId, discoveredModels);
 				const currentModelIds = discoveredModels.map((model) => model.id);
 				discoveredModelIdsByProvider.set(provider.providerId, currentModelIds);
-				const previousProviderState = previousState.byProvider.get(provider.providerId);
-				const previousModelIds = previousProviderState?.modelIds ?? [];
-				const { added, removed } = diffModelIds(previousModelIds, currentModelIds);
 
 				const nowIso = new Date().toISOString();
 				let providerModelsWithPricing = 0;
@@ -695,66 +666,13 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 				if (PROVIDER_API_PRICING_WATCH_PROVIDER_IDS.has(provider.providerId) && providerModelsWithPricing === 0) {
 					providerApiProvidersWithoutPricing.add(provider.providerId);
 				}
-				for (const modelId of removed) {
-					deleteRows.push({
-						provider_id: provider.providerId,
-						model_id: modelId,
-					});
-				}
-
-				const change =
-					added.length === 0 && removed.length === 0
-						? null
-						: {
-							providerId: provider.providerId,
-							providerName: provider.providerName,
-							previousCount: previousModelIds.length,
-							currentCount: currentModelIds.length,
-							added,
-							removed,
-						};
-				if (change) changes.push(change);
-
-				if (hasProviderApiSnapshotBaseline && PROVIDER_API_PRICING_WATCH_PROVIDER_IDS.has(provider.providerId)) {
-					const addedModelIds = new Set(added);
-					for (const model of discoveredModels) {
-						if (addedModelIds.has(model.id)) continue;
-						const previousSnapshot = previousProviderState?.providerApiSnapshotByModelId.get(model.id) ?? {
-							contextLength: null,
-							maxCompletionTokens: null,
-							pricingDetails: null,
-							pricingFingerprint: null,
-						};
-						const currentSnapshot = extractProviderApiModelSnapshot(
-							provider.providerId,
-							model.modelDetails,
-							model.pricingDetails
-						);
-						const snapshotDiff = buildProviderApiModelSnapshotDiff(previousSnapshot, currentSnapshot);
-						if (snapshotDiff.length === 0) continue;
-
-						const existing = providerApiPricingChangesByProvider.get(provider.providerId) ?? {
-							providerId: provider.providerId,
-							updates: 0,
-							samples: [],
-						};
-						existing.updates += 1;
-						if (existing.samples.length < MAX_PRICING_SAMPLE_LINES) {
-							existing.samples.push(
-								`${model.id} | ${snapshotDiff.join("; ")}`
-							);
-						}
-						providerApiPricingChangesByProvider.set(provider.providerId, existing);
-					}
-				}
-
 				results.push({
 					providerId: provider.providerId,
 					providerName: provider.providerName,
 					status: "success",
 					modelCount: currentModelIds.length,
 					durationMs: Date.now() - providerStarted,
-					change,
+					change: null,
 				});
 			} catch (error) {
 				results.push({
@@ -773,6 +691,60 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 				() => runProviderWorker(),
 			),
 		);
+
+		const successfulProviderIds = results
+			.filter((result): result is Extract<ProviderResult, { status: "success" }> => result.status === "success")
+			.map((result) => result.providerId);
+		const comparison = await compareCurrentModels(successfulProviderIds, upsertRows);
+		const previousState = comparison.previousState;
+		for (const result of results) {
+			if (result.status !== "success") continue;
+			const diff = comparison.diffsByProvider.get(result.providerId);
+			if (!diff) continue;
+			const change = diff.added.length === 0 && diff.removed.length === 0
+				? null
+				: {
+					providerId: result.providerId,
+					providerName: result.providerName,
+					previousCount: diff.previousCount,
+					currentCount: diff.currentCount,
+					added: diff.added,
+					removed: diff.removed,
+				};
+			result.change = change;
+			if (change) changes.push(change);
+
+			if (!PROVIDER_API_PRICING_WATCH_PROVIDER_IDS.has(result.providerId)) continue;
+			const hasBaseline = previousState.providerApiSnapshotReadyByProvider.has(result.providerId);
+			if (!hasBaseline) {
+				providerApiPricingBaselineInitialized = true;
+				continue;
+			}
+			const previousProviderState = previousState.byProvider.get(result.providerId);
+			const addedModelIds = new Set(diff.added);
+			for (const model of discoveredModelsByProvider.get(result.providerId) ?? []) {
+				if (addedModelIds.has(model.id)) continue;
+				const previousSnapshot = previousProviderState?.providerApiSnapshotByModelId.get(model.id);
+				if (!previousSnapshot) continue;
+				const currentSnapshot = extractProviderApiModelSnapshot(
+					result.providerId,
+					model.modelDetails,
+					model.pricingDetails,
+				);
+				const snapshotDiff = buildProviderApiModelSnapshotDiff(previousSnapshot, currentSnapshot);
+				if (snapshotDiff.length === 0) continue;
+				const existing = providerApiPricingChangesByProvider.get(result.providerId) ?? {
+					providerId: result.providerId,
+					updates: 0,
+					samples: [],
+				};
+				existing.updates += 1;
+				if (existing.samples.length < MAX_PRICING_SAMPLE_LINES) {
+					existing.samples.push(`${model.id} | ${snapshotDiff.join("; ")}`);
+				}
+				providerApiPricingChangesByProvider.set(result.providerId, existing);
+			}
+		}
 		results.sort(
 			(a, b) => (providerOrder.get(a.providerId) ?? 0) - (providerOrder.get(b.providerId) ?? 0),
 		);
@@ -953,8 +925,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 
 		let staleModelsDeleted = 0;
 		if (!persistenceDeferredReason) {
-			await upsertCurrentModels(upsertRows);
-			await deleteRemovedModels(deleteRows);
+			staleModelsDeleted = await commitCurrentModels(runId, successfulProviderIds, upsertRows);
 			if (shouldPrune) {
 				staleModelsDeleted = await pruneOldRows(staleCutoff);
 				if (shouldPruneRunsDaily(args, startedAt)) {
