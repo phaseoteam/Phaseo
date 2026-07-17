@@ -30,6 +30,7 @@ import {
 	shouldSyncProviderDiscoveryIssues,
 	shouldSyncPricingDiscoveryIssues,
 	syncUpstreamDiscoveryIssues,
+	type UpstreamDiscoveryIssueEntry,
 } from "./github-issues";
 import { fetchPricingTableSnapshots, type PricingTableSnapshot } from "./pricing-tables";
 import { MODEL_DISCOVERY_PROVIDERS, type ProviderConfig } from "./providers";
@@ -553,6 +554,28 @@ async function commitCurrentModels(
 	return typeof data === "number" ? data : Number(data) || 0;
 }
 
+async function confirmProviderIssueSignals(
+	runId: string,
+	successfulProviderIds: string[],
+	entries: UpstreamDiscoveryIssueEntry[],
+): Promise<UpstreamDiscoveryIssueEntry[]> {
+	const { data, error } = await getSupabaseAdmin().rpc("confirm_model_discovery_issue_signals", {
+		p_run_id: runId,
+		p_successful_provider_ids: successfulProviderIds,
+		p_entries: entries,
+	});
+	if (error) throw new Error(error.message || "Failed to confirm model discovery issue signals");
+	return Array.isArray(data) ? data as UpstreamDiscoveryIssueEntry[] : [];
+}
+
+async function acknowledgeProviderIssueSignals(entries: UpstreamDiscoveryIssueEntry[]): Promise<void> {
+	if (entries.length === 0) return;
+	const { error } = await getSupabaseAdmin().rpc("acknowledge_model_discovery_issue_signals", {
+		p_entries: entries,
+	});
+	if (error) throw new Error(error.message || "Failed to acknowledge model discovery issue signals");
+}
+
 async function pruneOldRows(cutoffIso: string): Promise<number> {
 	const supabase = getSupabaseAdmin();
 	const { data, error } = await supabase
@@ -934,13 +957,8 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			}
 		}
 
-		if (
-			changes.length > 0 ||
-			pricingMonitor.providerChanges.length > 0 ||
-			providerApiPricingMonitor.providerChanges.length > 0 ||
-			pricingTableMonitor.providerChanges.length > 0
-		) {
-			if (!shouldSyncProviderDiscoveryIssues()) {
+		if (!shouldSyncProviderDiscoveryIssues()) {
+			if (changes.length > 0) {
 				issueSyncSummary = {
 					created: 0,
 					updated: 0,
@@ -948,10 +966,16 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 					reason: "disabled by MODEL_DISCOVERY_ISSUE_SYNC_ENABLED",
 				};
 				console.log("[model-discovery] Provider GitHub issue sync skipped:", issueSyncSummary.reason);
-			} else {
-				try {
-					const detectedAt = new Date().toISOString();
-					const pricingIssueEntries = shouldSyncPricingDiscoveryIssues()
+			}
+		} else if (!persistenceDeferredReason) {
+			try {
+				const detectedAt = new Date().toISOString();
+				const providerIssueEntries = await confirmProviderIssueSignals(
+					runId,
+					successfulProviderIds,
+					buildProviderIssueEntries({ changes, detectedAt, detectionSource: args.source }),
+				);
+				const pricingIssueEntries = shouldSyncPricingDiscoveryIssues()
 						? [
 								...buildCatalogPricingIssueEntries({
 									changes: pricingMonitor.providerChanges.map((change) => ({
@@ -976,31 +1000,28 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 								}),
 							]
 						: [];
-					const issueEntries = [
-						...buildProviderIssueEntries({ changes, detectedAt, detectionSource: args.source }),
-						...pricingIssueEntries,
-					];
-					issueSyncSummary = await syncUpstreamDiscoveryIssues(issueEntries);
-					if (issueSyncSummary.skipped) {
-						console.log(
-							"[model-discovery] Provider GitHub issue sync skipped:",
-							issueSyncSummary.reason ?? "no reason provided"
-						);
-					} else {
-						console.log(
-							`[model-discovery] Provider GitHub issue sync complete: created=${issueSyncSummary.created}, updated=${issueSyncSummary.updated}.`
-						);
-					}
-				} catch (error) {
-					const reason = error instanceof Error ? error.message : String(error);
-					issueSyncSummary = {
-						created: 0,
-						updated: 0,
-						skipped: false,
-						error: reason,
-					};
-					console.error("[model-discovery] Provider GitHub issue sync failed:", reason);
+				const issueEntries = [...providerIssueEntries, ...pricingIssueEntries];
+				issueSyncSummary = await syncUpstreamDiscoveryIssues(issueEntries);
+				if (issueSyncSummary.skipped) {
+					console.log(
+						"[model-discovery] Provider GitHub issue sync skipped:",
+						issueSyncSummary.reason ?? "no reason provided"
+					);
+				} else {
+					await acknowledgeProviderIssueSignals(providerIssueEntries);
+					console.log(
+						`[model-discovery] Provider GitHub issue sync complete: created=${issueSyncSummary.created}, updated=${issueSyncSummary.updated}.`
+					);
 				}
+			} catch (error) {
+				const reason = error instanceof Error ? error.message : String(error);
+				issueSyncSummary = {
+					created: 0,
+					updated: 0,
+					skipped: false,
+					error: reason,
+				};
+				console.error("[model-discovery] Provider GitHub issue sync failed:", reason);
 			}
 		}
 
