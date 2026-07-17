@@ -41,7 +41,7 @@
 		"data:update-statuses": "tsx scripts/update-model-statuses.ts",
 		"data:recompute-benchmark-ranks": "pnpm --filter @phaseo/web run catalog:recompute-benchmark-ranks",
 		"data:recompute-benchmark-ranks:db": "pnpm --filter @phaseo/web run db:recompute-benchmark-ranks",
-		"data:prep-pr": "pnpm run data:recompute-benchmark-ranks && pnpm run openapi:gen && pnpm run validate:data && pnpm run validate:pricing && pnpm run validate:gateway && pnpm run validate:docs",
+		"data:prep-pr": "pnpm run openapi:gen && pnpm run validate:data && pnpm run validate:pricing && pnpm run validate:gateway && pnpm run validate:docs",
 		"data:precommit": "pnpm run data:prep-pr",
 		"data:reconcile-api-model-links": "pnpm --filter @phaseo/web run db:reconcile-api-model-links",
 		"data:check-new-models": "tsx scripts/model-discovery/run.ts",
