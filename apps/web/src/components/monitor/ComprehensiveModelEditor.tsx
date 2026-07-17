@@ -205,7 +205,6 @@ export function ComprehensiveModelEditor({
 		isSelfReported: boolean;
 		sourceLink: string;
 		otherInfo: string;
-		rank: string;
 	} | null>(null);
 
 	// Fetch ALL data when dialog opens
@@ -565,7 +564,6 @@ export function ComprehensiveModelEditor({
 			isSelfReported: benchmark.is_self_reported,
 			sourceLink: benchmark.source_link || "",
 			otherInfo: benchmark.other_info || "",
-			rank: benchmark.rank ? String(benchmark.rank) : "",
 		});
 	};
 
@@ -580,7 +578,6 @@ export function ComprehensiveModelEditor({
 				isSelfReported: editBenchmarkForm.isSelfReported,
 				sourceLink: editBenchmarkForm.sourceLink || undefined,
 				otherInfo: editBenchmarkForm.otherInfo || undefined,
-				rank: editBenchmarkForm.rank ? parseInt(editBenchmarkForm.rank) : undefined,
 			});
 
 			if (result.success) {

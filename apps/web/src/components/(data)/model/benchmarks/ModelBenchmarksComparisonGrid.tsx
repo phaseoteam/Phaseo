@@ -406,8 +406,6 @@ export function ModelBenchmarksComparisonGrid({
 		currentModel?.topScoreDisplay ??
 		selectedComparison.current.scoreDisplay ??
 		null;
-	const currentRank =
-		currentModel?.rank ?? selectedComparison.current.rank ?? null;
 	const totalModels = selectedComparison.totalModels ?? null;
 
 	return (
@@ -469,12 +467,6 @@ export function ModelBenchmarksComparisonGrid({
 				<div className="flex flex-wrap items-center gap-2">
 					{currentScoreDisplay ? (
 						<Badge variant="secondary">{currentScoreDisplay}</Badge>
-					) : null}
-					{currentRank != null ? (
-						<Badge variant="outline">
-							Rank #{currentRank}
-							{totalModels != null ? `/${totalModels}` : ""}
-						</Badge>
 					) : null}
 					{totalModels != null ? (
 						<Badge variant="secondary">{totalModels} models</Badge>
@@ -608,8 +600,6 @@ export function ModelBenchmarksComparisonGrid({
 				benchmarkName={selectedComparison.benchmarkName}
 				models={allModels}
 				isLowerBetter={isLowerBetter}
-				currentRank={currentRank}
-				totalModels={totalModels}
 				currentScoreDisplay={currentScoreDisplay}
 			/>
 		</div>

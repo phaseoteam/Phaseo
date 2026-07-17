@@ -333,7 +333,6 @@ export interface CreateBenchmarkResultInput {
 	isSelfReported: boolean;
 	otherInfo?: string;
 	sourceLink?: string;
-	rank?: number;
 }
 
 export async function createBenchmarkResult(input: CreateBenchmarkResultInput) {
@@ -349,7 +348,6 @@ export async function createBenchmarkResult(input: CreateBenchmarkResultInput) {
 		is_self_reported: input.isSelfReported,
 		other_info: input.otherInfo || null,
 		source_link: input.sourceLink || null,
-		rank: input.rank || null,
 	});
 
 	if (error) {
@@ -374,7 +372,6 @@ export interface UpdateBenchmarkResultInput {
 	isSelfReported?: boolean;
 	otherInfo?: string;
 	sourceLink?: string;
-	rank?: number;
 }
 
 export async function updateBenchmarkResult(input: UpdateBenchmarkResultInput) {
@@ -389,7 +386,6 @@ export async function updateBenchmarkResult(input: UpdateBenchmarkResultInput) {
 		updateData.is_self_reported = input.isSelfReported;
 	if (input.otherInfo !== undefined) updateData.other_info = input.otherInfo || null;
 	if (input.sourceLink !== undefined) updateData.source_link = input.sourceLink || null;
-	if (input.rank !== undefined) updateData.rank = input.rank || null;
 
 	const { error } = await supabase
 		.from("data_benchmark_results")

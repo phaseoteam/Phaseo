@@ -499,7 +499,6 @@ export async function loadModels(
                     is_self_reported: !!b.is_self_reported,
                     other_info: b.other_info ?? null,
                     source_link: b.source_link ?? null,
-                    rank: b.rank ?? null,
                     occur_idx,
                     variant: null,       // keep null for now; add if you later encode run config
                     result_key,
