@@ -21,33 +21,8 @@
       "url": "https://platform.kimi.ai/docs/guide/kimi-k3-quickstart"
     },
     {
-      "title": "Pricing",
-      "kind": "pricing",
-      "url": "https://platform.kimi.ai/docs/pricing/chat-k3"
-    },
-    {
-      "title": "Venice API Models",
+      "title": "Novita Kimi K3",
       "kind": "docs",
-      "url": "https://docs.venice.ai/models/overview"
-    },
-    {
-      "title": "Venice API Pricing",
-      "kind": "pricing",
-      "url": "https://docs.venice.ai/overview/pricing"
-    },
-    {
-      "title": "GMI Cloud Serverless API",
-      "kind": "docs",
-      "url": "https://docs.gmicloud.ai/inference-engine/marketplace/serverless"
-    },
-    {
-      "title": "GMI Cloud Pricing",
-      "kind": "pricing",
-      "url": "https://docs.gmicloud.ai/inference-engine/billing/price"
-    },
-    {
-      "title": "Novita API and Pricing",
-      "kind": "pricing",
       "url": "https://novita.ai/models/model-detail/moonshotai-kimi-k3"
     }
   ],
@@ -94,7 +69,7 @@
     },
     {
       "name": "availability_note",
-      "value": "Moonshot AI, GMI Cloud, Novita, and Venice provide Kimi K3 API access. GMI Cloud currently advertises an FP8 route with a 262,144-token context window; Novita advertises text, image, and video input with a 1,048,576-token context and output limit. Venice exposes the standard kimi-k3 route, but its live catalog does not yet expose an E2EE Kimi K3 model ID. Full model weights and the technical report are still forthcoming."
+      "value": "Moonshot AI, GMI Cloud, Novita, and Venice provide Kimi K3 API access. GMI Cloud currently advertises an FP8 route with a 262,144-token context window; Novita advertises text, image, and video input with a 1,048,576-token context and output limit. Venice exposes the standard kimi-k3 route at $3.75 per million input tokens, $0.375 per million cached input tokens, and $18.75 per million output tokens. Venice's live catalog does not expose an E2EE Kimi K3 model ID, so no E2EE route or pricing is listed. Full model weights and the technical report are still forthcoming."
     }
   ],
   "benchmarks": []
