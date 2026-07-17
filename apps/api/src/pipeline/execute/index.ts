@@ -560,7 +560,8 @@ async function attemptProviderWithIR(
 		await onCallStart(ctx.endpoint, candidate.providerId, baseModel);
 		t0 = performance.now();
 
-		ctx.meta.upstreamStartMs = Date.now();
+		// Only executor-reported fetch timestamps are authoritative for billing.
+		delete (ctx.meta as Record<string, unknown>).upstreamStartMs;
 		delete (ctx.meta as Record<string, unknown>).latency_ms;
 		delete (ctx.meta as Record<string, unknown>).generation_ms;
 		const executorResolveStart = performance.now();
@@ -631,7 +632,6 @@ async function attemptProviderWithIR(
 					// Always capture upstream request/response for audit logging.
 					returnUpstreamRequest: true,
 					returnUpstreamResponse: true,
-					upstreamStartMs: ctx.meta.upstreamStartMs, // Pass timing to executor
 					requestedModel:
 						typeof (ctx.rawBody as any)?.model === "string"
 							? ((ctx.rawBody as any).model as string)
@@ -694,6 +694,9 @@ async function attemptProviderWithIR(
 		);
 
 		if (executorResult.timing) {
+			if (typeof executorResult.timing.upstreamStartMs === "number") {
+				ctx.meta.upstreamStartMs = executorResult.timing.upstreamStartMs;
+			}
 			if (typeof executorResult.timing.latencyMs === "number") {
 				ctx.meta.latency_ms = executorResult.timing.latencyMs;
 			}

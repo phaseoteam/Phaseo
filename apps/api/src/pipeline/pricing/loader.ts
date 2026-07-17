@@ -38,6 +38,13 @@ function writePricingL1(key: string, value: PriceCard | null, ttlMs: number): vo
     });
 }
 
+function resolvePricingL1TtlMs(card: PriceCard, nowMs: number = Date.now()): number {
+    if (!card.effective_to) return PRICING_L1_TTL_MS;
+    const effectiveToMs = Date.parse(card.effective_to);
+    if (!Number.isFinite(effectiveToMs)) return PRICING_L1_TTL_MS;
+    return Math.max(1, Math.min(PRICING_L1_TTL_MS, effectiveToMs - nowMs));
+}
+
 export async function loadPriceCard(provider: string, model: string, endpoint: string): Promise<PriceCard | null> {
     const cacheKey = pricingCacheKey(provider, model, endpoint);
     const l1 = readPricingL1(cacheKey);
@@ -128,7 +135,7 @@ export async function loadPriceCard(provider: string, model: string, endpoint: s
             version,
             rules,
         };
-        writePricingL1(cacheKey, card, PRICING_L1_TTL_MS);
+        writePricingL1(cacheKey, card, resolvePricingL1TtlMs(card));
         return card;
     })();
 

@@ -74,6 +74,38 @@ describe("executeOpenAICompat", () => {
 		expect(Array.isArray(capturedBody?.tools)).toBe(true);
 	});
 
+	it("reports the exact fetch start used for DeepSeek billing", async () => {
+		const args = buildArgs();
+		args.providerId = "deepseek";
+		args.providerModelSlug = "deepseek-v4-pro";
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.deepseek.example/v1/chat/completions",
+			response: sseResponse([
+				{
+					id: "chatcmpl_deepseek_timestamp",
+					object: "chat.completion.chunk",
+					model: "deepseek-v4-pro",
+					choices: [{ index: 0, delta: { content: "ok" }, finish_reason: null }],
+				},
+				"[DONE]",
+			]),
+		}]);
+		const nowSpy = vi.spyOn(Date, "now")
+			.mockReturnValueOnce(1_000)
+			.mockReturnValueOnce(2_000)
+			.mockReturnValue(2_500);
+
+		try {
+			const result = await executeOpenAICompat(args);
+			expect(result.kind).toBe("stream");
+			expect(result.timing?.upstreamStartMs).toBe(2_000);
+			expect(result.timing?.requestBuildMs).toBe(1_000);
+		} finally {
+			nowSpy.mockRestore();
+			mock.restore();
+		}
+	});
+
 	it("routes alibaba-cloud to chat completions for text models", async () => {
 		const args = buildArgs();
 		args.providerId = "alibaba-cloud";
@@ -388,6 +420,7 @@ describe("executeOpenAICompat", () => {
 		};
 
 		let callCount = 0;
+		const nowSpy = vi.spyOn(Date, "now").mockImplementation(() => (callCount + 1) * 1_000);
 		const mock = installFetchMock([{
 			match: (url) => url === "https://api.baseten.example/v1/chat/completions",
 			response: () => {
@@ -413,12 +446,18 @@ describe("executeOpenAICompat", () => {
 			},
 		}]);
 
-		const result = await executeOpenAICompat(args);
-		mock.restore();
+		let result!: Awaited<ReturnType<typeof executeOpenAICompat>>;
+		try {
+			result = await executeOpenAICompat(args);
+		} finally {
+			nowSpy.mockRestore();
+			mock.restore();
+		}
 
 		expect(result.kind).toBe("completed");
 		expect(result.upstream.status).toBe(200);
 		expect(callCount).toBe(2);
+		expect(result.timing?.upstreamStartMs).toBe(2_000);
 		expect(mock.calls[0]?.headers.Authorization).toBe("Api-Key test-baseten-key");
 	});
 

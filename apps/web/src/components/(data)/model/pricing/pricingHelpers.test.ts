@@ -1,5 +1,8 @@
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
-import { buildProviderSections } from "./pricingHelpers";
+import {
+	buildProviderSections,
+	buildProviderTablePriceSummary,
+} from "./pricingHelpers";
 
 function makeProviderPricing(): ProviderPricing {
 	return {
@@ -331,5 +334,105 @@ describe("buildProviderSections", () => {
 			expect.objectContaining({ per1M: 3.75, label: "5 min TTL" }),
 			expect.objectContaining({ per1M: 6, label: "1 hour TTL" }),
 		]);
+	});
+
+	test("shows off-peak pricing first outside configured UTC windows", () => {
+		const provider = makeProviderPricing();
+		provider.pricing_rules = [{
+			...provider.pricing_rules[0]!,
+			id: "deepseek-input",
+			price_per_unit: 0.28,
+			billing_timestamp_basis: "provider_accept",
+			match: [],
+			time_windows: [
+				{
+					label: "Peak",
+					timezone: "UTC",
+					start_time: "01:00",
+					end_time: "04:00",
+					price_per_unit: 0.87,
+				},
+				{
+					label: "Peak",
+					timezone: "UTC",
+					start_time: "06:00",
+					end_time: "10:00",
+					price_per_unit: 0.87,
+				},
+			],
+		}];
+
+		const sections = buildProviderSections(
+			provider,
+			"standard",
+			new Date("2026-07-17T05:30:00.000Z"),
+		);
+		const tier = sections.textTokens?.in[0];
+
+		expect(tier).toMatchObject({
+			per1M: 0.28,
+			timeWindowPrices: [
+				{
+					label: "Off-peak",
+					per1M: 0.28,
+					isCurrent: true,
+				},
+				{
+					label: "Peak",
+					per1M: 0.87,
+					scheduleLabel: "01:00-04:00, 06:00-10:00 UTC",
+					isCurrent: false,
+				},
+			],
+		});
+		expect(buildProviderTablePriceSummary(sections, "input").primary).toMatchObject({
+			price: 0.28,
+			periodLabel: "Off-peak now",
+		});
+	});
+
+	test("shows peak pricing first from the inclusive start to exclusive end", () => {
+		const provider = makeProviderPricing();
+		provider.pricing_rules = [{
+			...provider.pricing_rules[0]!,
+			id: "deepseek-input",
+			price_per_unit: 0.28,
+			billing_timestamp_basis: "provider_accept",
+			match: [],
+			time_windows: [{
+				label: "Peak",
+				timezone: "UTC",
+				start_time: "01:00",
+				end_time: "04:00",
+				price_per_unit: 0.87,
+			}],
+		}];
+
+		const atStart = buildProviderSections(
+			provider,
+			"standard",
+			new Date("2026-07-17T01:00:00.000Z"),
+		);
+		const atEnd = buildProviderSections(
+			provider,
+			"standard",
+			new Date("2026-07-17T04:00:00.000Z"),
+		);
+
+		expect(atStart.textTokens?.in[0]).toMatchObject({
+			per1M: 0.87,
+			timeWindowPrices: [
+				expect.objectContaining({ label: "Peak", per1M: 0.87, isCurrent: true }),
+				expect.objectContaining({ label: "Off-peak", per1M: 0.28, isCurrent: false }),
+			],
+		});
+		expect(buildProviderTablePriceSummary(atStart, "input")).toMatchObject({
+			sortValue: 0.87,
+			primary: {
+				periodLabel: "Peak now",
+				periodScheduleLabel: "01:00-04:00 UTC",
+			},
+		});
+		expect(buildProviderTablePriceSummary(atEnd, "input").sortValue).toBe(0.28);
 	});
 });

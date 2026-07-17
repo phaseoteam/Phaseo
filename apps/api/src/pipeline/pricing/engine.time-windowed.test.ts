@@ -249,6 +249,8 @@ describe("pricing engine time-windowed rules", () => {
             unit_price_usd: "0.870000000",
             billing_timestamp_basis: "provider_accept",
             billing_timestamp_basis_configured: "provider_accept",
+            billing_timestamp_ms: Date.parse("2026-07-20T06:30:00Z"),
+            billing_timestamp_iso: "2026-07-20T06:30:00.000Z",
             pricing_time_window: {
                 label: "peak",
                 timezone: "UTC",
@@ -258,7 +260,7 @@ describe("pricing engine time-windowed rules", () => {
         });
     });
 
-    it("falls back to request start and snapshots the actual basis when the requested basis timestamp is missing", () => {
+    it("does not apply a time-window override when the configured timestamp is missing", () => {
         const card = makeDeepSeekCard();
         card.rules[0] = {
             ...card.rules[0],
@@ -272,17 +274,14 @@ describe("pricing engine time-windowed rules", () => {
             "standard",
         );
 
-        expect(result.pricing.total_usd_str).toBe("0.87");
+        expect(result.pricing.total_usd_str).toBe("0.435");
         expect(result.pricing.lines[0]).toMatchObject({
-            unit_price_usd: "0.870000000",
-            billing_timestamp_basis: "request_start",
+            unit_price_usd: "0.435000000",
+            billing_timestamp_basis: "provider_accept",
             billing_timestamp_basis_configured: "provider_accept",
-            pricing_time_window: {
-                label: "peak",
-                timezone: "UTC",
-                start_time: "06:00",
-                end_time: "10:00",
-            },
+            billing_timestamp_ms: null,
+            billing_timestamp_iso: null,
+            pricing_time_window: null,
         });
     });
 
@@ -412,6 +411,7 @@ describe("DeepSeek V4 catalog time-period pricing", () => {
 
             expect(card.rules).toHaveLength(3);
             expect(card.rules.every((rule) => !rule.time_windows?.length)).toBe(true);
+            expect(card.rules.every((rule) => rule.billing_timestamp_basis === "provider_accept")).toBe(true);
 
             const result = computeBillSummary(
                 {

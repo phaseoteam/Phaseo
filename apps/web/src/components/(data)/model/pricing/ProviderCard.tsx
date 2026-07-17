@@ -393,30 +393,54 @@ function renderCompactTierSummary(
 					Number.isFinite(tier.basePer1M) &&
 					Math.abs(tier.basePer1M - tier.per1M) > 1e-9;
 				const condition = tier.label && tier.label !== "All usage" ? tier.label : null;
+				const prices = tier.timeWindowPrices?.length
+					? [...tier.timeWindowPrices].sort((a, b) => {
+							if (a.isCurrent !== b.isCurrent) return a.isCurrent ? -1 : 1;
+							return 0;
+						})
+					: [{
+							label: condition ?? "",
+							price: tier.price,
+							per1M: tier.per1M,
+							scheduleLabel: null,
+							isCurrent: true,
+						}];
+
 				return (
-					<div
-						key={`${tier.label}-${tier.per1M}-${index}`}
-						className="flex items-baseline gap-1.5"
-					>
-						{hasComparison ? (
-							<span className="text-[11px] tabular-nums text-muted-foreground line-through">
-								{fmtUSD(tier.basePer1M!)}
-							</span>
-						) : null}
-						<span
-							className={cn(
-								index === 0 ? "text-lg" : "text-xs",
-								"font-semibold tabular-nums text-foreground",
-								valueClassName,
-							)}
-						>
-							{fmtUSD(tier.per1M)}
-						</span>
-						{condition ? (
-							<span className="truncate text-[10px] text-muted-foreground">
-								{condition}
-							</span>
-						) : null}
+					<div key={`${tier.label}-${tier.per1M}-${index}`} className="space-y-0.5">
+						{prices.map((price, priceIndex) => {
+							const isHeadline = index === 0 && priceIndex === 0;
+							const periodLabel = tier.timeWindowPrices?.length
+								? `${price.label}${price.isCurrent ? " · now" : ""}`
+								: condition;
+							return (
+								<div
+									key={`${price.label}-${price.per1M}-${priceIndex}`}
+									className="flex min-w-0 items-baseline gap-1.5"
+									title={price.scheduleLabel ?? undefined}
+								>
+									{hasComparison && priceIndex === 0 ? (
+										<span className="text-[11px] tabular-nums text-muted-foreground line-through">
+											{fmtUSD(tier.basePer1M!)}
+										</span>
+									) : null}
+									<span
+										className={cn(
+											isHeadline ? "text-lg" : "text-xs",
+											"font-semibold tabular-nums",
+											price.isCurrent ? (valueClassName ?? "text-foreground") : "text-muted-foreground",
+										)}
+									>
+										{fmtUSD(price.per1M)}
+									</span>
+									{periodLabel ? (
+										<span className="truncate text-[10px] text-muted-foreground">
+											{periodLabel}
+										</span>
+									) : null}
+								</div>
+							);
+						})}
 					</div>
 				);
 			})}
@@ -538,36 +562,17 @@ function getPlanTheme(plan: string) {
 	}
 }
 
-function formatMeterLabel(meter: string): string {
-	return String(meter ?? "")
-		.replace(/[_-]+/g, " ")
-		.replace(/\b\w/g, (char) => char.toUpperCase());
-}
-
 function formatBillingTimestampBasis(value: string | null | undefined): string {
 	switch (value) {
 		case "provider_accept":
-			return "Provider accept";
+			return "upstream request start";
 		case "completion":
-			return "Completion";
+			return "completion";
 		case "request_start":
-			return "Request start";
+			return "request start";
 		default:
-			return "Request start";
+			return "request start";
 	}
-}
-
-function formatRuleUnitLabel(rule: ProviderPricing["pricing_rules"][number]): string {
-	const unit = String(rule.unit ?? "").trim().toLowerCase();
-	const unitSize = Number(rule.unit_size ?? 1);
-	if (unit === "token" && unitSize === 1_000_000) return "/ 1M tokens";
-	if (unit === "token") return unitSize > 1 ? `/ ${fmtCompact(unitSize)} tokens` : "/ token";
-	if (unit === "image") return "/ image";
-	if (unit === "video") return "/ video";
-	if (unit === "second") return "/ sec";
-	if (unit === "minute") return "/ min";
-	if (unit === "call" || unit === "request") return "/ request";
-	return unitSize > 1 ? `/ ${fmtCompact(unitSize)} ${unit || "units"}` : `/ ${unit || "unit"}`;
 }
 
 function formatRequestMeterTitle(meter: string | null | undefined): string {
@@ -589,34 +594,6 @@ function formatRequestMeterUnit(unitLabel: string | null | undefined): string {
 	return `/ ${fmtCompact(Number(match[1].replace(/,/g, "")))} req`;
 }
 
-function formatRulePrice(
-	rule: ProviderPricing["pricing_rules"][number],
-	price: string | number | null | undefined,
-): string {
-	const numeric = Number(price);
-	if (!Number.isFinite(numeric)) return "--";
-	return `${fmtUSD(numeric)} ${formatRuleUnitLabel(rule)}`;
-}
-
-function parseUtcClockMinutes(value: string | null | undefined): number | null {
-	const match = String(value ?? "").match(/^([01]\d|2[0-3]):([0-5]\d)$/);
-	if (!match) return null;
-	return Number(match[1]) * 60 + Number(match[2]);
-}
-
-function isUtcTimeWindowActiveNow(
-	window: NonNullable<ProviderPricing["pricing_rules"][number]["time_windows"]>[number],
-	now: Date,
-): boolean {
-	if (window.timezone !== "UTC") return false;
-	const start = parseUtcClockMinutes(window.start_time);
-	const end = parseUtcClockMinutes(window.end_time);
-	if (start == null || end == null) return false;
-	const nowMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
-	if (start === end) return true;
-	if (start < end) return nowMinutes >= start && nowMinutes < end;
-	return nowMinutes >= start || nowMinutes < end;
-}
 
 function renderTablePriceSummary(
 	summary: ProviderTablePriceSummary,
@@ -627,6 +604,9 @@ function renderTablePriceSummary(
 	}
 
 	const detailParts: string[] = [];
+	if (summary.primary.periodLabel) {
+		detailParts.push(summary.primary.periodLabel);
+	}
 	if (!summary.secondary && summary.primary.label !== "text") {
 		detailParts.push(summary.primary.label);
 	}
@@ -639,12 +619,21 @@ function renderTablePriceSummary(
 	const detailLabel = detailParts.join(" / ");
 
 	return (
-		<div className="flex flex-col items-end gap-0.5">
+		<div
+			className="flex flex-col items-end gap-0.5"
+			title={summary.primary.periodScheduleLabel ?? undefined}
+		>
 			<div className={cn("font-medium tabular-nums", accentClassName)}>
 				{summary.primary.formattedPrice}
 			</div>
 			{summary.secondary ? (
 				<div className="truncate text-[10px] text-muted-foreground">
+					{summary.primary.periodLabel ? (
+						<>
+							<span>{summary.primary.periodLabel}</span>
+							<span>{" / "}</span>
+						</>
+					) : null}
 					<span>{summary.secondary.label}</span>
 					{" "}
 					<span className="tabular-nums">{summary.secondary.formattedPrice}</span>
@@ -1308,6 +1297,7 @@ export default function ProviderCard({
 	routingStatus,
 	displayNameOverride,
 	variantLabels,
+	pricingTimeMs,
 	showCacheReadColumn = false,
 	isLastVisible = false,
 }: {
@@ -1321,6 +1311,7 @@ export default function ProviderCard({
 	routingStatus: ProviderRoutingStatus | null;
 	displayNameOverride?: string | null;
 	variantLabels?: string[] | null;
+	pricingTimeMs: number;
 	showCacheReadColumn?: boolean;
 	isLastVisible?: boolean;
 }) {
@@ -1406,13 +1397,13 @@ export default function ProviderCard({
 	}, [inspectorProviderId]);
 
 	const sec = useMemo(
-		() => buildProviderSections(provider, selectedPlan),
-		[provider, selectedPlan]
+		() => buildProviderSections(provider, selectedPlan, pricingTimeMs),
+		[pricingTimeMs, provider, selectedPlan]
 	);
 	const tablePlan = defaultPlan;
 	const tableSec = useMemo(
-		() => buildProviderSections(provider, tablePlan),
-		[provider, tablePlan],
+		() => buildProviderSections(provider, tablePlan, pricingTimeMs),
+		[pricingTimeMs, provider, tablePlan],
 	);
 	const tableDerivedPricingMultiplier = useMemo(
 		() =>
@@ -1420,12 +1411,11 @@ export default function ProviderCard({
 				provider,
 				comparisonProviders,
 				selectedPlan: tablePlan,
-				nowMs: Date.now(),
+				nowMs: pricingTimeMs,
 			}),
-		[comparisonProviders, provider, tablePlan],
+		[comparisonProviders, pricingTimeMs, provider, tablePlan],
 	);
 	const planMultiplierLabels = useMemo(() => {
-		const nowMs = Date.now();
 		const labels: Record<string, string | null> = {};
 		for (const plan of availablePlans) {
 			if (plan === defaultPlan) {
@@ -1437,12 +1427,12 @@ export default function ProviderCard({
 					provider,
 					basePlan: defaultPlan,
 					targetPlan: plan,
-					nowMs,
+					nowMs: pricingTimeMs,
 				}),
 			);
 		}
 		return labels;
-	}, [availablePlans, defaultPlan, provider]);
+	}, [availablePlans, defaultPlan, pricingTimeMs, provider]);
 	const pricingComparisonAccent =
 		selectedPlan === "batch" ||
 		selectedPlan === "flex" ||
@@ -1451,7 +1441,7 @@ export default function ProviderCard({
 			? selectedPlan
 			: null;
 
-	const now = new Date();
+	const now = new Date(pricingTimeMs);
 
 	const planRules = getProviderPricingRulesForPlan(provider, selectedPlan);
 	const hasPlanPricing = planRules.length > 0;
@@ -2403,6 +2393,7 @@ export default function ProviderCard({
 		) : null;
 
 	const timeWindowPricingRules = planRules
+		.filter((rule) => isRuleActiveNow(rule, pricingTimeMs))
 		.map((rule) => ({
 			rule,
 			windows: (rule.time_windows ?? []).filter(
@@ -2828,73 +2819,9 @@ export default function ProviderCard({
 						{pricingPrimaryContent}
 						{pricingGeneratedOutputContent}
 						{timeWindowPricingRules.length > 0 ? (
-									<div className="py-2">
-										<div className="pb-2">
-											<div className="text-xs font-semibold text-foreground">
-												Time-window pricing
-											</div>
-											<div className="mt-0.5 text-[11px] text-muted-foreground">
-												Selected by {formatBillingTimestampBasis(timeWindowPricingRules[0]?.rule.billing_timestamp_basis)} time.
-											</div>
-										</div>
-										<div className="divide-y divide-zinc-200/80 dark:divide-zinc-800">
-											{timeWindowPricingRules.map(({ rule, windows }) => {
-												const windowsWithActiveState = windows.map((window) => ({
-													window,
-													active: isUtcTimeWindowActiveNow(window, now),
-												}));
-												const baseActive = !windowsWithActiveState.some((entry) => entry.active);
-												return (
-													<div key={rule.id} className="py-2.5">
-														<div className="flex items-center justify-between gap-3">
-															<div className="min-w-0 text-xs font-medium text-foreground">
-																{formatMeterLabel(rule.meter)}
-															</div>
-															<div
-																className={cn(
-																	"shrink-0 text-xs tabular-nums",
-																	baseActive ? selectedPlanTheme.accent : "text-muted-foreground",
-																)}
-															>
-																Base {formatRulePrice(rule, rule.price_per_unit)}
-																{baseActive ? <span className="ml-2 font-semibold">Active now</span> : null}
-															</div>
-														</div>
-														<div className="mt-2 divide-y divide-zinc-200/70 text-xs dark:divide-zinc-800">
-															{windowsWithActiveState.map(({ window, active }, index) => (
-																<div
-																	key={`${rule.id}-${window.label}-${window.start_time}-${index}`}
-																	className="flex items-center justify-between gap-3 py-1.5"
-																>
-																	<div className="min-w-0">
-																		<span className="font-medium text-foreground">
-																			{window.label}
-																		</span>
-																		<span className="ml-2 tabular-nums text-muted-foreground">
-																			{window.start_time}-{window.end_time} UTC
-																		</span>
-																		{active ? (
-																			<span className={cn("ml-2 font-semibold", selectedPlanTheme.accent)}>
-																				Active now
-																			</span>
-																		) : null}
-																	</div>
-																	<div
-																		className={cn(
-																			"shrink-0 font-semibold tabular-nums",
-																			active ? selectedPlanTheme.accent : "text-foreground",
-																		)}
-																	>
-																		{formatRulePrice(rule, window.price_per_unit)}
-																	</div>
-																</div>
-															))}
-														</div>
-													</div>
-												);
-											})}
-										</div>
-									</div>
+							<div className="pb-2 text-[10px] text-muted-foreground">
+								Current UTC period is shown first. Rates switch by {formatBillingTimestampBasis(timeWindowPricingRules[0]?.rule.billing_timestamp_basis)} time; hover a period label for its schedule.
+							</div>
 								) : null}
 								{pricingAdditionalContent}
 							</section>

@@ -93,6 +93,7 @@
       "note": "Pending DeepSeek peak pricing announced 2026-06-29: UTC windows 01:00-04:00 and 06:00-10:00 will price this meter at $0.87 per 1M tokens once the provider effective date is known.",
       "match": [],
       "priority": 100,
+      "billing_timestamp_basis": "provider_accept",
       "effective_from": "2026-05-31T15:59:00Z"
     },
     {
@@ -105,6 +106,7 @@
       "note": "Pending DeepSeek peak pricing announced 2026-06-29: UTC windows 01:00-04:00 and 06:00-10:00 will price this meter at $0.00725 per 1M tokens once the provider effective date is known.",
       "match": [],
       "priority": 100,
+      "billing_timestamp_basis": "provider_accept",
       "effective_from": "2026-05-31T15:59:00Z"
     },
     {
@@ -117,6 +119,7 @@
       "note": "Pending DeepSeek peak pricing announced 2026-06-29: UTC windows 01:00-04:00 and 06:00-10:00 will price this meter at $1.74 per 1M tokens once the provider effective date is known.",
       "match": [],
       "priority": 100,
+      "billing_timestamp_basis": "provider_accept",
       "effective_from": "2026-05-31T15:59:00Z"
     }
   ]

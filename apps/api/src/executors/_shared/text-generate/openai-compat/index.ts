@@ -79,9 +79,6 @@ async function sleep(ms: number): Promise<void> {
 }
 
 export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
-	// Use upstream start time from pipeline (set before executor is called)
-	// Falls back to current time if not provided (backward compatibility)
-	const upstreamStartMs = args.meta.upstreamStartMs ?? Date.now();
 	// Resolve API key (gateway or BYOK)
 	const keyInfo = resolveOpenAICompatKey({
 		providerId: args.providerId,
@@ -148,6 +145,7 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 
 		return {
 			response,
+			upstreamStartMs: fetchStartMs,
 			requestBody,
 			request: sanitized.request,
 			requestBuildMs: Math.max(0, fetchStartMs - requestBuildStartMs),
@@ -206,6 +204,7 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 	let requestBuildMs = attempt.requestBuildMs;
 	let upstreamHeadersMs = attempt.upstreamHeadersMs;
 	let transientRetryDelayMs = attempt.transientRetryDelayMs;
+	let upstreamStartMs = attempt.upstreamStartMs;
 
 	let adaptiveRetryCount = 0;
 	while (!res.ok && adaptiveRetryCount < OPENAI_COMPAT_MAX_ADAPTIVE_RETRIES) {
@@ -226,6 +225,7 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 			requestBuildMs = attempt.requestBuildMs;
 			upstreamHeadersMs = attempt.upstreamHeadersMs;
 			transientRetryDelayMs = attempt.transientRetryDelayMs;
+			upstreamStartMs = attempt.upstreamStartMs;
 			adaptiveRetryCount += 1;
 			continue;
 		}
@@ -257,6 +257,7 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 		requestBuildMs = attempt.requestBuildMs;
 		upstreamHeadersMs = attempt.upstreamHeadersMs;
 		transientRetryDelayMs = attempt.transientRetryDelayMs;
+		upstreamStartMs = attempt.upstreamStartMs;
 		adaptiveRetryCount += 1;
 	}
 
@@ -278,6 +279,7 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 			byokKeyId: keyInfo.byokId,
 			mappedRequest,
 			timing: {
+				upstreamStartMs,
 				requestBuildMs,
 				upstreamHeadersMs,
 				transientRetryDelayMs,
@@ -300,6 +302,7 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 			timing: {
 				latencyMs: undefined,
 				generationMs: undefined,
+				upstreamStartMs,
 				requestBuildMs,
 				upstreamHeadersMs,
 				transientRetryDelayMs,
@@ -330,6 +333,7 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 			timing: {
 				latencyMs: firstByteMs ?? totalMs,
 				generationMs: firstByteMs === null ? 0 : Math.max(0, totalMs - firstByteMs),
+				upstreamStartMs,
 				requestBuildMs,
 				upstreamHeadersMs,
 				transientRetryDelayMs,

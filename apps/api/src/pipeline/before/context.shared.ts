@@ -166,10 +166,28 @@ export function computeAdaptiveTtlForDynamic(context: GatewayContextData): numbe
  * Compute TTL for static data (providers, pricing)
  * Uses longer TTL since this data changes infrequently
  */
-export function computeStaticTtl(): number {
+export function computeStaticTtl(
+	context?: Pick<GatewayContextData, "pricing"> | null,
+	nowMs: number = Date.now(),
+): number | null {
 	// Static data can be cached for 5-15 minutes.
 	// Use midpoint default and keep tunable via constants.
-	return Math.floor((STATIC_TTL_MIN + STATIC_TTL_MAX) / 2);
+	const defaultTtl = Math.floor((STATIC_TTL_MIN + STATIC_TTL_MAX) / 2);
+	let nextPricingBoundaryMs: number | null = null;
+	for (const card of Object.values(context?.pricing ?? {})) {
+		const boundaryMs = card?.effective_to ? Date.parse(card.effective_to) : Number.NaN;
+		if (!Number.isFinite(boundaryMs) || boundaryMs <= nowMs) continue;
+		if (nextPricingBoundaryMs === null || boundaryMs < nextPricingBoundaryMs) {
+			nextPricingBoundaryMs = boundaryMs;
+		}
+	}
+	if (nextPricingBoundaryMs === null) return defaultTtl;
+
+	const secondsUntilBoundary = Math.floor((nextPricingBoundaryMs - nowMs) / 1000);
+	// Workers KV rejects TTLs below 60 seconds. Bypass static caching rather
+	// than serving a stale price card across an exact billing boundary.
+	if (secondsUntilBoundary < MIN_TTL_SECONDS) return null;
+	return Math.min(defaultTtl, secondsUntilBoundary);
 }
 
 type DynamicContextCacheEntry = Pick<

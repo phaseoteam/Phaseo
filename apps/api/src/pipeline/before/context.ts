@@ -58,9 +58,9 @@ export {
 const CONTEXT_CACHE_PREFIX = "gateway:context";
 
 // Multi-tier caching constants (respecting Cloudflare KV 60s minimum)
-const STATIC_CACHE_PREFIX = "gateway:static";
+const STATIC_CACHE_PREFIX = "gateway:static:v2";
 const DYNAMIC_CACHE_PREFIX = "gateway:dynamic";
-const PRESET_CACHE_PREFIX = "gateway:preset";
+const PRESET_CACHE_PREFIX = "gateway:preset:v2";
 
 const PRESET_TTL = 120;      // 2 minutes
 const CONTEXT_INFLIGHT_MAX_ENTRIES = 512;
@@ -1261,13 +1261,21 @@ export async function fetchGatewayContext(args: {
             try {
                 const split = splitContextForCache(parsed);
                 const dynamicTtl = clampTtl(computeAdaptiveTtlForDynamic(parsed));
-                const staticTtl = clampTtl(isPreset ? PRESET_TTL : computeStaticTtl());
+                const pricingAwareStaticTtl = computeStaticTtl(parsed);
+                const staticTtl = pricingAwareStaticTtl === null
+                    ? null
+                    : clampTtl(isPreset ? Math.min(PRESET_TTL, pricingAwareStaticTtl) : pricingAwareStaticTtl);
                 const creditTtl = clampTtl(computeCreditSnapshotTtlForContext(parsed));
-                await Promise.all([
+                const cacheWrites: Promise<void>[] = [
                     cache.put(dynamicCacheKey, JSON.stringify(split.dynamic), { expirationTtl: dynamicTtl }),
-                    cache.put(staticCacheKey, JSON.stringify(split.static), { expirationTtl: staticTtl }),
                     cache.put(creditCacheKey, JSON.stringify(split.credit), { expirationTtl: creditTtl }),
-                ]);
+                ];
+                if (staticTtl !== null) {
+                    cacheWrites.push(
+                        cache.put(staticCacheKey, JSON.stringify(split.static), { expirationTtl: staticTtl }),
+                    );
+                }
+                await Promise.all(cacheWrites);
             } catch {
                 // ignore cache write failures
             } finally {

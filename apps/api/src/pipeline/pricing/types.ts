@@ -127,6 +127,8 @@ export type PricingBreakdownLine = {
     line_nanos?: number;
     billing_timestamp_basis?: PricingTimestampBasis;
     billing_timestamp_basis_configured?: PricingTimestampBasis;
+    billing_timestamp_ms?: number | null;
+    billing_timestamp_iso?: string | null;
     pricing_time_window?: {
         label: string;
         timezone: "UTC";
