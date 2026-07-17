@@ -60,6 +60,12 @@ import {
 
 export const oauthRouter = new Hono<Env>();
 const MAX_OAUTH_REQUEST_BODY_BYTES = 16 * 1024;
+const OAUTH_CORS_HEADERS: Record<string, string> = {
+	"Access-Control-Allow-Origin": "*",
+	"Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+	"Access-Control-Allow-Headers": "Authorization, Content-Type",
+	"Access-Control-Max-Age": "86400",
+};
 const DYNAMIC_MCP_SCOPES = [
 	"openid",
 	"profile",
@@ -101,6 +107,20 @@ const DYNAMIC_MCP_SCOPE_SET = new Set<string>(DYNAMIC_MCP_SCOPES);
 const MCP_RESOURCE_SERVER_CLIENT_ID = "phaseo_mcp_resource_server";
 
 class OAuthRequestBodyTooLarge extends Error {}
+
+oauthRouter.use("*", async (c, next) => {
+	if (c.req.method === "OPTIONS") {
+		return new Response(null, { status: 204, headers: OAUTH_CORS_HEADERS });
+	}
+	await next();
+	const headers = new Headers(c.res.headers);
+	for (const [key, value] of Object.entries(OAUTH_CORS_HEADERS)) headers.set(key, value);
+	c.res = new Response(c.res.body, {
+		status: c.res.status,
+		statusText: c.res.statusText,
+		headers,
+	});
+});
 
 function noStore(status = 200) {
 	return { status, headers: { "Cache-Control": "no-store" } };
