@@ -11,6 +11,7 @@ import { releaseStaleOrphanBatchReservations } from "@core/wallet-reservations";
 import {
 	batchMetaFromProviderPayload,
 	fetchProviderBatchStatus,
+	findProviderBatchByGatewayMetadata,
 	OPENAI_BATCH_PROVIDER_ID,
 	persistProviderBatchFileOwnership,
 } from "@core/batch-provider-adapters";
@@ -81,6 +82,9 @@ function isBillingBlockedFinalization(result: FinalizeBatchJobResult): boolean {
 		result.reason === "successful_output_count_mismatch" ||
 		result.reason === "missing_model" ||
 		result.reason === "price_card_missing"
+		|| result.reason === "settlement_failed"
+		|| result.reason === "key_usage_persistence_failed"
+		|| result.reason.startsWith("settlement_not_applied:")
 		|| result.reason.startsWith("reservation_")
 	);
 }
@@ -155,7 +159,72 @@ export async function runBatchReconciliationJob(args?: {
 				});
 				return counts;
 			}
-			const nativeBatchId = resolveBatchProviderNativeId({
+			let existingNativeBatchId = String(job.nativeId ?? job.meta?.nativeBatchId ?? "").trim();
+			if (currentStatus === "submission_unknown" && !existingNativeBatchId) {
+				const recovered = await findProviderBatchByGatewayMetadata({
+					providerId,
+					batchId: job.batchId,
+					requestId: job.requestId,
+				});
+				const recoveredNativeId = String(recovered?.native_batch_id ?? recovered?.id ?? "").trim();
+				if (!recoveredNativeId) {
+					await updateBatchJobReconciliation({
+						workspaceId: job.workspaceId,
+						batchId: job.batchId,
+						nextReconcileAt: nextBatchErrorRetryAt(job),
+						lastError: "batch_submission_recovery_not_found",
+					});
+					counts.jobsErrored += 1;
+					return counts;
+				}
+				existingNativeBatchId = recoveredNativeId;
+				await saveBatchJobMeta(job.workspaceId, job.batchId, batchMetaFromProviderPayload(recovered, {
+					...(job.meta ?? { provider: providerId }),
+					provider: providerId,
+					nativeBatchId: recoveredNativeId,
+					submissionOutcome: "accepted",
+					submissionError: null,
+				}));
+				counts.jobsUpdated += 1;
+			}
+			const existingTerminalPhase = mapTerminalPhase(currentStatus);
+			if (!existingNativeBatchId && existingTerminalPhase) {
+				const finalization = await finalizeBatchJob({
+					workspaceId: job.workspaceId,
+					batchId: job.batchId,
+					status: currentStatus,
+				});
+				if (isBillingBlockedFinalization(finalization)) {
+					counts.jobsErrored += 1;
+					await updateBatchJobReconciliation({
+						workspaceId: job.workspaceId,
+						batchId: job.batchId,
+						nextReconcileAt: nextBatchErrorRetryAt(job),
+						lastError: `batch_billing_blocked:${finalization.reason}`,
+					});
+					return counts;
+				}
+				if (finalization.billed) {
+					dispatchAsyncWebhookEventInBackground({
+						workspaceId: job.workspaceId,
+						kind: "batch",
+						internalId: job.batchId,
+						phase: existingTerminalPhase,
+					});
+					if (existingTerminalPhase === "completed") counts.jobsCompleted += 1;
+					if (existingTerminalPhase === "failed") counts.jobsFailed += 1;
+					if (existingTerminalPhase === "cancelled") counts.jobsCancelled += 1;
+				}
+				await updateBatchJobReconciliation({
+					workspaceId: job.workspaceId,
+					batchId: job.batchId,
+					nextReconcileAt: null,
+					lastError: null,
+				});
+				counts.jobsUpdated += 1;
+				return counts;
+			}
+			const nativeBatchId = existingNativeBatchId || resolveBatchProviderNativeId({
 				batchId: job.batchId,
 				nativeId: job.nativeId,
 				meta: job.meta,

@@ -1,4 +1,7 @@
 export type BatchInputMode = "file" | "requests";
+export type BatchProviderPreviewReadiness = "validated" | "experimental" | "blocked";
+export type BatchProviderReconciliationMode = "provider_webhook_with_polling" | "polling";
+export type BatchProviderSubmissionRecovery = "metadata_lookup" | "manual_review";
 
 export type BatchProviderCapability = {
 	providerId: string;
@@ -7,6 +10,9 @@ export type BatchProviderCapability = {
 	gatewayInputModes: BatchInputMode[];
 	documentationUrl: string;
 	status: "planned" | "active";
+	previewReadiness: BatchProviderPreviewReadiness;
+	reconciliationMode: BatchProviderReconciliationMode;
+	submissionRecovery: BatchProviderSubmissionRecovery;
 	supportsMultipleModelsPerBatch?: boolean;
 	notes?: string;
 };
@@ -23,6 +29,9 @@ export const BATCH_PROVIDER_CAPABILITIES: BatchProviderCapability[] = [
 		gatewayInputModes: ["file", "requests"],
 		documentationUrl: "https://platform.openai.com/docs/guides/batch",
 		status: "active",
+		previewReadiness: "validated",
+		reconciliationMode: "provider_webhook_with_polling",
+		submissionRecovery: "metadata_lookup",
 		notes: "Gateway requests are converted into a provider batch JSONL file before submission.",
 	},
 	{
@@ -32,6 +41,9 @@ export const BATCH_PROVIDER_CAPABILITIES: BatchProviderCapability[] = [
 		gatewayInputModes: ["requests"],
 		documentationUrl: "https://docs.anthropic.com/en/docs/build-with-claude/batch-processing",
 		status: "active",
+		previewReadiness: "validated",
+		reconciliationMode: "polling",
+		submissionRecovery: "manual_review",
 		supportsMultipleModelsPerBatch: true,
 	},
 	{
@@ -41,6 +53,9 @@ export const BATCH_PROVIDER_CAPABILITIES: BatchProviderCapability[] = [
 		gatewayInputModes: ["requests"],
 		documentationUrl: "https://ai.google.dev/gemini-api/docs/batch-api",
 		status: "active",
+		previewReadiness: "validated",
+		reconciliationMode: "provider_webhook_with_polling",
+		submissionRecovery: "metadata_lookup",
 		notes: "Gemini requests are submitted to the native Batch API. File-backed Gemini batches require Google Files API integration.",
 	},
 	{
@@ -50,8 +65,11 @@ export const BATCH_PROVIDER_CAPABILITIES: BatchProviderCapability[] = [
 		gatewayInputModes: ["requests"],
 		documentationUrl: "https://docs.x.ai/developers/advanced-api-usage/batch-api",
 		status: "active",
+		previewReadiness: "blocked",
+		reconciliationMode: "polling",
+		submissionRecovery: "metadata_lookup",
 		supportsMultipleModelsPerBatch: true,
-		notes: "Requests are submitted through xAI's create-batch and add-requests workflow.",
+		notes: "Requests use xAI's create-batch and add-requests workflow. Production access returned 403 in the latest live matrix.",
 	},
 	{
 		providerId: "mistral",
@@ -60,6 +78,9 @@ export const BATCH_PROVIDER_CAPABILITIES: BatchProviderCapability[] = [
 		gatewayInputModes: ["file", "requests"],
 		documentationUrl: "https://docs.mistral.ai/studio-api/batch-processing",
 		status: "active",
+		previewReadiness: "validated",
+		reconciliationMode: "polling",
+		submissionRecovery: "metadata_lookup",
 	},
 	{
 		providerId: "groq",
@@ -68,6 +89,9 @@ export const BATCH_PROVIDER_CAPABILITIES: BatchProviderCapability[] = [
 		gatewayInputModes: ["file", "requests"],
 		documentationUrl: "https://console.groq.com/docs/batch",
 		status: "active",
+		previewReadiness: "experimental",
+		reconciliationMode: "polling",
+		submissionRecovery: "manual_review",
 		supportsMultipleModelsPerBatch: true,
 		notes: "Gateway requests are converted into a provider batch JSONL file before submission.",
 	},
@@ -78,6 +102,9 @@ export const BATCH_PROVIDER_CAPABILITIES: BatchProviderCapability[] = [
 		gatewayInputModes: ["file", "requests"],
 		documentationUrl: "https://docs.together.ai/docs/inference/batch/overview",
 		status: "active",
+		previewReadiness: "experimental",
+		reconciliationMode: "polling",
+		submissionRecovery: "manual_review",
 		supportsMultipleModelsPerBatch: true,
 		notes: "Gateway requests are converted into a provider batch JSONL file before submission.",
 	},
@@ -86,6 +113,28 @@ export const BATCH_PROVIDER_CAPABILITIES: BatchProviderCapability[] = [
 const CAPABILITIES_BY_PROVIDER = new Map(
 	BATCH_PROVIDER_CAPABILITIES.map((capability) => [capability.providerId, capability]),
 );
+
+export function resolveBatchPreviewProviderIds(value: unknown): string[] {
+	const configured = typeof value === "string" ? value.trim().toLowerCase() : "";
+	if (!configured) return ["openai"];
+	if (configured === "*") {
+		return BATCH_PROVIDER_CAPABILITIES
+			.filter((capability) => capability.status === "active" && capability.previewReadiness === "validated")
+			.map((capability) => capability.providerId);
+	}
+	const requested = configured
+		.split(",")
+		.map((providerId) => providerId.trim())
+		.filter(Boolean)
+		.map((providerId) => normalizeProviderId(providerId))
+		.filter((providerId): providerId is string => Boolean(providerId));
+	const knownActive = requested.filter((providerId) => getBatchProviderCapability(providerId)?.status === "active");
+	return [...new Set(knownActive)];
+}
+
+export function isBatchProviderPreviewEnabled(providerId: string, value: unknown): boolean {
+	return resolveBatchPreviewProviderIds(value).includes(normalizeProviderId(providerId) ?? "");
+}
 
 function normalizeProviderId(value: unknown): string | null {
 	if (typeof value !== "string") return null;

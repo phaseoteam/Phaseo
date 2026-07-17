@@ -26,6 +26,7 @@ const state = vi.hoisted(() => ({
 	requestRows: [] as Array<Record<string, unknown>>,
 	fetchCalls: [] as string[],
 	walletCalls: [] as Array<Record<string, unknown>>,
+	keyUsageCalls: [] as Array<{ name: string; args: Record<string, unknown> }>,
 	captureResult: null as Record<string, unknown> | null,
 	releaseError: null as Error | null,
 }));
@@ -40,6 +41,7 @@ function resetState() {
 	state.requestRows = [];
 	state.fetchCalls = [];
 	state.walletCalls = [];
+	state.keyUsageCalls = [];
 	state.captureResult = null;
 	state.releaseError = null;
 }
@@ -61,10 +63,20 @@ vi.mock("@/runtime/env", () => ({
 		OPENAI_API_KEY: "test-openai-key",
 		OPENAI_BASE_URL: "https://api.openai.example/v1",
 	}),
+	getSupabaseAdmin: () => ({
+		rpc: vi.fn(async (name: string, args: Record<string, unknown>) => {
+			state.keyUsageCalls.push({ name, args });
+			return { data: 1, error: null };
+		}),
+	}),
 }));
 
 vi.mock("@providers/keys", () => ({
 	resolveProviderKey: vi.fn(() => ({ key: "test-openai-key" })),
+}));
+
+vi.mock("@core/kv", () => ({
+	setKeyVersion: vi.fn(async () => Date.now()),
 }));
 
 vi.mock("@pipeline/pricing/persist", () => ({
@@ -240,6 +252,20 @@ vi.mock("@core/wallet-reservations", () => ({
 			applied: false,
 			alreadyApplied: false,
 			amountNanos: 0,
+			beforeBalanceNanos: null,
+			afterBalanceNanos: null,
+			beforeReservedNanos: null,
+			afterReservedNanos: null,
+		};
+	}),
+	settleWalletReservation: vi.fn(async (args: Record<string, unknown>) => {
+		state.walletCalls.push({ op: "settle", ...args });
+		if (state.captureResult) return state.captureResult;
+		return {
+			status: "captured",
+			applied: true,
+			alreadyApplied: false,
+			amountNanos: args.actualNanos,
 			beforeBalanceNanos: null,
 			afterBalanceNanos: null,
 			beforeReservedNanos: null,
@@ -1234,6 +1260,57 @@ describe("batch-finalization", () => {
 		expect(state.statusCalls).toEqual([]);
 	});
 
+	it("prices cancelled batches with successful output even when provider counts are absent", async () => {
+		state.record = {
+			workspaceId: "ws_batch_test",
+			batchId: "batch_cancelled_partial_no_counts",
+			status: "cancelled",
+			meta: {
+				provider: "openai",
+				apiKeyId: "key_batch_test",
+				status: "cancelled",
+				endpoint: "/v1/responses",
+				outputFileId: "file_cancelled_partial",
+				reservationId: "batch_hold:req_cancelled_partial",
+				reservedNanos: 500_000_000,
+				reservationStatus: "held",
+			},
+		};
+		vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+			custom_id: "partial-1",
+			response: {
+				status_code: 200,
+				body: {
+					model: "openai/gpt-4o-mini",
+					usage: { input_tokens: 2, output_tokens: 1, total_tokens: 3 },
+				},
+			},
+		}), { status: 200, headers: { "Content-Type": "application/jsonl" } })));
+
+		const { finalizeBatchJob } = await import("./batch-finalization");
+		await expect(finalizeBatchJob({
+			workspaceId: "ws_batch_test",
+			batchId: "batch_cancelled_partial_no_counts",
+			status: "cancelled",
+		})).resolves.toMatchObject({ billed: true, charged: true, status: "cancelled" });
+		expect(state.walletCalls).toContainEqual({
+			op: "settle",
+			workspaceId: "ws_batch_test",
+			keyId: "key_batch_test",
+			reservationId: "batch_hold:req_cancelled_partial",
+			actualNanos: 400_000_000,
+			settleRefId: "batch_cancelled_partial_no_counts",
+		});
+		expect(state.keyUsageCalls).toEqual([expect.objectContaining({
+			name: "gateway_record_batch_key_usage",
+			args: expect.objectContaining({
+				p_workspace_id: "ws_batch_test",
+				p_key_id: "key_batch_test",
+				p_batch_id: "batch_cancelled_partial_no_counts",
+			}),
+		})]);
+	});
+
 	it("releases reserved credits for cancelled batches without charging usage", async () => {
 		state.record = {
 			workspaceId: "ws_batch_test",
@@ -1473,10 +1550,11 @@ describe("batch-finalization", () => {
 		]);
 		expect(state.walletCalls).toEqual([
 			{
-				op: "capture",
+				op: "settle",
 				workspaceId: "ws_batch_test",
 				reservationId: "batch_hold:req_embeddings",
-				captureRefId: "batch_embeddings_123",
+				actualNanos: 300_000_000,
+				settleRefId: "batch_embeddings_123",
 			},
 		]);
 		expect(state.chargeCalls).toEqual([]);
@@ -1590,10 +1668,11 @@ describe("batch-finalization", () => {
 		]);
 		expect(state.walletCalls).toEqual([
 			{
-				op: "capture",
+				op: "settle",
 				workspaceId: "ws_batch_test",
 				reservationId: "batch_hold:req_video",
-				captureRefId: "batch_video_123",
+				actualNanos: 300_000_000,
+				settleRefId: "batch_video_123",
 			},
 		]);
 		expect(state.chargeCalls).toEqual([]);
@@ -1612,7 +1691,7 @@ describe("batch-finalization", () => {
 		});
 	});
 
-	it("releases a mismatched reservation and charges actual completed batch usage", async () => {
+	it("atomically settles a conservative reservation at actual completed batch usage", async () => {
 		state.record = {
 			workspaceId: "ws_batch_test",
 			batchId: "batch_reserved_123",
@@ -1663,30 +1742,25 @@ describe("batch-finalization", () => {
 			status: "completed",
 			charged: true,
 			billed: true,
-			reason: "charged:released_and_charged_actual",
+			reason: "charged:captured",
 		});
 		expect(state.walletCalls).toEqual([
 			{
-				op: "release",
+				op: "settle",
 				workspaceId: "ws_batch_test",
 				reservationId: "batch_hold:req_reserved",
-				releaseRefId: "batch_reserved_123",
+				actualNanos: 400_000_000,
+				settleRefId: "batch_reserved_123",
 			},
 		]);
-		expect(state.chargeCalls).toEqual([
-			{
-				requestId: "batch_capture:batch_reserved_123",
-				workspaceId: "ws_batch_test",
-				cost_nanos: 400_000_000,
-			},
-		]);
+		expect(state.chargeCalls).toEqual([]);
 		expect(state.statusCalls.at(-1)).toMatchObject({
 			status: "completed",
 			metaPatch: {
 				charged: true,
 				costNanos: 400_000_000,
-				billingReason: "charged:released_and_charged_actual",
-				reservationStatus: "released_and_charged_actual",
+				billingReason: "charged:captured",
+				reservationStatus: "captured",
 			},
 		});
 	});
@@ -1752,14 +1826,15 @@ describe("batch-finalization", () => {
 			status: "completed",
 			charged: false,
 			billed: false,
-			reason: "charged:released",
+			reason: "settlement_not_applied:released",
 		});
 		expect(state.walletCalls).toEqual([
 			{
-				op: "capture",
+				op: "settle",
 				workspaceId: "ws_batch_test",
 				reservationId: "batch_hold:req_released_exact",
-				captureRefId: "batch_released_exact_123",
+				actualNanos: 400_000_000,
+				settleRefId: "batch_released_exact_123",
 			},
 		]);
 		expect(state.chargeCalls).toEqual([]);
@@ -1768,8 +1843,7 @@ describe("batch-finalization", () => {
 			status: "completed",
 			metaPatch: {
 				charged: false,
-				costNanos: 400_000_000,
-				billingReason: "charged:released",
+				billingReason: "settlement_not_applied:released",
 				reservationStatus: "released",
 			},
 		});

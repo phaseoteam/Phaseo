@@ -10,6 +10,8 @@ export const MISTRAL_BATCH_PROVIDER_ID = "mistral";
 export const X_AI_BATCH_PROVIDER_ID = "x-ai";
 export const JSON_BATCH_CONTENT_TYPE = "application/json";
 export const FILE_BACKED_JSONL_BATCH_PROVIDERS = new Set(["openai", "groq", "together"]);
+const MAX_BATCH_RESULT_ENTRIES = 10_000;
+const X_AI_BATCH_RESULTS_PAGE_SIZE = 1_000;
 
 function providerKeyMissingResponse(providerId: string): Response {
 	return new Response(
@@ -375,6 +377,7 @@ export function buildProviderRetrievePath(providerId: string, nativeBatchId: str
 export function buildProviderCancelPath(providerId: string, nativeBatchId: string): string {
 	if (providerId === MISTRAL_BATCH_PROVIDER_ID) return `/batch/jobs/${encodeURIComponent(nativeBatchId)}/cancel`;
 	if (providerId === ANTHROPIC_BATCH_PROVIDER_ID) return `/messages/batches/${encodeURIComponent(nativeBatchId)}/cancel`;
+	if (providerId === X_AI_BATCH_PROVIDER_ID) return `/batches/${encodeURIComponent(nativeBatchId)}:cancel`;
 	if (providerId === GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID) {
 		const name = nativeBatchId.includes("/") ? nativeBatchId : `batches/${nativeBatchId}`;
 		return `/${name.split("/").map(encodeURIComponent).join("/")}:cancel`;
@@ -400,7 +403,67 @@ export async function fetchProviderBatchStatus(providerId: string, nativeBatchId
 	return normalizeProviderBatchPayload(providerId, await parseUpstreamJson(response));
 }
 
-export async function fetchProviderFileText(providerId: string, fileIdRaw: string): Promise<string> {
+export async function findProviderBatchByGatewayMetadata(args: {
+	providerId: string;
+	batchId: string;
+	requestId?: string | null;
+}): Promise<any | null> {
+	if (
+		args.providerId !== OPENAI_BATCH_PROVIDER_ID &&
+		args.providerId !== MISTRAL_BATCH_PROVIDER_ID &&
+		args.providerId !== GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID &&
+		args.providerId !== X_AI_BATCH_PROVIDER_ID
+	) return null;
+	let cursor: string | null = null;
+	for (let page = 0; page < 10; page += 1) {
+		const endpointPath = args.providerId === MISTRAL_BATCH_PROVIDER_ID
+			? `/batch/jobs?page=${page}&page_size=100`
+			: args.providerId === GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID
+				? `/batches?pageSize=100${cursor ? `&pageToken=${encodeURIComponent(cursor)}` : ""}`
+				: `/batches?limit=100${cursor ? `&after=${encodeURIComponent(cursor)}` : ""}`;
+		const response = await fetchProviderBatchApi(args.providerId, {
+			endpointPath,
+			method: "GET",
+		});
+		if (!response.ok) {
+			throw new Error(`${args.providerId}_batch_recovery_list_failed_${response.status}`);
+		}
+		const payload = await parseUpstreamJson(response);
+		const candidates = Array.isArray(payload?.data)
+			? payload.data
+			: Array.isArray(payload?.jobs)
+				? payload.jobs
+				: Array.isArray(payload)
+					? payload
+					: [];
+		for (const candidate of candidates) {
+			const metadata = candidate?.metadata && typeof candidate.metadata === "object"
+				? candidate.metadata
+				: {};
+			if (
+				batchText(metadata.phaseo_batch_id) === args.batchId ||
+				(args.requestId && batchText(metadata.phaseo_request_id) === args.requestId) ||
+				batchText(candidate?.name) === `phaseo-${args.batchId}` ||
+				batchText(candidate?.displayName ?? candidate?.display_name) === `phaseo-${args.batchId}`
+			) {
+				return normalizeProviderBatchPayload(args.providerId, candidate);
+			}
+		}
+		if (args.providerId === OPENAI_BATCH_PROVIDER_ID || args.providerId === X_AI_BATCH_PROVIDER_ID) {
+			if (payload?.has_more !== true || candidates.length === 0) break;
+			cursor = batchText(payload?.last_id) ?? batchText(candidates.at(-1)?.id);
+			if (!cursor) break;
+		} else if (args.providerId === GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID) {
+			cursor = batchText(payload?.nextPageToken);
+			if (!cursor) break;
+		} else if (candidates.length < 100) {
+			break;
+		}
+	}
+	return null;
+}
+
+export async function fetchProviderFileText(providerId: string, fileIdRaw: string, maxBytes = 20 * 1024 * 1024): Promise<string> {
 	const fileId = batchText(fileIdRaw);
 	if (!fileId) throw new Error("missing_output_file_id");
 	const response = await fetchProviderBatchApi(providerId, {
@@ -411,7 +474,26 @@ export async function fetchProviderFileText(providerId: string, fileIdRaw: strin
 		const preview = await response.text().catch(() => "");
 		throw new Error(`${providerId}_batch_output_fetch_failed_${response.status}:${preview.slice(0, 200)}`);
 	}
-	return response.text();
+	const declaredLength = Number(response.headers.get("content-length") ?? 0);
+	if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
+		throw new Error("batch_file_too_large");
+	}
+	if (!response.body) return "";
+	const reader = response.body.getReader();
+	const decoder = new TextDecoder();
+	let bytesRead = 0;
+	let text = "";
+	while (true) {
+		const { done, value } = await reader.read();
+		if (done) break;
+		bytesRead += value.byteLength;
+		if (bytesRead > maxBytes) {
+			await reader.cancel("batch_file_too_large").catch(() => undefined);
+			throw new Error("batch_file_too_large");
+		}
+		text += decoder.decode(value, { stream: true });
+	}
+	return text + decoder.decode();
 }
 
 export function parseProviderBatchInputEntries(text: string): Array<{ body: unknown; endpoint?: string | null }> {
@@ -545,8 +627,9 @@ export async function fetchProviderBatchOutputEntries(meta: BatchJobMeta): Promi
 	if (providerId === X_AI_BATCH_PROVIDER_ID) {
 		const entries: any[] = [];
 		let paginationToken: string | null = null;
-		for (let page = 0; page < 10_000; page += 1) {
-			const query = new URLSearchParams({ limit: "1000" });
+		const maxPages = Math.ceil(MAX_BATCH_RESULT_ENTRIES / X_AI_BATCH_RESULTS_PAGE_SIZE);
+		for (let page = 0; page < maxPages; page += 1) {
+			const query = new URLSearchParams({ limit: String(X_AI_BATCH_RESULTS_PAGE_SIZE) });
 			if (paginationToken) query.set("pagination_token", paginationToken);
 			const response = await fetchProviderBatchApi(providerId, {
 				endpointPath: `${resultsPath}?${query.toString()}`,
@@ -559,6 +642,9 @@ export async function fetchProviderBatchOutputEntries(meta: BatchJobMeta): Promi
 			const payload = await parseUpstreamJson(response);
 			if (!payload || !Array.isArray(payload.results)) throw new Error("x-ai_batch_results_invalid");
 			entries.push(...payload.results);
+			if (entries.length > MAX_BATCH_RESULT_ENTRIES) {
+				throw new Error("x-ai_batch_results_limit_exceeded");
+			}
 			paginationToken = batchText(payload.pagination_token);
 			if (!paginationToken) return normalizeOutputEntries(providerId, entries);
 		}

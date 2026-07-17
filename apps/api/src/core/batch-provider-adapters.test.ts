@@ -1,12 +1,17 @@
 import { describe, expect, it } from "vitest";
 
 import {
+	buildProviderCancelPath,
 	extractGoogleInlineResponses,
 	normalizeProviderBatchPayload,
 	normalizeProviderBatchStatus,
 } from "./batch-provider-adapters";
 
 describe("batch provider status normalization", () => {
+	it("uses provider-specific cancellation paths", () => {
+		expect(buildProviderCancelPath("x-ai", "batch_123")).toBe("/batches/batch_123:cancel");
+		expect(buildProviderCancelPath("openai", "batch_123")).toBe("/batches/batch_123/cancel");
+	});
 	it("normalizes OpenAI-compatible batch statuses for OpenAI, Groq, and Together", () => {
 		const statuses = [
 			"validating",

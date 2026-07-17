@@ -9,10 +9,12 @@ import { authenticate } from "@pipeline/before/auth";
 import type { AuthFailure, AuthSuccess } from "@pipeline/before/auth";
 import { err } from "@pipeline/before/http";
 import { generatePublicId } from "@pipeline/before/genId";
+import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { getBatchFileMeta, saveBatchFileMeta } from "@core/batch-jobs";
 import { getBatchApiFeatureGateName, isBatchApiAccessEnabled } from "@core/feature-flags";
 import {
 	buildUnsupportedBatchModePayload,
+	resolveBatchPreviewProviderIds,
 	resolveBatchProvidersForMode,
 	resolveBatchProvidersFromModel,
 	resolveRequestedBatchProviders,
@@ -23,6 +25,8 @@ import {
 	OPENAI_BATCH_PROVIDER_ID,
 	parseUpstreamJson,
 } from "@core/batch-provider-adapters";
+
+const MAX_BATCH_FILE_UPLOAD_BYTES = 20 * 1024 * 1024;
 
 function toText(value: unknown): string | null {
 	return batchText(value);
@@ -90,7 +94,47 @@ function resolveUploadProvider(req: Request): { ok: true; providerId: string } |
 			}), 400),
 		};
 	}
-	return { ok: true, providerId: activeFileProviders[0]!.providerId };
+	const previewProviderIds = resolveBatchPreviewProviderIds(getBindings().BATCH_API_PREVIEW_PROVIDERS);
+	const previewProvider = activeFileProviders.find((provider) => previewProviderIds.includes(provider.providerId));
+	if (!previewProvider) {
+		return {
+			ok: false,
+			response: jsonPayload({
+				error: {
+					type: "forbidden",
+					reason: "batch_provider_preview_disabled",
+					message: "The selected provider is not enabled for the current Batch API preview.",
+					requested_providers: effectiveProviders,
+					enabled_providers: previewProviderIds,
+				},
+			}, 403),
+		};
+	}
+	return { ok: true, providerId: previewProvider.providerId };
+}
+
+async function finishUploadClaim(args: {
+	workspaceId: string;
+	uploadId: string;
+	status: "completed" | "failed";
+	providerFileId?: string | null;
+}): Promise<void> {
+	try {
+		const { error } = await getSupabaseAdmin().rpc("gateway_finish_batch_file_upload", {
+			p_workspace_id: args.workspaceId,
+			p_upload_id: args.uploadId,
+			p_status: args.status,
+			p_provider_file_id: args.providerFileId ?? null,
+		});
+		if (error) throw error;
+	} catch (error) {
+		console.error("batch_file_upload_claim_finalize_failed", {
+			error,
+			workspaceId: args.workspaceId,
+			uploadId: args.uploadId,
+			status: args.status,
+		});
+	}
 }
 
 async function handleUpload(req: Request) {
@@ -105,30 +149,92 @@ async function handleUpload(req: Request) {
 	const providerResolution = resolveUploadProvider(req);
 	if (providerResolution.ok === false) return providerResolution.response;
 	const providerId = providerResolution.providerId;
-	const upstream = await fetchProviderBatchApi(providerId, {
-		endpointPath: "/files",
-		method: "POST",
-		body: req.body,
-		contentType: req.headers.get("content-type"),
+	const declaredLength = Number(req.headers.get("content-length") ?? 0);
+	if (Number.isFinite(declaredLength) && declaredLength > MAX_BATCH_FILE_UPLOAD_BYTES) {
+		return jsonPayload({ error: { type: "validation_error", reason: "batch_file_too_large" } }, 413);
+	}
+	const uploadBody = await req.arrayBuffer();
+	if (uploadBody.byteLength <= 0) {
+		return jsonPayload({ error: { type: "validation_error", reason: "batch_file_empty" } }, 400);
+	}
+	if (uploadBody.byteLength > MAX_BATCH_FILE_UPLOAD_BYTES) {
+		return jsonPayload({ error: { type: "validation_error", reason: "batch_file_too_large" } }, 413);
+	}
+	const claim = await getSupabaseAdmin().rpc("gateway_claim_batch_file_upload", {
+		p_workspace_id: auth.workspaceId,
+		p_upload_id: requestId,
+		p_bytes: uploadBody.byteLength,
 	});
+	if (claim.error) throw claim.error;
+	const claimRow = Array.isArray(claim.data) ? claim.data[0] : claim.data;
+	if (!claimRow?.ok) {
+		const reason = toText(claimRow?.reason) ?? "batch_file_quota_exceeded";
+		const status = reason === "batch_file_too_large" ? 413 : reason === "insufficient_funds" ? 402 : 429;
+		return jsonPayload({ error: { type: status === 402 ? "insufficient_funds" : "rate_limit_error", reason } }, status);
+	}
+	let upstream: Response;
+	try {
+		upstream = await fetchProviderBatchApi(providerId, {
+			endpointPath: "/files",
+			method: "POST",
+			body: uploadBody,
+			contentType: req.headers.get("content-type"),
+		});
+	} catch (error) {
+		await finishUploadClaim({ workspaceId: auth.workspaceId, uploadId: requestId, status: "failed" });
+		throw error;
+	}
 	const payload = await parseUpstreamJson(upstream);
+	if (!upstream.ok) {
+		await finishUploadClaim({ workspaceId: auth.workspaceId, uploadId: requestId, status: "failed" });
+		return proxyResponse(upstream);
+	}
+	if (!payload) {
+		await finishUploadClaim({ workspaceId: auth.workspaceId, uploadId: requestId, status: "failed" });
+		return jsonPayload({ error: { type: "upstream_error", reason: "batch_file_upload_invalid_response" } }, 502);
+	}
 	if (upstream.ok && payload) {
 		const fileId = toText(payload?.id);
-		if (fileId) {
+		if (!fileId) {
+			await finishUploadClaim({ workspaceId: auth.workspaceId, uploadId: requestId, status: "failed" });
+			return jsonPayload({ error: { type: "upstream_error", reason: "batch_file_upload_missing_id" } }, 502);
+		}
+		try {
 			await saveBatchFileMeta(auth.workspaceId, fileId, {
 				provider: providerId,
 				status: toText(payload?.status) ?? "uploaded",
 				purpose: toText(payload?.purpose),
 				filename: toText(payload?.filename),
-				bytes: typeof payload?.bytes === "number" ? payload.bytes : null,
+				bytes: typeof payload?.bytes === "number" ? payload.bytes : uploadBody.byteLength,
 				keySource: "gateway",
 				byokKeyId: null,
-			}).catch((storeErr) => {
-				console.error("file_job_meta_store_failed", {
-					error: storeErr,
-					workspaceId: auth.workspaceId,
-					fileId,
-				});
+			});
+			await finishUploadClaim({
+				workspaceId: auth.workspaceId,
+				uploadId: requestId,
+				status: "completed",
+				providerFileId: fileId,
+			});
+		} catch (storeErr) {
+			await fetchProviderBatchApi(providerId, {
+				endpointPath: `/files/${encodeURIComponent(fileId)}`,
+				method: "DELETE",
+			}).catch(() => null);
+			await finishUploadClaim({
+				workspaceId: auth.workspaceId,
+				uploadId: requestId,
+				status: "failed",
+				providerFileId: fileId,
+			});
+			console.error("file_job_meta_store_failed", {
+				error: storeErr,
+				workspaceId: auth.workspaceId,
+				fileId,
+			});
+			return err("gateway_error", {
+				reason: "batch_file_persistence_failed",
+				request_id: requestId,
+				workspace_id: auth.workspaceId,
 			});
 		}
 	}

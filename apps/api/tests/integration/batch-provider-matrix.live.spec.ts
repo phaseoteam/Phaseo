@@ -27,7 +27,8 @@ const LIVE_BATCH_PROVIDER_MATRIX_RUN =
 const describeLive = LIVE_RUN && LIVE_BATCH_PROVIDER_MATRIX_RUN ? describe : describe.skip;
 
 const TERMINAL_STATES = new Set(["completed", "failed", "expired", "cancelled", "canceled"]);
-const DEFAULT_PROVIDERS = ["openai", "google-ai-studio", "anthropic", "x-ai", "mistral"] as const;
+const ALL_PROVIDERS = ["openai", "google-ai-studio", "anthropic", "mistral", "x-ai", "groq", "together"] as const;
+const DEFAULT_PROVIDERS = ["openai", "google-ai-studio", "anthropic", "mistral"] as const;
 const PROVIDERS = (process.env.LIVE_BATCH_PROVIDER_MATRIX_PROVIDERS ?? DEFAULT_PROVIDERS.join(","))
 	.split(",")
 	.map((value) => value.trim())
@@ -38,7 +39,7 @@ const REQUEST_COUNT = Number(process.env.LIVE_BATCH_PROVIDER_MATRIX_REQUEST_COUN
 const WEBHOOK_POLL_ATTEMPTS = Number(process.env.LIVE_BATCH_PROVIDER_MATRIX_WEBHOOK_POLL_ATTEMPTS ?? "30");
 const WEBHOOK_POLL_DELAY_MS = Number(process.env.LIVE_BATCH_PROVIDER_MATRIX_WEBHOOK_POLL_DELAY_MS ?? "5000");
 
-type ProviderId = typeof DEFAULT_PROVIDERS[number];
+type ProviderId = typeof ALL_PROVIDERS[number];
 
 type ProviderCase = {
 	provider: ProviderId;
@@ -90,6 +91,16 @@ const PROVIDER_CASES: ProviderCase[] = [
 		provider: "mistral",
 		envModel: "LIVE_BATCH_PROVIDER_MATRIX_MISTRAL_MODEL",
 		preferredModels: ["mistral/mistral-small-4"],
+	},
+	{
+		provider: "groq",
+		envModel: "LIVE_BATCH_PROVIDER_MATRIX_GROQ_MODEL",
+		preferredModels: ["groq/llama-3.3-70b-versatile", "groq/llama-3.1-8b-instant"],
+	},
+	{
+		provider: "together",
+		envModel: "LIVE_BATCH_PROVIDER_MATRIX_TOGETHER_MODEL",
+		preferredModels: ["together/meta-llama/Llama-3.3-70B-Instruct-Turbo"],
 	},
 ];
 
