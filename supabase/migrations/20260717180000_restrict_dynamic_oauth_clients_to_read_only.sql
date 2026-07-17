@@ -22,12 +22,12 @@ with dynamic_clients as (
   where client.id in (select id from dynamic_clients)
   returning client.id
 )
-update public.oauth_authorizations authorization
-set revoked_at = coalesce(authorization.revoked_at, now())
-where authorization.client_id in (select id from restricted_clients)
+update public.oauth_authorizations authz
+set revoked_at = coalesce(authz.revoked_at, now())
+where authz.client_id in (select id from restricted_clients)
   and exists (
     select 1
-    from unnest(coalesce(authorization.scopes, array[]::text[])) scope
+    from unnest(coalesce(authz.scopes, array[]::text[])) scope
     where scope = 'gateway:access' or scope ~ ':(write|delete)$'
   );
 
