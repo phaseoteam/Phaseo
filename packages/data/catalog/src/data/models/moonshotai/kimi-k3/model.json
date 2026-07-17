@@ -34,6 +34,21 @@
       "title": "Venice API Pricing",
       "kind": "pricing",
       "url": "https://docs.venice.ai/overview/pricing"
+    },
+    {
+      "title": "GMI Cloud Serverless API",
+      "kind": "docs",
+      "url": "https://docs.gmicloud.ai/inference-engine/marketplace/serverless"
+    },
+    {
+      "title": "GMI Cloud Pricing",
+      "kind": "pricing",
+      "url": "https://docs.gmicloud.ai/inference-engine/billing/price"
+    },
+    {
+      "title": "Novita API and Pricing",
+      "kind": "pricing",
+      "url": "https://novita.ai/models/model-detail/moonshotai-kimi-k3"
     }
   ],
   "details": [
@@ -79,7 +94,7 @@
     },
     {
       "name": "availability_note",
-      "value": "Moonshot AI and Venice provide Kimi K3 API access. Venice currently exposes the standard kimi-k3 route; its live model catalog does not yet expose an E2EE Kimi K3 model ID. Full model weights and the technical report are still forthcoming."
+      "value": "Moonshot AI, GMI Cloud, Novita, and Venice provide Kimi K3 API access. GMI Cloud currently advertises an FP8 route with a 262,144-token context window; Novita advertises text, image, and video input with a 1,048,576-token context and output limit. Venice exposes the standard kimi-k3 route, but its live catalog does not yet expose an E2EE Kimi K3 model ID. Full model weights and the technical report are still forthcoming."
     }
   ],
   "benchmarks": []

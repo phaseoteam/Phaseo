@@ -4443,6 +4443,70 @@
                          ]
     },
     {
+        "api_model_id":  "moonshotai/kimi-k3",
+        "provider_api_model_id":  "novita:moonshotai/kimi-k3",
+        "provider_model_slug":  "moonshotai/kimi-k3",
+        "internal_model_id":  "moonshotai/kimi-k3",
+        "is_active_gateway":  true,
+        "quantization_scheme":  null,
+        "input_modalities":  "text,image,video",
+        "output_modalities":  "text",
+        "context_length":  1048576,
+        "max_output_tokens":  1048576,
+        "effective_from":  "2026-07-16T02:27:39Z",
+        "effective_to":  null,
+        "capabilities":  [
+                             {
+                                 "capability_id":  "text.generate",
+                                 "status":  "active",
+                                 "params":  [
+                                                {
+                                                    "param_id":  "max_tokens",
+                                                    "provider_min":  1,
+                                                    "provider_max":  1048576,
+                                                    "provider_default":  null,
+                                                    "notes":  "Novita reports a 1,048,576-token maximum output length."
+                                                },
+                                                {
+                                                    "param_id":  "response_format",
+                                                    "provider_min":  null,
+                                                    "provider_max":  null,
+                                                    "provider_default":  null,
+                                                    "notes":  "Novita lists structured-output support for this route."
+                                                },
+                                                {
+                                                    "param_id":  "structured_outputs",
+                                                    "provider_min":  null,
+                                                    "provider_max":  null,
+                                                    "provider_default":  null,
+                                                    "notes":  "Novita lists structured-output support for this route."
+                                                },
+                                                {
+                                                    "param_id":  "tool_choice",
+                                                    "provider_min":  null,
+                                                    "provider_max":  null,
+                                                    "provider_default":  null,
+                                                    "notes":  null
+                                                },
+                                                {
+                                                    "param_id":  "tools",
+                                                    "provider_min":  null,
+                                                    "provider_max":  null,
+                                                    "provider_default":  null,
+                                                    "notes":  "Novita lists function-calling support for this route."
+                                                },
+                                                {
+                                                    "param_id":  "include_reasoning",
+                                                    "provider_min":  null,
+                                                    "provider_max":  null,
+                                                    "provider_default":  null,
+                                                    "notes":  "Kimi K3 always reasons; Novita lists reasoning support for this route."
+                                                }
+                                            ]
+                             }
+                         ]
+    },
+    {
         "api_model_id":  "nex-agi/nex-n2-pro",
         "provider_api_model_id":  "novita:nex-agi/nex-n2-pro",
         "provider_model_slug":  "nex-agi/nex-n2-pro",
