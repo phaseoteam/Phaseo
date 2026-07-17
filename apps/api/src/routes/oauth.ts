@@ -618,8 +618,16 @@ oauthRouter.post(
 
 		const responseTypes = Array.isArray(body.response_types) ? body.response_types.map(String) : ["code"];
 		const grantTypes = Array.isArray(body.grant_types) ? body.grant_types.map(String) : ["authorization_code"];
-		if (!responseTypes.every((value) => value === "code") || !grantTypes.every((value) => value === "authorization_code")) {
-			return oauthError("invalid_client_metadata", "Dynamically registered clients support authorization_code with code responses");
+		const requestedGrantTypes = Array.from(new Set(grantTypes));
+		if (
+			!responseTypes.every((value) => value === "code") ||
+			!requestedGrantTypes.includes("authorization_code") ||
+			!requestedGrantTypes.every((value) => value === "authorization_code" || value === "refresh_token")
+		) {
+			return oauthError(
+				"invalid_client_metadata",
+				"Dynamically registered clients support authorization_code and refresh_token grants with code responses",
+			);
 		}
 
 		const requestedScopes = normalizeScopes(body.scope, DYNAMIC_MCP_DEFAULT_SCOPES);
@@ -649,6 +657,8 @@ oauthRouter.post(
 			client_name: clientName,
 			redirect_uris: safeRedirectUris,
 			response_types: ["code"],
+			// Dynamic clients receive resource-bound delegated access keys rather
+			// than refresh-token families, so register only the grant we issue.
 			grant_types: ["authorization_code"],
 			token_endpoint_auth_method: "none",
 			scope: requestedScopes.join(" "),
