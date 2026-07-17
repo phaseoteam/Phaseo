@@ -291,20 +291,10 @@ export async function denyAuthorizationAction(input: {
 			};
 		}
 
-		const readRedirectUris = (value: unknown): string[] => {
-			if (Array.isArray(value)) return value.filter((entry): entry is string => typeof entry === "string");
-			if (typeof value !== "string") return [];
-			try {
-				const parsed = JSON.parse(value);
-				return Array.isArray(parsed) ? parsed.filter((entry): entry is string => typeof entry === "string") : [];
-			} catch {
-				return [];
-			}
-		};
 		const { data: { session } } = await supabase.auth.getSession();
 		if (!session?.access_token) return { error: "Unauthorized" };
 		const registeredClient = await loadRegisteredOAuthClient(session.access_token, clientId);
-		const registeredRedirectUris = readRedirectUris(registeredClient?.redirect_uris);
+		const registeredRedirectUris = registeredClient?.redirect_uris ?? [];
 		let isCliLoopback = false;
 		if (clientId === "phaseo_cli" || clientId === "aistats_cli") {
 			try {
@@ -376,11 +366,7 @@ export async function revokeAuthorizationAction(
 			.eq("id", authorizationId)
 			.eq("user_id", user.id); // Ensure user owns this authorization
 
-		if (revokeError) {
-			return {
-				error: "Failed to revoke authorization",
-			};
-		}
+		if (revokeError) throw revokeError;
 
 		return { data: {} };
 	} catch {
