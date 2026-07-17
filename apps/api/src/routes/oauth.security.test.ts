@@ -566,7 +566,7 @@ describe("OAuth route security", () => {
 		]);
 	});
 
-	it("accepts refresh tokens for dynamically registered authorization-code clients", async () => {
+	it("downgrades dynamic refresh-token requests to the authorization-code grant it issues", async () => {
 		const { oauthRouter } = await import("./oauth");
 		const response = await oauthRouter.request("https://example.com/register", {
 			method: "POST",
@@ -583,7 +583,7 @@ describe("OAuth route security", () => {
 		expect(response.status).toBe(201);
 		await expect(response.json()).resolves.toMatchObject({
 			response_types: ["code"],
-			grant_types: ["authorization_code", "refresh_token"],
+			grant_types: ["authorization_code"],
 			token_endpoint_auth_method: "none",
 		});
 	});
