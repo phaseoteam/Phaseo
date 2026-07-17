@@ -1,0 +1,45 @@
+{
+  "key": "gmicloud:moonshotai/kimi-k3:text.generate",
+  "api_provider_id": "gmicloud",
+  "provider_slug": "gmicloud",
+  "api_model_id": "moonshotai/kimi-k3",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 3,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "GMI Cloud model discovery API reports $3.00 per 1M input tokens; observed 2026-07-17.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-16T21:18:04Z"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.3,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "GMI Cloud model discovery API reports $0.30 per 1M cache-read tokens; observed 2026-07-17.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-16T21:18:04Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 15,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "GMI Cloud model discovery API reports $15.00 per 1M output tokens; observed 2026-07-17.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-16T21:18:04Z"
+    }
+  ]
+}
