@@ -110,10 +110,14 @@ function getDisplayedProviderUptime(
 	return stats?.uptimePct3d ?? null;
 }
 
-function usePricingClock(initialPricingTimeMs: number): number {
+function usePricingClock(
+    initialPricingTimeMs: number,
+    freezePricingClock: boolean,
+): number {
     const [pricingTimeMs, setPricingTimeMs] = useState(initialPricingTimeMs);
 
     useEffect(() => {
+        if (freezePricingClock) return;
         let timeoutId: number | null = null;
         const tick = () => {
             const nowMs = Date.now();
@@ -126,7 +130,7 @@ function usePricingClock(initialPricingTimeMs: number): number {
         return () => {
             if (timeoutId !== null) window.clearTimeout(timeoutId);
         };
-    }, []);
+    }, [freezePricingClock]);
 
     return pricingTimeMs;
 }
@@ -332,6 +336,7 @@ export default function ModelPricingClient({
     providers,
     creatorOrgId,
     initialPricingTimeMs,
+    freezePricingClock = false,
     runtimeStats = EMPTY_RUNTIME_STATS,
     routingHealth = EMPTY_ROUTING_HEALTH,
     workspacePrivacySettings = null,
@@ -341,12 +346,13 @@ export default function ModelPricingClient({
     providers: ProviderPricing[];
     creatorOrgId?: string | null;
     initialPricingTimeMs: number;
+    freezePricingClock?: boolean;
     runtimeStats?: ProviderRuntimeStatsMap;
     routingHealth?: ProviderRoutingStatusMap;
     workspacePrivacySettings?: WorkspacePrivacySettings | null;
     showHeader?: boolean;
 }) {
-    const pricingTimeMs = usePricingClock(initialPricingTimeMs);
+    const pricingTimeMs = usePricingClock(initialPricingTimeMs, freezePricingClock);
     const pathname = usePathname() ?? "/";
     const router = useRouter();
     const searchParams = useSearchParams();
