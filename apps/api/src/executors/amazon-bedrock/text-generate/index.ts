@@ -3,7 +3,12 @@
 // How: IR -> OpenAI Chat/Responses payload, then protocol shaping is handled by the pipeline.
 
 import type { IRChatRequest } from "@core/ir";
-import type { ExecutorExecuteArgs, ExecutorResult, Bill } from "@executors/types";
+import type {
+	ExecutorExecuteArgs,
+	ExecutorResult,
+	ExecutorUpstreamAttempt,
+	Bill,
+} from "@executors/types";
 import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-generate/shared";
 import { resolveStreamForProtocol, bufferStreamToIR } from "@executors/_shared/text-generate/openai-compat";
 import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate/openai-compat/transform-chat";
@@ -57,6 +62,7 @@ async function executeBedrockOpenAI(
 ): Promise<ExecutorResult> {
 	const irRequest = args.ir as IRChatRequest;
 	const upstreamStartMs = args.meta.upstreamStartMs ?? Date.now();
+	const upstreamAttempts: ExecutorUpstreamAttempt[] = [];
 
 	const buildPayload = (route: "chat" | "responses"): Record<string, any> => {
 		const providerId = args.providerId || "amazon-bedrock";
@@ -79,15 +85,37 @@ async function executeBedrockOpenAI(
 	let requestPayload = buildPayload(route);
 	let requestBody = JSON.stringify(requestPayload);
 	let mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestBody : undefined;
-	let res = await sendBedrockRequest(auth, {
-		url: buildBedrockOpenAIUrl(auth.baseUrl, route),
-		body: requestBody,
-		headers: {
-			"Content-Type": "application/json",
-			Accept: requestPayload.stream ? "text/event-stream" : "application/json",
-			...upstreamTestHeaders(args.meta),
-		},
-	});
+	const performRequest = async (targetRoute: "chat" | "responses") => {
+		const url = buildBedrockOpenAIUrl(auth.baseUrl, targetRoute);
+		const startedAt = Date.now();
+		const response = await sendBedrockRequest(auth, {
+			url,
+			body: requestBody,
+			headers: {
+				"Content-Type": "application/json",
+				Accept: requestPayload.stream ? "text/event-stream" : "application/json",
+				...upstreamTestHeaders(args.meta),
+			},
+		});
+		let responsePayload: unknown;
+		if (!response.ok) {
+			const failure = await readErrorPayload(response);
+			responsePayload = failure.errorPayload ?? failure.errorText ?? null;
+		}
+		upstreamAttempts.push({
+			sequence: upstreamAttempts.length + 1,
+			route: targetRoute,
+			request: requestBody,
+			response: responsePayload,
+			status: response.status,
+			statusText: response.statusText || null,
+			url: response.url || url,
+			durationMs: Math.max(0, Date.now() - startedAt),
+			outcome: response.ok ? "success" : "upstream_non_2xx",
+		});
+		return response;
+	};
+	let res = await performRequest(route);
 
 	if (!res.ok && route === "responses") {
 		const { errorText } = await readErrorPayload(res);
@@ -96,15 +124,7 @@ async function executeBedrockOpenAI(
 			requestPayload = buildPayload(route);
 			requestBody = JSON.stringify(requestPayload);
 			mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestBody : undefined;
-			res = await sendBedrockRequest(auth, {
-				url: buildBedrockOpenAIUrl(auth.baseUrl, route),
-				body: requestBody,
-				headers: {
-					"Content-Type": "application/json",
-					Accept: requestPayload.stream ? "text/event-stream" : "application/json",
-					...upstreamTestHeaders(args.meta),
-				},
-			});
+			res = await performRequest(route);
 		}
 	}
 
@@ -128,6 +148,7 @@ async function executeBedrockOpenAI(
 			keySource: keyInfo.source,
 			byokKeyId: keyInfo.byokId,
 			mappedRequest,
+			upstreamAttempts,
 		};
 	}
 
@@ -142,6 +163,7 @@ async function executeBedrockOpenAI(
 			keySource: keyInfo.source,
 			byokKeyId: keyInfo.byokId,
 			mappedRequest,
+			upstreamAttempts,
 			timing: {
 				latencyMs: undefined,
 				generationMs: undefined,
@@ -171,6 +193,7 @@ async function executeBedrockOpenAI(
 			byokKeyId: keyInfo.byokId,
 			mappedRequest,
 			rawResponse,
+			upstreamAttempts,
 			timing: {
 				latencyMs: firstByteMs ?? undefined,
 				generationMs:
@@ -201,6 +224,7 @@ async function executeBedrockOpenAI(
 		byokKeyId: keyInfo.byokId,
 		mappedRequest,
 		rawResponse: json,
+		upstreamAttempts,
 		timing: {
 			latencyMs: Date.now() - upstreamStartMs,
 			generationMs: 0,

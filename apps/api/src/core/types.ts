@@ -76,6 +76,8 @@ export type RequestMeta = {
     generation_ms?: number;       // Post-first-token generation duration when available
     latency_ms?: number;          // Time to first token/byte when available; otherwise best-effort total latency
     end_to_end_ms?: number;       // Request start to completion when available
+    provider_generation_total_ms?: number; // Sum of provider generation across multi-round tool requests
+    provider_call_count?: number; // Main-model provider rounds used to produce the response
     preserve_stream_timing?: boolean; // Internal: stream is synthetic and already has authoritative timing
     before_ms?: number;           // Gateway preflight ("before" stage) latency
     beforeContextMs?: number;     // Context fetch + enrichment latency inside before

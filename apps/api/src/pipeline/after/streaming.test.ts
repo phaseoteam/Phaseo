@@ -534,4 +534,46 @@ describe("passthroughWithPricing", () => {
 		expect((ctx.meta.generation_ms as number)!).toBeLessThan((ctx.meta.latency_ms as number)!);
 	});
 
+	it("uses authoritative timing measured around the provider stream", async () => {
+		const ctx = baseCtx({
+			endpoint: "chat.completions",
+			protocol: "openai.chat.completions",
+			meta: {
+				upstreamStartMs: Date.now() - 500,
+			},
+		});
+		const upstream = makeDelayedSseResponse([
+			{
+				data: {
+					object: "chat.completion.chunk",
+					choices: [{ index: 0, delta: { content: "hello" }, finish_reason: null }],
+				},
+			},
+			{
+				data: {
+					object: "chat.completion",
+					choices: [{ index: 0, message: { role: "assistant", content: "hello" }, finish_reason: "stop" }],
+				},
+			},
+		], 20);
+
+		const response = await passthroughWithPricing({
+			upstream: upstream.response,
+			ctx,
+			provider: "baseten",
+			priceCard: null,
+			providerTiming: {
+				latencyMs: 31,
+				generationMs: 87,
+				totalMs: 118,
+			},
+		});
+
+		await drain(response);
+
+		expect(ctx.meta.latency_ms).toBe(31);
+		expect(ctx.meta.generation_ms).toBe(87);
+		expect(ctx.meta.end_to_end_ms).toBe(118);
+	});
+
 });

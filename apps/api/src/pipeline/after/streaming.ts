@@ -16,6 +16,7 @@ import {
 } from "@protocols/stream/encode";
 import { dispatchBackground } from "@/runtime/env";
 import { supportsProviderStreamCancellation } from "./stream-cancellation";
+import type { ExecutorTiming } from "@executors/types";
 
 /** Pure passthrough for non-stream fallbacks (keeps upstream headers where safe). */
 export function passthrough(upstream: Response): Response {
@@ -53,6 +54,7 @@ type PassthroughWithPricingOpts = {
      * Optional Server-Timing value; if present we'll include it.
      */
     timingHeader?: string;
+    providerTiming?: ExecutorTiming;
 };
 
 /** Re-stream SSE while:
@@ -61,7 +63,17 @@ type PassthroughWithPricingOpts = {
  *  - detecting the final snapshot frame with `usage` to trigger onFinalUsage
  */
 export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): Promise<Response> {
-    const { upstream, rewriteFrame, onFinalUsage, onFinalSnapshot, onStreamEvent, timingHeader, ctx, provider } = opts;
+    const {
+        upstream,
+        rewriteFrame,
+        onFinalUsage,
+        onFinalSnapshot,
+        onStreamEvent,
+        timingHeader,
+        providerTiming,
+        ctx,
+        provider,
+    } = opts;
     const canCancelUpstream = supportsProviderStreamCancellation(provider);
 
     const reader = upstream.body?.getReader();
@@ -84,6 +96,21 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
         return null;
     };
 
+    const readTimingValue = (value: number | null | undefined): number | null =>
+        typeof value === "number" && Number.isFinite(value)
+            ? Math.max(0, Math.round(value))
+            : null;
+
+    const applyProviderTiming = () => {
+        const latencyMs = readTimingValue(providerTiming?.latencyMs);
+        const generationMs = readTimingValue(providerTiming?.generationMs);
+        const totalMs = readTimingValue(providerTiming?.totalMs);
+        if (latencyMs !== null) ctx.meta.latency_ms = latencyMs;
+        if (generationMs !== null) ctx.meta.generation_ms = generationMs;
+        if (totalMs !== null) ctx.meta.end_to_end_ms = totalMs;
+        return latencyMs !== null && generationMs !== null && totalMs !== null;
+    };
+
     const recordCompletionTiming = () => {
         if (
             ctx.meta.preserve_stream_timing &&
@@ -93,6 +120,7 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
         ) {
             return;
         }
+        if (applyProviderTiming()) return;
         const nowMs = Date.now();
         const nowPerf = performance.now();
         const requestStartMs = resolveRequestStartMs();
@@ -210,10 +238,9 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                     if (firstFrameAt === null) {
                         firstFrameAt = performance.now();
                         firstFrameAtMs = Date.now();
-                        // For streamed responses, latency means upstream request start -> first frame
-                        // emitted back to the client. Provider adapters may record earlier upstream
-                        // timings, so overwrite here with the actual downstream first-frame timing.
-                        if (!ctx.meta.preserve_stream_timing) {
+                        // Prefer timing measured around the provider's raw stream. Executors without
+                        // that measurement fall back to request start -> first downstream frame.
+                        if (!ctx.meta.preserve_stream_timing && !applyProviderTiming()) {
                             const requestStartMs = resolveRequestStartMs();
                             if (requestStartMs !== null) {
                                 ctx.meta.latency_ms = Math.max(

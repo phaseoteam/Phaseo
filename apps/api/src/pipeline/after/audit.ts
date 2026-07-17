@@ -16,9 +16,197 @@ import {
 	resolveExecuteTotalLatencyMs,
 	resolveNonStreamLatencyMs,
 } from "./timing";
+import {
+    extractProviderFinishReason,
+    normalizeFinishReason,
+} from "../audit/normalize-finish-reason";
 
 function getProviderAttempts(ctx: PipelineContext): Array<Record<string, unknown>> {
     return Array.isArray(ctx.providerAttempts) ? ctx.providerAttempts : [];
+}
+
+function buildUpstreamExchanges(args: {
+    ctx: PipelineContext;
+    result: RequestResult;
+    finalFinishReason?: string | null;
+    gatewayResponse?: unknown;
+}) {
+    const attempts = Array.isArray(args.ctx.providerAttempts)
+        ? args.ctx.providerAttempts
+        : [];
+    const rounds = Array.isArray(args.ctx.providerRounds)
+        ? args.ctx.providerRounds
+        : [];
+    const finalSuccessfulAttempt = [...attempts]
+        .reverse()
+        .find((attempt) => attempt.outcome === "success") ?? null;
+
+    const buildExchange = (
+        attempt: (typeof attempts)[number],
+        index: number,
+    ): Record<string, any> => {
+        const round = rounds.find((candidate) =>
+            candidate.round_number === (attempt.round_number ?? 1) &&
+            candidate.provider === attempt.provider &&
+            attempt.outcome === "success"
+        ) ?? null;
+        const isFinalSuccess = attempt === finalSuccessfulAttempt;
+        const providerResponse =
+            round?.raw_response ??
+            attempt.upstream_response ??
+            (isFinalSuccess ? args.result.rawResponse ?? args.gatewayResponse ?? null : null);
+        const providerFinishReason =
+            round?.provider_finish_reason ??
+            attempt.provider_finish_reason ??
+            extractProviderFinishReason(providerResponse);
+        const normalizedFinishReason =
+            round?.finish_reason ??
+            attempt.finish_reason ??
+            normalizeFinishReason(
+                providerFinishReason ?? (isFinalSuccess ? args.finalFinishReason : null),
+                attempt.provider,
+            );
+        const mappedRequest =
+            round?.mapped_request ??
+            attempt.upstream_request ??
+            (isFinalSuccess ? args.result.mappedRequest ?? null : null);
+
+        return {
+            sequence: index + 1,
+            stage: ["blocked", "no_pricing", "unsupported_executor"].includes(attempt.outcome)
+                ? "routing"
+                : "upstream",
+            round_number: attempt.round_number ?? 1,
+            attempt_number: attempt.attempt_number,
+            provider: attempt.provider,
+            model: attempt.model,
+            api_model_id: attempt.api_model_id ?? null,
+            provider_model_slug: attempt.provider_model_slug ?? null,
+            outcome: attempt.outcome,
+            status: attempt.status ?? null,
+            status_text: attempt.status_text ?? null,
+            duration_ms: attempt.duration_ms,
+            latency_ms: round?.latency_ms ?? null,
+            generation_ms: round?.generation_ms ?? null,
+            total_ms: round?.total_ms ?? attempt.duration_ms,
+            native_response_id:
+                round?.native_response_id ??
+                attempt.native_response_id ??
+                (isFinalSuccess ? args.result.bill?.upstream_id ?? null : null),
+            provider_finish_reason: providerFinishReason,
+            finish_reason: normalizedFinishReason,
+            usage: round?.usage ?? (isFinalSuccess ? args.result.bill?.usage ?? null : null),
+            key_source: attempt.key_source ?? null,
+            byok_key_id: attempt.byok_key_id ?? null,
+            upstream_url: attempt.upstream_url ?? null,
+            response_kind: attempt.response_kind ?? null,
+            retryable: attempt.retryable ?? null,
+            fallback_attempted: attempt.fallback_attempted ?? false,
+            was_probe: attempt.was_probe ?? false,
+            request_build_ms: attempt.request_build_ms ?? null,
+            upstream_headers_ms: attempt.upstream_headers_ms ?? null,
+            retry_delay_ms: attempt.retry_delay_ms ?? null,
+            error: attempt.outcome === "success"
+                ? null
+                : {
+                    code: attempt.upstream_error_code ?? null,
+                    type: attempt.upstream_error_type ?? null,
+                    message: attempt.upstream_error_message ?? null,
+                    description: attempt.upstream_error_description ?? null,
+                    param: attempt.upstream_error_param ?? null,
+                },
+            upstream_request: attempt.upstream_request ?? sanitizeJsonStringForAxiom(
+                typeof mappedRequest === "string" ? mappedRequest : null,
+            ) ?? sanitizeForAxiom(mappedRequest),
+            upstream_response: attempt.upstream_response ?? sanitizeForAxiom(providerResponse),
+            response_source:
+                round?.raw_response != null || attempt.upstream_response != null || args.result.rawResponse != null
+                    ? "provider"
+                    : isFinalSuccess && args.gatewayResponse != null
+                        ? "gateway_reconstructed"
+                        : null,
+        };
+    };
+
+    if (attempts.length > 0) {
+        return attempts.flatMap((attempt, attemptIndex) => {
+            const base = buildExchange(attempt, attemptIndex);
+            const upstreamAttempts = Array.isArray(attempt.upstream_attempts)
+                ? attempt.upstream_attempts
+                : [];
+            if (upstreamAttempts.length === 0) return [base];
+
+            return upstreamAttempts.map((upstreamAttempt, upstreamIndex) => {
+                const isLastUpstreamAttempt = upstreamIndex === upstreamAttempts.length - 1;
+                return {
+                    ...base,
+                    sequence: 0,
+                    stage: "upstream",
+                    internal_attempt_number: upstreamAttempt.sequence,
+                    upstream_route: upstreamAttempt.route ?? null,
+                    outcome: upstreamAttempt.outcome,
+                    status: upstreamAttempt.status ?? null,
+                    status_text: upstreamAttempt.status_text ?? null,
+                    duration_ms: upstreamAttempt.duration_ms,
+                    total_ms: upstreamAttempt.duration_ms,
+                    upstream_url: upstreamAttempt.url ?? base.upstream_url,
+                    provider_finish_reason: isLastUpstreamAttempt
+                        ? base.provider_finish_reason
+                        : null,
+                    finish_reason: isLastUpstreamAttempt ? base.finish_reason : null,
+                    usage: isLastUpstreamAttempt && upstreamAttempt.outcome === "success"
+                        ? base.usage
+                        : null,
+                    error: upstreamAttempt.outcome === "success"
+                        ? null
+                        : {
+                            code: null,
+                            type: upstreamAttempt.outcome,
+                            message: upstreamAttempt.error_message ?? null,
+                            description: null,
+                            param: null,
+                        },
+                    upstream_request: upstreamAttempt.request ?? base.upstream_request,
+                    upstream_response: isLastUpstreamAttempt
+                        ? upstreamAttempt.response ?? base.upstream_response
+                        : upstreamAttempt.response ?? null,
+                    response_source: upstreamAttempt.response != null || isLastUpstreamAttempt
+                        ? base.response_source
+                        : null,
+                };
+            });
+        }).map((exchange, index) => ({ ...exchange, sequence: index + 1 }));
+    }
+
+    const providerResponse = args.result.rawResponse ?? args.gatewayResponse ?? null;
+    const providerFinishReason = extractProviderFinishReason(providerResponse);
+    return [{
+        sequence: 1,
+        stage: "upstream",
+        round_number: 1,
+        attempt_number: 1,
+        provider: args.result.provider,
+        model: args.ctx.model,
+        api_model_id: args.result.apiModelId ?? null,
+        provider_model_slug: args.result.providerModelSlug ?? null,
+        outcome: args.result.upstream.ok ? "success" : "upstream_non_2xx",
+        status: args.result.upstream.status,
+        status_text: args.result.upstream.statusText || null,
+        duration_ms: args.result.timing?.totalMs ?? args.result.generationTimeMs ?? null,
+        latency_ms: args.result.timing?.latencyMs ?? null,
+        generation_ms: args.result.timing?.generationMs ?? args.result.generationTimeMs ?? null,
+        total_ms: args.result.timing?.totalMs ?? null,
+        native_response_id: args.result.bill?.upstream_id ?? null,
+        provider_finish_reason: providerFinishReason,
+        finish_reason: normalizeFinishReason(
+            providerFinishReason ?? args.finalFinishReason ?? null,
+            args.result.provider,
+        ),
+        usage: args.result.bill?.usage ?? null,
+        upstream_request: sanitizeJsonStringForAxiom(args.result.mappedRequest),
+        upstream_response: sanitizeForAxiom(providerResponse),
+        response_source: args.result.rawResponse != null ? "provider" : "gateway_reconstructed",
+    }];
 }
 
 // ============================================================================
@@ -366,6 +554,12 @@ export async function handleFailureAudit(
             providerResponse: errorDetails ?? result.rawResponse ?? null,
             detailMetadata: {
                 stage: "execute",
+                upstream_exchanges: buildUpstreamExchanges({
+                    ctx,
+                    result,
+                    finalFinishReason: null,
+                    gatewayResponse: gatewayErrorPayload ?? gatewayFailurePayload,
+                }),
                 routing_diagnostics: sanitizeForAxiom((ctx as any).routingDiagnostics ?? null),
                 provider_enablement_diagnostics: sanitizeForAxiom(
                     ctx.providerEnablementDiagnostics ?? null,
@@ -488,8 +682,6 @@ export async function handleSuccessAudit(
     })();
 
     // Extract enrichment data for wide event logging
-    const requestEnrichment = extractRequestEnrichment(ctx);
-    const routingContext = extractRoutingContext(ctx, result);
     const guardrailEnforcementPayload = ctx.guardrailEnforcement
         ? sanitizeForAxiom({
             guardrail_enforcement: ctx.guardrailEnforcement,
@@ -507,6 +699,14 @@ export async function handleSuccessAudit(
         mergeWebFetchObservability(ctx.webFetchObservability ?? null),
     );
 
+    const upstreamExchanges = buildUpstreamExchanges({
+        ctx,
+        result,
+        finalFinishReason: finishReason,
+        gatewayResponse: gatewayResponse ?? null,
+    });
+    const requestEnrichment = extractRequestEnrichment(ctx);
+    const routingContext = extractRoutingContext(ctx, result);
     try {
         await auditSuccess({
             requestId: ctx.requestId,
@@ -560,6 +760,7 @@ export async function handleSuccessAudit(
             detailMetadata: {
                 stage: "execute",
                 finish_reason: finishReason ?? null,
+                upstream_exchanges: upstreamExchanges,
                 plugin_executions: sanitizeForAxiom(ctx.pluginExecutions ?? null),
                 routing_diagnostics: sanitizeForAxiom((ctx as any).routingDiagnostics ?? null),
                 response_cache: sanitizeForAxiom(ctx.responseCache ?? null),
@@ -574,7 +775,6 @@ export async function handleSuccessAudit(
                 replay_supported: true,
                 guardrail_enforcement_present: Boolean(ctx.guardrailEnforcement),
             },
-            // Wide event enrichment
             teamEnrichment: ctx.teamEnrichment ?? null,
             keyEnrichment: ctx.keyEnrichment ?? null,
             requestEnrichment,

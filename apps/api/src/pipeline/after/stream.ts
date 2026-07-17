@@ -95,6 +95,12 @@ function attachStreamTimingMeta(args: {
         generation_ms: generationMs,
         latency_ms: ctx.meta.latency_ms ?? 0,
         end_to_end_ms: ctx.meta.end_to_end_ms ?? null,
+        ...(typeof ctx.meta.provider_generation_total_ms === "number"
+            ? { provider_generation_total_ms: ctx.meta.provider_generation_total_ms }
+            : {}),
+        ...(typeof ctx.meta.provider_call_count === "number"
+            ? { provider_call_count: ctx.meta.provider_call_count }
+            : {}),
     };
     const responsePayload =
         frame.response &&
@@ -113,6 +119,12 @@ function attachStreamTimingMeta(args: {
             generation_ms: generationMs,
             end_to_end_ms: ctx.meta.end_to_end_ms ?? null,
             throughput_tps: throughputTps,
+            ...(typeof ctx.meta.provider_generation_total_ms === "number"
+                ? { provider_generation_total_ms: ctx.meta.provider_generation_total_ms }
+                : {}),
+            ...(typeof ctx.meta.provider_call_count === "number"
+                ? { provider_call_count: ctx.meta.provider_call_count }
+                : {}),
         };
     }
     if (frame.meta && typeof frame.meta === "object" && "finish_reason" in frame.meta) {
@@ -208,6 +220,7 @@ export async function handleStreamResponse(
         ctx,
         provider: result.provider,
         priceCard: card,
+        providerTiming: result.timing,
         rewriteFrame: (frame: any) => {
             if (!frame || typeof frame !== "object") return frame;
             const includeMeta = ctx.meta.returnMeta ?? false;

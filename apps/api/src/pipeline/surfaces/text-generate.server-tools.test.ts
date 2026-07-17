@@ -400,6 +400,28 @@ describe("runTextGeneratePipeline server tools", () => {
 		});
 
 		const finalizeArgs = finalizeRequestMock.mock.calls[0]?.[0];
+		expect(finalizeArgs.pre.ctx.providerRounds).toEqual([
+			expect.objectContaining({
+				round_number: 1,
+				provider: "openai",
+				finish_reason: "tool_calls",
+				usage: {
+					prompt_tokens: 10,
+					completion_tokens: 2,
+					total_tokens: 12,
+				},
+			}),
+			expect.objectContaining({
+				round_number: 2,
+				provider: "openai",
+				finish_reason: "stop",
+				usage: {
+					prompt_tokens: 6,
+					completion_tokens: 5,
+					total_tokens: 11,
+				},
+			}),
+		]);
 		expect(finalizeArgs.exec.result.ir.usage).toEqual(usageWithServerTool);
 		expect(finalizeArgs.exec.result.bill.usage).toEqual(billUsageWithServerTool);
 		expect(finalizeArgs.exec.result.rawResponse.usage).toEqual(
@@ -488,6 +510,7 @@ describe("runTextGeneratePipeline server tools", () => {
 					upstream: new Response(null, { status: 200 }),
 					provider: "openai",
 					generationTimeMs: 1,
+					timing: { generationMs: 11 },
 					bill: { cost_cents: 0, currency: "USD", usage: {} },
 					rawResponse: null,
 				},
@@ -512,6 +535,7 @@ describe("runTextGeneratePipeline server tools", () => {
 					upstream: new Response(JSON.stringify({ ok: true }), { status: 200 }),
 					provider: "openai",
 					generationTimeMs: 3,
+					timing: { generationMs: 17 },
 					bill: { cost_cents: 0, currency: "USD", usage: {} },
 					rawResponse: {
 						id: "chatcmpl_final_stream",
@@ -533,6 +557,8 @@ describe("runTextGeneratePipeline server tools", () => {
 		);
 
 		const args = createArgs({ stream: true });
+		args.pre.ctx.meta.upstreamStartMs = Date.now() - 100;
+		args.pre.ctx.meta.startedAtMs = Date.now() - 1_000;
 		const response = await runTextGeneratePipeline(args);
 
 		expect(response.status).toBe(200);
@@ -562,6 +588,13 @@ describe("runTextGeneratePipeline server tools", () => {
 		expect(finalizeArgs.exec.result.upstream.headers.get("Content-Type")).toBe(
 			"text/event-stream",
 		);
+		expect(finalizeArgs.pre.ctx.meta.generation_ms).toBe(17);
+		expect(finalizeArgs.pre.ctx.meta.provider_generation_total_ms).toBe(28);
+		expect(finalizeArgs.pre.ctx.meta.provider_call_count).toBe(2);
+		expect(finalizeArgs.pre.ctx.meta.throughput_tps).toBeCloseTo(5 / 0.017);
+		expect(finalizeArgs.pre.ctx.meta.end_to_end_ms).toBeGreaterThanOrEqual(900);
+		expect(finalizeArgs.pre.ctx.meta.latency_ms).toBeGreaterThanOrEqual(883);
+		expect(finalizeArgs.pre.ctx.meta.preserve_stream_timing).toBe(true);
 	});
 
 	it("executes the managed web search follow-up loop and records search result usage on non-stream requests", async () => {
@@ -1035,7 +1068,7 @@ describe("runTextGeneratePipeline server tools", () => {
 			created: 1778073808,
 			serverToolTrace: [{
 				id: "call_web_fetch",
-				name: "ai_stats_web_fetch",
+					name: "phaseo_web_fetch",
 				arguments: "{\"url\":\"https://example.com/spec\",\"max_chars\":4000}",
 				output: "{\"provider\":\"fetch\",\"url\":\"https://example.com/spec\",\"final_url\":\"https://example.com/spec\",\"status\":200,\"content_type\":\"text/html\",\"title\":\"Gateway Spec\",\"text\":\"Grounded specification text\",\"truncated\":false,\"returned_chars\":27}",
 			}],

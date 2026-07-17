@@ -12,6 +12,7 @@ import {
 	stripGatewayRequestUsageColumns,
 } from "../usage-columns";
 import { persistGatewayIoLog } from "./io-logging";
+import { persistGatewayUpstreamRequests } from "./upstream-requests";
 
 function supaAdmin() {
     return getSupabaseAdmin();
@@ -250,6 +251,19 @@ async function insertGatewayRequestDetailsNonBlocking(
     }
 }
 
+function summarizeDetailMetadata(
+    metadata: Record<string, unknown> | null | undefined,
+): Record<string, unknown> | null {
+    if (!metadata) return null;
+    const { upstream_exchanges: upstreamExchanges, ...summary } = metadata;
+    return {
+        ...summary,
+        upstream_exchange_count: Array.isArray(upstreamExchanges)
+            ? upstreamExchanges.length
+            : 0,
+    };
+}
+
 function buildSupaRow(args: {
     requestId: string; workspaceId?: string | null;
     endpoint: Endpoint; model?: string | null; canonicalModel?: string | null; provider?: string | null;
@@ -270,6 +284,7 @@ function buildSupaRow(args: {
     usage?: any | null; costNanos?: number | null; currency?: string | null;
     pricingLines?: any[] | null; throughput?: number | null;
     finishReason?: string | null;
+    detailMetadata?: Record<string, unknown> | null;
     requestPayload?: unknown;
     gatewayResponse?: unknown;
     edgeColo?: string | null;
@@ -300,7 +315,29 @@ function buildSupaRow(args: {
         end_user_id: args.requestUserId ?? null,
         session_id: args.sessionId ?? null,
         trace_data: args.traceData ?? null,
-        provider_attempts: Array.isArray(args.providerAttempts) ? args.providerAttempts : [],
+        provider_attempts: Array.isArray(args.providerAttempts)
+            ? args.providerAttempts.map((attempt) => {
+                const {
+                    upstream_request: _upstreamRequest,
+                    upstream_response: _upstreamResponse,
+                    upstream_attempts: upstreamAttempts,
+                    ...summary
+                } = attempt;
+                return {
+                    ...summary,
+                    upstream_attempts: Array.isArray(upstreamAttempts)
+                        ? upstreamAttempts.map((upstreamAttempt) => {
+                            const {
+                                request: _request,
+                                response: _response,
+                                ...upstreamSummary
+                            } = upstreamAttempt;
+                            return upstreamSummary;
+                        })
+                        : undefined,
+                };
+            })
+            : [],
         stream: !!args.stream,
         byok: !!args.byok,
         status_code: args.statusCode ?? null,
@@ -321,6 +358,7 @@ function buildSupaRow(args: {
         key_id: args.keyId ?? null,
         throughput: args.throughput ?? null,
         finish_reason: args.finishReason ?? null,
+        detail_metadata: args.detailMetadata ?? null,
         location: args.edgeColo ?? null,
     };
 }
@@ -378,6 +416,7 @@ export async function auditSuccess(args: {
 }) {
     const releaseRuntime = ensureRuntimeForBackground();
     try {
+        const persistedDetailMetadata = summarizeDetailMetadata(args.detailMetadata);
         const pricingLines = args.usagePriced?.pricing?.lines ?? [];
         const strippedUsage = stripPricingFromUsage(args.usagePriced);
         const appId = await ensureAppId({
@@ -413,7 +452,7 @@ export async function auditSuccess(args: {
             requestUserId: args.requestUserId ?? null,
             sessionId: args.sessionId ?? null,
             traceData: args.traceData ?? null,
-            providerAttempts: args.providerAttempts ?? null,
+            providerAttempts: null,
             statusCode: args.statusCode,
             success: true,
             errorCode: null,
@@ -436,6 +475,7 @@ export async function auditSuccess(args: {
             edgeContinent: args.edgeContinent ?? null,
             edgeAsn: args.edgeAsn ?? null,
             finishReason: args.finishReason ?? null,
+            detailMetadata: persistedDetailMetadata,
         });
 
         let supabaseError: Error | null = null;
@@ -445,6 +485,19 @@ export async function auditSuccess(args: {
                 "supabase_audit_success_insert",
             );
             await syncInsertedRequestRollup(insertedRow, "audit_success");
+            await persistGatewayUpstreamRequests({
+                insertedRow,
+                requestId: args.requestId,
+                workspaceId: args.workspaceId,
+                appId,
+                keyId: args.keyId ?? null,
+                endpoint: args.endpoint,
+                modelId: args.model,
+                currency: args.currency,
+                totalNanos: args.totalNanos ?? Math.round(args.totalCents * 1e7),
+                detailMetadata: args.detailMetadata ?? null,
+                context: "audit_success",
+            });
             await persistGatewayIoLog({
                 requestId: args.requestId,
                 workspaceId: args.workspaceId,
@@ -459,7 +512,7 @@ export async function auditSuccess(args: {
                 gatewayResponse: args.gatewayResponse,
                 providerRequest: args.providerRequest,
                 providerResponse: args.providerResponse,
-                metadata: args.detailMetadata ?? {},
+                metadata: persistedDetailMetadata ?? {},
             });
             await insertGatewayRequestDetailsNonBlocking(
                 {
@@ -480,7 +533,7 @@ export async function auditSuccess(args: {
                     response_content: normalizeJsonValue(extractReplayContent(args.gatewayResponse)),
                     provider_request: normalizeJsonValue(args.providerRequest),
                     provider_response: normalizeJsonValue(args.providerResponse),
-                    metadata: normalizeJsonValue(args.detailMetadata) ?? {},
+                    metadata: normalizeJsonValue(persistedDetailMetadata) ?? {},
                 },
                 "supabase_audit_success_details_insert",
             );
@@ -588,6 +641,7 @@ type AuditFailureExecute = {
 export async function auditFailure(args: AuditFailureBefore | AuditFailureExecute) {
     const releaseRuntime = ensureRuntimeForBackground();
     try {
+        const persistedDetailMetadata = summarizeDetailMetadata(args.detailMetadata);
         if (args.stage === "before") {
             const resolvedAppId = args.workspaceId
                 ? await ensureAppId({
@@ -614,7 +668,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                 requestUserId: args.requestUserId ?? null,
                 sessionId: args.sessionId ?? null,
                 traceData: args.traceData ?? null,
-                providerAttempts: args.providerAttempts ?? null,
+                providerAttempts: null,
                 statusCode: args.statusCode,
                 success: false,
                 errorCode: args.errorCode,
@@ -634,6 +688,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                 edgeCountry: args.edgeCountry ?? null,
                 edgeContinent: args.edgeContinent ?? null,
                 edgeAsn: args.edgeAsn ?? null,
+                detailMetadata: persistedDetailMetadata,
             });
 
             let supabaseError: Error | null = null;
@@ -644,6 +699,17 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                         "supabase_audit_failure_before_insert",
                     );
                     await syncInsertedRequestRollup(insertedRow, "audit_failure_before");
+                    await persistGatewayUpstreamRequests({
+                        insertedRow,
+                        requestId: args.requestId,
+                        workspaceId: args.workspaceId,
+                        appId: resolvedAppId ?? null,
+                        keyId: args.keyId ?? null,
+                        endpoint: args.endpoint,
+                        modelId: args.requestedModel ?? args.model ?? "unknown",
+                        detailMetadata: args.detailMetadata ?? null,
+                        context: "audit_failure_before",
+                    });
                     await persistGatewayIoLog({
                         requestId: args.requestId,
                         workspaceId: args.workspaceId,
@@ -658,7 +724,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                         gatewayResponse: args.gatewayResponse,
                         providerRequest: null,
                         providerResponse: args.providerResponse,
-                        metadata: args.detailMetadata ?? {},
+                        metadata: persistedDetailMetadata ?? {},
                     });
                     await insertGatewayRequestDetailsNonBlocking(
                         {
@@ -679,7 +745,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                             response_content: normalizeJsonValue(extractReplayContent(args.gatewayResponse)),
                             provider_request: null,
                             provider_response: normalizeJsonValue(args.providerResponse),
-                            metadata: normalizeJsonValue(args.detailMetadata) ?? {},
+                            metadata: normalizeJsonValue(persistedDetailMetadata) ?? {},
                         },
                         "supabase_audit_failure_before_details_insert",
                     );
@@ -716,7 +782,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
             requestUserId: args.requestUserId ?? null,
             sessionId: args.sessionId ?? null,
             traceData: args.traceData ?? null,
-            providerAttempts: args.providerAttempts ?? null,
+            providerAttempts: null,
             statusCode: args.statusCode,
             success: false,
             errorCode: args.errorCode,
@@ -736,6 +802,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
             edgeCountry: args.edgeCountry ?? null,
             edgeContinent: args.edgeContinent ?? null,
             edgeAsn: args.edgeAsn ?? null,
+            detailMetadata: persistedDetailMetadata,
         });
 
         let supabaseError: Error | null = null;
@@ -746,6 +813,17 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                     "supabase_audit_failure_execute_insert",
                 );
                 await syncInsertedRequestRollup(insertedRow, "audit_failure_execute");
+                await persistGatewayUpstreamRequests({
+                    insertedRow,
+                    requestId: args.requestId,
+                    workspaceId: args.workspaceId,
+                    appId: resolvedAppId ?? null,
+                    keyId: args.keyId ?? null,
+                    endpoint: args.endpoint,
+                    modelId: args.model,
+                    detailMetadata: args.detailMetadata ?? null,
+                    context: "audit_failure_execute",
+                });
                 await persistGatewayIoLog({
                     requestId: args.requestId,
                     workspaceId: args.workspaceId,
@@ -760,7 +838,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                     gatewayResponse: args.gatewayResponse,
                     providerRequest: args.providerRequest,
                     providerResponse: args.providerResponse,
-                    metadata: args.detailMetadata ?? {},
+                    metadata: persistedDetailMetadata ?? {},
                 });
                 await insertGatewayRequestDetailsNonBlocking(
                     {
@@ -781,7 +859,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                         response_content: normalizeJsonValue(extractReplayContent(args.gatewayResponse)),
                         provider_request: normalizeJsonValue(args.providerRequest),
                         provider_response: normalizeJsonValue(args.providerResponse),
-                        metadata: normalizeJsonValue(args.detailMetadata) ?? {},
+                        metadata: normalizeJsonValue(persistedDetailMetadata) ?? {},
                     },
                     "supabase_audit_failure_execute_details_insert",
                 );

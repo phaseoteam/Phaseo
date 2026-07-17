@@ -44,6 +44,62 @@ function buildArgs(): ExecutorExecuteArgs {
 	} as ExecutorExecuteArgs;
 }
 
+function delayedSseResponse(frames: unknown[], delayMs = 8): Response {
+	const encoder = new TextEncoder();
+	let index = 0;
+	return new Response(new ReadableStream<Uint8Array>({
+		async pull(controller) {
+			if (index >= frames.length) {
+				controller.close();
+				return;
+			}
+			const frame = frames[index++];
+			await new Promise((resolve) => setTimeout(resolve, delayMs));
+			const data = frame === "[DONE]" ? frame : JSON.stringify(frame);
+			controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+		},
+	}), {
+		status: 200,
+		headers: { "Content-Type": "text/event-stream" },
+	});
+}
+
+function delayedSingleChunkSseResponse(
+	frames: unknown[],
+	acceptedAtMs: number,
+	delayMs = 20,
+	splitBufferedDelivery = false,
+): Response {
+	const encoder = new TextEncoder();
+	let sent = false;
+	return new Response(new ReadableStream<Uint8Array>({
+		async pull(controller) {
+			if (sent) {
+				controller.close();
+				return;
+			}
+			sent = true;
+			await new Promise((resolve) => setTimeout(resolve, delayMs));
+			const body = frames
+				.map((frame) => `data: ${frame === "[DONE]" ? frame : JSON.stringify(frame)}\n\n`)
+				.join("");
+			if (splitBufferedDelivery) {
+				const midpoint = Math.floor(body.length / 2);
+				controller.enqueue(encoder.encode(body.slice(0, midpoint)));
+				controller.enqueue(encoder.encode(body.slice(midpoint)));
+			} else {
+				controller.enqueue(encoder.encode(body));
+			}
+		},
+	}), {
+		status: 200,
+		headers: {
+			"Content-Type": "text/event-stream",
+			"x-baseten-accepted-at": String(acceptedAtMs),
+		},
+	});
+}
+
 describe("executeOpenAICompat", () => {
 	const ALIBABA_CHAT_URL = "https://api.alibaba.example/compatible-mode/v1/chat/completions";
 
@@ -381,6 +437,7 @@ describe("executeOpenAICompat", () => {
 	it("retries transient baseten 429 responses once before failing over", async () => {
 		const args = buildArgs();
 		args.providerId = "baseten";
+		args.meta.returnUpstreamRequest = false;
 		args.ir = {
 			...args.ir,
 			model: "openai/gpt-oss-120b",
@@ -420,6 +477,101 @@ describe("executeOpenAICompat", () => {
 		expect(result.upstream.status).toBe(200);
 		expect(callCount).toBe(2);
 		expect(mock.calls[0]?.headers.Authorization).toBe("Api-Key test-baseten-key");
+		expect(result.mappedRequest).toContain('"model":"openai/gpt-oss-120b"');
+		expect(result.upstreamAttempts).toHaveLength(2);
+		expect(result.upstreamAttempts?.[0]).toEqual(expect.objectContaining({
+			sequence: 1,
+			route: "chat",
+			status: 429,
+			outcome: "upstream_non_2xx",
+			response: { error: { message: "rate limited" } },
+		}));
+		expect(result.upstreamAttempts?.[1]).toEqual(expect.objectContaining({
+			sequence: 2,
+			status: 200,
+			outcome: "success",
+		}));
+	});
+
+	it("measures Baseten streaming timing around the raw provider response", async () => {
+		const args = buildArgs();
+		args.providerId = "baseten";
+		args.providerModelSlug = "thinkingmachines/inkling";
+		args.ir = {
+			...args.ir,
+			model: "thinking-machines/inkling",
+			stream: true,
+		};
+
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.baseten.example/v1/chat/completions",
+			response: delayedSseResponse([
+				{
+					id: "chatcmpl_baseten_stream",
+					object: "chat.completion.chunk",
+					choices: [{ index: 0, delta: { content: "Hello" }, finish_reason: null }],
+				},
+				{
+					id: "chatcmpl_baseten_stream",
+					object: "chat.completion.chunk",
+					choices: [{ index: 0, delta: { content: " there" }, finish_reason: null }],
+				},
+				{
+					id: "chatcmpl_baseten_stream",
+					object: "chat.completion.chunk",
+					choices: [{ index: 0, delta: {}, finish_reason: "stop" }],
+					usage: { prompt_tokens: 4, completion_tokens: 2, total_tokens: 6 },
+				},
+				"[DONE]",
+			], 10),
+		}]);
+
+		const result = await executeOpenAICompat(args);
+		expect(result.kind).toBe("stream");
+		if (result.kind !== "stream") throw new Error("Expected a streaming result");
+		const timing = result.timing;
+		await new Response(result.stream).text();
+		mock.restore();
+
+		expect(timing?.latencyMs).toBeGreaterThan(0);
+		expect(timing?.generationMs).toBeGreaterThan(0);
+		expect(timing?.totalMs).toBeGreaterThanOrEqual(timing?.latencyMs ?? 0);
+		expect(timing?.totalMs).toBeGreaterThanOrEqual(timing?.generationMs ?? 0);
+	});
+
+	it("uses Baseten accepted-at timing when a buffered tool response arrives in same-tick chunks", async () => {
+		const args = buildArgs();
+		args.providerId = "baseten";
+		args.providerModelSlug = "thinkingmachines/inkling";
+		args.ir = {
+			...args.ir,
+			model: "thinking-machines/inkling",
+			stream: true,
+		};
+
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.baseten.example/v1/chat/completions",
+			response: () => delayedSingleChunkSseResponse([
+				{
+					id: "chatcmpl_baseten_buffered_tool",
+					object: "chat.completion.chunk",
+					choices: [{ index: 0, delta: { tool_calls: [] }, finish_reason: "tool_calls" }],
+					usage: { prompt_tokens: 10, completion_tokens: 30, total_tokens: 40 },
+				},
+				"[DONE]",
+			], Date.now() + 5, 20, true),
+		}]);
+
+		const result = await executeOpenAICompat(args);
+		expect(result.kind).toBe("stream");
+		if (result.kind !== "stream") throw new Error("Expected a streaming result");
+		const timing = result.timing;
+		await new Response(result.stream).text();
+		mock.restore();
+
+		expect(timing?.generationMs).toBeGreaterThan(0);
+		expect(timing?.latencyMs).toBeGreaterThanOrEqual(0);
+		expect(timing?.latencyMs).toBeLessThan(timing?.totalMs ?? 0);
 	});
 
 	it("retries transient groq 503 responses once before succeeding", async () => {

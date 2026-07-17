@@ -6,7 +6,13 @@
 // Handles: OpenAI, Groq, DeepSeek, Together, Fireworks, and other OpenAI-compatible providers
 // Uses OpenAI Responses API format upstream for consistency
 
-import type { ExecutorExecuteArgs, ExecutorResult, Bill } from "@executors/types";
+import type {
+	ExecutorExecuteArgs,
+	ExecutorResult,
+	ExecutorTiming,
+	ExecutorUpstreamAttempt,
+	Bill,
+} from "@executors/types";
 import type { IRChatResponse } from "@core/ir";
 import { irToOpenAIResponses, openAIResponsesToIR } from "./transform";
 import { irToOpenAIChat, openAIChatToIR } from "./transform-chat";
@@ -78,10 +84,92 @@ async function sleep(ms: number): Promise<void> {
 	await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function parseProviderAcceptedAtMs(res: Response, providerId: string): number | null {
+	if (providerId !== "baseten") return null;
+	const raw = res.headers.get("x-baseten-accepted-at");
+	if (!raw) return null;
+	const acceptedAtMs = Number(raw);
+	return Number.isFinite(acceptedAtMs) && acceptedAtMs > 0
+		? acceptedAtMs
+		: null;
+}
+
+function measureProviderStream(
+	stream: ReadableStream<Uint8Array>,
+	timing: ExecutorTiming,
+	providerStartedAtMs: number,
+	providerAcceptedAtMs: number | null,
+): ReadableStream<Uint8Array> {
+	const reader = stream.getReader();
+	let firstByteAtMs: number | null = null;
+	let settled = false;
+
+	const recordProgress = (nowMs: number) => {
+		if (firstByteAtMs === null) {
+			firstByteAtMs = nowMs;
+			timing.latencyMs = Math.max(0, nowMs - providerStartedAtMs);
+		}
+		timing.generationMs = Math.max(0, nowMs - firstByteAtMs);
+		timing.totalMs = Math.max(0, nowMs - providerStartedAtMs);
+	};
+
+	const recordCompletion = () => {
+		if (settled) return;
+		settled = true;
+		const nowMs = Date.now();
+		if (firstByteAtMs === null) {
+			timing.latencyMs = Math.max(0, nowMs - providerStartedAtMs);
+			timing.generationMs = 0;
+		} else {
+			timing.generationMs = Math.max(0, nowMs - firstByteAtMs);
+		}
+		if (
+			(timing.generationMs ?? 0) <= 2 &&
+			providerAcceptedAtMs !== null &&
+			providerAcceptedAtMs >= providerStartedAtMs &&
+			providerAcceptedAtMs <= nowMs
+		) {
+			// Some OpenAI-compatible providers buffer tool-call responses into one body
+			// delivery, which the runtime may expose as one or several same-tick chunks.
+			// Their accepted-at timestamp is the only observable latency/generation split.
+			timing.latencyMs = Math.max(0, providerAcceptedAtMs - providerStartedAtMs);
+			timing.generationMs = Math.max(0, nowMs - providerAcceptedAtMs);
+		} else if ((timing.generationMs ?? 0) <= 2 && nowMs > providerStartedAtMs) {
+			// If the provider exposes no processing boundary, consistently attribute
+			// an effectively buffered response to generation rather than zero-duration output.
+			timing.latencyMs = 0;
+			timing.generationMs = Math.max(0, nowMs - providerStartedAtMs);
+		}
+		timing.totalMs = Math.max(0, nowMs - providerStartedAtMs);
+	};
+
+	return new ReadableStream<Uint8Array>({
+		async pull(controller) {
+			try {
+				const { value, done } = await reader.read();
+				if (done) {
+					recordCompletion();
+					controller.close();
+					return;
+				}
+				if (value.byteLength > 0) {
+					recordProgress(Date.now());
+				}
+				controller.enqueue(value);
+			} catch (error) {
+				recordCompletion();
+				controller.error(error);
+			}
+		},
+		async cancel(reason) {
+			recordCompletion();
+			await reader.cancel(reason);
+		},
+	});
+}
+
 export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
-	// Use upstream start time from pipeline (set before executor is called)
-	// Falls back to current time if not provided (backward compatibility)
-	const upstreamStartMs = args.meta.upstreamStartMs ?? Date.now();
+	const upstreamAttempts: ExecutorUpstreamAttempt[] = [];
 	// Resolve API key (gateway or BYOK)
 	const keyInfo = resolveOpenAICompatKey({
 		providerId: args.providerId,
@@ -140,16 +228,53 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 		}
 
 		const fetchStartMs = Date.now();
-		const response = await fetch(openAICompatUrl(args.providerId, endpointForRoute(targetRoute)), {
-			method: "POST",
-			headers: openAICompatHeaders(args.providerId, keyInfo.key, upstreamTestHeaders(args.meta)),
-			body: requestBody,
+		const url = openAICompatUrl(args.providerId, endpointForRoute(targetRoute));
+		let response: Response;
+		try {
+			response = await fetch(url, {
+				method: "POST",
+				headers: openAICompatHeaders(args.providerId, keyInfo.key, upstreamTestHeaders(args.meta)),
+				body: requestBody,
+			});
+		} catch (error) {
+			upstreamAttempts.push({
+				sequence: upstreamAttempts.length + 1,
+				route: targetRoute,
+				request: requestBody,
+				url,
+				durationMs: Math.max(0, Date.now() - fetchStartMs),
+				outcome: "network_error",
+				errorMessage: error instanceof Error ? error.message : String(error),
+			});
+			throw error;
+		}
+
+		let responsePayload: unknown;
+		if (!response.ok) {
+			try {
+				const text = await response.clone().text();
+				responsePayload = text ? JSON.parse(text) : null;
+			} catch {
+				responsePayload = null;
+			}
+		}
+		upstreamAttempts.push({
+			sequence: upstreamAttempts.length + 1,
+			route: targetRoute,
+			request: requestBody,
+			response: responsePayload,
+			status: response.status,
+			statusText: response.statusText || null,
+			url: response.url || url,
+			durationMs: Math.max(0, Date.now() - fetchStartMs),
+			outcome: response.ok ? "success" : "upstream_non_2xx",
 		});
 
 		return {
 			response,
 			requestBody,
 			request: sanitized.request,
+			fetchStartMs,
 			requestBuildMs: Math.max(0, fetchStartMs - requestBuildStartMs),
 			upstreamHeadersMs: Math.max(0, Date.now() - fetchStartMs),
 		};
@@ -202,7 +327,7 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 	let attempt = await sendPayloadWithRetry(route, buildPayloadForRoute(route));
 	let res = attempt.response;
 	let requestBody = attempt.requestBody;
-	let mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestBody : undefined;
+	let mappedRequest = requestBody;
 	let requestBuildMs = attempt.requestBuildMs;
 	let upstreamHeadersMs = attempt.upstreamHeadersMs;
 	let transientRetryDelayMs = attempt.transientRetryDelayMs;
@@ -222,7 +347,7 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 			attempt = await sendPayloadWithRetry(route, buildPayloadForRoute(route));
 			res = attempt.response;
 			requestBody = attempt.requestBody;
-			mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestBody : undefined;
+			mappedRequest = requestBody;
 			requestBuildMs = attempt.requestBuildMs;
 			upstreamHeadersMs = attempt.upstreamHeadersMs;
 			transientRetryDelayMs = attempt.transientRetryDelayMs;
@@ -253,7 +378,7 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 		attempt = await sendPayloadWithRetry(route, adapted.request);
 		res = attempt.response;
 		requestBody = attempt.requestBody;
-		mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestBody : undefined;
+		mappedRequest = requestBody;
 		requestBuildMs = attempt.requestBuildMs;
 		upstreamHeadersMs = attempt.upstreamHeadersMs;
 		transientRetryDelayMs = attempt.transientRetryDelayMs;
@@ -267,6 +392,11 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 		upstream_id: res.headers.get("x-request-id") || undefined,
 		finish_reason: null,
 	};
+	const executorTiming: ExecutorTiming = {
+		requestBuildMs,
+		upstreamHeadersMs,
+		transientRetryDelayMs,
+	};
 	if (!res.ok) {
 		console.error(`Upstream error for provider ${args.providerId}: ${res.status} ${res.statusText}`);
 		return {
@@ -277,17 +407,24 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 			keySource: keyInfo.source,
 			byokKeyId: keyInfo.byokId,
 			mappedRequest,
-			timing: {
-				requestBuildMs,
-				upstreamHeadersMs,
-				transientRetryDelayMs,
-			},
+			timing: executorTiming,
+			upstreamAttempts,
 		};
 	}
 
 	// Handle streaming vs non-streaming
 	if (args.ir.stream) {
-		const stream = resolveStreamForProtocol(res, args, route);
+		if (!res.body) {
+			throw new Error("openai_stream_missing_body");
+		}
+		executorTiming.streamTimingSource = "provider";
+		const measuredProviderStream = measureProviderStream(
+			res.body,
+			executorTiming,
+			attempt.fetchStartMs,
+			parseProviderAcceptedAtMs(res, args.providerId),
+		);
+		const stream = resolveStreamForProtocol(res, args, route, measuredProviderStream);
 		return {
 			kind: "stream",
 			stream,
@@ -297,17 +434,17 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 			keySource: keyInfo.source,
 			byokKeyId: keyInfo.byokId,
 			mappedRequest,
-			timing: {
-				latencyMs: undefined,
-				generationMs: undefined,
-				requestBuildMs,
-				upstreamHeadersMs,
-				transientRetryDelayMs,
-			},
+			timing: executorTiming,
+			upstreamAttempts,
 		};
 	} else {
 		// Buffer the stream and return complete response
-		const { ir, usage, rawResponse, firstByteMs, totalMs } = await bufferStreamToIR(res, args, route, upstreamStartMs);
+		const { ir, usage, rawResponse, firstByteMs, totalMs } = await bufferStreamToIR(
+			res,
+			args,
+			route,
+			attempt.fetchStartMs,
+		);
 		if (ir) {
 			(ir as any).rawResponse = rawResponse;
 		}
@@ -327,12 +464,12 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 			byokKeyId: keyInfo.byokId,
 			mappedRequest,
 			rawResponse,
+			upstreamAttempts,
 			timing: {
+				...executorTiming,
 				latencyMs: firstByteMs ?? totalMs,
 				generationMs: firstByteMs === null ? 0 : Math.max(0, totalMs - firstByteMs),
-				requestBuildMs,
-				upstreamHeadersMs,
-				transientRetryDelayMs,
+				totalMs,
 			},
 		};
 	}
@@ -399,8 +536,9 @@ export function resolveStreamForProtocol(
 	res: Response,
 	args: ExecutorExecuteArgs,
 	route: "responses" | "chat",
+	providerStream: ReadableStream<Uint8Array> | null = res.body,
 ): ReadableStream<Uint8Array> {
-	if (!res.body) {
+	if (!providerStream) {
 		throw new Error("openai_stream_missing_body");
 	}
 
@@ -409,25 +547,25 @@ export function resolveStreamForProtocol(
 
 	if (protocol === "openai.chat.completions") {
 		if (route === "responses") {
-			return transformResponsesStreamToChat(res.body, args, state);
+			return transformResponsesStreamToChat(providerStream, args, state);
 		}
-		return transformChatStream(res.body, args, state);
+		return transformChatStream(providerStream, args, state);
 	}
 
 	if (protocol === "openai.responses") {
-		return transformChatStreamToResponses(res.body, args, state);
+		return transformChatStreamToResponses(providerStream, args, state);
 	}
 
 	if (protocol === "anthropic.messages") {
 		// Always normalize through chat->responses adapter first.
 		// This keeps /messages streaming compatible whether upstream emits responses events
 		// or chat-completion chunks on a responses route.
-		const responsesStream = transformChatStreamToResponses(res.body, args, state);
+		const responsesStream = transformChatStreamToResponses(providerStream, args, state);
 		return transformResponsesStreamToAnthropic(responsesStream, args);
 	}
 
 	// Default: passthrough (responses protocol or unknown)
-	return res.body;
+	return providerStream;
 }
 
 function resolvePreferredRoute(
