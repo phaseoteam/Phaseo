@@ -271,14 +271,18 @@ describe('api provider model safety checks', () => {
         expect(veniceE2ee).toBeUndefined();
     });
 
-    test('Kimi K3 links are model-specific and exclude pricing links', () => {
+    test('Kimi K3 links only include the official model API reference', () => {
         const model = JSON.parse(
             fs.readFileSync(path.join(DATA_ROOT, 'models', 'moonshotai', 'kimi-k3', 'model.json'), 'utf8')
         );
 
-        expect(model.links).toHaveLength(2);
-        expect(model.links.every((link: any) => link.kind !== 'pricing')).toBe(true);
-        expect(model.links.every((link: any) => link.url.toLowerCase().includes('kimi-k3'))).toBe(true);
+        expect(model.links).toEqual([
+            {
+                title: 'API Reference',
+                kind: 'api_reference',
+                url: 'https://platform.kimi.ai/docs/guide/kimi-k3-quickstart',
+            },
+        ]);
     });
 
     test('missing provider_model_slug -> error flagged', () => {
