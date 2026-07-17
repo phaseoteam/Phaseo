@@ -654,11 +654,17 @@ function enabledMcpScopes(env: PhaseoEnv): string[] {
 	];
 }
 
+function removeTrailingSlashes(value: string): string {
+	let end = value.length;
+	while (end > 0 && value.charCodeAt(end - 1) === 47) end -= 1;
+	return value.slice(0, end);
+}
+
 function resourceMetadata(request: Request, env: PhaseoEnv): Response {
 	const origin = new URL(request.url).origin;
 	return Response.json({
 		resource: `${origin}/mcp`,
-		authorization_servers: [`${env.PHASEO_API_BASE_URL.replace(/\/+$/, "")}/oauth`],
+		authorization_servers: [`${removeTrailingSlashes(env.PHASEO_API_BASE_URL)}/oauth`],
 		scopes_supported: enabledMcpScopes(env),
 		bearer_methods_supported: ["header"],
 	}, { headers: { "Cache-Control": "public, max-age=300" } });

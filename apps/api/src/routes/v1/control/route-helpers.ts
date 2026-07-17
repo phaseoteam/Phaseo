@@ -107,7 +107,7 @@ export function internalServerError(operation: string, error: unknown): Response
 	console.error("control_plane_operation_failed", {
 		operation,
 		request_id: requestId,
-		message: error instanceof Error ? error.message : "unknown_error",
+		error_type: error instanceof Error ? error.name : typeof error,
 	});
 	return json(
 		{ error: "internal_error", message: "Phaseo could not complete this request.", request_id: requestId },
