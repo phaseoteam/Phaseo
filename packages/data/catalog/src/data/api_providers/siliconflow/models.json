@@ -1281,6 +1281,27 @@
     ]
   },
   {
+    "api_model_id": "moonshotai/kimi-k3",
+    "provider_api_model_id": "siliconflow:moonshotai/kimi-k3",
+    "provider_model_slug": "moonshotai/Kimi-K3",
+    "internal_model_id": "moonshotai/kimi-k3",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": 1048576,
+    "effective_from": "2026-07-18T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "z-ai/glm-5.2",
     "provider_api_model_id": "siliconflow:z-ai/glm-5.2",
     "provider_model_slug": "zai-org/GLM-5.2",
