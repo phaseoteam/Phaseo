@@ -11,7 +11,10 @@ export type ProviderEventRecord = {
 	kind: string | null;
 	workspaceId: string | null;
 	internalId: string | null;
+	payload: Record<string, unknown>;
 	processedAt: string | null;
+	attemptCount: number;
+	nextAttemptAt: string | null;
 	createdAt: string | null;
 };
 
@@ -22,7 +25,10 @@ type ProviderEventRow = {
 	kind: string | null;
 	workspace_id: string | null;
 	internal_id: string | null;
+	payload: Record<string, unknown> | null;
 	processed_at: string | null;
+	attempt_count?: number | null;
+	next_attempt_at?: string | null;
 	created_at: string | null;
 };
 
@@ -40,7 +46,10 @@ function mapRow(row: ProviderEventRow): ProviderEventRecord {
 		kind: row.kind,
 		workspaceId: row.workspace_id,
 		internalId: row.internal_id,
+		payload: row.payload && typeof row.payload === "object" && !Array.isArray(row.payload) ? row.payload : {},
 		processedAt: row.processed_at,
+		attemptCount: Math.max(0, Number(row.attempt_count ?? 0) || 0),
+		nextAttemptAt: row.next_attempt_at ?? null,
 		createdAt: row.created_at,
 	};
 }
@@ -75,7 +84,7 @@ export async function insertProviderEvent(args: {
 	const { data, error } = await getSupabaseAdmin()
 		.from("gateway_provider_events")
 		.insert(payload)
-		.select("id,provider,provider_event_id,kind,workspace_id,internal_id,processed_at,created_at")
+		.select("id,provider,provider_event_id,kind,workspace_id,internal_id,payload,processed_at,attempt_count,next_attempt_at,created_at")
 		.maybeSingle();
 
 	if (!error) {
@@ -104,13 +113,48 @@ export async function getProviderEvent(
 
 	const { data, error } = await getSupabaseAdmin()
 		.from("gateway_provider_events")
-		.select("id,provider,provider_event_id,kind,workspace_id,internal_id,processed_at,created_at")
+		.select("id,provider,provider_event_id,kind,workspace_id,internal_id,payload,processed_at,attempt_count,next_attempt_at,created_at")
 		.eq("provider", provider)
 		.eq("provider_event_id", providerEventId)
 		.maybeSingle();
 	if (error) throw error;
 	if (!data) return null;
 	return mapRow(data as ProviderEventRow);
+}
+
+export async function listUnprocessedProviderEvents(args: {
+	providers: string[];
+	limit?: number;
+}): Promise<ProviderEventRecord[]> {
+	const providers = [...new Set(args.providers.map((provider) => normalizeText(provider)).filter((provider): provider is string => Boolean(provider)))];
+	if (providers.length === 0) return [];
+	const limit = Math.max(1, Math.min(500, Math.trunc(args.limit ?? 100)));
+	const { data, error } = await getSupabaseAdmin()
+		.from("gateway_provider_events")
+		.select("id,provider,provider_event_id,kind,workspace_id,internal_id,payload,processed_at,attempt_count,next_attempt_at,created_at")
+		.in("provider", providers)
+		.is("processed_at", null)
+		.or(`next_attempt_at.is.null,next_attempt_at.lte.${new Date().toISOString()}`)
+		.order("created_at", { ascending: true })
+		.limit(limit);
+	if (error) throw error;
+	return (data ?? []).map((row) => mapRow(row as ProviderEventRow));
+}
+
+export async function deferProviderEvent(args: {
+	provider: string;
+	providerEventId: string;
+	reason: string;
+}): Promise<void> {
+	const provider = normalizeText(args.provider);
+	const providerEventId = normalizeText(args.providerEventId);
+	if (!provider || !providerEventId) return;
+	const { error } = await getSupabaseAdmin().rpc("gateway_defer_provider_event", {
+		p_provider: provider,
+		p_provider_event_id: providerEventId,
+		p_reason: normalizeText(args.reason) ?? "provider_event_deferred",
+	});
+	if (error) throw error;
 }
 
 export async function markProviderEventProcessed(args: {

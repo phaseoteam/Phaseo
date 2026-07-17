@@ -83,7 +83,7 @@ export async function sendAxiomWideEvent(event: WideEvent) {
 }
 
 export async function emitGatewayOperationalFailure(args: {
-    workflow: "batch_finalization" | "video_finalization";
+    workflow: "batch_finalization" | "batch_submission" | "video_finalization";
     workspaceId: string;
     resourceId: string;
     reason: string;

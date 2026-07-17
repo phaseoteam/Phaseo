@@ -146,4 +146,40 @@ describe("providerPlanRouting", () => {
             getProviderModelScopeForPlan(provider, "flex").map((model) => model.model_id),
         ).toEqual(["anthropic/claude-opus-4.8-flex"]);
     });
+
+    it("shows explicit xAI batch pricing without requiring gateway batch execution support", () => {
+        const provider = makeProviderPricing();
+        provider.provider.api_provider_id = "spacex-ai";
+        provider.provider.api_provider_name = "xAI";
+        provider.provider.provider_family_id = "spacex-ai";
+        provider.provider_models = [{
+            ...provider.provider_models[0],
+            id: "spacex-ai:spacex-ai/grok-4.3:text.generate",
+            api_provider_id: "spacex-ai",
+            model_id: "spacex-ai/grok-4.3",
+            endpoint: "text.generate",
+        }];
+        provider.pricing_rules = [{
+            ...provider.pricing_rules[0],
+            id: "xai-grok-4.3-batch-input",
+            model_key: "spacex-ai:spacex-ai/grok-4.3:text.generate",
+            pricing_plan: "batch",
+            price_per_unit: 1,
+            note: "20% Batch API discount.",
+        }];
+
+        expect(getProviderAvailablePlans(provider)).toEqual(["batch"]);
+        expect(getProviderPricingRulesForPlan(provider, "batch")).toEqual([
+            expect.objectContaining({
+                id: "xai-grok-4.3-batch-input",
+                price_per_unit: 1,
+            }),
+        ]);
+        expect(getProviderModelScopeForPlan(provider, "batch")).toEqual([
+            expect.objectContaining({
+                model_id: "spacex-ai/grok-4.3",
+                endpoint: "text.generate",
+            }),
+        ]);
+    });
 });

@@ -9,11 +9,21 @@ import { loadPriceCard } from "@pipeline/pricing/loader";
 
 export const BATCH_RESERVATION_PREFIX = "batch_hold:";
 export const BATCH_RESERVATION_MARGIN_BPS = 1_000;
+export const BATCH_RESERVATION_ESTIMATE_STRATEGY = "utf8_input_upper_bound_v1";
+const BATCH_REQUEST_TOKEN_OVERHEAD = 16;
 
 export type BatchReservationRequest = {
 	body: unknown;
 	endpoint?: string | null;
 	method?: string | null;
+};
+
+export type BatchReservationEstimate = {
+	strategy: typeof BATCH_RESERVATION_ESTIMATE_STRATEGY;
+	requestCount: number;
+	inputTokenUpperBound: number;
+	outputTokenUpperBound: number;
+	marginBps: number;
 };
 
 function text(value: unknown): string | null {
@@ -43,6 +53,8 @@ const TEXT_BATCH_ENDPOINTS: Record<string, ReadonlySet<string>> = {
 
 const UNBOUNDED_BATCH_KEYS = new Set([
 	"audio",
+	"cache_control",
+	"cachecontrol",
 	"image",
 	"image_url",
 	"input_audio",
@@ -89,6 +101,17 @@ export function estimateInputQuadTokens(body: Record<string, unknown>): number {
 	return Math.max(1, Math.ceil(textLength(source) / 4));
 }
 
+export function estimateInputTokenUpperBound(body: Record<string, unknown>): number {
+	let serialized: string;
+	try {
+		serialized = JSON.stringify(body);
+	} catch {
+		throw new Error("batch_reservation_body_not_serializable");
+	}
+	const utf8Bytes = new TextEncoder().encode(serialized).byteLength;
+	return Math.max(1, utf8Bytes + BATCH_REQUEST_TOKEN_OVERHEAD);
+}
+
 function validatePriceableTextRequest(providerId: string, request: BatchReservationRequest, body: Record<string, unknown>): void {
 	if ((text(request.method) ?? "POST").toUpperCase() !== "POST") throw new Error("batch_method_not_supported");
 	const allowed = TEXT_BATCH_ENDPOINTS[providerId];
@@ -110,7 +133,11 @@ function maximumOutputTokens(body: Record<string, unknown>): number {
 	throw new Error("batch_max_output_tokens_required");
 }
 
-async function quotedRequestCost(providerId: string, request: BatchReservationRequest): Promise<number> {
+async function quotedRequestCost(providerId: string, request: BatchReservationRequest): Promise<{
+	reservedNanos: number;
+	inputTokenUpperBound: number;
+	outputTokenUpperBound: number;
+}> {
 	if (!request.body || typeof request.body !== "object" || Array.isArray(request.body)) throw new Error("invalid_batch_reservation_body");
 	const body = request.body as Record<string, unknown>;
 	validatePriceableTextRequest(providerId, request, body);
@@ -128,7 +155,7 @@ async function quotedRequestCost(providerId: string, request: BatchReservationRe
 		if (card) break;
 	}
 	if (!card) throw new Error("batch_reservation_price_card_missing");
-	const inputTokensUpperBound = estimateInputQuadTokens(body);
+	const inputTokensUpperBound = estimateInputTokenUpperBound(body);
 	const outputTokensUpperBound = maximumOutputTokens(body);
 	const priced = computeBill({
 		input_tokens: inputTokensUpperBound,
@@ -138,19 +165,37 @@ async function quotedRequestCost(providerId: string, request: BatchReservationRe
 		total_tokens: inputTokensUpperBound + outputTokensUpperBound,
 	}, card, { pricing_plan: "batch", service_tier: "batch" }, "batch");
 	const estimatedNanos = Math.max(0, Math.ceil(Number((priced as any)?.pricing?.total_nanos ?? 0) || 0));
-	return Math.ceil((estimatedNanos * (10_000 + BATCH_RESERVATION_MARGIN_BPS)) / 10_000);
+	return {
+		reservedNanos: Math.ceil((estimatedNanos * (10_000 + BATCH_RESERVATION_MARGIN_BPS)) / 10_000),
+		inputTokenUpperBound: inputTokensUpperBound,
+		outputTokenUpperBound: outputTokensUpperBound,
+	};
 }
 
 export async function reserveBatchCredits(args: {
 	workspaceId: string;
+	apiKeyId: string;
 	requestId: string;
 	providerId: string;
 	requests: BatchReservationRequest[];
-}): Promise<{ reservationId: string; reservedNanos: number; status: string; held: boolean }> {
+}): Promise<{
+	reservationId: string;
+	reservedNanos: number;
+	status: string;
+	held: boolean;
+	estimate: BatchReservationEstimate;
+}> {
 	if (args.requests.length === 0) throw new Error("batch_reservation_requests_required");
 	if (args.requests.length > 10_000) throw new Error("batch_request_limit_exceeded");
 	let reservedNanos = 0;
-	for (const request of args.requests) reservedNanos += await quotedRequestCost(args.providerId, request);
+	let inputTokenUpperBound = 0;
+	let outputTokenUpperBound = 0;
+	for (const request of args.requests) {
+		const quote = await quotedRequestCost(args.providerId, request);
+		reservedNanos += quote.reservedNanos;
+		inputTokenUpperBound += quote.inputTokenUpperBound;
+		outputTokenUpperBound += quote.outputTokenUpperBound;
+	}
 	if (reservedNanos <= 0) throw new Error("batch_reservation_zero_cost");
 	const reservationId = `${BATCH_RESERVATION_PREFIX}${args.requestId}`;
 	const result = await reserveWalletCredits({
@@ -158,11 +203,20 @@ export async function reserveBatchCredits(args: {
 		reservationId,
 		amountNanos: reservedNanos,
 		holdRefId: args.requestId,
+		keyId: args.apiKeyId,
+		requestCount: args.requests.length,
 	});
 	return {
 		reservationId,
 		reservedNanos,
 		status: result.status,
 		held: result.status === "held" && (result.applied || result.alreadyApplied),
+		estimate: {
+			strategy: BATCH_RESERVATION_ESTIMATE_STRATEGY,
+			requestCount: args.requests.length,
+			inputTokenUpperBound,
+			outputTokenUpperBound,
+			marginBps: BATCH_RESERVATION_MARGIN_BPS,
+		},
 	};
 }

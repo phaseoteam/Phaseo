@@ -11,6 +11,7 @@ const state = vi.hoisted(() => ({
 		internal: false,
 	},
 	fileMeta: new Map<string, Record<string, unknown>>(),
+	uploadClaim: { ok: true, reason: null as string | null },
 	fetchCalls: [] as Array<{
 		url: string;
 		method: string;
@@ -21,6 +22,7 @@ const state = vi.hoisted(() => ({
 function resetState() {
 	state.authResult.workspaceId = "ws_files_test";
 	state.fileMeta.clear();
+	state.uploadClaim = { ok: true, reason: null };
 	state.fetchCalls = [];
 }
 
@@ -46,6 +48,13 @@ vi.mock("@/runtime/env", () => ({
 	getBindings: () => ({
 		OPENAI_API_KEY: "test-openai-key",
 		OPENAI_BASE_URL: "https://api.openai.example/v1",
+		BATCH_API_PREVIEW_PROVIDERS: "openai,anthropic,google-ai-studio,mistral,x-ai,groq,together",
+	}),
+	getSupabaseAdmin: () => ({
+		rpc: vi.fn(async (name: string) => ({
+			data: name === "gateway_claim_batch_file_upload" ? [state.uploadClaim] : null,
+			error: null,
+		})),
 	}),
 }));
 
@@ -71,6 +80,40 @@ describe("filesRoutes", () => {
 		resetState();
 		vi.resetModules();
 		vi.unstubAllGlobals();
+	});
+
+	it("rejects workspace upload quota exhaustion before shared provider storage is used", async () => {
+		state.uploadClaim = { ok: false, reason: "batch_file_hourly_quota_exceeded" };
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+		const { filesRoutes } = await import("./files");
+		const response = await filesRoutes.request("https://example.com/?provider=openai", {
+			method: "POST",
+			headers: { "Content-Type": "application/jsonl" },
+			body: '{"custom_id":"one"}\n',
+		});
+		expect(response.status).toBe(429);
+		expect(await response.json()).toMatchObject({ error: { reason: "batch_file_hourly_quota_exceeded" } });
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it("rejects a successful provider response that does not identify an uploaded file", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => new Response("not-json", {
+			status: 200,
+			headers: { "Content-Type": "text/plain" },
+		})));
+		const { filesRoutes } = await import("./files");
+		const response = await filesRoutes.request("https://example.com/?provider=openai", {
+			method: "POST",
+			headers: { "Content-Type": "application/jsonl" },
+			body: '{"custom_id":"one"}\n',
+		});
+
+		expect(response.status).toBe(502);
+		await expect(response.json()).resolves.toMatchObject({
+			error: { reason: "batch_file_upload_invalid_response" },
+		});
+		expect(state.fileMeta.size).toBe(0);
 	});
 
 	it("stores ownership on upload, allows owned retrieval and proxies content, while listing stays unsupported", async () => {

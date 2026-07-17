@@ -19,6 +19,7 @@ export type BatchJobMeta = {
 	resource?: "job";
 	provider: string;
 	requestId?: string | null;
+	apiKeyId?: string | null;
 	sessionId?: string | null;
 	appId?: string | null;
 	model?: string | null;
@@ -55,6 +56,15 @@ export type BatchJobMeta = {
 	reservationId?: string | null;
 	reservedNanos?: number | null;
 	reservationStatus?: string | null;
+	reservationEstimate?: {
+		strategy?: string | null;
+		requestCount?: number | null;
+		inputTokenUpperBound?: number | null;
+		outputTokenUpperBound?: number | null;
+		marginBps?: number | null;
+	} | null;
+	submissionOutcome?: "accepted" | "rejected" | "unknown" | null;
+	submissionError?: string | null;
 	createdAt?: number;
 };
 
@@ -91,6 +101,7 @@ const BATCH_FILE_INTERNAL_PREFIX = "__file__:";
 const BATCH_RECONCILE_STATUSES = [
 	null,
 	"submitting",
+	"submission_unknown",
 	"validating",
 	"pending",
 	"in_progress",
@@ -136,6 +147,8 @@ function parseBatchMeta(value: unknown): BatchJobMeta | null {
 	const out: BatchJobMeta = { provider, resource: "job" };
 	if (typeof source.requestId === "string") out.requestId = source.requestId;
 	if (typeof source.request_id === "string") out.requestId = source.request_id;
+	if (typeof source.apiKeyId === "string") out.apiKeyId = source.apiKeyId;
+	if (typeof source.api_key_id === "string") out.apiKeyId = source.api_key_id;
 	if (typeof source.sessionId === "string") out.sessionId = source.sessionId;
 	if (typeof source.session_id === "string") out.sessionId = source.session_id;
 	if (typeof source.appId === "string") out.appId = source.appId;
@@ -219,6 +232,24 @@ function parseBatchMeta(value: unknown): BatchJobMeta | null {
 	if (typeof source.reserved_nanos === "number") out.reservedNanos = source.reserved_nanos;
 	if (typeof source.reservationStatus === "string") out.reservationStatus = source.reservationStatus;
 	if (typeof source.reservation_status === "string") out.reservationStatus = source.reservation_status;
+	const reservationEstimate = source.reservationEstimate && typeof source.reservationEstimate === "object" && !Array.isArray(source.reservationEstimate)
+		? source.reservationEstimate as Record<string, unknown>
+		: source.reservation_estimate && typeof source.reservation_estimate === "object" && !Array.isArray(source.reservation_estimate)
+			? source.reservation_estimate as Record<string, unknown>
+			: null;
+	if (reservationEstimate) {
+		out.reservationEstimate = {
+			strategy: typeof reservationEstimate.strategy === "string" ? reservationEstimate.strategy : null,
+			requestCount: typeof reservationEstimate.requestCount === "number" ? reservationEstimate.requestCount : null,
+			inputTokenUpperBound: typeof reservationEstimate.inputTokenUpperBound === "number" ? reservationEstimate.inputTokenUpperBound : null,
+			outputTokenUpperBound: typeof reservationEstimate.outputTokenUpperBound === "number" ? reservationEstimate.outputTokenUpperBound : null,
+			marginBps: typeof reservationEstimate.marginBps === "number" ? reservationEstimate.marginBps : null,
+		};
+	}
+	if (source.submissionOutcome === "accepted" || source.submissionOutcome === "rejected" || source.submissionOutcome === "unknown") {
+		out.submissionOutcome = source.submissionOutcome;
+	}
+	if (typeof source.submissionError === "string") out.submissionError = source.submissionError;
 	if (typeof source.createdAt === "number") out.createdAt = source.createdAt;
 	return out;
 }
@@ -397,6 +428,7 @@ export async function listPendingBatchJobs(
 			return (
 				status === "" ||
 				status === "submitting" ||
+				status === "submission_unknown" ||
 				status === "validating" ||
 				status === "pending" ||
 				status === "in_progress" ||

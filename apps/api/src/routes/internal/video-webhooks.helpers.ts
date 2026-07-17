@@ -469,11 +469,15 @@ export async function processAlibabaVideoWebhook(args: {
 export function pickHeaders(req: Request): Record<string, string> {
 	const out: Record<string, string> = {};
 	for (const [key, value] of req.headers.entries()) {
+		const containsCredentialMaterial = /authorization|cookie|signature|token|secret|api-key/.test(key);
 		if (
-			key.startsWith("webhook-") ||
-			key.startsWith("x-openai") ||
-			key.startsWith("x-acs-") ||
-			key.startsWith("x-eventbridge-")
+			!containsCredentialMaterial &&
+			(
+				key.startsWith("webhook-") ||
+				key.startsWith("x-openai") ||
+				key.startsWith("x-acs-") ||
+				key.startsWith("x-eventbridge-")
+			)
 		) {
 			out[key] = value;
 		}

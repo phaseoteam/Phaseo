@@ -14,6 +14,7 @@ import {
 	processGoogleAiStudioBatchWebhook,
 	pickHeaders,
 	processOpenAiBatchWebhook,
+	readProviderWebhookBody,
 	verifyGoogleAiStudioBatchWebhookSignature,
 	verifyOpenAiBatchWebhookSignature,
 } from "./batch-webhooks.helpers";
@@ -21,7 +22,9 @@ import {
 export const internalBatchWebhookRoutes = new Hono<Env>();
 
 internalBatchWebhookRoutes.post("/openai", withRuntime(async (req) => {
-	const rawBody = await req.text();
+	const body = await readProviderWebhookBody(req);
+	if (!body.ok) return json({ ok: false, error: "payload_too_large" }, 413, { "Cache-Control": "no-store" });
+	const rawBody = body.rawBody;
 	const signatureOk = await verifyOpenAiBatchWebhookSignature(req, rawBody);
 	if (!signatureOk) {
 		return json({ ok: false, error: "invalid_signature" }, 401, { "Cache-Control": "no-store" });
@@ -49,7 +52,7 @@ internalBatchWebhookRoutes.post("/openai", withRuntime(async (req) => {
 		payload,
 		headers: pickHeaders(req),
 	});
-	if (!dedupe.inserted) {
+	if (!dedupe.inserted && dedupe.record?.processedAt) {
 		return json({ ok: true, deduped: true, processed: Boolean(dedupe.record?.processedAt) }, 200, {
 			"Cache-Control": "no-store",
 		});
@@ -74,11 +77,13 @@ internalBatchWebhookRoutes.post("/openai", withRuntime(async (req) => {
 		}
 	})());
 
-	return json({ ok: true, accepted: true }, 202, { "Cache-Control": "no-store" });
+	return json({ ok: true, accepted: true, replayed: !dedupe.inserted }, 202, { "Cache-Control": "no-store" });
 }));
 
 async function handleGoogleAiStudioBatchWebhook(req: Request): Promise<Response> {
-	const rawBody = await req.text();
+	const body = await readProviderWebhookBody(req);
+	if (!body.ok) return json({ ok: false, error: "payload_too_large" }, 413, { "Cache-Control": "no-store" });
+	const rawBody = body.rawBody;
 	const signatureOk = await verifyGoogleAiStudioBatchWebhookSignature(req, rawBody);
 	if (!signatureOk) {
 		return json({ ok: false, error: "invalid_signature" }, 401, { "Cache-Control": "no-store" });
@@ -106,7 +111,7 @@ async function handleGoogleAiStudioBatchWebhook(req: Request): Promise<Response>
 		payload,
 		headers: pickHeaders(req),
 	});
-	if (!dedupe.inserted) {
+	if (!dedupe.inserted && dedupe.record?.processedAt) {
 		return json({ ok: true, deduped: true, processed: Boolean(dedupe.record?.processedAt) }, 200, {
 			"Cache-Control": "no-store",
 		});
@@ -131,7 +136,7 @@ async function handleGoogleAiStudioBatchWebhook(req: Request): Promise<Response>
 		}
 	})());
 
-	return json({ ok: true, accepted: true }, 202, { "Cache-Control": "no-store" });
+	return json({ ok: true, accepted: true, replayed: !dedupe.inserted }, 202, { "Cache-Control": "no-store" });
 }
 
 internalBatchWebhookRoutes.post("/gemini", withRuntime(handleGoogleAiStudioBatchWebhook));

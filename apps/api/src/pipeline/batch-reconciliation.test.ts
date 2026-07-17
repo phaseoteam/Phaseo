@@ -10,6 +10,7 @@ const {
 	finalizeBatchJobMock,
 	resolveProviderKeyMock,
 	releaseStaleOrphanBatchReservationsMock,
+	findProviderBatchByGatewayMetadataMock,
 } = vi.hoisted(() => ({
 	getBindingsMock: vi.fn(),
 	dispatchAsyncWebhookEventInBackgroundMock: vi.fn(),
@@ -20,7 +21,16 @@ const {
 	finalizeBatchJobMock: vi.fn(),
 	resolveProviderKeyMock: vi.fn(),
 	releaseStaleOrphanBatchReservationsMock: vi.fn(),
+	findProviderBatchByGatewayMetadataMock: vi.fn(),
 }));
+
+vi.mock("@core/batch-provider-adapters", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("@core/batch-provider-adapters")>();
+	return {
+		...actual,
+		findProviderBatchByGatewayMetadata: findProviderBatchByGatewayMetadataMock,
+	};
+});
 
 vi.mock("@/runtime/env", () => ({
 	getBindings: getBindingsMock,
@@ -70,6 +80,7 @@ describe("runBatchReconciliationJob", () => {
 		finalizeBatchJobMock.mockReset();
 		resolveProviderKeyMock.mockReset();
 		releaseStaleOrphanBatchReservationsMock.mockReset().mockResolvedValue(0);
+		findProviderBatchByGatewayMetadataMock.mockReset().mockResolvedValue(null);
 		vi.restoreAllMocks();
 
 		getBindingsMock.mockReturnValue({
@@ -239,7 +250,7 @@ describe("runBatchReconciliationJob", () => {
 		expect(result).toMatchObject({ jobsUpdated: 1, jobsErrored: 1, jobsPolled: 0 });
 	});
 
-	it("does not dispatch terminal webhook events when the status does not change", async () => {
+	it("finalizes terminal jobs without native ids instead of polling a gateway id forever", async () => {
 		listPendingBatchJobsMock.mockResolvedValue([
 			{
 				workspaceId: "ws_1",
@@ -250,23 +261,26 @@ describe("runBatchReconciliationJob", () => {
 			},
 		]);
 
-		const fetchMock = vi.fn(async () =>
-			new Response(JSON.stringify({
-				id: "batch_same_123",
-				status: "completed",
-			}), { status: 200, headers: { "Content-Type": "application/json" } }),
-		);
+		const fetchMock = vi.fn(async () => {
+			throw new Error("Terminal jobs without native ids must not poll providers");
+		});
 		vi.stubGlobal("fetch", fetchMock);
 
 		const summary = await runBatchReconciliationJob({ concurrency: 1 });
 
 		expect(summary.jobsScanned).toBe(1);
-		expect(summary.jobsPolled).toBe(1);
+		expect(summary.jobsPolled).toBe(0);
 		expect(summary.jobsUpdated).toBe(1);
-		expect(summary.jobsCompleted).toBe(0);
+		expect(summary.jobsCompleted).toBe(1);
 		expect(summary.jobsFailed).toBe(0);
 		expect(summary.jobsCancelled).toBe(0);
-		expect(dispatchAsyncWebhookEventInBackgroundMock).not.toHaveBeenCalled();
+		expect(fetchMock).not.toHaveBeenCalled();
+		expect(dispatchAsyncWebhookEventInBackgroundMock).toHaveBeenCalledWith({
+			workspaceId: "ws_1",
+			kind: "batch",
+			internalId: "batch_same_123",
+			phase: "completed",
+		});
 		expect(finalizeBatchJobMock).toHaveBeenCalledTimes(1);
 		expect(finalizeBatchJobMock).toHaveBeenCalledWith({
 			workspaceId: "ws_1",
@@ -363,6 +377,40 @@ describe("runBatchReconciliationJob", () => {
 			"https://api.openai.example/v1/batches/batch_native_123",
 			expect.any(Object),
 		);
+	});
+
+	it("recovers an unknown OpenAI submission from deterministic provider metadata", async () => {
+		listPendingBatchJobsMock.mockResolvedValue([{
+			workspaceId: "ws_1",
+			batchId: "batch_public_unknown",
+			requestId: "req_unknown",
+			provider: "openai",
+			status: "submission_unknown",
+			reconcileAttempts: 1,
+			meta: { provider: "openai", status: "submission_unknown", requestId: "req_unknown" },
+		}]);
+		findProviderBatchByGatewayMetadataMock.mockResolvedValueOnce({
+			id: "batch_native_recovered",
+			native_batch_id: "batch_native_recovered",
+			status: "in_progress",
+			metadata: { phaseo_batch_id: "batch_public_unknown" },
+		});
+		vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+			id: "batch_native_recovered",
+			status: "in_progress",
+		}), { status: 200, headers: { "Content-Type": "application/json" } })));
+
+		const summary = await runBatchReconciliationJob({ concurrency: 1 });
+		expect(summary.jobsPolled).toBe(1);
+		expect(findProviderBatchByGatewayMetadataMock).toHaveBeenCalledWith({
+			providerId: "openai",
+			batchId: "batch_public_unknown",
+			requestId: "req_unknown",
+		});
+		expect(saveBatchJobMetaMock).toHaveBeenCalledWith("ws_1", "batch_public_unknown", expect.objectContaining({
+			nativeBatchId: "batch_native_recovered",
+			submissionOutcome: "accepted",
+		}));
 	});
 
 	it("polls native provider batch APIs and normalizes terminal statuses", async () => {

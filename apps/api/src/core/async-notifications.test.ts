@@ -721,6 +721,43 @@ describe("buildAsyncNotificationData", () => {
 		});
 	});
 
+	it("reports partially charged cancelled batches as settled and billable", async () => {
+		const record: AsyncOperationRecord = {
+			workspaceId: "ws_partial",
+			kind: "batch",
+			internalId: "batch_partial_cancelled",
+			requestId: "req_partial",
+			sessionId: null,
+			appId: null,
+			provider: "together",
+			nativeId: "native_partial",
+			model: "together/model",
+			status: "cancelled",
+			meta: {
+				provider: "together",
+				costNanos: 125_000_000,
+				costUsd: 0.125,
+				charged: true,
+				billingReason: "charged_partial_success:captured",
+			},
+			billedAt: "2026-07-16T12:00:00.000Z",
+			createdAt: "2026-07-16T11:00:00.000Z",
+			updatedAt: "2026-07-16T12:00:00.000Z",
+		};
+		await expect(buildAsyncNotificationData({
+			baseUrl: "https://api.phaseo.app",
+			record,
+		})).resolves.toMatchObject({
+			status: "cancelled",
+			billing: {
+				state: "settled",
+				billable: true,
+				total_nanos: 125_000_000,
+				charged: true,
+			},
+		});
+	});
+
 	it("omits batch cancel urls for active unsupported providers in async payloads", async () => {
 		const record: AsyncOperationRecord = {
 			workspaceId: "team_custom_batch",

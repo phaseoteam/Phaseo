@@ -9,6 +9,8 @@ const findBatchJobRecordByNativeIdMock = vi.fn();
 const saveBatchFileMetaMock = vi.fn();
 const saveBatchJobMetaMock = vi.fn();
 const markProviderEventProcessedMock = vi.fn();
+const deferProviderEventMock = vi.fn();
+const listUnprocessedProviderEventsMock = vi.fn();
 
 vi.mock("@/runtime/env", () => ({
 	getBindings: () => getBindingsMock(),
@@ -35,6 +37,8 @@ vi.mock("@core/batch-jobs", () => ({
 }));
 
 vi.mock("@core/provider-events", () => ({
+	deferProviderEvent: (...args: any[]) => deferProviderEventMock(...args),
+	listUnprocessedProviderEvents: (...args: any[]) => listUnprocessedProviderEventsMock(...args),
 	markProviderEventProcessed: (...args: any[]) => markProviderEventProcessedMock(...args),
 }));
 
@@ -42,6 +46,8 @@ import {
 	mapOpenAiBatchTerminal,
 	processGoogleAiStudioBatchWebhook,
 	processOpenAiBatchWebhook,
+	readProviderWebhookBody,
+	runBatchProviderWebhookReplayJob,
 	verifyGoogleAiStudioBatchWebhookSignature,
 	verifyOpenAiBatchWebhookSignature,
 } from "./batch-webhooks.helpers";
@@ -60,6 +66,8 @@ describe("batch webhook helpers", () => {
 		saveBatchFileMetaMock.mockReset();
 		saveBatchJobMetaMock.mockReset();
 		markProviderEventProcessedMock.mockReset();
+		deferProviderEventMock.mockReset();
+		listUnprocessedProviderEventsMock.mockReset().mockResolvedValue([]);
 
 		getBindingsMock.mockReturnValue({
 			OPENAI_BATCH_WEBHOOK_SECRET: "batch-secret",
@@ -417,6 +425,109 @@ describe("batch webhook helpers", () => {
 			payload: { data: { id: "batch_native_123", status: "completed" } },
 		});
 		expect(dispatchAsyncWebhookEventMock).not.toHaveBeenCalled();
-		expect(markProviderEventProcessedMock).toHaveBeenCalled();
+		expect(markProviderEventProcessedMock).not.toHaveBeenCalled();
+		expect(deferProviderEventMock).toHaveBeenCalledWith(expect.objectContaining({
+			reason: "batch_finalization_pending:missing_usage",
+		}));
+	});
+
+	it("bounds provider webhook bodies before signature verification or persistence", async () => {
+		const accepted = await readProviderWebhookBody(new Request("https://example.com", {
+			method: "POST",
+			body: JSON.stringify({ type: "batch.completed" }),
+		}));
+		expect(accepted).toEqual({ ok: true, rawBody: JSON.stringify({ type: "batch.completed" }) });
+
+		const rejected = await readProviderWebhookBody(new Request("https://example.com", {
+			method: "POST",
+			headers: { "Content-Length": String(1024 * 1024 + 1) },
+			body: "{}",
+		}));
+		expect(rejected).toEqual({ ok: false });
+
+		const rejectedStream = await readProviderWebhookBody(new Request("https://example.com", {
+			method: "POST",
+			body: "x".repeat(1024 * 1024 + 1),
+		}));
+		expect(rejectedStream).toEqual({ ok: false });
+	});
+
+	it("defers a valid provider event until the accepted batch id has been persisted", async () => {
+		findBatchJobRecordByNativeIdMock.mockResolvedValueOnce(null);
+		await expect(processOpenAiBatchWebhook({
+			eventId: "evt_fast_batch",
+			eventType: "batch.completed",
+			payload: { data: { id: "batch_not_persisted_yet" } },
+		})).resolves.toBe(false);
+		expect(deferProviderEventMock).toHaveBeenCalledWith({
+			provider: "openai",
+			providerEventId: "evt_fast_batch",
+			reason: "batch_job_not_found",
+		});
+		expect(markProviderEventProcessedMock).not.toHaveBeenCalled();
+	});
+
+	it("replays persisted provider events that were accepted but not processed", async () => {
+		listUnprocessedProviderEventsMock.mockResolvedValueOnce([
+			{
+				id: "row_1",
+				provider: "openai",
+				providerEventId: "evt_replay_openai",
+				kind: "batch.completed",
+				workspaceId: null,
+				internalId: null,
+				payload: { type: "batch.completed", data: { id: "batch_native_123" } },
+				processedAt: null,
+				createdAt: "2026-07-16T10:00:00.000Z",
+			},
+		]);
+		fetchProviderBatchStatusMock.mockResolvedValueOnce({
+			id: "batch_native_123",
+			status: "completed",
+			request_counts: { total: 1, completed: 1, failed: 0 },
+		});
+
+		await expect(runBatchProviderWebhookReplayJob({ limit: 25 })).resolves.toEqual({
+			eventsScanned: 1,
+			eventsProcessed: 1,
+			eventsFailed: 0,
+		});
+		expect(listUnprocessedProviderEventsMock).toHaveBeenCalledWith({
+			providers: ["openai", "google-ai-studio"],
+			limit: 25,
+		});
+		expect(markProviderEventProcessedMock).toHaveBeenCalledWith(expect.objectContaining({
+			provider: "openai",
+			providerEventId: "evt_replay_openai",
+		}));
+	});
+
+	it("backs off replay events when provider processing throws", async () => {
+		listUnprocessedProviderEventsMock.mockResolvedValueOnce([
+			{
+				id: "row_failed",
+				provider: "openai",
+				providerEventId: "evt_replay_failed",
+				kind: "batch.completed",
+				workspaceId: null,
+				internalId: null,
+				payload: { type: "batch.completed", data: { id: "batch_native_123" } },
+				processedAt: null,
+				createdAt: "2026-07-16T10:00:00.000Z",
+			},
+		]);
+		fetchProviderBatchStatusMock.mockRejectedValueOnce(new Error("provider unavailable"));
+
+		await expect(runBatchProviderWebhookReplayJob()).resolves.toEqual({
+			eventsScanned: 1,
+			eventsProcessed: 0,
+			eventsFailed: 1,
+		});
+		expect(deferProviderEventMock).toHaveBeenCalledWith({
+			provider: "openai",
+			providerEventId: "evt_replay_failed",
+			reason: "provider unavailable",
+		});
+		expect(markProviderEventProcessedMock).not.toHaveBeenCalled();
 	});
 });

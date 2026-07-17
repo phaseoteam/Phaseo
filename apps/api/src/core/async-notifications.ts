@@ -641,6 +641,7 @@ function resolveBatchBilling(record: AsyncOperationRecord, meta: AsyncNotificati
 	const chargeReason = normalizeText(meta.billingReason ?? meta.billing_reason);
 	const charged = toBoolean(meta.charged);
 	const isVoided = status === "failed" || status === "expired" || status === "cancelled";
+	const hasSettledCharge = charged === true || (settledNanos != null && settledNanos > 0);
 	const displaySettledUsd = settledUsd ?? (isVoided ? 0 : null);
 	return {
 		currency: "usd",
@@ -649,7 +650,9 @@ function resolveBatchBilling(record: AsyncOperationRecord, meta: AsyncNotificati
 		settled_provider_cost: displaySettledUsd != null ? displaySettledUsd.toFixed(2) : null,
 		settled_user_cost: displaySettledUsd != null ? displaySettledUsd.toFixed(2) : null,
 		state:
-			isVoided
+			hasSettledCharge
+				? "settled"
+				: isVoided
 				? "void"
 				: settledUsd != null
 					? "settled"
@@ -658,7 +661,7 @@ function resolveBatchBilling(record: AsyncOperationRecord, meta: AsyncNotificati
 						: estimatedUsd != null
 							? "estimated"
 							: "pending",
-		billable: charged === true || (settledNanos != null && settledNanos > 0),
+		billable: hasSettledCharge,
 		total_nanos: settledNanos,
 		estimated_nanos: estimatedNanos,
 		reserved_nanos: reservedNanos,
@@ -816,7 +819,15 @@ function isVideoCancelSupportedProvider(value: unknown): boolean {
 }
 
 function isBatchCancelSupportedProvider(value: unknown): boolean {
-	return normalizeText(value)?.toLowerCase() === "openai";
+	return new Set([
+		"openai",
+		"anthropic",
+		"google-ai-studio",
+		"mistral",
+		"x-ai",
+		"groq",
+		"together",
+	]).has(normalizeText(value)?.toLowerCase() ?? "");
 }
 
 export function toAsyncLifecycleStatus(status: string): AsyncJobLifecycleStatus {
