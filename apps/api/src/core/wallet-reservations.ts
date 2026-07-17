@@ -69,7 +69,7 @@ async function invalidateReservationCaches(workspaceId: string, keyId?: string |
 	try {
 		await setKeyVersion("id", keyId, Date.now());
 	} catch (error) {
-		console.error("wallet_reservation_key_context_invalidation_failed", { workspaceId, keyId, error });
+		console.error("wallet_reservation_key_context_invalidation_failed", { workspaceId, error });
 	}
 }
 
@@ -123,7 +123,11 @@ function normalizeResult(data: unknown, successStatus?: "held" | "captured" | "r
 						: normalizeStatus(reason);
 	return {
 		applied: row.applied === true,
-		alreadyApplied: row.already_applied === true,
+		alreadyApplied:
+			row.already_applied === true ||
+			reason === "already_reserved" ||
+			reason === "already_captured" ||
+			reason === "already_released",
 		status: inferredStatus,
 		amountNanos: Math.max(0, Number(row.amount_nanos ?? 0) || 0),
 		beforeBalanceNanos: toFinite(row.before_balance_nanos),
@@ -191,7 +195,7 @@ export async function reserveWalletCredits(args: {
 		beforeReservedNanos: null,
 		afterReservedNanos: null,
 	};
-	if (normalized.applied) await invalidateReservationCaches(args.workspaceId, args.keyId);
+	if (normalized.applied || normalized.alreadyApplied) await invalidateReservationCaches(args.workspaceId, args.keyId);
 	return normalized;
 }
 
@@ -216,7 +220,7 @@ export async function captureWalletReservation(args: {
 		beforeReservedNanos: null,
 		afterReservedNanos: null,
 	};
-	if (normalized.applied) await invalidateReservationCaches(args.workspaceId, args.keyId);
+	if (normalized.applied || normalized.alreadyApplied) await invalidateReservationCaches(args.workspaceId, args.keyId);
 	return normalized;
 }
 
@@ -241,7 +245,7 @@ export async function releaseWalletReservation(args: {
 		beforeReservedNanos: null,
 		afterReservedNanos: null,
 	};
-	if (normalized.applied) await invalidateReservationCaches(args.workspaceId, args.keyId);
+	if (normalized.applied || normalized.alreadyApplied) await invalidateReservationCaches(args.workspaceId, args.keyId);
 	return normalized;
 }
 
@@ -270,7 +274,7 @@ export async function settleWalletReservation(args: {
 		beforeReservedNanos: null,
 		afterReservedNanos: null,
 	};
-	if (normalized.applied) await invalidateReservationCaches(args.workspaceId, args.keyId);
+	if (normalized.applied || normalized.alreadyApplied) await invalidateReservationCaches(args.workspaceId, args.keyId);
 	return normalized;
 }
 

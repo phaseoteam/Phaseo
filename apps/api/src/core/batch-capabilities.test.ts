@@ -78,7 +78,7 @@ describe("batch capabilities", () => {
 		expect(providerSupportsMultipleModelsPerBatch("mistral")).toBe(false);
 	});
 
-	it("fails closed to OpenAI and accepts an explicit preview provider allowlist", () => {
+	it("fails closed to validated preview providers even for an explicit allowlist", () => {
 		expect(resolveBatchPreviewProviderIds(undefined)).toEqual(["openai"]);
 		expect(resolveBatchPreviewProviderIds("anthropic, google, unknown")).toEqual([
 			"anthropic",
@@ -90,7 +90,7 @@ describe("batch capabilities", () => {
 			"google-ai-studio",
 			"mistral",
 		]);
-		expect(resolveBatchPreviewProviderIds("xai,groq,together")).toEqual(["x-ai", "groq", "together"]);
+		expect(resolveBatchPreviewProviderIds("xai,groq,together")).toEqual([]);
 		expect(resolveBatchPreviewProviderIds("unknown")).toEqual([]);
 	});
 

@@ -289,7 +289,7 @@ describe("runBatchReconciliationJob", () => {
 		});
 	});
 
-	it("keeps terminal batches retryable when billing finalization is blocked", async () => {
+	it.each(["missing_usage", "release_failed"] as const)("keeps terminal batches retryable when billing finalization is blocked by %s", async (reason) => {
 		listPendingBatchJobsMock.mockResolvedValue([
 			{
 				workspaceId: "ws_1",
@@ -304,7 +304,7 @@ describe("runBatchReconciliationJob", () => {
 			status: "completed",
 			charged: false,
 			billed: false,
-			reason: "missing_usage",
+			reason,
 		});
 
 		const fetchMock = vi.fn(async () =>
@@ -328,7 +328,7 @@ describe("runBatchReconciliationJob", () => {
 			workspaceId: "ws_1",
 			batchId: "batch_missing_usage_123",
 			nextReconcileAt: expect.any(String),
-			lastError: "batch_billing_blocked:missing_usage",
+			lastError: `batch_billing_blocked:${reason}`,
 		});
 		expect(updateBatchJobReconciliationMock.mock.calls[0]?.[0]?.nextReconcileAt).not.toBeNull();
 	});

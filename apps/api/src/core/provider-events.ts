@@ -125,18 +125,18 @@ export async function getProviderEvent(
 export async function listUnprocessedProviderEvents(args: {
 	providers: string[];
 	limit?: number;
+	workerId?: string;
+	leaseSeconds?: number;
 }): Promise<ProviderEventRecord[]> {
 	const providers = [...new Set(args.providers.map((provider) => normalizeText(provider)).filter((provider): provider is string => Boolean(provider)))];
 	if (providers.length === 0) return [];
 	const limit = Math.max(1, Math.min(500, Math.trunc(args.limit ?? 100)));
-	const { data, error } = await getSupabaseAdmin()
-		.from("gateway_provider_events")
-		.select("id,provider,provider_event_id,kind,workspace_id,internal_id,payload,processed_at,attempt_count,next_attempt_at,created_at")
-		.in("provider", providers)
-		.is("processed_at", null)
-		.or(`next_attempt_at.is.null,next_attempt_at.lte.${new Date().toISOString()}`)
-		.order("created_at", { ascending: true })
-		.limit(limit);
+	const { data, error } = await getSupabaseAdmin().rpc("gateway_claim_provider_events", {
+		p_providers: providers,
+		p_limit: limit,
+		p_worker_id: normalizeText(args.workerId) ?? "batch-provider-event-replay",
+		p_lease_seconds: Math.max(30, Math.min(3_600, Math.trunc(args.leaseSeconds ?? 120))),
+	});
 	if (error) throw error;
 	return (data ?? []).map((row) => mapRow(row as ProviderEventRow));
 }
@@ -170,6 +170,8 @@ export async function markProviderEventProcessed(args: {
 	const now = new Date().toISOString();
 	const patch: Record<string, unknown> = {
 		processed_at: now,
+		replay_locked_at: null,
+		replay_locked_by: null,
 		updated_at: now,
 	};
 	const workspaceId = normalizeText(args.workspaceId);

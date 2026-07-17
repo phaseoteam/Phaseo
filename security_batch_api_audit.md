@@ -4,9 +4,11 @@ Date: 2026-07-17
 
 ## Executive summary
 
-No unresolved critical or high-severity security finding was identified in the pending Batch API changes. Authentication, Statsig access control, workspace ownership, managed webhook secrets, provider-event idempotency, wallet reservations, and terminal billing all fail closed in the reviewed paths.
+No unresolved critical or high-severity security finding remains in the pending Batch API changes after the initial audit and automated PR-review follow-up. Authentication, Statsig access control, workspace ownership, managed webhook secrets, provider-event idempotency, wallet reservations, and terminal billing fail closed in the reviewed paths.
 
 Three defense-in-depth findings were fixed during this audit. The remaining release prerequisites are operational: rebase onto current `main`, apply the billing-security migration, run the controlled live-provider matrix, and keep xAI execution disabled until its production credential is accepted by the native Batch API.
+
+The PR follow-up additionally fixed accepted-job key attribution, pre-dispatch and upload hold release, rejected-submission settlement, idempotent reservation retries, terminal release retries, authoritative webhook phases, atomic provider-event replay leases, provider-specific recovery pagination, streamed file limits, OAuth scope fallback, direct webhook-table write grants, and persisted-header allowlisting. Regression tests cover each affected boundary.
 
 ## Scope
 
@@ -69,7 +71,7 @@ xAI execution remains `blocked` in the Batch API provider-readiness configuratio
 ## Residual release requirements
 
 1. Rebase the branch onto current `origin/main` before committing.
-2. Apply `supabase/migrations/20260716170000_batch_billing_security_invariants.sql` before deploying the worker.
+2. Apply `supabase/migrations/20260718010000_batch_billing_security_invariants.sql` before deploying the worker.
 3. Confirm production webhook encryption keys and OpenAI/Gemini provider webhook secrets are present after deployment.
 4. Run one controlled live batch through OpenAI, Gemini, Anthropic, and Mistral after the migration and worker deployment.
 5. Keep Groq and Together experimental and xAI blocked until live settlement evidence is captured.

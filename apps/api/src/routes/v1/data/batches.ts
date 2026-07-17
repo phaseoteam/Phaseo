@@ -74,6 +74,13 @@ const GATEWAY_BATCH_ID_PREFIX = "batch_";
 const MAX_BATCH_CREATE_BODY_BYTES = 20 * 1024 * 1024;
 const DEFAULT_BATCH_MAX_OUTPUT_TOKENS = 16_384;
 
+class ProviderBatchPreDispatchError extends Error {
+	constructor(message: string, options?: { cause?: unknown }) {
+		super(message, options);
+		this.name = "ProviderBatchPreDispatchError";
+	}
+}
+
 function toText(value: unknown): string | null {
 	if (typeof value !== "string") return null;
 	const trimmed = value.trim();
@@ -836,10 +843,15 @@ async function fetchProviderBatchApi(providerId: string, args: {
 }): Promise<Response> {
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
 	if (providerId === ANTHROPIC_PROVIDER_ID) {
-		const keyInfo = resolveProviderKey(
-			{ providerId, byokMeta: [] },
-			() => bindings.ANTHROPIC_API_KEY,
-		);
+		let keyInfo: ReturnType<typeof resolveProviderKey>;
+		try {
+			keyInfo = resolveProviderKey(
+				{ providerId, byokMeta: [] },
+				() => bindings.ANTHROPIC_API_KEY,
+			);
+		} catch (error) {
+			throw new ProviderBatchPreDispatchError("anthropic_batch_credentials_unavailable", { cause: error });
+		}
 		const headers = new Headers({
 			"x-api-key": keyInfo.key,
 			"anthropic-version": "2023-06-01",
@@ -855,7 +867,7 @@ async function fetchProviderBatchApi(providerId: string, args: {
 	if (providerId === GOOGLE_AI_STUDIO_PROVIDER_ID) {
 		const key = bindings.GOOGLE_AI_STUDIO_API_KEY || bindings.GEMINI_API_KEY;
 		if (!key) {
-			return jsonPayload({ error: { type: "upstream_error", reason: "google_ai_studio_key_missing" } }, 502);
+			throw new ProviderBatchPreDispatchError("google_ai_studio_key_missing");
 		}
 		const headers = new Headers({
 			"x-goog-api-key": key,
@@ -869,7 +881,12 @@ async function fetchProviderBatchApi(providerId: string, args: {
 		});
 	}
 
-	const keyInfo = resolveOpenAICompatKey({ providerId, byokMeta: [] } as any);
+	let keyInfo: ReturnType<typeof resolveOpenAICompatKey>;
+	try {
+		keyInfo = resolveOpenAICompatKey({ providerId, byokMeta: [] } as any);
+	} catch (error) {
+		throw new ProviderBatchPreDispatchError(`${providerId}_batch_credentials_unavailable`, { cause: error });
+	}
 	const headers = new Headers(openAICompatHeaders(providerId, keyInfo.key));
 	if (args.contentType) headers.set("Content-Type", args.contentType);
 	if (!args.contentType) headers.delete("Content-Type");
@@ -1073,9 +1090,10 @@ function buildProviderBatchCreate(providerId: string, args: {
 			body: {
 				batch: {
 					model,
-				displayName:
-					toText(args.payload.metadata && (args.payload.metadata as any).display_name) ??
-					`phaseo-${toText(args.payload.metadata && (args.payload.metadata as any).phaseo_batch_id) ?? Date.now()}`,
+				displayName: buildProviderRecoveryName(
+					args.payload.metadata && (args.payload.metadata as any).phaseo_batch_id,
+					args.payload.metadata && (args.payload.metadata as any).display_name,
+				),
 					inputConfig: {
 						requests: {
 							requests: (args.requestRows ?? []).map((row) => ({
@@ -1095,9 +1113,10 @@ function buildProviderBatchCreate(providerId: string, args: {
 		return {
 			endpointPath: "/batches",
 			body: {
-				name:
-					toText(args.payload.metadata && (args.payload.metadata as any).name) ??
-					`phaseo-${toText(args.payload.metadata && (args.payload.metadata as any).phaseo_batch_id) ?? Date.now()}`,
+				name: buildProviderRecoveryName(
+					args.payload.metadata && (args.payload.metadata as any).phaseo_batch_id,
+					args.payload.metadata && (args.payload.metadata as any).name,
+				),
 			},
 			followup: {
 				endpointPath: "",
@@ -1113,6 +1132,13 @@ function buildProviderBatchCreate(providerId: string, args: {
 		};
 	}
 	return { endpointPath: "/batches", body: args.upstreamPayload };
+}
+
+function buildProviderRecoveryName(batchIdRaw: unknown, userNameRaw: unknown): string {
+	const recoveryName = `phaseo-${toText(batchIdRaw) ?? Date.now()}`;
+	const userName = toText(userNameRaw);
+	if (!userName || userName === recoveryName) return recoveryName;
+	return `${recoveryName}-${userName}`.slice(0, 128);
 }
 
 function buildProviderRetrievePath(providerId: string, nativeBatchId: string): string {
@@ -1730,7 +1756,29 @@ async function handleCreate(req: Request) {
 		}, 402);
 	}
 	if (inputMode.mode === "requests" && FILE_BACKED_JSONL_BATCH_PROVIDERS.has(providerId)) {
-		const upload = await uploadProviderBatchInputFile(providerId, { requestId, rows: requestRows ?? [] });
+		let upload: Awaited<ReturnType<typeof uploadProviderBatchInputFile>>;
+		try {
+			upload = await uploadProviderBatchInputFile(providerId, { requestId, rows: requestRows ?? [] });
+		} catch (error) {
+			await releaseWalletReservation({
+				workspaceId: auth.workspaceId,
+				keyId: auth.apiKeyId,
+				reservationId: reservation.reservationId,
+				releaseRefId: requestId,
+			}).catch((releaseError) => {
+				console.error("batch_input_file_upload_reservation_release_failed", {
+					error: releaseError,
+					workspaceId: auth.workspaceId,
+					batchId,
+				});
+			});
+			return err("gateway_error", {
+				reason: error instanceof ProviderBatchPreDispatchError ? error.message : "batch_input_file_upload_failed",
+				request_id: requestId,
+				workspace_id: auth.workspaceId,
+				provider: providerId,
+			});
+		}
 		if (upload.ok === false) {
 			await releaseWalletReservation({
 				workspaceId: auth.workspaceId,
@@ -1867,6 +1915,20 @@ async function handleCreate(req: Request) {
 			idempotencyKey: `phaseo:${batchId}`,
 		});
 	} catch (error) {
+		if (error instanceof ProviderBatchPreDispatchError) {
+			await finalizeRejectedBatchSubmission({
+				workspaceId: auth.workspaceId,
+				batchId,
+				providerId,
+				statusCode: 503,
+			});
+			return err("gateway_error", {
+				reason: error.message,
+				request_id: requestId,
+				workspace_id: auth.workspaceId,
+				provider: providerId,
+			});
+		}
 		return quarantineUnknownBatchSubmission({
 			workspaceId: auth.workspaceId,
 			batchId,
@@ -1967,6 +2029,7 @@ async function handleCreate(req: Request) {
 			persistedMeta = batchMetaFromPayload(upstreamJson, {
 				provider: providerId,
 				requestId,
+				apiKeyId: auth.apiKeyId,
 				sessionId:
 					typeof payload?.session_id === "string"
 						? payload.session_id

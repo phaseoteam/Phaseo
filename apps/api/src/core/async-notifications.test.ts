@@ -977,6 +977,7 @@ describe("buildAsyncNotificationData", () => {
 				reservationStatus: "release_failed",
 				billingReason: "release_failed",
 				charged: false,
+				costNanos: 300000000,
 				estimatedUsage: {
 					requests: 1,
 					pricing: {
@@ -1001,7 +1002,7 @@ describe("buildAsyncNotificationData", () => {
 			billing: {
 				state: "pending",
 				billable: false,
-				total_nanos: null,
+				total_nanos: 300000000,
 				estimated_nanos: 300000000,
 				reserved_nanos: 300000000,
 				reservation_status: "release_failed",

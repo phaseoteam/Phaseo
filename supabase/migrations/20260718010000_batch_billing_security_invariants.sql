@@ -1,6 +1,6 @@
 -- Enforce batch wallet/key holds and make settled batch usage visible to key limits.
 
-grant insert, update on public.gateway_webhook_endpoints to authenticated;
+revoke insert, update on public.gateway_webhook_endpoints from authenticated;
 revoke select on public.gateway_webhook_endpoints from authenticated;
 grant select (
   id, workspace_id, name, url, status, events, created_by,
@@ -11,11 +11,56 @@ alter table public.gateway_provider_events
   add column if not exists attempt_count integer not null default 0,
   add column if not exists next_attempt_at timestamptz null,
   add column if not exists last_error text null,
-  add column if not exists dead_lettered_at timestamptz null;
+  add column if not exists dead_lettered_at timestamptz null,
+  add column if not exists replay_locked_at timestamptz null,
+  add column if not exists replay_locked_by text null;
 
 create index if not exists gateway_provider_events_replay_due_idx
   on public.gateway_provider_events (next_attempt_at, created_at)
   where processed_at is null;
+
+create or replace function public.gateway_claim_provider_events(
+  p_providers text[],
+  p_limit integer default 100,
+  p_worker_id text default 'batch-provider-event-replay',
+  p_lease_seconds integer default 120
+)
+returns setof public.gateway_provider_events
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  return query
+  with candidates as (
+    select event.id
+    from public.gateway_provider_events event
+    where event.provider = any(p_providers)
+      and event.processed_at is null
+      and event.dead_lettered_at is null
+      and (event.next_attempt_at is null or event.next_attempt_at <= now())
+      and (
+        event.replay_locked_at is null
+        or event.replay_locked_at < now() - make_interval(secs => greatest(30, least(coalesce(p_lease_seconds, 120), 3600)))
+      )
+    order by event.created_at asc
+    for update skip locked
+    limit greatest(1, least(coalesce(p_limit, 100), 500))
+  )
+  update public.gateway_provider_events event
+  set replay_locked_at = now(),
+      replay_locked_by = left(coalesce(nullif(trim(p_worker_id), ''), 'batch-provider-event-replay'), 200),
+      updated_at = now()
+  from candidates
+  where event.id = candidates.id
+  returning event.*;
+end;
+$$;
+
+revoke all on function public.gateway_claim_provider_events(text[], integer, text, integer)
+  from public, anon, authenticated;
+grant execute on function public.gateway_claim_provider_events(text[], integer, text, integer)
+  to service_role;
 
 create or replace function public.gateway_defer_provider_event(
   p_provider text,
@@ -45,6 +90,8 @@ begin
       end,
       dead_lettered_at = case when v_next_attempt >= 20 then now() else dead_lettered_at end,
       processed_at = case when v_next_attempt >= 20 then now() else processed_at end,
+      replay_locked_at = null,
+      replay_locked_by = null,
       updated_at = now()
   where provider = p_provider and provider_event_id = p_provider_event_id;
 end;
@@ -116,6 +163,10 @@ begin
   insert into public.gateway_batch_file_uploads (workspace_id, upload_id, bytes, status)
   values (p_workspace_id, p_upload_id, p_bytes, 'claimed')
   on conflict (workspace_id, upload_id) do nothing;
+  if not found then
+    return query select false, 'batch_file_upload_already_claimed'::text;
+    return;
+  end if;
   return query select true, null::text;
 end;
 $$;

@@ -1366,6 +1366,36 @@ describe("batch-finalization", () => {
 		});
 	});
 
+	it("releases definitively rejected native-result batches without fetching output", async () => {
+		state.record = {
+			workspaceId: "ws_batch_test",
+			batchId: "batch_rejected_anthropic",
+			status: "failed",
+			meta: {
+				provider: "anthropic",
+				status: "failed",
+				submissionOutcome: "rejected",
+				reservationId: "batch_hold:req_rejected_anthropic",
+				reservedNanos: 500_000_000,
+				reservationStatus: "held",
+			},
+		};
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+
+		const { finalizeBatchJob } = await import("./batch-finalization");
+		await expect(finalizeBatchJob({
+			workspaceId: "ws_batch_test",
+			batchId: "batch_rejected_anthropic",
+			status: "failed",
+		})).resolves.toMatchObject({ billed: true, charged: false });
+		expect(fetchMock).not.toHaveBeenCalled();
+		expect(state.walletCalls).toEqual([expect.objectContaining({
+			op: "release",
+			reservationId: "batch_hold:req_rejected_anthropic",
+		})]);
+	});
+
 	it("does not mark voided batches billed when reservation release fails", async () => {
 		state.releaseError = new Error("wallet release timeout");
 		state.record = {

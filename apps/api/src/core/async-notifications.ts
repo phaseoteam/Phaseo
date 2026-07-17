@@ -641,7 +641,7 @@ function resolveBatchBilling(record: AsyncOperationRecord, meta: AsyncNotificati
 	const chargeReason = normalizeText(meta.billingReason ?? meta.billing_reason);
 	const charged = toBoolean(meta.charged);
 	const isVoided = status === "failed" || status === "expired" || status === "cancelled";
-	const hasSettledCharge = charged === true || (settledNanos != null && settledNanos > 0);
+	const hasSettledCharge = charged === true || (charged == null && record.billedAt != null && settledNanos != null && settledNanos > 0);
 	const displaySettledUsd = settledUsd ?? (isVoided ? 0 : null);
 	return {
 		currency: "usd",
@@ -654,6 +654,8 @@ function resolveBatchBilling(record: AsyncOperationRecord, meta: AsyncNotificati
 				? "settled"
 				: isVoided
 				? "void"
+				: charged === false
+					? "pending"
 				: settledUsd != null
 					? "settled"
 					: status === "completed"

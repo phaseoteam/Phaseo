@@ -83,6 +83,7 @@ function isBillingBlockedFinalization(result: FinalizeBatchJobResult): boolean {
 		result.reason === "missing_model" ||
 		result.reason === "price_card_missing"
 		|| result.reason === "settlement_failed"
+		|| result.reason === "release_failed"
 		|| result.reason === "key_usage_persistence_failed"
 		|| result.reason.startsWith("settlement_not_applied:")
 		|| result.reason.startsWith("reservation_")

@@ -5,6 +5,7 @@ import {
 	extractGoogleInlineResponses,
 	normalizeProviderBatchPayload,
 	normalizeProviderBatchStatus,
+	parseProviderBatchListPage,
 } from "./batch-provider-adapters";
 
 describe("batch provider status normalization", () => {
@@ -157,5 +158,19 @@ describe("batch provider status normalization", () => {
 			status: "canceled",
 			state: { num_requests: 2, num_success: 0, num_error: 0 },
 		}).status).toBe("cancelled");
+	});
+
+	it("parses Gemini and xAI recovery list schemas and cursors", () => {
+		const xaiBatch = { batch_id: "batch_xai" };
+		expect(parseProviderBatchListPage("x-ai", {
+			batches: [xaiBatch],
+			pagination_token: "xai-next",
+		})).toEqual({ candidates: [xaiBatch], nextCursor: "xai-next" });
+
+		const geminiOperation = { name: "batches/batch_gemini" };
+		expect(parseProviderBatchListPage("google-ai-studio", {
+			operations: [geminiOperation],
+			nextPageToken: "gemini-next",
+		})).toEqual({ candidates: [geminiOperation], nextCursor: "gemini-next" });
 	});
 });

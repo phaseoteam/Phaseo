@@ -33,6 +33,13 @@ type OpenAiBatchTerminal =
 
 type BatchTerminal = OpenAiBatchTerminal;
 
+function customerWebhookPhase(status: string): "completed" | "failed" | "cancelled" {
+	const normalized = status.trim().toLowerCase();
+	if (normalized === "completed") return "completed";
+	if (normalized === "cancelled" || normalized === "canceled") return "cancelled";
+	return "failed";
+}
+
 const OPENAI_WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS = 5 * 60;
 const MAX_PROVIDER_WEBHOOK_BODY_BYTES = 1024 * 1024;
 
@@ -292,7 +299,7 @@ export async function processOpenAiBatchWebhook(args: {
 		workspaceId: job.workspaceId,
 		kind: "batch",
 		internalId: job.batchId,
-		phase: terminal.phase,
+		phase: customerWebhookPhase(finalization.status),
 	});
 
 	await markProviderEventProcessed({
@@ -417,7 +424,7 @@ export async function processGoogleAiStudioBatchWebhook(args: {
 		workspaceId: job.workspaceId,
 		kind: "batch",
 		internalId: job.batchId,
-		phase: terminal.phase,
+		phase: customerWebhookPhase(finalization.status),
 	});
 
 	await markProviderEventProcessed({
@@ -437,6 +444,8 @@ export async function runBatchProviderWebhookReplayJob(args?: { limit?: number }
 	const events = await listUnprocessedProviderEvents({
 		providers: [OPENAI_PROVIDER_ID, GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID],
 		limit: args?.limit ?? 100,
+		workerId: `batch-provider-event-replay:${crypto.randomUUID()}`,
+		leaseSeconds: 120,
 	});
 	let eventsProcessed = 0;
 	let eventsFailed = 0;

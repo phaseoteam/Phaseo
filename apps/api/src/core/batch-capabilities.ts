@@ -128,7 +128,10 @@ export function resolveBatchPreviewProviderIds(value: unknown): string[] {
 		.filter(Boolean)
 		.map((providerId) => normalizeProviderId(providerId))
 		.filter((providerId): providerId is string => Boolean(providerId));
-	const knownActive = requested.filter((providerId) => getBatchProviderCapability(providerId)?.status === "active");
+	const knownActive = requested.filter((providerId) => {
+		const capability = getBatchProviderCapability(providerId);
+		return capability?.status === "active" && capability.previewReadiness === "validated";
+	});
 	return [...new Set(knownActive)];
 }
 

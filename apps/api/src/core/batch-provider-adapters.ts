@@ -403,6 +403,38 @@ export async function fetchProviderBatchStatus(providerId: string, nativeBatchId
 	return normalizeProviderBatchPayload(providerId, await parseUpstreamJson(response));
 }
 
+export function parseProviderBatchListPage(providerId: string, payload: any): {
+	candidates: any[];
+	nextCursor: string | null;
+} {
+	const candidates = providerId === X_AI_BATCH_PROVIDER_ID && Array.isArray(payload?.batches)
+		? payload.batches
+		: providerId === GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID && Array.isArray(payload?.operations)
+			? payload.operations
+			: Array.isArray(payload?.data)
+				? payload.data
+				: Array.isArray(payload?.jobs)
+					? payload.jobs
+					: Array.isArray(payload)
+						? payload
+						: [];
+	if (providerId === OPENAI_BATCH_PROVIDER_ID) {
+		return {
+			candidates,
+			nextCursor: payload?.has_more === true && candidates.length > 0
+				? batchText(payload?.last_id) ?? batchText(candidates.at(-1)?.id)
+				: null,
+		};
+	}
+	if (providerId === X_AI_BATCH_PROVIDER_ID) {
+		return { candidates, nextCursor: batchText(payload?.pagination_token) };
+	}
+	if (providerId === GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID) {
+		return { candidates, nextCursor: batchText(payload?.nextPageToken) };
+	}
+	return { candidates, nextCursor: candidates.length >= 100 ? String(candidates.length) : null };
+}
+
 export async function findProviderBatchByGatewayMetadata(args: {
 	providerId: string;
 	batchId: string;
@@ -420,7 +452,9 @@ export async function findProviderBatchByGatewayMetadata(args: {
 			? `/batch/jobs?page=${page}&page_size=100`
 			: args.providerId === GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID
 				? `/batches?pageSize=100${cursor ? `&pageToken=${encodeURIComponent(cursor)}` : ""}`
-				: `/batches?limit=100${cursor ? `&after=${encodeURIComponent(cursor)}` : ""}`;
+				: args.providerId === X_AI_BATCH_PROVIDER_ID
+					? `/batches?limit=100${cursor ? `&pagination_token=${encodeURIComponent(cursor)}` : ""}`
+					: `/batches?limit=100${cursor ? `&after=${encodeURIComponent(cursor)}` : ""}`;
 		const response = await fetchProviderBatchApi(args.providerId, {
 			endpointPath,
 			method: "GET",
@@ -429,13 +463,7 @@ export async function findProviderBatchByGatewayMetadata(args: {
 			throw new Error(`${args.providerId}_batch_recovery_list_failed_${response.status}`);
 		}
 		const payload = await parseUpstreamJson(response);
-		const candidates = Array.isArray(payload?.data)
-			? payload.data
-			: Array.isArray(payload?.jobs)
-				? payload.jobs
-				: Array.isArray(payload)
-					? payload
-					: [];
+		const { candidates, nextCursor } = parseProviderBatchListPage(args.providerId, payload);
 		for (const candidate of candidates) {
 			const metadata = candidate?.metadata && typeof candidate.metadata === "object"
 				? candidate.metadata
@@ -443,22 +471,19 @@ export async function findProviderBatchByGatewayMetadata(args: {
 			if (
 				batchText(metadata.phaseo_batch_id) === args.batchId ||
 				(args.requestId && batchText(metadata.phaseo_request_id) === args.requestId) ||
-				batchText(candidate?.name) === `phaseo-${args.batchId}` ||
-				batchText(candidate?.displayName ?? candidate?.display_name) === `phaseo-${args.batchId}`
+				batchText(candidate?.name)?.startsWith(`phaseo-${args.batchId}`) === true ||
+				batchText(
+					candidate?.displayName ??
+					candidate?.display_name ??
+					candidate?.metadata?.displayName ??
+					candidate?.metadata?.batch?.displayName,
+				)?.startsWith(`phaseo-${args.batchId}`) === true
 			) {
 				return normalizeProviderBatchPayload(args.providerId, candidate);
 			}
 		}
-		if (args.providerId === OPENAI_BATCH_PROVIDER_ID || args.providerId === X_AI_BATCH_PROVIDER_ID) {
-			if (payload?.has_more !== true || candidates.length === 0) break;
-			cursor = batchText(payload?.last_id) ?? batchText(candidates.at(-1)?.id);
-			if (!cursor) break;
-		} else if (args.providerId === GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID) {
-			cursor = batchText(payload?.nextPageToken);
-			if (!cursor) break;
-		} else if (candidates.length < 100) {
-			break;
-		}
+		cursor = nextCursor;
+		if (!cursor) break;
 	}
 	return null;
 }
