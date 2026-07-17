@@ -19,28 +19,35 @@ launch.
   `gateway:access` or `keys:write`.
 - [x] Local API and MCP development secrets exist, match, and are at least 64
   characters long.
-- [ ] Reconcile Supabase migration history before applying any migration.
-- [ ] Add `PHASEO_MCP_RESOURCE_SERVER_SECRET` to the production API Worker.
-- [ ] Create the production `phaseo-mcp` Worker and add the identical secret.
-- [ ] Deploy and verify the production endpoint.
+- [x] Supabase local and production migration histories are aligned.
+- [x] `PHASEO_MCP_RESOURCE_SERVER_SECRET` is installed on the production API
+  Worker.
+- [x] The production `phaseo-mcp` Worker has the identical secret.
+- [x] `mcp.phaseo.app` resolves and the production discovery, health, and OAuth
+  challenge endpoints are verified.
 - [ ] Complete external MCP Inspector and ChatGPT developer-mode tests.
 
 ## Hard launch gates
 
 ### 1. Database history and migration
 
-Do not run `supabase db push` until `supabase migration list --linked` has been
-reviewed. At preparation time, production contains remote-only migration
-versions and the repository contains several local-only versions, including
-duplicate historical timestamps. Repairing migration history without first
-identifying which SQL actually ran could skip or repeat unrelated schema work.
+History was reconciled on 2026-07-17. Three production-only migrations were
+recovered from `supabase_migrations.schema_migrations` and committed to Git.
+Two local migrations with duplicate timestamps were assigned unique versions.
 
-Once history is reconciled, apply
-`20260717113000_bind_oauth_keys_to_resources.sql` before deploying the new API.
-The migration intentionally retains the existing nine-argument,
-gateway-only issuance function for a zero-downtime rollout. After all API
-instances use the resource-aware overload, add a later cleanup migration that
-drops the old signature.
+Production's earlier history had already been treated as a baseline: some
+versions were recorded even though their feature objects were absent. Replaying
+all later local-only feature migrations failed safely on the first missing
+prerequisite and made clear that doing so would introduce unrelated production
+features. Those historical/deferred versions were therefore recorded as part
+of the existing baseline without executing their SQL. The OAuth
+resource-binding migration was then applied normally and
+`supabase db push --dry-run` reported the remote database up to date.
+
+The launch migration intentionally retains the existing nine-argument,
+gateway-only issuance function for a zero-downtime rollout. Add a later cleanup
+migration that drops the old signature after the resource-aware API has been
+stable in production.
 
 Verify after application:
 
@@ -70,6 +77,10 @@ history, tickets, or logs.
 pnpm --filter @phaseo/gateway-api exec wrangler secret put PHASEO_MCP_RESOURCE_SERVER_SECRET --config wrangler.toml
 pnpm --filter @phaseo/mcp exec wrangler secret put PHASEO_MCP_RESOURCE_SERVER_SECRET --env production
 ```
+
+For the first MCP Worker deployment, Cloudflare requires the secret to be
+supplied with `wrangler deploy --secrets-file <ignored-file>` because the Worker
+does not yet exist for `secret put`.
 
 Confirm presence by name only:
 

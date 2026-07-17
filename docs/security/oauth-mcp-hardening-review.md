@@ -211,14 +211,17 @@ by default and is not considered safe for public enablement yet.
 
 1. Do not enable `PHASEO_MCP_WRITE_TOOLS_ENABLED` publicly until key secrets can
    be delivered outside model-readable MCP output.
-2. Reconcile Supabase local/remote migration history before applying the launch
-   migration, then verify its delegated-key expiry backfill completed.
+2. Migration history is aligned and the resource-binding migration is applied.
+   Keep future production schema changes migration-driven so the repaired
+   baseline does not drift again.
 3. Dynamic clients are rate-limited but do not yet have an expiry or automated
    inactive-client cleanup policy. Add one before high-volume public DCR.
 4. The web app has a focused consent CSP, not a strict app-wide `script-src`
    policy. Roll out a nonce-based CSP in report-only mode before enforcement.
-5. Verify deployed Cloudflare rate-limit bindings, secret presence, DNS/custom
-   domain, Service Binding, log redaction, and production environment selection.
+5. Cloudflare rate-limit bindings, shared-secret presence, DNS/custom domain,
+   production environment selection, and the MCP-to-API Service Binding were
+   verified at deployment. Continue monitoring logs for accidental credential
+   disclosure.
 6. Run an external OAuth interoperability suite and MCP Inspector against the
    deployed endpoint; source tests cannot verify browser/provider behavior.
 
