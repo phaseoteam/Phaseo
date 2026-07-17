@@ -32,6 +32,7 @@ interface ConsentFormProps {
 	state?: string;
 	codeChallenge?: string;
 	codeChallengeMethod?: string;
+	resource?: string;
 }
 
 type ScopeMeta = {
@@ -265,6 +266,7 @@ export default function ConsentForm({
 	state,
 	codeChallenge,
 	codeChallengeMethod,
+	resource,
 }: ConsentFormProps) {
 	const initialTeamIds = teams.map((team) => team.id);
 	const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>(
@@ -343,6 +345,7 @@ export default function ConsentForm({
 				state,
 				code_challenge: codeChallenge,
 				code_challenge_method: codeChallengeMethod,
+				resource,
 			});
 
 			if (result.error) {

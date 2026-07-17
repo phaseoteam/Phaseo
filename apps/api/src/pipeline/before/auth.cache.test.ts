@@ -267,6 +267,7 @@ describe("authenticate hot-path caching", () => {
 			oauth_user_id: "user_oauth",
 			oauth_client_id: "client_oauth",
 			oauth_scopes: ["gateway:access", "models:read", "logs:read"],
+			oauth_resource: "https://mcp.phaseo.app/mcp",
 		};
 
 		const { authenticateManagement } = await import("./auth");
@@ -277,6 +278,7 @@ describe("authenticate hot-path caching", () => {
 			ok: true,
 			authMethod: "oauth",
 			oauthScopes: ["gateway:access", "models:read"],
+			oauthResource: "https://mcp.phaseo.app/mcp",
 			scopes: ["gateway:access", "models:read"],
 		});
 	});

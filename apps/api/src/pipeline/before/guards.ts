@@ -254,6 +254,7 @@ export async function guardAuth(req: Request, options: GuardAuthOptions = {}): P
     authMethod?: "api_key" | "oauth";
     oauthClientId?: string | null;
     oauthScopes?: string[];
+    oauthResource?: string | null;
     scopes?: string[];
 }>> {
     const requestId = generatePublicId();
@@ -275,6 +276,7 @@ export async function guardAuth(req: Request, options: GuardAuthOptions = {}): P
             authMethod: auth.authMethod ?? "api_key",
             oauthClientId: auth.oauthClientId ?? null,
             oauthScopes: auth.oauthScopes ?? [],
+            oauthResource: auth.oauthResource ?? null,
             scopes: auth.scopes ?? [],
         },
     };
@@ -291,6 +293,7 @@ export async function guardManagementAuth(req: Request, options: GuardAuthOption
     authMethod?: "api_key" | "oauth";
     oauthClientId?: string | null;
     oauthScopes?: string[];
+    oauthResource?: string | null;
     scopes?: string[];
 }>> {
     const requestId = generatePublicId();
@@ -312,6 +315,7 @@ export async function guardManagementAuth(req: Request, options: GuardAuthOption
             authMethod: auth.authMethod ?? "api_key",
             oauthClientId: auth.oauthClientId ?? null,
             oauthScopes: auth.oauthScopes ?? [],
+            oauthResource: auth.oauthResource ?? null,
             scopes: auth.scopes ?? [],
         },
     };

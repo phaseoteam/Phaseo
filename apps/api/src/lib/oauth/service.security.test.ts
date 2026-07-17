@@ -12,6 +12,8 @@ const state = vi.hoisted(() => ({
 	refreshLookupHashes: [] as string[],
 	authorizationRow: { id: "auth_1", scopes: ["openid"], revoked_at: null } as Record<string, unknown> | null,
 	authorizationUpdateError: null as { message?: string } | null,
+	delegatedKeyRow: null as Record<string, unknown> | null,
+	revokedDelegatedKeyIds: [] as string[],
 }));
 
 vi.mock("@/runtime/env", () => ({
@@ -132,6 +134,21 @@ vi.mock("@/runtime/env", () => ({
 					}),
 				};
 			}
+			if (table === "keys") {
+				return {
+					select: () => ({
+						eq: () => ({
+							maybeSingle: async () => ({ data: state.delegatedKeyRow, error: null }),
+						}),
+					}),
+					update: () => ({
+						eq(column: string, value: unknown) {
+							if (column === "id") state.revokedDelegatedKeyIds.push(String(value));
+							return this;
+						},
+					}),
+				};
+			}
 			throw new Error(`Unexpected table: ${table}`);
 		},
 	}),
@@ -159,6 +176,8 @@ describe("OAuth refresh rotation security", () => {
 		state.refreshLookupHashes.length = 0;
 		state.authorizationRow = { id: "auth_1", scopes: ["openid"], revoked_at: null };
 		state.authorizationUpdateError = null;
+		state.delegatedKeyRow = null;
+		state.revokedDelegatedKeyIds.length = 0;
 		vi.resetModules();
 	});
 
@@ -288,6 +307,40 @@ describe("OAuth refresh rotation security", () => {
 
 		expect(result).toBeNull();
 		expect(state.rpcCalls).toHaveLength(rpcCallCount);
+	});
+
+	it("revokes a delegated access token after verifying its secret", async () => {
+		const kid = "AbCdEf123456";
+		const secret = "AbCdEf123456AbCdEf123456AbCdEf123456AbCd";
+		const { hmacSecret } = await import("@/routes/auth.helpers");
+		state.delegatedKeyRow = {
+			id: "delegated_key_1",
+			hash: await hmacSecret(secret, "test-pepper"),
+			key_kind: "oauth_delegated",
+			status: "active",
+		};
+		const { revokeToken } = await import("./service");
+
+		await revokeToken(`phaseo_v1_sk_${kid}_${secret}`);
+
+		expect(state.revokedDelegatedKeyIds).toEqual(["delegated_key_1"]);
+	});
+
+	it("does not revoke a delegated key for the wrong secret", async () => {
+		const kid = "AbCdEf123456";
+		const secret = "AbCdEf123456AbCdEf123456AbCdEf123456AbCd";
+		const { hmacSecret } = await import("@/routes/auth.helpers");
+		state.delegatedKeyRow = {
+			id: "delegated_key_1",
+			hash: await hmacSecret("Z".repeat(40), "test-pepper"),
+			key_kind: "oauth_delegated",
+			status: "active",
+		};
+		const { revokeToken } = await import("./service");
+
+		await revokeToken(`phaseo_v1_sk_${kid}_${secret}`);
+
+		expect(state.revokedDelegatedKeyIds).toEqual([]);
 	});
 
 	it("fails authorization approval when the grant cannot be persisted", async () => {

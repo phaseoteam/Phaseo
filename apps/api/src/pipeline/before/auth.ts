@@ -193,6 +193,7 @@ export type AuthSuccess = {
     authMethod?: "api_key" | "oauth";
     oauthClientId?: string | null;
     oauthScopes?: string[];
+    oauthResource?: string | null;
     scopes?: string[];
 };
 
@@ -212,6 +213,7 @@ type KeyRow = {
 	oauth_client_id?: string | null;
 	oauth_user_id?: string | null;
 	oauth_scopes?: unknown;
+	oauth_resource?: string | null;
 };
 
 type CachedKeyLookup = KeyRow | "missing" | null;
@@ -561,6 +563,7 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
 				authMethod: "oauth",
 				oauthClientId: clientId,
 				oauthScopes: effectiveScopes,
+				oauthResource: String(keyRow.oauth_resource ?? "").trim() || null,
 				scopes: effectiveScopes,
 			};
 		}

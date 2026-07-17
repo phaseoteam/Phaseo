@@ -1,7 +1,5 @@
 export type Env = {
 	PHASEO_API_BASE_URL: string;
-	/** Service token used only by anonymous catalogue tools. */
-	PHASEO_API_TOKEN?: string;
 };
 
 export type GatewayMeter = {
@@ -57,8 +55,13 @@ export type PhaseoCredentials = {
 	accessToken?: string;
 };
 
-function resolveAccessToken(env: Env, credentials: PhaseoCredentials = {}): string {
-	const token = credentials.accessToken?.trim() || env.PHASEO_API_TOKEN?.trim();
+export type AuthenticatedPhaseoUser = {
+	accessToken: string;
+	workspaceId: string | null;
+};
+
+function resolveAccessToken(credentials: PhaseoCredentials = {}): string {
+	const token = credentials.accessToken?.trim();
 	if (!token) throw new PhaseoApiError("Phaseo authentication is required.");
 	return token;
 }
@@ -73,7 +76,7 @@ export async function requestPhaseo<T>(
 		body?: unknown;
 	} = {},
 ): Promise<T> {
-	const token = resolveAccessToken(env, options.credentials);
+	const token = resolveAccessToken(options.credentials);
 	const response = await fetch(apiUrl(env, path, options.query), {
 		method: options.method ?? "GET",
 		headers: {
@@ -137,4 +140,27 @@ export async function createApiKey(
 	const payload = await requestPhaseo<CreateKeyResponse>(env, "/v1/keys", { method: "POST", credentials, body: input });
 	if (!payload.data?.key) throw new PhaseoApiError(payload.message ?? payload.error ?? "Phaseo could not create the API key.");
 	return payload.data as PhaseoApiKey & { key: string };
+}
+
+export async function authenticatePhaseoUser(request: Request, env: Env): Promise<AuthenticatedPhaseoUser | null> {
+	const authorization = request.headers.get("authorization") ?? "";
+	if (!authorization.toLowerCase().startsWith("bearer ")) return null;
+	const accessToken = authorization.slice(7).trim();
+	if (!accessToken) return null;
+
+	try {
+		const profile = await requestPhaseo<{
+			data?: {
+				current_workspace_id?: string | null;
+				oauth?: { resource?: string | null };
+			};
+		}>(env, "/v1/me", {
+			credentials: { accessToken },
+		});
+		const expectedResource = `${new URL(request.url).origin}/mcp`;
+		if (profile.data?.oauth?.resource !== expectedResource) return null;
+		return { accessToken, workspaceId: profile.data?.current_workspace_id ?? null };
+	} catch {
+		return null;
+	}
 }

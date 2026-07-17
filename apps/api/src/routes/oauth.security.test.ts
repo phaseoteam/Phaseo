@@ -10,6 +10,8 @@ const state = vi.hoisted(() => ({
 	updateFilters: [] as Array<Array<{ column: string; value: unknown }>>,
 	issuedTokenPairs: [] as Array<Record<string, unknown>>,
 	issuedManagedKeys: [] as Array<Record<string, unknown>>,
+	registeredClients: [] as Array<Record<string, unknown>>,
+	oauthAuth: { ok: false, reason: "invalid_token" } as Record<string, unknown>,
 	pollStatus: "ok" as string,
 }));
 
@@ -28,8 +30,28 @@ function json(body: unknown, status = 200, headers: Record<string, string> = {})
 vi.mock("@/runtime/env", () => ({
 	getBindings: () => ({}),
 	getSupabaseAdmin: () => ({
+		auth: {
+			admin: {
+				getUserById: async () => ({
+					data: {
+						user: {
+							email: "user@example.com",
+							user_metadata: { full_name: "Phaseo User" },
+						},
+					},
+				}),
+			},
+		},
 		rpc: async () => ({ data: state.pollStatus, error: null }),
 		from(table: string) {
+			if (table === "oauth_clients") {
+				return {
+					insert: async (payload: Record<string, unknown>) => {
+						state.registeredClients.push(payload);
+						return { error: null };
+					},
+				};
+			}
 			if (table === "oauth_authorization_codes") {
 				return {
 					select: () => ({
@@ -99,6 +121,10 @@ vi.mock("@/routes/utils", () => ({
 	withRuntime: (handler: (req: Request) => Promise<Response>) => async (c: any) => handler(c.req.raw),
 }));
 
+vi.mock("@/pipeline/before/auth", () => ({
+	authenticateManagement: vi.fn(async () => state.oauthAuth),
+}));
+
 vi.mock("@/lib/oauth/service", () => ({
 	CLI_CLIENT_ID: "phaseo_cli",
 	CLI_DEFAULT_SCOPES: ["openid"],
@@ -129,10 +155,15 @@ vi.mock("@/lib/oauth/service", () => ({
 		return { access_token: "phaseo_v1_sk_test", token_type: "Bearer" };
 	}),
 	isFirstPartyCliClient: vi.fn((clientId: string) => clientId === "phaseo_cli" || clientId === "aistats_cli"),
+	isThirdPartyOAuthEnabled: vi.fn(() => true),
 	loadOAuthClient: vi.fn(async () => state.client),
 	makeAuthCodeExpiry: vi.fn(() => "2026-06-10T16:00:00.000Z"),
 	makeDeviceCodeExpiry: vi.fn(() => "2026-06-10T16:00:00.000Z"),
-	normalizeScopes: vi.fn((raw, fallback) => fallback ?? []),
+	normalizeScopes: vi.fn((raw, fallback) => {
+		if (Array.isArray(raw)) return raw.map(String);
+		if (typeof raw === "string" && raw.trim()) return raw.trim().split(/[\s,]+/);
+		return fallback ?? [];
+	}),
 	normalizeUserCode: vi.fn((value: string) => value.trim().toUpperCase()),
 	parseTokenRequestBody: vi.fn((raw: string) => (raw ? JSON.parse(raw) : {})),
 	revokeToken: vi.fn(async () => undefined),
@@ -156,6 +187,8 @@ describe("OAuth route security", () => {
 		state.updateFilters.length = 0;
 		state.issuedTokenPairs.length = 0;
 		state.issuedManagedKeys.length = 0;
+		state.registeredClients.length = 0;
+		state.oauthAuth = { ok: false, reason: "invalid_token" };
 		state.pollStatus = "ok";
 		vi.resetModules();
 	});
@@ -457,5 +490,130 @@ describe("OAuth route security", () => {
 			error_description: "gateway:access consent is required for a delegated key",
 		});
 		expect(state.issuedManagedKeys).toEqual([]);
+	});
+
+	it("registers a public MCP client with delegated Gateway scopes", async () => {
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/register", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				client_name: "ChatGPT",
+				redirect_uris: ["https://chatgpt.com/aip/callback"],
+				scope: "openid gateway:access me:read keys:read keys:write",
+				token_endpoint_auth_method: "none",
+			}),
+		});
+
+		expect(response.status).toBe(201);
+		expect(await response.json()).toMatchObject({
+			client_name: "ChatGPT",
+			redirect_uris: ["https://chatgpt.com/aip/callback"],
+			grant_types: ["authorization_code"],
+			token_endpoint_auth_method: "none",
+		});
+		expect(state.registeredClients).toHaveLength(1);
+		expect(state.registeredClients[0]).toMatchObject({
+			name: "ChatGPT",
+			client_type: "public",
+			allowed_scopes: ["openid", "gateway:access", "me:read", "keys:read", "keys:write"],
+		});
+	});
+
+	it("advertises dynamic registration and public-client token exchange", async () => {
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/.well-known/oauth-authorization-server");
+
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({
+			issuer: "https://api.example.com/oauth",
+			registration_endpoint: "https://api.example.com/oauth/register",
+			token_endpoint_auth_methods_supported: ["client_secret_basic", "client_secret_post", "none"],
+			code_challenge_methods_supported: ["S256"],
+		});
+	});
+
+	it("rejects destructive scopes during dynamic client registration", async () => {
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/register", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				client_name: "Untrusted client",
+				redirect_uris: ["https://example.com/callback"],
+				scope: "openid gateway:access keys:delete",
+			}),
+		});
+
+		expect(response.status).toBe(400);
+		expect(await response.json()).toMatchObject({ error: "invalid_scope" });
+		expect(state.registeredClients).toEqual([]);
+	});
+
+	it("serves userinfo for an opaque delegated OAuth access token", async () => {
+		state.oauthAuth = {
+			ok: true,
+			workspaceId: "workspace_1",
+			apiKeyId: "key_1",
+			apiKeyRef: "oauth_client_1",
+			apiKeyKid: "kid_1",
+			userId: "user_1",
+			authMethod: "oauth",
+			oauthClientId: "client_1",
+			oauthScopes: ["openid", "profile", "email"],
+		};
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/userinfo", {
+			headers: { Authorization: "Bearer phaseo_v1_sk_example" },
+		});
+
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({
+			sub: "user_1",
+			email: "user@example.com",
+			name: "Phaseo User",
+			workspace_id: "workspace_1",
+			client_id: "client_1",
+		});
+	});
+
+	it("binds a delegated access token to the resource echoed at token exchange", async () => {
+		state.client = { id: "mcp_client", name: "MCP Client", client_type: "public" };
+		state.authorizationCodeRow = {
+			id: "authorization_code_resource",
+			client_id: "mcp_client",
+			user_id: "user_1",
+			workspace_id: "ws_1",
+			redirect_uri: "https://chatgpt.com/connector/oauth/callback",
+			scopes: ["openid", "gateway:access", "me:read"],
+			code_challenge: "challenge",
+			code_challenge_method: "S256",
+			resource: "https://mcp.phaseo.app/mcp",
+			expires_at: FUTURE_EXPIRES_AT,
+			used_at: null,
+		};
+		state.authorizationRow = { id: "auth_1", revoked_at: null };
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/token", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				grant_type: "authorization_code",
+				client_id: "mcp_client",
+				code: "authorization-code",
+				redirect_uri: "https://chatgpt.com/connector/oauth/callback",
+				code_verifier: "verifier",
+				resource: "https://mcp.phaseo.app/mcp",
+			}),
+		});
+
+		expect(response.status).toBe(200);
+		expect(state.issuedManagedKeys).toContainEqual({
+			userId: "user_1",
+			workspaceId: "ws_1",
+			clientId: "mcp_client",
+			scopes: ["openid", "gateway:access", "me:read"],
+			resource: "https://mcp.phaseo.app/mcp",
+		});
 	});
 });

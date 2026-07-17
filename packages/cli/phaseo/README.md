@@ -8,7 +8,7 @@ It gives you a first-party terminal workflow for:
 - inspecting your current identity and workspace grant
 - creating and managing regular API keys and management keys
 - managing workspaces, presets, settings, and guardrails
-- using first-party CLI OAuth while user-created OAuth apps remain in private testing
+- creating and managing scoped third-party OAuth applications
 - reading models, providers, pricing, credits, activity, analytics, and generations
 - falling back to a raw authenticated API command when you need an endpoint before a polished subcommand exists
 
@@ -106,7 +106,8 @@ The CLI sits on top of the shared Phaseo OAuth/OIDC stack, not a CLI-only auth p
 
 - first-party CLI login
 - device-code approval
-- future user-created OAuth apps
+- user-created third-party OAuth apps
+- dynamically registered MCP clients
 - `userinfo`, token, revoke, consent, and JWKS/discovery flows
 
 Implemented OAuth endpoints:
@@ -119,7 +120,9 @@ Implemented OAuth endpoints:
 - `POST /oauth/revoke`
 - `GET /oauth/userinfo`
 - `GET /oauth/.well-known/openid-configuration`
+- `GET /.well-known/oauth-authorization-server/oauth`
 - `GET /oauth/.well-known/jwks.json`
+- `POST /oauth/register`
 
 Supported grants:
 
@@ -127,7 +130,7 @@ Supported grants:
 - authorization code with required PKCE `S256`
 - refresh token
 
-User-created OAuth apps are coming soon. This release keeps OAuth client creation in private testing while the first-party Phaseo CLI exercises the shared OAuth/OIDC foundation.
+First-party CLI sessions use short-lived access tokens and rotating refresh tokens. User-created applications and MCP clients use authorization code with PKCE, exact redirect URIs, explicit workspace consent, stored scopes, revocable delegated access tokens, and optional protected-resource binding.
 
 ## Security Notes
 

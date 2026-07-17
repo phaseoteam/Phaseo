@@ -6,8 +6,8 @@
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { json, withRuntime } from "./utils";
-import { ALL_SUPPORTED_SCOPES } from "@/lib/authz/capabilities";
-import { getApiBaseUrl, getIssuer, getLocalJwks } from "@/lib/oauth/service";
+import { getLocalJwks } from "@/lib/oauth/service";
+import { oauthAuthorizationServerMetadata } from "./oauth";
 
 export const rootRouter = new Hono<Env>();
 
@@ -26,26 +26,28 @@ rootRouter.get(
     "/.well-known/openid-configuration",
     withRuntime(async () =>
         json(
-            {
-                issuer: getIssuer(),
-                authorization_endpoint: `${getApiBaseUrl()}/oauth/authorize`,
-                token_endpoint: `${getApiBaseUrl()}/oauth/token`,
-                device_authorization_endpoint: `${getApiBaseUrl()}/oauth/device/code`,
-                revocation_endpoint: `${getApiBaseUrl()}/oauth/revoke`,
-                userinfo_endpoint: `${getApiBaseUrl()}/oauth/userinfo`,
-                jwks_uri: `${getApiBaseUrl()}/oauth/.well-known/jwks.json`,
-                response_types_supported: ["code"],
-                grant_types_supported: [
-                    "authorization_code",
-                    "refresh_token",
-                    "urn:ietf:params:oauth:grant-type:device_code",
-                ],
-                scopes_supported: [...ALL_SUPPORTED_SCOPES],
-                code_challenge_methods_supported: ["S256"],
-            },
+            oauthAuthorizationServerMetadata(),
             200,
             { "Cache-Control": "public, max-age=300" },
         )
+    )
+);
+
+// RFC 8414 inserts the well-known path before an issuer path. With the issuer
+// https://api.phaseo.app/oauth, standards-compliant clients discover this URL.
+rootRouter.get(
+    "/.well-known/oauth-authorization-server/oauth",
+    withRuntime(async () =>
+        json(oauthAuthorizationServerMetadata(), 200, { "Cache-Control": "public, max-age=300" })
+    )
+);
+
+// Keep a root-level alias for clients that probe the host before resolving the
+// issuer-specific RFC 8414 URL.
+rootRouter.get(
+    "/.well-known/oauth-authorization-server",
+    withRuntime(async () =>
+        json(oauthAuthorizationServerMetadata(), 200, { "Cache-Control": "public, max-age=300" })
     )
 );
 

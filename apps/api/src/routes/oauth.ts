@@ -3,6 +3,7 @@ import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin } from "@/runtime/env";
 import { ALL_SUPPORTED_SCOPES, GATEWAY_ACCESS_SCOPE } from "@/lib/authz/capabilities";
 import { checkOAuthRateLimit } from "@/lib/oauth/rateLimit";
+import { authenticateManagement } from "@/pipeline/before/auth";
 import { json, withRuntime } from "@/routes/utils";
 import {
 	CLI_CLIENT_ID,
@@ -10,7 +11,6 @@ import {
 	assertRedirectAllowed,
 	authorizationConsentUrl,
 	bearerToken,
-	claimsScopes,
 	createOpaqueCode,
 	createUserCode,
 	defaultDeviceIntervalSeconds,
@@ -26,6 +26,7 @@ import {
 	issueTokenPairForGrant,
 	issueOAuthManagedKeyForAuthorizationCode,
 	isFirstPartyCliClient,
+	isThirdPartyOAuthEnabled,
 	loadOAuthClient,
 	makeAuthCodeExpiry,
 	makeDeviceCodeExpiry,
@@ -34,7 +35,6 @@ import {
 	parseTokenRequestBody,
 	revokeToken,
 	rotateRefreshToken,
-	validateLocalAccessToken,
 	verificationUriFor,
 	verifyPkce,
 	ensureGrant,
@@ -44,6 +44,20 @@ import {
 
 export const oauthRouter = new Hono<Env>();
 const MAX_OAUTH_REQUEST_BODY_BYTES = 16 * 1024;
+const DYNAMIC_MCP_SCOPES = [
+	"openid",
+	"profile",
+	"email",
+	GATEWAY_ACCESS_SCOPE,
+	"me:read",
+	"models:read",
+	"providers:read",
+	"pricing:read",
+	"workspaces:read",
+	"keys:read",
+	"keys:write",
+] as const;
+const DYNAMIC_MCP_SCOPE_SET = new Set<string>(DYNAMIC_MCP_SCOPES);
 
 class OAuthRequestBodyTooLarge extends Error {}
 
@@ -151,6 +165,151 @@ async function requireSupabaseActor(req: Request) {
 	return getSupabaseActor(token);
 }
 
+function isDynamicClientRedirectUriAllowed(value: unknown): value is string {
+	if (typeof value !== "string") return false;
+	try {
+		const url = new URL(value);
+		if (url.username || url.password || url.hash) return false;
+		if (url.protocol === "https:") return true;
+		return url.protocol === "http:" &&
+			(url.hostname === "127.0.0.1" || url.hostname === "localhost" || url.hostname === "::1" || url.hostname === "[::1]");
+	} catch {
+		return false;
+	}
+}
+
+function isDynamicClientMetadataUrlAllowed(value: unknown): value is string {
+	if (typeof value !== "string") return false;
+	try {
+		const url = new URL(value);
+		return url.protocol === "https:" && !url.username && !url.password && !url.hash;
+	} catch {
+		return false;
+	}
+}
+
+function isProtectedResourceAllowed(value: string): boolean {
+	try {
+		const url = new URL(value);
+		if (url.username || url.password || url.hash) return false;
+		if (url.protocol === "https:") return true;
+		return url.protocol === "http:" &&
+			(url.hostname === "127.0.0.1" || url.hostname === "localhost" || url.hostname === "::1" || url.hostname === "[::1]");
+	} catch {
+		return false;
+	}
+}
+
+export function oauthAuthorizationServerMetadata() {
+	const apiBaseUrl = getApiBaseUrl();
+	return {
+		issuer: getIssuer(),
+		authorization_endpoint: `${apiBaseUrl}/oauth/authorize`,
+		token_endpoint: `${apiBaseUrl}/oauth/token`,
+		device_authorization_endpoint: `${apiBaseUrl}/oauth/device/code`,
+		revocation_endpoint: `${apiBaseUrl}/oauth/revoke`,
+		userinfo_endpoint: `${apiBaseUrl}/oauth/userinfo`,
+		jwks_uri: `${apiBaseUrl}/oauth/.well-known/jwks.json`,
+		response_types_supported: ["code"],
+		grant_types_supported: [
+			"authorization_code",
+			"refresh_token",
+			"urn:ietf:params:oauth:grant-type:device_code",
+		],
+		token_endpoint_auth_methods_supported: ["client_secret_basic", "client_secret_post", "none"],
+		code_challenge_methods_supported: ["S256"],
+		scopes_supported: [...ALL_SUPPORTED_SCOPES],
+		...(isThirdPartyOAuthEnabled() ? { registration_endpoint: `${apiBaseUrl}/oauth/register` } : {}),
+	};
+}
+
+/**
+ * Register a public OAuth client for an MCP host. The registration only sets
+ * which scopes the client may later request; the user still grants an exact
+ * subset for an exact workspace on the consent screen.
+ */
+oauthRouter.post(
+	"/register",
+	withRuntime(async (req) => {
+		if (!isThirdPartyOAuthEnabled()) {
+			return oauthError("registration_not_supported", "Dynamic client registration is not enabled", 403);
+		}
+		if (!(await checkOAuthRateLimit(req, "strict", "dynamic-client-registration"))) return rateLimitError();
+		if (!req.headers.get("content-type")?.toLowerCase().includes("application/json")) {
+			return oauthError("invalid_client_metadata", "Dynamic client registration requires application/json");
+		}
+
+		let body: Record<string, unknown>;
+		try {
+			body = await readBody(req);
+		} catch (error) {
+			if (error instanceof OAuthRequestBodyTooLarge) return invalidBodyError(error);
+			return oauthError("invalid_client_metadata", "Request body must be valid JSON");
+		}
+
+		const redirectUris = Array.isArray(body.redirect_uris) ? body.redirect_uris : [];
+		if (redirectUris.length === 0 || redirectUris.length > 10 || !redirectUris.every(isDynamicClientRedirectUriAllowed)) {
+			return oauthError("invalid_redirect_uri", "redirect_uris must contain 1-10 HTTPS or loopback callback URLs");
+		}
+		if (body.client_uri !== undefined && !isDynamicClientMetadataUrlAllowed(body.client_uri)) {
+			return oauthError("invalid_client_metadata", "client_uri must be an HTTPS URL");
+		}
+		if (body.logo_uri !== undefined && !isDynamicClientMetadataUrlAllowed(body.logo_uri)) {
+			return oauthError("invalid_client_metadata", "logo_uri must be an HTTPS URL");
+		}
+
+		const clientName = String(body.client_name ?? "Phaseo MCP client").trim();
+		if (clientName.length < 3 || clientName.length > 100) {
+			return oauthError("invalid_client_metadata", "client_name must contain 3-100 characters");
+		}
+		if (String(body.token_endpoint_auth_method ?? "none") !== "none") {
+			return oauthError("invalid_client_metadata", "Only public clients using token_endpoint_auth_method=none are supported");
+		}
+
+		const responseTypes = Array.isArray(body.response_types) ? body.response_types.map(String) : ["code"];
+		const grantTypes = Array.isArray(body.grant_types) ? body.grant_types.map(String) : ["authorization_code"];
+		if (!responseTypes.every((value) => value === "code") || !grantTypes.every((value) => value === "authorization_code")) {
+			return oauthError("invalid_client_metadata", "Dynamically registered clients support authorization_code with code responses");
+		}
+
+		const requestedScopes = normalizeScopes(body.scope, DYNAMIC_MCP_SCOPES);
+		if (requestedScopes.length === 0 || !requestedScopes.every((scope) => DYNAMIC_MCP_SCOPE_SET.has(scope))) {
+			return oauthError("invalid_scope", "One or more requested scopes are not supported for dynamically registered MCP clients");
+		}
+		if (!requestedScopes.includes(GATEWAY_ACCESS_SCOPE)) {
+			return oauthError("invalid_scope", `${GATEWAY_ACCESS_SCOPE} is required for dynamically registered MCP clients`);
+		}
+
+		const clientId = crypto.randomUUID();
+		const safeRedirectUris = Array.from(new Set(redirectUris as string[]));
+		const { error } = await getSupabaseAdmin().from("oauth_clients").insert({
+			id: clientId,
+			name: clientName,
+			description: typeof body.client_description === "string" ? body.client_description.slice(0, 500) : null,
+			logo_url: typeof body.logo_uri === "string" ? body.logo_uri : null,
+			homepage_url: typeof body.client_uri === "string" ? body.client_uri : null,
+			client_type: "public",
+			redirect_uris: safeRedirectUris,
+			allowed_scopes: requestedScopes,
+			is_first_party: false,
+			beta_status: "public",
+			status: "active",
+		});
+		if (error) return oauthError("server_error", "Failed to register OAuth client", 500);
+
+		return json({
+			client_id: clientId,
+			client_id_issued_at: Math.floor(Date.now() / 1000),
+			client_name: clientName,
+			redirect_uris: safeRedirectUris,
+			response_types: ["code"],
+			grant_types: ["authorization_code"],
+			token_endpoint_auth_method: "none",
+			scope: requestedScopes.join(" "),
+		}, 201, { "Cache-Control": "no-store" });
+	}),
+);
+
 oauthRouter.post(
 	"/device/code",
 	withRuntime(async (req) => {
@@ -220,6 +379,7 @@ oauthRouter.get(
 		const responseType = url.searchParams.get("response_type")?.trim() ?? "code";
 		const codeChallenge = url.searchParams.get("code_challenge")?.trim() ?? "";
 		const codeChallengeMethod = url.searchParams.get("code_challenge_method")?.trim() ?? "S256";
+		const resource = url.searchParams.get("resource")?.trim() ?? "";
 		if (!(await checkOAuthRateLimit(req, "token", "authorize"))) return rateLimitError();
 
 		if (responseType !== "code") {
@@ -227,6 +387,9 @@ oauthRouter.get(
 		}
 		if (!clientId || !redirectUri || !codeChallenge || codeChallengeMethod !== "S256") {
 			return oauthError("invalid_request", "client_id, redirect_uri, and S256 PKCE are required");
+		}
+		if (resource && !isProtectedResourceAllowed(resource)) {
+			return oauthError("invalid_target", "resource must be an HTTPS or loopback protected resource URL");
 		}
 		const client = await loadOAuthClient(clientId);
 		if (!client || !assertRedirectAllowed(client, redirectUri)) {
@@ -248,7 +411,7 @@ oauthRouter.get(
 		}
 
 		const params = new URLSearchParams();
-		for (const key of ["client_id", "redirect_uri", "response_type", "scope", "state", "code_challenge", "code_challenge_method"]) {
+		for (const key of ["client_id", "redirect_uri", "response_type", "scope", "state", "code_challenge", "code_challenge_method", "resource"]) {
 			const value = url.searchParams.get(key);
 			if (value) params.set(key, value);
 		}
@@ -280,9 +443,13 @@ oauthRouter.post(
 		const workspaceIds = normalizeWorkspaceIds(body.workspace_ids);
 		const codeChallenge = String(body.code_challenge ?? "").trim();
 		const codeChallengeMethod = String(body.code_challenge_method ?? "S256").trim();
+		const resource = String(body.resource ?? "").trim();
 		const state = typeof body.state === "string" ? body.state : null;
 		if (!clientId || !redirectUri || !workspaceId || !codeChallenge || codeChallengeMethod !== "S256") {
 			return oauthError("invalid_request", "client_id, redirect_uri, workspace_id, and S256 PKCE are required");
+		}
+		if (resource && !isProtectedResourceAllowed(resource)) {
+			return oauthError("invalid_target", "resource must be an HTTPS or loopback protected resource URL");
 		}
 
 		const client = await loadOAuthClient(clientId);
@@ -335,6 +502,7 @@ oauthRouter.post(
 			scopes,
 			code_challenge: codeChallenge,
 			code_challenge_method: codeChallengeMethod,
+			resource: resource || null,
 			expires_at: makeAuthCodeExpiry(),
 		});
 		if (insert.error) return oauthError("server_error", insert.error.message, 500);
@@ -532,7 +700,7 @@ oauthRouter.post(
 			}
 			const { data, error } = await supabase
 				.from("oauth_authorization_codes")
-				.select("id, client_id, user_id, workspace_id, redirect_uri, scopes, code_challenge, code_challenge_method, expires_at, used_at")
+				.select("id, client_id, user_id, workspace_id, redirect_uri, scopes, code_challenge, code_challenge_method, resource, expires_at, used_at")
 				.in("code_hash", await hashOAuthSecretCandidates(code))
 				.eq("client_id", client.id)
 				.maybeSingle();
@@ -542,6 +710,11 @@ oauthRouter.post(
 			}
 			if (String(data.redirect_uri) !== redirectUri) {
 				return oauthError("invalid_grant", "redirect_uri does not match");
+			}
+			const resource = String(body.resource ?? "").trim();
+			const grantedResource = String(data.resource ?? "").trim();
+			if (resource !== grantedResource) {
+				return oauthError("invalid_target", "resource does not match the authorization request");
 			}
 			if (!(await verifyPkce({
 				codeVerifier: verifier,
@@ -562,6 +735,7 @@ oauthRouter.post(
 				workspaceId: String(data.workspace_id),
 				clientId: String(data.client_id),
 				scopes: Array.isArray(data.scopes) ? data.scopes.map(String) : [],
+				...(grantedResource ? { resource: grantedResource } : {}),
 			};
 			if (!isFirstPartyCliClient(client.id) && !tokenInput.scopes.includes(GATEWAY_ACCESS_SCOPE)) {
 				return oauthError("invalid_scope", `${GATEWAY_ACCESS_SCOPE} consent is required for a delegated key`);
@@ -619,27 +793,31 @@ oauthRouter.post(
 oauthRouter.get(
 	"/userinfo",
 	withRuntime(async (req) => {
-		const token = bearerToken(req);
-		if (!token) return oauthError("invalid_token", "Bearer token is required", 401);
-		const validation = await validateLocalAccessToken(token);
-		if (!validation.valid || !validation.claims) {
-			return oauthError("invalid_token", validation.error ?? "Invalid access token", 401);
+		const auth = await authenticateManagement(req, { useKvCache: false });
+		if (!auth.ok || auth.authMethod !== "oauth" || !auth.userId || !auth.oauthClientId) {
+			return oauthError("invalid_token", "Bearer OAuth token is invalid or expired", 401);
 		}
-		if (!(await hasActiveOAuthWorkspaceAccess({
-			userId: String(validation.claims.user_id),
-			workspaceId: String(validation.claims.workspace_id),
-			clientId: String(validation.claims.client_id),
-		}))) {
-			return oauthError("invalid_token", "OAuth workspace access is no longer active", 401);
+		const scopes = auth.oauthScopes ?? auth.scopes ?? [];
+		if (!scopes.includes("openid")) {
+			return oauthError("insufficient_scope", "Token requires openid", 403);
 		}
-		const scopes = claimsScopes(validation.claims);
+		const { data } = await getSupabaseAdmin().auth.admin.getUserById(auth.userId);
+		const user = data?.user;
+		const metadata = (user?.user_metadata ?? {}) as Record<string, unknown>;
+		const name =
+			typeof metadata.full_name === "string"
+				? metadata.full_name
+				: typeof metadata.name === "string"
+					? metadata.name
+					: null;
 		return json(
 			{
-				sub: validation.claims.sub,
-				email: scopes.includes("email") ? validation.claims.email ?? null : undefined,
-				name: scopes.includes("profile") ? (validation.claims as any).name ?? null : undefined,
-				workspace_id: validation.claims.workspace_id,
-				client_id: validation.claims.client_id,
+				sub: auth.userId,
+				email: scopes.includes("email") ? user?.email ?? null : undefined,
+				name: scopes.includes("profile") ? name : undefined,
+				workspace_id: auth.workspaceId,
+				client_id: auth.oauthClientId,
+				resource: auth.oauthResource ?? undefined,
 			},
 			200,
 			{ "Cache-Control": "no-store" },
@@ -651,23 +829,7 @@ oauthRouter.get(
 	"/.well-known/openid-configuration",
 	withRuntime(async () =>
 		json(
-			{
-				issuer: getIssuer(),
-				authorization_endpoint: `${getApiBaseUrl()}/oauth/authorize`,
-				token_endpoint: `${getApiBaseUrl()}/oauth/token`,
-				device_authorization_endpoint: `${getApiBaseUrl()}/oauth/device/code`,
-				revocation_endpoint: `${getApiBaseUrl()}/oauth/revoke`,
-				userinfo_endpoint: `${getApiBaseUrl()}/oauth/userinfo`,
-				jwks_uri: `${getApiBaseUrl()}/oauth/.well-known/jwks.json`,
-				response_types_supported: ["code"],
-				grant_types_supported: [
-					"authorization_code",
-					"refresh_token",
-					"urn:ietf:params:oauth:grant-type:device_code",
-				],
-				code_challenge_methods_supported: ["S256"],
-				scopes_supported: [...ALL_SUPPORTED_SCOPES],
-			},
+			oauthAuthorizationServerMetadata(),
 			200,
 			{ "Cache-Control": "public, max-age=300" },
 			),
@@ -681,23 +843,7 @@ oauthRouter.get(
 	"/.well-known/oauth-authorization-server",
 	withRuntime(async () =>
 		json(
-			{
-				issuer: getIssuer(),
-				authorization_endpoint: `${getApiBaseUrl()}/oauth/authorize`,
-				token_endpoint: `${getApiBaseUrl()}/oauth/token`,
-				device_authorization_endpoint: `${getApiBaseUrl()}/oauth/device/code`,
-				revocation_endpoint: `${getApiBaseUrl()}/oauth/revoke`,
-				userinfo_endpoint: `${getApiBaseUrl()}/oauth/userinfo`,
-				jwks_uri: `${getApiBaseUrl()}/oauth/.well-known/jwks.json`,
-				response_types_supported: ["code"],
-				grant_types_supported: [
-					"authorization_code",
-					"refresh_token",
-					"urn:ietf:params:oauth:grant-type:device_code",
-				],
-				code_challenge_methods_supported: ["S256"],
-				scopes_supported: [...ALL_SUPPORTED_SCOPES],
-			},
+			oauthAuthorizationServerMetadata(),
 			200,
 			{ "Cache-Control": "public, max-age=300" },
 		),

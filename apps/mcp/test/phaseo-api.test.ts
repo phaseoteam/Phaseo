@@ -4,7 +4,6 @@ import { createApiKey, getModel, listApiKeys, listModels, listProviders } from "
 
 const env = {
 	PHASEO_API_BASE_URL: "https://api.phaseo.app",
-	PHASEO_API_TOKEN: "test-read-only-token",
 };
 
 const fetchMock = vi.fn();
@@ -15,13 +14,13 @@ describe("Phaseo API client", () => {
 		vi.unstubAllGlobals();
 	});
 
-	it("uses the read-only token to list models", async () => {
+	it("uses the user's OAuth token to list models", async () => {
 		fetchMock.mockResolvedValue(Response.json({ ok: true, models: [] }));
 		vi.stubGlobal("fetch", fetchMock);
 
-		await expect(listModels(env)).resolves.toEqual([]);
+		await expect(listModels(env, 250, { accessToken: "oauth-token" })).resolves.toEqual([]);
 		expect((fetchMock.mock.calls[0]?.[0] as URL).href).toBe("https://api.phaseo.app/v1/models?limit=250");
-		expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({ headers: { Authorization: "Bearer test-read-only-token" }, method: "GET" });
+		expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({ headers: { Authorization: "Bearer oauth-token" }, method: "GET" });
 	});
 
 	it("uses the user's OAuth token for authenticated key operations", async () => {
@@ -45,7 +44,7 @@ describe("Phaseo API client", () => {
 		fetchMock.mockResolvedValue(Response.json({ ok: true, models: [] }));
 		vi.stubGlobal("fetch", fetchMock);
 
-		await expect(getModel(env, "openai/gpt-5")).resolves.toBeNull();
+		await expect(getModel(env, "openai/gpt-5", { accessToken: "oauth-token" })).resolves.toBeNull();
 		expect(fetchMock.mock.calls[0]?.[0].href).toBe("https://api.phaseo.app/v1/models?id=openai%2Fgpt-5&limit=1");
 	});
 
@@ -53,7 +52,7 @@ describe("Phaseo API client", () => {
 		fetchMock.mockResolvedValue(Response.json({ ok: true, providers: [] }));
 		vi.stubGlobal("fetch", fetchMock);
 
-		await expect(listProviders(env)).resolves.toEqual([]);
+		await expect(listProviders(env, { accessToken: "oauth-token" })).resolves.toEqual([]);
 		expect(fetchMock.mock.calls[0]?.[0].href).toBe("https://api.phaseo.app/v1/providers?limit=250");
 	});
 });

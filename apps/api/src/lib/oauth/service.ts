@@ -4,7 +4,7 @@ import {
 	GATEWAY_ACCESS_SCOPE,
 	parseStoredScopeList,
 } from "@/lib/authz/capabilities";
-import { resolveActiveKeyPepper } from "@/lib/security/keyPepper";
+import { resolveActiveKeyPepper, resolveKeyPepperCandidates } from "@/lib/security/keyPepper";
 import { generateGatewayKey, hmacSecret, timingSafeEqual } from "@/routes/auth.helpers";
 import { validateOAuthToken, type JWTClaims } from "./jwt";
 
@@ -55,6 +55,7 @@ type TokenIssueInput = {
 	workspaceId: string;
 	clientId: string;
 	scopes: string[];
+	resource?: string | null;
 	email?: string | null;
 	name?: string | null;
 };
@@ -624,6 +625,7 @@ export async function issueOAuthManagedKeyForAuthorizationCode(
 		p_workspace_id: input.workspaceId,
 		p_client_id: input.clientId,
 		p_scopes: input.scopes,
+		p_resource: input.resource ?? null,
 	});
 	if (error) throw new Error(error.message || "Failed to consume OAuth code and issue key");
 	if (data !== "issued") return null;
@@ -631,6 +633,7 @@ export async function issueOAuthManagedKeyForAuthorizationCode(
 		access_token: generated.plaintext,
 		token_type: "Bearer",
 		scope: input.scopes.join(" "),
+		...(input.resource ? { resource: input.resource } : {}),
 	};
 }
 
@@ -755,6 +758,30 @@ export async function revokeToken(token: string) {
 		.update({ revoked_at: new Date().toISOString() })
 		.in("token_hash", tokenHashes)
 		.is("revoked_at", null);
+
+	// Third-party authorization-code grants return an opaque delegated Gateway
+	// key as their OAuth access token. RFC 7009 revocation must invalidate that
+	// credential too, while proving possession of its secret before changing it.
+	const delegatedKey = /^phaseo_v1_sk_([A-Za-z0-9]{12})_([A-Za-z0-9]{40})$/.exec(token);
+	if (!delegatedKey) return;
+	const [, kid, secret] = delegatedKey;
+	const { data: keyRow, error } = await supabase
+		.from("keys")
+		.select("id, hash, key_kind, status")
+		.eq("kid", kid)
+		.maybeSingle();
+	if (error || !keyRow || keyRow.key_kind !== "oauth_delegated" || keyRow.status !== "active") return;
+
+	const candidates = resolveKeyPepperCandidates(getBindings());
+	const hashes = await Promise.all(candidates.map((candidate) => hmacSecret(secret, candidate.value)));
+	if (!hashes.some((candidate) => timingSafeEqual(candidate, String(keyRow.hash ?? "")))) return;
+
+	await supabase
+		.from("keys")
+		.update({ status: "revoked" })
+		.eq("id", keyRow.id)
+		.eq("status", "active")
+		.eq("key_kind", "oauth_delegated");
 }
 
 export function makeDeviceCodeExpiry(): string {

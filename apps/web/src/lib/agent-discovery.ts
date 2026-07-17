@@ -3,7 +3,6 @@ import { absoluteUrl, SITE_URL } from "@/lib/seo";
 
 const DEFAULT_DOCS_BASE_URL = "https://phaseo.app/docs";
 const DEFAULT_GATEWAY_API_BASE_URL = "https://api.phaseo.app/v1";
-const DEFAULT_SUPABASE_BASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co";
 
 function normalizeUrl(value: string): string {
 	return value.replace(/\/+$/, "");
@@ -12,14 +11,6 @@ function normalizeUrl(value: string): string {
 export function normalizeGatewayApiBaseUrl(value: string): string {
 	const normalized = normalizeUrl(value);
 	return normalized.endsWith("/v1") ? normalized : `${normalized}/v1`;
-}
-
-function normalizeSupabaseBaseUrl(value: string): string {
-	const trimmed = normalizeUrl(value);
-	if (trimmed.endsWith("/auth/v1")) {
-		return trimmed.slice(0, -"/auth/v1".length);
-	}
-	return trimmed;
 }
 
 export const DOCS_BASE_URL = normalizeUrl(
@@ -46,21 +37,22 @@ export const OAUTH_PROTECTED_RESOURCE_URL = absoluteUrl(
 	"/.well-known/oauth-protected-resource",
 );
 
-const supabaseBaseUrl = normalizeSupabaseBaseUrl(
-	process.env.NEXT_PUBLIC_SUPABASE_URL ??
-		process.env.SUPABASE_URL ??
-		DEFAULT_SUPABASE_BASE_URL,
-);
-
-export const OAUTH_ISSUER = `${supabaseBaseUrl}/auth/v1`;
-export const OAUTH_AUTHORIZATION_ENDPOINT = `${OAUTH_ISSUER}/oauth/authorize`;
-export const OAUTH_TOKEN_ENDPOINT = `${OAUTH_ISSUER}/oauth/token`;
-export const OAUTH_JWKS_URI = `${OAUTH_ISSUER}/.well-known/jwks.json`;
+export const OAUTH_ISSUER = `${API_ORIGIN}/oauth`;
+export const OAUTH_AUTHORIZATION_ENDPOINT = `${API_ORIGIN}/oauth/authorize`;
+export const OAUTH_TOKEN_ENDPOINT = `${API_ORIGIN}/oauth/token`;
+export const OAUTH_JWKS_URI = `${API_ORIGIN}/oauth/.well-known/jwks.json`;
 export const OAUTH_SCOPES_SUPPORTED = [
 	"openid",
 	"email",
 	"profile",
 	"gateway:access",
+	"me:read",
+	"models:read",
+	"providers:read",
+	"pricing:read",
+	"workspaces:read",
+	"keys:read",
+	"keys:write",
 ] as const;
 export const CONTENT_SIGNAL_VALUE = "ai-train=no, search=yes, ai-input=yes";
 
@@ -176,7 +168,7 @@ export function buildOAuthProtectedResourceMetadata() {
 	return {
 		resource: API_BASE_URL,
 		authorization_servers: [OAUTH_ISSUER],
-		scopes_supported: ["gateway:access"],
+		scopes_supported: [...OAUTH_SCOPES_SUPPORTED],
 		bearer_methods_supported: ["header"],
 	};
 }
@@ -186,8 +178,16 @@ export function buildOAuthAuthorizationServerMetadata() {
 		issuer: OAUTH_ISSUER,
 		authorization_endpoint: OAUTH_AUTHORIZATION_ENDPOINT,
 		token_endpoint: OAUTH_TOKEN_ENDPOINT,
+		device_authorization_endpoint: `${API_ORIGIN}/oauth/device/code`,
+		revocation_endpoint: `${API_ORIGIN}/oauth/revoke`,
+		userinfo_endpoint: `${API_ORIGIN}/oauth/userinfo`,
+		registration_endpoint: `${API_ORIGIN}/oauth/register`,
 		jwks_uri: OAUTH_JWKS_URI,
-		grant_types_supported: ["authorization_code", "refresh_token"],
+		grant_types_supported: [
+			"authorization_code",
+			"refresh_token",
+			"urn:ietf:params:oauth:grant-type:device_code",
+		],
 		response_types_supported: ["code"],
 		response_modes_supported: ["query"],
 		scopes_supported: [...OAUTH_SCOPES_SUPPORTED],

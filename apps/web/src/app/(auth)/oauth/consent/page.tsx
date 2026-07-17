@@ -22,6 +22,7 @@ interface ConsentPageProps {
 		state?: string;
 		code_challenge?: string;
 		code_challenge_method?: string;
+		resource?: string;
 		error?: string;
 	}>;
 }
@@ -394,6 +395,7 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 				state={params.state}
 				codeChallenge={params.code_challenge}
 				codeChallengeMethod={params.code_challenge_method}
+				resource={params.resource}
 			/>
 		</div>
 	);

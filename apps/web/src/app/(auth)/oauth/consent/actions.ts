@@ -22,6 +22,7 @@ interface ApproveAuthorizationInput {
 	state?: string;
 	code_challenge?: string;
 	code_challenge_method?: string;
+	resource?: string;
 }
 
 interface ConsentResult {
@@ -128,8 +129,6 @@ export async function approveAuthorizationAction(
 			return { error: "The active team must also be selected for authorization" };
 		}
 
-		const isBuiltInFirstPartyClient = resolvedClientId === "phaseo_cli";
-
 		// Verify user is a member of every selected team
 		const { data: memberships, error: membershipError } = await supabase
 			.from("workspace_members")
@@ -154,18 +153,27 @@ export async function approveAuthorizationAction(
 			};
 		}
 
-		if (!isBuiltInFirstPartyClient) {
-			// Verify OAuth app exists and is active
-			const { data: oauthApp, error: appError } = await supabase
-				.from("oauth_app_metadata")
-				.select("id, status")
-				.eq("client_id", resolvedClientId)
+		// User-owned applications live in oauth_app_metadata. First-party and
+		// dynamically registered MCP clients live in oauth_clients. The API-owned
+		// authorization server accepts both stores, so consent must do the same.
+		const { data: oauthApp } = await supabase
+			.from("oauth_app_metadata")
+			.select("client_id")
+			.eq("client_id", resolvedClientId)
+			.eq("status", "active")
+			.maybeSingle();
+		let registeredClient = null;
+		if (!oauthApp) {
+			const result = await supabase
+				.from("oauth_clients")
+				.select("id")
+				.eq("id", resolvedClientId)
 				.eq("status", "active")
-				.single();
-
-			if (appError || !oauthApp) {
-				return { error: "OAuth application not found or inactive" };
-			}
+				.maybeSingle();
+			registeredClient = result.data;
+		}
+		if (!oauthApp && !registeredClient) {
+			return { error: "OAuth application not found or inactive" };
 		}
 
 		const resolvedRedirectUri = input.redirect_uri?.trim() || null;
@@ -199,6 +207,7 @@ export async function approveAuthorizationAction(
 				state: input.state,
 				code_challenge: input.code_challenge,
 				code_challenge_method: input.code_challenge_method,
+				resource: input.resource,
 			}),
 			cache: "no-store",
 		});
