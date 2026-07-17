@@ -195,6 +195,23 @@ describe("OAuth route security", () => {
 		vi.resetModules();
 	});
 
+	it("allows browser-based OAuth clients to preflight token requests", async () => {
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/token", {
+			method: "OPTIONS",
+			headers: {
+				origin: "http://localhost:6274",
+				"access-control-request-method": "POST",
+				"access-control-request-headers": "content-type",
+			},
+		});
+
+		expect(response.status).toBe(204);
+		expect(response.headers.get("access-control-allow-origin")).toBe("*");
+		expect(response.headers.get("access-control-allow-methods")).toContain("POST");
+		expect(response.headers.get("access-control-allow-headers")).toContain("Content-Type");
+	});
+
 	it("does not let device-code denial overwrite a code that is no longer pending", async () => {
 		state.deviceRow = {
 			id: "device_1",
@@ -233,6 +250,7 @@ describe("OAuth route security", () => {
 		});
 
 		expect(response.status).toBe(413);
+		expect(response.headers.get("access-control-allow-origin")).toBe("*");
 		await expect(response.json()).resolves.toMatchObject({ error: "invalid_request" });
 	});
 
