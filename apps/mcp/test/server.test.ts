@@ -21,6 +21,7 @@ beforeAll(async () => {
 
 afterEach(async () => {
 	await Promise.all(connectedClients.splice(0).map((client) => client.close()));
+	vi.unstubAllGlobals();
 });
 
 describe("Phaseo MCP server metadata", () => {
@@ -28,7 +29,12 @@ describe("Phaseo MCP server metadata", () => {
 		const server = createServer(env, {
 			accessToken: "upstream-token",
 			workspaceId: "workspace_1",
-			scopes: ["models:read", "providers:read", "pricing:read", "keys:read"],
+			scopes: [
+				"me:read", "models:read", "providers:read", "pricing:read", "credits:read",
+				"activity:read", "analytics:read", "generations:read", "workspaces:read",
+				"keys:read", "presets:read", "settings:read", "guardrails:read",
+				"management_keys:read", "oauth_clients:read",
+			],
 		});
 		const client = new Client({ name: "phaseo-mcp-test", version: "1.0.0" });
 		connectedClients.push(client);
@@ -42,9 +48,37 @@ describe("Phaseo MCP server metadata", () => {
 		expect(Object.keys(tools)).toEqual([
 			"models_list",
 			"model_get",
+			"pricing_calculate",
 			"providers_list",
 			"cost_estimate",
 			"api_keys_list",
+			"account_get",
+			"organisations_list",
+			"endpoints_list",
+			"pricing_models_list",
+			"credits_get",
+			"activity_list",
+			"analytics_get",
+			"generation_get",
+			"logs_list",
+			"log_get",
+			"workspaces_list",
+			"workspace_get",
+			"workspace_members_list",
+			"api_key_get",
+			"presets_list",
+			"preset_get",
+			"settings_get",
+			"guardrails_list",
+			"guardrail_get",
+			"guardrail_keys_list",
+			"guardrail_members_list",
+			"management_keys_list",
+			"management_key_get",
+			"oauth_clients_list",
+			"oauth_client_get",
+			"webhook_endpoints_list",
+			"webhook_endpoint_get",
 		]);
 		expect(tools.models_list?.outputSchema).toMatchObject({
 			type: "object",
@@ -83,6 +117,27 @@ describe("Phaseo MCP server metadata", () => {
 		});
 		expect(tool?._meta?.securitySchemes).toEqual([{ type: "oauth2", scopes: ["keys:write"] }]);
 	});
+
+	it("proxies a scoped control-plane read with the exchanged user token", async () => {
+		const fetchMock = vi.fn().mockResolvedValue(Response.json({ data: { current_workspace_id: "workspace_1" } }));
+		vi.stubGlobal("fetch", fetchMock);
+		const server = createServer(env, {
+			accessToken: "upstream-token",
+			workspaceId: "workspace_1",
+			scopes: ["me:read"],
+		});
+		const client = new Client({ name: "phaseo-mcp-test", version: "1.0.0" });
+		connectedClients.push(client);
+		const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+		await server.connect(serverTransport);
+		await client.connect(clientTransport);
+
+		const result = await client.callTool({ name: "account_get", arguments: {} });
+		expect(result.structuredContent).toEqual({ result: { data: { current_workspace_id: "workspace_1" } } });
+		const request = fetchMock.mock.calls[0]?.[0] as Request;
+		expect(request.url).toBe("https://api.phaseo.app/v1/me");
+		expect(request.headers.get("authorization")).toBe("Bearer upstream-token");
+	});
 });
 
 describe("Phaseo MCP OAuth discovery", () => {
@@ -96,7 +151,7 @@ describe("Phaseo MCP OAuth discovery", () => {
 		expect(response.status).toBe(401);
 		expect(response.headers.get("cache-control")).toBe("no-store");
 		const challenge = response.headers.get("www-authenticate") ?? "";
-		expect(challenge).toContain("models:read providers:read pricing:read keys:read");
+		expect(challenge).toContain("me:read models:read providers:read pricing:read credits:read activity:read analytics:read generations:read workspaces:read keys:read presets:read settings:read guardrails:read management_keys:read oauth_clients:read");
 		expect(challenge).not.toContain("gateway:access");
 	});
 
@@ -110,10 +165,21 @@ describe("Phaseo MCP OAuth discovery", () => {
 
 		expect(metadata.resource).toBe("https://mcp.phaseo.app/mcp");
 		expect(metadata.scopes_supported).toEqual([
+			"me:read",
 			"models:read",
 			"providers:read",
 			"pricing:read",
+			"credits:read",
+			"activity:read",
+			"analytics:read",
+			"generations:read",
+			"workspaces:read",
 			"keys:read",
+			"presets:read",
+			"settings:read",
+			"guardrails:read",
+			"management_keys:read",
+			"oauth_clients:read",
 		]);
 		expect(response.headers.get("x-content-type-options")).toBe("nosniff");
 	});

@@ -55,11 +55,36 @@ const DYNAMIC_MCP_SCOPES = [
 	"models:read",
 	"providers:read",
 	"pricing:read",
+	"credits:read",
+	"activity:read",
+	"analytics:read",
+	"generations:read",
 	"workspaces:read",
 	"keys:read",
 	"keys:write",
+	"presets:read",
+	"settings:read",
+	"guardrails:read",
+	"management_keys:read",
+	"oauth_clients:read",
 ] as const;
-const DYNAMIC_MCP_DEFAULT_SCOPES = ["models:read", "providers:read", "pricing:read", "keys:read"] as const;
+const DYNAMIC_MCP_DEFAULT_SCOPES = [
+	"me:read",
+	"models:read",
+	"providers:read",
+	"pricing:read",
+	"credits:read",
+	"activity:read",
+	"analytics:read",
+	"generations:read",
+	"workspaces:read",
+	"keys:read",
+	"presets:read",
+	"settings:read",
+	"guardrails:read",
+	"management_keys:read",
+	"oauth_clients:read",
+] as const;
 const DYNAMIC_MCP_SCOPE_SET = new Set<string>(DYNAMIC_MCP_SCOPES);
 const MCP_RESOURCE_SERVER_CLIENT_ID = "phaseo_mcp_resource_server";
 

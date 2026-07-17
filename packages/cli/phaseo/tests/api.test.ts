@@ -228,6 +228,10 @@ test("resolves help text for command groups and leaf commands", () => {
 	assert.match(renderHelp(["logs", "list"]), /--status <success\|error\|2xx\|4xx\|5xx\|code>/);
 	assert.match(renderHelp(["oauth-clients", "create"]), /--show-secret/);
 	assert.match(renderHelp(["oauth-clients", "regenerate-secret"]), /--show-secret/);
+	assert.match(renderHelp(["organisations"]), /phaseo organisations list/);
+	assert.match(renderHelp(["endpoints"]), /phaseo endpoints list/);
+	assert.match(renderHelp(["webhooks", "create"]), /--show-secret/);
+	assert.match(renderHelp(["models", "get"]), /phaseo models get <model-id>/);
 });
 
 test("builds logs list filters for the API", () => {

@@ -43,7 +43,7 @@ type ProvidersResponse = {
 
 export class PhaseoApiError extends Error {}
 
-function apiUrl(env: PhaseoEnv, path: string, query: Record<string, string | number | undefined> = {}): URL {
+function apiUrl(env: PhaseoEnv, path: string, query: Record<string, string | number | boolean | undefined> = {}): URL {
 	const url = new URL(path, env.PHASEO_API_BASE_URL.endsWith("/") ? env.PHASEO_API_BASE_URL : `${env.PHASEO_API_BASE_URL}/`);
 	for (const [key, value] of Object.entries(query)) {
 		if (value !== undefined) url.searchParams.set(key, String(value));
@@ -72,8 +72,8 @@ export async function requestPhaseo<T>(
 	path: string,
 	options: {
 		credentials?: PhaseoCredentials;
-		method?: "GET" | "POST";
-		query?: Record<string, string | number | undefined>;
+		method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+		query?: Record<string, string | number | boolean | undefined>;
 		body?: unknown;
 	} = {},
 ): Promise<T> {
@@ -89,9 +89,21 @@ export async function requestPhaseo<T>(
 	const response = env.PHASEO_API ? await env.PHASEO_API.fetch(request) : await fetch(request);
 	const payload = (await response.json().catch(() => null)) as T | null;
 	if (!response.ok || !payload) {
-		throw new PhaseoApiError(`Phaseo API request failed (${response.status}).`);
+		const details = payload && typeof payload === "object"
+			? String((payload as Record<string, unknown>).message ?? (payload as Record<string, unknown>).error ?? "").trim()
+			: "";
+		throw new PhaseoApiError(details || `Phaseo API request failed (${response.status}).`);
 	}
 	return payload;
+}
+
+export async function readControlPlane(
+	env: PhaseoEnv,
+	path: string,
+	credentials: PhaseoCredentials,
+	query: Record<string, string | number | boolean | undefined> = {},
+): Promise<Record<string, unknown>> {
+	return requestPhaseo<Record<string, unknown>>(env, path, { credentials, query });
 }
 
 export async function listModels(env: PhaseoEnv, limit = 250, credentials?: PhaseoCredentials): Promise<GatewayModel[]> {

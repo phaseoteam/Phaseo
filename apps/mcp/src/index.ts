@@ -13,11 +13,253 @@ import {
 	listModels,
 	listProviders,
 	PhaseoApiError,
+	readControlPlane,
+	requestPhaseo,
 } from "./phaseo-api";
 
 const MAX_RESULTS = 20;
 const MAX_MCP_REQUEST_BODY_BYTES = 1024 * 1024;
-const READ_ONLY_MCP_SCOPES = ["models:read", "providers:read", "pricing:read", "keys:read"] as const;
+const READ_ONLY_MCP_SCOPES = [
+	"me:read",
+	"models:read",
+	"providers:read",
+	"pricing:read",
+	"credits:read",
+	"activity:read",
+	"analytics:read",
+	"generations:read",
+	"workspaces:read",
+	"keys:read",
+	"presets:read",
+	"settings:read",
+	"guardrails:read",
+	"management_keys:read",
+	"oauth_clients:read",
+] as const;
+
+type QueryValue = string | number | boolean | undefined;
+type ReadToolInput = Record<string, unknown>;
+
+type ReadToolDefinition = {
+	name: string;
+	title: string;
+	description: string;
+	scopes: readonly string[];
+	inputSchema: z.ZodRawShape;
+	path: (input: ReadToolInput) => string;
+	query?: (input: ReadToolInput) => Record<string, QueryValue>;
+};
+
+const paginationInputSchema = {
+	limit: z.number().int().min(1).max(250).optional(),
+	offset: z.number().int().nonnegative().optional(),
+};
+
+const controlPlaneReadTools: ReadToolDefinition[] = [
+	{
+		name: "account_get",
+		title: "Get the current Phaseo account",
+		description: "Get the authenticated user, current workspace, and workspace memberships. Read-only.",
+		scopes: ["me:read"],
+		inputSchema: {},
+		path: () => "/v1/me",
+	},
+	{
+		name: "organisations_list",
+		title: "List model organisations",
+		description: "List organisations represented in Phaseo's live model catalogue. Read-only.",
+		scopes: ["models:read"],
+		inputSchema: paginationInputSchema,
+		path: () => "/v1/organisations",
+		query: ({ limit, offset }) => ({ limit: limit as number | undefined, offset: offset as number | undefined }),
+	},
+	{
+		name: "endpoints_list",
+		title: "List Phaseo API endpoints",
+		description: "List the inference endpoint families supported by the Phaseo API and sample current model IDs. Read-only; does not run inference.",
+		scopes: ["models:read"],
+		inputSchema: {},
+		path: () => "/v1/endpoints",
+	},
+	{
+		name: "pricing_models_list",
+		title: "List model pricing",
+		description: "Retrieve the current Phaseo model pricing catalogue. Read-only.",
+		scopes: ["pricing:read"],
+		inputSchema: {},
+		path: () => "/v1/pricing/models",
+	},
+	{
+		name: "credits_get",
+		title: "Get Phaseo credit balance",
+		description: "Get current credit and usage totals for the authenticated workspace. Read-only.",
+		scopes: ["credits:read"],
+		inputSchema: {},
+		path: () => "/v1/credits",
+	},
+	{
+		name: "activity_list",
+		title: "List Phaseo activity",
+		description: "List recent billable gateway activity for the authenticated workspace. Read-only.",
+		scopes: ["activity:read"],
+		inputSchema: { days: z.number().int().min(1).max(90).optional(), ...paginationInputSchema },
+		path: () => "/v1/activity",
+		query: ({ days, limit, offset }) => ({ days: days as number | undefined, limit: limit as number | undefined, offset: offset as number | undefined }),
+	},
+	{
+		name: "analytics_get",
+		title: "Get Phaseo analytics",
+		description: "Get model and provider usage analytics for a workspace and optional date. Read-only.",
+		scopes: ["analytics:read"],
+		inputSchema: { date: z.string().date().optional() },
+		path: () => "/v1/analytics",
+		query: ({ date }) => ({ date: date as string | undefined }),
+	},
+	{
+		name: "generation_get",
+		title: "Get a Phaseo generation",
+		description: "Retrieve cost, routing, token, and provider metadata for one Phaseo request ID. Read-only.",
+		scopes: ["generations:read"],
+		inputSchema: { requestId: z.string().min(1).max(200) },
+		path: () => "/v1/generations",
+		query: ({ requestId }) => ({ id: requestId as string }),
+	},
+	{
+		name: "logs_list",
+		title: "List Phaseo request logs",
+		description: "Search request logs by time, status, provider, model, endpoint, request, key, session, or error code. Read-only.",
+		scopes: ["activity:read"],
+		inputSchema: {
+			since: z.string().max(50).optional(), from: z.string().datetime().optional(), to: z.string().datetime().optional(),
+			status: z.string().max(50).optional(), provider: z.string().max(100).optional(), model: z.string().max(200).optional(),
+			endpoint: z.string().max(100).optional(), requestId: z.string().max(200).optional(), keyId: z.string().max(200).optional(),
+			sessionId: z.string().max(200).optional(), errorCode: z.string().max(100).optional(), ...paginationInputSchema,
+		},
+		path: () => "/v1/logs",
+		query: (input) => ({
+			since: input.since as string | undefined, from: input.from as string | undefined, to: input.to as string | undefined,
+			status: input.status as string | undefined, provider: input.provider as string | undefined, model: input.model as string | undefined,
+			endpoint: input.endpoint as string | undefined, request_id: input.requestId as string | undefined, key_id: input.keyId as string | undefined,
+			session_id: input.sessionId as string | undefined, error_code: input.errorCode as string | undefined,
+			limit: input.limit as number | undefined, offset: input.offset as number | undefined,
+		}),
+	},
+	{
+		name: "log_get",
+		title: "Get a Phaseo request log",
+		description: "Retrieve one request log by request ID. Read-only.",
+		scopes: ["activity:read"],
+		inputSchema: { requestId: z.string().min(1).max(200) },
+		path: ({ requestId }) => `/v1/logs/${encodeURIComponent(String(requestId))}`,
+	},
+	{
+		name: "workspaces_list",
+		title: "List Phaseo workspaces",
+		description: "List workspaces available to the authenticated user. Read-only.",
+		scopes: ["workspaces:read"],
+		inputSchema: {},
+		path: () => "/v1/workspaces",
+	},
+	{
+		name: "workspace_get",
+		title: "Get a Phaseo workspace",
+		description: "Get one workspace by ID or slug. Read-only.",
+		scopes: ["workspaces:read"],
+		inputSchema: { workspaceId: z.string().min(1).max(200) },
+		path: ({ workspaceId }) => `/v1/workspaces/${encodeURIComponent(String(workspaceId))}`,
+	},
+	{
+		name: "workspace_members_list",
+		title: "List Phaseo workspace members",
+		description: "List members and roles for one workspace. Read-only.",
+		scopes: ["workspaces:read"],
+		inputSchema: { workspaceId: z.string().min(1).max(200) },
+		path: ({ workspaceId }) => `/v1/workspaces/${encodeURIComponent(String(workspaceId))}/members`,
+	},
+	{
+		name: "api_key_get",
+		title: "Get a Phaseo Gateway API key",
+		description: "Get metadata for one Gateway API key without returning its secret. Read-only.",
+		scopes: ["keys:read"],
+		inputSchema: { keyId: z.string().min(1).max(200) },
+		path: ({ keyId }) => `/v1/keys/${encodeURIComponent(String(keyId))}`,
+	},
+	{
+		name: "presets_list",
+		title: "List Phaseo routing presets",
+		description: "List routing presets for the authenticated workspace. Read-only.",
+		scopes: ["presets:read"], inputSchema: {}, path: () => "/v1/presets",
+	},
+	{
+		name: "preset_get",
+		title: "Get a Phaseo routing preset",
+		description: "Get one routing preset by ID, slug, or name. Read-only.",
+		scopes: ["presets:read"], inputSchema: { presetId: z.string().min(1).max(200) },
+		path: ({ presetId }) => `/v1/presets/${encodeURIComponent(String(presetId))}`,
+	},
+	{
+		name: "settings_get", title: "Get Phaseo workspace settings",
+		description: "Get routing and gateway settings for the authenticated workspace. Read-only.",
+		scopes: ["settings:read"], inputSchema: {}, path: () => "/v1/settings",
+	},
+	{
+		name: "guardrails_list", title: "List Phaseo guardrails",
+		description: "List guardrails configured for the authenticated workspace. Read-only.",
+		scopes: ["guardrails:read"], inputSchema: {}, path: () => "/v1/guardrails",
+	},
+	{
+		name: "guardrail_get", title: "Get a Phaseo guardrail",
+		description: "Get one guardrail configuration. Read-only.",
+		scopes: ["guardrails:read"], inputSchema: { guardrailId: z.string().min(1).max(200) },
+		path: ({ guardrailId }) => `/v1/guardrails/${encodeURIComponent(String(guardrailId))}`,
+	},
+	{
+		name: "guardrail_keys_list", title: "List keys assigned to a guardrail",
+		description: "List Gateway API keys assigned to one guardrail. Does not return key secrets. Read-only.",
+		scopes: ["guardrails:read"], inputSchema: { guardrailId: z.string().min(1).max(200) },
+		path: ({ guardrailId }) => `/v1/guardrails/${encodeURIComponent(String(guardrailId))}/keys`,
+	},
+	{
+		name: "guardrail_members_list", title: "List members assigned to a guardrail",
+		description: "List workspace members assigned to one guardrail. Read-only.",
+		scopes: ["guardrails:read"], inputSchema: { guardrailId: z.string().min(1).max(200) },
+		path: ({ guardrailId }) => `/v1/guardrails/${encodeURIComponent(String(guardrailId))}/members`,
+	},
+	{
+		name: "management_keys_list", title: "List Phaseo management keys",
+		description: "List management API key metadata without returning secrets. Read-only.",
+		scopes: ["management_keys:read"], inputSchema: {}, path: () => "/v1/management-keys",
+	},
+	{
+		name: "management_key_get", title: "Get a Phaseo management key",
+		description: "Get metadata and granted scopes for one management API key without returning its secret. Read-only.",
+		scopes: ["management_keys:read"], inputSchema: { keyId: z.string().min(1).max(200) },
+		path: ({ keyId }) => `/v1/management-keys/${encodeURIComponent(String(keyId))}`,
+	},
+	{
+		name: "oauth_clients_list", title: "List Phaseo OAuth clients",
+		description: "List third-party OAuth applications registered in the authenticated workspace. Does not return client secrets. Read-only.",
+		scopes: ["oauth_clients:read"], inputSchema: {}, path: () => "/v1/oauth-clients",
+	},
+	{
+		name: "oauth_client_get", title: "Get a Phaseo OAuth client",
+		description: "Get one registered OAuth application's metadata, redirect URIs, and scopes without returning its secret. Read-only.",
+		scopes: ["oauth_clients:read"], inputSchema: { clientId: z.string().min(1).max(200) },
+		path: ({ clientId }) => `/v1/oauth-clients/${encodeURIComponent(String(clientId))}`,
+	},
+	{
+		name: "webhook_endpoints_list", title: "List Phaseo webhook endpoints",
+		description: "List configured async webhook endpoints without returning signing secrets. Available only where the Batch API feature is enabled. Read-only.",
+		scopes: ["settings:read"], inputSchema: { ...paginationInputSchema, includeDeleted: z.boolean().optional() }, path: () => "/v1/webhook-endpoints",
+		query: ({ limit, offset, includeDeleted }) => ({ limit: limit as number | undefined, offset: offset as number | undefined, include_deleted: includeDeleted as boolean | undefined }),
+	},
+	{
+		name: "webhook_endpoint_get", title: "Get a Phaseo webhook endpoint",
+		description: "Get one async webhook endpoint without returning its signing secret. Available only where the Batch API feature is enabled. Read-only.",
+		scopes: ["settings:read"], inputSchema: { endpointId: z.string().min(1).max(200) },
+		path: ({ endpointId }) => `/v1/webhook-endpoints/${encodeURIComponent(String(endpointId))}`,
+	},
+];
 
 const modelSummarySchema = {
 	id: z.string(),
@@ -114,6 +356,47 @@ function errorResult(error: unknown) {
 	return { isError: true as const, content: [{ type: "text" as const, text: message }] };
 }
 
+function hasScopes(authenticatedUser: AuthenticatedPhaseoUser, scopes: readonly string[]): boolean {
+	return scopes.every((scope) => authenticatedUser.scopes.includes(scope));
+}
+
+function registerControlPlaneReadTools(
+	server: McpServer,
+	env: PhaseoEnv,
+	authenticatedUser: AuthenticatedPhaseoUser,
+): void {
+	for (const definition of controlPlaneReadTools) {
+		if (!hasScopes(authenticatedUser, definition.scopes)) continue;
+		server.registerTool(
+			definition.name,
+			{
+				title: definition.title,
+				description: definition.description,
+				inputSchema: definition.inputSchema,
+				outputSchema: { result: z.record(z.string(), z.unknown()) },
+				annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+				_meta: oauthToolMeta(definition.scopes),
+			},
+			async (input) => {
+				try {
+					const result = await readControlPlane(
+						env,
+						definition.path(input),
+						{ accessToken: authenticatedUser.accessToken },
+						definition.query?.(input) ?? {},
+					);
+					return {
+						content: [{ type: "text" as const, text: `${definition.title} completed.` }],
+						structuredContent: { result },
+					};
+				} catch (error) {
+					return errorResult(error);
+				}
+			},
+		);
+	}
+}
+
 export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPhaseoUser): McpServer {
 	const server = new McpServer(
 		{ name: "Phaseo", version: "0.2.0" },
@@ -184,6 +467,44 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 				const model = await getModel(env, modelId, { accessToken: authenticatedUser.accessToken });
 				if (!model) return { isError: true as const, content: [{ type: "text" as const, text: `No Phaseo model exists with ID "${modelId}".` }] };
 				return { content: [{ type: "text" as const, text: `Retrieved ${model.name} from Phaseo.` }], structuredContent: { model: modelSummary(model) } };
+			} catch (error) { return errorResult(error); }
+		},
+	);
+
+	if (authenticatedUser.scopes.includes("pricing:read")) server.registerTool(
+		"pricing_calculate",
+		{
+			title: "Calculate Phaseo provider pricing",
+			description: "Calculate an exact price-card result for a provider, model, endpoint, and usage payload. This does not run inference or create a billable request.",
+			inputSchema: {
+				provider: z.string().min(1).max(100),
+				model: z.string().min(1).max(200),
+				endpoint: z.string().min(1).max(100),
+				usage: z.record(z.string(), z.unknown()),
+				requestStartedAt: z.string().datetime().optional(),
+				providerAcceptedAt: z.string().datetime().optional(),
+				completedAt: z.string().datetime().optional(),
+			},
+			outputSchema: { result: z.record(z.string(), z.unknown()) },
+			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+			_meta: oauthToolMeta(["pricing:read"]),
+		},
+		async ({ provider, model, endpoint, usage, requestStartedAt, providerAcceptedAt, completedAt }) => {
+			try {
+				const result = await requestPhaseo<Record<string, unknown>>(env, "/v1/pricing/calculate", {
+					method: "POST",
+					credentials: { accessToken: authenticatedUser.accessToken },
+					body: {
+						provider, model, endpoint, usage,
+						request_started_at: requestStartedAt,
+						provider_accepted_at: providerAcceptedAt,
+						completed_at: completedAt,
+					},
+				});
+				return {
+					content: [{ type: "text" as const, text: "Calculated the current Phaseo price-card result." }],
+					structuredContent: { result },
+				};
 			} catch (error) { return errorResult(error); }
 		},
 	);
@@ -277,6 +598,8 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 			} catch (error) { return errorResult(error); }
 		},
 	);
+
+	registerControlPlaneReadTools(server, env, authenticatedUser);
 
 	if (
 		env.PHASEO_MCP_WRITE_TOOLS_ENABLED?.trim().toLowerCase() === "true" &&

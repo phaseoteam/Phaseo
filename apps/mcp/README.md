@@ -18,8 +18,25 @@ a separate five-minute API JWT. Resource-bound MCP tokens are rejected by
 ordinary Phaseo API routes, preventing cross-service replay and OAuth token
 passthrough.
 
-The read-only tool set includes model search, model lookup, provider listing,
-cost estimation, and `api_keys_list` when the user granted `keys:read`.
+The read-only tool set mirrors the user-facing Phaseo control plane where an
+agent can operate safely:
+
+- account identity and workspace membership
+- models, organisations, providers, endpoint families, and pricing
+- credits, activity, analytics, request logs, and generation metadata
+- workspaces and members
+- Gateway API key metadata without key secrets
+- presets, settings, guardrails, and guardrail assignments
+- management-key and OAuth-client metadata without secrets
+- webhook endpoint metadata where Batch API access is enabled
+
+Tools are registered only when the exchanged token contains every scope that
+the tool advertises. Billable inference endpoints, internal health/control
+routes, and secret-returning mutations are intentionally not represented as
+generic MCP proxy tools.
+
+The maintained API/MCP/CLI coverage matrix is in
+[`docs/security/mcp-cli-api-parity.md`](../../docs/security/mcp-cli-api-parity.md).
 
 `api_key_create` is compiled in but disabled by default. It is registered only
 when both conditions are true:

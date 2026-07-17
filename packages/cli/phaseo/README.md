@@ -9,7 +9,8 @@ It gives you a first-party terminal workflow for:
 - creating and managing regular API keys and management keys
 - managing workspaces, presets, settings, and guardrails
 - creating and managing scoped third-party OAuth applications
-- reading models, providers, pricing, credits, activity, analytics, and generations
+- reading models, organisations, providers, endpoint families, pricing, credits, activity, analytics, and generations
+- managing async webhook endpoints where Batch API access is enabled
 - falling back to a raw authenticated API command when you need an endpoint before a polished subcommand exists
 
 ## Install
@@ -90,13 +91,18 @@ phaseo guardrails add-members <guardrail-id> --user-ids <user-id,user-id>
 
 phaseo management-keys create --name "Raycast" --template raycast-readonly
 phaseo models list --limit 20
+phaseo models get openai/gpt-5
 phaseo providers list
+phaseo organisations list
+phaseo endpoints list
 phaseo pricing models
 phaseo credits get
 phaseo activity list --days 7
 phaseo logs list --since 1h --status error --json
 phaseo logs get <request-id> --json
 phaseo generation get --id <request-id>
+phaseo webhooks list
+phaseo webhooks create --url https://example.com/phaseo-events --events batch.completed --show-secret
 phaseo api get /v1/models
 ```
 

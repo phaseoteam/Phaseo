@@ -537,10 +537,21 @@ describe("OAuth route security", () => {
 		expect(state.registeredClients[0]?.allowed_scopes).not.toContain("keys:write");
 		expect(state.registeredClients[0]?.allowed_scopes).not.toContain("gateway:access");
 		expect(state.registeredClients[0]?.allowed_scopes).toEqual([
+			"me:read",
 			"models:read",
 			"providers:read",
 			"pricing:read",
+			"credits:read",
+			"activity:read",
+			"analytics:read",
+			"generations:read",
+			"workspaces:read",
 			"keys:read",
+			"presets:read",
+			"settings:read",
+			"guardrails:read",
+			"management_keys:read",
+			"oauth_clients:read",
 		]);
 	});
 
