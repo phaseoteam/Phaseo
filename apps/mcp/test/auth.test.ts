@@ -5,6 +5,8 @@ import { authenticatePhaseoUser } from "../src/phaseo-api";
 const env = {
 	PHASEO_API_BASE_URL: "https://api.phaseo.app",
 	PHASEO_MCP_WRITE_TOOLS_ENABLED: "false",
+	PHASEO_MCP_DESTRUCTIVE_TOOLS_ENABLED: "false",
+	PHASEO_MCP_SECRET_TOOLS_ENABLED: "false",
 	PHASEO_MCP_RESOURCE_SERVER_SECRET: "s".repeat(64),
 };
 

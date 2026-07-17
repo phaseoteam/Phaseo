@@ -60,15 +60,16 @@ by default and is not considered safe for public enablement yet.
 
 - Severity: High
 - Status: Mitigated by secure default; intentionally not enabled for production
-- Location: `apps/mcp/src/index.ts:184`, `apps/mcp/wrangler.jsonc:15`
-- Evidence: `api_key_create` returns the one-time Gateway key secret in MCP
-  structured output, which makes it model- and conversation-visible.
+- Location: `apps/mcp/src/mutation-tools.ts`, `apps/mcp/wrangler.jsonc`
+- Evidence: Secret-class creation and rotation tools return one-time key,
+  OAuth-client, or webhook secrets in MCP structured output, which makes them
+  model- and conversation-visible.
 - Impact: The secret may be retained by the MCP host, model provider, logs, or
   conversation export.
-- Fix: The tool is omitted unless the deployment explicitly sets
-  `PHASEO_MCP_WRITE_TOOLS_ENABLED=true` and the user granted `keys:write`.
-  Production configuration sets it to `false` and does not advertise the write
-  scope.
+- Fix: Secret-returning tools are omitted unless the deployment explicitly
+  sets both `PHASEO_MCP_WRITE_TOOLS_ENABLED=true` and
+  `PHASEO_MCP_SECRET_TOOLS_ENABLED=true`, and the user granted the required
+  write scope. Production configuration sets both flags to `false`.
 - Mitigation: Build a one-time Phaseo-hosted secret delivery page or widget
   whose secret is not returned in model-readable content before enabling it.
 - False-positive notes: Explicit user confirmation reduces accidental use but
@@ -209,8 +210,8 @@ by default and is not considered safe for public enablement yet.
 
 ## Residual risks and launch gates
 
-1. Do not enable `PHASEO_MCP_WRITE_TOOLS_ENABLED` publicly until key secrets can
-   be delivered outside model-readable MCP output.
+1. Do not enable `PHASEO_MCP_SECRET_TOOLS_ENABLED` publicly until key and
+   webhook secrets can be delivered outside model-readable MCP output.
 2. Migration history is aligned and the resource-binding migration is applied.
    Keep future production schema changes migration-driven so the repaired
    baseline does not drift again.

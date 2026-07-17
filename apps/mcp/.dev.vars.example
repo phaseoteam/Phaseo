@@ -4,3 +4,5 @@
 # the API Worker. Never commit the real value.
 PHASEO_MCP_RESOURCE_SERVER_SECRET="<generate-a-random-64-plus-character-secret>"
 PHASEO_MCP_WRITE_TOOLS_ENABLED="false"
+PHASEO_MCP_DESTRUCTIVE_TOOLS_ENABLED="false"
+PHASEO_MCP_SECRET_TOOLS_ENABLED="false"

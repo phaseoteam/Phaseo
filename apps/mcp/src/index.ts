@@ -3,7 +3,6 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
 import {
-	createApiKey,
 	authenticatePhaseoUser,
 	type AuthenticatedPhaseoUser,
 	type PhaseoEnv,
@@ -16,6 +15,11 @@ import {
 	readControlPlane,
 	requestPhaseo,
 } from "./phaseo-api";
+import {
+	MCP_DELETE_SCOPES,
+	MCP_WRITE_SCOPES,
+	registerMutationTools,
+} from "./mutation-tools";
 
 const MAX_RESULTS = 20;
 const MAX_MCP_REQUEST_BODY_BYTES = 1024 * 1024;
@@ -601,41 +605,18 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 
 	registerControlPlaneReadTools(server, env, authenticatedUser);
 
-	if (
-		env.PHASEO_MCP_WRITE_TOOLS_ENABLED?.trim().toLowerCase() === "true" &&
-		authenticatedUser.scopes.includes("keys:write")
-	) server.registerTool(
-		"api_key_create",
-		{
-			title: "Create a Phaseo Gateway API key",
-			description:
-				"Create a new Gateway API key in the authenticated Phaseo workspace. This is a write operation and returns a secret exactly once. Call only after the user explicitly confirms the exact key name, limit, expiry, and that the secret may be displayed in this conversation. Requires the keys:write permission and workspace owner or admin role.",
-			inputSchema: {
-				name: z.string().min(1).max(100).describe("Human-readable key name confirmed by the user."),
-				monthlyLimitUSD: z.number().nonnegative().nullable().optional().describe("Optional monthly USD spend limit. Use null for no limit."),
-				expiresAt: z.string().datetime().nullable().optional().describe("Optional ISO-8601 expiry timestamp. Use null for no expiry."),
-				confirm: z.literal(true).describe("Must be true only after the user explicitly confirmed creation and one-time secret display."),
-			},
-			outputSchema: { key: z.object({ ...apiKeySchema, key: z.string() }) },
-			annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
-			_meta: oauthToolMeta(["keys:write"]),
-		},
-		async ({ name, monthlyLimitUSD, expiresAt }) => {
-			try {
-				const key = await createApiKey(env, { accessToken: authenticatedUser.accessToken }, {
-					name,
-					...(monthlyLimitUSD === undefined ? {} : { limit: monthlyLimitUSD, limit_reset: "monthly" as const }),
-					...(expiresAt === undefined ? {} : { expires_at: expiresAt }),
-				});
-				return {
-					content: [{ type: "text" as const, text: `Created Gateway API key "${key.name ?? name}". Its secret is shown once below; save it securely because Phaseo cannot retrieve it again.` }],
-					structuredContent: { key: { ...apiKeySummary(key), key: key.key } },
-				};
-			} catch (error) { return errorResult(error); }
-		},
-	);
+	registerMutationTools(server, env, authenticatedUser);
 
 	return server;
+}
+
+function enabledMcpScopes(env: PhaseoEnv): string[] {
+	return [
+		...READ_ONLY_MCP_SCOPES,
+		...(env.PHASEO_MCP_WRITE_TOOLS_ENABLED?.trim().toLowerCase() === "true" ? MCP_WRITE_SCOPES : []),
+		...(env.PHASEO_MCP_WRITE_TOOLS_ENABLED?.trim().toLowerCase() === "true" &&
+			env.PHASEO_MCP_DESTRUCTIVE_TOOLS_ENABLED?.trim().toLowerCase() === "true" ? MCP_DELETE_SCOPES : []),
+	];
 }
 
 function resourceMetadata(request: Request, env: PhaseoEnv): Response {
@@ -643,20 +624,18 @@ function resourceMetadata(request: Request, env: PhaseoEnv): Response {
 	return Response.json({
 		resource: `${origin}/mcp`,
 		authorization_servers: [`${env.PHASEO_API_BASE_URL.replace(/\/+$/, "")}/oauth`],
-		scopes_supported: [
-			...READ_ONLY_MCP_SCOPES,
-			...(env.PHASEO_MCP_WRITE_TOOLS_ENABLED?.trim().toLowerCase() === "true" ? ["keys:write"] : []),
-		],
+		scopes_supported: enabledMcpScopes(env),
 		bearer_methods_supported: ["header"],
 	}, { headers: { "Cache-Control": "public, max-age=300" } });
 }
 
-function unauthorised(request: Request): Response {
+function unauthorised(request: Request, env: PhaseoEnv): Response {
 	const origin = new URL(request.url).origin;
+	const scopes = enabledMcpScopes(env);
 	return new Response("Phaseo login is required.", {
 		status: 401,
 		headers: {
-			"WWW-Authenticate": `Bearer resource_metadata="${origin}/.well-known/oauth-protected-resource/mcp", scope="${READ_ONLY_MCP_SCOPES.join(" ")}"`,
+			"WWW-Authenticate": `Bearer resource_metadata="${origin}/.well-known/oauth-protected-resource/mcp", scope="${scopes.join(" ")}"`,
 			"Cache-Control": "no-store",
 			"X-Content-Type-Options": "nosniff",
 		},
@@ -682,7 +661,7 @@ export default {
 			return secureResponse(new Response("MCP request body is too large.", { status: 413 }));
 		}
 		const authenticatedUser = await authenticatePhaseoUser(request, env);
-		if (!authenticatedUser) return secureResponse(unauthorised(request));
+		if (!authenticatedUser) return secureResponse(unauthorised(request, env));
 		const response = await createMcpHandler(createServer(env, authenticatedUser), {
 			route: "/mcp",
 			authContext: { props: { workspaceId: authenticatedUser.workspaceId } },

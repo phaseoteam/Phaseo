@@ -31,21 +31,27 @@ agent can operate safely:
 - webhook endpoint metadata where Batch API access is enabled
 
 Tools are registered only when the exchanged token contains every scope that
-the tool advertises. Billable inference endpoints, internal health/control
-routes, and secret-returning mutations are intentionally not represented as
-generic MCP proxy tools.
+the tool advertises. Billable inference endpoints and internal health/control
+routes are intentionally not represented as generic MCP proxy tools.
 
 The maintained API/MCP/CLI coverage matrix is in
 [`docs/security/mcp-cli-api-parity.md`](../../docs/security/mcp-cli-api-parity.md).
 
-`api_key_create` is compiled in but disabled by default. It is registered only
-when both conditions are true:
+CRUD tools are compiled in but disabled by default. Tool registration uses
+three independent deployment controls:
 
-- `PHASEO_MCP_WRITE_TOOLS_ENABLED=true` on the MCP Worker.
-- The user explicitly granted `keys:write`.
+- `PHASEO_MCP_WRITE_TOOLS_ENABLED=true` enables ordinary create/update and
+  assignment tools.
+- `PHASEO_MCP_DESTRUCTIVE_TOOLS_ENABLED=true` additionally enables delete,
+  member-removal, and assignment-removal tools.
+- `PHASEO_MCP_SECRET_TOOLS_ENABLED=true` additionally enables API-key,
+  management-key, OAuth-secret, and webhook-secret operations whose secrets
+  appear once in model-readable output.
 
-Leave it disabled for public deployment until Phaseo has a secure one-time
-secret-delivery UI that does not place the new key in model-readable output.
+Every tool also requires its exact OAuth `*:write` or `*:delete` scope and an
+input `confirm: true` value after the user approves the exact action. Keep the
+secret flag disabled for public deployment until Phaseo has a one-time secret
+delivery UI that does not place credentials in model-readable output.
 
 When `PHASEO_THIRD_PARTY_OAUTH_ENABLED=true`, Phaseo advertises dynamic client
 registration. Registrations default to the read-only scope set; write scopes

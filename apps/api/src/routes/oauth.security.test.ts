@@ -502,7 +502,7 @@ describe("OAuth route security", () => {
 			body: JSON.stringify({
 				client_name: "ChatGPT",
 				redirect_uris: ["https://chatgpt.com/aip/callback"],
-				scope: "openid gateway:access me:read keys:read keys:write",
+				scope: "openid gateway:access me:read keys:read keys:write keys:delete workspaces:write presets:delete settings:write guardrails:write management_keys:delete oauth_clients:write",
 				token_endpoint_auth_method: "none",
 			}),
 		});
@@ -518,7 +518,11 @@ describe("OAuth route security", () => {
 		expect(state.registeredClients[0]).toMatchObject({
 			name: "ChatGPT",
 			client_type: "public",
-			allowed_scopes: ["openid", "gateway:access", "me:read", "keys:read", "keys:write"],
+			allowed_scopes: [
+				"openid", "gateway:access", "me:read", "keys:read", "keys:write", "keys:delete",
+				"workspaces:write", "presets:delete", "settings:write", "guardrails:write",
+				"management_keys:delete", "oauth_clients:write",
+			],
 		});
 	});
 
@@ -583,7 +587,7 @@ describe("OAuth route security", () => {
 		});
 	});
 
-	it("rejects destructive scopes during dynamic client registration", async () => {
+	it("rejects unknown or internal scopes during dynamic client registration", async () => {
 		const { oauthRouter } = await import("./oauth");
 		const response = await oauthRouter.request("https://example.com/register", {
 			method: "POST",
@@ -591,7 +595,7 @@ describe("OAuth route security", () => {
 			body: JSON.stringify({
 				client_name: "Untrusted client",
 				redirect_uris: ["https://example.com/callback"],
-				scope: "openid gateway:access keys:delete",
+				scope: "openid keys:delete internal:admin",
 			}),
 		});
 

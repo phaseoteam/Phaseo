@@ -105,6 +105,8 @@ The production MCP deployment must have:
 - custom domain `mcp.phaseo.app`;
 - Service Binding `PHASEO_API -> phaseo-gateway`;
 - `PHASEO_MCP_WRITE_TOOLS_ENABLED = false`;
+- `PHASEO_MCP_DESTRUCTIVE_TOOLS_ENABLED = false`;
+- `PHASEO_MCP_SECRET_TOOLS_ENABLED = false`;
 - logs and sampled traces enabled.
 
 ## Production smoke tests
