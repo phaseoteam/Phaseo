@@ -102,12 +102,11 @@ export function isResponse(value: unknown): value is Response {
 	return value instanceof Response;
 }
 
-export function internalServerError(operation: string, error: unknown): Response {
+export function internalServerError(operation: string, _error: unknown): Response {
 	const requestId = crypto.randomUUID();
 	console.error("control_plane_operation_failed", {
 		operation,
 		request_id: requestId,
-		error_type: error instanceof Error ? error.name : typeof error,
 	});
 	return json(
 		{ error: "internal_error", message: "Phaseo could not complete this request.", request_id: requestId },
