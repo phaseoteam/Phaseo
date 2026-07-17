@@ -287,6 +287,31 @@ describe("batch webhook helpers", () => {
 		});
 	});
 
+	it("dispatches the authoritative finalized status for stale terminal events", async () => {
+		fetchProviderBatchStatusMock.mockResolvedValueOnce({
+			id: "batch_native_123",
+			status: "completed",
+			request_counts: { total: 1, completed: 1, failed: 0 },
+		});
+		finalizeBatchJobMock.mockResolvedValueOnce({
+			status: "failed",
+			charged: false,
+			billed: true,
+			reason: "stale_terminal_status",
+		});
+
+		await processOpenAiBatchWebhook({
+			eventId: "evt_stale_completed",
+			eventType: "batch.completed",
+			payload: { data: { id: "batch_native_123", status: "completed" } },
+		});
+
+		expect(dispatchAsyncWebhookEventMock).toHaveBeenCalledWith(expect.objectContaining({
+			internalId: "batch_internal_123",
+			phase: "failed",
+		}));
+	});
+
 	it("fetches authoritative Gemini batch status before finalizing", async () => {
 		await processGoogleAiStudioBatchWebhook({
 			eventId: "evt_gemini_batch_123",
@@ -495,6 +520,8 @@ describe("batch webhook helpers", () => {
 		expect(listUnprocessedProviderEventsMock).toHaveBeenCalledWith({
 			providers: ["openai", "google-ai-studio"],
 			limit: 25,
+			workerId: expect.stringMatching(/^batch-provider-event-replay:/),
+			leaseSeconds: 120,
 		});
 		expect(markProviderEventProcessedMock).toHaveBeenCalledWith(expect.objectContaining({
 			provider: "openai",

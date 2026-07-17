@@ -97,17 +97,17 @@ export async function emitGatewayOperationalFailure(args: {
             success: false,
             error_type: "system",
             error_origin: "gateway",
-            error_operational_kind: "finalization_failed",
+            error_operational_kind: args.workflow === "batch_submission" ? "submission_failed" : "finalization_failed",
             error_action_owner: "gateway",
             error_requires_investigation: true,
             error_code: args.reason,
             error_message: message.slice(0, 500) || null,
             workspace_id: args.workspaceId,
-            finalization_workflow: args.workflow,
-            finalization_resource_id: args.resourceId,
+            operational_workflow: args.workflow,
+            operational_resource_id: args.resourceId,
         });
     } catch (error) {
-        console.error("[observability] finalization failure event emit failed", error);
+        console.error("[observability] operational failure event emit failed", error);
     }
 }
 

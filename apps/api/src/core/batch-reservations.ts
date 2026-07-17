@@ -210,7 +210,7 @@ export async function reserveBatchCredits(args: {
 		reservationId,
 		reservedNanos,
 		status: result.status,
-		held: result.status === "held" && (result.applied || result.alreadyApplied),
+		held: result.status === "held",
 		estimate: {
 			strategy: BATCH_RESERVATION_ESTIMATE_STRATEGY,
 			requestCount: args.requests.length,

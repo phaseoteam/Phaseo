@@ -68,6 +68,9 @@ describe("video webhook helpers", () => {
 				"webhook-signature": "v1=secret-derived-value",
 				"x-openai-request-id": "req_123",
 				"x-openai-api-key": "provider-secret",
+				"x-openai-api_key": "provider-secret-underscore",
+				"x-openai-credential": "provider-credential",
+				"webhook-auth": "provider-auth",
 			},
 		}));
 

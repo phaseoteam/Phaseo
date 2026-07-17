@@ -17,11 +17,13 @@ const state = vi.hoisted(() => ({
 	reconciliationUpdates: [] as Array<Record<string, unknown>>,
 	statusUpdates: [] as Array<Record<string, unknown>>,
 	operationalFailures: [] as Array<Record<string, unknown>>,
+	releaseCalls: [] as Array<Record<string, unknown>>,
 	requestRows: [] as Array<Record<string, unknown>>,
 	saveBatchJobError: null as Error | null,
 	saveBatchJobErrorOnCall: null as number | null,
 	saveBatchJobCalls: 0,
 	previewProviders: "openai,anthropic,google-ai-studio,mistral,x-ai,groq,together",
+	googleApiKey: "test-google-key" as string | null,
 	guardContextFailure: null as Response | null,
 	policyAllowedProviders: null as string[] | null,
 	fetchCalls: [] as Array<{
@@ -41,11 +43,13 @@ function resetState() {
 	state.reconciliationUpdates = [];
 	state.statusUpdates = [];
 	state.operationalFailures = [];
+	state.releaseCalls = [];
 	state.requestRows = [];
 	state.saveBatchJobError = null;
 	state.saveBatchJobErrorOnCall = null;
 	state.saveBatchJobCalls = 0;
 	state.previewProviders = "openai,anthropic,google-ai-studio,mistral,x-ai,groq,together";
+	state.googleApiKey = "test-google-key";
 	state.guardContextFailure = null;
 	state.policyAllowedProviders = null;
 	state.fetchCalls = [];
@@ -118,7 +122,7 @@ vi.mock("@/runtime/env", () => ({
 	getBindings: () => ({
 		OPENAI_API_KEY: "test-openai-key",
 		OPENAI_BASE_URL: "https://api.openai.example/v1",
-		GOOGLE_AI_STUDIO_API_KEY: "test-google-key",
+		...(state.googleApiKey ? { GOOGLE_AI_STUDIO_API_KEY: state.googleApiKey } : {}),
 		BATCH_API_PREVIEW_PROVIDERS: state.previewProviders,
 	}),
 }));
@@ -301,7 +305,10 @@ vi.mock("@core/batch-reservations", () => ({
 
 vi.mock("@core/wallet-reservations", () => ({
 	releaseStaleOrphanBatchReservations: vi.fn(async () => 0),
-	releaseWalletReservation: vi.fn(async () => ({ status: "released", applied: true })),
+	releaseWalletReservation: vi.fn(async (args: Record<string, unknown>) => {
+		state.releaseCalls.push(args);
+		return { status: "released", applied: true };
+	}),
 }));
 
 vi.mock("@core/webhook-endpoints", () => ({
@@ -835,12 +842,9 @@ describe("batchRoutes", () => {
 		});
 
 		for (const [provider, model, expectedId] of [
-			["groq", "llama-3.3-70b-versatile", "batch_groq"],
-			["together", "meta-llama/Llama-3.3-70B-Instruct-Turbo", "batch_together"],
 			["mistral", "mistral-large-latest", "batch_mistral"],
 			["anthropic", "claude-4-sonnet", "batch_anthropic"],
 			["gemini", "gemini-2.5-flash", "batch_gemini"],
-			["xai", "grok-4", "batch_xai"],
 		] as const) {
 			const response = await batchRoutes.request("https://example.com/", {
 				method: "POST",
@@ -856,26 +860,11 @@ describe("batchRoutes", () => {
 		}
 
 		expect(state.fetchCalls.map((call) => `${call.method} ${call.url}`)).toEqual([
-			"POST https://api.groq.com/openai/v1/files",
-			"POST https://api.groq.com/openai/v1/batches",
-			"POST https://api.together.xyz/v1/files",
-			"POST https://api.together.xyz/v1/batches",
 			"POST https://api.mistral.ai/v1/batch/jobs",
 			"POST https://api.anthropic.com/v1/messages/batches",
 			"POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:batchGenerateContent",
-			"POST https://api.x.ai/v1/batches",
-			"POST https://api.x.ai/v1/batches/batch_xai/requests",
-			"GET https://api.x.ai/v1/batches/batch_xai",
 		]);
-		expect(state.fetchCalls[1]?.bodyJson).toEqual({
-			endpoint: "/v1/chat/completions",
-			input_file_id: "file_groq_input",
-		});
-		expect(state.fetchCalls[3]?.bodyJson).toEqual({
-			endpoint: "/v1/chat/completions",
-			input_file_id: "file_together_input",
-		});
-		expect(state.fetchCalls[4]?.bodyJson).toMatchObject({
+		expect(state.fetchCalls[0]?.bodyJson).toMatchObject({
 			endpoint: "/v1/chat/completions",
 			model: "mistral-large-latest",
 			requests: [
@@ -887,7 +876,7 @@ describe("batchRoutes", () => {
 				},
 			],
 		});
-		expect(state.fetchCalls[5]?.bodyJson).toMatchObject({
+		expect(state.fetchCalls[1]?.bodyJson).toMatchObject({
 			requests: [
 				{
 					custom_id: "anthropic-request-1",
@@ -897,9 +886,10 @@ describe("batchRoutes", () => {
 				},
 			],
 		});
-		expect(state.fetchCalls[6]?.bodyJson).toMatchObject({
+		expect(state.fetchCalls[2]?.bodyJson).toMatchObject({
 			batch: {
 				model: "models/gemini-2.5-flash",
+				displayName: expect.stringMatching(/^phaseo-batch_/),
 				inputConfig: {
 					requests: {
 						requests: [
@@ -914,26 +904,11 @@ describe("batchRoutes", () => {
 				},
 			},
 		});
-		expect(state.fetchCalls[8]?.bodyJson).toMatchObject({
-			batch_requests: [
-				{
-					batch_request_id: "xai-request-1",
-					batch_request: {
-						responses: {
-							model: "grok-4",
-						},
-					},
-				},
-			],
-		});
 		const savedJobs = Array.from(state.batchMeta.values());
 		expect(savedJobs).toEqual(expect.arrayContaining([
-			expect.objectContaining({ provider: "groq", nativeBatchId: "batch_groq" }),
-			expect.objectContaining({ provider: "together", nativeBatchId: "batch_together" }),
-			expect.objectContaining({ provider: "mistral", nativeBatchId: "batch_mistral", status: "in_progress" }),
-			expect.objectContaining({ provider: "anthropic", nativeBatchId: "batch_anthropic", status: "in_progress" }),
-			expect.objectContaining({ provider: "google-ai-studio", nativeBatchId: "batches/batch_gemini" }),
-			expect.objectContaining({ provider: "x-ai", nativeBatchId: "batch_xai", status: "in_progress" }),
+			expect.objectContaining({ provider: "mistral", nativeBatchId: "batch_mistral", status: "in_progress", apiKeyId: "key_batch_test" }),
+			expect.objectContaining({ provider: "anthropic", nativeBatchId: "batch_anthropic", status: "in_progress", apiKeyId: "key_batch_test" }),
+			expect.objectContaining({ provider: "google-ai-studio", nativeBatchId: "batches/batch_gemini", apiKeyId: "key_batch_test" }),
 		]));
 	});
 
@@ -1149,7 +1124,7 @@ describe("batchRoutes", () => {
 		expect(state.batchMeta.size).toBe(0);
 	});
 
-	it("allows mixed-model xAI batches because native batch requests carry each model", async () => {
+	it("keeps blocked xAI batches disabled even when explicitly configured", async () => {
 		vi.stubGlobal(
 			"fetch",
 			vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -1197,30 +1172,16 @@ describe("batchRoutes", () => {
 			}),
 		});
 
-		expect(response.status).toBe(200);
+		expect(response.status).toBe(403);
 		expect(await response.json()).toMatchObject({
-			native_batch_id: "batch_xai_mixed",
-			provider: "x-ai",
+			error: {
+				reason: "batch_provider_preview_disabled",
+			},
 		});
-		expect(state.fetchCalls[1]?.bodyJson).toMatchObject({
-			batch_requests: [
-				{
-					batch_request_id: "xai-row-1",
-					batch_request: {
-						responses: { model: "grok-4" },
-					},
-				},
-				{
-					batch_request_id: "xai-row-2",
-					batch_request: {
-						responses: { model: "grok-4-fast" },
-					},
-				},
-			],
-		});
+		expect(state.fetchCalls).toEqual([]);
 	});
 
-	it("allows mixed-model request batches for file-backed providers that support row-level models", async () => {
+	it("keeps experimental file-backed providers disabled even when explicitly configured", async () => {
 		vi.stubGlobal(
 			"fetch",
 			vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -1251,9 +1212,9 @@ describe("batchRoutes", () => {
 
 		const { batchRoutes } = await import("./batches");
 
-		for (const [provider, firstModel, secondModel, expectedId] of [
-			["groq", "llama-3.1-8b-instant", "llama-3.3-70b-versatile", "batch_groq_mixed"],
-			["together", "meta-llama/Llama-3.3-70B-Instruct-Turbo", "Qwen/Qwen3-235B-A22B-fp8-tput", "batch_together_mixed"],
+		for (const [provider, firstModel, secondModel] of [
+			["groq", "llama-3.1-8b-instant", "llama-3.3-70b-versatile"],
+			["together", "meta-llama/Llama-3.3-70B-Instruct-Turbo", "Qwen/Qwen3-235B-A22B-fp8-tput"],
 		] as const) {
 			const response = await batchRoutes.request("https://example.com/", {
 				method: "POST",
@@ -1274,18 +1235,13 @@ describe("batchRoutes", () => {
 				}),
 			});
 
-			expect(response.status).toBe(200);
+			expect(response.status).toBe(403);
 			expect(await response.json()).toMatchObject({
-				native_batch_id: expectedId,
+				error: { reason: "batch_provider_preview_disabled" },
 			});
 		}
 
-		expect(state.fetchCalls.map((call) => `${call.method} ${call.url}`)).toEqual([
-			"POST https://api.groq.com/openai/v1/files",
-			"POST https://api.groq.com/openai/v1/batches",
-			"POST https://api.together.xyz/v1/files",
-			"POST https://api.together.xyz/v1/batches",
-		]);
+		expect(state.fetchCalls).toEqual([]);
 	});
 
 	it("rejects mixed-provider request batches until provider fan-out is implemented", async () => {
@@ -2025,6 +1981,51 @@ describe("batchRoutes", () => {
 			},
 		});
 		expect(state.finalizeCalls).toEqual([]);
+	});
+
+	it("releases the reservation when provider-file upload throws before submission", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			if (String(input).endsWith("/files")) throw new Error("provider upload unavailable");
+			throw new Error(`Unexpected fetch ${String(input)}`);
+		}));
+		const { batchRoutes } = await import("./batches");
+		const response = await batchRoutes.request("https://example.com/", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ provider: "openai", model: "gpt-4.1-mini", max_output_tokens: 16, prompts: ["hello"] }),
+		});
+		expect(response.status).toBe(500);
+		expect(await response.json()).toMatchObject({ reason: "batch_input_file_upload_failed" });
+		expect(state.releaseCalls).toEqual([expect.objectContaining({
+			workspaceId: "ws_batch_test",
+			keyId: "key_batch_test",
+			reservationId: expect.stringMatching(/^batch_hold:/),
+		})]);
+		expect(state.batchMeta.size).toBe(0);
+	});
+
+	it("releases pre-dispatch credential failures instead of quarantining them", async () => {
+		state.googleApiKey = null;
+		vi.stubGlobal("fetch", vi.fn(async () => {
+			throw new Error("missing credentials must not dispatch");
+		}));
+		const { batchRoutes } = await import("./batches");
+		const response = await batchRoutes.request("https://example.com/", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				provider: "gemini",
+				model: "gemini-2.5-flash",
+				requests: [{ custom_id: "gemini-1", body: { model: "gemini-2.5-flash", contents: [{ parts: [{ text: "hello" }] }] } }],
+			}),
+		});
+		expect(response.status).toBe(500);
+		expect(await response.json()).toMatchObject({ reason: "google_ai_studio_key_missing" });
+		expect(state.finalizeCalls).toEqual([expect.objectContaining({ status: "failed" })]);
+		expect(Array.from(state.batchMeta.values())).toEqual(expect.arrayContaining([
+			expect.objectContaining({ submissionOutcome: "rejected", status: "failed" }),
+		]));
+		expect(state.operationalFailures).toEqual([]);
 	});
 
 	it("proxies batch cancellation and dispatches a cancelled webhook phase", async () => {

@@ -52,6 +52,21 @@ describe("batch credit reservations", () => {
 		});
 	});
 
+	it("treats an idempotent existing hold as successfully reserved", async () => {
+		reserveWalletCreditsMock.mockResolvedValueOnce({
+			status: "held",
+			applied: false,
+			alreadyApplied: false,
+		});
+		await expect(reserveBatchCredits({
+			workspaceId: "ws_1",
+			apiKeyId: "key_1",
+			requestId: "req_retry",
+			providerId: "openai",
+			requests: [{ body: { model: "gpt-4.1-mini", input: "hello", max_output_tokens: 1 } }],
+		})).resolves.toMatchObject({ held: true, status: "held" });
+	});
+
 	it("uses a UTF-8 input ceiling and applies a ten percent margin", async () => {
 		expect(estimateInputQuadTokens({ input: "12345678" })).toBe(2);
 		expect(estimateInputTokenUpperBound({ input: "12345678" })).toBe(new TextEncoder().encode(JSON.stringify({ input: "12345678" })).byteLength + 16);

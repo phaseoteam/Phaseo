@@ -152,6 +152,21 @@ describe("wallet reservation RPC compatibility", () => {
 		expect(invalidateGatewayCreditCacheMock).toHaveBeenCalledTimes(2);
 	});
 
+	it("invalidates caches when an idempotent retry reports an already-applied transition", async () => {
+		rpcMock.mockResolvedValueOnce({
+			data: [{ ok: true, applied: false, already_applied: false, reason: "already_reserved", amount_nanos: 500 }],
+			error: null,
+		});
+		await expect(reserveWalletCredits({
+			workspaceId: "ws_retry",
+			reservationId: "batch_hold:req_retry",
+			amountNanos: 500,
+			keyId: "key_retry",
+		})).resolves.toMatchObject({ status: "held", alreadyApplied: true });
+		expect(invalidateGatewayCreditCacheMock).toHaveBeenCalledWith("ws_retry");
+		expect(setKeyVersionMock).toHaveBeenCalledWith("id", "key_retry", expect.any(Number));
+	});
+
 	it("releases stale orphan batch holds through the bounded reaper RPC", async () => {
 		rpcMock.mockResolvedValueOnce({ data: 3, error: null });
 		await expect(releaseStaleOrphanBatchReservations({ olderThanSeconds: 60, limit: 5000 })).resolves.toBe(3);

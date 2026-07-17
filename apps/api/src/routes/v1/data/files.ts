@@ -28,6 +28,42 @@ import {
 
 const MAX_BATCH_FILE_UPLOAD_BYTES = 20 * 1024 * 1024;
 
+class BatchFileTooLargeError extends Error {
+	constructor() {
+		super("batch_file_too_large");
+		this.name = "BatchFileTooLargeError";
+	}
+}
+
+export async function readRequestBodyWithLimit(body: ReadableStream<Uint8Array> | null, maxBytes: number): Promise<ArrayBuffer> {
+	if (!body) return new ArrayBuffer(0);
+	const reader = body.getReader();
+	const chunks: Uint8Array[] = [];
+	let totalBytes = 0;
+	try {
+		while (true) {
+			const { done, value } = await reader.read();
+			if (done) break;
+			if (!value || value.byteLength === 0) continue;
+			totalBytes += value.byteLength;
+			if (totalBytes > maxBytes) {
+				await reader.cancel("batch_file_too_large").catch(() => undefined);
+				throw new BatchFileTooLargeError();
+			}
+			chunks.push(value);
+		}
+	} finally {
+		reader.releaseLock();
+	}
+	const output = new Uint8Array(totalBytes);
+	let offset = 0;
+	for (const chunk of chunks) {
+		output.set(chunk, offset);
+		offset += chunk.byteLength;
+	}
+	return output.buffer;
+}
+
 function toText(value: unknown): string | null {
 	return batchText(value);
 }
@@ -134,6 +170,16 @@ async function finishUploadClaim(args: {
 			uploadId: args.uploadId,
 			status: args.status,
 		});
+		const fallback = await getSupabaseAdmin()
+			.from("gateway_batch_file_uploads")
+			.update({
+				status: args.status,
+				provider_file_id: args.providerFileId ?? null,
+				updated_at: new Date().toISOString(),
+			})
+			.eq("workspace_id", args.workspaceId)
+			.eq("upload_id", args.uploadId);
+		if (fallback.error) throw new AggregateError([error, fallback.error], "batch_file_upload_claim_finalize_failed");
 	}
 }
 
@@ -153,12 +199,17 @@ async function handleUpload(req: Request) {
 	if (Number.isFinite(declaredLength) && declaredLength > MAX_BATCH_FILE_UPLOAD_BYTES) {
 		return jsonPayload({ error: { type: "validation_error", reason: "batch_file_too_large" } }, 413);
 	}
-	const uploadBody = await req.arrayBuffer();
+	let uploadBody: ArrayBuffer;
+	try {
+		uploadBody = await readRequestBodyWithLimit(req.body, MAX_BATCH_FILE_UPLOAD_BYTES);
+	} catch (error) {
+		if (error instanceof BatchFileTooLargeError) {
+			return jsonPayload({ error: { type: "validation_error", reason: "batch_file_too_large" } }, 413);
+		}
+		throw error;
+	}
 	if (uploadBody.byteLength <= 0) {
 		return jsonPayload({ error: { type: "validation_error", reason: "batch_file_empty" } }, 400);
-	}
-	if (uploadBody.byteLength > MAX_BATCH_FILE_UPLOAD_BYTES) {
-		return jsonPayload({ error: { type: "validation_error", reason: "batch_file_too_large" } }, 413);
 	}
 	const claim = await getSupabaseAdmin().rpc("gateway_claim_batch_file_upload", {
 		p_workspace_id: auth.workspaceId,
