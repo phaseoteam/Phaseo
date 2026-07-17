@@ -20,11 +20,27 @@ describe("MODEL_DISCOVERY_PROVIDERS", () => {
 		expect(providerIds.has("streamlake")).toBe(false);
 	});
 
-	it("uses native discovery entries for vertex regions", () => {
+	it("uses one canonical native discovery entry per provider", () => {
 		const providerIds = new Set(MODEL_DISCOVERY_PROVIDERS.map((provider) => provider.providerId));
 
 		expect(providerIds.has("google-vertex")).toBe(true);
-		expect(providerIds.has("google-vertex-eu")).toBe(true);
+		expect(providerIds.has("google-vertex-eu")).toBe(false);
+		expect(providerIds.has("anthropic")).toBe(true);
+		expect(providerIds.has("anthropic-us")).toBe(false);
+	});
+
+	it("excludes endpoint variants from model discovery", () => {
+		const providerIds = new Set(MODEL_DISCOVERY_PROVIDERS.map((provider) => provider.providerId));
+		for (const providerId of [
+			"minimax-lightning",
+			"nebius-token-factory-eu-north-1",
+			"nebius-token-factory-fast",
+			"nebius-token-factory-us-central-1",
+			"openai-eu",
+			"venice-e2ee",
+		]) {
+			expect(providerIds.has(providerId)).toBe(false);
+		}
 	});
 
 	it("accepts the production secret aliases for GMICloud and Nebius", () => {

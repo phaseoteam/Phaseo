@@ -32,6 +32,7 @@ type ProviderOverride = Partial<Omit<ProviderConfig, "providerId" | "providerNam
 
 const PROVIDER_ID_ALIASES_TO_SKIP = new Set<string>([
 	"alibaba-cloud",
+	"anthropic-us",
 	"arcee",
 	"atlas-cloud",
 	"aionlabs",
@@ -40,10 +41,16 @@ const PROVIDER_ID_ALIASES_TO_SKIP = new Set<string>([
 	"moonshot-ai",
 	"moonshot-ai-turbo",
 	"moonshotai-turbo",
+	"minimax-lightning",
+	"nebius-token-factory-eu-north-1",
+	"nebius-token-factory-fast",
+	"nebius-token-factory-us-central-1",
 	"novitaai",
+	"openai-eu",
 	"qwen",
 	"relace",
 	"voyageai",
+	"venice-e2ee",
 	"x-ai",
 	"xai",
 	"zai",
@@ -173,13 +180,6 @@ const NATIVE_DISCOVERY_PROVIDERS: ProviderConfig[] = [
 		authStyle: "anthropic",
 	},
 	{
-		providerId: "anthropic-us",
-		providerName: "Anthropic US",
-		modelsEndpoint: "https://api.anthropic.com/v1/models",
-		apiKeyEnv: ["ANTHROPIC_API_KEY"],
-		authStyle: "anthropic",
-	},
-	{
 		providerId: "google-ai-studio",
 		providerName: "Google AI Studio",
 		modelsEndpoint: "https://generativelanguage.googleapis.com/v1beta/models",
@@ -189,14 +189,6 @@ const NATIVE_DISCOVERY_PROVIDERS: ProviderConfig[] = [
 	{
 		providerId: "google-vertex",
 		providerName: "Google Vertex",
-		modelsEndpoint:
-			"https://aiplatform.googleapis.com/v1beta1/publishers/google/models?listAllVersions=true&pageSize=1000",
-		apiKeyEnv: ["GOOGLE_VERTEX_ACCESS_TOKEN", "GOOGLE_VERTEX_API_KEY"],
-		authStyle: "google_vertex",
-	},
-	{
-		providerId: "google-vertex-eu",
-		providerName: "Google Vertex EU",
 		modelsEndpoint:
 			"https://aiplatform.googleapis.com/v1beta1/publishers/google/models?listAllVersions=true&pageSize=1000",
 		apiKeyEnv: ["GOOGLE_VERTEX_ACCESS_TOKEN", "GOOGLE_VERTEX_API_KEY"],
