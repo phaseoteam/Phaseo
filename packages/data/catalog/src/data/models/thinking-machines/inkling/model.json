@@ -28,6 +28,11 @@
       "title": "Inkling on Hugging Face",
       "kind": "model",
       "url": "https://huggingface.co/thinkingmachines/inkling"
+    },
+    {
+      "title": "Inkling on Together AI",
+      "kind": "model",
+      "url": "https://www.together.ai/models/inkling"
     }
   ],
   "details": [
@@ -49,15 +54,15 @@
     },
     {
       "name": "availability_note",
-      "value": "Full weights are available on Hugging Face. Tinker currently exposes Inkling for sampling and fine-tuning, but its provider is not yet active in the gateway."
+      "value": "Full weights are available on Hugging Face. Tinker exposes Inkling for sampling and fine-tuning, Together AI offers serverless inference, and Baseten offers Model API inference."
     },
     {
       "name": "confirmed_api_providers",
-      "value": "Tinker (beta sampling and fine-tuning API)"
+      "value": "Tinker (beta sampling and fine-tuning API); Together AI (serverless); Baseten (Model API)"
     },
     {
       "name": "weights_distribution",
-      "value": "Hugging Face (weights distribution; no hosted inference provider currently listed)"
+      "value": "Hugging Face (weights distribution)"
     }
   ],
   "benchmarks": []
