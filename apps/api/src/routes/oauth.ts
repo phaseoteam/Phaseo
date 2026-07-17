@@ -59,7 +59,7 @@ const DYNAMIC_MCP_SCOPES = [
 	"keys:read",
 	"keys:write",
 ] as const;
-const DYNAMIC_MCP_DEFAULT_SCOPES = DYNAMIC_MCP_SCOPES.filter((scope) => scope !== "keys:write");
+const DYNAMIC_MCP_DEFAULT_SCOPES = ["models:read", "providers:read", "pricing:read", "keys:read"] as const;
 const DYNAMIC_MCP_SCOPE_SET = new Set<string>(DYNAMIC_MCP_SCOPES);
 const MCP_RESOURCE_SERVER_CLIENT_ID = "phaseo_mcp_resource_server";
 
@@ -302,10 +302,6 @@ oauthRouter.post(
 		if (requestedScopes.length === 0 || !requestedScopes.every((scope) => DYNAMIC_MCP_SCOPE_SET.has(scope))) {
 			return oauthError("invalid_scope", "One or more requested scopes are not supported for dynamically registered MCP clients");
 		}
-		if (!requestedScopes.includes(GATEWAY_ACCESS_SCOPE)) {
-			return oauthError("invalid_scope", `${GATEWAY_ACCESS_SCOPE} is required for dynamically registered MCP clients`);
-		}
-
 		const clientId = crypto.randomUUID();
 		const safeRedirectUris = Array.from(new Set(redirectUris as string[]));
 		const { error } = await getSupabaseAdmin().from("oauth_clients").insert({
@@ -436,7 +432,7 @@ oauthRouter.get(
 		if (scopes.length !== requestedScopes.length) {
 			return oauthError("invalid_scope", "One or more requested scopes are not allowed for this client");
 		}
-		if (!isFirstPartyCliClient(client.id) && !scopes.includes(GATEWAY_ACCESS_SCOPE)) {
+		if (!isFirstPartyCliClient(client.id) && !resource && !scopes.includes(GATEWAY_ACCESS_SCOPE)) {
 			return oauthError("invalid_scope", `${GATEWAY_ACCESS_SCOPE} is required for third-party OAuth`);
 		}
 
@@ -499,7 +495,7 @@ oauthRouter.post(
 		if (scopes.length !== requestedScopes.length) {
 			return oauthError("invalid_scope", "One or more requested scopes are not allowed for this client");
 		}
-		if (!isFirstPartyCliClient(client.id) && !scopes.includes(GATEWAY_ACCESS_SCOPE)) {
+		if (!isFirstPartyCliClient(client.id) && !resource && !scopes.includes(GATEWAY_ACCESS_SCOPE)) {
 			return oauthError("invalid_scope", `${GATEWAY_ACCESS_SCOPE} is required for third-party OAuth`);
 		}
 		const selectedWorkspaceIds = Array.from(new Set([...workspaceIds, workspaceId]));
@@ -787,7 +783,11 @@ oauthRouter.post(
 				scopes: Array.isArray(data.scopes) ? data.scopes.map(String) : [],
 				...(grantedResource ? { resource: grantedResource } : {}),
 			};
-			if (!isFirstPartyCliClient(client.id) && !tokenInput.scopes.includes(GATEWAY_ACCESS_SCOPE)) {
+			if (
+				!isFirstPartyCliClient(client.id) &&
+				!grantedResource &&
+				!tokenInput.scopes.includes(GATEWAY_ACCESS_SCOPE)
+			) {
 				return oauthError("invalid_scope", `${GATEWAY_ACCESS_SCOPE} consent is required for a delegated key`);
 			}
 			// The CLI retains refreshable sessions for `login`, logout, and token

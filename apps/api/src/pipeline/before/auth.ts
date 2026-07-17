@@ -532,10 +532,10 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
 				return { ok: false, reason: "oauth_authorization_revoked" };
 			}
 			const effectiveScopes = oauthScopes.filter((scope) => activeAuthorizationScopes.includes(scope));
-			if (!effectiveScopes.includes(GATEWAY_ACCESS_SCOPE)) {
+			const oauthResource = String(keyRow.oauth_resource ?? "").trim() || null;
+			if (!oauthResource && !effectiveScopes.includes(GATEWAY_ACCESS_SCOPE)) {
 				return { ok: false, reason: "oauth_gateway_scope_required" };
 			}
-			const oauthResource = String(keyRow.oauth_resource ?? "").trim() || null;
 			if (oauthResource && !options.allowResourceBoundOAuthKey) {
 				return { ok: false, reason: "oauth_resource_token_not_valid_for_api" };
 			}

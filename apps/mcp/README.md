@@ -81,3 +81,7 @@ The production environment disables `workers.dev`, binds the custom domain
 `mcp.phaseo.app`, and connects privately to `phaseo-gateway`. Apply the OAuth
 resource-binding migration and configure the shared exchange secret before the
 first deployment.
+
+The production launch order, smoke tests, rollback steps, and current external
+gates are tracked in
+[`docs/security/oauth-mcp-launch-checklist.md`](../../docs/security/oauth-mcp-launch-checklist.md).

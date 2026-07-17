@@ -266,7 +266,7 @@ describe("authenticate hot-path caching", () => {
 			key_kind: "oauth_delegated",
 			oauth_user_id: "user_oauth",
 			oauth_client_id: "client_oauth",
-			oauth_scopes: ["gateway:access", "models:read", "logs:read"],
+			oauth_scopes: ["models:read", "logs:read"],
 			oauth_resource: "https://mcp.phaseo.app/mcp",
 		};
 
@@ -283,9 +283,9 @@ describe("authenticate hot-path caching", () => {
 		expect(exchangeResult).toMatchObject({
 			ok: true,
 			authMethod: "oauth",
-			oauthScopes: ["gateway:access", "models:read"],
+			oauthScopes: ["models:read"],
 			oauthResource: "https://mcp.phaseo.app/mcp",
-			scopes: ["gateway:access", "models:read"],
+			scopes: ["models:read"],
 		});
 	});
 

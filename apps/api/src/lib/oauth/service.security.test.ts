@@ -310,6 +310,31 @@ describe("OAuth refresh rotation security", () => {
 		expect(state.rpcCalls).toHaveLength(rpcCallCount);
 	});
 
+	it("mints a least-privilege OAuth-managed key for an MCP resource", async () => {
+		state.rotationStatus = "issued";
+		const { issueOAuthManagedKeyForAuthorizationCode } = await import("./service");
+
+		const result = await issueOAuthManagedKeyForAuthorizationCode(
+			"00000000-0000-0000-0000-000000000004",
+			{
+				userId: "user_1",
+				workspaceId: "ws_1",
+				clientId: "mcp_client",
+				scopes: ["models:read", "pricing:read"],
+				resource: "https://mcp.phaseo.app/mcp",
+			},
+		);
+
+		expect(result?.access_token).toMatch(/^phaseo_v1_sk_/);
+		expect(state.rpcCalls.at(-1)).toMatchObject({
+			name: "consume_oauth_code_and_issue_managed_key",
+			args: {
+				p_scopes: ["models:read", "pricing:read"],
+				p_resource: "https://mcp.phaseo.app/mcp",
+			},
+		});
+	});
+
 	it("revokes a delegated access token after verifying its secret", async () => {
 		const kid = "AbCdEf123456";
 		const secret = "AbCdEf123456AbCdEf123456AbCdEf123456AbCd";

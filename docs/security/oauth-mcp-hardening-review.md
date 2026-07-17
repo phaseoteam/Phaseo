@@ -118,9 +118,10 @@ by default and is not considered safe for public enablement yet.
   `keys:write`, and accepted control characters in display metadata.
 - Impact: Clients could begin consent with unnecessary write access; malicious
   metadata could create misleading consent rendering or log entries.
-- Fix: Default DCR scopes are read-only. Write scopes require an explicit
-  request. Names/descriptions are normalized, bounded, and reject control
-  characters; URLs and OAuth parameters are also length-bounded.
+- Fix: Default DCR scopes are the minimum read-only MCP set. They exclude both
+  `gateway:access` and `keys:write`; write or inference scopes require an
+  explicit request. Names/descriptions are normalized, bounded, and reject
+  control characters; URLs and OAuth parameters are also length-bounded.
 - Mitigation: Continue HTML escaping client metadata in the consent UI.
 - False-positive notes: React already escaped metadata; normalization is
   defense in depth and protects non-HTML consumers too.
@@ -130,32 +131,34 @@ by default and is not considered safe for public enablement yet.
 - Severity: Medium
 - Status: Resolved for newly issued credentials
 - Location: `apps/api/src/lib/oauth/service.ts:658`,
-  `supabase/migrations/20260717090000_bind_oauth_keys_to_resources.sql:98`
+  `supabase/migrations/20260717113000_bind_oauth_keys_to_resources.sql`
 - Evidence: OAuth-managed Gateway keys previously had no explicit expiry.
 - Impact: Theft could provide access until manual revocation or authorization
   removal.
-- Fix: Newly issued delegated access credentials now expire after seven days
-  and return `expires_in` to clients.
-- Mitigation: Revoke any pre-migration unbounded delegated keys or backfill
-  expiry before public launch.
+- Fix: Newly issued delegated access credentials expire after seven days and
+  return `expires_in` to clients. The launch migration backfills active legacy
+  delegated credentials to a seven-day expiry.
+- Mitigation: Verify the post-migration active unbounded count is zero.
 - False-positive notes: CLI JWT access tokens were already short-lived and use
   rotating refresh tokens.
 
-### PHASEO-DB-008 â€” Legacy unbound issuance function remained callable
+### PHASEO-DB-008 — Rolling-deployment compatibility overload
 
-- Severity: Medium
-- Status: Resolved in migration
+- Severity: Low
+- Status: Accepted temporarily for zero-downtime rollout
 - Location:
-  `supabase/migrations/20260717090000_bind_oauth_keys_to_resources.sql:13`
-- Evidence: A previous overload could issue a delegated key without the new
-  resource argument.
-- Impact: Future application code could accidentally call the downgrade path.
-- Fix: The migration drops the old overload before granting the resource-bound
-  function to `service_role`.
-- Mitigation: Verify the old signature is absent after migration.
-- False-positive notes: Exploitation required privileged application/database
-  access, but removing the downgrade path is safer than relying on call-site
-  discipline.
+  `supabase/migrations/20260717113000_bind_oauth_keys_to_resources.sql`
+- Evidence: The previous nine-argument overload remains available to the
+  currently deployed API while the resource-aware overload is introduced.
+- Impact: Privileged application code can still mint an unbound delegated key,
+  but the database requires `gateway:access` for that path and grants execute
+  only to `service_role`.
+- Fix: The new API calls the resource-aware overload. Retaining the constrained
+  old signature avoids an OAuth outage between the migration and API deploy.
+- Mitigation: Drop the old signature in a follow-up migration after every API
+  instance has been upgraded.
+- False-positive notes: The compatibility path cannot mint a low-scope MCP
+  credential and does not weaken resource-bound token enforcement.
 
 ### PHASEO-CF-009 â€” Production Worker exposure and binding posture
 
@@ -188,12 +191,28 @@ by default and is not considered safe for public enablement yet.
 - False-positive notes: Equivalent edge headers may already exist but were not
   visible in source.
 
+### PHASEO-MCP-011 — Missing machine-readable tool contracts
+
+- Severity: Medium
+- Status: Resolved
+- Location: `apps/mcp/src/index.ts`
+- Evidence: Tools returned `structuredContent` without declaring matching
+  output schemas and did not expose per-tool OAuth requirements.
+- Impact: Hosts could not validate tool output reliably or request the minimum
+  authorization needed for each operation.
+- Fix: Every tool now declares an exact output schema, OAuth security metadata,
+  and complete read-only/destructive/idempotent/open-world annotations. Server
+  instructions also direct hosts to use live data and confirm writes.
+- Mitigation: Retain the in-memory `tools/list` regression tests.
+- False-positive notes: Authentication already existed at the `/mcp` boundary;
+  this finding concerned interoperability and least privilege.
+
 ## Residual risks and launch gates
 
 1. Do not enable `PHASEO_MCP_WRITE_TOOLS_ENABLED` publicly until key secrets can
    be delivered outside model-readable MCP output.
-2. Backfill or revoke delegated keys issued before the seven-day expiry
-   migration.
+2. Reconcile Supabase local/remote migration history before applying the launch
+   migration, then verify its delegated-key expiry backfill completed.
 3. Dynamic clients are rate-limited but do not yet have an expiry or automated
    inactive-client cleanup policy. Add one before high-volume public DCR.
 4. The web app has a focused consent CSP, not a strict app-wide `script-src`

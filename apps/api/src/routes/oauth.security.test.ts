@@ -535,6 +535,13 @@ describe("OAuth route security", () => {
 
 		expect(response.status).toBe(201);
 		expect(state.registeredClients[0]?.allowed_scopes).not.toContain("keys:write");
+		expect(state.registeredClients[0]?.allowed_scopes).not.toContain("gateway:access");
+		expect(state.registeredClients[0]?.allowed_scopes).toEqual([
+			"models:read",
+			"providers:read",
+			"pricing:read",
+			"keys:read",
+		]);
 	});
 
 	it("rejects control characters in dynamic client metadata", async () => {
@@ -617,7 +624,7 @@ describe("OAuth route security", () => {
 			user_id: "user_1",
 			workspace_id: "ws_1",
 			redirect_uri: "https://chatgpt.com/connector/oauth/callback",
-			scopes: ["openid", "gateway:access", "me:read"],
+			scopes: ["models:read", "pricing:read"],
 			code_challenge: "challenge",
 			code_challenge_method: "S256",
 			resource: "https://mcp.phaseo.app/mcp",
@@ -644,7 +651,7 @@ describe("OAuth route security", () => {
 			userId: "user_1",
 			workspaceId: "ws_1",
 			clientId: "mcp_client",
-			scopes: ["openid", "gateway:access", "me:read"],
+			scopes: ["models:read", "pricing:read"],
 			resource: "https://mcp.phaseo.app/mcp",
 		});
 	});

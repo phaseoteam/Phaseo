@@ -7,6 +7,7 @@ import {
 	authenticatePhaseoUser,
 	type AuthenticatedPhaseoUser,
 	type PhaseoEnv,
+	type PhaseoApiKey,
 	getModel,
 	listApiKeys,
 	listModels,
@@ -16,6 +17,46 @@ import {
 
 const MAX_RESULTS = 20;
 const MAX_MCP_REQUEST_BODY_BYTES = 1024 * 1024;
+const READ_ONLY_MCP_SCOPES = ["models:read", "providers:read", "pricing:read", "keys:read"] as const;
+
+const modelSummarySchema = {
+	id: z.string(),
+	name: z.string(),
+	description: z.string().nullable(),
+	provider: z.string().nullable(),
+	contextTokens: z.number().int().nullable(),
+	inputModalities: z.array(z.string()),
+	outputModalities: z.array(z.string()),
+	inputPricePerToken: z.string().nullable(),
+	outputPricePerToken: z.string().nullable(),
+	supportsTools: z.boolean(),
+	availableProviders: z.array(z.string()),
+};
+
+const providerSchema = {
+	api_provider_id: z.string(),
+	api_provider_name: z.string().nullable(),
+	description: z.string().nullable(),
+	link: z.string().nullable(),
+	country_code: z.string().nullable(),
+};
+
+const apiKeySchema = {
+	id: z.string(),
+	name: z.string().nullable(),
+	prefix: z.string().nullable(),
+	status: z.string().nullable(),
+	created_at: z.string().nullable(),
+	last_used_at: z.string().nullable(),
+	expires_at: z.string().nullable(),
+	disabled: z.boolean(),
+	limit: z.number().nullable(),
+	limit_reset: z.enum(["daily", "weekly", "monthly"]).nullable(),
+};
+
+function oauthToolMeta(scopes: readonly string[]) {
+	return { securitySchemes: [{ type: "oauth2", scopes: [...scopes] }] };
+}
 
 function normalise(value: string | null | undefined): string {
 	return value?.trim().toLowerCase() ?? "";
@@ -43,20 +84,49 @@ function modelSummary(model: Awaited<ReturnType<typeof listModels>>[number]) {
 	};
 }
 
+function providerSummary(provider: Awaited<ReturnType<typeof listProviders>>[number]) {
+	return {
+		api_provider_id: provider.api_provider_id,
+		api_provider_name: provider.api_provider_name,
+		description: provider.description,
+		link: provider.link,
+		country_code: provider.country_code,
+	};
+}
+
+function apiKeySummary(key: PhaseoApiKey) {
+	return {
+		id: key.id,
+		name: key.name,
+		prefix: key.prefix,
+		status: key.status,
+		created_at: key.created_at,
+		last_used_at: key.last_used_at,
+		expires_at: key.expires_at,
+		disabled: key.disabled,
+		limit: key.limit,
+		limit_reset: key.limit_reset,
+	};
+}
+
 function errorResult(error: unknown) {
 	const message = error instanceof PhaseoApiError ? error.message : "Phaseo could not complete this request.";
 	return { isError: true as const, content: [{ type: "text" as const, text: message }] };
 }
 
-function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPhaseoUser): McpServer {
-	const server = new McpServer({
-		name: "Phaseo",
-		version: "0.2.0",
-		description:
-			"Live Phaseo model catalogue, provider, pricing, and authenticated workspace controls. Use live Phaseo data rather than model-memory for current model or pricing questions. Write tools require explicit user confirmation.",
-	});
+export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPhaseoUser): McpServer {
+	const server = new McpServer(
+		{ name: "Phaseo", version: "0.2.0" },
+		{
+			instructions:
+				"Phaseo provides live model, provider, pricing, and authenticated workspace data. For current availability or pricing questions, use Phaseo tools instead of relying on model memory. Treat cost results as estimates. Write tools may consume or expose sensitive account resources and must only be called after the user explicitly confirms the exact action.",
+		},
+	);
 
-	server.registerTool(
+	if (
+		authenticatedUser.scopes.includes("models:read") &&
+		authenticatedUser.scopes.includes("pricing:read")
+	) server.registerTool(
 		"models_list",
 		{
 			title: "Search Phaseo models",
@@ -69,7 +139,9 @@ function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPhaseoUser
 				maximumInputPricePerMillion: z.number().nonnegative().optional(),
 				limit: z.number().int().min(1).max(MAX_RESULTS).default(10),
 			},
-			annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+			outputSchema: { models: z.array(z.object(modelSummarySchema)) },
+			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+			_meta: oauthToolMeta(["models:read", "pricing:read"]),
 		},
 		async ({ query, provider, modality, minimumContextTokens, maximumInputPricePerMillion, limit }) => {
 			try {
@@ -94,13 +166,18 @@ function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPhaseoUser
 		},
 	);
 
-	server.registerTool(
+	if (
+		authenticatedUser.scopes.includes("models:read") &&
+		authenticatedUser.scopes.includes("pricing:read")
+	) server.registerTool(
 		"model_get",
 		{
 			title: "Get a Phaseo model",
 			description: "Get live pricing, capabilities, and provider availability for one Phaseo model ID. Read-only.",
 			inputSchema: { modelId: z.string().min(1).max(200) },
-			annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+			outputSchema: { model: z.object(modelSummarySchema) },
+			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+			_meta: oauthToolMeta(["models:read", "pricing:read"]),
 		},
 		async ({ modelId }) => {
 			try {
@@ -111,23 +188,28 @@ function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPhaseoUser
 		},
 	);
 
-	server.registerTool(
+	if (authenticatedUser.scopes.includes("providers:read")) server.registerTool(
 		"providers_list",
 		{
 			title: "List Phaseo providers",
 			description: "List AI providers currently available through Phaseo. Read-only.",
 			inputSchema: {},
-			annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+			outputSchema: { providers: z.array(z.object(providerSchema)) },
+			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+			_meta: oauthToolMeta(["providers:read"]),
 		},
 		async () => {
 			try {
-				const providers = await listProviders(env, { accessToken: authenticatedUser.accessToken });
+				const providers = (await listProviders(env, { accessToken: authenticatedUser.accessToken })).map(providerSummary);
 				return { content: [{ type: "text" as const, text: `Phaseo currently lists ${providers.length} providers.` }], structuredContent: { providers } };
 			} catch (error) { return errorResult(error); }
 		},
 	);
 
-	server.registerTool(
+	if (
+		authenticatedUser.scopes.includes("models:read") &&
+		authenticatedUser.scopes.includes("pricing:read")
+	) server.registerTool(
 		"cost_estimate",
 		{
 			title: "Estimate a Phaseo model cost",
@@ -138,7 +220,21 @@ function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPhaseoUser
 				cachedInputTokens: z.number().int().nonnegative().default(0),
 				outputTokens: z.number().int().nonnegative(),
 			},
-			annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+			outputSchema: {
+				estimate: z.object({
+					modelId: z.string(),
+					inputTokens: z.number().int(),
+					cachedInputTokens: z.number().int(),
+					outputTokens: z.number().int(),
+					inputCostUSD: z.number(),
+					cachedInputCostUSD: z.number(),
+					outputCostUSD: z.number(),
+					totalCostUSD: z.number(),
+					currency: z.literal("USD"),
+				}),
+			},
+			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+			_meta: oauthToolMeta(["models:read", "pricing:read"]),
 		},
 		async ({ modelId, inputTokens, cachedInputTokens, outputTokens }) => {
 			try {
@@ -167,11 +263,13 @@ function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPhaseoUser
 			description:
 				"List Gateway API keys in the authenticated Phaseo workspace, including their status, limits, and expiry. Does not return key secrets. Requires the keys:read permission.",
 			inputSchema: {},
-			annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+			outputSchema: { keys: z.array(z.object(apiKeySchema)) },
+			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+			_meta: oauthToolMeta(["keys:read"]),
 		},
 		async () => {
 			try {
-				const keys = await listApiKeys(env, { accessToken: authenticatedUser.accessToken });
+				const keys = (await listApiKeys(env, { accessToken: authenticatedUser.accessToken })).map(apiKeySummary);
 				return {
 					content: [{ type: "text" as const, text: `Found ${keys.length} Gateway API key${keys.length === 1 ? "" : "s"} in the authenticated Phaseo workspace.` }],
 					structuredContent: { keys },
@@ -195,7 +293,9 @@ function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPhaseoUser
 				expiresAt: z.string().datetime().nullable().optional().describe("Optional ISO-8601 expiry timestamp. Use null for no expiry."),
 				confirm: z.literal(true).describe("Must be true only after the user explicitly confirmed creation and one-time secret display."),
 			},
-			annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+			outputSchema: { key: z.object({ ...apiKeySchema, key: z.string() }) },
+			annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+			_meta: oauthToolMeta(["keys:write"]),
 		},
 		async ({ name, monthlyLimitUSD, expiresAt }) => {
 			try {
@@ -206,7 +306,7 @@ function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPhaseoUser
 				});
 				return {
 					content: [{ type: "text" as const, text: `Created Gateway API key "${key.name ?? name}". Its secret is shown once below; save it securely because Phaseo cannot retrieve it again.` }],
-					structuredContent: { key },
+					structuredContent: { key: { ...apiKeySummary(key), key: key.key } },
 				};
 			} catch (error) { return errorResult(error); }
 		},
@@ -221,16 +321,7 @@ function resourceMetadata(request: Request, env: PhaseoEnv): Response {
 		resource: `${origin}/mcp`,
 		authorization_servers: [`${env.PHASEO_API_BASE_URL.replace(/\/+$/, "")}/oauth`],
 		scopes_supported: [
-			"openid",
-			"profile",
-			"email",
-			"gateway:access",
-			"me:read",
-			"models:read",
-			"providers:read",
-			"pricing:read",
-			"workspaces:read",
-			"keys:read",
+			...READ_ONLY_MCP_SCOPES,
 			...(env.PHASEO_MCP_WRITE_TOOLS_ENABLED?.trim().toLowerCase() === "true" ? ["keys:write"] : []),
 		],
 		bearer_methods_supported: ["header"],
@@ -242,7 +333,7 @@ function unauthorised(request: Request): Response {
 	return new Response("Phaseo login is required.", {
 		status: 401,
 		headers: {
-			"WWW-Authenticate": `Bearer resource_metadata="${origin}/.well-known/oauth-protected-resource/mcp", scope="openid gateway:access me:read models:read providers:read pricing:read workspaces:read keys:read"`,
+			"WWW-Authenticate": `Bearer resource_metadata="${origin}/.well-known/oauth-protected-resource/mcp", scope="${READ_ONLY_MCP_SCOPES.join(" ")}"`,
 			"Cache-Control": "no-store",
 			"X-Content-Type-Options": "nosniff",
 		},

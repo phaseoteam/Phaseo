@@ -630,9 +630,9 @@ export async function issueOAuthManagedKeyForAuthorizationCode(
 	grantId: string,
 	input: TokenIssueInput,
 ) {
-	// A delegated key can spend workspace credits. Never mint one from an
-	// identity-only or control-plane-only consent grant.
-	if (!input.scopes.includes(GATEWAY_ACCESS_SCOPE)) return null;
+	// Unbound delegated keys can spend workspace credits and require Gateway
+	// consent. Resource-bound keys remain confined to their protected resource.
+	if (!input.resource && !input.scopes.includes(GATEWAY_ACCESS_SCOPE)) return null;
 
 	const pepper = resolveActiveKeyPepper(getBindings());
 	if (!pepper) throw new Error("KEY_PEPPER_ACTIVE is not configured");

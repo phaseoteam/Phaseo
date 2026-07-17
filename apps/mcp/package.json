@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "build": "wrangler deploy --dry-run --env=",
+    "build:production": "wrangler deploy --dry-run --env production",
 		"cf-typegen": "wrangler types --include-runtime false --strict-vars false",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
