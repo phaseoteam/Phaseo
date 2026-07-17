@@ -132,6 +132,44 @@ Supported grants:
 
 First-party CLI sessions use short-lived access tokens and rotating refresh tokens. User-created applications and MCP clients use authorization code with PKCE, exact redirect URIs, explicit workspace consent, stored scopes, revocable delegated access tokens, and optional protected-resource binding.
 
+### Local OAuth end-to-end test
+
+Run the local web app at `http://localhost:3100` and the API Worker at
+`http://127.0.0.1:8790`, with the API configured to use the local web origin.
+Keep the test CLI session isolated from your normal Phaseo session:
+
+```powershell
+$env:PHASEO_CONFIG_DIR = "$env:TEMP\phaseo-oauth-e2e"
+node ./dist/index.js login --browser --api-url http://127.0.0.1:8790
+node ./dist/index.js whoami --json
+```
+
+Create a temporary public client with the smoke callback registered:
+
+```powershell
+node ./dist/index.js oauth-clients create `
+  --name "Local OAuth smoke test" `
+  --client-type public `
+  --redirect-uri http://127.0.0.1:8977/callback `
+  --scopes openid,profile,email,gateway:access,me:read `
+  --json
+```
+
+Pass the returned client ID to the smoke client. It performs S256 PKCE, checks
+`userinfo`, revokes the delegated credential, and verifies that reuse fails. It
+never prints the access token:
+
+```powershell
+pnpm smoke:oauth-client -- `
+  --api-url http://127.0.0.1:8790 `
+  --client-id <client-id>
+```
+
+Delete the temporary OAuth client and run `logout` when finished. Confidential
+clients are also supported; provide their one-time secret through the
+`PHASEO_OAUTH_CLIENT_SECRET` environment variable rather than a command-line
+argument.
+
 ## Security Notes
 
 - CLI sessions prefer OS-backed storage where possible:
