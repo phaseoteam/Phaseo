@@ -494,7 +494,7 @@ describe("OAuth route security", () => {
 		expect(state.issuedManagedKeys).toEqual([]);
 	});
 
-	it("registers a public MCP client with delegated Gateway scopes", async () => {
+	it("rejects privileged scopes for an unverified dynamically registered client", async () => {
 		const { oauthRouter } = await import("./oauth");
 		const response = await oauthRouter.request("https://example.com/register", {
 			method: "POST",
@@ -507,23 +507,12 @@ describe("OAuth route security", () => {
 			}),
 		});
 
-		expect(response.status).toBe(201);
+		expect(response.status).toBe(400);
 		expect(await response.json()).toMatchObject({
-			client_name: "ChatGPT",
-			redirect_uris: ["https://chatgpt.com/aip/callback"],
-			grant_types: ["authorization_code"],
-			token_endpoint_auth_method: "none",
+			error: "invalid_scope",
+			error_description: "Dynamically registered MCP clients are limited to read-only Phaseo scopes",
 		});
-		expect(state.registeredClients).toHaveLength(1);
-		expect(state.registeredClients[0]).toMatchObject({
-			name: "ChatGPT",
-			client_type: "public",
-			allowed_scopes: [
-				"openid", "gateway:access", "me:read", "keys:read", "keys:write", "keys:delete",
-				"workspaces:write", "presets:delete", "settings:write", "guardrails:write",
-				"management_keys:delete", "oauth_clients:write",
-			],
-		});
+		expect(state.registeredClients).toEqual([]);
 	});
 
 	it("defaults dynamic MCP registration to read-only scopes", async () => {
@@ -559,6 +548,27 @@ describe("OAuth route security", () => {
 		]);
 	});
 
+	it("returns authenticated consent metadata with an explicit dynamic trust source", async () => {
+		state.client = {
+			id: "dynamic_client",
+			name: "Unverified MCP",
+			client_type: "public",
+			redirect_uris: ["https://client.example/callback"],
+			is_first_party: false,
+			registration_source: "dynamic",
+		};
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/client-metadata?client_id=dynamic_client", {
+			headers: { Authorization: "Bearer user-session" },
+		});
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({
+			client_id: "dynamic_client",
+			is_first_party: false,
+			registration_source: "dynamic",
+		});
+	});
+
 	it("rejects control characters in dynamic client metadata", async () => {
 		const { oauthRouter } = await import("./oauth");
 		const response = await oauthRouter.request("https://example.com/register", {
@@ -572,6 +582,21 @@ describe("OAuth route security", () => {
 
 		expect(response.status).toBe(400);
 		expect(await response.json()).toMatchObject({ error: "invalid_client_metadata" });
+	});
+
+	it("rejects reserved Phaseo branding during dynamic registration", async () => {
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/register", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				client_name: "Phaseo Support",
+				redirect_uris: ["https://attacker.example/callback"],
+			}),
+		});
+		expect(response.status).toBe(400);
+		expect(await response.json()).toMatchObject({ error: "invalid_client_metadata" });
+		expect(state.registeredClients).toEqual([]);
 	});
 
 	it("advertises dynamic registration and public-client token exchange", async () => {

@@ -101,3 +101,17 @@ export async function requireJsonBody(req: Request): Promise<Record<string, unkn
 export function isResponse(value: unknown): value is Response {
 	return value instanceof Response;
 }
+
+export function internalServerError(operation: string, error: unknown): Response {
+	const requestId = crypto.randomUUID();
+	console.error("control_plane_operation_failed", {
+		operation,
+		request_id: requestId,
+		message: error instanceof Error ? error.message : "unknown_error",
+	});
+	return json(
+		{ error: "internal_error", message: "Phaseo could not complete this request.", request_id: requestId },
+		500,
+		{ "Cache-Control": "no-store" },
+	);
+}

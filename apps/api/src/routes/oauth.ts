@@ -6,6 +6,19 @@ import { checkOAuthRateLimit } from "@/lib/oauth/rateLimit";
 import { authenticateManagement } from "@/pipeline/before/auth";
 import { json, withRuntime } from "@/routes/utils";
 import {
+	approveMcpAction,
+	completeMcpAction,
+	consumeMcpAction,
+	getMcpActionApprovalForUser,
+	normalizeMcpAction,
+	prepareMcpAction,
+} from "@/lib/mcp/actionApprovals";
+import {
+	getMcpSecretRevealForUser,
+	revealMcpSecrets,
+	storeMcpSecretReveal,
+} from "@/lib/mcp/secretReveals";
+import {
 	CLI_CLIENT_ID,
 	CLI_DEFAULT_SCOPES,
 	assertRedirectAllowed,
@@ -20,6 +33,7 @@ import {
 	getIssuer,
 	getLocalJwks,
 	getSupabaseActor,
+	getWebBaseUrl,
 	hashOAuthSecret,
 	hashOAuthSecretCandidates,
 	hasActiveOAuthWorkspaceAccess,
@@ -50,7 +64,6 @@ const DYNAMIC_MCP_SCOPES = [
 	"openid",
 	"profile",
 	"email",
-	GATEWAY_ACCESS_SCOPE,
 	"me:read",
 	"models:read",
 	"providers:read",
@@ -60,25 +73,12 @@ const DYNAMIC_MCP_SCOPES = [
 	"analytics:read",
 	"generations:read",
 	"workspaces:read",
-	"workspaces:write",
-	"workspaces:delete",
 	"keys:read",
-	"keys:write",
-	"keys:delete",
 	"presets:read",
-	"presets:write",
-	"presets:delete",
 	"settings:read",
-	"settings:write",
 	"guardrails:read",
-	"guardrails:write",
-	"guardrails:delete",
 	"management_keys:read",
-	"management_keys:write",
-	"management_keys:delete",
 	"oauth_clients:read",
-	"oauth_clients:write",
-	"oauth_clients:delete",
 ] as const;
 const DYNAMIC_MCP_DEFAULT_SCOPES = [
 	"me:read",
@@ -280,6 +280,270 @@ export function oauthAuthorizationServerMetadata() {
 	};
 }
 
+oauthRouter.get(
+	"/client-metadata",
+	withRuntime(async (req) => {
+		const actor = await requireSupabaseActor(req);
+		if (!actor) return oauthError("access_denied", "User session is required", 401);
+		if (!(await checkOAuthRateLimit(req, "token", `client-metadata:${actor.userId}`))) return rateLimitError();
+		const clientId = new URL(req.url).searchParams.get("client_id")?.trim() ?? "";
+		if (!clientId || clientId.length > 256) {
+			return oauthError("invalid_request", "A valid client_id is required");
+		}
+		const client = await loadOAuthClient(clientId);
+		if (!client) return oauthError("invalid_client", "OAuth client is not active", 404);
+		return json({
+			client_id: client.id,
+			name: client.name,
+			description: client.description ?? null,
+			homepage_url: client.homepage_url ?? null,
+			logo_url: client.logo_url ?? null,
+			redirect_uris: client.redirect_uris,
+			is_first_party: client.is_first_party,
+			registration_source: client.registration_source,
+		}, 200, { "Cache-Control": "no-store" });
+	}),
+);
+
+function actionApprovalError(error: unknown): Response {
+	const requestId = crypto.randomUUID();
+	console.error("mcp_action_approval_failed", {
+		request_id: requestId,
+		message: error instanceof Error ? error.message : "unknown_error",
+	});
+	return oauthError("server_error", `Action approval service unavailable. Reference: ${requestId}`, 500);
+}
+
+function oauthStorageError(operation: string, error: unknown): Response {
+	const requestId = crypto.randomUUID();
+	console.error("oauth_storage_operation_failed", {
+		operation,
+		request_id: requestId,
+		message: error instanceof Error ? error.message : String((error as { message?: unknown })?.message ?? "unknown_error"),
+	});
+	return oauthError("server_error", `OAuth service request failed. Reference: ${requestId}`, 500);
+}
+
+async function authenticatedMcpActionActor(req: Request) {
+	const auth = await authenticateManagement(req, { useKvCache: false });
+	if (!auth.ok || auth.authMethod !== "oauth" || !auth.userId || !auth.oauthClientId) return null;
+	return {
+		userId: auth.userId,
+		workspaceId: auth.workspaceId,
+		clientId: auth.oauthClientId,
+		scopes: auth.oauthScopes ?? auth.scopes ?? [],
+	};
+}
+
+oauthRouter.post(
+	"/mcp/action-approval/prepare",
+	withRuntime(async (req) => {
+		const actor = await authenticatedMcpActionActor(req);
+		if (!actor) return oauthError("invalid_token", "An authenticated MCP OAuth token is required", 401);
+		let body: Record<string, unknown>;
+		try {
+			body = await readBody(req);
+		} catch (error) {
+			return invalidBodyError(error);
+		}
+		const action = normalizeMcpAction(body.action);
+		if (!action) return oauthError("invalid_request", "A valid bounded MCP action is required");
+		const destructive = action.method === "DELETE" || action.required_scopes.some((scope) => scope.endsWith(":delete"));
+		if (!(await checkOAuthRateLimit(req, destructive ? "strict" : "token", `mcp-prepare:${actor.userId}:${actor.workspaceId}:${action.tool_name}`))) {
+			return rateLimitError();
+		}
+		try {
+			const prepared = await prepareMcpAction(actor, action);
+			if (!prepared) return oauthError("insufficient_scope", "The OAuth grant cannot approve this action", 403);
+			return json({
+				approval_id: prepared.approvalId,
+				execution_token: prepared.executionToken,
+				expires_at: prepared.expiresAt,
+				approval_url: `${getWebBaseUrl()}/mcp/approvals/${encodeURIComponent(prepared.approvalId)}`,
+			}, 201, { "Cache-Control": "no-store" });
+		} catch (error) {
+			return actionApprovalError(error);
+		}
+	}),
+);
+
+oauthRouter.post(
+	"/mcp/action-approval/consume",
+	withRuntime(async (req) => {
+		const actor = await authenticatedMcpActionActor(req);
+		if (!actor) return oauthError("invalid_token", "An authenticated MCP OAuth token is required", 401);
+		let body: Record<string, unknown>;
+		try {
+			body = await readBody(req);
+		} catch (error) {
+			return invalidBodyError(error);
+		}
+		const action = normalizeMcpAction(body.action);
+		const executionToken = String(body.execution_token ?? "").trim();
+		if (!action || executionToken.length < 32 || executionToken.length > 512) {
+			return oauthError("invalid_request", "A valid action and execution token are required");
+		}
+		const destructive = action.method === "DELETE" || action.required_scopes.some((scope) => scope.endsWith(":delete"));
+		if (!(await checkOAuthRateLimit(req, destructive ? "strict" : "token", `mcp-consume:${actor.userId}:${actor.workspaceId}:${action.tool_name}`))) {
+			return rateLimitError();
+		}
+		try {
+			const consumed = await consumeMcpAction(actor, action, executionToken);
+			if (!consumed) return oauthError("invalid_grant", "Action approval is missing, expired, changed, or already used", 409);
+			return json({ approval_id: consumed.approvalId, consumed: true }, 200, { "Cache-Control": "no-store" });
+		} catch (error) {
+			return actionApprovalError(error);
+		}
+	}),
+);
+
+oauthRouter.post(
+	"/mcp/action-approval/complete",
+	withRuntime(async (req) => {
+		const actor = await authenticatedMcpActionActor(req);
+		if (!actor) return oauthError("invalid_token", "An authenticated MCP OAuth token is required", 401);
+		let body: Record<string, unknown>;
+		try {
+			body = await readBody(req);
+		} catch (error) {
+			return invalidBodyError(error);
+		}
+		const action = normalizeMcpAction(body.action);
+		const approvalId = String(body.approval_id ?? "").trim();
+		const outcome = body.outcome === "succeeded" || body.outcome === "failed" ? body.outcome : null;
+		if (!action || !/^[0-9a-f-]{36}$/i.test(approvalId) || !outcome) {
+			return oauthError("invalid_request", "A valid action, approval_id, and outcome are required");
+		}
+		try {
+			const completed = await completeMcpAction(actor, action, approvalId, outcome);
+			if (!completed) return oauthError("invalid_grant", "Action approval could not be completed", 409);
+			return json({ completed: true }, 200, { "Cache-Control": "no-store" });
+		} catch (error) {
+			return actionApprovalError(error);
+		}
+	}),
+);
+
+oauthRouter.get(
+	"/mcp/action-approval",
+	withRuntime(async (req) => {
+		const actor = await requireSupabaseActor(req);
+		if (!actor) return oauthError("access_denied", "User session is required", 401);
+		const approvalId = new URL(req.url).searchParams.get("approval_id")?.trim() ?? "";
+		if (!/^[0-9a-f-]{36}$/i.test(approvalId)) return oauthError("invalid_request", "A valid approval_id is required");
+		if (!(await checkOAuthRateLimit(req, "token", `mcp-approval-read:${actor.userId}`))) return rateLimitError();
+		try {
+			const approval = await getMcpActionApprovalForUser(approvalId, actor.userId);
+			if (!approval) return oauthError("invalid_grant", "Action approval was not found", 404);
+			return json({ approval }, 200, { "Cache-Control": "no-store" });
+		} catch (error) {
+			return actionApprovalError(error);
+		}
+	}),
+);
+
+oauthRouter.post(
+	"/mcp/action-approval/approve",
+	withRuntime(async (req) => {
+		const actor = await requireSupabaseActor(req);
+		if (!actor) return oauthError("access_denied", "User session is required", 401);
+		let body: Record<string, unknown>;
+		try {
+			body = await readBody(req);
+		} catch (error) {
+			return invalidBodyError(error);
+		}
+		const approvalId = String(body.approval_id ?? "").trim();
+		if (!/^[0-9a-f-]{36}$/i.test(approvalId)) return oauthError("invalid_request", "A valid approval_id is required");
+		if (!(await checkOAuthRateLimit(req, "strict", `mcp-approval-write:${actor.userId}`))) return rateLimitError();
+		try {
+			const approved = await approveMcpAction(approvalId, actor.userId);
+			if (!approved) return oauthError("invalid_grant", "Action approval is expired, already used, or unavailable", 409);
+			return json({ approval_id: approved.approvalId, approved_at: approved.approvedAt }, 200, { "Cache-Control": "no-store" });
+		} catch (error) {
+			return actionApprovalError(error);
+		}
+	}),
+);
+
+oauthRouter.post(
+	"/mcp/secret-reveal/store",
+	withRuntime(async (req) => {
+		const actor = await authenticatedMcpActionActor(req);
+		if (!actor) return oauthError("invalid_token", "An authenticated MCP OAuth token is required", 401);
+		let body: Record<string, unknown>;
+		try {
+			body = await readBody(req);
+		} catch (error) {
+			return invalidBodyError(error);
+		}
+		const approvalId = String(body.approval_id ?? "").trim();
+		const toolName = String(body.tool_name ?? "").trim();
+		const rawSecrets = body.secrets;
+		if (!/^[0-9a-f-]{36}$/i.test(approvalId) || !/^[a-z][a-z0-9_]{2,99}$/.test(toolName) || !rawSecrets || typeof rawSecrets !== "object" || Array.isArray(rawSecrets)) {
+			return oauthError("invalid_request", "A valid approval, tool, and secret payload are required");
+		}
+		const secrets = Object.fromEntries(
+			Object.entries(rawSecrets as Record<string, unknown>)
+				.filter((entry): entry is [string, string] => typeof entry[1] === "string"),
+		);
+		if (!(await checkOAuthRateLimit(req, "strict", `mcp-secret-store:${actor.userId}:${actor.workspaceId}`))) return rateLimitError();
+		try {
+			const reveal = await storeMcpSecretReveal({ actor, approvalId, toolName, secrets });
+			if (!reveal) return oauthError("invalid_grant", "The consumed action does not match this secret reveal", 409);
+			return json({
+				reveal_id: reveal.revealId,
+				expires_at: reveal.expiresAt,
+				reveal_url: `${getWebBaseUrl()}/mcp/secret-reveals/${encodeURIComponent(reveal.revealId)}`,
+			}, 201, { "Cache-Control": "no-store" });
+		} catch (error) {
+			return actionApprovalError(error);
+		}
+	}),
+);
+
+oauthRouter.get(
+	"/mcp/secret-reveal",
+	withRuntime(async (req) => {
+		const actor = await requireSupabaseActor(req);
+		if (!actor) return oauthError("access_denied", "User session is required", 401);
+		const revealId = new URL(req.url).searchParams.get("reveal_id")?.trim() ?? "";
+		if (!/^[0-9a-f-]{36}$/i.test(revealId)) return oauthError("invalid_request", "A valid reveal_id is required");
+		if (!(await checkOAuthRateLimit(req, "token", `mcp-secret-read:${actor.userId}`))) return rateLimitError();
+		try {
+			const reveal = await getMcpSecretRevealForUser(revealId, actor.userId);
+			if (!reveal) return oauthError("invalid_grant", "Secret reveal was not found", 404);
+			return json({ reveal }, 200, { "Cache-Control": "no-store" });
+		} catch (error) {
+			return actionApprovalError(error);
+		}
+	}),
+);
+
+oauthRouter.post(
+	"/mcp/secret-reveal/reveal",
+	withRuntime(async (req) => {
+		const actor = await requireSupabaseActor(req);
+		if (!actor) return oauthError("access_denied", "User session is required", 401);
+		let body: Record<string, unknown>;
+		try {
+			body = await readBody(req);
+		} catch (error) {
+			return invalidBodyError(error);
+		}
+		const revealId = String(body.reveal_id ?? "").trim();
+		if (!/^[0-9a-f-]{36}$/i.test(revealId)) return oauthError("invalid_request", "A valid reveal_id is required");
+		if (!(await checkOAuthRateLimit(req, "strict", `mcp-secret-reveal:${actor.userId}`))) return rateLimitError();
+		try {
+			const revealed = await revealMcpSecrets(revealId, actor.userId);
+			if (!revealed) return oauthError("invalid_grant", "Secret reveal is expired, already viewed, or unavailable", 409);
+			return json(revealed, 200, { "Cache-Control": "no-store", "Pragma": "no-cache" });
+		} catch (error) {
+			return actionApprovalError(error);
+		}
+	}),
+);
+
 /**
  * Register a public OAuth client for an MCP host. The registration only sets
  * which scopes the client may later request; the user still grants an exact
@@ -315,9 +579,12 @@ oauthRouter.post(
 			return oauthError("invalid_client_metadata", "logo_uri must be an HTTPS URL");
 		}
 
-		const clientName = String(body.client_name ?? "Phaseo MCP client").normalize("NFKC").trim();
+		const clientName = String(body.client_name ?? "Unverified MCP client").normalize("NFKC").trim();
 		if (clientName.length < 3 || clientName.length > 100 || hasUnsafeMetadataCharacters(clientName)) {
 			return oauthError("invalid_client_metadata", "client_name must contain 3-100 characters");
+		}
+		if (/\b(?:phaseo|ai[\s_-]*stats)\b/i.test(clientName)) {
+			return oauthError("invalid_client_metadata", "Dynamically registered clients cannot use reserved Phaseo product names");
 		}
 		const clientDescription = typeof body.client_description === "string"
 			? body.client_description.normalize("NFKC").trim()
@@ -337,7 +604,7 @@ oauthRouter.post(
 
 		const requestedScopes = normalizeScopes(body.scope, DYNAMIC_MCP_DEFAULT_SCOPES);
 		if (requestedScopes.length === 0 || !requestedScopes.every((scope) => DYNAMIC_MCP_SCOPE_SET.has(scope))) {
-			return oauthError("invalid_scope", "One or more requested scopes are not supported for dynamically registered MCP clients");
+			return oauthError("invalid_scope", "Dynamically registered MCP clients are limited to read-only Phaseo scopes");
 		}
 		const clientId = crypto.randomUUID();
 		const safeRedirectUris = Array.from(new Set(redirectUris as string[]));
@@ -411,7 +678,7 @@ oauthRouter.post(
 			expires_at: makeDeviceCodeExpiry(),
 		});
 		if (error) {
-			return oauthError("server_error", error.message, 500);
+			return oauthStorageError("oauth.device_code.insert", error);
 		}
 
 		return json(
@@ -543,7 +810,7 @@ oauthRouter.post(
 			.eq("user_id", actor.userId)
 			.in("workspace_id", selectedWorkspaceIds);
 		if (memberships.error) {
-			return oauthError("server_error", memberships.error.message, 500);
+			return oauthStorageError("oauth.authorization.memberships", memberships.error);
 		}
 		const grantedWorkspaceIds = new Set(
 			(memberships.data ?? []).map((row: { workspace_id?: unknown }) => String(row.workspace_id ?? "").trim()).filter(Boolean),
@@ -571,7 +838,7 @@ oauthRouter.post(
 			...(resource ? { resource } : {}),
 			expires_at: makeAuthCodeExpiry(),
 		});
-		if (insert.error) return oauthError("server_error", insert.error.message, 500);
+		if (insert.error) return oauthStorageError("oauth.authorization_code.insert", insert.error);
 
 		const redirect = new URL(redirectUri);
 		redirect.searchParams.set("code", code);
@@ -605,7 +872,7 @@ oauthRouter.post(
 			.select("id, client_id, scopes, status, expires_at")
 			.in("user_code_hash", await hashOAuthSecretCandidates(userCode))
 			.maybeSingle();
-		if (error) return oauthError("server_error", error.message, 500);
+		if (error) return oauthStorageError("oauth.device_activation.lookup", error);
 		if (!device || Date.parse(String(device.expires_at)) <= Date.now()) {
 			return oauthError("expired_token", "Device code was not found or has expired", 400);
 		}
@@ -642,7 +909,7 @@ oauthRouter.post(
 				.eq("status", "pending")
 				.select("id")
 				.maybeSingle();
-			if (deny.error) return oauthError("server_error", deny.error.message, 500);
+			if (deny.error) return oauthStorageError("oauth.device_activation.deny", deny.error);
 			if (!deny.data) return oauthError("invalid_grant", "Device code is no longer pending");
 			return json({ ok: true }, 200, { "Cache-Control": "no-store" });
 		}
@@ -673,7 +940,7 @@ oauthRouter.post(
 			.eq("status", "pending")
 			.select("id")
 			.maybeSingle();
-		if (approve.error) return oauthError("server_error", approve.error.message, 500);
+		if (approve.error) return oauthStorageError("oauth.device_activation.approve", approve.error);
 		if (!approve.data) return oauthError("invalid_grant", "Device code is no longer pending");
 		return json({ ok: true }, 200, { "Cache-Control": "no-store" });
 	}),
@@ -704,7 +971,7 @@ oauthRouter.post(
 				.in("device_code_hash", await hashOAuthSecretCandidates(deviceCode))
 				.eq("client_id", clientId)
 				.maybeSingle();
-			if (error) return oauthError("server_error", error.message, 500);
+			if (error) return oauthStorageError("oauth.device_token.lookup", error);
 			if (!data || Date.parse(String(data.expires_at)) <= Date.now()) {
 				return oauthError("expired_token", "Device code has expired");
 			}
@@ -714,7 +981,7 @@ oauthRouter.post(
 			if (data.status === "denied") return oauthError("access_denied", "The user denied this device request");
 			if (data.status !== "approved") {
 				const poll = await supabase.rpc("enforce_oauth_device_poll_interval", { p_device_id: data.id });
-				if (poll.error) return oauthError("server_error", poll.error.message, 500);
+				if (poll.error) return oauthStorageError("oauth.device_token.poll", poll.error);
 				if (poll.data === "slow_down") {
 					return oauthError("slow_down", "Device token polling is too frequent", 400);
 				}
@@ -787,7 +1054,7 @@ oauthRouter.post(
 				data = legacyResult.data ? { ...legacyResult.data, resource: null } : null;
 				error = legacyResult.error;
 			}
-			if (error) return oauthError("server_error", error.message, 500);
+			if (error) return oauthStorageError("oauth.authorization_code.lookup", error);
 			if (!data || data.used_at || Date.parse(String(data.expires_at)) <= Date.now()) {
 				return oauthError("invalid_grant", "Authorization code is invalid or expired");
 			}

@@ -166,7 +166,21 @@ describe("Phaseo MCP server metadata", () => {
 	});
 
 	it("requires confirmation and proxies a scoped mutation with the exchanged user token", async () => {
-		const fetchMock = vi.fn().mockResolvedValue(Response.json({ data: { id: "key_1", name: "Updated" } }));
+		const fetchMock = vi.fn(async (request: Request) => {
+			if (request.url.endsWith("/oauth/mcp/action-approval/prepare")) {
+				return Response.json({
+					approval_id: "11111111-1111-4111-8111-111111111111",
+					execution_token: "execution-token-that-is-at-least-32-characters",
+					expires_at: "2026-07-17T19:00:00.000Z",
+					approval_url: "https://phaseo.app/mcp/approvals/11111111-1111-4111-8111-111111111111",
+				});
+			}
+			if (request.url.endsWith("/oauth/mcp/action-approval/consume")) {
+				return Response.json({ approval_id: "11111111-1111-4111-8111-111111111111", consumed: true });
+			}
+			if (request.url.endsWith("/oauth/mcp/action-approval/complete")) return Response.json({ completed: true });
+			return Response.json({ data: { id: "key_1", name: "Updated" } });
+		});
 		vi.stubGlobal("fetch", fetchMock);
 		const server = createServer({ ...env, PHASEO_MCP_WRITE_TOOLS_ENABLED: "true" }, {
 			accessToken: "upstream-token",
@@ -183,13 +197,73 @@ describe("Phaseo MCP server metadata", () => {
 		expect(rejected.isError).toBe(true);
 		expect(fetchMock).not.toHaveBeenCalled();
 
-		const result = await client.callTool({ name: "api_key_update", arguments: { keyId: "key_1", name: "Updated", confirm: true } });
-		expect(result.structuredContent).toEqual({ result: { data: { id: "key_1", name: "Updated" } } });
-		const request = fetchMock.mock.calls[0]?.[0] as Request;
+		const prepared = await client.callTool({ name: "api_key_update", arguments: { keyId: "key_1", name: "Updated", confirm: true } });
+		expect(prepared.structuredContent).toMatchObject({
+			status: "approval_required",
+			approval: { id: "11111111-1111-4111-8111-111111111111" },
+		});
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+
+		const result = await client.callTool({
+			name: "api_key_update",
+			arguments: {
+				keyId: "key_1",
+				name: "Updated",
+				confirm: true,
+				approvalToken: "execution-token-that-is-at-least-32-characters",
+			},
+		});
+		expect(result.structuredContent).toEqual({ status: "completed", result: { data: { id: "key_1", name: "Updated" } } });
+		const request = fetchMock.mock.calls.map((call) => call[0] as Request).find((candidate) => candidate.url.endsWith("/v1/keys/key_1")) as Request;
 		expect(request.url).toBe("https://api.phaseo.app/v1/keys/key_1");
 		expect(request.method).toBe("PATCH");
 		expect(request.headers.get("authorization")).toBe("Bearer upstream-token");
 		expect(await request.clone().json()).toEqual({ name: "Updated" });
+	});
+
+	it("keeps generated secrets out of MCP results and returns a one-time reveal URL", async () => {
+		const plaintextKey = "phaseo_v1_sk_secret-that-must-never-reach-the-model";
+		const fetchMock = vi.fn(async (request: Request) => {
+			if (request.url.endsWith("/oauth/mcp/action-approval/prepare")) return Response.json({
+				approval_id: "22222222-2222-4222-8222-222222222222",
+				execution_token: "secret-execution-token-that-is-long-enough",
+				expires_at: "2026-07-17T19:00:00.000Z",
+				approval_url: "https://phaseo.app/mcp/approvals/22222222-2222-4222-8222-222222222222",
+			});
+			if (request.url.endsWith("/oauth/mcp/action-approval/consume")) return Response.json({ approval_id: "22222222-2222-4222-8222-222222222222", consumed: true });
+			if (request.url.endsWith("/v1/keys")) return Response.json({ data: { id: "key_2", prefix: "phaseo_v1", key: plaintextKey } });
+			if (request.url.endsWith("/oauth/mcp/secret-reveal/store")) return Response.json({
+				reveal_id: "33333333-3333-4333-8333-333333333333",
+				reveal_url: "https://phaseo.app/mcp/secret-reveals/33333333-3333-4333-8333-333333333333",
+				expires_at: "2026-07-17T19:05:00.000Z",
+			});
+			if (request.url.endsWith("/oauth/mcp/action-approval/complete")) return Response.json({ completed: true });
+			return new Response("not found", { status: 404 });
+		});
+		vi.stubGlobal("fetch", fetchMock);
+		const server = createServer({ ...env, PHASEO_MCP_WRITE_TOOLS_ENABLED: "true", PHASEO_MCP_SECRET_TOOLS_ENABLED: "true" }, {
+			accessToken: "upstream-token", workspaceId: "workspace_1", scopes: ["keys:write"],
+		});
+		const client = new Client({ name: "phaseo-mcp-test", version: "1.0.0" });
+		connectedClients.push(client);
+		const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+		await server.connect(serverTransport);
+		await client.connect(clientTransport);
+
+		await client.callTool({ name: "api_key_create", arguments: { name: "Secret key", confirm: true } });
+		const result = await client.callTool({
+			name: "api_key_create",
+			arguments: { name: "Secret key", confirm: true, approvalToken: "secret-execution-token-that-is-long-enough" },
+		});
+		const serialized = JSON.stringify(result);
+		expect(serialized).not.toContain(plaintextKey);
+		expect(result.structuredContent).toMatchObject({
+			status: "completed",
+			result: { data: { id: "key_2", key: "[available only through the Phaseo one-time reveal page]" } },
+			secretReveal: { id: "33333333-3333-4333-8333-333333333333" },
+		});
+		const storeRequest = fetchMock.mock.calls.map((call) => call[0] as Request).find((request) => request.url.endsWith("/oauth/mcp/secret-reveal/store")) as Request;
+		expect(await storeRequest.clone().json()).toMatchObject({ secrets: { "result.data.key": plaintextKey } });
 	});
 
 	it("proxies a scoped control-plane read with the exchanged user token", async () => {
@@ -215,6 +289,26 @@ describe("Phaseo MCP server metadata", () => {
 });
 
 describe("Phaseo MCP OAuth discovery", () => {
+	it("enforces the body limit even when Content-Length is absent", async () => {
+		const oversized = new Uint8Array(1024 * 1024 + 1);
+		const body = new ReadableStream<Uint8Array>({
+			start(controller) {
+				controller.enqueue(oversized);
+				controller.close();
+			},
+		});
+		const response = await worker.fetch(
+			new Request("https://mcp.phaseo.app/mcp", {
+				method: "POST",
+				body,
+				duplex: "half",
+			} as RequestInit & { duplex: "half" }),
+			env,
+			{} as ExecutionContext,
+		);
+		expect(response.status).toBe(413);
+	});
+
 	it("challenges unauthenticated clients without requesting gateway spend access", async () => {
 		const response = await worker.fetch(
 			new Request("https://mcp.phaseo.app/mcp", { method: "POST" }),
@@ -283,7 +377,8 @@ describe("Phaseo MCP OAuth discovery", () => {
 			{} as ExecutionContext,
 		);
 		const challenge = challengeResponse.headers.get("www-authenticate") ?? "";
-		expect(challenge).toContain("keys:write");
-		expect(challenge).toContain("keys:delete");
+		expect(challenge).not.toContain("keys:write");
+		expect(challenge).not.toContain("keys:delete");
+		expect(challenge).toContain("keys:read");
 	});
 });

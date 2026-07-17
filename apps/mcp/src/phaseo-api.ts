@@ -44,7 +44,12 @@ type ProvidersResponse = {
 	message?: string;
 };
 
-export class PhaseoApiError extends Error {}
+export class PhaseoApiError extends Error {
+	constructor(message: string, readonly status?: number) {
+		super(message);
+		this.name = "PhaseoApiError";
+	}
+}
 
 function apiUrl(env: PhaseoEnv, path: string, query: Record<string, string | number | boolean | undefined> = {}): URL {
 	const url = new URL(path, env.PHASEO_API_BASE_URL.endsWith("/") ? env.PHASEO_API_BASE_URL : `${env.PHASEO_API_BASE_URL}/`);
@@ -95,7 +100,12 @@ export async function requestPhaseo<T>(
 		const details = payload && typeof payload === "object"
 			? String((payload as Record<string, unknown>).message ?? (payload as Record<string, unknown>).error ?? "").trim()
 			: "";
-		throw new PhaseoApiError(details || `Phaseo API request failed (${response.status}).`);
+		// Backend and database error strings are not part of the public MCP
+		// contract. Preserve useful validation errors, but redact all 5xx detail.
+		const message = response.status >= 500
+			? `Phaseo could not complete the request (${response.status}).`
+			: details || `Phaseo API request failed (${response.status}).`;
+		throw new PhaseoApiError(message, response.status);
 	}
 	return payload;
 }
@@ -141,22 +151,11 @@ export type PhaseoApiKey = {
 };
 
 type KeysResponse = { data?: PhaseoApiKey[]; total_count?: number; error?: string; message?: string };
-type CreateKeyResponse = { data?: PhaseoApiKey & { key?: string }; error?: string; message?: string };
 
 export async function listApiKeys(env: PhaseoEnv, credentials: PhaseoCredentials): Promise<PhaseoApiKey[]> {
 	const payload = await requestPhaseo<KeysResponse>(env, "/v1/keys", { credentials, query: { limit: 100, include_disabled: 1 } });
 	if (!payload.data) throw new PhaseoApiError(payload.message ?? payload.error ?? "Phaseo could not load API keys.");
 	return payload.data;
-}
-
-export async function createApiKey(
-	env: PhaseoEnv,
-	credentials: PhaseoCredentials,
-	input: { name: string; limit?: number | null; limit_reset?: "daily" | "weekly" | "monthly"; expires_at?: string | null },
-): Promise<PhaseoApiKey & { key: string }> {
-	const payload = await requestPhaseo<CreateKeyResponse>(env, "/v1/keys", { method: "POST", credentials, body: input });
-	if (!payload.data?.key) throw new PhaseoApiError(payload.message ?? payload.error ?? "Phaseo could not create the API key.");
-	return payload.data as PhaseoApiKey & { key: string };
 }
 
 export async function authenticatePhaseoUser(request: Request, env: PhaseoEnv): Promise<AuthenticatedPhaseoUser | null> {

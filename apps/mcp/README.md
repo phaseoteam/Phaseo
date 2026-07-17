@@ -45,18 +45,22 @@ three independent deployment controls:
 - `PHASEO_MCP_DESTRUCTIVE_TOOLS_ENABLED=true` additionally enables delete,
   member-removal, and assignment-removal tools.
 - `PHASEO_MCP_SECRET_TOOLS_ENABLED=true` additionally enables API-key,
-  management-key, OAuth-secret, and webhook-secret operations whose secrets
-  appear once in model-readable output.
+  management-key, OAuth-secret, and webhook-secret operations. Generated
+  secrets are encrypted by the API and delivered through a Phaseo-hosted,
+  user-only, one-time reveal page; they are never returned to the model.
 
-Every tool also requires its exact OAuth `*:write` or `*:delete` scope and an
-input `confirm: true` value after the user approves the exact action. Keep the
-secret flag disabled for public deployment until Phaseo has a one-time secret
-delivery UI that does not place credentials in model-readable output.
+Every tool also requires its exact OAuth `*:write` or `*:delete` scope. A first
+call prepares a ten-minute action ticket and returns a Phaseo approval URL. The
+authenticated user must approve the exact tool, target, payload, client, and
+workspace in Phaseo before a single-use execution token can be consumed. The
+model-supplied `confirm: true` field is retained as UX intent, not trusted as
+the authorization boundary.
 
 When `PHASEO_THIRD_PARTY_OAUTH_ENABLED=true`, Phaseo advertises dynamic client
 registration. Registrations default to the read-only scope set; write scopes
-must be requested explicitly and remain subject to user consent, workspace
-membership, and route-level authorization.
+and `gateway:access` are rejected for unverified dynamically registered
+clients. Elevated access requires an explicitly trusted, developer-owned or
+first-party OAuth client.
 
 The Phaseo CLI remains a fixed first-party client with device authorization,
 short-lived JWT access tokens, and rotating refresh tokens. MCP hosts and
@@ -68,6 +72,11 @@ PKCE. Delegated API credentials expire after seven days and are revocable.
 Set the same randomly generated value (at least 64 characters) as the Wrangler
 secret `PHASEO_MCP_RESOURCE_SERVER_SECRET` on both the API Worker and the MCP
 Worker. Do not put it in `wrangler.jsonc`, `.dev.vars.example`, logs, or source.
+
+Before secret-returning tools can be enabled, configure a separate randomly
+generated Wrangler secret of at least 32 characters named
+`MCP_SECRET_REVEAL_ENCRYPTION_KEY` on the API Worker. Do not reuse the OAuth
+token pepper, webhook encryption key, or MCP resource-server secret.
 
 Production also uses a Cloudflare Service Binding named `PHASEO_API` to reach
 the `phaseo-gateway` Worker without traversing the public internet.

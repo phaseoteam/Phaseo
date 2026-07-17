@@ -23,6 +23,41 @@ import {
 
 const MAX_RESULTS = 20;
 const MAX_MCP_REQUEST_BODY_BYTES = 1024 * 1024;
+
+async function boundedMcpRequest(request: Request): Promise<Request | Response> {
+	const contentLength = Number(request.headers.get("content-length"));
+	if (Number.isFinite(contentLength) && contentLength > MAX_MCP_REQUEST_BODY_BYTES) {
+		return new Response("MCP request body is too large.", { status: 413 });
+	}
+	if (!request.body) return request;
+	const reader = request.body.getReader();
+	const chunks: Uint8Array[] = [];
+	let total = 0;
+	try {
+		while (true) {
+			const { value, done } = await reader.read();
+			if (done) break;
+			if (!value) continue;
+			total += value.byteLength;
+			if (total > MAX_MCP_REQUEST_BODY_BYTES) {
+				await reader.cancel();
+				return new Response("MCP request body is too large.", { status: 413 });
+			}
+			chunks.push(value);
+		}
+	} finally {
+		reader.releaseLock();
+	}
+	const body = new Uint8Array(total);
+	let offset = 0;
+	for (const chunk of chunks) {
+		body.set(chunk, offset);
+		offset += chunk.byteLength;
+	}
+	const headers = new Headers(request.headers);
+	headers.delete("content-length");
+	return new Request(request, { headers, body });
+}
 const READ_ONLY_MCP_SCOPES = [
 	"me:read",
 	"models:read",
@@ -631,7 +666,9 @@ function resourceMetadata(request: Request, env: PhaseoEnv): Response {
 
 function unauthorised(request: Request, env: PhaseoEnv): Response {
 	const origin = new URL(request.url).origin;
-	const scopes = enabledMcpScopes(env);
+	// This challenge is the minimum connection grant. Elevated scopes remain
+	// discoverable in resource metadata but are never bundled into first login.
+	const scopes = READ_ONLY_MCP_SCOPES;
 	return new Response("Phaseo login is required.", {
 		status: 401,
 		headers: {
@@ -656,16 +693,14 @@ export default {
 		if (url.pathname === "/.well-known/oauth-protected-resource/mcp") return secureResponse(resourceMetadata(request, env));
 		if (url.pathname !== "/mcp") return secureResponse(new Response("Not found", { status: 404 }));
 		if (url.searchParams.has("access_token")) return secureResponse(new Response("Bearer tokens must use the Authorization header.", { status: 400 }));
-		const contentLength = Number(request.headers.get("content-length"));
-		if (Number.isFinite(contentLength) && contentLength > MAX_MCP_REQUEST_BODY_BYTES) {
-			return secureResponse(new Response("MCP request body is too large.", { status: 413 }));
-		}
-		const authenticatedUser = await authenticatePhaseoUser(request, env);
+		const boundedRequest = await boundedMcpRequest(request);
+		if (boundedRequest instanceof Response) return secureResponse(boundedRequest);
+		const authenticatedUser = await authenticatePhaseoUser(boundedRequest, env);
 		if (!authenticatedUser) return secureResponse(unauthorised(request, env));
 		const response = await createMcpHandler(createServer(env, authenticatedUser), {
 			route: "/mcp",
 			authContext: { props: { workspaceId: authenticatedUser.workspaceId } },
-		})(request, env, ctx);
+		})(boundedRequest, env, ctx);
 		return secureResponse(response);
 	},
 } satisfies ExportedHandler<PhaseoEnv>;

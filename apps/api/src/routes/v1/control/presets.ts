@@ -6,6 +6,7 @@ import { json, withRuntime } from "@/routes/utils";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
 import {
 	type ManagementRouteAuth,
+	internalServerError,
 	requireCapability,
 	requireOAuthWorkspaceRole,
 } from "./route-helpers";
@@ -155,7 +156,7 @@ async function handleListPresets(req: Request) {
 			{ "Cache-Control": "no-store" },
 		);
 	} catch (error: any) {
-		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
+		return internalServerError("presets.list", error);
 	}
 }
 
@@ -211,7 +212,7 @@ async function handleCreatePreset(req: Request) {
 		if (error) throw new Error(error.message || "Failed to create preset");
 		return json({ data: formatPreset(data as PresetRow) }, 201, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
+		return internalServerError("presets.create", error);
 	}
 }
 
@@ -230,7 +231,7 @@ async function handleGetPreset(req: Request) {
 		if (!preset) return json({ error: "not_found", message: "Preset not found" }, 404, { "Cache-Control": "no-store" });
 		return json({ data: formatPreset(preset) }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
+		return internalServerError("presets.get", error);
 	}
 }
 
@@ -291,7 +292,7 @@ async function handleUpdatePreset(req: Request) {
 		const updated = await findPreset(auth.value.workspaceId, existing.id);
 		return json({ data: formatPreset(updated as PresetRow) }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
+		return internalServerError("presets.update", error);
 	}
 }
 
@@ -317,7 +318,7 @@ async function handleDeletePreset(req: Request) {
 		if (error) throw new Error(error.message || "Failed to delete preset");
 		return json({ deleted: true }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
+		return internalServerError("presets.delete", error);
 	}
 }
 

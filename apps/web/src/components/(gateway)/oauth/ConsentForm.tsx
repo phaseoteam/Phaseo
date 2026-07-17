@@ -255,6 +255,20 @@ function scopeToneBadge(tone: ScopeMeta["tone"]) {
 	return { label: "Read", className: "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300" };
 }
 
+function consentLogoSrc(value: unknown): string | null {
+	if (typeof value !== "string" || !value.startsWith("/") || value.startsWith("//")) return null;
+	return value;
+}
+
+function displayHostname(value: unknown): string | null {
+	if (typeof value !== "string") return null;
+	try {
+		return new URL(value).hostname;
+	} catch {
+		return null;
+	}
+}
+
 export default function ConsentForm({
 	oauthApp,
 	user,
@@ -277,6 +291,10 @@ export default function ConsentForm({
 	);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const [unverifiedAcknowledged, setUnverifiedAcknowledged] = useState(false);
+	const isUnverified = oauthApp.registration_source === "dynamic" && !oauthApp.is_first_party;
+	const logoSrc = consentLogoSrc(oauthApp.logo_url);
+	const redirectHostname = displayHostname(redirectUri);
 
 	const selectedCount = selectedTeamIds.length;
 	const allSelected = selectedCount === teams.length;
@@ -318,6 +336,10 @@ export default function ConsentForm({
 	};
 
 	const handleApprove = async () => {
+		if (isUnverified && !unverifiedAcknowledged) {
+			setError("Confirm that you understand this application has not been verified by Phaseo.");
+			return;
+		}
 		if (!selectedTeamIds.length) {
 			setError("Select at least one team to authorize.");
 			return;
@@ -411,9 +433,9 @@ export default function ConsentForm({
 				</div>
 
 				<div className="flex items-start gap-4">
-					{oauthApp.logo_url ? (
+					{logoSrc ? (
 						<img
-							src={oauthApp.logo_url}
+							src={logoSrc}
 							alt={oauthApp.name}
 							className="size-16 rounded-md object-cover border"
 						/>
@@ -447,6 +469,23 @@ export default function ConsentForm({
 			</CardHeader>
 
 			<CardContent className="space-y-6">
+				{isUnverified && (
+					<Alert variant="destructive">
+						<AlertCircle className="h-4 w-4" />
+						<AlertDescription className="space-y-2">
+							<p><strong>Unverified application.</strong> Phaseo has not verified this app's identity, owner, or branding.</p>
+							<div className="font-mono text-xs break-all">Client: {clientId ?? oauthApp.client_id ?? "unknown"}</div>
+							{redirectHostname && <div className="text-xs">Authorization returns to: <strong>{redirectHostname}</strong></div>}
+							<label className="flex items-start gap-2 pt-1 text-sm">
+								<Checkbox
+									checked={unverifiedAcknowledged}
+									onCheckedChange={(checked) => setUnverifiedAcknowledged(checked === true)}
+								/>
+								<span>I understand this application is unverified and I trust the redirect destination shown above.</span>
+							</label>
+						</AlertDescription>
+					</Alert>
+				)}
 				<Alert>
 					<Shield className="h-4 w-4" />
 					<AlertDescription>
@@ -578,7 +617,7 @@ export default function ConsentForm({
 				</Button>
 				<Button
 					onClick={handleApprove}
-					disabled={loading || !selectedTeamIds.length || !primaryTeamId}
+					disabled={loading || !selectedTeamIds.length || !primaryTeamId || (isUnverified && !unverifiedAcknowledged)}
 					className="flex-1"
 				>
 					{loading ? "Authorizing..." : "Authorize selected teams"}

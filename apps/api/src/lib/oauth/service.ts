@@ -44,6 +44,7 @@ type OAuthClient = {
 	is_first_party: boolean;
 	beta_status: "private" | "beta" | "public";
 	status: string;
+	registration_source: "first_party" | "dynamic" | "developer";
 };
 
 export type OAuthActor = {
@@ -413,6 +414,7 @@ export async function loadOAuthClient(clientId: string): Promise<OAuthClient | n
 			is_first_party: Boolean(row.is_first_party),
 			beta_status: row.beta_status ?? "private",
 			status: row.status ?? "active",
+			registration_source: Boolean(row.is_first_party) ? "first_party" : "dynamic",
 		};
 	}
 
@@ -445,6 +447,7 @@ export async function loadOAuthClient(clientId: string): Promise<OAuthClient | n
 		is_first_party: Boolean(row.is_first_party),
 		beta_status: row.beta_status ?? "beta",
 		status: row.status ?? "active",
+		registration_source: Boolean(row.is_first_party) ? "first_party" : "developer",
 	};
 }
 

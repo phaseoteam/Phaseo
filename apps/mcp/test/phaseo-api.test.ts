@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { createApiKey, getModel, listApiKeys, listModels, listProviders } from "../src/phaseo-api";
+import { getModel, listApiKeys, listModels, listProviders, requestPhaseo } from "../src/phaseo-api";
 
 const env = {
 	PHASEO_API_BASE_URL: "https://api.phaseo.app",
@@ -30,21 +30,22 @@ describe("Phaseo API client", () => {
 	});
 
 	it("uses the user's OAuth token for authenticated key operations", async () => {
-		fetchMock
-			.mockResolvedValueOnce(Response.json({ data: [] }))
-			.mockResolvedValueOnce(Response.json({ data: { id: "key-1", name: "MCP", key: "phaseo_v1_sk_secret" } }, { status: 201 }));
+		fetchMock.mockResolvedValueOnce(Response.json({ data: [] }));
 		vi.stubGlobal("fetch", fetchMock);
 
 		await expect(listApiKeys(env, { accessToken: "oauth-token" })).resolves.toEqual([]);
-		await expect(createApiKey(env, { accessToken: "oauth-token" }, { name: "MCP" })).resolves.toMatchObject({ id: "key-1", key: "phaseo_v1_sk_secret" });
 
 		const listRequest = fetchMock.mock.calls[0]?.[0] as Request;
-		const createRequest = fetchMock.mock.calls[1]?.[0] as Request;
 		expect(listRequest.headers.get("authorization")).toBe("Bearer oauth-token");
-		expect(createRequest.method).toBe("POST");
-		expect(createRequest.headers.get("authorization")).toBe("Bearer oauth-token");
-		expect(createRequest.headers.get("content-type")).toBe("application/json");
-		expect(await createRequest.clone().text()).toBe(JSON.stringify({ name: "MCP" }));
+	});
+
+	it("redacts upstream 5xx database details", async () => {
+		fetchMock.mockResolvedValue(Response.json({ message: "duplicate key violates constraint private_table_name" }, { status: 500 }));
+		vi.stubGlobal("fetch", fetchMock);
+		await expect(requestPhaseo(env, "/v1/settings", { credentials: { accessToken: "oauth-token" } }))
+			.rejects.toThrow("Phaseo could not complete the request (500).");
+		await expect(requestPhaseo(env, "/v1/settings", { credentials: { accessToken: "oauth-token" } }))
+			.rejects.not.toThrow("private_table_name");
 	});
 
 	it("uses the canonical model filter for a model lookup", async () => {

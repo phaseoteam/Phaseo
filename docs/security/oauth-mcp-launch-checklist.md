@@ -17,6 +17,9 @@ launch.
   output schemas, and accurate read/write annotations are present.
 - [x] Default dynamic-client scopes are read-only and do not include
   `gateway:access` or `keys:write`.
+- [x] Unverified dynamic registration rejects all Gateway, write, and delete
+  scopes and the consent page labels dynamically registered clients as
+  unverified.
 - [x] Local API and MCP development secrets exist, match, and are at least 64
   characters long.
 - [x] Supabase local and production migration histories are aligned.
@@ -108,6 +111,31 @@ The production MCP deployment must have:
 - `PHASEO_MCP_DESTRUCTIVE_TOOLS_ENABLED = false`;
 - `PHASEO_MCP_SECRET_TOOLS_ENABLED = false`;
 - logs and sampled traces enabled.
+
+### 4. Enabling MCP mutations later
+
+Do not enable mutation flags until migrations
+`20260717180000_restrict_dynamic_oauth_clients_to_read_only.sql`,
+`20260717181000_mcp_action_approvals.sql`, and
+`20260717182000_mcp_secret_reveals.sql` are applied.
+
+Ordinary and destructive tools require a Phaseo-hosted, exact-payload approval
+and a single-use execution token. Mutation preparation and consumption are
+rate limited, and every lifecycle transition is written to
+`mcp_action_audit_events` without bearer tokens, generated secrets, or full
+request payloads.
+
+Before enabling `PHASEO_MCP_SECRET_TOOLS_ENABLED`, generate and install a
+dedicated API Worker secret:
+
+```powershell
+pnpm --filter @phaseo/gateway-api exec wrangler secret put MCP_SECRET_REVEAL_ENCRYPTION_KEY --config wrangler.toml
+```
+
+Confirm it by name only with `wrangler secret list`. Secret tools must remain
+disabled if this secret is missing. The resulting credential is encrypted at
+rest and shown once through `/mcp/secret-reveals/:id`; MCP receives only
+redacted metadata and the reveal URL.
 
 ## Production smoke tests
 
