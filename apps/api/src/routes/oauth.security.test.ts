@@ -566,6 +566,46 @@ describe("OAuth route security", () => {
 		]);
 	});
 
+	it("accepts refresh tokens for dynamically registered authorization-code clients", async () => {
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/register", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				client_name: "MCP Inspector",
+				redirect_uris: ["http://localhost:6284/oauth/callback"],
+				response_types: ["code"],
+				grant_types: ["authorization_code", "refresh_token"],
+				token_endpoint_auth_method: "none",
+			}),
+		});
+
+		expect(response.status).toBe(201);
+		await expect(response.json()).resolves.toMatchObject({
+			response_types: ["code"],
+			grant_types: ["authorization_code", "refresh_token"],
+			token_endpoint_auth_method: "none",
+		});
+	});
+
+	it("rejects unsupported dynamic registration grant types", async () => {
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/register", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				client_name: "Unsupported grant client",
+				redirect_uris: ["https://client.example/callback"],
+				response_types: ["code"],
+				grant_types: ["authorization_code", "client_credentials"],
+			}),
+		});
+
+		expect(response.status).toBe(400);
+		await expect(response.json()).resolves.toMatchObject({ error: "invalid_client_metadata" });
+		expect(state.registeredClients).toEqual([]);
+	});
+
 	it("returns authenticated consent metadata with an explicit dynamic trust source", async () => {
 		state.client = {
 			id: "dynamic_client",
