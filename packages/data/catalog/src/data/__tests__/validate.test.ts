@@ -201,9 +201,27 @@ describe('pricing safety checks', () => {
         );
         expect(pricing.rules).toEqual(
             expect.arrayContaining([
-                expect.objectContaining({ meter: 'input_text_tokens', price_per_unit: 3.75 }),
-                expect.objectContaining({ meter: 'cached_read_text_tokens', price_per_unit: 0.375 }),
-                expect.objectContaining({ meter: 'output_text_tokens', price_per_unit: 18.75 }),
+                expect.objectContaining({
+                    meter: 'input_text_tokens',
+                    price_per_unit: 3.75,
+                    pricing_plan: 'standard',
+                    unit_size: 1000000,
+                    currency: 'USD',
+                }),
+                expect.objectContaining({
+                    meter: 'cached_read_text_tokens',
+                    price_per_unit: 0.375,
+                    pricing_plan: 'standard',
+                    unit_size: 1000000,
+                    currency: 'USD',
+                }),
+                expect.objectContaining({
+                    meter: 'output_text_tokens',
+                    price_per_unit: 18.75,
+                    pricing_plan: 'standard',
+                    unit_size: 1000000,
+                    currency: 'USD',
+                }),
             ])
         );
     });
