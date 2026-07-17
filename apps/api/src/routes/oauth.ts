@@ -535,7 +535,7 @@ oauthRouter.post(
 			scopes,
 			code_challenge: codeChallenge,
 			code_challenge_method: codeChallengeMethod,
-			resource: resource || null,
+			...(resource ? { resource } : {}),
 			expires_at: makeAuthCodeExpiry(),
 		});
 		if (insert.error) return oauthError("server_error", insert.error.message, 500);
@@ -731,12 +731,29 @@ oauthRouter.post(
 			if (!(await verifyClientSecret(client, clientSecret))) {
 				return oauthError("invalid_client", "OAuth client authentication failed", 401);
 			}
-			const { data, error } = await supabase
+			const requestedResource = String(body.resource ?? "").trim();
+			let { data, error } = await supabase
 				.from("oauth_authorization_codes")
 				.select("id, client_id, user_id, workspace_id, redirect_uri, scopes, code_challenge, code_challenge_method, resource, expires_at, used_at")
 				.in("code_hash", await hashOAuthSecretCandidates(code))
 				.eq("client_id", client.id)
 				.maybeSingle();
+			// During a rolling deployment, non-resource clients remain compatible
+			// with the schema from immediately before OAuth resource indicators.
+			if (
+				error &&
+				!requestedResource &&
+				/(?:resource.*column|column.*resource|resource.*schema cache)/i.test(error.message)
+			) {
+				const legacyResult = await supabase
+					.from("oauth_authorization_codes")
+					.select("id, client_id, user_id, workspace_id, redirect_uri, scopes, code_challenge, code_challenge_method, expires_at, used_at")
+					.in("code_hash", await hashOAuthSecretCandidates(code))
+					.eq("client_id", client.id)
+					.maybeSingle();
+				data = legacyResult.data ? { ...legacyResult.data, resource: null } : null;
+				error = legacyResult.error;
+			}
 			if (error) return oauthError("server_error", error.message, 500);
 			if (!data || data.used_at || Date.parse(String(data.expires_at)) <= Date.now()) {
 				return oauthError("invalid_grant", "Authorization code is invalid or expired");
@@ -744,7 +761,7 @@ oauthRouter.post(
 			if (String(data.redirect_uri) !== redirectUri) {
 				return oauthError("invalid_grant", "redirect_uri does not match");
 			}
-			const resource = String(body.resource ?? "").trim();
+			const resource = requestedResource;
 			const grantedResource = String(data.resource ?? "").trim();
 			if (resource !== grantedResource) {
 				return oauthError("invalid_target", "resource does not match the authorization request");

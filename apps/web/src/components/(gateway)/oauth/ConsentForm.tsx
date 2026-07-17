@@ -331,22 +331,24 @@ export default function ConsentForm({
 		setError(null);
 
 		try {
-			const { approveAuthorizationAction } = await import(
-				"@/app/(auth)/oauth/consent/actions"
-			);
-
-			const result = await approveAuthorizationAction({
-				authorization_id: authorizationId,
-				client_id: clientId,
-				workspace_id: primaryTeamId,
-				workspace_ids: selectedTeamIds,
-				scopes: requestedScopes,
-				redirect_uri: redirectUri,
-				state,
-				code_challenge: codeChallenge,
-				code_challenge_method: codeChallengeMethod,
-				resource,
+			const response = await fetch("/api/internal/oauth/consent", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					operation: "approve",
+					authorization_id: authorizationId,
+					client_id: clientId,
+					workspace_id: primaryTeamId,
+					workspace_ids: selectedTeamIds,
+					scopes: requestedScopes,
+					redirect_uri: redirectUri,
+					state,
+					code_challenge: codeChallenge,
+					code_challenge_method: codeChallengeMethod,
+					resource,
+				}),
 			});
+			const result = await response.json();
 
 			if (result.error) {
 				setError(result.error);
@@ -372,16 +374,18 @@ export default function ConsentForm({
 		setError(null);
 
 		try {
-			const { denyAuthorizationAction } = await import(
-				"@/app/(auth)/oauth/consent/actions"
-			);
-
-			const result = await denyAuthorizationAction({
-				authorization_id: authorizationId,
-				client_id: clientId,
-				redirect_uri: redirectUri,
-				state,
+			const response = await fetch("/api/internal/oauth/consent", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					operation: "deny",
+					authorization_id: authorizationId,
+					client_id: clientId,
+					redirect_uri: redirectUri,
+					state,
+				}),
 			});
+			const result = await response.json();
 
 			if (result.data?.redirect_url) {
 				if (!isSafeOAuthRedirectUrl(result.data.redirect_url)) {

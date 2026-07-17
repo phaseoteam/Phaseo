@@ -638,7 +638,8 @@ export async function issueOAuthManagedKeyForAuthorizationCode(
 	if (!pepper) throw new Error("KEY_PEPPER_ACTIVE is not configured");
 
 	const generated = generateGatewayKey();
-	const { data, error } = await getSupabaseAdmin().rpc("consume_oauth_code_and_issue_managed_key", {
+	const supabase = getSupabaseAdmin();
+	const rpcInput = {
 		p_code_id: grantId,
 		p_key_hash: await hmacSecret(generated.secret, pepper),
 		p_key_kid: generated.kid,
@@ -649,7 +650,17 @@ export async function issueOAuthManagedKeyForAuthorizationCode(
 		p_client_id: input.clientId,
 		p_scopes: input.scopes,
 		p_resource: input.resource ?? null,
-	});
+	};
+	let { data, error } = await supabase.rpc("consume_oauth_code_and_issue_managed_key", rpcInput);
+	if (error && !input.resource && /p_resource|schema cache|function.*not found/i.test(error.message)) {
+		const { p_resource: _resource, ...legacyRpcInput } = rpcInput;
+		const legacyResult = await supabase.rpc(
+			"consume_oauth_code_and_issue_managed_key",
+			legacyRpcInput,
+		);
+		data = legacyResult.data;
+		error = legacyResult.error;
+	}
 	if (error) throw new Error(error.message || "Failed to consume OAuth code and issue key");
 	if (data !== "issued") return null;
 	return {

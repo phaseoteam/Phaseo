@@ -172,7 +172,9 @@ export async function approveAuthorizationAction(
 				.maybeSingle();
 			registeredClient = result.data;
 		}
-		if (!oauthApp && !registeredClient) {
+		const isFirstPartyCli =
+			resolvedClientId === "phaseo_cli" || resolvedClientId === "aistats_cli";
+		if (!oauthApp && !registeredClient && !isFirstPartyCli) {
 			return { error: "OAuth application not found or inactive" };
 		}
 
