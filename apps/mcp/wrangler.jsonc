@@ -2,9 +2,12 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "phaseo-mcp-preview",
   "main": "src/index.ts",
-  "compatibility_date": "2026-07-17",
+  "compatibility_date": "2026-07-08",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
+  "secrets": {
+    "required": ["PHASEO_MCP_RESOURCE_SERVER_SECRET"]
+  },
   "observability": {
     "enabled": true,
     "logs": { "head_sampling_rate": 1 },
@@ -18,6 +21,9 @@
     "production": {
       "name": "phaseo-mcp",
       "workers_dev": false,
+      "secrets": {
+        "required": ["PHASEO_MCP_RESOURCE_SERVER_SECRET"]
+      },
       "routes": [
         { "pattern": "mcp.phaseo.app", "custom_domain": true }
       ],
