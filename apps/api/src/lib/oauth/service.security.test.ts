@@ -310,6 +310,25 @@ describe("OAuth refresh rotation security", () => {
 		expect(state.rpcCalls).toHaveLength(rpcCallCount);
 	});
 
+	it("refuses to mint a Gateway API resource key without gateway access consent", async () => {
+		const { issueOAuthManagedKeyForAuthorizationCode } = await import("./service");
+		const rpcCallCount = state.rpcCalls.length;
+
+		const result = await issueOAuthManagedKeyForAuthorizationCode(
+			"00000000-0000-0000-0000-000000000004",
+			{
+				userId: "user_1",
+				workspaceId: "ws_1",
+				clientId: "third_party",
+				scopes: ["models:read"],
+				resource: "https://api.phaseo.app:443/v1/",
+			},
+		);
+
+		expect(result).toBeNull();
+		expect(state.rpcCalls).toHaveLength(rpcCallCount);
+	});
+
 	it("mints a least-privilege OAuth-managed key for an MCP resource", async () => {
 		state.rotationStatus = "issued";
 		const { issueOAuthManagedKeyForAuthorizationCode } = await import("./service");

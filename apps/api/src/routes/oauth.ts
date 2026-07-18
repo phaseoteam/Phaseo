@@ -40,6 +40,7 @@ import {
 	issueTokenPairForGrant,
 	issueOAuthManagedKeyForAuthorizationCode,
 	issueMcpUpstreamToken,
+	isGatewayOAuthResource,
 	isValidPkceChallenge,
 	isFirstPartyCliClient,
 	isThirdPartyOAuthEnabled,
@@ -275,6 +276,12 @@ function isProtectedResourceAllowed(value: string): boolean {
 	} catch {
 		return false;
 	}
+}
+
+function requiresGatewayAccessScope(clientId: string, resource: string, scopes: string[]): boolean {
+	return !isFirstPartyCliClient(clientId)
+		&& (!resource || isGatewayOAuthResource(resource))
+		&& !scopes.includes(GATEWAY_ACCESS_SCOPE);
 }
 
 export function oauthAuthorizationServerMetadata() {
@@ -766,7 +773,7 @@ oauthRouter.get(
 		if (scopes.length !== requestedScopes.length) {
 			return oauthError("invalid_scope", "One or more requested scopes are not allowed for this client");
 		}
-		if (!isFirstPartyCliClient(client.id) && !resource && !scopes.includes(GATEWAY_ACCESS_SCOPE)) {
+		if (requiresGatewayAccessScope(client.id, resource, scopes)) {
 			return oauthError("invalid_scope", `${GATEWAY_ACCESS_SCOPE} is required for third-party OAuth`);
 		}
 
@@ -829,7 +836,7 @@ oauthRouter.post(
 		if (scopes.length !== requestedScopes.length) {
 			return oauthError("invalid_scope", "One or more requested scopes are not allowed for this client");
 		}
-		if (!isFirstPartyCliClient(client.id) && !resource && !scopes.includes(GATEWAY_ACCESS_SCOPE)) {
+		if (requiresGatewayAccessScope(client.id, resource, scopes)) {
 			return oauthError("invalid_scope", `${GATEWAY_ACCESS_SCOPE} is required for third-party OAuth`);
 		}
 		const selectedWorkspaceIds = Array.from(new Set([...workspaceIds, workspaceId]));
@@ -1117,11 +1124,7 @@ oauthRouter.post(
 				scopes: Array.isArray(data.scopes) ? data.scopes.map(String) : [],
 				...(grantedResource ? { resource: grantedResource } : {}),
 			};
-			if (
-				!isFirstPartyCliClient(client.id) &&
-				!grantedResource &&
-				!tokenInput.scopes.includes(GATEWAY_ACCESS_SCOPE)
-			) {
+			if (requiresGatewayAccessScope(client.id, grantedResource, tokenInput.scopes)) {
 				return oauthError("invalid_scope", `${GATEWAY_ACCESS_SCOPE} consent is required for a delegated key`);
 			}
 			// The CLI retains refreshable sessions for `login`, logout, and token

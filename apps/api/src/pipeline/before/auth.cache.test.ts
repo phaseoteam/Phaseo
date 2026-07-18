@@ -11,6 +11,7 @@ type KeyRow = {
 	oauth_client_id?: string | null;
 	oauth_user_id?: string | null;
 	oauth_scopes?: string[] | null;
+	oauth_resource?: string | null;
 };
 
 const runtime = vi.hoisted(() => {
@@ -289,7 +290,7 @@ describe("authenticate hot-path caching", () => {
 		});
 	});
 
-	it("accepts OAuth keys bound to the advertised Gateway API resource", async () => {
+	it("rejects Gateway API resource keys without gateway access consent", async () => {
 		const kid = "KIDOAUTHAPIRES";
 		const secret = "secret_oauth_api_resource";
 		runtime.dbRow.value = {
@@ -311,12 +312,36 @@ describe("authenticate hot-path caching", () => {
 		);
 		await flushBackground();
 
+		expect(result).toEqual({ ok: false, reason: "oauth_gateway_scope_required" });
+	});
+
+	it("accepts Gateway API resource keys with gateway access consent", async () => {
+		const kid = "KIDOAUTHAPIYES";
+		const secret = "secret_oauth_api_resource_allowed";
+		runtime.dbRow.value = {
+			id: "key_oauth_api_resource_allowed",
+			workspace_id: "team_oauth",
+			status: "active",
+			hash: hashSecret(secret),
+			key_kind: "oauth_delegated",
+			oauth_user_id: "user_oauth",
+			oauth_client_id: "client_oauth",
+			oauth_scopes: ["gateway:access", "models:read"],
+			oauth_resource: "https://api.phaseo.app:443/v1/",
+		};
+
+		const { authenticateManagement } = await import("./auth");
+		const result = await authenticateManagement(
+			buildRequest(`phaseo_v1_sk_${kid}_${secret}`),
+			{ useKvCache: false },
+		);
+		await flushBackground();
+
 		expect(result).toMatchObject({
 			ok: true,
 			authMethod: "oauth",
-			oauthScopes: ["models:read"],
-			oauthResource: "https://api.phaseo.app/v1",
-			scopes: ["models:read"],
+			oauthScopes: ["gateway:access", "models:read"],
+			scopes: ["gateway:access", "models:read"],
 		});
 	});
 
