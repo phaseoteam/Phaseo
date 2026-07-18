@@ -271,7 +271,7 @@ describe('api provider model safety checks', () => {
         expect(veniceE2ee).toBeUndefined();
     });
 
-    test('Kimi K3 links only include the official model API reference', () => {
+    test('Kimi K3 links include the official API reference and provider pricing', () => {
         const model = JSON.parse(
             fs.readFileSync(path.join(DATA_ROOT, 'models', 'moonshotai', 'kimi-k3', 'model.json'), 'utf8')
         );
@@ -281,6 +281,11 @@ describe('api provider model safety checks', () => {
                 title: 'API Reference',
                 kind: 'api_reference',
                 url: 'https://platform.kimi.ai/docs/guide/kimi-k3-quickstart',
+            },
+            {
+                title: 'SiliconFlow pricing',
+                kind: 'pricing',
+                url: 'https://siliconflow.cn/pricing',
             },
         ]);
     });
