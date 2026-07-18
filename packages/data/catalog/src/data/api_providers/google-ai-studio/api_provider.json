@@ -3,6 +3,7 @@
   "api_provider_name": "Google AI Studio",
   "description": null,
   "link": "https://aistudio.google.com/",
+  "pricing_source_url": "https://ai.google.dev/gemini-api/docs/pricing",
   "country_code": "US",
   "status": "Active",
   "colour": "#4285F4",
