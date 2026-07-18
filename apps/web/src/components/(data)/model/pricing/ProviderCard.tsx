@@ -30,6 +30,11 @@ import {
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
+import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
@@ -620,54 +625,77 @@ function PricingPeriodHoverCard({
 		? parsePricingScheduleRanges(scheduleLabel)
 		: getComplementPricingRanges(scheduledRanges);
 	const localTimeZoneLabel = formatTimeZoneShortName(userTimeZone, pricingTimeMs);
+	const trigger = (
+		<button
+			type="button"
+			className="group/period inline-flex min-w-0 items-center gap-1 truncate text-[10px] text-muted-foreground underline decoration-dotted underline-offset-4 transition-colors hover:text-foreground focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+			aria-label={`View ${label} pricing period details`}
+		>
+			<span className="truncate">{label}{isCurrent ? " · now" : ""}</span>
+			<Info className="h-2.5 w-2.5 shrink-0 opacity-55 transition-opacity group-hover/period:opacity-100" />
+		</button>
+	);
+	const content = (
+		<>
+			<div className="border-b border-border/70 px-4 py-3">
+				<div className="truncate text-xs font-semibold text-foreground">{label} pricing</div>
+			</div>
+			<dl className="px-4 py-3 text-[11px]">
+				<div className="grid grid-cols-[6.75rem_minmax(0,1fr)] items-start gap-3">
+					<dt className="text-muted-foreground">Your time ({localTimeZoneLabel})</dt>
+					<dd className="space-y-1 font-medium tabular-nums text-foreground">
+						{ranges.map((range) => {
+							const isActiveRange = isCurrent && isPricingTimeInRange(pricingTimeMs, range);
+							return (
+								<span
+									key={`${range.startMinute}-${range.endMinute}`}
+									className="grid grid-cols-[0.75rem_auto] items-center gap-1"
+								>
+									{isActiveRange ? (
+										<ChevronLeft className="size-3 text-foreground/70" aria-hidden="true" />
+									) : (
+										<span aria-hidden="true" />
+									)}
+									<span>{formatPricingRangeInTimeZone(range, userTimeZone, pricingTimeMs)}</span>
+									{isActiveRange ? <span className="sr-only">Current time period</span> : null}
+								</span>
+							);
+						})}
+					</dd>
+				</div>
+			</dl>
+		</>
+	);
 
 	return (
-		<HoverCard openDelay={120} closeDelay={80}>
-			<HoverCardTrigger asChild>
-				<button
-					type="button"
-					className="group/period inline-flex min-w-0 items-center gap-1 truncate text-[10px] text-muted-foreground underline decoration-dotted underline-offset-4 transition-colors hover:text-foreground focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-					aria-label={`View ${label} pricing period details`}
-				>
-					<span className="truncate">{label}{isCurrent ? " · now" : ""}</span>
-					<Info className="h-2.5 w-2.5 shrink-0 opacity-55 transition-opacity group-hover/period:opacity-100" />
-				</button>
-			</HoverCardTrigger>
-			<HoverCardContent
-				side="top"
-				align="start"
-				sideOffset={8}
-				className="w-[18rem] overflow-hidden rounded-2xl bg-popover p-0 shadow-xl ring-1 ring-foreground/10"
-			>
-				<div className="border-b border-border/70 px-4 py-3">
-					<div className="truncate text-xs font-semibold text-foreground">{label} pricing</div>
-				</div>
-				<dl className="px-4 py-3 text-[11px]">
-					<div className="grid grid-cols-[6.75rem_minmax(0,1fr)] items-start gap-3">
-						<dt className="text-muted-foreground">Your time ({localTimeZoneLabel})</dt>
-						<dd className="space-y-1 font-medium tabular-nums text-foreground">
-							{ranges.map((range) => {
-								const isActiveRange = isCurrent && isPricingTimeInRange(pricingTimeMs, range);
-								return (
-									<span
-										key={`${range.startMinute}-${range.endMinute}`}
-										className="grid grid-cols-[0.75rem_auto] items-center gap-1"
-									>
-										{isActiveRange ? (
-											<ChevronLeft className="size-3 text-foreground/70" aria-hidden="true" />
-										) : (
-											<span aria-hidden="true" />
-										)}
-										<span>{formatPricingRangeInTimeZone(range, userTimeZone, pricingTimeMs)}</span>
-										{isActiveRange ? <span className="sr-only">Current time period</span> : null}
-									</span>
-								);
-							})}
-						</dd>
-					</div>
-				</dl>
-			</HoverCardContent>
-		</HoverCard>
+		<>
+			<span className="sm:hidden">
+				<Popover>
+					<PopoverTrigger asChild>{trigger}</PopoverTrigger>
+					<PopoverContent
+						side="top"
+						align="start"
+						sideOffset={8}
+						className="w-[18rem] overflow-hidden rounded-2xl bg-popover p-0 shadow-xl ring-1 ring-foreground/10"
+					>
+						{content}
+					</PopoverContent>
+				</Popover>
+			</span>
+			<span className="hidden sm:inline">
+				<HoverCard openDelay={120} closeDelay={80}>
+					<HoverCardTrigger asChild>{trigger}</HoverCardTrigger>
+					<HoverCardContent
+						side="top"
+						align="start"
+						sideOffset={8}
+						className="w-[18rem] overflow-hidden rounded-2xl bg-popover p-0 shadow-xl ring-1 ring-foreground/10"
+					>
+						{content}
+					</HoverCardContent>
+				</HoverCard>
+			</span>
+		</>
 	);
 }
 
