@@ -210,6 +210,39 @@ describe("OAuth route security", () => {
 		expect(response.headers.get("access-control-allow-origin")).toBe("*");
 		expect(response.headers.get("access-control-allow-methods")).toContain("POST");
 		expect(response.headers.get("access-control-allow-headers")).toContain("Content-Type");
+		expect(response.headers.get("access-control-allow-headers")).toContain("MCP-Protocol-Version");
+	});
+
+	it("allows browser-based MCP clients to discover root OAuth metadata", async () => {
+		const { rootRouter } = await import("./root");
+		const preflight = await rootRouter.request(
+			"https://example.com/.well-known/oauth-authorization-server/oauth",
+			{
+				method: "OPTIONS",
+				headers: {
+					origin: "http://localhost:6284",
+					"access-control-request-method": "GET",
+					"access-control-request-headers": "mcp-protocol-version",
+				},
+			},
+		);
+
+		expect(preflight.status).toBe(204);
+		expect(preflight.headers.get("access-control-allow-origin")).toBe("*");
+		expect(preflight.headers.get("access-control-allow-headers")).toContain("MCP-Protocol-Version");
+
+		const metadata = await rootRouter.request(
+			"https://example.com/.well-known/oauth-authorization-server/oauth",
+			{ headers: { origin: "http://localhost:6284" } },
+		);
+
+		expect(metadata.status).toBe(200);
+		expect(metadata.headers.get("access-control-allow-origin")).toBe("*");
+		expect(await metadata.json()).toMatchObject({
+			issuer: "https://api.example.com/oauth",
+			authorization_endpoint: "https://api.example.com/oauth/authorize",
+			token_endpoint: "https://api.example.com/oauth/token",
+		});
 	});
 
 	it("does not let device-code denial overwrite a code that is no longer pending", async () => {

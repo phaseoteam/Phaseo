@@ -60,10 +60,10 @@ import {
 
 export const oauthRouter = new Hono<Env>();
 const MAX_OAUTH_REQUEST_BODY_BYTES = 16 * 1024;
-const OAUTH_CORS_HEADERS: Record<string, string> = {
+export const OAUTH_CORS_HEADERS: Record<string, string> = {
 	"Access-Control-Allow-Origin": "*",
 	"Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-	"Access-Control-Allow-Headers": "Authorization, Content-Type",
+	"Access-Control-Allow-Headers": "Authorization, Content-Type, Accept, MCP-Protocol-Version",
 	"Access-Control-Max-Age": "86400",
 };
 const DYNAMIC_MCP_SCOPES = [
