@@ -7,9 +7,23 @@ import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { json, withRuntime } from "./utils";
 import { getLocalJwks } from "@/lib/oauth/service";
-import { oauthAuthorizationServerMetadata } from "./oauth";
+import { OAUTH_CORS_HEADERS, oauthAuthorizationServerMetadata } from "./oauth";
 
 export const rootRouter = new Hono<Env>();
+
+rootRouter.use("/.well-known/*", async (c, next) => {
+    if (c.req.method === "OPTIONS") {
+        return new Response(null, { status: 204, headers: OAUTH_CORS_HEADERS });
+    }
+    await next();
+    const headers = new Headers(c.res.headers);
+    for (const [key, value] of Object.entries(OAUTH_CORS_HEADERS)) headers.set(key, value);
+    c.res = new Response(c.res.body, {
+        status: c.res.status,
+        statusText: c.res.statusText,
+        headers,
+    });
+});
 
 rootRouter.get(
     "/",
