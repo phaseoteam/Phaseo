@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
 import {
@@ -370,9 +370,10 @@ function UptimeSparkline({
 }
 
 function renderCompactTierSummary(
-	tiers?: TokenTier[] | null,
-	valueClassName?: string,
-	billingTimestampBasis?: string | null,
+	tiers: TokenTier[] | null | undefined,
+	valueClassName: string | undefined,
+	pricingTimeMs: number,
+	userTimeZone: string,
 ) {
 	const orderedTiers = [...(tiers ?? [])].sort((a, b) => {
 		if (a.isCurrent !== b.isCurrent) return a.isCurrent ? -1 : 1;
@@ -446,7 +447,8 @@ function renderCompactTierSummary(
 											isCurrent={price.isCurrent}
 											scheduleLabel={price.scheduleLabel}
 											scheduledPeriods={scheduledPeriods}
-											billingTimestampBasis={billingTimestampBasis}
+											pricingTimeMs={pricingTimeMs}
+											userTimeZone={userTimeZone}
 										/>
 									) : periodLabel ? (
 										<span className="truncate text-[10px] text-muted-foreground">
@@ -470,18 +472,96 @@ function formatPricingScheduleForDisplay(schedule: string): string {
 		.replace(/\s+UTC$/, "");
 }
 
+const subscribeToBrowserTimeZone = () => () => {};
+
+function getBrowserTimeZone(): string {
+	try {
+		return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+	} catch {
+		return "UTC";
+	}
+}
+
+function useBrowserTimeZone(): string {
+	return useSyncExternalStore(
+		subscribeToBrowserTimeZone,
+		getBrowserTimeZone,
+		() => "UTC",
+	);
+}
+
+function formatTimeInZone(date: Date, timeZone: string): string {
+	return new Intl.DateTimeFormat("en-GB", {
+		timeZone,
+		hour: "2-digit",
+		minute: "2-digit",
+		hourCycle: "h23",
+	}).format(date);
+}
+
+function formatPricingScheduleInTimeZone(
+	schedule: string,
+	timeZone: string,
+	pricingTimeMs: number,
+): string {
+	const outsidePrefix = schedule.startsWith("Outside ") ? "Outside " : "";
+	const anchor = new Date(pricingTimeMs);
+	const ranges = Array.from(
+		schedule.matchAll(/(\d{2}):(\d{2})[-–](\d{2}):(\d{2})/g),
+	).map((match) => {
+		const startHour = Number(match[1]);
+		const startMinute = Number(match[2]);
+		const endHour = Number(match[3]);
+		const endMinute = Number(match[4]);
+		const start = new Date(Date.UTC(
+			anchor.getUTCFullYear(),
+			anchor.getUTCMonth(),
+			anchor.getUTCDate(),
+			startHour,
+			startMinute,
+		));
+		const crossesMidnight = endHour * 60 + endMinute <= startHour * 60 + startMinute;
+		const end = new Date(Date.UTC(
+			anchor.getUTCFullYear(),
+			anchor.getUTCMonth(),
+			anchor.getUTCDate() + (crossesMidnight ? 1 : 0),
+			endHour,
+			endMinute,
+		));
+		return `${formatTimeInZone(start, timeZone)}–${formatTimeInZone(end, timeZone)}`;
+	});
+
+	return ranges.length > 0
+		? `${outsidePrefix}${ranges.join(" · ")}`
+		: formatPricingScheduleForDisplay(schedule);
+}
+
+function formatTimeZoneShortName(timeZone: string, pricingTimeMs: number): string {
+	try {
+		return new Intl.DateTimeFormat("en-GB", {
+			timeZone,
+			timeZoneName: "short",
+		}).formatToParts(new Date(pricingTimeMs))
+			.find((part) => part.type === "timeZoneName")?.value ?? timeZone;
+	} catch {
+		return timeZone;
+	}
+}
+
 function PricingPeriodHoverCard({
 	label,
 	isCurrent,
 	scheduleLabel,
 	scheduledPeriods,
-	billingTimestampBasis,
+	pricingTimeMs,
+	userTimeZone,
 }: {
 	label: string;
 	isCurrent: boolean;
 	scheduleLabel: string | null;
 	scheduledPeriods: string[];
-	billingTimestampBasis?: string | null;
+	pricingTimeMs: number;
+	userTimeZone: string;
 }) {
 	const scheduledDisplay = scheduledPeriods
 		.map(formatPricingScheduleForDisplay)
@@ -491,7 +571,12 @@ function PricingPeriodHoverCard({
 		: scheduledDisplay
 			? `Outside ${scheduledDisplay}`
 			: "All other times";
-	const timestampBasis = formatBillingTimestampBasis(billingTimestampBasis);
+	const localSchedule = formatPricingScheduleInTimeZone(
+		schedule,
+		userTimeZone,
+		pricingTimeMs,
+	);
+	const localTimeZoneLabel = formatTimeZoneShortName(userTimeZone, pricingTimeMs);
 
 	return (
 		<HoverCard openDelay={120} closeDelay={80}>
@@ -511,39 +596,19 @@ function PricingPeriodHoverCard({
 				sideOffset={8}
 				className="w-[18rem] overflow-hidden rounded-2xl bg-popover p-0 shadow-xl ring-1 ring-foreground/10"
 			>
-				<div className="flex items-center justify-between gap-3 border-b border-border/70 px-4 py-3">
-					<div className="flex min-w-0 items-center gap-2.5">
-						<div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-foreground/[0.06] text-foreground">
-							<Clock3 className="h-3.5 w-3.5" />
-						</div>
-						<div className="min-w-0">
-							<div className="truncate text-xs font-semibold text-foreground">{label} pricing</div>
-							<div className="text-[10px] text-muted-foreground">Time-based rate</div>
-						</div>
-					</div>
-					{isCurrent ? (
-						<span className="shrink-0 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[9px] font-semibold text-emerald-700 dark:text-emerald-300">
-							Active now
-						</span>
-					) : null}
+				<div className="border-b border-border/70 px-4 py-3">
+					<div className="truncate text-xs font-semibold text-foreground">{label} pricing</div>
 				</div>
-				<dl className="space-y-2.5 px-4 py-3 text-[11px]">
-					<div className="grid grid-cols-[5.25rem_minmax(0,1fr)] gap-3">
-						<dt className="text-muted-foreground">Schedule</dt>
+				<dl className="space-y-3 px-4 py-3 text-[11px]">
+					<div className="grid grid-cols-[6.75rem_minmax(0,1fr)] gap-3">
+						<dt className="text-muted-foreground">UTC</dt>
 						<dd className="font-medium tabular-nums text-foreground">{schedule}</dd>
 					</div>
-					<div className="grid grid-cols-[5.25rem_minmax(0,1fr)] gap-3">
-						<dt className="text-muted-foreground">Timezone</dt>
-						<dd className="font-medium text-foreground">UTC</dd>
-					</div>
-					<div className="grid grid-cols-[5.25rem_minmax(0,1fr)] gap-3">
-						<dt className="text-muted-foreground">Rate selected</dt>
-						<dd className="font-medium text-foreground">At {timestampBasis}</dd>
+					<div className="grid grid-cols-[6.75rem_minmax(0,1fr)] gap-3">
+						<dt className="text-muted-foreground">Your time ({localTimeZoneLabel})</dt>
+						<dd className="font-medium tabular-nums text-foreground">{localSchedule}</dd>
 					</div>
 				</dl>
-				<p className="border-t border-border/70 bg-muted/35 px-4 py-2.5 text-[10px] leading-relaxed text-muted-foreground">
-					The selected rate stays with the request after it is sent upstream.
-				</p>
 			</HoverCardContent>
 		</HoverCard>
 	);
@@ -660,19 +725,6 @@ function getPlanTheme(plan: string) {
 				discountStrong: "text-emerald-700 dark:text-emerald-300",
 				discountMuted: "text-emerald-800/80 dark:text-emerald-200/80",
 			};
-	}
-}
-
-function formatBillingTimestampBasis(value: string | null | undefined): string {
-	switch (value) {
-		case "provider_accept":
-			return "upstream request start";
-		case "completion":
-			return "completion";
-		case "request_start":
-			return "request start";
-		default:
-			return "request start";
 	}
 }
 
@@ -1407,6 +1459,7 @@ export default function ProviderCard({
 	const [selectedPlan, setSelectedPlan] = useState(defaultPlan);
 	const [expanded, setExpanded] = useState(false);
 	const reduceMotion = useReducedMotion();
+	const userTimeZone = useBrowserTimeZone();
 	const [disableInspectorAnimation, setDisableInspectorAnimation] = useState(false);
 	const [copiedInspectorValue, setCopiedInspectorValue] = useState<string | null>(null);
 	const inspectorAnimationResetRef = useRef<number | null>(null);
@@ -1534,21 +1587,6 @@ export default function ProviderCard({
 
 	const planRules = getProviderPricingRulesForPlan(provider, selectedPlan);
 	const hasPlanPricing = planRules.length > 0;
-	const timeWindowPricingRules = planRules
-		.filter((rule) => isRuleActiveNow(rule, pricingTimeMs))
-		.map((rule) => ({
-			rule,
-			windows: (rule.time_windows ?? []).filter(
-				(window) =>
-					window &&
-					window.timezone === "UTC" &&
-					window.price_per_unit !== undefined &&
-					window.price_per_unit !== null,
-			),
-		}))
-		.filter((entry) => entry.windows.length > 0);
-	const timeWindowBillingTimestampBasis =
-		timeWindowPricingRules[0]?.rule.billing_timestamp_basis ?? null;
 	const providerModelsInScope = getProviderModelScopeForPlan(
 		provider,
 		selectedPlan,
@@ -2308,7 +2346,8 @@ export default function ProviderCard({
 										{renderCompactTierSummary(
 											tile.tiers,
 											selectedPlanTheme.accent,
-											timeWindowBillingTimestampBasis,
+											pricingTimeMs,
+											userTimeZone,
 										)}
 										<div className="mt-0.5 text-[10px] text-muted-foreground">
 											{tile.unitLabel}
