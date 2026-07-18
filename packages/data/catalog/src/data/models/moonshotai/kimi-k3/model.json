@@ -19,6 +19,11 @@
       "title": "API Reference",
       "kind": "api_reference",
       "url": "https://platform.kimi.ai/docs/guide/kimi-k3-quickstart"
+    },
+    {
+      "title": "SiliconFlow pricing",
+      "kind": "pricing",
+      "url": "https://siliconflow.cn/pricing"
     }
   ],
   "details": [
@@ -64,7 +69,7 @@
     },
     {
       "name": "availability_note",
-      "value": "Moonshot AI, GMI Cloud, Novita, and Venice provide Kimi K3 API access. GMI Cloud currently advertises an FP8 route with a 262,144-token context window; Novita advertises text, image, and video input with a 1,048,576-token context and output limit. Venice exposes the standard kimi-k3 route at $3.75 per million input tokens, $0.375 per million cached input tokens, and $18.75 per million output tokens. Venice's live catalog does not expose an E2EE Kimi K3 model ID, so no E2EE route or pricing is listed. Full model weights and the technical report are still forthcoming."
+      "value": "Moonshot AI, GMI Cloud, Novita, SiliconFlow, and Venice provide Kimi K3 API access. GMI Cloud currently advertises an FP8 route with a 262,144-token context window; Novita advertises text, image, and video input with a 1,048,576-token context and output limit; SiliconFlow advertises text and image input with a 1,048,576-token context and online pricing of $0.30 per million cached input tokens, $3.00 per million input tokens, and $15.00 per million output tokens. Venice exposes the standard kimi-k3 route at $3.75 per million input tokens, $0.375 per million cached input tokens, and $18.75 per million output tokens. Venice's live catalog does not expose an E2EE Kimi K3 model ID, so no E2EE route or pricing is listed. Full model weights and the technical report are still forthcoming."
     }
   ],
   "benchmarks": []
