@@ -227,13 +227,13 @@ def main() -> None:
                 {
                     "id": "conflict_finding",
                     "type": "markdown",
-                    "body": "## Conflicting rules have been tidied\n\nThe four active-model overlaps and two retired-model overlaps are now closed with explicit effective windows. Venice retains the verified MiniMax M2.7 and GLM 4.7 Flash rates; Google retains the per-image Gemini representation; Novita and OpenAI preserve superseded rates for history without leaving them current. See the [Venice price list](https://docs.venice.ai/overview/pricing), [Gemini pricing](https://ai.google.dev/gemini-api/docs/pricing), and [OpenAI pricing](https://developers.openai.com/api/docs/pricing)."
+                    "body": "## Conflicting rules have been tidied\n\nThe historical overlap findings are now closed with explicit effective windows; zero conflicting rule pairs remain current on catalog-active models. Venice retains the verified MiniMax M2.7 and GLM 4.7 Flash rates; Google retains the per-image Gemini representation; Novita and OpenAI preserve superseded rates for history without leaving them current. See the [Venice price list](https://docs.venice.ai/overview/pricing), [Gemini pricing](https://ai.google.dev/gemini-api/docs/pricing), and [OpenAI pricing](https://developers.openai.com/api/docs/pricing)."
                 },
                 {"id": "conflict_table_block", "type": "table", "tableId": "active_conflict_detail", "layout": "full"},
                 {
                     "id": "source_checks_finding",
                     "type": "markdown",
-                    "body": "## Flagship spot checks are accurate; anomaly-led checks found stale duplicates\n\n**OpenAI GPT-5.4, Mistral Small 4, DeepSeek V4 Flash, and Google Gemini 2.5 Flash Image match official list prices.** The anomaly-led pass confirms that Novita’s Qwen3 Next Thinking model should be $0.15 input and $1.50 output per million tokens, while its catalog file also contains stale $0.98/$3.95 rules. Sources: [OpenAI](https://developers.openai.com/api/docs/pricing), [Mistral](https://docs.mistral.ai/models/model-selection-guide?models=mistral-small-4-0-26-03), [DeepSeek](https://api-docs.deepseek.com/quick_start/pricing), and [Novita](https://novita.ai/pricing)."
+                    "body": "## Flagship spot checks are accurate; historical rates are explicitly superseded\n\n**OpenAI GPT-5.4, Mistral Small 4, DeepSeek V4 Flash, and Google Gemini 2.5 Flash Image match official list prices.** The anomaly-led pass confirms that Novita’s Qwen3 Next Thinking model is $0.15 input and $1.50 output per million tokens at the audit cutoff; older $0.98/$3.95 rules remain only as dated historical records. Sources: [OpenAI](https://developers.openai.com/api/docs/pricing), [Mistral](https://docs.mistral.ai/models/model-selection-guide?models=mistral-small-4-0-26-03), [DeepSeek](https://api-docs.deepseek.com/quick_start/pricing), and [Novita](https://novita.ai/pricing)."
                 },
                 {"id": "external_checks_table_block", "type": "table", "tableId": "external_checks", "layout": "full"},
                 {

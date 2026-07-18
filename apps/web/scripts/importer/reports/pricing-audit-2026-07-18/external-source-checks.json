@@ -34,24 +34,24 @@
   {
     "provider": "Novita",
     "model": "qwen/qwen3-next-80b-a3b-thinking",
-    "catalog_result": "Conflicting current rules",
-    "catalog_values": "Both $0.98/$3.95 and $0.15/$1.50 input/output rules are current at equal priority and conditions",
+    "catalog_result": "Match after dated supersession",
+    "catalog_values": "Historical $0.98/$3.95 rules end before the audit cutoff; current $0.15/$1.50 input/output rules are effective at the audit cutoff",
     "official_values": "$0.15 input and $1.50 output per 1M tokens",
     "source_url": "https://novita.ai/pricing"
   },
   {
     "provider": "Venice",
     "model": "minimax/minimax-m2.7",
-    "catalog_result": "Correct rates plus conflicting near-duplicates",
-    "catalog_values": "Both $0.375/$0.075 and $0.38/$0.07 input/cache-read rules are current; output is $1.50",
+    "catalog_result": "Match after dated supersession",
+    "catalog_values": "Historical $0.375/$0.075 input/cache-read rules end before the audit cutoff; current $0.38/$0.07 input/cache-read rules are effective; output is $1.50",
     "official_values": "$0.38 input, $1.50 output, $0.07 cache read per 1M tokens",
     "source_url": "https://docs.venice.ai/overview/pricing"
   },
   {
     "provider": "Venice",
     "model": "z-ai/glm-4.7-flash",
-    "catalog_result": "Conflicting output rules",
-    "catalog_values": "$0.13 input with both $0.55 and $0.50 output rules current at equal priority and conditions",
+    "catalog_result": "Match after dated supersession",
+    "catalog_values": "$0.13 input; historical $0.55 output rule ends before the audit cutoff and current $0.50 output rule is effective",
     "official_values": "$0.13 input and $0.50 output per 1M tokens",
     "source_url": "https://docs.venice.ai/overview/pricing"
   },
