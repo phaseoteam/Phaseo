@@ -96,6 +96,26 @@ export function getApiBaseUrl(): string {
 	return String(bindings.GATEWAY_PUBLIC_BASE_URL ?? DEFAULT_API_BASE_URL).replace(/\/+$/, "");
 }
 
+export function getGatewayOAuthResource(): string {
+	const baseUrl = getApiBaseUrl();
+	return baseUrl.endsWith("/v1") ? baseUrl : `${baseUrl}/v1`;
+}
+
+function normalizeOAuthResource(value: string): string | null {
+	try {
+		const url = new URL(value);
+		url.pathname = url.pathname.replace(/\/+$/, "") || "/";
+		return url.toString();
+	} catch {
+		return null;
+	}
+}
+
+export function isGatewayOAuthResource(resource: string | null | undefined): boolean {
+	if (!resource) return false;
+	return normalizeOAuthResource(resource) === normalizeOAuthResource(getGatewayOAuthResource());
+}
+
 export function getWebBaseUrl(): string {
 	const bindings = getBindings();
 	return String(bindings.PHASEO_WEB_BASE_URL ?? DEFAULT_WEB_BASE_URL).replace(/\/+$/, "");
@@ -634,8 +654,11 @@ export async function issueOAuthManagedKeyForAuthorizationCode(
 	input: TokenIssueInput,
 ) {
 	// Unbound delegated keys can spend workspace credits and require Gateway
-	// consent. Resource-bound keys remain confined to their protected resource.
-	if (!input.resource && !input.scopes.includes(GATEWAY_ACCESS_SCOPE)) return null;
+	// consent. A key bound to the Gateway API is still a Gateway credential and
+	// must carry the same explicit credit-spending permission.
+	if ((!input.resource || isGatewayOAuthResource(input.resource)) && !input.scopes.includes(GATEWAY_ACCESS_SCOPE)) {
+		return null;
+	}
 
 	const pepper = resolveActiveKeyPepper(getBindings());
 	if (!pepper) throw new Error("KEY_PEPPER_ACTIVE is not configured");

@@ -155,6 +155,12 @@ vi.mock("@/lib/oauth/service", () => ({
 		return { access_token: "phaseo_v1_sk_test", token_type: "Bearer" };
 	}),
 	issueMcpUpstreamToken: vi.fn(async () => ({ access_token: "upstream-jwt", token_type: "Bearer", expires_in: 300 })),
+	isGatewayOAuthResource: vi.fn((resource: string | null | undefined) => {
+		if (!resource) return false;
+		const candidate = new URL(resource);
+		candidate.pathname = candidate.pathname.replace(/\/+$/, "") || "/";
+		return candidate.toString() === "https://api.example.com/v1";
+	}),
 	isValidPkceChallenge: vi.fn((value: string) => /^[A-Za-z0-9_-]{43}$/.test(value)),
 	isFirstPartyCliClient: vi.fn((clientId: string) => clientId === "phaseo_cli" || clientId === "aistats_cli"),
 	isThirdPartyOAuthEnabled: vi.fn(() => true),
@@ -506,6 +512,84 @@ describe("OAuth route security", () => {
 			clientId: "third_party",
 			scopes: ["gateway:access", "models:read"],
 		});
+	});
+
+	it("rejects Gateway API resource authorization without gateway access consent", async () => {
+		state.client = { id: "third_party", name: "Third Party", client_type: "public" };
+		const challenge = "a".repeat(43);
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request(
+			`https://example.com/authorize?client_id=third_party&redirect_uri=${encodeURIComponent("https://example.com/callback")}&response_type=code&scope=models%3Aread&code_challenge=${challenge}&code_challenge_method=S256&resource=${encodeURIComponent("https://api.example.com/v1/")}`,
+		);
+
+		expect(response.status).toBe(400);
+		expect(await response.json()).toMatchObject({
+			error: "invalid_scope",
+			error_description: "gateway:access is required for third-party OAuth",
+		});
+	});
+
+	it("rejects Gateway API resource approval without gateway access consent", async () => {
+		state.client = { id: "third_party", name: "Third Party", client_type: "public" };
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/authorize/approve", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				client_id: "third_party",
+				redirect_uri: "https://example.com/callback",
+				primary_workspace_id: "ws_1",
+				scopes: ["models:read"],
+				code_challenge: "a".repeat(43),
+				code_challenge_method: "S256",
+				resource: "https://api.example.com/v1",
+			}),
+		});
+
+		expect(response.status).toBe(400);
+		expect(await response.json()).toMatchObject({
+			error: "invalid_scope",
+			error_description: "gateway:access is required for third-party OAuth",
+		});
+	});
+
+	it("does not exchange a Gateway API resource grant without gateway access consent", async () => {
+		state.client = { id: "third_party", name: "Third Party", client_type: "confidential" };
+		state.authorizationCodeRow = {
+			id: "authorization_code_gateway_resource",
+			client_id: "third_party",
+			user_id: "user_1",
+			workspace_id: "ws_1",
+			redirect_uri: "https://example.com/callback",
+			scopes: ["models:read"],
+			resource: "https://api.example.com/v1/",
+			code_challenge: "challenge",
+			code_challenge_method: "S256",
+			expires_at: FUTURE_EXPIRES_AT,
+			used_at: null,
+		};
+		state.authorizationRow = { id: "auth_1", revoked_at: null };
+
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/token", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				grant_type: "authorization_code",
+				client_id: "third_party",
+				code: "authorization-code",
+				redirect_uri: "https://example.com/callback",
+				code_verifier: "verifier",
+				resource: "https://api.example.com/v1/",
+			}),
+		});
+
+		expect(response.status).toBe(400);
+		expect(await response.json()).toMatchObject({
+			error: "invalid_scope",
+			error_description: "gateway:access consent is required for a delegated key",
+		});
+		expect(state.issuedManagedKeys).toEqual([]);
 	});
 
 	it("does not issue a delegated key from identity-only consent", async () => {
