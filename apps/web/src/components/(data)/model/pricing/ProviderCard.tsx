@@ -564,7 +564,7 @@ function formatTimeInZone(date: Date, timeZone: string): string {
 		timeZone,
 		hour: "2-digit",
 		minute: "2-digit",
-		hourCycle: "h23",
+		hour12: false,
 	}).format(date);
 }
 
@@ -1893,6 +1893,7 @@ export default function ProviderCard({
 	).map(([label, tiles]) => ({
 		label,
 		tiles,
+		mobileColumns: Math.min(2, tiles.length),
 		columns: Math.min(4, tiles.length),
 	}));
 	const infoScope = providerModelsInScope;
@@ -2406,19 +2407,29 @@ export default function ProviderCard({
 			{tokenMetricGroups.map((group) => (
 				<div key={group.label} className="space-y-1">
 					<div
-						className="grid"
-						style={{
-							gridTemplateColumns: `repeat(${group.columns}, minmax(0, 1fr))`,
-						}}
+						className={cn(
+							"grid",
+							group.mobileColumns === 1 ? "grid-cols-1" : "grid-cols-2",
+							group.columns === 1
+								? "sm:grid-cols-1"
+								: group.columns === 2
+									? "sm:grid-cols-2"
+									: group.columns === 3
+										? "sm:grid-cols-3"
+										: "sm:grid-cols-4",
+						)}
 					>
 						{group.tiles.map((tile, index) => (
 							<div
 								key={tile.key}
 								className={cn(
 									"min-h-[78px] min-w-0 py-2.5",
-									index % group.columns === 0
+									index % group.mobileColumns === 0
 										? "pr-3"
 										: "border-l border-zinc-200/80 px-3 dark:border-zinc-800",
+									index % group.columns === 0
+										? "sm:border-l-0 sm:px-0 sm:pr-3"
+										: "sm:border-l sm:border-zinc-200/80 sm:px-3 sm:dark:border-zinc-800",
 								)}
 							>
 								<div className="text-[11px] text-muted-foreground">
