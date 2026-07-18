@@ -483,11 +483,6 @@ function parsePricingTime(value: string, fallback = 0): number {
 	return hours * 60 + minutes;
 }
 
-function formatPricingTime(minute: number): string {
-	const normalized = ((minute % 1_440) + 1_440) % 1_440;
-	return `${String(Math.floor(normalized / 60)).padStart(2, "0")}:${String(normalized % 60).padStart(2, "0")}`;
-}
-
 function mergePricingTimeRanges(ranges: PricingTimeRange[]): PricingTimeRange[] {
 	const sorted = [...ranges].sort(
 		(a, b) => a.startMinute - b.startMinute || a.endMinute - b.endMinute,
@@ -533,6 +528,12 @@ function getComplementPricingRanges(ranges: PricingTimeRange[]): PricingTimeRang
 		complement.push({ startMinute: cursor, endMinute: 1_440 });
 	}
 	return complement;
+}
+
+function isPricingTimeInRange(pricingTimeMs: number, range: PricingTimeRange): boolean {
+	const date = new Date(pricingTimeMs);
+	const minute = date.getUTCHours() * 60 + date.getUTCMinutes();
+	return minute >= range.startMinute && minute < range.endMinute;
 }
 
 const subscribeToBrowserTimeZone = () => () => {};
@@ -641,25 +642,27 @@ function PricingPeriodHoverCard({
 				<div className="border-b border-border/70 px-4 py-3">
 					<div className="truncate text-xs font-semibold text-foreground">{label} pricing</div>
 				</div>
-				<dl className="space-y-3 px-4 py-3 text-[11px]">
-					<div className="grid grid-cols-[6.75rem_minmax(0,1fr)] items-start gap-3">
-						<dt className="text-muted-foreground">UTC</dt>
-						<dd className="space-y-1 font-medium tabular-nums text-foreground">
-							{ranges.map((range) => (
-								<span key={`${range.startMinute}-${range.endMinute}`} className="block">
-									{formatPricingTime(range.startMinute)}–{formatPricingTime(range.endMinute)}
-								</span>
-							))}
-						</dd>
-					</div>
+				<dl className="px-4 py-3 text-[11px]">
 					<div className="grid grid-cols-[6.75rem_minmax(0,1fr)] items-start gap-3">
 						<dt className="text-muted-foreground">Your time ({localTimeZoneLabel})</dt>
 						<dd className="space-y-1 font-medium tabular-nums text-foreground">
-							{ranges.map((range) => (
-								<span key={`${range.startMinute}-${range.endMinute}`} className="block">
-									{formatPricingRangeInTimeZone(range, userTimeZone, pricingTimeMs)}
-								</span>
-							))}
+							{ranges.map((range) => {
+								const isActiveRange = isCurrent && isPricingTimeInRange(pricingTimeMs, range);
+								return (
+									<span
+										key={`${range.startMinute}-${range.endMinute}`}
+										className="grid grid-cols-[0.75rem_auto] items-center gap-1"
+									>
+										{isActiveRange ? (
+											<ChevronLeft className="size-3 text-foreground/70" aria-hidden="true" />
+										) : (
+											<span aria-hidden="true" />
+										)}
+										<span>{formatPricingRangeInTimeZone(range, userTimeZone, pricingTimeMs)}</span>
+										{isActiveRange ? <span className="sr-only">Current time period</span> : null}
+									</span>
+								);
+							})}
 						</dd>
 					</div>
 				</dl>
