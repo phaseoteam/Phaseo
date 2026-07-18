@@ -465,11 +465,74 @@ function renderCompactTierSummary(
 	);
 }
 
-function formatPricingScheduleForDisplay(schedule: string): string {
-	return schedule
-		.replace(/(\d{2}:\d{2})-(\d{2}:\d{2})/g, "$1–$2")
-		.replace(/,\s*/g, " · ")
-		.replace(/\s+UTC$/, "");
+type PricingTimeRange = {
+	startMinute: number;
+	endMinute: number;
+};
+
+function parsePricingTime(value: string, fallback = 0): number {
+	const [hours, minutes] = value.split(":").map(Number);
+	if (
+		!Number.isInteger(hours) ||
+		!Number.isInteger(minutes) ||
+		hours < 0 ||
+		hours > 23 ||
+		minutes < 0 ||
+		minutes > 59
+	) return fallback;
+	return hours * 60 + minutes;
+}
+
+function formatPricingTime(minute: number): string {
+	const normalized = ((minute % 1_440) + 1_440) % 1_440;
+	return `${String(Math.floor(normalized / 60)).padStart(2, "0")}:${String(normalized % 60).padStart(2, "0")}`;
+}
+
+function mergePricingTimeRanges(ranges: PricingTimeRange[]): PricingTimeRange[] {
+	const sorted = [...ranges].sort(
+		(a, b) => a.startMinute - b.startMinute || a.endMinute - b.endMinute,
+	);
+	return sorted.reduce<PricingTimeRange[]>((merged, range) => {
+		const previous = merged.at(-1);
+		if (!previous || range.startMinute > previous.endMinute) {
+			merged.push({ ...range });
+			return merged;
+		}
+		previous.endMinute = Math.max(previous.endMinute, range.endMinute);
+		return merged;
+	}, []);
+}
+
+function parsePricingScheduleRanges(schedule: string): PricingTimeRange[] {
+	const ranges = Array.from(
+		schedule.matchAll(/(\d{2}:\d{2})[-–](\d{2}:\d{2})/g),
+	).flatMap((match) => {
+		const startMinute = parsePricingTime(match[1]!);
+		const endMinute = parsePricingTime(match[2]!);
+		if (startMinute === endMinute) return [];
+		if (startMinute < endMinute) return [{ startMinute, endMinute }];
+		return [
+			{ startMinute, endMinute: 1_440 },
+			{ startMinute: 0, endMinute },
+		];
+	});
+	return mergePricingTimeRanges(ranges);
+}
+
+function getComplementPricingRanges(ranges: PricingTimeRange[]): PricingTimeRange[] {
+	const merged = mergePricingTimeRanges(ranges);
+	const complement: PricingTimeRange[] = [];
+	let cursor = 0;
+	for (const range of merged) {
+		if (range.startMinute > cursor) {
+			complement.push({ startMinute: cursor, endMinute: range.startMinute });
+		}
+		cursor = Math.max(cursor, range.endMinute);
+	}
+	if (cursor < 1_440) {
+		complement.push({ startMinute: cursor, endMinute: 1_440 });
+	}
+	return complement;
 }
 
 const subscribeToBrowserTimeZone = () => () => {};
@@ -499,41 +562,27 @@ function formatTimeInZone(date: Date, timeZone: string): string {
 	}).format(date);
 }
 
-function formatPricingScheduleInTimeZone(
-	schedule: string,
+function formatPricingRangeInTimeZone(
+	range: PricingTimeRange,
 	timeZone: string,
 	pricingTimeMs: number,
 ): string {
-	const outsidePrefix = schedule.startsWith("Outside ") ? "Outside " : "";
 	const anchor = new Date(pricingTimeMs);
-	const ranges = Array.from(
-		schedule.matchAll(/(\d{2}):(\d{2})[-–](\d{2}):(\d{2})/g),
-	).map((match) => {
-		const startHour = Number(match[1]);
-		const startMinute = Number(match[2]);
-		const endHour = Number(match[3]);
-		const endMinute = Number(match[4]);
-		const start = new Date(Date.UTC(
-			anchor.getUTCFullYear(),
-			anchor.getUTCMonth(),
-			anchor.getUTCDate(),
-			startHour,
-			startMinute,
-		));
-		const crossesMidnight = endHour * 60 + endMinute <= startHour * 60 + startMinute;
-		const end = new Date(Date.UTC(
-			anchor.getUTCFullYear(),
-			anchor.getUTCMonth(),
-			anchor.getUTCDate() + (crossesMidnight ? 1 : 0),
-			endHour,
-			endMinute,
-		));
-		return `${formatTimeInZone(start, timeZone)}–${formatTimeInZone(end, timeZone)}`;
-	});
-
-	return ranges.length > 0
-		? `${outsidePrefix}${ranges.join(" · ")}`
-		: formatPricingScheduleForDisplay(schedule);
+	const start = new Date(Date.UTC(
+		anchor.getUTCFullYear(),
+		anchor.getUTCMonth(),
+		anchor.getUTCDate(),
+		0,
+		range.startMinute,
+	));
+	const end = new Date(Date.UTC(
+		anchor.getUTCFullYear(),
+		anchor.getUTCMonth(),
+		anchor.getUTCDate(),
+		0,
+		range.endMinute,
+	));
+	return `${formatTimeInZone(start, timeZone)}–${formatTimeInZone(end, timeZone)}`;
 }
 
 function formatTimeZoneShortName(timeZone: string, pricingTimeMs: number): string {
@@ -563,19 +612,12 @@ function PricingPeriodHoverCard({
 	pricingTimeMs: number;
 	userTimeZone: string;
 }) {
-	const scheduledDisplay = scheduledPeriods
-		.map(formatPricingScheduleForDisplay)
-		.join(" · ");
-	const schedule = scheduleLabel
-		? formatPricingScheduleForDisplay(scheduleLabel)
-		: scheduledDisplay
-			? `Outside ${scheduledDisplay}`
-			: "All other times";
-	const localSchedule = formatPricingScheduleInTimeZone(
-		schedule,
-		userTimeZone,
-		pricingTimeMs,
+	const scheduledRanges = mergePricingTimeRanges(
+		scheduledPeriods.flatMap(parsePricingScheduleRanges),
 	);
+	const ranges = scheduleLabel
+		? parsePricingScheduleRanges(scheduleLabel)
+		: getComplementPricingRanges(scheduledRanges);
 	const localTimeZoneLabel = formatTimeZoneShortName(userTimeZone, pricingTimeMs);
 
 	return (
@@ -600,13 +642,25 @@ function PricingPeriodHoverCard({
 					<div className="truncate text-xs font-semibold text-foreground">{label} pricing</div>
 				</div>
 				<dl className="space-y-3 px-4 py-3 text-[11px]">
-					<div className="grid grid-cols-[6.75rem_minmax(0,1fr)] gap-3">
+					<div className="grid grid-cols-[6.75rem_minmax(0,1fr)] items-start gap-3">
 						<dt className="text-muted-foreground">UTC</dt>
-						<dd className="font-medium tabular-nums text-foreground">{schedule}</dd>
+						<dd className="space-y-1 font-medium tabular-nums text-foreground">
+							{ranges.map((range) => (
+								<span key={`${range.startMinute}-${range.endMinute}`} className="block">
+									{formatPricingTime(range.startMinute)}–{formatPricingTime(range.endMinute)}
+								</span>
+							))}
+						</dd>
 					</div>
-					<div className="grid grid-cols-[6.75rem_minmax(0,1fr)] gap-3">
+					<div className="grid grid-cols-[6.75rem_minmax(0,1fr)] items-start gap-3">
 						<dt className="text-muted-foreground">Your time ({localTimeZoneLabel})</dt>
-						<dd className="font-medium tabular-nums text-foreground">{localSchedule}</dd>
+						<dd className="space-y-1 font-medium tabular-nums text-foreground">
+							{ranges.map((range) => (
+								<span key={`${range.startMinute}-${range.endMinute}`} className="block">
+									{formatPricingRangeInTimeZone(range, userTimeZone, pricingTimeMs)}
+								</span>
+							))}
+						</dd>
 					</div>
 				</dl>
 			</HoverCardContent>
