@@ -525,6 +525,27 @@
     ]
   },
   {
+    "api_model_id": "thinking-machines/inkling",
+    "provider_api_model_id": "together:thinking-machines/inkling",
+    "provider_model_slug": "thinkingmachines/Inkling",
+    "internal_model_id": "thinking-machines/inkling",
+    "is_active_gateway": true,
+    "quantization_scheme": "NVFP4",
+    "input_modalities": "text,image,audio",
+    "output_modalities": "text",
+    "context_length": 524288,
+    "max_output_tokens": null,
+    "effective_from": "2026-07-15T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "z-ai/glm-5",
     "provider_api_model_id": "together:z-ai/glm-5",
     "provider_model_slug": "zai-org/GLM-5",
