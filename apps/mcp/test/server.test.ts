@@ -325,7 +325,9 @@ describe("Phaseo MCP OAuth discovery", () => {
 
 	it("publishes only the scopes required by the enabled MCP tools", async () => {
 		const response = await worker.fetch(
-			new Request("https://mcp.phaseo.app/.well-known/oauth-protected-resource/mcp"),
+			new Request("https://mcp.phaseo.app/.well-known/oauth-protected-resource/mcp", {
+				headers: { Origin: "http://localhost:6284" },
+			}),
 			env,
 			{} as ExecutionContext,
 		);
@@ -350,6 +352,42 @@ describe("Phaseo MCP OAuth discovery", () => {
 			"oauth_clients:read",
 		]);
 		expect(response.headers.get("x-content-type-options")).toBe("nosniff");
+		expect(response.headers.get("access-control-allow-origin")).toBe("*");
+		expect(response.headers.get("access-control-expose-headers")).toContain("WWW-Authenticate");
+	});
+
+	it("supports browser OAuth metadata discovery and preflight requests", async () => {
+		const preflight = await worker.fetch(
+			new Request("https://mcp.phaseo.app/.well-known/oauth-protected-resource/mcp", {
+				method: "OPTIONS",
+				headers: {
+					Origin: "http://localhost:6284",
+					"Access-Control-Request-Method": "GET",
+					"Access-Control-Request-Headers": "authorization",
+				},
+			}),
+			env,
+			{} as ExecutionContext,
+		);
+
+		expect(preflight.status).toBe(204);
+		expect(preflight.headers.get("access-control-allow-origin")).toBe("*");
+		expect(preflight.headers.get("access-control-allow-methods")).toContain("GET");
+		expect(preflight.headers.get("access-control-allow-headers")).toContain("Authorization");
+
+		const fallback = await worker.fetch(
+			new Request("https://mcp.phaseo.app/.well-known/oauth-protected-resource", {
+				headers: { Origin: "http://localhost:6284" },
+			}),
+			env,
+			{} as ExecutionContext,
+		);
+		const metadata = await fallback.json<{ resource: string; authorization_servers: string[] }>();
+
+		expect(fallback.status).toBe(200);
+		expect(fallback.headers.get("access-control-allow-origin")).toBe("*");
+		expect(metadata.resource).toBe("https://mcp.phaseo.app/mcp");
+		expect(metadata.authorization_servers).toEqual(["https://api.phaseo.app/oauth"]);
 	});
 
 	it("publishes write and delete scopes only when their tool classes are enabled", async () => {

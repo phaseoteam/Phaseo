@@ -23,6 +23,14 @@ import {
 
 const MAX_RESULTS = 20;
 const MAX_MCP_REQUEST_BODY_BYTES = 1024 * 1024;
+const MCP_CORS_HEADERS = {
+	"Access-Control-Allow-Origin": "*",
+	"Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+	"Access-Control-Allow-Headers":
+		"Authorization, Content-Type, Accept, MCP-Protocol-Version, MCP-Session-Id, Last-Event-ID",
+	"Access-Control-Expose-Headers": "WWW-Authenticate, MCP-Session-Id, MCP-Protocol-Version",
+	"Access-Control-Max-Age": "86400",
+} as const;
 
 async function boundedMcpRequest(request: Request): Promise<Request | Response> {
 	const contentLength = Number(request.headers.get("content-length"));
@@ -689,14 +697,19 @@ function secureResponse(response: Response): Response {
 	const headers = new Headers(response.headers);
 	headers.set("X-Content-Type-Options", "nosniff");
 	headers.set("Referrer-Policy", "no-referrer");
+	for (const [name, value] of Object.entries(MCP_CORS_HEADERS)) headers.set(name, value);
 	return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
 export default {
 	async fetch(request: Request, env: PhaseoEnv, ctx: ExecutionContext): Promise<Response> {
 		const url = new URL(request.url);
+		if (request.method === "OPTIONS") return secureResponse(new Response(null, { status: 204 }));
 		if (url.pathname === "/health") return secureResponse(Response.json({ status: "ok", service: "phaseo-mcp" }));
-		if (url.pathname === "/.well-known/oauth-protected-resource/mcp") return secureResponse(resourceMetadata(request, env));
+		if (
+			url.pathname === "/.well-known/oauth-protected-resource/mcp" ||
+			url.pathname === "/.well-known/oauth-protected-resource"
+		) return secureResponse(resourceMetadata(request, env));
 		if (url.pathname !== "/mcp") return secureResponse(new Response("Not found", { status: 404 }));
 		if (url.searchParams.has("access_token")) return secureResponse(new Response("Bearer tokens must use the Authorization header.", { status: 400 }));
 		const boundedRequest = await boundedMcpRequest(request);
