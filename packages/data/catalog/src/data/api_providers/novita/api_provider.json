@@ -3,6 +3,7 @@
   "api_provider_name": "NovitaAI",
   "description": null,
   "link": "https://novita.ai/docs/guides/introduction",
+  "pricing_source_url": "https://novita.ai/pricing",
   "country_code": "US",
   "status": "Active",
   "colour": "#23D57C",

@@ -1,0 +1,354 @@
+{
+  "surface": "report",
+  "manifest": {
+    "version": 1,
+    "surface": "report",
+    "title": "Active-model pricing audit",
+    "description": "Repository-wide review of active model pricing coverage, rule integrity, provenance, and authoritative provider spot checks.",
+    "generatedAt": "2026-07-17T23:30:00Z",
+    "cards": [
+      {
+        "id": "route_coverage",
+        "description": "Production-active provider/capability routes with a current price after legitimate key resolution.",
+        "dataset": "summary",
+        "sourceId": "catalog_audit",
+        "metrics": [
+          {
+            "label": "Resolved route coverage",
+            "field": "route_pricing_coverage_resolved",
+            "format": "percent"
+          },
+          {
+            "label": "Exact-key coverage",
+            "field": "route_pricing_coverage_exact",
+            "format": "percent"
+          }
+        ]
+      },
+      {
+        "id": "active_models_priced",
+        "description": "Catalog-active models with at least one current provider price; non-routable research and local models remain in the denominator.",
+        "dataset": "summary",
+        "sourceId": "catalog_audit",
+        "metrics": [
+          {
+            "label": "Catalog-active models priced",
+            "field": "active_models_with_current_pricing",
+            "format": "number"
+          },
+          {
+            "label": "Of catalog-active models",
+            "field": "catalog_active_models",
+            "format": "number"
+          }
+        ]
+      },
+      {
+        "id": "active_conflicts",
+        "description": "Same-priority, same-condition current rule pairs with different prices on catalog-active models.",
+        "dataset": "summary",
+        "sourceId": "catalog_audit",
+        "metrics": [
+          {
+            "label": "Active conflicting rule pairs",
+            "field": "active_model_overlapping_conflicting_rule_pairs",
+            "format": "number"
+          }
+        ]
+      },
+      {
+        "id": "source_coverage",
+        "description": "Providers with current pricing entries whose provider metadata includes an authoritative pricing URL.",
+        "dataset": "summary",
+        "sourceId": "catalog_audit",
+        "metrics": [
+          {
+            "label": "Provider source coverage",
+            "field": "provider_source_coverage",
+            "format": "percent"
+          },
+          {
+            "label": "Providers with URLs",
+            "field": "current_pricing_providers_with_source_url",
+            "format": "number"
+          }
+        ]
+      }
+    ],
+    "charts": [
+      {
+        "id": "source_coverage_chart",
+        "title": "Pricing source URL coverage",
+        "subtitle": "Providers with current pricing entries.",
+        "type": "bar",
+        "dataset": "source_coverage",
+        "sourceId": "catalog_audit",
+        "encodings": {
+          "x": {
+            "field": "source_status",
+            "type": "nominal",
+            "label": "Source metadata"
+          },
+          "y": {
+            "field": "provider_count",
+            "type": "quantitative",
+            "label": "Providers"
+          }
+        },
+        "layout": "full"
+      }
+    ],
+    "tables": [],
+    "sources": [
+      {
+        "id": "catalog_audit",
+        "label": "Phaseo catalog pricing audit",
+        "path": "apps/web/scripts/importer/reports/pricing-audit-2026-07-18/report_datasets.sql"
+      }
+    ],
+    "blocks": [
+      {
+        "id": "technical_summary",
+        "type": "markdown",
+        "layout": "full",
+        "sourceId": "catalog_audit",
+        "body": "## Assessment: ready with a provider-review caveat\n\n**945 of 956 active routes (98.8%)** resolve to a current price after alias handling; 11 Ambient/Avian routes remain for provider confirmation. No conflicting rule pairs remain on active models, while **22 of 63 pricing providers** expose a source URL. Computer Use Preview remains scheduled to retire on 2026-07-23. Snapshot: **17 July 2026 23:30 UTC**. Exact routes, rule evidence, official spot checks, methods, and limitations are in the executed notebook and supporting JSON."
+      },
+      {
+        "id": "source_coverage_chart_block",
+        "type": "chart",
+        "chartId": "source_coverage_chart",
+        "layout": "full"
+      }
+    ]
+  },
+  "snapshot": {
+    "version": 1,
+    "generatedAt": "2026-07-17T23:30:00Z",
+    "status": "ready",
+    "datasets": {
+      "summary": [
+        {
+          "audit_at": "2026-07-17T23:30:00Z",
+          "model_files": 1203,
+          "catalog_active_models": 703,
+          "available_models": 701,
+          "limited_access_models": 2,
+          "active_models_with_current_pricing": 417,
+          "active_model_pricing_coverage_rate": 0.5931721194879089,
+          "active_models_with_gateway_route": 333,
+          "active_gateway_models_with_current_pricing": 333,
+          "active_gateway_model_pricing_coverage_rate": 1.0,
+          "provider_model_routes": 956,
+          "provider_model_routes_status_active": 919,
+          "provider_model_routes_status_deranked": 37,
+          "priced_provider_model_routes": 934,
+          "route_pricing_gap_count": 22,
+          "route_pricing_gap_count_after_capability_aliases": 11,
+          "alternate_pricing_key_gap_count": 11,
+          "route_pricing_coverage_rate": 0.9769874476987448,
+          "route_pricing_coverage_rate_after_capability_aliases": 0.9884937238493724,
+          "pricing_files": 1353,
+          "current_pricing_files": 1277,
+          "pricing_rules": 4863,
+          "current_pricing_rules": 4372,
+          "current_free_rules": 33,
+          "pricing_providers": 63,
+          "current_pricing_providers": 63,
+          "current_pricing_providers_with_source_url": 22,
+          "current_pricing_provider_source_coverage_rate": 0.3492063492063492,
+          "duplicate_pricing_keys": 0,
+          "pricing_files_without_current_rules": 76,
+          "overlapping_conflicting_rule_pairs": 2,
+          "active_model_overlapping_conflicting_rule_pairs": 0,
+          "cached_read_more_expensive_than_input": 0,
+          "batch_more_expensive_than_standard": 0,
+          "current_non_usd_rules": 20,
+          "current_missing_currency_rules": 0,
+          "current_pricing_model_refs_missing_from_catalog": 49,
+          "active_route_model_refs_missing_from_catalog": 0,
+          "route_pricing_coverage_exact": 0.9769874476987448,
+          "route_pricing_coverage_resolved": 0.9884937238493724,
+          "active_model_pricing_coverage": 0.5931721194879089,
+          "provider_source_coverage": 0.3492063492063492
+        }
+      ],
+      "route_resolution": [
+        {
+          "resolution_status": "Exact key",
+          "route_count": 934
+        },
+        {
+          "resolution_status": "Alternate key",
+          "route_count": 11
+        },
+        {
+          "resolution_status": "Unresolved",
+          "route_count": 11
+        }
+      ],
+      "unresolved_by_provider": [
+        {
+          "provider_id": "avian",
+          "missing_route_count": 8
+        },
+        {
+          "provider_id": "ambient",
+          "missing_route_count": 3
+        }
+      ],
+      "unresolved_gaps": [
+        {
+          "provider_id": "ambient",
+          "model_id": "moonshotai/kimi-k2.7-code",
+          "capability_id": "text.generate",
+          "gap_type": "missing_file"
+        },
+        {
+          "provider_id": "ambient",
+          "model_id": "z-ai/glm-5.2",
+          "capability_id": "text.generate",
+          "gap_type": "missing_file"
+        },
+        {
+          "provider_id": "ambient",
+          "model_id": "z-ai/glm-5.2",
+          "capability_id": "text.generate",
+          "gap_type": "missing_file"
+        },
+        {
+          "provider_id": "avian",
+          "model_id": "deepseek/deepseek-v3.2",
+          "capability_id": "text.generate",
+          "gap_type": "missing_file"
+        },
+        {
+          "provider_id": "avian",
+          "model_id": "deepseek/deepseek-v4-flash",
+          "capability_id": "text.generate",
+          "gap_type": "missing_file"
+        },
+        {
+          "provider_id": "avian",
+          "model_id": "deepseek/deepseek-v4-pro",
+          "capability_id": "text.generate",
+          "gap_type": "missing_file"
+        },
+        {
+          "provider_id": "avian",
+          "model_id": "minimax/minimax-m2.5",
+          "capability_id": "text.generate",
+          "gap_type": "missing_file"
+        },
+        {
+          "provider_id": "avian",
+          "model_id": "moonshotai/kimi-k2.5",
+          "capability_id": "text.generate",
+          "gap_type": "missing_file"
+        },
+        {
+          "provider_id": "avian",
+          "model_id": "moonshotai/kimi-k2.6",
+          "capability_id": "text.generate",
+          "gap_type": "missing_file"
+        },
+        {
+          "provider_id": "avian",
+          "model_id": "z-ai/glm-5",
+          "capability_id": "text.generate",
+          "gap_type": "missing_file"
+        },
+        {
+          "provider_id": "avian",
+          "model_id": "z-ai/glm-5.1",
+          "capability_id": "text.generate",
+          "gap_type": "missing_file"
+        }
+      ],
+      "active_conflicts": [],
+      "external_checks": [
+        {
+          "provider": "OpenAI",
+          "model": "openai/gpt-5.4",
+          "catalog_result": "Match",
+          "catalog_values": "Standard short-context $2.50 input, $0.25 cached input, $15 output per 1M tokens; batch/flex $1.25/$0.13/$7.50",
+          "official_values": "Standard short-context $2.50 input, $0.25 cached input, $15 output per 1M tokens; batch/flex $1.25/$0.13/$7.50",
+          "source_url": "https://developers.openai.com/api/docs/pricing"
+        },
+        {
+          "provider": "Google AI Studio",
+          "model": "google/gemini-2.5-flash-image",
+          "catalog_result": "Rates match, overlapping representation",
+          "catalog_values": "$0.30/M text and image input; image output represented both as $30/M image tokens and $0.039 per 1,290 tokens",
+          "official_values": "$0.30/M input and $0.039 per image (1,290 tokens; $30/M image tokens)",
+          "source_url": "https://ai.google.dev/gemini-api/docs/pricing"
+        },
+        {
+          "provider": "Mistral",
+          "model": "mistral/mistral-small-4",
+          "catalog_result": "Match",
+          "catalog_values": "$0.15 input and $0.60 output per 1M tokens",
+          "official_values": "$0.15 input and $0.60 output per 1M tokens",
+          "source_url": "https://docs.mistral.ai/models/model-selection-guide?models=mistral-small-4-0-26-03"
+        },
+        {
+          "provider": "DeepSeek",
+          "model": "deepseek/deepseek-v4-flash",
+          "catalog_result": "Match",
+          "catalog_values": "$0.0028 cache hit, $0.14 cache miss input, $0.28 output per 1M tokens",
+          "official_values": "$0.0028 cache hit, $0.14 cache miss input, $0.28 output per 1M tokens",
+          "source_url": "https://api-docs.deepseek.com/quick_start/pricing"
+        },
+        {
+          "provider": "Novita",
+          "model": "qwen/qwen3-next-80b-a3b-thinking",
+          "catalog_result": "Conflicting current rules",
+          "catalog_values": "Both $0.98/$3.95 and $0.15/$1.50 input/output rules are current at equal priority and conditions",
+          "official_values": "$0.15 input and $1.50 output per 1M tokens",
+          "source_url": "https://novita.ai/pricing"
+        },
+        {
+          "provider": "Venice",
+          "model": "minimax/minimax-m2.7",
+          "catalog_result": "Correct rates plus conflicting near-duplicates",
+          "catalog_values": "Both $0.375/$0.075 and $0.38/$0.07 input/cache-read rules are current; output is $1.50",
+          "official_values": "$0.38 input, $1.50 output, $0.07 cache read per 1M tokens",
+          "source_url": "https://docs.venice.ai/overview/pricing"
+        },
+        {
+          "provider": "Venice",
+          "model": "z-ai/glm-4.7-flash",
+          "catalog_result": "Conflicting output rules",
+          "catalog_values": "$0.13 input with both $0.55 and $0.50 output rules current at equal priority and conditions",
+          "official_values": "$0.13 input and $0.50 output per 1M tokens",
+          "source_url": "https://docs.venice.ai/overview/pricing"
+        },
+        {
+          "provider": "Anthropic",
+          "model": "anthropic/claude-3-opus",
+          "catalog_result": "Retired-model conflict outside active scope",
+          "catalog_values": "Batch input $7.50 with competing batch output rules of $2.00 and $37.50 per 1M tokens",
+          "official_values": "Historical standard $15 input/$75 output with a 50% batch discount, implying $7.50/$37.50",
+          "source_url": "https://docs.anthropic.com/en/docs/about-claude/pricing"
+        }
+      ],
+      "source_coverage": [
+        {
+          "source_status": "URL present",
+          "provider_count": 22
+        },
+        {
+          "source_status": "URL missing",
+          "provider_count": 41
+        }
+      ]
+    }
+  },
+  "sources": [
+    {
+      "id": "catalog_audit",
+      "label": "Phaseo catalog pricing audit",
+      "path": "apps/web/scripts/importer/reports/pricing-audit-2026-07-18/report_datasets.sql"
+    }
+  ]
+}

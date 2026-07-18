@@ -1,0 +1,66 @@
+[
+  {
+    "provider": "OpenAI",
+    "model": "openai/gpt-5.4",
+    "catalog_result": "Match",
+    "catalog_values": "Standard short-context $2.50 input, $0.25 cached input, $15 output per 1M tokens; batch/flex $1.25/$0.13/$7.50",
+    "official_values": "Standard short-context $2.50 input, $0.25 cached input, $15 output per 1M tokens; batch/flex $1.25/$0.13/$7.50",
+    "source_url": "https://developers.openai.com/api/docs/pricing"
+  },
+  {
+    "provider": "Google AI Studio",
+    "model": "google/gemini-2.5-flash-image",
+    "catalog_result": "Rates match, overlapping representation",
+    "catalog_values": "$0.30/M text and image input; image output represented both as $30/M image tokens and $0.039 per 1,290 tokens",
+    "official_values": "$0.30/M input and $0.039 per image (1,290 tokens; $30/M image tokens)",
+    "source_url": "https://ai.google.dev/gemini-api/docs/pricing"
+  },
+  {
+    "provider": "Mistral",
+    "model": "mistral/mistral-small-4",
+    "catalog_result": "Match",
+    "catalog_values": "$0.15 input and $0.60 output per 1M tokens",
+    "official_values": "$0.15 input and $0.60 output per 1M tokens",
+    "source_url": "https://docs.mistral.ai/models/model-selection-guide?models=mistral-small-4-0-26-03"
+  },
+  {
+    "provider": "DeepSeek",
+    "model": "deepseek/deepseek-v4-flash",
+    "catalog_result": "Match",
+    "catalog_values": "$0.0028 cache hit, $0.14 cache miss input, $0.28 output per 1M tokens",
+    "official_values": "$0.0028 cache hit, $0.14 cache miss input, $0.28 output per 1M tokens",
+    "source_url": "https://api-docs.deepseek.com/quick_start/pricing"
+  },
+  {
+    "provider": "Novita",
+    "model": "qwen/qwen3-next-80b-a3b-thinking",
+    "catalog_result": "Conflicting current rules",
+    "catalog_values": "Both $0.98/$3.95 and $0.15/$1.50 input/output rules are current at equal priority and conditions",
+    "official_values": "$0.15 input and $1.50 output per 1M tokens",
+    "source_url": "https://novita.ai/pricing"
+  },
+  {
+    "provider": "Venice",
+    "model": "minimax/minimax-m2.7",
+    "catalog_result": "Correct rates plus conflicting near-duplicates",
+    "catalog_values": "Both $0.375/$0.075 and $0.38/$0.07 input/cache-read rules are current; output is $1.50",
+    "official_values": "$0.38 input, $1.50 output, $0.07 cache read per 1M tokens",
+    "source_url": "https://docs.venice.ai/overview/pricing"
+  },
+  {
+    "provider": "Venice",
+    "model": "z-ai/glm-4.7-flash",
+    "catalog_result": "Conflicting output rules",
+    "catalog_values": "$0.13 input with both $0.55 and $0.50 output rules current at equal priority and conditions",
+    "official_values": "$0.13 input and $0.50 output per 1M tokens",
+    "source_url": "https://docs.venice.ai/overview/pricing"
+  },
+  {
+    "provider": "Anthropic",
+    "model": "anthropic/claude-3-opus",
+    "catalog_result": "Retired-model conflict outside active scope",
+    "catalog_values": "Batch input $7.50 with competing batch output rules of $2.00 and $37.50 per 1M tokens",
+    "official_values": "Historical standard $15 input/$75 output with a 50% batch discount, implying $7.50/$37.50",
+    "source_url": "https://docs.anthropic.com/en/docs/about-claude/pricing"
+  }
+]

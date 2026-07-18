@@ -12,10 +12,11 @@
       "price_per_unit": 0.55,
       "currency": "USD",
       "pricing_plan": "batch",
-      "note": null,
+      "note": "Superseded OpenAI Computer Use Preview batch rate; retained for historical reference.",
       "match": [],
       "priority": 100,
-      "effective_from": "2025-03-11T00:00:00Z"
+      "effective_from": "2025-03-11T00:00:00Z",
+      "effective_to": "2026-07-17T00:00:00Z"
     },
     {
       "meter": "output_text_tokens",
@@ -24,10 +25,35 @@
       "price_per_unit": 2.2,
       "currency": "USD",
       "pricing_plan": "batch",
-      "note": null,
+      "note": "Superseded OpenAI Computer Use Preview batch rate; retained for historical reference.",
       "match": [],
       "priority": 100,
-      "effective_from": "2025-03-11T00:00:00Z"
+      "effective_from": "2025-03-11T00:00:00Z",
+      "effective_to": "2026-07-17T00:00:00Z"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.5,
+      "currency": "USD",
+      "pricing_plan": "batch",
+      "note": "Current OpenAI Computer Use Preview batch rate verified against the OpenAI pricing page on 2026-07-18.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-17T00:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 6,
+      "currency": "USD",
+      "pricing_plan": "batch",
+      "note": "Current OpenAI Computer Use Preview batch rate verified against the OpenAI pricing page on 2026-07-18.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-17T00:00:00Z"
     }
   ]
 }

@@ -3,6 +3,7 @@
   "api_provider_name": "ElevenLabs",
   "description": null,
   "link": "https://elevenlabs.io/docs/",
+  "pricing_source_url": "https://elevenlabs.io/pricing/api",
   "country_code": "GB",
   "status": "NotReady",
   "colour": "#6E6E6E",

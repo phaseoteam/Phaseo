@@ -3,6 +3,7 @@
   "api_provider_name": "Baseten",
   "description": null,
   "link": "https://docs.baseten.co/",
+  "pricing_source_url": "https://www.baseten.co/pricing",
   "country_code": "US",
   "status": "Active",
   "colour": "#14B8A6",
