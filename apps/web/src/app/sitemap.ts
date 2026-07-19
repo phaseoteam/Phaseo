@@ -9,6 +9,7 @@ import {
 	fetchFrontendBenchmarks,
 	fetchFrontendCountrySummaries,
 	fetchFrontendMarketplacePresets,
+	fetchFrontendModels,
 	fetchFrontendOrganisations,
 	fetchFrontendSubscriptionPlans,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
@@ -109,7 +110,11 @@ const COUNTRY_SUFFIXES: RouteSuffix[] = [
 ];
 
 const MARKETPLACE_PRESET_SUFFIXES: RouteSuffix[] = [
-    { suffix: "", changeFrequency: "weekly", priority: 0.55 },
+	{ suffix: "", changeFrequency: "weekly", priority: 0.55 },
+];
+
+const MODEL_SUFFIXES: RouteSuffix[] = [
+	{ suffix: "", changeFrequency: "weekly", priority: 0.85 },
 ];
 
 function buildRouteUrl(route: string): string {
@@ -158,6 +163,32 @@ function normalizeSingleSegmentSlugs(list?: string[], label?: string): string[] 
 				label ?? "single segment"
 			} slug(s)`,
 		);
+	}
+
+	return [...normalized].sort();
+}
+
+function normalizeModelIds(list?: string[]): string[] {
+	const normalized = new Set<string>();
+	let dropped = 0;
+
+	for (const modelId of list ?? []) {
+		const segments = String(modelId ?? "")
+			.trim()
+			.replace(/^\/+|\/+$/g, "")
+			.split("/")
+			.filter(Boolean);
+
+		if (segments.length !== 2) {
+			dropped += 1;
+			continue;
+		}
+
+		normalized.add(segments.join("/"));
+	}
+
+	if (dropped > 0) {
+		console.warn(`[sitemap] dropped ${dropped} malformed model id(s)`);
 	}
 
 	return [...normalized].sort();
@@ -258,6 +289,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		plansResult,
 		countriesResult,
 		marketplacePresetsResult,
+		modelsResult,
 		helpCategoryResult,
 		helpArticleResult,
 	] = await Promise.allSettled([
@@ -267,6 +299,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		fetchFrontendSubscriptionPlans(),
 		fetchFrontendCountrySummaries(),
 		fetchFrontendMarketplacePresets(),
+		fetchFrontendModels(),
 		getHelpCategoryParams(),
 		getHelpArticleParams(),
 	]);
@@ -323,7 +356,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		).map((preset) => String(preset.id ?? "").trim()),
 		"marketplace preset",
 	);
+	const modelsForSitemap = fromSettled(modelsResult, "models for sitemap", []);
+	const modelIds = normalizeModelIds(
+		modelsForSitemap.map((model) => model.model_id),
+	);
+	const modelEntries = modelIds.map((slug) => {
+		const source = modelsForSitemap.find((model) => model.model_id === slug);
+		return {
+			slug,
+			lastModified: resolveLastModified(source?.updated_at),
+		};
+	});
 	const dynamicItems = [
+		...applySuffixesWithEntries("/models", modelEntries, MODEL_SUFFIXES),
 		...applySuffixesWithEntries(
 			"/api-providers",
 			providerEntries,
