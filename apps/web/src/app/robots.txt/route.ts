@@ -28,6 +28,7 @@ const ROBOTS_BODY = [
 	...buildRobotBlock("ChatGPT-User"),
 	...buildRobotBlock("GPTBot"),
 	`Sitemap: ${SITE_URL}/sitemap.xml`,
+	`Sitemap: ${SITE_URL}/docs/sitemap.xml`,
 	`Host: ${SITE_URL}`,
 	"",
 ].join("\n");
