@@ -55,7 +55,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 141
+      "rank": 145
     },
     {
       "benchmark_id": "swe-bench",
@@ -191,7 +191,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-5/",
-      "rank": 141
+      "rank": 151
     },
     {
       "benchmark_id": "if-eval",
@@ -255,7 +255,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-5/",
-      "rank": 64
+      "rank": 65
     },
     {
       "benchmark_id": "multichallenge-(o3-mini-grader)",

@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://z.ai/blog/glm-4.5",
-      "rank": 47
+      "rank": 51
     },
     {
       "benchmark_id": "gpqa",
@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://z.ai/blog/glm-4.5",
-      "rank": 105
+      "rank": 113
     },
     {
       "benchmark_id": "livecodebench",

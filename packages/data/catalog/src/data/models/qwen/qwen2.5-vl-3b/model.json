@@ -118,7 +118,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen2.5-vl-32b (score=0.4914; benches=28)",
       "source_link": "https://github.com/QwenLM/Qwen2.5-VL",
-      "rank": 36
+      "rank": 38
     },
     {
       "benchmark_id": "mathvista-mini",
@@ -174,7 +174,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen2.5-vl-32b (score=0.4914; benches=28)",
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-32B-Instruct",
-      "rank": 90
+      "rank": 92
     },
     {
       "benchmark_id": "mmstar",

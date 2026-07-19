@@ -129,7 +129,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort, No Tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 91
+      "rank": 95
     },
     {
       "benchmark_id": "graphwalks-bfs-lt-128k",
@@ -161,7 +161,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort, No Tools",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 132
+      "rank": 142
     },
     {
       "benchmark_id": "longfact-concepts-hallucination-rate",
@@ -193,7 +193,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 49
+      "rank": 50
     },
     {
       "benchmark_id": "multi-challenge",

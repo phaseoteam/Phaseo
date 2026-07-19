@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": "Search agent with commercial API + webpage filter + 128K context",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
-      "rank": 45
+      "rank": 49
     },
     {
       "benchmark_id": "browsecomp-zh",
@@ -86,7 +86,7 @@
       "is_self_reported": true,
       "other_info": "Thinking mode only, text-only subset",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
-      "rank": 98
+      "rank": 106
     },
     {
       "benchmark_id": "livecodebench",

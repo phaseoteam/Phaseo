@@ -71,7 +71,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-2.5-flash-lite",
       "source_link": "https://deepmind.google/models/gemini/flash-lite/",
-      "rank": 154
+      "rank": 164
     },
     {
       "benchmark_id": "livecodebench",

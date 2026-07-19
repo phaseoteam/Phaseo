@@ -49,7 +49,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1; DeepSeek-V4-Flash Max",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash",
-      "rank": 21
+      "rank": 24
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -57,7 +57,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1; DeepSeek-V4-Flash Max",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash",
-      "rank": 58
+      "rank": 66
     },
     {
       "benchmark_id": "terminal-bench-2.0",
@@ -105,7 +105,7 @@
       "is_self_reported": true,
       "other_info": "Elo; DeepSeek-V4-Flash Max",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash",
-      "rank": 19
+      "rank": 22
     },
     {
       "benchmark_id": "scale-mcp-atlas",
@@ -113,7 +113,7 @@
       "is_self_reported": true,
       "other_info": "MCPAtlas; Pass@1; DeepSeek-V4-Flash Max",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash",
-      "rank": 10
+      "rank": 12
     },
     {
       "benchmark_id": "toolathlon",
@@ -121,7 +121,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1; DeepSeek-V4-Flash Max",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash",
-      "rank": 7
+      "rank": 10
     },
     {
       "benchmark_id": "livebench",

@@ -85,7 +85,7 @@
       "is_self_reported": true,
       "other_info": "MCP-Atlas public set; Gemini 2.5 Pro judge",
       "source_link": "https://www.alibabacloud.com/blog/qwen3-7-the-agent-frontier_603154",
-      "rank": 3
+      "rank": 5
     },
     {
       "benchmark_id": "skillsbench",
@@ -117,7 +117,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.alibabacloud.com/blog/qwen3-7-the-agent-frontier_603154",
-      "rank": 12
+      "rank": 15
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -125,7 +125,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.alibabacloud.com/blog/qwen3-7-the-agent-frontier_603154",
-      "rank": 41
+      "rank": 49
     },
     {
       "benchmark_id": "hmmt-feb-2026",

@@ -71,7 +71,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-3-pro-preview",
       "source_link": "https://blog.google/products/gemini/gemini-3",
-      "rank": 28
+      "rank": 34
     },
     {
       "benchmark_id": "livecodebench-pro",
@@ -103,7 +103,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-3-pro-preview",
       "source_link": "https://blog.google/products/gemini/gemini-3",
-      "rank": 8
+      "rank": 9
     },
     {
       "benchmark_id": "mrcr-v2-(8-needle)",

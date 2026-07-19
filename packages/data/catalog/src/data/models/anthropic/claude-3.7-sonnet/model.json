@@ -185,7 +185,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-3-7-sonnet",
-      "rank": 34
+      "rank": 37
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -193,7 +193,7 @@
       "is_self_reported": true,
       "other_info": "Thinking",
       "source_link": null,
-      "rank": 69
+      "rank": 72
     },
     {
       "benchmark_id": "lisanbench",

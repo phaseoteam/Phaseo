@@ -6990,6 +6990,7 @@ components:
       enum:
         - 2-bench-retail
         - 2-bench-telecom
+        - aa-briefcase
         - aa-index
         - aa-intelligence-index-v4
         - aa-lcr
@@ -7044,6 +7045,7 @@ components:
         - automationbench
         - babe
         - babyvision
+        - babyvision-python
         - balrog-ai
         - bbh
         - bcflv4
@@ -7088,6 +7090,7 @@ components:
         - charxiv-r
         - charxiv-reasoning
         - charxiv-rq
+        - charxiv-rq-python
         - chest-imagenome-anatomy-iou
         - chexpert-cxr-top5-macro-f1
         - chinese-simpleqa
@@ -7128,6 +7131,7 @@ components:
         - cybersecurity-ctfs
         - da-2k
         - dailyomni
+        - deck-bench
         - deep-planning
         - deepconsult
         - deepplanning-v1.1-avg-acc
@@ -7191,6 +7195,7 @@ components:
         - frontiermath
         - frontiersci-olympiad
         - frontiersci-research
+        - frontierswe
         - fsc-147-down
         - fullstackbench-en
         - fullstackbench-zh
@@ -7242,6 +7247,7 @@ components:
         - humaneval+
         - humanevalfim-average
         - humanitys-last-exam
+        - humanitys-last-exam-tools
         - hypersim
         - if
         - if-bench
@@ -7267,6 +7273,7 @@ components:
         - ivebench-overall-vs-kling-o1
         - ivebench-overall-vs-runway-aleph
         - jobbench
+        - kimi-code-bench-2
         - korbench
         - lbpp-(v2)
         - legal-agent-benchmark
@@ -7309,6 +7316,7 @@ components:
         - mathkangaroo
         - mathverse-mini
         - mathvision
+        - mathvision-python
         - mathvista
         - mathvista-mini
         - maxife
@@ -7336,6 +7344,7 @@ components:
         - misguided-attention
         - mle-bench
         - mle-bench-lite
+        - mls-bench-lite
         - mlvu
         - mlvu-m
         - mm-browsecomp
@@ -7370,6 +7379,7 @@ components:
         - mmmu-(val)
         - mmmu-(validation)
         - mmmu-pro
+        - mmmu-pro-python
         - mmmuval
         - mmsearch
         - mmsearch-plus
@@ -7428,6 +7438,7 @@ components:
         - olympiadbench
         - omnibench
         - omnibench-music
+        - omnidocbench
         - omnidocbench-1-5-down
         - omnidocbench-1.5
         - omnigaia
@@ -7447,6 +7458,7 @@ components:
         - ovobench
         - paperbench
         - pathmcqa-accuracy
+        - perceptionbench
         - perceptiontest
         - phibench
         - phybench
@@ -7461,7 +7473,9 @@ components:
         - polymath-en
         - pope
         - popqa
+        - posttrain-bench
         - procbench
+        - program-bench
         - protocolqa
         - qasper
         - qmsum
@@ -7502,6 +7516,7 @@ components:
         - social-iqa
         - solo-bench
         - spider
+        - spreadsheetbench-2
         - spreadsheetbench-verified
         - squality
         - summscreenfd
@@ -7516,6 +7531,7 @@ components:
         - swe-bench-pro
         - swe-evo
         - swe-lancer
+        - swe-marathon
         - swe-perf
         - swe-review
         - swt-bench
@@ -7615,6 +7631,7 @@ components:
         - zebralogic
         - zerobench
         - zerobench-main
+        - zerobench-main-python
         - zerobench-sub
     ErrorResponse:
       type: object

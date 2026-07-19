@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "humanitys-last-exam-tools",
+  "benchmark_name": "Humanity's Last Exam with Tools",
+  "category": "reasoning",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": "https://github.com/centerforaisafety/hle",
+  "total_models": 1
+}

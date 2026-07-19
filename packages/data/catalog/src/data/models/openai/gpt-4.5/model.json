@@ -100,7 +100,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 89
+      "rank": 93
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -108,7 +108,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 94
+      "rank": 98
     },
     {
       "benchmark_id": "lisanbench",

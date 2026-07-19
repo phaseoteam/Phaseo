@@ -84,7 +84,7 @@
       "is_self_reported": true,
       "other_info": "manual fallback alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 87
+      "rank": 95
     },
     {
       "benchmark_id": "livecodebench-v5",

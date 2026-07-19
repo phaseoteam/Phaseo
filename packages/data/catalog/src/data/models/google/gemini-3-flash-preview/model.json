@@ -90,7 +90,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://blog.google/products/gemini/gemini-3-flash/",
-      "rank": 33
+      "rank": 39
     },
     {
       "benchmark_id": "livecodebench-pro",
@@ -106,7 +106,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://blog.google/products/gemini/gemini-3-flash/",
-      "rank": 21
+      "rank": 23
     },
     {
       "benchmark_id": "mmmlu",
@@ -122,7 +122,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://blog.google/products/gemini/gemini-3-flash/",
-      "rank": 3
+      "rank": 4
     },
     {
       "benchmark_id": "mrcr-v2-(8-needle)",
@@ -186,7 +186,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://blog.google/products/gemini/gemini-3-flash/",
-      "rank": 6
+      "rank": 9
     },
     {
       "benchmark_id": "vending-bench-2",
@@ -226,7 +226,7 @@
       "is_self_reported": false,
       "other_info": "DeepSWE label: gemini-3-flash; mini-swe-agent; 5% +/-2%; avg cost $1.53; avg time 39m; out tok 233k",
       "source_link": "https://deepswe.datacurve.ai/",
-      "rank": 16
+      "rank": 19
     },
     {
       "benchmark_id": "elimination-game",

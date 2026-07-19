@@ -103,7 +103,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from llama-3.2-90b-instruct (score=0.5873; benches=13)",
       "source_link": "https://ai.meta.com/blog/llama-3-2-connect-2024-vision-edge-mobile-devices/",
-      "rank": 93
+      "rank": 95
     },
     {
       "benchmark_id": "textvqa",

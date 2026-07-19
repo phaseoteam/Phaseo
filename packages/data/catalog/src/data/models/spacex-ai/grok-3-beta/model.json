@@ -153,7 +153,7 @@
       "is_self_reported": true,
       "other_info": "Think, Cons@64",
       "source_link": "https://x.ai/news/grok-3",
-      "rank": 36
+      "rank": 39
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -161,7 +161,7 @@
       "is_self_reported": true,
       "other_info": "Think",
       "source_link": "https://x.ai/news/grok-3",
-      "rank": 58
+      "rank": 61
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -169,7 +169,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/news/grok-3",
-      "rank": 78
+      "rank": 81
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -177,7 +177,7 @@
       "is_self_reported": true,
       "other_info": "Reasoning",
       "source_link": "https://x.ai/news/grok-3",
-      "rank": 79
+      "rank": 82
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -185,7 +185,7 @@
       "is_self_reported": true,
       "other_info": "Reasoning",
       "source_link": "https://x.ai/blog/grok-3",
-      "rank": 106
+      "rank": 110
     },
     {
       "benchmark_id": "lisanbench",

@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "charxiv-rq-python",
+  "benchmark_name": "CharXiv-RQ with Python",
+  "category": "multimodal",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": "https://charxiv.github.io/",
+  "total_models": 1
+}

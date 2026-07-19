@@ -36,7 +36,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/news/grok-4",
-      "rank": 20
+      "rank": 23
     },
     {
       "benchmark_id": "hmmt-2025",
@@ -52,7 +52,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/news/grok-4",
-      "rank": 32
+      "rank": 38
     },
     {
       "benchmark_id": "usamo-2025",
@@ -84,7 +84,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.com/xai/status/1943158495588815072",
-      "rank": 16
+      "rank": 20
     },
     {
       "benchmark_id": "livecodebench",

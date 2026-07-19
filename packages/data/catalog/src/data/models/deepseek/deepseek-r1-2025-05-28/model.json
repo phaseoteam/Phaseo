@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://api-docs.deepseek.com/news/news250528",
-      "rank": 53
+      "rank": 56
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://api-docs.deepseek.com/news/news250528",
-      "rank": 88
+      "rank": 96
     },
     {
       "benchmark_id": "livebench",

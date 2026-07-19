@@ -39,7 +39,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from mimo-v2-pro",
       "source_link": "https://mimo.xiaomi.com/mimo-v2-pro",
-      "rank": 3
+      "rank": 4
     },
     {
       "benchmark_id": "gdpval-aa",
@@ -47,7 +47,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from mimo-v2-pro",
       "source_link": "https://mimo.xiaomi.com/mimo-v2-pro",
-      "rank": 17
+      "rank": 20
     },
     {
       "benchmark_id": "pinchbench",

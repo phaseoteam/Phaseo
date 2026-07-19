@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
       "source_link": "https://qwen.ai/blog?id=qwen3.5",
-      "rank": 30
+      "rank": 34
     },
     {
       "benchmark_id": "browsecomp-zh",
@@ -206,7 +206,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
       "source_link": "https://qwen.ai/blog?id=qwen3.5",
-      "rank": 23
+      "rank": 28
     },
     {
       "benchmark_id": "hypersim",
@@ -278,7 +278,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
       "source_link": "https://qwen.ai/blog?id=qwen3.5",
-      "rank": 6
+      "rank": 7
     },
     {
       "benchmark_id": "mathvista-mini",
@@ -374,7 +374,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen3.5-27b (score=0.4147; benches=81)",
       "source_link": "https://qwen.ai/blog?id=qwen3.5",
-      "rank": 32
+      "rank": 33
     },
     {
       "benchmark_id": "mmstar",

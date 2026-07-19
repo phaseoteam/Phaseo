@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from minimax-m2",
       "source_link": null,
-      "rank": 40
+      "rank": 44
     },
     {
       "benchmark_id": "browsecomp-zh",
@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from minimax-m2",
       "source_link": null,
-      "rank": 109
+      "rank": 117
     },
     {
       "benchmark_id": "if",

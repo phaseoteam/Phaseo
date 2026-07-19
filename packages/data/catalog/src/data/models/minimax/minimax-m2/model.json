@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 39
+      "rank": 43
     },
     {
       "benchmark_id": "browsecomp-zh",
@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 108
+      "rank": 116
     },
     {
       "benchmark_id": "if",

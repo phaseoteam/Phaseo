@@ -190,7 +190,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 13
+      "rank": 15
     },
     {
       "benchmark_id": "mathvista-mini",
@@ -262,7 +262,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 47
+      "rank": 48
     },
     {
       "benchmark_id": "mmmu-(val)",

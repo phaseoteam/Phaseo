@@ -47,7 +47,7 @@
       "is_self_reported": true,
       "other_info": "Wins or ties",
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 28
+      "rank": 31
     },
     {
       "benchmark_id": "investment-banking-modeling",
@@ -63,7 +63,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 1
+      "rank": 3
     },
     {
       "benchmark_id": "genebench",
@@ -95,7 +95,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 3
+      "rank": 5
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -103,7 +103,7 @@
       "is_self_reported": true,
       "other_info": "No tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 35
+      "rank": 43
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -111,7 +111,7 @@
       "is_self_reported": true,
       "other_info": "With tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 6
+      "rank": 10
     },
     {
       "benchmark_id": "simplebench",

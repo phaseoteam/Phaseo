@@ -45,7 +45,7 @@
       "is_self_reported": true,
       "other_info": "Hugging Face model card benchmark table (arcee-ai/Trinity-Large-Thinking)",
       "source_link": "https://huggingface.co/arcee-ai/Trinity-Large-Thinking/raw/main/README.md",
-      "rank": 75
+      "rank": 78
     },
     {
       "benchmark_id": "tau2-airline",
