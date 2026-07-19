@@ -1285,7 +1285,7 @@
     "provider_api_model_id": "siliconflow:moonshotai/kimi-k3",
     "provider_model_slug": "moonshotai/Kimi-K3",
     "internal_model_id": "moonshotai/kimi-k3",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
