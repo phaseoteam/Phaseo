@@ -92,9 +92,9 @@ describe("cross-provider model deployment matrix", () => {
         }).toMatchObject({
             models: 355,
             providers: 49,
-            deployments: 800,
+            deployments: 799,
             multiProviderModels: 127,
-            multiProviderDeployments: 569,
+            multiProviderDeployments: 568,
             missing: [],
         });
     });
