@@ -671,11 +671,11 @@ function PricingPeriodHoverCard({
 							return (
 								<span
 									key={`${range.startMinute}-${range.endMinute}`}
-									className="inline-flex items-center gap-1"
+									className="flex items-center gap-1 leading-4"
 								>
 									<span>{formatPricingRangeInTimeZone(range, userTimeZone, pricingTimeMs)}</span>
 									{isActiveRange ? (
-										<ChevronLeft className="size-3 text-foreground/70" aria-hidden="true" />
+										<ChevronLeft className="size-3 shrink-0 text-foreground/70" aria-hidden="true" />
 									) : null}
 									{isActiveRange ? <span className="sr-only">Current time period</span> : null}
 								</span>
