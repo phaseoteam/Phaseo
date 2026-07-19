@@ -1,0 +1,46 @@
+{
+  "model_id": "qwen/qwen3.8-max-preview",
+  "organisation_id": "qwen",
+  "name": "Qwen3.8-Max-Preview",
+  "status": "Available",
+  "previous_model_id": "qwen/qwen3.7-max-preview",
+  "description": "Qwen3.8-Max-Preview is a 2.4T-parameter preview model from Qwen. It has debuted through Alibaba Token Plan, Qoder, and QoderWork while Qwen continues testing it in China; its architecture, context limits, public API model ID, pricing, and benchmark results have not been published.",
+  "announced_date": "2026-07-19T00:00:00",
+  "release_date": "2026-07-19T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": null,
+  "links": [
+    {
+      "title": "Qwen announcement",
+      "kind": "announcement",
+      "url": "https://x.com/Alibaba_Qwen/status/2078754377473601787"
+    },
+    {
+      "title": "Qoder preview availability",
+      "kind": "release",
+      "url": "https://docs.qoder.com/events/qwen-max-preview"
+    }
+  ],
+  "details": [
+    {
+      "name": "availability",
+      "value": "Available through Alibaba Token Plan, Qoder, and QoderWork; Qwen says testing in China is ongoing.",
+      "source_link": "https://x.com/Alibaba_Qwen/status/2078754377473601787"
+    },
+    {
+      "name": "parameter_count",
+      "value": 2400000000000,
+      "source_link": "https://docs.qoder.com/events/qwen-max-preview",
+      "other_info": "Qoder lists the preview model at 2.4T parameters."
+    }
+  ],
+  "page_notice": {
+    "tone": "warning",
+    "markdown": "Qwen3.8-Max-Preview is a 2.4T-parameter preview available through Alibaba Token Plan, Qoder, and QoderWork. Qwen says testing in China is ongoing; public API model ID, pricing, context limits, and benchmark results have not been published. [Read Qwen's announcement](https://x.com/Alibaba_Qwen/status/2078754377473601787)."
+  },
+  "benchmarks": []
+}
