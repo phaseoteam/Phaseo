@@ -618,6 +618,8 @@ function PricingPeriodHoverCard({
 	pricingTimeMs: number;
 	userTimeZone: string;
 }) {
+	const [isOpen, setIsOpen] = useState(false);
+	const closeTimerRef = useRef<number | null>(null);
 	const scheduledRanges = mergePricingTimeRanges(
 		scheduledPeriods.flatMap(parsePricingScheduleRanges),
 	);
@@ -625,6 +627,26 @@ function PricingPeriodHoverCard({
 		? parsePricingScheduleRanges(scheduleLabel)
 		: getComplementPricingRanges(scheduledRanges);
 	const localTimeZoneLabel = formatTimeZoneShortName(userTimeZone, pricingTimeMs);
+	const clearCloseTimer = () => {
+		if (closeTimerRef.current === null) return;
+		window.clearTimeout(closeTimerRef.current);
+		closeTimerRef.current = null;
+	};
+	const openOnMouseHover = (event: React.PointerEvent<HTMLElement>) => {
+		if (event.pointerType !== "mouse") return;
+		clearCloseTimer();
+		setIsOpen(true);
+	};
+	const closeAfterMouseHover = (event: React.PointerEvent<HTMLElement>) => {
+		if (event.pointerType !== "mouse") return;
+		clearCloseTimer();
+		closeTimerRef.current = window.setTimeout(() => {
+			setIsOpen(false);
+			closeTimerRef.current = null;
+		}, 80);
+	};
+
+	useEffect(() => () => clearCloseTimer(), []);
 	const trigger = (
 		<button
 			type="button"
@@ -666,34 +688,21 @@ function PricingPeriodHoverCard({
 	);
 
 	return (
-		<>
-			<span className="sm:hidden">
-				<Popover>
-					<PopoverTrigger asChild>{trigger}</PopoverTrigger>
-					<PopoverContent
-						side="top"
-						align="start"
-						sideOffset={8}
-						className="w-[18rem] overflow-hidden rounded-2xl bg-popover p-0 shadow-xl ring-1 ring-foreground/10"
-					>
-						{content}
-					</PopoverContent>
-				</Popover>
+		<Popover open={isOpen} onOpenChange={setIsOpen}>
+			<span onPointerEnter={openOnMouseHover} onPointerLeave={closeAfterMouseHover}>
+				<PopoverTrigger asChild>{trigger}</PopoverTrigger>
 			</span>
-			<span className="hidden sm:inline">
-				<HoverCard openDelay={120} closeDelay={80}>
-					<HoverCardTrigger asChild>{trigger}</HoverCardTrigger>
-					<HoverCardContent
-						side="top"
-						align="start"
-						sideOffset={8}
-						className="w-[18rem] overflow-hidden rounded-2xl bg-popover p-0 shadow-xl ring-1 ring-foreground/10"
-					>
-						{content}
-					</HoverCardContent>
-				</HoverCard>
-			</span>
-		</>
+			<PopoverContent
+				side="top"
+				align="start"
+				sideOffset={8}
+				onPointerEnter={openOnMouseHover}
+				onPointerLeave={closeAfterMouseHover}
+				className="w-[18rem] overflow-hidden rounded-2xl bg-popover p-0 shadow-xl ring-1 ring-foreground/10"
+			>
+				{content}
+			</PopoverContent>
+		</Popover>
 	);
 }
 
