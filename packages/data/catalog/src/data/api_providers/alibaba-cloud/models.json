@@ -2257,5 +2257,26 @@
                                             ]
                              }
                          ]
+    },
+    {
+        "api_model_id": "qwen/qwen3.8-max-preview",
+        "provider_api_model_id": "alibaba-cloud:qwen/qwen3.8-max-preview",
+        "provider_model_slug": "qwen3.8-max-preview",
+        "internal_model_id": "qwen/qwen3.8-max-preview",
+        "is_active_gateway": false,
+        "quantization_scheme": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "context_length": null,
+        "max_output_tokens": null,
+        "effective_from": "2026-07-19T00:00:00",
+        "effective_to": null,
+        "capabilities": [
+            {
+                "capability_id": "text.generate",
+                "status": "coming_soon",
+                "params": []
+            }
+        ]
     }
 ]
