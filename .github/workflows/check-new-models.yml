@@ -1,9 +1,10 @@
 name: Check Internal Models
 
 on:
-    push:
-        branches:
-            - main
+    workflow_run:
+        workflows: ["CI"]
+        types: [completed]
+    workflow_dispatch:
 
 concurrency:
     group: check-internal-models
@@ -12,6 +13,7 @@ concurrency:
 env:
     NODE_VERSION: 22
     DISCORD_WEBHOOK_NEW_MODELS_PUBLIC: ${{ secrets.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC }}
+    MODEL_DISCOVERY_STATE_BRANCH: ${{ github.event.workflow_run.head_branch || github.ref_name }}
 
 permissions:
     contents: read
@@ -20,9 +22,15 @@ jobs:
     check-internal-models:
         name: Check internal models
         runs-on: ubuntu-latest
+        if: >-
+            github.event_name == 'workflow_dispatch' ||
+            (github.event.workflow_run.event == 'push' &&
+            github.event.workflow_run.conclusion == 'success' &&
+            github.event.workflow_run.head_branch == 'main')
         steps:
             - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
               with:
+                  ref: ${{ github.event.workflow_run.head_sha || github.sha }}
                   fetch-depth: 0
                   persist-credentials: false
 
@@ -51,9 +59,9 @@ jobs:
               uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
               with:
                   path: scripts/model-discovery/state
-                  key: internal-model-state-${{ github.ref_name }}-${{ github.run_id }}
+                  key: internal-model-state-${{ env.MODEL_DISCOVERY_STATE_BRANCH }}-${{ github.run_id }}
                   restore-keys: |
-                      internal-model-state-${{ github.ref_name }}-
+                      internal-model-state-${{ env.MODEL_DISCOVERY_STATE_BRANCH }}-
 
             - name: Check for internal models
               run: |
