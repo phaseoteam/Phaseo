@@ -425,7 +425,7 @@ function renderCompactTierSummary(
 						{prices.map((price, priceIndex) => {
 							const isHeadline = index === 0 && priceIndex === 0;
 							const periodLabel = tier.timeWindowPrices?.length
-								? `${price.label}${price.isCurrent ? " · now" : ""}`
+								? price.label
 								: condition;
 							return (
 								<div
@@ -631,7 +631,7 @@ function PricingPeriodHoverCard({
 			className="group/period inline-flex min-w-0 items-center gap-1 truncate text-[10px] text-muted-foreground underline decoration-dotted underline-offset-4 transition-colors hover:text-foreground focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
 			aria-label={`View ${label} pricing period details`}
 		>
-			<span className="truncate">{label}{isCurrent ? " · now" : ""}</span>
+			<span className="truncate">{label}</span>
 			<Info className="h-2.5 w-2.5 shrink-0 opacity-55 transition-opacity group-hover/period:opacity-100" />
 		</button>
 	);
