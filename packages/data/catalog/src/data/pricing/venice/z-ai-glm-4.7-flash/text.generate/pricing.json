@@ -25,18 +25,9 @@
       "pricing_plan": "standard",
       "note": null,
       "match": [],
-      "priority": 100
-    },
-    {
-      "meter": "input_text_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
-      "price_per_unit": 0.13,
-      "currency": "USD",
-      "pricing_plan": "standard",
-      "note": null,
-      "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_to": "2026-07-17T00:00:00Z",
+      "note": "Superseded Venice rate; retained for historical reference."
     },
     {
       "meter": "output_text_tokens",
@@ -45,9 +36,10 @@
       "price_per_unit": 0.5,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": null,
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-07-17T00:00:00Z",
+      "note": "Current Venice rate verified against its pricing page on 2026-07-18."
     }
   ]
 }

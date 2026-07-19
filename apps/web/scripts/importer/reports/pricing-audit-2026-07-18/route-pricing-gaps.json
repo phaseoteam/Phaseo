@@ -1,0 +1,489 @@
+[
+  {
+    "provider_id": "ambient",
+    "model_id": "moonshotai/kimi-k2.7-code",
+    "capability_id": "text.generate",
+    "capability_status": "active",
+    "provider_api_model_id": "ambient:moonshotai/kimi-k2.7-code",
+    "provider_model_slug": "moonshotai/kimi-k2.7-code",
+    "internal_model_id": "moonshotai/kimi-k2.7-code",
+    "capability_params": [],
+    "pricing_key": "ambient:moonshotai/kimi-k2.7-code:text.generate",
+    "source_path": "packages/data/catalog/src/data/api_providers/ambient/models.json",
+    "gap_type": "missing_file",
+    "alternate_current_pricing_keys": []
+  },
+  {
+    "provider_id": "ambient",
+    "model_id": "z-ai/glm-5.2",
+    "capability_id": "text.generate",
+    "capability_status": "active",
+    "provider_api_model_id": "ambient:z-ai/glm-5.2",
+    "provider_model_slug": "z-ai/glm-5.2",
+    "internal_model_id": "z-ai/glm-5.2",
+    "capability_params": [],
+    "pricing_key": "ambient:z-ai/glm-5.2:text.generate",
+    "source_path": "packages/data/catalog/src/data/api_providers/ambient/models.json",
+    "gap_type": "missing_file",
+    "alternate_current_pricing_keys": []
+  },
+  {
+    "provider_id": "ambient",
+    "model_id": "z-ai/glm-5.2",
+    "capability_id": "text.generate",
+    "capability_status": "active",
+    "provider_api_model_id": "ambient:ambient/large",
+    "provider_model_slug": "ambient/large",
+    "internal_model_id": "z-ai/glm-5.2",
+    "capability_params": [],
+    "pricing_key": "ambient:z-ai/glm-5.2:text.generate",
+    "source_path": "packages/data/catalog/src/data/api_providers/ambient/models.json",
+    "gap_type": "missing_file",
+    "alternate_current_pricing_keys": []
+  },
+  {
+    "provider_id": "avian",
+    "model_id": "deepseek/deepseek-v3.2",
+    "capability_id": "text.generate",
+    "capability_status": "active",
+    "provider_api_model_id": "avian:deepseek/deepseek-v3.2",
+    "provider_model_slug": "deepseek/deepseek-v3.2",
+    "internal_model_id": "deepseek/deepseek-v3.2",
+    "capability_params": [],
+    "pricing_key": "avian:deepseek/deepseek-v3.2:text.generate",
+    "source_path": "packages/data/catalog/src/data/api_providers/avian/models.json",
+    "gap_type": "missing_file",
+    "alternate_current_pricing_keys": []
+  },
+  {
+    "provider_id": "avian",
+    "model_id": "deepseek/deepseek-v4-flash",
+    "capability_id": "text.generate",
+    "capability_status": "active",
+    "provider_api_model_id": "avian:deepseek/deepseek-v4-flash",
+    "provider_model_slug": "deepseek/deepseek-v4-flash",
+    "internal_model_id": "deepseek/deepseek-v4-flash",
+    "capability_params": [],
+    "pricing_key": "avian:deepseek/deepseek-v4-flash:text.generate",
+    "source_path": "packages/data/catalog/src/data/api_providers/avian/models.json",
+    "gap_type": "missing_file",
+    "alternate_current_pricing_keys": []
+  },
+  {
+    "provider_id": "avian",
+    "model_id": "deepseek/deepseek-v4-pro",
+    "capability_id": "text.generate",
+    "capability_status": "active",
+    "provider_api_model_id": "avian:deepseek/deepseek-v4-pro",
+    "provider_model_slug": "deepseek/deepseek-v4-pro",
+    "internal_model_id": "deepseek/deepseek-v4-pro",
+    "capability_params": [],
+    "pricing_key": "avian:deepseek/deepseek-v4-pro:text.generate",
+    "source_path": "packages/data/catalog/src/data/api_providers/avian/models.json",
+    "gap_type": "missing_file",
+    "alternate_current_pricing_keys": []
+  },
+  {
+    "provider_id": "avian",
+    "model_id": "minimax/minimax-m2.5",
+    "capability_id": "text.generate",
+    "capability_status": "active",
+    "provider_api_model_id": "avian:minimax/minimax-m2.5",
+    "provider_model_slug": "minimax/minimax-m2.5",
+    "internal_model_id": "minimax/minimax-m2.5",
+    "capability_params": [],
+    "pricing_key": "avian:minimax/minimax-m2.5:text.generate",
+    "source_path": "packages/data/catalog/src/data/api_providers/avian/models.json",
+    "gap_type": "missing_file",
+    "alternate_current_pricing_keys": []
+  },
+  {
+    "provider_id": "avian",
+    "model_id": "moonshotai/kimi-k2.5",
+    "capability_id": "text.generate",
+    "capability_status": "active",
+    "provider_api_model_id": "avian:moonshotai/kimi-k2.5",
+    "provider_model_slug": "moonshotai/kimi-k2.5",
+    "internal_model_id": "moonshotai/kimi-k2.5",
+    "capability_params": [],
+    "pricing_key": "avian:moonshotai/kimi-k2.5:text.generate",
+    "source_path": "packages/data/catalog/src/data/api_providers/avian/models.json",
+    "gap_type": "missing_file",
+    "alternate_current_pricing_keys": []
+  },
+  {
+    "provider_id": "avian",
+    "model_id": "moonshotai/kimi-k2.6",
+    "capability_id": "text.generate",
+    "capability_status": "active",
+    "provider_api_model_id": "avian:moonshotai/kimi-k2.6",
+    "provider_model_slug": "moonshotai/kimi-k2.6",
+    "internal_model_id": "moonshotai/kimi-k2.6",
+    "capability_params": [],
+    "pricing_key": "avian:moonshotai/kimi-k2.6:text.generate",
+    "source_path": "packages/data/catalog/src/data/api_providers/avian/models.json",
+    "gap_type": "missing_file",
+    "alternate_current_pricing_keys": []
+  },
+  {
+    "provider_id": "avian",
+    "model_id": "z-ai/glm-5",
+    "capability_id": "text.generate",
+    "capability_status": "active",
+    "provider_api_model_id": "avian:z-ai/glm-5",
+    "provider_model_slug": "z-ai/glm-5",
+    "internal_model_id": "z-ai/glm-5",
+    "capability_params": [],
+    "pricing_key": "avian:z-ai/glm-5:text.generate",
+    "source_path": "packages/data/catalog/src/data/api_providers/avian/models.json",
+    "gap_type": "missing_file",
+    "alternate_current_pricing_keys": []
+  },
+  {
+    "provider_id": "avian",
+    "model_id": "z-ai/glm-5.1",
+    "capability_id": "text.generate",
+    "capability_status": "active",
+    "provider_api_model_id": "avian:z-ai/glm-5.1",
+    "provider_model_slug": "z-ai/glm-5.1",
+    "internal_model_id": "z-ai/glm-5.1",
+    "capability_params": [],
+    "pricing_key": "avian:z-ai/glm-5.1:text.generate",
+    "source_path": "packages/data/catalog/src/data/api_providers/avian/models.json",
+    "gap_type": "missing_file",
+    "alternate_current_pricing_keys": []
+  },
+  {
+    "provider_id": "openai",
+    "model_id": "openai/gpt-image-1",
+    "capability_id": "batch",
+    "capability_status": "active",
+    "provider_api_model_id": "openai:openai/gpt-image-1",
+    "provider_model_slug": "gpt-image-1",
+    "internal_model_id": "openai/gpt-image-1",
+    "capability_params": {
+      "endpoint": {
+        "type": "enum",
+        "values": [
+          "/v1/images/generations"
+        ],
+        "default": "/v1/images/generations"
+      },
+      "completion_window": {
+        "type": "enum",
+        "values": [
+          "24h"
+        ],
+        "default": "24h"
+      }
+    },
+    "pricing_key": "openai:openai/gpt-image-1:batch",
+    "source_path": "packages/data/catalog/src/data/api_providers/openai/models.json",
+    "gap_type": "alternate_pricing_key_only",
+    "alternate_current_pricing_keys": [
+      "openai:openai/gpt-image-1:image.generations"
+    ]
+  },
+  {
+    "provider_id": "openai",
+    "model_id": "openai/gpt-image-1",
+    "capability_id": "image.generate",
+    "capability_status": "active",
+    "provider_api_model_id": "openai:openai/gpt-image-1",
+    "provider_model_slug": "gpt-image-1",
+    "internal_model_id": "openai/gpt-image-1",
+    "capability_params": [],
+    "pricing_key": "openai:openai/gpt-image-1:image.generate",
+    "source_path": "packages/data/catalog/src/data/api_providers/openai/models.json",
+    "gap_type": "alternate_pricing_key_only",
+    "alternate_current_pricing_keys": [
+      "openai:openai/gpt-image-1:image.generations"
+    ]
+  },
+  {
+    "provider_id": "openai",
+    "model_id": "openai/gpt-image-1-mini",
+    "capability_id": "batch",
+    "capability_status": "active",
+    "provider_api_model_id": "openai:openai/gpt-image-1-mini",
+    "provider_model_slug": "gpt-image-1-mini",
+    "internal_model_id": "openai/gpt-image-1-mini",
+    "capability_params": {
+      "endpoint": {
+        "type": "enum",
+        "values": [
+          "/v1/images/generations",
+          "/v1/images/edits"
+        ],
+        "default": "/v1/images/generations"
+      },
+      "completion_window": {
+        "type": "enum",
+        "values": [
+          "24h"
+        ],
+        "default": "24h"
+      }
+    },
+    "pricing_key": "openai:openai/gpt-image-1-mini:batch",
+    "source_path": "packages/data/catalog/src/data/api_providers/openai/models.json",
+    "gap_type": "alternate_pricing_key_only",
+    "alternate_current_pricing_keys": [
+      "openai:openai/gpt-image-1-mini:image.generate",
+      "openai:openai/gpt-image-1-mini:image.edit"
+    ]
+  },
+  {
+    "provider_id": "openai",
+    "model_id": "openai/gpt-image-1.5",
+    "capability_id": "batch",
+    "capability_status": "active",
+    "provider_api_model_id": "openai:openai/gpt-image-1.5",
+    "provider_model_slug": "gpt-image-1.5-2025-12-16",
+    "internal_model_id": "openai/gpt-image-1.5",
+    "capability_params": {
+      "endpoint": {
+        "type": "enum",
+        "values": [
+          "/v1/images/generations",
+          "/v1/images/edits"
+        ],
+        "default": "/v1/images/generations"
+      },
+      "completion_window": {
+        "type": "enum",
+        "values": [
+          "24h"
+        ],
+        "default": "24h"
+      }
+    },
+    "pricing_key": "openai:openai/gpt-image-1.5:batch",
+    "source_path": "packages/data/catalog/src/data/api_providers/openai/models.json",
+    "gap_type": "alternate_pricing_key_only",
+    "alternate_current_pricing_keys": [
+      "openai:openai/gpt-image-1.5:image.generate",
+      "openai:openai/gpt-image-1.5:image.edit"
+    ]
+  },
+  {
+    "provider_id": "openai",
+    "model_id": "openai/gpt-image-2",
+    "capability_id": "batch",
+    "capability_status": "active",
+    "provider_api_model_id": "openai:openai/gpt-image-2",
+    "provider_model_slug": "gpt-image-2",
+    "internal_model_id": "openai/gpt-image-2",
+    "capability_params": {
+      "endpoint": {
+        "type": "enum",
+        "values": [
+          "/v1/images/generations",
+          "/v1/images/edits"
+        ],
+        "default": "/v1/images/generations"
+      },
+      "completion_window": {
+        "type": "enum",
+        "values": [
+          "24h"
+        ],
+        "default": "24h"
+      }
+    },
+    "pricing_key": "openai:openai/gpt-image-2:batch",
+    "source_path": "packages/data/catalog/src/data/api_providers/openai/models.json",
+    "gap_type": "alternate_pricing_key_only",
+    "alternate_current_pricing_keys": [
+      "openai:openai/gpt-image-2:image.generate",
+      "openai:openai/gpt-image-2:image.edit"
+    ]
+  },
+  {
+    "provider_id": "openai",
+    "model_id": "openai/omni-moderation",
+    "capability_id": "batch",
+    "capability_status": "active",
+    "provider_api_model_id": "openai:openai/omni-moderation",
+    "provider_model_slug": "omni-moderation-latest",
+    "internal_model_id": "openai/omni-moderation",
+    "capability_params": {
+      "endpoint": {
+        "type": "enum",
+        "values": [
+          "/v1/moderations"
+        ],
+        "default": "/v1/moderations"
+      },
+      "completion_window": {
+        "type": "enum",
+        "values": [
+          "24h"
+        ],
+        "default": "24h"
+      }
+    },
+    "pricing_key": "openai:openai/omni-moderation:batch",
+    "source_path": "packages/data/catalog/src/data/api_providers/openai/models.json",
+    "gap_type": "alternate_pricing_key_only",
+    "alternate_current_pricing_keys": [
+      "openai:openai/omni-moderation:text.moderate",
+      "openai:openai/omni-moderation:moderations.create"
+    ]
+  },
+  {
+    "provider_id": "openai",
+    "model_id": "openai/sora-2",
+    "capability_id": "batch",
+    "capability_status": "active",
+    "provider_api_model_id": "openai:openai/sora-2",
+    "provider_model_slug": "sora-2-2025-12-08",
+    "internal_model_id": "openai/sora-2",
+    "capability_params": {
+      "endpoint": {
+        "type": "enum",
+        "values": [
+          "/v1/videos"
+        ],
+        "default": "/v1/videos"
+      },
+      "completion_window": {
+        "type": "enum",
+        "values": [
+          "24h"
+        ],
+        "default": "24h"
+      }
+    },
+    "pricing_key": "openai:openai/sora-2:batch",
+    "source_path": "packages/data/catalog/src/data/api_providers/openai/models.json",
+    "gap_type": "alternate_pricing_key_only",
+    "alternate_current_pricing_keys": [
+      "openai:openai/sora-2:video.generate"
+    ]
+  },
+  {
+    "provider_id": "openai",
+    "model_id": "openai/sora-2-pro",
+    "capability_id": "batch",
+    "capability_status": "active",
+    "provider_api_model_id": "openai:openai/sora-2-pro",
+    "provider_model_slug": "sora-2-pro",
+    "internal_model_id": "openai/sora-2-pro",
+    "capability_params": {
+      "endpoint": {
+        "type": "enum",
+        "values": [
+          "/v1/videos"
+        ],
+        "default": "/v1/videos"
+      },
+      "completion_window": {
+        "type": "enum",
+        "values": [
+          "24h"
+        ],
+        "default": "24h"
+      }
+    },
+    "pricing_key": "openai:openai/sora-2-pro:batch",
+    "source_path": "packages/data/catalog/src/data/api_providers/openai/models.json",
+    "gap_type": "alternate_pricing_key_only",
+    "alternate_current_pricing_keys": [
+      "openai:openai/sora-2-pro:video.generate"
+    ]
+  },
+  {
+    "provider_id": "openai",
+    "model_id": "openai/text-embedding-3-large",
+    "capability_id": "batch",
+    "capability_status": "active",
+    "provider_api_model_id": "openai:openai/text-embedding-3-large",
+    "provider_model_slug": "text-embedding-3-large",
+    "internal_model_id": "openai/text-embedding-3-large",
+    "capability_params": {
+      "endpoint": {
+        "type": "enum",
+        "values": [
+          "/v1/embeddings"
+        ],
+        "default": "/v1/embeddings"
+      },
+      "completion_window": {
+        "type": "enum",
+        "values": [
+          "24h"
+        ],
+        "default": "24h"
+      }
+    },
+    "pricing_key": "openai:openai/text-embedding-3-large:batch",
+    "source_path": "packages/data/catalog/src/data/api_providers/openai/models.json",
+    "gap_type": "alternate_pricing_key_only",
+    "alternate_current_pricing_keys": [
+      "openai:openai/text-embedding-3-large:text.embed"
+    ]
+  },
+  {
+    "provider_id": "openai",
+    "model_id": "openai/text-embedding-3-small",
+    "capability_id": "batch",
+    "capability_status": "active",
+    "provider_api_model_id": "openai:openai/text-embedding-3-small",
+    "provider_model_slug": "text-embedding-3-small",
+    "internal_model_id": "openai/text-embedding-3-small",
+    "capability_params": {
+      "endpoint": {
+        "type": "enum",
+        "values": [
+          "/v1/embeddings"
+        ],
+        "default": "/v1/embeddings"
+      },
+      "completion_window": {
+        "type": "enum",
+        "values": [
+          "24h"
+        ],
+        "default": "24h"
+      }
+    },
+    "pricing_key": "openai:openai/text-embedding-3-small:batch",
+    "source_path": "packages/data/catalog/src/data/api_providers/openai/models.json",
+    "gap_type": "alternate_pricing_key_only",
+    "alternate_current_pricing_keys": [
+      "openai:openai/text-embedding-3-small:text.embed"
+    ]
+  },
+  {
+    "provider_id": "openai",
+    "model_id": "openai/text-embedding-ada-002",
+    "capability_id": "batch",
+    "capability_status": "active",
+    "provider_api_model_id": "openai:openai/text-embedding-ada-002",
+    "provider_model_slug": "text-embedding-ada-002",
+    "internal_model_id": "openai/text-embedding-ada-002",
+    "capability_params": {
+      "endpoint": {
+        "type": "enum",
+        "values": [
+          "/v1/embeddings"
+        ],
+        "default": "/v1/embeddings"
+      },
+      "completion_window": {
+        "type": "enum",
+        "values": [
+          "24h"
+        ],
+        "default": "24h"
+      }
+    },
+    "pricing_key": "openai:openai/text-embedding-ada-002:batch",
+    "source_path": "packages/data/catalog/src/data/api_providers/openai/models.json",
+    "gap_type": "alternate_pricing_key_only",
+    "alternate_current_pricing_keys": [
+      "openai:openai/text-embedding-ada-002:text.embed"
+    ]
+  }
+]
