@@ -127,7 +127,7 @@ const deepSeekProvider = {
 	],
 } as ProviderPricing;
 
-const periodOptions = {
+const frozenPeriodOptions = {
 	peak: {
 		label: "Peak",
 		timeLabel: "02:30 UTC",
@@ -140,7 +140,17 @@ const periodOptions = {
 	},
 } as const;
 
-type DemoPeriod = keyof typeof periodOptions;
+const demoPeriodOptions = [
+	{ key: "current", label: "Current" },
+	{ key: "peak", label: frozenPeriodOptions.peak.label },
+	{ key: "off-peak", label: frozenPeriodOptions["off-peak"].label },
+] as const;
+
+type DemoPeriod = (typeof demoPeriodOptions)[number]["key"];
+
+function formatCurrentPreviewTime(timeMs: number): string {
+	return `${new Date(timeMs).toISOString().slice(11, 16)} UTC`;
+}
 
 export default function TimeWindowPricingPreviewPage({
 	searchParams,
@@ -163,8 +173,17 @@ async function TimeWindowPricingPreview({
 	await connection();
 
 	const requestedPeriod = (await searchParams).period;
-	const period: DemoPeriod = requestedPeriod === "off-peak" ? "off-peak" : "peak";
-	const selected = periodOptions[period];
+	const period: DemoPeriod =
+		requestedPeriod === "peak" || requestedPeriod === "off-peak"
+			? requestedPeriod
+			: "current";
+	const isFrozenPeriod = period !== "current";
+	const selected = isFrozenPeriod
+		? frozenPeriodOptions[period]
+		: {
+				timeLabel: formatCurrentPreviewTime(Date.now()),
+				timeMs: Date.now(),
+			};
 
 	return (
 		<main className="mx-auto min-h-screen max-w-6xl px-6 py-12">
@@ -178,24 +197,42 @@ async function TimeWindowPricingPreview({
 						Illustrative announced pricing windows rendered through the production model-page components. This fixture does not affect billing or catalog data.
 					</p>
 				</div>
-				<div className="flex flex-wrap items-center gap-3 border-y border-amber-200/80 py-3 text-sm dark:border-amber-900/70">
-					<span className="font-medium text-amber-800 dark:text-amber-300">
-						Frozen billing time: {selected.timeLabel}
+				<div
+					className={cn(
+						"flex flex-wrap items-center gap-3 border-y py-3 text-sm",
+						isFrozenPeriod
+							? "border-amber-200/80 dark:border-amber-900/70"
+							: "border-emerald-200/80 dark:border-emerald-900/70",
+					)}
+				>
+					<span
+						className={cn(
+							"font-medium",
+							isFrozenPeriod
+								? "text-amber-800 dark:text-amber-300"
+								: "text-emerald-800 dark:text-emerald-300",
+						)}
+					>
+						{isFrozenPeriod ? "Frozen billing time" : "Current billing time"}: {selected.timeLabel}
 					</span>
 					<div className="flex items-center rounded-md border border-zinc-200 p-0.5 dark:border-zinc-800">
-						{(Object.keys(periodOptions) as DemoPeriod[]).map((option) => (
+						{demoPeriodOptions.map((option) => (
 							<Link
-								key={option}
-								href={`/preview/time-window-pricing?period=${option}`}
-								aria-current={period === option ? "page" : undefined}
+								key={option.key}
+								href={
+									option.key === "current"
+										? "/preview/time-window-pricing"
+										: `/preview/time-window-pricing?period=${option.key}`
+								}
+								aria-current={period === option.key ? "page" : undefined}
 								className={cn(
 									"rounded px-3 py-1.5 text-xs font-medium transition-colors",
-									period === option
+									period === option.key
 										? "bg-foreground text-background"
 										: "text-muted-foreground hover:text-foreground",
 								)}
 							>
-								{periodOptions[option].label}
+								{option.label}
 							</Link>
 						))}
 					</div>
@@ -208,7 +245,7 @@ async function TimeWindowPricingPreview({
 				providers={[deepSeekProvider]}
 				creatorOrgId="deepseek"
 				initialPricingTimeMs={selected.timeMs}
-				freezePricingClock
+				freezePricingClock={isFrozenPeriod}
 				showHeader
 			/>
 		</main>
