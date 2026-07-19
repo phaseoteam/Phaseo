@@ -1,12 +1,13 @@
-import { NextResponse } from "next/server";
+import { connection } from "next/server";
+
+import { buildOAuthAuthorizationServerMetadata } from "@/lib/agent-discovery";
 
 export async function GET() {
-	return NextResponse.json(
-		{
-			error: "not_configured",
-			message:
-				"OAuth authorization server metadata is not configured in this deployment yet.",
+	await connection();
+
+	return Response.json(buildOAuthAuthorizationServerMetadata(), {
+		headers: {
+			"Cache-Control": "public, max-age=3600, stale-while-revalidate=3600",
 		},
-		{ status: 501 },
-	);
+	});
 }

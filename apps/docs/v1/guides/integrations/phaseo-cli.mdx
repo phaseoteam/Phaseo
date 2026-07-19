@@ -104,9 +104,9 @@ The CLI is intended to cover the useful parts of the Phaseo dashboard and manage
 
 ## OAuth apps
 
-User-created OAuth apps are coming soon. This release keeps OAuth client creation in private testing while the first-party Phaseo CLI uses the shared OAuth/OIDC foundation for browser sign-in, device code, token refresh, revoke, userinfo, and JWKS/discovery flows.
+Phaseo uses one OAuth authorization server for the first-party CLI, user-created applications, and dynamically registered MCP clients. The CLI uses browser or device login with rotating refresh tokens. Third-party clients use authorization code with PKCE, explicit scopes and workspace consent, revocable delegated access tokens, and optional protected-resource binding.
 
-Self-hosted or preview deployments keep third-party OAuth disabled unless `PHASEO_THIRD_PARTY_OAUTH_ENABLED` is set to a truthy value. Accepted truthy values are `1`, `true`, `yes`, and `on`, matched case-insensitively after trimming whitespace. Leave the variable unset while validating the first-party CLI path; enabling it exposes user-created OAuth app management and should only be paired with reviewed redirect URI, consent, client-secret, and workspace authorization configuration.
+The hosted Phaseo API enables third-party OAuth. Self-hosted or preview API deployments keep it disabled unless `PHASEO_THIRD_PARTY_OAUTH_ENABLED` is set to a truthy value. Accepted truthy values are `1`, `true`, `yes`, and `on`, matched case-insensitively after trimming whitespace. Enabling it exposes user-created OAuth app management and dynamic client registration, so pair it with reviewed redirect URI, consent, client-secret, rate-limit, and workspace authorization configuration.
 
 ```bash title=".env"
 PHASEO_THIRD_PARTY_OAUTH_ENABLED=true

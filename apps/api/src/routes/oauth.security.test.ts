@@ -10,6 +10,8 @@ const state = vi.hoisted(() => ({
 	updateFilters: [] as Array<Array<{ column: string; value: unknown }>>,
 	issuedTokenPairs: [] as Array<Record<string, unknown>>,
 	issuedManagedKeys: [] as Array<Record<string, unknown>>,
+	registeredClients: [] as Array<Record<string, unknown>>,
+	oauthAuth: { ok: false, reason: "invalid_token" } as Record<string, unknown>,
 	pollStatus: "ok" as string,
 }));
 
@@ -26,10 +28,30 @@ function json(body: unknown, status = 200, headers: Record<string, string> = {})
 }
 
 vi.mock("@/runtime/env", () => ({
-	getBindings: () => ({}),
+	getBindings: () => ({ PHASEO_MCP_RESOURCE_SERVER_SECRET: "s".repeat(64) }),
 	getSupabaseAdmin: () => ({
+		auth: {
+			admin: {
+				getUserById: async () => ({
+					data: {
+						user: {
+							email: "user@example.com",
+							user_metadata: { full_name: "Phaseo User" },
+						},
+					},
+				}),
+			},
+		},
 		rpc: async () => ({ data: state.pollStatus, error: null }),
 		from(table: string) {
+			if (table === "oauth_clients") {
+				return {
+					insert: async (payload: Record<string, unknown>) => {
+						state.registeredClients.push(payload);
+						return { error: null };
+					},
+				};
+			}
 			if (table === "oauth_authorization_codes") {
 				return {
 					select: () => ({
@@ -99,6 +121,10 @@ vi.mock("@/routes/utils", () => ({
 	withRuntime: (handler: (req: Request) => Promise<Response>) => async (c: any) => handler(c.req.raw),
 }));
 
+vi.mock("@/pipeline/before/auth", () => ({
+	authenticateManagement: vi.fn(async () => state.oauthAuth),
+}));
+
 vi.mock("@/lib/oauth/service", () => ({
 	CLI_CLIENT_ID: "phaseo_cli",
 	CLI_DEFAULT_SCOPES: ["openid"],
@@ -128,11 +154,24 @@ vi.mock("@/lib/oauth/service", () => ({
 		state.issuedManagedKeys.push(input);
 		return { access_token: "phaseo_v1_sk_test", token_type: "Bearer" };
 	}),
+	issueMcpUpstreamToken: vi.fn(async () => ({ access_token: "upstream-jwt", token_type: "Bearer", expires_in: 300 })),
+	isGatewayOAuthResource: vi.fn((resource: string | null | undefined) => {
+		if (!resource) return false;
+		const candidate = new URL(resource);
+		candidate.pathname = candidate.pathname.replace(/\/+$/, "") || "/";
+		return candidate.toString() === "https://api.example.com/v1";
+	}),
+	isValidPkceChallenge: vi.fn((value: string) => /^[A-Za-z0-9_-]{43}$/.test(value)),
 	isFirstPartyCliClient: vi.fn((clientId: string) => clientId === "phaseo_cli" || clientId === "aistats_cli"),
+	isThirdPartyOAuthEnabled: vi.fn(() => true),
 	loadOAuthClient: vi.fn(async () => state.client),
 	makeAuthCodeExpiry: vi.fn(() => "2026-06-10T16:00:00.000Z"),
 	makeDeviceCodeExpiry: vi.fn(() => "2026-06-10T16:00:00.000Z"),
-	normalizeScopes: vi.fn((raw, fallback) => fallback ?? []),
+	normalizeScopes: vi.fn((raw, fallback) => {
+		if (Array.isArray(raw)) return raw.map(String);
+		if (typeof raw === "string" && raw.trim()) return raw.trim().split(/[\s,]+/);
+		return fallback ?? [];
+	}),
 	normalizeUserCode: vi.fn((value: string) => value.trim().toUpperCase()),
 	parseTokenRequestBody: vi.fn((raw: string) => (raw ? JSON.parse(raw) : {})),
 	revokeToken: vi.fn(async () => undefined),
@@ -156,8 +195,60 @@ describe("OAuth route security", () => {
 		state.updateFilters.length = 0;
 		state.issuedTokenPairs.length = 0;
 		state.issuedManagedKeys.length = 0;
+		state.registeredClients.length = 0;
+		state.oauthAuth = { ok: false, reason: "invalid_token" };
 		state.pollStatus = "ok";
 		vi.resetModules();
+	});
+
+	it("allows browser-based OAuth clients to preflight token requests", async () => {
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/token", {
+			method: "OPTIONS",
+			headers: {
+				origin: "http://localhost:6274",
+				"access-control-request-method": "POST",
+				"access-control-request-headers": "content-type",
+			},
+		});
+
+		expect(response.status).toBe(204);
+		expect(response.headers.get("access-control-allow-origin")).toBe("*");
+		expect(response.headers.get("access-control-allow-methods")).toContain("POST");
+		expect(response.headers.get("access-control-allow-headers")).toContain("Content-Type");
+		expect(response.headers.get("access-control-allow-headers")).toContain("MCP-Protocol-Version");
+	});
+
+	it("allows browser-based MCP clients to discover root OAuth metadata", async () => {
+		const { rootRouter } = await import("./root");
+		const preflight = await rootRouter.request(
+			"https://example.com/.well-known/oauth-authorization-server/oauth",
+			{
+				method: "OPTIONS",
+				headers: {
+					origin: "http://localhost:6284",
+					"access-control-request-method": "GET",
+					"access-control-request-headers": "mcp-protocol-version",
+				},
+			},
+		);
+
+		expect(preflight.status).toBe(204);
+		expect(preflight.headers.get("access-control-allow-origin")).toBe("*");
+		expect(preflight.headers.get("access-control-allow-headers")).toContain("MCP-Protocol-Version");
+
+		const metadata = await rootRouter.request(
+			"https://example.com/.well-known/oauth-authorization-server/oauth",
+			{ headers: { origin: "http://localhost:6284" } },
+		);
+
+		expect(metadata.status).toBe(200);
+		expect(metadata.headers.get("access-control-allow-origin")).toBe("*");
+		expect(await metadata.json()).toMatchObject({
+			issuer: "https://api.example.com/oauth",
+			authorization_endpoint: "https://api.example.com/oauth/authorize",
+			token_endpoint: "https://api.example.com/oauth/token",
+		});
 	});
 
 	it("does not let device-code denial overwrite a code that is no longer pending", async () => {
@@ -198,6 +289,7 @@ describe("OAuth route security", () => {
 		});
 
 		expect(response.status).toBe(413);
+		expect(response.headers.get("access-control-allow-origin")).toBe("*");
 		await expect(response.json()).resolves.toMatchObject({ error: "invalid_request" });
 	});
 
@@ -422,6 +514,84 @@ describe("OAuth route security", () => {
 		});
 	});
 
+	it("rejects Gateway API resource authorization without gateway access consent", async () => {
+		state.client = { id: "third_party", name: "Third Party", client_type: "public" };
+		const challenge = "a".repeat(43);
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request(
+			`https://example.com/authorize?client_id=third_party&redirect_uri=${encodeURIComponent("https://example.com/callback")}&response_type=code&scope=models%3Aread&code_challenge=${challenge}&code_challenge_method=S256&resource=${encodeURIComponent("https://api.example.com/v1/")}`,
+		);
+
+		expect(response.status).toBe(400);
+		expect(await response.json()).toMatchObject({
+			error: "invalid_scope",
+			error_description: "gateway:access is required for third-party OAuth",
+		});
+	});
+
+	it("rejects Gateway API resource approval without gateway access consent", async () => {
+		state.client = { id: "third_party", name: "Third Party", client_type: "public" };
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/authorize/approve", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				client_id: "third_party",
+				redirect_uri: "https://example.com/callback",
+				primary_workspace_id: "ws_1",
+				scopes: ["models:read"],
+				code_challenge: "a".repeat(43),
+				code_challenge_method: "S256",
+				resource: "https://api.example.com/v1",
+			}),
+		});
+
+		expect(response.status).toBe(400);
+		expect(await response.json()).toMatchObject({
+			error: "invalid_scope",
+			error_description: "gateway:access is required for third-party OAuth",
+		});
+	});
+
+	it("does not exchange a Gateway API resource grant without gateway access consent", async () => {
+		state.client = { id: "third_party", name: "Third Party", client_type: "confidential" };
+		state.authorizationCodeRow = {
+			id: "authorization_code_gateway_resource",
+			client_id: "third_party",
+			user_id: "user_1",
+			workspace_id: "ws_1",
+			redirect_uri: "https://example.com/callback",
+			scopes: ["models:read"],
+			resource: "https://api.example.com/v1/",
+			code_challenge: "challenge",
+			code_challenge_method: "S256",
+			expires_at: FUTURE_EXPIRES_AT,
+			used_at: null,
+		};
+		state.authorizationRow = { id: "auth_1", revoked_at: null };
+
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/token", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				grant_type: "authorization_code",
+				client_id: "third_party",
+				code: "authorization-code",
+				redirect_uri: "https://example.com/callback",
+				code_verifier: "verifier",
+				resource: "https://api.example.com/v1/",
+			}),
+		});
+
+		expect(response.status).toBe(400);
+		expect(await response.json()).toMatchObject({
+			error: "invalid_scope",
+			error_description: "gateway:access consent is required for a delegated key",
+		});
+		expect(state.issuedManagedKeys).toEqual([]);
+	});
+
 	it("does not issue a delegated key from identity-only consent", async () => {
 		state.client = { id: "third_party", name: "Third Party", client_type: "confidential" };
 		state.authorizationCodeRow = {
@@ -457,5 +627,284 @@ describe("OAuth route security", () => {
 			error_description: "gateway:access consent is required for a delegated key",
 		});
 		expect(state.issuedManagedKeys).toEqual([]);
+	});
+
+	it("rejects privileged scopes for an unverified dynamically registered client", async () => {
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/register", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				client_name: "ChatGPT",
+				redirect_uris: ["https://chatgpt.com/aip/callback"],
+				scope: "openid gateway:access me:read keys:read keys:write keys:delete workspaces:write presets:delete settings:write guardrails:write management_keys:delete oauth_clients:write",
+				token_endpoint_auth_method: "none",
+			}),
+		});
+
+		expect(response.status).toBe(400);
+		expect(await response.json()).toMatchObject({
+			error: "invalid_scope",
+			error_description: "Dynamically registered MCP clients are limited to read-only Phaseo scopes",
+		});
+		expect(state.registeredClients).toEqual([]);
+	});
+
+	it("defaults dynamic MCP registration to read-only scopes", async () => {
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/register", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				client_name: "Read-only MCP",
+				redirect_uris: ["https://client.example/callback"],
+			}),
+		});
+
+		expect(response.status).toBe(201);
+		expect(state.registeredClients[0]?.allowed_scopes).not.toContain("keys:write");
+		expect(state.registeredClients[0]?.allowed_scopes).not.toContain("gateway:access");
+		expect(state.registeredClients[0]?.allowed_scopes).toEqual([
+			"me:read",
+			"models:read",
+			"providers:read",
+			"pricing:read",
+			"credits:read",
+			"activity:read",
+			"analytics:read",
+			"generations:read",
+			"workspaces:read",
+			"keys:read",
+			"presets:read",
+			"settings:read",
+			"guardrails:read",
+			"management_keys:read",
+			"oauth_clients:read",
+		]);
+	});
+
+	it("downgrades dynamic refresh-token requests to the authorization-code grant it issues", async () => {
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/register", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				client_name: "MCP Inspector",
+				redirect_uris: ["http://localhost:6284/oauth/callback"],
+				response_types: ["code"],
+				grant_types: ["authorization_code", "refresh_token"],
+				token_endpoint_auth_method: "none",
+			}),
+		});
+
+		expect(response.status).toBe(201);
+		await expect(response.json()).resolves.toMatchObject({
+			response_types: ["code"],
+			grant_types: ["authorization_code"],
+			token_endpoint_auth_method: "none",
+		});
+	});
+
+	it("rejects unsupported dynamic registration grant types", async () => {
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/register", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				client_name: "Unsupported grant client",
+				redirect_uris: ["https://client.example/callback"],
+				response_types: ["code"],
+				grant_types: ["authorization_code", "client_credentials"],
+			}),
+		});
+
+		expect(response.status).toBe(400);
+		await expect(response.json()).resolves.toMatchObject({ error: "invalid_client_metadata" });
+		expect(state.registeredClients).toEqual([]);
+	});
+
+	it("returns authenticated consent metadata with an explicit dynamic trust source", async () => {
+		state.client = {
+			id: "dynamic_client",
+			name: "Unverified MCP",
+			client_type: "public",
+			redirect_uris: ["https://client.example/callback"],
+			is_first_party: false,
+			registration_source: "dynamic",
+		};
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/client-metadata?client_id=dynamic_client", {
+			headers: { Authorization: "Bearer user-session" },
+		});
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({
+			client_id: "dynamic_client",
+			is_first_party: false,
+			registration_source: "dynamic",
+		});
+	});
+
+	it("rejects control characters in dynamic client metadata", async () => {
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/register", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				client_name: "Bad\nClient",
+				redirect_uris: ["https://client.example/callback"],
+			}),
+		});
+
+		expect(response.status).toBe(400);
+		expect(await response.json()).toMatchObject({ error: "invalid_client_metadata" });
+	});
+
+	it("rejects reserved Phaseo branding during dynamic registration", async () => {
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/register", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				client_name: "Phaseo Support",
+				redirect_uris: ["https://attacker.example/callback"],
+			}),
+		});
+		expect(response.status).toBe(400);
+		expect(await response.json()).toMatchObject({ error: "invalid_client_metadata" });
+		expect(state.registeredClients).toEqual([]);
+	});
+
+	it("advertises dynamic registration and public-client token exchange", async () => {
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/.well-known/oauth-authorization-server");
+
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({
+			issuer: "https://api.example.com/oauth",
+			registration_endpoint: "https://api.example.com/oauth/register",
+			token_endpoint_auth_methods_supported: ["client_secret_basic", "client_secret_post", "none"],
+			code_challenge_methods_supported: ["S256"],
+		});
+	});
+
+	it("rejects unknown or internal scopes during dynamic client registration", async () => {
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/register", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				client_name: "Untrusted client",
+				redirect_uris: ["https://example.com/callback"],
+				scope: "openid keys:delete internal:admin",
+			}),
+		});
+
+		expect(response.status).toBe(400);
+		expect(await response.json()).toMatchObject({ error: "invalid_scope" });
+		expect(state.registeredClients).toEqual([]);
+	});
+
+	it("serves userinfo for an opaque delegated OAuth access token", async () => {
+		state.oauthAuth = {
+			ok: true,
+			workspaceId: "workspace_1",
+			apiKeyId: "key_1",
+			apiKeyRef: "oauth_client_1",
+			apiKeyKid: "kid_1",
+			userId: "user_1",
+			authMethod: "oauth",
+			oauthClientId: "client_1",
+			oauthScopes: ["openid", "profile", "email"],
+		};
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/userinfo", {
+			headers: { Authorization: "Bearer phaseo_v1_sk_example" },
+		});
+
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({
+			sub: "user_1",
+			email: "user@example.com",
+			name: "Phaseo User",
+			workspace_id: "workspace_1",
+			client_id: "client_1",
+		});
+	});
+
+	it("binds a delegated access token to the resource echoed at token exchange", async () => {
+		state.client = { id: "mcp_client", name: "MCP Client", client_type: "public" };
+		state.authorizationCodeRow = {
+			id: "authorization_code_resource",
+			client_id: "mcp_client",
+			user_id: "user_1",
+			workspace_id: "ws_1",
+			redirect_uri: "https://chatgpt.com/connector/oauth/callback",
+			scopes: ["models:read", "pricing:read"],
+			code_challenge: "challenge",
+			code_challenge_method: "S256",
+			resource: "https://mcp.phaseo.app/mcp",
+			expires_at: FUTURE_EXPIRES_AT,
+			used_at: null,
+		};
+		state.authorizationRow = { id: "auth_1", revoked_at: null };
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/token", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				grant_type: "authorization_code",
+				client_id: "mcp_client",
+				code: "authorization-code",
+				redirect_uri: "https://chatgpt.com/connector/oauth/callback",
+				code_verifier: "verifier",
+				resource: "https://mcp.phaseo.app/mcp",
+			}),
+		});
+
+		expect(response.status).toBe(200);
+		expect(state.issuedManagedKeys).toContainEqual({
+			userId: "user_1",
+			workspaceId: "ws_1",
+			clientId: "mcp_client",
+			scopes: ["models:read", "pricing:read"],
+			resource: "https://mcp.phaseo.app/mcp",
+		});
+	});
+
+	it("exchanges an MCP audience token for a separate short-lived API token", async () => {
+		state.oauthAuth = {
+			ok: true,
+			workspaceId: "workspace_1",
+			apiKeyId: "key_1",
+			apiKeyRef: "oauth_client_1",
+			apiKeyKid: "kid_1",
+			userId: "user_1",
+			authMethod: "oauth",
+			oauthClientId: "client_1",
+			oauthScopes: ["openid", "gateway:access", "models:read"],
+			oauthResource: "https://mcp.phaseo.app/mcp",
+		};
+		const credentials = btoa(`phaseo_mcp_resource_server:${"s".repeat(64)}`);
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/mcp/token-exchange", {
+			method: "POST",
+			headers: {
+				Authorization: `Basic ${credentials}`,
+				"content-type": "application/json",
+			},
+			body: JSON.stringify({
+				subject_token: "resource-bound-token",
+				resource: "https://mcp.phaseo.app/mcp",
+			}),
+		});
+
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({
+			active: true,
+			resource: "https://mcp.phaseo.app/mcp",
+			workspace_id: "workspace_1",
+			upstream_access_token: "upstream-jwt",
+			expires_in: 300,
+		});
 	});
 });

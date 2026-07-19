@@ -1,6 +1,7 @@
 // lib/fetchers/benchmarks/getBenchmark.ts
 import { createAdminClient } from "@/utils/supabase/admin";
 import { cacheLife, cacheTag } from "next/cache";
+import { getBenchmarkResultRankings } from "@/lib/fetchers/benchmarks/getBenchmarkResultRankings";
 
 // BenchmarkPage (with results) is defined later in this file.
 export interface Organisation {
@@ -100,12 +101,42 @@ export default async function getBenchmark(
     const row = benchmarks as any | undefined;
     if (!row) return null;
 
+    let derivedRankByResultId = new Map<
+        string,
+        { rank: number | null; totalRankedModels: number | null }
+    >();
+    try {
+        const derivedRankings = await getBenchmarkResultRankings({
+            benchmarkIds: [benchmark_id],
+            includeHidden,
+        });
+        derivedRankByResultId = new Map(
+            derivedRankings.map((ranking) => [
+                ranking.resultId,
+                {
+                    rank: ranking.rank,
+                    totalRankedModels: ranking.totalRankedModels,
+                },
+            ])
+        );
+    } catch (rankingError) {
+        // Keep rolling deployments functional until the RPC migration is live.
+        console.warn("[benchmarks] Falling back to persisted benchmark ranks", {
+            benchmarkId: benchmark_id,
+            error:
+                rankingError instanceof Error
+                    ? rankingError.message
+                    : String(rankingError),
+        });
+    }
+
     const results: BenchmarkResult[] = (row.data_benchmark_results ?? [])
         .filter((r: any) => {
             if (includeHidden) return true;
             return !r?.data_models?.hidden;
         })
         .map((r: any) => {
+        const derivedRanking = derivedRankByResultId.get(String(r.id));
         const modelRow = r.data_models ?? null;
         const orgRow = modelRow?.data_organisations ?? null;
 
@@ -140,10 +171,14 @@ export default async function getBenchmark(
             source_link: r.source_link ?? null,
             created_at: r.created_at ?? null,
             updated_at: r.updated_at ?? null,
-            rank: r.rank ?? null,
+            rank: derivedRanking ? derivedRanking.rank : (r.rank ?? null),
             model,
         } as BenchmarkResult;
     });
+
+    const derivedTotalModels = Array.from(derivedRankByResultId.values()).find(
+        (ranking) => ranking.totalRankedModels != null
+    )?.totalRankedModels;
 
     const formatted: BenchmarkPage = {
         id: row.id,
@@ -151,7 +186,7 @@ export default async function getBenchmark(
         category: row.category ?? null,
         ascending_order:
             typeof row.ascending_order === "boolean" ? row.ascending_order : null,
-        total_models: row.total_models ?? null,
+        total_models: derivedTotalModels ?? row.total_models ?? null,
         link: row.link ?? null,
         results,
         type: row.type ?? null,

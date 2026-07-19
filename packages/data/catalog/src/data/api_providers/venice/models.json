@@ -816,7 +816,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "deranked_lvl1",
         "params": [
           {
             "param_id": "max_tokens",

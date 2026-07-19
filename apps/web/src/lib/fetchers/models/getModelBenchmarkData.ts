@@ -11,6 +11,10 @@ import {
 	parseBenchmarkScore,
 	resolveBenchmarkIsPercentage,
 } from "@/lib/benchmarks/scoreFormat";
+import {
+	getBenchmarkResultRankings,
+	type DerivedBenchmarkRankingRow,
+} from "@/lib/fetchers/benchmarks/getBenchmarkResultRankings";
 
 export interface ModelBenchmarkOrganisation {
 	organisation_id: string;
@@ -257,7 +261,45 @@ async function loadBenchmarkResults(
 ): Promise<RawBenchmarkPayload> {
 	// Rely on Next.js cache tags/lifetimes instead of process-local memoization.
 	// This avoids stale benchmark data persisting after importer updates.
-	return fetchBenchmarkResultsRaw(modelId, includeHidden);
+	const payload = await fetchBenchmarkResultsRaw(modelId, includeHidden);
+	if (!payload.results.length) return payload;
+
+	try {
+		const rankings = await getBenchmarkResultRankings({
+			benchmarkIds: payload.results.map((result) => result.benchmark_id),
+			modelId,
+			includeHidden,
+		});
+		const rankingByResultId = new Map(
+			rankings.map((ranking) => [ranking.resultId, ranking])
+		);
+
+		return {
+			...payload,
+			results: payload.results.map((result) => {
+				const ranking = rankingByResultId.get(result.id);
+				if (!ranking) return result;
+
+				return {
+					...result,
+					rank: ranking.rank,
+					benchmark: {
+						...result.benchmark,
+						total_models:
+							ranking.totalRankedModels ?? result.benchmark.total_models,
+					},
+				};
+			}),
+		};
+	} catch (error) {
+		// Keep previews and rolling deployments functional until the migration is
+		// applied. Persisted ranks are a temporary compatibility fallback only.
+		console.warn("[benchmarks] Falling back to persisted model ranks", {
+			modelId,
+			error: error instanceof Error ? error.message : String(error),
+		});
+		return payload;
+	}
 }
 
 function selectHighlightResults(
@@ -373,6 +415,31 @@ type ComparisonRow = {
 	rank: number | null;
 	model: ComparisonRowModel | ComparisonRowModel[];
 };
+
+function derivedRankingToComparisonRow(
+	ranking: DerivedBenchmarkRankingRow
+): ComparisonRow {
+	return {
+		model_id: ranking.modelId,
+		score: ranking.score,
+		is_self_reported: ranking.isSelfReported,
+		other_info: ranking.otherInfo,
+		source_link: ranking.sourceLink,
+		rank: ranking.rank,
+		model: {
+			model_id: ranking.modelId,
+			name: ranking.modelName,
+			organisation: ranking.organisationId
+				? {
+						organisation_id: ranking.organisationId,
+						name:
+							ranking.organisationName ?? ranking.organisationId,
+						colour: ranking.organisationColour,
+					}
+				: null,
+		},
+	};
+}
 
 function determineIsLowerBetter(
 	models: BenchmarkComparisonModel[],
@@ -558,16 +625,43 @@ async function fetchBenchmarkComparisonCharts(
 	const supabase = createAdminClient();
 	const charts: BenchmarkComparisonChart[] = [];
 	const processedBenchmarks = new Set<string>();
+	const benchmarkIds = Array.from(
+		new Set(results.map((result) => result.benchmark_id).filter(Boolean))
+	);
+	let derivedRowsByBenchmark: Map<string, ComparisonRow[]> | null = null;
+
+	try {
+		const rankings = await getBenchmarkResultRankings({
+			benchmarkIds,
+			includeHidden,
+			limitPerBenchmark: 100,
+		});
+		derivedRowsByBenchmark = new Map<string, ComparisonRow[]>();
+		for (const ranking of rankings) {
+			const rows = derivedRowsByBenchmark.get(ranking.benchmarkId) ?? [];
+			rows.push(derivedRankingToComparisonRow(ranking));
+			derivedRowsByBenchmark.set(ranking.benchmarkId, rows);
+		}
+	} catch (error) {
+		console.warn("[benchmarks] Falling back to persisted comparison ranks", {
+			modelId,
+			error: error instanceof Error ? error.message : String(error),
+		});
+	}
 
 	for (const result of results) {
 		if (!result.benchmark_id) continue;
 		if (processedBenchmarks.has(result.benchmark_id)) continue;
 		processedBenchmarks.add(result.benchmark_id);
 
-		const { data, error } = await supabase
-			.from("data_benchmark_results")
-			.select(
-				`
+		let rows: ComparisonRow[];
+		if (derivedRowsByBenchmark) {
+			rows = derivedRowsByBenchmark.get(result.benchmark_id) ?? [];
+		} else {
+			const { data, error } = await supabase
+				.from("data_benchmark_results")
+				.select(
+					`
 					model_id,
 					score,
 					is_self_reported,
@@ -588,24 +682,25 @@ async function fetchBenchmarkComparisonCharts(
 							colour
 						)
 					)
-				`
-			)
-			.eq("benchmark_id", result.benchmark_id)
-			.order("rank", { ascending: true, nullsFirst: false })
-			.limit(100);
+					`
+				)
+				.eq("benchmark_id", result.benchmark_id)
+				.order("rank", { ascending: true, nullsFirst: false })
+				.limit(100);
 
-		if (error) {
-			throw new Error(
-				error.message ||
-				`Failed to fetch benchmark comparison for ${result.benchmark_id}`
-			);
+			if (error) {
+				throw new Error(
+					error.message ||
+						`Failed to fetch benchmark comparison for ${result.benchmark_id}`
+				);
+			}
+
+			rows = (data ?? []).filter((row: any) => {
+				if (includeHidden) return true;
+				const modelEntry = normalizeMaybeArray(row?.model);
+				return !modelEntry?.hidden;
+			});
 		}
-
-		const rows: ComparisonRow[] = (data ?? []).filter((row: any) => {
-			if (includeHidden) return true;
-			const modelEntry = normalizeMaybeArray(row?.model);
-			return !modelEntry?.hidden;
-		});
 		if (!rows.length) continue;
 		const benchmarkType = result.benchmark.type;
 		const lowerIsBetterHint = getLowerIsBetter(
