@@ -887,10 +887,14 @@ function ChatPlaygroundContent({
 						]?.displayName?.trim() ||
 						modelDisplayNameById[comparisonModelId]
 					: undefined;
+			const comparisonProviderLabel = activeThread.settings.providerId
+				? providerNameById.get(activeThread.settings.providerId)
+				: undefined;
 			const changes = getChangedSettings(
 				activeThread.settings,
 				comparisonModelId,
 				comparisonModelDisplayName,
+				comparisonProviderLabel,
 			);
 			if (changes.length > 0) {
 				setPendingNewChat({
@@ -909,6 +913,7 @@ function ChatPlaygroundContent({
 		createThreadWithSettings,
 		modelDisplayNameById,
 		newChatModelPreference,
+		providerNameById,
 	]);
 
 	const handleNewChatDecision = useCallback(

@@ -1602,12 +1602,12 @@ export function ChatHeader({
 					<TooltipContent>Settings</TooltipContent>
 				</Tooltip>
 				<Dialog open={settingsOpen} onOpenChange={onSettingsOpenChange}>
-					<DialogContent className="overflow-hidden p-0 md:max-h-[520px] md:max-w-[760px] lg:max-w-[820px]">
+					<DialogContent className="max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] overflow-hidden p-0 md:max-h-[520px] md:w-auto md:max-w-[760px] lg:max-w-[820px]">
 						<DialogTitle className="sr-only">Settings</DialogTitle>
 						<DialogDescription className="sr-only">
 							Chat settings and diagnostics.
 						</DialogDescription>
-						<div className="flex h-[520px] flex-1 overflow-hidden">
+						<div className="flex h-[calc(100dvh-1rem)] max-h-[520px] flex-1 overflow-hidden">
 							<div className="hidden w-52 shrink-0 flex-col border-r border-border p-2 md:flex">
 								<Button
 									variant={
@@ -1666,7 +1666,7 @@ export function ChatHeader({
 								)}
 							</div>
 							<div className="flex flex-1 flex-col overflow-hidden">
-								<div className="flex items-center gap-2 border-b border-border px-4 py-3 md:hidden">
+								<div className="flex shrink-0 items-center gap-1 overflow-x-auto border-b border-border px-3 py-2 [&>button]:shrink-0 md:hidden">
 									<Button
 										size="sm"
 										variant={
@@ -1721,7 +1721,7 @@ export function ChatHeader({
 										</Button>
 									)}
 								</div>
-								<div className="flex-1 overflow-y-auto p-4">
+								<div className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-4">
 									{settingsTab === "personalization" && (
 										<div className="grid gap-3">
 											<div className="grid gap-1">
@@ -2299,7 +2299,7 @@ export function ChatHeader({
 										</div>
 									)}
 								</div>
-								<div className="border-t border-border px-4 py-3">
+								<div className="border-t border-border px-3 py-3 sm:px-4">
 									<div className="flex justify-end">
 										<Button onClick={onSaveSettings}>
 											Save
@@ -2307,9 +2307,6 @@ export function ChatHeader({
 									</div>
 								</div>
 							</div>
-						</div>
-						<div className="flex justify-end">
-							<Button onClick={onSaveSettings}>Save</Button>
 						</div>
 					</DialogContent>
 				</Dialog>
