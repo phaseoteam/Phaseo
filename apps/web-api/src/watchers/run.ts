@@ -6,7 +6,7 @@ import { runYoutubeWatcher } from "@/watchers/youtube";
 
 export type WatcherKind = "web" | "youtube";
 
-export async function runWatcher(kind: WatcherKind, env: Env, executionCtx: ExecutionContext) {
+export async function runWatcher(kind: WatcherKind, env: Env, executionCtx: object) {
 	const client = getDataClient(env);
 	const summary = kind === "web" ? await runWebWatcher(client) : await runYoutubeWatcher(client, env.YT_API_KEY ?? "");
 	const changed = kind === "web"
@@ -18,7 +18,7 @@ export async function runWatcher(kind: WatcherKind, env: Env, executionCtx: Exec
 	return { kind, summary, invalidation };
 }
 
-export async function runScheduledWatchers(env: Env, executionCtx: ExecutionContext) {
+export async function runScheduledWatchers(env: Env, executionCtx: object) {
 	const results = await Promise.allSettled([
 		runWatcher("web", env, executionCtx),
 		runWatcher("youtube", env, executionCtx),

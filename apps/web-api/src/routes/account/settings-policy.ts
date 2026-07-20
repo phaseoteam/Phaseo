@@ -98,7 +98,7 @@ accountSettingsPolicyRouter.get("/presets", async (c) => {
 
 function validPresetName(value: string) { return /^@[a-zA-Z0-9][a-zA-Z0-9_.-]*$/.test(value.trim()); }
 function presetVisibility(value: unknown) { return ["private", "team", "public"].includes(String(value)) ? String(value) : "team"; }
-async function purgePresetCache(c: { executionCtx: ExecutionContext }, id?: string) {
+async function purgePresetCache(c: { executionCtx: object }, id?: string) {
 	return purgeWorkerCacheTags(c.executionCtx, ["web-api-marketplace", "web-api-marketplace-presets", ...(id ? [`web-api-marketplace-preset-${encodeURIComponent(id).replace(/%/g, "")}`] : [])]);
 }
 
