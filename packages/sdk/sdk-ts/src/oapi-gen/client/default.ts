@@ -104,12 +104,7 @@ export async function cancelBatch(
   last_webhook_progress?: number | null;
   last_webhook_progress_at?: string | null;
   lifecycle_status?:
-    | "pending"
-    | "running"
-    | "completed"
-    | "failed"
-    | "cancelled"
-    | "expired";
+    "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
   metadata?: {};
   native_batch_id?: string | null;
   next_webhook_retry_at?: string | null;
@@ -149,10 +144,7 @@ export async function cancelBatch(
       delivered_events?: number;
       last_attempt_at?: string | null;
       last_attempt_status?:
-        | "delivered"
-        | "scheduled_retry"
-        | "failed_permanently"
-        | null;
+        "delivered" | "scheduled_retry" | "failed_permanently" | null;
       last_delivered_at?: string | null;
       last_error_message?: string | null;
       last_failure_at?: string | null;
@@ -216,12 +208,7 @@ export async function cancelBatch(
     last_webhook_progress?: number | null;
     last_webhook_progress_at?: string | null;
     lifecycle_status?:
-      | "pending"
-      | "running"
-      | "completed"
-      | "failed"
-      | "cancelled"
-      | "expired";
+      "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
     metadata?: {};
     native_batch_id?: string | null;
     next_webhook_retry_at?: string | null;
@@ -261,10 +248,7 @@ export async function cancelBatch(
         delivered_events?: number;
         last_attempt_at?: string | null;
         last_attempt_status?:
-          | "delivered"
-          | "scheduled_retry"
-          | "failed_permanently"
-          | null;
+          "delivered" | "scheduled_retry" | "failed_permanently" | null;
         last_delivered_at?: string | null;
         last_error_message?: string | null;
         last_failure_at?: string | null;
@@ -349,12 +333,7 @@ export async function cancelBatchAlias(
   last_webhook_progress?: number | null;
   last_webhook_progress_at?: string | null;
   lifecycle_status?:
-    | "pending"
-    | "running"
-    | "completed"
-    | "failed"
-    | "cancelled"
-    | "expired";
+    "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
   metadata?: {};
   native_batch_id?: string | null;
   next_webhook_retry_at?: string | null;
@@ -394,10 +373,7 @@ export async function cancelBatchAlias(
       delivered_events?: number;
       last_attempt_at?: string | null;
       last_attempt_status?:
-        | "delivered"
-        | "scheduled_retry"
-        | "failed_permanently"
-        | null;
+        "delivered" | "scheduled_retry" | "failed_permanently" | null;
       last_delivered_at?: string | null;
       last_error_message?: string | null;
       last_failure_at?: string | null;
@@ -461,12 +437,7 @@ export async function cancelBatchAlias(
     last_webhook_progress?: number | null;
     last_webhook_progress_at?: string | null;
     lifecycle_status?:
-      | "pending"
-      | "running"
-      | "completed"
-      | "failed"
-      | "cancelled"
-      | "expired";
+      "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
     metadata?: {};
     native_batch_id?: string | null;
     next_webhook_retry_at?: string | null;
@@ -506,10 +477,7 @@ export async function cancelBatchAlias(
         delivered_events?: number;
         last_attempt_at?: string | null;
         last_attempt_status?:
-          | "delivered"
-          | "scheduled_retry"
-          | "failed_permanently"
-          | null;
+          "delivered" | "scheduled_retry" | "failed_permanently" | null;
         last_delivered_at?: string | null;
         last_error_message?: string | null;
         last_failure_at?: string | null;
@@ -589,12 +557,7 @@ export async function cancelVideo(
   last_webhook_progress?: number | null;
   last_webhook_progress_at?: string | null;
   lifecycle_status?:
-    | "pending"
-    | "running"
-    | "completed"
-    | "failed"
-    | "cancelled"
-    | "expired";
+    "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
   model?: string;
   native_video_id?: string | null;
   next_webhook_retry_at?: string | null;
@@ -619,12 +582,7 @@ export async function cancelVideo(
   size?: string;
   started_at?: number | string | null;
   status?:
-    | "queued"
-    | "processing"
-    | "completed"
-    | "failed"
-    | "cancelled"
-    | "expired";
+    "queued" | "processing" | "completed" | "failed" | "cancelled" | "expired";
   usage?: {
     cost?: number;
     is_byok?: boolean;
@@ -650,10 +608,7 @@ export async function cancelVideo(
       delivered_events?: number;
       last_attempt_at?: string | null;
       last_attempt_status?:
-        | "delivered"
-        | "scheduled_retry"
-        | "failed_permanently"
-        | null;
+        "delivered" | "scheduled_retry" | "failed_permanently" | null;
       last_delivered_at?: string | null;
       last_error_message?: string | null;
       last_failure_at?: string | null;
@@ -712,12 +667,7 @@ export async function cancelVideo(
     last_webhook_progress?: number | null;
     last_webhook_progress_at?: string | null;
     lifecycle_status?:
-      | "pending"
-      | "running"
-      | "completed"
-      | "failed"
-      | "cancelled"
-      | "expired";
+      "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
     model?: string;
     native_video_id?: string | null;
     next_webhook_retry_at?: string | null;
@@ -773,10 +723,7 @@ export async function cancelVideo(
         delivered_events?: number;
         last_attempt_at?: string | null;
         last_attempt_status?:
-          | "delivered"
-          | "scheduled_retry"
-          | "failed_permanently"
-          | null;
+          "delivered" | "scheduled_retry" | "failed_permanently" | null;
         last_delivered_at?: string | null;
         last_error_message?: string | null;
         last_failure_at?: string | null;
@@ -856,12 +803,7 @@ export async function cancelVideoAlias(
   last_webhook_progress?: number | null;
   last_webhook_progress_at?: string | null;
   lifecycle_status?:
-    | "pending"
-    | "running"
-    | "completed"
-    | "failed"
-    | "cancelled"
-    | "expired";
+    "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
   model?: string;
   native_video_id?: string | null;
   next_webhook_retry_at?: string | null;
@@ -886,12 +828,7 @@ export async function cancelVideoAlias(
   size?: string;
   started_at?: number | string | null;
   status?:
-    | "queued"
-    | "processing"
-    | "completed"
-    | "failed"
-    | "cancelled"
-    | "expired";
+    "queued" | "processing" | "completed" | "failed" | "cancelled" | "expired";
   usage?: {
     cost?: number;
     is_byok?: boolean;
@@ -917,10 +854,7 @@ export async function cancelVideoAlias(
       delivered_events?: number;
       last_attempt_at?: string | null;
       last_attempt_status?:
-        | "delivered"
-        | "scheduled_retry"
-        | "failed_permanently"
-        | null;
+        "delivered" | "scheduled_retry" | "failed_permanently" | null;
       last_delivered_at?: string | null;
       last_error_message?: string | null;
       last_failure_at?: string | null;
@@ -979,12 +913,7 @@ export async function cancelVideoAlias(
     last_webhook_progress?: number | null;
     last_webhook_progress_at?: string | null;
     lifecycle_status?:
-      | "pending"
-      | "running"
-      | "completed"
-      | "failed"
-      | "cancelled"
-      | "expired";
+      "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
     model?: string;
     native_video_id?: string | null;
     next_webhook_retry_at?: string | null;
@@ -1040,10 +969,7 @@ export async function cancelVideoAlias(
         delivered_events?: number;
         last_attempt_at?: string | null;
         last_attempt_status?:
-          | "delivered"
-          | "scheduled_retry"
-          | "failed_permanently"
-          | null;
+          "delivered" | "scheduled_retry" | "failed_permanently" | null;
         last_delivered_at?: string | null;
         last_error_message?: string | null;
         last_failure_at?: string | null;
@@ -1526,12 +1452,7 @@ export async function createBatch(
   last_webhook_progress?: number | null;
   last_webhook_progress_at?: string | null;
   lifecycle_status?:
-    | "pending"
-    | "running"
-    | "completed"
-    | "failed"
-    | "cancelled"
-    | "expired";
+    "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
   metadata?: {};
   native_batch_id?: string | null;
   next_webhook_retry_at?: string | null;
@@ -1571,10 +1492,7 @@ export async function createBatch(
       delivered_events?: number;
       last_attempt_at?: string | null;
       last_attempt_status?:
-        | "delivered"
-        | "scheduled_retry"
-        | "failed_permanently"
-        | null;
+        "delivered" | "scheduled_retry" | "failed_permanently" | null;
       last_delivered_at?: string | null;
       last_error_message?: string | null;
       last_failure_at?: string | null;
@@ -1638,12 +1556,7 @@ export async function createBatch(
     last_webhook_progress?: number | null;
     last_webhook_progress_at?: string | null;
     lifecycle_status?:
-      | "pending"
-      | "running"
-      | "completed"
-      | "failed"
-      | "cancelled"
-      | "expired";
+      "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
     metadata?: {};
     native_batch_id?: string | null;
     next_webhook_retry_at?: string | null;
@@ -1683,10 +1596,7 @@ export async function createBatch(
         delivered_events?: number;
         last_attempt_at?: string | null;
         last_attempt_status?:
-          | "delivered"
-          | "scheduled_retry"
-          | "failed_permanently"
-          | null;
+          "delivered" | "scheduled_retry" | "failed_permanently" | null;
         last_delivered_at?: string | null;
         last_error_message?: string | null;
         last_failure_at?: string | null;
@@ -1844,12 +1754,7 @@ export async function createBatchAlias(
   last_webhook_progress?: number | null;
   last_webhook_progress_at?: string | null;
   lifecycle_status?:
-    | "pending"
-    | "running"
-    | "completed"
-    | "failed"
-    | "cancelled"
-    | "expired";
+    "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
   metadata?: {};
   native_batch_id?: string | null;
   next_webhook_retry_at?: string | null;
@@ -1889,10 +1794,7 @@ export async function createBatchAlias(
       delivered_events?: number;
       last_attempt_at?: string | null;
       last_attempt_status?:
-        | "delivered"
-        | "scheduled_retry"
-        | "failed_permanently"
-        | null;
+        "delivered" | "scheduled_retry" | "failed_permanently" | null;
       last_delivered_at?: string | null;
       last_error_message?: string | null;
       last_failure_at?: string | null;
@@ -1956,12 +1858,7 @@ export async function createBatchAlias(
     last_webhook_progress?: number | null;
     last_webhook_progress_at?: string | null;
     lifecycle_status?:
-      | "pending"
-      | "running"
-      | "completed"
-      | "failed"
-      | "cancelled"
-      | "expired";
+      "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
     metadata?: {};
     native_batch_id?: string | null;
     next_webhook_retry_at?: string | null;
@@ -2001,10 +1898,7 @@ export async function createBatchAlias(
         delivered_events?: number;
         last_attempt_at?: string | null;
         last_attempt_status?:
-          | "delivered"
-          | "scheduled_retry"
-          | "failed_permanently"
-          | null;
+          "delivered" | "scheduled_retry" | "failed_permanently" | null;
         last_delivered_at?: string | null;
         last_error_message?: string | null;
         last_failure_at?: string | null;
@@ -2087,13 +1981,7 @@ export type CreateChatCompletionParams = {
             input_audio: {
               data?: string;
               format?:
-                | "wav"
-                | "mp3"
-                | "flac"
-                | "m4a"
-                | "ogg"
-                | "pcm16"
-                | "pcm24";
+                "wav" | "mp3" | "flac" | "m4a" | "ogg" | "pcm16" | "pcm24";
             };
             type: "input_audio";
           }
@@ -2321,13 +2209,7 @@ export async function createChatCompletion(
             input_audio: {
               data?: string;
               format?:
-                | "wav"
-                | "mp3"
-                | "flac"
-                | "m4a"
-                | "ogg"
-                | "pcm16"
-                | "pcm24";
+                "wav" | "mp3" | "flac" | "m4a" | "ogg" | "pcm16" | "pcm24";
             };
             type: "input_audio";
           }
@@ -2413,13 +2295,7 @@ export async function createChatCompletion(
               input_audio: {
                 data?: string;
                 format?:
-                  | "wav"
-                  | "mp3"
-                  | "flac"
-                  | "m4a"
-                  | "ogg"
-                  | "pcm16"
-                  | "pcm24";
+                  "wav" | "mp3" | "flac" | "m4a" | "ogg" | "pcm16" | "pcm24";
               };
               type: "input_audio";
             }
@@ -3911,12 +3787,7 @@ export async function createVideo(
   last_webhook_progress?: number | null;
   last_webhook_progress_at?: string | null;
   lifecycle_status?:
-    | "pending"
-    | "running"
-    | "completed"
-    | "failed"
-    | "cancelled"
-    | "expired";
+    "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
   model?: string;
   native_video_id?: string | null;
   next_webhook_retry_at?: string | null;
@@ -3941,12 +3812,7 @@ export async function createVideo(
   size?: string;
   started_at?: number | string | null;
   status?:
-    | "queued"
-    | "processing"
-    | "completed"
-    | "failed"
-    | "cancelled"
-    | "expired";
+    "queued" | "processing" | "completed" | "failed" | "cancelled" | "expired";
   usage?: {
     cost?: number;
     is_byok?: boolean;
@@ -3972,10 +3838,7 @@ export async function createVideo(
       delivered_events?: number;
       last_attempt_at?: string | null;
       last_attempt_status?:
-        | "delivered"
-        | "scheduled_retry"
-        | "failed_permanently"
-        | null;
+        "delivered" | "scheduled_retry" | "failed_permanently" | null;
       last_delivered_at?: string | null;
       last_error_message?: string | null;
       last_failure_at?: string | null;
@@ -4034,12 +3897,7 @@ export async function createVideo(
     last_webhook_progress?: number | null;
     last_webhook_progress_at?: string | null;
     lifecycle_status?:
-      | "pending"
-      | "running"
-      | "completed"
-      | "failed"
-      | "cancelled"
-      | "expired";
+      "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
     model?: string;
     native_video_id?: string | null;
     next_webhook_retry_at?: string | null;
@@ -4095,10 +3953,7 @@ export async function createVideo(
         delivered_events?: number;
         last_attempt_at?: string | null;
         last_attempt_status?:
-          | "delivered"
-          | "scheduled_retry"
-          | "failed_permanently"
-          | null;
+          "delivered" | "scheduled_retry" | "failed_permanently" | null;
         last_delivered_at?: string | null;
         last_error_message?: string | null;
         last_failure_at?: string | null;
@@ -4247,12 +4102,7 @@ export async function createVideoAlias(
   last_webhook_progress?: number | null;
   last_webhook_progress_at?: string | null;
   lifecycle_status?:
-    | "pending"
-    | "running"
-    | "completed"
-    | "failed"
-    | "cancelled"
-    | "expired";
+    "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
   model?: string;
   native_video_id?: string | null;
   next_webhook_retry_at?: string | null;
@@ -4277,12 +4127,7 @@ export async function createVideoAlias(
   size?: string;
   started_at?: number | string | null;
   status?:
-    | "queued"
-    | "processing"
-    | "completed"
-    | "failed"
-    | "cancelled"
-    | "expired";
+    "queued" | "processing" | "completed" | "failed" | "cancelled" | "expired";
   usage?: {
     cost?: number;
     is_byok?: boolean;
@@ -4308,10 +4153,7 @@ export async function createVideoAlias(
       delivered_events?: number;
       last_attempt_at?: string | null;
       last_attempt_status?:
-        | "delivered"
-        | "scheduled_retry"
-        | "failed_permanently"
-        | null;
+        "delivered" | "scheduled_retry" | "failed_permanently" | null;
       last_delivered_at?: string | null;
       last_error_message?: string | null;
       last_failure_at?: string | null;
@@ -4370,12 +4212,7 @@ export async function createVideoAlias(
     last_webhook_progress?: number | null;
     last_webhook_progress_at?: string | null;
     lifecycle_status?:
-      | "pending"
-      | "running"
-      | "completed"
-      | "failed"
-      | "cancelled"
-      | "expired";
+      "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
     model?: string;
     native_video_id?: string | null;
     next_webhook_retry_at?: string | null;
@@ -4431,10 +4268,7 @@ export async function createVideoAlias(
         delivered_events?: number;
         last_attempt_at?: string | null;
         last_attempt_status?:
-          | "delivered"
-          | "scheduled_retry"
-          | "failed_permanently"
-          | null;
+          "delivered" | "scheduled_retry" | "failed_permanently" | null;
         last_delivered_at?: string | null;
         last_error_message?: string | null;
         last_failure_at?: string | null;
@@ -5485,12 +5319,7 @@ export async function getVideo(
   last_webhook_progress?: number | null;
   last_webhook_progress_at?: string | null;
   lifecycle_status?:
-    | "pending"
-    | "running"
-    | "completed"
-    | "failed"
-    | "cancelled"
-    | "expired";
+    "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
   model?: string;
   native_video_id?: string | null;
   next_webhook_retry_at?: string | null;
@@ -5515,12 +5344,7 @@ export async function getVideo(
   size?: string;
   started_at?: number | string | null;
   status?:
-    | "queued"
-    | "processing"
-    | "completed"
-    | "failed"
-    | "cancelled"
-    | "expired";
+    "queued" | "processing" | "completed" | "failed" | "cancelled" | "expired";
   usage?: {
     cost?: number;
     is_byok?: boolean;
@@ -5546,10 +5370,7 @@ export async function getVideo(
       delivered_events?: number;
       last_attempt_at?: string | null;
       last_attempt_status?:
-        | "delivered"
-        | "scheduled_retry"
-        | "failed_permanently"
-        | null;
+        "delivered" | "scheduled_retry" | "failed_permanently" | null;
       last_delivered_at?: string | null;
       last_error_message?: string | null;
       last_failure_at?: string | null;
@@ -5608,12 +5429,7 @@ export async function getVideo(
     last_webhook_progress?: number | null;
     last_webhook_progress_at?: string | null;
     lifecycle_status?:
-      | "pending"
-      | "running"
-      | "completed"
-      | "failed"
-      | "cancelled"
-      | "expired";
+      "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
     model?: string;
     native_video_id?: string | null;
     next_webhook_retry_at?: string | null;
@@ -5669,10 +5485,7 @@ export async function getVideo(
         delivered_events?: number;
         last_attempt_at?: string | null;
         last_attempt_status?:
-          | "delivered"
-          | "scheduled_retry"
-          | "failed_permanently"
-          | null;
+          "delivered" | "scheduled_retry" | "failed_permanently" | null;
         last_delivered_at?: string | null;
         last_error_message?: string | null;
         last_failure_at?: string | null;
@@ -5752,12 +5565,7 @@ export async function getVideoAlias(
   last_webhook_progress?: number | null;
   last_webhook_progress_at?: string | null;
   lifecycle_status?:
-    | "pending"
-    | "running"
-    | "completed"
-    | "failed"
-    | "cancelled"
-    | "expired";
+    "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
   model?: string;
   native_video_id?: string | null;
   next_webhook_retry_at?: string | null;
@@ -5782,12 +5590,7 @@ export async function getVideoAlias(
   size?: string;
   started_at?: number | string | null;
   status?:
-    | "queued"
-    | "processing"
-    | "completed"
-    | "failed"
-    | "cancelled"
-    | "expired";
+    "queued" | "processing" | "completed" | "failed" | "cancelled" | "expired";
   usage?: {
     cost?: number;
     is_byok?: boolean;
@@ -5813,10 +5616,7 @@ export async function getVideoAlias(
       delivered_events?: number;
       last_attempt_at?: string | null;
       last_attempt_status?:
-        | "delivered"
-        | "scheduled_retry"
-        | "failed_permanently"
-        | null;
+        "delivered" | "scheduled_retry" | "failed_permanently" | null;
       last_delivered_at?: string | null;
       last_error_message?: string | null;
       last_failure_at?: string | null;
@@ -5875,12 +5675,7 @@ export async function getVideoAlias(
     last_webhook_progress?: number | null;
     last_webhook_progress_at?: string | null;
     lifecycle_status?:
-      | "pending"
-      | "running"
-      | "completed"
-      | "failed"
-      | "cancelled"
-      | "expired";
+      "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
     model?: string;
     native_video_id?: string | null;
     next_webhook_retry_at?: string | null;
@@ -5936,10 +5731,7 @@ export async function getVideoAlias(
         delivered_events?: number;
         last_attempt_at?: string | null;
         last_attempt_status?:
-          | "delivered"
-          | "scheduled_retry"
-          | "failed_permanently"
-          | null;
+          "delivered" | "scheduled_retry" | "failed_permanently" | null;
         last_delivered_at?: string | null;
         last_error_message?: string | null;
         last_failure_at?: string | null;
@@ -6288,12 +6080,7 @@ export async function listBatches(
     last_webhook_progress?: number | null;
     last_webhook_progress_at?: string | null;
     lifecycle_status?:
-      | "pending"
-      | "running"
-      | "completed"
-      | "failed"
-      | "cancelled"
-      | "expired";
+      "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
     metadata?: {};
     native_batch_id?: string | null;
     next_webhook_retry_at?: string | null;
@@ -6333,10 +6120,7 @@ export async function listBatches(
         delivered_events?: number;
         last_attempt_at?: string | null;
         last_attempt_status?:
-          | "delivered"
-          | "scheduled_retry"
-          | "failed_permanently"
-          | null;
+          "delivered" | "scheduled_retry" | "failed_permanently" | null;
         last_delivered_at?: string | null;
         last_error_message?: string | null;
         last_failure_at?: string | null;
@@ -6451,10 +6235,7 @@ export async function listBatches(
           delivered_events?: number;
           last_attempt_at?: string | null;
           last_attempt_status?:
-            | "delivered"
-            | "scheduled_retry"
-            | "failed_permanently"
-            | null;
+            "delivered" | "scheduled_retry" | "failed_permanently" | null;
           last_delivered_at?: string | null;
           last_error_message?: string | null;
           last_failure_at?: string | null;
@@ -6547,12 +6328,7 @@ export async function listBatchesAlias(
     last_webhook_progress?: number | null;
     last_webhook_progress_at?: string | null;
     lifecycle_status?:
-      | "pending"
-      | "running"
-      | "completed"
-      | "failed"
-      | "cancelled"
-      | "expired";
+      "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
     metadata?: {};
     native_batch_id?: string | null;
     next_webhook_retry_at?: string | null;
@@ -6592,10 +6368,7 @@ export async function listBatchesAlias(
         delivered_events?: number;
         last_attempt_at?: string | null;
         last_attempt_status?:
-          | "delivered"
-          | "scheduled_retry"
-          | "failed_permanently"
-          | null;
+          "delivered" | "scheduled_retry" | "failed_permanently" | null;
         last_delivered_at?: string | null;
         last_error_message?: string | null;
         last_failure_at?: string | null;
@@ -6710,10 +6483,7 @@ export async function listBatchesAlias(
           delivered_events?: number;
           last_attempt_at?: string | null;
           last_attempt_status?:
-            | "delivered"
-            | "scheduled_retry"
-            | "failed_permanently"
-            | null;
+            "delivered" | "scheduled_retry" | "failed_permanently" | null;
           last_delivered_at?: string | null;
           last_error_message?: string | null;
           last_failure_at?: string | null;
@@ -8764,12 +8534,7 @@ export async function listVideos(
     last_webhook_progress?: number | null;
     last_webhook_progress_at?: string | null;
     lifecycle_status?:
-      | "pending"
-      | "running"
-      | "completed"
-      | "failed"
-      | "cancelled"
-      | "expired";
+      "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
     model?: string;
     native_video_id?: string | null;
     next_webhook_retry_at?: string | null;
@@ -8825,10 +8590,7 @@ export async function listVideos(
         delivered_events?: number;
         last_attempt_at?: string | null;
         last_attempt_status?:
-          | "delivered"
-          | "scheduled_retry"
-          | "failed_permanently"
-          | null;
+          "delivered" | "scheduled_retry" | "failed_permanently" | null;
         last_delivered_at?: string | null;
         last_error_message?: string | null;
         last_failure_at?: string | null;
@@ -8954,10 +8716,7 @@ export async function listVideos(
           delivered_events?: number;
           last_attempt_at?: string | null;
           last_attempt_status?:
-            | "delivered"
-            | "scheduled_retry"
-            | "failed_permanently"
-            | null;
+            "delivered" | "scheduled_retry" | "failed_permanently" | null;
           last_delivered_at?: string | null;
           last_error_message?: string | null;
           last_failure_at?: string | null;
@@ -9044,12 +8803,7 @@ export async function listVideosAlias(
     last_webhook_progress?: number | null;
     last_webhook_progress_at?: string | null;
     lifecycle_status?:
-      | "pending"
-      | "running"
-      | "completed"
-      | "failed"
-      | "cancelled"
-      | "expired";
+      "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
     model?: string;
     native_video_id?: string | null;
     next_webhook_retry_at?: string | null;
@@ -9105,10 +8859,7 @@ export async function listVideosAlias(
         delivered_events?: number;
         last_attempt_at?: string | null;
         last_attempt_status?:
-          | "delivered"
-          | "scheduled_retry"
-          | "failed_permanently"
-          | null;
+          "delivered" | "scheduled_retry" | "failed_permanently" | null;
         last_delivered_at?: string | null;
         last_error_message?: string | null;
         last_failure_at?: string | null;
@@ -9234,10 +8985,7 @@ export async function listVideosAlias(
           delivered_events?: number;
           last_attempt_at?: string | null;
           last_attempt_status?:
-            | "delivered"
-            | "scheduled_retry"
-            | "failed_permanently"
-            | null;
+            "delivered" | "scheduled_retry" | "failed_permanently" | null;
           last_delivered_at?: string | null;
           last_error_message?: string | null;
           last_failure_at?: string | null;
@@ -9409,12 +9157,7 @@ export async function retrieveBatch(
   last_webhook_progress?: number | null;
   last_webhook_progress_at?: string | null;
   lifecycle_status?:
-    | "pending"
-    | "running"
-    | "completed"
-    | "failed"
-    | "cancelled"
-    | "expired";
+    "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
   metadata?: {};
   native_batch_id?: string | null;
   next_webhook_retry_at?: string | null;
@@ -9454,10 +9197,7 @@ export async function retrieveBatch(
       delivered_events?: number;
       last_attempt_at?: string | null;
       last_attempt_status?:
-        | "delivered"
-        | "scheduled_retry"
-        | "failed_permanently"
-        | null;
+        "delivered" | "scheduled_retry" | "failed_permanently" | null;
       last_delivered_at?: string | null;
       last_error_message?: string | null;
       last_failure_at?: string | null;
@@ -9521,12 +9261,7 @@ export async function retrieveBatch(
     last_webhook_progress?: number | null;
     last_webhook_progress_at?: string | null;
     lifecycle_status?:
-      | "pending"
-      | "running"
-      | "completed"
-      | "failed"
-      | "cancelled"
-      | "expired";
+      "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
     metadata?: {};
     native_batch_id?: string | null;
     next_webhook_retry_at?: string | null;
@@ -9566,10 +9301,7 @@ export async function retrieveBatch(
         delivered_events?: number;
         last_attempt_at?: string | null;
         last_attempt_status?:
-          | "delivered"
-          | "scheduled_retry"
-          | "failed_permanently"
-          | null;
+          "delivered" | "scheduled_retry" | "failed_permanently" | null;
         last_delivered_at?: string | null;
         last_error_message?: string | null;
         last_failure_at?: string | null;
@@ -9654,12 +9386,7 @@ export async function retrieveBatchAlias(
   last_webhook_progress?: number | null;
   last_webhook_progress_at?: string | null;
   lifecycle_status?:
-    | "pending"
-    | "running"
-    | "completed"
-    | "failed"
-    | "cancelled"
-    | "expired";
+    "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
   metadata?: {};
   native_batch_id?: string | null;
   next_webhook_retry_at?: string | null;
@@ -9699,10 +9426,7 @@ export async function retrieveBatchAlias(
       delivered_events?: number;
       last_attempt_at?: string | null;
       last_attempt_status?:
-        | "delivered"
-        | "scheduled_retry"
-        | "failed_permanently"
-        | null;
+        "delivered" | "scheduled_retry" | "failed_permanently" | null;
       last_delivered_at?: string | null;
       last_error_message?: string | null;
       last_failure_at?: string | null;
@@ -9766,12 +9490,7 @@ export async function retrieveBatchAlias(
     last_webhook_progress?: number | null;
     last_webhook_progress_at?: string | null;
     lifecycle_status?:
-      | "pending"
-      | "running"
-      | "completed"
-      | "failed"
-      | "cancelled"
-      | "expired";
+      "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
     metadata?: {};
     native_batch_id?: string | null;
     next_webhook_retry_at?: string | null;
@@ -9811,10 +9530,7 @@ export async function retrieveBatchAlias(
         delivered_events?: number;
         last_attempt_at?: string | null;
         last_attempt_status?:
-          | "delivered"
-          | "scheduled_retry"
-          | "failed_permanently"
-          | null;
+          "delivered" | "scheduled_retry" | "failed_permanently" | null;
         last_delivered_at?: string | null;
         last_error_message?: string | null;
         last_failure_at?: string | null;
