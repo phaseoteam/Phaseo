@@ -31,27 +31,6 @@ function normalizeBetaFeatures(value: unknown): Record<string, boolean> {
 	);
 }
 
-const BASE62 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-async function deterministicBase62(seed: string, length: number): Promise<string> {
-	let output = "";
-	for (let counter = 0; output.length < length; counter += 1) {
-		const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${seed}:${counter}`)));
-		for (const byte of digest) { output += BASE62[byte % BASE62.length]; if (output.length >= length) break; }
-	}
-	return output.slice(0, length);
-}
-async function keyHash(pepper: string, secret: string): Promise<string> {
-	const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(pepper), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-	const digest = new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(secret)));
-	return [...digest].map((byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-function truthy(value: unknown): boolean { return ["1", "true", "yes", "on"].includes(String(value ?? "").trim().toLowerCase()); }
-async function invalidateGatewayKey(env: Env, keyId: string) {
-	const key = env.PHASEO_MANAGEMENT_KEY ?? env.PHASEO_CONTROL_KEY;
-	if (!key || !env.PHASEO_CONTROL_SECRET) return;
-	await fetch(`${(env.GATEWAY_API_ORIGIN ?? "http://localhost:8787").replace(/\/+$/, "")}/v1/keys/${encodeURIComponent(keyId)}/invalidate`, { method: "POST", headers: { Authorization: `Bearer ${key}`, "x-control-secret": env.PHASEO_CONTROL_SECRET } });
-}
-
 export const accountAuthRouter = new Hono<{ Bindings: Env }>();
 
 accountAuthRouter.get("/status", async (c) => {
@@ -141,48 +120,6 @@ accountAuthRouter.get("/workspaces", async (c) => {
 		return [{ id: String(workspace.id), name: String(workspace.name ?? workspace.slug ?? workspace.id), role: String(row.role ?? "member") }];
 	});
 	return c.json({ workspaces }, 200, PRIVATE_NO_STORE_HEADERS);
-});
-
-accountAuthRouter.post("/chat-gateway", async (c) => {
-	const user = await requireUser(c.req.raw, c.env);
-	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
-	const body: { workspaceId?: string; forceHashSync?: boolean } = await c.req.json<{ workspaceId?: string; forceHashSync?: boolean }>().catch(() => ({}));
-	const client = getDataClient(c.env);
-	const [profile, memberships, owned] = await Promise.all([
-		client.from("users").select("default_workspace_id").eq("user_id", user.id).maybeSingle(),
-		client.from("workspace_members").select("workspace_id").eq("user_id", user.id).order("workspace_id", { ascending: true }),
-		client.from("workspaces").select("id").eq("owner_user_id", user.id).order("id", { ascending: true }),
-	]);
-	if (profile.error || memberships.error || owned.error) return c.json({ error: "workspace_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	const accessible = new Set([...(memberships.data ?? []).map((row) => String(row.workspace_id ?? "")), ...(owned.data ?? []).map((row) => String(row.id ?? ""))].filter(Boolean));
-	const requested = String(body.workspaceId ?? "").trim();
-	const fallback = String(profile.data?.default_workspace_id ?? "").trim();
-	const workspaceId = (requested && accessible.has(requested) ? requested : "") || (fallback && accessible.has(fallback) ? fallback : "") || [...accessible][0] || "";
-	if (!workspaceId) return c.json({ error: "no_workspace_membership" }, 403, PRIVATE_NO_STORE_HEADERS);
-	const seed = String(c.env.CHAT_ROUTE_KEY_SEED ?? c.env.KEY_PEPPER_ACTIVE ?? "").trim();
-	const pepper = String(c.env.KEY_PEPPER_ACTIVE ?? "").trim();
-	if (!seed || !pepper) return c.json({ error: "chat_key_configuration_missing" }, 503, PRIVATE_NO_STORE_HEADERS);
-	const kid = await deterministicBase62(`${seed}:kid:${workspaceId}`, 12);
-	const secret = await deterministicBase62(`${seed}:secret:${workspaceId}`, 40);
-	const plaintext = `phaseo_v1_sk_${kid}_${secret}`;
-	const expectedHash = await keyHash(pepper, secret);
-	const existing = await client.from("keys").select("id,workspace_id,status,hash").eq("kid", kid).maybeSingle();
-	if (existing.error) return c.json({ error: "chat_key_lookup_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
-	if (!existing.data) {
-		const inserted = await client.from("keys").insert({ workspace_id: workspaceId, name: "__chat_route_managed_key__", kid, hash: expectedHash, prefix: kid.slice(0, 6), status: "active", scopes: "[]", created_by: user.id, daily_limit_requests: 0, weekly_limit_requests: 0, monthly_limit_requests: 0, daily_limit_cost_nanos: 0, weekly_limit_cost_nanos: 0, monthly_limit_cost_nanos: 0 });
-		if (inserted.error && String(inserted.error.code ?? "") !== "23505") return c.json({ error: "chat_key_create_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
-	} else {
-		if (String(existing.data.workspace_id) !== workspaceId) return c.json({ error: "chat_key_collision" }, 500, PRIVATE_NO_STORE_HEADERS);
-		const update: Record<string, unknown> = {};
-		if (String(existing.data.status) !== "active") update.status = "active";
-		if ((body.forceHashSync === true || truthy(c.env.CHAT_ROUTE_FORCE_HASH_SYNC)) && String(existing.data.hash ?? "").toLowerCase().trim() !== expectedHash) update.hash = expectedHash;
-		if (Object.keys(update).length) {
-			const updated = await client.from("keys").update(update).eq("id", existing.data.id).eq("workspace_id", workspaceId);
-			if (updated.error) return c.json({ error: "chat_key_update_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
-			c.executionCtx.waitUntil(invalidateGatewayKey(c.env, String(existing.data.id)));
-		}
-	}
-	return c.json({ apiKey: plaintext, userId: user.id, workspaceId }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountAuthRouter.post("/test-key", async (c) => {

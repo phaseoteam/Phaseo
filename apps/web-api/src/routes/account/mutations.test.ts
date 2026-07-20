@@ -47,7 +47,6 @@ describe("account mutation boundaries", () => {
 		["PUT", "/api/account/settings/webhooks/endpoint-1/status", { status: "disabled", workspaceId: "workspace-1" }],
 		["POST", "/api/account/settings/webhooks/endpoint-1/rotate", { workspaceId: "workspace-1" }],
 		["DELETE", "/api/account/settings/webhooks/endpoint-1", { workspaceId: "workspace-1" }],
-		["POST", "/api/account/auth/chat-gateway", { workspaceId: "workspace-1" }],
 		["POST", "/api/account/auth/oauth-consent/validate", { clientId: "phaseo_cli", workspaceIds: ["workspace-1"] }],
 		["POST", "/api/account/models/catalog/benchmarks", { id: "benchmark-test", name: "Benchmark Test" }],
 		["POST", "/api/account/models/catalog/subscription-plans", { plan_uuid: "plan-uuid", plan_id: "plan", name: "Plan", frequency: "monthly", price: 10, currency: "USD" }],
@@ -83,5 +82,16 @@ describe("account mutation boundaries", () => {
 		expect([401, 403]).toContain(response.status);
 		expect(response.headers.get("cache-control")).toBe("private, no-store");
 		expect(response.headers.get("cloudflare-cdn-cache-control")).toBeNull();
+	});
+
+	it("does not expose a browser route that can mint a managed gateway key", async () => {
+		const response = await app.request("https://phaseo.app/api/account/auth/chat-gateway", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ workspaceId: "workspace-1" }),
+		}, { ENV: "development" });
+
+		expect(response.status).toBe(404);
+		expect(await response.json()).toEqual({ error: "not_found" });
 	});
 });
