@@ -36,7 +36,7 @@
 		"@dqbd/tiktoken": "^1.0.22",
 		"@flags-sdk/statsig": "^0.2.5",
 		"@hookform/resolvers": "^5.2.2",
-		"@next/third-parties": "16.2.6",
+		"@next/third-parties": "16.2.10",
 		"@number-flow/react": "^0.6.0",
 		"@octokit/rest": "^22.0.1",
 		"@react-three/drei": "^10.7.6",
