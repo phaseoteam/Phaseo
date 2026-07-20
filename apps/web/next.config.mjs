@@ -71,26 +71,6 @@ const nextConfig = {
         ],
       },
       {
-        source: "/mcp/approvals/:path*",
-        headers: [
-          {
-            key: "Content-Security-Policy",
-            value: "frame-ancestors 'none'; base-uri 'self'; object-src 'none'; img-src 'self' data:",
-          },
-          { key: "Cache-Control", value: "no-store" },
-        ],
-      },
-      {
-        source: "/mcp/secret-reveals/:path*",
-        headers: [
-          {
-            key: "Content-Security-Policy",
-            value: "frame-ancestors 'none'; base-uri 'self'; object-src 'none'; img-src 'self' data:",
-          },
-          { key: "Cache-Control", value: "no-store" },
-        ],
-      },
-      {
         source: "/",
         headers: [
           {

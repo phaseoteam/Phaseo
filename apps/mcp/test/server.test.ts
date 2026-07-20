@@ -1,7 +1,6 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { MCP_DELETE_SCOPES, MCP_MUTATION_TOOL_NAMES, MCP_WRITE_SCOPES } from "../src/mutation-tools";
 
 vi.mock("agents/mcp", () => ({ createMcpHandler: vi.fn() }));
 
@@ -10,9 +9,6 @@ let createServer: typeof import("../src/index").createServer;
 
 const env = {
 	PHASEO_API_BASE_URL: "https://api.phaseo.app",
-	PHASEO_MCP_WRITE_TOOLS_ENABLED: "false",
-	PHASEO_MCP_DESTRUCTIVE_TOOLS_ENABLED: "false",
-	PHASEO_MCP_SECRET_TOOLS_ENABLED: "false",
 	PHASEO_MCP_RESOURCE_SERVER_SECRET: "s".repeat(64),
 };
 
@@ -94,176 +90,7 @@ describe("Phaseo MCP server metadata", () => {
 		expect(tools.api_keys_list?._meta?.securitySchemes).toEqual([
 			{ type: "oauth2", scopes: ["keys:read"] },
 		]);
-		expect(tools.api_key_create).toBeUndefined();
-	});
-
-	it("keeps ordinary writes behind both the feature flag and write scope", async () => {
-		const server = createServer({ ...env, PHASEO_MCP_WRITE_TOOLS_ENABLED: "true" }, {
-			accessToken: "upstream-token",
-			workspaceId: "workspace_1",
-			scopes: ["keys:write"],
-		});
-		const client = new Client({ name: "phaseo-mcp-test", version: "1.0.0" });
-		connectedClients.push(client);
-		const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-		await server.connect(serverTransport);
-		await client.connect(clientTransport);
-
-		const tools = (await client.listTools()).tools;
-		expect(tools.map(({ name }) => name)).toEqual(["api_key_update"]);
-		const tool = tools.find(({ name }) => name === "api_key_update");
-		expect(tool?.annotations).toMatchObject({
-			readOnlyHint: false,
-			destructiveHint: false,
-			idempotentHint: true,
-			openWorldHint: true,
-		});
-		expect(tool?._meta?.securitySchemes).toEqual([{ type: "oauth2", scopes: ["keys:write"] }]);
-	});
-
-	it("isolates secret-returning and destructive tools behind separate flags", async () => {
-		const server = createServer({
-			...env,
-			PHASEO_MCP_WRITE_TOOLS_ENABLED: "true",
-			PHASEO_MCP_DESTRUCTIVE_TOOLS_ENABLED: "true",
-			PHASEO_MCP_SECRET_TOOLS_ENABLED: "true",
-		}, {
-			accessToken: "upstream-token",
-			workspaceId: "workspace_1",
-			scopes: ["keys:write", "keys:delete"],
-		});
-		const client = new Client({ name: "phaseo-mcp-test", version: "1.0.0" });
-		connectedClients.push(client);
-		const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-		await server.connect(serverTransport);
-		await client.connect(clientTransport);
-
-		const tools = Object.fromEntries((await client.listTools()).tools.map((tool) => [tool.name, tool]));
-		expect(Object.keys(tools)).toEqual(["api_key_create", "api_key_update", "api_key_delete"]);
-		expect(tools.api_key_create?.annotations?.destructiveHint).toBe(false);
-		expect(tools.api_key_delete?.annotations?.destructiveHint).toBe(true);
-		expect(tools.api_key_delete?._meta?.securitySchemes).toEqual([{ type: "oauth2", scopes: ["keys:delete"] }]);
-	});
-
-	it("registers the complete CRUD surface when every mutation class and scope is enabled", async () => {
-		const server = createServer({
-			...env,
-			PHASEO_MCP_WRITE_TOOLS_ENABLED: "true",
-			PHASEO_MCP_DESTRUCTIVE_TOOLS_ENABLED: "true",
-			PHASEO_MCP_SECRET_TOOLS_ENABLED: "true",
-		}, {
-			accessToken: "upstream-token",
-			workspaceId: "workspace_1",
-			scopes: [...MCP_WRITE_SCOPES, ...MCP_DELETE_SCOPES],
-		});
-		const client = new Client({ name: "phaseo-mcp-test", version: "1.0.0" });
-		connectedClients.push(client);
-		const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-		await server.connect(serverTransport);
-		await client.connect(clientTransport);
-
-		expect((await client.listTools()).tools.map(({ name }) => name)).toEqual(MCP_MUTATION_TOOL_NAMES);
-	});
-
-	it("requires confirmation and proxies a scoped mutation with the exchanged user token", async () => {
-		const fetchMock = vi.fn(async (request: Request) => {
-			if (request.url.endsWith("/oauth/mcp/action-approval/prepare")) {
-				return Response.json({
-					approval_id: "11111111-1111-4111-8111-111111111111",
-					execution_token: "execution-token-that-is-at-least-32-characters",
-					expires_at: "2026-07-17T19:00:00.000Z",
-					approval_url: "https://phaseo.app/mcp/approvals/11111111-1111-4111-8111-111111111111",
-				});
-			}
-			if (request.url.endsWith("/oauth/mcp/action-approval/consume")) {
-				return Response.json({ approval_id: "11111111-1111-4111-8111-111111111111", consumed: true });
-			}
-			if (request.url.endsWith("/oauth/mcp/action-approval/complete")) return Response.json({ completed: true });
-			return Response.json({ data: { id: "key_1", name: "Updated" } });
-		});
-		vi.stubGlobal("fetch", fetchMock);
-		const server = createServer({ ...env, PHASEO_MCP_WRITE_TOOLS_ENABLED: "true" }, {
-			accessToken: "upstream-token",
-			workspaceId: "workspace_1",
-			scopes: ["keys:write"],
-		});
-		const client = new Client({ name: "phaseo-mcp-test", version: "1.0.0" });
-		connectedClients.push(client);
-		const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-		await server.connect(serverTransport);
-		await client.connect(clientTransport);
-
-		const rejected = await client.callTool({ name: "api_key_update", arguments: { keyId: "key_1", name: "Updated" } });
-		expect(rejected.isError).toBe(true);
-		expect(fetchMock).not.toHaveBeenCalled();
-
-		const prepared = await client.callTool({ name: "api_key_update", arguments: { keyId: "key_1", name: "Updated", confirm: true } });
-		expect(prepared.structuredContent).toMatchObject({
-			status: "approval_required",
-			approval: { id: "11111111-1111-4111-8111-111111111111" },
-		});
-		expect(fetchMock).toHaveBeenCalledTimes(1);
-
-		const result = await client.callTool({
-			name: "api_key_update",
-			arguments: {
-				keyId: "key_1",
-				name: "Updated",
-				confirm: true,
-				approvalToken: "execution-token-that-is-at-least-32-characters",
-			},
-		});
-		expect(result.structuredContent).toEqual({ status: "completed", result: { data: { id: "key_1", name: "Updated" } } });
-		const request = fetchMock.mock.calls.map((call) => call[0] as Request).find((candidate) => candidate.url.endsWith("/v1/keys/key_1")) as Request;
-		expect(request.url).toBe("https://api.phaseo.app/v1/keys/key_1");
-		expect(request.method).toBe("PATCH");
-		expect(request.headers.get("authorization")).toBe("Bearer upstream-token");
-		expect(await request.clone().json()).toEqual({ name: "Updated" });
-	});
-
-	it("keeps generated secrets out of MCP results and returns a one-time reveal URL", async () => {
-		const plaintextKey = "phaseo_v1_sk_secret-that-must-never-reach-the-model";
-		const fetchMock = vi.fn(async (request: Request) => {
-			if (request.url.endsWith("/oauth/mcp/action-approval/prepare")) return Response.json({
-				approval_id: "22222222-2222-4222-8222-222222222222",
-				execution_token: "secret-execution-token-that-is-long-enough",
-				expires_at: "2026-07-17T19:00:00.000Z",
-				approval_url: "https://phaseo.app/mcp/approvals/22222222-2222-4222-8222-222222222222",
-			});
-			if (request.url.endsWith("/oauth/mcp/action-approval/consume")) return Response.json({ approval_id: "22222222-2222-4222-8222-222222222222", consumed: true });
-			if (request.url.endsWith("/v1/keys")) return Response.json({ data: { id: "key_2", prefix: "phaseo_v1", key: plaintextKey } });
-			if (request.url.endsWith("/oauth/mcp/secret-reveal/store")) return Response.json({
-				reveal_id: "33333333-3333-4333-8333-333333333333",
-				reveal_url: "https://phaseo.app/mcp/secret-reveals/33333333-3333-4333-8333-333333333333",
-				expires_at: "2026-07-17T19:05:00.000Z",
-			});
-			if (request.url.endsWith("/oauth/mcp/action-approval/complete")) return Response.json({ completed: true });
-			return new Response("not found", { status: 404 });
-		});
-		vi.stubGlobal("fetch", fetchMock);
-		const server = createServer({ ...env, PHASEO_MCP_WRITE_TOOLS_ENABLED: "true", PHASEO_MCP_SECRET_TOOLS_ENABLED: "true" }, {
-			accessToken: "upstream-token", workspaceId: "workspace_1", scopes: ["keys:write"],
-		});
-		const client = new Client({ name: "phaseo-mcp-test", version: "1.0.0" });
-		connectedClients.push(client);
-		const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-		await server.connect(serverTransport);
-		await client.connect(clientTransport);
-
-		await client.callTool({ name: "api_key_create", arguments: { name: "Secret key", confirm: true } });
-		const result = await client.callTool({
-			name: "api_key_create",
-			arguments: { name: "Secret key", confirm: true, approvalToken: "secret-execution-token-that-is-long-enough" },
-		});
-		const serialized = JSON.stringify(result);
-		expect(serialized).not.toContain(plaintextKey);
-		expect(result.structuredContent).toMatchObject({
-			status: "completed",
-			result: { data: { id: "key_2", key: "[available only through the Phaseo one-time reveal page]" } },
-			secretReveal: { id: "33333333-3333-4333-8333-333333333333" },
-		});
-		const storeRequest = fetchMock.mock.calls.map((call) => call[0] as Request).find((request) => request.url.endsWith("/oauth/mcp/secret-reveal/store")) as Request;
-		expect(await storeRequest.clone().json()).toMatchObject({ secrets: { "result.data.key": plaintextKey } });
+		expect(Object.keys(tools).some((name) => /(?:create|update|delete|remove)$/.test(name))).toBe(false);
 	});
 
 	it("proxies a scoped control-plane read with the exchanged user token", async () => {
@@ -390,33 +217,4 @@ describe("Phaseo MCP OAuth discovery", () => {
 		expect(metadata.authorization_servers).toEqual(["https://api.phaseo.app/oauth"]);
 	});
 
-	it("publishes write and delete scopes only when their tool classes are enabled", async () => {
-		const enabledEnv = {
-			...env,
-			PHASEO_MCP_WRITE_TOOLS_ENABLED: "true",
-			PHASEO_MCP_DESTRUCTIVE_TOOLS_ENABLED: "true",
-		};
-		const response = await worker.fetch(
-			new Request("https://mcp.phaseo.app/.well-known/oauth-protected-resource/mcp"),
-			enabledEnv,
-			{} as ExecutionContext,
-		);
-		const metadata = await response.json<{ scopes_supported: string[] }>();
-
-		expect(metadata.scopes_supported).toContain("workspaces:write");
-		expect(metadata.scopes_supported).toContain("oauth_clients:write");
-		expect(metadata.scopes_supported).toContain("workspaces:delete");
-		expect(metadata.scopes_supported).toContain("oauth_clients:delete");
-		expect(metadata.scopes_supported).not.toContain("gateway:access");
-
-		const challengeResponse = await worker.fetch(
-			new Request("https://mcp.phaseo.app/mcp", { method: "POST" }),
-			enabledEnv,
-			{} as ExecutionContext,
-		);
-		const challenge = challengeResponse.headers.get("www-authenticate") ?? "";
-		expect(challenge).not.toContain("keys:write");
-		expect(challenge).not.toContain("keys:delete");
-		expect(challenge).toContain("keys:read");
-	});
 });

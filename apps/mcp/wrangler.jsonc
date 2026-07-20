@@ -14,10 +14,7 @@
     "traces": { "enabled": true, "head_sampling_rate": 0.01 }
   },
   "vars": {
-    "PHASEO_API_BASE_URL": "https://api.phaseo.app",
-    "PHASEO_MCP_WRITE_TOOLS_ENABLED": "false",
-    "PHASEO_MCP_DESTRUCTIVE_TOOLS_ENABLED": "false",
-    "PHASEO_MCP_SECRET_TOOLS_ENABLED": "false"
+    "PHASEO_API_BASE_URL": "https://api.phaseo.app"
   },
   "env": {
     "production": {
@@ -33,10 +30,7 @@
         { "binding": "PHASEO_API", "service": "phaseo-gateway" }
       ],
       "vars": {
-        "PHASEO_API_BASE_URL": "https://api.phaseo.app",
-        "PHASEO_MCP_WRITE_TOOLS_ENABLED": "false",
-        "PHASEO_MCP_DESTRUCTIVE_TOOLS_ENABLED": "false",
-        "PHASEO_MCP_SECRET_TOOLS_ENABLED": "false"
+        "PHASEO_API_BASE_URL": "https://api.phaseo.app"
       }
     }
   }
