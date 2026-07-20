@@ -82,7 +82,7 @@
 		"jszip": "^3.10.1",
 		"katex": "0.16.47",
 		"lucide-react": "^1.17.0",
-		"motion": "^12.40.0",
+		"motion": "^12.42.2",
 		"nanoid": "^5.1.9",
 		"next": "16.2.6",
 		"next-mdx-remote": "^6.0.0",
