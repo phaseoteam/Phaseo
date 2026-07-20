@@ -17,6 +17,31 @@ export function configuredAuthOriginsFromEnv(
 	return [...new Set(candidates)];
 }
 
+export function resolveVercelPreviewAuthOrigin(
+	env: NodeJS.ProcessEnv = process.env,
+): string | null {
+	if (env.VERCEL_ENV !== "preview") return null;
+
+	const deploymentUrl = String(
+		env.NEXT_PUBLIC_VERCEL_URL ?? env.VERCEL_URL ?? "",
+	).trim();
+	if (!deploymentUrl) return null;
+
+	try {
+		const url = new URL(
+			deploymentUrl.startsWith("http")
+				? deploymentUrl
+				: `https://${deploymentUrl}`,
+		);
+		if (url.protocol !== "https:" || !url.hostname.endsWith(".vercel.app")) {
+			return null;
+		}
+		return stripTrailingSlash(url.origin);
+	} catch {
+		return null;
+	}
+}
+
 export function resolveLocalDevAuthOrigin(input: {
 	originHeader?: string | null;
 	hostHeader?: string | null;
@@ -47,6 +72,9 @@ export async function resolveAuthOrigin(
 ): Promise<string> {
 	const configuredOrigins = configuredAuthOriginsFromEnv(env);
 	const isDev = env.NODE_ENV !== "production";
+	const vercelPreviewOrigin = resolveVercelPreviewAuthOrigin(env);
+
+	if (vercelPreviewOrigin) return vercelPreviewOrigin;
 
 	if (!isDev) {
 		if (configuredOrigins.length > 0) return configuredOrigins[0]!;
