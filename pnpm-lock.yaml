@@ -86,8 +86,8 @@ importers:
         specifier: ^1.38.0
         version: 1.38.0
       '@visulima/tabular':
-        specifier: ^4.0.0
-        version: 4.0.0
+        specifier: ^3.1.0
+        version: 3.1.3
       hono:
         specifier: ^4.12.27
         version: 4.12.27
@@ -191,8 +191,8 @@ importers:
         specifier: ^5.2.2
         version: 5.2.2(react-hook-form@7.81.0(react@19.2.7))
       '@next/third-parties':
-        specifier: 16.2.10
-        version: 16.2.10(next@16.2.6(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)
+        specifier: 16.2.6
+        version: 16.2.6(next@16.2.6(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)
       '@number-flow/react':
         specifier: ^0.6.0
         version: 0.6.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -212,14 +212,14 @@ importers:
         specifier: ^3.33.3
         version: 3.33.3
       '@statsig/react-bindings':
-        specifier: ^3.33.2
-        version: 3.33.2(react@19.2.7)
+        specifier: ^3.33.3
+        version: 3.33.3(react@19.2.7)
       '@statsig/session-replay':
-        specifier: ^3.33.2
-        version: 3.33.2
+        specifier: ^3.33.3
+        version: 3.33.3
       '@statsig/web-analytics':
-        specifier: ^3.33.2
-        version: 3.33.2
+        specifier: ^3.33.3
+        version: 3.33.3
       '@streamdown/math':
         specifier: ^1.0.2
         version: 1.0.2(react@19.2.7)
@@ -239,8 +239,8 @@ importers:
         specifier: ^8.21.3
         version: 8.21.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@tanstack/react-virtual':
-        specifier: ^3.14.6
-        version: 3.14.6(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        specifier: ^3.13.21
+        version: 3.13.23(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@upstash/ratelimit':
         specifier: ^2.0.6
         version: 2.0.8(@upstash/redis@1.38.0)
@@ -329,8 +329,8 @@ importers:
         specifier: ^1.17.0
         version: 1.17.0(react@19.2.7)
       motion:
-        specifier: ^12.42.2
-        version: 12.42.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        specifier: ^12.40.0
+        version: 12.40.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       nanoid:
         specifier: ^5.1.9
         version: 5.1.9
@@ -2601,8 +2601,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@next/third-parties@16.2.10':
-    resolution: {integrity: sha512-H3yxCMLziM1JKXnjQv83WBH2cp1fB1vMxpC1/bBTpvvaesBEuRuprpzq5RI32atis0VhUZflgdpJdGNZIGpQaQ==}
+  '@next/third-parties@16.2.6':
+    resolution: {integrity: sha512-PDPIPVj1NX6Taxsl8OJteAUJ7iwR+QrokwWig68eh0cOmuNjC6MBL+ZzBjO8Bv0n/HOSqjGArZpM5KMSUxm+MQ==}
     peerDependencies:
       next: ^13.0.0 || ^14.0.0 || ^15.0.0 || ^16.0.0-beta.0
       react: ^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0
@@ -3948,28 +3948,22 @@ packages:
   '@standard-schema/utils@0.3.0':
     resolution: {integrity: sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g==}
 
-  '@statsig/client-core@3.33.2':
-    resolution: {integrity: sha512-TKZ546NfK2oShe1sHhgn+TaCoAWZ/bs0soK+gAjB/y5UAqWVhCcORAd/8eRUyor8Lz2VfL3V4Ze/zr1CCM2/5g==}
-
   '@statsig/client-core@3.33.3':
     resolution: {integrity: sha512-L9CMsROdc/dMsdEq8gXnoO8/XNUwxh3YjU5ZIbLLyc/DIDYVzioo+R2NIS9XDiiqaW7A7SRZdjjiUQq7qXloCw==}
-
-  '@statsig/js-client@3.33.2':
-    resolution: {integrity: sha512-FgAnaN0d8X/OEZS/HEGI2D3CdbZzsbw3BHlSGvaqUcnwu45aXejFFUCCw96/NTH4lEvSMj1S1RBsrnQ2pVErgQ==}
 
   '@statsig/js-client@3.33.3':
     resolution: {integrity: sha512-FjEZDYzLJ2iwie4Dma4lAOLbGXdU6W/xp6ib+7rqgDd2+0I9qduwof6W577NNc/gVzLTq2D8tsGauQD+oJmlPw==}
 
-  '@statsig/react-bindings@3.33.2':
-    resolution: {integrity: sha512-IMipEGbDVMH1xnNJ4KHB5RwAmOWK6CUWRGOfY2Le3rPID6xByEn91KWNHVGZ423FodX8+4opblV9U8/bz02D7A==}
+  '@statsig/react-bindings@3.33.3':
+    resolution: {integrity: sha512-WYwdyJdzZlfAu9q0CYkE/E2UIYBSFWuo5MC/30x2ckvIArCmEvLmFgp5PMYKPYtwCNXiraX1mwozxenTr6k+0g==}
     peerDependencies:
       react: ^16.6.3 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
-  '@statsig/session-replay@3.33.2':
-    resolution: {integrity: sha512-++B4K+rRV2YZ+1g11/R/a7wK4x7tyJbngYR/LkQ/8umpV3nc/9hyLO1io3O2MlcbpV6AgrWl8vmJd+M2WCBRpA==}
+  '@statsig/session-replay@3.33.3':
+    resolution: {integrity: sha512-KD9h3eRnbmbOyC8/VN1V6vpx6teIcu6hSFKp1F7u8pA2fhVxvV1cT80xmu+3a7QkO+9SFWNu0DJ/86DsHYz4QQ==}
 
-  '@statsig/web-analytics@3.33.2':
-    resolution: {integrity: sha512-+xvWNB/p4ziHTUn7828fIfewTqy2Y0JK+priehHoee2aeskO0fm40UrXiaKJdC69Nk3UUSninXdeyI0bK4gWdw==}
+  '@statsig/web-analytics@3.33.3':
+    resolution: {integrity: sha512-raGSL9SnIH0x3RThOoroB9k+fiF9eSzoKXIgsfZMyfMFHiYzMxBra+oKiTtlyr2byHIHjMqHGvwKCiLANV3NCg==}
 
   '@stoplight/better-ajv-errors@1.0.3':
     resolution: {integrity: sha512-0p9uXkuB22qGdNfy3VeEhxkU5uwvp/KrBTAbrLBURv6ilxIVwanKwjMc41lQfIVgPGcOkmLbTolfFrSsueu7zA==}
@@ -4346,8 +4340,8 @@ packages:
       react: '>=16.8'
       react-dom: '>=16.8'
 
-  '@tanstack/react-virtual@3.14.6':
-    resolution: {integrity: sha512-4+Uq8m0/gzO4kMCHUEpTtGX1RnONK0C+g88b2ltwPMWUBiaVarBuWKoPJaz7gj1cKCVRAdyu+U8GcKhwCc2beA==}
+  '@tanstack/react-virtual@3.13.23':
+    resolution: {integrity: sha512-XnMRnHQ23piOVj2bzJqHrRrLg4r+F86fuBcwteKfbIjJrtGxb4z7tIvPVAe4B+4UVwo9G4Giuz5fmapcrnZ0OQ==}
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
@@ -4356,8 +4350,8 @@ packages:
     resolution: {integrity: sha512-ldZXEhOBb8Is7xLs01fR3YEc3DERiz5silj8tnGkFZytt1abEvl/GhUmCE0PMLaMPTa3Jk4HbKmRlHmu+gCftg==}
     engines: {node: '>=12'}
 
-  '@tanstack/virtual-core@3.17.4':
-    resolution: {integrity: sha512-nGm5KteqxasUdThLc2izl6dHUqLv0LQj7Nuyo5gYalTPf/U8a9ermvsl7reT+6ioBW1l8WfpP/mcU338nLXpqw==}
+  '@tanstack/virtual-core@3.13.23':
+    resolution: {integrity: sha512-zSz2Z2HNyLjCplANTDyl3BcdQJc2k1+yyFoKhNRmCr7V7dY8o8q5m8uFTI1/Pg1kL+Hgrz6u3Xo6eFUB7l66cg==}
 
   '@tokenlens/core@1.3.0':
     resolution: {integrity: sha512-d8YNHNC+q10bVpi95fELJwJyPVf1HfvBEI18eFQxRSZTdByXrP+f/ZtlhSzkx0Jl0aEmYVeBA5tPeeYRioLViQ==}
@@ -5049,9 +5043,9 @@ packages:
     resolution: {integrity: sha512-UycprH3T6n3jH0k44NHMa7pnFHGu/N05MjojYr+Mc6I7obkoLIJujSWwin1pCvdy/eOxrI/l3uDLQsmcrOb4ug==}
     engines: {node: '>= 20'}
 
-  '@visulima/tabular@4.0.0':
-    resolution: {integrity: sha512-2BZVeNojH++U2AiMM8sIJb/Ofcrp8Pz2VnSJLyPH5kAGpE0c/KgFgUW8D6SPJIa5aylzMvK11p9YDPjaJ3igHQ==}
-    engines: {node: ^22.14.0 || >=24.10.0}
+  '@visulima/tabular@3.1.3':
+    resolution: {integrity: sha512-egA4Zh+iP94W8Aj9HCVvtyXAwgZATVvnNEPZj3zgx2WqM7HCmKfMhRFwlGIeuBYFT0pR/5D8xQChc0j4gQL2/Q==}
+    engines: {node: '>=20.19 <=25.x'}
 
   '@vitejs/plugin-react@6.0.3':
     resolution: {integrity: sha512-vmFvco5/QuC2f9Oj+wTk0+9XeDFkHxSamwZKYc7MxYwKICfvUvlMhqKI0VuICPltGqh1neqBKDvO4kes1ya8vg==}
@@ -7189,8 +7183,8 @@ packages:
   fraction.js@5.3.4:
     resolution: {integrity: sha512-1X1NTtiJphryn/uLQz3whtY6jK3fTqoE3ohKs0tT+Ujr1W59oopxmoEh7Lu5p6vBaPbgoM0bzveAW4Qi5RyWDQ==}
 
-  framer-motion@12.42.2:
-    resolution: {integrity: sha512-5XY9luDiu0oHfHBjpDthFMh0ES+122w6p/papSJBweMkO8Sn+PW2QaEgRblQBpWFnuvZS5qvarpt/hO2pjGmnw==}
+  framer-motion@12.40.0:
+    resolution: {integrity: sha512-uaBd3qC1v3KQqBEjwTUd183K6PbS+j0yR9w9VmEOLWA/tnUcSn8Xa3uck7t4dgpDoUss8xQTcj8W2L07lrnLFg==}
     peerDependencies:
       '@emotion/is-prop-valid': '*'
       react: ^18.0.0 || ^19.0.0
@@ -8878,14 +8872,14 @@ packages:
   mlly@1.8.2:
     resolution: {integrity: sha512-d+ObxMQFmbt10sretNDytwt85VrbkhhUA/JBGm1MPaWJ65Cl4wOgLaB1NYvJSZ0Ef03MMEU/0xpPMXUIQ29UfA==}
 
-  motion-dom@12.42.2:
-    resolution: {integrity: sha512-5gIMWLp/PycBtJRJWRgjxke5n8dlvkSn2DrYW+tr3XcqAZY1xZh6BJyooJXCM8wdfM7wfMjkBJNLge1CKPUIRA==}
+  motion-dom@12.40.0:
+    resolution: {integrity: sha512-HxU3ZaBwNPVQUBQf1xxgq+7JrPNZvjLVxgbpEZL7RrWJnsxOf0/OM+yrHG9ogLQ31Do/r57Oz2gQWPK+6q62mg==}
 
   motion-utils@12.39.0:
     resolution: {integrity: sha512-8nadJAJjTtqRkmRF36FoJTrywK9nnFmnPwnSMyxaOCU7GDjN9RTMJIxx9De8ErM+vpPhMccr/6fo5WciyQLnMQ==}
 
-  motion@12.42.2:
-    resolution: {integrity: sha512-Atvv11yUKIid41cVrRBDVX5m8tF8kNpExRSlbpt6APClhDjtwQssgFHhQzejxw7/7YYbjHSPKBVbHo05BuJT5Q==}
+  motion@12.40.0:
+    resolution: {integrity: sha512-yjrHUrBFW6kQvjJwRsoiPSAhC5tRwRqNGJWmiJ4CrGnbKp0V88AdzkhBmDoqIsIPfarOe0Uddd37Xq43/gIocA==}
     peerDependencies:
       '@emotion/is-prop-valid': '*'
       react: ^18.0.0 || ^19.0.0
@@ -13947,7 +13941,7 @@ snapshots:
   '@next/swc-win32-x64-msvc@16.2.6':
     optional: true
 
-  '@next/third-parties@16.2.10(next@16.2.6(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)':
+  '@next/third-parties@16.2.6(next@16.2.6(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)':
     dependencies:
       next: 16.2.6(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       react: 19.2.7
@@ -15326,34 +15320,28 @@ snapshots:
 
   '@standard-schema/utils@0.3.0': {}
 
-  '@statsig/client-core@3.33.2': {}
-
   '@statsig/client-core@3.33.3': {}
-
-  '@statsig/js-client@3.33.2':
-    dependencies:
-      '@statsig/client-core': 3.33.2
 
   '@statsig/js-client@3.33.3':
     dependencies:
       '@statsig/client-core': 3.33.3
 
-  '@statsig/react-bindings@3.33.2(react@19.2.7)':
+  '@statsig/react-bindings@3.33.3(react@19.2.7)':
     dependencies:
-      '@statsig/client-core': 3.33.2
-      '@statsig/js-client': 3.33.2
+      '@statsig/client-core': 3.33.3
+      '@statsig/js-client': 3.33.3
       react: 19.2.7
 
-  '@statsig/session-replay@3.33.2':
+  '@statsig/session-replay@3.33.3':
     dependencies:
       '@rrweb/record': 2.0.0-alpha.17
-      '@statsig/client-core': 3.33.2
+      '@statsig/client-core': 3.33.3
       rrweb: 2.0.0-alpha.17
 
-  '@statsig/web-analytics@3.33.2':
+  '@statsig/web-analytics@3.33.3':
     dependencies:
-      '@statsig/client-core': 3.33.2
-      '@statsig/js-client': 3.33.2
+      '@statsig/client-core': 3.33.3
+      '@statsig/js-client': 3.33.3
       web-vitals: 5.0.3
 
   '@stoplight/better-ajv-errors@1.0.3(ajv@8.20.0)':
@@ -15902,15 +15890,15 @@ snapshots:
       react: 19.2.7
       react-dom: 19.2.7(react@19.2.7)
 
-  '@tanstack/react-virtual@3.14.6(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@tanstack/react-virtual@3.13.23(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
-      '@tanstack/virtual-core': 3.17.4
+      '@tanstack/virtual-core': 3.13.23
       react: 19.2.7
       react-dom: 19.2.7(react@19.2.7)
 
   '@tanstack/table-core@8.21.3': {}
 
-  '@tanstack/virtual-core@3.17.4': {}
+  '@tanstack/virtual-core@3.13.23': {}
 
   '@tokenlens/core@1.3.0': {}
 
@@ -16608,7 +16596,7 @@ snapshots:
 
   '@vercel/oidc@3.2.0': {}
 
-  '@visulima/tabular@4.0.0': {}
+  '@visulima/tabular@3.1.3': {}
 
   '@vitejs/plugin-react@6.0.3(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.7)(@babel/runtime@7.29.7)(rolldown@1.1.5)(vite@8.1.4(@types/node@25.6.0)(esbuild@0.25.12)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0)))(vite@8.1.4(@types/node@25.6.0)(esbuild@0.25.12)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))':
     dependencies:
@@ -19137,9 +19125,9 @@ snapshots:
 
   fraction.js@5.3.4: {}
 
-  framer-motion@12.42.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7):
+  framer-motion@12.40.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7):
     dependencies:
-      motion-dom: 12.42.2
+      motion-dom: 12.40.0
       motion-utils: 12.39.0
       tslib: 2.8.1
     optionalDependencies:
@@ -21696,15 +21684,15 @@ snapshots:
       pkg-types: 1.3.1
       ufo: 1.6.3
 
-  motion-dom@12.42.2:
+  motion-dom@12.40.0:
     dependencies:
       motion-utils: 12.39.0
 
   motion-utils@12.39.0: {}
 
-  motion@12.42.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7):
+  motion@12.40.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7):
     dependencies:
-      framer-motion: 12.42.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      framer-motion: 12.40.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       tslib: 2.8.1
     optionalDependencies:
       react: 19.2.7
