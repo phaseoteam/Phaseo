@@ -168,23 +168,28 @@ function normalizeSingleSegmentSlugs(list?: string[], label?: string): string[] 
 	return [...normalized].sort();
 }
 
+function normalizeModelId(modelId: unknown): string | null {
+	const segments = String(modelId ?? "")
+		.trim()
+		.replace(/^\/+|\/+$/g, "")
+		.split("/")
+		.filter(Boolean);
+
+	return segments.length === 2 ? segments.join("/") : null;
+}
+
 function normalizeModelIds(list?: string[]): string[] {
 	const normalized = new Set<string>();
 	let dropped = 0;
 
 	for (const modelId of list ?? []) {
-		const segments = String(modelId ?? "")
-			.trim()
-			.replace(/^\/+|\/+$/g, "")
-			.split("/")
-			.filter(Boolean);
-
-		if (segments.length !== 2) {
+		const normalizedModelId = normalizeModelId(modelId);
+		if (!normalizedModelId) {
 			dropped += 1;
 			continue;
 		}
 
-		normalized.add(segments.join("/"));
+		normalized.add(normalizedModelId);
 	}
 
 	if (dropped > 0) {
@@ -360,11 +365,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 	const modelIds = normalizeModelIds(
 		modelsForSitemap.map((model) => model.model_id),
 	);
+	const modelLastModifiedById = new Map<string, string | null>();
+	for (const model of modelsForSitemap) {
+		const modelId = normalizeModelId(model.model_id);
+		if (!modelId) continue;
+		modelLastModifiedById.set(
+			modelId,
+			resolveLastModified(
+				modelLastModifiedById.get(modelId),
+				model.updated_at,
+			),
+		);
+	}
 	const modelEntries = modelIds.map((slug) => {
-		const source = modelsForSitemap.find((model) => model.model_id === slug);
 		return {
 			slug,
-			lastModified: resolveLastModified(source?.updated_at),
+			lastModified: modelLastModifiedById.get(slug) ?? null,
 		};
 	});
 	const dynamicItems = [
