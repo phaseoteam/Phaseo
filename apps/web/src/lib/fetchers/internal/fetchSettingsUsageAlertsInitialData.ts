@@ -1,22 +1,9 @@
-import type { SettingsUsageAlertsInitialData } from "@/app/api/internal/settings/usage/alerts/initial/route";
-import { internalUrl, requestOrigin } from "@/lib/fetchers/internal/requestOrigin";
+import type { SettingsUsageAlertsInitialData } from "@/lib/fetchers/internal/settingsTypes";
+import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
 
 export async function fetchSettingsUsageAlertsInitialData(): Promise<SettingsUsageAlertsInitialData> {
-	const { cookie, origin } = await requestOrigin();
-	const response = await fetch(
-		internalUrl(origin, "/api/internal/settings/usage/alerts/initial"),
-		{
-			cache: "no-store",
-			headers: {
-				accept: "application/json",
-				cookie,
-			},
-		},
-	);
-
-	if (!response.ok) {
-		throw new Error(`Failed to fetch usage alerts settings data: ${response.status}`);
-	}
-
-	return (await response.json()) as SettingsUsageAlertsInitialData;
+	const context = await getServerAccountContext();
+	const query = context.workspaceId ? `?workspaceId=${encodeURIComponent(context.workspaceId)}` : "";
+	return fetchAccountWebApi<SettingsUsageAlertsInitialData>(`/api/account/settings/usage/alerts${query}`, context.accessToken);
 }

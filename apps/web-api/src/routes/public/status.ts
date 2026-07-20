@@ -4,6 +4,8 @@ import { withPublicCache } from "@/http/cache";
 
 type StatusState = "operational" | "degraded" | "partial_outage" | "major_outage" | "maintenance" | "unknown";
 type InstatusComponent = { name?: unknown; status?: unknown; children?: InstatusComponent[] };
+type ProviderIncident = { id: string; title: string; link: string; status: string; impact?: string; description?: string; updatedAt?: string; publishedAt?: string };
+type ProviderStatus = { name: string; statusPageUrl: string; hasIssues: boolean; incidents: ProviderIncident[]; lastChecked?: string; error?: string };
 
 const STATUS_PAGE_HREF = "https://phaseo.instatus.com/";
 const DEFAULT_SUMMARY_URL = "https://phaseo.instatus.com/api/v2/summary.json";
@@ -64,4 +66,64 @@ publicStatusRouter.get("/status", async (c) => {
 	} finally {
 		clearTimeout(timeout);
 	}
+});
+
+const resolvedProviderStatuses = new Set(["resolved", "operational"]);
+const normalizeProviderStatus = (value: unknown) => String(value ?? "").trim().toLowerCase();
+const decodeXml = (value: string) => value.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'");
+const xmlValue = (item: string, tag: string) => decodeXml(item.match(new RegExp(`<${tag}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${tag}>`, "i"))?.[1]?.trim() ?? "");
+
+function rssIncidents(xml: string): ProviderIncident[] {
+	return [...xml.matchAll(/<item(?:\s[^>]*)?>([\s\S]*?)<\/item>/gi)].map((match, index) => {
+		const item = match[1] ?? "";
+		const description = xmlValue(item, "description") || xmlValue(item, "content:encoded") || undefined;
+		const status = normalizeProviderStatus(xmlValue(item, "cb:status") || description?.match(/Status:\s*([^<\n]+)/i)?.[1]);
+		return {
+			id: xmlValue(item, "guid") || xmlValue(item, "link") || `incident-${index}`,
+			title: xmlValue(item, "title") || "Status update",
+			link: xmlValue(item, "link"),
+			status,
+			impact: xmlValue(item, "cb:impact") || description?.match(/<p>Severity:\s*([^<]+)<\/p>/i)?.[1],
+			description,
+			publishedAt: xmlValue(item, "pubDate") || xmlValue(item, "dc:date") || undefined,
+		};
+	}).filter((incident) => incident.status && !resolvedProviderStatuses.has(incident.status));
+}
+
+async function fetchRssProvider(name: string, statusPageUrl: string, feedUrl: string): Promise<ProviderStatus> {
+	try {
+		const response = await fetch(feedUrl, { headers: { accept: "application/rss+xml, application/xml, text/xml" } });
+		if (!response.ok) throw new Error(`Feed request failed (${response.status})`);
+		const incidents = rssIncidents(await response.text());
+		return { name, statusPageUrl, hasIssues: incidents.length > 0, incidents, lastChecked: new Date().toISOString() };
+	} catch (error) {
+		return { name, statusPageUrl, hasIssues: true, incidents: [], error: error instanceof Error ? error.message : "Unknown error" };
+	}
+}
+
+async function fetchAnthropicProvider(): Promise<ProviderStatus> {
+	const name = "Anthropic";
+	const statusPageUrl = "https://status.claude.com/";
+	try {
+		const response = await fetch("https://status.claude.com/api/v2/summary.json", { headers: { accept: "application/json" } });
+		if (!response.ok) throw new Error(`Feed request failed (${response.status})`);
+		const payload = await response.json() as { incidents?: Array<Record<string, any>> };
+		const incidents = (payload.incidents ?? []).map((incident) => ({
+			id: String(incident.id ?? ""), title: String(incident.name ?? "Status update"), link: String(incident.shortlink ?? ""),
+			status: normalizeProviderStatus(incident.status), impact: incident.impact, description: incident.incident_updates?.[0]?.body,
+			updatedAt: incident.updated_at, publishedAt: incident.created_at,
+		})).filter((incident) => incident.status && !resolvedProviderStatuses.has(incident.status));
+		return { name, statusPageUrl, hasIssues: incidents.length > 0, incidents, lastChecked: new Date().toISOString() };
+	} catch (error) {
+		return { name, statusPageUrl, hasIssues: true, incidents: [], error: error instanceof Error ? error.message : "Unknown error" };
+	}
+}
+
+publicStatusRouter.get("/status/providers", async (c) => {
+	const providers = await Promise.all([
+		fetchRssProvider("OpenAI", "https://status.openai.com/", "https://status.openai.com/feed.rss"),
+		fetchAnthropicProvider(),
+		fetchRssProvider("SpaceXAI", "https://status.x.ai/", "https://status.x.ai/feed.xml"),
+	]);
+	return withPublicCache(c.json({ providers }), { edgeTtlSeconds: 600, staleWhileRevalidateSeconds: 600 });
 });

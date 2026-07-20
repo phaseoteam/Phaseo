@@ -61,9 +61,9 @@ const internalTools = [
 	},
 	{
 		id: "cache-ops",
-		title: "Cache Ops",
+		title: "Cache Control Centre",
 		description:
-			"Revalidate cached model, provider, search, ranking, and landing data from one admin surface.",
+			"Purge named Cloudflare Worker scopes, advance browser search generations, and review the audit trail.",
 		icon: RefreshCcw,
 		href: "/internal/cache",
 		comingSoon: false,

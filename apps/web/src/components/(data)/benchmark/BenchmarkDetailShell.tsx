@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import Image from "next/image";
 import TabBar from "@/components/(data)/benchmark/BenchmarkTabs";
-import type { BenchmarkPage } from "@/lib/fetchers/benchmarks/getBenchmark";
+import type { BenchmarkPage } from "@/lib/fetchers/benchmarks/types";
 import BenchmarkEditButton from "./edit/BenchmarkEditButton";
 
 interface BenchmarkDetailShellProps {

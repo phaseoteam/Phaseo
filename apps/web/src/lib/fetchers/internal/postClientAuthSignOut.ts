@@ -1,13 +1,6 @@
-export async function postClientAuthSignOut() {
-	const response = await fetch("/api/internal/auth/sign-out", {
-		method: "POST",
-		cache: "no-store",
-		headers: {
-			accept: "application/json",
-		},
-	});
+import { createClient } from "@/utils/supabase/client";
 
-	if (!response.ok) {
-		throw new Error(`Failed to sign out: ${response.status}`);
-	}
+export async function postClientAuthSignOut() {
+	const { error } = await createClient().auth.signOut();
+	if (error) throw error;
 }

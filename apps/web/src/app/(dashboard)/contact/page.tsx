@@ -8,8 +8,7 @@ import {
 	getLondonInfo,
 } from "@/lib/support/schedule";
 import { ContactClient } from "@/components/contact/ContactClient";
-import { createClient } from "@/utils/supabase/server";
-import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
+import { fetchContactPersonalization } from "@/lib/fetchers/internal/fetchContactPersonalization";
 
 export const metadata: Metadata = buildMetadata({
 	title: "Contact",
@@ -23,44 +22,6 @@ export const metadata: Metadata = buildMetadata({
 		"AI model database help",
 	],
 });
-
-async function getContactPersonalization() {
-	const supabase = await createClient();
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
-
-	const result = {
-		defaultInternalId: "",
-		isAuthenticated: Boolean(user),
-		tierLabel: "",
-		userEmail: user?.email ?? null,
-	};
-
-	const workspaceId = await getWorkspaceIdFromCookie();
-	if (!workspaceId) return result;
-
-	try {
-		const [{ data: prev }, { data: teamResult }] = await Promise.all([
-			supabase.rpc("monthly_spend_prev_cents", { p_team: workspaceId }).single(),
-			supabase
-				.from("workspaces")
-				.select("slug")
-				.eq("id", workspaceId)
-				.maybeSingle(),
-		]);
-		const lastMonthCents = Number(prev ?? 0);
-		const lastMonthUsd = lastMonthCents / 1_000_000_000;
-
-		return {
-			...result,
-			defaultInternalId: teamResult?.slug ?? workspaceId,
-			tierLabel: lastMonthUsd >= 10000 ? "Enterprise" : "Basic",
-		};
-	} catch {
-		return result;
-	}
-}
 
 async function ContactPersonalization() {
 	await connection();
@@ -81,7 +42,7 @@ async function ContactPersonalization() {
 		: backOnlineLabel
 			? `Support will be back online in ${backOnlineLabel}. Replies may be delayed, but you will still get a direct human response from me as soon as possible.`
 			: "I'm away right now. Replies may be delayed, but you will still get a direct human response from me as soon as possible.";
-	const personalization = await getContactPersonalization();
+	const personalization = await fetchContactPersonalization();
 
 	return (
 		<ContactClient

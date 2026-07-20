@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
 import { isSafeOAuthRedirectUrl } from "@/lib/oauth/safeUrls";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
 
 export const metadata = {
 	title: "Authorize Application - Phaseo",
@@ -109,6 +110,9 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 		const returnUrl = new URLSearchParams(params as any).toString();
 		redirect(`/sign-in?returnUrl=${encodeURIComponent(`/oauth/consent?${returnUrl}`)}`);
 	}
+	const { data: sessionData } = await supabase.auth.getSession();
+	const accessToken = sessionData.session?.access_token;
+	if (!accessToken) redirect("/sign-in");
 
 	// Handle error cases
 	if (params.error) {
@@ -140,6 +144,13 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 	let resolvedClientId: string | undefined;
 	let resolvedRedirectUri: string | undefined;
 	let requestedScopes: string[] = [];
+	type ConsentData = {
+		appMetadata: Record<string, any> | null;
+		firstPartyClient: Record<string, any> | null;
+		workspaces: Array<{ id: string; name: string }>;
+	};
+	const loadConsentData = (clientId: string) => fetchAccountWebApi<ConsentData>(`/api/account/auth/oauth-consent?clientId=${encodeURIComponent(clientId)}`, accessToken);
+	let consentData: ConsentData | null = null;
 
 	if (authorizationId) {
 		const { data: authorizationDetails, error: authorizationError } =
@@ -184,13 +195,9 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 		}
 
 		if (resolvedClientId) {
-			const { data: appMetadata } = await supabase
-				.from("oauth_app_metadata")
-				.select("*")
-				.eq("client_id", resolvedClientId)
-				.eq("status", "active")
-				.maybeSingle();
-			oauthApp = appMetadata;
+			const loaded = await loadConsentData(resolvedClientId);
+			consentData = loaded;
+			oauthApp = loaded.appMetadata;
 		}
 
 		if (!oauthApp) {
@@ -221,26 +228,10 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 			);
 		}
 
-		// Fetch OAuth app metadata
-		const { data: appMetadata, error: appError } = await supabase
-			.from("oauth_app_metadata")
-			.select("*")
-			.eq("client_id", params.client_id)
-			.eq("status", "active")
-			.single();
-
-		let resolvedAppMetadata: Record<string, any> | null = appMetadata as Record<string, any> | null;
-		if (appError || !resolvedAppMetadata) {
-			const { data: firstPartyClient } = await supabase
-				.from("oauth_clients")
-				.select("id, name, description, logo_url, homepage_url, redirect_uris, status")
-				.eq("id", params.client_id)
-				.eq("status", "active")
-				.maybeSingle();
-			if (firstPartyClient) {
-				resolvedAppMetadata = oauthAppFromClientRow(firstPartyClient as Record<string, any>);
-			}
-		}
+		const loaded = await loadConsentData(params.client_id);
+		consentData = loaded;
+		let resolvedAppMetadata: Record<string, any> | null = loaded.appMetadata;
+		if (!resolvedAppMetadata && loaded.firstPartyClient) resolvedAppMetadata = oauthAppFromClientRow(loaded.firstPartyClient);
 		if (!resolvedAppMetadata && params.client_id in FIRST_PARTY_CLIENTS) {
 			const firstPartyClient = FIRST_PARTY_CLIENTS[params.client_id];
 			const redirectUris =
@@ -339,19 +330,8 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 			: ["openid", "email", "gateway:access"];
 	}
 
-	// Fetch user's teams
-	const { data: teamMembers, error: teamsError } = await supabase
-		.from("workspace_members")
-		.select(`
-			workspace_id,
-			teams:workspaces (
-				id,
-				name
-			)
-		`)
-		.eq("user_id", user.id);
-
-	if (teamsError || !teamMembers || teamMembers.length === 0) {
+	const resolvedConsentData = consentData ?? await loadConsentData(resolvedClientId ?? "");
+	if (resolvedConsentData.workspaces.length === 0) {
 		return (
 			<div className="container max-w-2xl mx-auto py-12">
 				<Card className="p-8">
@@ -370,16 +350,7 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 		);
 	}
 
-	// Transform teams data
-	const teams = teamMembers
-		.map((tm) => {
-			const team = Array.isArray(tm.teams) ? tm.teams[0] : tm.teams;
-			if (team && typeof team === "object" && "id" in team && "name" in team) {
-				return { id: team.id, name: team.name };
-			}
-			return null;
-		})
-		.filter((t): t is { id: string; name: string } => t !== null);
+	const teams = resolvedConsentData.workspaces;
 
 	return (
 		<div className="container max-w-3xl mx-auto py-12">

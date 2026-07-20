@@ -23,6 +23,7 @@ import {
 import { Streamdown } from "streamdown";
 import { Logo } from "@/components/Logo";
 import { extractResponseText } from "@/components/(chat)/chatPayload";
+import { fetchChatWebApi } from "@/lib/web-api/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -218,7 +219,7 @@ function extractOutputTokens(payload: any): number | null {
 
 async function callResponsesText(model: string, input: string) {
 	try {
-		const response = await fetch("/api/chat/text", {
+		const response = await fetchChatWebApi("/api/chat/text", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({
@@ -252,7 +253,7 @@ async function callResponsesStream(
 	onDelta: (delta: string) => void,
 ) {
 	try {
-		const response = await fetch("/api/chat/text", {
+		const response = await fetchChatWebApi("/api/chat/text", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({

@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import CacheOpsClient from "./CacheOpsClient";
 
 export const metadata: Metadata = {
-	title: "Internal Cache Ops",
+	title: "Cache Control Centre",
 	description:
-		"Internal cache operations panel for revalidating model, provider, search, rankings, and landing data.",
+		"Admin controls for targeted Cloudflare Worker cache eviction and browser search generations.",
 	robots: {
 		index: false,
 		follow: false,

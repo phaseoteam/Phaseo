@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { accountBillingRequest } from "@/lib/billing/accountBillingClient";
 
 type Props = {
 	customerId: string;
@@ -28,15 +29,12 @@ export function StripePortalButton({
 				if (!customerId) return;
 				setLoading(true);
 				try {
-					const resp = await fetch("/api/stripe/billing-portal", {
-						method: "POST",
-						headers: { "Content-Type": "application/json" },
-						body: JSON.stringify({
+					const data = await accountBillingRequest<{ url?: string }>("/api/account/settings/billing/portal", {
+						method: "POST", body: JSON.stringify({
 							customerId,
 							returnUrl: returnUrl ?? window.location.href,
 						}),
 					});
-					const data = await resp.json();
 					if (data?.url) {
 						window.location.href = data.url;
 					}

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Calendar, Sparkles, TrendingUp, Check } from "lucide-react";
 import { fetchFrontendAPIProviderUpdates } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import type { APIProviderRecentModel } from "@/lib/fetchers/api-providers/getAPIProviderUpdates";
+import type { APIProviderRecentModel } from "@/lib/fetchers/api-providers/providerDataTypes";
 import {
 	Empty,
 	EmptyDescription,

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { toast } from "sonner";
+import { accountBillingRequest } from "@/lib/billing/accountBillingClient";
 import {
 	ExternalLink,
 	FileText,
@@ -150,15 +151,8 @@ export default function EnterpriseInvoices(props: {
 	const openInvoiceDocument = React.useCallback(async (stripeInvoiceId: string) => {
 		setBusyInvoiceId(stripeInvoiceId);
 		try {
-			const res = await fetch("/api/stripe/invoices/document", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ stripeInvoiceId }),
-			});
-			const payload = await res.json().catch(() => ({}));
-			if (!res.ok || !payload?.url) {
-				throw new Error(payload?.error ?? "Unable to load invoice document");
-			}
+			const payload = await accountBillingRequest<{ url?: string }>("/api/account/settings/billing/invoice-document", { method: "POST", body: JSON.stringify({ stripeInvoiceId }) });
+			if (!payload.url) throw new Error("Unable to load invoice document");
 			window.open(String(payload.url), "_blank", "noopener,noreferrer");
 		} catch (err: any) {
 			toast.error(err?.message ?? "Failed to open invoice document");

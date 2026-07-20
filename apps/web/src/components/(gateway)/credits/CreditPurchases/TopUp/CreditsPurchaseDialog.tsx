@@ -27,6 +27,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { ChargeSavedPayment } from "@/app/(dashboard)/settings/credits/actions";
 import { isAnalyticsCaptureAllowed } from "@/lib/clientErrorReporting";
 import { captureProductEvent } from "@/lib/productAnalytics";
+import { accountBillingRequest } from "@/lib/billing/accountBillingClient";
 
 /* Helpers */
 const formatUSD = (v: number) =>
@@ -317,10 +318,8 @@ export default function CreditsPurchaseDialog({
 				return; // don't fall through
 			}
 			// If we got here, user chose "new" or no saved PM available -> go to Checkout:
-			const response = await fetch("/api/checkout/create", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const data = await accountBillingRequest<{ url?: string }>("/api/account/settings/billing/checkout", {
+				method: "POST", body: JSON.stringify({
 					kind: mode,
 					amount_pence: Math.round(total * 100),
 					currency: "usd",
@@ -329,15 +328,9 @@ export default function CreditsPurchaseDialog({
 					customerId,
 					user_id: clientUserId ?? null,
 					workspace_id: workspaceId,
+					returnUrl: window.location.href,
 				}),
 			});
-
-			const data = await response.json();
-			if (!response.ok) {
-				throw new Error(
-					data?.error || data?.message || `Server ${response.status}`
-				);
-			}
 			if (data.url) window.location.href = data.url;
 		} catch (e: any) {
 			setErr(e?.message || "Something went wrong. Please try again.");

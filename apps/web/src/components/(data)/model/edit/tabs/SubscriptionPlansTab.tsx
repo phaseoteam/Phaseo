@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { createClient } from "@/utils/supabase/client"
+import { createAdminSubscriptionPlan, fetchAdminModelEditorSource, fetchAdminModelFormOptions } from "@/lib/fetchers/internal/adminModelEditorClient"
 
 export type SubscriptionPlanModelPayload = {
   plan_uuid: string
@@ -66,26 +66,17 @@ export default function SubscriptionPlansTab({
   useEffect(() => {
     const fetchData = async () => {
       setLoaded(false)
-      const supabase = createClient()
-      const [{ data: plansData }, { data: linkedData }, { data: modelRow }] = await Promise.all([
-        supabase
-          .from("data_subscription_plans")
-          .select("plan_uuid, plan_id, name, frequency, price, currency")
-          .order("name", { ascending: true })
-          .order("frequency", { ascending: true }),
-        supabase
-          .from("data_subscription_plan_models")
-          .select("plan_uuid, model_info, rate_limit, other_info")
-          .eq("model_id", modelId),
-        supabase
-          .from("data_models")
-          .select("organisation_id")
-          .eq("model_id", modelId)
-          .maybeSingle(),
-      ])
+      const [source, options] = await Promise.all([fetchAdminModelEditorSource(modelId), fetchAdminModelFormOptions()])
+      const plansData = options.subscriptionPlans ?? []
+      const linkedData = (source.subscriptionPlans ?? []).map((plan: any) => ({
+        plan_uuid: plan.plan_uuid,
+        model_info: plan.model_info?.model_info,
+        rate_limit: plan.model_info?.rate_limit,
+        other_info: plan.model_info?.other_info,
+      }))
 
-      setPlans((plansData ?? []) as PlanOption[])
-      setModelOrganisationId(modelRow?.organisation_id ?? null)
+      setPlans(plansData as PlanOption[])
+      setModelOrganisationId(source.model?.organisation_id ?? null)
 
       const nextSelected: Record<string, SubscriptionPlanModelPayload> = {}
       for (const row of linkedData ?? []) {
@@ -163,21 +154,8 @@ export default function SubscriptionPlansTab({
     }
 
     setCreatingPlan(true)
-    const supabase = createClient()
-    const { error } = await supabase.from("data_subscription_plans").insert({
-      plan_uuid,
-      plan_id: planId,
-      name,
-      frequency,
-      price: newPlan.price ?? 0,
-      currency,
-      organisation_id: modelOrganisationId,
-      description: null,
-      link: null,
-      other_info: {},
-    })
-
-    if (!error) {
+    try {
+      await createAdminSubscriptionPlan({ plan_uuid, plan_id: planId, name, frequency, price: newPlan.price ?? 0, currency, organisation_id: modelOrganisationId })
       setPlans((prev) =>
         [...prev, newPlan].sort((a, b) =>
           formatPlanLabel(a).localeCompare(formatPlanLabel(b), undefined, {
@@ -191,7 +169,7 @@ export default function SubscriptionPlansTab({
       setNewPlanFrequency("monthly")
       setNewPlanPrice("0")
       setNewPlanCurrency("USD")
-    }
+    } catch { /* Keep the draft values available for retry. */ }
     setCreatingPlan(false)
   }
 

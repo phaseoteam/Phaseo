@@ -19,7 +19,7 @@ import {
   normalizeModelStatus,
 } from "@/lib/models/editorOptions"
 import { cn } from "@/lib/utils"
-import { createClient } from "@/utils/supabase/client"
+import { fetchAdminModelFormOptions } from "@/lib/fetchers/internal/adminModelEditorClient"
 import type { ModelData } from "../ModelEditDialog"
 
 interface BasicTabProps {
@@ -92,32 +92,17 @@ export default function BasicTab({ model, onModelChange }: BasicTabProps) {
 
   useEffect(() => {
     const fetchOptions = async () => {
-      const supabase = createClient()
-      const [{ data: modelsData }, { data: organisationData }, { data: familyData }] = await Promise.all([
-        supabase
-          .from("data_models")
-          .select("model_id, name")
-          .neq("model_id", model.model_id)
-          .order("name")
-          .limit(300),
-        supabase
-          .from("data_organisations")
-          .select("organisation_id, name")
-          .order("name")
-          .limit(300),
-        supabase
-          .from("data_model_families")
-          .select("family_id, family_name")
-          .order("family_name")
-          .limit(500),
-      ])
+      const options = await fetchAdminModelFormOptions()
+      const modelsData = options.previousModels ?? []
+      const organisationData = options.organisations ?? []
+      const familyData = options.families ?? []
 
-      setExistingModels((modelsData ?? []).map((item: any) => ({
+      setExistingModels(modelsData.filter((item: any) => item.model_id !== model.model_id).map((item: any) => ({
         model_id: item.model_id,
         name: item.name || item.model_id,
       })))
-      setOrganisations((organisationData ?? []) as OrganisationOption[])
-      setFamilies((familyData ?? []) as FamilyOption[])
+      setOrganisations(organisationData as OrganisationOption[])
+      setFamilies(familyData as FamilyOption[])
     }
     void fetchOptions()
   }, [model.model_id])

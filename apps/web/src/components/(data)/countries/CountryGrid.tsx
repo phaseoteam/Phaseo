@@ -1,8 +1,8 @@
 import CountryCard from "./CountryCard";
-import type { CountrySummary } from "@/lib/fetchers/countries/getCountrySummaries";
+import type { CountryListSummary } from "@/lib/fetchers/countries/types";
 
 interface CountriesGridProps {
-	countries: CountrySummary[];
+	countries: CountryListSummary[];
 }
 
 export default function CountriesGrid({ countries }: CountriesGridProps) {

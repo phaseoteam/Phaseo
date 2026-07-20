@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type SyntheticEvent 
 import { Logo } from "@/components/Logo";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import { filterModelsForRoom } from "@/lib/chat/rooms";
+import { fetchChatWebApi } from "@/lib/web-api/client";
 import { APP_HEADERS } from "@/components/(chat)/playground/chat-playground-core";
 import { extractGenerationUrls } from "@/lib/chat/roomRequestBuilders";
 import {
@@ -1096,7 +1097,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 
 			if (roomId === "video") {
 				try {
-					const response = await fetch("/api/chat/video?list=1&limit=100", {
+					const response = await fetchChatWebApi("/api/chat/video?list=1&limit=100", {
 						method: "GET",
 						cache: "no-store",
 					});
@@ -1235,7 +1236,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 		const trimmed = resourceId.trim();
 		if (!trimmed) return false;
 		try {
-			const response = await fetch(
+			const response = await fetchChatWebApi(
 				`/api/chat/video?resourceId=${encodeURIComponent(trimmed)}&content=1`,
 				{
 					method: "GET",
@@ -1270,7 +1271,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 
 					let pollResponse: Response;
 					try {
-						pollResponse = await fetch(
+						pollResponse = await fetchChatWebApi(
 							`/api/chat/video?resourceId=${encodeURIComponent(currentResourceId)}`,
 							{ method: "GET", cache: "no-store" },
 						);
@@ -1665,7 +1666,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 								);
 							}
 
-							const response = await fetch(`/api/chat/${roomId}`, {
+							const response = await fetchChatWebApi(`/api/chat/${roomId}`, {
 								method: "POST",
 								headers: {
 									"Content-Type": "application/json",

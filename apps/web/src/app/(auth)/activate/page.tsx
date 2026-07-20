@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { ShieldCheck, Terminal } from "lucide-react";
 import { approveDeviceAction, denyDeviceAction, lookupDeviceRequest } from "./actions";
 import { createClient } from "@/utils/supabase/server";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,21 +52,10 @@ async function ActivatePageContent({ searchParams }: ActivatePageProps) {
 
 	const userCode = String(params.user_code ?? "").trim();
 	const request = userCode ? await lookupDeviceRequest(userCode).catch((error) => ({ error: String(error?.message ?? error) })) : null;
-	const { data: memberships } = await supabase
-		.from("workspace_members")
-		.select("role, workspace_id, workspaces:workspaces(id, name, slug)")
-		.eq("user_id", user.id);
-	const workspaces = (memberships ?? [])
-		.map((row: any) => {
-			const workspace = Array.isArray(row.workspaces) ? row.workspaces[0] : row.workspaces;
-			if (!workspace?.id) return null;
-			return {
-				id: String(workspace.id),
-				name: String(workspace.name ?? workspace.slug ?? workspace.id),
-				role: String(row.role ?? "member"),
-			};
-		})
-		.filter(Boolean) as Array<{ id: string; name: string; role: string }>;
+	const { data: sessionData } = await supabase.auth.getSession();
+	const { workspaces } = await fetchAccountWebApi<{
+		workspaces: Array<{ id: string; name: string; role: string }>;
+	}>("/api/account/auth/workspaces", sessionData.session?.access_token);
 
 	return (
 		<div className="container mx-auto flex min-h-[70vh] max-w-2xl items-center justify-center py-12">

@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { BenchmarkCard as BenchmarkCardType } from "@/lib/fetchers/benchmarks/getAllBenchmarks";
+import type { BenchmarkCard as BenchmarkCardType } from "@/lib/fetchers/benchmarks/types";
 
 export default function BenchmarkCard({
 	benchmark_id,

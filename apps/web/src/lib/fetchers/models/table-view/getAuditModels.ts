@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/utils/supabase/admin";
+import { fetchAdminModelAuditSource } from "@/lib/fetchers/internal/fetchAdminModelAuditSource";
 import { toUsdPerMillion } from "./helpers";
 
 export interface AuditModelData {
@@ -73,219 +73,14 @@ function isCapabilityGatewayActive(status: unknown): boolean {
 	return false;
 }
 
-async function fetchRowsByModelIdsInBatches<T>({
-	supabase,
-	modelIds,
-	batchSize = 120,
-	fetchBatch,
-	errorLabel,
-}: {
-	supabase: ReturnType<typeof createAdminClient>;
-	modelIds: string[];
-	batchSize?: number;
-	fetchBatch: (ids: string[]) => any;
-	errorLabel: string;
-}): Promise<T[]> {
-	const rows: T[] = [];
-	for (let i = 0; i < modelIds.length; i += batchSize) {
-		const batch = modelIds.slice(i, i + batchSize);
-		if (!batch.length) continue;
-		const { data, error } = (await fetchBatch(batch)) as {
-			data: T[] | null;
-			error: any;
-		};
-		if (error) {
-			throw new Error(
-				`${errorLabel} failed for batch starting at ${i}: ${error.message ?? String(error)}`
-			);
-		}
-		if (Array.isArray(data) && data.length > 0) {
-			rows.push(...data);
-		}
-	}
-	return rows;
-}
-
-async function fetchActivePricingRows({
-	supabase,
-	pageSize = 1000,
-}: {
-	supabase: ReturnType<typeof createAdminClient>;
-	pageSize?: number;
-}): Promise<
-	Array<{
-		model_key: string | null;
-		meter: string | null;
-		price_per_unit: number | null;
-		unit_size: number | null;
-	}>
-> {
-	const rows: Array<{
-		model_key: string | null;
-		meter: string | null;
-		price_per_unit: number | null;
-		unit_size: number | null;
-	}> = [];
-	const nowIso = new Date().toISOString();
-	const activePricingWindowClause = [
-		"and(effective_from.is.null,effective_to.is.null)",
-		`and(effective_from.is.null,effective_to.gt.${nowIso})`,
-		`and(effective_from.lte.${nowIso},effective_to.is.null)`,
-		`and(effective_from.lte.${nowIso},effective_to.gt.${nowIso})`,
-	].join(",");
-	for (let from = 0; ; from += pageSize) {
-		const to = from + pageSize - 1;
-		const { data, error } = await supabase
-			.from("data_api_pricing_rules")
-			.select("model_key, meter, price_per_unit, unit_size")
-			.or(activePricingWindowClause)
-			.range(from, to);
-		if (error) {
-			throw new Error(
-				`Fetching active pricing rows failed at range ${from}-${to}: ${error.message ?? String(error)}`,
-			);
-		}
-		if (!Array.isArray(data) || data.length === 0) {
-			break;
-		}
-		rows.push(...data);
-		if (data.length < pageSize) {
-			break;
-		}
-	}
-	return rows;
-}
-
 export async function getAuditModels(
 	includeHidden: boolean
 ): Promise<AuditModelData[]> {
-	const supabase = createAdminClient();
-
-	// Fetch all models with their relationships
-	let query = supabase
-		.from("data_models")
-		.select(`
-			model_id,
-			name,
-			release_date,
-			retirement_date,
-			status,
-			hidden,
-			input_types,
-			output_types,
-			organisation: data_organisations(
-				organisation_id,
-				name
-			)
-		`)
-		.order("release_date", { ascending: false });
-
-	if (!includeHidden) {
-		query = query.eq("hidden", false);
-	}
-
-	const { data: models, error } = await query;
-
-	if (error) {
-		throw error;
-	}
-
+	const { models, providerRows, benchmarkRows, pricingRows: pricingData } =
+		await fetchAdminModelAuditSource(includeHidden);
 	if (!models) {
 		return [];
 	}
-
-	const modelIds = models
-		.map((model: any) => String(model?.model_id ?? "").trim())
-		.filter(Boolean);
-
-	const [providerRows, benchmarkRows] = await Promise.all([
-		modelIds.length
-			? (async () => {
-					const providerRowsByModelId = await fetchRowsByModelIdsInBatches<any>({
-						supabase,
-						modelIds,
-						batchSize: 120,
-						errorLabel: "Fetching audit provider models by model_id",
-						fetchBatch: (ids) =>
-							supabase
-								.from("data_api_provider_models")
-								.select(
-									`
-										provider_api_model_id,
-										model_id,
-										provider_id,
-										api_model_id,
-										is_active_gateway,
-										effective_from,
-										effective_to,
-										provider: data_api_providers(
-											api_provider_id,
-											api_provider_name
-										),
-										capabilities: data_api_provider_model_capabilities(
-											capability_id,
-											status
-										)
-									`,
-								)
-								.in("model_id", ids),
-					});
-					const providerRowsByApiModelId = await fetchRowsByModelIdsInBatches<any>({
-						supabase,
-						modelIds,
-						batchSize: 120,
-						errorLabel: "Fetching audit provider models by api_model_id",
-						fetchBatch: (ids) =>
-							supabase
-								.from("data_api_provider_models")
-								.select(
-									`
-										provider_api_model_id,
-										model_id,
-										provider_id,
-										api_model_id,
-										is_active_gateway,
-										effective_from,
-										effective_to,
-										provider: data_api_providers(
-											api_provider_id,
-											api_provider_name
-										),
-										capabilities: data_api_provider_model_capabilities(
-											capability_id,
-											status
-										)
-									`,
-								)
-								.in("api_model_id", ids),
-					});
-					const merged = [
-						...providerRowsByModelId,
-						...providerRowsByApiModelId,
-					];
-					const deduped = new Map<string, any>();
-					for (const row of merged) {
-						const key = String(row?.provider_api_model_id ?? "").trim();
-						if (!key) continue;
-						deduped.set(key, row);
-					}
-					return Array.from(deduped.values());
-			  })()
-			: Promise.resolve([] as any[]),
-		modelIds.length
-			? fetchRowsByModelIdsInBatches<any>({
-					supabase,
-					modelIds,
-					batchSize: 150,
-					errorLabel: "Fetching audit benchmark rows",
-					fetchBatch: (ids) =>
-						supabase
-							.from("data_benchmark_results")
-							.select("model_id, id")
-							.in("model_id", ids),
-			  })
-			: Promise.resolve([] as any[]),
-	]);
 
 	const providerModelsByModelId = new Map<string, any[]>();
 	for (const row of providerRows ?? []) {
@@ -313,9 +108,6 @@ export async function getAuditModels(
 			(benchmarkCountByModelId.get(modelId) ?? 0) + 1,
 		);
 	}
-
-	// Fetch active pricing rules with pagination to avoid default row limits.
-	const pricingData = await fetchActivePricingRows({ supabase, pageSize: 1000 });
 
 	const pricingByKey = new Map<
 		string,

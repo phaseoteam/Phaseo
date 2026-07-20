@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Logo } from "@/components/Logo";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import { filterModelsForRoom } from "@/lib/chat/rooms";
+import { fetchChatWebApi } from "@/lib/web-api/client";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
 import { APP_HEADERS } from "@/components/(chat)/playground/chat-playground-core";
 import { inferAudioMimeType } from "@/components/(chat)/chatConversationHelpers";
@@ -579,7 +580,7 @@ async function pollMusicGeneration(resourceId: string): Promise<{
 	let latestPayload: unknown = null;
 	let latestStatus: "queued" | "in_progress" | "completed" | "failed" | null = null;
 	for (let attempt = 0; attempt < MUSIC_POLL_MAX_ATTEMPTS; attempt += 1) {
-		const response = await fetch(
+		const response = await fetchChatWebApi(
 			`/api/chat/audio?action=music&resourceId=${encodeURIComponent(resourceId)}`,
 			{ method: "GET" },
 		);
@@ -1716,7 +1717,7 @@ export function AudioRoom({
 				),
 			);
 
-			const response = await fetch("/api/chat/audio", {
+			const response = await fetchChatWebApi("/api/chat/audio", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({

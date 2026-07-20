@@ -1,19 +1,12 @@
-import type { InternalAuthHeaderData } from "@/app/api/internal/auth/header/route";
-import { internalUrl, requestOrigin } from "@/lib/fetchers/internal/requestOrigin";
+import type { InternalAuthHeaderData } from "@/lib/fetchers/internal/authTypes";
+import { createClient } from "@/utils/supabase/server";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
 
 export async function fetchInternalAuthHeaderData(): Promise<InternalAuthHeaderData> {
-	const { cookie, origin } = await requestOrigin();
-	const response = await fetch(internalUrl(origin, "/api/internal/auth/header"), {
-		cache: "no-store",
-		headers: {
-			accept: "application/json",
-			cookie,
-		},
-	});
-
-	if (!response.ok) {
-		throw new Error(`Failed to fetch auth header data: ${response.status}`);
-	}
-
-	return (await response.json()) as InternalAuthHeaderData;
+	const supabase = await createClient();
+	const { data } = await supabase.auth.getSession();
+	return fetchAccountWebApi<InternalAuthHeaderData>(
+		"/api/account/auth/header",
+		data.session?.access_token,
+	);
 }

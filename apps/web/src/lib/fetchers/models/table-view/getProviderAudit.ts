@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/utils/supabase/admin";
+import { fetchAdminProviderAuditSource } from "@/lib/fetchers/internal/fetchAdminModelAuditSource";
 import {
 	aggregateProviderAuditRoutability,
 	classifyProviderAuditRoutability,
@@ -128,49 +128,8 @@ function formatShortIsoDate(iso: string | null): string | null {
 }
 
 export async function getProviderAudit(): Promise<ProviderAuditData> {
-	const supabase = createAdminClient();
 	const nowIso = new Date().toISOString();
-
-	const [{ data: providerModels, error: providerModelsError }, { data: pricingRules, error: pricingError }] =
-		await Promise.all([
-			supabase
-				.from("data_api_provider_models")
-				.select(
-					`
-					provider_api_model_id,
-					provider_id,
-					api_model_id,
-					provider_model_slug,
-					internal_model_id,
-					is_active_gateway,
-					routing_status,
-					effective_from,
-					effective_to,
-					provider:data_api_providers(
-						api_provider_id,
-						api_provider_name,
-						status,
-						routing_status
-					),
-					capabilities:data_api_provider_model_capabilities(
-						capability_id,
-						status,
-						effective_from,
-						effective_to
-					)
-					`
-				),
-			supabase
-				.from("data_api_pricing_rules")
-				.select("model_key, effective_from, effective_to"),
-		]);
-
-	if (providerModelsError) {
-		throw new Error(providerModelsError.message || "Failed to load provider models for audit");
-	}
-	if (pricingError) {
-		throw new Error(pricingError.message || "Failed to load pricing rules for provider audit");
-	}
+	const { providerModels, pricingRules } = await fetchAdminProviderAuditSource();
 
 	type PricingKeySummary = {
 		hasActive: boolean;

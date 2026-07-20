@@ -1,4 +1,4 @@
-import { ReactNode, Suspense } from "react";
+import { ReactNode } from "react";
 import Link from "next/link";
 import {
 	fetchFrontendModelHeader,
@@ -6,7 +6,6 @@ import {
 	fetchFrontendModelPageNotice,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { Logo } from "@/components/Logo";
-import ModelEditButton from "./edit/ModelEditButton";
 import { Badge } from "@/components/ui/badge";
 import ModelNotFoundState from "@/components/(data)/model/ModelNotFoundState";
 import { Button } from "@/components/ui/button";
@@ -19,6 +18,8 @@ import ModelPageNotice from "./ModelPageNotice";
 import ModelStickyHeader from "./ModelStickyHeader";
 import ModelStatusBanner from "./overview/ModelStatusBanner";
 import { resolveModelDescription } from "@/lib/models/modelDescription";
+import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
+import type { ModelOverviewHeader } from "@/lib/fetchers/models/getModelOverviewHeader";
 import {
 	FREE_ROUTER_DESCRIPTION,
 	FREE_ROUTER_MODEL_ID,
@@ -32,6 +33,8 @@ interface ModelDetailShellProps {
 	children: ReactNode;
 	tab?: string;
 	includeHidden?: boolean;
+	header?: ModelOverviewHeader;
+	modelOverview?: ModelOverviewPage | null;
 }
 
 function isModelNotFoundError(error: unknown): boolean {
@@ -71,6 +74,8 @@ export default async function ModelDetailShell({
 	children,
 	tab,
 	includeHidden = false,
+	header: prefetchedHeader,
+	modelOverview: prefetchedModelOverview,
 }: ModelDetailShellProps) {
 	const isFreeRouter = isFreeRouterModelId(modelId);
 	const [header, modelOverview, modelPageNotice] = isFreeRouter
@@ -91,13 +96,15 @@ export default async function ModelDetailShell({
 				null,
 			]
 		: await Promise.all([
-				fetchFrontendModelHeader(modelId, includeHidden).catch((error) => {
+				prefetchedHeader ?? fetchFrontendModelHeader(modelId, includeHidden).catch((error) => {
 					if (isModelNotFoundError(error)) {
 						return null;
 					}
 					throw error;
 				}),
-				fetchFrontendModelOverview(modelId).catch(() => null),
+				prefetchedModelOverview !== undefined
+					? Promise.resolve(prefetchedModelOverview)
+					: fetchFrontendModelOverview(modelId).catch(() => null),
 				fetchFrontendModelPageNotice(modelId, includeHidden).catch(() => null),
 			]);
 
@@ -167,9 +174,6 @@ export default async function ModelDetailShell({
 									</Link>{" "}
 									<span>{header.name}</span>
 								</h1>
-								<Suspense fallback={null}>
-									<ModelEditButton modelId={modelId} tab={tab} />
-								</Suspense>
 								{includeHidden && header.hidden ? (
 									<Badge variant="secondary">Hidden</Badge>
 								) : null}

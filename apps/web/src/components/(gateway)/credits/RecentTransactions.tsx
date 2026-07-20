@@ -12,6 +12,7 @@ import {
 	PaginationLink,
 } from "@/components/ui/pagination";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { accountBillingRequest } from "@/lib/billing/accountBillingClient";
 import {
 	ExternalLink,
 	ArrowUpCircle,
@@ -446,15 +447,8 @@ export default function RecentTransactions({
 		}
 		setBusy(tx.id, true);
 		try {
-			const response = await fetch("/api/stripe/purchases/document", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ paymentIntentId }),
-			});
-			const payload = await response.json().catch(() => ({}));
-			if (!response.ok || !payload?.url) {
-				throw new Error(payload?.error ?? "Document lookup failed");
-			}
+			const payload = await accountBillingRequest<{ url?: string; message?: string }>("/api/account/settings/billing/purchase-document", { method: "POST", body: JSON.stringify({ paymentIntentId }) });
+			if (!payload.url) throw new Error("Document lookup failed");
 			window.open(String(payload.url), "_blank", "noopener,noreferrer");
 			toast.success(payload?.message ?? "Opened document");
 		} catch (error: any) {
@@ -474,18 +468,10 @@ export default function RecentTransactions({
 		try {
 			const result = await toast.promise(
 				(async () => {
-					const response = await fetch("/api/stripe/refunds/request", {
-						method: "POST",
-						headers: { "Content-Type": "application/json" },
-						body: JSON.stringify({ paymentIntentId, reason }),
-					});
-					const payload = await response.json().catch(() => ({}));
-					if (!response.ok) {
-						throw new Error(
-							payload?.error ?? "Refund request failed",
-						);
-					}
-					return payload;
+					return accountBillingRequest<{ message?: string; status?: string }>(
+						"/api/account/settings/billing/refund",
+						{ method: "POST", body: JSON.stringify({ paymentIntentId, reason }) },
+					);
 				})(),
 				{
 					loading: "Submitting refund request...",
@@ -529,15 +515,12 @@ export default function RecentTransactions({
 					onClick={async (e) => {
 						e.preventDefault();
 						try {
-							const resp = await fetch("/api/stripe/billing-portal", {
-								method: "POST",
-								headers: { "Content-Type": "application/json" },
-								body: JSON.stringify({
+							const data = await accountBillingRequest<{ url?: string }>("/api/account/settings/billing/portal", {
+								method: "POST", body: JSON.stringify({
 									customerId: stripeCustomerId,
 									returnUrl: window.location.href,
 								}),
 							});
-							const data = await resp.json();
 							window.location.href = data?.url ?? "/settings/credits";
 						} catch {
 							window.location.href = "/settings/credits";

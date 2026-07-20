@@ -1,16 +1,10 @@
-import type { InternalAuthStatsigData } from "@/app/api/internal/auth/statsig/route";
+import type { InternalAuthStatsigData } from "@/lib/fetchers/internal/authTypes";
+import { getBrowserAccessToken } from "@/lib/fetchers/internal/accountAuthClient";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
 
 export async function fetchClientAuthStatsigData(): Promise<InternalAuthStatsigData> {
-	const response = await fetch("/api/internal/auth/statsig", {
-		cache: "no-store",
-		headers: {
-			accept: "application/json",
-		},
-	});
-
-	if (!response.ok) {
-		throw new Error(`Failed to fetch Statsig auth data: ${response.status}`);
-	}
-
-	return (await response.json()) as InternalAuthStatsigData;
+	return fetchAccountWebApi<InternalAuthStatsigData>(
+		"/api/account/auth/statsig",
+		await getBrowserAccessToken(),
+	);
 }

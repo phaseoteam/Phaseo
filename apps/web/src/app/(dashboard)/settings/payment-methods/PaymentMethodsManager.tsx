@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { accountBillingRequest } from "@/lib/billing/accountBillingClient";
 import {
     Dialog,
     DialogContent,
@@ -53,12 +54,14 @@ function formatDate(unixSeconds: number | null | undefined) {
     }
 }
 
-async function readJsonSafe(response: Response) {
-    try {
-        return await response.json();
-    } catch {
-        return null;
-    }
+async function paymentMethodsRequest(
+	method: "GET" | "POST" | "PATCH" | "DELETE",
+	body?: Record<string, unknown>,
+): Promise<PaymentMethodsPayload & { url?: string }> {
+	return accountBillingRequest(
+		"/api/account/settings/billing/payment-methods",
+		{ method, body: body ? JSON.stringify(body) : undefined },
+	);
 }
 
 export function PaymentMethodsManager({
@@ -78,14 +81,7 @@ export function PaymentMethodsManager({
     async function refresh() {
         setRefreshing(true);
         try {
-            const response = await fetch("/api/stripe/payment-methods", {
-                method: "GET",
-                cache: "no-store",
-            });
-            const payload = await readJsonSafe(response);
-            if (!response.ok || !payload) {
-                throw new Error(payload?.error || "Failed to refresh payment methods");
-            }
+			const payload = await paymentMethodsRequest("GET");
             setData(payload);
         } catch (error: any) {
             toast.error("Failed to refresh", {
@@ -99,15 +95,7 @@ export function PaymentMethodsManager({
     async function setDefault(paymentMethodId: string) {
         setDefaultPendingId(paymentMethodId);
         try {
-            const response = await fetch("/api/stripe/payment-methods", {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ paymentMethodId }),
-            });
-            const payload = await readJsonSafe(response);
-            if (!response.ok || !payload) {
-                throw new Error(payload?.error || "Failed to set default payment method");
-            }
+			const payload = await paymentMethodsRequest("PATCH", { paymentMethodId });
             setData(payload);
             toast.success("Default payment method updated");
         } catch (error: any) {
@@ -122,15 +110,7 @@ export function PaymentMethodsManager({
     async function removePaymentMethod(paymentMethodId: string) {
         setRemovePendingId(paymentMethodId);
         try {
-            const response = await fetch("/api/stripe/payment-methods", {
-                method: "DELETE",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ paymentMethodId }),
-            });
-            const payload = await readJsonSafe(response);
-            if (!response.ok || !payload) {
-                throw new Error(payload?.error || "Failed to remove payment method");
-            }
+			const payload = await paymentMethodsRequest("DELETE", { paymentMethodId });
             setData(payload);
             toast.success("Payment method removed");
         } catch (error: any) {
@@ -152,15 +132,8 @@ export function PaymentMethodsManager({
     async function addCard() {
         setAdding(true);
         try {
-            const response = await fetch("/api/stripe/payment-methods", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ returnUrl: window.location.href }),
-            });
-            const payload = await readJsonSafe(response);
-            if (!response.ok || !payload?.url) {
-                throw new Error(payload?.error || "Failed to start card setup");
-            }
+			const payload = await paymentMethodsRequest("POST", { returnUrl: window.location.href });
+			if (!payload.url) throw new Error("Failed to start card setup");
             window.location.href = payload.url;
         } catch (error: any) {
             toast.error("Unable to add card", {

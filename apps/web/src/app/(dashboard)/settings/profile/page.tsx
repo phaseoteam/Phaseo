@@ -2,8 +2,7 @@ import { redirect } from "next/navigation"
 
 import ProfileDashboard from "@/components/(gateway)/settings/profile/ProfileDashboard"
 import ProfileShareControls from "@/components/(gateway)/settings/profile/ProfileShareControls"
-import { getUserObfuscationPreference } from "@/lib/fetchers/account/getUserObfuscationPreference"
-import { getOwnProfileSnapshot } from "@/lib/fetchers/profile/getProfileSnapshot"
+import { fetchSettingsProfileInitialData } from "@/lib/fetchers/internal/fetchSettingsProfileInitialData"
 import { buildProfileShareCardPayload } from "@/lib/profileShare"
 
 export const metadata = {
@@ -11,13 +10,12 @@ export const metadata = {
 }
 
 export default async function ProfileSettingsPage() {
-	const profile = await getOwnProfileSnapshot()
+	const { profile, obfuscateInfo } = await fetchSettingsProfileInitialData()
 
 	if (!profile) {
 		redirect("/sign-in")
 	}
 
-	const obfuscateInfo = await getUserObfuscationPreference(profile.userId)
 	const sharePayload = buildProfileShareCardPayload(profile)
 
 	return (

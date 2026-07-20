@@ -1,36 +1,29 @@
 "use server"
 
 import { createClient } from '@/utils/supabase/server'
-import { createAdminClient } from '@/utils/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { createHash, randomBytes } from 'crypto'
 import { cookies } from 'next/headers'
 import { OBFUSCATE_INFO_COOKIE, serializeObfuscateInfo } from '@/lib/obfuscation'
-import { sendAccountLifecycleDiscordWebhook } from '@/lib/auth/accountLifecycleDiscord'
+import { getServerAccountContext } from '@/lib/fetchers/internal/serverAccountContext'
+import { fetchAccountWebApi } from '@/lib/web-api/client'
+
+async function accountAccessToken(): Promise<string> {
+    const { accessToken } = await getServerAccountContext()
+    if (!accessToken) throw new Error('Not authenticated')
+    return accessToken
+}
 
 export async function updateAccount(payload: {
     display_name?: string | null
     default_workspace_id?: string | null
     obfuscate_info?: boolean
 }) {
-    const supabase = await createClient()
-    const { data: authData } = await supabase.auth.getUser()
-    const authUser = authData.user
-
-    if (!authUser) {
-        throw new Error('Not authenticated')
-    }
-
-    const toUpsert: any = {}
-    if (payload.display_name !== undefined) toUpsert.display_name = payload.display_name
-    if (payload.default_workspace_id !== undefined) toUpsert.default_workspace_id = payload.default_workspace_id
-    if (payload.obfuscate_info !== undefined) toUpsert.obfuscate_info = payload.obfuscate_info
-
-    toUpsert.user_id = authUser.id
-
-    const { error } = await supabase.from('users').upsert(toUpsert, { onConflict: 'user_id' })
-    if (error) throw new Error(error.message)
+    await fetchAccountWebApi<{ ok: true }>(
+        '/api/account/settings/account/profile',
+        await accountAccessToken(),
+        { method: 'PUT', body: JSON.stringify(payload) },
+    )
     if (payload.obfuscate_info !== undefined) {
         const cookieStore = await cookies()
         cookieStore.set(OBFUSCATE_INFO_COOKIE, serializeObfuscateInfo(payload.obfuscate_info), {
@@ -47,34 +40,11 @@ export async function updateAccount(payload: {
 }
 
 export async function deleteAccount() {
-    const supabase = await createClient()
-    const { data: authData } = await supabase.auth.getUser()
-    const authUser = authData.user
-
-    if (!authUser) {
-        throw new Error('Not authenticated')
-    }
-
-    // Use admin client to delete the auth user (service role key required)
-    const admin = createAdminClient()
-    // supabase-js admin API exposes auth.admin.deleteUser
-    // If this fails, throw so the client can show an error
-    const { error } = await (admin as any).auth.admin.deleteUser(authUser.id)
-    if (error) throw new Error(error.message)
-
-    void sendAccountLifecycleDiscordWebhook({
-        event: 'account_deleted',
-        userId: authUser.id,
-        email: authUser.email ?? null,
-        timestampIso: new Date().toISOString(),
-    }).catch((error) => {
-        console.error('Failed sending account deletion Discord webhook', {
-            userId: authUser.id,
-            error: error instanceof Error ? error.message : String(error),
-        })
-    })
-
-    return { ok: true }
+	return fetchAccountWebApi<{ ok: true }>(
+		'/api/account/settings/account',
+		await accountAccessToken(),
+		{ method: 'DELETE' },
+	)
 }
 
 // ============================================================================
@@ -284,28 +254,11 @@ export async function verifyMFAEnrollmentAction(
         // Ignore cleanup errors - non-critical
     }
 
-    // Generate 10 recovery codes
-    const recoveryCodes = Array.from({ length: 10 }, () =>
-        generateRecoveryCode()
+    const { recoveryCodes } = await fetchAccountWebApi<{ recoveryCodes: string[] }>(
+        '/api/account/settings/account/recovery-codes',
+        await accountAccessToken(),
+        { method: 'POST' },
     )
-
-    // Hash and store recovery codes
-    const adminClient = createAdminClient()
-    const hashedCodes = recoveryCodes.map((code) => ({
-        user_id: user.id,
-        code_hash: hashRecoveryCode(code),
-        created_at: new Date().toISOString(),
-    }))
-
-    const { error: insertError } = await adminClient
-        .from('user_recovery_codes')
-        .insert(hashedCodes)
-
-    if (insertError) {
-        console.error('Error storing recovery codes:', insertError)
-        // Don't fail enrollment if recovery codes fail to store
-        // MFA is still active, user just won't have recovery codes
-    }
 
     revalidatePath('/settings/account')
 
@@ -361,17 +314,11 @@ export async function unenrollMFAAction(
         throw new Error('Failed to disable MFA')
     }
 
-    // Delete recovery codes
-    const adminClient = createAdminClient()
-    const { error: deleteError } = await adminClient
-        .from('user_recovery_codes')
-        .delete()
-        .eq('user_id', user.id)
-
-    if (deleteError) {
-        console.error('Error deleting recovery codes:', deleteError)
-        // Don't fail unenrollment if recovery code deletion fails
-    }
+    await fetchAccountWebApi<{ success: true }>(
+        '/api/account/settings/account/recovery-codes',
+        await accountAccessToken(),
+        { method: 'DELETE' },
+    )
 
     revalidatePath('/settings/account')
     return { success: true }
@@ -415,61 +362,10 @@ export async function cleanupUnverifiedMFAAction() {
  * Used for checking if codes exist after initial setup.
  */
 export async function getRecoveryCodesAction() {
-    const supabase = await createClient()
-    const { data: authData } = await supabase.auth.getUser()
-    const user = authData.user
-
-    if (!user) {
-        throw new Error('Not authenticated')
-    }
-
-    // Recovery codes are stored hashed, so we can't return the original codes
-    // This function is mainly for checking if codes exist
-    const { data, error } = await supabase
-        .from('user_recovery_codes')
-        .select('id, created_at, used_at')
-        .eq('user_id', user.id)
-        .is('used_at', null)
-
-    if (error) {
-        console.error('Error fetching recovery codes:', error)
-        throw new Error('Failed to retrieve recovery codes')
-    }
-
-    return {
-        hasRecoveryCodes: (data?.length ?? 0) > 0,
-        unusedCount: data?.length ?? 0,
-    }
-}
-
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
-/**
- * Generates a random 8-character recovery code (alphanumeric, no ambiguous chars).
- */
-function generateRecoveryCode(): string {
-    // Use crypto-safe random bytes, convert to alphanumeric (no ambiguous chars)
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // No O, 0, I, 1
-    const bytes = randomBytes(8)
-    let code = ''
-
-    for (let i = 0; i < 8; i++) {
-        code += chars[bytes[i] % chars.length]
-    }
-
-    // Format as XXXX-XXXX for readability
-    return `${code.slice(0, 4)}-${code.slice(4)}`
-}
-
-/**
- * Hashes a recovery code for secure storage.
- */
-function hashRecoveryCode(code: string): string {
-    // Remove hyphen and hash with SHA-256
-    const normalized = code.replace(/-/g, '')
-    return createHash('sha256').update(normalized).digest('hex')
+    return fetchAccountWebApi<{ hasRecoveryCodes: boolean; unusedCount: number }>(
+        '/api/account/settings/account/recovery-codes',
+        await accountAccessToken(),
+    )
 }
 
 /**
@@ -477,45 +373,9 @@ function hashRecoveryCode(code: string): string {
  * Used during MFA login verification.
  */
 export async function verifyRecoveryCodeAction(code: string) {
-    const supabase = await createClient()
-    const { data: authData } = await supabase.auth.getUser()
-    const user = authData.user
-
-    if (!user) {
-        throw new Error('Not authenticated')
-    }
-
-    const codeHash = hashRecoveryCode(code)
-
-    // Find matching unused recovery code
-    const { data: codes, error: fetchError } = await supabase
-        .from('user_recovery_codes')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('code_hash', codeHash)
-        .is('used_at', null)
-        .limit(1)
-
-    if (fetchError) {
-        console.error('Error fetching recovery code:', fetchError)
-        throw new Error('Failed to verify recovery code')
-    }
-
-    if (!codes || codes.length === 0) {
-        throw new Error('Invalid or already used recovery code')
-    }
-
-    // Mark code as used
-    const adminClient = createAdminClient()
-    const { error: updateError } = await adminClient
-        .from('user_recovery_codes')
-        .update({ used_at: new Date().toISOString() })
-        .eq('id', codes[0].id)
-
-    if (updateError) {
-        console.error('Error marking recovery code as used:', updateError)
-        throw new Error('Failed to use recovery code')
-    }
-
-    return { success: true }
+    return fetchAccountWebApi<{ success: true }>(
+        '/api/account/settings/account/recovery-codes/verify',
+        await accountAccessToken(),
+        { method: 'POST', body: JSON.stringify({ code }) },
+    )
 }

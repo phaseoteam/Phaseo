@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/utils/supabase/server";
+import { fetchAdminCatalogRecord } from "@/lib/fetchers/internal/fetchAdminCatalog";
 import {
 	deleteAPIProviderAction,
 	updateAPIProviderAction,
@@ -16,14 +16,7 @@ export default async function EditAPIProviderPage({
 	params: Promise<{ providerId: string }>;
 }) {
 	const { providerId } = await params;
-	const supabase = await createClient();
-	const { data: row } = await supabase
-		.from("data_api_providers")
-		.select(
-			"api_provider_id, api_provider_name, description, link, country_code, prompt_training_policy, prompt_training_notes, prompt_training_source_url",
-		)
-		.eq("api_provider_id", providerId)
-		.maybeSingle();
+	const { row } = await fetchAdminCatalogRecord("provider", providerId);
 	if (!row) return notFound();
 
 	const updateAction = updateAPIProviderAction.bind(null, providerId);

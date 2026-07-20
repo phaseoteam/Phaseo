@@ -1,27 +1,12 @@
 "use server";
 
-import { createClient } from "@/utils/supabase/server";
-import { createAdminClient } from "@/utils/supabase/admin";
 import { revalidatePath } from "next/cache";
-import { hashOAuthClientSecret } from "@/lib/keygen";
-import { OAUTH_SCOPE_OPTIONS } from "@/lib/oauth/scopes";
+import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
 import {
 	THIRD_PARTY_OAUTH_COMING_SOON_MESSAGE,
 	isThirdPartyOAuthEnabled,
 } from "@/lib/oauth/thirdPartyOAuth";
-
-/**
- * OAuth App Management Server Actions
- *
- * These actions are the dashboard's canonical OAuth client management path.
- * Secrets are generated and hashed server-side here using the same active pepper
- * configured in the API worker.
- *
- * Architecture:
- * - Supabase OAuth server manages client credentials (opaque storage)
- * - We store rich metadata in oauth_app_metadata table
- * - All operations maintain consistency between both stores
- */
 
 interface CreateOAuthAppInput {
 	name: string;
@@ -40,150 +25,44 @@ interface OAuthAppResult {
 	error?: string;
 }
 
-type OAuthAppMetadataUrls = Pick<
-	CreateOAuthAppInput,
-	"homepage_url" | "logo_url" | "privacy_policy_url" | "terms_of_service_url"
->;
-
-function validateMetadataUrls(values: OAuthAppMetadataUrls): string | null {
-	for (const [field, value] of Object.entries(values)) {
-		if (value === undefined || value.trim() === "") continue;
-		try {
-			const url = new URL(value);
-			if (url.protocol !== "https:" || url.username || url.password || url.hash) {
-				return `${field.replaceAll("_", " ")} must be an HTTPS URL without credentials or a fragment`;
-			}
-		} catch {
-			return `${field.replaceAll("_", " ")} must be a valid HTTPS URL`;
-		}
-	}
-	return null;
+async function token(): Promise<string> {
+	const { accessToken } = await getServerAccountContext();
+	if (!accessToken) throw new Error("Unauthorized");
+	return accessToken;
 }
 
-const SUPPORTED_OAUTH_SCOPES = new Set(OAUTH_SCOPE_OPTIONS.map((option) => option.value));
-
-function validateOAuthScopes(scopes: string[] | undefined): string[] {
-	const normalized = Array.from(new Set((scopes ?? []).map((scope) => String(scope).trim()).filter(Boolean)));
-	if (normalized.length === 0) throw new Error("Choose at least one OAuth scope");
-	const unsupported = normalized.find((scope) => !SUPPORTED_OAUTH_SCOPES.has(scope));
-	if (unsupported) throw new Error(`Unsupported OAuth scope: ${unsupported}`);
-	return normalized;
+function refresh(clientId?: string): void {
+	revalidatePath("/settings/oauth-apps");
+	if (clientId) revalidatePath(`/settings/oauth-apps/${clientId}`);
 }
 
-/**
- * Create a new OAuth application
- *
- * This action:
- * 1. Validates user has permission for the team
- * 2. Creates OAuth client in Supabase (gets client_id + client_secret)
- * 3. Stores metadata in oauth_app_metadata table
- * 4. Returns credentials (client_secret only shown once!)
- */
-export async function createOAuthAppAction(
-	input: CreateOAuthAppInput
-): Promise<OAuthAppResult> {
+async function execute<T>(operation: () => Promise<T>): Promise<OAuthAppResult> {
 	try {
-		if (!isThirdPartyOAuthEnabled()) {
-			return { error: THIRD_PARTY_OAUTH_COMING_SOON_MESSAGE };
-		}
-
-		const supabase = await createClient();
-
-		// Get current user
-		const {
-			data: { user },
-			error: userError,
-		} = await supabase.auth.getUser();
-
-		if (userError || !user) {
-			return { error: "Unauthorized" };
-		}
-
-		// Verify user is a member of the team
-		const { data: membership } = await supabase
-			.from("workspace_members")
-			.select("role")
-			.eq("workspace_id", input.workspace_id)
-			.eq("user_id", user.id)
-			.in("role", ["owner", "admin"])
-			.maybeSingle();
-
-		if (!membership) {
-			return { error: "Workspace owner or admin access is required to create OAuth apps" };
-		}
-
-		// Validate inputs
-		if (!input.name || input.name.trim().length < 3) {
-			return { error: "App name must be at least 3 characters" };
-		}
-
-		if (!input.redirect_uris || input.redirect_uris.length === 0) {
-			return { error: "At least one redirect URI is required" };
-		}
-
-		// Validate redirect URIs
-		for (const uri of input.redirect_uris) {
-			try {
-				const url = new URL(uri);
-				const loopback = url.hostname === "127.0.0.1" || url.hostname === "::1" || url.hostname === "[::1]" || url.hostname === "localhost";
-				if (url.username || url.password || url.hash || (url.protocol !== "https:" && !(url.protocol === "http:" && loopback))) {
-					return { error: `Invalid redirect URI: ${uri}` };
-				}
-			} catch {
-				return { error: `Invalid redirect URI format: ${uri}` };
-			}
-		}
-		const metadataUrlError = validateMetadataUrls(input);
-		if (metadataUrlError) return { error: metadataUrlError };
-
-		const allowedScopes = validateOAuthScopes(input.allowed_scopes);
-		const adminClient = createAdminClient();
-		const { data: oauthClient, error: clientError } = await (adminClient.auth.admin.oauth as any).createClient({
-			name: input.name,
-			redirect_uris: input.redirect_uris,
-		});
-		if (clientError || !oauthClient?.client_id || !oauthClient?.client_secret) {
-			return { error: `Failed to create OAuth client: ${clientError?.message || "Unknown error"}` };
-		}
-		const { data: metadata, error: metadataError } = await supabase
-			.from("oauth_app_metadata")
-			.insert({
-				client_id: oauthClient.client_id,
-				workspace_id: input.workspace_id,
-				name: input.name,
-				description: input.description,
-				redirect_uris: input.redirect_uris,
-				homepage_url: input.homepage_url,
-				logo_url: input.logo_url,
-				privacy_policy_url: input.privacy_policy_url,
-				terms_of_service_url: input.terms_of_service_url,
-				client_type: "confidential",
-				client_secret_hash: await hashOAuthClientSecret(oauthClient.client_secret),
-				allowed_scopes: allowedScopes,
-				created_by: user.id,
-				status: "active",
-			})
-			.select()
-			.single();
-		if (metadataError) {
-			await (adminClient.auth.admin.oauth as any).deleteClient(oauthClient.client_id);
-			return { error: `Failed to create OAuth app: ${metadataError.message}` };
-		}
-
-		revalidatePath("/settings/oauth-apps");
-		return { data: { ...metadata, client_secret: oauthClient.client_secret } };
-	} catch (error: any) {
-		console.error("Error creating OAuth app:", error);
-		return { error: error.message || "Failed to create OAuth app" };
+		return { data: await operation() };
+	} catch (error) {
+		return { error: error instanceof Error ? error.message : "OAuth app operation failed" };
 	}
 }
 
-/**
- * Update OAuth app metadata
- *
- * Note: This only updates metadata (name, description, etc.)
- * Redirect URIs are managed separately via updateRedirectUris
- */
+function disabled(): OAuthAppResult | null {
+	return isThirdPartyOAuthEnabled() ? null : { error: THIRD_PARTY_OAUTH_COMING_SOON_MESSAGE };
+}
+
+export async function createOAuthAppAction(input: CreateOAuthAppInput): Promise<OAuthAppResult> {
+	const unavailable = disabled();
+	if (unavailable) return unavailable;
+	const result = await execute(async () => {
+		const response = await fetchAccountWebApi<{ data: any }>(
+			"/api/account/settings/oauth-apps",
+			await token(),
+			{ method: "POST", body: JSON.stringify(input) },
+		);
+		refresh();
+		return response.data;
+	});
+	return result;
+}
+
 export async function updateOAuthAppAction(
 	clientId: string,
 	updates: {
@@ -193,404 +72,91 @@ export async function updateOAuthAppAction(
 		logo_url?: string;
 		privacy_policy_url?: string;
 		terms_of_service_url?: string;
-	}
+	},
 ): Promise<OAuthAppResult> {
-	try {
-		if (!isThirdPartyOAuthEnabled()) {
-			return { error: THIRD_PARTY_OAUTH_COMING_SOON_MESSAGE };
-		}
-
-		const supabase = await createClient();
-
-		// Get current user
-		const {
-			data: { user },
-			error: userError,
-		} = await supabase.auth.getUser();
-
-		if (userError || !user) {
-			return { error: "Unauthorized" };
-		}
-
-		// Fetch app to verify ownership
-		const { data: app } = await supabase
-			.from("oauth_app_metadata")
-			.select("workspace_id")
-			.eq("client_id", clientId)
-			.single();
-
-		if (!app) {
-			return { error: "OAuth app not found" };
-		}
-
-		// Only workspace owners and admins may change an OAuth app's metadata.
-		const { data: membership } = await supabase
-			.from("workspace_members")
-			.select("role")
-			.eq("workspace_id", app.workspace_id)
-			.eq("user_id", user.id)
-			.in("role", ["owner", "admin"])
-			.maybeSingle();
-
-		if (!membership) {
-			return { error: "Workspace owner or admin access is required" };
-		}
-		const metadataUrlError = validateMetadataUrls(updates);
-		if (metadataUrlError) return { error: metadataUrlError };
-
-		// Update metadata
-		const { data: updated, error: updateError } = await supabase
-			.from("oauth_app_metadata")
-			.update(updates)
-			.eq("client_id", clientId)
-			.select()
-			.single();
-
-		if (updateError) {
-			return { error: `Failed to update OAuth app: ${updateError.message}` };
-		}
-
-		revalidatePath("/settings/oauth-apps");
-		revalidatePath(`/settings/oauth-apps/${clientId}`);
-		return { data: updated };
-	} catch (error: any) {
-		console.error("Error updating OAuth app:", error);
-		return { error: error.message || "Failed to update OAuth app" };
-	}
+	const unavailable = disabled();
+	if (unavailable) return unavailable;
+	return execute(async () => {
+		const response = await fetchAccountWebApi<{ data: any }>(
+			`/api/account/settings/oauth-apps/${encodeURIComponent(clientId)}`,
+			await token(),
+			{ method: "PUT", body: JSON.stringify(updates) },
+		);
+		refresh(clientId);
+		return response.data;
+	});
 }
 
 export async function updateOAuthAppScopesAction(
 	clientId: string,
 	allowedScopes: string[],
 ): Promise<OAuthAppResult> {
-	try {
-		if (!isThirdPartyOAuthEnabled()) return { error: THIRD_PARTY_OAUTH_COMING_SOON_MESSAGE };
-		if (!Array.isArray(allowedScopes) || allowedScopes.length === 0) {
-			return { error: "Choose at least one OAuth scope" };
-		}
-		const supabase = await createClient();
-		const { data: { user }, error: userError } = await supabase.auth.getUser();
-		if (userError || !user) return { error: "Unauthorized" };
-		const { data: app } = await supabase
-			.from("oauth_app_metadata")
-			.select("workspace_id")
-			.eq("client_id", clientId)
-			.single();
-		if (!app) return { error: "OAuth app not found" };
-		const { data: membership } = await supabase
-			.from("workspace_members")
-			.select("role")
-			.eq("workspace_id", app.workspace_id)
-			.eq("user_id", user.id)
-			.in("role", ["owner", "admin"])
-			.maybeSingle();
-		if (!membership) return { error: "Workspace owner or admin access is required" };
-
-		const { data: updated, error: updateError } = await supabase
-			.from("oauth_app_metadata")
-			.update({ allowed_scopes: validateOAuthScopes(allowedScopes) })
-			.eq("client_id", clientId)
-			.eq("workspace_id", app.workspace_id)
-			.select()
-			.single();
-		if (updateError) return { error: `Failed to update OAuth app scopes: ${updateError.message}` };
-		revalidatePath("/settings/oauth-apps");
-		revalidatePath(`/settings/oauth-apps/${clientId}`);
+	const unavailable = disabled();
+	if (unavailable) return unavailable;
+	const result = await execute(async () => {
+		const response = await fetchAccountWebApi<{ data: any }>(
+			`/api/account/settings/oauth-apps/${encodeURIComponent(clientId)}`,
+			await token(),
+			{ method: "PUT", body: JSON.stringify({ allowed_scopes: allowedScopes }) },
+		);
+		refresh(clientId);
 		revalidatePath("/settings/authorized-apps");
-		return { data: updated };
-	} catch (error: any) {
-		console.error("oauth_app_scope_update_failed", error);
-		return { error: error.message || "Failed to update OAuth app scopes" };
-	}
+		return response.data;
+	});
+	return result;
 }
 
-/**
- * Regenerate client secret
- *
- * This invalidates the old secret and generates a new one.
- * The new secret is returned only once.
- */
-export async function regenerateClientSecretAction(
-	clientId: string
-): Promise<OAuthAppResult> {
-	try {
-		if (!isThirdPartyOAuthEnabled()) {
-			return { error: THIRD_PARTY_OAUTH_COMING_SOON_MESSAGE };
-		}
-
-		const supabase = await createClient();
-
-		// Get current user
-		const {
-			data: { user },
-			error: userError,
-		} = await supabase.auth.getUser();
-
-		if (userError || !user) {
-			return { error: "Unauthorized" };
-		}
-
-		// Fetch app to verify ownership
-		const { data: app } = await supabase
-			.from("oauth_app_metadata")
-			.select("workspace_id, name")
-			.eq("client_id", clientId)
-			.single();
-
-		if (!app) {
-			return { error: "OAuth app not found" };
-		}
-
-		// Rotating a secret invalidates existing integrations, so require an admin role.
-		const { data: membership } = await supabase
-			.from("workspace_members")
-			.select("role")
-			.eq("workspace_id", app.workspace_id)
-			.eq("user_id", user.id)
-			.in("role", ["owner", "admin"])
-			.maybeSingle();
-
-		if (!membership) {
-			return { error: "Workspace owner or admin access is required" };
-		}
-
-		const adminClient = createAdminClient();
-		const { data: newSecret, error: secretError } = await (adminClient.auth.admin.oauth as any).regenerateSecret(clientId);
-		if (secretError || !newSecret?.client_secret) {
-			return { error: `Failed to regenerate secret: ${secretError?.message || "Unknown error"}` };
-		}
-		const { error: hashUpdateError } = await supabase
-			.from("oauth_app_metadata")
-			.update({ client_secret_hash: await hashOAuthClientSecret(newSecret.client_secret) })
-			.eq("client_id", clientId)
-			.eq("workspace_id", app.workspace_id);
-		if (hashUpdateError) return { error: `Failed to update OAuth client secret: ${hashUpdateError.message}` };
-
-		revalidatePath("/settings/oauth-apps");
-		revalidatePath(`/settings/oauth-apps/${clientId}`);
-		return { data: { client_id: clientId, client_secret: newSecret.client_secret } };
-	} catch (error: any) {
-		console.error("Error regenerating secret:", error);
-		return { error: error.message || "Failed to regenerate secret" };
-	}
+export async function regenerateClientSecretAction(clientId: string): Promise<OAuthAppResult> {
+	const unavailable = disabled();
+	if (unavailable) return unavailable;
+	return execute(async () => {
+		const response = await fetchAccountWebApi<{ data: any }>(
+			`/api/account/settings/oauth-apps/${encodeURIComponent(clientId)}/regenerate-secret`,
+			await token(),
+			{ method: "POST" },
+		);
+		refresh(clientId);
+		return response.data;
+	});
 }
 
-/**
- * Delete OAuth app
- *
- * This:
- * 1. Deletes the OAuth client from Supabase (invalidates all tokens)
- * 2. Deletes metadata from oauth_app_metadata
- * 3. Cascades to delete authorizations (via foreign key)
- */
-export async function deleteOAuthAppAction(
-	clientId: string
-): Promise<OAuthAppResult> {
-	try {
-		if (!isThirdPartyOAuthEnabled()) {
-			return { error: THIRD_PARTY_OAUTH_COMING_SOON_MESSAGE };
-		}
-
-		const supabase = await createClient();
-
-		// Get current user
-		const {
-			data: { user },
-			error: userError,
-		} = await supabase.auth.getUser();
-
-		if (userError || !user) {
-			return { error: "Unauthorized" };
-		}
-
-		// Fetch app to verify ownership
-		const { data: app } = await supabase
-			.from("oauth_app_metadata")
-			.select("workspace_id")
-			.eq("client_id", clientId)
-			.single();
-
-		if (!app) {
-			return { error: "OAuth app not found" };
-		}
-
-		// Deleting an OAuth app invalidates existing integrations, so require an admin role.
-		const { data: membership } = await supabase
-			.from("workspace_members")
-			.select("role")
-			.eq("workspace_id", app.workspace_id)
-			.eq("user_id", user.id)
-			.in("role", ["owner", "admin"])
-			.maybeSingle();
-
-		if (!membership) {
-			return { error: "Workspace owner or admin access is required" };
-		}
-
-		// Delete OAuth client from Supabase first
-		const adminClient = createAdminClient();
-		const { error: clientError } = await (adminClient.auth.admin.oauth as any).deleteClient(clientId);
-		if (clientError) {
-			return { error: `Failed to delete OAuth client: ${clientError.message}` };
-		}
-
-		// Delete metadata (this will cascade to authorizations)
-		const { error: deleteError } = await supabase
-			.from("oauth_app_metadata")
-			.delete()
-			.eq("client_id", clientId);
-
-		if (deleteError) {
-			return { error: `Failed to delete OAuth app: ${deleteError.message}` };
-		}
-
-		revalidatePath("/settings/oauth-apps");
-		return { data: { success: true } };
-	} catch (error: any) {
-		console.error("Error deleting OAuth app:", error);
-		return { error: error.message || "Failed to delete OAuth app" };
-	}
+export async function deleteOAuthAppAction(clientId: string): Promise<OAuthAppResult> {
+	const unavailable = disabled();
+	if (unavailable) return unavailable;
+	return execute(async () => {
+		const response = await fetchAccountWebApi<{ data: any }>(
+			`/api/account/settings/oauth-apps/${encodeURIComponent(clientId)}`,
+			await token(),
+			{ method: "DELETE" },
+		);
+		refresh();
+		return response.data;
+	});
 }
 
-/**
- * List OAuth apps for a team
- */
-export async function listOAuthAppsAction(
-	workspaceId: string
-): Promise<OAuthAppResult> {
-	try {
-		const supabase = await createClient();
-
-		// Get current user
-		const {
-			data: { user },
-			error: userError,
-		} = await supabase.auth.getUser();
-
-		if (userError || !user) {
-			return { error: "Unauthorized" };
-		}
-
-		// Verify user is a member of the team
-		const { data: membership } = await supabase
-			.from("workspace_members")
-			.select("workspace_id")
-			.eq("workspace_id", workspaceId)
-			.eq("user_id", user.id)
-			.single();
-
-		if (!membership) {
-			return { error: "You don't have permission to view OAuth apps for this workspace" };
-		}
-
-		// Fetch apps with stats
-		const { data: apps, error: appsError } = await supabase
-			.from("oauth_apps_with_stats")
-			.select("*")
-			.eq("workspace_id", workspaceId)
-			.order("created_at", { ascending: false });
-
-		if (appsError) {
-			return { error: `Failed to list OAuth apps: ${appsError.message}` };
-		}
-
-		return { data: apps };
-	} catch (error: any) {
-		console.error("Error listing OAuth apps:", error);
-		return { error: error.message || "Failed to list OAuth apps" };
-	}
+export async function listOAuthAppsAction(workspaceId: string): Promise<OAuthAppResult> {
+	return execute(async () => {
+		const response = await fetchAccountWebApi<{ oauthApps: any[] }>(
+			`/api/account/settings/oauth-apps?workspaceId=${encodeURIComponent(workspaceId)}`,
+			await token(),
+		);
+		return response.oauthApps;
+	});
 }
 
-/**
- * Update redirect URIs for an OAuth app
- */
 export async function updateRedirectUrisAction(
 	clientId: string,
-	redirectUris: string[]
+	redirectUris: string[],
 ): Promise<OAuthAppResult> {
-	try {
-		if (!isThirdPartyOAuthEnabled()) {
-			return { error: THIRD_PARTY_OAUTH_COMING_SOON_MESSAGE };
-		}
-
-		const supabase = await createClient();
-
-		// Get current user
-		const {
-			data: { user },
-			error: userError,
-		} = await supabase.auth.getUser();
-
-		if (userError || !user) {
-			return { error: "Unauthorized" };
-		}
-
-		// Fetch app to verify ownership
-		const { data: app } = await supabase
-			.from("oauth_app_metadata")
-			.select("workspace_id")
-			.eq("client_id", clientId)
-			.single();
-
-		if (!app) {
-			return { error: "OAuth app not found" };
-		}
-
-		// Verify user is a member of the team
-		const { data: membership } = await supabase
-			.from("workspace_members")
-			.select("workspace_id")
-			.eq("workspace_id", app.workspace_id)
-			.eq("user_id", user.id)
-			.single();
-
-		if (!membership) {
-			return { error: "You don't have permission to update this OAuth app" };
-		}
-
-		// Validate redirect URIs
-		if (!redirectUris || redirectUris.length === 0) {
-			return { error: "At least one redirect URI is required" };
-		}
-
-		for (const uri of redirectUris) {
-			try {
-				const url = new URL(uri);
-				if (url.protocol !== "http:" && url.protocol !== "https:") {
-					return { error: `Invalid redirect URI: ${uri}` };
-				}
-			} catch {
-				return { error: `Invalid redirect URI format: ${uri}` };
-			}
-		}
-
-		// Update redirect URIs in Supabase OAuth client
-		const adminClient = createAdminClient();
-		const { error: updateError } = await (adminClient.auth.admin.oauth as any).updateClient(clientId, {
-			redirect_uris: redirectUris,
-		});
-
-		if (updateError) {
-			return { error: `Failed to update redirect URIs: ${updateError.message}` };
-		}
-
-		const { error: metadataUpdateError } = await supabase
-			.from("oauth_app_metadata")
-			.update({
-				redirect_uris: redirectUris,
-			})
-			.eq("client_id", clientId)
-			.eq("workspace_id", app.workspace_id);
-		if (metadataUpdateError) {
-			return {
-				error: `Redirect URIs updated in OAuth client but metadata sync failed: ${metadataUpdateError.message}`,
-			};
-		}
-
-		revalidatePath(`/settings/oauth-apps/${clientId}`);
-		return { data: { redirect_uris: redirectUris } };
-	} catch (error: any) {
-		console.error("Error updating redirect URIs:", error);
-		return { error: error.message || "Failed to update redirect URIs" };
-	}
+	const unavailable = disabled();
+	if (unavailable) return unavailable;
+	return execute(async () => {
+		const response = await fetchAccountWebApi<{ data: any }>(
+			`/api/account/settings/oauth-apps/${encodeURIComponent(clientId)}`,
+			await token(),
+			{ method: "PUT", body: JSON.stringify({ operation: "redirect-uris", redirect_uris: redirectUris }) },
+		);
+		refresh(clientId);
+		return response.data;
+	});
 }

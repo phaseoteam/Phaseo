@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/utils/supabase/server";
+import { fetchAdminCatalogRecord } from "@/lib/fetchers/internal/fetchAdminCatalog";
 import {
 	deleteOrganisationAction,
 	updateOrganisationAction,
@@ -13,17 +13,8 @@ export default async function EditOrganisationPage({
 	params: Promise<{ organisationId: string }>;
 }) {
 	const { organisationId } = await params;
-	const supabase = await createClient();
-	const { data: row } = await supabase
-		.from("data_organisations")
-		.select("organisation_id, name, description, country_code, colour")
-		.eq("organisation_id", organisationId)
-		.maybeSingle();
+	const { row, links = [] } = await fetchAdminCatalogRecord("organisation", organisationId);
 	if (!row) return notFound();
-	const { data: links } = await supabase
-		.from("data_organisation_links")
-		.select("platform, url")
-		.eq("organisation_id", organisationId);
 
 	const updateAction = updateOrganisationAction.bind(null, organisationId);
 	const deleteAction = deleteOrganisationAction.bind(null, organisationId);
@@ -53,7 +44,7 @@ export default async function EditOrganisationPage({
 						<input name="colour" defaultValue={row.colour ?? ""} className="w-full rounded-md border px-3 py-2 text-sm" />
 					</label>
 				</div>
-				<OrganisationLinksFieldset initialLinks={(links ?? []) as Array<{ platform: string; url: string }>} />
+				<OrganisationLinksFieldset initialLinks={links as Array<{ platform: string; url: string }>} />
 				<div className="flex gap-2">
 					<button type="submit" className="rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground">
 						Save

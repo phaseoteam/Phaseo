@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase/server";
+import { fetchAdminCreditGrants } from "@/lib/fetchers/internal/fetchAdminCreditGrants";
 import { createCreditGrantAction } from "./actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -57,18 +57,7 @@ function formatDate(value: string | null | undefined): string {
 }
 
 export default async function InternalCreditsPage() {
-	const supabase = await createClient();
-	const { data: grants, error } = await supabase
-		.from("credit_grants")
-		.select(
-			"id, code, amount_nanos, max_redemptions, redemptions_count, expires_at, is_active, created_at, disabled_at, note"
-		)
-		.order("created_at", { ascending: false })
-		.limit(250);
-
-	if (error) {
-		throw new Error(error.message);
-	}
+	const grants = await fetchAdminCreditGrants();
 
 	const now = Date.now();
 	let outstandingNanos = BIGINT_ZERO;

@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import type { CountryOrganisationSummary } from "@/lib/fetchers/countries/getCountrySummaries";
+import type { CountryOrganisationSummary } from "@/lib/fetchers/countries/types";
 import { Logo } from "@/components/Logo";
 import Link from "next/link";
 import { formatCountryDate } from "@/components/(data)/countries/utils";

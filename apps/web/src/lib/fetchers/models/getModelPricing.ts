@@ -1,5 +1,5 @@
-import { cacheLife, cacheTag } from "next/cache";
-import { createAdminClient } from "@/utils/supabase/admin";
+import { fetchPublicWebApi } from "@/lib/web-api/client";
+import { fetchAdminModelSource } from "@/lib/fetchers/internal/fetchAdminModelSource";
 import { normalizeQuantizationScheme } from "@/lib/quantization";
 
 /** mirrors new rules schema */
@@ -228,30 +228,16 @@ export default async function getModelPricing(
     includeHidden: boolean,
     includeInternal = false
 ): Promise<ProviderPricing[]> {
+	if (!includeHidden && !includeInternal) {
+		return (await fetchPublicWebApi<{ providers: ProviderPricing[] }>(
+			`/api/_web/models/${encodeURIComponent(modelId)}/pricing`,
+		)).providers;
+	}
     // console.log(`[getModelPricing] Starting for modelId: ${modelId}`);
-    const supabase = createAdminClient();
-
-    const { data: modelRow, error: modelError } = await supabase
-        .from("data_models")
-        .select("hidden")
-        .eq("model_id", modelId)
-        .maybeSingle();
-
-    if (modelError) throw new Error(modelError.message || "Failed to load model metadata");
-    if (modelRow && !includeHidden && modelRow.hidden) {
-        throw new Error("Model not found");
-    }
-
-    const nowIso = new Date().toISOString();
-    const activeWindowClause = [
-        "and(effective_from.is.null,effective_to.is.null)",
-        `and(effective_from.is.null,effective_to.gt.${nowIso})`,
-        `and(effective_from.lte.${nowIso},effective_to.is.null)`,
-        `and(effective_from.lte.${nowIso},effective_to.gt.${nowIso})`,
-        `and(effective_from.gt.${nowIso},effective_to.is.null)`,
-        `and(effective_from.gt.${nowIso},effective_to.gt.${nowIso})`,
-    ].join(",");
-
+	const publicPayload = await fetchAdminModelSource(modelId).then((source) => ({
+            provider_rows: source.providerRows,
+            pricing_rules: source.pricingRules,
+        }));
     const providerModelSelect = `
         provider_api_model_id,
         provider_id,
@@ -405,120 +391,7 @@ export default async function getModelPricing(
     // Fetch provider models with capabilities and provider info in one query.
     // Temporary compatibility: allow pre-migration DBs that don't yet have
     // context_length / max_output_tokens columns on data_api_provider_models.
-    let pmRows: any[] | null = null;
-    let pmError: any = null;
-    let providerModelSelectForSiblingLookup = providerModelSelect;
-    const mergeProviderRowsById = (rows: any[]): any[] => {
-        const byProviderApiModelId = new Map<string, any>();
-        for (const row of rows) {
-            const key = String(row?.provider_api_model_id ?? "").trim();
-            if (!key) continue;
-            byProviderApiModelId.set(key, row);
-        }
-        return Array.from(byProviderApiModelId.values());
-    };
-
-    const fetchProviderRows = async (args: {
-        selectClause: string;
-        modelIds: string[];
-        providerIds?: string[];
-    }) => {
-        const modelIds = args.modelIds.filter(Boolean);
-        if (!modelIds.length) {
-            return {
-                rows: [] as any[],
-                error: null as any,
-            };
-        }
-
-        let byInternalQuery = supabase
-            .from("data_api_provider_models")
-            .select(args.selectClause);
-        let byApiQuery = supabase
-            .from("data_api_provider_models")
-            .select(args.selectClause);
-
-        if (args.providerIds?.length) {
-            byInternalQuery = byInternalQuery.in("provider_id", args.providerIds);
-            byApiQuery = byApiQuery.in("provider_id", args.providerIds);
-        }
-
-        const [byInternalRes, byApiRes] = await Promise.all([
-            byInternalQuery.in("model_id", modelIds),
-            byApiQuery.in("api_model_id", modelIds),
-        ]);
-
-        if (byInternalRes.error && byApiRes.error) {
-            return {
-                rows: null as any[] | null,
-                error: byInternalRes.error,
-            };
-        }
-
-        const mergedRows = [
-            ...((byInternalRes.data ?? []) as any[]),
-            ...((byApiRes.data ?? []) as any[]),
-        ];
-
-        return {
-            rows: mergeProviderRowsById(mergedRows),
-            error: byInternalRes.error ?? byApiRes.error ?? null,
-        };
-    };
-
-    {
-        const res = await fetchProviderRows({
-            selectClause: providerModelSelect,
-            modelIds: [modelId],
-        });
-        pmRows = res.rows;
-        pmError = res.error;
-    }
-
-    if (pmError && isMissingProviderModelColumnError(pmError)) {
-        const compatRes = await fetchProviderRows({
-            selectClause: providerModelSelectWithoutDataPolicy,
-            modelIds: [modelId],
-        });
-        if (compatRes.error && isMissingProviderModelColumnError(compatRes.error)) {
-            providerModelSelectForSiblingLookup = providerModelSelectLegacy;
-            const legacyRes = await fetchProviderRows({
-                selectClause: providerModelSelectLegacy,
-                modelIds: [modelId],
-            });
-            pmRows = legacyRes.rows;
-            pmError = legacyRes.error;
-        } else {
-            providerModelSelectForSiblingLookup = providerModelSelectWithoutDataPolicy;
-            pmRows = compatRes.rows;
-            pmError = compatRes.error;
-        }
-    }
-
-    if (pmError) throw new Error(pmError.message || "Failed to fetch provider models");
-
-    const normalizedModelId = modelId.toLowerCase();
-    const siblingModelIds =
-        normalizedModelId.endsWith("-fast") || normalizedModelId.endsWith("-flex")
-            ? []
-            : [`${modelId}-fast`, `${modelId}-flex`];
-    const providerIdsForSiblingLookup = Array.from(
-        new Set(
-            ((pmRows ?? []) as any[])
-                .map((row) => (typeof row?.provider_id === "string" ? row.provider_id : ""))
-                .filter(Boolean)
-        )
-    );
-    if (siblingModelIds.length > 0 && providerIdsForSiblingLookup.length > 0) {
-        const siblingRes = await fetchProviderRows({
-            selectClause: providerModelSelectForSiblingLookup,
-            modelIds: siblingModelIds,
-            providerIds: providerIdsForSiblingLookup,
-        });
-        if (!siblingRes.error && siblingRes.rows?.length) {
-            pmRows = mergeProviderRowsById([...(pmRows ?? []), ...siblingRes.rows]);
-        }
-    }
+    const pmRows = publicPayload.provider_rows;
 
     // console.log(`[getModelPricing] Fetched ${pmRows?.length || 0} provider model rows for providers: ${(pmRows ?? []).map(r => r.provider_id).join(', ')}`);
 
@@ -736,80 +609,13 @@ export default async function getModelPricing(
 
     const nowMs = Date.now();
 
-    if (modelKeys.length) {
-        const { data: r, error: prErr } = await supabase
-            .from("data_api_pricing_rules")
-            .select(
-                "rule_id, model_key, pricing_plan, meter, unit, unit_size, price_per_unit, currency, note, priority, effective_from, effective_to, match, billing_timestamp_basis, time_windows"
-            )
-            .in("model_key", modelKeys)
-            .or(activeWindowClause)
-            .order("priority", { ascending: false })
-            .order("effective_from", { ascending: false });
-
-        if (prErr) throw new Error(prErr.message || "Failed to fetch pricing rules");
-
-        rules = (r || [])
-            .filter((row) =>
-                isWithinActiveOrUpcomingPricingWindow(
-                    row.effective_from ?? null,
-                    row.effective_to ?? null,
-                    nowMs
-                )
-            )
-            .map(mapRule);
-
-        // console.log(`[getModelPricing] Fetched ${rules.length} pricing rules: ${rules.slice(0, 5).map(r => `${r.id} (${r.meter})`).join(', ')}${rules.length > 5 ? '...' : ''}`);
-    }
-
-    // Fallback for incomplete capability rows in DB: fetch rules by provider:model:* prefix.
-    if (providerModelPrefixes.size > 0) {
-        const knownPrefixes = new Set<string>();
-        for (const rule of rules) {
-            const lastColon = rule.model_key.lastIndexOf(":");
-            if (lastColon <= 0) continue;
-            knownPrefixes.add(`${rule.model_key.slice(0, lastColon)}:`);
-        }
-
-        const missingPrefixes = [...providerModelPrefixes].filter(
-            (prefix) => !knownPrefixes.has(prefix)
-        );
-
-        for (const prefix of missingPrefixes) {
-            const { data: fallbackRows, error: fallbackError } = await supabase
-                .from("data_api_pricing_rules")
-                .select(
-                    "rule_id, model_key, pricing_plan, meter, unit, unit_size, price_per_unit, currency, note, priority, effective_from, effective_to, match, billing_timestamp_basis, time_windows"
-                )
-                .like("model_key", `${prefix}%`)
-                .or(activeWindowClause)
-                .order("priority", { ascending: false })
-                .order("effective_from", { ascending: false });
-
-            if (fallbackError) {
-                console.warn(
-                    "[getModelPricing] Fallback pricing lookup failed",
-                    modelId,
-                    prefix,
-                    fallbackError.message
-                );
-                continue;
-            }
-
-            for (const row of fallbackRows ?? []) {
-                if (
-                    !isWithinActiveOrUpcomingPricingWindow(
-                        row.effective_from ?? null,
-                        row.effective_to ?? null,
-                        nowMs
-                    )
-                ) {
-                    continue;
-                }
-                rules.push(mapRule(row));
-            }
-        }
-    }
+    rules = publicPayload.pricing_rules
+        .filter((row) => isWithinActiveOrUpcomingPricingWindow(
+            row.effective_from ?? null,
+            row.effective_to ?? null,
+            nowMs,
+        ))
+        .map(mapRule);
 
     if (rules.length > 1) {
         const dedup = new Map<string, PricingRule>();
@@ -852,30 +658,11 @@ export default async function getModelPricing(
     return result;
 }
 
-/**
- * Cached version of getModelPricing.
- *
- * Usage: await getModelPricingCached(modelId)
- *
- * This wraps the fetcher with `unstable_cache` for at least 1 week of caching.
- */
+/** Compatibility alias. Cloudflare owns caching for the underlying endpoint. */
 export async function getModelPricingCached(
     modelId: string,
     includeHidden: boolean,
     includeInternal = false
 ): Promise<ProviderPricing[]> {
-    "use cache";
-
-    cacheLife("hours");
-    cacheTag("public-model-catalogue");
-    cacheTag("data:models");
-    cacheTag(`data:models:${modelId}`);
-    cacheTag(`model:api:${modelId}`);
-    cacheTag("data:data_api_pricing_rules");
-    cacheTag("data:data_api_provider_models");
-    cacheTag("frontend:model-pricing");
-    cacheTag("frontend:model-pricing-history");
-
-    // console.log("[fetch] HIT DB for model pricing", modelId);
     return getModelPricing(modelId, includeHidden, includeInternal);
 }

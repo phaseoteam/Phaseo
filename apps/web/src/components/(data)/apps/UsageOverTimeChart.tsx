@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { AppUsageRow } from "@/lib/fetchers/apps/getAppUsageOverTime";
+import type { AppUsageRow } from "@/lib/fetchers/apps/types";
 import AppUsageChart from "./AppUsageChart";
 
 type RangeKey = "1h" | "1d" | "1w" | "4w" | "1m" | "1y";

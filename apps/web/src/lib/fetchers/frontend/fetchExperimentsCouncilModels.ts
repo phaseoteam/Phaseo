@@ -1,15 +1,8 @@
 import { filterModelsForRoom } from "@/lib/chat/rooms";
-import { cacheLife, cacheTag } from "next/cache";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import { fetchFrontendGatewayModels } from "./fetchFrontendGatewayModels";
 
 export async function fetchExperimentsCouncilModels(): Promise<GatewaySupportedModel[]> {
-	"use cache";
-
-	cacheLife("hours");
-	cacheTag("gateway-supported-models");
-	cacheTag("experiments-council-models");
-
 	const models = await fetchFrontendGatewayModels();
 	const textModels = filterModelsForRoom(models, "text").filter(
 		(model) => model.isAvailable,

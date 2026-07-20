@@ -1,7 +1,8 @@
 "use server";
 
-import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
+import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 
 /**
  * User Authorization Management Actions
@@ -25,31 +26,9 @@ export async function revokeAuthorizationAction(
 	authorizationId: string
 ): Promise<ActionResult> {
 	try {
-		const supabase = await createClient();
-
-		// Get current user
-		const {
-			data: { user },
-			error: userError,
-		} = await supabase.auth.getUser();
-
-		if (userError || !user) {
-			return { error: "Unauthorized" };
-		}
-
-		// Revoke authorization (set revoked_at timestamp)
-		// The RLS policy ensures user can only revoke their own authorizations
-		const { error: revokeError } = await supabase
-			.from("oauth_authorizations")
-			.update({ revoked_at: new Date().toISOString() })
-			.eq("id", authorizationId)
-			.eq("user_id", user.id); // Extra safety check
-
-		if (revokeError) {
-			return {
-				error: `Failed to revoke authorization: ${revokeError.message}`,
-			};
-		}
+		const { accessToken } = await getServerAccountContext();
+		if (!accessToken) return { error: "Unauthorized" };
+		await fetchAccountWebApi(`/api/account/settings/authorized-apps/${encodeURIComponent(authorizationId)}`, accessToken, { method: "DELETE" });
 
 		// Revalidate the page
 		revalidatePath("/settings/authorized-apps");
@@ -70,31 +49,10 @@ export async function getAuthorizationDetailsAction(
 	authorizationId: string
 ): Promise<ActionResult> {
 	try {
-		const supabase = await createClient();
-
-		// Get current user
-		const {
-			data: { user },
-			error: userError,
-		} = await supabase.auth.getUser();
-
-		if (userError || !user) {
-			return { error: "Unauthorized" };
-		}
-
-		// Fetch authorization details
-		const { data: authorization, error: authError } = await supabase
-			.from("oauth_authorizations")
-			.select("id, client_id, workspace_id, scopes, created_at, last_used_at")
-			.eq("id", authorizationId)
-			.eq("user_id", user.id)
-			.single();
-
-		if (authError || !authorization) {
-			return { error: "Authorization not found" };
-		}
-
-		return { data: authorization };
+		const { accessToken } = await getServerAccountContext();
+		if (!accessToken) return { error: "Unauthorized" };
+		const response = await fetchAccountWebApi<{ authorization: unknown }>(`/api/account/settings/authorized-apps/${encodeURIComponent(authorizationId)}`, accessToken);
+		return { data: response.authorization };
 	} catch (error: any) {
 		console.error("Error fetching authorization details:", error);
 		return { error: error.message || "Failed to fetch authorization details" };
