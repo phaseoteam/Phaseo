@@ -34,7 +34,7 @@ export function ChatNewChatDialog({
 }: ChatNewChatDialogProps) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-md">
+            <DialogContent className="w-[calc(100vw-1rem)] max-w-md">
                 <DialogHeader className="space-y-2 text-left">
                     <DialogTitle>Reuse chat parameters?</DialogTitle>
                     <DialogDescription>
@@ -54,11 +54,11 @@ export function ChatNewChatDialog({
                         </ul>
                     </div>
                 ) : null}
-                <DialogFooter>
-                    <Button variant="ghost" onClick={onUseDefaults}>
+                <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                    <Button className="w-full sm:w-auto" variant="ghost" onClick={onUseDefaults}>
                         Use defaults
                     </Button>
-                    <Button onClick={onUseCurrent}>Use current</Button>
+                    <Button className="w-full sm:w-auto" onClick={onUseCurrent}>Use current</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

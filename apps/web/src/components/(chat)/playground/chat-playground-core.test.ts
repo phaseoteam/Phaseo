@@ -8,6 +8,19 @@ import {
 	normalizeServerTools,
 } from "./chat-playground-core";
 
+describe("getChangedSettings", () => {
+	it("uses the provider display name instead of the stored provider id", () => {
+		const changes = getChangedSettings(
+			{ ...DEFAULT_SETTINGS, providerId: "openai" },
+			"openai/gpt-5",
+			undefined,
+			"OpenAI",
+		);
+
+		expect(changes).toContainEqual({ label: "Provider", value: "OpenAI" });
+	});
+});
+
 describe("buildDefaultSystemPrompt", () => {
 	it("instructs models to produce valid Streamdown-compatible LaTeX", () => {
 		const prompt = buildDefaultSystemPrompt("openai/gpt-5.6-luna-pro");
