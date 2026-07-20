@@ -86,8 +86,8 @@ importers:
         specifier: ^1.38.0
         version: 1.38.0
       '@visulima/tabular':
-        specifier: ^3.1.0
-        version: 3.1.3
+        specifier: ^4.0.0
+        version: 4.0.0
       hono:
         specifier: ^4.12.27
         version: 4.12.27
@@ -5069,9 +5069,9 @@ packages:
     resolution: {integrity: sha512-UycprH3T6n3jH0k44NHMa7pnFHGu/N05MjojYr+Mc6I7obkoLIJujSWwin1pCvdy/eOxrI/l3uDLQsmcrOb4ug==}
     engines: {node: '>= 20'}
 
-  '@visulima/tabular@3.1.3':
-    resolution: {integrity: sha512-egA4Zh+iP94W8Aj9HCVvtyXAwgZATVvnNEPZj3zgx2WqM7HCmKfMhRFwlGIeuBYFT0pR/5D8xQChc0j4gQL2/Q==}
-    engines: {node: '>=20.19 <=25.x'}
+  '@visulima/tabular@4.0.0':
+    resolution: {integrity: sha512-2BZVeNojH++U2AiMM8sIJb/Ofcrp8Pz2VnSJLyPH5kAGpE0c/KgFgUW8D6SPJIa5aylzMvK11p9YDPjaJ3igHQ==}
+    engines: {node: ^22.14.0 || >=24.10.0}
 
   '@vitejs/plugin-react@6.0.3':
     resolution: {integrity: sha512-vmFvco5/QuC2f9Oj+wTk0+9XeDFkHxSamwZKYc7MxYwKICfvUvlMhqKI0VuICPltGqh1neqBKDvO4kes1ya8vg==}
@@ -16648,7 +16648,7 @@ snapshots:
 
   '@vercel/oidc@3.2.0': {}
 
-  '@visulima/tabular@3.1.3': {}
+  '@visulima/tabular@4.0.0': {}
 
   '@vitejs/plugin-react@6.0.3(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.7)(@babel/runtime@7.29.7)(rolldown@1.1.5)(vite@8.1.4(@types/node@25.6.0)(esbuild@0.25.12)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0)))(vite@8.1.4(@types/node@25.6.0)(esbuild@0.25.12)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))':
     dependencies:
