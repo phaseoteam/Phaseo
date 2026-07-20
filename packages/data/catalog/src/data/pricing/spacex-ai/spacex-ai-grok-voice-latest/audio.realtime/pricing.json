@@ -1,7 +1,7 @@
 {
-  "key": "x-ai:x-ai/grok-voice-latest:audio.realtime",
-  "api_provider_id": "x-ai",
-  "provider_slug": "x-ai",
+  "key": "spacex-ai:x-ai/grok-voice-latest:audio.realtime",
+  "api_provider_id": "spacex-ai",
+  "provider_slug": "spacex-ai",
   "api_model_id": "x-ai/grok-voice-latest",
   "capability_id": "audio.realtime",
   "rules": [

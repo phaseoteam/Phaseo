@@ -17,6 +17,7 @@
   "links": [
     {
       "platform": "api_reference",
+      "title": "Gemini Live API documentation",
       "url": "https://ai.google.dev/gemini-api/docs/live"
     }
   ],

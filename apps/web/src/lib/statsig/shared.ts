@@ -34,7 +34,7 @@ export type WebBetaFeatureDefinition = {
 	title: string;
 	description: string;
 	adminOnly?: boolean;
- 	selfService?: boolean;
+	selfService?: boolean;
 };
 
 export const WEB_BETA_FEATURES = [

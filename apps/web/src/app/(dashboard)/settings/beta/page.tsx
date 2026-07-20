@@ -11,7 +11,7 @@ export default async function BetaSettingsPage() {
 	const initialData = await fetchSettingsBetaInitialData();
 	const betaFeatures: readonly WebBetaFeatureDefinition[] = WEB_BETA_FEATURES.filter(
 		(feature) =>
-			feature.selfService !== false &&
+			(feature as WebBetaFeatureDefinition).selfService !== false &&
 			(!feature.adminOnly || initialData.isAdmin),
 	);
 

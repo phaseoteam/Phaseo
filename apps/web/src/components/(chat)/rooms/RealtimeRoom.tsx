@@ -47,6 +47,7 @@ import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySup
 import { filterModelsForRoom } from "@/lib/chat/rooms";
 import { groupModelsByReleaseMonth } from "@/components/(chat)/playgroundConfig";
 import { cn } from "@/lib/utils";
+import { fetchChatWebApi } from "@/lib/web-api/client";
 
 const RealtimePersona = dynamic(
 	() => import("@/components/ai-elements/persona").then((mod) => mod.Persona),
@@ -2339,7 +2340,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 		if (!selectedModel) {
 			throw new Error("Select a realtime model before starting.");
 		}
-		const response = await fetch("/api/chat/realtime/session", {
+		const response = await fetchChatWebApi("/api/chat/realtime/session", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({

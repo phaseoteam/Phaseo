@@ -4,31 +4,10 @@ import { revalidatePath } from "next/cache";
 
 import {
 	normalizeBetaFeatures,
-	WEB_BETA_FEATURES,
 	type StatsigProfile,
 } from "@/lib/statsig/shared";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
-
-function sanitizeBetaFeatures(
-	value: unknown,
-	options: { isAdmin: boolean },
-): Record<string, boolean> {
-	const normalized = normalizeBetaFeatures(value);
-	const allowedKeys = new Set<string>(
-		WEB_BETA_FEATURES.filter(
-			(feature) =>
-				feature.selfService !== false && (!feature.adminOnly || options.isAdmin),
-		).map((feature) => feature.key),
-	);
-
-	return Object.fromEntries(
-		Object.entries(normalized).filter(
-			([key, enabled]) =>
-				allowedKeys.has(key) && enabled === true
-		)
-	);
-}
 
 export async function updateBetaPreferences(payload: {
 	beta_opt_in?: boolean;

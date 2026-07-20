@@ -1229,7 +1229,7 @@
     "api_model_id": "x-ai/grok-voice-latest",
     "provider_api_model_id": "x-ai:x-ai/grok-voice-latest",
     "provider_model_slug": "grok-voice-latest",
-    "internal_model_id": "x-ai/grok-voice-latest",
+    "internal_model_id": "spacex-ai/grok-voice-latest",
     "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,audio",

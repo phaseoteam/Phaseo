@@ -1,4 +1,5 @@
 import type { ProviderOfferScope } from "@/lib/providers/providerOffers";
+import type { CapabilityParamsById } from "@/lib/chat/roomModelSettings";
 
 export type GatewaySupportedModel = {
 	modelId: string;
@@ -6,6 +7,7 @@ export type GatewaySupportedModel = {
 	selectorModelId: string;
 	providerId: string;
 	capabilities: string[];
+	capabilityParamsById?: CapabilityParamsById;
 	effectiveFrom: string | null;
 	effectiveTo: string | null;
 	providerName: string | null;

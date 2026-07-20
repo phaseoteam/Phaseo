@@ -1178,7 +1178,7 @@ function withGatewayMetadata(
 				).sort();
 				if (gatewayValues.length > 0)
 					return normalizeModalityList(gatewayValues);
-				return normalizeModalityList(
+				return normalizeModelModalityList(
 					normalizeStringList(model?.output_types ?? model?.output_modalities),
 					{ realtime: hasRealtimeModelHint(model) },
 				);

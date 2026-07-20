@@ -149,21 +149,27 @@ accountSettingsRouter.get("/beta", async (c) => {
 	const user = await requireUser(c.req.raw, c.env);
 	if (!user) {
 		return c.json({
+			isAdmin: false,
 			profile: { betaOptIn: false, betaFeatures: {} },
 			signedIn: false,
 		}, 200, PRIVATE_NO_STORE_HEADERS);
 	}
 	const { data, error } = await getDataClient(c.env)
 		.from("users")
-		.select("beta_opt_in,beta_features")
+		.select("beta_opt_in,beta_features,role")
 		.eq("user_id", user.id)
 		.maybeSingle();
 	if (error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	const isAdmin = String(data?.role ?? "").toLowerCase() === "admin";
+	const betaFeatures = normalizeBetaFeatures(data?.beta_features);
+	if (isAdmin) betaFeatures.chat_realtime_voice = true;
+	else delete betaFeatures.chat_realtime_voice;
 	return c.json({
 		profile: {
-			betaOptIn: Boolean(data?.beta_opt_in),
-			betaFeatures: normalizeBetaFeatures(data?.beta_features),
+			betaOptIn: Boolean(data?.beta_opt_in) || isAdmin,
+			betaFeatures,
 		},
+		isAdmin,
 		signedIn: true,
 	}, 200, PRIVATE_NO_STORE_HEADERS);
 });
@@ -177,7 +183,8 @@ accountSettingsRouter.put("/beta", async (c) => {
 	const body: { beta_features?: unknown } = await c.req.json<{ beta_features?: unknown }>().catch(() => ({}));
 	const requested = normalizeBetaFeatures(body.beta_features);
 	const isAdmin = String(roleResult.data?.role ?? "").toLowerCase() === "admin";
-	const betaFeatures = isAdmin && requested.models_catalogue_v2 === true ? { models_catalogue_v2: true } : {};
+	const betaFeatures: Record<string, boolean> = isAdmin && requested.models_catalogue_v2 === true ? { models_catalogue_v2: true } : {};
+	if (isAdmin) betaFeatures.chat_realtime_voice = true;
 	const profile = { betaOptIn: Object.keys(betaFeatures).length > 0, betaFeatures };
 	const result = await client.from("users").upsert({ user_id: user.id, beta_opt_in: profile.betaOptIn, beta_features: profile.betaFeatures }, { onConflict: "user_id" });
 	if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);

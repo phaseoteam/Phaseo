@@ -16,6 +16,7 @@
   "links": [
     {
       "platform": "api_reference",
+      "title": "xAI realtime voice documentation",
       "url": "https://docs.x.ai/developers/model-capabilities/audio/realtime"
     }
   ],
