@@ -10,6 +10,10 @@ import {
 import "server-only";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
+import {
+	requireAuthenticatedUser,
+	requireWorkspaceMembership,
+} from "@/utils/serverActionAuth";
 
 export async function RefreshCredits() {
     revalidatePath("/settings/credits");
@@ -95,16 +99,39 @@ type ChargeSavedPaymentArgs = {
     workspace_id?: string | null;
 };
 
+function resolveInternalBaseUrl(): string {
+	const envUrl =
+		process.env.INTERNAL_APP_URL ||
+		process.env.APP_URL ||
+		process.env.WEBSITE_URL ||
+		process.env.NEXT_PUBLIC_APP_URL ||
+		(process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null);
+
+	return (envUrl || "http://localhost:3000").replace(/\/$/, "");
+}
+
+const INTERNAL_HEADER = "x-internal-payments-token";
+
 export async function ChargeSavedPayment(args: ChargeSavedPaymentArgs) {
-	const context = await getServerAccountContext();
-	const workspaceId = args.workspace_id ?? context.workspaceId ?? await resolveWorkspaceIdFromActiveCookie();
-	if (!context.accessToken) throw new Error("Unauthorized");
-	try {
-		const data = await fetchAccountWebApi<any>("/api/account/settings/billing/charge-saved", context.accessToken, { method: "POST", body: JSON.stringify({ ...args, workspace_id: workspaceId }) });
-		return { ok: true, status: 200, data };
-	} catch (error: any) {
-		return { ok: false, status: Number(error?.status ?? 500), data: { error: error?.message ?? "payment_failed" } };
-	}
+	const { supabase, user } = await requireAuthenticatedUser();
+	const workspaceId = args.workspace_id ?? (await resolveWorkspaceIdFromActiveCookie());
+	await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
+
+	const token = process.env.INTERNAL_PAYMENTS_TOKEN ?? process.env.INTERNAL_API_TOKEN;
+	if (!token) throw new Error("Internal payments token not configured");
+
+	const response = await fetch(`${resolveInternalBaseUrl()}/api/payments/charge-saved`, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			[INTERNAL_HEADER]: token,
+		},
+		body: JSON.stringify({ ...args, workspace_id: workspaceId }),
+		cache: "no-store",
+	});
+
+	const data = await response.json().catch(() => ({ error: "invalid_response" }));
+	return { ok: response.ok, status: response.status, data };
 }
 
 type SaveBillingOnboardingArgs = {
