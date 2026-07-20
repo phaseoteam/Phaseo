@@ -47,7 +47,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://docs.z.ai/guides/llm/glm-5",
-      "rank": 18
+      "rank": 22
     },
     {
       "benchmark_id": "scale-mcp-atlas",
@@ -55,7 +55,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://docs.z.ai/guides/llm/glm-5",
-      "rank": 11
+      "rank": 13
     },
     {
       "benchmark_id": "swe-bench",

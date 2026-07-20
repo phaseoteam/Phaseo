@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://infermatic.ai/docs",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "919773bad1fa503c7baf44ea954218e745e8e786d66cc3bc18022646818d5277",
+  "gatewayPathPrefix": "/v1"
+}

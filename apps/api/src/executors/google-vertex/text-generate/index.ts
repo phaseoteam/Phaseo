@@ -16,6 +16,7 @@ import { resolveProviderKey } from "@providers/keys";
 import { googleUsageMetadataToIRUsage } from "@providers/google-ai-studio/usage";
 import { applyGoogleOutputTokenFallback, applyOpenAIUsageFallback } from "@executors/google/shared/usage-fallback";
 import { getBindings } from "@/runtime/env";
+import { upstreamTestHeaders } from "@providers/shared/testing";
 import { withNormalizedReasoning } from "@executors/google/text-generate/normalize-reasoning";
 import { irPartsToGeminiParts } from "@executors/google/shared/media";
 import {
@@ -88,6 +89,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		headers: {
 			Authorization: `Bearer ${accessToken}`,
 			"Content-Type": "application/json",
+			...upstreamTestHeaders(args.meta),
 		},
 		body: requestBody,
 	});

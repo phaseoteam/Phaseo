@@ -150,7 +150,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.6",
-      "rank": 65
+      "rank": 73
     },
     {
       "benchmark_id": "ifbench",
@@ -206,7 +206,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.6",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "maxife",
@@ -222,7 +222,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.6",
-      "rank": 6
+      "rank": 8
     },
     {
       "benchmark_id": "mcp-mark",
@@ -294,7 +294,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.6",
-      "rank": 14
+      "rank": 15
     },
     {
       "benchmark_id": "mmstar",
@@ -454,7 +454,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.6",
-      "rank": 12
+      "rank": 15
     },
     {
       "benchmark_id": "v-star",

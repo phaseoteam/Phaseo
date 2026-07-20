@@ -767,7 +767,7 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 					model: pre.ctx.model,
 					result: exec.result,
 				});
-			} catch (error) {
+			} catch {
 				const header = timing.timer.header();
 				pre.ctx.timing = timing.timer.snapshot();
 				return await handleError({
@@ -775,7 +775,7 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 					res: createJsonErrorResponse(
 						502,
 						"gateway_stream_materialization_error",
-						error instanceof Error ? error.message : String(error),
+						"The upstream stream could not be materialized.",
 					),
 					endpoint,
 					ctx: pre.ctx,
@@ -945,7 +945,7 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 							model: pre.ctx.model,
 							result: followUpResult,
 						});
-					} catch (error) {
+					} catch {
 						const header = timing.timer.header();
 						pre.ctx.timing = timing.timer.snapshot();
 						return await handleError({
@@ -953,7 +953,7 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 							res: createJsonErrorResponse(
 								502,
 								"gateway_stream_materialization_error",
-								error instanceof Error ? error.message : String(error),
+								"The upstream stream could not be materialized.",
 							),
 							endpoint,
 							ctx: pre.ctx,

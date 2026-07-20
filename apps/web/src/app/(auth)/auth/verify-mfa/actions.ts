@@ -1,16 +1,11 @@
 'use server'
 
 import { createClient } from '@/utils/supabase/server'
-import { getServerAccountContext } from '@/lib/fetchers/internal/serverAccountContext'
-import { fetchAccountWebApi } from '@/lib/web-api/client'
 
 /**
- * Verifies MFA during login using either TOTP or recovery code
+ * Verifies a TOTP MFA challenge during login and upgrades the session to AAL2.
  */
-export async function verifyMFALoginAction(
-    code: string,
-    recoveryMode: boolean = false
-) {
+export async function verifyMFALoginAction(code: string) {
     const supabase = await createClient()
 
     const {
@@ -19,17 +14,6 @@ export async function verifyMFALoginAction(
 
     if (!user) {
         throw new Error('Not authenticated')
-    }
-
-    if (recoveryMode) {
-		const { accessToken } = await getServerAccountContext()
-		if (!accessToken) throw new Error('Not authenticated')
-		const result = await fetchAccountWebApi<{ success: true }>(
-			'/api/account/settings/account/recovery-codes/verify',
-			accessToken,
-			{ method: 'POST', body: JSON.stringify({ code }) },
-		)
-		return { ...result, usedRecoveryCode: true }
     }
 
     // Normal TOTP verification

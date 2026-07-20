@@ -1,0 +1,6 @@
+{
+  "sourceUrl": "https://docs.canopywave.io/",
+  "reconstruction": "phaseo-executor-and-official-reference",
+  "unsupportedReason": "Provider is explicitly marked not-ready by Phaseo executor coverage.",
+  "bundleSha256": "b2617d3851f0415d4a53265ec7520c545599f892c424ad10c6fbd2aeaff92056"
+}

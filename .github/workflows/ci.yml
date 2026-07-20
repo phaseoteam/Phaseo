@@ -5,6 +5,8 @@ on:
         branches: [main]
     pull_request:
         branches: [main]
+    merge_group:
+        types: [checks_requested]
     workflow_dispatch:
 
 permissions:
@@ -21,19 +23,22 @@ jobs:
             - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
+              uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
             - name: Setup Node.js
-              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
               with:
                   node-version: ${{ env.NODE_VERSION }}
                   registry-url: https://registry.npmjs.org
 
             - name: Restore lockfile (guard setup-node cache mutation)
               run: git checkout -- pnpm-lock.yaml
+
+            - name: Validate CI secret boundaries
+              run: pnpm run validate:ci-security
 
             - name: Install dependencies
               run: corepack pnpm install --frozen-lockfile
@@ -68,13 +73,13 @@ jobs:
             - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
+              uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
             - name: Setup Node.js
-              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
               with:
                   node-version: ${{ env.NODE_VERSION }}
                   registry-url: https://registry.npmjs.org
@@ -115,13 +120,13 @@ jobs:
             - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
+              uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
             - name: Setup Node.js
-              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
               with:
                   node-version: ${{ env.NODE_VERSION }}
 
@@ -137,18 +142,13 @@ jobs:
                   pnpm run validate:api
                   cd apps/api && pnpm exec tsx scripts/pricing-simulator-cli.ts
 
-            - name: Docs links
+            - name: Docs validation
               if: matrix.app == 'docs'
-              continue-on-error: true
-              run: pnpm run docs:links
+              run: pnpm run validate:docs
 
-            - name: Web lint & typecheck
+            - name: Web validation
               if: matrix.app == 'web'
-              continue-on-error: true
-              run: |
-                  cd apps/web
-                  pnpm run lint
-                  pnpm run typecheck
+              run: pnpm --filter @phaseo/web exec next build --experimental-build-mode compile
 
             - name: Web API lint, test & build
               if: matrix.app == 'web-api'
@@ -163,17 +163,17 @@ jobs:
         needs: openapi-lint
         if: github.event_name == 'push' || !startsWith(github.head_ref, 'chore/auto-model-statuses')
         steps:
-            - uses: actions/checkout@v7
+            - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@v5
+              uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
 
             - name: Setup Node.js
-              uses: actions/setup-node@v6
+              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
               with:
                   node-version: 24
 
@@ -195,13 +195,13 @@ jobs:
             - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
+              uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
             - name: Setup Node.js
-              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
               with:
                   node-version: ${{ env.NODE_VERSION }}
 
@@ -219,6 +219,9 @@ jobs:
     importer:
         name: Run importer on main
         runs-on: ubuntu-latest
+        concurrency:
+            group: importer-main
+            cancel-in-progress: false
         needs:
             - data
             - check-paths
@@ -230,13 +233,13 @@ jobs:
             - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
+              uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
             - name: Setup Node.js
-              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
               with:
                   node-version: ${{ env.NODE_VERSION }}
 
@@ -245,6 +248,15 @@ jobs:
 
             - name: Install dependencies
               run: corepack pnpm install --frozen-lockfile
+
+            - name: Restore importer hash state
+              id: importer-state-cache
+              uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+              with:
+                  path: packages/data/catalog/src/data/.import-state.json
+                  key: importer-state-main-${{ github.run_id }}
+                  restore-keys: |
+                      importer-state-main-
 
             - name: Run importer (all sections)
               if: ${{ env.SUPABASE_SERVICE_ROLE_KEY != '' && env.NEXT_PUBLIC_SUPABASE_URL != '' }}
@@ -256,9 +268,17 @@ jobs:
                   set -euo pipefail
                   for attempt in 1 2 3; do
                     echo "Running importer attempt ${attempt}/3"
-                    if (cd apps/web && pnpm exec tsx scripts/importer/main.ts --section=all); then
+                    set +e
+                    (cd apps/web && pnpm exec tsx scripts/importer/main.ts --section=all)
+                    exit_code=$?
+                    set -e
+                    if [ "${exit_code}" -eq 0 ]; then
                       echo "Importer succeeded on attempt ${attempt}"
                       exit 0
+                    fi
+                    if [ "${exit_code}" -ne 75 ]; then
+                      echo "Importer failed with a deterministic error (exit ${exit_code}); not retrying."
+                      exit "${exit_code}"
                     fi
                     if [ "${attempt}" -lt 3 ]; then
                       sleep_for=$((attempt * 15))
@@ -268,6 +288,13 @@ jobs:
                   done
                   echo "Importer failed after 3 attempts"
                   exit 1
+
+            - name: Save importer hash state
+              if: success()
+              uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+              with:
+                  path: packages/data/catalog/src/data/.import-state.json
+                  key: ${{ steps.importer-state-cache.outputs.cache-primary-key }}
 
     sdk-gen:
         name: Generate SDKs
@@ -296,13 +323,13 @@ jobs:
                   fetch-depth: 0
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
+              uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
             - name: Setup Node.js
-              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
               with:
                   node-version: ${{ env.NODE_VERSION }}
 
@@ -355,7 +382,7 @@ jobs:
             - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
             - name: Set up Python for SDK builds
-              uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+              uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
               with:
                   python-version: "3.12"
 
@@ -366,13 +393,13 @@ jobs:
                   python -m pip install -e packages/sdk/sdk-py
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
+              uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
             - name: Setup Node.js
-              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
               with:
                   node-version: ${{ env.NODE_VERSION }}
 
@@ -396,14 +423,14 @@ jobs:
                   persist-credentials: false
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
+              uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
 
             - name: Setup Node.js
-              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
               with:
                   node-version: ${{ env.NODE_VERSION }}
 
@@ -429,14 +456,14 @@ jobs:
             - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
+              uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
 
             - name: Setup Node.js
-              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
               with:
                   node-version: ${{ env.NODE_VERSION }}
 
@@ -448,19 +475,19 @@ jobs:
 
             - name: Setup Go
               if: matrix.sdk == 'go'
-              uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+              uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
               with:
                   go-version: "1.23"
 
             - name: Setup .NET
               if: matrix.sdk == 'csharp'
-              uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1
+              uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68
               with:
                   dotnet-version: "8.0.x"
 
             - name: Setup Java
               if: matrix.sdk == 'java'
-              uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a
+              uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95
               with:
                   distribution: "temurin"
                   java-version: "17"
@@ -474,7 +501,7 @@ jobs:
 
             - name: Setup Ruby
               if: matrix.sdk == 'ruby'
-              uses: ruby/setup-ruby@d45b1a4e94b71acab930e56e79c6aa188764e7f9
+              uses: ruby/setup-ruby@003a5c4d8d6321bd302e38f6f0ec593f77f06600
               with:
                   ruby-version: "3.2"
 
@@ -484,12 +511,12 @@ jobs:
     deploy-preview-web:
         name: Deploy Web (Preview)
         runs-on: ubuntu-latest
-        needs:
-            - apps
-            - deploy-preview-web-api
+        needs: apps
         concurrency:
             group: deploy-preview-web-${{ github.event.pull_request.number || github.ref }}
             cancel-in-progress: true
+        # Merge-queue commits can contain PR-controlled code. Keep merge_group
+        # for validation jobs, but never give it this job's Vercel credentials.
         if: >
             github.event_name == 'workflow_dispatch' ||
             (
@@ -505,13 +532,13 @@ jobs:
             - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
+              uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
             - name: Setup Node.js
-              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
               with:
                   node-version: ${{ env.NODE_VERSION }}
 
@@ -536,13 +563,11 @@ jobs:
               run: |
                   git_branch="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
                   vercel pull --yes --environment=preview --git-branch="$git_branch" --token=$VERCEL_TOKEN
-                  preview_url="$(vercel deploy --yes --force --archive=tgz --token=$VERCEL_TOKEN \
-                    --build-env WEB_API_ORIGIN=https://phaseo-web-api-staging.danielbutler500.workers.dev \
-                    --env WEB_API_ORIGIN=https://phaseo-web-api-staging.danielbutler500.workers.dev)"
+                  preview_url="$(vercel deploy --yes --force --archive=tgz --token=$VERCEL_TOKEN)"
                   echo "url=$preview_url" >> "$GITHUB_OUTPUT"
 
             - name: Update pull request preview link
-              uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+              uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
               if: ${{ github.event_name == 'pull_request' && steps.deploy.outputs.url != '' }}
               env:
                   PREVIEW_URL: ${{ steps.deploy.outputs.url }}
@@ -573,120 +598,6 @@ jobs:
                       })
                     }
 
-    deploy-preview-web-api:
-        name: Deploy Web API (Staging)
-        runs-on: ubuntu-latest
-        needs: apps
-        if: >
-            github.event_name == 'workflow_dispatch' ||
-            (
-                github.event_name == 'pull_request' &&
-                !startsWith(github.head_ref, 'chore/auto-model-statuses') &&
-                github.event.pull_request.head.repo.full_name == github.repository &&
-                contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.pull_request.author_association)
-            )
-        permissions:
-            contents: read
-        steps:
-            - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
-
-            - name: Setup pnpm
-              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
-              with:
-                  version: 10.33.0
-                  run_install: false
-                  standalone: true
-            - name: Setup Node.js
-              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
-              with:
-                  node-version: ${{ env.NODE_VERSION }}
-
-            - name: Restore lockfile (guard setup-node cache mutation)
-              run: git checkout -- pnpm-lock.yaml
-
-            - name: Install dependencies
-              run: corepack pnpm install --frozen-lockfile
-
-            - name: Validate Cloudflare web API deploy secrets
-              shell: bash
-              env:
-                  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-                  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-              run: |
-                  set -euo pipefail
-                  missing=()
-                  [ -z "${CLOUDFLARE_API_TOKEN:-}" ] && missing+=("CLOUDFLARE_API_TOKEN")
-                  [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ] && missing+=("CLOUDFLARE_ACCOUNT_ID")
-                  if [ "${#missing[@]}" -gt 0 ]; then
-                    echo "::error::Missing required Cloudflare deploy secret(s): ${missing[*]}"
-                    exit 1
-                  fi
-
-            - name: Deploy web API staging Worker
-              uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0
-              with:
-                  apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-                  accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-                  workingDirectory: apps/web-api
-                  command: deploy --env staging
-
-    deploy-preview-api:
-        name: Deploy Gateway API (Staging)
-        runs-on: ubuntu-latest
-        needs: apps
-        if: >
-            github.event_name == 'workflow_dispatch' ||
-            (
-                github.event_name == 'pull_request' &&
-                !startsWith(github.head_ref, 'chore/auto-model-statuses') &&
-                github.event.pull_request.head.repo.full_name == github.repository &&
-                contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.pull_request.author_association)
-            )
-        permissions:
-            contents: read
-        steps:
-            - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
-
-            - name: Setup pnpm
-              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
-              with:
-                  version: 10.33.0
-                  run_install: false
-                  standalone: true
-            - name: Setup Node.js
-              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
-              with:
-                  node-version: ${{ env.NODE_VERSION }}
-
-            - name: Restore lockfile (guard setup-node cache mutation)
-              run: git checkout -- pnpm-lock.yaml
-
-            - name: Install dependencies
-              run: corepack pnpm install --frozen-lockfile
-
-            - name: Validate Cloudflare gateway API deploy secrets
-              shell: bash
-              env:
-                  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-                  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-              run: |
-                  set -euo pipefail
-                  missing=()
-                  [ -z "${CLOUDFLARE_API_TOKEN:-}" ] && missing+=("CLOUDFLARE_API_TOKEN")
-                  [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ] && missing+=("CLOUDFLARE_ACCOUNT_ID")
-                  if [ "${#missing[@]}" -gt 0 ]; then
-                    echo "::error::Missing required Cloudflare deploy secret(s): ${missing[*]}"
-                    exit 1
-                  fi
-
-            - name: Deploy gateway API staging Worker
-              uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0
-              with:
-                  apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-                  accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-                  workingDirectory: apps/api
-                  command: deploy --env staging
-
     deploy:
         runs-on: ubuntu-latest
         needs:
@@ -709,13 +620,13 @@ jobs:
             - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
+              uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
             - name: Setup Node.js
-              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
               with:
                   node-version: ${{ env.NODE_VERSION }}
 
@@ -814,8 +725,7 @@ jobs:
         env:
             NPM_CONFIG_PROVENANCE: true
         permissions:
-            contents: write
-            pull-requests: write
+            contents: read
             id-token: write
         steps:
             - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
@@ -830,13 +740,13 @@ jobs:
                   private-key: ${{ secrets.PHASEO_APP_PRIVATE_KEY }}
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
+              uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
             - name: Setup Node.js
-              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
               with:
                   node-version: 24
                   registry-url: https://registry.npmjs.org
@@ -893,7 +803,7 @@ jobs:
 
             - name: Set up Python (for PyPI publish)
               if: github.ref == 'refs/heads/main' && steps.changesets.outputs.published == 'true'
-              uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+              uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
               with:
                   python-version: 3.12
 
@@ -907,7 +817,7 @@ jobs:
 
             - name: Publish Python SDK to PyPI (Trusted Publishing)
               if: github.ref == 'refs/heads/main' && steps.changesets.outputs.published == 'true'
-              uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b
+              uses: pypa/gh-action-pypi-publish@ba38be9e461d3875417946c167d0b5f3d385a247
               with:
                   packages-dir: packages/sdk/sdk-py/dist
                   skip-existing: true

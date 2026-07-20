@@ -1,0 +1,50 @@
+{
+  "providerId": "novita",
+  "displayName": "Novita AI",
+  "source": {
+    "kind": "official-mintlify",
+    "url": "https://novita.ai/docs/api-reference/api-reference-overview"
+  },
+  "operations": [
+    {
+      "capability": "text.generate",
+      "method": "post",
+      "path": "/openai/v1/chat/completions",
+      "operationId": "createChatCompletion"
+    },
+    {
+      "capability": "text.generate",
+      "method": "post",
+      "path": "/openai/v1/completions",
+      "operationId": "createCompletion"
+    },
+    {
+      "capability": "embeddings",
+      "method": "post",
+      "path": "/openai/v1/embeddings",
+      "operationId": "createEmbedding"
+    },
+    {
+      "capability": "rerank",
+      "method": "post",
+      "path": "/openai/v1/rerank",
+      "operationId": "createRerank"
+    },
+    {
+      "capability": "models.list",
+      "method": "get",
+      "path": "/openai/v1/models",
+      "operationId": "listModels"
+    },
+    {
+      "capability": "models.retrieve",
+      "method": "get",
+      "path": "/openai/v1/models/{model}",
+      "operationId": "retrieveModel"
+    }
+  ],
+  "overlays": [
+    "Novita publishes per-endpoint OpenAPI JSON for some APIs, but its LLM pages use Mintlify api: sources. This bundle is reproducibly compiled from Mintlify's structured endpoint payloads.",
+    "Scalar fields emitted as empty object schemas and the OpenAI-compatible tools/stop shapes are normalized to their documented wire types."
+  ]
+}

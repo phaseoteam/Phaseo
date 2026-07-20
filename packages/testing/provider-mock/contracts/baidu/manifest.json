@@ -1,0 +1,12 @@
+{
+  "providerId": "baidu",
+  "displayName": "Baidu Qianfan",
+  "source": {
+    "kind": "official-docs",
+    "url": "https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Fm2vrveyu"
+  },
+  "operations": [],
+  "overlays": [
+    "Catalog provider has no provider-local Phaseo transport configuration."
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://docs.wandb.ai/inference/api-reference",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "ceb424811eeb8d9ffcf2c63b51b8629176967b141467d0d1b96cf086068a0874",
+  "gatewayPathPrefix": "/v1"
+}

@@ -1,0 +1,20 @@
+{
+  "providerId": "nebius-token-factory-fast",
+  "displayName": "Nebius Token Factory Fast",
+  "source": {
+    "kind": "phaseo-overlay",
+    "url": "https://docs.nebius.com/studio/inference/quickstart"
+  },
+  "operations": [
+    {
+      "capability": "chat",
+      "method": "post",
+      "path": "/v1/chat/completions",
+      "operationId": "nebius_token_factory_chat",
+      "notes": "Reconstructed from the provider's documented OpenAI-compatible API surface; provider-specific restrictions belong in overlays."
+    }
+  ],
+  "overlays": [
+    "Inherits nebius-token-factory; this enabled ID changes routing, residency, performance tier, or transport policy without changing the request schema."
+  ]
+}

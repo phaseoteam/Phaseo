@@ -3,6 +3,7 @@
   "api_provider_name": "Venice",
   "description": null,
   "link": "https://docs.venice.ai/",
+  "pricing_source_url": "https://docs.venice.ai/overview/pricing",
   "country_code": "US",
   "status": "Active",
   "colour": "#DD3300",

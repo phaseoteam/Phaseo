@@ -1,0 +1,1935 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Together APIs",
+    "description": "The Together REST API. See https://docs.together.ai for more details.",
+    "version": "2.0.0",
+    "termsOfService": "https://www.together.ai/terms-of-service",
+    "contact": {
+      "name": "Together Support",
+      "url": "https://www.together.ai/contact"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://github.com/togethercomputer/openapi/blob/main/LICENSE"
+    }
+  },
+  "paths": {
+    "/v1/chat/completions": {
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "Create chat completion",
+        "description": "Generate a model response for a given chat conversation. Supports single queries and multi-turn conversations with system, user, and assistant messages.",
+        "x-codeSamples": [
+          {
+            "lang": "Python",
+            "label": "Together AI SDK (v2)",
+            "source": "# Docs for v1 can be found by changing the above selector ^\nfrom together import Together\nimport os\n\nclient = Together(\n    api_key=os.environ.get(\"TOGETHER_API_KEY\"),\n)\n\nresponse = client.chat.completions.create(\n    model=\"Qwen/Qwen3.5-9B\",\n    messages=[\n        {\"role\": \"system\", \"content\": \"You are a helpful assistant.\"},\n        {\"role\": \"user\", \"content\": \"What are some fun things to do in New York?\"},\n    ],\n    reasoning={\"enabled\": False}\n)\n"
+          },
+          {
+            "lang": "Python",
+            "label": "Together AI SDK (v1)",
+            "source": "from together import Together\nimport os\n\nclient = Together(\n    api_key=os.environ.get(\"TOGETHER_API_KEY\"),\n)\n\nresponse = client.chat.completions.create(\n    model=\"Qwen/Qwen3.5-9B\",\n    messages=[\n        {\"role\": \"system\", \"content\": \"You are a helpful assistant.\"},\n        {\"role\": \"user\", \"content\": \"What are some fun things to do in New York?\"},\n    ],\n    reasoning={\"enabled\": False}\n)\n\nprint(response.choices[0].message.content)\n"
+          },
+          {
+            "lang": "TypeScript",
+            "label": "Together AI SDK (TypeScript)",
+            "source": "import Together from \"together-ai\";\n\nconst client = new Together({\n  apiKey: process.env.TOGETHER_API_KEY,\n});\n\nconst response = await client.chat.completions.create({\n  model: \"Qwen/Qwen3.5-9B\",\n  messages: [\n    { role: \"system\", content: \"You are a helpful assistant.\" },\n    { role: \"user\", \"content\": \"What are some fun things to do in New York?\" },\n  ],\n  reasoning: { enabled: false },\n});\n\nconsole.log(response.choices[0].message?.content);\n"
+          },
+          {
+            "lang": "JavaScript",
+            "label": "Together AI SDK (JavaScript)",
+            "source": "import Together from \"together-ai\";\n\nconst client = new Together({\n  apiKey: process.env.TOGETHER_API_KEY,\n});\n\nconst response = await client.chat.completions.create({\n  model: \"Qwen/Qwen3.5-9B\",\n  messages: [\n    { role: \"system\", content: \"You are a helpful assistant.\" },\n    { role: \"user\", \"content\": \"What are some fun things to do in New York?\" },\n  ],\n  reasoning: { enabled: false },\n});\n\nconsole.log(response.choices[0].message?.content);\n"
+          },
+          {
+            "lang": "Shell",
+            "label": "cURL",
+            "source": "curl -X POST \"https://api.together.ai/v1/chat/completions\" \\\n     -H \"Authorization: Bearer $TOGETHER_API_KEY\" \\\n     -H \"Content-Type: application/json\" \\\n     -d '{\n       \"model\": \"Qwen/Qwen3.5-9B\",\n       \"messages\": [\n         {\"role\": \"system\", \"content\": \"You are a helpful assistant.\"},\n         {\"role\": \"user\", \"content\": \"What are some fun things to do in New York?\"}\n       ],\n       \"reasoning\": {\"enabled\": false}\n     }'\n"
+          }
+        ],
+        "operationId": "chat-completions",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatCompletionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatCompletionResponse"
+                }
+              },
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatCompletionStream"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorData"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorData"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorData"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RateLimit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorData"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Overloaded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorData"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorData"
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/v1/embeddings": {
+      "post": {
+        "tags": [
+          "Embeddings"
+        ],
+        "summary": "Create embedding",
+        "description": "Generate vector embeddings for one or more text inputs. Returns numerical arrays representing semantic meaning, useful for search, classification, and retrieval.",
+        "x-codeSamples": [
+          {
+            "lang": "Python",
+            "label": "Together AI SDK (v2)",
+            "source": "# Docs for v1 can be found by changing the above selector ^\nfrom together import Together\nimport os\n\nclient = Together(\n    api_key=os.environ.get(\"TOGETHER_API_KEY\"),\n)\n\nresponse = client.embeddings.create(\n    model=\"BAAI/bge-large-en-v1.5\",\n    input=\"New York City\",\n)\n\nprint(response.data[0].embedding)\n"
+          },
+          {
+            "lang": "Python",
+            "label": "Together AI SDK (v1)",
+            "source": "from together import Together\nimport os\n\nclient = Together(\n    api_key=os.environ.get(\"TOGETHER_API_KEY\"),\n)\n\nresponse = client.embeddings.create(\n    model=\"BAAI/bge-large-en-v1.5\",\n    input=\"New York City\",\n)\n\nprint(response.data[0].embedding)\n"
+          },
+          {
+            "lang": "TypeScript",
+            "label": "Together AI SDK (TypeScript)",
+            "source": "import Together from \"together-ai\";\n\nconst client = new Together({\n  apiKey: process.env.TOGETHER_API_KEY,\n});\n\nconst response = await client.embeddings.create({\n  model: \"BAAI/bge-large-en-v1.5\",\n  input: \"New York City\",\n});\n\nconsole.log(response.data[0].embedding);\n"
+          },
+          {
+            "lang": "JavaScript",
+            "label": "Together AI SDK (JavaScript)",
+            "source": "import Together from \"together-ai\";\n\nconst client = new Together({\n  apiKey: process.env.TOGETHER_API_KEY,\n});\n\nconst response = await client.embeddings.create({\n  model: \"BAAI/bge-large-en-v1.5\",\n  input: \"New York City\",\n});\n\nconsole.log(response.data[0].embedding);\n"
+          },
+          {
+            "lang": "Shell",
+            "label": "cURL",
+            "source": "curl -X POST \"https://api.together.ai/v1/embeddings\" \\\n     -H \"Authorization: Bearer $TOGETHER_API_KEY\" \\\n     -H \"Content-Type: application/json\" \\\n     -d '{\n       \"model\": \"BAAI/bge-large-en-v1.5\",\n       \"input\": \"New York City\"\n     }'\n"
+          }
+        ],
+        "operationId": "embeddings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmbeddingsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmbeddingsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorData"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorData"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorData"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RateLimit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorData"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Overloaded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorData"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorData"
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/v1/rerank": {
+      "post": {
+        "tags": [
+          "Rerank"
+        ],
+        "summary": "Create a rerank request",
+        "description": "Rerank a list of documents by relevance to a query. Returns a relevance score and ordering index for each document.",
+        "x-codeSamples": [
+          {
+            "lang": "Python",
+            "label": "Together AI SDK (v2)",
+            "source": "# Docs for v1 can be found by changing the above selector ^\nfrom together import Together\nimport os\n\nclient = Together(\n    api_key=os.environ.get(\"TOGETHER_API_KEY\"),\n)\n\ndocuments = [\n    {\n        \"title\": \"Llama\",\n        \"text\": \"The llama is a domesticated South American camelid, widely used as a meat and pack animal by Andean cultures since the pre-Columbian era.\"\n    },\n    {\n        \"title\": \"Panda\",\n        \"text\": \"The giant panda (Ailuropoda melanoleuca), also known as the panda bear or simply panda, is a bear species endemic to China.\"\n    },\n    {\n        \"title\": \"Guanaco\",\n        \"text\": \"The guanaco is a camelid native to South America, closely related to the llama. Guanacos are one of two wild South American camelids; the other species is the vicuña, which lives at higher elevations.\"\n    },\n    {\n        \"title\": \"Wild Bactrian camel\",\n        \"text\": \"The wild Bactrian camel (Camelus ferus) is an endangered species of camel endemic to Northwest China and southwestern Mongolia.\"\n    }\n]\n\nresponse = client.rerank.create(\n    model=\"Salesforce/Llama-Rank-v1\",\n    query=\"What animals can I find near Peru?\",\n    documents=documents,\n)\n\nfor result in response.results:\n    print(f\"Rank: {result.index + 1}\")\n    print(f\"Title: {documents[result.index]['title']}\")\n    print(f\"Text: {documents[result.index]['text']}\")\n"
+          },
+          {
+            "lang": "Python",
+            "label": "Together AI SDK (v1)",
+            "source": "from together import Together\nimport os\n\nclient = Together(\n    api_key=os.environ.get(\"TOGETHER_API_KEY\"),\n)\n\ndocuments = [\n    {\n        \"title\": \"Llama\",\n        \"text\": \"The llama is a domesticated South American camelid, widely used as a meat and pack animal by Andean cultures since the pre-Columbian era.\"\n    },\n    {\n        \"title\": \"Panda\",\n        \"text\": \"The giant panda (Ailuropoda melanoleuca), also known as the panda bear or simply panda, is a bear species endemic to China.\"\n    },\n    {\n        \"title\": \"Guanaco\",\n        \"text\": \"The guanaco is a camelid native to South America, closely related to the llama. Guanacos are one of two wild South American camelids; the other species is the vicuña, which lives at higher elevations.\"\n    },\n    {\n        \"title\": \"Wild Bactrian camel\",\n        \"text\": \"The wild Bactrian camel (Camelus ferus) is an endangered species of camel endemic to Northwest China and southwestern Mongolia.\"\n    }\n]\n\nresponse = client.rerank.create(\n    model=\"Salesforce/Llama-Rank-v1\",\n    query=\"What animals can I find near Peru?\",\n    documents=documents,\n)\n\nfor result in response.results:\n    print(f\"Rank: {result.index + 1}\")\n    print(f\"Title: {documents[result.index]['title']}\")\n    print(f\"Text: {documents[result.index]['text']}\")\n"
+          },
+          {
+            "lang": "TypeScript",
+            "label": "Together AI SDK (TypeScript)",
+            "source": "import Together from \"together-ai\";\n\nconst client = new Together({\n  apiKey: process.env.TOGETHER_API_KEY,\n});\n\nconst documents = [{\n  \"title\": \"Llama\",\n  \"text\": \"The llama is a domesticated South American camelid, widely used as a meat and pack animal by Andean cultures since the pre-Columbian era.\"\n},\n{\n  \"title\": \"Panda\",\n  \"text\": \"The giant panda (Ailuropoda melanoleuca), also known as the panda bear or simply panda, is a bear species endemic to China.\"\n},\n{\n  \"title\": \"Guanaco\",\n  \"text\": \"The guanaco is a camelid native to South America, closely related to the llama. Guanacos are one of two wild South American camelids; the other species is the vicuña, which lives at higher elevations.\"\n},\n{\n  \"title\": \"Wild Bactrian camel\",\n  \"text\": \"The wild Bactrian camel (Camelus ferus) is an endangered species of camel endemic to Northwest China and southwestern Mongolia.\"\n}];\n\nconst response = await client.rerank.create({\n  model: \"Salesforce/Llama-Rank-v1\",\n  query: \"What animals can I find near Peru?\",\n  documents,\n});\n\nfor (const result of response.results) {\n  console.log(`Rank: ${result.index + 1}`);\n  console.log(`Title: ${documents[result.index].title}`);\n  console.log(`Text: ${documents[result.index].text}`);\n}\n"
+          },
+          {
+            "lang": "JavaScript",
+            "label": "Together AI SDK (JavaScript)",
+            "source": "import Together from \"together-ai\";\n\nconst client = new Together({\n  apiKey: process.env.TOGETHER_API_KEY,\n});\n\nconst documents = [{\n  \"title\": \"Llama\",\n  \"text\": \"The llama is a domesticated South American camelid, widely used as a meat and pack animal by Andean cultures since the pre-Columbian era.\"\n},\n{\n  \"title\": \"Panda\",\n  \"text\": \"The giant panda (Ailuropoda melanoleuca), also known as the panda bear or simply panda, is a bear species endemic to China.\"\n},\n{\n  \"title\": \"Guanaco\",\n  \"text\": \"The guanaco is a camelid native to South America, closely related to the llama. Guanacos are one of two wild South American camelids; the other species is the vicuña, which lives at higher elevations.\"\n},\n{\n  \"title\": \"Wild Bactrian camel\",\n  \"text\": \"The wild Bactrian camel (Camelus ferus) is an endangered species of camel endemic to Northwest China and southwestern Mongolia.\"\n}];\n\nconst response = await client.rerank.create({\n  model: \"Salesforce/Llama-Rank-v1\",\n  query: \"What animals can I find near Peru?\",\n  documents,\n});\n\nfor (const result of response.results) {\n  console.log(`Rank: ${result.index + 1}`);\n  console.log(`Title: ${documents[result.index].title}`);\n  console.log(`Text: ${documents[result.index].text}`);\n}\n"
+          },
+          {
+            "lang": "Shell",
+            "label": "cURL",
+            "source": "curl -X POST \"https://api.together.ai/v1/rerank\" \\\n     -H \"Authorization: Bearer $TOGETHER_API_KEY\" \\\n     -H \"Content-Type: application/json\" \\\n     -d '{\n       \"model\": \"Salesforce/Llama-Rank-v1\",\n       \"query\": \"What animals can I find near Peru?\",\n       \"documents\": [{\n          \"title\": \"Llama\",\n          \"text\": \"The llama is a domesticated South American camelid, widely used as a meat and pack animal by Andean cultures since the pre-Columbian era.\"\n        },\n        {\n          \"title\": \"Panda\",\n          \"text\": \"The giant panda (Ailuropoda melanoleuca), also known as the panda bear or simply panda, is a bear species endemic to China.\"\n        },\n        {\n          \"title\": \"Guanaco\",\n          \"text\": \"The guanaco is a camelid native to South America, closely related to the llama. Guanacos are one of two wild South American camelids; the other species is the vicuña, which lives at higher elevations.\"\n        },\n        {\n          \"title\": \"Wild Bactrian camel\",\n          \"text\": \"The wild Bactrian camel (Camelus ferus) is an endangered species of camel endemic to Northwest China and southwestern Mongolia.\"\n        }]\n     }'\n"
+          }
+        ],
+        "operationId": "rerank",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RerankRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RerankResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorData"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorData"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorData"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RateLimit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorData"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Overloaded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorData"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorData"
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/v1/models": {
+      "get": {
+        "tags": [
+          "Models"
+        ],
+        "summary": "List all models",
+        "description": "Lists all of Together's open-source models and metadata including pricing, chat template, and context.",
+        "x-codeSamples": [
+          {
+            "lang": "Python",
+            "label": "Together AI SDK (v2)",
+            "source": "# Docs for v1 can be found by changing the above selector ^\nfrom together import Together\nimport os\n\nclient = Together(\n    api_key=os.environ.get(\"TOGETHER_API_KEY\"),\n)\n\nmodels = client.models.list()\n\nfor model in models:\n    print(model.id)\n"
+          },
+          {
+            "lang": "Python",
+            "label": "Together AI SDK (v1)",
+            "source": "from together import Together\nimport os\n\nclient = Together(\n    api_key=os.environ.get(\"TOGETHER_API_KEY\"),\n)\n\nmodels = client.models.list()\n\nfor model in models:\n    print(model.id)\n"
+          },
+          {
+            "lang": "TypeScript",
+            "label": "Together AI SDK (TypeScript)",
+            "source": "import Together from \"together-ai\";\n\nconst client = new Together({\n  apiKey: process.env.TOGETHER_API_KEY,\n});\n\nconst models = await client.models.list();\n\nfor (const model of models) {\n  console.log(model.id);\n}\n"
+          },
+          {
+            "lang": "JavaScript",
+            "label": "Together AI SDK (JavaScript)",
+            "source": "import Together from \"together-ai\";\n\nconst client = new Together({\n  apiKey: process.env.TOGETHER_API_KEY,\n});\n\nconst models = await client.models.list();\n\nfor (const model of models) {\n  console.log(model.id);\n}\n"
+          },
+          {
+            "lang": "Shell",
+            "label": "cURL",
+            "source": "curl \"https://api.together.ai/v1/models\" \\\n     -H \"Authorization: Bearer $TOGETHER_API_KEY\" \\\n     -H \"Content-Type: application/json\"\n"
+          }
+        ],
+        "operationId": "models",
+        "parameters": [
+          {
+            "name": "dedicated",
+            "in": "query",
+            "schema": {
+              "description": "Filter models to only return dedicated models",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelInfoList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorData"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorData"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorData"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RateLimit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorData"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorData"
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ChatCompletionRequest": {
+        "type": "object",
+        "required": [
+          "model",
+          "messages"
+        ],
+        "properties": {
+          "messages": {
+            "type": "array",
+            "description": "A list of messages comprising the conversation so far.",
+            "items": {
+              "$ref": "#/components/schemas/ChatCompletionMessageParam"
+            }
+          },
+          "model": {
+            "type": "string",
+            "description": "The name of the model to query.<br> <br> [See all of Together AI's chat models](https://docs.together.ai/docs/serverless-models#chat-models)\n"
+          },
+          "max_tokens": {
+            "type": "integer",
+            "description": "The maximum number of tokens to generate."
+          },
+          "stop": {
+            "type": "array",
+            "description": "A list of string sequences that truncate (stop) inference text output. For example, \"</s>\" stops generation as soon as the model generates the given token.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "temperature": {
+            "type": "number",
+            "description": "A decimal number from 0-1 that determines the degree of randomness in the response. A temperature less than 1 favors more correctness and is appropriate for question answering or summarization. A value closer to 1 introduces more randomness in the output.",
+            "format": "float"
+          },
+          "top_p": {
+            "type": "number",
+            "description": "A percentage (also called the nucleus parameter) that's used to dynamically adjust the number of choices for each predicted token based on the cumulative probabilities. It specifies a probability threshold below which all less likely tokens are filtered out. This technique helps maintain diversity and generate more fluent and natural-sounding text.",
+            "format": "float"
+          },
+          "top_k": {
+            "type": "integer",
+            "description": "An integer that's used to limit the number of choices for the next predicted word or token. It specifies the maximum number of tokens to consider at each step, based on their probability of occurrence. This technique helps to speed up the generation process and can improve the quality of the generated text by focusing on the most likely options.",
+            "format": "int32"
+          },
+          "context_length_exceeded_behavior": {
+            "type": "string",
+            "enum": [
+              "truncate",
+              "error"
+            ],
+            "default": "error",
+            "description": "Defines the behavior of the API when max_tokens exceed the maximum context length of the model. When set to 'error', the API returns 400 with an appropriate error message. When set to 'truncate', overrides max_tokens with the maximum context length of the model."
+          },
+          "repetition_penalty": {
+            "type": "number",
+            "description": "A number that controls the diversity of generated text by reducing the likelihood of repeated sequences. Higher values decrease repetition."
+          },
+          "stream": {
+            "type": "boolean",
+            "description": "If true, stream tokens as Server-Sent Events as the model generates them instead of waiting for the full model response. The stream terminates with `data: [DONE]`. If false, return a single JSON object containing the results."
+          },
+          "logprobs": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20,
+            "description": "An integer between 0 and 20 of the top k tokens to return log probabilities for at each generation step, instead of only the sampled token. Log probabilities help assess model confidence in token predictions."
+          },
+          "echo": {
+            "type": "boolean",
+            "description": "If true, the response contains the prompt. Can be used with `logprobs` to return prompt logprobs."
+          },
+          "n": {
+            "type": "integer",
+            "description": "The number of completions to generate for each prompt.",
+            "minimum": 1,
+            "maximum": 128
+          },
+          "min_p": {
+            "type": "number",
+            "description": "A number between 0 and 1 that can be used as an alternative to top_p and top-k.",
+            "format": "float"
+          },
+          "presence_penalty": {
+            "type": "number",
+            "description": "A number between -2.0 and 2.0 where a positive value increases the likelihood of a model talking about new topics.",
+            "format": "float"
+          },
+          "frequency_penalty": {
+            "type": "number",
+            "description": "A number between -2.0 and 2.0 where a positive value decreases the likelihood of repeating tokens that have already been mentioned.",
+            "format": "float"
+          },
+          "logit_bias": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number",
+              "format": "float"
+            },
+            "description": "Adjusts the likelihood of specific tokens appearing in the generated output.",
+            "example": {
+              "105": 21.4,
+              "1024": -10.5
+            }
+          },
+          "seed": {
+            "type": "integer",
+            "description": "Seed value for reproducibility.",
+            "example": 42
+          },
+          "function_call": {
+            "oneOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "auto"
+                ]
+              },
+              {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  }
+                }
+              }
+            ]
+          },
+          "response_format": {
+            "description": "An object specifying the format that the model must output.\n\nSetting to `{ \"type\": \"json_schema\", \"json_schema\": {...} }` enables\nStructured Outputs which ensures the model will match your supplied JSON\nschema. Learn more in the [Structured Outputs\nguide](https://docs.together.ai/docs/json-mode).\n\nSetting to `{ \"type\": \"json_object\" }` enables the older JSON mode, which\nensures the message the model generates is valid JSON. Using `json_schema`\nis preferred for models that support it.\n",
+            "discriminator": {
+              "propertyName": "type"
+            },
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResponseFormatText"
+              },
+              {
+                "$ref": "#/components/schemas/ResponseFormatJsonSchema"
+              },
+              {
+                "$ref": "#/components/schemas/ResponseFormatJsonObject"
+              }
+            ]
+          },
+          "tools": {
+            "type": "array",
+            "description": "A list of tools the model may call. Currently, only functions are supported as a tool. Use this to provide a list of functions the model may generate JSON inputs for.",
+            "items": {
+              "$ref": "#/components/schemas/ToolsPart"
+            }
+          },
+          "tool_choice": {
+            "description": "Controls which (if any) function is called by the model. By default uses `auto`, which lets the model pick between generating a message or calling a function.",
+            "oneOf": [
+              {
+                "type": "string",
+                "example": "tool_name"
+              },
+              {
+                "$ref": "#/components/schemas/ToolChoice"
+              }
+            ]
+          },
+          "compliance": {
+            "const": "hipaa"
+          },
+          "chat_template_kwargs": {
+            "description": "Additional configuration to pass to model engine.",
+            "type": "object",
+            "additional_properties": true
+          },
+          "safety_model": {
+            "type": "string",
+            "description": "The name of the moderation model used to validate tokens. Choose from the available moderation models found [here](https://docs.together.ai/docs/inference-models#moderation-models).",
+            "example": "safety_model_name"
+          },
+          "reasoning_effort": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ],
+            "description": "Controls the level of reasoning effort the model should apply when generating responses. Higher values may result in more thoughtful and detailed responses but may take longer to generate.",
+            "example": "medium"
+          },
+          "reasoning": {
+            "description": "For models that support toggling reasoning functionality, this object can be used to control that functionality.",
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      },
+      "ChatCompletionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "choices": {
+            "$ref": "#/components/schemas/ChatCompletionChoicesData"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/UsageData"
+          },
+          "created": {
+            "type": "integer"
+          },
+          "model": {
+            "type": "string"
+          },
+          "prompt": {
+            "description": "When `echo` is true, the prompt is included in the response. Additionally, when `logprobs` is also provided, log probability information is provided on the prompt.",
+            "$ref": "#/components/schemas/PromptPart"
+          },
+          "object": {
+            "description": "The object type, which is always `chat.completion`.",
+            "const": "chat.completion"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InferenceWarning"
+            }
+          }
+        },
+        "required": [
+          "choices",
+          "id",
+          "created",
+          "model",
+          "object",
+          "prompt"
+        ]
+      },
+      "ChatCompletionStream": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ChatCompletionEvent"
+          },
+          {
+            "$ref": "#/components/schemas/StreamSentinel"
+          }
+        ]
+      },
+      "ErrorData": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string",
+                "nullable": false
+              },
+              "type": {
+                "type": "string",
+                "nullable": false
+              },
+              "param": {
+                "type": "string",
+                "nullable": true,
+                "default": null
+              },
+              "code": {
+                "type": "string",
+                "nullable": true,
+                "default": null
+              }
+            },
+            "required": [
+              "type",
+              "message"
+            ]
+          }
+        }
+      },
+      "EmbeddingsRequest": {
+        "type": "object",
+        "required": [
+          "model",
+          "input"
+        ],
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "The name of the embedding model to use.<br> <br> [See all of Together AI's embedding models](https://docs.together.ai/docs/serverless-models#embedding-models)\n",
+            "example": "togethercomputer/m2-bert-80M-8k-retrieval",
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "WhereIsAI/UAE-Large-V1",
+                  "BAAI/bge-large-en-v1.5",
+                  "BAAI/bge-base-en-v1.5",
+                  "togethercomputer/m2-bert-80M-8k-retrieval"
+                ]
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "input": {
+            "oneOf": [
+              {
+                "type": "string",
+                "description": "A string providing the text for the model to embed.",
+                "example": "Our solar system orbits the Milky Way galaxy at about 515,000 mph"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "description": "A string providing the text for the model to embed.",
+                  "example": "Our solar system orbits the Milky Way galaxy at about 515,000 mph"
+                }
+              }
+            ],
+            "example": "Our solar system orbits the Milky Way galaxy at about 515,000 mph"
+          }
+        }
+      },
+      "EmbeddingsResponse": {
+        "type": "object",
+        "required": [
+          "object",
+          "model",
+          "data"
+        ],
+        "properties": {
+          "object": {
+            "description": "The object type, which is always `list`.",
+            "const": "list"
+          },
+          "model": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "index",
+                "object",
+                "embedding"
+              ],
+              "properties": {
+                "object": {
+                  "description": "The object type, which is always `embedding`.",
+                  "const": "embedding"
+                },
+                "embedding": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "index": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      },
+      "RerankRequest": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "The model to be used for the rerank request.<br> <br> [See all of Together AI's rerank models](https://docs.together.ai/docs/serverless-models#rerank-models)\n",
+            "example": "Salesforce/Llama-Rank-V1",
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "Salesforce/Llama-Rank-v1"
+                ]
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "query": {
+            "type": "string",
+            "description": "The search query to be used for ranking.",
+            "example": "What animals can I find near Peru?"
+          },
+          "documents": {
+            "description": "List of documents, which can be either strings or objects.",
+            "oneOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "example": "Our solar system orbits the Milky Way galaxy at about 515,000 mph"
+                }
+              }
+            ],
+            "example": [
+              {
+                "title": "Llama",
+                "text": "The llama is a domesticated South American camelid, widely used as a meat and pack animal by Andean cultures since the pre-Columbian era."
+              },
+              {
+                "title": "Panda",
+                "text": "The giant panda (Ailuropoda melanoleuca), also known as the panda bear or simply panda, is a bear species endemic to China."
+              },
+              {
+                "title": "Guanaco",
+                "text": "The guanaco is a camelid native to South America, closely related to the llama. Guanacos are one of two wild South American camelids; the other species is the vicuña, which lives at higher elevations."
+              },
+              {
+                "title": "Wild Bactrian camel",
+                "text": "The wild Bactrian camel (Camelus ferus) is an endangered species of camel endemic to Northwest China and southwestern Mongolia."
+              }
+            ]
+          },
+          "top_n": {
+            "type": "integer",
+            "description": "The number of top results to return.",
+            "example": 2
+          },
+          "return_documents": {
+            "type": "boolean",
+            "description": "Whether to return supplied documents with the response.",
+            "example": true
+          },
+          "rank_fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of keys in the JSON Object document to rank by. Defaults to use all supplied keys for ranking.",
+            "example": [
+              "title",
+              "text"
+            ]
+          }
+        },
+        "required": [
+          "model",
+          "query",
+          "documents"
+        ],
+        "additionalProperties": false
+      },
+      "RerankResponse": {
+        "type": "object",
+        "required": [
+          "object",
+          "model",
+          "results"
+        ],
+        "properties": {
+          "object": {
+            "description": "The object type, which is always `rerank`.",
+            "const": "rerank"
+          },
+          "id": {
+            "type": "string",
+            "description": "Request ID",
+            "example": "9dfa1a09-5ebc-4a40-970f-586cb8f4ae47"
+          },
+          "model": {
+            "type": "string",
+            "description": "The model to be used for the rerank request.",
+            "example": "salesforce/turboranker-0.8-3778-6328"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "index",
+                "relevance_score",
+                "document"
+              ],
+              "properties": {
+                "index": {
+                  "type": "integer"
+                },
+                "relevance_score": {
+                  "type": "number"
+                },
+                "document": {
+                  "type": "object",
+                  "properties": {
+                    "text": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            },
+            "example": [
+              {
+                "index": 0,
+                "relevance_score": 0.29980177813003117,
+                "document": {
+                  "text": "{\"title\":\"Llama\",\"text\":\"The llama is a domesticated South American camelid, widely used as a meat and pack animal by Andean cultures since the pre-Columbian era.\"}"
+                }
+              },
+              {
+                "index": 2,
+                "relevance_score": 0.2752447527354349,
+                "document": {
+                  "text": "{\"title\":\"Guanaco\",\"text\":\"The guanaco is a camelid native to South America, closely related to the llama. Guanacos are one of two wild South American camelids; the other species is the vicuña, which lives at higher elevations.\"}"
+                }
+              }
+            ]
+          },
+          "usage": {
+            "$ref": "#/components/schemas/UsageData",
+            "example": {
+              "prompt_tokens": 1837,
+              "completion_tokens": 0,
+              "total_tokens": 1837
+            }
+          }
+        }
+      },
+      "ModelInfoList": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ModelInfo"
+        }
+      },
+      "ChatCompletionMessageParam": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ChatCompletionSystemMessageParam"
+          },
+          {
+            "$ref": "#/components/schemas/ChatCompletionUserMessageParam"
+          },
+          {
+            "$ref": "#/components/schemas/ChatCompletionAssistantMessageParam"
+          },
+          {
+            "$ref": "#/components/schemas/ChatCompletionToolMessageParam"
+          },
+          {
+            "$ref": "#/components/schemas/ChatCompletionFunctionMessageParam"
+          }
+        ]
+      },
+      "ResponseFormatText": {
+        "type": "object",
+        "title": "Text",
+        "description": "Default response format. Used to generate text responses.\n",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "The type of response format being defined. Always `text`.",
+            "enum": [
+              "text"
+            ],
+            "x-stainless-const": true
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "ResponseFormatJsonSchema": {
+        "type": "object",
+        "title": "JSON schema",
+        "description": "JSON Schema response format. Used to generate structured JSON responses.\nLearn more about [Structured Outputs](https://docs.together.ai/docs/json-mode).\n",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "The type of response format being defined. Always `json_schema`.",
+            "enum": [
+              "json_schema"
+            ],
+            "x-stainless-const": true
+          },
+          "json_schema": {
+            "type": "object",
+            "title": "JSON schema",
+            "description": "Structured Outputs configuration options, including a JSON Schema.\n",
+            "properties": {
+              "description": {
+                "type": "string",
+                "description": "A description of what the response format is for, used by the model to\ndetermine how to respond in the format.\n"
+              },
+              "name": {
+                "type": "string",
+                "description": "The name of the response format. Must be a-z, A-Z, 0-9, or contain\nunderscores and dashes, with a maximum length of 64.\n"
+              },
+              "schema": {
+                "$ref": "#/components/schemas/ResponseFormatJsonSchemaSchema"
+              },
+              "strict": {
+                "anyOf": [
+                  {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Whether to enable strict schema adherence when generating the output.\nIf set to true, the model will always follow the exact schema defined\nin the `schema` field. Only a subset of JSON Schema is supported when\n`strict` is `true`. To learn more, read the [Structured Outputs\nguide](https://docs.together.ai/docs/json-mode).\n"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
+        "required": [
+          "type",
+          "json_schema"
+        ]
+      },
+      "ResponseFormatJsonObject": {
+        "type": "object",
+        "title": "JSON object",
+        "description": "JSON object response format. An older method of generating JSON responses.\nUsing `json_schema` is recommended for models that support it. Note that the\nmodel will not generate JSON without a system or user message instructing it\nto do so.\n",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "The type of response format being defined. Always `json_object`.",
+            "enum": [
+              "json_object"
+            ],
+            "x-stainless-const": true
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "ToolsPart": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "tool_type"
+          },
+          "function": {
+            "type": "object",
+            "properties": {
+              "description": {
+                "type": "string",
+                "example": "A description of the function."
+              },
+              "name": {
+                "type": "string",
+                "example": "function_name"
+              },
+              "parameters": {
+                "type": "object",
+                "additionalProperties": true,
+                "description": "A map of parameter names to their values."
+              }
+            }
+          }
+        }
+      },
+      "ToolChoice": {
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "function",
+          "index"
+        ],
+        "properties": {
+          "index": {
+            "type": "number"
+          },
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "function"
+            ]
+          },
+          "function": {
+            "type": "object",
+            "required": [
+              "name",
+              "arguments"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "example": "function_name"
+              },
+              "arguments": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "ChatCompletionChoicesData": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string"
+            },
+            "index": {
+              "type": "integer"
+            },
+            "seed": {
+              "type": "integer"
+            },
+            "finish_reason": {
+              "$ref": "#/components/schemas/FinishReason"
+            },
+            "message": {
+              "$ref": "#/components/schemas/ChatCompletionMessage"
+            },
+            "logprobs": {
+              "allOf": [
+                {
+                  "nullable": true
+                },
+                {
+                  "$ref": "#/components/schemas/LogprobsPart"
+                }
+              ]
+            },
+            "top_logprobs": {
+              "$ref": "#/components/schemas/TopLogprobs"
+            }
+          }
+        }
+      },
+      "UsageData": {
+        "type": "object",
+        "properties": {
+          "prompt_tokens": {
+            "type": "integer"
+          },
+          "completion_tokens": {
+            "type": "integer"
+          },
+          "total_tokens": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "prompt_tokens",
+          "completion_tokens",
+          "total_tokens"
+        ],
+        "nullable": true
+      },
+      "PromptPart": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string",
+              "example": "<s>[INST] What is the capital of France? [/INST]"
+            },
+            "logprobs": {
+              "$ref": "#/components/schemas/LogprobsPart"
+            }
+          }
+        }
+      },
+      "InferenceWarning": {
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ChatCompletionEvent": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ChatCompletionChunk"
+          }
+        }
+      },
+      "StreamSentinel": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "title": "stream_signal",
+            "type": "string",
+            "enum": [
+              "[DONE]"
+            ]
+          }
+        }
+      },
+      "ModelInfo": {
+        "type": "object",
+        "required": [
+          "id",
+          "object",
+          "created",
+          "type"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "Austism/chronos-hermes-13b"
+          },
+          "object": {
+            "description": "The object type, which is always `model`.",
+            "const": "model"
+          },
+          "created": {
+            "type": "integer",
+            "example": 1692896905
+          },
+          "type": {
+            "enum": [
+              "chat",
+              "language",
+              "code",
+              "image",
+              "embedding",
+              "moderation",
+              "rerank"
+            ],
+            "example": "chat"
+          },
+          "display_name": {
+            "type": "string",
+            "example": "Chronos Hermes (13B)"
+          },
+          "organization": {
+            "type": "string",
+            "example": "Austism"
+          },
+          "link": {
+            "type": "string"
+          },
+          "license": {
+            "type": "string",
+            "example": "other"
+          },
+          "context_length": {
+            "type": "integer",
+            "example": 2048
+          },
+          "pricing": {
+            "$ref": "#/components/schemas/Pricing"
+          }
+        }
+      },
+      "ChatCompletionSystemMessageParam": {
+        "type": "object",
+        "required": [
+          "content",
+          "role"
+        ],
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "system"
+            ]
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "ChatCompletionUserMessageParam": {
+        "type": "object",
+        "required": [
+          "content",
+          "role"
+        ],
+        "properties": {
+          "content": {
+            "$ref": "#/components/schemas/ChatCompletionUserMessageContent"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "user"
+            ]
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "ChatCompletionAssistantMessageParam": {
+        "type": "object",
+        "required": [
+          "role"
+        ],
+        "properties": {
+          "content": {
+            "type": "string",
+            "nullable": true
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "assistant"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "tool_calls": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolChoice"
+            }
+          },
+          "function_call": {
+            "type": "object",
+            "deprecated": true,
+            "properties": {
+              "arguments": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "arguments",
+              "name"
+            ]
+          }
+        }
+      },
+      "ChatCompletionToolMessageParam": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "tool"
+            ]
+          },
+          "content": {
+            "type": "string"
+          },
+          "tool_call_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "content",
+          "tool_call_id"
+        ]
+      },
+      "ChatCompletionFunctionMessageParam": {
+        "type": "object",
+        "deprecated": true,
+        "required": [
+          "content",
+          "role",
+          "name"
+        ],
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "function"
+            ]
+          },
+          "content": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "ResponseFormatJsonSchemaSchema": {
+        "type": "object",
+        "title": "JSON schema",
+        "description": "The schema for the response format, described as a JSON Schema object.\nLearn how to build JSON schemas [here](https://json-schema.org/).\n",
+        "additionalProperties": true
+      },
+      "FinishReason": {
+        "type": "string",
+        "enum": [
+          "stop",
+          "eos",
+          "length",
+          "tool_calls",
+          "function_call"
+        ]
+      },
+      "ChatCompletionMessage": {
+        "type": "object",
+        "required": [
+          "role",
+          "content"
+        ],
+        "properties": {
+          "content": {
+            "type": "string",
+            "nullable": true
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "assistant"
+            ]
+          },
+          "tool_calls": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolChoice"
+            }
+          },
+          "function_call": {
+            "type": "object",
+            "deprecated": true,
+            "required": [
+              "arguments",
+              "name"
+            ],
+            "properties": {
+              "arguments": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "reasoning": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "LogprobsPart": {
+        "type": "object",
+        "properties": {
+          "token_ids": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "List of token IDs corresponding to the logprobs"
+          },
+          "tokens": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of token strings"
+          },
+          "token_logprobs": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "List of token log probabilities"
+          },
+          "top_logprobs": {
+            "$ref": "#/components/schemas/TopLogprobs"
+          }
+        }
+      },
+      "TopLogprobs": {
+        "description": "Top log probabilities for the tokens.",
+        "type": "object",
+        "additionalProperties": {
+          "type": "number"
+        }
+      },
+      "ChatCompletionChunk": {
+        "type": "object",
+        "required": [
+          "id",
+          "object",
+          "created",
+          "choices",
+          "model"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "object": {
+            "description": "The object type, which is always `chat.completion.chunk`.",
+            "const": "chat.completion.chunk"
+          },
+          "created": {
+            "type": "integer"
+          },
+          "system_fingerprint": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string",
+            "example": "mistralai/Mixtral-8x7B-Instruct-v0.1"
+          },
+          "choices": {
+            "title": "ChatCompletionChoices",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "index",
+                "delta",
+                "finish_reason"
+              ],
+              "properties": {
+                "index": {
+                  "type": "integer"
+                },
+                "finish_reason": {
+                  "$ref": "#/components/schemas/FinishReason",
+                  "nullable": true
+                },
+                "logprobs": {
+                  "type": "number",
+                  "nullable": true
+                },
+                "top_logprobs": {
+                  "$ref": "#/components/schemas/TopLogprobs"
+                },
+                "seed": {
+                  "type": "integer",
+                  "nullable": true
+                },
+                "delta": {
+                  "title": "ChatCompletionChoiceDelta",
+                  "type": "object",
+                  "required": [
+                    "role"
+                  ],
+                  "properties": {
+                    "token_id": {
+                      "type": "integer"
+                    },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "system",
+                        "user",
+                        "assistant",
+                        "function",
+                        "tool"
+                      ]
+                    },
+                    "content": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "reasoning": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "tool_calls": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ToolChoice"
+                      }
+                    },
+                    "function_call": {
+                      "type": "object",
+                      "deprecated": true,
+                      "nullable": true,
+                      "properties": {
+                        "arguments": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "arguments",
+                        "name"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "usage": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UsageData"
+              },
+              {
+                "nullable": true
+              }
+            ]
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InferenceWarning"
+            }
+          }
+        }
+      },
+      "Pricing": {
+        "type": "object",
+        "required": [
+          "hourly",
+          "input",
+          "output",
+          "base",
+          "finetune"
+        ],
+        "properties": {
+          "base": {
+            "type": "number",
+            "example": 0
+          },
+          "finetune": {
+            "type": "number",
+            "example": 0
+          },
+          "hourly": {
+            "type": "number",
+            "example": 0
+          },
+          "input": {
+            "type": "number",
+            "example": 0.3
+          },
+          "output": {
+            "type": "number",
+            "example": 0.3
+          },
+          "cached_input": {
+            "type": "number",
+            "example": 0.2
+          }
+        }
+      },
+      "ChatCompletionUserMessageContent": {
+        "description": "The content of the message, which can either be a simple string or a structured format.",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ChatCompletionUserMessageContentString"
+          },
+          {
+            "$ref": "#/components/schemas/ChatCompletionUserMessageContentMultimodal"
+          }
+        ]
+      },
+      "ChatCompletionUserMessageContentString": {
+        "type": "string",
+        "description": "A plain text message."
+      },
+      "ChatCompletionUserMessageContentMultimodal": {
+        "type": "array",
+        "description": "A structured message with mixed content types.",
+        "items": {
+          "type": "object",
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "text"
+                  ]
+                },
+                "text": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "text"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "image_url"
+                  ]
+                },
+                "image_url": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string",
+                      "description": "The URL of the image"
+                    }
+                  },
+                  "required": [
+                    "url"
+                  ]
+                }
+              }
+            },
+            {
+              "type": "object",
+              "title": "Video",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "video_url"
+                  ]
+                },
+                "video_url": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string",
+                      "description": "The URL of the video"
+                    }
+                  },
+                  "required": [
+                    "url"
+                  ]
+                }
+              },
+              "required": [
+                "type",
+                "video_url"
+              ]
+            },
+            {
+              "type": "object",
+              "title": "Audio",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "audio_url"
+                  ]
+                },
+                "audio_url": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string",
+                      "description": "The URL of the audio"
+                    }
+                  },
+                  "required": [
+                    "url"
+                  ]
+                }
+              },
+              "required": [
+                "type",
+                "audio_url"
+              ]
+            },
+            {
+              "type": "object",
+              "title": "Input Audio",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "input_audio"
+                  ]
+                },
+                "input_audio": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "string",
+                      "description": "The base64 encoded audio data"
+                    },
+                    "format": {
+                      "type": "string",
+                      "description": "The format of the audio data",
+                      "enum": [
+                        "wav"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "format"
+                  ]
+                }
+              },
+              "required": [
+                "type",
+                "input_audio"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -240,6 +240,54 @@ describe("buildProviderSections", () => {
 		});
 	});
 
+	test("presents a higher-priority promotional rate as a discount without an end date", () => {
+		const provider = makeProviderPricing();
+		provider.pricing_rules = [
+			{
+				id: "inkling-input-list",
+				model_key: "thinking-machines:thinking-machines/inkling-64k:text.generate",
+				pricing_plan: "standard",
+				meter: "input_text_tokens",
+				unit: "token",
+				unit_size: 1_000_000,
+				price_per_unit: 3.74,
+				currency: "USD",
+				note: "Undiscounted list price",
+				priority: 100,
+				effective_from: "2026-07-15T00:00:00.000Z",
+				effective_to: null,
+				match: [],
+			},
+			{
+				id: "inkling-input-promotion",
+				model_key: "thinking-machines:thinking-machines/inkling-64k:text.generate",
+				pricing_plan: "standard",
+				meter: "input_text_tokens",
+				unit: "token",
+				unit_size: 1_000_000,
+				price_per_unit: 1.87,
+				currency: "USD",
+				note: "Limited-time 50% promotion",
+				priority: 200,
+				effective_from: "2026-07-15T00:00:00.000Z",
+				effective_to: null,
+				match: [],
+			},
+		];
+
+		const sections = buildProviderSections(provider, "standard");
+
+		expect(sections.textTokens?.in).toEqual([
+			expect.objectContaining({
+				per1M: 1.87,
+				basePer1M: 3.74,
+				comparisonKind: "discount",
+				comparisonDirection: "cheaper",
+				discountEndsAt: null,
+			}),
+		]);
+	});
+
 	test("labels split Anthropic cache write TTL pricing clearly", () => {
 		const provider = makeProviderPricing();
 		provider.provider.api_provider_id = "anthropic";

@@ -1,0 +1,79 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Black Forest Labs Phaseo contract",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/v1/{model}": {
+      "post": {
+        "operationId": "bfl_submit_image",
+        "description": "Submit asynchronous image generation or edit.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "prompt": {
+                    "type": "string"
+                  },
+                  "width": {
+                    "type": "integer"
+                  },
+                  "height": {
+                    "type": "integer"
+                  },
+                  "seed": {
+                    "type": "integer"
+                  },
+                  "input_image": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "prompt"
+                ],
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deterministic mock success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Provider validation error"
+          },
+          "429": {
+            "description": "Provider rate limit"
+          },
+          "500": {
+            "description": "Provider failure"
+          }
+        }
+      }
+    },
+    "/v1/get_result": {
+      "get": {
+        "operationId": "bfl_get_result",
+        "responses": {
+          "200": {
+            "description": "Generation status"
+          }
+        }
+      }
+    }
+  }
+}

@@ -997,7 +997,55 @@ publicModelsRouter.get("/:modelId/benchmarks", async (c) => {
 			.maybeSingle();
 		if (error) throw error;
 		if (!data) return notFound(c);
-		const results = (data.benchmark_results ?? []) as Array<Record<string, unknown>>;
+		let results = (data.benchmark_results ?? []) as Array<Record<string, unknown>>;
+		const benchmarkIds = Array.from(
+			new Set(
+				results
+					.map((result) => String(result.benchmark_id ?? "").trim())
+					.filter(Boolean),
+			),
+		);
+		if (benchmarkIds.length > 0) {
+			const rankings = await getDataClient(c.env).rpc(
+				"get_benchmark_result_rankings",
+				{
+					p_benchmark_ids: benchmarkIds,
+					p_model_id: modelId,
+					p_include_hidden: false,
+					p_limit_per_benchmark: null,
+				},
+			);
+			if (rankings.error) {
+				console.warn("[web-api/models] benchmark rank fallback", {
+					modelId,
+					error: rankings.error.message,
+				});
+			} else {
+				const byResultId = new Map<string, Record<string, unknown>>(
+					(rankings.data ?? []).map((row: Record<string, unknown>) => [
+						String(row.result_id ?? ""),
+						row,
+					]),
+				);
+				results = results.map((result) => {
+					const ranking = byResultId.get(String(result.id ?? ""));
+					if (!ranking) return result;
+					const benchmark = result.benchmark as Record<string, unknown> | null;
+					return {
+						...result,
+						rank: Number(ranking.benchmark_rank ?? result.rank) || null,
+						benchmark: benchmark
+							? {
+								...benchmark,
+								total_models:
+									Number(ranking.total_ranked_models ?? benchmark.total_models) ||
+									benchmark.total_models,
+							}
+							: benchmark,
+					};
+				});
+			}
+		}
 		return withPublicCache(c.json({ modelId: data.model_id, results, highlights: benchmarkHighlights(results) }), sectionPolicy("benchmarks", modelId));
 	} catch (error) {
 		console.error("[web-api/models] benchmarks failed", { modelId, error });

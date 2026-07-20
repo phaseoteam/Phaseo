@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://docs.clarifai.com/compute/inference/openai/",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "676f37c9c7cb5322d6e72dc11cdbbeea91a79fd9bd441e90c199f6798038447b",
+  "gatewayPathPrefix": "/v1"
+}

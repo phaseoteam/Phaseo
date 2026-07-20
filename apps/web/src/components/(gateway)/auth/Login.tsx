@@ -1,5 +1,6 @@
 import OAuthButtons from "./OAuthButtons";
 import EmailPassword from "./EmailPassword";
+import { PasskeySignInButton } from "./PasskeySignInButton";
 
 type SignupNotice = "check-email" | null;
 
@@ -39,7 +40,10 @@ export function Login({
 				</p>
 			) : null}
 
-			<OAuthButtons returnUrl={returnUrl} />
+			<div className="flex flex-col gap-2">
+				<OAuthButtons returnUrl={returnUrl} />
+				<PasskeySignInButton returnUrl={returnUrl} />
+			</div>
 			<EmailPassword returnUrl={returnUrl} />
 		</div>
 	);

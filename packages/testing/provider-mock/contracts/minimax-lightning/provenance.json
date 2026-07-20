@@ -1,0 +1,8 @@
+{
+  "inheritedFrom": "minimax",
+  "parentSource": {
+    "kind": "official-docs",
+    "url": "https://platform.minimax.io/docs/api-reference/text-openai-api"
+  },
+  "bundleSha256": "f76ecc2fa97f2c9eb6befc9688c11edf60e8a507dddf7ceff1a1d1c8cb2e7342"
+}

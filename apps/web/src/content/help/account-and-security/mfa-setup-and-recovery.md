@@ -1,8 +1,8 @@
 ---
 title: MFA Setup and Recovery
-description: How to enroll, rotate, and recover multi-factor authentication access.
+description: How to enroll and manage multi-factor authentication access.
 order: 2
-updated: 2026-02-09
+updated: 2026-07-11
 ---
 
 Enable MFA from `Settings -> Account` to protect your API keys and billing actions.
@@ -10,7 +10,9 @@ Enable MFA from `Settings -> Account` to protect your API keys and billing actio
 Recommended setup:
 
 - Register an authenticator app first.
-- Store backup codes in a secure password manager.
+- Keep a secure backup of your authenticator configuration before changing devices.
 - Confirm a fresh sign-in after setup.
 
-If you lose your device, use backup codes to sign in, then rotate MFA immediately.
+Supabase MFA only upgrades a session after a verified authenticator challenge. This application does not issue custom recovery codes because they cannot create the required AAL2 session. If you lose access to your authenticator, contact support to recover the account safely.
+
+Passkeys can also be added from the MFA settings page when they have been enabled for the current environment. They provide passwordless sign-in and do not replace the authenticator factor required by MFA.

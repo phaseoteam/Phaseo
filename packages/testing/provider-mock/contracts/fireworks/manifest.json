@@ -1,0 +1,28 @@
+{
+  "providerId": "fireworks",
+  "displayName": "Fireworks AI",
+  "source": {
+    "kind": "official-openapi",
+    "url": "https://docs.fireworks.ai/merged.openapi.yaml"
+  },
+  "operations": [
+    {
+      "capability": "chat",
+      "method": "post",
+      "path": "/inference/v1/chat/completions",
+      "operationId": "create_chat_completion_v1_chat_completions_post"
+    },
+    {
+      "capability": "responses",
+      "method": "post",
+      "path": "/inference/v1/responses",
+      "operationId": "create_response_v1_responses_post"
+    },
+    {
+      "capability": "messages",
+      "method": "post",
+      "path": "/inference/v1/messages",
+      "operationId": "messages_post"
+    }
+  ]
+}

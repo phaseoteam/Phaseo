@@ -1,0 +1,324 @@
+[
+    {
+        "api_model_id":  "z-ai/glm-5.1",
+        "provider_api_model_id":  "ambient:zai-org/GLM-5.1-FP8",
+        "provider_model_slug":  "zai-org/GLM-5.1-FP8",
+        "internal_model_id":  "z-ai/glm-5.1",
+        "is_active_gateway":  false,
+        "quantization_scheme":  "fp8",
+        "input_modalities":  "",
+        "output_modalities":  "text",
+        "context_length":  202752,
+        "max_output_tokens":  131072,
+        "effective_from":  "2026-07-13T00:00:00",
+        "effective_to":  null,
+        "capabilities":  [
+                             {
+                                 "capability_id":  "text.generate",
+                                 "status":  "inactive",
+                                 "params":  [
+
+                                            ]
+                             }
+                         ]
+    },
+    {
+        "api_model_id":  "z-ai/glm-5.2",
+        "provider_api_model_id":  "ambient:z-ai/glm-5.2",
+        "provider_model_slug":  "z-ai/glm-5.2",
+        "internal_model_id":  "z-ai/glm-5.2",
+        "is_active_gateway":  true,
+        "quantization_scheme":  "fp8",
+        "input_modalities":  "",
+        "output_modalities":  "text",
+        "context_length":  101376,
+        "max_output_tokens":  101376,
+        "effective_from":  "2026-07-13T00:00:00",
+        "effective_to":  null,
+        "capabilities":  [
+                             {
+                                 "capability_id":  "text.generate",
+                                 "status":  "active",
+                                 "params":  [
+
+                                            ]
+                             }
+                         ]
+    },
+    {
+        "api_model_id":  "z-ai/glm-4.5-air",
+        "provider_api_model_id":  "ambient:z-ai/glm-4.5-air",
+        "provider_model_slug":  "z-ai/glm-4.5-air",
+        "internal_model_id":  "z-ai/glm-4.5-air",
+        "is_active_gateway":  false,
+        "quantization_scheme":  null,
+        "input_modalities":  "",
+        "output_modalities":  "text",
+        "context_length":  131072,
+        "max_output_tokens":  131072,
+        "effective_from":  "2026-07-13T00:00:00",
+        "effective_to":  null,
+        "capabilities":  [
+                             {
+                                 "capability_id":  "text.generate",
+                                 "status":  "inactive",
+                                 "params":  [
+
+                                            ]
+                             }
+                         ]
+    },
+    {
+        "api_model_id":  "openai/gpt-oss-120b",
+        "provider_api_model_id":  "ambient:openai/gpt-oss-120b",
+        "provider_model_slug":  "openai/gpt-oss-120b",
+        "internal_model_id":  "openai/gpt-oss-120b",
+        "is_active_gateway":  false,
+        "quantization_scheme":  null,
+        "input_modalities":  "",
+        "output_modalities":  "text",
+        "context_length":  131072,
+        "max_output_tokens":  131072,
+        "effective_from":  "2026-07-13T00:00:00",
+        "effective_to":  null,
+        "capabilities":  [
+                             {
+                                 "capability_id":  "text.generate",
+                                 "status":  "inactive",
+                                 "params":  [
+
+                                            ]
+                             }
+                         ]
+    },
+    {
+        "api_model_id":  "openai/gpt-oss-20b",
+        "provider_api_model_id":  "ambient:openai/gpt-oss-20b",
+        "provider_model_slug":  "openai/gpt-oss-20b",
+        "internal_model_id":  "openai/gpt-oss-20b",
+        "is_active_gateway":  false,
+        "quantization_scheme":  null,
+        "input_modalities":  "",
+        "output_modalities":  "text",
+        "context_length":  131072,
+        "max_output_tokens":  131072,
+        "effective_from":  "2026-07-13T00:00:00",
+        "effective_to":  null,
+        "capabilities":  [
+                             {
+                                 "capability_id":  "text.generate",
+                                 "status":  "inactive",
+                                 "params":  [
+
+                                            ]
+                             }
+                         ]
+    },
+    {
+        "api_model_id":  "moonshotai/kimi-k2.5",
+        "provider_api_model_id":  "ambient:moonshotai/kimi-k2.5",
+        "provider_model_slug":  "moonshotai/kimi-k2.5",
+        "internal_model_id":  "moonshotai/kimi-k2.5",
+        "is_active_gateway":  false,
+        "quantization_scheme":  "INT4",
+        "input_modalities":  "",
+        "output_modalities":  "text",
+        "context_length":  262144,
+        "max_output_tokens":  262144,
+        "effective_from":  "2026-07-13T00:00:00",
+        "effective_to":  null,
+        "capabilities":  [
+                             {
+                                 "capability_id":  "text.generate",
+                                 "status":  "inactive",
+                                 "params":  [
+
+                                            ]
+                             }
+                         ]
+    },
+    {
+        "api_model_id":  "moonshotai/kimi-k2.6",
+        "provider_api_model_id":  "ambient:moonshotai/kimi-k2.6",
+        "provider_model_slug":  "moonshotai/kimi-k2.6",
+        "internal_model_id":  "moonshotai/kimi-k2.6",
+        "is_active_gateway":  false,
+        "quantization_scheme":  "int4",
+        "input_modalities":  "",
+        "output_modalities":  "text",
+        "context_length":  262144,
+        "max_output_tokens":  262144,
+        "effective_from":  "2026-07-13T00:00:00",
+        "effective_to":  null,
+        "capabilities":  [
+                             {
+                                 "capability_id":  "text.generate",
+                                 "status":  "inactive",
+                                 "params":  [
+
+                                            ]
+                             }
+                         ]
+    },
+    {
+        "api_model_id":  "moonshotai/kimi-k2.7-code",
+        "provider_api_model_id":  "ambient:moonshotai/kimi-k2.7-code",
+        "provider_model_slug":  "moonshotai/kimi-k2.7-code",
+        "internal_model_id":  "moonshotai/kimi-k2.7-code",
+        "is_active_gateway":  true,
+        "quantization_scheme":  null,
+        "input_modalities":  "",
+        "output_modalities":  "text",
+        "context_length":  262144,
+        "max_output_tokens":  262144,
+        "effective_from":  "2026-07-13T00:00:00",
+        "effective_to":  null,
+        "capabilities":  [
+                             {
+                                 "capability_id":  "text.generate",
+                                 "status":  "active",
+                                 "params":  [
+
+                                            ]
+                             }
+                         ]
+    },
+    {
+        "api_model_id":  "nvidia/nemotron-3-nano-30b-a3b",
+        "provider_api_model_id":  "ambient:nvidia/nemotron-3-nano-30b-a3b",
+        "provider_model_slug":  "nvidia/nemotron-3-nano-30b-a3b",
+        "internal_model_id":  "nvidia/nemotron-3-nano-30b-a3b",
+        "is_active_gateway":  false,
+        "quantization_scheme":  "fp4",
+        "input_modalities":  "",
+        "output_modalities":  "text",
+        "context_length":  262144,
+        "max_output_tokens":  228000,
+        "effective_from":  "2026-07-13T00:00:00",
+        "effective_to":  null,
+        "capabilities":  [
+                             {
+                                 "capability_id":  "text.generate",
+                                 "status":  "inactive",
+                                 "params":  [
+
+                                            ]
+                             }
+                         ]
+    },
+    {
+        "api_model_id":  "qwen/qwen3-next-80b-a3b-instruct",
+        "provider_api_model_id":  "ambient:qwen/qwen3-next-80b-a3b-instruct",
+        "provider_model_slug":  "qwen/qwen3-next-80b-a3b-instruct",
+        "internal_model_id":  "qwen/qwen3-next-80b-a3b-instruct",
+        "is_active_gateway":  false,
+        "quantization_scheme":  null,
+        "input_modalities":  "",
+        "output_modalities":  "text",
+        "context_length":  262144,
+        "max_output_tokens":  262144,
+        "effective_from":  "2026-07-13T00:00:00",
+        "effective_to":  null,
+        "capabilities":  [
+                             {
+                                 "capability_id":  "text.generate",
+                                 "status":  "inactive",
+                                 "params":  [
+
+                                            ]
+                             }
+                         ]
+    },
+    {
+        "api_model_id":  "qwen/qwen3.5-35b-a3b",
+        "provider_api_model_id":  "ambient:qwen/qwen3.5-35b-a3b",
+        "provider_model_slug":  "qwen/qwen3.5-35b-a3b",
+        "internal_model_id":  "qwen/qwen3.5-35b-a3b",
+        "is_active_gateway":  false,
+        "quantization_scheme":  null,
+        "input_modalities":  "",
+        "output_modalities":  "text",
+        "context_length":  262144,
+        "max_output_tokens":  262144,
+        "effective_from":  "2026-07-13T00:00:00",
+        "effective_to":  null,
+        "capabilities":  [
+                             {
+                                 "capability_id":  "text.generate",
+                                 "status":  "inactive",
+                                 "params":  [
+
+                                            ]
+                             }
+                         ]
+    },
+    {
+        "api_model_id":  "qwen/qwen3.6-27b",
+        "provider_api_model_id":  "ambient:qwen/qwen3.6-27b",
+        "provider_model_slug":  "qwen/qwen3.6-27b",
+        "internal_model_id":  "qwen/qwen3.6-27b",
+        "is_active_gateway":  false,
+        "quantization_scheme":  null,
+        "input_modalities":  "",
+        "output_modalities":  "text",
+        "context_length":  262144,
+        "max_output_tokens":  81920,
+        "effective_from":  "2026-07-13T00:00:00",
+        "effective_to":  null,
+        "capabilities":  [
+                             {
+                                 "capability_id":  "text.generate",
+                                 "status":  "inactive",
+                                 "params":  [
+
+                                            ]
+                             }
+                         ]
+    },
+    {
+        "api_model_id":  "qwen/qwen3.6-35b-a3b",
+        "provider_api_model_id":  "ambient:qwen/qwen3.6-35b-a3b",
+        "provider_model_slug":  "qwen/qwen3.6-35b-a3b",
+        "internal_model_id":  "qwen/qwen3.6-35b-a3b",
+        "is_active_gateway":  false,
+        "quantization_scheme":  null,
+        "input_modalities":  "",
+        "output_modalities":  "text",
+        "context_length":  262144,
+        "max_output_tokens":  262144,
+        "effective_from":  "2026-07-13T00:00:00",
+        "effective_to":  null,
+        "capabilities":  [
+                             {
+                                 "capability_id":  "text.generate",
+                                 "status":  "inactive",
+                                 "params":  [
+
+                                            ]
+                             }
+                         ]
+    },
+    {
+        "api_model_id":  "z-ai/glm-5.2",
+        "provider_api_model_id":  "ambient:ambient/large",
+        "provider_model_slug":  "ambient/large",
+        "internal_model_id":  "z-ai/glm-5.2",
+        "is_active_gateway":  true,
+        "quantization_scheme":  "fp8",
+        "input_modalities":  "",
+        "output_modalities":  "text",
+        "context_length":  101376,
+        "max_output_tokens":  101376,
+        "effective_from":  "2026-07-13T00:00:00",
+        "effective_to":  null,
+        "capabilities":  [
+                             {
+                                 "capability_id":  "text.generate",
+                                 "status":  "active",
+                                 "params":  [
+
+                                            ]
+                             }
+                         ]
+    }
+]

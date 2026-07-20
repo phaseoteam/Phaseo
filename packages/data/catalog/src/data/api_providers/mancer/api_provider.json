@@ -1,0 +1,14 @@
+{
+  "api_provider_id": "mancer",
+  "api_provider_name": "Mancer",
+  "description": "OpenAI-compatible language-model inference API.",
+  "link": "https://mancer.tech/docs-api",
+  "country_code": "US",
+  "status": "Active",
+  "colour": "#7C3AED",
+  "privacy_policy_url": "https://mancer.tech/privacy",
+  "terms_of_service_url": "https://mancer.tech/terms",
+  "prompt_training_policy": "unknown",
+  "prompt_training_notes": null,
+  "prompt_training_source_url": null
+}

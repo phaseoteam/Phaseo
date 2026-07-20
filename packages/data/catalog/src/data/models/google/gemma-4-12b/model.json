@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/google/gemma-4-12B-it",
-      "rank": 65
+      "rank": 68
     },
     {
       "benchmark_id": "tau-2-bench",
@@ -94,7 +94,7 @@
       "is_self_reported": true,
       "other_info": "No tools",
       "source_link": "https://huggingface.co/google/gemma-4-12B-it",
-      "rank": 150
+      "rank": 160
     },
     {
       "benchmark_id": "big-bench-extra-hard",
@@ -118,7 +118,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/google/gemma-4-12B-it",
-      "rank": 40
+      "rank": 41
     },
     {
       "benchmark_id": "omnidocbench-1.5",

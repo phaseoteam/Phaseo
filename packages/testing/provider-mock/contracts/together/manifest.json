@@ -1,0 +1,34 @@
+{
+  "providerId": "together",
+  "displayName": "Together AI",
+  "source": {
+    "kind": "official-openapi",
+    "url": "https://docs.together.ai/openapi.yaml"
+  },
+  "operations": [
+    {
+      "capability": "chat",
+      "method": "post",
+      "path": "/v1/chat/completions",
+      "operationId": "chat-completions"
+    },
+    {
+      "capability": "embeddings",
+      "method": "post",
+      "path": "/v1/embeddings",
+      "operationId": "embeddings"
+    },
+    {
+      "capability": "rerank",
+      "method": "post",
+      "path": "/v1/rerank",
+      "operationId": "rerank"
+    },
+    {
+      "capability": "models",
+      "method": "get",
+      "path": "/v1/models",
+      "operationId": "models"
+    }
+  ]
+}

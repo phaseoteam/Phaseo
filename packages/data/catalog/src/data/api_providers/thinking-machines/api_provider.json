@@ -4,7 +4,7 @@
   "provider_family_id": "thinking-machines",
   "offer_label": "Tinker",
   "offer_scope": "specialized",
-  "description": "Tinker is Thinking Machines Lab's training and sampling API for open-weight models. Its OpenAI-compatible inference endpoint is currently documented as beta and intended for testing and internal workflows.",
+  "description": "Tinker is Thinking Machines Lab's training and sampling API for open-weight models. Its OpenAI-compatible inference endpoint supports Inkling sampling and is documented as beta.",
   "link": "https://thinkingmachines.ai/tinker/",
   "residency_mode": "unknown",
   "default_execution_regions": null,
@@ -19,6 +19,6 @@
   "regional_pricing_mode": "same_as_global",
   "regional_pricing_notes": "Thinking Machines publishes a single public USD rate card for Tinker model sampling and training.",
   "country_code": "US",
-  "status": "NotReady",
+  "status": "Active",
   "colour": "#111111"
 }

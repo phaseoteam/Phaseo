@@ -8,9 +8,15 @@ export function createClient() {
 	// Many server fetchers import this helper; avoid browser-only client initialization on the server.
 	if (typeof window === "undefined") {
 		return createSupabaseClient(url, anonKey, {
-			auth: { persistSession: false, autoRefreshToken: false },
+			auth: {
+				persistSession: false,
+				autoRefreshToken: false,
+				experimental: { passkey: true },
+			},
 		});
 	}
 
-	return createBrowserClient(url, anonKey);
+	return createBrowserClient(url, anonKey, {
+		auth: { experimental: { passkey: true } },
+	});
 }

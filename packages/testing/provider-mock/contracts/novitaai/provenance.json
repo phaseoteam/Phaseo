@@ -1,0 +1,8 @@
+{
+  "inheritedFrom": "novita",
+  "parentSource": {
+    "kind": "official-mintlify",
+    "url": "https://novita.ai/docs/api-reference/api-reference-overview"
+  },
+  "bundleSha256": "374b608ec4361b70c4aaaf5a3f6ac34027b5d8a17e1999711cbbdb78ca1b09a9"
+}

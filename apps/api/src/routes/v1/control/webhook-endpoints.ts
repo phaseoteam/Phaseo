@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { Env } from "@/runtime/types";
 import { clearRuntime, configureRuntime, getSupabaseAdmin } from "@/runtime/env";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
+import { CAPABILITIES } from "@/lib/authz/capabilities";
 import {
 	encryptWebhookSecret,
 	generateWebhookSigningSecret,
@@ -11,6 +12,7 @@ import {
 	validateWebhookEndpointUrlForDelivery,
 } from "@core/webhook-endpoints";
 import { getBatchApiFeatureGateName, isBatchApiAccessEnabled } from "@core/feature-flags";
+import { requireCapability, requireOAuthWorkspaceRole } from "./route-helpers";
 
 const app = new Hono<Env>();
 const PAGE_SIZE = 100;
@@ -102,6 +104,18 @@ app.use("*", async (c, next) => {
 		if (!auth.ok) {
 			return (auth as GuardErr).response;
 		}
+		const readOnly = c.req.method === "GET" || c.req.method === "HEAD";
+		const scopeError = requireCapability(
+			auth.value,
+			readOnly ? CAPABILITIES.SETTINGS_READ : CAPABILITIES.SETTINGS_WRITE,
+		);
+		if (scopeError) return scopeError;
+		const roleError = await requireOAuthWorkspaceRole(
+			auth.value,
+			auth.value.workspaceId,
+			readOnly ? ["owner", "admin", "member"] : ["owner", "admin"],
+		);
+		if (roleError) return roleError;
 		const accessDenied = await requireWebhookEndpointAccess({
 			workspaceId: auth.value.workspaceId,
 			apiKeyId: auth.value.apiKeyId,

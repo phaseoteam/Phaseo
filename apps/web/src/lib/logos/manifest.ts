@@ -34,6 +34,10 @@ export const logoManifest = {
 		light: "/logos/anthropic_light.svg",
 		dark: "/logos/anthropic_dark.svg",
 	},
+	"anthropic-us": {
+		light: "/logos/anthropic_light.svg",
+		dark: "/logos/anthropic_dark.svg",
+	},
 	"arcee-ai": {
 		color: "/logos/arcee-ai.svg",
 	},
@@ -157,6 +161,9 @@ export const logoManifest = {
 	"google-vertex": {
 		color: "/logos/google-vertex.svg",
 	},
+	"google-vertex-eu": {
+		color: "/logos/google-vertex.svg",
+	},
 	grok: {
 		light: "/logos/grok_light.svg",
 		dark: "/logos/grok_dark.svg",
@@ -257,6 +264,10 @@ export const logoManifest = {
 		light: "/logos/nebius-token-factory_light.svg",
 		dark: "/logos/nebius-token-factory_dark.svg",
 	},
+	"nebius-token-factory-fast": {
+		light: "/logos/nebius-token-factory_light.svg",
+		dark: "/logos/nebius-token-factory_dark.svg",
+	},
 	nextbit: {
 		color: "/logos/nextbit.svg",
 	},
@@ -275,6 +286,10 @@ export const logoManifest = {
 		color: "/logos/nvidia.svg",
 	},
 	openai: {
+		light: "/logos/openai_light.svg",
+		dark: "/logos/openai_dark.svg",
+	},
+	"openai-eu": {
 		light: "/logos/openai_light.svg",
 		dark: "/logos/openai_dark.svg",
 	},
@@ -351,6 +366,12 @@ export const logoManifest = {
 	together: {
 		color: "/logos/together.svg",
 	},
+	tinker: {
+		color: "/logos/tinker.svg",
+	},
+	"thinking-machines": {
+		color: "/logos/thinking-machines.svg",
+	},
 	upstage: {
 		color: "/logos/upstage.svg",
 	},
@@ -369,6 +390,10 @@ export const logoManifest = {
 	},
 	"weights-and-biases": {
 		color: "/logos/weights-and-biases.svg",
+	},
+	wafer: {
+		light: "/logos/wafer_light.svg",
+		dark: "/logos/wafer_dark.svg",
 	},
 	"spacex-ai": {
 		light: "/logos/spacexai_light.svg",

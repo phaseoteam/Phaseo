@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://docs.nebius.com/studio/inference/quickstart",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "6467dcf9b0eb915694208c97201ee135674999eacd87af520c67e4f0efaf7ba8",
+  "gatewayPathPrefix": "/v1"
+}

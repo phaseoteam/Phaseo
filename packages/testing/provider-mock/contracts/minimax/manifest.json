@@ -1,0 +1,35 @@
+{
+  "providerId": "minimax",
+  "displayName": "MiniMax",
+  "source": {
+    "kind": "official-docs",
+    "url": "https://platform.minimax.io/docs/api-reference/text-openai-api"
+  },
+  "operations": [
+    {
+      "capability": "chat",
+      "method": "post",
+      "path": "/v1/chat/completions",
+      "operationId": "minimax_chat",
+      "notes": "Reconstructed from the provider's documented OpenAI-compatible API surface; provider-specific restrictions belong in overlays."
+    },
+    {
+      "capability": "video.generate",
+      "method": "post",
+      "path": "/v1/video_generation",
+      "operationId": "minimax_video_generate_1",
+      "notes": "Derived from the enabled Phaseo executor URL and provider API reference."
+    },
+    {
+      "capability": "music.generate",
+      "method": "post",
+      "path": "/v1/music_generation",
+      "operationId": "minimax_music_generate_1",
+      "notes": "Derived from the enabled Phaseo executor URL and provider API reference."
+    }
+  ],
+  "overlays": [
+    "OpenAI-compatible request schema baseline; narrowed and extended by deterministic provider scenarios as documented behavior is identified.",
+    "Enabled capability operations derived from Phaseo executor routing."
+  ]
+}

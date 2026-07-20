@@ -83,7 +83,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from o4-mini",
       "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
-      "rank": 36
+      "rank": 40
     },
     {
       "benchmark_id": "charxiv-r",
@@ -107,7 +107,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from o4-mini",
       "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
-      "rank": 104
+      "rank": 112
     },
     {
       "benchmark_id": "mathvista",

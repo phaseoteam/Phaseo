@@ -1,0 +1,32 @@
+{
+  "providerId": "spacex-ai",
+  "displayName": "SpaceX AI",
+  "source": {
+    "kind": "phaseo-overlay",
+    "url": "https://docs.x.ai/developers/tools/function-calling"
+  },
+  "operations": [
+    {
+      "capability": "text.generate",
+      "method": "post",
+      "path": "/responses",
+      "operationId": "createResponse"
+    },
+    {
+      "capability": "text.generate",
+      "method": "post",
+      "path": "/chat/completions",
+      "operationId": "createChatCompletion"
+    },
+    {
+      "capability": "video.generate",
+      "method": "post",
+      "path": "/v1/videos/generations",
+      "operationId": "x_ai_video_generate_1",
+      "notes": "Derived from the enabled Phaseo executor URL and provider API reference."
+    }
+  ],
+  "overlays": [
+    "Inherits x-ai; this enabled ID changes routing, residency, performance tier, or transport policy without changing the request schema."
+  ]
+}

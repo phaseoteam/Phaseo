@@ -1,0 +1,6 @@
+{
+  "sourceUrl": "https://docs.aws.amazon.com/bedrock/",
+  "reconstruction": "phaseo-executor-and-official-reference",
+  "unsupportedReason": "Catalog transport variant; no distinct Phaseo executor is currently registered.",
+  "bundleSha256": "6f2dca095138b6b1469221ab42968b16d869f95a49c179a51808be81932c9ae6"
+}

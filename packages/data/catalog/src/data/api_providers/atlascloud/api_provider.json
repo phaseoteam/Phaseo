@@ -3,6 +3,7 @@
   "api_provider_name": "AtlasCloud",
   "description": null,
   "link": "https://docs.atlascloud.ai/",
+  "pricing_source_url": "https://www.atlascloud.ai/providers/minimax",
   "country_code": "US",
   "status": "Active",
   "colour": "#2563EB",

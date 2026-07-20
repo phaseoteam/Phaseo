@@ -79,7 +79,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-flash",
       "source_link": "https://developers.googleblog.com/en/start-building-with-gemini-25-flash/",
-      "rank": 119
+      "rank": 129
     },
     {
       "benchmark_id": "livecodebench-v5",

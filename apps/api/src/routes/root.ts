@@ -1,15 +1,29 @@
 // src/routes/root.ts
-// Purpose: Root routes (health, basic info, and top-level wiring).
+// Purpose: Root routes (basic info, OAuth discovery, and top-level wiring).
 // Why: Keeps non-versioned routes explicit and minimal.
 // How: Wires HTTP routes to pipeline entrypoints and response helpers.
 
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { json, withRuntime } from "./utils";
-import { ALL_SUPPORTED_SCOPES } from "@/lib/authz/capabilities";
-import { getApiBaseUrl, getIssuer, getLocalJwks } from "@/lib/oauth/service";
+import { getLocalJwks } from "@/lib/oauth/service";
+import { OAUTH_CORS_HEADERS, oauthAuthorizationServerMetadata } from "./oauth";
 
 export const rootRouter = new Hono<Env>();
+
+rootRouter.use("/.well-known/*", async (c, next) => {
+    if (c.req.method === "OPTIONS") {
+        return new Response(null, { status: 204, headers: OAUTH_CORS_HEADERS });
+    }
+    await next();
+    const headers = new Headers(c.res.headers);
+    for (const [key, value] of Object.entries(OAUTH_CORS_HEADERS)) headers.set(key, value);
+    c.res = new Response(c.res.body, {
+        status: c.res.status,
+        statusText: c.res.statusText,
+        headers,
+    });
+});
 
 rootRouter.get(
     "/",
@@ -26,26 +40,28 @@ rootRouter.get(
     "/.well-known/openid-configuration",
     withRuntime(async () =>
         json(
-            {
-                issuer: getIssuer(),
-                authorization_endpoint: `${getApiBaseUrl()}/oauth/authorize`,
-                token_endpoint: `${getApiBaseUrl()}/oauth/token`,
-                device_authorization_endpoint: `${getApiBaseUrl()}/oauth/device/code`,
-                revocation_endpoint: `${getApiBaseUrl()}/oauth/revoke`,
-                userinfo_endpoint: `${getApiBaseUrl()}/oauth/userinfo`,
-                jwks_uri: `${getApiBaseUrl()}/oauth/.well-known/jwks.json`,
-                response_types_supported: ["code"],
-                grant_types_supported: [
-                    "authorization_code",
-                    "refresh_token",
-                    "urn:ietf:params:oauth:grant-type:device_code",
-                ],
-                scopes_supported: [...ALL_SUPPORTED_SCOPES],
-                code_challenge_methods_supported: ["S256"],
-            },
+            oauthAuthorizationServerMetadata(),
             200,
             { "Cache-Control": "public, max-age=300" },
         )
+    )
+);
+
+// RFC 8414 inserts the well-known path before an issuer path. With the issuer
+// https://api.phaseo.app/oauth, standards-compliant clients discover this URL.
+rootRouter.get(
+    "/.well-known/oauth-authorization-server/oauth",
+    withRuntime(async () =>
+        json(oauthAuthorizationServerMetadata(), 200, { "Cache-Control": "public, max-age=300" })
+    )
+);
+
+// Keep a root-level alias for clients that probe the host before resolving the
+// issuer-specific RFC 8414 URL.
+rootRouter.get(
+    "/.well-known/oauth-authorization-server",
+    withRuntime(async () =>
+        json(oauthAuthorizationServerMetadata(), 200, { "Cache-Control": "public, max-age=300" })
     )
 );
 

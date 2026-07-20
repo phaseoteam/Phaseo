@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://gitbook.mor.org/developers/api-documentation",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "7ff552635bdcd30adc3d7c256d7946c4e623fea7b759bc3355371857804af82e",
+  "gatewayPathPrefix": "/v1"
+}

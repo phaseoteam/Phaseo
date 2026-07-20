@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://docs.darkbloom.dev/",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "86779c1c6193d0d84983da4d774ddb47bede8b9f2143f9df2a55608d5f3d5fa3",
+  "gatewayPathPrefix": "/v1"
+}

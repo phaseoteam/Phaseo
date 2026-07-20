@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://platform.stepfun.com/docs",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "f7b2a46a19794410acf13e083f036b1e32e5a191ba58679aab489fb6872ea559",
+  "gatewayPathPrefix": "/v1"
+}

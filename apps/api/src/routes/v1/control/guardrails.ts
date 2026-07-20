@@ -5,6 +5,7 @@ import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { json, withRuntime } from "@/routes/utils";
 import {
+	internalServerError,
 	isResponse,
 	parseOffset,
 	parsePathId,
@@ -279,7 +280,7 @@ async function handleListGuardrails(req: Request) {
 		if (error) throw new Error(error.message || "Failed to list guardrails");
 		return json({ data: data ?? [] }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
+		return internalServerError("guardrails.list", error);
 	}
 }
 
@@ -310,7 +311,7 @@ async function handleCreateGuardrail(req: Request) {
 		if (error) throw new Error(error.message || "Failed to create guardrail");
 		return json({ data }, 201, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
+		return internalServerError("guardrails.create", error);
 	}
 }
 
@@ -334,7 +335,7 @@ async function handleGetGuardrail(req: Request) {
 		if (keyError) throw new Error(keyError.message || "Failed to fetch guardrail keys");
 		return json({ data: { ...guardrail, key_ids: (keyRows ?? []).map((row) => row.key_id) } }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
+		return internalServerError("guardrails.get", error);
 	}
 }
 
@@ -367,7 +368,7 @@ async function handleUpdateGuardrail(req: Request) {
 		if (!data) return json({ error: "not_found", message: "Guardrail not found" }, 404, { "Cache-Control": "no-store" });
 		return json({ data }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
+		return internalServerError("guardrails.update", error);
 	}
 }
 
@@ -400,7 +401,7 @@ async function handleDeleteGuardrail(req: Request) {
 		if (error) throw new Error(error.message || "Failed to delete guardrail");
 		return json({ deleted: true }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
+		return internalServerError("guardrails.delete", error);
 	}
 }
 
@@ -442,7 +443,7 @@ async function handleSetGuardrailKeys(req: Request) {
 		}
 		return json({ data: { guardrail_id: id, key_ids: keyIds } }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
+		return internalServerError("guardrails.keys.add", error);
 	}
 }
 
@@ -463,7 +464,7 @@ async function handleListGuardrailKeys(req: Request) {
 		const assignments = await listGuardrailKeyAssignments(auth.value.workspaceId, id);
 		return json({ data: assignments, total_count: assignments.length }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
+		return internalServerError("guardrails.keys.list", error);
 	}
 }
 
@@ -516,7 +517,7 @@ async function handleAddGuardrailKeys(req: Request) {
 		const added = assignments.filter((assignment) => keyIds.includes(assignment.key_id));
 		return json({ added_count: added.length, data: added }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
+		return internalServerError("guardrails.keys.assign", error);
 	}
 }
 
@@ -552,7 +553,7 @@ async function handleRemoveGuardrailKeys(req: Request) {
 
 		return json({ removed_count: count ?? 0 }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
+		return internalServerError("guardrails.keys.remove", error);
 	}
 }
 
@@ -573,7 +574,7 @@ async function handleListGuardrailMembers(req: Request) {
 		const assignments = await listGuardrailMemberAssignments(auth.value.workspaceId, id);
 		return json({ data: assignments, total_count: assignments.length }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
+		return internalServerError("guardrails.members.list", error);
 	}
 }
 
@@ -627,7 +628,7 @@ async function handleAddGuardrailMembers(req: Request) {
 		const added = assignments.filter((assignment) => userIds.includes(assignment.user_id));
 		return json({ added_count: added.length, data: added }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
+		return internalServerError("guardrails.members.assign", error);
 	}
 }
 
@@ -664,7 +665,7 @@ async function handleRemoveGuardrailMembers(req: Request) {
 
 		return json({ removed_count: count ?? 0 }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
+		return internalServerError("guardrails.members.remove", error);
 	}
 }
 

@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://docs.morphllm.com/api-reference",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "b8b91a00a463d7d82ffe5e9269b0ad7db67ddc5d110261cf3ab7a0920fa8c59d",
+  "gatewayPathPrefix": "/v1"
+}

@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": "inferred version-family alias from ernie-5.0",
       "source_link": "https://www.baidu.com/",
-      "rank": 49
+      "rank": 57
     },
     {
       "benchmark_id": "mmlu-pro",

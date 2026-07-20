@@ -2,8 +2,6 @@
 
 import { apiBaseUrl } from "@/lib/oauth/apiBaseUrl";
 import { createClient } from "@/utils/supabase/server";
-import { fetchAccountWebApi } from "@/lib/web-api/client";
-import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 
 /**
  * OAuth Consent Server Actions
@@ -24,6 +22,7 @@ interface ApproveAuthorizationInput {
 	state?: string;
 	code_challenge?: string;
 	code_challenge_method?: string;
+	resource?: string;
 }
 
 interface ConsentResult {
@@ -32,6 +31,33 @@ interface ConsentResult {
 		authorization_id?: string;
 	};
 	error?: string;
+}
+
+interface RegisteredOAuthClient {
+	client_id: string;
+	redirect_uris: string[];
+}
+
+async function loadRegisteredOAuthClient(
+	accessToken: string,
+	clientId: string,
+): Promise<RegisteredOAuthClient | null> {
+	const response = await fetch(
+		`${apiBaseUrl()}/oauth/client-metadata?client_id=${encodeURIComponent(clientId)}`,
+		{
+			headers: { Authorization: `Bearer ${accessToken}` },
+			cache: "no-store",
+		},
+	);
+	if (!response.ok) return null;
+	const payload = await response.json().catch(() => null) as Record<string, unknown> | null;
+	if (!payload || String(payload.client_id ?? "") !== clientId) return null;
+	return {
+		client_id: clientId,
+		redirect_uris: Array.isArray(payload.redirect_uris)
+			? payload.redirect_uris.filter((value): value is string => typeof value === "string")
+			: [],
+	};
 }
 
 /**
@@ -130,6 +156,30 @@ export async function approveAuthorizationAction(
 			return { error: "The active team must also be selected for authorization" };
 		}
 
+		// Verify user is a member of every selected team
+		const { data: memberships, error: membershipError } = await supabase
+			.from("workspace_members")
+			.select("workspace_id")
+			.eq("user_id", user.id)
+			.in("workspace_id", selectedWorkspaceIds);
+
+		const grantedWorkspaceIds = new Set(
+			(memberships ?? [])
+				.map((membership: { workspace_id?: unknown }) =>
+					String(membership.workspace_id ?? "").trim()
+				)
+				.filter(Boolean)
+		);
+
+		if (
+			membershipError ||
+			!selectedWorkspaceIds.every((workspaceId) => grantedWorkspaceIds.has(workspaceId))
+		) {
+			return {
+				error: "You don't have permission to authorize for one or more selected teams",
+			};
+		}
+
 		const resolvedRedirectUri = input.redirect_uri?.trim() || null;
 		if (!resolvedRedirectUri) {
 			return {
@@ -144,11 +194,9 @@ export async function approveAuthorizationAction(
 		if (!session?.access_token) {
 			return { error: "Unauthorized" };
 		}
-		await fetchAccountWebApi<{ valid: true }>(
-			"/api/account/auth/oauth-consent/validate",
-			session.access_token,
-			{ method: "POST", body: JSON.stringify({ clientId: resolvedClientId, workspaceIds: selectedWorkspaceIds }) },
-		);
+		if (!(await loadRegisteredOAuthClient(session.access_token, resolvedClientId))) {
+			return { error: "OAuth application not found or inactive" };
+		}
 
 		const response = await fetch(`${apiBaseUrl()}/oauth/authorize/approve`, {
 			method: "POST",
@@ -166,6 +214,7 @@ export async function approveAuthorizationAction(
 				state: input.state,
 				code_challenge: input.code_challenge,
 				code_challenge_method: input.code_challenge_method,
+				resource: input.resource,
 			}),
 			cache: "no-store",
 		});
@@ -185,12 +234,13 @@ export async function approveAuthorizationAction(
 				redirect_url: payload.redirect_url,
 			},
 		};
-	} catch (error: any) {
+	} catch {
+		const requestId = crypto.randomUUID();
 		console.error("oauth_consent_approve_authorization_failed", {
 			operation: "approveAuthorizationAction",
-			error,
+			request_id: requestId,
 		});
-		return { error: error.message || "Failed to approve authorization" };
+		return { error: `Failed to approve authorization. Reference: ${requestId}` };
 	}
 }
 
@@ -202,12 +252,16 @@ export async function approveAuthorizationAction(
  */
 export async function denyAuthorizationAction(input: {
 	authorization_id?: string;
+	client_id?: string;
 	redirect_uri?: string;
 	state?: string;
 }): Promise<ConsentResult> {
 	try {
+		const supabase = await createClient();
+		const { data: { user } } = await supabase.auth.getUser();
+		if (!user) return { error: "Unauthorized" };
+
 		if (input.authorization_id) {
-			const supabase = await createClient();
 			const oauthClient = supabase.auth.oauth as any;
 			const { data: redirectData, error } = await oauthClient.denyAuthorization(
 				input.authorization_id,
@@ -229,11 +283,32 @@ export async function denyAuthorizationAction(input: {
 			};
 		}
 
-		if (!input.redirect_uri) {
+		const clientId = input.client_id?.trim();
+		if (!input.redirect_uri || !clientId) {
 			return {
 				error:
-					"Missing authorization_id. Please restart the OAuth flow from the client application.",
+					"Missing authorization request details. Please restart the OAuth flow from the client application.",
 			};
+		}
+
+		const { data: { session } } = await supabase.auth.getSession();
+		if (!session?.access_token) return { error: "Unauthorized" };
+		const registeredClient = await loadRegisteredOAuthClient(session.access_token, clientId);
+		const registeredRedirectUris = registeredClient?.redirect_uris ?? [];
+		let isCliLoopback = false;
+		if (clientId === "phaseo_cli" || clientId === "aistats_cli") {
+			try {
+				const redirect = new URL(input.redirect_uri);
+				isCliLoopback = redirect.protocol === "http:" &&
+					["127.0.0.1", "localhost", "::1", "[::1]"].includes(redirect.hostname) &&
+					redirect.pathname === "/callback" &&
+					!redirect.username && !redirect.password && !redirect.search && !redirect.hash;
+			} catch {
+				isCliLoopback = false;
+			}
+		}
+		if (!registeredRedirectUris.includes(input.redirect_uri) && !isCliLoopback) {
+			return { error: "OAuth client or redirect URI is invalid" };
 		}
 
 		// Build redirect URL with error
@@ -252,12 +327,13 @@ export async function denyAuthorizationAction(input: {
 				redirect_url: redirectUrl.toString(),
 			},
 		};
-	} catch (error: any) {
+	} catch {
+		const requestId = crypto.randomUUID();
 		console.error("oauth_consent_deny_authorization_failed", {
 			operation: "denyAuthorizationAction",
-			error,
+			request_id: requestId,
 		});
-		return { error: error.message || "Failed to deny authorization" };
+		return { error: `Failed to deny authorization. Reference: ${requestId}` };
 	}
 }
 
@@ -271,15 +347,34 @@ export async function revokeAuthorizationAction(
 	authorizationId: string
 ): Promise<ConsentResult> {
 	try {
-		const { accessToken } = await getServerAccountContext();
-		if (!accessToken) return { error: "Unauthorized" };
-		await fetchAccountWebApi<{ success: true }>(`/api/account/settings/authorized-apps/${encodeURIComponent(authorizationId)}`, accessToken, { method: "DELETE" });
+		const supabase = await createClient();
+
+		// Get current user
+		const {
+			data: { user },
+			error: userError,
+		} = await supabase.auth.getUser();
+
+		if (userError || !user) {
+			return { error: "Unauthorized" };
+		}
+
+		// Revoke authorization (set revoked_at timestamp)
+		const { error: revokeError } = await supabase
+			.from("oauth_authorizations")
+			.update({ revoked_at: new Date().toISOString() })
+			.eq("id", authorizationId)
+			.eq("user_id", user.id); // Ensure user owns this authorization
+
+		if (revokeError) throw revokeError;
+
 		return { data: {} };
-	} catch (error: any) {
+	} catch {
+		const requestId = crypto.randomUUID();
 		console.error("oauth_consent_revoke_authorization_failed", {
 			operation: "revokeAuthorizationAction",
-			error,
+			request_id: requestId,
 		});
-		return { error: error.message || "Failed to revoke authorization" };
+		return { error: `Failed to revoke authorization. Reference: ${requestId}` };
 	}
 }

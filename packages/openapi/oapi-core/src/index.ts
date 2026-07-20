@@ -1,6 +1,7 @@
 export { loadOpenApi } from "./loadOpenApi.js";
 export { buildIR } from "./builder.js";
 export { stringifyIR } from "./stringify.js";
+export { splitPathTemplate } from "./pathTemplate.js";
 export type { BuildOptions } from "./builder.js";
 export type { Diagnostic, DiagnosticLevel } from "./diagnostics.js";
 export type {

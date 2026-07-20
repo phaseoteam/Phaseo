@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "aa-briefcase",
+  "benchmark_name": "AA-Briefcase",
+  "category": "agents",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": "https://artificialanalysis.ai/",
+  "total_models": 1
+}

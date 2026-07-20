@@ -7,11 +7,13 @@ import {
 	normalizeApiRoot,
 	oauthUrl,
 	parseScopeArgument,
+	exchangeAuthorizationCode,
 	revokeRefreshToken,
 	v1Url,
 } from "../src/api.ts";
 import {
 	buildLogsListPath,
+	buildModelsListPath,
 	callbackListenHost,
 	helpKeyForCommand,
 	parseArgs,
@@ -22,6 +24,7 @@ import {
 	renderLoginBanner,
 	renderLoginMenu,
 	renderHelp,
+	renderOneTimeClientSecret,
 	windowsBrowserOpenArgs,
 	validateLoopbackRedirectUri,
 } from "../src/index.ts";
@@ -105,13 +108,37 @@ test("surfaces refresh-token revocation failures", async () => {
 	}
 });
 
-test("quotes Windows browser-launch URLs so cmd does not truncate query params", () => {
+test("rejects an authorization exchange that is not a refreshable CLI session", async () => {
+	const originalFetch = globalThis.fetch;
+	globalThis.fetch = (async () =>
+		new Response(JSON.stringify({
+			access_token: "phaseo_v1_sk_test",
+			refresh_token: "refresh-token",
+			expires_in: "900",
+			token_type: "Bearer",
+		}), {
+			status: 200,
+			headers: { "content-type": "application/json" },
+		})) as typeof fetch;
+	try {
+		await assert.rejects(
+			() => exchangeAuthorizationCode("https://api.example.com", {
+				code: "code",
+				redirectUri: "http://127.0.0.1:8976/callback",
+				codeVerifier: "verifier",
+			}),
+			/not return a refreshable CLI session/,
+		);
+	} finally {
+		globalThis.fetch = originalFetch;
+	}
+});
+
+test("passes Windows browser-launch URLs without a command interpreter", () => {
 	const fullUrl = "http://127.0.0.1:8788/oauth/authorize?response_type=code&client_id=phaseo_cli&redirect_uri=http%3A%2F%2F127.0.0.1%3A8976%2Fcallback";
 	assert.deepEqual(windowsBrowserOpenArgs(fullUrl), [
-		"-NoProfile",
-		"-NonInteractive",
-		"-Command",
-		`Start-Process -FilePath '${fullUrl}'`,
+		"url.dll,FileProtocolHandler",
+		fullUrl,
 	]);
 });
 
@@ -199,6 +226,12 @@ test("resolves help text for command groups and leaf commands", () => {
 	assert.match(renderHelp(["login"]), /--scopes <csv>/);
 	assert.equal(helpKeyForCommand(["logs", "list"]), "logs list");
 	assert.match(renderHelp(["logs", "list"]), /--status <success\|error\|2xx\|4xx\|5xx\|code>/);
+	assert.match(renderHelp(["oauth-clients", "create"]), /--show-secret/);
+	assert.match(renderHelp(["oauth-clients", "regenerate-secret"]), /--show-secret/);
+	assert.match(renderHelp(["organisations"]), /phaseo organisations list/);
+	assert.match(renderHelp(["endpoints"]), /phaseo endpoints list/);
+	assert.match(renderHelp(["webhooks", "create"]), /--show-secret/);
+	assert.match(renderHelp(["models", "get"]), /phaseo models get <model-id>/);
 });
 
 test("builds logs list filters for the API", () => {
@@ -218,6 +251,19 @@ test("builds logs list filters for the API", () => {
 		}),
 		"/logs?since=2h&status=5xx&provider=openai&model=gpt-5-mini&endpoint=%2Fresponses&request_id=req_1&key_id=key_1&session_id=session_1&error_code=upstream_error&limit=25&offset=5",
 	);
+});
+
+test("hides one-time OAuth client secrets unless explicitly requested", () => {
+	const secret = "oauth-secret-value";
+	const hidden = renderOneTimeClientSecret(secret, false);
+	assert.doesNotMatch(hidden, new RegExp(secret));
+	assert.match(hidden, /Client secret hidden/);
+	assert.equal(renderOneTimeClientSecret(secret, true), `Client secret: ${secret}\n`);
+});
+
+test("builds model catalogue paths for the public v1 routes", () => {
+	assert.equal(buildModelsListPath({ limit: "3", offset: "1" }), "/models?limit=3&offset=1");
+	assert.equal(buildModelsListPath({ mine: true, all: true }), "/models/me?availability=all");
 });
 
 test("treats short and long root flags as flags instead of commands", () => {

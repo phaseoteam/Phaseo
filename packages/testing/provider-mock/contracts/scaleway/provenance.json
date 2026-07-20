@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://www.scaleway.com/en/docs/generative-apis/api-cli/openai-compatibility/",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "e105c26697912b2d90d4a2872f75e9e0117e75f5896092f70b1f32bde71fe101",
+  "gatewayPathPrefix": "/v1"
+}

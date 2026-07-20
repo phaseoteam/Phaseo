@@ -1,0 +1,9 @@
+{
+  "sourceUrl": "https://raw.githubusercontent.com/openai/openai-openapi/master/openapi.yaml",
+  "sourceRepository": "https://github.com/openai/openai-openapi",
+  "sourceSha256": "74cbcf73838f4cd7e209b2d3f2e9ddc9fa155f21a44360b6fac7646a6d4f5f8b",
+  "bundleSha256": "a855fcbc7ee2aff1d56443516199bbdb8309fcfcfac9a6e34af453e35ea9913d",
+  "openapiVersion": "3.1.0",
+  "apiVersion": "2.3.0",
+  "capabilityOverlay": true
+}

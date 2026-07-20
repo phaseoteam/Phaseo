@@ -68,7 +68,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-nano-8b-v1/modelcard",
-      "rank": 125
+      "rank": 129
     },
     {
       "benchmark_id": "bfcl-v2",

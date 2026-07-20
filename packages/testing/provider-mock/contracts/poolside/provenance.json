@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://docs.poolside.ai/",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "2a0243832821344f9df874e7b51486cf622ea2704d111fbd806ddaa7498464c7",
+  "gatewayPathPrefix": "/v1"
+}

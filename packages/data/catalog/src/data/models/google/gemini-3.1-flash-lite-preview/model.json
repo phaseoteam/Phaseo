@@ -42,7 +42,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf",
-      "rank": 96
+      "rank": 104
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -50,7 +50,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf",
-      "rank": 28
+      "rank": 31
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -58,7 +58,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf",
-      "rank": 25
+      "rank": 26
     },
     {
       "benchmark_id": "charxiv-reasoning",

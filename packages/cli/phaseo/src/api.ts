@@ -75,6 +75,31 @@ async function parseJson(response: Response): Promise<any> {
 	}
 }
 
+function requireRefreshableCliTokens(body: any): {
+	access_token: string;
+	refresh_token: string;
+	expires_in: number;
+	scope?: string;
+} {
+	if (
+		typeof body?.access_token !== "string" ||
+		!body.access_token ||
+		typeof body?.refresh_token !== "string" ||
+		!body.refresh_token ||
+		typeof body?.expires_in !== "number" ||
+		!Number.isFinite(body.expires_in) ||
+		body.expires_in <= 0
+	) {
+		throw new Error("Phaseo OAuth did not return a refreshable CLI session");
+	}
+	return {
+		access_token: body.access_token,
+		refresh_token: body.refresh_token,
+		expires_in: body.expires_in,
+		scope: typeof body.scope === "string" ? body.scope : undefined,
+	};
+}
+
 export async function apiFetch(apiRoot: string, path: string, init: RequestInit & { accessToken?: string } = {}) {
 	const headers = new Headers(init.headers);
 	if (!headers.has("content-type") && init.body) headers.set("content-type", "application/json");
@@ -102,12 +127,13 @@ export async function refreshSession(session: Session): Promise<Session> {
 	if (!response.ok) {
 		throw new Error(typeof body?.error_description === "string" ? body.error_description : "Failed to refresh Phaseo session");
 	}
+	const tokens = requireRefreshableCliTokens(body);
 	const next: Session = {
-		accessToken: body.access_token,
-		refreshToken: body.refresh_token,
-		expiresAt: Date.now() + Number(body.expires_in ?? 900) * 1000,
+		accessToken: tokens.access_token,
+		refreshToken: tokens.refresh_token,
+		expiresAt: Date.now() + tokens.expires_in * 1000,
 		apiUrl: session.apiUrl,
-		scope: body.scope,
+		scope: tokens.scope,
 	};
 	await writeSession(next);
 	return next;
@@ -163,12 +189,7 @@ export async function pollDeviceToken(apiRoot: string, deviceCode: string) {
 		error.code = code;
 		throw error;
 	}
-	return body as {
-		access_token: string;
-		refresh_token: string;
-		expires_in: number;
-		scope?: string;
-	};
+	return requireRefreshableCliTokens(body);
 }
 
 export async function revokeRefreshToken(apiRoot: string, refreshToken: string): Promise<void> {
@@ -217,10 +238,5 @@ export async function exchangeAuthorizationCode(apiRoot: string, args: {
 	if (!response.ok) {
 		throw new Error(typeof body?.error_description === "string" ? body.error_description : "Failed to exchange authorization code");
 	}
-	return body as {
-		access_token: string;
-		refresh_token: string;
-		expires_in: number;
-		scope?: string;
-	};
+	return requireRefreshableCliTokens(body);
 }

@@ -1,0 +1,8 @@
+{
+  "inheritedFrom": "atlascloud",
+  "parentSource": {
+    "kind": "official-docs",
+    "url": "https://docs.atlascloud.ai/"
+  },
+  "bundleSha256": "9a1836cf5f9992c2d3756326f3c590b2c04552807d4072f0502089a43cae671c"
+}

@@ -1,0 +1,21 @@
+{
+  "sourceUrl": "https://api.deepinfra.com/openapi.json",
+  "sourceSha256": "610da191cbe755652f4f452b9bec5cddb4bddeb3523d54c2e94f909e8f4ca870",
+  "bundleSha256": "06e573e70e4da912d693dbc866aabbcd6f04c4ae8b8bab1eb6d69ab4d1a3b025",
+  "openapiVersion": "3.1.0",
+  "apiVersion": "1.0.0",
+  "gatewayPathMappings": [
+    {
+      "sourcePath": "/v1/chat/completions",
+      "gatewayPath": "/v1/openai/chat/completions"
+    },
+    {
+      "sourcePath": "/v1/embeddings",
+      "gatewayPath": "/v1/openai/embeddings"
+    },
+    {
+      "sourcePath": "/v1/models",
+      "gatewayPath": "/v1/openai/models"
+    }
+  ]
+}

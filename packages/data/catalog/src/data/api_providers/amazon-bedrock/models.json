@@ -212,14 +212,14 @@
   {
     "api_model_id": "anthropic/claude-haiku-4.5",
     "provider_api_model_id": "amazon-bedrock:anthropic/claude-haiku-4.5",
-    "provider_model_slug": "anthropic.claude-haiku-4-5-20251001-v1:0",
+    "provider_model_slug": "anthropic.claude-haiku-4-5",
     "internal_model_id": "anthropic/claude-haiku-4.5",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
     "context_length": 200000,
-    "max_output_tokens": null,
+    "max_output_tokens": 64000,
     "effective_from": "2025-10-15T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -317,14 +317,14 @@
   {
     "api_model_id": "anthropic/claude-opus-4.7",
     "provider_api_model_id": "amazon-bedrock:anthropic/claude-opus-4.7",
-    "provider_model_slug": "anthropic.claude-opus-4-7-v1",
+    "provider_model_slug": "anthropic.claude-opus-4-7",
     "internal_model_id": "anthropic/claude-opus-4.7",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
     "context_length": 1000000,
-    "max_output_tokens": null,
+    "max_output_tokens": 128000,
     "effective_from": "2026-04-16T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -450,8 +450,8 @@
     "input_modalities": "text,image",
     "output_modalities": "text",
     "context_length": 128000,
-    "max_output_tokens": null,
-    "effective_from": null,
+    "max_output_tokens": 131072,
+    "effective_from": "2025-03-12T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -471,8 +471,8 @@
     "input_modalities": "text,image",
     "output_modalities": "text",
     "context_length": 128000,
-    "max_output_tokens": null,
-    "effective_from": null,
+    "max_output_tokens": 131072,
+    "effective_from": "2025-03-12T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -492,8 +492,8 @@
     "input_modalities": "text,image",
     "output_modalities": "text",
     "context_length": 128000,
-    "max_output_tokens": null,
-    "effective_from": null,
+    "max_output_tokens": 131072,
+    "effective_from": "2025-03-12T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -556,7 +556,7 @@
     "output_modalities": "text",
     "context_length": 400000,
     "max_output_tokens": null,
-    "effective_from": null,
+    "effective_from": "2025-10-27T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -577,7 +577,7 @@
     "output_modalities": "text",
     "context_length": 196000,
     "max_output_tokens": null,
-    "effective_from": null,
+    "effective_from": "2025-12-23T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -598,7 +598,7 @@
     "output_modalities": "text",
     "context_length": 196000,
     "max_output_tokens": null,
-    "effective_from": null,
+    "effective_from": "2026-02-12T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -619,7 +619,7 @@
     "output_modalities": "text",
     "context_length": 256000,
     "max_output_tokens": null,
-    "effective_from": null,
+    "effective_from": "2026-01-27T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -640,7 +640,7 @@
     "output_modalities": "text",
     "context_length": 256000,
     "max_output_tokens": null,
-    "effective_from": null,
+    "effective_from": "2025-12-15T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -661,7 +661,7 @@
     "output_modalities": "text",
     "context_length": 262000,
     "max_output_tokens": null,
-    "effective_from": null,
+    "effective_from": "2026-03-11T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -674,14 +674,14 @@
   {
     "api_model_id": "openai/gpt-oss-120b",
     "provider_api_model_id": "amazon-bedrock:openai/gpt-oss-120b",
-    "provider_model_slug": "openai.gpt-oss-120b-1:0",
+    "provider_model_slug": "openai.gpt-oss-120b",
     "internal_model_id": "openai/gpt-oss-120b",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": 128000,
-    "max_output_tokens": null,
+    "max_output_tokens": 131072,
     "effective_from": "2025-08-05T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -695,14 +695,14 @@
   {
     "api_model_id": "openai/gpt-oss-20b",
     "provider_api_model_id": "amazon-bedrock:openai/gpt-oss-20b",
-    "provider_model_slug": "openai.gpt-oss-20b-1:0",
+    "provider_model_slug": "openai.gpt-oss-20b",
     "internal_model_id": "openai/gpt-oss-20b",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": 128000,
-    "max_output_tokens": null,
+    "max_output_tokens": 131072,
     "effective_from": "2025-08-05T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -724,7 +724,7 @@
     "output_modalities": "text",
     "context_length": 128000,
     "max_output_tokens": null,
-    "effective_from": null,
+    "effective_from": "2025-10-29T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -745,7 +745,7 @@
     "output_modalities": "text",
     "context_length": 128000,
     "max_output_tokens": null,
-    "effective_from": null,
+    "effective_from": "2025-10-29T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -758,7 +758,7 @@
   {
     "api_model_id": "qwen/qwen3-coder-30b-a3b",
     "provider_api_model_id": "amazon-bedrock:qwen/qwen3-coder-30b-a3b",
-    "provider_model_slug": "qwen.qwen3-coder-30b-a3b",
+    "provider_model_slug": "qwen.qwen3-coder-30b-a3b-instruct",
     "internal_model_id": "qwen/qwen3-coder-30b-a3b",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -785,8 +785,8 @@
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 128000,
+    "max_output_tokens": 128000,
     "effective_from": "2026-05-11T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -821,7 +821,7 @@
   {
     "api_model_id": "qwen/qwen3-next-80b-a3b-instruct",
     "provider_api_model_id": "amazon-bedrock:qwen/qwen3-next-80b-a3b-instruct",
-    "provider_model_slug": "qwen.qwen3-next-80b-a3b",
+    "provider_model_slug": "qwen.qwen3-next-80b-a3b-instruct",
     "internal_model_id": "qwen/qwen3-next-80b-a3b-instruct",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -842,7 +842,7 @@
   {
     "api_model_id": "qwen/qwen3-vl-235b-a22b-instruct",
     "provider_api_model_id": "amazon-bedrock:qwen/qwen3-vl-235b-a22b-instruct",
-    "provider_model_slug": "qwen.qwen3-vl-235b-a22b",
+    "provider_model_slug": "qwen.qwen3-vl-235b-a22b-instruct",
     "internal_model_id": "qwen/qwen3-vl-235b-a22b-instruct",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -892,7 +892,7 @@
     "output_modalities": "text",
     "context_length": 203000,
     "max_output_tokens": null,
-    "effective_from": null,
+    "effective_from": "2025-12-22T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -913,7 +913,7 @@
     "output_modalities": "text",
     "context_length": 203000,
     "max_output_tokens": null,
-    "effective_from": null,
+    "effective_from": "2026-01-19T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -934,7 +934,7 @@
     "output_modalities": "text",
     "context_length": 203000,
     "max_output_tokens": null,
-    "effective_from": null,
+    "effective_from": "2026-02-11T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -960,79 +960,15 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "disabled",
-        "params": [
-          {
-            "param_id": "reasoning",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": "low",
-            "notes": "Amazon Bedrock supports reasoning effort values none, low, medium, and high for Grok 4.3.",
-            "type": "enum",
-            "values": [
-              "none",
-              "low",
-              "medium",
-              "high"
-            ]
-          },
-          {
-            "param_id": "max_completion_tokens",
-            "provider_min": null,
-            "provider_max": 131072,
-            "provider_default": 131072,
-            "notes": null
-          },
-          {
-            "param_id": "response_format",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "structured_outputs",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "temperature",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": 0.7,
-            "notes": null
-          },
-          {
-            "param_id": "tool_choice",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "tools",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "top_p",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": 0.95,
-            "notes": null
-          }
-        ]
+        "status": "active",
+        "params": []
       }
     ]
   },
   {
     "api_model_id": "anthropic/claude-fable-5",
     "provider_api_model_id": "amazon-bedrock:anthropic/claude-fable-5",
-    "provider_model_slug": "anthropic.claude-fable-5-v1",
+    "provider_model_slug": "anthropic.claude-fable-5",
     "internal_model_id": "anthropic/claude-fable-5",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -1041,6 +977,447 @@
     "context_length": 1000000,
     "max_output_tokens": 128000,
     "effective_from": "2026-06-09T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "anthropic/claude-mythos-5",
+    "provider_api_model_id": "amazon-bedrock:anthropic/claude-mythos-5",
+    "provider_model_slug": "anthropic.claude-mythos-5",
+    "internal_model_id": "anthropic/claude-mythos-5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 128000,
+    "effective_from": "2026-06-09T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "anthropic/claude-mythos-preview",
+    "provider_api_model_id": "amazon-bedrock:anthropic/claude-mythos-preview",
+    "provider_model_slug": "anthropic.claude-mythos-preview",
+    "internal_model_id": "anthropic/claude-mythos-preview",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "deepseek/deepseek-v3.2",
+    "provider_api_model_id": "amazon-bedrock:deepseek/deepseek-v3.2",
+    "provider_model_slug": "deepseek.v3.2",
+    "internal_model_id": "deepseek/deepseek-v3.2",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 163840,
+    "max_output_tokens": 65536,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "deepseek/deepseek-v3.1",
+    "provider_api_model_id": "amazon-bedrock:deepseek/deepseek-v3.1",
+    "provider_model_slug": "deepseek.v3.1",
+    "internal_model_id": "deepseek/deepseek-v3.1",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 32768,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "mistral/devstral-2.0",
+    "provider_api_model_id": "amazon-bedrock:mistral/devstral-2.0",
+    "provider_model_slug": "mistral.devstral-2-123b",
+    "internal_model_id": "mistral/devstral-2.0",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": "2026-07-31T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "mistral/magistral-small-1.2",
+    "provider_api_model_id": "amazon-bedrock:mistral/magistral-small-1.2",
+    "provider_model_slug": "mistral.magistral-small-2509",
+    "internal_model_id": "mistral/magistral-small-1.2",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": "2026-04-30T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "mistral/ministral-3.0-14b",
+    "provider_api_model_id": "amazon-bedrock:mistral/ministral-3.0-14b",
+    "provider_model_slug": "mistral.ministral-3-14b-instruct",
+    "internal_model_id": "mistral/ministral-3.0-14b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "mistral/ministral-3.0-8b",
+    "provider_api_model_id": "amazon-bedrock:mistral/ministral-3.0-8b",
+    "provider_model_slug": "mistral.ministral-3-8b-instruct",
+    "internal_model_id": "mistral/ministral-3.0-8b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "mistral/ministral-3.0-3b",
+    "provider_api_model_id": "amazon-bedrock:mistral/ministral-3.0-3b",
+    "provider_model_slug": "mistral.ministral-3-3b-instruct",
+    "internal_model_id": "mistral/ministral-3.0-3b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "mistral/mistral-large-3.0",
+    "provider_api_model_id": "amazon-bedrock:mistral/mistral-large-3.0",
+    "provider_model_slug": "mistral.mistral-large-3-675b-instruct",
+    "internal_model_id": "mistral/mistral-large-3.0",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "mistral/voxtral-mini",
+    "provider_api_model_id": "amazon-bedrock:mistral/voxtral-mini",
+    "provider_model_slug": "mistral.voxtral-mini-3b-2507",
+    "internal_model_id": "mistral/voxtral-mini",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,audio",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": "2026-05-31T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "mistral/voxtral-small",
+    "provider_api_model_id": "amazon-bedrock:mistral/voxtral-small",
+    "provider_model_slug": "mistral.voxtral-small-24b-2507",
+    "internal_model_id": "mistral/voxtral-small",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,audio",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "moonshotai/kimi-k2-thinking",
+    "provider_api_model_id": "amazon-bedrock:moonshotai/kimi-k2-thinking",
+    "provider_model_slug": "moonshotai.kimi-k2-thinking",
+    "internal_model_id": "moonshotai/kimi-k2-thinking",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 65536,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": "2026-05-25T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "nvidia/nemotron-nano-9b-v2",
+    "provider_api_model_id": "amazon-bedrock:nvidia/nemotron-nano-9b-v2",
+    "provider_model_slug": "nvidia.nemotron-nano-9b-v2",
+    "internal_model_id": "nvidia/nemotron-nano-9b-v2",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "nvidia/nvidia-nemotron-nano-12b-v2-vl",
+    "provider_api_model_id": "amazon-bedrock:nvidia/nvidia-nemotron-nano-12b-v2-vl",
+    "provider_model_slug": "nvidia.nemotron-nano-12b-v2",
+    "internal_model_id": "nvidia/nvidia-nemotron-nano-12b-v2-vl",
+    "is_active_gateway": false,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 131072,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/gpt-5.5",
+    "provider_api_model_id": "amazon-bedrock:openai/gpt-5.5",
+    "provider_model_slug": "openai.gpt-5.5",
+    "internal_model_id": "openai/gpt-5.5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1050000,
+    "max_output_tokens": 128000,
+    "effective_from": "2026-04-24T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/gpt-5.4",
+    "provider_api_model_id": "amazon-bedrock:openai/gpt-5.4",
+    "provider_model_slug": "openai.gpt-5.4",
+    "internal_model_id": "openai/gpt-5.4",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1050000,
+    "max_output_tokens": 128000,
+    "effective_from": "2026-03-05T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-coder-480b-a35b",
+    "provider_api_model_id": "amazon-bedrock:qwen/qwen3-coder-480b-a35b",
+    "provider_model_slug": "qwen.qwen3-coder-480b-a35b-instruct",
+    "internal_model_id": "qwen/qwen3-coder-480b-a35b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": 64000,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/gpt-5.6-sol",
+    "provider_api_model_id": "amazon-bedrock:openai/gpt-5.6-sol",
+    "provider_model_slug": "openai.gpt-5.6-sol",
+    "internal_model_id": "openai/gpt-5.6-sol",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1050000,
+    "max_output_tokens": 128000,
+    "effective_from": "2026-07-13T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/gpt-5.6-terra",
+    "provider_api_model_id": "amazon-bedrock:openai/gpt-5.6-terra",
+    "provider_model_slug": "openai.gpt-5.6-terra",
+    "internal_model_id": "openai/gpt-5.6-terra",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1050000,
+    "max_output_tokens": 128000,
+    "effective_from": "2026-07-13T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/gpt-5.6-luna",
+    "provider_api_model_id": "amazon-bedrock:openai/gpt-5.6-luna",
+    "provider_model_slug": "openai.gpt-5.6-luna",
+    "internal_model_id": "openai/gpt-5.6-luna",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1050000,
+    "max_output_tokens": 128000,
+    "effective_from": "2026-07-13T00:00:00",
     "effective_to": null,
     "capabilities": [
       {

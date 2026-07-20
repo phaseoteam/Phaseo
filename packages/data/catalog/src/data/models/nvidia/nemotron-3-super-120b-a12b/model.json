@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/nemotron-3-super-120b-a12b/modelcard",
-      "rank": 44
+      "rank": 48
     },
     {
       "benchmark_id": "gpqa",
@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/nemotron-3-super-120b-a12b/modelcard",
-      "rank": 72
+      "rank": 80
     },
     {
       "benchmark_id": "ifbench",

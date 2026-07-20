@@ -3,15 +3,29 @@
 
 import type { AuthSuccess } from "@pipeline/before/auth";
 import type { GatewayBindings } from "@/runtime/env.types";
-import { getBindings } from "@/runtime/env";
+import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 
 const DEFAULT_BATCH_API_GATE = "gateway_batch_api";
+const DEFAULT_GATEWAY_IO_LOGGING_GATE = "gateway_io_logging";
+const WORKSPACE_OWNER_CACHE_TTL_MS = 5 * 60 * 1000;
+
+type StatsigGateSubject = {
+	workspaceId: string;
+	apiKeyId?: string | null;
+	apiKeyRef?: string | null;
+	apiKeyKid?: string | null;
+	userId?: string | null;
+	internal?: boolean;
+	surface: string;
+};
 
 type StatsigGateResponse = {
 	value?: unknown;
 	name?: unknown;
 	results?: Record<string, { value?: unknown }>;
 };
+
+const workspaceOwnerCache = new Map<string, { userId: string | null; expiresAt: number }>();
 
 function normalizeText(value: unknown): string | null {
 	if (typeof value !== "string") return null;
@@ -45,30 +59,60 @@ export function getBatchApiFeatureGateName(bindings: Partial<GatewayBindings> = 
 	return normalizeText(bindings.STATSIG_BATCH_API_GATE) ?? DEFAULT_BATCH_API_GATE;
 }
 
-export async function isBatchApiAccessEnabled(
-	auth: AuthSuccess,
-	bindings: Partial<GatewayBindings> = getBindings(),
-): Promise<boolean> {
-	const gateName = getBatchApiFeatureGateName(bindings);
-	const statsigKey = resolveStatsigServerKey(bindings);
-	if (!statsigKey) {
-		return isLocalTestBypass(bindings);
+export function getGatewayIoLoggingFeatureGateName(bindings: Partial<GatewayBindings> = getBindings()): string {
+	return normalizeText(bindings.STATSIG_GATEWAY_IO_LOGGING_GATE) ?? DEFAULT_GATEWAY_IO_LOGGING_GATE;
+}
+
+async function resolveWorkspaceOwnerUserId(workspaceId: string): Promise<string | null> {
+	const now = Date.now();
+	const cached = workspaceOwnerCache.get(workspaceId);
+	if (cached && cached.expiresAt > now) return cached.userId;
+
+	try {
+		const { data, error } = await getSupabaseAdmin()
+			.from("workspaces")
+			.select("owner_user_id")
+			.eq("id", workspaceId)
+			.maybeSingle();
+		if (error) throw error;
+		const userId = normalizeText((data as { owner_user_id?: unknown } | null)?.owner_user_id);
+		workspaceOwnerCache.set(workspaceId, { userId, expiresAt: now + WORKSPACE_OWNER_CACHE_TTL_MS });
+		return userId;
+	} catch (error) {
+		console.error("gateway_feature_gate_workspace_owner_lookup_failed", {
+			workspaceId,
+			error: error instanceof Error ? error.message : String(error),
+		});
+		workspaceOwnerCache.set(workspaceId, { userId: null, expiresAt: now + 60_000 });
+		return null;
 	}
+}
+
+async function isStatsigGateEnabled(
+	gateName: string,
+	subject: StatsigGateSubject,
+	bindings: Partial<GatewayBindings>,
+): Promise<boolean> {
+	const statsigKey = resolveStatsigServerKey(bindings);
+	if (!statsigKey) return isLocalTestBypass(bindings);
+
+	const userId = normalizeText(subject.userId) ?? await resolveWorkspaceOwnerUserId(subject.workspaceId);
+	if (!userId) return false;
 
 	const user = {
-		userID: auth.userId ?? auth.apiKeyId ?? auth.workspaceId,
+		userID: userId,
 		customIDs: {
-			workspaceID: auth.workspaceId,
-			apiKeyID: auth.apiKeyId,
-			apiKeyKid: auth.apiKeyKid,
+			workspaceID: subject.workspaceId,
+			apiKeyID: subject.apiKeyId ?? undefined,
+			apiKeyKid: subject.apiKeyKid ?? undefined,
 		},
 		custom: {
-			workspace_id: auth.workspaceId,
-			api_key_id: auth.apiKeyId,
-			api_key_ref: auth.apiKeyRef,
-			api_key_kid: auth.apiKeyKid,
-			is_internal: auth.internal === true,
-			surface: "gateway_batch_api",
+			workspace_id: subject.workspaceId,
+			api_key_id: subject.apiKeyId ?? null,
+			api_key_ref: subject.apiKeyRef ?? null,
+			api_key_kid: subject.apiKeyKid ?? null,
+			is_internal: subject.internal === true,
+			surface: subject.surface,
 		},
 		statsigEnvironment: {
 			tier: resolveStatsigEnvironmentTier(bindings),
@@ -86,10 +130,7 @@ export async function isBatchApiAccessEnabled(
 				"Content-Type": "application/json",
 				"statsig-api-key": statsigKey,
 			},
-			body: JSON.stringify({
-				gateName,
-				user,
-			}),
+			body: JSON.stringify({ gateName, user }),
 		});
 		if (!response.ok) return false;
 		const payload = (await response.json().catch(() => null)) as StatsigGateResponse | null;
@@ -98,11 +139,38 @@ export async function isBatchApiAccessEnabled(
 		const nested = payload.results?.[gateName]?.value;
 		return typeof nested === "boolean" ? nested : false;
 	} catch (error) {
-		console.error("batch_api_statsig_gate_check_failed", {
+		console.error("gateway_statsig_gate_check_failed", {
 			error,
 			gateName,
-			workspaceId: auth.workspaceId,
+			workspaceId: subject.workspaceId,
+			surface: subject.surface,
 		});
 		return false;
 	}
+}
+
+export async function isBatchApiAccessEnabled(
+	auth: AuthSuccess,
+	bindings: Partial<GatewayBindings> = getBindings(),
+): Promise<boolean> {
+	const gateName = getBatchApiFeatureGateName(bindings);
+	return isStatsigGateEnabled(gateName, {
+		workspaceId: auth.workspaceId,
+		apiKeyId: auth.apiKeyId,
+		apiKeyRef: auth.apiKeyRef,
+		apiKeyKid: auth.apiKeyKid,
+		userId: auth.userId,
+		internal: auth.internal,
+		surface: "gateway_batch_api",
+	}, bindings);
+}
+
+export async function isGatewayIoLoggingFeatureEnabled(
+	subject: Omit<StatsigGateSubject, "surface">,
+	bindings: Partial<GatewayBindings> = getBindings(),
+): Promise<boolean> {
+	return isStatsigGateEnabled(getGatewayIoLoggingFeatureGateName(bindings), {
+		...subject,
+		surface: "gateway_io_logging",
+	}, bindings);
 }

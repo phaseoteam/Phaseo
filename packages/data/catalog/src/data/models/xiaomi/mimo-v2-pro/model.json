@@ -39,7 +39,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mimo.xiaomi.com/mimo-v2-pro",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "gdpval-aa",
@@ -47,7 +47,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mimo.xiaomi.com/mimo-v2-pro",
-      "rank": 16
+      "rank": 19
     },
     {
       "benchmark_id": "pinchbench",

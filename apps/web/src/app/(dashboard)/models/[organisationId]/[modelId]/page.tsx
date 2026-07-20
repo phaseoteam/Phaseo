@@ -130,7 +130,7 @@ export async function generateMetadata(props: {
 		].filter(Boolean) as string[],
 		imagePath,
 		robots: {
-			index: false,
+			index: true,
 			follow: true,
 		},
 	});

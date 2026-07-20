@@ -49,6 +49,7 @@ export default function RouteRequestDetailDialog({
 			providerNames={providerNames}
 			providerMetadata={providerMetadata}
 			providerName={providerName}
+			ioLog={detail.ioLog}
 			headerActions={
 				<div className="flex items-center justify-between gap-3">
 					<div className="flex items-center gap-2">

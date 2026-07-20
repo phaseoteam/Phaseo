@@ -182,12 +182,15 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 			"phaseo management-keys --help",
 			"phaseo models --help",
 			"phaseo providers --help",
+			"phaseo organisations --help",
+			"phaseo endpoints --help",
 			"phaseo pricing --help",
 			"phaseo credits --help",
 			"phaseo activity --help",
 			"phaseo logs --help",
 			"phaseo analytics --help",
 			"phaseo generation --help",
+			"phaseo webhooks --help",
 			"phaseo api --help",
 			"",
 			"Login scopes:",
@@ -294,15 +297,20 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	"guardrails set-keys": { usage: ["phaseo guardrails set-keys <id> --key-ids <id,id> [--json]"] },
 	"oauth-clients": {
 		usage: [
-			"User-created OAuth apps are coming soon during the first-party CLI OAuth beta.",
+			"phaseo oauth-clients list [--json]",
+			"phaseo oauth-clients create --name <name> --redirect-uri <uri>|--redirect-uris <uri,uri> [--client-type public|confidential] [--scopes scope_a,scope_b] [--show-secret] [--json]",
+			"phaseo oauth-clients get <client-id> [--json]",
+			"phaseo oauth-clients update <client-id> [--name <name>] [--redirect-uri <uri>|--redirect-uris <uri,uri>] [--scopes scope_a,scope_b] [--json]",
+			"phaseo oauth-clients delete <client-id> [--json]",
+			"phaseo oauth-clients regenerate-secret <client-id> [--show-secret] [--json]",
 		],
 	},
-	"oauth-clients list": { usage: ["User-created OAuth apps are coming soon during the first-party CLI OAuth beta."] },
-	"oauth-clients create": { usage: ["User-created OAuth apps are coming soon during the first-party CLI OAuth beta."] },
-	"oauth-clients get": { usage: ["User-created OAuth apps are coming soon during the first-party CLI OAuth beta."] },
-	"oauth-clients update": { usage: ["User-created OAuth apps are coming soon during the first-party CLI OAuth beta."] },
-	"oauth-clients delete": { usage: ["User-created OAuth apps are coming soon during the first-party CLI OAuth beta."] },
-	"oauth-clients regenerate-secret": { usage: ["User-created OAuth apps are coming soon during the first-party CLI OAuth beta."] },
+	"oauth-clients list": { usage: ["phaseo oauth-clients list [--json]"] },
+	"oauth-clients create": { usage: ["phaseo oauth-clients create --name <name> --redirect-uri <uri>|--redirect-uris <uri,uri> [--client-type public|confidential] [--scopes scope_a,scope_b] [--show-secret] [--json]"] },
+	"oauth-clients get": { usage: ["phaseo oauth-clients get <client-id> [--json]"] },
+	"oauth-clients update": { usage: ["phaseo oauth-clients update <client-id> [--name <name>] [--redirect-uri <uri>|--redirect-uris <uri,uri>] [--scopes scope_a,scope_b] [--json]"] },
+	"oauth-clients delete": { usage: ["phaseo oauth-clients delete <client-id> [--json]"] },
+	"oauth-clients regenerate-secret": { usage: ["phaseo oauth-clients regenerate-secret <client-id> [--show-secret] [--json]"] },
 	"management-keys": {
 		usage: [
 			"phaseo management-keys list [--json]",
@@ -317,10 +325,18 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	"management-keys get": { usage: ["phaseo management-keys get <id> [--json]"] },
 	"management-keys update": { usage: ["phaseo management-keys update <id> [--name <name>] [--template raycast-readonly|read-only|read-write|full-control] [--paused true|false] [--json]"] },
 	"management-keys delete": { usage: ["phaseo management-keys delete <id> [--json]"] },
-	models: { usage: ["phaseo models list [--limit <n>] [--offset <n>] [--all] [--json]"] },
+	models: { usage: [
+		"phaseo models list [--limit <n>] [--offset <n>] [--all] [--json]",
+		"phaseo models get <model-id> [--json]",
+	] },
 	"models list": { usage: ["phaseo models list [--limit <n>] [--offset <n>] [--all] [--json]"] },
+	"models get": { usage: ["phaseo models get <model-id> [--json]"] },
 	providers: { usage: ["phaseo providers list [--json]"] },
 	"providers list": { usage: ["phaseo providers list [--json]"] },
+	organisations: { usage: ["phaseo organisations list [--limit <n>] [--offset <n>] [--json]"] },
+	"organisations list": { usage: ["phaseo organisations list [--limit <n>] [--offset <n>] [--json]"] },
+	endpoints: { usage: ["phaseo endpoints list [--json]"] },
+	"endpoints list": { usage: ["phaseo endpoints list [--json]"] },
 	pricing: {
 		usage: [
 			"phaseo pricing models [--json]",
@@ -345,6 +361,22 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	"analytics get": { usage: ["phaseo analytics get [--date YYYY-MM-DD] [--json]"] },
 	generation: { usage: ["phaseo generation get --id <request-id> [--json]"] },
 	"generation get": { usage: ["phaseo generation get --id <request-id> [--json]"] },
+	webhooks: {
+		usage: [
+			"phaseo webhooks list [--limit <n>] [--offset <n>] [--include-deleted] [--json]",
+			"phaseo webhooks create --url <https-url> [--name <name>] [--events <event,event>] [--show-secret] [--json]",
+			"phaseo webhooks get <id> [--json]",
+			"phaseo webhooks update <id> [--url <https-url>] [--name <name>] [--events <event,event>] [--status active|disabled] [--json]",
+			"phaseo webhooks rotate-secret <id> [--show-secret] [--json]",
+			"phaseo webhooks delete <id> [--json]",
+		],
+	},
+	"webhooks list": { usage: ["phaseo webhooks list [--limit <n>] [--offset <n>] [--include-deleted] [--json]"] },
+	"webhooks create": { usage: ["phaseo webhooks create --url <https-url> [--name <name>] [--events <event,event>] [--show-secret] [--json]"] },
+	"webhooks get": { usage: ["phaseo webhooks get <id> [--json]"] },
+	"webhooks update": { usage: ["phaseo webhooks update <id> [--url <https-url>] [--name <name>] [--events <event,event>] [--status active|disabled] [--json]"] },
+	"webhooks rotate-secret": { usage: ["phaseo webhooks rotate-secret <id> [--show-secret] [--json]"] },
+	"webhooks delete": { usage: ["phaseo webhooks delete <id> [--json]"] },
 	api: {
 		usage: [
 			"phaseo api get <v1-path> [--json]",
@@ -496,13 +528,14 @@ export function prefersDeviceCodeByEnvironment(
 }
 
 export function windowsBrowserOpenArgs(url: string): string[] {
-	const escapedUrl = url.replace(/'/g, "''");
-	return [
-		"-NoProfile",
-		"-NonInteractive",
-		"-Command",
-		`Start-Process -FilePath '${escapedUrl}'`,
-	];
+	return ["url.dll,FileProtocolHandler", url];
+}
+
+export function renderOneTimeClientSecret(secret: unknown, showSecret: boolean): string {
+	if (typeof secret !== "string" || !secret) return "";
+	return showSecret
+		? `Client secret: ${secret}\n`
+		: "Client secret hidden. Re-run with --json or --show-secret to capture it once.\n";
 }
 
 function loginOptionIndex(method: LoginMethod): number {
@@ -603,7 +636,8 @@ function openUrl(url: string): boolean {
 	}
 	try {
 		if (platform === "win32") {
-			spawn("powershell.exe", windowsBrowserOpenArgs(url), {
+			// Pass the authorization URL as data, never through a command interpreter.
+			spawn("rundll32.exe", windowsBrowserOpenArgs(url), {
 				detached: true,
 				stdio: "ignore",
 			}).unref();
@@ -1321,7 +1355,7 @@ async function createOauthClient(flags: Record<string, string | boolean>) {
 	const body = await request("/oauth-clients", { method: "POST", body: payload });
 	if (flagBool(flags, "json")) return printJson(body);
 	process.stdout.write(`Created OAuth client: ${body.name ?? payload.name}\nClient ID: ${body.client_id}\n`);
-	if (body.client_secret) process.stdout.write(`Client secret: ${body.client_secret}\n`);
+	process.stdout.write(renderOneTimeClientSecret(body.client_secret, flagBool(flags, "show-secret")));
 }
 
 async function getOauthClient(id: string | undefined, flags: Record<string, string | boolean>) {
@@ -1352,7 +1386,7 @@ async function regenerateOauthClientSecret(id: string | undefined, flags: Record
 	const body = await request(`/oauth-clients/${encodeURIComponent(id)}/regenerate-secret`, { method: "POST" });
 	if (flagBool(flags, "json")) return printJson(body);
 	process.stdout.write(`Regenerated secret for ${body.client_id}\n`);
-	if (body.client_secret) process.stdout.write(`Client secret: ${body.client_secret}\n`);
+	process.stdout.write(renderOneTimeClientSecret(body.client_secret, flagBool(flags, "show-secret")));
 }
 
 async function listManagementKeys(flags: Record<string, string | boolean>) {
@@ -1408,21 +1442,49 @@ async function deleteManagementKey(id: string | undefined, flags: Record<string,
 	process.stdout.write("Deleted management key.\n");
 }
 
-async function listModels(flags: Record<string, string | boolean>) {
+export function buildModelsListPath(flags: Record<string, string | boolean>): string {
 	const mine = flagBool(flags, "mine");
-	const body = await request(appendQuery(mine ? "/gateway/models/me" : "/gateway/models", {
+	return appendQuery(mine ? "/models/me" : "/models", {
 		limit: flagString(flags, "limit"),
 		offset: flagString(flags, "offset"),
 		availability: flagBool(flags, "all") ? "all" : undefined,
-	}));
+	});
+}
+
+async function listModels(flags: Record<string, string | boolean>) {
+	const body = await request(buildModelsListPath(flags));
 	if (flagBool(flags, "json")) return printJson(body);
-	printList(body.data ?? [], (model) => `${model.id ?? model.model_id} ${model.name ?? ""}`.trim());
+	printList(body.models ?? body.data ?? [], (model) => `${model.id ?? model.model_id} ${model.name ?? ""}`.trim());
 }
 
 async function listProviders(flags: Record<string, string | boolean>) {
 	const body = await request(appendQuery("/providers", { limit: flagString(flags, "limit"), offset: flagString(flags, "offset") }));
 	if (flagBool(flags, "json")) return printJson(body);
 	printList(body.providers ?? [], (provider) => `${provider.api_provider_id} ${provider.api_provider_name ?? ""}`.trim());
+}
+
+async function getModel(id: string | undefined, flags: Record<string, string | boolean>) {
+	if (!id) throw new Error("Model id is required");
+	const body = await request(appendQuery("/models", { id, limit: 1 }));
+	const model = (body.models ?? body.data ?? [])[0];
+	if (!model) throw new Error(`Model not found: ${id}`);
+	if (flagBool(flags, "json")) return printJson(model);
+	process.stdout.write(`${model.id ?? model.model_id}\n${model.name ?? ""}\n`);
+}
+
+async function listOrganisations(flags: Record<string, string | boolean>) {
+	const body = await request(appendQuery("/organisations", {
+		limit: flagString(flags, "limit"),
+		offset: flagString(flags, "offset"),
+	}));
+	if (flagBool(flags, "json")) return printJson(body);
+	printList(body.organisations ?? [], (organisation) => `${organisation.organisation_id} ${organisation.name ?? ""}`.trim());
+}
+
+async function listEndpoints(flags: Record<string, string | boolean>) {
+	const body = await request("/endpoints");
+	if (flagBool(flags, "json")) return printJson(body);
+	printList(body.endpoints ?? [], (endpoint) => String(endpoint));
 }
 
 async function pricingModels(flags: Record<string, string | boolean>) {
@@ -1518,6 +1580,75 @@ async function generationGet(flags: Record<string, string | boolean>) {
 	process.stdout.write(`${body.request_id ?? id}\nModel: ${body.model_id ?? body.model ?? "unknown"}\nProvider: ${body.provider ?? "unknown"}\nCost: ${formatMoneyFromNanos(body.cost_nanos)}\nReplay supported: ${Boolean(body.replay_supported)}\n`);
 }
 
+async function listWebhooks(flags: Record<string, string | boolean>) {
+	const body = await request(appendQuery("/webhook-endpoints", {
+		limit: flagString(flags, "limit"),
+		offset: flagString(flags, "offset"),
+		include_deleted: flagBool(flags, "include-deleted") || undefined,
+	}));
+	if (flagBool(flags, "json")) return printJson(body);
+	printList(body.data ?? [], (endpoint) => `${endpoint.status ?? "unknown"} ${endpoint.name ?? endpoint.id} ${endpoint.url ?? ""} ${endpoint.id}`.trim());
+}
+
+function renderWebhookSecret(secret: unknown, showSecret: boolean): string {
+	if (typeof secret !== "string" || !secret) return "";
+	return showSecret
+		? `Signing secret: ${secret}\n`
+		: "Signing secret hidden. Re-run with --json or --show-secret to capture it once.\n";
+}
+
+async function createWebhook(flags: Record<string, string | boolean>) {
+	const url = flagString(flags, "url");
+	if (!url) throw new Error("--url is required");
+	const body = await request("/webhook-endpoints", {
+		method: "POST",
+		body: compact({
+			name: flagString(flags, "name"),
+			url,
+			events: flagString(flags, "events") ? parseCsvFlag(flags, "events") : undefined,
+		}),
+	});
+	if (flagBool(flags, "json")) return printJson(body);
+	process.stdout.write(`Created webhook endpoint: ${body.name ?? body.id}\nID: ${body.id}\n`);
+	process.stdout.write(renderWebhookSecret(body.signing_secret, flagBool(flags, "show-secret")));
+}
+
+async function getWebhook(id: string | undefined, flags: Record<string, string | boolean>) {
+	if (!id) throw new Error("Webhook endpoint id is required");
+	const body = await request(`/webhook-endpoints/${encodeURIComponent(id)}`);
+	if (flagBool(flags, "json")) return printJson(body);
+	process.stdout.write(`${body.name ?? body.id}\nStatus: ${body.status ?? "unknown"}\nURL: ${body.url ?? "unknown"}\nID: ${body.id}\n`);
+}
+
+async function updateWebhook(id: string | undefined, flags: Record<string, string | boolean>) {
+	if (!id) throw new Error("Webhook endpoint id is required");
+	const payload = compact({
+		name: flagString(flags, "name"),
+		url: flagString(flags, "url"),
+		events: flagString(flags, "events") ? parseCsvFlag(flags, "events") : undefined,
+		status: flagString(flags, "status"),
+	});
+	if (Object.keys(payload).length === 0) throw new Error("Provide --name, --url, --events, or --status");
+	const body = await request(`/webhook-endpoints/${encodeURIComponent(id)}`, { method: "PATCH", body: payload });
+	if (flagBool(flags, "json")) return printJson(body);
+	process.stdout.write(`Updated webhook endpoint: ${body.name ?? body.id}\n`);
+}
+
+async function rotateWebhookSecret(id: string | undefined, flags: Record<string, string | boolean>) {
+	if (!id) throw new Error("Webhook endpoint id is required");
+	const body = await request(`/webhook-endpoints/${encodeURIComponent(id)}/rotate-secret`, { method: "POST", body: {} });
+	if (flagBool(flags, "json")) return printJson(body);
+	process.stdout.write(`Rotated webhook signing secret: ${body.name ?? body.id}\n`);
+	process.stdout.write(renderWebhookSecret(body.signing_secret, flagBool(flags, "show-secret")));
+}
+
+async function deleteWebhook(id: string | undefined, flags: Record<string, string | boolean>) {
+	if (!id) throw new Error("Webhook endpoint id is required");
+	const body = await request(`/webhook-endpoints/${encodeURIComponent(id)}`, { method: "DELETE" });
+	if (flagBool(flags, "json")) return printJson(body);
+	process.stdout.write("Deleted webhook endpoint.\n");
+}
+
 async function rawApi(method: HttpMethod, path: string | undefined, flags: Record<string, string | boolean>) {
 	if (!path) throw new Error("API path is required");
 	const normalizedPath = path.startsWith("/v1/") ? path.slice(3) : path;
@@ -1601,7 +1732,10 @@ async function main() {
 		else if (first === "management-keys" && second === "update") action = updateManagementKey(third, parsed.flags);
 		else if (first === "management-keys" && second === "delete") action = deleteManagementKey(third, parsed.flags);
 		else if (first === "models" && second === "list") action = listModels(parsed.flags);
+		else if (first === "models" && second === "get") action = getModel(third, parsed.flags);
 		else if (first === "providers" && second === "list") action = listProviders(parsed.flags);
+		else if (first === "organisations" && second === "list") action = listOrganisations(parsed.flags);
+		else if (first === "endpoints" && second === "list") action = listEndpoints(parsed.flags);
 		else if (first === "pricing" && second === "models") action = pricingModels(parsed.flags);
 		else if (first === "pricing" && second === "calculate") action = pricingCalculate(parsed.flags);
 		else if (first === "credits" && second === "get") action = creditsGet(parsed.flags);
@@ -1610,6 +1744,12 @@ async function main() {
 		else if (first === "logs" && second === "get") action = logsGet(third, parsed.flags);
 		else if (first === "analytics" && second === "get") action = analyticsGet(parsed.flags);
 		else if (first === "generation" && second === "get") action = generationGet(parsed.flags);
+		else if (first === "webhooks" && second === "list") action = listWebhooks(parsed.flags);
+		else if (first === "webhooks" && second === "create") action = createWebhook(parsed.flags);
+		else if (first === "webhooks" && second === "get") action = getWebhook(third, parsed.flags);
+		else if (first === "webhooks" && second === "update") action = updateWebhook(third, parsed.flags);
+		else if (first === "webhooks" && second === "rotate-secret") action = rotateWebhookSecret(third, parsed.flags);
+		else if (first === "webhooks" && second === "delete") action = deleteWebhook(third, parsed.flags);
 		else if (first === "api" && second === "get") action = rawApi("GET", third, parsed.flags);
 		else if (first === "api" && second === "post") action = rawApi("POST", third, parsed.flags);
 		else if (first === "api" && second === "put") action = rawApi("PUT", third, parsed.flags);

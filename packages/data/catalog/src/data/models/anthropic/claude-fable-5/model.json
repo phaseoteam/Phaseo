@@ -133,7 +133,7 @@
       "is_self_reported": true,
       "other_info": "Higher of Mythos 5 / Fable 5 in Anthropic's launch table",
       "source_link": "https://www-cdn.anthropic.com/images/4zrzovbb/website/1e65982497d7d4891219ed0e83141625a291b860-2600x2870.png",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "os-world",
@@ -157,7 +157,7 @@
       "is_self_reported": true,
       "other_info": "No tools; starred row in Anthropic's launch table",
       "source_link": "https://www-cdn.anthropic.com/images/4zrzovbb/website/1e65982497d7d4891219ed0e83141625a291b860-2600x2870.png",
-      "rank": 3
+      "rank": 5
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -189,7 +189,7 @@
       "is_self_reported": true,
       "other_info": "Starred row in Anthropic's launch table",
       "source_link": "https://www-cdn.anthropic.com/images/4zrzovbb/website/1e65982497d7d4891219ed0e83141625a291b860-2600x2870.png",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "exploitbench-cap",

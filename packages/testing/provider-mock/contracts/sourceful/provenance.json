@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://docs.sourceful.ai/",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "9d867a4746de1d95286ffbe98ddfd14b999d4940029432202d5e555e27bf188f",
+  "gatewayPathPrefix": "/v1"
+}

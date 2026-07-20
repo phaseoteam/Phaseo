@@ -10,6 +10,7 @@ import {
 } from "@/app/(dashboard)/settings/account/actions";
 
 import { MFAEnrollmentFlow } from "./MFAEnrollmentFlow";
+import { PasskeyManager } from "./PasskeyManager";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,8 +24,6 @@ import {
 	AlertDialogTitle,
 	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
 	Empty,
 	EmptyContent,
@@ -36,19 +35,18 @@ import {
 import { Loader2, Shield, ShieldCheck } from "lucide-react";
 
 export default function AccountMFAClient({
+	hasPassword,
 	mfaEnabled,
 	mfaFactorId,
-	hasPassword,
 }: {
+	hasPassword: boolean;
 	mfaEnabled: boolean;
 	mfaFactorId: string | null;
-	hasPassword: boolean;
 }) {
 	const router = useRouter();
 
 	const [mfaDialogOpen, setMfaDialogOpen] = React.useState(false);
 	const [disablingMFA, setDisablingMFA] = React.useState(false);
-	const [mfaDisablePassword, setMfaDisablePassword] = React.useState("");
 
 	async function handleDisableMFA() {
 		if (!mfaFactorId) {
@@ -56,19 +54,13 @@ export default function AccountMFAClient({
 			return;
 		}
 
-		if (hasPassword && !mfaDisablePassword) {
-			toast.error("Password is required");
-			return;
-		}
-
 		setDisablingMFA(true);
 		try {
-			await toast.promise(unenrollMFAAction(mfaFactorId, mfaDisablePassword), {
+			await toast.promise(unenrollMFAAction(mfaFactorId), {
 				loading: "Disabling MFA...",
 				success: "Two-factor authentication disabled",
 				error: (err: any) => err?.message || "Could not disable MFA",
 			});
-			setMfaDisablePassword("");
 			router.refresh();
 		} catch (e) {
 			void e;
@@ -148,22 +140,6 @@ export default function AccountMFAClient({
 									</AlertDialogDescription>
 								</AlertDialogHeader>
 
-								{hasPassword ? (
-									<div className="grid gap-3 py-4">
-										<div className="grid gap-2">
-											<Label htmlFor="mfaDisablePassword">Confirm with password</Label>
-											<Input
-												id="mfaDisablePassword"
-												type="password"
-												value={mfaDisablePassword}
-												onChange={(e) => setMfaDisablePassword(e.target.value)}
-												placeholder="Enter your password"
-												autoFocus
-											/>
-										</div>
-									</div>
-								) : null}
-
 								<AlertDialogFooter>
 									<AlertDialogCancel disabled={disablingMFA}>
 										Cancel
@@ -171,7 +147,7 @@ export default function AccountMFAClient({
 									<Button
 										variant="destructive"
 										onClick={handleDisableMFA}
-										disabled={(hasPassword && !mfaDisablePassword) || disablingMFA}
+										disabled={disablingMFA}
 									>
 										{disablingMFA ? (
 											<>
@@ -194,6 +170,7 @@ export default function AccountMFAClient({
 				onOpenChange={handleMFADialogClose}
 				onSuccess={handleMFASuccess}
 			/>
+			<PasskeyManager hasPassword={hasPassword} />
 		</div>
 	);
 }

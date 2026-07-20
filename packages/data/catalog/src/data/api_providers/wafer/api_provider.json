@@ -1,0 +1,14 @@
+{
+  "api_provider_id": "wafer",
+  "api_provider_name": "Wafer",
+  "description": "OpenAI-compatible serverless inference API.",
+  "link": "https://app.wafer.ai/models",
+  "country_code": "US",
+  "status": "Active",
+  "colour": "#0F766E",
+  "privacy_policy_url": "https://www.wafer.ai/privacy-policy",
+  "terms_of_service_url": "https://www.wafer.ai/terms",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "Wafer says prompts and completions are not used to train the served models; its policy separately describes limited use for internal draft-model performance work outside Zero Data Retention traffic.",
+  "prompt_training_source_url": "https://www.wafer.ai/privacy-policy"
+}

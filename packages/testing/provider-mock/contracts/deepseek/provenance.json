@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://api-docs.deepseek.com/api/create-chat-completion",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "b0089a9213be65d023b861d202c1e1551942b7866ac9fbe83ed28404809c76fe",
+  "gatewayPathPrefix": "/v1"
+}

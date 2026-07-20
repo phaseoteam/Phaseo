@@ -633,8 +633,8 @@ export async function loadProviders(
     tracker: ChangeTracker,
     opts?: { modelId?: string | null }
 ) {
-    tracker.touchPrefix(DIR_PROVIDERS);
     const modelFilter = opts?.modelId ?? null;
+    if (!modelFilter) tracker.touchPrefix(DIR_PROVIDERS);
     const dirs = await listDirs(DIR_PROVIDERS);
     const supa = client();
     const organisationColours = await loadOrganisationColours();
@@ -690,10 +690,13 @@ export async function loadProviders(
         notes: string | null;
     }> = [];
     let touched = false;
+    let providerModelsChanged = false;
     for (const d of dirs) {
         const fp = join(d, "api_provider.json");
         const { data: j, hash } = await readJsonWithHash<any>(fp);
-        const change = tracker.track(fp, hash, { api_provider_id: j.api_provider_id });
+        const change = modelFilter
+            ? { status: "unchanged" as const }
+            : tracker.track(fp, hash, { api_provider_id: j.api_provider_id });
 
         const sourceStatus = getProviderStatusFromSource(j as Record<string, unknown>);
         const parsedStatus = parseProviderStatus(sourceStatus.value);
@@ -819,14 +822,22 @@ export async function loadProviders(
                     ]).filter(Boolean)
                 )
             );
-            const modelsChange = tracker.track(modelsPath, modelsHash, {
-                api_provider_id: j.api_provider_id,
-                kind: "provider_models",
-                linked_model_ids: linkedModelIds,
-            });
-            if (modelsChange.status !== "unchanged") touched = true;
+            const modelsChange = modelFilter
+                ? { status: "unchanged" as const }
+                : tracker.track(modelsPath, modelsHash, {
+                    api_provider_id: j.api_provider_id,
+                    kind: "provider_models",
+                    linked_model_ids: linkedModelIds,
+                });
+            if (modelsChange.status !== "unchanged") {
+                touched = true;
+                providerModelsChanged = true;
+            }
             const shouldTouchProviderModels =
-                change.status !== "unchanged" || modelsChange.status !== "unchanged";
+                Boolean(modelFilter) ||
+                tracker.isFullImport() ||
+                change.status !== "unchanged" ||
+                modelsChange.status !== "unchanged";
 
             for (const model of models ?? []) {
                 const apiModelId =
@@ -885,7 +896,7 @@ export async function loadProviders(
                 }
                 const provider_api_model_id = model.provider_api_model_id;
                 providerModelIds.add(provider_api_model_id);
-                providerModelsToUpsert.push({
+                const providerModelRow = {
                     provider_api_model_id,
                     provider_id: j.api_provider_id,
                     api_model_id: apiModelId,
@@ -903,12 +914,16 @@ export async function loadProviders(
                     max_output_tokens: toNullableInt(model.max_output_tokens),
                     effective_from: toNullableIsoTimestamp(model.effective_from),
                     effective_to: toNullableIsoTimestamp(model.effective_to),
-                });
+                };
+                if (shouldTouchProviderModels) {
+                    providerModelsToUpsert.push(providerModelRow);
+                }
 
                 for (const cap of model.capabilities ?? []) {
                     if (!cap?.capability_id) continue;
                     const capability_id = cap.capability_id;
                     capabilityKeys.add(`${provider_api_model_id}::${capability_id}`);
+                    if (!shouldTouchProviderModels) continue;
                     capabilityRowsToUpsert.push({
                         provider_api_model_id,
                         capability_id,
@@ -1019,7 +1034,7 @@ export async function loadProviders(
         );
     }
 
-    const deletions = tracker.getDeleted(DIR_PROVIDERS);
+    const deletions = modelFilter ? [] : tracker.getDeleted(DIR_PROVIDERS);
     for (const deletion of deletions) {
         const linkedModelIds = Array.isArray(deletion.info.meta?.linked_model_ids)
             ? deletion.info.meta.linked_model_ids
@@ -1033,6 +1048,9 @@ export async function loadProviders(
         }
     }
     touched = touched || deletions.length > 0;
+    const shouldPruneProviderModels =
+        !modelFilter &&
+        (tracker.isFullImport() || providerModelsChanged || deletions.length > 0);
 
     if (touched) {
         await pruneRowsByColumn(supa, "data_api_providers", "api_provider_id", providerIds, "data_api_providers");
@@ -1076,7 +1094,7 @@ export async function loadProviders(
         }
     }
 
-    if (providerModelIds.size && !isDryRun() && !modelFilter) {
+    if (providerModelIds.size && !isDryRun() && shouldPruneProviderModels) {
         await pruneRowsByColumn(
             supa,
             "data_api_provider_models",
@@ -1086,7 +1104,7 @@ export async function loadProviders(
         );
     }
 
-    if (capabilityKeys.size && !isDryRun() && !modelFilter) {
+    if (capabilityKeys.size && !isDryRun() && shouldPruneProviderModels) {
         const keys = Array.from(capabilityKeys);
         for (const group of chunk(keys, 500)) {
             const providerIdsChunk = Array.from(

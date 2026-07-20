@@ -32,8 +32,6 @@ interface BenchmarkDialogProps {
 	benchmarkName: string;
 	models: BenchmarkComparisonModel[];
 	isLowerBetter: boolean;
-	currentRank: number | null;
-	totalModels: number | null;
 	currentScoreDisplay: string | null;
 }
 
@@ -203,8 +201,6 @@ export function BenchmarkDialog({
 	benchmarkName,
 	models,
 	isLowerBetter,
-	currentRank,
-	totalModels,
 	currentScoreDisplay,
 }: BenchmarkDialogProps) {
 	const isMobile = useIsMobile();
@@ -255,12 +251,6 @@ export function BenchmarkDialog({
 						{currentScoreDisplay && (
 							<Badge variant="secondary">
 								{currentScoreDisplay}
-							</Badge>
-						)}
-						{currentRank != null && (
-							<Badge variant="outline">
-								Rank #{currentRank}
-								{totalModels != null ? `/${totalModels}` : ""}
 							</Badge>
 						)}
 						{isLowerBetter && (

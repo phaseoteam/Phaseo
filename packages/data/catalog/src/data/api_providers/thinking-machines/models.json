@@ -1,5 +1,47 @@
 [
   {
+    "api_model_id": "thinking-machines/inkling",
+    "provider_api_model_id": "thinking-machines:thinkingmachines/Inkling:peft:262144",
+    "provider_model_slug": "thinkingmachines/Inkling:peft:262144",
+    "internal_model_id": "thinking-machines/inkling",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,audio",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": null,
+    "effective_from": "2026-07-15T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "thinking-machines/inkling-64k",
+    "provider_api_model_id": "thinking-machines:thinkingmachines/Inkling",
+    "provider_model_slug": "thinkingmachines/Inkling",
+    "internal_model_id": "thinking-machines/inkling-64k",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,audio",
+    "output_modalities": "text",
+    "context_length": 65536,
+    "max_output_tokens": null,
+    "effective_from": "2026-07-15T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "openai/gpt-oss-20b",
     "provider_api_model_id": "thinking-machines:openai/gpt-oss-20b",
     "provider_model_slug": "openai/gpt-oss-20b",

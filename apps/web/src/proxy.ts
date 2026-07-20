@@ -52,21 +52,13 @@ async function canPreviewFutureBlogPost(request: NextRequest): Promise<boolean> 
 		return false;
 	}
 
-	const { data: sessionData } = await supabase.auth.getSession();
-	const accessToken = sessionData.session?.access_token;
-	if (!accessToken) return false;
-	const origin = (process.env.WEB_API_ORIGIN ?? "https://phaseo.app").replace(/\/+$/, "");
-	try {
-		const response = await fetch(`${origin}/api/account/auth/status`, {
-			headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
-			cache: "no-store",
-		});
-		if (!response.ok) return false;
-		const status = await response.json() as { isAdmin?: unknown };
-		return status.isAdmin === true;
-	} catch {
-		return false;
-	}
+	const { data, error } = await supabase
+		.from("users")
+		.select("role")
+		.eq("user_id", user.id)
+		.maybeSingle();
+
+	return !error && data?.role === "admin";
 }
 
 async function blockFutureBlogPostUnlessPreviewAllowed(
@@ -119,6 +111,12 @@ export const config = {
 		},
 		"/blog/:path*",
 		"/settings/:path*",
+		"/apps/:path*",
+		"/gateway/:path*",
+		"/onboarding/:path*",
+		"/internal/:path*",
 		"/chat/:path*",
+		"/api/internal/:path*",
+		"/api/chat/:path*",
 	],
 };

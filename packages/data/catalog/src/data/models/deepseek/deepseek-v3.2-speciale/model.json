@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.com/deepseek_ai/status/1995452646459858977/photo/1",
-      "rank": 31
+      "rank": 34
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.com/deepseek_ai/status/1995452646459858977/photo/1",
-      "rank": 64
+      "rank": 72
     },
     {
       "benchmark_id": "aime-2025",
@@ -134,7 +134,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2/resolve/main/assets/paper.pdf",
-      "rank": 15
+      "rank": 18
     }
   ]
 }

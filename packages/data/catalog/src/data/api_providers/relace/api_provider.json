@@ -1,0 +1,14 @@
+{
+  "api_provider_id": "relace",
+  "api_provider_name": "Relace",
+  "description": "Code-model inference API.",
+  "link": "https://docs.relace.ai/api-reference/introduction",
+  "country_code": "US",
+  "status": "Active",
+  "colour": "#4F46E5",
+  "privacy_policy_url": "https://relace.ai/privacy",
+  "terms_of_service_url": "https://relace.ai/terms",
+  "prompt_training_policy": "unknown",
+  "prompt_training_notes": null,
+  "prompt_training_source_url": null
+}

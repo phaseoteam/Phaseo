@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://tinker-docs.thinkingmachines.ai/",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "0b89edda62b9c11f2ad195a96e326fe1584a2d7d9c094d42f150f02ab2b2c04f",
+  "gatewayPathPrefix": ""
+}

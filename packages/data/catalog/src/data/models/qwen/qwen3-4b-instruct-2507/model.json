@@ -190,7 +190,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen3-vl-4b-thinking (score=0.3462; benches=48)",
       "source_link": null,
-      "rank": 24
+      "rank": 26
     },
     {
       "benchmark_id": "mathvista-mini",
@@ -262,7 +262,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen3-vl-4b-thinking (score=0.3462; benches=48)",
       "source_link": null,
-      "rank": 74
+      "rank": 75
     },
     {
       "benchmark_id": "mmmu-(val)",

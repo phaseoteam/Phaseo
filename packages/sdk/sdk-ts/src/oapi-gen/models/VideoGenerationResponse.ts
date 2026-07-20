@@ -40,12 +40,7 @@ export interface VideoGenerationResponse {
   last_webhook_progress?: number | null;
   last_webhook_progress_at?: string | null;
   lifecycle_status?:
-    | "pending"
-    | "running"
-    | "completed"
-    | "failed"
-    | "cancelled"
-    | "expired";
+    "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
   model?: string;
   native_video_id?: string | null;
   next_webhook_retry_at?: string | null;
@@ -70,12 +65,7 @@ export interface VideoGenerationResponse {
   size?: string;
   started_at?: number | string | null;
   status?:
-    | "queued"
-    | "processing"
-    | "completed"
-    | "failed"
-    | "cancelled"
-    | "expired";
+    "queued" | "processing" | "completed" | "failed" | "cancelled" | "expired";
   usage?: {
     cost?: number;
     is_byok?: boolean;
@@ -101,10 +91,7 @@ export interface VideoGenerationResponse {
       delivered_events?: number;
       last_attempt_at?: string | null;
       last_attempt_status?:
-        | "delivered"
-        | "scheduled_retry"
-        | "failed_permanently"
-        | null;
+        "delivered" | "scheduled_retry" | "failed_permanently" | null;
       last_delivered_at?: string | null;
       last_error_message?: string | null;
       last_failure_at?: string | null;

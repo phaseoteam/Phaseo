@@ -76,7 +76,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
-      "rank": 17
+      "rank": 19
     },
     {
       "benchmark_id": "os-world",
@@ -116,7 +116,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
-      "rank": 17
+      "rank": 20
     },
     {
       "benchmark_id": "aime-2025",
@@ -140,7 +140,7 @@
       "is_self_reported": true,
       "other_info": "Elo",
       "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
-      "rank": 7
+      "rank": 9
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -148,7 +148,7 @@
       "is_self_reported": true,
       "other_info": "No tools",
       "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
-      "rank": 33
+      "rank": 34
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -156,7 +156,7 @@
       "is_self_reported": true,
       "other_info": "With tools",
       "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
-      "rank": 29
+      "rank": 30
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -164,7 +164,7 @@
       "is_self_reported": true,
       "other_info": "No tools",
       "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
-      "rank": 61
+      "rank": 69
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -172,7 +172,7 @@
       "is_self_reported": true,
       "other_info": "With tools",
       "source_link": "https://www-cdn.anthropic.com/78073f739564e986ff3e28522761a7a0b4484f84.pdf",
-      "rank": 21
+      "rank": 26
     },
     {
       "benchmark_id": "financeagent-v1.1",
@@ -212,7 +212,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-sonnet-4-6",
-      "rank": 20
+      "rank": 24
     },
     {
       "benchmark_id": "gdpval-aa",
@@ -220,7 +220,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-sonnet-4-6",
-      "rank": 4
+      "rank": 6
     },
     {
       "benchmark_id": "gpqa",
@@ -236,7 +236,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-sonnet-4-6",
-      "rank": 5
+      "rank": 7
     },
     {
       "benchmark_id": "gdpval-aa",
@@ -244,7 +244,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-sonnet-4-6",
-      "rank": 6
+      "rank": 8
     },
     {
       "benchmark_id": "deepswe",
@@ -252,7 +252,7 @@
       "is_self_reported": false,
       "other_info": "mini-swe-agent; effort high; 32% +/-2%; avg cost $5.52; avg time 42m; out tok 76k",
       "source_link": "https://deepswe.datacurve.ai/",
-      "rank": 5
+      "rank": 8
     },
     {
       "benchmark_id": "creative-story-writing",

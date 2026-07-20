@@ -1,0 +1,19 @@
+{
+  "model_id": "kwaipilot/kat-coder-pro-v1",
+  "organisation_id": "kwaipilot",
+  "name": "Kat Coder Pro V1",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Kat Coder Pro V1 is a coding and agentic model in the KwaiKAT KAT-Coder series.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": ["text"],
+  "output_types": ["text"],
+  "api_model_id": "kwaipilot/kat-coder-pro-v1",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

@@ -213,6 +213,12 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	"anthropic-us": {
 		"text.generate": anthropicText,
 	},
+	"anthropic-aws": {
+		"text.generate": anthropicText,
+	},
+	"anthropic-aws-us": {
+		"text.generate": anthropicText,
+	},
 	ai21: {
 		"text.generate": ai21Text,
 	},

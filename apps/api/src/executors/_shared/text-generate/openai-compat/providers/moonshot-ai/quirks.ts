@@ -17,11 +17,20 @@ const K2_7_CODE_MODELS = new Set([
 	"moonshotai/kimi-k2.7-code",
 ]);
 
+const K3_MODELS = new Set([
+	"kimi-k3",
+	"moonshotai/kimi-k3",
+]);
+
 const isMoonshot = (providerId?: string) =>
 	MOONSHOT_PROVIDER_IDS.has(String(providerId ?? "").trim().toLowerCase());
 
 function isK27CodeModel(model: unknown): boolean {
 	return K2_7_CODE_MODELS.has(String(model ?? "").trim().toLowerCase());
+}
+
+function isK3Model(model: unknown): boolean {
+	return K3_MODELS.has(String(model ?? "").trim().toLowerCase());
 }
 
 function normalizeK27CodeRequest(request: Record<string, any>) {
@@ -67,10 +76,50 @@ function normalizeK27CodeRequest(request: Record<string, any>) {
 	}
 }
 
+function normalizeK3Request(request: Record<string, any>, ir: Record<string, any>) {
+	if (!isK3Model(request?.model)) return;
+
+	// K3 always thinks and replaces the K2.x thinking object with top-level reasoning_effort.
+	delete request.thinking;
+	if (ir?.reasoning && typeof ir.reasoning === "object") {
+		request.reasoning_effort = "max";
+	}
+
+	// K3 documents max_completion_tokens rather than the legacy max_tokens alias.
+	if (request.max_tokens !== undefined && request.max_completion_tokens === undefined) {
+		request.max_completion_tokens = request.max_tokens;
+	}
+	delete request.max_tokens;
+
+	// These sampling values are fixed upstream and should be omitted from requests.
+	delete request.temperature;
+	delete request.top_p;
+	delete request.frequency_penalty;
+	delete request.presence_penalty;
+
+	// Moonshot's K3 chat schema names video content parts video_url.
+	if (Array.isArray(request.messages)) {
+		request.messages = request.messages.map((message: any) => {
+			if (!Array.isArray(message?.content)) return message;
+			return {
+				...message,
+				content: message.content.map((part: any) =>
+					part?.type === "input_video"
+						? { ...part, type: "video_url" }
+						: part,
+				),
+			};
+		});
+	}
+}
+
 export const moonshotQuirks: ProviderQuirks = {
-	transformRequest: ({ request }) => {
+	transformRequest: ({ request, ir }) => {
 		// Moonshot compatibility validates schema payload shape differently.
-		applyJsonSchemaFallback(request);
+		// K3 explicitly supports strict json_schema and must keep the original payload.
+		if (!isK3Model(request?.model)) {
+			applyJsonSchemaFallback(request);
+		}
 
 		// Moonshot chat schema is stricter on role enums than OpenAI's newer "developer" role.
 		// Normalize to "system" before upstream dispatch.
@@ -83,6 +132,14 @@ export const moonshotQuirks: ProviderQuirks = {
 		}
 
 		normalizeK27CodeRequest(request);
+		normalizeK3Request(request, ir);
+	},
+	extractReasoning: ({ choice, rawContent }) => {
+		const reasoning = choice?.message?.reasoning_content;
+		return {
+			main: rawContent,
+			reasoning: typeof reasoning === "string" && reasoning.length > 0 ? [reasoning] : [],
+		};
 	},
 };
 

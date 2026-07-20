@@ -92,6 +92,9 @@ the sole cache owner for migrated data.
   `PHASEO_THIRD_PARTY_OAUTH_ENABLED`, `NON_ENTERPRISE_KEY_LIMIT`,
   `GATEWAY_API_ORIGIN`, and the gateway invalidation credentials consistently
   in staging and production.
+- Provision `GATEWAY_INTERNAL_TEST_TOKEN` in both the gateway and this Worker
+  when I/O-log inspection is enabled. It is only used server-to-server to read
+  the gateway's private I/O-log route and must never be exposed to the browser.
 - Deploy this Worker after confirming that `phaseo.app` is an active proxied Cloudflare zone. Its routes match `phaseo.app/api/_web/*`, `/api/account/*`, `/api/chat/*`, and `/api/internal/*`; authentication and Stripe/checkout routes continue to Vercel.
 - Keep `api.phaseo.app` deployed from `apps/api`; it remains the external gateway API.
 

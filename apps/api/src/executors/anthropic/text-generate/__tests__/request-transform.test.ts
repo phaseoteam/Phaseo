@@ -506,6 +506,14 @@ describe("irToAnthropicMessages service controls", () => {
 
 		expect(resolveAnthropicInferenceGeo("anthropic", request)).toBe("us");
 		expect(resolveAnthropicInferenceGeo("anthropic-us", request)).toBe("us");
+		expect(resolveAnthropicInferenceGeo("anthropic-aws-us", request)).toBe("us");
+		expect(resolveAnthropicInferenceGeo("anthropic-aws", request)).toBe("us");
+	});
+
+	it("defaults only US-scoped Anthropic offers to US inference", () => {
+		const request = createBaseRequest();
+		expect(resolveAnthropicInferenceGeo("anthropic-aws-us", request)).toBe("us");
+		expect(resolveAnthropicInferenceGeo("anthropic-aws", request)).toBeNull();
 	});
 });
 

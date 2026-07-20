@@ -1,6 +1,7 @@
 # Phaseo Raycast Extension
 
-Search Phaseo's AI model catalogue directly from Raycast.
+The Phaseo extension brings Phaseo into Raycast. Its first command lets you
+explore the AI model catalogue directly from your launcher.
 
 ## Features
 

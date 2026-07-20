@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/nemotron-3-nano-30b-a3b/modelcard",
-      "rank": 100
+      "rank": 108
     },
     {
       "benchmark_id": "livecodebench-v6",

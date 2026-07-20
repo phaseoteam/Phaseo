@@ -32,6 +32,24 @@ function guardrailRow(payload: GuardrailPayload, includeName = true): Record<str
 		["sensitiveInfoRules", "sensitive_info_rules"],
 	];
 	for (const [input, column] of fields) if (payload[input] !== undefined) row[column] = payload[input];
+	const ioLoggingUpdated =
+		typeof payload.ioLoggingEnabled === "boolean" ||
+		typeof payload.ioLoggingRetentionDays === "number" ||
+		typeof payload.ioLoggingIncludeProviderPayloads === "boolean";
+	if (typeof payload.ioLoggingEnabled === "boolean") {
+		row.io_logging_enabled = payload.ioLoggingEnabled;
+	}
+	if (typeof payload.ioLoggingRetentionDays === "number") {
+		row.io_logging_retention_days = Math.max(
+			90,
+			Math.min(365, Math.trunc(payload.ioLoggingRetentionDays)),
+		);
+	}
+	if (typeof payload.ioLoggingIncludeProviderPayloads === "boolean") {
+		row.io_logging_include_provider_payloads =
+			payload.ioLoggingIncludeProviderPayloads;
+	}
+	if (ioLoggingUpdated) row.io_logging_updated_at = row.updated_at;
 	if (includeName) {
 		const budgets = payload.budgets ?? {};
 		Object.assign(row, {

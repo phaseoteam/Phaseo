@@ -8,6 +8,7 @@ import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { json, withRuntime } from "@/routes/utils";
 import {
 	isResponse,
+	internalServerError,
 	requireJsonBody,
 	requireCapability,
 	requireOAuthWorkspaceRole,
@@ -112,7 +113,7 @@ async function handleGetSettings(req: Request) {
 		if (error) throw new Error(error.message || "Failed to fetch workspace settings");
 		return json({ data: data ?? { workspace_id: auth.value.workspaceId, routing_mode: "balanced" } }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
+		return internalServerError("settings.get", error);
 	}
 }
 
@@ -151,7 +152,7 @@ async function handleUpdateSettings(req: Request) {
 		}
 		return json({ data }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
+		return internalServerError("settings.update", error);
 	}
 }
 

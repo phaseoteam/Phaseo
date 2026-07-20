@@ -138,7 +138,6 @@ export interface ModelUpdatePayload {
     other_info?: string | null
     source_link?: string | null
     variant?: string | null
-    rank?: number | null
   }>
   pricing_rules?: Array<{
     id?: string
@@ -509,7 +508,6 @@ export async function updateModelData(supabase: SupabaseClient, payload: ModelUp
         other_info: result.other_info?.trim() || null,
         source_link: result.source_link?.trim() || null,
         variant: result.variant?.trim() || null,
-        rank: result.rank ?? null,
         created_at: nowIso,
         updated_at: nowIso,
       }))

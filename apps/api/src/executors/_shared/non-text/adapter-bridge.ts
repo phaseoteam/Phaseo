@@ -169,6 +169,8 @@ function irToAdapterBody(endpoint: NonTextEndpoint, ir: ExecutorExecuteArgs["ir"
 				size: request.size,
 				n: request.n,
 				quality: request.quality,
+				stream: request.stream,
+				partial_images: request.partialImages,
 				response_format: request.responseFormat,
 				output_format: request.outputFormat,
 				output_compression: request.outputCompression,
@@ -671,7 +673,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			apiKeyId: "",
 			apiKeyRef: "",
 			apiKeyKid: "",
-			stream: false,
+			stream: (args.ir as IRImageGenerationRequest).stream === true,
 			debug: args.meta.debug,
 			echoUpstreamRequest: args.meta.echoUpstreamRequest,
 			returnUpstreamRequest: args.meta.returnUpstreamRequest,
@@ -684,7 +686,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		byokMeta: args.byokMeta,
 		pricingCard: args.pricingCard,
 		providerModelSlug: args.providerModelSlug,
-		stream: false,
+		stream: (args.ir as IRImageGenerationRequest).stream === true,
 	};
 
 	let adapterResult: Awaited<ReturnType<typeof executeProviderEndpoint>>;

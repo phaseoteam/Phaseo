@@ -112,13 +112,6 @@ function safeJsonParse(text: string): unknown {
 	}
 }
 
-function sanitizeLogText(value: string): string {
-	return value
-		.replace(/\bBearer\s+[A-Za-z0-9._-]+\b/gi, "Bearer [redacted]")
-		.replace(/phaseo_v1_sk_[A-Za-z0-9]+_[A-Za-z0-9]+/g, "[redacted_key]")
-		.replace(/"(access_token|refresh_token|client_secret)"\s*:\s*"[^"]+"/gi, "\"$1\":\"[redacted]\"");
-}
-
 async function postJson(
 	url: string,
 	body: unknown,
@@ -647,12 +640,9 @@ async function main(): Promise<void> {
 	});
 
 	console.log("");
-	console.log("Run complete:", summarizeResult(results));
-	for (const result of results) {
-		console.log(
-			`- [${result.status.toUpperCase()}] ${result.name}: ${sanitizeLogText(result.message)}`,
-		);
-	}
+	// Detailed results can include values derived from OAuth responses. Keep
+	// them in the sanitized local report rather than writing them to stdout.
+	console.log("Run complete. Review the sanitized report for test details.");
 	console.log(`Report: ${reportPath}`);
 	console.log("");
 

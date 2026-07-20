@@ -45,7 +45,7 @@ const ICONS: Record<ChatRoomId, ComponentType<{ className?: string }>> = {
 	embeddings: Sparkles,
 };
 
-const DISABLED_ROOMS = new Set<ChatRoomId>(["video", "realtime"]);
+const DISABLED_ROOMS = new Set<ChatRoomId>(["realtime"]);
 
 function isRoomActive(pathname: string, route: string): boolean {
 	if (route === "/chat") {

@@ -1,0 +1,22 @@
+{
+  "providerId": "black-forest-labs",
+  "displayName": "Black Forest Labs",
+  "source": {
+    "kind": "official-docs",
+    "url": "https://docs.bfl.ai/api-reference/tasks/generate-or-edit-an-image"
+  },
+  "operations": [
+    {
+      "capability": "bfl_submit_image",
+      "method": "post",
+      "path": "/v1/{model}",
+      "operationId": "bfl_submit_image"
+    },
+    {
+      "capability": "bfl_get_result",
+      "method": "get",
+      "path": "/v1/get_result",
+      "operationId": "bfl_get_result"
+    }
+  ]
+}

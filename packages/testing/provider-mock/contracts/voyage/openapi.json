@@ -1,0 +1,162 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Voyage AI Phaseo contract",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/v1/embeddings": {
+      "post": {
+        "operationId": "voyage_embeddings",
+        "description": "Voyage text and multimodal embeddings.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "input": {},
+                  "model": {
+                    "type": "string"
+                  },
+                  "input_type": {
+                    "type": "string"
+                  },
+                  "truncation": {
+                    "type": "boolean"
+                  },
+                  "output_dimension": {
+                    "type": "integer"
+                  },
+                  "output_dtype": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "input",
+                  "model"
+                ],
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deterministic mock success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Provider validation error"
+          },
+          "429": {
+            "description": "Provider rate limit"
+          },
+          "500": {
+            "description": "Provider failure"
+          }
+        }
+      }
+    },
+    "/v1/rerank": {
+      "post": {
+        "operationId": "voyage_rerank",
+        "description": "Voyage reranking.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "query": {
+                    "type": "string"
+                  },
+                  "documents": {
+                    "type": "array",
+                    "items": {}
+                  },
+                  "model": {
+                    "type": "string"
+                  },
+                  "top_k": {
+                    "type": "integer"
+                  },
+                  "truncation": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "query",
+                  "documents",
+                  "model"
+                ],
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deterministic mock success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Provider validation error"
+          },
+          "429": {
+            "description": "Provider rate limit"
+          },
+          "500": {
+            "description": "Provider failure"
+          }
+        }
+      }
+    },
+    "/v1/chat/completions": {
+      "post": {
+        "operationId": "voyage_text_generate_1",
+        "description": "Phaseo executor-derived text.generate operation.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deterministic mock success"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "429": {
+            "description": "Rate limit"
+          }
+        }
+      }
+    }
+  }
+}

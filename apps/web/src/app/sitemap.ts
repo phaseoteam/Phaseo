@@ -9,6 +9,7 @@ import {
 	fetchFrontendBenchmarks,
 	fetchFrontendCountrySummaries,
 	fetchFrontendMarketplacePresets,
+	fetchFrontendModels,
 	fetchFrontendOrganisations,
 	fetchFrontendSubscriptionPlans,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
@@ -59,10 +60,6 @@ const staticRoutes: Array<{
         { path: "/faq", changeFrequency: "monthly", priority: 0.6 },
 		{ path: "/compare", changeFrequency: "weekly", priority: 0.7 },
 		{ path: "/migrate", changeFrequency: "weekly", priority: 0.7 },
-		{ path: "/migrate/openrouter", changeFrequency: "weekly", priority: 0.65 },
-		{ path: "/migrate/vercel-ai-gateway", changeFrequency: "weekly", priority: 0.65 },
-		{ path: "/migrate/requesty", changeFrequency: "weekly", priority: 0.65 },
-		{ path: "/migrate/llmgateway", changeFrequency: "weekly", priority: 0.65 },
 		{ path: "/gateway/marketplace", changeFrequency: "weekly", priority: 0.6 },
         { path: "/contribute", changeFrequency: "monthly", priority: 0.6 },
         { path: "/roadmap", changeFrequency: "monthly", priority: 0.6 },
@@ -113,7 +110,11 @@ const COUNTRY_SUFFIXES: RouteSuffix[] = [
 ];
 
 const MARKETPLACE_PRESET_SUFFIXES: RouteSuffix[] = [
-    { suffix: "", changeFrequency: "weekly", priority: 0.55 },
+	{ suffix: "", changeFrequency: "weekly", priority: 0.55 },
+];
+
+const MODEL_SUFFIXES: RouteSuffix[] = [
+	{ suffix: "", changeFrequency: "weekly", priority: 0.85 },
 ];
 
 function buildRouteUrl(route: string): string {
@@ -162,6 +163,37 @@ function normalizeSingleSegmentSlugs(list?: string[], label?: string): string[] 
 				label ?? "single segment"
 			} slug(s)`,
 		);
+	}
+
+	return [...normalized].sort();
+}
+
+function normalizeModelId(modelId: unknown): string | null {
+	const segments = String(modelId ?? "")
+		.trim()
+		.replace(/^\/+|\/+$/g, "")
+		.split("/")
+		.filter(Boolean);
+
+	return segments.length === 2 ? segments.join("/") : null;
+}
+
+function normalizeModelIds(list?: string[]): string[] {
+	const normalized = new Set<string>();
+	let dropped = 0;
+
+	for (const modelId of list ?? []) {
+		const normalizedModelId = normalizeModelId(modelId);
+		if (!normalizedModelId) {
+			dropped += 1;
+			continue;
+		}
+
+		normalized.add(normalizedModelId);
+	}
+
+	if (dropped > 0) {
+		console.warn(`[sitemap] dropped ${dropped} malformed model id(s)`);
 	}
 
 	return [...normalized].sort();
@@ -262,6 +294,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		plansResult,
 		countriesResult,
 		marketplacePresetsResult,
+		modelsResult,
 		helpCategoryResult,
 		helpArticleResult,
 	] = await Promise.allSettled([
@@ -271,6 +304,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		fetchFrontendSubscriptionPlans(),
 		fetchFrontendCountrySummaries(),
 		fetchFrontendMarketplacePresets(),
+		fetchFrontendModels(),
 		getHelpCategoryParams(),
 		getHelpArticleParams(),
 	]);
@@ -327,7 +361,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		).map((preset) => String(preset.id ?? "").trim()),
 		"marketplace preset",
 	);
+	const modelsForSitemap = fromSettled(modelsResult, "models for sitemap", []);
+	const modelIds = normalizeModelIds(
+		modelsForSitemap.map((model) => model.model_id),
+	);
+	const modelLastModifiedById = new Map<string, string | null>();
+	for (const model of modelsForSitemap) {
+		const modelId = normalizeModelId(model.model_id);
+		if (!modelId) continue;
+		modelLastModifiedById.set(
+			modelId,
+			resolveLastModified(
+				modelLastModifiedById.get(modelId),
+				model.updated_at,
+			),
+		);
+	}
+	const modelEntries = modelIds.map((slug) => {
+		return {
+			slug,
+			lastModified: modelLastModifiedById.get(slug) ?? null,
+		};
+	});
 	const dynamicItems = [
+		...applySuffixesWithEntries("/models", modelEntries, MODEL_SUFFIXES),
 		...applySuffixesWithEntries(
 			"/api-providers",
 			providerEntries,

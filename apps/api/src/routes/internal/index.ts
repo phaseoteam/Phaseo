@@ -8,9 +8,11 @@ import type { Env } from "@/runtime/types";
 import { internalBatchWebhookRoutes } from "./batch-webhooks";
 import { internalVideoWebhookRoutes } from "./video-webhooks";
 import { internalCacheRoutes } from "./cache";
+import { internalIoLogRoutes } from "./io-logs";
 
 export const internalRouter = new Hono<Env>();
 
 internalRouter.route("/batch-webhooks", internalBatchWebhookRoutes);
 internalRouter.route("/cache", internalCacheRoutes);
+internalRouter.route("/io-logs", internalIoLogRoutes);
 internalRouter.route("/video-webhooks", internalVideoWebhookRoutes);

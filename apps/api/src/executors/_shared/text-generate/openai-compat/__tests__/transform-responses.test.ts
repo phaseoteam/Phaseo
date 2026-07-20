@@ -544,6 +544,37 @@ describe("irToOpenAIResponses", () => {
 		}]);
 	});
 
+	it("does not allow Meta web_search_options to inject an arbitrary tool", () => {
+		const request = irToOpenAIResponses({
+			model: "meta/muse-spark-1.1",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "Find the latest news." }],
+			}],
+			stream: false,
+			webSearchOptions: {
+				type: "function",
+				name: "attacker_tool",
+				parameters: { type: "object" },
+				search_context_size: "high",
+				user_location: {
+					type: "approximate",
+					country: "GB",
+					secret: "must-not-pass-through",
+				},
+			},
+		} as any, "muse-spark-1.1", "meta");
+
+		expect(request.tools).toEqual([{
+			type: "web_search_preview",
+			search_context_size: "high",
+			user_location: {
+				type: "approximate",
+				country: "GB",
+			},
+		}]);
+	});
+
 	it("maps Meta reasoning effort and stateful responses fields", () => {
 		const request = irToOpenAIResponses({
 			model: "meta/muse-spark-1.1",
@@ -746,6 +777,23 @@ describe("irToOpenAIResponses", () => {
 		expect(request.text).toEqual({
 			format: { type: "json_object" },
 		});
+	});
+
+	it("preserves function-tool strictness for OpenAI Responses", () => {
+		const request = irToOpenAIResponses({
+			model: "openai/gpt-5.4-nano",
+			messages: [{ role: "user", content: [{ type: "text", text: "weather" }] }],
+			stream: false,
+			tools: [{ name: "lookup_weather", parameters: { type: "object" }, strict: true }],
+		} as any, "gpt-5.4-nano", "openai");
+
+		expect(request.tools).toEqual([{
+			type: "function",
+			name: "lookup_weather",
+			description: undefined,
+			parameters: { type: "object" },
+			strict: true,
+		}]);
 	});
 
 	it("normalizes Groq responses payload shape", () => {

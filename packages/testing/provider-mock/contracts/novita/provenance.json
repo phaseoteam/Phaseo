@@ -1,0 +1,54 @@
+{
+  "generatedAt": "2026-07-12T09:44:58.777Z",
+  "pages": [
+    {
+      "capability": "text.generate",
+      "method": "post",
+      "path": "/openai/v1/chat/completions",
+      "operationId": "createChatCompletion",
+      "url": "https://novita.ai/docs/api-reference/model-apis-llm-create-chat-completion",
+      "sha256": "2135578ff475abf450c5f7642f03ecbed99672feea4a4d793c796e5cf7d4dcb7"
+    },
+    {
+      "capability": "text.generate",
+      "method": "post",
+      "path": "/openai/v1/completions",
+      "operationId": "createCompletion",
+      "url": "https://novita.ai/docs/api-reference/model-apis-llm-create-completion",
+      "sha256": "4040c412276c8100db4805de9367a9d8cc56e49dd0788c9b86fff9d25668e1c6"
+    },
+    {
+      "capability": "embeddings",
+      "method": "post",
+      "path": "/openai/v1/embeddings",
+      "operationId": "createEmbedding",
+      "url": "https://novita.ai/docs/api-reference/model-apis-llm-create-embeddings",
+      "sha256": "4fc24958e8fdc54f6cea61e14fbf7bb7b4fe34b600fbec45058065d0b81f9e42"
+    },
+    {
+      "capability": "rerank",
+      "method": "post",
+      "path": "/openai/v1/rerank",
+      "operationId": "createRerank",
+      "url": "https://novita.ai/docs/api-reference/model-apis-llm-create-rerank",
+      "sha256": "a7c058fc9572bacee13a921f73a4c61c5d3a3040a3e717f874d3b79d3b2facd0"
+    },
+    {
+      "capability": "models.list",
+      "method": "get",
+      "path": "/openai/v1/models",
+      "operationId": "listModels",
+      "url": "https://novita.ai/docs/api-reference/model-apis-llm-list-models",
+      "sha256": "edbba02b7264d9d5e8dfbad9c87c808d6596e41f42e552dff87936e61ba77664"
+    },
+    {
+      "capability": "models.retrieve",
+      "method": "get",
+      "path": "/openai/v1/models/{model}",
+      "operationId": "retrieveModel",
+      "url": "https://novita.ai/docs/api-reference/model-apis-llm-retrieve-model",
+      "sha256": "299536de9dc394b51dcc03b766daea8fae8d217a507c33db3604db5fa3453ba3"
+    }
+  ],
+  "bundleSha256": "a11bffdc303114150c29575f331b7016a794343e9feefff348e04e20e7f74506"
+}

@@ -21,7 +21,7 @@ import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin, configureRuntime, clearRuntime } from "@/runtime/env";
 import { z } from "zod";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
-import { CAPABILITIES, normalizeScopeList } from "@/lib/authz/capabilities";
+import { CAPABILITIES, GATEWAY_ACCESS_SCOPE, normalizeScopeList } from "@/lib/authz/capabilities";
 import { requireCapability, requireOAuthWorkspaceRole } from "./route-helpers";
 import { createOpaqueCode, hashOAuthClientSecret, isThirdPartyOAuthEnabled } from "@/lib/oauth/service";
 
@@ -31,6 +31,7 @@ const DEFAULT_THIRD_PARTY_ALLOWED_SCOPES = [
 	"openid",
 	"profile",
 	"email",
+	GATEWAY_ACCESS_SCOPE,
 	CAPABILITIES.ME_READ,
 	CAPABILITIES.WORKSPACES_READ,
 	CAPABILITIES.MODELS_READ,
@@ -344,10 +345,7 @@ app.post("/", async (c) => {
 
 		if (clientError || !oauthClient) {
 			console.error("Error creating OAuth client:", clientError);
-			return c.json(
-				{ error: `Failed to create OAuth client: ${clientError?.message || 'Unknown error'}` },
-				500
-			);
+			return c.json({ error: "Failed to create OAuth client" }, 500);
 		}
 
 		const clientSecretHash =
@@ -381,10 +379,7 @@ app.post("/", async (c) => {
 			// Rollback: delete OAuth client if metadata insert failed
 			await oauthAdmin.deleteClient(oauthClient.client_id);
 			console.error("Error storing OAuth metadata:", metadataError);
-			return c.json(
-				{ error: `Failed to create OAuth app: ${metadataError.message}` },
-				500
-			);
+			return c.json({ error: "Failed to create OAuth app" }, 500);
 		}
 
 		return c.json(
@@ -633,7 +628,20 @@ app.delete("/:clientId", async (c) => {
 			return c.json({ error: "OAuth app not found" }, 404);
 		}
 
-		// Delete from Supabase OAuth first
+		// The OAuth authorization table is not protected by a database foreign-key
+		// cascade in every deployed schema. Revoke first so an already-issued
+		// delegated gateway key stops working even if a later delete step fails.
+		const { error: revokeError } = await supabase
+			.from("oauth_authorizations")
+			.update({ revoked_at: new Date().toISOString() })
+			.eq("client_id", clientId)
+			.is("revoked_at", null);
+		if (revokeError) {
+			console.error("Error revoking OAuth authorizations for client deletion:", revokeError);
+			return c.json({ error: "Failed to revoke OAuth app authorizations" }, 500);
+		}
+
+		// Delete from Supabase OAuth after delegated access has been revoked.
 		const oauthAdmin = (supabase.auth.admin as any).oauth;
 		const { error: clientError } = await oauthAdmin.deleteClient(clientId);
 		if (clientError) {
@@ -641,7 +649,7 @@ app.delete("/:clientId", async (c) => {
 			return c.json({ error: "Failed to delete OAuth client" }, 500);
 		}
 
-		// Delete metadata (this will cascade to authorizations via foreign key)
+		// Delete metadata after all authorizations have been explicitly revoked.
 		const { error: deleteError } = await supabase
 			.from("oauth_app_metadata")
 			.delete()

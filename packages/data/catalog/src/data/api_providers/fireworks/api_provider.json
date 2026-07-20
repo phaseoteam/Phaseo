@@ -3,6 +3,7 @@
   "api_provider_name": "Fireworks",
   "description": null,
   "link": "https://docs.fireworks.ai/getting-started/introduction",
+  "pricing_source_url": "https://fireworks.ai/pricing",
   "country_code": "US",
   "status": "Active",
   "colour": "#EF4444",

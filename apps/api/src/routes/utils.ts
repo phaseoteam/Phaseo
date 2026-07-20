@@ -25,8 +25,24 @@ const LEGACY_CACHE_CREATED_AT_HEADER = "x-aistats-cache-created-at";
 const REVALIDATION_DEDUPE_WINDOW_MS = 15_000;
 const revalidationLocks = new Map<string, number>();
 
+function sanitizeJsonResponseBody(value: unknown, seen = new WeakSet<object>()): unknown {
+    if (value instanceof Error) return { error: "internal_error" };
+    if (Array.isArray(value)) return value.map((entry) => sanitizeJsonResponseBody(entry, seen));
+    if (!value || typeof value !== "object") return value;
+    if (seen.has(value)) return "[Circular]";
+    seen.add(value);
+    const output: Record<string, unknown> = {};
+    for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+        const normalizedKey = key.toLowerCase().replace(/[-_]/g, "");
+        if (normalizedKey === "stack" || normalizedKey === "stacktrace") continue;
+        output[key] = sanitizeJsonResponseBody(entry, seen);
+    }
+    seen.delete(value);
+    return output;
+}
+
 function stringifyJsonBody(body: unknown): string {
-    return safeJsonStringify(body);
+    return safeJsonStringify(sanitizeJsonResponseBody(body));
 }
 
 export function withRuntime(handler: Handler) {
@@ -106,7 +122,7 @@ export function withRuntime(handler: Handler) {
     };
 }
 
-export function json(body: any, status = 200, headers: Record<string, string> = {}) {
+export function json(body: unknown, status = 200, headers: Record<string, string> = {}) {
     return new Response(stringifyJsonBody(body), {
         status,
         headers: {

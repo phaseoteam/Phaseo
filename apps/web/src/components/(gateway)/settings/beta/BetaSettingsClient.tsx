@@ -18,7 +18,6 @@ type BetaFeatureDefinition = {
 	kind?: "toggle" | "range";
 	title: string;
 	description: string;
-	adminOnly?: boolean;
 };
 
 export default function BetaSettingsClient({

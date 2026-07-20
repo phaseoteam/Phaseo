@@ -9,7 +9,7 @@ import {
 	resolveKeyPepperCandidates,
 	type KeyPepperCandidate,
 } from "@/lib/security/keyPepper";
-import { parseStoredScopeList } from "@/lib/authz/capabilities";
+import { GATEWAY_ACCESS_SCOPE, parseStoredScopeList } from "@/lib/authz/capabilities";
 
 const enc = new TextEncoder();
 const KEY_CACHE_PREFIX = "gateway:key";
@@ -17,7 +17,6 @@ const KEY_CACHE_TTL_SECONDS = 60;
 const KEY_VERSION_L1_TTL_MS = 1_000;
 const KEY_LOOKUP_L1_TTL_MS = 1_000;
 const KEY_LOOKUP_L1_MAX_ENTRIES = 2_000;
-
 /* -------------------- Web Crypto HMAC helpers -------------------- */
 
 /**
@@ -193,11 +192,13 @@ export type AuthSuccess = {
     authMethod?: "api_key" | "oauth";
     oauthClientId?: string | null;
     oauthScopes?: string[];
+    oauthResource?: string | null;
     scopes?: string[];
 };
 
 type AuthenticateOptions = {
     useKvCache?: boolean;
+    allowResourceBoundOAuthKey?: boolean;
 };
 
 type KeyRow = {
@@ -208,6 +209,11 @@ type KeyRow = {
     expires_at?: string | null;
     soft_blocked?: boolean | null;
     scopes?: unknown;
+	key_kind?: string | null;
+	oauth_client_id?: string | null;
+	oauth_user_id?: string | null;
+	oauth_scopes?: unknown;
+	oauth_resource?: string | null;
 };
 
 type CachedKeyLookup = KeyRow | "missing" | null;
@@ -481,10 +487,91 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
         return { ok: false, reason: "invalid_secret" };
     }
 
+    // OAuth-managed keys must observe revocation and consent changes immediately.
+    // They deliberately bypass the KV cache after the initial lookup so a removed
+    // workspace member or a revoked/rotated delegated key cannot remain usable
+    // for the cache TTL.
+    if (String(keyRow.key_kind ?? "standard") === "oauth_delegated") {
+        const freshKeyRow = await fetchFreshKeyRow();
+        if (freshKeyRow === "db_error") return { ok: false, reason: "db_error" };
+        if (!freshKeyRow || freshKeyRow.status !== "active") {
+            return { ok: false, reason: "key_not_found_or_revoked" };
+        }
+        if (isExpiredKey(freshKeyRow.expires_at)) return { ok: false, reason: "key_expired" };
+
+        keyRow = freshKeyRow;
+        keyRowSource = "db";
+        stored = String(keyRow.hash).toLowerCase().trim();
+        matchedPepper = await findMatchingPepperCandidate({
+            secret: parsed.secret,
+            storedHash: stored,
+            pepperCandidates,
+        });
+        if (!matchedPepper) return { ok: false, reason: "invalid_secret" };
+    }
+
     const success = async (nextHash?: string): Promise<AuthSuccess | AuthFailure> => {
         let workspaceId = keyRow.workspace_id;
         const internal = isInternalRequestAuthorized(req, bindings);
         const hasHashMigration = Boolean(nextHash) && nextHash !== stored;
+		const keyKind = String(keyRow.key_kind ?? "standard");
+
+		if (keyKind === "oauth_delegated") {
+			const userId = String(keyRow.oauth_user_id ?? "").trim();
+			const clientId = String(keyRow.oauth_client_id ?? "").trim();
+			const oauthScopes = Array.isArray(keyRow.oauth_scopes)
+				? keyRow.oauth_scopes.map(String).filter(Boolean)
+				: [];
+			if (!userId || !clientId || oauthScopes.length === 0) {
+				return { ok: false, reason: "oauth_managed_key_invalid" };
+			}
+			const { getActiveOAuthWorkspaceScopes, isGatewayOAuthResource } = await import("@/lib/oauth/service");
+			const activeAuthorizationScopes = await getActiveOAuthWorkspaceScopes({ userId, workspaceId, clientId });
+			if (activeAuthorizationScopes === null) {
+				return { ok: false, reason: "oauth_authorization_revoked" };
+			}
+			const effectiveScopes = oauthScopes.filter((scope) => activeAuthorizationScopes.includes(scope));
+			const oauthResource = String(keyRow.oauth_resource ?? "").trim() || null;
+			const isGatewayApiResource = isGatewayOAuthResource(oauthResource);
+			if ((!oauthResource || isGatewayApiResource) && !effectiveScopes.includes(GATEWAY_ACCESS_SCOPE)) {
+				return { ok: false, reason: "oauth_gateway_scope_required" };
+			}
+			if (oauthResource && !isGatewayApiResource && !options.allowResourceBoundOAuthKey) {
+				return { ok: false, reason: "oauth_resource_token_not_valid_for_api" };
+			}
+
+			dispatchBackground((async () => {
+				configureRuntime(bindings);
+				try {
+					const updatePayload: Record<string, unknown> = { last_used_at: new Date().toISOString() };
+					if (hasHashMigration) updatePayload.hash = nextHash;
+					await supabase.from("keys").update(updatePayload).eq("id", keyRow.id);
+					await supabase
+						.from("oauth_authorizations")
+						.update({ last_used_at: new Date().toISOString() })
+						.eq("user_id", userId)
+						.eq("client_id", clientId)
+						.eq("workspace_id", workspaceId);
+				} finally {
+					clearRuntime();
+				}
+			})());
+
+			return {
+				ok: true,
+				apiKeyId: keyRow.id,
+				apiKeyRef: `kid_${parsed.kid}`,
+				apiKeyKid: parsed.kid,
+				workspaceId,
+				userId,
+				internal,
+				authMethod: "oauth",
+				oauthClientId: clientId,
+				oauthScopes: effectiveScopes,
+				oauthResource,
+				scopes: effectiveScopes,
+			};
+		}
 
         // Fire-and-forget update of last_used_at timestamp (+ hash migration when needed).
         dispatchBackground((async () => {
@@ -548,10 +635,25 @@ export async function authenticateManagement(
 
     const parsed = parseV2(token);
     if (!parsed) return { ok: false, reason: "invalid_key_format" };
+
+    // OAuth-managed credentials deliberately use the normal `sk` syntax so
+    // clients can use them as standard Bearer tokens. Allow only the delegated
+    // variant onto control routes; a user-created inference key remains unable
+    // to reach management APIs. Capability checks on each route then enforce
+    // the current OAuth consent scopes.
+    if (parsed.namespace === "phaseo" && parsed.keyType === "inference") {
+        const delegatedAuth = await authenticate(req, options);
+        if (!delegatedAuth.ok) return delegatedAuth;
+        if (delegatedAuth.authMethod !== "oauth") {
+            return { ok: false, reason: "management_key_required" };
+        }
+        return delegatedAuth;
+    }
+
     // Management routes are intentionally strict: `sk` credentials are
-    // inference-only, and management credentials must use the current,
-    // unambiguous Phaseo `mk` format. Do this before any database lookup so an
-    // inference key can never be mistaken for a management key.
+    // user-created inference credentials are not management credentials, and
+    // elevated management credentials use the current, unambiguous Phaseo `mk`
+    // format. Do this before any management-key database lookup.
     if (parsed.namespace !== "phaseo" || parsed.keyType !== "management") {
         return { ok: false, reason: "management_key_required" };
     }
@@ -652,18 +754,21 @@ async function authenticateOAuth(req: Request, token: string, options: Authentic
     const useKvCache = options.useKvCache ?? true;
 
     try {
-        const { hasActiveOAuthWorkspaceAccess, validateLocalAccessToken } = await import("@/lib/oauth/service");
+        const { getActiveOAuthWorkspaceScopes, validateLocalAccessToken } = await import("@/lib/oauth/service");
         const localValidation = await validateLocalAccessToken(token);
         if (localValidation.valid && localValidation.claims) {
             const claims = localValidation.claims;
             const supabase = getSupabaseAdmin();
-            if (!(await hasActiveOAuthWorkspaceAccess({
+            const activeAuthorizationScopes = await getActiveOAuthWorkspaceScopes({
                 userId: claims.user_id,
                 clientId: claims.client_id,
                 workspaceId: claims.workspace_id,
-            }))) {
+            });
+            if (activeAuthorizationScopes === null) {
                 return { ok: false, reason: "oauth_authorization_revoked" };
             }
+			const tokenScopes = typeof claims.scope === "string" ? claims.scope.split(/\s+/).filter(Boolean) : [];
+			const effectiveScopes = tokenScopes.filter((scope) => activeAuthorizationScopes.includes(scope));
 
             dispatchBackground((async () => {
                 configureRuntime(bindings);
@@ -689,8 +794,8 @@ async function authenticateOAuth(req: Request, token: string, options: Authentic
                 internal: isInternalRequestAuthorized(req, bindings),
                 authMethod: "oauth",
                 oauthClientId: claims.client_id,
-                oauthScopes: typeof claims.scope === "string" ? claims.scope.split(/\s+/).filter(Boolean) : [],
-                scopes: typeof claims.scope === "string" ? claims.scope.split(/\s+/).filter(Boolean) : [],
+				oauthScopes: effectiveScopes,
+				scopes: effectiveScopes,
             } as AuthSuccess;
         }
     } catch {
@@ -756,14 +861,17 @@ async function authenticateOAuth(req: Request, token: string, options: Authentic
 
         // Check that both the authorization and workspace membership remain active.
         const supabase = getSupabaseAdmin();
-        const { hasActiveOAuthWorkspaceAccess } = await import("@/lib/oauth/service");
-        if (!(await hasActiveOAuthWorkspaceAccess({
+        const { getActiveOAuthWorkspaceScopes } = await import("@/lib/oauth/service");
+        const activeAuthorizationScopes = await getActiveOAuthWorkspaceScopes({
             userId: claims.user_id,
             clientId: claims.client_id,
             workspaceId: claims.workspace_id,
-        }))) {
+        });
+        if (activeAuthorizationScopes === null) {
             return { ok: false, reason: "oauth_authorization_revoked" };
         }
+		const tokenScopes = typeof claims.scope === "string" ? claims.scope.split(/\s+/).filter(Boolean) : [];
+		const effectiveScopes = tokenScopes.filter((scope) => activeAuthorizationScopes.includes(scope));
 
         // Update last_used_at (fire and forget)
         dispatchBackground((async () => {
@@ -793,8 +901,8 @@ async function authenticateOAuth(req: Request, token: string, options: Authentic
             internal: isInternalRequestAuthorized(req, bindings),
             authMethod: "oauth",
             oauthClientId: claims.client_id,
-            oauthScopes: typeof claims.scope === "string" ? claims.scope.split(/\s+/).filter(Boolean) : [],
-            scopes: typeof claims.scope === "string" ? claims.scope.split(/\s+/).filter(Boolean) : [],
+			oauthScopes: effectiveScopes,
+			scopes: effectiveScopes,
         } as AuthSuccess;
     } catch (error: any) {
         const message = String(error?.message ?? "");

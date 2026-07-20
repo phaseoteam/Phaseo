@@ -1,0 +1,8 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "DigitalOcean Gradient AI Phaseo contract",
+    "version": "1.0.0"
+  },
+  "paths": {}
+}

@@ -1,0 +1,14 @@
+{
+  "api_provider_id": "darkbloom",
+  "api_provider_name": "Darkbloom",
+  "description": "OpenAI-compatible inference API.",
+  "link": "https://www.darkbloom.dev/",
+  "country_code": "US",
+  "status": "Active",
+  "colour": "#BE123C",
+  "privacy_policy_url": "https://www.darkbloom.dev/privacy",
+  "terms_of_service_url": "https://www.darkbloom.dev/terms",
+  "prompt_training_policy": "unknown",
+  "prompt_training_notes": null,
+  "prompt_training_source_url": null
+}

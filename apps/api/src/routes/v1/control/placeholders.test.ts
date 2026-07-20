@@ -114,4 +114,24 @@ describe("placeholdersRoutes /endpoints", () => {
 			message: "db unavailable",
 		});
 	});
+
+	it("requires models:read from OAuth callers", async () => {
+		guardAuthMock.mockResolvedValue({
+			ok: true,
+			value: {
+				workspaceId: "ws_test",
+				authMethod: "oauth",
+				scopes: ["openid"],
+			},
+		});
+
+		const response = await placeholdersRoutes.request("https://example.com/endpoints");
+
+		expect(response.status).toBe(403);
+		expect(await response.json()).toEqual({
+			error: "insufficient_scope",
+			message: "Token requires models:read",
+		});
+		expect(getSupabaseAdminMock).not.toHaveBeenCalled();
+	});
 });

@@ -1,0 +1,174 @@
+{
+  "generated_at": "2026-07-18T09:54:18.384Z",
+  "provider_filter": null,
+  "scanned_providers": 71,
+  "scanned_provider_models": 902,
+  "scanned_active_capabilities": 904,
+  "missing_count": 15,
+  "by_provider": [
+    {
+      "api_provider_id": "openai",
+      "missing_count": 12
+    },
+    {
+      "api_provider_id": "thinking-machines",
+      "missing_count": 2
+    },
+    {
+      "api_provider_id": "baseten",
+      "missing_count": 1
+    }
+  ],
+  "missing": [
+    {
+      "api_provider_id": "baseten",
+      "api_model_id": "thinking-machines/inkling",
+      "capability_id": "text.generate",
+      "provider_api_model_id": "baseten:thinkingmachines/inkling",
+      "provider_model_slug": "thinkingmachines/inkling",
+      "internal_model_id": "thinking-machines/inkling",
+      "is_active_gateway": true,
+      "pricing_key": "baseten:thinking-machines/inkling:text.generate"
+    },
+    {
+      "api_provider_id": "openai",
+      "api_model_id": "openai/computer-use-preview",
+      "capability_id": "text.generate",
+      "provider_api_model_id": "openai:openai/computer-use-preview",
+      "provider_model_slug": "computer-use-preview-2025-03-11",
+      "internal_model_id": "openai/computer-use-preview",
+      "is_active_gateway": true,
+      "pricing_key": "openai:openai/computer-use-preview:text.generate"
+    },
+    {
+      "api_provider_id": "openai",
+      "api_model_id": "openai/gpt-image-1",
+      "capability_id": "image.generate",
+      "provider_api_model_id": "openai:openai/gpt-image-1",
+      "provider_model_slug": "gpt-image-1",
+      "internal_model_id": "openai/gpt-image-1",
+      "is_active_gateway": true,
+      "pricing_key": "openai:openai/gpt-image-1:image.generate"
+    },
+    {
+      "api_provider_id": "openai",
+      "api_model_id": "openai/gpt-image-1",
+      "capability_id": "batch",
+      "provider_api_model_id": "openai:openai/gpt-image-1",
+      "provider_model_slug": "gpt-image-1",
+      "internal_model_id": "openai/gpt-image-1",
+      "is_active_gateway": true,
+      "pricing_key": "openai:openai/gpt-image-1:batch"
+    },
+    {
+      "api_provider_id": "openai",
+      "api_model_id": "openai/gpt-image-1.5",
+      "capability_id": "batch",
+      "provider_api_model_id": "openai:openai/gpt-image-1.5",
+      "provider_model_slug": "gpt-image-1.5-2025-12-16",
+      "internal_model_id": "openai/gpt-image-1.5",
+      "is_active_gateway": true,
+      "pricing_key": "openai:openai/gpt-image-1.5:batch"
+    },
+    {
+      "api_provider_id": "openai",
+      "api_model_id": "openai/gpt-image-2",
+      "capability_id": "batch",
+      "provider_api_model_id": "openai:openai/gpt-image-2",
+      "provider_model_slug": "gpt-image-2",
+      "internal_model_id": "openai/gpt-image-2",
+      "is_active_gateway": true,
+      "pricing_key": "openai:openai/gpt-image-2:batch"
+    },
+    {
+      "api_provider_id": "openai",
+      "api_model_id": "openai/gpt-image-1-mini",
+      "capability_id": "batch",
+      "provider_api_model_id": "openai:openai/gpt-image-1-mini",
+      "provider_model_slug": "gpt-image-1-mini",
+      "internal_model_id": "openai/gpt-image-1-mini",
+      "is_active_gateway": true,
+      "pricing_key": "openai:openai/gpt-image-1-mini:batch"
+    },
+    {
+      "api_provider_id": "openai",
+      "api_model_id": "openai/omni-moderation",
+      "capability_id": "batch",
+      "provider_api_model_id": "openai:openai/omni-moderation",
+      "provider_model_slug": "omni-moderation-latest",
+      "internal_model_id": "openai/omni-moderation",
+      "is_active_gateway": true,
+      "pricing_key": "openai:openai/omni-moderation:batch"
+    },
+    {
+      "api_provider_id": "openai",
+      "api_model_id": "openai/sora-2",
+      "capability_id": "batch",
+      "provider_api_model_id": "openai:openai/sora-2",
+      "provider_model_slug": "sora-2-2025-12-08",
+      "internal_model_id": "openai/sora-2",
+      "is_active_gateway": true,
+      "pricing_key": "openai:openai/sora-2:batch"
+    },
+    {
+      "api_provider_id": "openai",
+      "api_model_id": "openai/sora-2-pro",
+      "capability_id": "batch",
+      "provider_api_model_id": "openai:openai/sora-2-pro",
+      "provider_model_slug": "sora-2-pro",
+      "internal_model_id": "openai/sora-2-pro",
+      "is_active_gateway": true,
+      "pricing_key": "openai:openai/sora-2-pro:batch"
+    },
+    {
+      "api_provider_id": "openai",
+      "api_model_id": "openai/text-embedding-3-large",
+      "capability_id": "batch",
+      "provider_api_model_id": "openai:openai/text-embedding-3-large",
+      "provider_model_slug": "text-embedding-3-large",
+      "internal_model_id": "openai/text-embedding-3-large",
+      "is_active_gateway": true,
+      "pricing_key": "openai:openai/text-embedding-3-large:batch"
+    },
+    {
+      "api_provider_id": "openai",
+      "api_model_id": "openai/text-embedding-3-small",
+      "capability_id": "batch",
+      "provider_api_model_id": "openai:openai/text-embedding-3-small",
+      "provider_model_slug": "text-embedding-3-small",
+      "internal_model_id": "openai/text-embedding-3-small",
+      "is_active_gateway": true,
+      "pricing_key": "openai:openai/text-embedding-3-small:batch"
+    },
+    {
+      "api_provider_id": "openai",
+      "api_model_id": "openai/text-embedding-ada-002",
+      "capability_id": "batch",
+      "provider_api_model_id": "openai:openai/text-embedding-ada-002",
+      "provider_model_slug": "text-embedding-ada-002",
+      "internal_model_id": "openai/text-embedding-ada-002",
+      "is_active_gateway": true,
+      "pricing_key": "openai:openai/text-embedding-ada-002:batch"
+    },
+    {
+      "api_provider_id": "thinking-machines",
+      "api_model_id": "thinking-machines/inkling",
+      "capability_id": "text.generate",
+      "provider_api_model_id": "thinking-machines:thinkingmachines/Inkling:peft:262144",
+      "provider_model_slug": "thinkingmachines/Inkling:peft:262144",
+      "internal_model_id": "thinking-machines/inkling",
+      "is_active_gateway": true,
+      "pricing_key": "thinking-machines:thinking-machines/inkling:text.generate"
+    },
+    {
+      "api_provider_id": "thinking-machines",
+      "api_model_id": "thinking-machines/inkling-64k",
+      "capability_id": "text.generate",
+      "provider_api_model_id": "thinking-machines:thinkingmachines/Inkling",
+      "provider_model_slug": "thinkingmachines/Inkling",
+      "internal_model_id": "thinking-machines/inkling-64k",
+      "is_active_gateway": true,
+      "pricing_key": "thinking-machines:thinking-machines/inkling-64k:text.generate"
+    }
+  ]
+}

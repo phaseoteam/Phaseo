@@ -1,0 +1,8 @@
+{
+  "inheritedFrom": "liquid-ai",
+  "parentSource": {
+    "kind": "official-docs",
+    "url": "https://docs.liquid.ai/api-reference"
+  },
+  "bundleSha256": "5ee14be8ae02e7b751711e651f009c6bbde410c05e4f57561f24a38922d70428"
+}

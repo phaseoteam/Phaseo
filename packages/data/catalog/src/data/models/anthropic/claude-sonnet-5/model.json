@@ -99,7 +99,8 @@
       "score": 80.4,
       "is_self_reported": true,
       "other_info": "mini-SWE-agent harness; xhigh effort; mean reward across 445 trials",
-      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card"
+      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card",
+      "rank": 5
     },
     {
       "benchmark_id": "frontiercode-diamond",
@@ -127,28 +128,32 @@
       "score": 43.2,
       "is_self_reported": true,
       "other_info": "No tools; auto thinking; 1M total-token cap",
-      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card"
+      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card",
+      "rank": 42
     },
     {
       "benchmark_id": "humanitys-last-exam",
       "score": 57.4,
       "is_self_reported": true,
       "other_info": "With web search, web fetch, programmatic tool calling, and code execution; auto thinking; 1M total-token cap",
-      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card"
+      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card",
+      "rank": 9
     },
     {
       "benchmark_id": "browsecomp",
       "score": 84.7,
       "is_self_reported": true,
       "other_info": "Single-agent run; adaptive thinking at maximum effort; 10M-token limit with context compaction triggered at 200k",
-      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card"
+      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card",
+      "rank": 9
     },
     {
       "benchmark_id": "browsecomp",
       "score": 86.6,
       "is_self_reported": true,
       "other_info": "Multi-agent run from Anthropic capability summary table",
-      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card"
+      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card",
+      "rank": 7
     },
     {
       "benchmark_id": "gdp-pdf",
@@ -183,7 +188,8 @@
       "score": 59.4,
       "is_self_reported": true,
       "other_info": "Exact-match accuracy on Anthropic internal agentic harness; mean of five trials",
-      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card"
+      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card",
+      "rank": 3
     },
     {
       "benchmark_id": "legal-agent-benchmark",
@@ -204,21 +210,24 @@
       "score": 1609,
       "is_self_reported": false,
       "other_info": "GDPval-AA v2; Elo; independent Artificial Analysis evaluation, score as of 2026-06-06",
-      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card"
+      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card",
+      "rank": 10
     },
     {
       "benchmark_id": "toolathlon",
       "score": 54.3,
       "is_self_reported": true,
       "other_info": "Pass@1; internal harness; adaptive thinking at max effort; averaged over three trials across 108 tasks",
-      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card"
+      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card",
+      "rank": 7
     },
     {
       "benchmark_id": "automationbench",
       "score": 13.5,
       "is_self_reported": true,
       "other_info": "Zapier leaderboard private held-out tasks; max effort",
-      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card"
+      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card",
+      "rank": 4
     }
   ]
 }

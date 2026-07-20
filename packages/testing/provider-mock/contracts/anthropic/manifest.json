@@ -1,0 +1,14 @@
+{
+  "providerId": "anthropic",
+  "displayName": "Anthropic",
+  "source": {
+    "kind": "official-docs",
+    "url": "https://docs.anthropic.com/en/api/messages"
+  },
+  "operations": [
+    { "capability": "text.generate", "method": "post", "path": "/messages", "operationId": "createMessage" }
+  ],
+  "overlays": [
+    "Anthropic does not publish a downloadable OpenAPI document for this surface; this narrow contract is derived from the official Messages API and tool-use documentation."
+  ]
+}

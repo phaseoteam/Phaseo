@@ -336,6 +336,70 @@
     ]
   },
   {
+    "api_model_id": "moonshotai/kimi-k3",
+    "provider_api_model_id": "gmicloud:moonshotai/kimi-k3",
+    "provider_model_slug": "moonshotai/kimi-k3",
+    "internal_model_id": "moonshotai/kimi-k3",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text,image,video",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": null,
+    "effective_from": "2026-07-16T21:18:04Z",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": 1,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "GMI Cloud does not publish a separate maximum completion length for this route."
+          },
+          {
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Kimi K3 supports strict JSON Schema response formats."
+          },
+          {
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Kimi K3 supports strict JSON Schema structured output."
+          },
+          {
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Required tool choice was verified against GMI Cloud on 2026-07-17."
+          },
+          {
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Function calling was verified against GMI Cloud on 2026-07-17."
+          },
+          {
+            "param_id": "include_reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Kimi K3 always reasons; GMI Cloud returns reasoning_content alongside the answer or tool call."
+          }
+        ]
+      }
+    ]
+  },
+  {
     "api_model_id": "moonshotai/kimi-k2-0905",
     "provider_api_model_id": "gmicloud:moonshotai/kimi-k2-0905",
     "provider_model_slug": "moonshotai/Kimi-K2-Instruct-0905",

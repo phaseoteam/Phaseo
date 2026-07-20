@@ -56,7 +56,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/Qwen/QVQ-72B-Preview",
-      "rank": 41
+      "rank": 43
     },
     {
       "benchmark_id": "mathvista",

@@ -6,7 +6,9 @@ import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin } from "@/runtime/env";
 import { guardAuth, type GuardErr } from "@/pipeline/before/guards";
+import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { json, withRuntime } from "../../utils";
+import { requireCapability } from "./route-helpers";
 
 const KNOWN_ENDPOINTS = [
 	"chat/completions",
@@ -31,6 +33,8 @@ async function handleListEndpoints(req: Request) {
 	if (!auth.ok) {
 		return (auth as GuardErr).response;
 	}
+	const scopeError = requireCapability(auth.value, CAPABILITIES.MODELS_READ);
+	if (scopeError) return scopeError;
 
 	try {
 		const supabase = getSupabaseAdmin();

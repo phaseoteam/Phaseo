@@ -1,0 +1,29 @@
+{
+  "sourceUrl": "https://docs.siliconflow.com/cn/api-reference/openapi.yaml",
+  "sourceSha256": "2be59ab2f6908e5f6a035ab56f3fb36b325f307210dcab63a117b8fd460b429c",
+  "bundleSha256": "b6a6bd4716f39d6fb099b9049a04c67abd1f521690235cbb9d2001e06f061049",
+  "openapiVersion": "3.0.0",
+  "apiVersion": "1.0.0",
+  "gatewayPathMappings": [
+    {
+      "sourcePath": "/chat/completions",
+      "gatewayPath": "/v1/chat/completions"
+    },
+    {
+      "sourcePath": "/embeddings",
+      "gatewayPath": "/v1/embeddings"
+    },
+    {
+      "sourcePath": "/rerank",
+      "gatewayPath": "/v1/rerank"
+    },
+    {
+      "sourcePath": "/messages",
+      "gatewayPath": "/v1/messages"
+    },
+    {
+      "sourcePath": "/models",
+      "gatewayPath": "/v1/models"
+    }
+  ]
+}

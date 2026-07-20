@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://mancer.tech/docs",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "c01f895288d6b2e04b981157cfcd1e5d41f33526d56738c572edea22124dcc4a",
+  "gatewayPathPrefix": "/oai/v1"
+}

@@ -94,7 +94,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/glasswing",
-      "rank": 1
+      "rank": 3
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -102,7 +102,7 @@
       "is_self_reported": true,
       "other_info": "Without tools",
       "source_link": "https://www.anthropic.com/glasswing",
-      "rank": 7
+      "rank": 11
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -118,7 +118,7 @@
       "is_self_reported": true,
       "other_info": "4.9x fewer tokens vs Opus 4.6",
       "source_link": "https://www.anthropic.com/glasswing",
-      "rank": 3
+      "rank": 5
     },
     {
       "benchmark_id": "os-world",

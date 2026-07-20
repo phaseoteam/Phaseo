@@ -1,0 +1,25 @@
+{
+  "sourceUrl": "https://docs.together.ai/openapi.yaml",
+  "sourceSha256": "57a72f332ec48a611e1e454b6a688950e0c0b2e3604a6958e1eb64c83cc813f5",
+  "bundleSha256": "b4401ddc777cd2cbf8deca9789ca98dfcbd8a1a6196b3c50c8ef433e2d5dadd3",
+  "openapiVersion": "3.1.0",
+  "apiVersion": "2.0.0",
+  "gatewayPathMappings": [
+    {
+      "sourcePath": "/chat/completions",
+      "gatewayPath": "/v1/chat/completions"
+    },
+    {
+      "sourcePath": "/embeddings",
+      "gatewayPath": "/v1/embeddings"
+    },
+    {
+      "sourcePath": "/rerank",
+      "gatewayPath": "/v1/rerank"
+    },
+    {
+      "sourcePath": "/models",
+      "gatewayPath": "/v1/models"
+    }
+  ]
+}

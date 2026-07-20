@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "program-bench",
+  "benchmark_name": "Program Bench",
+  "category": "code",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": "https://www.vals.ai/benchmarks/programbench",
+  "total_models": 1
+}

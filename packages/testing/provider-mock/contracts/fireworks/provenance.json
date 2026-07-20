@@ -1,0 +1,21 @@
+{
+  "sourceUrl": "https://docs.fireworks.ai/merged.openapi.yaml",
+  "sourceSha256": "bd0551f1ad9915da1ecc7372d087223938426ca066da5f8f463f46baea4b6dd1",
+  "bundleSha256": "bac1a70dff112568f33dc62008bfc890f45418a655ffed91edc27b18ec39828a",
+  "openapiVersion": "3.1.0",
+  "apiVersion": "4.259.0",
+  "gatewayPathMappings": [
+    {
+      "sourcePath": "/v1/chat/completions",
+      "gatewayPath": "/inference/v1/chat/completions"
+    },
+    {
+      "sourcePath": "/v1/responses",
+      "gatewayPath": "/inference/v1/responses"
+    },
+    {
+      "sourcePath": "/v1/messages",
+      "gatewayPath": "/inference/v1/messages"
+    }
+  ]
+}

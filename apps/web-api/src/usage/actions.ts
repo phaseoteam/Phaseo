@@ -189,6 +189,50 @@ export interface InvestigateGenerationResult {
 	modelMetadata: Array<[string, SerializableModelMetadataEntry]>;
 	providerNames: Array<[string, string]>;
 	providerMetadata: Array<[string, ProviderMetadataEntry]>;
+	ioLog: GatewayIoLog | null;
+}
+
+export type GatewayIoLog = {
+	status: string;
+	storage_provider: string | null;
+	bytes: number | null;
+	retention_until: string | null;
+	error: string | null;
+	payload: Record<string, unknown> | null;
+};
+
+async function fetchGatewayIoLog(
+	workspaceId: string,
+	requestId: string,
+): Promise<GatewayIoLog | null> {
+	const env = current().env;
+	const token = String(env.GATEWAY_INTERNAL_TEST_TOKEN ?? "").trim();
+	if (!token) return null;
+
+	const baseUrl = String(env.GATEWAY_API_ORIGIN ?? "https://api.phaseo.app")
+		.trim()
+		.replace(/\/v1\/?$/, "")
+		.replace(/\/+$/, "");
+	if (!baseUrl) return null;
+
+	try {
+		const response = await fetch(
+			`${baseUrl}/internal/io-logs/${encodeURIComponent(requestId)}?workspace_id=${encodeURIComponent(workspaceId)}`,
+			{
+				headers: { "x-phaseo-internal-token": token },
+			},
+		);
+		if (!response.ok) return null;
+		const body = (await response.json()) as { io_log?: GatewayIoLog | null };
+		return body.io_log ?? null;
+	} catch (error) {
+		console.warn("[web-api/usage] I/O log lookup failed", {
+			workspaceId,
+			requestId,
+			error: error instanceof Error ? error.message : String(error),
+		});
+		return null;
+	}
 }
 
 export interface PaginatedRequestsResult {
@@ -1585,6 +1629,7 @@ export async function investigateGeneration(
 		const appName = request.app_id
 			? appMetadata.get(request.app_id)?.title ?? null
 			: null;
+		const ioLog = await fetchGatewayIoLog(workspaceId, trimmedRequestId);
 
 		return {
 			success: true,
@@ -1594,6 +1639,7 @@ export async function investigateGeneration(
 				modelMetadata: Array.from(modelMetadata.entries()),
 				providerNames: Array.from(providerNames.entries()),
 				providerMetadata: Array.from(providerMetadata.entries()),
+				ioLog,
 			},
 		};
 	}
@@ -1634,8 +1680,9 @@ export async function investigateGeneration(
 		typeof request.app_title === "string" && request.app_title.trim().length > 0
 			? request.app_title.trim()
 			: request.app_id
-				? appMetadata.get(request.app_id)?.title ?? null
-				: null;
+			? appMetadata.get(request.app_id)?.title ?? null
+			: null;
+	const ioLog = await fetchGatewayIoLog(workspaceId, trimmedRequestId);
 
 	return {
 		success: true,
@@ -1645,6 +1692,7 @@ export async function investigateGeneration(
 			modelMetadata: Array.from(modelMetadata.entries()),
 			providerNames: Array.from(providerNames.entries()),
 			providerMetadata: Array.from(providerMetadata.entries()),
+			ioLog,
 		},
 	};
 }

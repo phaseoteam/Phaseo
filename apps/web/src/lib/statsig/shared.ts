@@ -20,29 +20,12 @@ export const NEW_LANDING_PAGE_EXPERIMENT =
 	"gateway_hero_experiment";
 export const BATCH_API_GATE =
 	process.env.NEXT_PUBLIC_STATSIG_BATCH_API_GATE ?? "gateway_batch_api";
+export const GATEWAY_IO_LOGGING_GATE =
+	process.env.NEXT_PUBLIC_STATSIG_GATEWAY_IO_LOGGING_GATE ?? "gateway_io_logging";
 export const NEW_GATEWAY_HERO_GATE = NEW_LANDING_PAGE_GATE;
 export const NEW_GATEWAY_HERO_EXPERIMENT = NEW_LANDING_PAGE_EXPERIMENT;
 
-export const MODELS_CATALOGUE_V2_BETA_KEY = "models_catalogue_v2";
-
-export type WebBetaFeatureDefinition = {
-	key: string;
-	kind?: "toggle" | "range";
-	title: string;
-	description: string;
-	adminOnly?: boolean;
-};
-
-export const WEB_BETA_FEATURES = [
-	{
-		key: MODELS_CATALOGUE_V2_BETA_KEY,
-		kind: "toggle",
-		title: "Models catalogue V2",
-		description:
-			"Load the Models page from the parallel V2 model, provider, capability, SKU, and rate tables.",
-		adminOnly: true,
-	},
-] as const satisfies readonly WebBetaFeatureDefinition[];
+export const WEB_BETA_FEATURES = [] as const;
 
 export type WebBetaFeatureKey = (typeof WEB_BETA_FEATURES)[number]["key"];
 export type GatewayHeroVariant = "classic" | "experimental";

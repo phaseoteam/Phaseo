@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
 import { isSafeOAuthRedirectUrl } from "@/lib/oauth/safeUrls";
-import { fetchAccountWebApi } from "@/lib/web-api/client";
+import { apiBaseUrl } from "@/lib/oauth/apiBaseUrl";
 
 export const metadata = {
 	title: "Authorize Application - Phaseo",
@@ -23,6 +23,7 @@ interface ConsentPageProps {
 		state?: string;
 		code_challenge?: string;
 		code_challenge_method?: string;
+		resource?: string;
 		error?: string;
 	}>;
 }
@@ -73,7 +74,26 @@ function oauthAppFromClientRow(row: Record<string, any>) {
 		logo_url: row.logo_url ?? null,
 		redirect_uris: parseRedirectUris(row.redirect_uris),
 		status: row.status ?? "active",
+		is_first_party: Boolean(row.is_first_party),
+		registration_source: row.registration_source ?? (row.is_first_party ? "first_party" : "dynamic"),
 	};
+}
+
+async function loadConsentClientMetadata(supabase: any, clientId: string) {
+	const { data: { session } } = await supabase.auth.getSession();
+	if (!session?.access_token) return null;
+	try {
+		const url = new URL(`${apiBaseUrl()}/oauth/client-metadata`);
+		url.searchParams.set("client_id", clientId);
+		const response = await fetch(url, {
+			headers: { Authorization: `Bearer ${session.access_token}` },
+			cache: "no-store",
+		});
+		if (!response.ok) return null;
+		return await response.json();
+	} catch {
+		return null;
+	}
 }
 
 export default function ConsentPage({ searchParams }: ConsentPageProps) {
@@ -110,9 +130,6 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 		const returnUrl = new URLSearchParams(params as any).toString();
 		redirect(`/sign-in?returnUrl=${encodeURIComponent(`/oauth/consent?${returnUrl}`)}`);
 	}
-	const { data: sessionData } = await supabase.auth.getSession();
-	const accessToken = sessionData.session?.access_token;
-	if (!accessToken) redirect("/sign-in");
 
 	// Handle error cases
 	if (params.error) {
@@ -144,13 +161,6 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 	let resolvedClientId: string | undefined;
 	let resolvedRedirectUri: string | undefined;
 	let requestedScopes: string[] = [];
-	type ConsentData = {
-		appMetadata: Record<string, any> | null;
-		firstPartyClient: Record<string, any> | null;
-		workspaces: Array<{ id: string; name: string }>;
-	};
-	const loadConsentData = (clientId: string) => fetchAccountWebApi<ConsentData>(`/api/account/auth/oauth-consent?clientId=${encodeURIComponent(clientId)}`, accessToken);
-	let consentData: ConsentData | null = null;
 
 	if (authorizationId) {
 		const { data: authorizationDetails, error: authorizationError } =
@@ -195,9 +205,15 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 		}
 
 		if (resolvedClientId) {
-			const loaded = await loadConsentData(resolvedClientId);
-			consentData = loaded;
-			oauthApp = loaded.appMetadata;
+			const { data: appMetadata } = await supabase
+				.from("oauth_app_metadata")
+				.select("*")
+				.eq("client_id", resolvedClientId)
+				.eq("status", "active")
+				.maybeSingle();
+			oauthApp = appMetadata
+				? { ...appMetadata, registration_source: appMetadata.is_first_party ? "first_party" : "developer" }
+				: await loadConsentClientMetadata(supabase, resolvedClientId);
 		}
 
 		if (!oauthApp) {
@@ -209,6 +225,8 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 				logo_url: authorizationDetails.client?.logo_uri ?? null,
 				redirect_uris: [authorizationDetails.redirect_uri],
 				status: "active",
+				is_first_party: false,
+				registration_source: "dynamic",
 			};
 		}
 	} else {
@@ -228,10 +246,21 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 			);
 		}
 
-		const loaded = await loadConsentData(params.client_id);
-		consentData = loaded;
-		let resolvedAppMetadata: Record<string, any> | null = loaded.appMetadata;
-		if (!resolvedAppMetadata && loaded.firstPartyClient) resolvedAppMetadata = oauthAppFromClientRow(loaded.firstPartyClient);
+		// Fetch OAuth app metadata
+		const { data: appMetadata, error: appError } = await supabase
+			.from("oauth_app_metadata")
+			.select("*")
+			.eq("client_id", params.client_id)
+			.eq("status", "active")
+			.single();
+
+		let resolvedAppMetadata: Record<string, any> | null = appMetadata as Record<string, any> | null;
+		if (appError || !resolvedAppMetadata) {
+			const firstPartyClient = await loadConsentClientMetadata(supabase, params.client_id);
+			if (firstPartyClient) {
+				resolvedAppMetadata = oauthAppFromClientRow(firstPartyClient as Record<string, any>);
+			}
+		}
 		if (!resolvedAppMetadata && params.client_id in FIRST_PARTY_CLIENTS) {
 			const firstPartyClient = FIRST_PARTY_CLIENTS[params.client_id];
 			const redirectUris =
@@ -246,6 +275,8 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 				logo_url: firstPartyClient.logo_url,
 				redirect_uris: redirectUris,
 				status: "active",
+				is_first_party: true,
+				registration_source: "first_party",
 			};
 		}
 
@@ -330,8 +361,19 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 			: ["openid", "email", "gateway:access"];
 	}
 
-	const resolvedConsentData = consentData ?? await loadConsentData(resolvedClientId ?? "");
-	if (resolvedConsentData.workspaces.length === 0) {
+	// Fetch user's teams
+	const { data: teamMembers, error: teamsError } = await supabase
+		.from("workspace_members")
+		.select(`
+			workspace_id,
+			teams:workspaces (
+				id,
+				name
+			)
+		`)
+		.eq("user_id", user.id);
+
+	if (teamsError || !teamMembers || teamMembers.length === 0) {
 		return (
 			<div className="container max-w-2xl mx-auto py-12">
 				<Card className="p-8">
@@ -350,7 +392,16 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 		);
 	}
 
-	const teams = resolvedConsentData.workspaces;
+	// Transform teams data
+	const teams = teamMembers
+		.map((tm) => {
+			const team = Array.isArray(tm.teams) ? tm.teams[0] : tm.teams;
+			if (team && typeof team === "object" && "id" in team && "name" in team) {
+				return { id: team.id, name: team.name };
+			}
+			return null;
+		})
+		.filter((t): t is { id: string; name: string } => t !== null);
 
 	return (
 		<div className="container max-w-3xl mx-auto py-12">
@@ -365,6 +416,7 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 				state={params.state}
 				codeChallenge={params.code_challenge}
 				codeChallengeMethod={params.code_challenge_method}
+				resource={params.resource}
 			/>
 		</div>
 	);

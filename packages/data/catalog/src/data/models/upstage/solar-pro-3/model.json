@@ -30,7 +30,7 @@
       "is_self_reported": false,
       "other_info": "Artificial Analysis structured model metrics",
       "source_link": "https://artificialanalysis.ai/models/solar-pro-3",
-      "rank": 26
+      "rank": 29
     },
     {
       "benchmark_id": "tau-2-telecom",
@@ -94,7 +94,7 @@
       "is_self_reported": false,
       "other_info": "Artificial Analysis structured model metrics",
       "source_link": "https://artificialanalysis.ai/models/solar-pro-3",
-      "rank": 86
+      "rank": 90
     },
     {
       "benchmark_id": "critpt",

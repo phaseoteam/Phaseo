@@ -170,7 +170,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
       "source_link": "https://openai.com/index/gpt-5/",
-      "rank": 143
+      "rank": 153
     },
     {
       "benchmark_id": "if-eval",
@@ -234,7 +234,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
       "source_link": "https://openai.com/index/gpt-5/",
-      "rank": 66
+      "rank": 67
     },
     {
       "benchmark_id": "multi-challenge",

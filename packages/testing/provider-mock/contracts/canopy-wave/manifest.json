@@ -1,0 +1,12 @@
+{
+  "providerId": "canopy-wave",
+  "displayName": "Canopy Wave",
+  "source": {
+    "kind": "official-docs",
+    "url": "https://docs.canopywave.io/"
+  },
+  "operations": [],
+  "overlays": [
+    "Provider is explicitly marked not-ready by Phaseo executor coverage."
+  ]
+}

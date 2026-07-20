@@ -1,0 +1,7 @@
+{
+  "sourceUrl": "https://docs.inference.net/",
+  "reconstruction": "openai-compatible-reference-overlay",
+  "baseContract": "openai",
+  "bundleSha256": "96d25e8bafa1e26a5a63fd4dd767cbe0ea83d230b4d115f27bf5d3ffd63efa0c",
+  "gatewayPathPrefix": "/v1"
+}

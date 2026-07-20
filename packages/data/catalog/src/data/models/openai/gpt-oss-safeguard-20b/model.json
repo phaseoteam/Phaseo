@@ -55,7 +55,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gpt-oss-20b (score=0.5137; benches=7)",
       "source_link": "https://openai.com/index/introducing-gpt-oss/",
-      "rank": 124
+      "rank": 134
     },
     {
       "benchmark_id": "mmlu",

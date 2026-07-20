@@ -111,7 +111,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct",
-      "rank": 73
+      "rank": 74
     },
     {
       "benchmark_id": "tydiqa",

@@ -19,6 +19,7 @@ import { CookieConsentManager } from "@/components/analytics/CookieConsentManage
 import { DeferredVercelAnalytics } from "@/components/analytics/DeferredVercelAnalytics";
 import { ConsoleEasterEgg } from "@/components/ConsoleEasterEgg";
 import SiteNoticeSlot from "@/components/site-notice/SiteNoticeSlot";
+import ThemeAwareFavicon from "@/components/ThemeAwareFavicon";
 import { Suspense } from "react";
 import { PublicSWRProvider } from "@/components/providers/PublicSWRProvider";
 import AdminDeveloperMenuLauncher from "@/components/developer-menu/AdminDeveloperMenuLauncher";
@@ -36,8 +37,8 @@ export const metadata: Metadata = {
 	authors: [{ name: SITE_NAME }],
 	metadataBase: METADATA_BASE,
 	icons: {
-		icon: [{ url: "/favicon.svg", type: "image/svg+xml", sizes: "any" }],
-		shortcut: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+		icon: [{ url: "/api/favicon", type: "image/svg+xml", sizes: "any" }],
+		shortcut: [{ url: "/api/favicon", type: "image/svg+xml" }],
 	},
 	openGraph: {
 		type: "website",
@@ -94,6 +95,7 @@ export default function RootLayout({
 					disableTransitionOnChange
 				>
 					<TooltipProvider>
+						<ThemeAwareFavicon />
 						<Suspense fallback={null}>
 							<SiteNoticeSlot />
 						</Suspense>

@@ -61,7 +61,11 @@ export function irToOpenAIChat(
 				providerId === "crofai" ||
 				providerId === "xiaomi" ||
 				providerId === "minimax" ||
-				providerId === "minimax-lightning";
+				providerId === "minimax-lightning" ||
+				providerId === "moonshot-ai" ||
+				providerId === "moonshotai" ||
+				providerId === "moonshot-ai-turbo" ||
+				providerId === "moonshotai-turbo";
 			if (providerSupportsAssistantReasoningContent && assistantReasoning.length > 0) {
 				message.reasoning_content = assistantReasoning;
 			}
@@ -227,6 +231,7 @@ function toOpenAIChatTool(tool: IRTool): any {
 			name: tool.name,
 			description: tool.description,
 			parameters: tool.parameters,
+			...(tool.strict !== undefined ? { strict: tool.strict } : {}),
 		},
 	};
 }

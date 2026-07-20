@@ -71,7 +71,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 45
+      "rank": 48
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -79,7 +79,7 @@
       "is_self_reported": true,
       "other_info": "No Tools",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 117
+      "rank": 127
     },
     {
       "benchmark_id": "lmarena-text",

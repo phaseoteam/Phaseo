@@ -134,7 +134,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 49
+      "rank": 51
     },
     {
       "benchmark_id": "mathvista",
@@ -246,7 +246,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen2.5-omni-7b (score=0.3696; benches=45)",
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 102
+      "rank": 104
     },
     {
       "benchmark_id": "mmstar",

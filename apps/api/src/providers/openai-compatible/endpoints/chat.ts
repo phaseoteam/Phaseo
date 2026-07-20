@@ -5,7 +5,7 @@
 import type { ProviderExecuteArgs, AdapterResult } from "../../types";
 import type { GatewayCompletionsResponse, GatewayReasoningDetail, GatewayUsage } from "@core/types";
 import { ChatCompletionsSchema, type ChatCompletionsRequest } from "@core/schemas";
-import { resolveCanonicalTokenUsage } from "@core/usage-normalization";
+import { pickFirstFiniteNumber, resolveCanonicalTokenUsage } from "@core/usage-normalization";
 import { buildAdapterPayload } from "../../utils";
 import { computeBill } from "@pipeline/pricing/engine";
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "../config";
@@ -201,12 +201,33 @@ function mapGatewayToOpenAIChat(
 function normalizeUsage(usage: any): GatewayUsage | undefined {
     if (!usage) return undefined;
     const tokens = resolveCanonicalTokenUsage(usage);
+    const cachedTokens = pickFirstFiniteNumber(usage, [
+        "input_tokens_details.cached_tokens",
+        "prompt_tokens_details.cached_tokens",
+        "cached_read_text_tokens",
+        "cachedInputTokens",
+    ]);
+    const reasoningTokens = pickFirstFiniteNumber(usage, [
+        "output_tokens_details.reasoning_tokens",
+        "completion_tokens_details.reasoning_tokens",
+        "reasoning_tokens",
+        "reasoningTokens",
+    ]);
     return {
         input_tokens: tokens.inputTokens,
         output_tokens: tokens.outputTokens,
         total_tokens: tokens.totalTokens,
         input_text_tokens: tokens.inputTokens,
         output_text_tokens: tokens.outputTokens,
+        ...(typeof cachedTokens === "number" ? {
+            input_tokens_details: { cached_tokens: cachedTokens },
+            input_details: { cached_tokens: cachedTokens },
+            cached_read_text_tokens: cachedTokens,
+        } : {}),
+        ...(typeof reasoningTokens === "number" ? {
+            output_tokens_details: { reasoning_tokens: reasoningTokens },
+            reasoning_tokens: reasoningTokens,
+        } : {}),
     };
 }
 

@@ -5,9 +5,11 @@ import {
 	CLI_DEFAULT_SCOPES,
 	createUserCode,
 	filterAllowedScopes,
+	hashOAuthClientSecret,
 	hashOAuthSecret,
 	normalizeScopes,
 	normalizeUserCode,
+	verifyPkce,
 	verifyClientSecret,
 } from "./service";
 
@@ -40,6 +42,18 @@ describe("OAuth service helpers", () => {
 			"keys:write",
 		]);
 		expect(normalizeUserCode("abcd efgh")).toBe("ABCD-EFGH");
+	});
+
+	it("enforces RFC 7636 verifier and challenge syntax", async () => {
+		const verifier = "A".repeat(43);
+		const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)));
+		let binary = "";
+		for (const byte of digest) binary += String.fromCharCode(byte);
+		const challenge = btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+
+		await expect(verifyPkce({ codeVerifier: verifier, codeChallenge: challenge, method: "S256" })).resolves.toBe(true);
+		await expect(verifyPkce({ codeVerifier: "short", codeChallenge: challenge, method: "S256" })).resolves.toBe(false);
+		await expect(verifyPkce({ codeVerifier: verifier, codeChallenge: "short", method: "S256" })).resolves.toBe(false);
 	});
 
 	it("filters requested scopes against client allowlists", () => {
@@ -110,6 +124,16 @@ describe("OAuth service helpers", () => {
 		await expect(verifyClientSecret(client, secret)).resolves.toBe(true);
 		await expect(verifyClientSecret(client, "wrong-secret")).resolves.toBe(false);
 		await expect(verifyClientSecret(client, null)).resolves.toBe(false);
+	});
+
+	it("hashes generated OAuth client secrets with the OAuth pepper", async () => {
+		const secret = "generated-opaque-client-secret";
+		const hash = await hashOAuthClientSecret(secret);
+		expect(hash).toBe(await hashOAuthSecret(secret));
+		await expect(verifyClientSecret({
+			client_type: "confidential",
+			client_secret_hash: hash,
+		}, secret)).resolves.toBe(true);
 	});
 
 	it("keeps OAuth hashes independent from API-key pepper rotation", async () => {

@@ -1,4 +1,5 @@
 import type { Backend, BackendContext, GeneratedFile, IR, IRModel, IROperation, IRSchema } from "@phaseo/oapi-core";
+import { splitPathTemplate } from "@phaseo/oapi-core";
 import { format } from "prettier";
 
 export const backendTs: Backend = {
@@ -173,13 +174,13 @@ function renderPathTemplate(path: string, params: IROperation["params"]): string
 	if (params.length === 0) {
 		return JSON.stringify(path);
 	}
-	const segments = path.split(/({[^}]+})/g).filter(Boolean);
+	const segments = splitPathTemplate(path);
 	const parts = segments.map((segment) => {
 		if (segment.startsWith("{") && segment.endsWith("}")) {
-			const name = segment.slice(1, -1);
-			return `\${encodeURIComponent(String(path?.${name}))}`;
+			const name = JSON.stringify(segment.slice(1, -1));
+			return `\${encodeURIComponent(String(path?.[${name}]))}`;
 		}
-		return segment.replace(/`/g, "\\`").replace(/\$/g, "\\$");
+		return segment.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$/g, "\\$");
 	});
 	return "`" + parts.join("") + "`";
 }

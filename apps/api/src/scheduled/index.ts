@@ -15,6 +15,7 @@ import { runAsyncWebhookRetriesJob } from "@/core/async-notifications";
 import { runBatchReconciliationJob } from "@/pipeline/batch-reconciliation";
 import { drainEmailOutbox } from "@/pipeline/notifications/email-outbox";
 import { runVideoReconciliationJob } from "@/pipeline/video-reconciliation";
+import { runGatewayIoRetentionBillingJob } from "@/pipeline/audit/io-retention-billing";
 
 const MODEL_DISCOVERY_TICKS_PER_DAY = Array.from({ length: 24 }, (_value, hour) =>
 	60 / getModelDiscoveryStepMinutesUtc(hour),
@@ -57,6 +58,12 @@ function toInt(value: string | undefined, fallback: number): number {
 	return Math.max(1, Math.floor(parsed));
 }
 
+function toNonNegativeInt(value: string | undefined, fallback: number): number {
+	const parsed = Number(value ?? "");
+	if (!Number.isFinite(parsed)) return fallback;
+	return Math.max(0, Math.floor(parsed));
+}
+
 function toZeroBasedInt(value: string | undefined, fallback: number): number {
 	const parsed = Number(value ?? "");
 	if (!Number.isFinite(parsed)) return fallback;
@@ -88,6 +95,11 @@ function isModelDiscoveryTick(event: ScheduledController): boolean {
 	const hour = scheduledAt.getUTCHours();
 	const minute = scheduledAt.getUTCMinutes();
 	return minute % getModelDiscoveryStepMinutesUtc(hour) === 0;
+}
+
+function isDailyRetentionBillingTick(event: ScheduledController): boolean {
+	const scheduledAt = new Date(event.scheduledTime);
+	return scheduledAt.getUTCHours() === 0 && scheduledAt.getUTCMinutes() === 10;
 }
 
 function getModelDiscoveryExecutionIndex(event: ScheduledController): number {
@@ -222,6 +234,44 @@ async function handleEmailOutboxScheduledEvent(_event: ScheduledController, env:
 	}
 }
 
+async function handleGatewayIoRetentionBillingScheduledEvent(
+	event: ScheduledController,
+	env: GatewayBindings,
+): Promise<void> {
+	if (!toBool(env.GATEWAY_IO_RETENTION_BILLING_ENABLED, false)) {
+		return;
+	}
+
+	const limit = toInt(env.GATEWAY_IO_RETENTION_BILLING_LIMIT, 100);
+	const graceDays = toInt(env.GATEWAY_IO_RETENTION_GRACE_DAYS, 14);
+	const pricePerMillionUnitsNanos = toNonNegativeInt(
+		env.GATEWAY_IO_RETENTION_PRICE_PER_MILLION_UNITS_NANOS,
+		0,
+	);
+	const pruneLimit = toInt(env.GATEWAY_IO_RETENTION_PRUNE_LIMIT, 250);
+	configureRuntime(env);
+	try {
+		const summary = await runGatewayIoRetentionBillingJob({
+			asOf: new Date(event.scheduledTime),
+			limit,
+			graceDays,
+			pricePerMillionUnitsNanos,
+			pruneLimit,
+		});
+		if (
+			summary.processed > 0 ||
+			summary.charged > 0 ||
+			summary.grace > 0 ||
+			summary.suspended > 0 ||
+			summary.failed > 0
+		) {
+			console.log("gateway_io_retention_billing_completed", summary);
+		}
+	} finally {
+		clearRuntime();
+	}
+}
+
 async function handleOAuthCleanupScheduledEvent(env: GatewayBindings): Promise<void> {
 	configureRuntime(env);
 	try {
@@ -233,6 +283,13 @@ async function handleOAuthCleanupScheduledEvent(env: GatewayBindings): Promise<v
 }
 
 export async function handleScheduledEvent(event: ScheduledController, env: GatewayBindings): Promise<void> {
+	if (isDailyRetentionBillingTick(event)) {
+		try {
+			await handleGatewayIoRetentionBillingScheduledEvent(event, env);
+		} catch (error) {
+			console.error("gateway_io_retention_billing_scheduled_failed", serializeError(error));
+		}
+	}
 	if (isCoreJobsTick(event)) {
 		try {
 			await handleOAuthCleanupScheduledEvent(env);

@@ -128,6 +128,30 @@ export async function handlePasswordSignIn(formData: FormData) {
 	redirect(redirectPath);
 }
 
+/** Completes server-side provisioning after a browser passkey ceremony. */
+export async function completePasskeySignIn(returnUrl?: string) {
+	const supabase = await createClient();
+	const {
+		data: { user },
+	} = await supabase.auth.getUser();
+	if (!user) {
+		throw new Error("Passkey sign-in did not create a session");
+	}
+
+	const {
+		data: { session },
+	} = await supabase.auth.getSession();
+	const result = await finalizePostLogin({
+		supabaseUser: supabase,
+		user,
+		session,
+		returnUrl: sanitizeReturnUrl(returnUrl, "/"),
+		source: "server_action",
+	});
+
+	return { redirectPath: result.redirectPath };
+}
+
 // react-doctor-disable-next-line
 export async function startSsoSignIn(input: StartSsoInput) {
 	const supabase = await createClient();
