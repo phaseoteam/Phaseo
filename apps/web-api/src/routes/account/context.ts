@@ -1,10 +1,11 @@
 import { requireUser, type AuthenticatedUser } from "@/auth/requireUser";
-import { getDataClient } from "@/data/supabase";
+import { getAuthenticatedDataClient, getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 
 export type AccountWorkspaceContext = {
 	user: AuthenticatedUser;
 	client: ReturnType<typeof getDataClient>;
+	userClient: ReturnType<typeof getDataClient>;
 	workspaceId: string;
 	role: string;
 };
@@ -30,6 +31,8 @@ export async function requireAccountWorkspace(args: {
 	).trim();
 	if (!user || !workspaceId) return null;
 	const client = getDataClient(args.env);
+	const userClient = getAuthenticatedDataClient(args.env, args.request);
+	if (!userClient) return null;
 	const [membershipResult, workspaceResult] = await Promise.all([
 		client
 			.from("workspace_members")
@@ -49,6 +52,7 @@ export async function requireAccountWorkspace(args: {
 	return {
 		user,
 		client,
+		userClient,
 		workspaceId,
 		role: isOwner ? "admin" : String(membershipResult.data?.role ?? "member"),
 	};

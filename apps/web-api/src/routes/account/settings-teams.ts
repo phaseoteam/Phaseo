@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { requireUser } from "@/auth/requireUser";
-import { getDataClient } from "@/data/supabase";
+import { getAuthenticatedDataClient, getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { requireAccountWorkspace } from "./context";
@@ -351,7 +351,9 @@ for (const decision of ["approve", "reject"] as const) {
 	accountSettingsTeamsRouter.post(`/teams/join-requests/:requestId/${decision}`, async (c) => {
 		const user = await requireUser(c.req.raw, c.env);
 		if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
-		const result = await getDataClient(c.env).rpc(`${decision}_workspace_join_request`, { p_request_id: c.req.param("requestId") });
+		const userClient = getAuthenticatedDataClient(c.env, c.req.raw);
+		if (!userClient) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
+		const result = await userClient.rpc(`${decision}_workspace_join_request`, { p_request_id: c.req.param("requestId") });
 		if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 		const row = Array.isArray(result.data) ? result.data[0] : result.data;
 		if (!row?.id) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);

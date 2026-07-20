@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { notifyAccountDeleted } from "@/auth/accountLifecycleDiscord";
 import { requireUser } from "@/auth/requireUser";
-import { getDataClient } from "@/data/supabase";
+import { getAuthenticatedDataClient, getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { requireAccountWorkspace } from "./context";
@@ -684,6 +684,8 @@ accountSettingsRouter.get("/keys", async (c) => {
 		}, 200, PRIVATE_NO_STORE_HEADERS);
 	}
 	const client = getDataClient(c.env);
+	const userClient = getAuthenticatedDataClient(c.env, c.req.raw);
+	if (!userClient) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 	const [membershipsResult, ownedResult] = await Promise.all([
 		client.from("workspace_members").select("workspace_id").eq("user_id", user.id),
 		client.from("workspaces").select("id").eq("owner_user_id", user.id),
@@ -716,7 +718,7 @@ accountSettingsRouter.get("/keys", async (c) => {
 		const [keysResult, usageResult] = await Promise.all([
 			client.from("keys").select("*").eq("workspace_id", initialWorkspaceId)
 				.neq("status", "deleted").neq("name", "__chat_route_managed_key__"),
-			client.rpc("get_workspace_key_usage", {
+			userClient.rpc("get_workspace_key_usage", {
 				p_workspace_id: initialWorkspaceId,
 				p_day_start: dayStart.toISOString(),
 			}),

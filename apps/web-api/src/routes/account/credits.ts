@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { requireUser } from "@/auth/requireUser";
-import { getDataClient } from "@/data/supabase";
+import { getAuthenticatedDataClient, getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 
@@ -34,6 +34,8 @@ async function requireWorkspace(c: { req: { raw: Request; query: (key: string) =
 		?? cookieValue(c.req.raw, "activeWorkspaceId")?.trim();
 	if (!user || !workspaceId) return null;
 	const client = getDataClient(c.env);
+	const userClient = getAuthenticatedDataClient(c.env, c.req.raw);
+	if (!userClient) return null;
 	const { data, error } = await client
 		.from("workspace_members")
 		.select("workspace_id")
@@ -41,7 +43,7 @@ async function requireWorkspace(c: { req: { raw: Request; query: (key: string) =
 		.eq("user_id", user.id)
 		.maybeSingle();
 	if (error || !data) return null;
-	return { client, user, workspaceId };
+	return { client, user, userClient, workspaceId };
 }
 
 export const creditsRouter = new Hono<{ Bindings: Env }>();
@@ -230,7 +232,7 @@ creditsRouter.post("/redeem", async (c) => {
 	if (!/^[A-Z0-9_-]{2,}$/.test(code)) return c.json({ status: "invalid_code_format", message: "Credit code format is invalid." }, 400, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireWorkspace({ req: { raw: c.req.raw, query: (key) => key === "workspaceId" ? workspaceId : undefined }, env: c.env });
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
-	const result = await context.client.rpc("redeem_credit_code", { p_code: code, p_workspace_id: workspaceId });
+	const result = await context.userClient.rpc("redeem_credit_code", { p_code: code, p_workspace_id: workspaceId });
 	if (result.error) return c.json({ status: "error", message: "We could not redeem that credit code right now." }, 503, PRIVATE_NO_STORE_HEADERS);
 	const row = Array.isArray(result.data) ? result.data[0] : result.data;
 	return c.json({ result: row ?? null }, 200, PRIVATE_NO_STORE_HEADERS);
