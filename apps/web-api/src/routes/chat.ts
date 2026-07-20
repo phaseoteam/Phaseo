@@ -11,7 +11,7 @@ export const chatRouter = new Hono<{ Bindings: Env }>();
 const waitUntil = (c: any) => (promise: Promise<unknown>) => c.executionCtx.waitUntil(promise);
 
 function truthy(value: string | undefined): boolean { return ["1", "true", "yes"].includes(String(value ?? "").trim().toLowerCase()); }
-function videoEnabled(env: Env): boolean { const value = env.VIDEO_CHAT_API_ENABLED ?? env.NEXT_PUBLIC_VIDEO_CHAT_API_ENABLED; return value == null || !["0", "false", "no", "off"].includes(value.trim().toLowerCase()); }
+function videoEnabled(env: Env): boolean { const value = env.VIDEO_CHAT_API_ENABLED ?? env.NEXT_PUBLIC_VIDEO_CHAT_API_ENABLED; return ["1", "true", "yes", "on"].includes(value?.trim().toLowerCase() ?? ""); }
 function unavailable(c: any) { return c.json({ error: "Video generation is coming soon.", code: "not_implemented_yet" }, 501, PRIVATE_NO_STORE_HEADERS); }
 async function envelope(request: Request): Promise<ChatProxyEnvelope & Record<string, any>> { return request.json().catch(() => ({})); }
 

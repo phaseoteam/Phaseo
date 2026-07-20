@@ -6,6 +6,7 @@ import type { StatsigUser } from "@flags-sdk/statsig";
 import { getServerStatsigUser, getStatsigFlagsAdapter } from "@/lib/statsig/server";
 import {
 	BATCH_API_GATE,
+	VIDEO_API_GATE,
 	GATEWAY_IO_LOGGING_GATE,
 	MODELS_CATALOGUE_V2_BETA_KEY,
 	NEW_LANDING_PAGE_EXPERIMENT,
@@ -79,5 +80,16 @@ export const gatewayIoLoggingFlag = statsigAdapter
 		})
 	: flag<boolean>({
 			key: GATEWAY_IO_LOGGING_GATE,
+			decide: () => false,
+		});
+
+export const videoApiFlag = statsigAdapter
+	? flag<boolean, StatsigUser>({
+			key: VIDEO_API_GATE,
+			identify,
+			adapter: statsigAdapter.featureGate((gate) => gate.value),
+		})
+	: flag<boolean>({
+			key: VIDEO_API_GATE,
 			decide: () => false,
 		});

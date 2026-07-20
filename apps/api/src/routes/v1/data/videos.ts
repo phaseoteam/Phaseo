@@ -21,6 +21,7 @@ import { fetchCatalogue } from "../control/models.catalogue";
 import { withRuntime } from "../../utils";
 import { getVideoByIdHandler } from "./videos.get-by-id";
 import { getVideoContentHandler } from "./videos.get-content";
+import { getVideoApiFeatureGateName, isVideoApiAccessEnabled } from "@core/feature-flags";
 
 import * as videoHelpers from "./videos.helpers";
 
@@ -234,6 +235,20 @@ function notImplementedYetResponse(): Response {
 	});
 }
 
+function featureDisabledResponse(): Response {
+	return err("not_implemented_yet", {
+		reason: "video_api_feature_disabled",
+		message: "Video API access is not enabled for this workspace.",
+		feature_gate: getVideoApiFeatureGateName(),
+	});
+}
+
+async function requireVideoFeature(req: Request): Promise<Response | null> {
+	const auth = await guardAuth(req);
+	if (!auth.ok) return (auth as { ok: false; response: Response }).response;
+	return await isVideoApiAccessEnabled(auth.value) ? null : featureDisabledResponse();
+}
+
 videosRoutes.use("*", async (c, next) => {
 	if (c.env && !isVideoApiEnabled(c.env.VIDEO_API_ENABLED)) {
 		return notImplementedYetResponse();
@@ -241,12 +256,16 @@ videosRoutes.use("*", async (c, next) => {
 	await next();
 });
 
-videosRoutes.post("/", withRuntime(videoHandler));
+videosRoutes.post("/", withRuntime(async (req) => {
+	const denied = await requireVideoFeature(req);
+	return denied ?? videoHandler(req);
+}));
 
 videosRoutes.get("/", withRuntime(async (req) => {
 	const auth = await guardAuth(req);
 	if (!auth.ok) return (auth as { ok: false; response: Response }).response;
 	const authValue = auth.value as VideoRouteAuth;
+	if (!await isVideoApiAccessEnabled(auth.value)) return featureDisabledResponse();
 	const url = new URL(req.url);
 	const limit = parseVideoListLimit(url);
 	const statuses = parseVideoListStatuses(url);
@@ -294,6 +313,7 @@ videosRoutes.get("/", withRuntime(async (req) => {
 videosRoutes.get("/models", withRuntime(async (req) => {
 	const auth = await guardAuth(req);
 	if (!auth.ok) return (auth as { ok: false; response: Response }).response;
+	if (!await isVideoApiAccessEnabled(auth.value)) return featureDisabledResponse();
 	const url = new URL(req.url);
 	const catalogue = await fetchCatalogue({
 		endpoints: ["video.generation"],

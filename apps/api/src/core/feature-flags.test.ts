@@ -3,7 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	getBatchApiFeatureGateName,
 	getGatewayIoLoggingFeatureGateName,
+	getVideoApiFeatureGateName,
 	isBatchApiAccessEnabled,
+	isVideoApiAccessEnabled,
 	isGatewayIoLoggingFeatureEnabled,
 } from "./feature-flags";
 import type { AuthSuccess } from "@pipeline/before/auth";
@@ -26,8 +28,26 @@ describe("batch API feature gate", () => {
 	it("uses the configured Statsig gate name", () => {
 		expect(getBatchApiFeatureGateName({ STATSIG_BATCH_API_GATE: "custom_batch_gate" })).toBe("custom_batch_gate");
 		expect(getBatchApiFeatureGateName({})).toBe("gateway_batch_api");
+		expect(getVideoApiFeatureGateName({ STATSIG_VIDEO_API_GATE: "custom_video_gate" })).toBe("custom_video_gate");
+		expect(getVideoApiFeatureGateName({})).toBe("gateway_video_api");
 		expect(getGatewayIoLoggingFeatureGateName({ STATSIG_GATEWAY_IO_LOGGING_GATE: "custom_io_gate" })).toBe("custom_io_gate");
 		expect(getGatewayIoLoggingFeatureGateName({})).toBe("gateway_io_logging");
+	});
+
+	it("checks video access independently with the authenticated workspace", async () => {
+		const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+			const body = JSON.parse(String(init?.body));
+			expect(body).toMatchObject({
+				gateName: "gateway_video_api",
+				user: { custom: { workspace_id: "ws_batch_admin", surface: "gateway_video_api" } },
+			});
+			return new Response(JSON.stringify({ value: true }));
+		});
+		vi.stubGlobal("fetch", fetchMock);
+
+		await expect(isVideoApiAccessEnabled(auth, {
+			STATSIG_SERVER_KEY: "secret-statsig-key",
+		})).resolves.toBe(true);
 	});
 
 	it("checks the Statsig gate with workspace and API key identifiers", async () => {

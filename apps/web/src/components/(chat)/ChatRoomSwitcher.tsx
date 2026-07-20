@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useFeatureGate } from "@statsig/react-bindings";
 import type { ComponentType } from "react";
 import {
 	AudioLines,
@@ -31,6 +32,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useSidebar } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
+import { VIDEO_API_GATE } from "@/lib/statsig/shared";
 
 const ICONS: Record<ChatRoomId, ComponentType<{ className?: string }>> = {
 	text: MessageSquareText,
@@ -55,6 +57,7 @@ function isRoomActive(pathname: string, route: string): boolean {
 }
 
 export function ChatRoomSwitcher() {
+	const videoEnabled = useFeatureGate(VIDEO_API_GATE).value;
 	const pathname = usePathname() ?? "/chat";
 	const { state: sidebarState, isMobile } = useSidebar();
 	const activeRoom =
@@ -120,7 +123,7 @@ export function ChatRoomSwitcher() {
 					sideOffset={8}
 					className="z-[90] w-56"
 				>
-					{CHAT_ROOMS.map((room) => {
+					{CHAT_ROOMS.filter((room) => room.id !== "video" || videoEnabled).map((room) => {
 						const Icon = ICONS[room.id];
 						const active = isRoomActive(pathname, room.route);
 						const disabled = DISABLED_ROOMS.has(room.id);

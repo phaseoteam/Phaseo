@@ -24,15 +24,12 @@ function request(url: string, init?: RequestInit): Promise<Response> {
 	return inferenceRouter.fetch(new Request(url, init), testEnv, testExecutionContext);
 }
 
-describe("inferenceRouter disabled feature mounts", () => {
-	it("returns 501 for top-level videos routes", async () => {
+describe("inferenceRouter staged feature mounts", () => {
+	it("mounts the authenticated video router instead of the permanent shim", async () => {
 		const response = await request("https://example.com/videos");
 
-		expect(response.status).toBe(501);
-		expect(await response.json()).toMatchObject({
-			error: "not_implemented",
-			feature: "videos",
-		});
+		expect(response.status).toBe(401);
+		expect(await response.json()).not.toMatchObject({ feature: "videos" });
 	});
 
 	it("mounts public batch and file routes while music remains disabled", async () => {
