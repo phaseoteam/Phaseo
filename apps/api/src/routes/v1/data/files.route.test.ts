@@ -14,6 +14,7 @@ const state = vi.hoisted(() => ({
 	uploadClaim: { ok: true, reason: null as string | null },
 	finishClaimError: null as Error | null,
 	fallbackClaimUpdates: [] as Array<Record<string, unknown>>,
+	batchApiEnabled: true,
 	fetchCalls: [] as Array<{
 		url: string;
 		method: string;
@@ -27,6 +28,7 @@ function resetState() {
 	state.uploadClaim = { ok: true, reason: null };
 	state.finishClaimError = null;
 	state.fallbackClaimUpdates = [];
+	state.batchApiEnabled = true;
 	state.fetchCalls = [];
 }
 
@@ -46,6 +48,11 @@ function jsonResponse(body: unknown, status = 200, headers: Record<string, strin
 
 vi.mock("@pipeline/before/auth", () => ({
 	authenticate: vi.fn(async () => state.authResult),
+}));
+
+vi.mock("@core/feature-flags", () => ({
+	getBatchApiFeatureGateName: () => "gateway_batch_api",
+	isBatchApiAccessEnabled: vi.fn(async () => state.batchApiEnabled),
 }));
 
 vi.mock("@/runtime/env", () => ({
@@ -99,6 +106,24 @@ describe("filesRoutes", () => {
 		resetState();
 		vi.resetModules();
 		vi.unstubAllGlobals();
+	});
+
+	it("rejects provider file uploads before upstream work when the Statsig gate is disabled", async () => {
+		state.batchApiEnabled = false;
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+		const { filesRoutes } = await import("./files");
+		const response = await filesRoutes.request("https://example.com/?provider=openai", {
+			method: "POST",
+			body: "{\"custom_id\":\"one\"}\n",
+		});
+
+		expect(response.status).toBe(403);
+		expect(await response.json()).toMatchObject({
+			reason: "batch_api_feature_flag_disabled",
+			feature_gate: "gateway_batch_api",
+		});
+		expect(fetchMock).not.toHaveBeenCalled();
 	});
 
 	it("stops reading streamed uploads as soon as the byte limit is crossed", async () => {

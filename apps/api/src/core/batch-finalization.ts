@@ -389,6 +389,14 @@ function isPartialSuccess(meta: BatchJobMeta | null | undefined): boolean {
 
 function shouldInspectTerminalOutput(meta: BatchJobMeta | null | undefined): boolean {
 	if (meta?.submissionOutcome === "rejected" && !normalizeText(meta.outputFileId)) return false;
+	if (
+		meta?.reservationStatus === "released" &&
+		!normalizeText(meta.nativeBatchId) &&
+		!normalizeText(meta.outputFileId) &&
+		(meta.requestCounts?.completed ?? 0) <= 0
+	) {
+		return false;
+	}
 	if ((meta?.requestCounts?.completed ?? 0) > 0) return true;
 	if (normalizeText(meta?.outputFileId)) return true;
 	const providerId = normalizeText(meta?.provider);

@@ -16,6 +16,7 @@ const state = vi.hoisted(() => ({
 		},
 	},
 	dbCalls: 0,
+	batchApiEnabled: true,
 }));
 
 vi.mock("@/runtime/env", () => ({
@@ -33,7 +34,7 @@ vi.mock("@/pipeline/before/guards", () => ({
 
 vi.mock("@core/feature-flags", () => ({
 	getBatchApiFeatureGateName: () => "gateway_batch_api",
-	isBatchApiAccessEnabled: vi.fn(async () => true),
+	isBatchApiAccessEnabled: vi.fn(async () => state.batchApiEnabled),
 }));
 
 vi.mock("@core/webhook-endpoints", () => ({
@@ -54,6 +55,18 @@ describe("webhook endpoint management authorization", () => {
 		state.auth.value.authMethod = "api_key";
 		state.auth.value.scopes = ["settings:read"];
 		state.auth.value.oauthScopes = [];
+		state.batchApiEnabled = true;
+	});
+
+	it("rejects webhook management before service-role access when the Batch gate is disabled", async () => {
+		state.batchApiEnabled = false;
+		const response = await app.request("https://api.example.test/", { method: "GET" }, {} as any);
+		expect(response.status).toBe(403);
+		expect(await response.json()).toMatchObject({
+			reason: "batch_api_feature_flag_disabled",
+			feature_gate: "gateway_batch_api",
+		});
+		expect(state.dbCalls).toBe(0);
 	});
 
 	it("requires settings:read for OAuth metadata reads", async () => {
