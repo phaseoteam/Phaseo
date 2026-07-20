@@ -99,9 +99,11 @@ export default function RootLayout({
 						<Suspense fallback={null}>
 							<SiteNoticeSlot />
 						</Suspense>
-						<PublicSWRProvider>
-							<NuqsAdapter>{children}</NuqsAdapter>
-						</PublicSWRProvider>
+						<Suspense fallback={null}>
+							<PublicSWRProvider>
+								<NuqsAdapter>{children}</NuqsAdapter>
+							</PublicSWRProvider>
+						</Suspense>
 						<AdminDeveloperMenuLauncher />
 						<TailwindIndicator />
 						<Toaster richColors />
