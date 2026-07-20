@@ -5,7 +5,6 @@ import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { requireAccountWorkspace } from "./context";
-import { activeStripeCustomer, ensureWorkspaceStripeCustomer, getStripe } from "@/billing/stripe";
 import { accountSettingsPolicyRouter } from "./settings-policy";
 import { accountSettingsUsageRouter } from "./settings-usage";
 import { accountSettingsUsageActionsRouter } from "./settings-usage-actions";
@@ -908,14 +907,7 @@ accountSettingsRouter.get("/credits", async (c) => {
 	}, 200, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
-	let customerId: string;
-	try {
-		customerId = await ensureWorkspaceStripeCustomer(c.env, context);
-	} catch (error) {
-		console.error("[web-api/settings] Stripe wallet unavailable", error);
-		return c.json({ error: "billing_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	}
-	const [walletResult, settingsResult, latestPaymentResult, userResult] = await Promise.all([
+	const [walletResult, initialSettingsResult, latestPaymentResult, userResult] = await Promise.all([
 		context.client.from("wallets")
 			.select("workspace_id,stripe_customer_id,balance_nanos,reserved_nanos,auto_top_up_enabled,low_balance_threshold,auto_top_up_amount,auto_top_up_account_id")
 			.eq("workspace_id", workspaceId).maybeSingle(),
@@ -928,33 +920,14 @@ accountSettingsRouter.get("/credits", async (c) => {
 			.order("event_time", { ascending: false }).limit(1).maybeSingle(),
 		context.client.from("users").select("obfuscate_info").eq("user_id", context.user.id).maybeSingle(),
 	]);
+	let settingsResult = initialSettingsResult;
+	if (settingsResult.error?.code === "42703") {
+		// Low-balance settings were introduced after some existing deployments.
+		// Treat their absence as the default disabled state while the schema rolls out.
+		settingsResult = await context.client.from("workspace_settings").select().eq("workspace_id", workspaceId).maybeSingle();
+	}
 	if (walletResult.error || settingsResult.error || latestPaymentResult.error || userResult.error) {
 		return c.json({ error: "billing_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	}
-	const stripe = getStripe(c.env);
-	let customerEmail: string | null = null;
-	let defaultPaymentMethodId: string | null = null;
-	let paymentMethods: Array<{ id: string; card: { brand: string | null; last4: string | null; exp_month: number | null; exp_year: number | null } }> = [];
-	try {
-		const customer = activeStripeCustomer(await stripe.customers.retrieve(customerId));
-		if (customer) {
-			customerEmail = customer.email ?? null;
-			defaultPaymentMethodId = typeof customer.invoice_settings.default_payment_method === "string"
-				? customer.invoice_settings.default_payment_method
-				: customer.invoice_settings.default_payment_method?.id ?? null;
-		}
-		const methods = await stripe.paymentMethods.list({ customer: customerId, type: "card" });
-		paymentMethods = methods.data.map((method) => ({
-			id: method.id,
-			card: {
-				brand: method.card?.brand ?? null,
-				last4: method.card?.last4 ?? null,
-				exp_month: method.card?.exp_month ?? null,
-				exp_year: method.card?.exp_year ?? null,
-			},
-		}));
-	} catch (error) {
-		console.error("[web-api/settings] Stripe summary failed", error);
 	}
 	const thresholdNanos = Number(settingsResult.data?.low_balance_email_threshold_nanos ?? 0);
 	const cookieOverride = c.req.query("obfuscateInfo");
@@ -965,10 +938,10 @@ accountSettingsRouter.get("/credits", async (c) => {
 		lowBalanceEmailThresholdUsd: thresholdNanos > 0 ? Number((thresholdNanos / 1_000_000_000).toFixed(2)) : null,
 		obfuscateInfo: cookieOverride === "1" ? true : cookieOverride === "0" ? false : Boolean(userResult.data?.obfuscate_info),
 		stripeInfo: {
-			customer: { id: customerId, email: customerEmail },
-			defaultPaymentMethodId,
-			hasPaymentMethod: paymentMethods.length > 0,
-			paymentMethods,
+			customer: { id: null, email: null },
+			defaultPaymentMethodId: null,
+			hasPaymentMethod: false,
+			paymentMethods: [],
 		},
 		wallet: walletResult.data ?? null,
 	}, 200, PRIVATE_NO_STORE_HEADERS);
@@ -987,39 +960,18 @@ accountSettingsRouter.get("/payment-methods", async (c) => {
 	}, 200, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
-	try {
-		const customerId = await ensureWorkspaceStripeCustomer(c.env, context);
-		const stripe = getStripe(c.env);
-		const [customerResponse, methods] = await Promise.all([
-			stripe.customers.retrieve(customerId),
-			stripe.paymentMethods.list({ customer: customerId, type: "card" }),
-		]);
-		const customer = activeStripeCustomer(customerResponse);
-		const defaultPaymentMethod = customer?.invoice_settings.default_payment_method;
-		const userResult = await context.client.from("users").select("obfuscate_info").eq("user_id", context.user.id).maybeSingle();
-		if (userResult.error) return c.json({ error: "billing_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-		const cookieOverride = c.req.query("obfuscateInfo");
-		return c.json({
-			customerId,
-			initialData: {
-				customer: { id: customerId, email: customer?.email ?? null },
-				defaultPaymentMethodId: typeof defaultPaymentMethod === "string" ? defaultPaymentMethod : defaultPaymentMethod?.id ?? null,
-				paymentMethods: methods.data.map((method) => ({
-					id: method.id,
-					brand: method.card?.brand ?? null,
-					last4: method.card?.last4 ?? null,
-					expMonth: method.card?.exp_month ?? null,
-					expYear: method.card?.exp_year ?? null,
-					funding: method.card?.funding ?? null,
-					created: method.created ?? null,
-				})),
-			},
-			obfuscateInfo: cookieOverride === "1" ? true : cookieOverride === "0" ? false : Boolean(userResult.data?.obfuscate_info),
-		}, 200, PRIVATE_NO_STORE_HEADERS);
-	} catch (error) {
-		console.error("[web-api/settings] payment methods failed", error);
-		return c.json({ error: "billing_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	}
+	const userResult = await context.client.from("users").select("obfuscate_info").eq("user_id", context.user.id).maybeSingle();
+	if (userResult.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	const cookieOverride = c.req.query("obfuscateInfo");
+	return c.json({
+		customerId: null,
+		initialData: {
+			customer: { id: "", email: null },
+			defaultPaymentMethodId: null,
+			paymentMethods: [],
+		},
+		obfuscateInfo: cookieOverride === "1" ? true : cookieOverride === "0" ? false : Boolean(userResult.data?.obfuscate_info),
+	}, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountSettingsRouter.get("/observability/destinations/new/:provider", async (c) => {

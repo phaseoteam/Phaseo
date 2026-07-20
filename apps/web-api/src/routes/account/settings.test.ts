@@ -6,29 +6,12 @@ const env = {
 	SUPABASE_URL: "https://example.supabase.co",
 	SUPABASE_ANON_KEY: "anon-key",
 	SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
-	TEST_STRIPE_SECRET_KEY: "sk_test_example",
 };
 
 afterEach(() => vi.unstubAllGlobals());
 
 function authenticatedFetch(input: RequestInfo | URL): Response {
 	const url = input instanceof Request ? input.url : String(input);
-	if (url.includes("api.stripe.com/v1/customers/cus_test")) {
-		return new Response(JSON.stringify({
-			id: "cus_test", object: "customer", email: "billing@example.com",
-			metadata: { workspace_id: "workspace-1" },
-			invoice_settings: { default_payment_method: "pm_test" },
-		}), { status: 200, headers: { "content-type": "application/json" } });
-	}
-	if (url.includes("api.stripe.com/v1/payment_methods")) {
-		return new Response(JSON.stringify({
-			object: "list", has_more: false, url: "/v1/payment_methods",
-			data: [{
-				id: "pm_test", object: "payment_method", created: 1700000000,
-				card: { brand: "visa", last4: "4242", exp_month: 12, exp_year: 2030, funding: "credit" },
-			}],
-		}), { status: 200, headers: { "content-type": "application/json" } });
-	}
 	if (url.includes("/auth/v1/user")) {
 		return new Response(JSON.stringify({
 			id: "user-1",
@@ -381,19 +364,19 @@ describe("account settings routes", () => {
 			lowBalanceEmailThresholdUsd: 5,
 			obfuscateInfo: true,
 			stripeInfo: {
-				customer: { id: "cus_test", email: "billing@example.com" },
-				defaultPaymentMethodId: "pm_test",
-				hasPaymentMethod: true,
-				paymentMethods: [{ id: "pm_test", card: { last4: "4242" } }],
+				customer: { id: null, email: null },
+				defaultPaymentMethodId: null,
+				hasPaymentMethod: false,
+				paymentMethods: [],
 			},
 		});
 		await expect(paymentMethods.json()).resolves.toMatchObject({
-			customerId: "cus_test",
+			customerId: null,
 			obfuscateInfo: true,
 			initialData: {
-				customer: { id: "cus_test", email: "billing@example.com" },
-				defaultPaymentMethodId: "pm_test",
-				paymentMethods: [{ id: "pm_test", last4: "4242", funding: "credit" }],
+				customer: { id: "", email: null },
+				defaultPaymentMethodId: null,
+				paymentMethods: [],
 			},
 		});
 		await expect(oauthAppDetail.json()).resolves.toMatchObject({

@@ -3,7 +3,6 @@ import { requireUser } from "@/auth/requireUser";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
-import { ensureWorkspaceStripeCustomer } from "@/billing/stripe";
 
 function cookieValue(request: Request, name: string): string | null {
 	for (const segment of (request.headers.get("cookie") ?? "").split(";")) {

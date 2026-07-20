@@ -54,7 +54,7 @@ Each model page section will be added as an independent resource rather than ext
 ## Local development
 
 1. Create `apps/web-api/.dev.vars` with the non-production values needed by a route. The account API requires `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`; the local Worker also accepts the existing `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` names used by `apps/api/.dev.vars`.
-	Stripe-backed billing routes additionally require `TEST_STRIPE_SECRET_KEY` locally (or `STRIPE_SECRET_KEY` outside test environments). Stripe webhook testing also requires `STRIPE_WEBHOOK_SECRET`; `RESEND_API_KEY` and `DISCORD_BILLING_WEBHOOK_URL` enable checkout and credit-purchase notifications.
+	Stripe checkout, billing reads, and webhooks remain owned by the Next.js web application; they are intentionally not configured in this Worker.
 	Authenticated automatic chat issue creation additionally uses `GITHUB_TOKEN` (or `GH_TOKEN`) and optional `GITHUB_REPOSITORY`; anonymous reports fall back to a prefilled GitHub issue URL.
 	Scheduled YouTube ingestion requires `YT_API_KEY`. Watchers can be run locally with `POST /api/internal/watchers/web` or `/youtube` using `Authorization: Bearer $REVALIDATION_SECRET`.
 	Key-management routes require `KEY_PEPPER_ACTIVE`; OAuth client management

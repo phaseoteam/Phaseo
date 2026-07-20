@@ -26,9 +26,6 @@ export type Env = {
 	PHASEO_CONTROL_KEY?: string;
 	PHASEO_CONTROL_SECRET?: string;
 	GATEWAY_API_ORIGIN?: string;
-	STRIPE_SECRET_KEY?: string;
-	TEST_STRIPE_SECRET_KEY?: string;
-	STRIPE_WEBHOOK_SECRET?: string;
 	RESEND_API_KEY?: string;
 	DISCORD_BILLING_WEBHOOK_URL?: string;
 	GITHUB_REPOSITORY?: string;
