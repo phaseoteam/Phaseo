@@ -21,6 +21,11 @@ export type ModelsFilterFacets = {
 	yearOptions: OptionCount[];
 };
 
+export type ModelsPageData = {
+	models: ModelsPageModel[];
+	facets: ModelsFilterFacets;
+};
+
 export type ModelsPageModel = Omit<
 	Pick<
 		ModelCard,

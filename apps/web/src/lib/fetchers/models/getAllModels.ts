@@ -11,6 +11,7 @@ export interface ModelCard {
     organisation_id: string;
     organisation_name: string | null;
     organisation_colour: string | null;
+    description?: string | null;
     status?: string | null;
     hidden?: boolean;
     release_date?: string | null;
@@ -330,6 +331,7 @@ export function mapRawToModelCard(
         ),
         organisation_colour:
             raw.organisation?.colour ?? raw.organisation?.color ?? null,
+        description: raw.description ?? null,
         status: raw.status ?? null,
         hidden: Boolean(raw.hidden),
         release_date: raw.release_date ?? null,

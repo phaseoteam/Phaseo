@@ -25,7 +25,26 @@ export const GATEWAY_IO_LOGGING_GATE =
 export const NEW_GATEWAY_HERO_GATE = NEW_LANDING_PAGE_GATE;
 export const NEW_GATEWAY_HERO_EXPERIMENT = NEW_LANDING_PAGE_EXPERIMENT;
 
-export const WEB_BETA_FEATURES = [] as const;
+export const MODELS_CATALOGUE_V2_BETA_KEY = "models_catalogue_v2";
+
+export type WebBetaFeatureDefinition = {
+	key: string;
+	kind?: "toggle" | "range";
+	title: string;
+	description: string;
+	adminOnly?: boolean;
+};
+
+export const WEB_BETA_FEATURES = [
+	{
+		key: MODELS_CATALOGUE_V2_BETA_KEY,
+		kind: "toggle",
+		title: "Models catalogue V2",
+		description:
+			"Load the Models page from the parallel V2 model, provider, capability, SKU, and rate tables.",
+		adminOnly: true,
+	},
+] as const satisfies readonly WebBetaFeatureDefinition[];
 
 export type WebBetaFeatureKey = (typeof WEB_BETA_FEATURES)[number]["key"];
 export type GatewayHeroVariant = "classic" | "experimental";
