@@ -6,6 +6,7 @@ describe("getContextCapabilityCandidates", () => {
 		expect(getContextCapabilityCandidates("responses")).toEqual([
 			"text.generate",
 			"responses",
+			"interactions",
 			"chat.completions",
 			"messages",
 			"chat.generate",
@@ -15,6 +16,16 @@ describe("getContextCapabilityCandidates", () => {
 			"text.generate",
 			"chat.completions",
 			"responses",
+			"interactions",
+			"messages",
+			"chat.generate",
+			"text",
+		]);
+		expect(getContextCapabilityCandidates("interactions")).toEqual([
+			"text.generate",
+			"interactions",
+			"responses",
+			"chat.completions",
 			"messages",
 			"chat.generate",
 			"text",
@@ -23,6 +34,7 @@ describe("getContextCapabilityCandidates", () => {
 			"text.generate",
 			"messages",
 			"responses",
+			"interactions",
 			"chat.completions",
 			"chat.generate",
 			"text",
@@ -30,6 +42,7 @@ describe("getContextCapabilityCandidates", () => {
 		expect(getContextCapabilityCandidates("text.generate")).toEqual([
 			"text.generate",
 			"responses",
+			"interactions",
 			"chat.completions",
 			"messages",
 			"chat.generate",

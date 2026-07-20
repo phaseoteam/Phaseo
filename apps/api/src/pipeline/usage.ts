@@ -59,6 +59,7 @@ export function shapeUsageForClient(
     const textEndpoint =
         ctx?.endpoint === "chat.completions" ||
         ctx?.endpoint === "responses" ||
+        ctx?.endpoint === "interactions" ||
         ctx?.endpoint === "messages";
 
     // Derive multimodal counts when upstream usage omits them.
@@ -86,7 +87,7 @@ export function shapeUsageForClient(
         if (video && base.input_video_count == null) base.input_video_count = video;
     }
 
-    if (ctx?.endpoint === "responses") {
+    if (ctx?.endpoint === "responses" || ctx?.endpoint === "interactions") {
         const items: any[] = Array.isArray(ctx.body?.input) ? ctx.body.input : (Array.isArray(ctx.body?.input_items) ? ctx.body.input_items : []);
         let img = base.input_image_count ?? 0;
         let audio = base.input_audio_count ?? 0;
@@ -102,25 +103,31 @@ export function shapeUsageForClient(
             switch ((node as any).type) {
                 case "input_image":
                 case "image_url":
+                case "image":
                     img += 1;
                     break;
                 case "input_audio":
+                case "audio":
                     audio += 1;
                     break;
                 case "input_video":
+                case "video":
                     video += 1;
                     break;
                 case "message":
+                case "user_input":
+                case "model_output":
                     inspectContent((node as any).content);
                     break;
                 default:
+                    inspectContent((node as any).content);
+                    inspectContent((node as any).parts);
                     break;
             }
         };
 
         for (const item of items) {
             inspectContent(item);
-            if (item && Array.isArray((item as any).content)) inspectContent((item as any).content);
         }
 
         if (img && base.input_image_count == null) base.input_image_count = img;
@@ -311,4 +318,3 @@ export function shapeUsageForClient(
 
     return shaped;
 }
-

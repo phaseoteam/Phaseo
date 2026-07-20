@@ -7,6 +7,7 @@ import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 
 import { chatCompletionsRoutes } from "./chat-completions";
+import { interactionsRoutes } from "./interactions";
 import { messagesRoutes } from "./messages";
 import { responsesRoutes } from "./responses";
 import { embeddingsRoutes } from "./embeddings";
@@ -29,6 +30,7 @@ import { asyncJobsRoutes } from "./async-jobs";
 export const inferenceRouter = new Hono<Env>();
 
 inferenceRouter.route("/chat/completions", chatCompletionsRoutes);
+inferenceRouter.route("/interactions", interactionsRoutes);
 inferenceRouter.route("/messages", messagesRoutes);
 inferenceRouter.route("/responses", responsesRoutes);
 inferenceRouter.route("/embeddings", embeddingsRoutes);
@@ -51,7 +53,6 @@ inferenceRouter.route("/async", asyncJobsRoutes);
 
 // Backward-compatible alias for existing imports.
 export const dataRouter = inferenceRouter;
-
 
 
 

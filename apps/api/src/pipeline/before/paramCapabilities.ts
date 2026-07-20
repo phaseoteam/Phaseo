@@ -59,6 +59,7 @@ function hasToolUsageInResponsesInput(items: any[]): boolean {
 		item &&
 		(item.type === "function_call" ||
 			item.type === "function_call_output" ||
+			item.type === "function_result" ||
 			item.tool_call_id ||
 			item.call_id)
 	);
@@ -126,19 +127,39 @@ export function extractRequestedParams(endpoint: Endpoint, rawBody: any): string
 		params.push("response_format");
 	}
 
+	if (endpoint === "interactions" && isPlainObject(rawBody.generation_config)) {
+		const generationConfigMap: Record<string, string> = {
+			tool_choice: "tool_choice",
+			temperature: "temperature",
+			top_p: "top_p",
+			max_output_tokens: "max_tokens",
+			stop_sequences: "stop",
+			frequency_penalty: "frequency_penalty",
+			presence_penalty: "presence_penalty",
+			seed: "seed",
+			thinking_level: "reasoning",
+			thinking_summaries: "reasoning",
+		};
+		for (const [key, canonical] of Object.entries(generationConfigMap)) {
+			if (Object.prototype.hasOwnProperty.call(rawBody.generation_config, key)) {
+				params.push(canonical);
+			}
+		}
+	}
+
 	// Infer tool usage from message/input surfaces where tools may be omitted but active.
 	if (Array.isArray(rawBody.messages) && hasToolUsageInMessages(rawBody.messages)) {
 		params.push("tools");
 	}
 	if (
-		endpoint === "responses" &&
+		(endpoint === "responses" || endpoint === "interactions") &&
 		Array.isArray(rawBody.input_items) &&
 		hasToolUsageInResponsesInput(rawBody.input_items)
 	) {
 		params.push("tools");
 	}
 	if (
-		endpoint === "responses" &&
+		(endpoint === "responses" || endpoint === "interactions") &&
 		Array.isArray(rawBody.input) &&
 		hasToolUsageInResponsesInput(rawBody.input)
 	) {

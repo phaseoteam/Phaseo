@@ -1424,6 +1424,64 @@ type ImagesGenerationResponse struct {
 	Data *[]map[string]interface{} `json:"data,omitempty"`
 }
 
+type InteractionContentBlock struct {
+	Data *string `json:"data,omitempty"`
+	MimeType *string `json:"mime_type,omitempty"`
+	Text *string `json:"text,omitempty"`
+	Type string `json:"type"`
+	Uri *string `json:"uri,omitempty"`
+}
+
+type InteractionResponse struct {
+	Created *int `json:"created,omitempty"`
+	Id string `json:"id"`
+	Model string `json:"model"`
+	Object string `json:"object"`
+	OutputText *string `json:"output_text,omitempty"`
+	Status string `json:"status"`
+	Steps []map[string]interface{} `json:"steps"`
+	Usage *map[string]interface{} `json:"usage,omitempty"`
+}
+
+type InteractionsRequest struct {
+	Background *bool `json:"background,omitempty"`
+	CachedContent *string `json:"cached_content,omitempty"`
+	Debug *map[string]interface{} `json:"debug,omitempty"`
+	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
+	Environment interface{} `json:"environment,omitempty"`
+	GenerationConfig *map[string]interface{} `json:"generation_config,omitempty"`
+	Input interface{} `json:"input"`
+	Labels *map[string]interface{} `json:"labels,omitempty"`
+	Meta *bool `json:"meta,omitempty"`
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+	Model string `json:"model"`
+	PreviousInteractionId *string `json:"previous_interaction_id,omitempty"`
+	Provider *map[string]interface{} `json:"provider,omitempty"`
+	ResponseFormat interface{} `json:"response_format,omitempty"`
+	ResponseModalities *string `json:"response_modalities,omitempty"`
+	SafetySettings *[]map[string]interface{} `json:"safety_settings,omitempty"`
+	ServiceTier *string `json:"service_tier,omitempty"`
+	SessionId *string `json:"session_id,omitempty"`
+	Store *bool `json:"store,omitempty"`
+	Stream *bool `json:"stream,omitempty"`
+	SystemInstruction interface{} `json:"system_instruction,omitempty"`
+	ToolChoice interface{} `json:"tool_choice,omitempty"`
+	Tools *[]map[string]interface{} `json:"tools,omitempty"`
+}
+
+type InteractionStep struct {
+	Arguments interface{} `json:"arguments,omitempty"`
+	CallId *string `json:"call_id,omitempty"`
+	Content interface{} `json:"content,omitempty"`
+	Id *string `json:"id,omitempty"`
+	IsError *bool `json:"is_error,omitempty"`
+	Name *string `json:"name,omitempty"`
+	Result interface{} `json:"result,omitempty"`
+	Signature *string `json:"signature,omitempty"`
+	Summary interface{} `json:"summary,omitempty"`
+	Type string `json:"type"`
+}
+
 type InvalidRequestResponse struct {
 	Error string `json:"error"`
 	MaxOffset *int `json:"max_offset,omitempty"`

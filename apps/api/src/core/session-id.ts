@@ -6,6 +6,7 @@ export function isBodyOnlyTextSessionEndpoint(endpoint: Endpoint): boolean {
 	return (
 		endpoint === "chat.completions" ||
 		endpoint === "responses" ||
+		endpoint === "interactions" ||
 		endpoint === "messages"
 	);
 }

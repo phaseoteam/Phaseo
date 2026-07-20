@@ -20,6 +20,7 @@ const PIPELINES: Record<Endpoint, PipelineRunner> = {
 	rerank: runRerankPipeline,
 	"chat.completions": runTextGeneratePipeline,
 	responses: runTextGeneratePipeline,
+	interactions: runTextGeneratePipeline,
 	messages: runTextGeneratePipeline,
 	"images.generations": runNonTextPipeline,
 	"images.edits": runNonTextPipeline,

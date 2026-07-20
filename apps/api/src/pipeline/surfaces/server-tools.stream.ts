@@ -17,6 +17,7 @@ function toStreamProtocol(protocol: Protocol): StreamProtocol | null {
 	switch (protocol) {
 		case "openai.chat.completions":
 		case "openai.responses":
+		case "google.interactions":
 		case "anthropic.messages":
 			return protocol;
 		default:
@@ -292,12 +293,143 @@ function buildUnifiedEventsFromAnthropicPayload(payload: any): UnifiedStreamEven
 	return events;
 }
 
+function parseGoogleInteractionMediaPart(value: any): Extract<IRContentPart, { type: "image" | "audio" }> | null {
+	if (!value || typeof value !== "object") return null;
+	const type = String(value.type ?? "").toLowerCase();
+	if (type === "image") {
+		if (typeof value.data === "string" && value.data.length > 0) {
+			return {
+				type: "image",
+				source: "data",
+				data: value.data,
+				...(typeof value.mime_type === "string" ? { mimeType: value.mime_type } : {}),
+			};
+		}
+		const uri = typeof value.uri === "string" ? value.uri : (typeof value.url === "string" ? value.url : null);
+		if (!uri) return null;
+		return {
+			type: "image",
+			source: "url",
+			data: uri,
+			...(typeof value.mime_type === "string" ? { mimeType: value.mime_type } : {}),
+		};
+	}
+	if (type === "audio") {
+		const format = (() => {
+			const mimeType = String(value.mime_type ?? "").toLowerCase();
+			if (mimeType.includes("mpeg") || mimeType.includes("mp3")) return "mp3";
+			if (mimeType.includes("flac")) return "flac";
+			if (mimeType.includes("mp4") || mimeType.includes("m4a")) return "m4a";
+			if (mimeType.includes("ogg")) return "ogg";
+			if (mimeType.includes("l16") || mimeType.includes("pcm16")) return "pcm16";
+			if (mimeType.includes("l24") || mimeType.includes("pcm24")) return "pcm24";
+			if (mimeType.includes("wav")) return "wav";
+			return undefined;
+		})();
+		if (typeof value.data === "string" && value.data.length > 0) {
+			return {
+				type: "audio",
+				source: "data",
+				data: value.data,
+				format,
+			};
+		}
+		const uri = typeof value.uri === "string" ? value.uri : (typeof value.url === "string" ? value.url : null);
+		if (!uri) return null;
+		return {
+			type: "audio",
+			source: "url",
+			data: uri,
+			format,
+		};
+	}
+	return null;
+}
+
+function googleText(value: any): string {
+	if (typeof value === "string") return value;
+	if (Array.isArray(value)) return value.map(googleText).filter(Boolean).join("");
+	if (!value || typeof value !== "object") return "";
+	if (typeof value.text === "string") return value.text;
+	if (value.content !== undefined) return googleText(value.content);
+	if (value.summary !== undefined) return googleText(value.summary);
+	return "";
+}
+
+function buildUnifiedEventsFromGoogleInteractionsPayload(payload: any): UnifiedStreamEvent[] {
+	const events: UnifiedStreamEvent[] = [
+		{ type: "start", protocol: "google.interactions", payload },
+	];
+	const steps = Array.isArray(payload?.steps) ? payload.steps : [];
+	for (let stepIndex = 0; stepIndex < steps.length; stepIndex += 1) {
+		const step = steps[stepIndex] ?? {};
+		const stepType = String(step?.type ?? "").toLowerCase();
+		if (stepType === "model_output") {
+			const content = Array.isArray(step?.content) ? step.content : [];
+			for (const block of content) {
+				if (block?.type === "text" && typeof block?.text === "string" && block.text.length > 0) {
+					events.push({
+						type: "delta_text",
+						channel: "output_text",
+						text: block.text,
+						choiceIndex: 0,
+					});
+					continue;
+				}
+				const mediaPart = parseGoogleInteractionMediaPart(block);
+				if (mediaPart) {
+					events.push({
+						type: "delta_content_part",
+						part: mediaPart,
+						choiceIndex: 0,
+					});
+				}
+			}
+		}
+		if (stepType === "thought") {
+			const text = googleText(step?.summary ?? step?.content ?? step?.text);
+			if (text) {
+				events.push({
+					type: "delta_text",
+					channel: "reasoning_text",
+					text,
+					choiceIndex: 0,
+				});
+			}
+		}
+		if (stepType === "function_call") {
+			events.push({
+				type: "delta_tool",
+				toolCallId: typeof step?.id === "string" ? step.id : undefined,
+				toolName: typeof step?.name === "string" ? step.name : undefined,
+				arguments:
+					step?.arguments != null
+						? (typeof step.arguments === "string" ? step.arguments : JSON.stringify(step.arguments))
+						: undefined,
+				choiceIndex: 0,
+				toolIndex: stepIndex,
+			});
+		}
+	}
+	if (payload?.usage && typeof payload.usage === "object") {
+		events.push({ type: "usage", usage: payload.usage, payload });
+	}
+	events.push({
+		type: "stop",
+		finishReason: String(payload?.status ?? "completed"),
+		payload,
+	});
+	return events;
+}
+
 function buildUnifiedEventsFromPayload(protocol: StreamProtocol, payload: any): UnifiedStreamEvent[] {
 	switch (protocol) {
 		case "openai.chat.completions":
 			return buildUnifiedEventsFromChatCompletionsPayload(payload);
 		case "openai.responses":
 			return buildUnifiedEventsFromResponsesPayload(payload);
+		case "google.interactions":
+			return buildUnifiedEventsFromGoogleInteractionsPayload(payload);
 		case "anthropic.messages":
 			return buildUnifiedEventsFromAnthropicPayload(payload);
 		default:
@@ -334,7 +466,7 @@ export function buildSyntheticServerToolStream(args: {
 				const prefix = encoded.eventName ? `event: ${encoded.eventName}\n` : "";
 				controller.enqueue(encoder.encode(`${prefix}data: ${JSON.stringify(encoded.frame)}\n\n`));
 			}
-			if (streamProtocol !== "anthropic.messages") {
+			if (streamProtocol !== "anthropic.messages" && streamProtocol !== "google.interactions") {
 				controller.enqueue(encoder.encode("data: [DONE]\n\n"));
 			}
 			controller.close();
@@ -378,7 +510,7 @@ function mapStopReasonToIr(reason: string | null | undefined): IRChatResponse["c
 	if (!normalized) return "stop";
 	if (normalized === "stop" || normalized === "end_turn" || normalized === "completed") return "stop";
 	if (normalized === "max_tokens" || normalized === "length") return "length";
-	if (normalized === "tool_use" || normalized === "tool_calls" || normalized.includes("tool")) return "tool_calls";
+	if (normalized === "tool_use" || normalized === "tool_calls" || normalized === "requires_action" || normalized.includes("tool")) return "tool_calls";
 	if (normalized.includes("content") || normalized.includes("refusal") || normalized.includes("safety")) return "content_filter";
 	if (normalized === "error" || normalized === "failed") return "error";
 	return "stop";
@@ -397,11 +529,13 @@ function usageRawToIR(usageRaw: any): IRUsage | undefined {
 	if (!usageRaw || typeof usageRaw !== "object") return undefined;
 
 	const inputTokens =
+		parseUsageNumber(usageRaw.total_input_tokens) ??
 		parseUsageNumber(usageRaw.input_tokens) ??
 		parseUsageNumber(usageRaw.prompt_tokens) ??
 		parseUsageNumber(usageRaw.inputTokens) ??
 		0;
 	const outputTokens =
+		parseUsageNumber(usageRaw.total_output_tokens) ??
 		parseUsageNumber(usageRaw.output_tokens) ??
 		parseUsageNumber(usageRaw.completion_tokens) ??
 		parseUsageNumber(usageRaw.outputTokens) ??
@@ -411,6 +545,7 @@ function usageRawToIR(usageRaw: any): IRUsage | undefined {
 		parseUsageNumber(usageRaw.totalTokens) ??
 		(inputTokens + outputTokens);
 	const cachedInputTokens =
+		parseUsageNumber(usageRaw.total_cached_tokens) ??
 		parseUsageNumber(usageRaw.cached_read_tokens) ??
 		parseUsageNumber(usageRaw.cached_input_tokens) ??
 		parseUsageNumber(usageRaw.cached_tokens) ??
@@ -418,6 +553,7 @@ function usageRawToIR(usageRaw: any): IRUsage | undefined {
 		parseUsageNumber(usageRaw.prompt_tokens_details?.cached_tokens) ??
 		parseUsageNumber(usageRaw.input_tokens_details?.cached_tokens);
 	const reasoningTokens =
+		parseUsageNumber(usageRaw.total_thought_tokens) ??
 		parseUsageNumber(usageRaw.reasoning_tokens) ??
 		parseUsageNumber(usageRaw.output_tokens_details?.reasoning_tokens);
 
@@ -522,18 +658,21 @@ function usageRawToIR(usageRaw: any): IRUsage | undefined {
 
 function resolveRawPayloadForUsage(payload: any): any {
 	if (payload?.response && typeof payload.response === "object") return payload.response;
+	if (payload?.interaction && typeof payload.interaction === "object") return payload.interaction;
 	return payload;
 }
 
 function resolveNativeId(payload: any): string | undefined {
 	if (typeof payload?.id === "string" && payload.id.length > 0) return payload.id;
 	if (typeof payload?.response?.id === "string" && payload.response.id.length > 0) return payload.response.id;
+	if (typeof payload?.interaction?.id === "string" && payload.interaction.id.length > 0) return payload.interaction.id;
 	return undefined;
 }
 
 function resolveModelFromPayload(payload: any): string | undefined {
 	if (typeof payload?.model === "string" && payload.model.length > 0) return payload.model;
 	if (typeof payload?.response?.model === "string" && payload.response.model.length > 0) return payload.response.model;
+	if (typeof payload?.interaction?.model === "string" && payload.interaction.model.length > 0) return payload.interaction.model;
 	return undefined;
 }
 
@@ -980,6 +1119,7 @@ export async function consumeTextProtocolStreamToIR(args: {
 		rawResponse?.usage ??
 		lastPayload?.usage ??
 		lastPayload?.response?.usage ??
+		lastPayload?.interaction?.usage ??
 		null;
 
 	if (rawResponse && typeof rawResponse === "object") {

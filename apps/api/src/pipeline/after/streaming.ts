@@ -239,6 +239,7 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                     const targetProtocol: StreamProtocol | null =
                         ctx.protocol === "openai.chat.completions" ||
                         ctx.protocol === "openai.responses" ||
+                        ctx.protocol === "google.interactions" ||
                         ctx.protocol === "anthropic.messages"
                             ? ctx.protocol
                             : null;
@@ -269,7 +270,20 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                             event.type === "stop" ||
                             (event.type === "snapshot" && event.isFinal),
                     );
-                    const usageCandidate = usageFromEvents ?? json?.usage ?? json?.response?.usage ?? null;
+                    const usageCandidate =
+                        usageFromEvents ??
+                        json?.usage ??
+                        json?.response?.usage ??
+                        json?.interaction?.usage ??
+                        null;
+
+                    const interaction =
+                        json?.object === "interaction" ? json : json?.interaction;
+                    const hasTerminalInteractionStatus =
+                        interaction?.object === "interaction" &&
+                        ["completed", "requires_action", "failed", "cancelled", "incomplete"].includes(
+                            interaction?.status,
+                        );
 
                     const fallbackTerminal =
                         !terminalByEvents &&
@@ -278,7 +292,8 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                             json?.object === "chat.completion" ||
                             json?.response?.object === "chat.completion" ||
                             (json?.object === "response" && json?.status === "completed") ||
-                            (json?.response?.object === "response" && json?.response?.status === "completed")
+                            (json?.response?.object === "response" && json?.response?.status === "completed") ||
+                            hasTerminalInteractionStatus
                         );
 
                     const isFinalSnapshot = !sawFinalUsage && (terminalByEvents || fallbackTerminal);
@@ -364,7 +379,6 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
     // Do not add custom gateway headers; everything important is in-body now.
     return new Response(ts.readable, { status: upstream.status, headers });
 }
-
 
 
 

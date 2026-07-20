@@ -7,7 +7,7 @@ import type { IRContentPart } from "@core/ir";
 type StopReason = string | null | undefined;
 
 export type UnifiedStreamEvent =
-	| { type: "start"; protocol: "openai.chat.completions" | "openai.responses" | "anthropic.messages"; payload?: any }
+	| { type: "start"; protocol: "openai.chat.completions" | "openai.responses" | "google.interactions" | "anthropic.messages"; payload?: any }
 	| {
 			type: "delta_text";
 			channel: "output_text" | "reasoning_text";
@@ -46,12 +46,14 @@ export type StreamEventExtractArgs = {
 function normalizeProtocol(args: StreamEventExtractArgs):
 	| "openai.chat.completions"
 	| "openai.responses"
+	| "google.interactions"
 	| "anthropic.messages"
 	| null {
 	const explicit = args.protocol;
 	if (
 		explicit === "openai.chat.completions" ||
 		explicit === "openai.responses" ||
+		explicit === "google.interactions" ||
 		explicit === "anthropic.messages"
 	) {
 		return explicit;
@@ -59,6 +61,7 @@ function normalizeProtocol(args: StreamEventExtractArgs):
 
 	const eventName = String(args.eventName ?? "");
 	if (eventName.startsWith("response.")) return "openai.responses";
+	if (eventName.startsWith("interaction.") || eventName.startsWith("step.")) return "google.interactions";
 	if (eventName.startsWith("message_") || eventName.startsWith("content_block_")) {
 		return "anthropic.messages";
 	}
@@ -68,6 +71,18 @@ function normalizeProtocol(args: StreamEventExtractArgs):
 	}
 	if (args.frame?.object === "response" || args.frame?.response?.object === "response") {
 		return "openai.responses";
+	}
+	if (
+		args.frame?.object === "interaction" ||
+		args.frame?.interaction?.object === "interaction" ||
+		typeof args.frame?.event_type === "string" && (
+			args.frame.event_type.startsWith("interaction.") ||
+			args.frame.event_type.startsWith("step.")
+		) ||
+		typeof args.frame?.id === "string" &&
+			(args.frame.id.startsWith("v1_") || args.frame.id.startsWith("interactions/"))
+	) {
+		return "google.interactions";
 	}
 	if (
 		typeof args.frame?.type === "string" &&
@@ -567,6 +582,232 @@ function extractOpenAIResponsesEvents(
 	return events;
 }
 
+function googleStatusToStopReason(status: unknown): StopReason {
+	const normalized = String(status ?? "").toLowerCase();
+	if (normalized === "failed" || normalized === "cancelled" || normalized === "expired") return "error";
+	if (normalized === "incomplete") return "length";
+	if (normalized === "requires_action") return "tool_calls";
+	return normalized || "stop";
+}
+
+function parseGoogleInteractionMediaPart(value: any): Extract<IRContentPart, { type: "image" | "audio" }> | null {
+	if (!value || typeof value !== "object") return null;
+	const type = String(value.type ?? "").toLowerCase();
+	if (type === "image") {
+		if (typeof value.data === "string" && value.data.length > 0) {
+			return {
+				type: "image",
+				source: "data",
+				data: value.data,
+				...(typeof value.mime_type === "string" ? { mimeType: value.mime_type } : {}),
+			};
+		}
+		const uri = typeof value.uri === "string"
+			? value.uri
+			: typeof value.url === "string"
+				? value.url
+				: null;
+		if (!uri) return null;
+		return {
+			type: "image",
+			source: "url",
+			data: uri,
+			...(typeof value.mime_type === "string" ? { mimeType: value.mime_type } : {}),
+		};
+	}
+	if (type === "audio") {
+		const format = (() => {
+			const mimeType = String(value.mime_type ?? "").toLowerCase();
+			if (mimeType.includes("mpeg") || mimeType.includes("mp3")) return "mp3";
+			if (mimeType.includes("flac")) return "flac";
+			if (mimeType.includes("mp4") || mimeType.includes("m4a")) return "m4a";
+			if (mimeType.includes("ogg")) return "ogg";
+			if (mimeType.includes("l16") || mimeType.includes("pcm16")) return "pcm16";
+			if (mimeType.includes("l24") || mimeType.includes("pcm24")) return "pcm24";
+			if (mimeType.includes("wav")) return "wav";
+			return undefined;
+		})();
+		if (typeof value.data === "string" && value.data.length > 0) {
+			return {
+				type: "audio",
+				source: "data",
+				data: value.data,
+				format,
+			};
+		}
+		const uri = typeof value.uri === "string"
+			? value.uri
+			: typeof value.url === "string"
+				? value.url
+				: null;
+		if (!uri) return null;
+		return {
+			type: "audio",
+			source: "url",
+			data: uri,
+			format,
+		};
+	}
+	return null;
+}
+
+function googleInteractionText(value: any): string {
+	if (typeof value === "string") return value;
+	if (Array.isArray(value)) return value.map(googleInteractionText).filter(Boolean).join("");
+	if (!value || typeof value !== "object") return "";
+	if (typeof value.text === "string") return value.text;
+	if (value.content !== undefined) return googleInteractionText(value.content);
+	if (value.summary !== undefined) return googleInteractionText(value.summary);
+	return "";
+}
+
+function googleArgumentsToString(value: any): string | undefined {
+	if (value === undefined || value === null) return undefined;
+	if (typeof value === "string") return value;
+	try {
+		return JSON.stringify(value);
+	} catch {
+		return "{}";
+	}
+}
+
+function extractGoogleInteractionsEvents(
+	eventName: string | null | undefined,
+	frame: any,
+): UnifiedStreamEvent[] {
+	const events: UnifiedStreamEvent[] = [];
+	const event = String(eventName ?? frame?.event_type ?? "");
+
+	if (event === "interaction.created") {
+		events.push({
+			type: "start",
+			protocol: "google.interactions",
+			payload: frame,
+		});
+		return events;
+	}
+
+	if (event === "step.start") {
+		const step = frame?.step ?? frame;
+		const stepType = String(step?.type ?? "").toLowerCase();
+		if (stepType === "function_call") {
+			events.push({
+				type: "delta_tool",
+				toolCallId: typeof step?.id === "string" ? step.id : undefined,
+				toolName: typeof step?.name === "string" ? step.name : undefined,
+				arguments: googleArgumentsToString(step?.arguments ?? step?.args),
+				payload: frame,
+			});
+		}
+		if (stepType === "model_output" && Array.isArray(step?.content)) {
+			for (const block of step.content) {
+				if (block?.type === "text" && typeof block?.text === "string") {
+					events.push({
+						type: "delta_text",
+						channel: "output_text",
+						text: block.text,
+						payload: frame,
+					});
+					continue;
+				}
+				const mediaPart = parseGoogleInteractionMediaPart(block);
+				if (mediaPart) {
+					events.push({
+						type: "delta_content_part",
+						part: mediaPart,
+						payload: frame,
+					});
+				}
+			}
+		}
+		return events;
+	}
+
+	if (event === "step.delta") {
+		const delta = frame?.delta ?? frame;
+		const deltaType = String(delta?.type ?? "").toLowerCase();
+		if (deltaType === "text" && typeof delta?.text === "string") {
+			events.push({
+				type: "delta_text",
+				channel: "output_text",
+				text: delta.text,
+				payload: frame,
+			});
+			return events;
+		}
+		if (deltaType === "thought_summary" || deltaType === "reasoning_text") {
+			const text = googleInteractionText(delta?.content ?? delta?.summary ?? delta?.text);
+			if (text) {
+				events.push({
+					type: "delta_text",
+					channel: "reasoning_text",
+					text,
+					payload: frame,
+				});
+			}
+			return events;
+		}
+		if (deltaType === "arguments_delta") {
+			events.push({
+				type: "delta_tool",
+				argumentsDelta:
+					typeof delta?.arguments === "string"
+						? delta.arguments
+						: typeof delta?.arguments_delta === "string"
+							? delta.arguments_delta
+							: undefined,
+				payload: frame,
+			});
+			return events;
+		}
+		const mediaPart = parseGoogleInteractionMediaPart(delta);
+		if (mediaPart) {
+			events.push({
+				type: "delta_content_part",
+				part: mediaPart,
+				payload: frame,
+			});
+		}
+		return events;
+	}
+
+	if (event === "interaction.completed" || frame?.object === "interaction" || frame?.interaction?.object === "interaction") {
+		const interaction = frame?.interaction ?? frame;
+		events.push({
+			type: "snapshot",
+			isFinal: true,
+			payload: interaction,
+		});
+		if (interaction?.usage) {
+			events.push({
+				type: "usage",
+				usage: interaction.usage,
+				payload: interaction,
+			});
+		}
+		events.push({
+			type: "stop",
+			finishReason: googleStatusToStopReason(interaction?.status),
+			payload: interaction,
+		});
+		return events;
+	}
+
+	if (event === "error") {
+		events.push({
+			type: "error",
+			message:
+				typeof frame?.error?.message === "string"
+					? frame.error.message
+					: (typeof frame?.message === "string" ? frame.message : "stream_error"),
+			payload: frame,
+		});
+		events.push({ type: "stop", finishReason: "error", payload: frame });
+	}
+
+	return events;
+}
+
 function extractAnthropicMessagesEvents(
 	eventName: string | null | undefined,
 	frame: any,
@@ -697,6 +938,7 @@ export function extractUnifiedStreamEvents(
 		target:
 			| "openai.chat.completions"
 			| "openai.responses"
+			| "google.interactions"
 			| "anthropic.messages",
 	): UnifiedStreamEvent[] => {
 		switch (target) {
@@ -704,6 +946,8 @@ export function extractUnifiedStreamEvents(
 				return extractOpenAIChatEvents(args.frame);
 			case "openai.responses":
 				return extractOpenAIResponsesEvents(args.eventName, args.frame);
+			case "google.interactions":
+				return extractGoogleInteractionsEvents(args.eventName, args.frame);
 			case "anthropic.messages":
 				return extractAnthropicMessagesEvents(args.eventName, args.frame);
 			default:
@@ -731,6 +975,7 @@ export function detectStreamProtocol(
 ):
 	| "openai.chat.completions"
 	| "openai.responses"
+	| "google.interactions"
 	| "anthropic.messages"
 	| null {
 	return normalizeProtocol(args);

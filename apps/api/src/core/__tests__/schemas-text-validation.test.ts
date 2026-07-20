@@ -1,7 +1,55 @@
 import { describe, expect, it } from "vitest";
-import { AnthropicMessagesSchema, ChatCompletionsSchema, ResponsesSchema } from "../schemas";
+import { AnthropicMessagesSchema, ChatCompletionsSchema, InteractionsSchema, ResponsesSchema } from "../schemas";
 
 describe("text request schema validation", () => {
+	it("requires current Google Interactions generation controls", () => {
+		expect(
+			InteractionsSchema.safeParse({
+				model: "google/gemini-3-flash-preview",
+				input: "hello",
+				generation_config: { top_k: 20 },
+			}).success,
+		).toBe(false);
+
+		expect(
+			InteractionsSchema.safeParse({
+				model: "google/gemini-3-flash-preview",
+				input: "hello",
+				generation_config: { thinking_level: "medium", top_p: 0.9 },
+				response_modalities: "text",
+				service_tier: "flex",
+				labels: { cohort: "pro" },
+				safety_settings: [{ category: "harassment", threshold: "block_medium_and_above" }],
+			}).success,
+		).toBe(true);
+
+		expect(
+			InteractionsSchema.safeParse({ model: "google/gemini-3-flash-preview" }).success,
+		).toBe(false);
+		expect(
+			InteractionsSchema.safeParse({
+				model: "google/gemini-3-flash-preview",
+				input: "hello",
+				service_tier: "batch",
+			}).success,
+		).toBe(false);
+		expect(
+			InteractionsSchema.safeParse({
+				model: "google/gemini-3-flash-preview",
+				input: "hello",
+				agent: "deep-research-preview-04-2026",
+			}).success,
+		).toBe(false);
+
+		expect(
+			InteractionsSchema.safeParse({
+				model: "google/gemini-3-flash-preview",
+				input: "hello",
+				response_modalities: ["text", "image"],
+			}).success,
+		).toBe(false);
+	});
+
 	it("accepts chat streaming when tools are present", () => {
 		const parsed = ChatCompletionsSchema.safeParse({
 			model: "gpt-4.1",

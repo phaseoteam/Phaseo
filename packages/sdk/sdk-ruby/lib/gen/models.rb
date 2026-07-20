@@ -1151,6 +1151,102 @@ module Phaseo
     # @!attribute [rw] data
     #   @return [Array<Hash{String => Object}>, nil]
     ImagesGenerationResponse = Struct.new(:created, :data, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [String, nil]
+    # @!attribute [rw] mime_type
+    #   @return [String, nil]
+    # @!attribute [rw] text
+    #   @return [String, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    # @!attribute [rw] uri
+    #   @return [String, nil]
+    InteractionContentBlock = Struct.new(:data, :mime_type, :text, :type, :uri, keyword_init: true)
+    # @!attribute [rw] created
+    #   @return [Integer, nil]
+    # @!attribute [rw] id
+    #   @return [String]
+    # @!attribute [rw] model
+    #   @return [String]
+    # @!attribute [rw] object
+    #   @return [String]
+    # @!attribute [rw] output_text
+    #   @return [String, nil]
+    # @!attribute [rw] status
+    #   @return [String]
+    # @!attribute [rw] steps
+    #   @return [Array<Hash{String => Object}>]
+    # @!attribute [rw] usage
+    #   @return [Hash{String => Object}, nil]
+    InteractionResponse = Struct.new(:created, :id, :model, :object, :output_text, :status, :steps, :usage, keyword_init: true)
+    # @!attribute [rw] background
+    #   @return [Boolean, nil]
+    # @!attribute [rw] cached_content
+    #   @return [String, nil]
+    # @!attribute [rw] debug
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] echo_upstream_request
+    #   @return [Boolean, nil]
+    # @!attribute [rw] environment
+    #   @return [String, Hash{String => Object}, nil]
+    # @!attribute [rw] generation_config
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] input
+    #   @return [String, Array<Hash{String => Object}>, Hash{String => Object}]
+    # @!attribute [rw] labels
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] meta
+    #   @return [Boolean, nil]
+    # @!attribute [rw] metadata
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] model
+    #   @return [String]
+    # @!attribute [rw] previous_interaction_id
+    #   @return [String, nil]
+    # @!attribute [rw] provider
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] response_format
+    #   @return [Hash{String => Object}, Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] response_modalities
+    #   @return [String, nil]
+    # @!attribute [rw] safety_settings
+    #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] service_tier
+    #   @return [String, nil]
+    # @!attribute [rw] session_id
+    #   @return [String, nil]
+    # @!attribute [rw] store
+    #   @return [Boolean, nil]
+    # @!attribute [rw] stream
+    #   @return [Boolean, nil]
+    # @!attribute [rw] system_instruction
+    #   @return [String, Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] tool_choice
+    #   @return [String, Hash{String => Object}, nil]
+    # @!attribute [rw] tools
+    #   @return [Array<Hash{String => Object}>, nil]
+    InteractionsRequest = Struct.new(:background, :cached_content, :debug, :echo_upstream_request, :environment, :generation_config, :input, :labels, :meta, :metadata, :model, :previous_interaction_id, :provider, :response_format, :response_modalities, :safety_settings, :service_tier, :session_id, :store, :stream, :system_instruction, :tool_choice, :tools, keyword_init: true)
+    # @!attribute [rw] arguments
+    #   @return [String, Hash{String => Object}, nil]
+    # @!attribute [rw] call_id
+    #   @return [String, nil]
+    # @!attribute [rw] content
+    #   @return [String, Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] id
+    #   @return [String, nil]
+    # @!attribute [rw] is_error
+    #   @return [Boolean, nil]
+    # @!attribute [rw] name
+    #   @return [String, nil]
+    # @!attribute [rw] result
+    #   @return [String, Hash{String => Object}, nil]
+    # @!attribute [rw] signature
+    #   @return [String, nil]
+    # @!attribute [rw] summary
+    #   @return [String, Hash{String => Object}, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    InteractionStep = Struct.new(:arguments, :call_id, :content, :id, :is_error, :name, :result, :signature, :summary, :type, keyword_init: true)
     # @!attribute [rw] error
     #   @return [String]
     # @!attribute [rw] max_offset

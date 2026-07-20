@@ -10,6 +10,7 @@ const STICKY_TTL_SECONDS = 300; // 5 minutes
 const CONTEXT_HASH_VERSION = "v2-opening-anchors";
 const CACHE_AWARE_ROUTING_ENDPOINTS = new Set<Endpoint>([
     "responses",
+    "interactions",
     "chat.completions",
     "messages",
 ]);
@@ -268,7 +269,7 @@ function buildContextInput(body: any, endpoint: Endpoint): Record<string, unknow
 
     const explicitSystem = normalizeContentForHash(body?.system);
 
-    const opening = endpoint === "responses"
+    const opening = endpoint === "responses" || endpoint === "interactions"
         ? fromResponses
         : {
             firstSystemOrDeveloper:

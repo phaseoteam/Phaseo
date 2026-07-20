@@ -12,11 +12,13 @@ import type { Endpoint } from "@core/types";
  * Each protocol represents a client-facing API format:
  * - openai.chat.completions: OpenAI Chat Completions API
  * - openai.responses: OpenAI Responses API (unified responses format)
+ * - google.interactions: Google Interactions API
  * - anthropic.messages: Anthropic Messages API
  */
 export type Protocol =
 	| "openai.chat.completions"
 	| "openai.responses"
+	| "google.interactions"
 	| "openai.embeddings"
 	| "openai.moderations"
 	| "openai.rerank"
@@ -25,6 +27,7 @@ export type Protocol =
 export type TextProtocol =
 	| "openai.chat.completions"
 	| "openai.responses"
+	| "google.interactions"
 	| "anthropic.messages";
 
 /**
@@ -48,6 +51,8 @@ export function detectProtocol(endpoint: Endpoint, requestPath?: string): Protoc
 	switch (endpoint) {
 		case "responses":
 			return "openai.responses";
+		case "interactions":
+			return "google.interactions";
 
 		case "embeddings":
 			return "openai.embeddings";
@@ -77,6 +82,8 @@ export function detectTextProtocol(
 	switch (endpoint) {
 		case "responses":
 			return "openai.responses";
+		case "interactions":
+			return "google.interactions";
 		case "chat.completions":
 			return "openai.chat.completions";
 		case "messages":
@@ -98,6 +105,8 @@ export function getProtocolPath(protocol: Protocol): string {
 			return "/v1/chat/completions";
 		case "openai.responses":
 			return "/v1/responses";
+		case "google.interactions":
+			return "/v1/interactions";
 		case "openai.embeddings":
 			return "/v1/embeddings";
 		case "openai.moderations":
@@ -129,7 +138,7 @@ export function protocolSupportsFeature(
 			// OpenAI Responses API has native reasoning support
 			// Chat Completions can represent it via our split-choice mechanism
 			// Anthropic Messages may support thinking blocks (future)
-			return protocol === "openai.responses" || protocol === "openai.chat.completions";
+			return protocol === "openai.responses" || protocol === "openai.chat.completions" || protocol === "google.interactions";
 
 		case "multimodal":
 			// All protocols support multimodal content
@@ -149,6 +158,8 @@ export function getProtocolDisplayName(protocol: Protocol): string {
 			return "OpenAI Chat Completions";
 		case "openai.responses":
 			return "OpenAI Responses";
+		case "google.interactions":
+			return "Google Interactions";
 		case "openai.embeddings":
 			return "OpenAI Embeddings";
 		case "openai.moderations":
@@ -159,4 +170,3 @@ export function getProtocolDisplayName(protocol: Protocol): string {
 			return "Anthropic Messages";
 	}
 }
-

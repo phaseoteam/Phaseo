@@ -556,6 +556,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResponsesResponse'
+  /interactions:
+    post:
+      tags:
+        - Gateway
+      operationId: createInteraction
+      summary: Create interaction
+      description: >-
+        Creates a model-backed response using the Google Interactions-compatible
+        API. Google managed agents and webhook configuration are not supported.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InteractionsRequest'
+      responses:
+        '200':
+          description: Interaction response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InteractionResponse'
+            text/event-stream:
+              schema:
+                type: string
   /async/{kind}/{id}/ws:
     get:
       x-beta: true
@@ -4788,6 +4813,245 @@ components:
           type: integer
         output_tokens:
           type: integer
+    InteractionContentBlock:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - text
+            - image
+            - audio
+            - video
+            - document
+        text:
+          type: string
+        mime_type:
+          type: string
+        data:
+          type: string
+        uri:
+          type: string
+      additionalProperties: true
+    InteractionStep:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - user_input
+            - model_output
+            - thought
+            - function_call
+            - function_result
+        content:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                $ref: '#/components/schemas/InteractionContentBlock'
+        summary:
+          oneOf:
+            - type: string
+            - $ref: '#/components/schemas/InteractionContentBlock'
+        id:
+          type: string
+        call_id:
+          type: string
+        name:
+          type: string
+        arguments:
+          oneOf:
+            - type: string
+            - type: object
+              additionalProperties: true
+        result:
+          oneOf:
+            - type: string
+            - type: object
+              additionalProperties: true
+        is_error:
+          type: boolean
+        signature:
+          type: string
+      additionalProperties: true
+    InteractionsRequest:
+      type: object
+      required:
+        - model
+        - input
+      properties:
+        model:
+          type: string
+        input:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                oneOf:
+                  - $ref: '#/components/schemas/InteractionContentBlock'
+                  - $ref: '#/components/schemas/InteractionStep'
+                  - type: object
+                    additionalProperties: true
+            - type: object
+              additionalProperties: true
+        system_instruction:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                $ref: '#/components/schemas/InteractionContentBlock'
+        generation_config:
+          type: object
+          properties:
+            temperature:
+              type: number
+            top_p:
+              type: number
+            max_output_tokens:
+              type: integer
+            stop_sequences:
+              type: array
+              items:
+                type: string
+            seed:
+              type: integer
+            thinking_level:
+              type: string
+              enum:
+                - minimal
+                - low
+                - medium
+                - high
+            thinking_summaries:
+              type: string
+              enum:
+                - none
+                - auto
+          additionalProperties: true
+        tools:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        tool_choice:
+          oneOf:
+            - type: string
+            - type: object
+              additionalProperties: true
+        response_format:
+          oneOf:
+            - type: object
+              additionalProperties: true
+            - type: array
+              items:
+                type: object
+                additionalProperties: true
+        response_modalities:
+          type: string
+          enum:
+            - text
+            - image
+            - audio
+            - video
+            - document
+        previous_interaction_id:
+          type: string
+        store:
+          type: boolean
+        stream:
+          type: boolean
+          default: false
+        background:
+          type: boolean
+        service_tier:
+          type: string
+          enum:
+            - standard
+            - priority
+            - flex
+        cached_content:
+          type: string
+        environment:
+          oneOf:
+            - type: string
+            - type: object
+              additionalProperties: true
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+        safety_settings:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+        session_id:
+          type: string
+          maxLength: 256
+        meta:
+          type: boolean
+        echo_upstream_request:
+          type: boolean
+        debug:
+          $ref: '#/components/schemas/DebugOptions'
+        provider:
+          $ref: '#/components/schemas/ProviderRoutingOptions'
+      additionalProperties: true
+    InteractionResponse:
+      type: object
+      required:
+        - id
+        - object
+        - model
+        - status
+        - steps
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+          enum:
+            - interaction
+        created:
+          type: integer
+        model:
+          type: string
+        status:
+          type: string
+          enum:
+            - completed
+            - failed
+            - incomplete
+            - requires_action
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/InteractionStep'
+        output_text:
+          type: string
+        usage:
+          type: object
+          properties:
+            total_input_tokens:
+              type: integer
+            total_output_tokens:
+              type: integer
+            total_tokens:
+              type: integer
+            total_cached_tokens:
+              type: integer
+            total_thought_tokens:
+              type: integer
+          additionalProperties: true
     ResponsesRequest:
       type: object
       required:

@@ -510,6 +510,42 @@ export function presentUsageForClient(usage: any, ctx?: { endpoint?: PipelineCon
     return out;
 }
 
+export function presentInteractionUsageForClient(usage: any): any {
+    if (!usage || typeof usage !== "object") return usage;
+    const generic = presentUsageForClient(usage, { endpoint: "interactions" as any });
+    const inputTokens = generic?.input_tokens ?? usage.total_input_tokens ?? 0;
+    const outputTokens = generic?.output_tokens ?? usage.total_output_tokens ?? 0;
+    const totalTokens = generic?.total_tokens ?? usage.total_tokens ?? inputTokens + outputTokens;
+    return {
+        total_input_tokens: inputTokens,
+        total_output_tokens: outputTokens,
+        total_tokens: totalTokens,
+        ...(usage.total_cached_tokens != null
+            ? { total_cached_tokens: usage.total_cached_tokens }
+            : generic?.input_tokens_details?.cached_tokens != null
+                ? { total_cached_tokens: generic.input_tokens_details.cached_tokens }
+                : {}),
+        ...(usage.total_thought_tokens != null
+            ? { total_thought_tokens: usage.total_thought_tokens }
+            : generic?.output_tokens_details?.reasoning_tokens != null
+                ? { total_thought_tokens: generic.output_tokens_details.reasoning_tokens }
+                : {}),
+        ...(Array.isArray(usage.input_tokens_by_modality)
+            ? { input_tokens_by_modality: usage.input_tokens_by_modality }
+            : {}),
+        ...(Array.isArray(usage.output_tokens_by_modality)
+            ? { output_tokens_by_modality: usage.output_tokens_by_modality }
+            : {}),
+        ...(usage.total_tool_use_tokens != null
+            ? { total_tool_use_tokens: usage.total_tool_use_tokens }
+            : {}),
+        ...(usage.server_tool_use != null
+            ? { server_tool_use: usage.server_tool_use }
+            : {}),
+        ...(generic?.pricing_breakdown ? { pricing_breakdown: generic.pricing_breakdown } : {}),
+    };
+}
+
 function resolveTopLevelPricingUsage(usage: any): {
 	totalNanos: number;
 	totalCents: number;
@@ -860,6 +896,27 @@ export function formatClientPayload(args: {
         return attachTopLevelPricing(body, usage);
     }
 
+    if (ctx.endpoint === "interactions") {
+        const {
+            requestId,
+            meta: _m,
+            usage: rawUsage,
+            ...rest
+        } = payload ?? {};
+        const body: any = {
+            requestId: requestId ?? ctx.requestId,
+            ...rest,
+        };
+        if (rawUsage) {
+            body.usage = presentInteractionUsageForClient(rawUsage);
+        }
+        if (ctx.meta?.echoUpstreamRequest && payload?.upstream_request) {
+            body.upstream_request = payload.upstream_request;
+        }
+        if (meta) body.meta = meta;
+        return attachTopLevelPricing(body, body.usage);
+    }
+
 	if (ctx.endpoint === "moderations") {
 		const {
 			provider,
@@ -926,8 +983,6 @@ export function formatClientPayload(args: {
     if (meta) fallback.meta = meta;
     return attachTopLevelPricing(fallback, usage);
 }
-
-
 
 
 

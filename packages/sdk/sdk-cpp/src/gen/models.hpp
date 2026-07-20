@@ -781,6 +781,64 @@ struct ImagesGenerationResponse {
 	std::vector<std::map<std::string, std::any>> data;
 };
 
+struct InteractionContentBlock {
+	std::string data;
+	std::string mime_type;
+	std::string text;
+	std::any type;
+	std::string uri;
+};
+
+struct InteractionResponse {
+	std::optional<int> created;
+	std::string id;
+	std::string model;
+	std::any object;
+	std::string output_text;
+	std::any status;
+	std::vector<std::map<std::string, std::any>> steps;
+	std::map<std::string, std::any> usage;
+};
+
+struct InteractionsRequest {
+	std::optional<bool> background;
+	std::string cached_content;
+	std::map<std::string, std::any> debug;
+	std::optional<bool> echo_upstream_request;
+	std::any environment;
+	std::map<std::string, std::any> generation_config;
+	std::any input;
+	std::map<std::string, std::any> labels;
+	std::optional<bool> meta;
+	std::map<std::string, std::any> metadata;
+	std::string model;
+	std::string previous_interaction_id;
+	std::map<std::string, std::any> provider;
+	std::any response_format;
+	std::any response_modalities;
+	std::vector<std::map<std::string, std::any>> safety_settings;
+	std::any service_tier;
+	std::string session_id;
+	std::optional<bool> store;
+	std::optional<bool> stream;
+	std::any system_instruction;
+	std::any tool_choice;
+	std::vector<std::map<std::string, std::any>> tools;
+};
+
+struct InteractionStep {
+	std::any arguments;
+	std::string call_id;
+	std::any content;
+	std::string id;
+	std::optional<bool> is_error;
+	std::string name;
+	std::any result;
+	std::string signature;
+	std::any summary;
+	std::any type;
+};
+
 struct InvalidRequestResponse {
 	std::string error;
 	std::optional<int> max_offset;

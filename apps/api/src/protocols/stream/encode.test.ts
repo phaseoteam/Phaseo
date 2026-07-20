@@ -112,5 +112,34 @@ describe("encodeUnifiedStreamEvent", () => {
 		expect(encoded?.frame.item?.content?.[0]?.type).toBe("output_image");
 		expect(encoded?.frame.item?.content?.[0]?.b64_json).toBe("ZmFrZQ==");
 	});
-});
 
+	it("encodes google interaction text deltas and completion usage", () => {
+		const textDelta = encodeUnifiedStreamEvent(
+			"google.interactions",
+			{
+				type: "delta_text",
+				channel: "output_text",
+				text: "hello",
+				choiceIndex: 0,
+			},
+			{ requestId: "int_1", model: "gemini-test" },
+		);
+		expect(textDelta?.eventName).toBe("step.delta");
+		expect(textDelta?.frame.delta).toEqual({ type: "text", text: "hello" });
+
+		const completed = encodeUnifiedStreamEvent(
+			"google.interactions",
+			{
+				type: "usage",
+				usage: { input_tokens: 4, output_tokens: 1, total_tokens: 5 },
+			},
+			{ requestId: "int_1", model: "gemini-test" },
+		);
+		expect(completed?.eventName).toBe("interaction.completed");
+		expect(completed?.frame.interaction?.usage).toEqual({
+			total_input_tokens: 4,
+			total_output_tokens: 1,
+			total_tokens: 5,
+		});
+	});
+});

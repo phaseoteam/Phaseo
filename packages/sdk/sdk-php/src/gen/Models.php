@@ -1391,6 +1391,114 @@ class ImagesGenerationResponse
 	public $data;
 }
 
+class InteractionContentBlock
+{
+	/** @var string|null */
+	public $data;
+	/** @var string|null */
+	public $mime_type;
+	/** @var string|null */
+	public $text;
+	/** @var string */
+	public $type;
+	/** @var string|null */
+	public $uri;
+}
+
+class InteractionResponse
+{
+	/** @var int|null */
+	public $created;
+	/** @var string */
+	public $id;
+	/** @var string */
+	public $model;
+	/** @var string */
+	public $object;
+	/** @var string|null */
+	public $output_text;
+	/** @var string */
+	public $status;
+	/** @var array */
+	public $steps;
+	/** @var array<string, mixed>|null */
+	public $usage;
+}
+
+class InteractionsRequest
+{
+	/** @var bool|null */
+	public $background;
+	/** @var string|null */
+	public $cached_content;
+	/** @var array<string, mixed>|null */
+	public $debug;
+	/** @var bool|null */
+	public $echo_upstream_request;
+	/** @var string|array<string, mixed>|null */
+	public $environment;
+	/** @var array<string, mixed>|null */
+	public $generation_config;
+	/** @var string|array|array<string, mixed> */
+	public $input;
+	/** @var array<string, mixed>|null */
+	public $labels;
+	/** @var bool|null */
+	public $meta;
+	/** @var array<string, mixed>|null */
+	public $metadata;
+	/** @var string */
+	public $model;
+	/** @var string|null */
+	public $previous_interaction_id;
+	/** @var array<string, mixed>|null */
+	public $provider;
+	/** @var array<string, mixed>|array|null */
+	public $response_format;
+	/** @var string|null */
+	public $response_modalities;
+	/** @var array|null */
+	public $safety_settings;
+	/** @var string|null */
+	public $service_tier;
+	/** @var string|null */
+	public $session_id;
+	/** @var bool|null */
+	public $store;
+	/** @var bool|null */
+	public $stream;
+	/** @var string|array|null */
+	public $system_instruction;
+	/** @var string|array<string, mixed>|null */
+	public $tool_choice;
+	/** @var array|null */
+	public $tools;
+}
+
+class InteractionStep
+{
+	/** @var string|array<string, mixed>|null */
+	public $arguments;
+	/** @var string|null */
+	public $call_id;
+	/** @var string|array|null */
+	public $content;
+	/** @var string|null */
+	public $id;
+	/** @var bool|null */
+	public $is_error;
+	/** @var string|null */
+	public $name;
+	/** @var string|array<string, mixed>|null */
+	public $result;
+	/** @var string|null */
+	public $signature;
+	/** @var string|array<string, mixed>|null */
+	public $summary;
+	/** @var string */
+	public $type;
+}
+
 class InvalidRequestResponse
 {
 	/** @var string */

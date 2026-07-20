@@ -119,6 +119,19 @@ describe("extractUnifiedStreamEvents", () => {
 		).toBe(true);
 	});
 
+	it("detects current Google interaction IDs without an explicit protocol hint", () => {
+		const events = extractUnifiedStreamEvents({
+			frame: {
+				id: "v1_interaction_123",
+				object: "interaction",
+				status: "completed",
+				steps: [],
+			},
+		});
+
+		expect(events.some((event) => event.type === "stop")).toBe(true);
+	});
+
 	it("does not treat generic responses tool_call items as function calls", () => {
 		const events = extractUnifiedStreamEvents({
 			protocol: "openai.responses",
@@ -286,6 +299,76 @@ describe("extractUnifiedStreamEvents", () => {
 			usageStop.some(
 				(event) =>
 					event.type === "stop" && event.finishReason === "end_turn",
+			),
+		).toBe(true);
+	});
+
+	it("extracts google interaction deltas, usage, and stop", () => {
+		const deltaEvents = extractUnifiedStreamEvents({
+			protocol: "google.interactions",
+			eventName: "step.delta",
+			frame: {
+				event_type: "step.delta",
+				index: 0,
+				delta: { type: "text", text: "hello" },
+			},
+		});
+		expect(
+			deltaEvents.some(
+				(event) =>
+					event.type === "delta_text" &&
+					event.channel === "output_text" &&
+					event.text === "hello",
+			),
+		).toBe(true);
+		expect(deltaEvents.find((event) => event.type === "delta_text")?.choiceIndex).toBeUndefined();
+
+		const toolEvents = extractUnifiedStreamEvents({
+			protocol: "google.interactions",
+			eventName: "step.start",
+			frame: {
+				event_type: "step.start",
+				index: 1,
+				step: {
+					type: "function_call",
+					id: "call_1",
+					name: "lookup",
+					arguments: { q: "x" },
+				},
+			},
+		});
+		expect(
+			toolEvents.some(
+				(event) =>
+					event.type === "delta_tool" &&
+					event.toolCallId === "call_1" &&
+					event.toolName === "lookup" &&
+					event.arguments === "{\"q\":\"x\"}",
+			),
+		).toBe(true);
+
+		const completedEvents = extractUnifiedStreamEvents({
+			protocol: "google.interactions",
+			eventName: "interaction.completed",
+			frame: {
+				event_type: "interaction.completed",
+				interaction: {
+					object: "interaction",
+					status: "requires_action",
+					usage: {
+						total_input_tokens: 3,
+						total_output_tokens: 2,
+						total_tokens: 5,
+					},
+				},
+			},
+		});
+		expect(completedEvents.some((event) => event.type === "usage")).toBe(true);
+		expect(
+			completedEvents.some(
+				(event) =>
+					event.type === "stop" &&
+					event.finishReason === "tool_calls",
 			),
 		).toBe(true);
 	});

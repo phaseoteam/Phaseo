@@ -1927,6 +1927,160 @@ public sealed class ImagesGenerationResponse
 
 }
 
+public sealed class InteractionContentBlock
+{
+	[JsonPropertyName("data")]
+	public string? Data { get; set; }
+
+	[JsonPropertyName("mime_type")]
+	public string? MimeType { get; set; }
+
+	[JsonPropertyName("text")]
+	public string? Text { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+	[JsonPropertyName("uri")]
+	public string? Uri { get; set; }
+
+}
+
+public sealed class InteractionResponse
+{
+	[JsonPropertyName("created")]
+	public int? Created { get; set; }
+
+	[JsonPropertyName("id")]
+	public string Id { get; set; }
+
+	[JsonPropertyName("model")]
+	public string Model { get; set; }
+
+	[JsonPropertyName("object")]
+	public string Object { get; set; }
+
+	[JsonPropertyName("output_text")]
+	public string? OutputText { get; set; }
+
+	[JsonPropertyName("status")]
+	public string Status { get; set; }
+
+	[JsonPropertyName("steps")]
+	public List<Dictionary<string, object>> Steps { get; set; }
+
+	[JsonPropertyName("usage")]
+	public Dictionary<string, object>? Usage { get; set; }
+
+}
+
+public sealed class InteractionsRequest
+{
+	[JsonPropertyName("background")]
+	public bool? Background { get; set; }
+
+	[JsonPropertyName("cached_content")]
+	public string? CachedContent { get; set; }
+
+	[JsonPropertyName("debug")]
+	public Dictionary<string, object>? Debug { get; set; }
+
+	[JsonPropertyName("echo_upstream_request")]
+	public bool? EchoUpstreamRequest { get; set; }
+
+	[JsonPropertyName("environment")]
+	public object? Environment { get; set; }
+
+	[JsonPropertyName("generation_config")]
+	public Dictionary<string, object>? GenerationConfig { get; set; }
+
+	[JsonPropertyName("input")]
+	public object Input { get; set; }
+
+	[JsonPropertyName("labels")]
+	public Dictionary<string, object>? Labels { get; set; }
+
+	[JsonPropertyName("meta")]
+	public bool? Meta { get; set; }
+
+	[JsonPropertyName("metadata")]
+	public Dictionary<string, object>? Metadata { get; set; }
+
+	[JsonPropertyName("model")]
+	public string Model { get; set; }
+
+	[JsonPropertyName("previous_interaction_id")]
+	public string? PreviousInteractionId { get; set; }
+
+	[JsonPropertyName("provider")]
+	public Dictionary<string, object>? Provider { get; set; }
+
+	[JsonPropertyName("response_format")]
+	public object? ResponseFormat { get; set; }
+
+	[JsonPropertyName("response_modalities")]
+	public string? ResponseModalities { get; set; }
+
+	[JsonPropertyName("safety_settings")]
+	public List<Dictionary<string, object>>? SafetySettings { get; set; }
+
+	[JsonPropertyName("service_tier")]
+	public string? ServiceTier { get; set; }
+
+	[JsonPropertyName("session_id")]
+	public string? SessionId { get; set; }
+
+	[JsonPropertyName("store")]
+	public bool? Store { get; set; }
+
+	[JsonPropertyName("stream")]
+	public bool? Stream { get; set; }
+
+	[JsonPropertyName("system_instruction")]
+	public object? SystemInstruction { get; set; }
+
+	[JsonPropertyName("tool_choice")]
+	public object? ToolChoice { get; set; }
+
+	[JsonPropertyName("tools")]
+	public List<Dictionary<string, object>>? Tools { get; set; }
+
+}
+
+public sealed class InteractionStep
+{
+	[JsonPropertyName("arguments")]
+	public object? Arguments { get; set; }
+
+	[JsonPropertyName("call_id")]
+	public string? CallId { get; set; }
+
+	[JsonPropertyName("content")]
+	public object? Content { get; set; }
+
+	[JsonPropertyName("id")]
+	public string? Id { get; set; }
+
+	[JsonPropertyName("is_error")]
+	public bool? IsError { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("result")]
+	public object? Result { get; set; }
+
+	[JsonPropertyName("signature")]
+	public string? Signature { get; set; }
+
+	[JsonPropertyName("summary")]
+	public object? Summary { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
 public sealed class InvalidRequestResponse
 {
 	[JsonPropertyName("error")]

@@ -182,6 +182,7 @@ function getTextContextCapabilitiesToLoad(
     const requestedSurface = capabilityCandidates.find(
         candidate =>
             candidate === "responses" ||
+            candidate === "interactions" ||
             candidate === "chat.completions" ||
             candidate === "messages",
     );
@@ -1297,7 +1298,6 @@ export async function fetchGatewayContext(args: {
         }
     }
 }
-
 
 
 

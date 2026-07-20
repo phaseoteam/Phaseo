@@ -1,7 +1,23 @@
 import { describe, expect, it } from "vitest";
-import { enrichSuccessPayload, extractFinishReason, formatClientPayload } from "./payload";
+import { enrichSuccessPayload, extractFinishReason, formatClientPayload, presentInteractionUsageForClient } from "./payload";
 
 describe("enrichSuccessPayload model selection", () => {
+	it("preserves documented Google interaction usage details", () => {
+		expect(presentInteractionUsageForClient({
+			total_input_tokens: 3,
+			total_output_tokens: 5,
+			total_tokens: 8,
+			total_tool_use_tokens: 2,
+			server_tool_use: { web_search_requests: 1 },
+		})).toMatchObject({
+			total_input_tokens: 3,
+			total_output_tokens: 5,
+			total_tokens: 8,
+			total_tool_use_tokens: 2,
+			server_tool_use: { web_search_requests: 1 },
+		});
+	});
+
 	it("backfills assistant phase from IR when raw output message omits it", async () => {
 		const ctx: any = {
 			endpoint: "responses",

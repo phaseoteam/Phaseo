@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { irToGemini } from "../index";
 
 describe("google-ai-studio irToGemini", () => {
-	it("maps system and developer roles into systemInstruction parts", async () => {
+	it("maps system and developer roles into system_instruction", async () => {
 		const request = await irToGemini({
 			model: "gemini-2.5-flash",
 			stream: false,
@@ -13,14 +13,12 @@ describe("google-ai-studio irToGemini", () => {
 			],
 		} as any);
 
-		expect(request.systemInstruction?.parts).toEqual([
-			{ text: "system prompt" },
-			{ text: "developer prompt" },
-		]);
-		expect(request.contents).toHaveLength(1);
-		expect(request.contents[0]).toEqual({
-			role: "user",
-			parts: [{ text: "hello" }],
+		expect(request.system_instruction).toBe("system prompt\n\ndeveloper prompt");
+		expect(request.store).toBe(false);
+		expect(request.input).toHaveLength(1);
+		expect(request.input[0]).toEqual({
+			type: "user_input",
+			content: [{ type: "text", text: "hello" }],
 		});
 	});
 
@@ -42,23 +40,24 @@ describe("google-ai-studio irToGemini", () => {
 			},
 		} as any);
 
-		expect(request.generationConfig?.responseMimeType).toBe("application/json");
-		expect(request.generationConfig?.responseSchema).toEqual({
+		expect(request.response_format).toEqual({
+			type: "text",
+			mime_type: "application/json",
+			schema: {
+				type: "object",
+				properties: { answer: { type: "string" } },
+				required: ["answer"],
+			},
+		});
+		expect(request.response_format?.schema).toEqual({
 			type: "object",
 			properties: { answer: { type: "string" } },
 			required: ["answer"],
 		});
-		expect(Array.isArray(request.systemInstruction?.parts)).toBe(true);
-		expect(
-			request.systemInstruction.parts.some(
-				(part: any) =>
-					typeof part?.text === "string" &&
-					part.text.includes("Return only valid JSON that matches this schema exactly:"),
-			),
-		).toBe(true);
+		expect(request.system_instruction).toContain("Return only valid JSON that matches this schema exactly:");
 	});
 
-	it("maps image config passthrough and explicit thought controls", async () => {
+	it("maps image response format and explicit thought controls", async () => {
 		const request = await irToGemini({
 			model: "gemini-3.1-flash-image-preview",
 			stream: false,
@@ -73,27 +72,32 @@ describe("google-ai-studio irToGemini", () => {
 			},
 		} as any);
 
-		expect(request.generationConfig?.responseModalities).toEqual(["IMAGE"]);
-		expect(request.generationConfig?.thinkingConfig?.includeThoughts).toBe(false);
-		expect(request.generationConfig?.imageConfig).toEqual({
-			aspectRatio: "9:16",
-			imageSize: "0.5K",
-			includeRaiReason: true,
-			referenceImages: [{ referenceType: "REFERENCE_TYPE_RAW" }],
+		expect(request.response_modalities).toBeUndefined();
+		expect(request.generation_config?.thinking_summaries).toBe("none");
+		expect(request.response_format).toEqual({
+			type: "image",
+			mime_type: "image/jpeg",
+			delivery: "inline",
+			aspect_ratio: "9:16",
+			image_size: "512",
 		});
 	});
 
-	it("defaults Gemini image models to TEXT+IMAGE modalities when caller omits them", async () => {
+	it("uses response_format for default Gemini image output", async () => {
 		const request = await irToGemini({
 			model: "google/gemini-2.5-flash-image",
 			stream: false,
 			messages: [{ role: "user", content: [{ type: "text", text: "draw a blue square" }] }],
 		} as any);
 
-		expect(request.generationConfig?.responseModalities).toEqual(["TEXT", "IMAGE"]);
+		expect(request.response_modalities).toBeUndefined();
+		expect(request.response_format).toEqual([
+			{ type: "text" },
+			{ type: "image", mime_type: "image/jpeg", delivery: "inline" },
+		]);
 	});
 
-	it("maps audio modality for Gemini responseModalities", async () => {
+	it("uses response_format for multi-modal audio output", async () => {
 		const request = await irToGemini({
 			model: "lyria-3-pro",
 			stream: false,
@@ -101,7 +105,44 @@ describe("google-ai-studio irToGemini", () => {
 			modalities: ["text", "audio"],
 		} as any);
 
-		expect(request.generationConfig?.responseModalities).toEqual(["TEXT", "AUDIO"]);
+		expect(request.response_modalities).toBeUndefined();
+		expect(request.response_format).toEqual([
+			{ type: "text" },
+			{ type: "audio", delivery: "inline" },
+		]);
+	});
+
+	it("preserves Google v1 interaction IDs for continuation", async () => {
+		const request = await irToGemini({
+			model: "gemini-3.5-flash",
+			stream: false,
+			previousResponseId: "v1_interaction_123",
+			messages: [{ role: "user", content: [{ type: "text", text: "continue" }] }],
+		} as any);
+
+		expect(request.previous_interaction_id).toBe("v1_interaction_123");
+		expect(request.store).toBe(true);
+	});
+
+	it("forwards current Google interaction request controls", async () => {
+		const request = await irToGemini({
+			model: "gemini-3.5-flash",
+			stream: false,
+			messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
+			vendor: {
+				google: {
+					environment: "environments/test",
+					labels: { cohort: "pro" },
+					safety_settings: [{ category: "harassment", threshold: "block_medium_and_above" }],
+				},
+			},
+		} as any);
+
+		expect(request).toMatchObject({
+			environment: "environments/test",
+			labels: { cohort: "pro" },
+			safety_settings: [{ category: "harassment", threshold: "block_medium_and_above" }],
+		});
 	});
 
 	it("maps reasoning.effort to thinkingLevel for Gemini 3.1 image preview", async () => {
@@ -112,8 +153,8 @@ describe("google-ai-studio irToGemini", () => {
 			reasoning: { effort: "minimal", enabled: true },
 		} as any);
 
-		expect(request.generationConfig?.thinkingConfig?.thinkingLevel).toBe("MINIMAL");
-		expect(request.generationConfig?.thinkingConfig?.thinkingBudget).toBeUndefined();
+		expect(request.generation_config?.thinking_level).toBe("minimal");
+		expect(request.generation_config?.thinking_budget).toBeUndefined();
 	});
 
 	it("passes through supported image sizes and aspect ratios", async () => {
@@ -132,10 +173,13 @@ describe("google-ai-studio irToGemini", () => {
 					},
 				} as any);
 
-				expect(request.generationConfig?.imageConfig?.imageSize).toBe(size);
-				expect(request.generationConfig?.imageConfig?.aspectRatio).toBe(ratio);
+				const formats = Array.isArray(request.response_format)
+					? request.response_format
+					: [request.response_format];
+				const imageFormat = formats.find((format) => format?.type === "image");
+				expect(imageFormat?.image_size).toBe(size === "0.5K" ? "512" : size);
+				expect(imageFormat?.aspect_ratio).toBe(ratio);
 			}
 		}
 	});
 });
-

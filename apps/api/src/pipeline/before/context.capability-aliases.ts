@@ -24,6 +24,7 @@ const AUDIO_SPEECH_CONTEXT_CAPABILITY_ALIASES = [
 ] as const;
 const TEXT_CONTEXT_CAPABILITY_ALIASES = [
 	"responses",
+	"interactions",
 	"chat.completions",
 	"messages",
 	"text.generate",
