@@ -7,7 +7,7 @@ import {
 	sendDiscordWebhookPayload,
 	type InternalModelNotificationModel,
 } from "@/lib/model-discovery/internalModelDiscordNotifier";
-import { createClient } from "@/utils/supabase/server";
+import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
 
 type NotifierTestResult = {
 	ok: boolean;
@@ -99,22 +99,8 @@ function loadOrganisationMetaMap(): Record<string, OrganisationMeta> {
 }
 
 async function requireAdmin(): Promise<void> {
-	const supabase = await createClient();
-	const {
-		data: { user },
-		error: authError,
-	} = await supabase.auth.getUser();
-	if (authError || !user) throw new Error("Unauthorized");
-
-	const { data: userRow, error: userError } = await supabase
-		.from("users")
-		.select("role")
-		.eq("user_id", user.id)
-		.maybeSingle();
-
-	if (userError || (userRow?.role ?? "").toLowerCase() !== "admin") {
-		throw new Error("Unauthorized");
-	}
+	const status = await fetchInternalAuthStatus();
+	if (!status.signedIn || !status.isAdmin) throw new Error("Unauthorized");
 }
 
 function titleCaseFromSlug(raw: string): string {

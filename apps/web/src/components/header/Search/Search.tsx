@@ -1,8 +1,10 @@
 "use client";
 
-import React, { Fragment, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import useSWR from "swr";
+import { usePathname, useRouter } from "next/navigation";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { useTheme } from "next-themes";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
 	InputGroup,
@@ -10,6 +12,7 @@ import {
 	InputGroupInput,
 } from "@/components/ui/input-group";
 import { Kbd } from "@/components/ui/kbd";
+import { KeyboardShortcut } from "@/components/ui/keyboard-shortcut";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
@@ -17,33 +20,62 @@ import {
 	ArrowDown,
 	ArrowUp,
 	ArrowUpRight,
+	Bolt,
+	Compass,
 	CornerDownLeft,
+	ExternalLink,
+	Pin,
+	PinOff,
 	Search as SearchIcon,
+	Sparkles,
 	Trophy,
 } from "lucide-react";
+import { GLOBAL_NAVIGATION_ITEMS } from "./Search.navigation";
+import {
+	EXTERNAL_RESOURCE_ITEMS,
+	getContextItems,
+	GLOBAL_ACTION_ITEMS,
+	parsePaletteQuery,
+} from "./Search.commands";
+import {
+	invalidatePinnedItemsCache,
+	PINNED_STORAGE_KEY,
+	readPinnedItems,
+	togglePinnedItem,
+	writePinnedItems,
+} from "./Search.storage";
+import type { PaletteItem } from "./Search.types";
 import type {
 	CompactSearchData,
 	SearchData,
-} from "@/lib/fetchers/search/getSearchData";
+} from "@/lib/fetchers/search/types";
+import { publicSWRKeys } from "@/lib/swr/keys";
+import {
+	canCheckSearchGeneration,
+	searchIndexPath,
+	wasAwayLongEnough,
+} from "./Search.freshness";
 
 interface Props {
 	className?: string;
 }
 
-type SearchableItem = {
-	id: string;
-	title: string;
-	subtitle?: string | null;
-	href: string;
-	logoId?: string | null;
-	flagIso?: string;
-};
+type SearchableItem = PaletteItem;
+
+type SearchRowType =
+	| "action"
+	| "benchmark"
+	| "comparison"
+	| "context"
+	| "default"
+	| "navigation"
+	| "resource";
 
 type DefaultSearchCategory = {
 	key: string;
 	heading: string;
 	items: SearchableItem[];
-	type?: "benchmark" | "comparison" | "default";
+	type?: SearchRowType;
 	showSubtitle?: boolean;
 };
 
@@ -52,27 +84,36 @@ type DefaultBrowseRow =
 			type: "heading";
 			key: string;
 			heading: string;
-	  }
+	}
 	| {
 			type: "item";
 			key: string;
 			item: SearchableItem;
 			showSubtitle?: boolean;
-	  }
+			rowType?: SearchRowType;
+	}
 	| {
 			type: "separator";
 			key: string;
-	  };
+	};
 
 type SearchResultCategory = {
-	name: "models" | "apiProviders" | "organisations" | "benchmarks";
+	name:
+		| "actions"
+		| "apiProviders"
+		| "benchmarks"
+		| "context"
+		| "models"
+		| "navigation"
+		| "organisations"
+		| "resources";
 	items: SearchableItem[];
 	score: number;
 };
 
 type SelectableSearchRow = {
 	key: string;
-	href: string;
+	item: SearchableItem;
 	listRowIndex?: number;
 };
 
@@ -98,7 +139,7 @@ function normalizeSearchTerm(value: string): string {
 		.replace(/[\s._-]+/g, " ")
 		.replace(/[^a-z0-9 ]/g, "")
 		.trim();
-}
+	}
 
 function buildSearchKeywords(item: SearchableItem): string[] {
 	const keywords = new Set<string>();
@@ -109,6 +150,7 @@ function buildSearchKeywords(item: SearchableItem): string[] {
 		item.href,
 		item.logoId,
 		item.flagIso,
+		...(item.keywords ?? []),
 	];
 
 	for (const term of terms) {
@@ -135,7 +177,7 @@ function buildSearchKeywords(item: SearchableItem): string[] {
 }
 
 function createSearchIndex<T extends SearchableItem>(
-	items: T[],
+	items: readonly T[],
 ): IndexedSearchItem<T>[] {
 	return items.map((item) => ({
 		item,
@@ -148,9 +190,6 @@ function createSearchIndex<T extends SearchableItem>(
 			.join(" "),
 	}));
 }
-
-let cachedSearchData: SearchData | null = null;
-let searchDataRequest: Promise<SearchData> | null = null;
 
 function isCompactSearchData(value: unknown): value is CompactSearchData {
 	return Boolean(
@@ -211,36 +250,31 @@ function expandSearchData(value: SearchData | CompactSearchData): SearchData {
 			href,
 			flagIso,
 		})),
+		cacheGeneration: Math.max(1, Number(value.v ?? 1)),
 	};
 }
 
-async function fetchSearchData(): Promise<SearchData> {
-	if (cachedSearchData) return cachedSearchData;
-	if (searchDataRequest) return searchDataRequest;
-
-	searchDataRequest = fetch("/api/_web/search", {
+async function fetchSearchData(path: string): Promise<SearchData> {
+	const response = await fetch(path, {
 		method: "GET",
-		cache: "no-store",
-		credentials: "same-origin",
-	})
-		.then(async (response) => {
-			if (!response.ok) {
-				throw new Error("Failed to load search data");
-			}
-			return expandSearchData(
-				(await response.json()) as SearchData | CompactSearchData,
-			);
-		})
-		.then((data) => {
-			cachedSearchData = data;
-			return data;
-		})
-		.finally(() => {
-			searchDataRequest = null;
-		});
-
-	return searchDataRequest;
+		credentials: "omit",
+	});
+	if (!response.ok) throw new Error("Failed to load search data");
+	return expandSearchData(
+		(await response.json()) as SearchData | CompactSearchData,
+	);
 }
+
+let lastSearchGenerationCheckAt = 0;
+
+const NAVIGATION_SEARCH_INDEX = createSearchIndex(GLOBAL_NAVIGATION_ITEMS);
+const ACTION_SEARCH_INDEX = createSearchIndex(GLOBAL_ACTION_ITEMS);
+const RESOURCE_SEARCH_INDEX = createSearchIndex(EXTERNAL_RESOURCE_ITEMS);
+const KEYBOARD_SHORTCUT_ITEMS = [
+	...GLOBAL_NAVIGATION_ITEMS,
+	...GLOBAL_ACTION_ITEMS,
+	...EXTERNAL_RESOURCE_ITEMS,
+].filter((item) => item.shortcut);
 
 function getIndexedMatchScore<T extends SearchableItem>(
 	indexedItem: IndexedSearchItem<T>,
@@ -300,8 +334,11 @@ function filterAndSortIndexed<T extends SearchableItem>(
 	items: IndexedSearchItem<T>[],
 	term: string,
 	limit: number,
+	showAllWhenEmpty = false,
 ): T[] {
-	if (!term) return [];
+	if (!term) {
+		return showAllWhenEmpty ? items.slice(0, limit).map(({ item }) => item) : [];
+	}
 
 	return items
 		.map((indexedItem) => ({
@@ -340,39 +377,75 @@ function SearchBrowseRow({
 	rowKey,
 	onActive,
 	type = "default",
+	isPinned = false,
+	onTogglePin,
 }: {
 	item: SearchableItem;
 	showSubtitle?: boolean;
-	onSelect: (href: string) => void;
+	onSelect: (item: SearchableItem) => void;
 	active?: boolean;
 	rowKey: string;
 	onActive: () => void;
-	type?: "benchmark" | "comparison" | "default";
+	type?: SearchRowType;
+	isPinned?: boolean;
+	onTogglePin?: (item: SearchableItem) => void;
 }) {
 	return (
-		<button
-			type="button"
+		<div
 			data-search-row-key={rowKey}
-			onClick={() => onSelect(item.href)}
 			onMouseEnter={onActive}
 			className={cn(
-				"flex h-8 w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm outline-hidden transition-colors hover:bg-muted focus-visible:bg-muted",
+				"group/search-row relative flex h-8 w-full items-center rounded-lg text-sm transition-colors hover:bg-muted",
 				active && "bg-muted text-foreground",
 			)}
 		>
-			<SearchBrowseIcon item={item} type={type} />
-			<div className="min-w-0 flex flex-1 items-baseline gap-2">
-				<span className="truncate font-medium text-zinc-900 dark:text-zinc-50">
-					{item.title}
-				</span>
-				{showSubtitle && item.subtitle ? (
-					<span className="min-w-0 truncate text-xs text-zinc-500 dark:text-zinc-400">
-						{item.subtitle}
+			<button
+				type="button"
+				onClick={() => onSelect(item)}
+				onFocus={onActive}
+				className="flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5 text-left outline-hidden"
+			>
+				<SearchBrowseIcon item={item} type={type} />
+				<div className="min-w-0 flex flex-1 items-baseline gap-2">
+					<span className="truncate font-medium text-zinc-900 dark:text-zinc-50">
+						{item.title}
 					</span>
+					{showSubtitle && item.subtitle ? (
+						<span className="min-w-0 truncate text-xs text-zinc-500 dark:text-zinc-400">
+							{item.subtitle}
+						</span>
+					) : null}
+				</div>
+				{item.shortcut ? (
+					<KeyboardShortcut
+						keys={item.shortcut}
+						type="sequence"
+						label={`Press ${item.shortcut[0]}, then ${item.shortcut[1]}`}
+						className="hidden shrink-0 items-center gap-1 sm:flex"
+						title={`Press ${item.shortcut[0]}, then ${item.shortcut[1]}`}
+					/>
 				) : null}
-			</div>
-			<ArrowUpRight className="size-3.5 shrink-0 text-zinc-400 dark:text-zinc-500" />
-		</button>
+				{onTogglePin ? <span aria-hidden="true" className="size-6 shrink-0" /> : null}
+				{item.external ? (
+					<ExternalLink className="size-3.5 shrink-0 text-zinc-400 dark:text-zinc-500" />
+				) : (
+					<ArrowUpRight className="size-3.5 shrink-0 text-zinc-400 dark:text-zinc-500" />
+				)}
+			</button>
+			{onTogglePin ? (
+				<button
+					type="button"
+					onClick={() => onTogglePin(item)}
+					aria-label={isPinned ? `Unpin ${item.title}` : `Pin ${item.title}`}
+					className={cn(
+						"absolute right-7 top-1/2 z-10 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-zinc-400 opacity-0 outline-hidden transition hover:bg-background hover:text-zinc-700 focus-visible:opacity-100 group-hover/search-row:opacity-100 dark:hover:text-zinc-200",
+						isPinned && "opacity-100 text-zinc-700 dark:text-zinc-200",
+					)}
+				>
+					{isPinned ? <PinOff className="size-3.5" /> : <Pin className="size-3.5" />}
+				</button>
+			) : null}
+		</div>
 	);
 }
 
@@ -414,9 +487,44 @@ function SearchBrowseIcon({
 	type = "default",
 }: {
 	item: SearchableItem;
-	type?: "benchmark" | "comparison" | "default";
+	type?: SearchRowType;
 }) {
-	if (type === "benchmark") {
+	const persistedType = item.id.startsWith("nav-")
+		? "navigation"
+		: item.id.startsWith("action-")
+			? "action"
+			: item.id.startsWith("context-")
+				? "context"
+				: item.id.startsWith("resource-")
+					? "resource"
+					: "default";
+	const effectiveType = type === "default" ? persistedType : type;
+
+	if (effectiveType === "action" || effectiveType === "context") {
+		return (
+			<div className="flex size-5 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
+				{effectiveType === "context" ? <Sparkles className="size-3" /> : <Bolt className="size-3" />}
+			</div>
+		);
+	}
+
+	if (effectiveType === "resource") {
+		return (
+			<div className="flex size-5 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
+				<ExternalLink className="size-3" />
+			</div>
+		);
+	}
+
+	if (effectiveType === "navigation") {
+		return (
+			<div className="flex size-5 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
+				<Compass className="size-3" />
+			</div>
+		);
+	}
+
+	if (effectiveType === "benchmark") {
 		return (
 			<div className="flex size-5 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
 				<Trophy className="size-3" />
@@ -497,18 +605,101 @@ function SearchEmptyState({
 
 export default function Search({ className }: Props) {
 	const router = useRouter();
+	const pathname = usePathname() ?? "/";
+	const { resolvedTheme, setTheme } = useTheme();
 	const listRef = useRef<HTMLDivElement>(null);
 	const queryUpdateTimeoutRef = useRef<number | null>(null);
 	const inputValueRef = useRef("");
+	const awaySinceRef = useRef<number | null>(null);
+	const searchGenerationRef = useRef(1);
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState("");
 	const [activeRowIndex, setActiveRowIndex] = useState(0);
-	const [searchData, setSearchData] = useState<SearchData | null>(
-		cachedSearchData
-	);
-	const [isLoadingSearchData, setIsLoadingSearchData] = useState(false);
-	const [searchDataError, setSearchDataError] = useState<string | null>(null);
+	const {
+		data: searchData,
+		error: searchDataFetchError,
+		isLoading: isLoadingSearchData,
+		mutate: mutateSearchData,
+	} = useSWR(open ? publicSWRKeys.search : null, fetchSearchData, {
+		dedupingInterval: 24 * 60 * 60 * 1_000,
+		revalidateIfStale: false,
+		revalidateOnFocus: false,
+		revalidateOnReconnect: false,
+	});
+	searchGenerationRef.current = searchData?.cacheGeneration ?? 1;
+	const searchDataError = searchDataFetchError
+		? "Unable to load search data."
+		: null;
 	const [scrollViewport, setScrollViewport] = useState<HTMLDivElement | null>(null);
+	const [pinnedItems, setPinnedItems] = useState<PaletteItem[]>([]);
+	const contextItems = useMemo(() => getContextItems(pathname), [pathname]);
+
+	useEffect(() => {
+		setPinnedItems(readPinnedItems());
+
+		function onStorage(event: StorageEvent) {
+			if (
+				event.storageArea !== window.localStorage ||
+				(event.key !== PINNED_STORAGE_KEY && event.key !== null)
+			) return;
+			invalidatePinnedItemsCache();
+			setPinnedItems(readPinnedItems());
+		}
+
+		window.addEventListener("storage", onStorage);
+		return () => window.removeEventListener("storage", onStorage);
+	}, []);
+
+	useEffect(() => {
+		function markAway() {
+			awaySinceRef.current ??= Date.now();
+		}
+
+		function maybeRefreshAfterAway() {
+			if (!searchData) return;
+			const now = Date.now();
+			const awaySince = awaySinceRef.current;
+			awaySinceRef.current = null;
+			if (!wasAwayLongEnough(awaySince, now)) return;
+			if (!canCheckSearchGeneration(lastSearchGenerationCheckAt, now)) return;
+			lastSearchGenerationCheckAt = now;
+
+			void fetch("/api/_web/cache-generation/search", {
+				method: "GET",
+				credentials: "omit",
+			})
+				.then(async (response) => {
+					if (!response.ok) throw new Error("Failed to check search generation");
+					const payload = await response.json() as { generation?: unknown };
+					return Math.max(1, Number(payload.generation ?? 1));
+				})
+				.then(async (generation) => {
+					if (generation <= searchGenerationRef.current) return;
+					await mutateSearchData(
+						fetchSearchData(searchIndexPath(generation)),
+						{ revalidate: false },
+					);
+				})
+				.catch(() => {
+					// The existing index remains usable; the next eligible focus can retry.
+				});
+		}
+
+		function onVisibilityChange() {
+			if (document.visibilityState === "hidden") markAway();
+			else maybeRefreshAfterAway();
+		}
+
+		if (document.visibilityState === "hidden") markAway();
+		document.addEventListener("visibilitychange", onVisibilityChange);
+		window.addEventListener("blur", markAway);
+		window.addEventListener("focus", maybeRefreshAfterAway);
+		return () => {
+			document.removeEventListener("visibilitychange", onVisibilityChange);
+			window.removeEventListener("blur", markAway);
+			window.removeEventListener("focus", maybeRefreshAfterAway);
+		};
+	}, [mutateSearchData, searchData]);
 
 	useEffect(() => {
 		function onKeyDown(event: KeyboardEvent) {
@@ -540,37 +731,8 @@ export default function Search({ className }: Props) {
 			}
 			inputValueRef.current = "";
 			setQuery("");
-			setIsLoadingSearchData(false);
-			return;
 		}
-
-		setSearchDataError(null);
 	}, [open]);
-
-	useEffect(() => {
-		if (!open || searchData || searchDataError) return;
-
-		let cancelled = false;
-		setIsLoadingSearchData(true);
-
-		void fetchSearchData()
-			.then((data) => {
-				if (cancelled) return;
-				setSearchData(data);
-			})
-			.catch(() => {
-				if (cancelled) return;
-				setSearchDataError("Unable to load search data.");
-			})
-			.finally(() => {
-				if (cancelled) return;
-				setIsLoadingSearchData(false);
-			});
-
-		return () => {
-			cancelled = true;
-		};
-	}, [open, searchData, searchDataError]);
 
 	useEffect(() => {
 		return () => {
@@ -580,10 +742,92 @@ export default function Search({ className }: Props) {
 		};
 	}, []);
 
-	const handleSelect = (href: string) => {
+	const handleSelect = useCallback((item: SearchableItem) => {
+		if (item.action) {
+			switch (item.action) {
+				case "copy-current-url":
+					void navigator.clipboard.writeText(window.location.href);
+					break;
+				case "copy-text":
+					if (item.actionValue) void navigator.clipboard.writeText(item.actionValue);
+					break;
+				case "theme-dark":
+					setTheme("dark");
+					break;
+				case "theme-light":
+					setTheme("light");
+					break;
+				case "theme-system":
+					setTheme("system");
+					break;
+				case "theme-toggle":
+					setTheme(resolvedTheme === "dark" ? "light" : "dark");
+					break;
+			}
+			setOpen(false);
+			return;
+		}
+
+		if (!item.href) return;
 		setOpen(false);
-		router.push(href);
-	};
+		if (item.external) {
+			window.open(item.href, "_blank", "noopener,noreferrer");
+			return;
+		}
+		router.push(item.href);
+	}, [resolvedTheme, router, setTheme]);
+
+	const handleTogglePin = useCallback((item: SearchableItem) => {
+		setPinnedItems((currentItems) => {
+			const nextItems = togglePinnedItem(currentItems, item);
+			return writePinnedItems(nextItems);
+		});
+	}, []);
+
+	useEffect(() => {
+		if (open) return;
+		let pendingKey = "";
+		let resetTimer: number | null = null;
+
+		function resetChord() {
+			pendingKey = "";
+			if (resetTimer) window.clearTimeout(resetTimer);
+			resetTimer = null;
+		}
+
+		function onShortcut(event: KeyboardEvent) {
+			if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
+			const target = event.target;
+			if (
+				target instanceof HTMLElement &&
+				(target.isContentEditable || target.matches("input, textarea, select"))
+			) return;
+
+			const key = event.key.toUpperCase();
+			if (key.length !== 1) return;
+			if (pendingKey) {
+				const item = KEYBOARD_SHORTCUT_ITEMS.find(
+					(candidate) => candidate.shortcut?.[0] === pendingKey && candidate.shortcut[1] === key,
+				);
+				resetChord();
+				if (!item) return;
+				event.preventDefault();
+				handleSelect(item);
+				return;
+			}
+
+			if (!KEYBOARD_SHORTCUT_ITEMS.some((item) => item.shortcut?.[0] === key)) return;
+			event.preventDefault();
+			pendingKey = key;
+			resetTimer = window.setTimeout(resetChord, 900);
+		}
+
+		window.addEventListener("keydown", onShortcut);
+		return () => {
+			window.removeEventListener("keydown", onShortcut);
+			if (resetTimer) window.clearTimeout(resetTimer);
+		};
+	}, [handleSelect, open]);
 
 	const handleQueryChange = (value: string) => {
 		inputValueRef.current = value;
@@ -599,7 +843,10 @@ export default function Search({ className }: Props) {
 	};
 
 	const hasQuery = query.trim().length > 0;
-	const searchTerm = query.trim().toLowerCase();
+	const { scope: searchScope, term: searchTerm } = useMemo(
+		() => parsePaletteQuery(query),
+		[query],
+	);
 
 	const searchIndex = useMemo<SearchIndex | null>(() => {
 		if (!searchData) return null;
@@ -611,72 +858,138 @@ export default function Search({ className }: Props) {
 			benchmarks: createSearchIndex(searchData.benchmarks),
 		};
 	}, [searchData]);
+	const contextSearchIndex = useMemo(() => createSearchIndex(contextItems), [contextItems]);
 
 	const orderedCategories = useMemo<SearchResultCategory[]>(() => {
-		if (!hasQuery || !searchIndex) return [];
-		if (!searchTerm) return [];
+		if (!hasQuery) return [];
 
 		const resultLimit = searchTerm.length <= 1
 			? 8
 			: searchTerm.length <= 2
 				? 12
 				: 24;
-		const models = filterAndSortIndexed(searchIndex.models, searchTerm, resultLimit);
-		const providers = filterAndSortIndexed(searchIndex.apiProviders, searchTerm, resultLimit);
-		const organisations = filterAndSortIndexed(searchIndex.organisations, searchTerm, resultLimit);
-		const benchmarks = filterAndSortIndexed(searchIndex.benchmarks, searchTerm, resultLimit);
+		const showAllWhenScoped = searchTerm.length === 0 && searchScope !== "all";
+		const includesScope = (scope: typeof searchScope) =>
+			searchScope === "all" || searchScope === scope;
+		const navigation = includesScope("navigation")
+			? filterAndSortIndexed(NAVIGATION_SEARCH_INDEX, searchTerm, 12, showAllWhenScoped)
+			: [];
+		const actions = includesScope("actions")
+			? filterAndSortIndexed(ACTION_SEARCH_INDEX, searchTerm, 12, showAllWhenScoped)
+			: [];
+		const context = includesScope("actions")
+			? filterAndSortIndexed(contextSearchIndex, searchTerm, 8, showAllWhenScoped)
+			: [];
+		const resources = includesScope("resources")
+			? filterAndSortIndexed(RESOURCE_SEARCH_INDEX, searchTerm, 12, showAllWhenScoped)
+			: [];
+		const models = includesScope("models") && searchIndex
+			? filterAndSortIndexed(searchIndex.models, searchTerm, resultLimit, showAllWhenScoped)
+			: [];
+		const providers = searchScope === "all" && searchIndex
+			? filterAndSortIndexed(searchIndex.apiProviders, searchTerm, resultLimit)
+			: [];
+		const organisations = searchScope === "all" && searchIndex
+			? filterAndSortIndexed(searchIndex.organisations, searchTerm, resultLimit)
+			: [];
+		const benchmarks = searchScope === "all" && searchIndex
+			? filterAndSortIndexed(searchIndex.benchmarks, searchTerm, resultLimit)
+			: [];
 
 		return [
 			{
+				name: "context" as const,
+				items: context,
+				score: getFirstResultScore(contextSearchIndex, context, searchTerm),
+			},
+			{
+				name: "actions" as const,
+				items: actions,
+				score: getFirstResultScore(ACTION_SEARCH_INDEX, actions, searchTerm),
+			},
+			{
+				name: "navigation" as const,
+				items: navigation,
+				score: getFirstResultScore(NAVIGATION_SEARCH_INDEX, navigation, searchTerm),
+			},
+			{
+				name: "resources" as const,
+				items: resources,
+				score: getFirstResultScore(RESOURCE_SEARCH_INDEX, resources, searchTerm),
+			},
+			{
 				name: "models" as const,
 				items: models,
-				score: getFirstResultScore(searchIndex.models, models, searchTerm),
+				score: searchIndex
+					? getFirstResultScore(searchIndex.models, models, searchTerm)
+					: 0,
 			},
 			{
 				name: "apiProviders" as const,
 				items: providers,
-				score: getFirstResultScore(searchIndex.apiProviders, providers, searchTerm),
+				score: searchIndex
+					? getFirstResultScore(searchIndex.apiProviders, providers, searchTerm)
+					: 0,
 			},
 			{
 				name: "organisations" as const,
 				items: organisations,
-				score: getFirstResultScore(searchIndex.organisations, organisations, searchTerm),
+				score: searchIndex
+					? getFirstResultScore(searchIndex.organisations, organisations, searchTerm)
+					: 0,
 			},
 			{
 				name: "benchmarks" as const,
 				items: benchmarks,
-				score: getFirstResultScore(searchIndex.benchmarks, benchmarks, searchTerm),
+				score: searchIndex
+					? getFirstResultScore(searchIndex.benchmarks, benchmarks, searchTerm)
+					: 0,
 			},
 		]
 			.filter((category) => category.items.length > 0)
 			.sort((left, right) => right.score - left.score);
-	}, [hasQuery, searchIndex, searchTerm]);
+	}, [contextSearchIndex, hasQuery, searchIndex, searchScope, searchTerm]);
 
 	const defaultCategories = useMemo<DefaultSearchCategory[]>(() => {
-		if (hasQuery || !searchData) return [];
-
-		const modelGroups = new Map<string, SearchableItem[]>();
-		for (const model of searchData.models) {
-			const heading = model.releaseGroupLabel ?? "Unknown Release Date";
-			const models = modelGroups.get(heading) ?? [];
-			models.push(model);
-			modelGroups.set(heading, models);
-		}
+		if (hasQuery) return [];
 
 		return [
-			...Array.from(modelGroups.entries()).map(([heading, items]) => ({
-				key: `models-${heading}`,
-				heading,
-				items,
+			{
+				key: "pinned",
+				heading: "Pinned",
+				items: pinnedItems,
+			},
+			{
+				key: "models",
+				heading: "Models",
+				items: searchData?.models ?? [],
 				showSubtitle: false,
-			})),
+			},
+			{
+				key: "context",
+				heading: "On this page",
+				items: contextItems,
+				type: "context" as const,
+			},
+			{
+				key: "quick-actions",
+				heading: "Quick actions",
+				items: GLOBAL_ACTION_ITEMS.slice(0, 7),
+				type: "action" as const,
+			},
+			{
+				key: "resources",
+				heading: "Resources",
+				items: EXTERNAL_RESOURCE_ITEMS.slice(0, 4),
+				type: "resource" as const,
+			},
 			{
 				key: "apiProviders",
 				heading: "API Providers",
-				items: searchData.apiProviders,
+				items: searchData?.apiProviders ?? [],
 			},
 		].filter((category) => category.items.length > 0);
-	}, [hasQuery, searchData]);
+	}, [contextItems, hasQuery, pinnedItems, searchData]);
 
 	const defaultBrowseRows = useMemo<DefaultBrowseRow[]>(() => {
 		if (hasQuery) return [];
@@ -693,6 +1006,7 @@ export default function Search({ className }: Props) {
 					key: `${category.key}-${item.id}`,
 					item,
 					showSubtitle: category.showSubtitle,
+					rowType: category.type,
 				})),
 			];
 
@@ -709,7 +1023,7 @@ export default function Search({ className }: Props) {
 			return orderedCategories.flatMap((category) =>
 				category.items.map((item) => ({
 					key: `${category.name}-${item.id}`,
-					href: item.href,
+					item,
 				})),
 			);
 		}
@@ -719,7 +1033,7 @@ export default function Search({ className }: Props) {
 				? [
 						{
 							key: row.key,
-							href: row.item.href,
+							item: row.item,
 							listRowIndex,
 						},
 					]
@@ -728,6 +1042,10 @@ export default function Search({ className }: Props) {
 	}, [defaultBrowseRows, hasQuery, orderedCategories]);
 
 	const activeRow = selectableRows[activeRowIndex] ?? selectableRows[0] ?? null;
+	const pinnedItemIds = useMemo(
+		() => new Set(pinnedItems.map((item) => item.id)),
+		[pinnedItems],
+	);
 
 	const defaultBrowseVirtualizer = useVirtualizer({
 		count: defaultBrowseRows.length,
@@ -756,7 +1074,7 @@ export default function Search({ className }: Props) {
 
 	useEffect(() => {
 		setActiveRowIndex(0);
-	}, [hasQuery, searchTerm]);
+	}, [hasQuery, searchScope, searchTerm]);
 
 	useEffect(() => {
 		if (activeRowIndex < selectableRows.length) return;
@@ -807,8 +1125,8 @@ export default function Search({ className }: Props) {
 		if (event.key === "Enter" && activeRow) {
 			event.preventDefault();
 
-			const nextSearchTerm = inputValueRef.current.trim().toLowerCase();
-			if (nextSearchTerm !== searchTerm) {
+			const nextQuery = parsePaletteQuery(inputValueRef.current);
+			if (nextQuery.term !== searchTerm || nextQuery.scope !== searchScope) {
 				if (queryUpdateTimeoutRef.current) {
 					window.clearTimeout(queryUpdateTimeoutRef.current);
 					queryUpdateTimeoutRef.current = null;
@@ -818,7 +1136,7 @@ export default function Search({ className }: Props) {
 				return;
 			}
 
-			handleSelect(activeRow.href);
+			handleSelect(activeRow.item);
 		}
 	};
 
@@ -831,7 +1149,7 @@ export default function Search({ className }: Props) {
 				type="button"
 				onClick={() => setOpen(true)}
 				className="relative flex h-[var(--site-header-control-h,2.25rem)] w-[var(--site-header-control-h,2.25rem)] items-center justify-center rounded-lg border border-zinc-200/80 bg-white px-0 text-left text-sm text-zinc-500 shadow-none transition-[border-color,color,background-color] hover:border-zinc-300 hover:text-zinc-700 xl:w-full xl:justify-start xl:pl-9 xl:pr-12 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:text-zinc-200"
-				aria-label="Open search"
+				aria-label="Open command palette"
 			>
 				<SearchIcon className="pointer-events-none absolute left-1/2 top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 text-zinc-400 xl:left-3 xl:translate-x-0 dark:text-zinc-500" />
 				<span className="hidden truncate font-medium xl:inline">Search</span>
@@ -858,8 +1176,8 @@ export default function Search({ className }: Props) {
 								key={open ? "global-search-open" : "global-search-closed"}
 								onChange={(event) => handleQueryChange(event.currentTarget.value)}
 								onKeyDown={handleSearchKeyDown}
-								placeholder="Search Phaseo..."
-								aria-label="Search catalogue"
+								placeholder="Search, or use > / @ ? ..."
+								aria-label="Search Phaseo and run commands"
 								autoFocus
 								className="text-sm"
 							/>
@@ -867,6 +1185,15 @@ export default function Search({ className }: Props) {
 								<Kbd>esc</Kbd>
 							</InputGroupAddon>
 						</InputGroup>
+					</div>
+					<div
+						className="mb-1 flex flex-wrap items-center gap-x-3 gap-y-1 px-2 py-1 text-[11px] text-muted-foreground"
+						aria-label="Command prefixes"
+					>
+						<span className="inline-flex items-center gap-1"><Kbd>&gt;</Kbd> actions</span>
+						<span className="inline-flex items-center gap-1"><Kbd>/</Kbd> pages</span>
+						<span className="inline-flex items-center gap-1"><Kbd>@</Kbd> models</span>
+						<span className="inline-flex items-center gap-1"><Kbd>?</Kbd> resources</span>
 					</div>
 					<div ref={listRef} className="overflow-hidden outline-none">
 						<ScrollArea
@@ -884,6 +1211,10 @@ export default function Search({ className }: Props) {
 								) : (
 									orderedCategories.map((category, index) => {
 										const categoryConfig = {
+											actions: { heading: "Actions", type: "action" as const, showSubtitle: true },
+											context: { heading: "On this page", type: "context" as const, showSubtitle: true },
+											navigation: { heading: "Navigation", type: "navigation" as const, showSubtitle: true },
+											resources: { heading: "External resources", type: "resource" as const, showSubtitle: true },
 											models: { heading: "Models", type: undefined, showSubtitle: false },
 											apiProviders: { heading: "API Providers", type: undefined, showSubtitle: true },
 											organisations: { heading: "Organisations", type: undefined, showSubtitle: true },
@@ -913,6 +1244,8 @@ export default function Search({ className }: Props) {
 																if (nextIndex >= 0) setActiveRowIndex(nextIndex);
 															}}
 															onSelect={handleSelect}
+															isPinned={pinnedItemIds.has(item.id)}
+															onTogglePin={handleTogglePin}
 														/>
 													))}
 												</div>
@@ -952,12 +1285,15 @@ export default function Search({ className }: Props) {
 														rowKey={row.key}
 														item={row.item}
 														showSubtitle={row.showSubtitle}
+														type={row.rowType}
 														active={activeRow?.key === row.key}
 														onActive={() => {
 															const nextIndex = getSelectableRowIndex(row.key);
 															if (nextIndex >= 0) setActiveRowIndex(nextIndex);
 														}}
 														onSelect={handleSelect}
+														isPinned={pinnedItemIds.has(row.item.id)}
+														onTogglePin={handleTogglePin}
 													/>
 												)}
 											</div>

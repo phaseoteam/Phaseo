@@ -30,7 +30,7 @@ import {
 	Bot,
 	Link2,
 } from "lucide-react";
-import type { APIProviderModels } from "@/lib/fetchers/api-providers/getAPIProvider";
+import type { APIProviderModels } from "@/lib/fetchers/api-providers/providerDataTypes";
 import { CopyButton } from "@/components/ui/copy-button";
 import { capabilityToEndpoints } from "@/lib/config/capabilityToEndpoints";
 

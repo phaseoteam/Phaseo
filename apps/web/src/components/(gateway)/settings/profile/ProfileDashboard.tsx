@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Camera, ExternalLink, Flame } from "lucide-react"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 
-import type { ProfileSnapshot } from "@/lib/fetchers/profile/getProfileSnapshot"
+import type { ProfileSnapshot } from "@/lib/fetchers/profile/types"
 import { formatCompactNumber, formatUsdFromNanos } from "@/lib/profile"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Logo } from "@/components/Logo"

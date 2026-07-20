@@ -2,6 +2,8 @@
 
 import { apiBaseUrl } from "@/lib/oauth/apiBaseUrl";
 import { createClient } from "@/utils/supabase/server";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
+import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 
 /**
  * OAuth Consent Server Actions
@@ -128,46 +130,6 @@ export async function approveAuthorizationAction(
 			return { error: "The active team must also be selected for authorization" };
 		}
 
-		const isBuiltInFirstPartyClient = resolvedClientId === "phaseo_cli";
-
-		// Verify user is a member of every selected team
-		const { data: memberships, error: membershipError } = await supabase
-			.from("workspace_members")
-			.select("workspace_id")
-			.eq("user_id", user.id)
-			.in("workspace_id", selectedWorkspaceIds);
-
-		const grantedWorkspaceIds = new Set(
-			(memberships ?? [])
-				.map((membership: { workspace_id?: unknown }) =>
-					String(membership.workspace_id ?? "").trim()
-				)
-				.filter(Boolean)
-		);
-
-		if (
-			membershipError ||
-			!selectedWorkspaceIds.every((workspaceId) => grantedWorkspaceIds.has(workspaceId))
-		) {
-			return {
-				error: "You don't have permission to authorize for one or more selected teams",
-			};
-		}
-
-		if (!isBuiltInFirstPartyClient) {
-			// Verify OAuth app exists and is active
-			const { data: oauthApp, error: appError } = await supabase
-				.from("oauth_app_metadata")
-				.select("id, status")
-				.eq("client_id", resolvedClientId)
-				.eq("status", "active")
-				.single();
-
-			if (appError || !oauthApp) {
-				return { error: "OAuth application not found or inactive" };
-			}
-		}
-
 		const resolvedRedirectUri = input.redirect_uri?.trim() || null;
 		if (!resolvedRedirectUri) {
 			return {
@@ -182,6 +144,11 @@ export async function approveAuthorizationAction(
 		if (!session?.access_token) {
 			return { error: "Unauthorized" };
 		}
+		await fetchAccountWebApi<{ valid: true }>(
+			"/api/account/auth/oauth-consent/validate",
+			session.access_token,
+			{ method: "POST", body: JSON.stringify({ clientId: resolvedClientId, workspaceIds: selectedWorkspaceIds }) },
+		);
 
 		const response = await fetch(`${apiBaseUrl()}/oauth/authorize/approve`, {
 			method: "POST",
@@ -304,31 +271,9 @@ export async function revokeAuthorizationAction(
 	authorizationId: string
 ): Promise<ConsentResult> {
 	try {
-		const supabase = await createClient();
-
-		// Get current user
-		const {
-			data: { user },
-			error: userError,
-		} = await supabase.auth.getUser();
-
-		if (userError || !user) {
-			return { error: "Unauthorized" };
-		}
-
-		// Revoke authorization (set revoked_at timestamp)
-		const { error: revokeError } = await supabase
-			.from("oauth_authorizations")
-			.update({ revoked_at: new Date().toISOString() })
-			.eq("id", authorizationId)
-			.eq("user_id", user.id); // Ensure user owns this authorization
-
-		if (revokeError) {
-			return {
-				error: `Failed to revoke authorization: ${revokeError.message}`,
-			};
-		}
-
+		const { accessToken } = await getServerAccountContext();
+		if (!accessToken) return { error: "Unauthorized" };
+		await fetchAccountWebApi<{ success: true }>(`/api/account/settings/authorized-apps/${encodeURIComponent(authorizationId)}`, accessToken, { method: "DELETE" });
 		return { data: {} };
 	} catch (error: any) {
 		console.error("oauth_consent_revoke_authorization_failed", {

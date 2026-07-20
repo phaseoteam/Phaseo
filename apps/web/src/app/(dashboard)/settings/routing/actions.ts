@@ -1,12 +1,8 @@
 "use server";
 
-import { createClient } from "@/utils/supabase/server";
-import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { revalidatePath } from "next/cache";
-import {
-	requireAuthenticatedUser,
-	requireWorkspaceMembership,
-} from "@/utils/serverActionAuth";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
+import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 
 export type RoutingMode = "balanced" | "price" | "latency" | "throughput";
 
@@ -27,44 +23,12 @@ export async function updateRoutingSettings({
 	responseHealingLocked,
 	responseHealingMode,
 }: UpdateRoutingSettingsInput) {
-	const { supabase, user } = await requireAuthenticatedUser();
-	const workspaceId = await getWorkspaceIdFromCookie();
-	if (!workspaceId) {
-		throw new Error("Missing workspace id");
-	}
-	await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
-
-	const payload = {
-		workspace_id: workspaceId,
-		routing_mode: mode,
-		...(typeof betaChannelEnabled === "boolean"
-			? { beta_channel_enabled: betaChannelEnabled }
-			: {}),
-		...(typeof alphaChannelEnabled === "boolean"
-			? {
-					alpha_channel_enabled:
-						betaChannelEnabled === false ? false : alphaChannelEnabled,
-			  }
-			: {}),
-		...(typeof responseHealingEnabled === "boolean"
-			? { response_healing_enabled: responseHealingEnabled }
-			: {}),
-		...(typeof responseHealingLocked === "boolean"
-			? { response_healing_locked: responseHealingLocked }
-			: {}),
-		...(responseHealingMode === "safe" || responseHealingMode === "strict"
-			? { response_healing_mode: responseHealingMode }
-			: {}),
-		updated_at: new Date().toISOString(),
-	};
-
-	const { error } = await supabase
-		.from("workspace_settings")
-		.upsert(payload, { onConflict: "workspace_id" });
-
-	if (error) {
-		throw error;
-	}
+	const context = await getServerAccountContext();
+	if (!context.accessToken || !context.workspaceId) throw new Error("Missing workspace id");
+	await fetchAccountWebApi("/api/account/settings/routing", context.accessToken, {
+		method: "PUT",
+		body: JSON.stringify({ workspaceId: context.workspaceId, mode, betaChannelEnabled, alphaChannelEnabled, responseHealingEnabled, responseHealingLocked, responseHealingMode }),
+	});
 
 	revalidatePath("/settings/routing");
 }

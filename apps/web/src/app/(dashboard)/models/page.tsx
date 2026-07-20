@@ -1,5 +1,6 @@
 import { cacheLife, cacheTag } from "next/cache";
 import ModelsDisplay from "@/components/(data)/models/Models/ModelsDisplay";
+import ModelsPageClient from "@/components/(data)/models/Models/ModelsPageClient";
 import {
 	mapRawToModelCard,
 	type ModelCard,
@@ -32,6 +33,7 @@ import type {
 } from "@/components/(data)/models/Models/modelsDisplay.types";
 import { modelsCatalogueV2Flag } from "@/lib/flags";
 import { isAdminViewer } from "@/lib/auth/getViewerRole";
+import { withMissingCatalogPricing } from "@/lib/models/withMissingCatalogPricing";
 
 export const metadata: Metadata = buildMetadata({
 	title: "Models",
@@ -87,6 +89,8 @@ const UPCOMING_CATALOG_STATUS_SET = new Set(["announced"]);
 
 type PublicModelsResponse = {
 	models: unknown[];
+	facets?: ModelsFilterFacets;
+	pricing_complete?: boolean;
 	total: number;
 	limit: number;
 	offset: number;
@@ -97,7 +101,8 @@ type ModelsCatalogueVersion = "v1" | "v2";
 async function fetchModelsFromWebApi(
 	apiOrigin: string,
 	catalogueVersion: ModelsCatalogueVersion,
-): Promise<ModelCard[]> {
+	projectionVersion: 5,
+): Promise<{ models: ModelCard[]; facets: ModelsFilterFacets | null; pricingComplete: boolean }> {
 	"use cache";
 	cacheLife("hours");
 	cacheTag(
@@ -106,8 +111,9 @@ async function fetchModelsFromWebApi(
 	const pageSize = 2_000;
 	const versionQuery =
 		catalogueVersion === "v2" ? "&catalogue_version=v2" : "";
+	const shapeQuery = catalogueVersion === "v1" ? `&shape=page&projection=${projectionVersion}` : "";
 	const firstResponse = await fetch(
-		`${apiOrigin}/api/_web/models?limit=${pageSize}&offset=0${versionQuery}`,
+		`${apiOrigin}/api/_web/models?limit=${pageSize}&offset=0${versionQuery}${shapeQuery}`,
 		{ cache: "no-store" },
 	);
 	if (!firstResponse.ok) {
@@ -122,7 +128,7 @@ async function fetchModelsFromWebApi(
 	const laterPages = await Promise.all(
 		pageOffsets.map(async (offset) => {
 			const response = await fetch(
-				`${apiOrigin}/api/_web/models?limit=${pageSize}&offset=${offset}${versionQuery}`,
+				`${apiOrigin}/api/_web/models?limit=${pageSize}&offset=${offset}${versionQuery}${shapeQuery}`,
 				{ cache: "no-store" },
 			);
 			if (!response.ok) {
@@ -132,10 +138,14 @@ async function fetchModelsFromWebApi(
 		}),
 	);
 
-	return [firstPage, ...laterPages]
-		.flatMap((page) => page.models)
-		.map((model) => mapRawToModelCard(model))
-		.filter((model) => Boolean(model.model_id));
+	const rows = [firstPage, ...laterPages].flatMap((page) => page.models);
+	return {
+		models: catalogueVersion === "v1"
+			? (rows as ModelCard[]).filter((model) => Boolean(model.model_id))
+			: rows.map((model) => mapRawToModelCard(model)).filter((model) => Boolean(model.model_id)),
+		facets: firstPage.facets ?? null,
+		pricingComplete: firstPage.pricing_complete === true,
+	};
 }
 
 function getModelYear(model: ModelsPageModel): string {
@@ -988,10 +998,13 @@ function resolveModelWeeklyMetrics(
 
 function resolveCatalogPricingSummary(
 	modelId: string,
-	signals: GatewaySignals | undefined,
+	signals: GatewaySignals | string[] | undefined,
 	catalogPricingSummaries: CatalogPricingSummaryByModelId,
 ): CatalogPricingSummary | undefined {
-	const candidates = [modelId, ...Array.from(signals?.apiModelIds ?? [])]
+	const apiModelIds = Array.isArray(signals)
+		? signals
+		: Array.from(signals?.apiModelIds ?? []);
+	const candidates = [modelId, ...apiModelIds]
 		.map((value) => String(value ?? "").trim())
 		.filter(Boolean);
 
@@ -1374,40 +1387,53 @@ function buildFreeRouterModelsPageEntry(
 	};
 }
 
-async function loadModelsPageData(): Promise<ModelsPageData> {
-	const isAdminPromise = isAdminViewer();
-	const catalogueVersionPromise = isAdminPromise.then(async (isAdmin) =>
-		isAdmin && (await modelsCatalogueV2Flag()) ? "v2" : "v1",
-	);
+async function loadModelsPageData(
+	catalogueVersion: ModelsCatalogueVersion,
+): Promise<ModelsPageData> {
 	const apiOrigin =
 		process.env.WEB_API_ORIGIN?.replace(/\/$/, "") ?? "https://phaseo.app";
-	const allModelsPromise = catalogueVersionPromise.then((catalogueVersion) =>
-		fetchModelsFromWebApi(apiOrigin, catalogueVersion),
+	const allModelsPromise = fetchModelsFromWebApi(apiOrigin, catalogueVersion, 5);
+	const catalogPricingSummariesPromise = allModelsPromise.then((result) =>
+		result.pricingComplete ? Promise.resolve({}) : getCatalogPricingSummariesCached(),
 	);
-	const [allModels, freeRouterOverview, catalogPricingSummaries] =
+	const freeRouterOverviewPromise = catalogueVersion === "v2"
+		? fetchFrontendFreeRouterOverview()
+		: Promise.resolve(null);
+	const [allModelsResult, freeRouterOverview, catalogPricingSummaries] =
 		await Promise.all([
 			allModelsPromise,
-			fetchFrontendFreeRouterOverview(),
-			getCatalogPricingSummariesCached(),
+			freeRouterOverviewPromise,
+			catalogPricingSummariesPromise,
 		]);
-	const monitorRows = allModels.flatMap(
-		(model) => model.gateway_monitor_rows ?? [],
-	);
-	const models = withGatewayMetadata(
-		allModels,
-		monitorRows,
-		catalogPricingSummaries,
-	);
-	const freeRouterModel = buildFreeRouterModelsPageEntry(freeRouterOverview);
-	const modelsWithFreeRouter = [
-		freeRouterModel,
-		...models.filter((model) => model.model_id !== FREE_ROUTER_MODEL_ID),
-	];
-	const facets = buildModelsFilterFacets(modelsWithFreeRouter);
-	return { models: modelsWithFreeRouter, facets };
+	const allModels = allModelsResult.models;
+	const models = catalogueVersion === "v1"
+		? allModelsResult.pricingComplete
+			? allModels as ModelsPageModel[]
+			: withMissingCatalogPricing(allModels as ModelsPageModel[], catalogPricingSummaries)
+		: withGatewayMetadata(
+			allModels,
+			allModels.flatMap((model) => model.gateway_monitor_rows ?? []),
+			catalogPricingSummaries,
+		);
+	const modelsWithVirtualEntries = catalogueVersion === "v1"
+		? models
+		: [
+			buildFreeRouterModelsPageEntry(freeRouterOverview!),
+			...models.filter((model) => model.model_id !== FREE_ROUTER_MODEL_ID),
+		];
+	const facets = catalogueVersion === "v1" && allModelsResult.facets
+		? allModelsResult.facets
+		: buildModelsFilterFacets(modelsWithVirtualEntries);
+	return { models: modelsWithVirtualEntries, facets };
 }
 
-export default function ModelsPage() {
-	const dataPromise = loadModelsPageData();
-	return <ModelsDisplay dataPromise={dataPromise} />;
+export default async function ModelsPage() {
+	const catalogueVersion: ModelsCatalogueVersion =
+		(await isAdminViewer()) && (await modelsCatalogueV2Flag()) ? "v2" : "v1";
+
+	return catalogueVersion === "v2" ? (
+		<ModelsDisplay dataPromise={loadModelsPageData("v2")} />
+	) : (
+		<ModelsPageClient />
+	);
 }

@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { getBrowserAccessToken } from "@/lib/fetchers/internal/accountAuthClient";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
 import { AlertTriangle, Bug, ClipboardCopy, InfoIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -114,9 +116,12 @@ export function ChatRequestErrorNotice({
 	const createIssue = async () => {
 		setIsSubmitting(true);
 		try {
-			const response = await fetch("/api/chat/issues", {
+			const payload = await fetchAccountWebApi<{
+				error?: string;
+				created?: boolean;
+				issueUrl?: string;
+			}>("/api/account/chat/issues", await getBrowserAccessToken(), {
 				method: "POST",
-				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
 					error,
 					threadTitle,
@@ -127,12 +132,7 @@ export function ChatRequestErrorNotice({
 					notes,
 				}),
 			});
-			const payload = (await response.json()) as {
-				error?: string;
-				created?: boolean;
-				issueUrl?: string;
-			};
-			if (!response.ok || !payload.issueUrl) {
+			if (!payload.issueUrl) {
 				throw new Error(payload.error || "Failed to create GitHub issue");
 			}
 			window.open(payload.issueUrl, "_blank", "noopener,noreferrer");

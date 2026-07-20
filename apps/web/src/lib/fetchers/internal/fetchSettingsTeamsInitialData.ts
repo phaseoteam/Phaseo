@@ -1,36 +1,12 @@
-import { headers } from "next/headers";
-import { absoluteUrl } from "@/lib/seo";
-import type { TeamsSettingsData } from "@/app/(dashboard)/settings/teams/teamsData";
+import type { TeamsSettingsData } from "@/lib/fetchers/internal/settingsTypes";
+import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
 
-export async function fetchSettingsTeamsInitialData(
-	preferredWorkspaceId?: string | null,
-): Promise<TeamsSettingsData> {
-	const requestHeaders = await headers();
+export async function fetchSettingsTeamsInitialData(preferredWorkspaceId?: string | null): Promise<TeamsSettingsData> {
+	const context = await getServerAccountContext();
 	const params = new URLSearchParams();
-	const normalizedPreferredWorkspaceId = String(
-		preferredWorkspaceId ?? "",
-	).trim();
-	if (normalizedPreferredWorkspaceId) {
-		params.set("preferredWorkspaceId", normalizedPreferredWorkspaceId);
-	}
+	if (context.workspaceId) params.set("workspaceId", context.workspaceId);
+	if (preferredWorkspaceId?.trim()) params.set("preferredWorkspaceId", preferredWorkspaceId.trim());
 	const query = params.toString();
-
-	const response = await fetch(
-		absoluteUrl(`/api/internal/settings/teams/initial${query ? `?${query}` : ""}`),
-		{
-			cache: "no-store",
-			headers: {
-				accept: "application/json",
-				cookie: requestHeaders.get("cookie") ?? "",
-			},
-		},
-	);
-
-	if (!response.ok) {
-		throw new Error(
-			`Failed to fetch settings teams initial data: ${response.status}`,
-		);
-	}
-
-	return (await response.json()) as TeamsSettingsData;
+	return fetchAccountWebApi<TeamsSettingsData>(`/api/account/settings/teams${query ? `?${query}` : ""}`, context.accessToken);
 }

@@ -1,69 +1,14 @@
-import { createClient } from "@/utils/supabase/server";
-import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
+import type { SettingsPresetsInitialData } from "@/lib/fetchers/internal/settingsTypes";
+import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
 
-export type SettingsPresetsInitialData = {
-	currentUserId: string | undefined;
-	initialTeamId: string | null;
-	teams: Array<{
-		id: string;
-		name: string;
-	}>;
-	teamsWithPresets: Array<{
-		id: string;
-		name: string;
-		presets: any[];
-	}>;
-};
+export type { SettingsPresetsInitialData } from "@/lib/fetchers/internal/settingsTypes";
 
 export async function fetchSettingsPresetsInitialData(): Promise<SettingsPresetsInitialData> {
-	const supabase = await createClient();
-
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
-
-	if (!user?.id) {
-		return {
-			currentUserId: undefined,
-			initialTeamId: null,
-			teams: [],
-			teamsWithPresets: [],
-		};
-	}
-
-	const initialTeamId = (await getWorkspaceIdFromCookie()) ?? null;
-
-	const [teamUsersResult, presetsResult] = await Promise.all([
-		supabase
-			.from("workspace_members")
-			.select("workspace_id, teams:workspaces(id, name)")
-			.eq("user_id", user.id),
-		initialTeamId
-			? supabase.from("presets").select("*").eq("workspace_id", initialTeamId)
-			: Promise.resolve({ data: [], error: null }),
-	]);
-
-	if (teamUsersResult.error) throw new Error(teamUsersResult.error.message);
-	if (presetsResult.error) throw new Error(presetsResult.error.message);
-
-	const teams: Array<{ id: string; name: string }> = [];
-
-	for (const teamUser of teamUsersResult.data ?? []) {
-		const rawTeam = (teamUser as any)?.teams;
-		const team = Array.isArray(rawTeam) ? rawTeam[0] : rawTeam;
-		if (team?.id && team?.name) {
-			teams.push({ id: team.id as string, name: team.name as string });
-		}
-	}
-
-	const activeTeam = teams.find((team) => team.id === initialTeamId);
-
-	return {
-		currentUserId: user.id,
-		initialTeamId,
-		teams,
-		teamsWithPresets: activeTeam
-			? [{ ...activeTeam, presets: (presetsResult.data ?? []) as any[] }]
-			: [],
-	};
+	const context = await getServerAccountContext();
+	const query = context.workspaceId ? `?workspaceId=${encodeURIComponent(context.workspaceId)}` : "";
+	return fetchAccountWebApi<SettingsPresetsInitialData>(
+		`/api/account/settings/presets${query}`,
+		context.accessToken,
+	);
 }

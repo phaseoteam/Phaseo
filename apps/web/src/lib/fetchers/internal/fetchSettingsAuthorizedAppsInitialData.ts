@@ -1,25 +1,11 @@
-import { headers } from "next/headers";
-import { absoluteUrl } from "@/lib/seo";
-import type { SettingsAuthorizedAppsInitialData } from "@/app/api/internal/settings/authorized-apps/initial/route";
+import type { SettingsAuthorizedAppsInitialData } from "@/lib/fetchers/internal/settingsTypes";
+import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
 
 export async function fetchSettingsAuthorizedAppsInitialData(): Promise<SettingsAuthorizedAppsInitialData> {
-	const requestHeaders = await headers();
-	const response = await fetch(
-		absoluteUrl("/api/internal/settings/authorized-apps/initial"),
-		{
-			cache: "no-store",
-			headers: {
-				accept: "application/json",
-				cookie: requestHeaders.get("cookie") ?? "",
-			},
-		},
+	const { accessToken } = await getServerAccountContext();
+	return fetchAccountWebApi<SettingsAuthorizedAppsInitialData>(
+		"/api/account/settings/authorized-apps",
+		accessToken,
 	);
-
-	if (!response.ok) {
-		throw new Error(
-			`Failed to fetch authorized apps settings data: ${response.status}`,
-		);
-	}
-
-	return (await response.json()) as SettingsAuthorizedAppsInitialData;
 }

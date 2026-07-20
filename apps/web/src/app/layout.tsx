@@ -20,6 +20,8 @@ import { DeferredVercelAnalytics } from "@/components/analytics/DeferredVercelAn
 import { ConsoleEasterEgg } from "@/components/ConsoleEasterEgg";
 import SiteNoticeSlot from "@/components/site-notice/SiteNoticeSlot";
 import { Suspense } from "react";
+import { PublicSWRProvider } from "@/components/providers/PublicSWRProvider";
+import AdminDeveloperMenuLauncher from "@/components/developer-menu/AdminDeveloperMenuLauncher";
 
 const montserrat = Montserrat({ subsets: ["latin"] });
 
@@ -95,7 +97,10 @@ export default function RootLayout({
 						<Suspense fallback={null}>
 							<SiteNoticeSlot />
 						</Suspense>
-						<NuqsAdapter>{children}</NuqsAdapter>
+						<PublicSWRProvider>
+							<NuqsAdapter>{children}</NuqsAdapter>
+						</PublicSWRProvider>
+						<AdminDeveloperMenuLauncher />
 						<TailwindIndicator />
 						<Toaster richColors />
 					</TooltipProvider>

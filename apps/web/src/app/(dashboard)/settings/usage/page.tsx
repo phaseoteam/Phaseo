@@ -2,9 +2,6 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { permanentRedirect, redirect } from "next/navigation";
 
-import { createClient } from "@/utils/supabase/server";
-import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
-import { CHAT_MANAGED_KEY_NAME } from "@/lib/gateway/managed-chat-key";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import ObservabilityHub from "@/components/(gateway)/usage/observability/ObservabilityHub";
 import type {
@@ -19,10 +16,6 @@ import type {
 } from "@/components/(gateway)/usage/observability/types";
 import { extractUsageMeters } from "@/components/(gateway)/usage/usageMeters";
 import {
-	LONG_RUNNING_REQUEST_ENDPOINTS,
-	buildNotInFilter,
-} from "@/lib/gateway/usage/logFilters";
-import {
 	getUsageRangeLabel,
 	getUsageRangeParamKeys,
 	parseUsageDateInput,
@@ -35,9 +28,9 @@ import {
 	type GuardrailEnforcementMetricsResult,
 } from "@/lib/gateway/usage/guardrailEnforcementMetrics";
 import {
-	fetchAppNames,
-	fetchModelMetadata,
-} from "@/app/(dashboard)/gateway/usage/server-actions";
+	fetchSettingsObservabilityData,
+	type ObservabilityRequestRow as RawRequestRow,
+} from "@/lib/fetchers/internal/fetchSettingsObservabilityData";
 
 export const metadata: Metadata = {
 	title: "Observability - Settings",
@@ -45,33 +38,6 @@ export const metadata: Metadata = {
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
-type ApiKeyOption = {
-	id: string;
-	name: string | null;
-	prefix: string | null;
-};
-
-type RawRequestRow = {
-	created_at: string;
-	model_id: string | null;
-	provider: string | null;
-	app_id: string | null;
-	key_id: string | null;
-	usage: unknown;
-	cost_nanos: number | string | null;
-	success: boolean | null;
-	error_payload: Record<string, unknown> | null;
-	error_message: string | null;
-	pricing_lines: unknown;
-};
-
-type RawRequestResult = {
-	rows: RawRequestRow[];
-	isSampled: boolean;
-	limit: number;
-};
-
-const RAW_REQUEST_SAMPLE_LIMIT = 5000;
 
 function firstParam(value: string | string[] | undefined): string | undefined {
 	if (typeof value === "string") return value;
@@ -518,84 +484,6 @@ function parseLegacyRangePreset(value?: string | null): UsageRangePreset {
 	return "last_30d";
 }
 
-async function fetchRawRequests(args: {
-	supabase: Awaited<ReturnType<typeof createClient>>;
-	workspaceId: string;
-	from: string;
-	to: string;
-	limit?: number;
-}): Promise<RawRequestResult> {
-	try {
-		const limit = args.limit ?? RAW_REQUEST_SAMPLE_LIMIT;
-		const { data, error } = await args.supabase
-			.from("gateway_requests")
-			.select(
-				"created_at,model_id,provider,app_id,key_id,usage,cost_nanos,success,error_payload,error_message,pricing_lines",
-			)
-			.eq("workspace_id", args.workspaceId)
-			.gte("created_at", args.from)
-			.lte("created_at", args.to)
-			.not("endpoint", "in", buildNotInFilter(LONG_RUNNING_REQUEST_ENDPOINTS))
-			.order("created_at", { ascending: true })
-			.limit(limit + 1);
-
-		if (error) {
-			console.error("Error fetching observability request rows:", error);
-			return { rows: [], isSampled: false, limit };
-		}
-		const rows = (data ?? []) as RawRequestRow[];
-		return {
-			rows: rows.slice(0, limit),
-			isSampled: rows.length > limit,
-			limit,
-		};
-	} catch (error) {
-		console.error("Failed to fetch observability request rows:", error);
-		const limit = args.limit ?? RAW_REQUEST_SAMPLE_LIMIT;
-		return { rows: [], isSampled: false, limit };
-	}
-}
-
-async function fetchApiKeyOptions(args: {
-	supabase: Awaited<ReturnType<typeof createClient>>;
-	workspaceId: string;
-}): Promise<ApiKeyOption[]> {
-	try {
-		const { data, error } = await args.supabase
-			.from("keys")
-			.select("id,name,prefix")
-			.eq("workspace_id", args.workspaceId)
-			.neq("status", "deleted")
-			.neq("name", CHAT_MANAGED_KEY_NAME)
-			.order("created_at", { ascending: true });
-
-		if (error) {
-			console.error("Error fetching observability API keys:", error);
-			return [];
-		}
-		return (data ?? []).map((row: any) => ({
-			id: row.id,
-			name: row?.name ?? null,
-			prefix: row?.prefix ?? null,
-		}));
-	} catch (error) {
-		console.error("Failed to fetch observability API keys:", error);
-		return [];
-	}
-}
-
-async function safeMapLoad<T>(
-	label: string,
-	load: () => Promise<Map<string, T>>,
-): Promise<Map<string, T>> {
-	try {
-		return await load();
-	} catch (error) {
-		console.error(`Failed to fetch observability ${label}:`, error);
-		return new Map<string, T>();
-	}
-}
-
 function routeForLegacyTab(tab?: string | null) {
 	const normalized = (tab ?? "").toLowerCase();
 	if (
@@ -651,29 +539,6 @@ async function ObservabilityContent({
 	searchParams: Promise<SearchParams>;
 	initialTab: ObservabilityTab;
 }) {
-	const supabase = await createClient();
-	let user: { id: string } | null = null;
-	try {
-		const authResult = await supabase.auth.getUser();
-		user = authResult.data.user;
-	} catch (error) {
-		console.error("Failed to resolve observability user:", error);
-	}
-
-	if (!user) redirect("/sign-in");
-
-	const workspaceId = await getWorkspaceIdFromCookie();
-	if (!workspaceId) {
-		return (
-			<div className="rounded-xl border bg-card p-6">
-				<h1 className="text-xl font-semibold">Observability</h1>
-				<p className="mt-2 text-sm text-muted-foreground">
-					You need to be signed in and have a team selected to view observability.
-				</p>
-			</div>
-		);
-	}
-
 	const sp = await searchParams;
 	const rangeKeys = getUsageRangeParamKeys();
 	const presetParam = firstParam(sp[rangeKeys.preset]);
@@ -694,39 +559,16 @@ async function ObservabilityContent({
 	const previousFrom = new Date(fromDate.getTime() - windowMs).toISOString();
 	const previousTo = from;
 
-	const [keys, currentRequestResult, previousRequestResult] = await Promise.all([
-		fetchApiKeyOptions({ supabase, workspaceId }),
-		fetchRawRequests({ supabase, workspaceId, from, to }),
-		fetchRawRequests({
-			supabase,
-			workspaceId,
-			from: previousFrom,
-			to: previousTo,
-		}),
-	]);
+	const initial = await fetchSettingsObservabilityData({ from, to, previousFrom, previousTo });
+	if (!initial?.signedIn) redirect("/sign-in");
+	if (!initial.workspaceId) return <div className="rounded-xl border bg-card p-6"><h1 className="text-xl font-semibold">Observability</h1><p className="mt-2 text-sm text-muted-foreground">You need to be signed in and have a team selected to view observability.</p></div>;
+	const { keys, current: currentRequestResult, previous: previousRequestResult } = initial;
 	const rawRows = currentRequestResult.rows;
 	const previousRows = previousRequestResult.rows;
 
 	const keyMap = new Map(keys.map((key) => [key.id, key]));
-	const modelIds = Array.from(
-		new Set(
-			[...rawRows, ...previousRows]
-				.map((row) => row.model_id)
-				.filter((id): id is string => Boolean(id)),
-		),
-	);
-	const appIds = Array.from(
-		new Set(
-			rawRows
-				.map((row) => row.app_id)
-				.filter((id): id is string => Boolean(id)),
-		),
-	);
-
-	const [modelMetadata, appNames] = await Promise.all([
-		safeMapLoad("model metadata", () => fetchModelMetadata(modelIds)),
-		safeMapLoad("app names", () => fetchAppNames(appIds)),
-	]);
+	const modelMetadata = new Map(initial.modelMetadataEntries);
+	const appNames = new Map(initial.appNameEntries);
 
 	const modelLabel = (id: string | null) => {
 		if (!id) return "Unknown model";

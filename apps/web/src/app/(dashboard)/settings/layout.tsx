@@ -3,8 +3,7 @@ import SettingsSidebar from "@/components/(gateway)/settings/Sidebar";
 import SettingsTopTabsServer from "@/components/(gateway)/settings/SettingsTopTabsServer";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import { createClient } from "@/utils/supabase/server";
-import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
+import { fetchSettingsLayoutInitialData } from "@/lib/fetchers/internal/fetchSettingsLayoutInitialData";
 import {
 	Sidebar,
 	SidebarInset,
@@ -27,9 +26,8 @@ export default async function SettingsLayout({
 }: {
 	children: React.ReactNode;
 }) {
-	const supabase = await createClient();
-	const { data: authData } = await supabase.auth.getUser();
-	if (!authData.user) {
+	const initialData = await fetchSettingsLayoutInitialData();
+	if (!initialData.signedIn) {
 		const headerStore = await headers();
 		const requestedPath =
 			headerStore.get("x-invoke-path") ??
@@ -40,29 +38,9 @@ export default async function SettingsLayout({
 			: "/settings";
 		redirect(`/sign-in?returnUrl=${encodeURIComponent(safeReturnUrl)}`);
 	}
-	const userId = authData.user?.id ?? null;
-	const workspaceId = await getWorkspaceIdFromCookie();
-	let showBroadcast = false;
+	const showBroadcast = initialData.showBroadcast;
 	let showWebhooks = false;
-	let isEnterpriseInvoiceMode = false;
-	if (userId && workspaceId) {
-		const { data: membership } = await supabase
-			.from("workspace_members")
-			.select("role")
-			.eq("workspace_id", workspaceId)
-			.eq("user_id", userId)
-			.maybeSingle();
-		showBroadcast = (membership?.role ?? "").toLowerCase() === "admin";
-
-		const { data: teamRow } = await supabase
-			.from("workspaces")
-			.select("tier,billing_mode")
-			.eq("id", workspaceId)
-			.maybeSingle();
-		const tier = String(teamRow?.tier ?? "").toLowerCase();
-		const billingMode = String(teamRow?.billing_mode ?? "wallet").toLowerCase();
-		isEnterpriseInvoiceMode = tier === "enterprise" && billingMode === "invoice";
-	}
+	const isEnterpriseInvoiceMode = initialData.isEnterpriseInvoiceMode;
 	showWebhooks = await batchApiFlag();
 
 	return (

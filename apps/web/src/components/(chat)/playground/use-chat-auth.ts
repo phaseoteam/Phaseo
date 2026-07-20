@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
+import { fetchClientAuthHeaderData } from "@/lib/fetchers/internal/fetchClientAuthHeaderData";
 
 export type ChatUser = {
 	id: string;
@@ -47,14 +48,10 @@ export function useChatAuth() {
 				setAuthLoading(false);
 				return;
 			}
-			const profile = await supabase
-				.from("users")
-				.select("display_name, role")
-				.eq("user_id", data.user.id)
-				.maybeSingle();
+			const profile = await fetchClientAuthHeaderData();
 			if (!mounted) return;
 			const displayName =
-				profile.data?.display_name ??
+				profile.user?.displayName ??
 				data.user.user_metadata?.full_name ??
 				data.user.user_metadata?.name ??
 				data.user.email ??
@@ -65,7 +62,7 @@ export function useChatAuth() {
 				name: displayName,
 				avatarUrl: data.user.user_metadata?.avatar_url ?? null,
 			});
-			setUserRole(profile.data?.role ?? null);
+			setUserRole(profile.userRole ?? null);
 			setAuthLoading(false);
 		};
 		loadUser();

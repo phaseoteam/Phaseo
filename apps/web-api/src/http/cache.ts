@@ -1,6 +1,7 @@
 export type PublicCachePolicy = {
   edgeTtlSeconds: number;
   staleWhileRevalidateSeconds?: number;
+	browserTtlSeconds?: number;
 	cacheTags?: readonly string[];
 };
 
@@ -11,6 +12,7 @@ export const PRIVATE_NO_STORE_HEADERS = {
 
 export function publicCacheHeaders(policy: PublicCachePolicy): Record<string, string> {
 	const staleWhileRevalidateSeconds = policy.staleWhileRevalidateSeconds ?? 0;
+	const browserTtlSeconds = policy.browserTtlSeconds ?? 60;
 	const edgeDirectives = [
 		"public",
 		`max-age=${policy.edgeTtlSeconds}`,
@@ -24,7 +26,7 @@ export function publicCacheHeaders(policy: PublicCachePolicy): Record<string, st
 		// catalogue for the full edge lifetime.
 		"Cache-Control": [
 			"public",
-			"max-age=60",
+			`max-age=${browserTtlSeconds}`,
 			`s-maxage=${policy.edgeTtlSeconds}`,
 			staleWhileRevalidateSeconds > 0
 				? `stale-while-revalidate=${staleWhileRevalidateSeconds}`

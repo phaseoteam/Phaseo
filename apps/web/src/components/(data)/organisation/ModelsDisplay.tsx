@@ -10,7 +10,7 @@ import {
 	KeyRound,
 } from "lucide-react";
 import type { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";
-import type { OrganisationOverview as OrganisationPage } from "@/lib/fetchers/organisations/getOrganisation";
+import type { OrganisationOverview as OrganisationPage } from "@/lib/fetchers/organisations/types";
 import {
 	Tooltip,
 	TooltipTrigger,

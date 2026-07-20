@@ -1,5 +1,5 @@
-import { createClient } from "@/utils/supabase/server";
-import { after, NextResponse } from "next/server";
+import { createServerClient } from "@supabase/ssr";
+import { after, NextRequest, NextResponse } from "next/server";
 import {
 	DEFAULT_AUTH_ERROR_MESSAGE,
 	buildAuthErrorRedirectUrl,
@@ -7,6 +7,23 @@ import {
 } from "@/lib/auth/errorMessage";
 import { sanitizeReturnUrl } from "@/lib/auth/return-url";
 import { finalizePostLogin } from "@/lib/auth/post-login";
+
+function createCallbackClient(request: NextRequest, response: NextResponse) {
+	return createServerClient(
+		process.env.NEXT_PUBLIC_SUPABASE_URL!,
+		process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+		{
+			cookies: {
+				getAll: () => request.cookies.getAll(),
+				setAll: (cookiesToSet) => {
+					cookiesToSet.forEach(({ name, value, options }) =>
+						response.cookies.set(name, value, options),
+					);
+				},
+			},
+		},
+	);
+}
 
 function buildHashPreservingAuthErrorResponse(requestUrl: string) {
 	const fallbackUrl = buildAuthErrorRedirectUrl(
@@ -62,7 +79,7 @@ function buildHashPreservingAuthErrorResponse(requestUrl: string) {
 	});
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
 	const url = new URL(request.url);
 	const code = url.searchParams.get("code");
 	const type = url.searchParams.get("type");
@@ -80,7 +97,10 @@ export async function GET(request: Request) {
 		);
 	}
 
-	const supabaseUser = await createClient();
+	// Supabase must write session cookies onto the exact redirect response that
+	// completes OAuth; buffering cookies loses them on the redirect in Next.js.
+	const successResponse = NextResponse.redirect(new URL(returnUrl, url));
+	const supabaseUser = createCallbackClient(request, successResponse);
 
 	if (type !== "email") {
 		if (!code) {
@@ -133,7 +153,8 @@ export async function GET(request: Request) {
 			source: "auth_callback",
 			deferTask: (task) => after(task),
 		});
-		return NextResponse.redirect(new URL(result.redirectPath, url));
+		successResponse.headers.set("Location", new URL(result.redirectPath, url).toString());
+		return successResponse;
 	} catch (error) {
 		console.error("Failed to finalize post-login state during auth callback", {
 			userId: user.id,

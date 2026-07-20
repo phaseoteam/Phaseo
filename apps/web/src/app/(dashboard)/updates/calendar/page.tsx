@@ -1,6 +1,6 @@
 import ModelCalendar from "@/components/(data)/models/ModelCalendar/ModelCalendar";
 import ModelCalendarRouteSwitch from "@/components/updates/ModelCalendarRouteSwitch";
-import type { ModelEvent } from "@/lib/fetchers/updates/getModelUpdates";
+import type { ModelEvent } from "@/lib/fetchers/updates/types";
 import { fetchFrontendModelUpdates } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { buildMetadata } from "@/lib/seo";
 import type { Metadata } from "next";

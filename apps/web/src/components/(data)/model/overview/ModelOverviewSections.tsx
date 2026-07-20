@@ -28,7 +28,10 @@ import OtherInfo from "@/components/(data)/model/overview/OtherInfo";
 import ModelLinks from "@/components/(data)/model/overview/ModelLinks";
 import { isAdminViewer } from "@/lib/auth/getViewerRole";
 import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
-import { getModelGatewayMetadataCached } from "@/lib/fetchers/models/getModelGatewayMetadata";
+import {
+	getModelGatewayMetadataCached,
+	type ModelGatewayMetadata,
+} from "@/lib/fetchers/models/getModelGatewayMetadata";
 import type { ModelPerformanceMetrics } from "@/lib/fetchers/models/getModelPerformance";
 import {
 	fetchFrontendModelApps,
@@ -69,6 +72,7 @@ type ModelOverviewSectionsProps = {
 	showSubscriptions?: boolean;
 	status?: string | null;
 	isGatewayActive?: boolean;
+	gatewayMetadata?: ModelGatewayMetadata;
 	performancePromise?: Promise<ModelPerformanceMetrics | null>;
 	quickstartRequestContext?: QuickstartRequestContext;
 };
@@ -196,12 +200,18 @@ function formatTypeLabel(value: string): string {
 export async function ModelProvidersSection({
 	modelId,
 	includeHidden,
-}: ModelSectionSharedProps) {
+	modelStatus,
+	modelName,
+	creatorOrganisationId,
+}: ModelSectionSharedProps & { modelStatus?: string | null; modelName?: string | null; creatorOrganisationId?: string | null }) {
 	return (
 		<ModelPricing
 			modelId={modelId}
 			includeHidden={includeHidden}
 			showHeader={false}
+			modelStatus={modelStatus}
+			modelName={modelName}
+			creatorOrganisationId={creatorOrganisationId}
 		/>
 	);
 }
@@ -529,10 +539,12 @@ export async function ModelQuickstartSection({
 	modelId,
 	includeHidden,
 	isGatewayActive = true,
+	gatewayMetadata: prefetchedGatewayMetadata,
 	surface = "page",
 	quickstartRequestContext,
 }: ModelSectionSharedProps & {
 	isGatewayActive?: boolean;
+	gatewayMetadata?: ModelGatewayMetadata;
 	surface?: ModelSectionSurface;
 	quickstartRequestContext?: QuickstartRequestContext;
 }) {
@@ -547,18 +559,20 @@ export async function ModelQuickstartSection({
 		);
 	}
 
-	const includeInternalProviders = await withOptionalSectionTimeout(
-		isAdminViewer(),
-		false,
-		"quickstart admin viewer check"
-	);
-	const gatewayMetadata = await withOptionalSectionTimeout(
-		includeInternalProviders
-			? getModelGatewayMetadataCached(modelId, includeHidden)
-			: fetchFrontendModelGatewayMetadata(modelId),
-		null,
-		"quickstart metadata"
-	);
+	const gatewayMetadata = prefetchedGatewayMetadata ?? await (async () => {
+		const includeInternalProviders = await withOptionalSectionTimeout(
+			isAdminViewer(),
+			false,
+			"quickstart admin viewer check"
+		);
+		return withOptionalSectionTimeout(
+			includeInternalProviders
+				? getModelGatewayMetadataCached(modelId, includeHidden)
+				: fetchFrontendModelGatewayMetadata(modelId),
+			null,
+			"quickstart metadata"
+		);
+	})();
 
 	const quickstartEndpoint =
 		gatewayMetadata?.activeProviders.find((p) => p.endpoint)?.endpoint ??
@@ -1217,6 +1231,7 @@ export default function ModelOverviewSections({
 	showSubscriptions = true,
 	status,
 	isGatewayActive = true,
+	gatewayMetadata,
 	performancePromise,
 	quickstartRequestContext,
 }: ModelOverviewSectionsProps) {
@@ -1279,7 +1294,7 @@ export default function ModelOverviewSections({
 						description="Provider listings and known route availability for this model."
 					/>
 					<Suspense fallback={<ProvidersSectionSkeleton />}>
-						<ModelProvidersSection modelId={modelId} includeHidden={includeHidden} />
+						<ModelProvidersSection modelId={modelId} includeHidden={includeHidden} modelStatus={status} modelName={model?.name} creatorOrganisationId={model?.organisation_id} />
 					</Suspense>
 				</Section>
 				{showBenchmarks ? (
@@ -1303,6 +1318,7 @@ export default function ModelOverviewSections({
 						modelId={modelId}
 						includeHidden={includeHidden}
 						isGatewayActive={false}
+						gatewayMetadata={gatewayMetadata}
 						surface="overview"
 					/>
 				</Section>
@@ -1346,7 +1362,7 @@ export default function ModelOverviewSections({
 					description="API providers, route pricing, availability, and recent reliability signals."
 				/>
 				<Suspense fallback={<ProvidersSectionSkeleton />}>
-					<ModelProvidersSection modelId={modelId} includeHidden={includeHidden} />
+					<ModelProvidersSection modelId={modelId} includeHidden={includeHidden} modelStatus={status} modelName={model?.name} creatorOrganisationId={model?.organisation_id} />
 				</Suspense>
 			</Section>
 			<Section id="performance">
@@ -1421,6 +1437,7 @@ export default function ModelOverviewSections({
 					<ModelQuickstartSection
 						modelId={modelId}
 						includeHidden={includeHidden}
+						gatewayMetadata={gatewayMetadata}
 						surface="overview"
 						quickstartRequestContext={quickstartRequestContext}
 					/>

@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { filterModelsForRoom } from "@/lib/chat/rooms";
+import { fetchChatWebApi } from "@/lib/web-api/client";
 import {
 	buildAudioRequestOptions,
 	buildEmbeddingsRequestOptions,
@@ -378,7 +379,7 @@ async function pollMusicGeneration(
 		if (signal?.aborted) {
 			throw new DOMException("Polling aborted", "AbortError");
 		}
-		const response = await fetch(
+		const response = await fetchChatWebApi(
 			`/api/chat/audio?action=music&resourceId=${encodeURIComponent(resourceId)}`,
 			{ method: "GET", signal },
 		);
@@ -482,7 +483,7 @@ async function fetchVideoContentObjectUrl(
 	resourceId: string,
 	signal?: AbortSignal,
 ): Promise<string | null> {
-	const response = await fetch(
+	const response = await fetchChatWebApi(
 		`/api/chat/video?resourceId=${encodeURIComponent(resourceId)}&content=1`,
 		{
 			method: "GET",
@@ -512,7 +513,7 @@ async function pollVideoGeneration(
 		if (signal?.aborted) {
 			throw new DOMException("Polling aborted", "AbortError");
 		}
-		const response = await fetch(
+		const response = await fetchChatWebApi(
 			`/api/chat/video?resourceId=${encodeURIComponent(resourceId)}`,
 			{
 				method: "GET",
@@ -1849,7 +1850,7 @@ export default function ModelPlayground({
 		let streamingText = "";
 
 		try {
-			const response = await fetch("/api/chat/playground", {
+			const response = await fetchChatWebApi("/api/chat/playground", {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -2017,7 +2018,7 @@ export default function ModelPlayground({
 			} else {
 				requestBody.input = trimmedAudioPrompt;
 			}
-			const response = await fetch("/api/chat/audio", {
+			const response = await fetchChatWebApi("/api/chat/audio", {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -2161,7 +2162,7 @@ export default function ModelPlayground({
 				resolvedImageModelId,
 				imageDefaults,
 			);
-			const response = await fetch("/api/chat/image", {
+			const response = await fetchChatWebApi("/api/chat/image", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
@@ -2221,7 +2222,7 @@ export default function ModelPlayground({
 				resolvedVideoModelId,
 				videoDefaults,
 			);
-			const response = await fetch("/api/chat/video", {
+			const response = await fetchChatWebApi("/api/chat/video", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
@@ -2320,7 +2321,7 @@ export default function ModelPlayground({
 				resolvedEmbeddingsModelId,
 				embeddingDefaults,
 			);
-			const response = await fetch("/api/chat/embeddings", {
+			const response = await fetchChatWebApi("/api/chat/embeddings", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
@@ -2366,7 +2367,7 @@ export default function ModelPlayground({
 		setModerationRawResponse("");
 
 		try {
-			const response = await fetch("/api/chat/moderation", {
+			const response = await fetchChatWebApi("/api/chat/moderation", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({

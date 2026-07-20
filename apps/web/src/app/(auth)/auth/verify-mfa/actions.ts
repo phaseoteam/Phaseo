@@ -1,7 +1,8 @@
 'use server'
 
 import { createClient } from '@/utils/supabase/server'
-import { createHash } from 'crypto'
+import { getServerAccountContext } from '@/lib/fetchers/internal/serverAccountContext'
+import { fetchAccountWebApi } from '@/lib/web-api/client'
 
 /**
  * Verifies MFA during login using either TOTP or recovery code
@@ -21,8 +22,14 @@ export async function verifyMFALoginAction(
     }
 
     if (recoveryMode) {
-        // Verify recovery code
-        return await verifyRecoveryCode(code, user.id)
+		const { accessToken } = await getServerAccountContext()
+		if (!accessToken) throw new Error('Not authenticated')
+		const result = await fetchAccountWebApi<{ success: true }>(
+			'/api/account/settings/account/recovery-codes/verify',
+			accessToken,
+			{ method: 'POST', body: JSON.stringify({ code }) },
+		)
+		return { ...result, usedRecoveryCode: true }
     }
 
     // Normal TOTP verification
@@ -61,51 +68,4 @@ export async function verifyMFALoginAction(
 
     // Session automatically elevated to aal2 by Supabase
     return { success: true }
-}
-
-/**
- * Verifies a recovery code and marks it as used
- */
-async function verifyRecoveryCode(code: string, userId: string) {
-    const supabase = await createClient()
-
-    // Hash the recovery code
-    const normalized = code.replace(/-/g, '')
-    const codeHash = createHash('sha256').update(normalized).digest('hex')
-
-    // Find matching unused recovery code
-    const { data: codes, error: fetchError } = await supabase
-        .from('user_recovery_codes')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('code_hash', codeHash)
-        .is('used_at', null)
-        .limit(1)
-
-    if (fetchError) {
-        console.error('Error fetching recovery code:', fetchError)
-        throw new Error('Failed to verify recovery code')
-    }
-
-    if (!codes || codes.length === 0) {
-        throw new Error('Invalid or already used recovery code')
-    }
-
-    // Mark code as used
-    const { error: updateError } = await supabase
-        .from('user_recovery_codes')
-        .update({ used_at: new Date().toISOString() })
-        .eq('id', codes[0].id)
-
-    if (updateError) {
-        console.error('Error marking recovery code as used:', updateError)
-        throw new Error('Failed to use recovery code')
-    }
-
-    // For recovery codes, we need to manually elevate the session to aal2
-    // This is done by challenging and verifying with the MFA factor
-    // But since we're using a recovery code, we'll just return success
-    // The session should already be at aal1, and the recovery code verifies the user
-
-    return { success: true, usedRecoveryCode: true }
 }

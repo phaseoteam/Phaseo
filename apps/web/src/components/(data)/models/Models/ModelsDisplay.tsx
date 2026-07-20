@@ -100,7 +100,8 @@ import type {
 } from "./modelsDisplay.types";
 
 interface ModelsDisplayProps {
-	dataPromise: Promise<ModelsPageData>;
+	dataPromise?: Promise<ModelsPageData>;
+	modelsPageData?: ModelsPageData;
 	showPrimaryHeader?: boolean;
 }
 
@@ -912,23 +913,45 @@ function OutputModalityButtonRow({
 
 export default function ModelsDisplay({
 	dataPromise,
+	modelsPageData,
 	showPrimaryHeader = true,
 }: ModelsDisplayProps) {
 	return (
 		<Suspense fallback={null}>
-			<ModelsDisplayContent
+			<ModelsDisplayData
 				dataPromise={dataPromise}
+				modelsPageData={modelsPageData}
 				showPrimaryHeader={showPrimaryHeader}
 			/>
 		</Suspense>
 	);
 }
 
-function ModelsDisplayContent({
+function ModelsDisplayData({
 	dataPromise,
+	modelsPageData,
 	showPrimaryHeader = true,
 }: ModelsDisplayProps) {
-	const modelsPageData = use(dataPromise);
+	const serverData = dataPromise ? use(dataPromise) : undefined;
+	const resolvedModelsPageData = serverData ?? modelsPageData;
+
+	if (!resolvedModelsPageData) return null;
+
+	return (
+		<ModelsDisplayContent
+			modelsPageData={resolvedModelsPageData}
+			showPrimaryHeader={showPrimaryHeader}
+		/>
+	);
+}
+
+function ModelsDisplayContent({
+	modelsPageData,
+	showPrimaryHeader = true,
+}: {
+	modelsPageData: ModelsPageData;
+	showPrimaryHeader?: boolean;
+}) {
 	const { models, facets } = modelsPageData;
 	const [search, setSearch] = useQueryState("q", qParser);
 	const deferredSearch = useDeferredValue(search ?? "");

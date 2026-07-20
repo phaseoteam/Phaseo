@@ -119,6 +119,18 @@ const nextConfig = {
 						source: "/api/_web/:path*",
 						destination: `${webApiOrigin}/api/_web/:path*`,
 					},
+					{
+						source: "/api/account/:path*",
+						destination: `${webApiOrigin}/api/account/:path*`,
+					},
+					{
+						source: "/api/chat/:path*",
+						destination: `${webApiOrigin}/api/chat/:path*`,
+					},
+					{
+						source: "/api/internal/:path*",
+						destination: `${webApiOrigin}/api/internal/:path*`,
+					},
 				]
 			: []),
         ...docsProxyRewrites,

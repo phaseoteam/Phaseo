@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { withPublicCache, type PublicCachePolicy } from "@/http/cache";
+import { fetchModelsPageCatalogue } from "@/models/page-catalogue";
 
 const REFERENCE_CACHE: PublicCachePolicy = {
 	edgeTtlSeconds: 24 * 60 * 60,
@@ -29,32 +30,20 @@ function countryName(iso: string) {
 
 async function getCountrySummaries(env: Env) {
 	const client = getDataClient(env);
-	const [organisationsResult, modelsResult] = await Promise.all([
+	const [organisationsResult, catalogue] = await Promise.all([
 		client.from("data_organisations").select("organisation_id,name,country_code,colour"),
-		client.from("data_models").select("model_id,name,organisation_id,status,release_date,announcement_date,updated_at,input_types,output_types").eq("hidden", false),
+		fetchModelsPageCatalogue(env),
 	]);
 	if (organisationsResult.error) throw organisationsResult.error;
-	if (modelsResult.error) throw modelsResult.error;
 
 	const modelsByOrganisation = new Map<string, Array<Record<string, unknown>>>();
-	for (const model of modelsResult.data ?? []) {
+	for (const model of catalogue.models) {
 		const organisationId = String(model.organisation_id ?? "").trim();
 		if (!organisationId) continue;
-		const primaryDate = model.release_date ?? model.announcement_date ?? null;
-		const parsed = primaryDate ? Date.parse(primaryDate) : Number.NaN;
 		const models = modelsByOrganisation.get(organisationId) ?? [];
 		models.push({
-			model_id: model.model_id,
-			name: model.name,
+			...model,
 			organisation_id: organisationId,
-			status: model.status ?? null,
-			release_date: model.release_date ?? null,
-			announcement_date: model.announcement_date ?? null,
-			updated_at: model.updated_at ?? null,
-			input_types: model.input_types ?? [],
-			output_types: model.output_types ?? [],
-			primary_date: primaryDate,
-			primary_timestamp: Number.isFinite(parsed) ? parsed : null,
 		});
 		modelsByOrganisation.set(organisationId, models);
 	}
@@ -65,7 +54,15 @@ async function getCountrySummaries(env: Env) {
 		if (!iso) continue;
 		const models = [...(modelsByOrganisation.get(organisation.organisation_id) ?? [])]
 			.sort((left, right) => Number(right.primary_timestamp ?? 0) - Number(left.primary_timestamp ?? 0))
-			.map((model) => ({ ...model, organisation_name: organisation.name ?? null, organisation_colour: organisation.colour ?? null }));
+			.map((model) => ({
+				...model,
+				organisation_name: organisation.name ?? null,
+				organisation_colour: organisation.colour ?? null,
+				organisation: {
+					name: organisation.name ?? null,
+					colour: organisation.colour ?? null,
+				},
+			}));
 		const organisations = countries.get(iso) ?? [];
 		organisations.push({
 			organisation_id: organisation.organisation_id,
@@ -94,6 +91,19 @@ async function getCountrySummaries(env: Env) {
 			};
 		})
 		.sort((left, right) => right.totalModels - left.totalModels);
+}
+
+async function getCountryListSummaries(env: Env) {
+	const result = await getDataClient(env).rpc("get_public_country_summaries");
+	if (!result.error) return (result.data ?? []).map((row) => ({
+		iso: String(row.iso ?? "").toUpperCase(),
+		countryName: countryName(String(row.iso ?? "").toUpperCase()),
+		totalOrganisations: Number(row.total_organisations ?? 0),
+		totalModels: Number(row.total_models ?? 0),
+	}));
+	const missing = result.error.code === "PGRST202" || /could not find|does not exist/i.test(result.error.message ?? "");
+	if (!missing) throw result.error;
+	return (await getCountrySummaries(env)).map(({ iso, countryName, totalOrganisations, totalModels }) => ({ iso, countryName, totalOrganisations, totalModels }));
 }
 
 publicReferenceDataRouter.get("/organisations", async (c) => {
@@ -137,30 +147,118 @@ publicReferenceDataRouter.get("/benchmarks", async (c) => {
 	}
 });
 
+publicReferenceDataRouter.get("/benchmarks/:benchmarkId", async (c) => {
+	const benchmarkId = c.req.param("benchmarkId");
+	try {
+		const { data, error } = await getDataClient(c.env)
+			.from("data_benchmarks")
+			.select(`id,name,category,ascending_order,total_models,link,type,data_benchmark_results(id,model_id,score,is_self_reported,other_info,source_link,created_at,updated_at,rank,data_models(model_id,name,release_date,announcement_date,organisation_id,hidden,data_organisations(*)))`)
+			.eq("id", benchmarkId)
+			.maybeSingle();
+		if (error) throw error;
+		if (!data) return notFound(c, "benchmark");
+
+		const results = (data.data_benchmark_results ?? [])
+			.filter((result) => {
+				const model = Array.isArray(result.data_models)
+					? result.data_models[0]
+					: result.data_models;
+				return model && !model.hidden;
+			})
+			.map((result) => {
+				const model = Array.isArray(result.data_models)
+					? result.data_models[0]
+					: result.data_models;
+				const organisationRow = Array.isArray(model.data_organisations)
+					? model.data_organisations[0]
+					: model.data_organisations;
+				const organisation = organisationRow
+					? {
+						organisation_id: organisationRow.organisation_id,
+						name: organisationRow.name ?? null,
+						colour: organisationRow.colour ?? null,
+						display_name: organisationRow.display_name ?? organisationRow.name ?? null,
+						logo: organisationRow.logo ?? null,
+						logo_url: organisationRow.logo_url ?? null,
+					}
+					: null;
+				return {
+					id: result.id,
+					model_id: result.model_id,
+					score: result.score,
+					is_self_reported: Boolean(result.is_self_reported),
+					other_info: result.other_info ?? null,
+					source_link: result.source_link ?? null,
+					created_at: result.created_at ?? null,
+					updated_at: result.updated_at ?? null,
+					rank: result.rank ?? null,
+					model: {
+						model_id: model.model_id,
+						name: model.name ?? null,
+						release_date: model.release_date ?? null,
+						announcement_date: model.announcement_date ?? null,
+						organisation,
+					},
+				};
+			});
+
+		return withPublicCache(c.json({
+			benchmark: {
+				id: data.id,
+				name: data.name ?? null,
+				category: data.category ?? null,
+				ascending_order:
+					typeof data.ascending_order === "boolean" ? data.ascending_order : null,
+				total_models: data.total_models ?? null,
+				link: data.link ?? null,
+				type: data.type ?? null,
+				results,
+			},
+		}), policy(`web-api-benchmark-${encodeURIComponent(benchmarkId).replace(/%/g, "")}`));
+	} catch (error) {
+		console.error("[web-api/reference] benchmark failed", { benchmarkId, error });
+		return c.json({ error: "benchmark_unavailable" }, 503);
+	}
+});
+
 /**
  * Stable provider identity data. Live availability, traffic, and latency stay
  * in separate telemetry resources so this list can retain a long cache TTL.
  */
-publicReferenceDataRouter.get("/api-providers", async (c) => {
+publicReferenceDataRouter.get("/api-providers/:providerId/header", async (c) => {
+	const providerId = c.req.param("providerId").trim();
+	if (["inception", "inceptron", "nextbit"].includes(providerId.toLowerCase())) return notFound(c, "api_provider");
+	try {
+		const { data, error } = await getDataClient(c.env).from("data_api_providers")
+			.select("api_provider_id,api_provider_name,country_code")
+			.eq("api_provider_id", providerId).maybeSingle();
+		if (error) throw error;
+		if (!data) return notFound(c, "api_provider");
+		return withPublicCache(c.json({ provider: data }), policy(`web-api-provider-${encodeURIComponent(providerId).replace(/%/g, "")}`));
+	} catch (error) {
+		console.error("[web-api/reference] provider header failed", { providerId, error });
+		return c.json({ error: "provider_unavailable" }, 503);
+	}
+});
+
+publicReferenceDataRouter.get("/sources", async (c) => {
 	try {
 		const { data, error } = await getDataClient(c.env)
 			.from("data_api_providers")
-			.select("api_provider_id,api_provider_name,colour,country_code,provider_family_id,offer_label,offer_scope")
+			.select("api_provider_id,api_provider_name,country_code")
 			.order("api_provider_name", { ascending: true });
 		if (error) throw error;
-		const providers = (data ?? []).map((row) => ({
-			id: row.api_provider_id,
-			name: row.api_provider_name,
-			colour: row.colour ?? null,
-			country_code: row.country_code ?? null,
-			provider_family_id: row.provider_family_id ?? null,
-			offer_label: row.offer_label ?? null,
-			offer_scope: row.offer_scope ?? null,
-		}));
-		return withPublicCache(c.json({ providers }), policy("web-api-providers"));
+		const sources = (data ?? [])
+			.map((row) => ({
+				api_provider_id: row.api_provider_id,
+				api_provider_name: row.api_provider_name ?? "",
+				country_code: row.country_code ?? null,
+			}))
+			.filter((source) => Boolean(source.api_provider_id));
+		return withPublicCache(c.json({ sources }), policy("web-api-sources"));
 	} catch (error) {
-		console.error("[web-api/reference] providers failed", error);
-		return c.json({ error: "providers_unavailable" }, 503);
+		console.error("[web-api/reference] sources failed", error);
+		return c.json({ error: "sources_unavailable" }, 503);
 	}
 });
 
@@ -292,7 +390,7 @@ publicReferenceDataRouter.get("/subscription-plans/:planId", async (c) => {
 
 publicReferenceDataRouter.get("/countries", async (c) => {
 	try {
-		return withPublicCache(c.json({ countries: await getCountrySummaries(c.env) }), policy("web-api-countries"));
+		return withPublicCache(c.json({ countries: await getCountryListSummaries(c.env) }), policy("web-api-countries"));
 	} catch (error) {
 		console.error("[web-api/reference] countries failed", error);
 		return c.json({ error: "countries_unavailable" }, 503);

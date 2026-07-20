@@ -1,25 +1,14 @@
-import { headers } from "next/headers";
-import { absoluteUrl } from "@/lib/seo";
-import type { SettingsPaymentMethodsInitialData } from "@/app/api/internal/settings/payment-methods/initial/route";
+import type { SettingsPaymentMethodsInitialData } from "@/lib/fetchers/internal/settingsTypes";
+import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
 
 export async function fetchSettingsPaymentMethodsInitialData(): Promise<SettingsPaymentMethodsInitialData> {
-	const requestHeaders = await headers();
-	const response = await fetch(
-		absoluteUrl("/api/internal/settings/payment-methods/initial"),
-		{
-			cache: "no-store",
-			headers: {
-				accept: "application/json",
-				cookie: requestHeaders.get("cookie") ?? "",
-			},
-		},
+	const context = await getServerAccountContext();
+	const params = new URLSearchParams();
+	if (context.workspaceId) params.set("workspaceId", context.workspaceId);
+	if (context.obfuscateInfo != null) params.set("obfuscateInfo", context.obfuscateInfo ? "1" : "0");
+	return fetchAccountWebApi<SettingsPaymentMethodsInitialData>(
+		`/api/account/settings/payment-methods?${params.toString()}`,
+		context.accessToken,
 	);
-
-	if (!response.ok) {
-		throw new Error(
-			`Failed to fetch payment methods settings data: ${response.status}`,
-		);
-	}
-
-	return (await response.json()) as SettingsPaymentMethodsInitialData;
 }

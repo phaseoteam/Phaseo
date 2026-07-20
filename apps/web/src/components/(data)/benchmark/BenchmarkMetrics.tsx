@@ -11,7 +11,7 @@ import {
 	Crown,
 	Database,
 } from "lucide-react";
-import type { BenchmarkPage } from "@/lib/fetchers/benchmarks/getBenchmark";
+import type { BenchmarkPage } from "@/lib/fetchers/benchmarks/types";
 import {
 	formatBenchmarkScore,
 	getLowerIsBetter,

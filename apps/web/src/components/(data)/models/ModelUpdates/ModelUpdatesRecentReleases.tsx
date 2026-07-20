@@ -2,7 +2,7 @@ import UpdateCard, { type UpdateBadge } from "@/components/updates/UpdateCard";
 import type {
 	EventType,
 	ModelEvent,
-} from "@/lib/fetchers/updates/getModelUpdates";
+} from "@/lib/fetchers/updates/types";
 import type React from "react";
 
 interface EventTypeOption {

@@ -1,23 +1,9 @@
-import { headers } from "next/headers";
-import { absoluteUrl } from "@/lib/seo";
-import type { SettingsRoutingInitialData } from "@/app/api/internal/settings/routing/initial/route";
+import type { SettingsRoutingInitialData } from "@/lib/fetchers/internal/settingsTypes";
+import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
 
 export async function fetchSettingsRoutingInitialData(): Promise<SettingsRoutingInitialData> {
-	const requestHeaders = await headers();
-	const response = await fetch(
-		absoluteUrl("/api/internal/settings/routing/initial"),
-		{
-			cache: "no-store",
-			headers: {
-				accept: "application/json",
-				cookie: requestHeaders.get("cookie") ?? "",
-			},
-		},
-	);
-
-	if (!response.ok) {
-		throw new Error(`Failed to fetch routing settings data: ${response.status}`);
-	}
-
-	return (await response.json()) as SettingsRoutingInitialData;
+	const context = await getServerAccountContext();
+	const query = context.workspaceId ? `?workspaceId=${encodeURIComponent(context.workspaceId)}` : "";
+	return fetchAccountWebApi<SettingsRoutingInitialData>(`/api/account/settings/routing${query}`, context.accessToken);
 }

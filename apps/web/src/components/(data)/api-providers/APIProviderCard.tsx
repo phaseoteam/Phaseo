@@ -11,7 +11,7 @@ import {
 import Link from "next/link";
 import { type CSSProperties } from "react";
 import { cn } from "@/lib/utils";
-import type { APIProviderCard as APIProviderCardType } from "@/lib/fetchers/api-providers/getAllAPIProviders";
+import type { APIProviderCard as APIProviderCardType } from "@/lib/fetchers/api-providers/providerDataTypes";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import {

@@ -14,7 +14,7 @@ import {
 import type {
 	ProviderTokenSeriesModel,
 	ProviderTokenSeriesPoint,
-} from "@/lib/fetchers/api-providers/api-provider/providerTokenTimeseries";
+} from "@/lib/fetchers/api-providers/providerDataTypes";
 
 export default async function ProvidersTokenUsageChart() {
 	const { data } = await fetchFrontendMarketShareTimeseries(

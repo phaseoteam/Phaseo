@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import type { APIProviderCard } from "@/lib/fetchers/api-providers/getAllAPIProviders";
+import type { APIProviderCard } from "@/lib/fetchers/api-providers/providerDataTypes";
 import { fetchFrontendAPIProviders } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import APIProvidersDisplay from "@/components/(data)/api-providers/APIProvidersDisplay";
 import { Skeleton } from "@/components/ui/skeleton";

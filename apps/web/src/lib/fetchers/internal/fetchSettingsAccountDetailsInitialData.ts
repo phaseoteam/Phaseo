@@ -1,23 +1,14 @@
-import { headers } from "next/headers";
-import { absoluteUrl } from "@/lib/seo";
-import type { SettingsAccountDetailsInitialData } from "@/app/api/internal/settings/account/details/initial/route";
+import type { SettingsAccountDetailsInitialData } from "@/lib/fetchers/internal/settingsTypes";
+import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
 
 export async function fetchSettingsAccountDetailsInitialData(): Promise<SettingsAccountDetailsInitialData> {
-	const requestHeaders = await headers();
-	const response = await fetch(
-		absoluteUrl("/api/internal/settings/account/details/initial"),
-		{
-			cache: "no-store",
-			headers: {
-				accept: "application/json",
-				cookie: requestHeaders.get("cookie") ?? "",
-			},
-		},
+	const context = await getServerAccountContext();
+	const query = context.obfuscateInfo == null
+		? ""
+		: `?obfuscateInfo=${context.obfuscateInfo ? "1" : "0"}`;
+	return fetchAccountWebApi<SettingsAccountDetailsInitialData>(
+		`/api/account/settings/account/details${query}`,
+		context.accessToken,
 	);
-
-	if (!response.ok) {
-		throw new Error(`Failed to fetch account settings data: ${response.status}`);
-	}
-
-	return (await response.json()) as SettingsAccountDetailsInitialData;
 }
