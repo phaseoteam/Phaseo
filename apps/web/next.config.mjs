@@ -116,12 +116,8 @@ const nextConfig = {
 		...(webApiOrigin
 			? [
 					{
-						source: "/api/public/:path*",
-						destination: `${webApiOrigin}/api/public/:path*`,
-					},
-					{
-						source: "/api/account/:path*",
-						destination: `${webApiOrigin}/api/account/:path*`,
+						source: "/api/_web/:path*",
+						destination: `${webApiOrigin}/api/_web/:path*`,
 					},
 				]
 			: []),

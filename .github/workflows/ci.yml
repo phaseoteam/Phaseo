@@ -110,7 +110,7 @@ jobs:
         if: github.event_name == 'push' || !startsWith(github.head_ref, 'chore/auto-model-statuses')
         strategy:
             matrix:
-                app: [api, docs, web]
+                app: [api, docs, web, web-api]
         steps:
             - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
@@ -149,6 +149,13 @@ jobs:
                   cd apps/web
                   pnpm run lint
                   pnpm run typecheck
+
+            - name: Web API lint, test & build
+              if: matrix.app == 'web-api'
+              run: |
+                  pnpm --filter @phaseo/web-api lint
+                  pnpm --filter @phaseo/web-api test
+                  pnpm --filter @phaseo/web-api build
 
     api-aimock:
         name: API AIMock matrix
@@ -694,6 +701,8 @@ jobs:
                       name: Deploy Web
                     - target: api
                       name: Deploy API
+                    - target: web-api
+                      name: Deploy Web API
                     - target: docs
                       name: Deploy Docs
         steps:
@@ -738,12 +747,12 @@ jobs:
             - name: Restore lockfile (guard setup-node cache mutation)
               run: git checkout -- pnpm-lock.yaml
 
-            - name: Install dependencies (for API)
-              if: matrix.target == 'api'
+            - name: Install dependencies (for Cloudflare Workers)
+              if: matrix.target == 'api' || matrix.target == 'web-api'
               run: corepack pnpm install --frozen-lockfile
 
             - name: Validate Cloudflare API deploy secrets
-              if: matrix.target == 'api'
+              if: matrix.target == 'api' || matrix.target == 'web-api'
               shell: bash
               env:
                   CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -778,6 +787,15 @@ jobs:
                   apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
                   accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
                   workingDirectory: apps/api
+
+            - name: Deploy Web API Worker to Cloudflare
+              if: matrix.target == 'web-api'
+              uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0
+              with:
+                  apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                  accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+                  workingDirectory: apps/web-api
+                  command: deploy
 
             # ---------- DOCS ----------
             - name: Docs (Mintlify deploy is handled by GitHub App)
