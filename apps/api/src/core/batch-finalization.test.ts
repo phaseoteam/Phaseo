@@ -1396,6 +1396,35 @@ describe("batch-finalization", () => {
 		})]);
 	});
 
+	it("finalizes released xAI failures without inventing a provider batch id", async () => {
+		state.record = {
+			workspaceId: "ws_batch_test",
+			batchId: "batch_failed_xai_without_native_id",
+			status: "failed",
+			meta: {
+				provider: "x-ai",
+				status: "submitting",
+				reservationId: "batch_hold:req_failed_xai",
+				reservedNanos: 122_100,
+				reservationStatus: "released",
+			},
+		};
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+
+		const { finalizeBatchJob } = await import("./batch-finalization");
+		await expect(finalizeBatchJob({
+			workspaceId: "ws_batch_test",
+			batchId: "batch_failed_xai_without_native_id",
+			status: "failed",
+		})).resolves.toMatchObject({ billed: true, charged: false });
+		expect(fetchMock).not.toHaveBeenCalled();
+		expect(state.walletCalls).toEqual([expect.objectContaining({
+			op: "release",
+			reservationId: "batch_hold:req_failed_xai",
+		})]);
+	});
+
 	it("does not mark voided batches billed when reservation release fails", async () => {
 		state.releaseError = new Error("wallet release timeout");
 		state.record = {

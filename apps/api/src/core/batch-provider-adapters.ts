@@ -391,6 +391,22 @@ function buildProviderResultsPath(providerId: string, nativeBatchId: string): st
 	return null;
 }
 
+export class ProviderBatchFetchError extends Error {
+	readonly providerId: string;
+	readonly nativeBatchId: string;
+	readonly status: number;
+	readonly responsePreview: string;
+
+	constructor(args: { providerId: string; nativeBatchId: string; status: number; responsePreview: string }) {
+		super(`${args.providerId}_batch_fetch_failed_${args.status}:${args.responsePreview}`);
+		this.name = "ProviderBatchFetchError";
+		this.providerId = args.providerId;
+		this.nativeBatchId = args.nativeBatchId;
+		this.status = args.status;
+		this.responsePreview = args.responsePreview;
+	}
+}
+
 export async function fetchProviderBatchStatus(providerId: string, nativeBatchId: string): Promise<any | null> {
 	const response = await fetchProviderBatchApi(providerId, {
 		endpointPath: buildProviderRetrievePath(providerId, nativeBatchId),
@@ -398,7 +414,12 @@ export async function fetchProviderBatchStatus(providerId: string, nativeBatchId
 	});
 	if (!response.ok) {
 		const preview = await response.text().catch(() => "");
-		throw new Error(`${providerId}_batch_fetch_failed_${response.status}:${preview.slice(0, 200)}`);
+		throw new ProviderBatchFetchError({
+			providerId,
+			nativeBatchId,
+			status: response.status,
+			responsePreview: preview.slice(0, 200),
+		});
 	}
 	return normalizeProviderBatchPayload(providerId, await parseUpstreamJson(response));
 }

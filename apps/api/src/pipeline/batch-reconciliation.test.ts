@@ -4,8 +4,10 @@ const {
 	getBindingsMock,
 	dispatchAsyncWebhookEventInBackgroundMock,
 	listPendingBatchJobsMock,
+	markBatchJobBilledMock,
 	saveBatchFileMetaMock,
 	saveBatchJobMetaMock,
+	setBatchJobStatusMock,
 	updateBatchJobReconciliationMock,
 	finalizeBatchJobMock,
 	resolveProviderKeyMock,
@@ -15,8 +17,10 @@ const {
 	getBindingsMock: vi.fn(),
 	dispatchAsyncWebhookEventInBackgroundMock: vi.fn(),
 	listPendingBatchJobsMock: vi.fn(),
+	markBatchJobBilledMock: vi.fn(),
 	saveBatchFileMetaMock: vi.fn(),
 	saveBatchJobMetaMock: vi.fn(),
+	setBatchJobStatusMock: vi.fn(),
 	updateBatchJobReconciliationMock: vi.fn(),
 	finalizeBatchJobMock: vi.fn(),
 	resolveProviderKeyMock: vi.fn(),
@@ -42,6 +46,7 @@ vi.mock("@core/async-notifications", () => ({
 
 vi.mock("@core/batch-jobs", () => ({
 	listPendingBatchJobs: listPendingBatchJobsMock,
+	markBatchJobBilled: markBatchJobBilledMock,
 	resolveBatchProviderNativeId: vi.fn((args: { batchId: string; nativeId?: string | null; meta?: Record<string, unknown> | null }) => {
 		const nativeId = typeof args.nativeId === "string" && args.nativeId.trim() ? args.nativeId.trim() : null;
 		const nativeBatchId =
@@ -52,6 +57,7 @@ vi.mock("@core/batch-jobs", () => ({
 	}),
 	saveBatchFileMeta: saveBatchFileMetaMock,
 	saveBatchJobMeta: saveBatchJobMetaMock,
+	setBatchJobStatus: setBatchJobStatusMock,
 	updateBatchJobReconciliation: updateBatchJobReconciliationMock,
 }));
 
@@ -74,8 +80,10 @@ describe("runBatchReconciliationJob", () => {
 		getBindingsMock.mockReset();
 		dispatchAsyncWebhookEventInBackgroundMock.mockReset();
 		listPendingBatchJobsMock.mockReset();
+		markBatchJobBilledMock.mockReset().mockResolvedValue(true);
 		saveBatchFileMetaMock.mockReset();
 		saveBatchJobMetaMock.mockReset();
+		setBatchJobStatusMock.mockReset().mockResolvedValue(undefined);
 		updateBatchJobReconciliationMock.mockReset();
 		finalizeBatchJobMock.mockReset();
 		resolveProviderKeyMock.mockReset();
@@ -286,6 +294,112 @@ describe("runBatchReconciliationJob", () => {
 			workspaceId: "ws_1",
 			batchId: "batch_same_123",
 			status: "completed",
+		});
+	});
+
+	it("finalizes failed terminal jobs with native ids when there is no successful output", async () => {
+		listPendingBatchJobsMock.mockResolvedValue([
+			{
+				workspaceId: "ws_1",
+				batchId: "batch_failed_public",
+				nativeId: "batch_failed_native",
+				provider: "mistral",
+				status: "failed",
+				meta: {
+					provider: "mistral",
+					status: "failed",
+					nativeBatchId: "batch_failed_native",
+					requestCounts: { total: 1, completed: 0, failed: 1 },
+					reservationId: "batch_hold:req_failed",
+				},
+			},
+		]);
+		const fetchMock = vi.fn(async () => {
+			throw new Error("Failed terminal jobs must not be polled again");
+		});
+		vi.stubGlobal("fetch", fetchMock);
+
+		const summary = await runBatchReconciliationJob({ concurrency: 1 });
+
+		expect(summary).toMatchObject({ jobsScanned: 1, jobsPolled: 0, jobsUpdated: 1, jobsFailed: 1, jobsErrored: 0 });
+		expect(fetchMock).not.toHaveBeenCalled();
+		expect(finalizeBatchJobMock).toHaveBeenCalledWith({
+			workspaceId: "ws_1",
+			batchId: "batch_failed_public",
+			status: "failed",
+		});
+	});
+
+	it("retires old terminal provider records that were explicitly uncharged and never reserved", async () => {
+		listPendingBatchJobsMock.mockResolvedValue([
+			{
+				workspaceId: "ws_1",
+				batchId: "msgbatch_legacy",
+				nativeId: "msgbatch_legacy",
+				provider: "anthropic",
+				status: "completed",
+				createdAt: "2026-06-17T10:00:00.000Z",
+				meta: {
+					provider: "anthropic",
+					status: "completed",
+					nativeBatchId: "msgbatch_legacy",
+					charged: false,
+					requestCounts: { total: 1, completed: 1, failed: 0 },
+				},
+			},
+		]);
+		vi.setSystemTime(new Date("2026-07-20T10:00:00.000Z"));
+		vi.stubGlobal("fetch", vi.fn(async () => new Response("not found", { status: 404 })));
+
+		const summary = await runBatchReconciliationJob({ concurrency: 1 });
+
+		expect(summary).toMatchObject({ jobsScanned: 1, jobsPolled: 0, jobsUpdated: 1, jobsErrored: 0 });
+		expect(setBatchJobStatusMock).toHaveBeenCalledWith(
+			"ws_1",
+			"msgbatch_legacy",
+			"completed",
+			expect.objectContaining({
+				charged: false,
+				billingReason: "legacy_provider_resource_not_found_no_reservation",
+				providerResultUnavailableAt: expect.any(String),
+			}),
+		);
+		expect(markBatchJobBilledMock).toHaveBeenCalledWith("ws_1", "msgbatch_legacy");
+		expect(updateBatchJobReconciliationMock).not.toHaveBeenCalled();
+	});
+
+	it("keeps reserved terminal 404s unbilled and slows retries for manual investigation", async () => {
+		listPendingBatchJobsMock.mockResolvedValue([
+			{
+				workspaceId: "ws_1",
+				batchId: "msgbatch_reserved",
+				nativeId: "msgbatch_reserved",
+				provider: "anthropic",
+				status: "completed",
+				reconcileAttempts: 20,
+				createdAt: "2026-06-17T10:00:00.000Z",
+				meta: {
+					provider: "anthropic",
+					status: "completed",
+					nativeBatchId: "msgbatch_reserved",
+					charged: false,
+					reservationId: "batch_hold:req_reserved",
+					requestCounts: { total: 1, completed: 1, failed: 0 },
+				},
+			},
+		]);
+		vi.setSystemTime(new Date("2026-07-20T10:00:00.000Z"));
+		vi.stubGlobal("fetch", vi.fn(async () => new Response("not found", { status: 404 })));
+
+		const summary = await runBatchReconciliationJob({ concurrency: 1 });
+
+		expect(summary).toMatchObject({ jobsScanned: 1, jobsUpdated: 0, jobsErrored: 1 });
+		expect(markBatchJobBilledMock).not.toHaveBeenCalled();
+		expect(updateBatchJobReconciliationMock).toHaveBeenCalledWith({
+			workspaceId: "ws_1",
+			batchId: "msgbatch_reserved",
+			nextReconcileAt: "2026-07-21T10:00:00.000Z",
+			lastError: "anthropic_batch_fetch_failed_404:not found",
 		});
 	});
 

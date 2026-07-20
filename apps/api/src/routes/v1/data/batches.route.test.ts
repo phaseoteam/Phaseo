@@ -26,6 +26,7 @@ const state = vi.hoisted(() => ({
 	googleApiKey: "test-google-key" as string | null,
 	guardContextFailure: null as Response | null,
 	policyAllowedProviders: null as string[] | null,
+	batchApiEnabled: true,
 	fetchCalls: [] as Array<{
 		url: string;
 		method: string;
@@ -52,6 +53,7 @@ function resetState() {
 	state.googleApiKey = "test-google-key";
 	state.guardContextFailure = null;
 	state.policyAllowedProviders = null;
+	state.batchApiEnabled = true;
 	state.fetchCalls = [];
 }
 
@@ -75,6 +77,11 @@ function jsonResponse(body: unknown, status = 200, headers: Record<string, strin
 
 vi.mock("@pipeline/before/auth", () => ({
 	authenticate: vi.fn(async () => state.authResult),
+}));
+
+vi.mock("@core/feature-flags", () => ({
+	getBatchApiFeatureGateName: () => "gateway_batch_api",
+	isBatchApiAccessEnabled: vi.fn(async () => state.batchApiEnabled),
 }));
 
 vi.mock("@pipeline/before/guards", () => ({
@@ -334,6 +341,29 @@ describe("batchRoutes", () => {
 		resetState();
 		vi.resetModules();
 		vi.unstubAllGlobals();
+	});
+
+	it("rejects batch requests before provider work when the Statsig gate is disabled", async () => {
+		state.batchApiEnabled = false;
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+		const { batchRoutes } = await import("./batches");
+		const response = await batchRoutes.request("https://example.com/", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				provider: "openai",
+				model: "openai/gpt-4.1-mini",
+				requests: [{ body: { model: "openai/gpt-4.1-mini", input: "hello" } }],
+			}),
+		});
+
+		expect(response.status).toBe(403);
+		expect(await response.json()).toMatchObject({
+			reason: "batch_api_feature_flag_disabled",
+			feature_gate: "gateway_batch_api",
+		});
+		expect(fetchMock).not.toHaveBeenCalled();
 	});
 
 	it("applies originating key limits before uploading or submitting provider work", async () => {
