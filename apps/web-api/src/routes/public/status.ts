@@ -70,7 +70,17 @@ publicStatusRouter.get("/status", async (c) => {
 
 const resolvedProviderStatuses = new Set(["resolved", "operational"]);
 const normalizeProviderStatus = (value: unknown) => String(value ?? "").trim().toLowerCase();
-const decodeXml = (value: string) => value.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'");
+const XML_ENTITIES: Record<string, string> = {
+	amp: "&",
+	lt: "<",
+	gt: ">",
+	quot: '"',
+	"#39": "'",
+	apos: "'",
+};
+const decodeXml = (value: string) => value
+	.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
+	.replace(/&(amp|lt|gt|quot|#39|apos);/g, (_match, entity: string) => XML_ENTITIES[entity] ?? _match);
 const xmlValue = (item: string, tag: string) => decodeXml(item.match(new RegExp(`<${tag}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${tag}>`, "i"))?.[1]?.trim() ?? "");
 
 function rssIncidents(xml: string): ProviderIncident[] {

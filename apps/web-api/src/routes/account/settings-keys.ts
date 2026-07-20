@@ -8,7 +8,17 @@ import { requireAccountWorkspace } from "./context";
 const BASE62 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 const CONTROL_SCOPES = ["me:read","models:read","providers:read","pricing:read","credits:read","activity:read","analytics:read","generations:read","workspaces:read","workspaces:write","workspaces:delete","keys:read","keys:write","keys:delete","presets:read","presets:write","presets:delete","settings:read","settings:write","guardrails:read","guardrails:write","guardrails:delete","management_keys:read","management_keys:write","management_keys:delete","oauth_clients:read","oauth_clients:write","oauth_clients:delete"] as const;
 
-function randomBase62(length: number) { const bytes = crypto.getRandomValues(new Uint8Array(length)); return [...bytes].map((byte) => BASE62[byte % BASE62.length]).join(""); }
+function randomBase62(length: number) {
+	const upperBound = 256 - (256 % BASE62.length);
+	let value = "";
+	while (value.length < length) {
+		const bytes = crypto.getRandomValues(new Uint8Array(length - value.length));
+		for (const byte of bytes) {
+			if (byte < upperBound) value += BASE62[byte % BASE62.length];
+		}
+	}
+	return value;
+}
 function generateKey(kind: "sk" | "mk") { const kid = randomBase62(12); const secret = randomBase62(40); return { kid, secret, plaintext: `phaseo_v1_${kind}_${kid}_${secret}`, prefix: kid.slice(0, 6) }; }
 function buffer(value: Uint8Array) { return new Uint8Array(value).buffer; }
 async function hmac(env: Env, secret: string) {

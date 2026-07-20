@@ -109,8 +109,14 @@ export const accountSettingsProfileRouter = new Hono<{ Bindings: Env }>();
 
 function recoveryCode(): string {
 	const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-	const bytes = crypto.getRandomValues(new Uint8Array(8));
-	const code = [...bytes].map((byte) => alphabet[byte % alphabet.length]).join("");
+	const upperBound = 256 - (256 % alphabet.length);
+	let code = "";
+	while (code.length < 8) {
+		const bytes = crypto.getRandomValues(new Uint8Array(8 - code.length));
+		for (const byte of bytes) {
+			if (byte < upperBound) code += alphabet[byte % alphabet.length];
+		}
+	}
 	return `${code.slice(0, 4)}-${code.slice(4)}`;
 }
 
