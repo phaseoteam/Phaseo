@@ -17,7 +17,6 @@ import { accountSettingsByokRouter } from "./settings-byok";
 import { accountSettingsGuardrailsRouter } from "./settings-guardrails";
 import { accountSettingsBroadcastRouter } from "./settings-broadcast";
 import { accountSettingsWebhooksRouter } from "./settings-webhooks";
-import { accountSettingsBillingRouter } from "./settings-billing";
 import { purgeWorkerCacheTags } from "@/http/invalidation";
 
 function normalizeBetaFeatures(value: unknown): Record<string, boolean> {
@@ -91,7 +90,6 @@ accountSettingsRouter.route("/", accountSettingsByokRouter);
 accountSettingsRouter.route("/", accountSettingsGuardrailsRouter);
 accountSettingsRouter.route("/", accountSettingsBroadcastRouter);
 accountSettingsRouter.route("/", accountSettingsWebhooksRouter);
-accountSettingsRouter.route("/", accountSettingsBillingRouter);
 
 accountSettingsRouter.get("/layout", async (c) => {
 	const user = await requireUser(c.req.raw, c.env);

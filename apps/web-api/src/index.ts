@@ -5,7 +5,6 @@ import { internalRouter } from "@/routes/internal";
 import { chatRouter } from "@/routes/chat";
 import { publicRouter } from "@/routes/public";
 import { frontendRouter } from "@/routes/frontend";
-import { stripeWebhookRouter } from "@/routes/webhooks/stripe-checkout";
 import { runScheduledWatchers } from "@/watchers/run";
 
 const app = new Hono<{ Bindings: Env }>();
@@ -15,7 +14,6 @@ app.route("/api/account", accountRouter);
 app.route("/api/internal", internalRouter);
 app.route("/api/chat", chatRouter);
 app.route("/api/_web", frontendRouter);
-app.route("/api/webhooks", stripeWebhookRouter);
 
 app.notFound((c) => c.json({ error: "not_found" }, 404));
 
