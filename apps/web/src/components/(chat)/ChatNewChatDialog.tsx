@@ -54,7 +54,7 @@ export function ChatNewChatDialog({
                         </ul>
                     </div>
                 ) : null}
-                <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <DialogFooter>
                     <Button className="w-full sm:w-auto" variant="ghost" onClick={onUseDefaults}>
                         Use defaults
                     </Button>
