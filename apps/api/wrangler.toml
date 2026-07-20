@@ -37,6 +37,7 @@ GATEWAY_IO_RETENTION_BILLING_LIMIT = "100"
 GATEWAY_IO_RETENTION_GRACE_DAYS = "14"
 GATEWAY_IO_RETENTION_PRICE_PER_MILLION_UNITS_NANOS = "0"
 GATEWAY_IO_RETENTION_PRUNE_LIMIT = "250"
+REALTIME_PUBLIC_API_ENABLED = "false"
 
 [triggers]
 crons = ["* * * * *"]
@@ -81,3 +82,11 @@ namespace_id = "41002"
 [ratelimits.simple]
 limit = 60
 period = 60
+
+[[durable_objects.bindings]]
+name = "REALTIME_RELAY"
+class_name = "RealtimeRelayDurableObject"
+
+[[migrations]]
+tag = "v1-realtime-relay"
+new_sqlite_classes = ["RealtimeRelayDurableObject"]

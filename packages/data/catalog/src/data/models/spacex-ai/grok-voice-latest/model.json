@@ -1,0 +1,37 @@
+{
+  "model_id": "spacex-ai/grok-voice-latest",
+  "organisation_id": "spacex-ai",
+  "name": "Grok Voice Latest",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Grok Voice Latest is xAI's realtime voice model for low-latency bidirectional audio conversations.",
+  "announced_date": "2026-04-23T00:00:00",
+  "release_date": "2026-04-23T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,audio",
+  "output_types": "text,audio",
+  "api_model_id": "x-ai/grok-voice-latest",
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://docs.x.ai/developers/model-capabilities/audio/realtime"
+    }
+  ],
+  "details": [
+    {
+      "name": "alias_target",
+      "value": "grok-voice-think-fast-1.0"
+    },
+    {
+      "name": "release_note",
+      "value": "xAI documents grok-voice-latest as an alias to the newest voice model, currently grok-voice-think-fast-1.0. AI Stats stores the current target release date from xAI release notes."
+    },
+    {
+      "name": "voices",
+      "value": 26
+    }
+  ],
+  "benchmarks": []
+}

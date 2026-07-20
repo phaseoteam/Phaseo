@@ -9,7 +9,11 @@ import { fetchSettingsBetaInitialData } from "@/lib/fetchers/internal/fetchSetti
 
 export default async function BetaSettingsPage() {
 	const initialData = await fetchSettingsBetaInitialData();
-	const betaFeatures: readonly WebBetaFeatureDefinition[] = WEB_BETA_FEATURES;
+	const betaFeatures: readonly WebBetaFeatureDefinition[] = WEB_BETA_FEATURES.filter(
+		(feature) =>
+			feature.selfService !== false &&
+			(!feature.adminOnly || initialData.isAdmin),
+	);
 
 	if (!initialData.signedIn) {
 		return (

@@ -17,7 +17,8 @@ function sanitizeBetaFeatures(
 	const normalized = normalizeBetaFeatures(value);
 	const allowedKeys = new Set<string>(
 		WEB_BETA_FEATURES.filter(
-			(feature) => !feature.adminOnly || options.isAdmin,
+			(feature) =>
+				feature.selfService !== false && (!feature.adminOnly || options.isAdmin),
 		).map((feature) => feature.key),
 	);
 
@@ -43,6 +44,7 @@ export async function updateBetaPreferences(payload: {
 	const profile = response.profile;
 
 	revalidatePath("/settings/beta");
+	revalidatePath("/chat/realtime");
 	revalidatePath("/");
 	revalidatePath("/gateway");
 	revalidatePath("/models");

@@ -11,6 +11,7 @@ export type Endpoint =
     | "audio.speech"
     | "audio.transcription"
     | "audio.translations"
+    | "audio.realtime"
     | "moderations"
     | "rerank"
     | "video.generation"

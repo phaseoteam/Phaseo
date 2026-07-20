@@ -14,6 +14,8 @@ export type GatewayBindings = {
 	GATEWAY_IO_RETENTION_PRUNE_LIMIT?: string;
     OAUTH_STRICT_RATE_LIMITER?: RateLimit;
     OAUTH_TOKEN_RATE_LIMITER?: RateLimit;
+    REALTIME_RELAY?: DurableObjectNamespace;
+    REALTIME_PUBLIC_API_ENABLED?: string;
     KV?: KVNamespace;
     DB?: D1Database;
     PHASEO_CONTROL_SECRET?: string;
@@ -288,6 +290,8 @@ export type GatewayBindings = {
     STATSIG_BATCH_API_GATE?: string;
     STATSIG_GATEWAY_IO_LOGGING_GATE?: string;
     STATSIG_ENVIRONMENT_TIER?: string;
+    REALTIME_SESSION_RECONCILIATION_ENABLED?: string;
+    REALTIME_SESSION_RECONCILIATION_LIMIT?: string;
     ASYNC_WEBHOOK_RETRIES_ENABLED?: string;
     ASYNC_WEBHOOK_RETRIES_LIMIT_PER_KIND?: string;
     ASYNC_WEBHOOK_RETRIES_MAX_DELIVERIES?: string;

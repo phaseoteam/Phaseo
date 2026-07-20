@@ -65,6 +65,8 @@ type AudioModelSchema = {
 	supportsLanguageHint: boolean;
 };
 
+export type CapabilityParamsById = Record<string, unknown> | null | undefined;
+
 const AUDIO_MODE_SUPPORT_FALLBACK: AudioModeSupport = {
 	speech: true,
 	transcription: true,
@@ -80,6 +82,71 @@ type EmbeddingsModelSchema = {
 function modelIdIncludes(modelId: string, hints: string[]) {
 	const normalized = modelId.toLowerCase();
 	return hints.some((hint) => normalized.includes(hint));
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function dedupeStrings(values: string[]): string[] {
+	return Array.from(
+		new Set(values.map((value) => value.trim()).filter(Boolean)),
+	);
+}
+
+function readVoiceIdsFromParams(params: unknown): string[] {
+	if (!isRecord(params)) return [];
+	const voice = params.voice ?? params.voices;
+	const source = isRecord(voice)
+		? voice.values ?? voice.options ?? voice.enum
+		: voice;
+	if (!Array.isArray(source)) return [];
+	return dedupeStrings(
+		source
+			.map((entry) => {
+				if (typeof entry === "string") return entry;
+				if (!isRecord(entry)) return "";
+				const id = entry.id ?? entry.value ?? entry.voice_id ?? entry.voiceId;
+				return typeof id === "string" ? id : "";
+			})
+			.filter(Boolean),
+	);
+}
+
+function readDefaultVoiceFromParams(params: unknown): string | null {
+	if (!isRecord(params)) return null;
+	const voice = params.voice ?? params.voices;
+	const source = isRecord(voice) ? voice.default ?? voice.default_voice : null;
+	return typeof source === "string" && source.trim() ? source.trim() : null;
+}
+
+function getCapabilityParams(
+	paramsById: CapabilityParamsById,
+	capabilityIds: string[],
+): unknown {
+	if (!paramsById) return null;
+	for (const capabilityId of capabilityIds) {
+		const params = paramsById[capabilityId];
+		if (params) return params;
+	}
+	return null;
+}
+
+function applyVoiceParams(
+	schema: AudioModelSchema,
+	params: unknown,
+): AudioModelSchema {
+	const voiceOptions = readVoiceIdsFromParams(params);
+	if (voiceOptions.length === 0) return schema;
+	const defaultVoice = readDefaultVoiceFromParams(params);
+	const orderedVoiceOptions =
+		defaultVoice && voiceOptions.includes(defaultVoice)
+			? [defaultVoice, ...voiceOptions.filter((voice) => voice !== defaultVoice)]
+			: voiceOptions;
+	return {
+		...schema,
+		voiceOptions: orderedVoiceOptions,
+	};
 }
 
 export function getImageModelSchema(modelId: string): ImageModelSchema {
@@ -258,37 +325,85 @@ export function getVideoDurationOptions(
 	return getVideoDurationOptionsForSchema(schema, normalizedSize);
 }
 
-export function getAudioModelSchema(modelId: string): AudioModelSchema {
+export function getAudioModelSchema(
+	modelId: string,
+	capabilityParamsById?: CapabilityParamsById,
+): AudioModelSchema {
+	const speechParams = getCapabilityParams(capabilityParamsById, [
+		"audio.speech",
+		"audio",
+		"audio.generate",
+	]);
 	if (modelIdIncludes(modelId, ["mimo-v2-tts"])) {
-		return {
+		return applyVoiceParams({
 			voiceOptions: ["mimo_Default"],
 			formatOptions: ["mp3", "wav", "pcm"],
 			supportsSpeechSpeed: false,
 			supportsLanguageHint: false,
-		};
+		}, speechParams);
 	}
 	if (modelIdIncludes(modelId, ["gpt-4o-mini-tts", "gpt-4o-audio"])) {
-		return {
-			voiceOptions: ["alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer"],
+		return applyVoiceParams({
+			voiceOptions: [
+				"marin",
+				"cedar",
+				"alloy",
+				"ash",
+				"ballad",
+				"coral",
+				"echo",
+				"fable",
+				"nova",
+				"onyx",
+				"sage",
+				"shimmer",
+				"verse",
+			],
 			formatOptions: ["mp3", "wav", "opus"],
 			supportsSpeechSpeed: true,
 			supportsLanguageHint: true,
-		};
+		}, speechParams);
 	}
 	if (modelIdIncludes(modelId, ["tts-1"])) {
-		return {
-			voiceOptions: ["alloy", "echo", "fable", "onyx", "nova", "shimmer"],
+		return applyVoiceParams({
+			voiceOptions: [
+				"alloy",
+				"ash",
+				"coral",
+				"echo",
+				"fable",
+				"onyx",
+				"nova",
+				"sage",
+				"shimmer",
+			],
 			formatOptions: ["mp3", "wav", "opus"],
 			supportsSpeechSpeed: true,
 			supportsLanguageHint: false,
-		};
+		}, speechParams);
 	}
-	return {
+	if (modelIdIncludes(modelId, ["grok-tts"])) {
+		return applyVoiceParams({
+			voiceOptions: ["eve", "ara", "rex", "sal", "leo"],
+			formatOptions: ["mp3", "wav", "pcm", "ulaw"],
+			supportsSpeechSpeed: true,
+			supportsLanguageHint: true,
+		}, speechParams);
+	}
+	if (modelIdIncludes(modelId, ["gemini", "tts"])) {
+		return applyVoiceParams({
+			voiceOptions: ["Kore", "Puck", "Zephyr", "Charon"],
+			formatOptions: ["wav"],
+			supportsSpeechSpeed: false,
+			supportsLanguageHint: true,
+		}, speechParams);
+	}
+	return applyVoiceParams({
 		voiceOptions: ["alloy"],
 		formatOptions: ["mp3", "wav"],
 		supportsSpeechSpeed: true,
 		supportsLanguageHint: true,
-	};
+	}, speechParams);
 }
 
 function normalizeCapabilityId(value: string): string {
@@ -423,8 +538,11 @@ export function getDefaultVideoRoomParams(modelId: string): VideoRoomParams {
 	};
 }
 
-export function getDefaultAudioRoomParams(modelId: string): AudioRoomParams {
-	const schema = getAudioModelSchema(modelId);
+export function getDefaultAudioRoomParams(
+	modelId: string,
+	capabilityParamsById?: CapabilityParamsById,
+): AudioRoomParams {
+	const schema = getAudioModelSchema(modelId, capabilityParamsById);
 	const defaultSpeechFormat = schema.formatOptions.includes(CHAT_AUDIO_SPEECH_FORMAT)
 		? CHAT_AUDIO_SPEECH_FORMAT
 		: (schema.formatOptions[0] ?? CHAT_AUDIO_SPEECH_FORMAT);
@@ -500,8 +618,9 @@ export function buildAudioRequestOptions(
 	mode: AudioMode,
 	modelId: string,
 	params: AudioRoomParams,
+	capabilityParamsById?: CapabilityParamsById,
 ): Record<string, unknown> {
-	const schema = getAudioModelSchema(modelId);
+	const schema = getAudioModelSchema(modelId, capabilityParamsById);
 	if (mode === "speech") {
 		const next: Record<string, unknown> = {};
 		if (schema.voiceOptions.includes(params.speechVoice)) {

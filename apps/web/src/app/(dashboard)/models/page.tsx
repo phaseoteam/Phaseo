@@ -55,6 +55,7 @@ const MODALITY_FILTER_DISPLAY_ORDER = [
 	"video",
 	"audio",
 	"audio_tts",
+	"realtime",
 	"audio_stt",
 	"audio_music",
 	"file",
@@ -173,6 +174,9 @@ function getCatalogOnlyGatewayStatus(
 
 function normalizeModalityKey(value: string): string {
 	const normalized = value.toLowerCase().replace(/[._/-]+/g, " ");
+	if (normalized.includes("realtime") || normalized.includes("real time")) {
+		return "realtime";
+	}
 	if (normalized.includes("embed")) return "embeddings";
 	if (normalized.includes("moderat")) return "moderations";
 	if (normalized.includes("rerank") || normalized.includes("re rank")) {
@@ -204,6 +208,42 @@ function normalizeModalityKey(value: string): string {
 	return normalized.trim();
 }
 
+function isRealtimeEndpoint(value: unknown): boolean {
+	const normalized = String(value ?? "")
+		.trim()
+		.toLowerCase()
+		.replace(/[._/-]+/g, " ");
+	return normalized.includes("realtime") || normalized.includes("real time");
+}
+
+function hasRealtimeModelHint(model: ModelCard | undefined): boolean {
+	if (!model) return false;
+	const values = [
+		model.model_id,
+		model.api_model_id,
+		model.name,
+		(model as { description?: unknown }).description,
+	].map((value) => String(value ?? "").toLowerCase());
+	const hasBidirectionalAudio =
+		normalizeStringList(model.input_types ?? model.input_modalities).some(
+			(value) => normalizeModalityKey(value) === "audio",
+		) &&
+		normalizeStringList(model.output_types ?? model.output_modalities).some(
+			(value) => normalizeModalityKey(value) === "audio",
+		);
+	return (
+		hasBidirectionalAudio &&
+		values.some(
+			(value) =>
+				value.includes("realtime") ||
+				value.includes("real-time") ||
+				value.includes(" live") ||
+				value.endsWith("live") ||
+				value.includes("voice"),
+		)
+	);
+}
+
 function sortModalityValues(values: string[]): string[] {
 	const orderIndex = new Map<string, number>(
 		MODALITY_FILTER_DISPLAY_ORDER.map((key, index) => [key, index]),
@@ -228,6 +268,16 @@ function normalizeModalityList(values: string[]): string[] {
 			),
 		),
 	);
+}
+
+function normalizeModelModalityList(
+	values: string[],
+	options?: { realtime?: boolean },
+): string[] {
+	return normalizeModalityList([
+		...values,
+		...(options?.realtime ? ["realtime"] : []),
+	]);
 }
 
 function normalizeProviderGatewayStatus(value: unknown): string {
@@ -717,7 +767,12 @@ function aggregateGatewaySignals(
 		if (apiModelId) existing.apiModelIds.add(apiModelId);
 
 		const endpoint = String(row.endpoint ?? "").trim();
-		if (endpoint) existing.endpoints.add(endpoint);
+		if (endpoint) {
+			existing.endpoints.add(endpoint);
+			if (isRealtimeEndpoint(endpoint)) {
+				existing.outputModalities.add("realtime");
+			}
+		}
 
 		for (const modality of row.inputModalities ?? []) {
 			const value = String(modality ?? "").trim();
@@ -1125,6 +1180,7 @@ function withGatewayMetadata(
 					return normalizeModalityList(gatewayValues);
 				return normalizeModalityList(
 					normalizeStringList(model?.output_types ?? model?.output_modalities),
+					{ realtime: hasRealtimeModelHint(model) },
 				);
 			})(),
 			gateway_features: Array.from(signals?.features ?? []).sort(),
@@ -1274,11 +1330,12 @@ function withGatewayMetadata(
 				gateway_provider_count: 0,
 				gateway_active_provider_count: 0,
 				gateway_endpoints: [],
-				gateway_input_modalities: normalizeModalityList(
+				gateway_input_modalities: normalizeModelModalityList(
 					normalizeStringList(model.input_types ?? model.input_modalities),
 				),
-				gateway_output_modalities: normalizeModalityList(
+				gateway_output_modalities: normalizeModelModalityList(
 					normalizeStringList(model.output_types ?? model.output_modalities),
+					{ realtime: hasRealtimeModelHint(model) },
 				),
 				gateway_features: [],
 				gateway_provider_names: [],

@@ -39,6 +39,13 @@ function formatModalityLabel(value: string): string {
 	const normalized = String(value ?? "")
 		.trim()
 		.toLowerCase();
+	if (
+		normalized === "realtime" ||
+		normalized === "audio.realtime" ||
+		normalized === "audio/realtime"
+	) {
+		return "Real-time";
+	}
 	if (normalized === "audio_stt") return "Transcription";
 	if (normalized === "audio_tts") return "Speech";
 	if (normalized === "audio_music") return "Music";

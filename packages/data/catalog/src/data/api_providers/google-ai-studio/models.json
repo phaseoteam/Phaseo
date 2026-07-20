@@ -1288,6 +1288,155 @@
                          ]
     },
     {
+        "api_model_id":  "google/gemini-3.1-flash-live-preview",
+        "provider_api_model_id":  "google-ai-studio:google/gemini-3.1-flash-live-preview",
+        "provider_model_slug":  "gemini-3.1-flash-live-preview",
+        "internal_model_id":  "google/gemini-3.1-flash-live-preview",
+        "is_active_gateway":  true,
+        "quantization_scheme":  null,
+        "input_modalities":  "text,audio",
+        "output_modalities":  "text,audio",
+        "context_length":  null,
+        "max_output_tokens":  null,
+        "effective_from":  "2026-03-01T00:00:00",
+        "effective_to":  null,
+        "capabilities":  [
+                             {
+                                 "capability_id":  "audio.realtime",
+                                 "status":  "active",
+                                 "params":  {
+                                                "voice":  {
+                                                              "type":  "enum",
+                                                              "default":  "Puck",
+                                                              "values":  [
+                                                                             {
+                                                                                 "id":  "Zephyr",
+                                                                                 "description":  "Bright"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Kore",
+                                                                                 "description":  "Firm"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Orus",
+                                                                                 "description":  "Firm"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Autonoe",
+                                                                                 "description":  "Bright"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Umbriel",
+                                                                                 "description":  "Easy-going"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Erinome",
+                                                                                 "description":  "Clear"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Laomedeia",
+                                                                                 "description":  "Upbeat"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Schedar",
+                                                                                 "description":  "Even"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Achird",
+                                                                                 "description":  "Friendly"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Sadachbia",
+                                                                                 "description":  "Lively"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Puck",
+                                                                                 "description":  "Upbeat"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Fenrir",
+                                                                                 "description":  "Excitable"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Aoede",
+                                                                                 "description":  "Breezy"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Enceladus",
+                                                                                 "description":  "Breathy"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Algieba",
+                                                                                 "description":  "Smooth"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Algenib",
+                                                                                 "description":  "Gravelly"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Achernar",
+                                                                                 "description":  "Soft"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Gacrux",
+                                                                                 "description":  "Mature"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Zubenelgenubi",
+                                                                                 "description":  "Casual"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Sadaltager",
+                                                                                 "description":  "Knowledgeable"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Charon",
+                                                                                 "description":  "Informative"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Leda",
+                                                                                 "description":  "Youthful"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Callirrhoe",
+                                                                                 "description":  "Easy-going"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Iapetus",
+                                                                                 "description":  "Clear"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Despina",
+                                                                                 "description":  "Smooth"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Rasalgethi",
+                                                                                 "description":  "Informative"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Alnilam",
+                                                                                 "description":  "Firm"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Pulcherrima",
+                                                                                 "description":  "Forward"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Vindemiatrix",
+                                                                                 "description":  "Gentle"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Sulafat",
+                                                                                 "description":  "Warm"
+                                                                             }
+                                                                         ],
+                                                              "source_url":  "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/live-api/configure-language-voice"
+                                                          }
+                                            }
+                             }
+                         ]
+    },
+    {
         "api_model_id":  "google/gemini-3.1-flash-tts-preview",
         "provider_api_model_id":  "google-ai-studio:google/gemini-3.1-flash-tts-preview",
         "provider_model_slug":  "gemini-3.1-flash-tts-preview",
@@ -1304,9 +1453,135 @@
                              {
                                  "capability_id":  "audio.speech",
                                  "status":  "active",
-                                 "params":  [
-
-                                            ]
+                                 "params":  {
+                                                "voice":  {
+                                                              "type":  "enum",
+                                                              "default":  "Kore",
+                                                              "values":  [
+                                                                             {
+                                                                                 "id":  "Zephyr",
+                                                                                 "description":  "Bright"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Puck",
+                                                                                 "description":  "Upbeat"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Charon",
+                                                                                 "description":  "Informative"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Kore",
+                                                                                 "description":  "Firm"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Fenrir",
+                                                                                 "description":  "Excitable"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Leda",
+                                                                                 "description":  "Youthful"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Orus",
+                                                                                 "description":  "Firm"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Aoede",
+                                                                                 "description":  "Breezy"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Callirrhoe",
+                                                                                 "description":  "Easy-going"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Autonoe",
+                                                                                 "description":  "Bright"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Enceladus",
+                                                                                 "description":  "Breathy"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Iapetus",
+                                                                                 "description":  "Clear"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Umbriel",
+                                                                                 "description":  "Easy-going"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Algieba",
+                                                                                 "description":  "Smooth"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Despina",
+                                                                                 "description":  "Smooth"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Erinome",
+                                                                                 "description":  "Clear"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Algenib",
+                                                                                 "description":  "Gravelly"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Rasalgethi",
+                                                                                 "description":  "Informative"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Laomedeia",
+                                                                                 "description":  "Upbeat"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Achernar",
+                                                                                 "description":  "Soft"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Alnilam",
+                                                                                 "description":  "Firm"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Schedar",
+                                                                                 "description":  "Even"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Gacrux",
+                                                                                 "description":  "Mature"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Pulcherrima",
+                                                                                 "description":  "Forward"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Achird",
+                                                                                 "description":  "Friendly"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Zubenelgenubi",
+                                                                                 "description":  "Casual"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Vindemiatrix",
+                                                                                 "description":  "Gentle"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Sadachbia",
+                                                                                 "description":  "Lively"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Sadaltager",
+                                                                                 "description":  "Knowledgeable"
+                                                                             },
+                                                                             {
+                                                                                 "id":  "Sulafat",
+                                                                                 "description":  "Warm"
+                                                                             }
+                                                                         ],
+                                                              "source_url":  "https://ai.google.dev/gemini-api/docs/speech-generation"
+                                                          }
+                                            }
                              }
                          ]
     },

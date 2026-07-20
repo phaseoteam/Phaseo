@@ -2101,7 +2101,28 @@
       {
         "capability_id": "audio.speech",
         "status": "active",
-        "params": []
+        "params": {
+          "voice": {
+            "type": "enum",
+            "default": "marin",
+            "values": [
+              "marin",
+              "cedar",
+              "alloy",
+              "ash",
+              "ballad",
+              "coral",
+              "echo",
+              "fable",
+              "nova",
+              "onyx",
+              "sage",
+              "shimmer",
+              "verse"
+            ],
+            "source_url": "https://developers.openai.com/api/docs/guides/text-to-speech"
+          }
+        }
       }
     ]
   },
@@ -5426,7 +5447,7 @@
     "provider_api_model_id": "openai:openai/gpt-realtime",
     "provider_model_slug": "gpt-realtime-2025-08-28",
     "internal_model_id": "openai/gpt-realtime",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image,audio",
     "output_modalities": "text,audio",
@@ -5434,14 +5455,38 @@
     "max_output_tokens": 4096,
     "effective_from": "2026-03-25T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "audio.realtime",
+        "status": "active",
+        "params": {
+          "voice": {
+            "type": "enum",
+            "default": "marin",
+            "values": [
+              "marin",
+              "cedar",
+              "alloy",
+              "ash",
+              "ballad",
+              "coral",
+              "echo",
+              "sage",
+              "shimmer",
+              "verse"
+            ],
+            "source_url": "https://developers.openai.com/api/docs/guides/realtime-conversations"
+          }
+        }
+      }
+    ]
   },
   {
     "api_model_id": "openai/gpt-realtime-1.5",
     "provider_api_model_id": "openai:openai/gpt-realtime-1.5",
     "provider_model_slug": "gpt-realtime-1.5",
     "internal_model_id": "openai/gpt-realtime-1.5",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image,audio",
     "output_modalities": "text,audio",
@@ -5451,9 +5496,27 @@
     "effective_to": null,
     "capabilities": [
       {
-        "capability_id": "realtime",
+        "capability_id": "audio.realtime",
         "status": "active",
-        "params": []
+        "params": {
+          "voice": {
+            "type": "enum",
+            "default": "marin",
+            "values": [
+              "marin",
+              "cedar",
+              "alloy",
+              "ash",
+              "ballad",
+              "coral",
+              "echo",
+              "sage",
+              "shimmer",
+              "verse"
+            ],
+            "source_url": "https://developers.openai.com/api/docs/guides/realtime-conversations"
+          }
+        }
       }
     ]
   },
@@ -5462,7 +5525,7 @@
     "provider_api_model_id": "openai:openai/gpt-realtime-2",
     "provider_model_slug": "gpt-realtime-2",
     "internal_model_id": "openai/gpt-realtime-2",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image,audio",
     "output_modalities": "text,audio",
@@ -5474,7 +5537,103 @@
       {
         "capability_id": "audio.realtime",
         "status": "active",
-        "params": []
+        "params": {
+          "voice": {
+            "type": "enum",
+            "default": "marin",
+            "values": [
+              "marin",
+              "cedar",
+              "alloy",
+              "ash",
+              "ballad",
+              "coral",
+              "echo",
+              "sage",
+              "shimmer",
+              "verse"
+            ],
+            "source_url": "https://developers.openai.com/api/docs/guides/realtime-conversations"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/gpt-realtime-2.1",
+    "provider_api_model_id": "openai:openai/gpt-realtime-2.1",
+    "provider_model_slug": "gpt-realtime-2.1",
+    "internal_model_id": "openai/gpt-realtime-2.1",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,audio",
+    "output_modalities": "text,audio",
+    "context_length": 128000,
+    "max_output_tokens": 32000,
+    "effective_from": "2026-07-06T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.realtime",
+        "status": "active",
+        "params": {
+          "voice": {
+            "type": "enum",
+            "default": "marin",
+            "values": [
+              "marin",
+              "cedar",
+              "alloy",
+              "ash",
+              "ballad",
+              "coral",
+              "echo",
+              "sage",
+              "shimmer",
+              "verse"
+            ],
+            "source_url": "https://developers.openai.com/api/docs/guides/realtime-conversations"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/gpt-realtime-2.1-mini",
+    "provider_api_model_id": "openai:openai/gpt-realtime-2.1-mini",
+    "provider_model_slug": "gpt-realtime-2.1-mini",
+    "internal_model_id": "openai/gpt-realtime-2.1-mini",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,audio",
+    "output_modalities": "text,audio",
+    "context_length": 128000,
+    "max_output_tokens": 32000,
+    "effective_from": "2026-07-06T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.realtime",
+        "status": "active",
+        "params": {
+          "voice": {
+            "type": "enum",
+            "default": "marin",
+            "values": [
+              "marin",
+              "cedar",
+              "alloy",
+              "ash",
+              "ballad",
+              "coral",
+              "echo",
+              "sage",
+              "shimmer",
+              "verse"
+            ],
+            "source_url": "https://developers.openai.com/api/docs/guides/realtime-conversations"
+          }
+        }
       }
     ]
   },
@@ -6910,7 +7069,30 @@
     "max_output_tokens": null,
     "effective_from": "2026-03-25T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "audio.speech",
+        "status": "active",
+        "params": {
+          "voice": {
+            "type": "enum",
+            "default": "alloy",
+            "values": [
+              "alloy",
+              "ash",
+              "coral",
+              "echo",
+              "fable",
+              "onyx",
+              "nova",
+              "sage",
+              "shimmer"
+            ],
+            "source_url": "https://developers.openai.com/api/docs/guides/text-to-speech"
+          }
+        }
+      }
+    ]
   },
   {
     "api_model_id": "openai/tts-1-hd",
@@ -6925,7 +7107,30 @@
     "max_output_tokens": null,
     "effective_from": "2026-03-25T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "audio.speech",
+        "status": "active",
+        "params": {
+          "voice": {
+            "type": "enum",
+            "default": "alloy",
+            "values": [
+              "alloy",
+              "ash",
+              "coral",
+              "echo",
+              "fable",
+              "onyx",
+              "nova",
+              "sage",
+              "shimmer"
+            ],
+            "source_url": "https://developers.openai.com/api/docs/guides/text-to-speech"
+          }
+        }
+      }
+    ]
   },
   {
     "api_model_id": "openai/whisper-1",

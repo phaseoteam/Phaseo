@@ -104,8 +104,43 @@ describe("roomModelSettings", () => {
 
 	it("exposes extended voices for gpt-4o mini tts", () => {
 		const schema = getAudioModelSchema("openai/gpt-4o-mini-tts");
+		expect(schema.voiceOptions[0]).toBe("marin");
+		expect(schema.voiceOptions).toContain("cedar");
 		expect(schema.voiceOptions).toContain("coral");
 		expect(schema.voiceOptions).toContain("sage");
+	});
+
+	it("uses capability voice params ahead of fallback audio voices", () => {
+		const schema = getAudioModelSchema("provider/example-tts", {
+			"audio.speech": {
+				voice: {
+					default: "voice-b",
+					values: [
+						{ id: "voice-a", label: "Voice A" },
+						{ id: "voice-b", label: "Voice B" },
+					],
+				},
+			},
+		});
+		expect(schema.voiceOptions).toEqual(["voice-b", "voice-a"]);
+
+		const request = buildAudioRequestOptions(
+			"speech",
+			"provider/example-tts",
+			{
+				...getDefaultAudioRoomParams("provider/example-tts"),
+				speechVoice: "voice-a",
+			},
+			{
+				"audio.speech": {
+					voice: {
+						default: "voice-b",
+						values: ["voice-a", "voice-b"],
+					},
+				},
+			},
+		);
+		expect(request.voice).toBe("voice-a");
 	});
 
 	it("uses Xiaomi-specific speech settings for mimo v2 tts", () => {
