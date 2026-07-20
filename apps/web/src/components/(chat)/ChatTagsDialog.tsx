@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import type { ChatTag, ChatThread } from "@/lib/indexeddb/chats";
 import { cn } from "@/lib/utils";
 
@@ -138,7 +139,10 @@ export function ChatTagsDialog({
 									{selectedTags.length} selected
 								</span>
 							</div>
-							<div className="flex max-h-36 flex-wrap gap-2 overflow-y-auto rounded-xl border border-border bg-muted/20 p-2">
+							<ScrollArea
+								className="max-h-36 rounded-xl border border-border bg-muted/20"
+								viewportClassName="flex flex-wrap gap-2 p-2"
+							>
 								{availableTags.map((tag) => {
 									const selected = selectedTagIds.has(tag.id);
 									return (
@@ -162,7 +166,7 @@ export function ChatTagsDialog({
 										</button>
 									);
 								})}
-							</div>
+							</ScrollArea>
 						</div>
 					) : null}
 					<div className="grid gap-2">
