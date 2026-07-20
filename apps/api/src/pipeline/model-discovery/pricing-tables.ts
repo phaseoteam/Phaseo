@@ -54,11 +54,11 @@ const MAX_PRICING_SAMPLES = 6;
 function decodeHtml(value: string): string {
 	return value
 		.replace(/&nbsp;/gi, " ")
-		.replace(/&amp;/gi, "&")
 		.replace(/&lt;/gi, "<")
 		.replace(/&gt;/gi, ">")
 		.replace(/&#39;|&apos;/gi, "'")
-		.replace(/&quot;/gi, '"');
+		.replace(/&quot;/gi, '"')
+		.replace(/&amp;/gi, "&");
 }
 
 function tableText(tableHtml: string): string {

@@ -37,11 +37,7 @@ export interface ModelProviderAvailability {
   endpoints: string[];
   is_active_gateway: boolean;
   model_routing_status:
-    | "active"
-    | "deranked_lvl1"
-    | "deranked_lvl2"
-    | "deranked_lvl3"
-    | "disabled";
+    "active" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
   params: string[];
   params_detail?: {
     [key: string]: {
@@ -49,11 +45,7 @@ export interface ModelProviderAvailability {
     };
   };
   provider_routing_status:
-    | "active"
-    | "deranked_lvl1"
-    | "deranked_lvl2"
-    | "deranked_lvl3"
-    | "disabled";
+    "active" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
   provider_status:
     | "active"
     | "beta"
