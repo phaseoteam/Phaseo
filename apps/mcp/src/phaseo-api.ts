@@ -1,8 +1,5 @@
 export type PhaseoEnv = Cloudflare.Env & {
 	PHASEO_MCP_RESOURCE_SERVER_SECRET: string;
-	PHASEO_MCP_WRITE_TOOLS_ENABLED?: string;
-	PHASEO_MCP_DESTRUCTIVE_TOOLS_ENABLED?: string;
-	PHASEO_MCP_SECRET_TOOLS_ENABLED?: string;
 };
 
 export type GatewayMeter = {

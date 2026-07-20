@@ -15,11 +15,6 @@ import {
 	readControlPlane,
 	requestPhaseo,
 } from "./phaseo-api";
-import {
-	MCP_DELETE_SCOPES,
-	MCP_WRITE_SCOPES,
-	registerMutationTools,
-} from "./mutation-tools";
 
 const MAX_RESULTS = 20;
 const MAX_MCP_REQUEST_BODY_BYTES = 1024 * 1024;
@@ -449,7 +444,7 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 		{ name: "Phaseo", version: "0.2.0" },
 		{
 			instructions:
-				"Phaseo provides live model, provider, pricing, and authenticated workspace data. For current availability or pricing questions, use Phaseo tools instead of relying on model memory. Treat cost results as estimates. Write tools may consume or expose sensitive account resources and must only be called after the user explicitly confirms the exact action.",
+				"Phaseo provides live model, provider, pricing, and authenticated workspace data. For current availability or pricing questions, use Phaseo tools instead of relying on model memory. Treat cost results as estimates. All Phaseo MCP tools are read-only; use the Phaseo dashboard, CLI, or Management API for administrative changes.",
 		},
 	);
 
@@ -648,18 +643,7 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 
 	registerControlPlaneReadTools(server, env, authenticatedUser);
 
-	registerMutationTools(server, env, authenticatedUser);
-
 	return server;
-}
-
-function enabledMcpScopes(env: PhaseoEnv): string[] {
-	return [
-		...READ_ONLY_MCP_SCOPES,
-		...(env.PHASEO_MCP_WRITE_TOOLS_ENABLED?.trim().toLowerCase() === "true" ? MCP_WRITE_SCOPES : []),
-		...(env.PHASEO_MCP_WRITE_TOOLS_ENABLED?.trim().toLowerCase() === "true" &&
-			env.PHASEO_MCP_DESTRUCTIVE_TOOLS_ENABLED?.trim().toLowerCase() === "true" ? MCP_DELETE_SCOPES : []),
-	];
 }
 
 function removeTrailingSlashes(value: string): string {
@@ -673,7 +657,7 @@ function resourceMetadata(request: Request, env: PhaseoEnv): Response {
 	return Response.json({
 		resource: `${origin}/mcp`,
 		authorization_servers: [`${removeTrailingSlashes(env.PHASEO_API_BASE_URL)}/oauth`],
-		scopes_supported: enabledMcpScopes(env),
+		scopes_supported: READ_ONLY_MCP_SCOPES,
 		bearer_methods_supported: ["header"],
 	}, { headers: { "Cache-Control": "public, max-age=300" } });
 }
