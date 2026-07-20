@@ -20,6 +20,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
 	Popover,
 	PopoverContent,
@@ -266,7 +267,10 @@ export function ChatRequestErrorNotice({
 							Inspect the gateway failure and create a GitHub issue from this dialog.
 						</DialogDescription>
 					</DialogHeader>
-					<div className="grid gap-3 overflow-y-auto">
+					<ScrollArea
+						className="min-h-0 max-h-[calc(85vh-8rem)]"
+						viewportClassName="grid gap-3 pr-1"
+					>
 						<div className="grid gap-2 rounded-lg border border-border p-3 text-sm">
 							<div className="grid gap-1 sm:grid-cols-2">
 								<p>
@@ -319,9 +323,14 @@ export function ChatRequestErrorNotice({
 						{error.routingDiagnostics ? (
 							<div className="grid gap-2 rounded-lg border border-border p-3 text-sm">
 								<p className="font-medium">Routing diagnostics</p>
-								<pre className="max-h-56 overflow-auto rounded bg-muted p-3 text-xs">
-									{JSON.stringify(error.routingDiagnostics, null, 2)}
-								</pre>
+								<ScrollArea
+									className="max-h-56 rounded bg-muted"
+									viewportClassName="p-3"
+								>
+									<pre className="text-xs">
+										{JSON.stringify(error.routingDiagnostics, null, 2)}
+									</pre>
+								</ScrollArea>
 							</div>
 						) : null}
 						<div className="grid gap-2">
@@ -333,7 +342,7 @@ export function ChatRequestErrorNotice({
 								placeholder="What were you trying to do? How can we reproduce it?"
 							/>
 						</div>
-					</div>
+					</ScrollArea>
 					<DialogFooter>
 						<Button type="button" variant="outline" onClick={copyDiagnostics}>
 							Copy diagnostics

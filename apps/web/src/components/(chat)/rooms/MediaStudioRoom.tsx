@@ -52,6 +52,7 @@ import {
 	MediaPlayerVolumeIndicator,
 } from "@/components/ui/media-player";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { RoomModelSelector } from "@/components/(chat)/RoomModelSelector";
 import { useSidebar } from "@/components/ui/sidebar";
@@ -2290,7 +2291,8 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 					if (!open) setPreviewEntryId(null);
 				}}
 			>
-				<DialogContent className="max-h-[90vh] max-w-5xl overflow-auto p-0">
+				<DialogContent className="max-h-[90vh] max-w-5xl overflow-hidden p-0">
+					<ScrollArea className="max-h-[90vh]" viewportClassName="p-0">
 					{previewEntry ? (
 						roomId === "image" ? (
 							<div className="flex flex-col">
@@ -2546,6 +2548,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 							</div>
 						)
 					) : null}
+					</ScrollArea>
 				</DialogContent>
 			</Dialog>
 			{roomId === "image" && dialogProfile ? (

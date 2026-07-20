@@ -612,7 +612,10 @@ export function ModelSettingsDialog({
                         Tune how this model responds in this chat.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="grid max-h-[calc(100dvh-7rem)] min-w-0 gap-3 overflow-y-auto overflow-x-hidden pr-1 sm:max-h-[75vh]">
+                <ScrollArea
+                    className="min-w-0 max-h-[calc(100dvh-7rem)] sm:max-h-[75vh]"
+                    viewportClassName="grid gap-3 pr-1"
+                >
                     <div className="grid gap-2">
                         <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
                             <div className="grid flex-1 gap-1.5">
@@ -1318,7 +1321,7 @@ export function ModelSettingsDialog({
                             Apply to all
                         </Button>
                     </div>
-                </div>
+                    </ScrollArea>
                     </motion.div>
                 )}
                 </AnimatePresence>
