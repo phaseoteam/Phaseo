@@ -52,7 +52,7 @@
 		"@supabase/ssr": "^0.10.3",
 		"@supabase/supabase-js": "^2.106.2",
 		"@tanstack/react-table": "^8.21.3",
-		"@tanstack/react-virtual": "^3.13.21",
+		"@tanstack/react-virtual": "^3.14.6",
 		"@upstash/ratelimit": "^2.0.6",
 		"@upstash/redis": "^1.38.0",
 		"@vercel/analytics": "^2.0.1",
