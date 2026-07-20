@@ -1,5 +1,4 @@
-import { cacheLife, cacheTag } from "next/cache";
-import { createAdminClient } from "@/utils/supabase/admin";
+import { fetchPublicWebApi } from "@/lib/web-api/client";
 
 export type ProviderRuntimeStats = {
 	providerId: string;
@@ -391,40 +390,6 @@ function hourOffsetFromUtcHour(nowUtcHourMs: number, bucketDate: Date): 0 | 1 | 
 	return offset as 0 | 1 | 2;
 }
 
-async function fetchGatewayRequestStatsRows(args: {
-	client: ReturnType<typeof createAdminClient>;
-	modelIds: string[];
-	providerIds: string[];
-	fromIso: string;
-	toIso: string;
-}): Promise<GatewayRequestStatsRow[]> {
-	const rows: GatewayRequestStatsRow[] = [];
-
-	for (let offset = 0; ; offset += PAGE_SIZE) {
-		const to = offset + PAGE_SIZE - 1;
-		const { data, error } = await args.client
-			.from("gateway_requests")
-			.select(
-				"provider, success, status_code, error_code, created_at, latency_ms, generation_ms, throughput, usage",
-			)
-			.in("model_id", args.modelIds)
-			.in("provider", args.providerIds)
-			.gte("created_at", args.fromIso)
-			.lte("created_at", args.toIso)
-			.order("created_at", { ascending: true })
-			.range(offset, to);
-
-		if (error) {
-			throw new Error(error.message ?? "Failed to fetch model provider request stats");
-		}
-		if (!Array.isArray(data) || data.length === 0) break;
-		rows.push(...(data as GatewayRequestStatsRow[]));
-		if (data.length < PAGE_SIZE) break;
-	}
-
-	return rows;
-}
-
 function mapRpcRuntimeStatsRows(args: {
 	rows: RpcProviderHealthMetricsRow[];
 	providerIds: string[];
@@ -627,289 +592,23 @@ function mapRpcHealthMetricsRows(args: {
 	return out;
 }
 
-async function fetchRuntimeStatsViaRpc(args: {
-	client: ReturnType<typeof createAdminClient>;
-	modelIds: string[];
-	providerIds: string[];
-}): Promise<ProviderRuntimeStatsMap | null> {
-	const { data, error } = await args.client.rpc("get_model_provider_health_metrics", {
-		p_model_ids: args.modelIds,
-		p_provider_ids: args.providerIds,
-		p_window_days: 3,
-		p_bucket_hours: 1,
-	});
-
-	if (error) {
-		const message = String(error.message ?? "");
-		if (
-			message.includes("get_model_provider_health_metrics") ||
-			message.includes("Could not find the function") ||
-			message.includes("does not exist")
-		) {
-			return null;
-		}
-		throw new Error(message || "Failed to fetch model provider health metrics");
-	}
-
-	return mapRpcRuntimeStatsRows({
-		rows: (data ?? []) as RpcProviderHealthMetricsRow[],
-		providerIds: args.providerIds,
-	});
-}
-
 export async function getModelProviderRuntimeStats(args: {
 	modelId: string;
 	providerIds: string[];
 	modelAliases: string[];
 }): Promise<ProviderRuntimeStatsMap> {
-	const providerIds = Array.from(new Set(args.providerIds.filter(Boolean))).sort((a, b) =>
-		a.localeCompare(b),
+	const providerIds = [...new Set(args.providerIds.filter(Boolean))].sort();
+	if (!providerIds.length) return {};
+	const query = new URLSearchParams({
+		provider_ids: providerIds.join(","),
+		model_aliases: [...new Set(args.modelAliases.filter(Boolean))].sort().join(","),
+		window_days: "3",
+		bucket_hours: "1",
+	});
+	const payload = await fetchPublicWebApi<{ rows: RpcProviderHealthMetricsRow[] }>(
+		`/api/_web/models/${encodeURIComponent(args.modelId)}/provider-health?${query.toString()}`,
 	);
-	const modelIds = Array.from(
-		new Set([args.modelId, ...args.modelAliases].filter(Boolean)),
-	).sort((a, b) => a.localeCompare(b));
-
-	if (!providerIds.length || !modelIds.length) return {};
-
-	const now = new Date();
-	const nowMs = now.getTime();
-	const nowUtcHourMs = Date.UTC(
-		now.getUTCFullYear(),
-		now.getUTCMonth(),
-		now.getUTCDate(),
-		now.getUTCHours(),
-	);
-	const windowStart3d = new Date(nowMs - THREE_DAYS_MS);
-	const fromIso = windowStart3d.toISOString();
-	const toIso = now.toISOString();
-	const nowUtcMidnightMs = Date.UTC(
-		now.getUTCFullYear(),
-		now.getUTCMonth(),
-		now.getUTCDate(),
-	);
-
-	const client = createAdminClient();
-	try {
-		const rpcStats = await fetchRuntimeStatsViaRpc({
-			client,
-			modelIds,
-			providerIds,
-		});
-		if (rpcStats) return rpcStats;
-	} catch (error) {
-		console.warn("Failed to fetch model provider runtime stats via RPC", {
-			modelId: args.modelId,
-			error,
-		});
-	}
-
-	let requestRows: GatewayRequestStatsRow[];
-	try {
-		requestRows = await fetchGatewayRequestStatsRows({
-			client,
-			modelIds,
-			providerIds,
-			fromIso,
-			toIso,
-		});
-	} catch (error) {
-		console.warn("Failed to fetch model provider runtime stats", {
-			modelId: args.modelId,
-			error,
-		});
-		return {};
-	}
-
-	const aggregateByProvider = new Map<string, Aggregate>();
-
-	for (const row of requestRows) {
-		const providerId = String(row?.provider ?? "").trim();
-		if (!providerId) continue;
-		const createdAt = new Date(String(row?.created_at ?? ""));
-		if (!Number.isFinite(createdAt.getTime())) continue;
-		const createdAtMs = createdAt.getTime();
-
-		const aggregate = aggregateByProvider.get(providerId) ?? emptyAggregate();
-		const latencyMs = toFiniteNumber(row.latency_ms);
-		const explicitThroughput = toFiniteNumber(row.throughput);
-		const generationMs = toFiniteNumber(row.generation_ms);
-		const inputTokens = extractInputTokensFromUsage(row.usage) ?? 0;
-		const outputTokens = extractOutputTokensFromUsage(row.usage) ?? 0;
-		const cachedReadTokens = extractCachedReadTokensFromUsage(row.usage) ?? 0;
-		const derivedThroughput =
-			explicitThroughput != null && explicitThroughput > 0
-				? explicitThroughput
-				: generationMs != null &&
-						generationMs > 0 &&
-						outputTokens > 0
-					? (outputTokens * 1000) / generationMs
-					: null;
-		const success = row.success === true ? 1 : 0;
-
-		aggregate.requests3d += 1;
-		aggregate.successful3d += success;
-
-		if (latencyMs != null && latencyMs > 0) {
-			aggregate.latencySum3d += latencyMs;
-			aggregate.latencySamples3d += 1;
-			aggregate.latencyValues3d.push(latencyMs);
-		}
-		if (derivedThroughput != null && derivedThroughput > 0) {
-			aggregate.throughputSum3d += derivedThroughput;
-			aggregate.throughputSamples3d += 1;
-			aggregate.throughputValues3d.push(derivedThroughput);
-		}
-
-		const dayOffset = dayOffsetFromUtcMidnight(nowUtcMidnightMs, createdAt);
-		if (dayOffset != null) {
-			aggregate.dayRequests[dayOffset] += 1;
-			aggregate.daySuccessful[dayOffset] += success;
-		}
-		const hourOffset = hourOffsetFromUtcHour(nowUtcHourMs, createdAt);
-		if (hourOffset != null) {
-			aggregate.hourRequests[hourOffset] += 1;
-			aggregate.hourSuccessful[hourOffset] += success;
-		}
-
-		if (createdAtMs >= nowMs - THIRTY_MINUTES_MS) {
-			aggregate.requests30m += 1;
-			if (latencyMs != null && latencyMs > 0) {
-				aggregate.latencySum30m += latencyMs;
-				aggregate.latencySamples30m += 1;
-				aggregate.latencyValues30m.push(latencyMs);
-			}
-			if (derivedThroughput != null && derivedThroughput > 0) {
-				aggregate.throughputSum30m += derivedThroughput;
-				aggregate.throughputSamples30m += 1;
-				aggregate.throughputValues30m.push(derivedThroughput);
-			}
-		}
-		if (createdAtMs >= nowMs - ONE_HOUR_MS) {
-			aggregate.inputTokens1h += inputTokens;
-			aggregate.outputTokens1h += outputTokens;
-			aggregate.cachedReadTokens1h += cachedReadTokens;
-		}
-		const healthImpact = classifyRequestHealthImpact(row);
-		if (healthImpact !== "neutral") {
-			aggregate.healthRequests3d += 1;
-			if (healthImpact === "success") {
-				aggregate.healthSuccessful3d += 1;
-			}
-
-			const dayOffset = dayOffsetFromUtcMidnight(nowUtcMidnightMs, createdAt);
-			if (dayOffset != null) {
-				aggregate.dayHealthRequests[dayOffset] += 1;
-				if (healthImpact === "success") {
-					aggregate.dayHealthSuccessful[dayOffset] += 1;
-				}
-			}
-			const hourOffset = hourOffsetFromUtcHour(nowUtcHourMs, createdAt);
-			if (hourOffset != null) {
-				aggregate.hourHealthRequests[hourOffset] += 1;
-				if (healthImpact === "success") {
-					aggregate.hourHealthSuccessful[hourOffset] += 1;
-				}
-			}
-		}
-
-		aggregateByProvider.set(providerId, aggregate);
-	}
-
-	const out: ProviderRuntimeStatsMap = {};
-
-	for (const providerId of providerIds) {
-		const aggregate = aggregateByProvider.get(providerId) ?? emptyAggregate();
-		const latencyMs30m =
-			median(aggregate.latencyValues30m) ??
-			median(aggregate.latencyValues3d) ??
-			average(aggregate.latencySum30m, aggregate.latencySamples30m) ??
-			average(aggregate.latencySum3d, aggregate.latencySamples3d);
-		const throughput30m =
-			median(aggregate.throughputValues30m) ??
-			median(aggregate.throughputValues3d) ??
-			average(aggregate.throughputSum30m, aggregate.throughputSamples30m) ??
-			average(aggregate.throughputSum3d, aggregate.throughputSamples3d);
-
-		out[providerId] = {
-			providerId,
-			latencyMs30m,
-			throughput30m,
-			uptimePct3d:
-				aggregate.healthRequests3d > 0
-					? (aggregate.healthSuccessful3d / aggregate.healthRequests3d) * 100
-					: null,
-			inputTokens1h: aggregate.inputTokens1h,
-			outputTokens1h: aggregate.outputTokens1h,
-			cachedReadTokens1h: aggregate.cachedReadTokens1h,
-			cacheTokenPct1h: normaliseCacheTokenPct(
-				aggregate.cachedReadTokens1h,
-				aggregate.inputTokens1h + aggregate.outputTokens1h,
-			),
-			uptimeDaily3d: [
-				{
-					dayOffset: 0,
-					requests: aggregate.dayRequests[0],
-					successful: aggregate.daySuccessful[0],
-					uptimePct:
-						aggregate.dayHealthRequests[0] > 0
-							? (aggregate.dayHealthSuccessful[0] / aggregate.dayHealthRequests[0]) * 100
-							: null,
-				},
-				{
-					dayOffset: 1,
-					requests: aggregate.dayRequests[1],
-					successful: aggregate.daySuccessful[1],
-					uptimePct:
-						aggregate.dayHealthRequests[1] > 0
-							? (aggregate.dayHealthSuccessful[1] / aggregate.dayHealthRequests[1]) * 100
-							: null,
-				},
-				{
-					dayOffset: 2,
-					requests: aggregate.dayRequests[2],
-					successful: aggregate.daySuccessful[2],
-					uptimePct:
-						aggregate.dayHealthRequests[2] > 0
-							? (aggregate.dayHealthSuccessful[2] / aggregate.dayHealthRequests[2]) * 100
-							: null,
-				},
-			],
-			uptimeHourly3h: [
-				{
-					hourOffset: 0,
-					requests: aggregate.hourRequests[0],
-					successful: aggregate.hourSuccessful[0],
-					uptimePct:
-						aggregate.hourHealthRequests[0] > 0
-							? (aggregate.hourHealthSuccessful[0] / aggregate.hourHealthRequests[0]) * 100
-							: null,
-				},
-				{
-					hourOffset: 1,
-					requests: aggregate.hourRequests[1],
-					successful: aggregate.hourSuccessful[1],
-					uptimePct:
-						aggregate.hourHealthRequests[1] > 0
-							? (aggregate.hourHealthSuccessful[1] / aggregate.hourHealthRequests[1]) * 100
-							: null,
-				},
-				{
-					hourOffset: 2,
-					requests: aggregate.hourRequests[2],
-					successful: aggregate.hourSuccessful[2],
-					uptimePct:
-						aggregate.hourHealthRequests[2] > 0
-							? (aggregate.hourHealthSuccessful[2] / aggregate.hourHealthRequests[2]) * 100
-							: null,
-				},
-			],
-			requests30m: aggregate.requests30m,
-			requests3d: aggregate.requests3d,
-			successful3d: aggregate.successful3d,
-		};
-	}
-
-	return out;
+	return mapRpcRuntimeStatsRows({ rows: payload.rows, providerIds });
 }
 
 export async function getModelProviderRuntimeStatsCached(args: {
@@ -917,13 +616,6 @@ export async function getModelProviderRuntimeStatsCached(args: {
 	providerIds: string[];
 	modelAliases: string[];
 }): Promise<ProviderRuntimeStatsMap> {
-	"use cache";
-
-	cacheLife("hours");
-	cacheTag("data:gateway_usage_rollups");
-	cacheTag("data:gateway_requests");
-	cacheTag(`data:gateway_usage_rollups:model:${args.modelId}`);
-
 	return getModelProviderRuntimeStats(args);
 }
 
@@ -934,35 +626,18 @@ export async function getModelProviderHealthMetrics(args: {
 	windowDays?: number;
 	bucketHours?: number;
 }): Promise<ProviderHealthMetricsMap> {
-	const providerIds = Array.from(new Set(args.providerIds.filter(Boolean))).sort((a, b) =>
-		a.localeCompare(b),
+	const providerIds = [...new Set(args.providerIds.filter(Boolean))].sort();
+	if (!providerIds.length) return {};
+	const query = new URLSearchParams({
+		provider_ids: providerIds.join(","),
+		model_aliases: [...new Set(args.modelAliases.filter(Boolean))].sort().join(","),
+		window_days: String(args.windowDays ?? 30),
+		bucket_hours: String(args.bucketHours ?? 24),
+	});
+	const payload = await fetchPublicWebApi<{ rows: RpcProviderHealthMetricsRow[] }>(
+		`/api/_web/models/${encodeURIComponent(args.modelId)}/provider-health?${query.toString()}`,
 	);
-	const modelIds = Array.from(
-		new Set([args.modelId, ...args.modelAliases].filter(Boolean)),
-	).sort((a, b) => a.localeCompare(b));
-
-	if (!providerIds.length || !modelIds.length) return {};
-
-	const client = createAdminClient();
-	const { data, error } = await client.rpc("get_model_provider_health_metrics", {
-		p_model_ids: modelIds,
-		p_provider_ids: providerIds,
-		p_window_days: Math.max(1, Math.min(90, Math.round(args.windowDays ?? 30))),
-		p_bucket_hours: Math.max(1, Math.min(24 * 7, Math.round(args.bucketHours ?? 24))),
-	});
-
-	if (error) {
-		console.warn("Failed to fetch model provider health metrics", {
-			modelId: args.modelId,
-			error,
-		});
-		return {};
-	}
-
-	return mapRpcHealthMetricsRows({
-		rows: (data ?? []) as RpcProviderHealthMetricsRow[],
-		providerIds,
-	});
+	return mapRpcHealthMetricsRows({ rows: payload.rows, providerIds });
 }
 
 export async function getModelProviderHealthMetricsCached(args: {
@@ -972,14 +647,5 @@ export async function getModelProviderHealthMetricsCached(args: {
 	windowDays?: number;
 	bucketHours?: number;
 }): Promise<ProviderHealthMetricsMap> {
-	"use cache";
-
-	cacheLife("hours");
-	cacheTag("data:gateway_usage_rollups");
-	cacheTag("data:gateway_requests");
-	cacheTag(`data:gateway_usage_rollups:model:${args.modelId}`);
-	cacheTag(`data:gateway_requests:model:${args.modelId}`);
-	cacheTag(`model:health:${args.modelId}`);
-
 	return getModelProviderHealthMetrics(args);
 }

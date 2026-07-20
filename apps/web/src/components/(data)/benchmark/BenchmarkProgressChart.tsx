@@ -21,7 +21,7 @@ import {
 	type ChartConfig,
 } from "@/components/ui/chart";
 import { Logo } from "@/components/Logo";
-import type { BenchmarkPage } from "@/lib/fetchers/benchmarks/getBenchmark";
+import type { BenchmarkPage } from "@/lib/fetchers/benchmarks/types";
 import {
 	normalizeBenchmarkScoreValue,
 	parseBenchmarkScore,

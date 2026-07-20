@@ -1,19 +1,12 @@
-import type { InternalAuthStatus } from "@/app/api/internal/auth/status/route";
-import { internalUrl, requestOrigin } from "@/lib/fetchers/internal/requestOrigin";
+import type { InternalAuthStatus } from "@/lib/fetchers/internal/authTypes";
+import { createClient } from "@/utils/supabase/server";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
 
 export async function fetchInternalAuthStatus(): Promise<InternalAuthStatus> {
-	const { cookie, origin } = await requestOrigin();
-	const response = await fetch(internalUrl(origin, "/api/internal/auth/status"), {
-		cache: "no-store",
-		headers: {
-			accept: "application/json",
-			cookie,
-		},
-	});
-
-	if (!response.ok) {
-		throw new Error(`Failed to fetch auth status: ${response.status}`);
-	}
-
-	return (await response.json()) as InternalAuthStatus;
+	const supabase = await createClient();
+	const { data } = await supabase.auth.getSession();
+	return fetchAccountWebApi<InternalAuthStatus>(
+		"/api/account/auth/status",
+		data.session?.access_token,
+	);
 }

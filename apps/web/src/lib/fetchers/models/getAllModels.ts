@@ -1,24 +1,9 @@
 // lib/fetchers/models/getAllModels.ts
-import { cacheLife, cacheTag } from "next/cache";
-import {
-	MODEL_LIST_TAGS,
-	PUBLIC_MODEL_CATALOGUE_CACHE_LIFE,
-} from "@/lib/cache/publicModelCatalogueTags";
-import { createAdminClient } from "@/utils/supabase/admin";
-import { applyHiddenFilter } from "./visibility";
+import { fetchPublicWebApi } from "@/lib/web-api/client";
 import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDisplay";
-import {
-	type GatewaySupportedModel,
-	getGatewaySupportedModels,
-} from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
-import {
-	type MonitorModelData,
-	getMonitorModels,
-} from "@/lib/fetchers/models/table-view/getMonitorModels";
-import {
-	parseModelPageNoticeRow,
-	type ModelPageNotice,
-} from "@/lib/fetchers/models/getModelPageNotice";
+import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
+import type { MonitorModelData } from "@/lib/fetchers/models/table-view/getMonitorModels";
+import type { ModelPageNotice } from "@/lib/fetchers/models/getModelPageNotice";
 
 export interface ModelCard {
     model_id: string;
@@ -26,6 +11,7 @@ export interface ModelCard {
     organisation_id: string;
     organisation_name: string | null;
     organisation_colour: string | null;
+    description?: string | null;
     status?: string | null;
     hidden?: boolean;
     release_date?: string | null;
@@ -345,6 +331,7 @@ export function mapRawToModelCard(
         ),
         organisation_colour:
             raw.organisation?.colour ?? raw.organisation?.color ?? null,
+        description: raw.description ?? null,
         status: raw.status ?? null,
         hidden: Boolean(raw.hidden),
         release_date: raw.release_date ?? null,
@@ -372,262 +359,43 @@ type GetModelsFilter = {
     includeHidden?: boolean;
 };
 
-const PAGE_SIZE = 1000;
-
-async function fetchPagedRows(
-    runQuery: (from: number, to: number) => Promise<{ data: any[] | null; error: any }>,
-    errorContext: string,
-): Promise<any[]> {
-    const rows: any[] = [];
-
-    for (let from = 0; ; from += PAGE_SIZE) {
-        const to = from + PAGE_SIZE - 1;
-        const { data, error } = await runQuery(from, to);
-
-        if (error) {
-            // eslint-disable-next-line no-console
-            console.warn(`[getAllModels] supabase error ${errorContext}`, error.message);
-            throw error;
-        }
-
-        if (!Array.isArray(data) || data.length === 0) {
-            break;
-        }
-
-        rows.push(...data);
-
-        if (data.length < PAGE_SIZE) {
-            break;
-        }
-    }
-
-    return rows;
-}
-
 async function fetchModelsFromDb(filters: GetModelsFilter): Promise<any[]> {
-    const supabase = createAdminClient();
-    const includeHidden = Boolean(filters.includeHidden);
-
-    const search = filters.search?.trim() ?? "";
-
-    const baseSelect = `
-            model_id,
-            name,
-            status,
-            organisation_id,
-            hidden,
-            release_date,
-            announcement_date,
-            updated_at,
-            api_model_id,
-            input_types,
-            output_types,
-            organisation: data_organisations (name, colour)
-        `;
-
-    // No search filter: simple ordered query
-    if (!search) {
-        return fetchPagedRows(
-            (from, to) =>
-                applyHiddenFilter(
-                    supabase.from("data_models").select(baseSelect),
-                    includeHidden
-                )
-                    .order("name", { ascending: true })
-                    .range(from, to),
-            "fetching models",
+    if (filters.includeHidden) {
+        throw new Error("Cloudflare public models API does not expose hidden models");
+    }
+    const pageSize = 2_000;
+    const search = filters.search?.trim();
+    const pages: any[] = [];
+    let total = Number.POSITIVE_INFINITY;
+    for (let offset = 0; offset < total; offset += pageSize) {
+        const query = new URLSearchParams({ limit: String(pageSize), offset: String(offset) });
+        if (search) query.set("search", search);
+        const payload = await fetchPublicWebApi<{ models: any[]; total: number }>(
+            `/api/_web/models?${query.toString()}`,
         );
+        pages.push(...payload.models);
+        total = payload.total;
+        if (payload.models.length < pageSize) break;
     }
-
-    const like = `%${search}%`;
-
-    // 1) Models whose name matches the search
-    const [
-        byNameData,
-        { data: orgsData, error: orgsError },
-    ] = await Promise.all([
-        fetchPagedRows(
-            (from, to) =>
-                applyHiddenFilter(
-                    supabase.from("data_models").select(baseSelect),
-                    includeHidden
-                )
-                    .ilike("name", like)
-                    .range(from, to),
-            "fetching models by name",
-        ),
-        supabase
-            .from("data_organisations")
-            .select("organisation_id")
-            .ilike("name", like),
-    ]);
-
-    if (orgsError) {
-        // eslint-disable-next-line no-console
-        console.warn(
-            "[getAllModels] supabase error fetching organisations by name",
-            orgsError.message
-        );
-        throw orgsError;
-    }
-
-    const orgIds = (orgsData ?? [])
-        .map((row: any) => row.organisation_id)
-        .filter((id: unknown): id is string => typeof id === "string");
-
-    let byOrgData: any[] = [];
-
-    if (orgIds.length > 0) {
-        byOrgData = await fetchPagedRows(
-            (from, to) =>
-                applyHiddenFilter(
-                    supabase.from("data_models").select(baseSelect),
-                    includeHidden
-                )
-                    .in("organisation_id", orgIds)
-                    .range(from, to),
-            "fetching models by organisation",
-        );
-    }
-
-    // Merge and de-duplicate by model_id
-    const combined = [...(byNameData ?? []), ...byOrgData];
-
-    const byId = new Map<string, any>();
-    for (const row of combined) {
-        const id =
-            (row as any).model_id ?? (row as any).id ?? (row as any).slug;
-        if (!id) continue;
-        if (!byId.has(id)) {
-            byId.set(id, row);
-        }
-    }
-
-    const uniqueRows = Array.from(byId.values());
-
-    // Sort by name ascending to match previous behaviour
-    uniqueRows.sort((a: any, b: any) => {
-        const nameA = (a?.name ?? "").toString();
-        const nameB = (b?.name ?? "").toString();
-        return nameA.localeCompare(nameB);
-    });
-
-    return uniqueRows;
-}
-
-function isMissingRelationError(error: unknown): boolean {
-    const text = String((error as { message?: unknown })?.message ?? "").toLowerCase();
-    return (
-        text.includes("does not exist") ||
-        text.includes("could not find table") ||
-        text.includes("relation") ||
-        text.includes("schema cache")
-    );
-}
-
-async function fetchModelPageNoticesFromDb(): Promise<Map<string, ModelPageNotice>> {
-    const supabase = createAdminClient();
-    const { data, error } = await supabase
-        .from("data_api_model_page_notices")
-        .select("api_model_id, tone, markdown");
-
-    if (error) {
-        if (isMissingRelationError(error)) return new Map();
-        // eslint-disable-next-line no-console
-        console.warn("[getAllModels] supabase error fetching model notices", error.message);
-        throw error;
-    }
-
-    const notices = new Map<string, ModelPageNotice>();
-    for (const row of data ?? []) {
-        const notice = parseModelPageNoticeRow(row);
-        if (!notice) continue;
-        notices.set(notice.apiModelId, notice);
-    }
-    return notices;
-}
-
-function resolveModelPageNotice(
-    noticesByApiModelId: Map<string, ModelPageNotice>,
-    raw: any,
-    gatewayModels: GatewaySupportedModel[],
-    monitorRows: MonitorModelData[],
-): ModelPageNotice | null {
-    const candidates = [
-        raw.api_model_id,
-        raw.model_id,
-        raw.id,
-        raw.slug,
-        ...gatewayModels.flatMap((model) => [
-            model.modelId,
-            model.selectorModelId,
-            model.internalModelId,
-        ]),
-        ...monitorRows.flatMap((row) => [row.apiModelId, row.modelId]),
-    ];
-
-    for (const candidate of candidates) {
-        const id = String(candidate ?? "").trim();
-        if (!id) continue;
-        const notice = noticesByApiModelId.get(id);
-        if (notice) return notice;
-    }
-
-    return null;
+    return pages;
 }
 
 export async function getAllModels(
     includeHidden: boolean,
     includeInternal = false,
 ): Promise<ModelCard[]> {
-    const [rows, gatewayModels, monitorResult, noticesByApiModelId] = await Promise.all([
-        fetchModelsFromDb({ includeHidden }),
-        getGatewaySupportedModels(includeHidden),
-        getMonitorModels({}, includeHidden, includeInternal),
-        fetchModelPageNoticesFromDb(),
-    ]);
-
-    const gatewayModelsByInternalId = new Map<string, GatewaySupportedModel[]>();
-    for (const gatewayModel of gatewayModels) {
-        const internalModelId = gatewayModel.internalModelId?.trim();
-        if (!internalModelId) continue;
-        const list = gatewayModelsByInternalId.get(internalModelId) ?? [];
-        list.push(gatewayModel);
-        gatewayModelsByInternalId.set(internalModelId, list);
-    }
-    const monitorRowsByModelId = new Map<string, MonitorModelData[]>();
-    for (const monitorRow of monitorResult.models) {
-        const modelId = String(monitorRow.modelId ?? "").trim();
-        if (!modelId) continue;
-        const list = monitorRowsByModelId.get(modelId) ?? [];
-        list.push(monitorRow);
-        monitorRowsByModelId.set(modelId, list);
-    }
-
-    const models: ModelCard[] = rows
+    void includeInternal;
+    return (await fetchModelsFromDb({ includeHidden }))
         .map((raw: any) => {
-            const modelId = String(raw.model_id ?? raw.id ?? raw.slug ?? "").trim();
-            const gatewaySupportedModels = modelId
-                ? gatewayModelsByInternalId.get(modelId) ?? []
-                : [];
-            const gatewayMonitorRows = modelId
-                ? monitorRowsByModelId.get(modelId) ?? []
+            const monitorRows = Array.isArray(raw.gateway_monitor_rows)
+                ? raw.gateway_monitor_rows as MonitorModelData[]
                 : [];
             return mapRawToModelCard(raw, {
-                ...summarizeMonitorRowsForModel(gatewayMonitorRows),
-                model_page_notice: resolveModelPageNotice(
-                    noticesByApiModelId,
-                    raw,
-                    gatewaySupportedModels,
-                    gatewayMonitorRows,
-                ),
-                gateway_supported_models: gatewaySupportedModels,
-                gateway_monitor_rows: gatewayMonitorRows,
+                ...summarizeMonitorRowsForModel(monitorRows),
+                gateway_monitor_rows: monitorRows,
             });
         })
-        .filter((m) => !!m.model_id);
-
-    return models;
+        .filter((model) => Boolean(model.model_id));
 }
 
 export async function getModelsFiltered(
@@ -645,13 +413,6 @@ export async function getModelsFiltered(
 export async function getModelsFilteredCached(
 	filters: GetModelsFilter & { includeHidden: boolean }
 ): Promise<ModelCard[]> {
-	"use cache";
-
-	cacheLife("hours");
-	cacheTag("public-model-catalogue");
-	cacheTag("data:models");
-	cacheTag("frontend:models");
-
 	return getModelsFiltered(filters);
 }
 
@@ -659,13 +420,5 @@ export async function getAllModelsCached(
     includeHidden: boolean,
     includeInternal = false,
 ): Promise<ModelCard[]> {
-    "use cache";
-
-    cacheLife(PUBLIC_MODEL_CATALOGUE_CACHE_LIFE);
-    for (const tag of MODEL_LIST_TAGS) {
-        cacheTag(tag);
-    }
-
-    console.log("[fetch] HIT DB for models");
     return getAllModels(includeHidden, includeInternal);
 }

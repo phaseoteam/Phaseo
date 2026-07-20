@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { createClient } from "@/utils/supabase/client";
+import { fetchAdminModelEditorSource, fetchAdminModelFormOptions } from "@/lib/fetchers/internal/adminModelEditorClient";
 import BasicTab from "@/components/(data)/model/edit/tabs/BasicTab";
 import DetailsTab from "@/components/(data)/model/edit/tabs/DetailsTab";
 import BenchmarksTab from "@/components/(data)/model/edit/tabs/BenchmarksTab";
@@ -199,23 +199,11 @@ export default function ModelLegacyEditor({
 	const [savedMessage, setSavedMessage] = useState<string | null>(null);
 
 	const fetchBasicData = useCallback(async () => {
-		const supabase = createClient();
-		const { data: modelData } = await supabase
-			.from("data_models")
-			.select(
-				"model_id, name, organisation_id, hidden, license, status, announcement_date, release_date, deprecation_date, retirement_date, input_types, output_types, previous_model_id, family_id"
-			)
-			.eq("model_id", modelId)
-			.single();
-
-		const { data: providerData } = await supabase
-			.from("data_api_providers")
-			.select("api_provider_id, api_provider_name");
-
-		setModel(modelData as ModelData);
-		if (providerData) {
+		const [source, options] = await Promise.all([fetchAdminModelEditorSource(modelId), fetchAdminModelFormOptions()]);
+		setModel(source.model as ModelData);
+		if (options.providers) {
 			setProviders(
-				providerData.map((provider: any) => ({
+				options.providers.map((provider: any) => ({
 					id: provider.api_provider_id,
 					name: provider.api_provider_name ?? provider.api_provider_id,
 				}))

@@ -1,23 +1,11 @@
-import { headers } from "next/headers";
-import { absoluteUrl } from "@/lib/seo";
-import type { SettingsAccountMfaInitialData } from "@/app/api/internal/settings/account/mfa/initial/route";
+import type { SettingsAccountMfaInitialData } from "@/lib/fetchers/internal/settingsTypes";
+import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
 
 export async function fetchSettingsAccountMfaInitialData(): Promise<SettingsAccountMfaInitialData> {
-	const requestHeaders = await headers();
-	const response = await fetch(
-		absoluteUrl("/api/internal/settings/account/mfa/initial"),
-		{
-			cache: "no-store",
-			headers: {
-				accept: "application/json",
-				cookie: requestHeaders.get("cookie") ?? "",
-			},
-		},
+	const { accessToken } = await getServerAccountContext();
+	return fetchAccountWebApi<SettingsAccountMfaInitialData>(
+		"/api/account/settings/account/mfa",
+		accessToken,
 	);
-
-	if (!response.ok) {
-		throw new Error(`Failed to fetch MFA settings data: ${response.status}`);
-	}
-
-	return (await response.json()) as SettingsAccountMfaInitialData;
 }

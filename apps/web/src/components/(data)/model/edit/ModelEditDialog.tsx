@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { toast } from "sonner"
 import { updateModel } from "@/app/(dashboard)/models/actions"
-import { createClient } from "@/utils/supabase/client"
+import { fetchAdminModelEditorSource, fetchAdminModelFormOptions } from "@/lib/fetchers/internal/adminModelEditorClient"
 import BasicTab from "./tabs/BasicTab"
 import DetailsTab from "./tabs/DetailsTab"
 import BenchmarksTab from "./tabs/BenchmarksTab"
@@ -78,22 +78,10 @@ export default function ModelEditDialog({ modelId, tab }: ModelEditDialogProps) 
   const [activeTab, setActiveTab] = useState<string>("basic")
 
   const fetchBasicData = useCallback(async () => {
-    const supabase = createClient()
-    const { data: modelData } = await supabase
-      .from("data_models")
-      .select(
-        "model_id, name, organisation_id, hidden, license, status, announcement_date, release_date, deprecation_date, retirement_date, input_types, output_types, previous_model_id, family_id"
-      )
-      .eq("model_id", modelId)
-      .single()
-
-    const { data: providerData } = await supabase
-      .from("data_api_providers")
-      .select("api_provider_id, api_provider_name")
-
-    setModel(modelData)
-    if (providerData) {
-      setProviders(providerData.map((p: any) => ({
+    const [source, options] = await Promise.all([fetchAdminModelEditorSource(modelId), fetchAdminModelFormOptions()])
+    setModel(source.model as ModelData)
+    if (options.providers) {
+      setProviders(options.providers.map((p: any) => ({
         id: p.api_provider_id,
         name: p.api_provider_name ?? p.api_provider_id,
       })))

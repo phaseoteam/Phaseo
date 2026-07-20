@@ -13,7 +13,7 @@ import {
 	EmptyHeader,
 	EmptyTitle,
 } from "@/components/ui/empty";
-import type { ProviderMetrics } from "@/lib/fetchers/api-providers/getProviderMetrics";
+import type { ProviderMetrics } from "@/lib/fetchers/api-providers/providerDataTypes";
 import { cn } from "@/lib/utils";
 import { E2ELatencyChart, LatencyChart, ThroughputChart } from "./PerformanceCharts";
 

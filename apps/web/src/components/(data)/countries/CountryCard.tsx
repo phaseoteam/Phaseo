@@ -6,9 +6,9 @@ import { ArrowRight } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import type { CountrySummary } from "@/lib/fetchers/countries/getCountrySummaries";
+import type { CountryListSummary } from "@/lib/fetchers/countries/types";
 
-export default function CountryCard({ country }: { country: CountrySummary }) {
+export default function CountryCard({ country }: { country: CountryListSummary }) {
 	const isoLower = country.iso?.toLowerCase() ?? "";
 	const hasFlag = isoLower.length === 2;
 	const flagPath = hasFlag ? `/flags/${isoLower}.svg` : null;

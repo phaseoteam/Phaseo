@@ -8,7 +8,7 @@ import { Megaphone, Rocket, Ban, Archive } from "lucide-react";
 import type {
 	ModelEvent,
 	EventType,
-} from "@/lib/fetchers/updates/getModelUpdates";
+} from "@/lib/fetchers/updates/types";
 
 function formatDate(dateStr: string | null | undefined) {
 	if (!dateStr) return "-";

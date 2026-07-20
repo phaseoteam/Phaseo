@@ -1,11 +1,10 @@
 "use server";
 
-import { createClient } from "@/utils/supabase/server";
-import { createAdminClient } from "@/utils/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { revalidateAppDataTags } from "@/lib/cache/revalidateDataTags";
 import { normalizeAppCategoryCsv } from "@/lib/appCategories";
-import { requireWorkspaceMembership } from "@/utils/serverActionAuth";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
+import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 
 const PROTECTED_APP_TITLES = new Set([
 	"phaseo chat",
@@ -70,38 +69,8 @@ export async function updateAppAction(appId: string, updates: UpdateAppInput) {
 		throw new Error("Valid app ID is required");
 	}
 
-	const supabase = await createClient();
-	const {
-		data: { user },
-		error: userError,
-	} = await supabase.auth.getUser();
-
-	if (userError || !user) {
-		throw new Error("Unauthorized");
-	}
-
-	const { data: existingApp, error: existingAppError } = await supabase
-		.from("api_apps")
-		.select("id, workspace_id, title, app_key")
-		.eq("id", appId)
-		.maybeSingle();
-
-	if (existingAppError) {
-		throw new Error(existingAppError.message ?? "Failed to load app");
-	}
-
-	if (!existingApp) {
-		throw new Error("App not found");
-	}
-
-	if (!existingApp.workspace_id) {
-		throw new Error("App not found");
-	}
-	await requireWorkspaceMembership(supabase, user.id, existingApp.workspace_id);
-
-	if (isProtectedApp(existingApp.title, existingApp.app_key)) {
-		throw new Error("This app is managed by Phaseo and cannot be edited");
-	}
+	const { accessToken } = await getServerAccountContext();
+	if (!accessToken) throw new Error("Unauthorized");
 
 	const updateObj: Record<string, unknown> = {};
 
@@ -158,15 +127,7 @@ export async function updateAppAction(appId: string, updates: UpdateAppInput) {
 		return { success: true };
 	}
 
-	const { error } = await supabase
-		.from("api_apps")
-		.update(updateObj)
-		.eq("id", appId)
-		.eq("workspace_id", existingApp.workspace_id);
-
-	if (error) {
-		throw new Error(error.message ?? "Failed to update app");
-	}
+	await fetchAccountWebApi(`/api/account/settings/apps/${encodeURIComponent(appId)}`, accessToken, { method: "PUT", body: JSON.stringify(updateObj) });
 
 	revalidateAppDataTags([appId]);
 	revalidatePath("/settings/apps");
@@ -186,58 +147,9 @@ export async function mergeAppsAction(
 		throw new Error("Select a different target app");
 	}
 
-	const supabase = await createClient();
-	const {
-		data: { user },
-		error: userError,
-	} = await supabase.auth.getUser();
-
-	if (userError || !user) {
-		throw new Error("Unauthorized");
-	}
-
-	const { data: apps, error: appError } = await supabase
-		.from("api_apps")
-		.select("id, workspace_id, title, app_key")
-		.in("id", [sourceAppId, targetAppId]);
-
-	if (appError || !apps || apps.length !== 2) {
-		throw new Error("Apps must belong to your workspace");
-	}
-
-	const workspaceId = apps[0].workspace_id;
-	if (!apps.every((app) => app.workspace_id === workspaceId)) {
-		throw new Error("Apps must belong to the same workspace");
-	}
-
-	if (!workspaceId) {
-		throw new Error("Apps must belong to your workspace");
-	}
-	await requireWorkspaceMembership(supabase, user.id, workspaceId);
-
-	if (apps.some((app) => isProtectedApp(app.title, app.app_key))) {
-		throw new Error("Phaseo managed apps cannot be merged");
-	}
-
-	const admin = createAdminClient();
-	const { error: updateError } = await admin
-		.from("gateway_requests")
-		.update({ app_id: targetAppId })
-		.eq("app_id", sourceAppId)
-		.eq("workspace_id", workspaceId);
-
-	if (updateError) {
-		throw new Error(updateError.message ?? "Failed to move request history");
-	}
-
-	const { error: deleteError } = await supabase
-		.from("api_apps")
-		.delete()
-		.eq("id", sourceAppId);
-
-	if (deleteError) {
-		throw new Error(deleteError.message ?? "Failed to remove source app");
-	}
+	const { accessToken } = await getServerAccountContext();
+	if (!accessToken) throw new Error("Unauthorized");
+	await fetchAccountWebApi(`/api/account/settings/apps/${encodeURIComponent(sourceAppId)}/merge`, accessToken, { method: "POST", body: JSON.stringify({ targetAppId }) });
 
 	revalidateAppDataTags([sourceAppId, targetAppId]);
 	revalidatePath("/settings/apps");

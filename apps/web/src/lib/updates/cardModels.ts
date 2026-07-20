@@ -9,7 +9,7 @@ import {
 import type {
     EventType,
     ModelEvent,
-} from "@/lib/fetchers/updates/getModelUpdates";
+} from "@/lib/fetchers/updates/types";
 import { Ban, Archive, Megaphone, Rocket } from "lucide-react";
 
 export type UpdateCardBadge = {

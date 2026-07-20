@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import {
+	Suspense,
+	use,
 	useCallback,
 	useDeferredValue,
 	useEffect,
@@ -92,14 +94,14 @@ import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDisplay";
 import type {
 	GatewayStatusFilter,
-	ModelsFilterFacets,
+	ModelsPageData,
 	ModelsPageModel,
 	OptionCount,
 } from "./modelsDisplay.types";
 
 interface ModelsDisplayProps {
-	models: ModelsPageModel[];
-	facets: ModelsFilterFacets;
+	dataPromise?: Promise<ModelsPageData>;
+	modelsPageData?: ModelsPageData;
 	showPrimaryHeader?: boolean;
 }
 
@@ -650,6 +652,7 @@ function FilterCheckboxList({
 	collapsedLimit?: number;
 }) {
 	const [expanded, setExpanded] = useState(false);
+
 	const canCollapse =
 		Number.isFinite(collapsedLimit) &&
 		Number(collapsedLimit) > 0 &&
@@ -909,10 +912,47 @@ function OutputModalityButtonRow({
 }
 
 export default function ModelsDisplay({
-	models,
-	facets,
+	dataPromise,
+	modelsPageData,
 	showPrimaryHeader = true,
 }: ModelsDisplayProps) {
+	return (
+		<Suspense fallback={null}>
+			<ModelsDisplayData
+				dataPromise={dataPromise}
+				modelsPageData={modelsPageData}
+				showPrimaryHeader={showPrimaryHeader}
+			/>
+		</Suspense>
+	);
+}
+
+function ModelsDisplayData({
+	dataPromise,
+	modelsPageData,
+	showPrimaryHeader = true,
+}: ModelsDisplayProps) {
+	const serverData = dataPromise ? use(dataPromise) : undefined;
+	const resolvedModelsPageData = serverData ?? modelsPageData;
+
+	if (!resolvedModelsPageData) return null;
+
+	return (
+		<ModelsDisplayContent
+			modelsPageData={resolvedModelsPageData}
+			showPrimaryHeader={showPrimaryHeader}
+		/>
+	);
+}
+
+function ModelsDisplayContent({
+	modelsPageData,
+	showPrimaryHeader = true,
+}: {
+	modelsPageData: ModelsPageData;
+	showPrimaryHeader?: boolean;
+}) {
+	const { models, facets } = modelsPageData;
 	const [search, setSearch] = useQueryState("q", qParser);
 	const deferredSearch = useDeferredValue(search ?? "");
 	const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);

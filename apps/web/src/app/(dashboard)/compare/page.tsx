@@ -4,6 +4,7 @@ import { buildMetadata } from "@/lib/seo";
 import type { ExtendedModel } from "@/data/types";
 import {
 	fetchFrontendCompareModels,
+	fetchFrontendCompareUsage,
 	fetchFrontendComparisonModels,
 	fetchFrontendModelPerformance,
 	fetchFrontendModelRealtimeWindowStats,
@@ -64,6 +65,43 @@ const average = (values: Array<number | null | undefined>): number | null => {
 	return normalized.reduce((sum, value) => sum + value, 0) / normalized.length;
 };
 
+async function loadLegacyUsage(modelIds: string[]): Promise<CompareGatewayUsageByModel> {
+	const entries = await Promise.all(modelIds.map(async (id) => {
+		try {
+			const [metrics, trajectory, realtime30m] = await Promise.all([
+				fetchFrontendModelPerformance(id),
+				fetchFrontendModelTokenTrajectory(id),
+				fetchFrontendModelRealtimeWindowStats(id, 30),
+			]);
+			const points30d = (trajectory?.points ?? []).slice(-30).map((point) => ({ date: point.date, value: Number(point.tokens ?? 0) }));
+			const summary = metrics?.summary ?? null;
+			const hourly = metrics?.hourly ?? [];
+			const timeOfDay = metrics?.timeOfDay ?? [];
+			const providerPerformance = metrics?.providerPerformance ?? [];
+			const providerDaily7d = metrics?.providerDaily7d ?? [];
+			const fallbackLatencyMs = summary?.avgLatencyMs ?? average(hourly.map((point) => point.avgLatencyMs)) ?? average(timeOfDay.map((point) => point.avgLatencyMs)) ?? average(providerPerformance.map((provider) => provider.avgLatencyMs)) ?? average(providerDaily7d.map((point) => point.avgLatencyMs));
+			const fallbackThroughput = summary?.avgThroughput ?? average(hourly.map((point) => point.avgThroughput)) ?? average(timeOfDay.map((point) => point.avgThroughput)) ?? average(providerPerformance.map((provider) => provider.avgThroughput)) ?? average(providerDaily7d.map((point) => point.avgThroughput));
+			return [id, {
+				periodDays: 30,
+				tokens30d: points30d.reduce((sum, point) => sum + (Number.isFinite(point.value) ? point.value : 0), 0),
+				latestDate: points30d.at(-1)?.date ?? null,
+				points30d,
+				totalRequests: summary?.totalRequests ?? 0,
+				requests30m: realtime30m?.requestsInWindow ?? 0,
+				latencyP50Ms30m: realtime30m?.latencyP50Ms ?? fallbackLatencyMs ?? null,
+				throughputP50TokPerSec30m: realtime30m?.throughputP50TokPerSec ?? fallbackThroughput ?? null,
+				cumulativeTokens: metrics?.cumulativeTokens ?? null,
+				requestPoints24h: hourly.map((point) => ({ date: point.bucket, value: point.requests })),
+			}] as const;
+		} catch (error) {
+			// eslint-disable-next-line no-console
+			console.warn("[compare] Failed to load gateway usage for model", { modelId: id, error });
+			return null;
+		}
+	}));
+	return Object.fromEntries(entries.filter(Boolean) as Array<[string, CompareGatewayUsageByModel[string]]>);
+}
+
 export default async function Page({ searchParams }: PageProps = {}) {
 	const [models, resolvedSearchParams] = await Promise.all([
 		fetchFrontendCompareModels(),
@@ -87,80 +125,11 @@ export default async function Page({ searchParams }: PageProps = {}) {
 	const [comparisonData, usageByModel] = resolvedIds.length
 		? await Promise.all([
 				fetchFrontendComparisonModels(resolvedIds),
-				Promise.all(
-					resolvedIds.map(async (id) => {
-						try {
-							const [metrics, trajectory, realtime30m] = await Promise.all([
-								fetchFrontendModelPerformance(id),
-								fetchFrontendModelTokenTrajectory(id),
-								fetchFrontendModelRealtimeWindowStats(id, 30),
-							]);
-							const points30d = (trajectory?.points ?? [])
-								.slice(-30)
-								.map((point) => ({
-									date: point.date,
-									value: Number(point.tokens ?? 0),
-								}));
-							const tokens30d = points30d.reduce(
-								(sum, point) => sum + (Number.isFinite(point.value) ? point.value : 0),
-								0
-							);
-							const latestDate = points30d.length
-								? points30d[points30d.length - 1].date
-								: null;
-							const summary = metrics?.summary ?? null;
-							const hourly = metrics?.hourly ?? [];
-							const timeOfDay = metrics?.timeOfDay ?? [];
-							const providerPerformance = metrics?.providerPerformance ?? [];
-							const providerDaily7d = metrics?.providerDaily7d ?? [];
-							const fallbackLatencyMs =
-								summary?.avgLatencyMs ??
-								average(hourly.map((point) => point.avgLatencyMs)) ??
-								average(timeOfDay.map((point) => point.avgLatencyMs)) ??
-								average(
-									providerPerformance.map((provider) => provider.avgLatencyMs)
-								) ??
-								average(providerDaily7d.map((point) => point.avgLatencyMs));
-							const fallbackThroughput =
-								summary?.avgThroughput ??
-								average(hourly.map((point) => point.avgThroughput)) ??
-								average(timeOfDay.map((point) => point.avgThroughput)) ??
-								average(
-									providerPerformance.map((provider) => provider.avgThroughput)
-								) ??
-								average(providerDaily7d.map((point) => point.avgThroughput));
-							return [
-								id,
-								{
-									periodDays: 30,
-									tokens30d,
-									latestDate,
-									points30d,
-									totalRequests: summary?.totalRequests ?? 0,
-									requests30m: realtime30m?.requestsInWindow ?? 0,
-									latencyP50Ms30m:
-										realtime30m?.latencyP50Ms ?? fallbackLatencyMs ?? null,
-									throughputP50TokPerSec30m:
-										realtime30m?.throughputP50TokPerSec ?? fallbackThroughput ?? null,
-									cumulativeTokens: metrics?.cumulativeTokens ?? null,
-									requestPoints24h: hourly.map((point) => ({
-										date: point.bucket,
-										value: point.requests,
-									})),
-								},
-							] as const;
-						} catch (error) {
-							// eslint-disable-next-line no-console
-							console.warn("[compare] Failed to load gateway usage for model", {
-								modelId: id,
-								error,
-							});
-							return null;
-						}
-					})
-				).then((entries) =>
-					Object.fromEntries(entries.filter(Boolean) as Array<[string, CompareGatewayUsageByModel[string]]>)
-				),
+				fetchFrontendCompareUsage(resolvedIds).catch((error) => {
+					// eslint-disable-next-line no-console
+					console.warn("[compare] Batch usage unavailable; using compatibility requests", error);
+					return loadLegacyUsage(resolvedIds);
+				}),
 			])
 		: [[], {}];
 

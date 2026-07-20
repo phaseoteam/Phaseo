@@ -1,4 +1,3 @@
-import { cacheLife, cacheTag } from "next/cache";
 import { getModelOverviewCached } from "@/lib/fetchers/models/getModel";
 import { getModelPricingCached, type ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 
@@ -40,16 +39,6 @@ export async function getModelPendingApiReleaseState(
 	modelId: string,
 	includeHidden: boolean,
 ): Promise<ModelPendingApiReleaseState> {
-	"use cache";
-
-	cacheLife("hours");
-	cacheTag("public-model-catalogue");
-	cacheTag("data:models");
-	cacheTag(`data:models:${modelId}`);
-	cacheTag(`model:data:${modelId}`);
-	cacheTag(`model:api:${modelId}`);
-	cacheTag("frontend:model-pending-api-release");
-
 	const [model, providers] = await Promise.all([
 		getModelOverviewCached(modelId, includeHidden).catch(() => null),
 		getModelPricingCached(modelId, includeHidden).catch((error) => {

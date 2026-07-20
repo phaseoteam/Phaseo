@@ -1,11 +1,11 @@
-import { Suspense } from "react";
+import { cacheLife, cacheTag } from "next/cache";
 import ModelsDisplay from "@/components/(data)/models/Models/ModelsDisplay";
-import { ModelsPageSkeleton } from "@/components/(data)/models/Models/ModelsPageSkeleton";
-import type { ModelCard } from "@/lib/fetchers/models/getAllModels";
+import ModelsPageClient from "@/components/(data)/models/Models/ModelsPageClient";
 import {
-	fetchFrontendFreeRouterOverview,
-	fetchFrontendModels,
-} from "@/lib/fetchers/frontend/fetchPublicCatalog";
+	mapRawToModelCard,
+	type ModelCard,
+} from "@/lib/fetchers/models/getAllModels";
+import { fetchFrontendFreeRouterOverview } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import {
 	getCatalogPricingSummariesCached,
 	type CatalogPricingSummary,
@@ -27,9 +27,13 @@ import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import type {
 	GatewayStatusFilter,
 	ModelsFilterFacets,
+	ModelsPageData,
 	ModelsPageModel,
 	OptionCount,
 } from "@/components/(data)/models/Models/modelsDisplay.types";
+import { modelsCatalogueV2Flag } from "@/lib/flags";
+import { isAdminViewer } from "@/lib/auth/getViewerRole";
+import { withMissingCatalogPricing } from "@/lib/models/withMissingCatalogPricing";
 
 export const metadata: Metadata = buildMetadata({
 	title: "Models",
@@ -82,6 +86,67 @@ const ACTIVE_PROVIDER_STATUS_SET = new Set([
 ]);
 
 const UPCOMING_CATALOG_STATUS_SET = new Set(["announced"]);
+
+type PublicModelsResponse = {
+	models: unknown[];
+	facets?: ModelsFilterFacets;
+	pricing_complete?: boolean;
+	total: number;
+	limit: number;
+	offset: number;
+};
+
+type ModelsCatalogueVersion = "v1" | "v2";
+
+async function fetchModelsFromWebApi(
+	apiOrigin: string,
+	catalogueVersion: ModelsCatalogueVersion,
+	projectionVersion: 5,
+): Promise<{ models: ModelCard[]; facets: ModelsFilterFacets | null; pricingComplete: boolean }> {
+	"use cache";
+	cacheLife("hours");
+	cacheTag(
+		catalogueVersion === "v2" ? "web-api-models-v2" : "web-api-models",
+	);
+	const pageSize = 2_000;
+	const versionQuery =
+		catalogueVersion === "v2" ? "&catalogue_version=v2" : "";
+	const shapeQuery = catalogueVersion === "v1" ? `&shape=page&projection=${projectionVersion}` : "";
+	const firstResponse = await fetch(
+		`${apiOrigin}/api/_web/models?limit=${pageSize}&offset=0${versionQuery}${shapeQuery}`,
+		{ cache: "no-store" },
+	);
+	if (!firstResponse.ok) {
+		throw new Error(`Public models API failed with ${firstResponse.status}`);
+	}
+
+	const firstPage = (await firstResponse.json()) as PublicModelsResponse;
+	const pageOffsets: number[] = [];
+	for (let offset = pageSize; offset < firstPage.total; offset += pageSize) {
+		pageOffsets.push(offset);
+	}
+	const laterPages = await Promise.all(
+		pageOffsets.map(async (offset) => {
+			const response = await fetch(
+				`${apiOrigin}/api/_web/models?limit=${pageSize}&offset=${offset}${versionQuery}${shapeQuery}`,
+				{ cache: "no-store" },
+			);
+			if (!response.ok) {
+				throw new Error(`Public models API failed with ${response.status}`);
+			}
+			return (await response.json()) as PublicModelsResponse;
+		}),
+	);
+
+	const rows = [firstPage, ...laterPages].flatMap((page) => page.models);
+	return {
+		models: catalogueVersion === "v1"
+			? (rows as ModelCard[]).filter((model) => Boolean(model.model_id))
+			: rows.map((model) => mapRawToModelCard(model)).filter((model) => Boolean(model.model_id)),
+		facets: firstPage.facets ?? null,
+		pricingComplete: firstPage.pricing_complete === true,
+	};
+}
 
 function getModelYear(model: ModelsPageModel): string {
 	if (Number.isFinite(model.primary_timestamp)) {
@@ -933,10 +998,13 @@ function resolveModelWeeklyMetrics(
 
 function resolveCatalogPricingSummary(
 	modelId: string,
-	signals: GatewaySignals | undefined,
+	signals: GatewaySignals | string[] | undefined,
 	catalogPricingSummaries: CatalogPricingSummaryByModelId,
 ): CatalogPricingSummary | undefined {
-	const candidates = [modelId, ...Array.from(signals?.apiModelIds ?? [])]
+	const apiModelIds = Array.isArray(signals)
+		? signals
+		: Array.from(signals?.apiModelIds ?? []);
+	const candidates = [modelId, ...apiModelIds]
 		.map((value) => String(value ?? "").trim())
 		.filter(Boolean);
 
@@ -1027,6 +1095,7 @@ function withGatewayMetadata(
 			model_id: modelId,
 			name: displayName,
 			organisation_id: fallbackOrganisationId,
+			description: model?.description ?? null,
 			organisation_name:
 				normalizeOrganisationDisplayName(
 					model?.organisation_name,
@@ -1191,6 +1260,7 @@ function withGatewayMetadata(
 				model_id: modelId,
 				name: model.name ?? modelId,
 				organisation_id: model.organisation_id ?? "",
+				description: model.description ?? null,
 				organisation_name:
 					normalizeOrganisationDisplayName(
 						model.organisation_name,
@@ -1317,34 +1387,53 @@ function buildFreeRouterModelsPageEntry(
 	};
 }
 
-async function ModelsPageDataSection() {
-	const [allModels, freeRouterOverview, catalogPricingSummaries] =
+async function loadModelsPageData(
+	catalogueVersion: ModelsCatalogueVersion,
+): Promise<ModelsPageData> {
+	const apiOrigin =
+		process.env.WEB_API_ORIGIN?.replace(/\/$/, "") ?? "https://phaseo.app";
+	const allModelsPromise = fetchModelsFromWebApi(apiOrigin, catalogueVersion, 5);
+	const catalogPricingSummariesPromise = allModelsPromise.then((result) =>
+		result.pricingComplete ? Promise.resolve({}) : getCatalogPricingSummariesCached(),
+	);
+	const freeRouterOverviewPromise = catalogueVersion === "v2"
+		? fetchFrontendFreeRouterOverview()
+		: Promise.resolve(null);
+	const [allModelsResult, freeRouterOverview, catalogPricingSummaries] =
 		await Promise.all([
-			fetchFrontendModels(),
-			fetchFrontendFreeRouterOverview(),
-			getCatalogPricingSummariesCached(),
+			allModelsPromise,
+			freeRouterOverviewPromise,
+			catalogPricingSummariesPromise,
 		]);
-	const monitorRows = allModels.flatMap(
-		(model) => model.gateway_monitor_rows ?? [],
-	);
-	const models = withGatewayMetadata(
-		allModels,
-		monitorRows,
-		catalogPricingSummaries,
-	);
-	const freeRouterModel = buildFreeRouterModelsPageEntry(freeRouterOverview);
-	const modelsWithFreeRouter = [
-		freeRouterModel,
-		...models.filter((model) => model.model_id !== FREE_ROUTER_MODEL_ID),
-	];
-	const facets = buildModelsFilterFacets(modelsWithFreeRouter);
-	return <ModelsDisplay models={modelsWithFreeRouter} facets={facets} />;
+	const allModels = allModelsResult.models;
+	const models = catalogueVersion === "v1"
+		? allModelsResult.pricingComplete
+			? allModels as ModelsPageModel[]
+			: withMissingCatalogPricing(allModels as ModelsPageModel[], catalogPricingSummaries)
+		: withGatewayMetadata(
+			allModels,
+			allModels.flatMap((model) => model.gateway_monitor_rows ?? []),
+			catalogPricingSummaries,
+		);
+	const modelsWithVirtualEntries = catalogueVersion === "v1"
+		? models
+		: [
+			buildFreeRouterModelsPageEntry(freeRouterOverview!),
+			...models.filter((model) => model.model_id !== FREE_ROUTER_MODEL_ID),
+		];
+	const facets = catalogueVersion === "v1" && allModelsResult.facets
+		? allModelsResult.facets
+		: buildModelsFilterFacets(modelsWithVirtualEntries);
+	return { models: modelsWithVirtualEntries, facets };
 }
 
-export default function ModelsPage() {
-	return (
-		<Suspense fallback={<ModelsPageSkeleton />}>
-			<ModelsPageDataSection />
-		</Suspense>
+export default async function ModelsPage() {
+	const catalogueVersion: ModelsCatalogueVersion =
+		(await isAdminViewer()) && (await modelsCatalogueV2Flag()) ? "v2" : "v1";
+
+	return catalogueVersion === "v2" ? (
+		<ModelsDisplay dataPromise={loadModelsPageData("v2")} />
+	) : (
+		<ModelsPageClient />
 	);
 }

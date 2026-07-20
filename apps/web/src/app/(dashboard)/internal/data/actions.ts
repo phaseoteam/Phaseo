@@ -1,13 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/utils/supabase/server";
-import {
-	revalidateBenchmarkDataTags,
-	revalidateModelApiInfoTags,
-	revalidateModelDataOnlyTags,
-	revalidateModelDataTags,
-} from "@/lib/cache/revalidateDataTags";
 import {
 	getIndexNowModelUrls,
 	getIndexNowProviderUrls,
@@ -27,25 +20,25 @@ import {
 	type CapabilityStatusOption,
 } from "@/lib/models/editorOptions";
 import { normalizeHttpUrl } from "@/lib/utils/urlSafety";
+import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
+import { fetchAccountWebApi, fetchInternalWebApi } from "@/lib/web-api/client";
 
-async function requireAdmin() {
-	const supabase = await createClient();
-	const {
-		data: { user },
-		error: authError,
-	} = await supabase.auth.getUser();
-	if (authError || !user) throw new Error("Unauthorized");
+async function callCatalogMutation(path: `/api/account/models/catalog/${string}`, method: "POST" | "PUT" | "DELETE", body?: unknown) {
+	const { accessToken } = await getServerAccountContext();
+	if (!accessToken) throw new Error("Unauthorized");
+	return fetchAccountWebApi<{ success?: boolean }>(path, accessToken, { method, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+}
 
-	const { data: userRow, error: userError } = await supabase
-		.from("users")
-		.select("role")
-		.eq("user_id", user.id)
-		.maybeSingle();
-	if (userError || (userRow?.role ?? "").toLowerCase() !== "admin") {
-		throw new Error("Unauthorized");
-	}
+async function callModelMutation(path: `/api/account/models${string}`, method: "POST" | "PUT" | "DELETE", body?: unknown) {
+	const { accessToken } = await getServerAccountContext();
+	if (!accessToken) throw new Error("Unauthorized");
+	return fetchAccountWebApi<Record<string, unknown>>(path, accessToken, { method, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+}
 
-	return supabase;
+async function revalidateCloudflare(tags: string[]) {
+	const { accessToken } = await getServerAccountContext();
+	if (!accessToken) throw new Error("Unauthorized");
+	return fetchInternalWebApi<{ revalidated: string[] }>("/api/internal/revalidate", accessToken, { method: "POST", body: JSON.stringify({ tags }) });
 }
 
 function optionalString(v: FormDataEntryValue | null) {
@@ -212,11 +205,7 @@ type OrganisationLinkPayload = {
 	url?: string | null;
 };
 
-async function replaceOrganisationLinks(
-	supabase: Awaited<ReturnType<typeof requireAdmin>>,
-	organisationId: string,
-	rawLinks: OrganisationLinkPayload[]
-) {
+function normalizeOrganisationLinks(rawLinks: OrganisationLinkPayload[]) {
 	const rank = new Map(ORG_SOCIAL_PLATFORM_ORDER.map((platform, index) => [platform, index]));
 	const links = rawLinks
 		.map((link) => ({
@@ -236,192 +225,33 @@ async function replaceOrganisationLinks(
 		throw new Error("Duplicate organisation social platforms are not allowed");
 	}
 
-	const { error: deleteError } = await supabase
-		.from("data_organisation_links")
-		.delete()
-		.eq("organisation_id", organisationId);
-	if (deleteError) throw new Error(deleteError.message);
-
-	if (!links.length) return;
-	const { error: insertError } = await supabase
-		.from("data_organisation_links")
-		.insert(
-			links.map((link) => ({
-				organisation_id: organisationId,
-				platform: link.platform,
-				url: link.url,
-			}))
-		);
-	if (insertError) throw new Error(insertError.message);
-}
-
-type ProviderPair = { provider_id: string; api_model_id: string };
-
-function dedupeProviderPairs(pairs: ProviderPair[]): ProviderPair[] {
-	const unique = new Map<string, ProviderPair>();
-	for (const pair of pairs) {
-		const providerId = pair.provider_id?.trim();
-		const apiModelId = pair.api_model_id?.trim();
-		if (!providerId || !apiModelId) continue;
-		unique.set(`${providerId}:::${apiModelId}`, {
-			provider_id: providerId,
-			api_model_id: apiModelId,
-		});
-	}
-	return Array.from(unique.values());
-}
-
-async function deletePricingRulesForProviderPairs(
-	supabase: Awaited<ReturnType<typeof requireAdmin>>,
-	pairs: ProviderPair[]
-) {
-	for (const pair of dedupeProviderPairs(pairs)) {
-		const modelKeyPrefix = `${pair.provider_id}:${pair.api_model_id}:`;
-		const { error } = await supabase
-			.from("data_api_pricing_rules")
-			.delete()
-			.gte("model_key", modelKeyPrefix)
-			.lt("model_key", `${modelKeyPrefix}\uffff`);
-		if (error) throw new Error(error.message);
-	}
-}
-
-async function deleteModelGraph(
-	supabase: Awaited<ReturnType<typeof requireAdmin>>,
-	modelId: string
-) {
-	const { data: providerModelRows, error: providerRowsError } = await supabase
-		.from("data_api_provider_models")
-		.select("provider_api_model_id, provider_id, api_model_id")
-		.eq("model_id", modelId);
-	if (providerRowsError) throw new Error(providerRowsError.message);
-
-	const providerApiModelIds = (providerModelRows ?? [])
-		.map((row) => row.provider_api_model_id)
-		.filter(Boolean);
-	if (providerApiModelIds.length > 0) {
-		const { error: capabilitiesDeleteError } = await supabase
-			.from("data_api_provider_model_capabilities")
-			.delete()
-			.in("provider_api_model_id", providerApiModelIds);
-		if (capabilitiesDeleteError) throw new Error(capabilitiesDeleteError.message);
-	}
-
-	await deletePricingRulesForProviderPairs(
-		supabase,
-		(providerModelRows ?? []).map((row) => ({
-			provider_id: row.provider_id,
-			api_model_id: row.api_model_id,
-		}))
-	);
-
-	const { error: providerModelsDeleteError } = await supabase
-		.from("data_api_provider_models")
-		.delete()
-		.eq("model_id", modelId);
-	if (providerModelsDeleteError) throw new Error(providerModelsDeleteError.message);
-
-	const { error: aliasesDeleteError } = await supabase
-		.from("data_api_model_aliases")
-		.delete()
-		.eq("api_model_id", modelId);
-	if (aliasesDeleteError) throw new Error(aliasesDeleteError.message);
-
-	const { error: benchmarkDeleteError } = await supabase
-		.from("data_benchmark_results")
-		.delete()
-		.eq("model_id", modelId);
-	if (benchmarkDeleteError) throw new Error(benchmarkDeleteError.message);
-
-	const { error: detailsDeleteError } = await supabase
-		.from("data_model_details")
-		.delete()
-		.eq("model_id", modelId);
-	if (detailsDeleteError) throw new Error(detailsDeleteError.message);
-
-	const { error: linksDeleteError } = await supabase
-		.from("data_model_links")
-		.delete()
-		.eq("model_id", modelId);
-	if (linksDeleteError) throw new Error(linksDeleteError.message);
-
-	const { error: planModelsDeleteError } = await supabase
-		.from("data_subscription_plan_models")
-		.delete()
-		.eq("model_id", modelId);
-	if (planModelsDeleteError) throw new Error(planModelsDeleteError.message);
-
-	const { error: modelDeleteError } = await supabase
-		.from("data_models")
-		.delete()
-		.eq("model_id", modelId);
-	if (modelDeleteError) throw new Error(modelDeleteError.message);
-
-	const { error: apiModelDeleteError } = await supabase
-		.from("data_api_models")
-		.delete()
-		.eq("api_model_id", modelId);
-	if (apiModelDeleteError) throw new Error(apiModelDeleteError.message);
+	return links;
 }
 
 // react-doctor-disable-next-line
 export async function createOrganisationAction(formData: FormData) {
-	const supabase = await requireAdmin();
 	const organisationId = requiredString(formData.get("organisation_id"), "organisation_id");
 	const name = requiredString(formData.get("name"), "name");
-	const socialLinks = parseJsonField<OrganisationLinkPayload[]>(formData.get("social_links_payload"), "social_links_payload", []);
-
-	const { error } = await supabase.from("data_organisations").insert({
-		organisation_id: organisationId,
-		name,
-		description: optionalString(formData.get("description")),
-		country_code: optionalString(formData.get("country_code")),
-		colour: optionalString(formData.get("colour")),
-	});
-	if (error) throw new Error(error.message);
-	await replaceOrganisationLinks(supabase, organisationId, socialLinks);
-
-	revalidateModelDataTags({ organisationIds: [organisationId] });
+	const socialLinks = normalizeOrganisationLinks(parseJsonField<OrganisationLinkPayload[]>(formData.get("social_links_payload"), "social_links_payload", []));
+	await callCatalogMutation("/api/account/models/catalog/organisations", "POST", { organisation_id: organisationId, name, description: optionalString(formData.get("description")), country_code: optionalString(formData.get("country_code")), colour: optionalString(formData.get("colour")), social_links: socialLinks });
 	revalidatePath("/internal/data/organisations");
 }
 
 // react-doctor-disable-next-line
 export async function updateOrganisationAction(organisationId: string, formData: FormData) {
-	const supabase = await requireAdmin();
-	const socialLinks = parseJsonField<OrganisationLinkPayload[]>(formData.get("social_links_payload"), "social_links_payload", []);
-	const { error } = await supabase
-		.from("data_organisations")
-		.update({
-			name: requiredString(formData.get("name"), "name"),
-			description: optionalString(formData.get("description")),
-			country_code: optionalString(formData.get("country_code")),
-			colour: optionalString(formData.get("colour")),
-			updated_at: new Date().toISOString(),
-		})
-		.eq("organisation_id", organisationId);
-	if (error) throw new Error(error.message);
-	await replaceOrganisationLinks(supabase, organisationId, socialLinks);
-
-	revalidateModelDataTags({ organisationIds: [organisationId] });
+	const socialLinks = normalizeOrganisationLinks(parseJsonField<OrganisationLinkPayload[]>(formData.get("social_links_payload"), "social_links_payload", []));
+	await callCatalogMutation(`/api/account/models/catalog/organisations/${encodeURIComponent(organisationId)}`, "PUT", { name: requiredString(formData.get("name"), "name"), description: optionalString(formData.get("description")), country_code: optionalString(formData.get("country_code")), colour: optionalString(formData.get("colour")), social_links: socialLinks });
 	revalidatePath("/internal/data/organisations");
 }
 
 // react-doctor-disable-next-line
 export async function deleteOrganisationAction(organisationId: string) {
-	const supabase = await requireAdmin();
-	const { error } = await supabase
-		.from("data_organisations")
-		.delete()
-		.eq("organisation_id", organisationId);
-	if (error) throw new Error(error.message);
-
-	revalidateModelDataTags({ organisationIds: [organisationId] });
+	await callCatalogMutation(`/api/account/models/catalog/organisations/${encodeURIComponent(organisationId)}`, "DELETE");
 	revalidatePath("/internal/data/organisations");
 }
 
 // react-doctor-disable-next-line
 export async function createAPIProviderAction(formData: FormData) {
-	const supabase = await requireAdmin();
 	const apiProviderId = requiredString(formData.get("api_provider_id"), "api_provider_id");
 	const apiProviderName = requiredString(formData.get("api_provider_name"), "api_provider_name");
 	const promptTrainingPolicy = normalizeProviderPromptTrainingPolicy(
@@ -437,7 +267,7 @@ export async function createAPIProviderAction(formData: FormData) {
 		formData.get("data_policy_contract_mode"),
 	);
 
-	const { error } = await supabase.from("data_api_providers").insert({
+	await callCatalogMutation("/api/account/models/catalog/providers", "POST", {
 		api_provider_id: apiProviderId,
 		api_provider_name: apiProviderName,
 		description: optionalString(formData.get("description")),
@@ -454,9 +284,6 @@ export async function createAPIProviderAction(formData: FormData) {
 		),
 		status: "Active",
 	});
-	if (error) throw new Error(error.message);
-
-	revalidateModelDataTags();
 	await submitIndexNowUrls(
 		getIndexNowProviderUrls(apiProviderId),
 		`create provider ${apiProviderId}`,
@@ -466,7 +293,6 @@ export async function createAPIProviderAction(formData: FormData) {
 
 // react-doctor-disable-next-line
 export async function updateAPIProviderAction(apiProviderId: string, formData: FormData) {
-	const supabase = await requireAdmin();
 	const promptTrainingPolicy = normalizeProviderPromptTrainingPolicy(
 		formData.get("prompt_training_policy"),
 	);
@@ -479,9 +305,7 @@ export async function updateAPIProviderAction(apiProviderId: string, formData: F
 	const dataPolicyContractMode = normalizeProviderDataPolicyContractMode(
 		formData.get("data_policy_contract_mode"),
 	);
-	const { error } = await supabase
-		.from("data_api_providers")
-		.update({
+	await callCatalogMutation(`/api/account/models/catalog/providers/${encodeURIComponent(apiProviderId)}`, "PUT", {
 			api_provider_name: requiredString(formData.get("api_provider_name"), "api_provider_name"),
 			description: optionalString(formData.get("description")),
 			link: optionalString(formData.get("link")),
@@ -495,12 +319,7 @@ export async function updateAPIProviderAction(apiProviderId: string, formData: F
 			data_policy_contract_notes: optionalString(
 				formData.get("data_policy_contract_notes"),
 			),
-			updated_at: new Date().toISOString(),
-		})
-		.eq("api_provider_id", apiProviderId);
-	if (error) throw new Error(error.message);
-
-	revalidateModelDataTags();
+	});
 	await submitIndexNowUrls(
 		getIndexNowProviderUrls(apiProviderId),
 		`update provider ${apiProviderId}`,
@@ -510,14 +329,7 @@ export async function updateAPIProviderAction(apiProviderId: string, formData: F
 
 // react-doctor-disable-next-line
 export async function deleteAPIProviderAction(apiProviderId: string) {
-	const supabase = await requireAdmin();
-	const { error } = await supabase
-		.from("data_api_providers")
-		.delete()
-		.eq("api_provider_id", apiProviderId);
-	if (error) throw new Error(error.message);
-
-	revalidateModelDataTags();
+	await callCatalogMutation(`/api/account/models/catalog/providers/${encodeURIComponent(apiProviderId)}`, "DELETE");
 	await submitIndexNowUrls(
 		getIndexNowProviderUrls(apiProviderId),
 		`delete provider ${apiProviderId}`,
@@ -527,11 +339,9 @@ export async function deleteAPIProviderAction(apiProviderId: string) {
 
 // react-doctor-disable-next-line
 export async function createBenchmarkAction(formData: FormData) {
-	const supabase = await requireAdmin();
 	const id = requiredString(formData.get("id"), "id");
 	const name = requiredString(formData.get("name"), "name");
-
-	const { error } = await supabase.from("data_benchmarks").insert({
+	await callCatalogMutation("/api/account/models/catalog/benchmarks", "POST", {
 		id,
 		name,
 		category: optionalString(formData.get("category")),
@@ -543,19 +353,12 @@ export async function createBenchmarkAction(formData: FormData) {
 					? false
 					: null,
 	});
-	if (error) throw new Error(error.message);
-
-	revalidateModelDataTags({ benchmarkIds: [id] });
-	revalidateBenchmarkDataTags({ benchmarkId: id });
 	revalidatePath("/internal/data/benchmarks");
 }
 
 // react-doctor-disable-next-line
 export async function updateBenchmarkAction(id: string, formData: FormData) {
-	const supabase = await requireAdmin();
-	const { error } = await supabase
-		.from("data_benchmarks")
-		.update({
+	await callCatalogMutation(`/api/account/models/catalog/benchmarks/${encodeURIComponent(id)}`, "PUT", {
 			name: requiredString(formData.get("name"), "name"),
 			category: optionalString(formData.get("category")),
 			link: optionalString(formData.get("link")),
@@ -565,30 +368,18 @@ export async function updateBenchmarkAction(id: string, formData: FormData) {
 					: optionalString(formData.get("ascending_order")) === "lower"
 						? false
 						: null,
-			updated_at: new Date().toISOString(),
-		})
-		.eq("id", id);
-	if (error) throw new Error(error.message);
-
-	revalidateModelDataTags({ benchmarkIds: [id] });
-	revalidateBenchmarkDataTags({ benchmarkId: id });
+	});
 	revalidatePath("/internal/data/benchmarks");
 }
 
 // react-doctor-disable-next-line
 export async function deleteBenchmarkAction(id: string) {
-	const supabase = await requireAdmin();
-	const { error } = await supabase.from("data_benchmarks").delete().eq("id", id);
-	if (error) throw new Error(error.message);
-
-	revalidateModelDataTags({ benchmarkIds: [id] });
-	revalidateBenchmarkDataTags({ benchmarkId: id });
+	await callCatalogMutation(`/api/account/models/catalog/benchmarks/${encodeURIComponent(id)}`, "DELETE");
 	revalidatePath("/internal/data/benchmarks");
 }
 
 // react-doctor-disable-next-line
 export async function createModelAction(formData: FormData) {
-	const supabase = await requireAdmin();
 	const modelId = requiredString(formData.get("model_id"), "model_id");
 	const name = requiredString(formData.get("name"), "name");
 	const organisationId = requiredString(formData.get("organisation_id"), "organisation_id");
@@ -711,18 +502,6 @@ export async function createModelAction(formData: FormData) {
 	if (familyName) {
 		const nextFamilyId = familyPayload.family_id?.trim() || slugifyId(familyName);
 		if (!nextFamilyId) throw new Error("family_id is required");
-		const { error: familyError } = await supabase
-			.from("data_model_families")
-			.upsert(
-				{
-					family_id: nextFamilyId,
-					family_name: familyName,
-					family_description: familyPayload.family_description?.trim() || null,
-					updated_at: new Date().toISOString(),
-				},
-				{ onConflict: "family_id" }
-			);
-		if (familyError) throw new Error(familyError.message);
 		resolvedFamilyId = nextFamilyId;
 	}
 
@@ -734,36 +513,7 @@ export async function createModelAction(formData: FormData) {
 			throw new Error("organisation_id is required");
 		}
 
-		const { error: apiModelError } = await supabase
-			.from("data_api_models")
-			.upsert(
-				{
-					api_model_id: modelId,
-					organisation_id: canonicalOrganisationId,
-					display_name: name,
-					updated_at: new Date().toISOString(),
-				},
-				{ onConflict: "api_model_id" }
-			);
-		if (apiModelError) throw new Error(apiModelError.message);
-
-		const { error } = await supabase.from("data_models").insert({
-			model_id: modelId,
-			name,
-			organisation_id: organisationId,
-			family_id: resolvedFamilyId,
-			status: normalizeModelStatus(optionalString(formData.get("status"))),
-			previous_model_id: optionalString(formData.get("previous_model_id")),
-			release_date: optionalString(formData.get("release_date")),
-			announcement_date: optionalString(formData.get("announcement_date")),
-			deprecation_date: optionalString(formData.get("deprecation_date")),
-			retirement_date: optionalString(formData.get("retirement_date")),
-			license: optionalString(formData.get("license")),
-			input_types: normalizeCoreTypes(formData.get("input_types")),
-			output_types: normalizeCoreTypes(formData.get("output_types")),
-			hidden: formData.get("hidden") === "on",
-		});
-		if (error) throw new Error(error.message);
+		await callModelMutation("/api/account/models", "POST", { modelId, name, organisationId: canonicalOrganisationId, familyId: resolvedFamilyId, status: normalizeModelStatus(optionalString(formData.get("status"))), previousModelId: optionalString(formData.get("previous_model_id")), releaseDate: optionalString(formData.get("release_date")), announcementDate: optionalString(formData.get("announcement_date")), deprecationDate: optionalString(formData.get("deprecation_date")), retirementDate: optionalString(formData.get("retirement_date")), license: optionalString(formData.get("license")), inputTypes: normalizeCoreTypes(formData.get("input_types")), outputTypes: normalizeCoreTypes(formData.get("output_types")), hidden: formData.get("hidden") === "on" });
 		insertedModel = true;
 
 		if (newBenchmarks.length > 0) {
@@ -781,12 +531,7 @@ export async function createModelAction(formData: FormData) {
 						ascending_order: ascendingOrder,
 					};
 				});
-			if (benchmarkRows.length > 0) {
-				const { error: benchmarkError } = await supabase
-					.from("data_benchmarks")
-					.upsert(benchmarkRows, { onConflict: "id" });
-				if (benchmarkError) throw new Error(benchmarkError.message);
-			}
+			if (benchmarkRows.length > 0) await Promise.all(benchmarkRows.map((row) => callCatalogMutation("/api/account/models/catalog/benchmarks", "POST", row)));
 		}
 
 	const providerModelRows = providerModels
@@ -933,12 +678,7 @@ export async function createModelAction(formData: FormData) {
 				} => Boolean(row)
 			);
 
-		if (insertedInlinePlanRows.length > 0) {
-			const { error: planInsertError } = await supabase
-				.from("data_subscription_plans")
-				.upsert(insertedInlinePlanRows, { onConflict: "plan_uuid" });
-			if (planInsertError) throw new Error(planInsertError.message);
-		}
+		if (insertedInlinePlanRows.length > 0) await Promise.all(insertedInlinePlanRows.map((row) => callCatalogMutation("/api/account/models/catalog/subscription-plans", "POST", row)));
 
 		const mergedSubscriptionPlanModels = [
 			...subscriptionPlanModels
@@ -977,6 +717,7 @@ export async function createModelAction(formData: FormData) {
 		) {
 			await updateModel({
 				modelId,
+				...(familyName ? { family: { family_id: resolvedFamilyId, family_name: familyName, family_description: familyPayload.family_description?.trim() || null } } : {}),
 				provider_models: providerModelRows,
 				provider_capabilities: providerCapabilityRows,
 				benchmark_results: benchmarkRows,
@@ -989,7 +730,7 @@ export async function createModelAction(formData: FormData) {
 	} catch (error) {
 		if (insertedModel) {
 			try {
-				await deleteModelGraph(supabase, modelId);
+				await callCatalogMutation(`/api/account/models/catalog/models/${encodeURIComponent(modelId)}`, "DELETE");
 			} catch (rollbackError) {
 				console.error("[createModelAction] rollback failed", rollbackError);
 			}
@@ -997,10 +738,6 @@ export async function createModelAction(formData: FormData) {
 		throw error;
 	}
 
-	revalidateModelDataTags({
-		modelId,
-		organisationIds: [organisationId],
-	});
 	await submitIndexNowUrls(
 		getIndexNowModelUrls(modelId),
 		`create model ${modelId}`,
@@ -1010,44 +747,10 @@ export async function createModelAction(formData: FormData) {
 
 // react-doctor-disable-next-line
 export async function updateModelAction(modelId: string, formData: FormData) {
-	const supabase = await requireAdmin();
 	const organisationId = requiredString(formData.get("organisation_id"), "organisation_id");
 	const name = requiredString(formData.get("name"), "name");
-
-	const { error: apiModelError } = await supabase
-		.from("data_api_models")
-		.upsert(
-			{
-				api_model_id: modelId,
-				organisation_id: organisationId,
-				display_name: name,
-				updated_at: new Date().toISOString(),
-			},
-			{ onConflict: "api_model_id" }
-		);
-	if (apiModelError) throw new Error(apiModelError.message);
-
-	const { error } = await supabase
-		.from("data_models")
-		.update({
-			name,
-			organisation_id: organisationId,
-			status: normalizeModelStatus(optionalString(formData.get("status"))),
-			previous_model_id: optionalString(formData.get("previous_model_id")),
-			release_date: optionalString(formData.get("release_date")),
-			announcement_date: optionalString(formData.get("announcement_date")),
-			deprecation_date: optionalString(formData.get("deprecation_date")),
-			retirement_date: optionalString(formData.get("retirement_date")),
-			license: optionalString(formData.get("license")),
-			input_types: normalizeCoreTypes(formData.get("input_types")),
-			output_types: normalizeCoreTypes(formData.get("output_types")),
-			hidden: formData.get("hidden") === "on",
-			updated_at: new Date().toISOString(),
-		})
-		.eq("model_id", modelId);
-	if (error) throw new Error(error.message);
-
-	revalidateModelDataTags({ modelId, organisationIds: [organisationId] });
+	const result = await updateModel({ modelId, name, organisation_id: organisationId, status: normalizeModelStatus(optionalString(formData.get("status"))), previous_model_id: optionalString(formData.get("previous_model_id")), release_date: optionalString(formData.get("release_date")), announcement_date: optionalString(formData.get("announcement_date")), deprecation_date: optionalString(formData.get("deprecation_date")), retirement_date: optionalString(formData.get("retirement_date")), license: optionalString(formData.get("license")), input_types: normalizeCoreTypes(formData.get("input_types")), output_types: normalizeCoreTypes(formData.get("output_types")), hidden: formData.get("hidden") === "on" });
+	if (!result.ok) throw new Error(result.error ?? "Model update failed");
 	await submitIndexNowUrls(
 		getIndexNowModelUrls(modelId),
 		`update model ${modelId}`,
@@ -1057,11 +760,7 @@ export async function updateModelAction(modelId: string, formData: FormData) {
 
 // react-doctor-disable-next-line
 export async function deleteModelAction(modelId: string) {
-	const supabase = await requireAdmin();
-	const organisationIds = await resolveModelOrganisationIds(supabase, modelId);
-	await deleteModelGraph(supabase, modelId);
-
-	revalidateModelDataTags({ modelId, organisationIds });
+	await callCatalogMutation(`/api/account/models/catalog/models/${encodeURIComponent(modelId)}`, "DELETE");
 	await submitIndexNowUrls(
 		getIndexNowModelUrls(modelId),
 		`delete model ${modelId}`,
@@ -1069,25 +768,9 @@ export async function deleteModelAction(modelId: string) {
 	revalidatePath("/internal/data/models");
 }
 
-async function resolveModelOrganisationIds(
-	supabase: Awaited<ReturnType<typeof requireAdmin>>,
-	modelId: string
-) {
-	const { data } = await supabase
-		.from("data_models")
-		.select("organisation_id")
-		.eq("model_id", modelId)
-		.maybeSingle();
-
-	return data?.organisation_id ? [data.organisation_id] : [];
-}
-
 // react-doctor-disable-next-line
 export async function revalidateSingleModelDataAction(modelId: string) {
-	const supabase = await requireAdmin();
-	const organisationIds = await resolveModelOrganisationIds(supabase, modelId);
-
-	revalidateModelDataOnlyTags({ modelId, organisationIds });
+	await revalidateCloudflare(["web-api-models", "web-api-model-details", "web-api-model-benchmarks", "web-api-model-timelines", "web-api-model-subscriptions", "web-api-model-notices", "web-api-search"]);
 	revalidatePath(`/internal/data/models/edit/${modelId}`);
 	revalidatePath("/models");
 	revalidatePath("/models/**");
@@ -1097,9 +780,7 @@ export async function revalidateSingleModelDataAction(modelId: string) {
 
 // react-doctor-disable-next-line
 export async function revalidateSingleModelApiInfoAction(modelId: string) {
-	await requireAdmin();
-
-	revalidateModelApiInfoTags({ modelId });
+	await revalidateCloudflare(["web-api-models", "web-api-model-pricing", "web-api-model-performance", "web-api-model-provider-health", "web-api-provider-routing-health", "web-api-providers"]);
 	revalidatePath(`/internal/data/models/edit/${modelId}`);
 	revalidatePath("/models");
 	revalidatePath("/models/**");
@@ -1111,10 +792,7 @@ export async function revalidateSingleModelApiInfoAction(modelId: string) {
 
 // react-doctor-disable-next-line
 export async function revalidateSingleModelAllAction(modelId: string) {
-	const supabase = await requireAdmin();
-	const organisationIds = await resolveModelOrganisationIds(supabase, modelId);
-
-	revalidateModelDataTags({ modelId, organisationIds });
+	await revalidateCloudflare(["web-api-models", "web-api-model-details", "web-api-model-benchmarks", "web-api-model-timelines", "web-api-model-subscriptions", "web-api-model-pricing", "web-api-model-performance", "web-api-model-notices", "web-api-providers", "web-api-organisations", "web-api-reference-data", "web-api-search"]);
 	revalidatePath(`/internal/data/models/edit/${modelId}`);
 	revalidatePath("/models");
 	revalidatePath("/models/**");

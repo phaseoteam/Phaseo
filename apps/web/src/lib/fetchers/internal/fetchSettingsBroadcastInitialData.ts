@@ -1,23 +1,14 @@
-import { headers } from "next/headers";
-import { absoluteUrl } from "@/lib/seo";
-import type { SettingsBroadcastInitialData } from "@/app/api/internal/settings/broadcast/initial/route";
+import type { SettingsBroadcastInitialData } from "@/lib/fetchers/internal/settingsTypes";
+import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
 
 export async function fetchSettingsBroadcastInitialData(): Promise<SettingsBroadcastInitialData> {
-	const requestHeaders = await headers();
-	const response = await fetch(
-		absoluteUrl("/api/internal/settings/broadcast/initial"),
-		{
-			cache: "no-store",
-			headers: {
-				accept: "application/json",
-				cookie: requestHeaders.get("cookie") ?? "",
-			},
-		},
+	const context = await getServerAccountContext();
+	const query = context.workspaceId
+		? `?workspaceId=${encodeURIComponent(context.workspaceId)}`
+		: "";
+	return fetchAccountWebApi<SettingsBroadcastInitialData>(
+		`/api/account/settings/broadcast${query}`,
+		context.accessToken,
 	);
-
-	if (!response.ok) {
-		throw new Error(`Failed to fetch broadcast settings data: ${response.status}`);
-	}
-
-	return (await response.json()) as SettingsBroadcastInitialData;
 }

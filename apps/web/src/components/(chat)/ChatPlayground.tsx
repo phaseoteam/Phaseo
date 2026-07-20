@@ -8,6 +8,7 @@ import {
 	SidebarRail,
 } from "@/components/ui/sidebar";
 import { BASE_URL } from "@/components/(data)/model/quickstart/config";
+import { fetchChatWebApi } from "@/lib/web-api/client";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import type {
 	ChatMessage,
@@ -1522,7 +1523,7 @@ function ChatPlaygroundContent({
 
 			try {
 				markChatPerformance(performanceRunId, "request-dispatch");
-				const response = await fetch("/api/chat/text", {
+				const response = await fetchChatWebApi("/api/chat/text", {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
@@ -2457,7 +2458,7 @@ function ChatPlaygroundContent({
 							tools: undefined,
 							tool_choice: undefined,
 						};
-						const continuationResponse = await fetch(
+						const continuationResponse = await fetchChatWebApi(
 							"/api/chat/text",
 							{
 								method: "POST",

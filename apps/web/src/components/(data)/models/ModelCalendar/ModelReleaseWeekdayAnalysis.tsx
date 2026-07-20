@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { Logo } from "@/components/Logo";
-import type { ModelEvent } from "@/lib/fetchers/updates/getModelUpdates";
+import type { ModelEvent } from "@/lib/fetchers/updates/types";
 import {
 	ChartContainer,
 	ChartTooltip,

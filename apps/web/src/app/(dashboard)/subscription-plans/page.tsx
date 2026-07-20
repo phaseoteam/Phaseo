@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import type { SubscriptionPlanSummary } from "@/lib/fetchers/subscription-plans/getAllSubscriptionPlans";
+import type { SubscriptionPlanSummary } from "@/lib/fetchers/subscription-plans/types";
 import { fetchFrontendSubscriptionPlans } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import SubscriptionPlansDisplay from "@/components/(data)/subscription-plans/SubscriptionPlansDisplay";
 

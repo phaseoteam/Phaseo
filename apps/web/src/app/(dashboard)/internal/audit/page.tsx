@@ -1,34 +1,14 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { AuditFiltersWrapper } from "@/components/monitor/AuditFiltersWrapper";
 import { getAuditModels } from "@/lib/fetchers/models/table-view/getAuditModels";
-import { createClient } from "@/utils/supabase/server";
+import { requireInternalAdmin } from "@/lib/auth/requireInternalAdmin";
 
 export const metadata = {
 	title: "Data Audit - Internal",
 };
 
 export default async function ModelsAuditPage() {
-	const supabase = await createClient();
-
-	const {
-		data: { user },
-		error: authError,
-	} = await supabase.auth.getUser();
-
-	if (authError || !user) {
-		redirect("/sign-in");
-	}
-
-	const { data: userRow, error: userError } = await supabase
-		.from("users")
-		.select("role")
-		.eq("user_id", user.id)
-		.maybeSingle();
-
-	if (userError || (userRow?.role ?? "").toLowerCase() !== "admin") {
-		redirect("/internal");
-	}
+	await requireInternalAdmin("/internal");
 
 	const data = await getAuditModels(true);
 

@@ -1,28 +1,24 @@
-import { headers } from "next/headers";
-import { absoluteUrl } from "@/lib/seo";
-import type { CreditsTierSummary } from "@/app/api/internal/credits/tier-summary/route";
+import { createClient } from "@/utils/supabase/server";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
+
+export type CreditsTierSummary = {
+	lastMonthCents: number;
+	mtdCents: number;
+	teamTier: "basic" | "enterprise";
+};
 
 export async function fetchCreditsTierSummary(
 	workspaceId?: string,
 ): Promise<CreditsTierSummary> {
-	const requestHeaders = await headers();
+	const supabase = await createClient();
+	const { data } = await supabase.auth.getSession();
+	const accessToken = data.session?.access_token;
+	if (!accessToken) throw new Error("Cannot fetch credits tier summary without a session");
 	const params = new URLSearchParams();
 	if (workspaceId) params.set("workspaceId", workspaceId);
 	const query = params.toString();
-	const response = await fetch(
-		absoluteUrl(`/api/internal/credits/tier-summary${query ? `?${query}` : ""}`),
-		{
-			cache: "no-store",
-			headers: {
-				accept: "application/json",
-				cookie: requestHeaders.get("cookie") ?? "",
-			},
-		},
+	return fetchAccountWebApi<CreditsTierSummary>(
+		`/api/account/credits/tier-summary${query ? `?${query}` : ""}`,
+		accessToken,
 	);
-
-	if (!response.ok) {
-		throw new Error(`Failed to fetch credits tier summary: ${response.status}`);
-	}
-
-	return (await response.json()) as CreditsTierSummary;
 }

@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import useSWR from "swr";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { publicSWRKeys } from "@/lib/swr/keys";
 
 type StatusState =
 	| "operational"
@@ -107,46 +109,23 @@ function componentPriority(component: StatusComponent) {
 
 export function FooterStatusIndicator() {
 	const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const [status, setStatus] = useState<StatusSummary>({
-		ok: false,
-		state: "unknown",
-		label: "Checking status",
-		href: STATUS_PAGE_HREF,
-	});
+	const { data, error } = useSWR<StatusSummary>(publicSWRKeys.status);
+	const status: StatusSummary = data
+		? {
+				ok: Boolean(data.ok),
+				state: data.state ?? "unknown",
+				label: data.label || "Status unavailable",
+				href: data.href || STATUS_PAGE_HREF,
+				components: Array.isArray(data.components) ? data.components : [],
+			}
+		: {
+				ok: false,
+				state: "unknown",
+				label: error ? "Status unavailable" : "Checking status",
+				href: STATUS_PAGE_HREF,
+				components: [],
+			};
 	const [open, setOpen] = useState(false);
-
-	useEffect(() => {
-		let active = true;
-
-		void fetch("/api/status/summary", { cache: "no-store" })
-			.then((response) => response.json() as Promise<StatusSummary>)
-			.then((summary) => {
-				if (!active) return;
-				setStatus({
-					ok: Boolean(summary.ok),
-					state: summary.state ?? "unknown",
-					label: summary.label || "Status unavailable",
-					href: summary.href || STATUS_PAGE_HREF,
-					components: Array.isArray(summary.components)
-						? summary.components
-						: [],
-				});
-			})
-			.catch(() => {
-				if (!active) return;
-				setStatus({
-					ok: false,
-					state: "unknown",
-					label: "Status unavailable",
-					href: STATUS_PAGE_HREF,
-					components: [],
-				});
-			});
-
-		return () => {
-			active = false;
-		};
-	}, []);
 
 	useEffect(() => {
 		return () => {

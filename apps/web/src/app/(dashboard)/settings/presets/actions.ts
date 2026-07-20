@@ -1,13 +1,9 @@
 "use server";
 
-import { createClient } from "@/utils/supabase/server";
 import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { revalidatePath, revalidateTag } from "next/cache";
-import {
-	requireActingUser,
-	requireAuthenticatedUser,
-	requireWorkspaceMembership,
-} from "@/utils/serverActionAuth";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
+import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 
 export type PresetConfig = {
 	system_prompt?: string;
@@ -289,40 +285,6 @@ function revalidatePresetDataCache(presetId?: string | null): void {
 	}
 }
 
-async function generateUniquePresetName(
-	supabase: Awaited<ReturnType<typeof createClient>>,
-	workspaceId: string,
-	baseName: string
-) {
-	const normalizedBase = normalizePresetName(baseName);
-	if (!normalizedBase) {
-		throw new Error("Preset name is required");
-	}
-
-	const { data: existing } = await supabase
-		.from("presets")
-		.select("name")
-		.eq("workspace_id", workspaceId);
-
-	const existingNames = new Set(
-		(existing ?? [])
-			.map((row: any) => (typeof row?.name === "string" ? row.name : ""))
-			.filter(Boolean)
-	);
-
-	if (!existingNames.has(normalizedBase)) return normalizedBase;
-
-	const copySuffix = `${normalizedBase}-copy`;
-	if (!existingNames.has(copySuffix)) return copySuffix;
-
-	for (let idx = 2; idx <= 20; idx += 1) {
-		const candidate = `${normalizedBase}-copy-${idx}`;
-		if (!existingNames.has(candidate)) return candidate;
-	}
-
-	throw new Error("Unable to generate a unique preset name");
-}
-
 export async function createPresetAction(input: CreatePresetInput) {
 	const { name, description, creatorUserId, workspaceId, config, visibility } = input;
 
@@ -335,55 +297,14 @@ export async function createPresetAction(input: CreatePresetInput) {
 
 	validatePresetName(name);
 
-	const { supabase, user } = await requireAuthenticatedUser();
-	requireActingUser(creatorUserId, user.id);
-	await requireWorkspaceMembership(supabase, user.id, workspaceId);
-
-	const { data: existing } = await supabase
-		.from("presets")
-		.select("id")
-		.eq("workspace_id", workspaceId)
-		.eq("name", name.trim())
-		.maybeSingle();
-
-	if (existing) {
-		throw new Error(`Preset "${name}" already exists in this workspace`);
-	}
-
 	const sanitizedConfig = sanitizeConfig(config);
 	const normalizedVisibility = normalizeVisibility(visibility);
-
-	const insertObj: Record<string, unknown> = {
-		workspace_id: workspaceId,
-		name: name.trim(),
-		created_by: creatorUserId,
-		config: sanitizedConfig,
-		visibility: normalizedVisibility,
-	};
-
-	if (description) {
-		insertObj.description = description.trim().substring(0, 500);
-	}
-
-	const { data, error } = await supabase
-		.from("presets")
-		.insert(insertObj)
-		.select("id, created_at")
-		.maybeSingle();
-
-	if (error) {
-		console.error("Failed to create preset:", error);
-		throw new Error(`Failed to create preset: ${error.message}`);
-	}
+	const { accessToken } = await getServerAccountContext(); if (!accessToken) throw new Error("Unauthorized");
+	const data = await fetchAccountWebApi<{ id?: string; name: string; createdAt?: string }>("/api/account/settings/presets", accessToken, { method: "POST", body: JSON.stringify({ workspaceId, name: name.trim(), description, creatorUserId, config: sanitizedConfig, visibility: normalizedVisibility }) });
 
 	revalidatePath("/settings/presets");
-	revalidatePresetDataCache(data?.id ?? null);
-
-	return {
-		id: data?.id,
-		name: name.trim(),
-		createdAt: data?.created_at,
-	};
+	revalidatePresetDataCache(data.id ?? null);
+	return data;
 }
 
 export async function forkPresetAction(sourcePresetId: string) {
@@ -391,72 +312,20 @@ export async function forkPresetAction(sourcePresetId: string) {
 		throw new Error("Valid preset ID is required");
 	}
 
-	const supabase = await createClient();
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
-
-	if (!user) {
-		throw new Error("AUTH_REQUIRED");
-	}
-
-	const workspaceId = await getWorkspaceIdFromCookie();
+	const context = await getServerAccountContext();
+	const workspaceId = context.workspaceId ?? await getWorkspaceIdFromCookie();
 	if (!workspaceId) {
 		throw new Error("WORKSPACE_REQUIRED");
 	}
-
-	const { data: source, error } = await supabase
-		.from("presets")
-		.select("id, name, description, config, visibility")
-		.eq("id", sourcePresetId)
-		.maybeSingle();
-
-	if (error) {
-		console.error("Failed to fetch source preset:", error);
-		throw new Error("Failed to fetch preset");
-	}
-
-	if (!source || source.visibility !== "public") {
-		throw new Error("Preset is not publicly available");
-	}
-
-	const uniqueName = await generateUniquePresetName(
-		supabase,
-		workspaceId,
-		source.name || "@preset"
-	);
-
-	const insertObj: Record<string, unknown> = {
-		workspace_id: workspaceId,
-		name: uniqueName,
-		created_by: user.id,
-		config: source.config ?? {},
-		visibility: "private",
-		source_preset_id: source.id,
-	};
-
-	if (source.description) {
-		insertObj.description = source.description;
-	}
-
-	const { data, error: insertError } = await supabase
-		.from("presets")
-		.insert(insertObj)
-		.select("id")
-		.maybeSingle();
-
-	if (insertError) {
-		console.error("Failed to fork preset:", insertError);
-		throw new Error("Failed to copy preset");
-	}
+	if (!context.accessToken) throw new Error("AUTH_REQUIRED");
+	const data = await fetchAccountWebApi<{ id?: string; name: string }>(`/api/account/settings/presets/${encodeURIComponent(sourcePresetId)}/fork`, context.accessToken, { method: "POST", body: JSON.stringify({ workspaceId }) });
 
 	revalidatePath("/settings/presets");
 	revalidatePresetDataCache(sourcePresetId);
-	if (data?.id) {
+	if (data.id) {
 		revalidatePresetDataCache(data.id);
 	}
-
-	return { id: data?.id, name: uniqueName };
+	return data;
 }
 
 export async function updatePresetAction(input: UpdatePresetInput) {
@@ -466,37 +335,10 @@ export async function updatePresetAction(input: UpdatePresetInput) {
 		throw new Error("Valid preset ID is required");
 	}
 
-	const { supabase, user } = await requireAuthenticatedUser();
-
-	const { data: existing } = await supabase
-		.from("presets")
-		.select("id, workspace_id, name, config")
-		.eq("id", id)
-		.maybeSingle();
-
-	if (!existing) {
-		throw new Error("Preset not found");
-	}
-	await requireWorkspaceMembership(supabase, user.id, existing.workspace_id);
-
-	const updateObj: Record<string, unknown> = {
-		updated_at: new Date().toISOString(),
-	};
+	const updateObj: Record<string, unknown> = {};
 
 	if (name) {
 		validatePresetName(name);
-
-		const { data: duplicate } = await supabase
-			.from("presets")
-			.select("id")
-			.eq("workspace_id", existing.workspace_id)
-			.eq("name", name.trim())
-			.neq("id", id)
-			.maybeSingle();
-
-		if (duplicate) {
-			throw new Error(`Preset "${name}" already exists in this workspace`);
-		}
 
 		updateObj.name = name.trim();
 	}
@@ -506,24 +348,15 @@ export async function updatePresetAction(input: UpdatePresetInput) {
 	}
 
 	if (config !== undefined) {
-		const existingConfig = (existing.config as Record<string, unknown>) || {};
-		const mergedConfig = { ...existingConfig, ...sanitizeConfig(config as PresetConfig) };
-		updateObj.config = mergedConfig;
+		updateObj.config = sanitizeConfig(config as PresetConfig);
 	}
 
 	if (visibility) {
 		updateObj.visibility = normalizeVisibility(visibility);
 	}
 
-	const { error } = await supabase
-		.from("presets")
-		.update(updateObj)
-		.eq("id", id);
-
-	if (error) {
-		console.error("Failed to update preset:", error);
-		throw new Error(`Failed to update preset: ${error.message}`);
-	}
+	const { accessToken } = await getServerAccountContext(); if (!accessToken) throw new Error("Unauthorized");
+	await fetchAccountWebApi(`/api/account/settings/presets/${encodeURIComponent(id)}`, accessToken, { method: "PUT", body: JSON.stringify(updateObj) });
 
 	revalidatePath("/settings/presets");
 	revalidatePresetDataCache(id);
@@ -536,39 +369,9 @@ export async function deletePresetAction(id: string, confirmName?: string) {
 		throw new Error("Valid preset ID is required");
 	}
 
-	const { supabase, user } = await requireAuthenticatedUser();
-
-	const { data: existing, error: fetchError } = await supabase
-		.from("presets")
-		.select("name, workspace_id")
-		.eq("id", id)
-		.maybeSingle();
-
-	if (fetchError) {
-		throw new Error(`Failed to fetch preset: ${fetchError.message}`);
-	}
-
-	if (!existing) {
-		throw new Error("Preset not found");
-	}
-	if (!existing.workspace_id) throw new Error("Preset not found");
-	await requireWorkspaceMembership(supabase, user.id, existing.workspace_id);
-
-	if (confirmName) {
-		if (existing.name !== confirmName) {
-			throw new Error("Confirmation failed: Preset name does not match");
-		}
-	}
-
-	const { error } = await supabase
-		.from("presets")
-		.delete()
-		.eq("id", id);
-
-	if (error) {
-		console.error("Failed to delete preset:", error);
-		throw new Error(`Failed to delete preset: ${error.message}`);
-	}
+	const { accessToken } = await getServerAccountContext(); if (!accessToken) throw new Error("Unauthorized");
+	const query = confirmName ? `?confirmName=${encodeURIComponent(confirmName)}` : "";
+	await fetchAccountWebApi(`/api/account/settings/presets/${encodeURIComponent(id)}${query}`, accessToken, { method: "DELETE" });
 
 	revalidatePath("/settings/presets");
 	revalidatePresetDataCache(id);
@@ -581,23 +384,8 @@ export async function getPresetById(id: string) {
 		throw new Error("Valid preset ID is required");
 	}
 
-	const { supabase, user } = await requireAuthenticatedUser();
-
-	const { data, error } = await supabase
-		.from("presets")
-		.select("*")
-		.eq("id", id)
-		.maybeSingle();
-
-	if (error) {
-		console.error("Failed to fetch preset:", error);
-		throw new Error(`Failed to fetch preset: ${error.message}`);
-	}
-	if (data?.workspace_id) {
-		await requireWorkspaceMembership(supabase, user.id, data.workspace_id);
-	}
-
-	return data;
+	const { accessToken } = await getServerAccountContext(); if (!accessToken) throw new Error("Unauthorized");
+	return (await fetchAccountWebApi<{ preset: any }>(`/api/account/settings/presets/${encodeURIComponent(id)}`, accessToken)).preset;
 }
 
 export async function listPresetsByWorkspace(workspaceId: string) {
@@ -605,21 +393,8 @@ export async function listPresetsByWorkspace(workspaceId: string) {
 		throw new Error("Valid workspace ID is required");
 	}
 
-	const { supabase, user } = await requireAuthenticatedUser();
-	await requireWorkspaceMembership(supabase, user.id, workspaceId);
-
-	const { data, error } = await supabase
-		.from("presets")
-		.select("*")
-		.eq("workspace_id", workspaceId)
-		.order("created_at", { ascending: false });
-
-	if (error) {
-		console.error("Failed to list presets:", error);
-		throw new Error(`Failed to list presets: ${error.message}`);
-	}
-
-	return data;
+	const { accessToken } = await getServerAccountContext(); if (!accessToken) throw new Error("Unauthorized");
+	return (await fetchAccountWebApi<{ presets: any[] }>(`/api/account/settings/presets/list?workspaceId=${encodeURIComponent(workspaceId)}`, accessToken)).presets;
 }
 
 export const listPresetsByTeam = listPresetsByWorkspace;
