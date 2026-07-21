@@ -233,18 +233,25 @@ function buildSummary(apiModelId: string, rows: PricingRuleRow[]): CatalogPricin
     return summary;
 }
 
-async function fetchPricingRuleRows(): Promise<PricingRuleRow[]> {
+async function fetchPricingRuleRows(cache: RequestCache = "no-store"): Promise<PricingRuleRow[]> {
 	return (await fetchPublicWebApi<{ rules: PricingRuleRow[] }>(
 		"/api/_web/models/catalog-pricing-rules",
+		{ cache },
 	)).rules;
 }
 
 export async function getCatalogPricingSummariesCached(): Promise<
     CatalogPricingSummaryByModelId
 > {
+    return getCatalogPricingSummariesWithCacheMode("no-store");
+}
+
+export async function getCatalogPricingSummariesWithCacheMode(
+    cache: RequestCache,
+): Promise<CatalogPricingSummaryByModelId> {
     let rows: PricingRuleRow[];
     try {
-        rows = await fetchPricingRuleRows();
+        rows = await fetchPricingRuleRows(cache);
     } catch {
         return {};
     }

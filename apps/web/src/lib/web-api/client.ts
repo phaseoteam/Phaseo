@@ -24,10 +24,13 @@ function getWebApiOrigin(): string {
  * serving, cache tags, and revalidation are owned by Cloudflare so there is a
  * single cache contract for every web deployment.
  */
-export async function fetchPublicWebApi<T>(path: `/api/_web/${string}`): Promise<T> {
+export async function fetchPublicWebApi<T>(
+	path: `/api/_web/${string}`,
+	options?: { cache?: RequestCache },
+): Promise<T> {
 	const response = await fetch(`${getWebApiOrigin()}${path}`, {
 		headers: { Accept: "application/json" },
-		cache: "no-store",
+		cache: options?.cache ?? "no-store",
 	});
 
 	if (!response.ok) {

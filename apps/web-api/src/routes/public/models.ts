@@ -10,7 +10,8 @@ import { withPublicCache, type PublicCachePolicy } from "@/http/cache";
 const CACHE_PROFILES = {
 	catalogue: {
 		edgeTtlSeconds: 5 * 60,
-		staleWhileRevalidateSeconds: 5 * 60,
+		browserTtlSeconds: 5 * 60,
+		staleWhileRevalidateSeconds: 60 * 60,
 		cacheTags: ["web-api-models"],
 	},
 	overview: {
@@ -55,6 +56,7 @@ const CACHE_PROFILES = {
 	},
 	catalogPricing: {
 		edgeTtlSeconds: 60 * 60,
+		browserTtlSeconds: 5 * 60,
 		staleWhileRevalidateSeconds: 24 * 60 * 60,
 		cacheTags: ["web-api-catalog-pricing"],
 	},
