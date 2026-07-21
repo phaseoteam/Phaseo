@@ -7,10 +7,10 @@ info:
   version: 1.0.0
   contact:
     name: Phaseo
-    url: https://phaseo.app
+    url: 'https://phaseo.app'
     email: danielbutler500@gmail.com
 servers:
-  - url: https://api.phaseo.app/v1
+  - url: 'https://api.phaseo.app/v1'
 security:
   - BearerAuth: []
 paths:
@@ -158,7 +158,7 @@ paths:
             default: json
         - name: feed
           in: query
-          description: Alias for format. Accepts json, rss, or atom.
+          description: 'Alias for format. Accepts json, rss, or atom.'
           schema:
             type: string
             enum:
@@ -342,7 +342,7 @@ paths:
             default: json
         - name: feed
           in: query
-          description: Alias for format. Accepts json, rss, or atom.
+          description: 'Alias for format. Accepts json, rss, or atom.'
           schema:
             type: string
             enum:
@@ -511,7 +511,7 @@ paths:
                     - role: user
                       content: What is the current datetime in Europe/London?
                   tools:
-                    - type: gateway:datetime
+                    - type: 'gateway:datetime'
                       parameters:
                         timezone: Europe/London
                   tool_choice: auto
@@ -545,7 +545,7 @@ paths:
                     - role: user
                       content: Give me the current datetime in Asia/Tokyo.
                   tools:
-                    - type: gateway:datetime
+                    - type: 'gateway:datetime'
                       parameters:
                         timezone: Asia/Tokyo
                   tool_choice: auto
@@ -556,7 +556,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResponsesResponse'
-  /async/{kind}/{id}/ws:
+  '/async/{kind}/{id}/ws':
     get:
       x-beta: true
       tags:
@@ -656,7 +656,7 @@ paths:
                     - role: user
                       content: What time is it in America/New_York right now?
                   tools:
-                    - type: gateway:datetime
+                    - type: 'gateway:datetime'
                       parameters:
                         timezone: America/New_York
                   tool_choice:
@@ -931,7 +931,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VideoModelsResponse'
-  /videos/{video_id}:
+  '/videos/{video_id}':
     get:
       x-beta: true
       tags:
@@ -978,7 +978,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VideoDeleteResponse'
-  /videos/{video_id}/cancel:
+  '/videos/{video_id}/cancel':
     post:
       x-beta: true
       tags:
@@ -1008,7 +1008,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /videos/{video_id}/content:
+  '/videos/{video_id}/content':
     get:
       x-beta: true
       tags:
@@ -1031,7 +1031,7 @@ paths:
               schema:
                 type: string
                 format: binary
-  /videos/{video_id}/download_url:
+  '/videos/{video_id}/download_url':
     post:
       x-beta: true
       tags:
@@ -1118,7 +1118,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MusicGenerateResponse'
-  /music/generate/{music_id}:
+  '/music/generate/{music_id}':
     get:
       x-beta: true
       tags:
@@ -1223,7 +1223,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /files/{file_id}:
+  '/files/{file_id}':
     get:
       x-beta: true
       tags:
@@ -1259,7 +1259,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /files/{file_id}/content:
+  '/files/{file_id}/content':
     get:
       x-beta: true
       tags:
@@ -1525,7 +1525,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /batches/files/{file_id}:
+  '/batches/files/{file_id}':
     get:
       x-beta: true
       tags:
@@ -1560,7 +1560,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /batches/files/{file_id}/content:
+  '/batches/files/{file_id}/content':
     get:
       x-beta: true
       tags:
@@ -1594,7 +1594,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /batches/{batch_id}:
+  '/batches/{batch_id}':
     get:
       x-beta: true
       tags:
@@ -1634,7 +1634,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /batches/{batch_id}/requests:
+  '/batches/{batch_id}/requests':
     get:
       x-beta: true
       tags:
@@ -1692,7 +1692,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /batches/{batch_id}/cancel:
+  '/batches/{batch_id}/cancel':
     post:
       x-beta: true
       tags:
@@ -1972,7 +1972,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /keys/{id}:
+  '/keys/{id}':
     get:
       x-beta: true
       tags:
@@ -2263,7 +2263,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /workspaces/{id}:
+  '/workspaces/{id}':
     get:
       x-beta: true
       tags:
@@ -2557,7 +2557,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /health/providers/{provider_id}/derank:
+  '/health/providers/{provider_id}/derank':
     get:
       x-beta: true
       tags:
@@ -2711,14 +2711,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VideoModelsResponse'
-  /video/generations/{video_id}:
+  '/video/generations/{video_id}':
     get:
       x-beta: true
       tags:
         - Gateway
       operationId: getVideoAlias
       summary: Get video status (alias)
-      description: Alias of /videos/{video_id}.
+      description: 'Alias of /videos/{video_id}.'
       parameters:
         - name: video_id
           in: path
@@ -2738,7 +2738,7 @@ paths:
         - Gateway
       operationId: deleteVideoAlias
       summary: Delete video (alias)
-      description: Alias of /videos/{video_id}.
+      description: 'Alias of /videos/{video_id}.'
       parameters:
         - name: video_id
           in: path
@@ -2752,14 +2752,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VideoDeleteResponse'
-  /video/generations/{video_id}/cancel:
+  '/video/generations/{video_id}/cancel':
     post:
       x-beta: true
       tags:
         - Gateway
       operationId: cancelVideoAlias
       summary: Cancel video (alias)
-      description: Alias of /videos/{video_id}/cancel.
+      description: 'Alias of /videos/{video_id}/cancel.'
       parameters:
         - name: video_id
           in: path
@@ -2779,14 +2779,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /video/generations/{video_id}/content:
+  '/video/generations/{video_id}/content':
     get:
       x-beta: true
       tags:
         - Gateway
       operationId: getVideoContentAlias
       summary: Get video content (alias)
-      description: Alias of /videos/{video_id}/content.
+      description: 'Alias of /videos/{video_id}/content.'
       parameters:
         - name: video_id
           in: path
@@ -2801,14 +2801,14 @@ paths:
               schema:
                 type: string
                 format: binary
-  /video/generations/{video_id}/download_url:
+  '/video/generations/{video_id}/download_url':
     post:
       x-beta: true
       tags:
         - Gateway
       operationId: createVideoDownloadUrlAlias
       summary: Create a signed video download URL (alias)
-      description: Alias of /videos/{video_id}/download_url.
+      description: 'Alias of /videos/{video_id}/download_url.'
       parameters:
         - name: video_id
           in: path
@@ -2866,14 +2866,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MusicGenerateResponse'
-  /music/generations/{music_id}:
+  '/music/generations/{music_id}':
     get:
       x-beta: true
       tags:
         - Gateway
       operationId: getMusicGenerationAlias
       summary: Get music generation status (alias)
-      description: Alias of /music/generate/{music_id}.
+      description: 'Alias of /music/generate/{music_id}.'
       parameters:
         - name: music_id
           in: path
@@ -3077,14 +3077,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /batch/files/{file_id}:
+  '/batch/files/{file_id}':
     get:
       x-beta: true
       tags:
         - Gateway
       operationId: retrieveBatchFileAlias
       summary: Retrieve batch file (alias)
-      description: Alias of /batches/files/{file_id}.
+      description: 'Alias of /batches/files/{file_id}.'
       parameters:
         - name: file_id
           in: path
@@ -3111,14 +3111,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /batch/files/{file_id}/content:
+  '/batch/files/{file_id}/content':
     get:
       x-beta: true
       tags:
         - Gateway
       operationId: retrieveBatchFileContentAlias
       summary: Retrieve batch file content (alias)
-      description: Alias of /batches/files/{file_id}/content.
+      description: 'Alias of /batches/files/{file_id}/content.'
       parameters:
         - name: file_id
           in: path
@@ -3146,14 +3146,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /batch/{id}:
+  '/batch/{id}':
     get:
       x-beta: true
       tags:
         - Gateway
       operationId: retrieveBatchAlias
       summary: Retrieve batch (alias)
-      description: Alias of /batches/{batch_id}.
+      description: 'Alias of /batches/{batch_id}.'
       parameters:
         - name: id
           in: path
@@ -3185,14 +3185,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /batch/{id}/requests:
+  '/batch/{id}/requests':
     get:
       x-beta: true
       tags:
         - Gateway
       operationId: listBatchRequestsAlias
       summary: List batch request rows (alias)
-      description: Alias of /batches/{batch_id}/requests.
+      description: 'Alias of /batches/{batch_id}/requests.'
       parameters:
         - name: id
           in: path
@@ -3242,14 +3242,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /batch/{id}/cancel:
+  '/batch/{id}/cancel':
     post:
       x-beta: true
       tags:
         - Gateway
       operationId: cancelBatchAlias
       summary: Cancel batch (alias)
-      description: Alias of /batches/{batch_id}/cancel.
+      description: 'Alias of /batches/{batch_id}/cancel.'
       parameters:
         - name: id
           in: path
@@ -3357,7 +3357,7 @@ paths:
             default: json
         - name: feed
           in: query
-          description: Alias for format. Accepts json, rss, or atom.
+          description: 'Alias for format. Accepts json, rss, or atom.'
           schema:
             type: string
             enum:
@@ -3626,7 +3626,7 @@ components:
         link:
           type: string
           nullable: true
-          example: https://openai.com
+          example: 'https://openai.com'
         country_code:
           type: string
           nullable: true
@@ -4386,7 +4386,7 @@ components:
         type:
           type: string
           enum:
-            - gateway:datetime
+            - 'gateway:datetime'
         parameters:
           type: object
           properties:
@@ -4409,7 +4409,7 @@ components:
         type:
           type: string
           enum:
-            - gateway:web_search
+            - 'gateway:web_search'
         parameters:
           type: object
           properties:
@@ -4443,7 +4443,7 @@ components:
         type:
           type: string
           enum:
-            - gateway:web_fetch
+            - 'gateway:web_fetch'
         parameters:
           type: object
           properties:
@@ -4474,9 +4474,9 @@ components:
             - auto
             - none
             - required
-            - gateway:datetime
-            - gateway:web_search
-            - gateway:web_fetch
+            - 'gateway:datetime'
+            - 'gateway:web_search'
+            - 'gateway:web_fetch'
         - type: object
     ServerToolUsage:
       type: object
@@ -5252,7 +5252,7 @@ components:
               properties:
                 task_type:
                   type: string
-                  pattern: ^[A-Z_]+$
+                  pattern: '^[A-Z_]+$'
                 title:
                   type: string
             mistral:
@@ -5756,7 +5756,7 @@ components:
         next_retry_at:
           type: string
           nullable: true
-          description: ISO timestamp for the next scheduled retry, when present.
+          description: 'ISO timestamp for the next scheduled retry, when present.'
         last_attempt_at:
           type: string
           nullable: true
@@ -5772,7 +5772,7 @@ components:
         last_response_status:
           type: integer
           nullable: true
-          description: HTTP status returned by the webhook destination, when available.
+          description: 'HTTP status returned by the webhook destination, when available.'
         last_delivered_at:
           type: string
           nullable: true
@@ -5784,7 +5784,7 @@ components:
         last_error_message:
           type: string
           nullable: true
-          description: Most recent delivery error message, when available.
+          description: 'Most recent delivery error message, when available.'
     AsyncWebhookDeliveryAttempt:
       type: object
       description: Recent gateway-managed async webhook delivery attempt.
@@ -5822,15 +5822,15 @@ components:
         next_retry_at:
           type: string
           nullable: true
-          description: ISO timestamp for the next retry after this attempt, when scheduled.
+          description: 'ISO timestamp for the next retry after this attempt, when scheduled.'
         response_status:
           type: integer
           nullable: true
-          description: HTTP status returned by the webhook destination, when available.
+          description: 'HTTP status returned by the webhook destination, when available.'
         error_message:
           type: string
           nullable: true
-          description: Delivery error message, when available.
+          description: 'Delivery error message, when available.'
         response_body_preview:
           type: string
           nullable: true
@@ -7448,8 +7448,8 @@ components:
         - openai-mrcr-8-needle-128k
         - openai-mrcr-8-needle-1m
         - openai-mrcr-v2-8-needle
-        - openai-mrcr:-2-needle-128k
-        - openai-mrcr:-2-needle-1m
+        - 'openai-mrcr:-2-needle-128k'
+        - 'openai-mrcr:-2-needle-1m'
         - openbookqa
         - openrca
         - os-world
@@ -8151,7 +8151,7 @@ components:
           example: Production
         slug:
           type: string
-          pattern: ^[a-z0-9-]+$
+          pattern: '^[a-z0-9-]+$'
           minLength: 1
           maxLength: 50
           example: production
@@ -8165,7 +8165,7 @@ components:
           maxLength: 100
         slug:
           type: string
-          pattern: ^[a-z0-9-]+$
+          pattern: '^[a-z0-9-]+$'
           minLength: 1
           maxLength: 50
       additionalProperties: false
@@ -8537,7 +8537,7 @@ components:
           example: active
         scopes:
           type: string
-          example: read,write
+          example: 'read,write'
         created_at:
           type: string
           format: date-time
@@ -8569,7 +8569,7 @@ components:
           example: active
         scopes:
           type: string
-          example: read,write
+          example: 'read,write'
         created_at:
           type: string
           format: date-time
@@ -8604,7 +8604,7 @@ components:
           example: active
         scopes:
           type: string
-          example: read,write
+          example: 'read,write'
         created_by:
           type: string
           format: uuid
@@ -8889,7 +8889,9 @@ components:
         - google/gemini-3.1-pro-preview
         - google/gemini-3.1-pro-preview-customtools
         - google/gemini-3.5-flash
+        - google/gemini-3.5-flash-lite
         - google/gemini-3.5-pro
+        - google/gemini-3.6-flash
         - google/gemini-embedding-001
         - google/gemini-embedding-2
         - google/gemini-embedding-2-preview
@@ -8897,10 +8899,10 @@ components:
         - google/gemma-3-27b
         - google/gemma-3n-e4b
         - google/gemma-4-26b-a4b
-        - google/gemma-4-26b-a4b:free
+        - 'google/gemma-4-26b-a4b:free'
         - google/gemma-4-31b
         - google/gemma-4-31b-it
-        - google/gemma-4-31b:free
+        - 'google/gemma-4-31b:free'
         - google/lyria-3-clip-preview
         - google/lyria-3-pro-preview
         - google/veo-2
@@ -8955,7 +8957,7 @@ components:
         - mistral/devstral-2
         - mistral/devstral-medium-1.0
         - mistral/devstral-small-1.1
-        - mistral/leanstral-1.5:free
+        - 'mistral/leanstral-1.5:free'
         - mistral/magistral-medium-1.2
         - mistral/ministral-3-14b
         - mistral/ministral-3-3b
@@ -9085,8 +9087,8 @@ components:
         - openai/text-embedding-ada-002
         - openai/whisper-1
         - phaseo/free
-        - poolside/laguna-m.1:free
-        - poolside/laguna-xs-2.1:free
+        - 'poolside/laguna-m.1:free'
+        - 'poolside/laguna-xs-2.1:free'
         - qwen/qvq-max
         - qwen/qwen-3.6-plus
         - qwen/qwen-flash
@@ -9206,7 +9208,7 @@ components:
         - tencent/hunyuan-a13b-instruct
         - tencent/hy3
         - tencent/hy3-preview
-        - tencent/hy3:free
+        - 'tencent/hy3:free'
         - thinking-machines/inkling
         - thinking-machines/inkling-64k
         - venice/venice-uncensored
@@ -9242,9 +9244,9 @@ components:
         - xiaomi/mimo-v2-flash
         - xiaomi/mimo-v2.5
         - xiaomi/mimo-v2.5-pro
-        - xiaomi/mimo-v2.5-tts:free
+        - 'xiaomi/mimo-v2.5-tts:free'
         - z-ai/glm-4-32b
-        - z-ai/glm-4-7-flash:free
+        - 'z-ai/glm-4-7-flash:free'
         - z-ai/glm-4.5
         - z-ai/glm-4.5-air
         - z-ai/glm-4.5-air-x
