@@ -1073,7 +1073,15 @@ function ModelsDisplayContent({
 	const [showScrollTopButton, setShowScrollTopButton] = useState(false);
 	const [showMobileFilterFab, setShowMobileFilterFab] = useState(false);
 	const [isMobileViewport, setIsMobileViewport] = useState(false);
+	const [sidebarCountsReady, setSidebarCountsReady] = useState(false);
 	const scrollTopAnimationFrameRef = useRef<number | null>(null);
+
+	useEffect(() => {
+		const frame = window.requestAnimationFrame(() => {
+			setSidebarCountsReady(true);
+		});
+		return () => window.cancelAnimationFrame(frame);
+	}, [models]);
 
 	useEffect(() => {
 		const mediaQuery = window.matchMedia("(max-width: 639px)");
@@ -1442,6 +1450,22 @@ function ModelsDisplayContent({
 	);
 
 	const dynamicSidebarCounts = useMemo(() => {
+		if (!sidebarCountsReady) {
+			return {
+				statusCounts: facets.statusCounts,
+				endpointOptions: baseEndpointOptions,
+				inputModalityOptions: baseInputModalityOptions,
+				outputModalityOptions: baseOutputModalityOptions,
+				featureOptions: baseFeatureOptions,
+				tierOptions: baseTierOptions,
+				supportedParameterOptions: baseSupportedParameterOptions,
+				providerOptions: baseProviderOptions,
+				regionOptions: baseRegionOptions,
+				creatorOptions: baseCreatorOptions,
+				yearOptions: baseYearOptions,
+			};
+		}
+
 		const withAllExcept = (dimension: FilterDimension) =>
 			preparedModels.filter((prepared) =>
 				matchesPreparedModel(prepared, { exclude: dimension }),
@@ -1541,8 +1565,10 @@ function ModelsDisplayContent({
 		baseSupportedParameterOptions,
 		baseTierOptions,
 		baseYearOptions,
+		facets.statusCounts,
 		matchesPreparedModel,
 		preparedModels,
+		sidebarCountsReady,
 		selectedCreators,
 		selectedEndpoints,
 		selectedFeatures,
