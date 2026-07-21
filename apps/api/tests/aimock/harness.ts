@@ -183,6 +183,53 @@ function createOpenAIChatMount(): Mountable {
     };
 }
 
+function createGoogleInteractionsMount(): Mountable {
+    let journal: Journal | null = null;
+    return {
+        setJournal(nextJournal) { journal = nextJournal; },
+        async handleRequest(req: IncomingMessage, res: ServerResponse, pathname: string) {
+            if (pathname !== "/" || req.method !== "POST") return false;
+            const body = JSON.parse(await readIncomingBody(req)) as Record<string, any>;
+            const headers = flattenHeaders(req.headers as Record<string, string | string[] | undefined>);
+            const serialized = JSON.stringify(body);
+            const prompt = serialized.includes("[aimock-tool] weather")
+                ? "[aimock-tool] weather"
+                : serialized.includes("[aimock-structured] person")
+                    ? "[aimock-structured] person"
+                    : "[aimock-chat] hello";
+            const tool = prompt === "[aimock-tool] weather" ? body.tools?.[0] : undefined;
+            const content = prompt === "[aimock-structured] person"
+                ? JSON.stringify({ name: "Ava", city: "London" })
+                : "Hello from AIMock via Phaseo.";
+            const payload = {
+                id: "interaction_cross_provider",
+                status: "completed",
+                model: body.model,
+                steps: tool
+                    ? [{
+                        type: "function_call",
+                        id: "call_aimock_weather",
+                        name: tool.name,
+                        arguments: { city: "London", unit: "celsius" },
+                    }]
+                    : [{
+                        type: "model_output",
+                        content: [{ type: "text", text: content }],
+                    }],
+                usage: {
+                    total_input_tokens: 4,
+                    total_output_tokens: 3,
+                    total_tokens: 7,
+                },
+            };
+            journal?.add({ method: req.method, path: req.url ?? pathname, headers, body, service: "chat", response: { status: 200, fixture: null } });
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify(payload));
+            return true;
+        },
+    };
+}
+
 function createAnthropicMessagesMount(): Mountable {
     let journal: Journal | null = null;
     return {
@@ -493,6 +540,7 @@ export async function startAimock(): Promise<LLMock> {
     ]);
     aimock.mount("/v1/rerank", createOpenAIRerankMount());
     aimock.mount("/v1/tts", createXAiTtsMount());
+    aimock.mount("/v1beta/interactions", createGoogleInteractionsMount());
     aimock.mount("/v1/openai", createOpenAIChatMount());
     aimock.mount("/api/v1", createOpenAIChatMount());
     aimock.mount("/v1/projects/aimock-project/locations/us-east5/publishers/anthropic/models", createAnthropicMessagesMount());
