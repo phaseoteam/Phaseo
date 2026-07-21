@@ -2,6 +2,30 @@ import { describe, expect, it } from "vitest";
 import { irToGemini } from "../index";
 
 describe("google-ai-studio irToGemini", () => {
+	it("removes JSON Schema additionalProperties from function declarations", async () => {
+		const request = await irToGemini({
+			model: "gemini-3.5-flash-lite",
+			stream: false,
+			messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
+			tools: [{
+				name: "lookup",
+				description: "Look something up",
+				parameters: {
+					type: "object",
+					additionalProperties: false,
+					properties: {
+						query: { type: "string", additionalProperties: false },
+					},
+				},
+			}],
+		} as any);
+
+		expect(request.tools?.[0]?.functionDeclarations?.[0]?.parameters).toEqual({
+			type: "object",
+			properties: { query: { type: "string" } },
+		});
+	});
+
 	it("maps system and developer roles into systemInstruction parts", async () => {
 		const request = await irToGemini({
 			model: "gemini-2.5-flash",

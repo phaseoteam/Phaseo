@@ -27,6 +27,7 @@ import { googleUsageMetadataToIRUsage } from "@providers/google-ai-studio/usage"
 import { encodeOpenAIChatResponse } from "@protocols/openai-chat/encode";
 import { createSyntheticResponsesStreamFromIR } from "@executors/_shared/text-generate/synthetic-responses-stream";
 import { buildSyntheticServerToolStream } from "@pipeline/surfaces/server-tools.stream";
+import { sanitizeGeminiSchema } from "@executors/google/shared/schema";
 
 const DEFAULT_LYRIA_RETRY_ATTEMPTS = 3;
 const DEFAULT_LYRIA_RETRY_DELAY_MS = 300;
@@ -184,7 +185,7 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 			generationConfig.responseMimeType = "application/json";
 		} else if (ir.responseFormat.type === "json_schema") {
 			generationConfig.responseMimeType = "application/json";
-			generationConfig.responseSchema = ir.responseFormat.schema;
+			generationConfig.responseSchema = sanitizeGeminiSchema(ir.responseFormat.schema);
 
 			// Reinforce schema adherence for models that treat responseSchema as soft guidance.
 			const schemaText = (() => {
@@ -260,7 +261,7 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 			functionDeclarations: ir.tools.map(tool => ({
 				name: tool.name,
 				description: tool.description,
-				parameters: tool.parameters,
+				parameters: sanitizeGeminiSchema(tool.parameters),
 			})),
 		}];
 
