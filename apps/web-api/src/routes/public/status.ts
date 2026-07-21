@@ -87,34 +87,72 @@ function isVisibleComponent(component: ComponentStatus, components: ComponentSta
 	);
 }
 
-function extractEscapedObject(source: string, marker: string) {
-	const start = source.indexOf(marker);
-	if (start < 0) return null;
+function extractEscapedObjects(source: string, marker: string) {
+	const candidates: string[] = [];
+	let markerStart = source.indexOf(marker);
 
-	const braceStart = source.indexOf("{", start + marker.length);
-	if (braceStart < 0) return null;
+	while (markerStart >= 0) {
+		const braceStart = source.indexOf("{", markerStart + marker.length);
+		if (braceStart < 0) break;
 
-	let depth = 0;
-	for (let index = braceStart; index < source.length; index += 1) {
-		const char = source[index];
-		if (char === "{") {
-			depth += 1;
-			continue;
+		let depth = 0;
+		let inString = false;
+		let escaped = false;
+		for (let index = braceStart; index < source.length; index += 1) {
+			const char = source[index];
+			if (inString) {
+				if (escaped) {
+					escaped = false;
+				} else if (char === "\\") {
+					escaped = true;
+				} else if (char === '"') {
+					inString = false;
+				}
+				continue;
+			}
+
+			if (char === '"') {
+				inString = true;
+				continue;
+			}
+			if (char === "{") {
+				depth += 1;
+				continue;
+			}
+			if (char !== "}") continue;
+			depth -= 1;
+			if (depth === 0) {
+				candidates.push(source.slice(braceStart, index + 1));
+				break;
+			}
 		}
 
-		if (char !== "}") continue;
-		depth -= 1;
-		if (depth === 0) return source.slice(braceStart, index + 1);
+		markerStart = source.indexOf(marker, markerStart + marker.length);
 	}
 
-	return null;
+	return candidates;
 }
 
 function parseIncidentSummaryHtml(html: string): IncidentSummary {
-	const rawSummary = extractEscapedObject(html, String.raw`\"summary\":`);
-	if (!rawSummary) throw new Error("incident_summary_not_found");
+	const normalizedHtml = html.replace(/\\"/g, '"');
+	for (const rawSummary of extractEscapedObjects(normalizedHtml, '"summary":')) {
+		try {
+			const parsed = JSON.parse(rawSummary) as unknown;
+			if (
+				isRecord(parsed) &&
+				("structure" in parsed ||
+					"components" in parsed ||
+					"ongoing_incidents" in parsed ||
+					"in_progress_maintenances" in parsed)
+			) {
+				return parsed as IncidentSummary;
+			}
+		} catch {
+			continue;
+		}
+	}
 
-	return JSON.parse(rawSummary.replace(/\\"/g, '"')) as IncidentSummary;
+	throw new Error("incident_summary_not_found");
 }
 
 function affectedComponentKey(value: unknown) {
