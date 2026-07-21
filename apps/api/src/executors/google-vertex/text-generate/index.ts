@@ -23,6 +23,7 @@ import {
 	modelSupportsGoogleThinkingLevels,
 	resolveGoogleThinkingLevelForEffort,
 } from "@executors/google/shared/thinking";
+import { sanitizeGeminiSchema } from "@executors/google/shared/schema";
 import type { ProviderExecutor } from "../../types";
 
 type VertexServiceAccount = {
@@ -460,7 +461,7 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 		generationConfig.responseMimeType = "application/json";
 	} else if (ir.responseFormat?.type === "json_schema") {
 		generationConfig.responseMimeType = "application/json";
-		generationConfig.responseSchema = ir.responseFormat.schema;
+		generationConfig.responseSchema = sanitizeGeminiSchema(ir.responseFormat.schema);
 
 		const schemaText = (() => {
 			try {
@@ -515,7 +516,7 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 			functionDeclarations: ir.tools.map(tool => ({
 				name: tool.name,
 				description: tool.description,
-				parameters: tool.parameters,
+				parameters: sanitizeGeminiSchema(tool.parameters),
 			})),
 		}];
 		if (ir.toolChoice === "auto") request.toolConfig = { functionCallingConfig: { mode: "AUTO" } };
