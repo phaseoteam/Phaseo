@@ -846,6 +846,9 @@ pub mod model_ids {
     /// Model ID: `poolside/laguna-m.1:free`.
     /// Model page: https://phaseo.app/models/poolside/laguna-m.1%3Afree
     pub const POOLSIDE_LAGUNA_M_1_FREE: &str = "poolside/laguna-m.1:free";
+    /// Model ID: `poolside/laguna-s-2.1:free`.
+    /// Model page: https://phaseo.app/models/poolside/laguna-s-2.1%3Afree
+    pub const POOLSIDE_LAGUNA_S_2_1_FREE: &str = "poolside/laguna-s-2.1:free";
     /// Model ID: `poolside/laguna-xs-2.1:free`.
     /// Model page: https://phaseo.app/models/poolside/laguna-xs-2.1%3Afree
     pub const POOLSIDE_LAGUNA_XS_2_1_FREE: &str = "poolside/laguna-xs-2.1:free";
