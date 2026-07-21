@@ -24,7 +24,9 @@ export default function ModelsPageClient() {
 		data: pricing,
 		error: pricingError,
 	} = useSWR(
-		catalogue?.pricingComplete ? null : publicSWRKeys.catalogPricing,
+		catalogue && !catalogue.pricingComplete
+			? publicSWRKeys.catalogPricing
+			: null,
 		fetchModelsPricing,
 		{
 			...MODELS_SWR_OPTIONS,
