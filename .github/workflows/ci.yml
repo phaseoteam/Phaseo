@@ -230,7 +230,18 @@ jobs:
             SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
             NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
         steps:
+            - name: Create GitHub App token (Phaseo Bot)
+              id: importer-app-token
+              uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+              with:
+                  client-id: ${{ secrets.PHASEO_APP_CLIENT_ID }}
+                  private-key: ${{ secrets.PHASEO_APP_PRIVATE_KEY }}
+
             - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+              with:
+                  fetch-depth: 0
+                  persist-credentials: false
+                  token: ${{ steps.importer-app-token.outputs.token }}
 
             - name: Setup pnpm
               uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
@@ -295,6 +306,44 @@ jobs:
               with:
                   path: packages/data/catalog/src/data/.import-state.json
                   key: ${{ steps.importer-state-cache.outputs.cache-primary-key }}
+
+            - name: Prepare importer state update
+              id: importer-state-update
+              if: success() && env.SUPABASE_SERVICE_ROLE_KEY != '' && env.NEXT_PUBLIC_SUPABASE_URL != ''
+              env:
+                  GH_TOKEN: ${{ steps.importer-app-token.outputs.token }}
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  state_file="packages/data/catalog/src/data/.import-state.json"
+                  if git diff --quiet -- "${state_file}"; then
+                    echo "changed=false" >> "${GITHUB_OUTPUT}"
+                    echo "Importer state is already committed."
+                    exit 0
+                  fi
+
+                  branch="automation/importer-state-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+                  git config user.name "github-actions[bot]"
+                  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+                  git switch --create "${branch}"
+                  git add "${state_file}"
+                  git commit -m "chore(data): persist importer state"
+                  git push --set-upstream "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "${branch}"
+                  echo "changed=true" >> "${GITHUB_OUTPUT}"
+                  echo "branch=${branch}" >> "${GITHUB_OUTPUT}"
+
+            - name: Open importer state update PR
+              if: steps.importer-state-update.outputs.changed == 'true'
+              env:
+                  GH_TOKEN: ${{ steps.importer-app-token.outputs.token }}
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  gh pr create \
+                    --base main \
+                    --head "${{ steps.importer-state-update.outputs.branch }}" \
+                    --title "chore(data): persist importer state" \
+                    --body "Automated update of the committed importer hash state after a successful main import."
 
     sdk-gen:
         name: Generate SDKs
