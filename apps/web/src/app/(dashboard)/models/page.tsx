@@ -31,6 +31,7 @@ import type {
 	ModelsPageModel,
 	OptionCount,
 } from "@/components/(data)/models/Models/modelsDisplay.types";
+import type { ModelsCatalogueData } from "@/lib/swr/models";
 import { modelsCatalogueV2Flag } from "@/lib/flags";
 import { isAdminViewer } from "@/lib/auth/getViewerRole";
 import { withMissingCatalogPricing } from "@/lib/models/withMissingCatalogPricing";
@@ -1427,6 +1428,19 @@ async function loadModelsPageData(
 	return { models: modelsWithVirtualEntries, facets };
 }
 
+async function loadModelsPageCatalogue(): Promise<ModelsCatalogueData> {
+	const apiOrigin =
+		process.env.WEB_API_ORIGIN?.replace(/\/$/, "") ?? "https://phaseo.app";
+	const result = await fetchModelsFromWebApi(apiOrigin, "v1", 5);
+	const models = result.models as ModelsPageModel[];
+
+	return {
+		models,
+		facets: result.facets ?? buildModelsFilterFacets(models),
+		pricingComplete: result.pricingComplete,
+	};
+}
+
 export default async function ModelsPage() {
 	const catalogueVersion: ModelsCatalogueVersion =
 		(await isAdminViewer()) && (await modelsCatalogueV2Flag()) ? "v2" : "v1";
@@ -1434,6 +1448,6 @@ export default async function ModelsPage() {
 	return catalogueVersion === "v2" ? (
 		<ModelsDisplay dataPromise={loadModelsPageData("v2")} />
 	) : (
-		<ModelsPageClient />
+		<ModelsPageClient initialCatalogue={await loadModelsPageCatalogue()} />
 	);
 }
