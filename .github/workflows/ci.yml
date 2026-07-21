@@ -219,6 +219,9 @@ jobs:
     importer:
         name: Run importer on main
         runs-on: ubuntu-latest
+        permissions:
+            contents: write
+            pull-requests: write
         concurrency:
             group: importer-main
             cancel-in-progress: false
@@ -231,6 +234,8 @@ jobs:
             NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
         steps:
             - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+              with:
+                  fetch-depth: 0
 
             - name: Setup pnpm
               uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
@@ -295,6 +300,42 @@ jobs:
               with:
                   path: packages/data/catalog/src/data/.import-state.json
                   key: ${{ steps.importer-state-cache.outputs.cache-primary-key }}
+
+            - name: Prepare importer state update
+              id: importer-state-update
+              if: success() && env.SUPABASE_SERVICE_ROLE_KEY != '' && env.NEXT_PUBLIC_SUPABASE_URL != ''
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  state_file="packages/data/catalog/src/data/.import-state.json"
+                  if git diff --quiet -- "${state_file}"; then
+                    echo "changed=false" >> "${GITHUB_OUTPUT}"
+                    echo "Importer state is already committed."
+                    exit 0
+                  fi
+
+                  branch="automation/importer-state-${GITHUB_RUN_ID}"
+                  git config user.name "github-actions[bot]"
+                  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+                  git switch --create "${branch}"
+                  git add "${state_file}"
+                  git commit -m "chore(data): persist importer state"
+                  git push --set-upstream origin "${branch}"
+                  echo "changed=true" >> "${GITHUB_OUTPUT}"
+                  echo "branch=${branch}" >> "${GITHUB_OUTPUT}"
+
+            - name: Open importer state update PR
+              if: steps.importer-state-update.outputs.changed == 'true'
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  gh pr create \
+                    --base main \
+                    --head "${{ steps.importer-state-update.outputs.branch }}" \
+                    --title "chore(data): persist importer state" \
+                    --body "Automated update of the committed importer hash state after a successful main import."
 
     sdk-gen:
         name: Generate SDKs
