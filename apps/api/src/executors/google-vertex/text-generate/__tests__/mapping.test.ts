@@ -1,11 +1,68 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { geminiToIR, irToGemini, resolveVertexModelRoute } from "../index";
+import type { IRChatRequest } from "@core/ir";
+import type { ExecutorExecuteArgs } from "@executors/types";
+import { execute } from "../index";
+import { installFetchMock } from "../../../../../tests/helpers/mock-fetch";
+import { setupTestRuntime, teardownTestRuntime } from "../../../../../tests/helpers/runtime";
+
+vi.mock("@supabase/supabase-js", () => ({
+	createClient: () => ({}),
+}));
+
+beforeAll(() => setupTestRuntime());
+afterAll(() => teardownTestRuntime());
+
+function buildExecuteArgs(): ExecutorExecuteArgs {
+	const ir: IRChatRequest = {
+		model: "google/gemini-3.6-flash",
+		stream: false,
+		messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
+	};
+	return {
+		ir,
+		requestId: "req_google_vertex_empty",
+		workspaceId: "team_test",
+		providerId: "google-vertex",
+		endpoint: "responses",
+		protocol: "openai.responses",
+		capability: "text.generate",
+		providerModelSlug: "gemini-3.6-flash",
+		capabilityParams: null,
+		byokMeta: [],
+		pricingCard: null as any,
+		meta: {},
+	} as ExecutorExecuteArgs;
+}
 
 describe("google-vertex route resolution", () => {
 	it("routes prefixed models by family", () => {
 		expect(resolveVertexModelRoute("google/gemini-2.5-flash").family).toBe("gemini");
 		expect(resolveVertexModelRoute("anthropic/claude-sonnet-4@20250514").family).toBe("anthropic");
 		expect(resolveVertexModelRoute("openai/gpt-4.1").family).toBe("openapi_chat");
+	});
+});
+
+describe("google-vertex empty response handling", () => {
+	it("turns a zero-output Gemini response into a failoverable error", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url.includes(":streamGenerateContent"),
+			response: new Response(JSON.stringify({
+				candidates: [{ finishReason: "STOP" }],
+				usageMetadata: { promptTokenCount: 8, candidatesTokenCount: 0, totalTokenCount: 8 },
+			}), {
+				status: 200,
+				headers: { "Content-Type": "application/json" },
+			}),
+		}]);
+
+		const result = await execute(buildExecuteArgs());
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		if (result.kind !== "completed") return;
+		expect(result.ir).toBeUndefined();
+		expect(result.upstream?.status).toBe(502);
 	});
 });
 

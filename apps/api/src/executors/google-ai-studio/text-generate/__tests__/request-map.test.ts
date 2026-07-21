@@ -2,6 +2,29 @@ import { describe, expect, it } from "vitest";
 import { irToGemini } from "../index";
 
 describe("google-ai-studio irToGemini", () => {
+	it("uses the Interactions request shape for current Gemini Flash models", async () => {
+		const request = await irToGemini({
+			model: "gemini-3.6-flash",
+			stream: true,
+			temperature: 0.2,
+			topP: 0.8,
+			topK: 20,
+			maxTokens: 256,
+			messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
+		} as any);
+
+		expect(request.model).toBe("gemini-3.6-flash");
+		expect(request.input).toEqual([{
+			type: "user_input",
+			content: [{ type: "text", text: "hello" }],
+		}]);
+		expect(request.generation_config).toEqual({ max_output_tokens: 256 });
+		expect(request).not.toHaveProperty("temperature");
+		expect(request.generation_config).not.toHaveProperty("temperature");
+		expect(request.generation_config).not.toHaveProperty("top_p");
+		expect(request.generation_config).not.toHaveProperty("top_k");
+	});
+
 	it("maps system and developer roles into system_instruction", async () => {
 		const request = await irToGemini({
 			model: "gemini-2.5-flash",

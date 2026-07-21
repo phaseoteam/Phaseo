@@ -35,6 +35,25 @@ function baseArgs(overrides?: Record<string, any>): any {
 }
 
 describe("google-ai-studio stream transform", () => {
+	it("emits a structured error instead of a blank successful stream", async () => {
+		const upstream = makeGoogleSseStream([
+			{
+				interaction: {
+					id: "v1_empty",
+					status: "completed",
+					usage: { total_input_tokens: 5, total_output_tokens: 0, total_tokens: 5 },
+				},
+				event_type: "interaction.completed",
+			},
+		]);
+
+		const output = await readStreamText(transformStream(upstream, baseArgs()));
+
+		expect(output).toContain("event: error");
+		expect(output).toContain("google_empty_response");
+		expect(output).toContain("data: [DONE]");
+	});
+
 	it("emits chat tool_call deltas from Interactions function_call steps", async () => {
 		const upstream = makeGoogleSseStream([
 			{

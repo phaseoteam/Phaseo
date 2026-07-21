@@ -11,7 +11,11 @@ vi.mock("@supabase/supabase-js", () => ({
 
 function buildArgs(
 	overrides?: Partial<IRChatRequest>,
-	options?: { providerModelSlug?: string },
+	options?: {
+		providerModelSlug?: string;
+		endpoint?: string;
+		protocol?: string;
+	},
 ): ExecutorExecuteArgs {
 	const ir: IRChatRequest = {
 		model: "google/gemma-3-27b:free",
@@ -24,8 +28,8 @@ function buildArgs(
 		requestId: "req_google_usage_fallback",
 		workspaceId: "team_test",
 		providerId: "google-ai-studio",
-		endpoint: "responses",
-		protocol: "openai.responses",
+		endpoint: options?.endpoint ?? "responses",
+		protocol: options?.protocol ?? "openai.responses",
 		capability: "text.generate",
 		providerModelSlug: options?.providerModelSlug ?? "gemma-3-27b-it",
 		capabilityParams: null,
@@ -44,6 +48,64 @@ afterAll(() => {
 });
 
 describe("google-ai-studio execute usage fallback", () => {
+	it("routes current Gemini Flash models through Interactions and rejects empty output", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url.endsWith("/v1beta/interactions"),
+			response: new Response(JSON.stringify({
+				id: "v1_empty_response",
+				status: "completed",
+				steps: [],
+				usage: { total_input_tokens: 8, total_output_tokens: 0, total_tokens: 8 },
+			}), {
+				status: 200,
+				headers: { "Content-Type": "application/json" },
+			}),
+		}]);
+
+		const result = await executor(buildArgs(
+			{ model: "google/gemini-3.6-flash" },
+			{ providerModelSlug: "google/gemini-3.6-flash" },
+		));
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		if (result.kind !== "completed") return;
+		expect(result.ir).toBeUndefined();
+		expect(result.upstream?.status).toBe(502);
+		expect(mock.calls).toHaveLength(1);
+		expect(mock.calls[0]?.bodyJson?.model).toBe("gemini-3.6-flash");
+		expect(mock.calls[0]?.bodyJson?.generation_config).toBeUndefined();
+	});
+
+	it("keeps legacy GenerateContent routing for older AI Studio models", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url.endsWith("/v1beta/models/gemini-2.5-flash:generateContent"),
+			response: new Response(JSON.stringify({
+				candidates: [{
+					content: { parts: [{ text: "legacy response" }] },
+					finishReason: "STOP",
+				}],
+			}), {
+				status: 200,
+				headers: { "Content-Type": "application/json" },
+			}),
+		}]);
+
+		const result = await executor(buildArgs(
+			{ model: "google/gemini-2.5-flash" },
+			{ providerModelSlug: "google/gemini-2.5-flash" },
+		));
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		if (result.kind !== "completed") return;
+		expect(result.ir?.choices[0]?.message.content[0]).toEqual({
+			type: "text",
+			text: "legacy response",
+		});
+		expect(mock.calls[0]?.bodyJson?.contents?.[0]?.role).toBe("user");
+	});
+
 	it("estimates completion tokens when upstream usage reports prompt-only counts", async () => {
 		const payload = {
 			id: "v1_usage_fallback",

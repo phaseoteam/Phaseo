@@ -52,6 +52,37 @@ function isGeminiImageModelName(value: string): boolean {
 	);
 }
 
+function isGeminiInteractionsModelName(value: string): boolean {
+	const normalized = String(value ?? "").toLowerCase();
+	return normalized.includes("gemini-3.6-flash") || normalized.includes("gemini-3.5-flash");
+}
+
+function hasUsableIRResponse(response: IRChatResponse | undefined): boolean {
+	if (!response?.choices?.length) return false;
+	return response.choices.some((choice) => {
+		if ((choice.message?.toolCalls?.length ?? 0) > 0) return true;
+		return (choice.message?.content ?? []).some((part: any) => {
+			if (!part || typeof part !== "object") return false;
+			if (typeof part.text === "string" && part.text.trim().length > 0) return true;
+			return typeof part.data === "string" && part.data.length > 0;
+		});
+	});
+}
+
+function emptyGoogleResponse(model: string, provider: string): Response {
+	return new Response(JSON.stringify({
+		error: {
+			code: "google_empty_response",
+			message: "Google returned a successful response without any output.",
+			model,
+			provider,
+		},
+	}), {
+		status: 502,
+		headers: { "Content-Type": "application/json" },
+	});
+}
+
 function isRetryableGoogleStatus(status: number): boolean {
 	return status === 429 || status >= 500;
 }
@@ -278,9 +309,10 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 
 	const generationConfig: any = {};
 
-	if (ir.temperature !== undefined) generationConfig.temperature = ir.temperature;
+	const isCurrentGeminiModel = isGeminiInteractionsModelName(modelOverride ?? ir.model);
+	if (!isCurrentGeminiModel && ir.temperature !== undefined) generationConfig.temperature = ir.temperature;
 	if (ir.maxTokens !== undefined) generationConfig.max_output_tokens = ir.maxTokens;
-	if (ir.topP !== undefined) generationConfig.top_p = ir.topP;
+	if (!isCurrentGeminiModel && ir.topP !== undefined) generationConfig.top_p = ir.topP;
 	if (ir.seed !== undefined) generationConfig.seed = ir.seed;
 	if (ir.frequencyPenalty !== undefined) generationConfig.frequency_penalty = ir.frequencyPenalty;
 	if (ir.presencePenalty !== undefined) generationConfig.presence_penalty = ir.presencePenalty;
@@ -974,7 +1006,6 @@ export function preprocess(ir: IRChatRequest, args: ExecutorExecuteArgs): IRChat
  */
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	const { ir, providerId, providerModelSlug, requestId, pricingCard, meta } = args;
-	const isInteractionsRequest = args.protocol === "google.interactions";
 	const bindings = getBindings() as any;
 
 	// Resolve API key: prefer decrypted BYOK for this provider, else use gateway keys.
@@ -984,7 +1015,13 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	// Determine model candidates (must be in URL, not body)
 	const requestedModel = providerModelSlug || ir.model || "gemini-2.0-flash-exp";
-	const forceSyntheticImageStream = !isInteractionsRequest && Boolean(ir.stream) && isGeminiImageModelName(requestedModel);
+	const isInteractionsRequest =
+		(args.protocol as string) === "google.interactions" ||
+		isGeminiInteractionsModelName(requestedModel);
+	const forceSyntheticStream = Boolean(ir.stream) && (
+		isGeminiImageModelName(requestedModel) ||
+		isInteractionsRequest
+	);
 	const modelCandidates = resolveGoogleModelCandidates(requestedModel);
 	let model = modelCandidates[0] || "gemini-2.0-flash-exp";
 
@@ -1000,7 +1037,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	const makeEndpoint = (candidateModel: string) => {
 		if (isInteractionsRequest) return `${baseUrl}/interactions`;
-		return Boolean(ir.stream) && !forceSyntheticImageStream
+		return Boolean(ir.stream) && !forceSyntheticStream
 			? `${baseUrl}/models/${encodeURIComponent(candidateModel)}:streamGenerateContent?alt=sse`
 			: `${baseUrl}/models/${encodeURIComponent(candidateModel)}:generateContent`;
 	};
@@ -1020,7 +1057,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			const requestBody = isInteractionsRequest
 				? await irToGemini(ir, candidateModel)
 				: await irToLegacyGemini(ir, candidateModel);
-			if (isInteractionsRequest && Boolean(ir.stream) && !forceSyntheticImageStream) {
+			if (isInteractionsRequest && Boolean(ir.stream) && !forceSyntheticStream) {
 				requestBody.stream = true;
 			}
 			const endpoint = makeEndpoint(candidateModel);
@@ -1083,11 +1120,22 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			};
 		}
 
-		if (forceSyntheticImageStream) {
+		if (forceSyntheticStream) {
 			const rawData = await response.json();
 			const data = normalizeGeminiResponsePayload(rawData);
 			const irResponse = providerPayloadToIR(data, requestId, model, providerId);
 			applyGoogleOutputTokenFallback(irResponse);
+			if (!hasUsableIRResponse(irResponse)) {
+				return {
+					kind: "completed",
+					ir: undefined,
+					upstream: emptyGoogleResponse(model, providerId),
+					bill: { cost_cents: 0, currency: "USD" },
+					keySource: keyInfo.source,
+					byokKeyId: keyInfo.byokId,
+					mappedRequest,
+				};
+			}
 
 			const bill: any = {
 				cost_cents: 0,
@@ -1184,6 +1232,17 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 					irResponse.usage?.totalTokens ?? 0,
 				);
 			}
+			if (!hasUsableIRResponse(irResponse)) {
+				return {
+					kind: "completed",
+					ir: undefined,
+					upstream: emptyGoogleResponse(model, providerId),
+					bill: { cost_cents: 0, currency: "USD" },
+					keySource: keyInfo.source,
+					byokKeyId: keyInfo.byokId,
+					mappedRequest,
+				};
+			}
 
 			const bill: any = {
 				cost_cents: 0,
@@ -1215,6 +1274,17 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		const data = normalizeGeminiResponsePayload(rawData);
 		const irResponse = providerPayloadToIR(data, requestId, model, providerId);
 		applyGoogleOutputTokenFallback(irResponse);
+		if (!hasUsableIRResponse(irResponse)) {
+			return {
+				kind: "completed",
+				ir: undefined,
+				upstream: emptyGoogleResponse(model, providerId),
+				bill: { cost_cents: 0, currency: "USD" },
+				keySource: keyInfo.source,
+				byokKeyId: keyInfo.byokId,
+				mappedRequest,
+			};
+		}
 
 		// Calculate pricing
 		const bill: any = {
@@ -1375,6 +1445,7 @@ export function transformStream(
 	const interactionStepStates = new Map<number, InteractionStepState>();
 	let interactionToolCallCount = 0;
 	let interactionSawFunctionCall = false;
+	let sawUsableOutput = false;
 
 	let created = Math.floor(Date.now() / 1000);
 	const model = args.providerModelSlug || args.ir.model || "gemini-2.0-flash-exp";
@@ -1395,6 +1466,17 @@ export function transformStream(
 		irChunk: IRStreamChunk,
 		controller: ReadableStreamDefaultController<Uint8Array>,
 	): void => {
+		if (irChunk.choices.some((choice: any) => {
+			if ((choice.delta?.toolCalls?.length ?? 0) > 0) return true;
+			if (typeof choice.delta?.content === "string" && choice.delta.content.trim().length > 0) return true;
+			return (choice.delta?.contentParts ?? []).some((part: any) => {
+				if (!part || typeof part !== "object") return false;
+				if (typeof part.text === "string" && part.text.trim().length > 0) return true;
+				return typeof part.data === "string" && part.data.length > 0;
+			});
+		})) {
+			sawUsableOutput = true;
+		}
 		const openAIChunk = encodeIRChunkToOpenAI(irChunk);
 		controller.enqueue(encoder.encode(`data: ${JSON.stringify(openAIChunk)}\n\n`));
 	};
@@ -1775,6 +1857,17 @@ export function transformStream(
 						}
 						emittedChunkCount += emitPayloadEntries(toPayloadEntries(payload), controller);
 					}
+				}
+				if (!sawUsableOutput) {
+					const errorPayload = {
+						error: {
+							code: "google_empty_response",
+							message: "Google returned a successful response without any output.",
+						},
+					};
+					controller.enqueue(encoder.encode(
+						`event: error\ndata: ${JSON.stringify(errorPayload)}\n\n`,
+					));
 				}
 				controller.enqueue(encoder.encode("data: [DONE]\n\n"));
 			} catch (err) {
