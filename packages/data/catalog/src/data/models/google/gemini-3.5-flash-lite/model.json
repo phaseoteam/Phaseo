@@ -1,0 +1,39 @@
+{
+  "model_id": "google/gemini-3.5-flash-lite",
+  "organisation_id": "google",
+  "name": "Gemini 3.5 Flash-Lite",
+  "status": "Available",
+  "previous_model_id": "google/gemini-3.1-flash-lite",
+  "description": "Gemini 3.5 Flash-Lite is Google's efficient multimodal model for low-latency, high-volume workloads.",
+  "announced_date": "2026-07-21T00:00:00",
+  "release_date": "2026-07-21T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image,video,audio",
+  "output_types": "text",
+  "api_model_id": "google/gemini-3.5-flash-lite",
+  "family_id": "google/gemini-3.5",
+  "links": [
+    {
+      "title": "Google Cloud SKU pricing",
+      "kind": "pricing",
+      "url": "https://cloud.google.com/skus?filter=3.5%20flash%20lite&currency=USD&hl=en"
+    }
+  ],
+  "details": [
+    {
+      "name": "availability_note",
+      "value": "Google Cloud exposes Gemini 3.5 Flash-Lite SKUs globally."
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2026-03"
+    },
+    {
+      "name": "capability_note",
+      "value": "AI Studio describes Gemini 3.5 Flash-Lite as its fastest, most cost-effective 3.5 model for high-throughput execution."
+    }
+  ],
+  "benchmarks": []
+}
