@@ -8,28 +8,18 @@ import {
 	fetchModelsCatalogue,
 	fetchModelsPricing,
 	toModelsPageData,
-	type ModelsCatalogueData,
 } from "@/lib/swr/models";
-
-interface ModelsPageClientProps {
-	initialCatalogue?: ModelsCatalogueData;
-}
 
 const MODELS_SWR_OPTIONS = {
 	dedupingInterval: 5 * 60_000,
 	revalidateOnFocus: false,
 } as const;
 
-export default function ModelsPageClient({
-	initialCatalogue,
-}: ModelsPageClientProps) {
+export default function ModelsPageClient() {
 	const {
 		data: catalogue,
 		error: catalogueError,
-	} = useSWR(publicSWRKeys.models, fetchModelsCatalogue, {
-		...MODELS_SWR_OPTIONS,
-		fallbackData: initialCatalogue,
-	});
+	} = useSWR(publicSWRKeys.models, fetchModelsCatalogue, MODELS_SWR_OPTIONS);
 	const {
 		data: pricing,
 		error: pricingError,
