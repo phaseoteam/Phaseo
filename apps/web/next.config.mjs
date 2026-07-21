@@ -15,7 +15,10 @@ const configuredAllowedDevOrigins =
     .filter(Boolean) ?? [];
 
 const mintlifyProxyOrigin = "https://aistats.mintlify.site";
-const webApiOrigin = process.env.WEB_API_ORIGIN?.trim().replace(/\/$/, "");
+const configuredWebApiOrigin = process.env.WEB_API_ORIGIN?.trim().replace(/\/$/, "");
+const webApiOrigin =
+  configuredWebApiOrigin ||
+  (process.env.VERCEL_ENV === "preview" ? "https://phaseo.app" : "");
 const docsProxyRewrites = [
   {
     source: "/docs",
