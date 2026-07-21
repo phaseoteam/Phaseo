@@ -292,6 +292,7 @@ export type KnownModelId =
   | "openai/whisper-1"
   | "phaseo/free"
   | "poolside/laguna-m.1:free"
+  | "poolside/laguna-s-2.1:free"
   | "poolside/laguna-xs-2.1:free"
   | "qwen/qvq-max"
   | "qwen/qwen-3.6-plus"
