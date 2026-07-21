@@ -219,9 +219,6 @@ jobs:
     importer:
         name: Run importer on main
         runs-on: ubuntu-latest
-        permissions:
-            contents: write
-            pull-requests: write
         concurrency:
             group: importer-main
             cancel-in-progress: false
@@ -243,6 +240,7 @@ jobs:
             - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
               with:
                   fetch-depth: 0
+                  persist-credentials: false
                   token: ${{ steps.importer-app-token.outputs.token }}
 
             - name: Setup pnpm
@@ -312,6 +310,8 @@ jobs:
             - name: Prepare importer state update
               id: importer-state-update
               if: success() && env.SUPABASE_SERVICE_ROLE_KEY != '' && env.NEXT_PUBLIC_SUPABASE_URL != ''
+              env:
+                  GH_TOKEN: ${{ steps.importer-app-token.outputs.token }}
               shell: bash
               run: |
                   set -euo pipefail
@@ -322,13 +322,13 @@ jobs:
                     exit 0
                   fi
 
-                  branch="automation/importer-state-${GITHUB_RUN_ID}"
+                  branch="automation/importer-state-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
                   git config user.name "github-actions[bot]"
                   git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
                   git switch --create "${branch}"
                   git add "${state_file}"
                   git commit -m "chore(data): persist importer state"
-                  git push --set-upstream origin "${branch}"
+                  git push --set-upstream "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "${branch}"
                   echo "changed=true" >> "${GITHUB_OUTPUT}"
                   echo "branch=${branch}" >> "${GITHUB_OUTPUT}"
 
