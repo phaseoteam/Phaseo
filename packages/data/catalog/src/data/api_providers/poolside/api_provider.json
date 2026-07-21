@@ -14,5 +14,5 @@
   "data_policy_tier": "logs",
   "data_policy_confidence": "maybe",
   "data_policy_contract_mode": "none",
-  "data_policy_contract_notes": "The public Terms establish an opt-out mechanism but do not provide a general zero-retention guarantee. This route is classified as logs based on the opted-out account configuration; verify the account or upstream platform setting if it changes."
+  "data_policy_contract_notes": "The public Terms establish an opt-out mechanism but do not provide a general zero-retention guarantee. This route is classified as logs based on the opted-out account configuration; verify the account or upstream platform setting if it changes. Poolside may still use content for safety review or when feedback is provided."
 }
