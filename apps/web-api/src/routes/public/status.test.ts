@@ -69,4 +69,22 @@ describe("GET /api/_web/status", () => {
       components: [{ name: "API health (/v1/health)", state: "major_outage" }],
     });
   });
+
+  it("uses affected components when the widget has no page structure", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        affected_components: [{ name: "API health (/v1/health)", status: "degraded" }],
+        ongoing_incidents: [],
+        in_progress_maintenances: [],
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response("", { status: 503 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await app.request("https://phaseo.app/api/_web/status", {}, { ENV: "development" });
+
+    await expect(response.json()).resolves.toMatchObject({
+      state: "degraded",
+      components: [{ name: "API health (/v1/health)", state: "degraded" }],
+    });
+  });
 });

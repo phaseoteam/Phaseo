@@ -250,12 +250,42 @@ function flattenIncidentComponents(summary: IncidentSummary): ComponentStatus[] 
 
 	if (components.length > 0) return components.slice(0, 24);
 
-	return (summary.components ?? []).flatMap((component) => {
+	const fallbackComponents: ComponentStatus[] = [];
+	const seen = new Set<string>();
+	const addFallbackComponent = (
+		value: unknown,
+		fallback?: { state: StatusState; label: string },
+	) => {
+		if (!isRecord(value)) return;
+		const component = isRecord(value.component) ? value.component : value;
 		const name = displayComponentName(component.name);
-		if (!name) return [];
-		const status = componentStatus(affected, component.id, component.name);
-		return [{ name, status: status.state, ...status, parent: null }];
-	}).slice(0, 24);
+		if (!name || seen.has(name)) return;
+		const id = component.id ?? component.component_id ?? component.status_page_component_id;
+		const status =
+			affected.get(String(id ?? "").trim()) ??
+			affected.get(name) ??
+			fallback ??
+			normalizeStatus("operational");
+		seen.add(name);
+		fallbackComponents.push({ name, status: status.state, ...status, parent: null });
+	};
+
+	for (const component of summary.components ?? []) addFallbackComponent(component);
+	for (const component of asArray(summary.affected_components)) addFallbackComponent(component);
+	for (const event of asArray(summary.ongoing_incidents)) {
+		if (!isRecord(event)) continue;
+		const eventStatus = normalizeStatus(event.current_worst_impact ?? event.impact ?? event.status);
+		const fallback = eventStatus.state === "unknown" ? normalizeStatus("degraded") : eventStatus;
+		for (const component of asArray(event.affected_components)) addFallbackComponent(component, fallback);
+	}
+	for (const event of asArray(summary.in_progress_maintenances)) {
+		if (!isRecord(event)) continue;
+		for (const component of asArray(event.affected_components)) {
+			addFallbackComponent(component, normalizeStatus("maintenance"));
+		}
+	}
+
+	return fallbackComponents.slice(0, 24);
 }
 
 function pickIncidentStatus(summary: IncidentSummary) {
@@ -295,7 +325,11 @@ async function fetchIncidentStatus(signal: AbortSignal, env: Env) {
 
 	let widgetSummary: IncidentSummary | null = null;
 	if (widgetResult.status === "fulfilled" && widgetResult.value.ok) {
-		widgetSummary = (await widgetResult.value.json()) as IncidentSummary;
+		try {
+			widgetSummary = (await widgetResult.value.json()) as IncidentSummary;
+		} catch {
+			widgetSummary = null;
+		}
 	}
 
 	let pageSummary: IncidentSummary | null = null;
@@ -348,7 +382,8 @@ publicStatusRouter.get("/status", async (c) => {
 					: status.label;
 
 		return withPublicCache(c.json({ ok: true, ...status, label, components: visibleComponents, href }), { edgeTtlSeconds: 30, staleWhileRevalidateSeconds: 60 });
-	} catch {
+	} catch (error) {
+		console.error("[web-api/status] failed to fetch Incident.io status", error);
 		return c.json({ ok: false, state: "unknown" satisfies StatusState, label: "Status unavailable", components: [], href: STATUS_PAGE_HREF });
 	} finally {
 		clearTimeout(timeout);
