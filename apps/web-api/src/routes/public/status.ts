@@ -146,6 +146,26 @@ function affectedComponentStatus(
 	return status.state === "unknown" && fallback ? fallback : status;
 }
 
+const STATUS_SEVERITY: Record<StatusState, number> = {
+	operational: 0,
+	unknown: 1,
+	maintenance: 2,
+	degraded: 3,
+	partial_outage: 4,
+	major_outage: 5,
+};
+
+function setAffectedStatus(
+	affected: Map<string, { state: StatusState; label: string }>,
+	key: string,
+	status: { state: StatusState; label: string },
+) {
+	const existing = affected.get(key);
+	if (!existing || STATUS_SEVERITY[status.state] > STATUS_SEVERITY[existing.state]) {
+		affected.set(key, status);
+	}
+}
+
 function buildAffectedComponentMap(summary: IncidentSummary) {
 	const affected = new Map<string, { state: StatusState; label: string }>();
 
@@ -157,7 +177,7 @@ function buildAffectedComponentMap(summary: IncidentSummary) {
 		if (!key) return;
 		const status = affectedComponentStatus(component, fallback);
 		if (status.state === "unknown") return;
-		affected.set(key, status);
+		setAffectedStatus(affected, key, status);
 	};
 
 	for (const component of asArray(summary.affected_components)) {
@@ -239,25 +259,19 @@ function flattenIncidentComponents(summary: IncidentSummary): ComponentStatus[] 
 }
 
 function pickIncidentStatus(summary: IncidentSummary) {
-	if (asArray(summary.in_progress_maintenances).length > 0) {
-		return normalizeStatus("maintenance");
-	}
-
 	const affectedStatuses = Array.from(buildAffectedComponentMap(summary).values());
 	if (affectedStatuses.length > 0) {
-		const rank: Record<StatusState, number> = {
-			operational: 0,
-			unknown: 1,
-			maintenance: 2,
-			degraded: 3,
-			partial_outage: 4,
-			major_outage: 5,
-		};
-		return affectedStatuses.sort((a, b) => rank[b.state] - rank[a.state])[0];
+		return affectedStatuses.sort(
+			(a, b) => STATUS_SEVERITY[b.state] - STATUS_SEVERITY[a.state],
+		)[0];
 	}
 
 	if (asArray(summary.ongoing_incidents).length > 0) {
 		return { state: "degraded" as const, label: "Service issues reported" };
+	}
+
+	if (asArray(summary.in_progress_maintenances).length > 0) {
+		return normalizeStatus("maintenance");
 	}
 
 	return normalizeStatus("operational");
