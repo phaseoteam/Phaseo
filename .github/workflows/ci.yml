@@ -233,9 +233,17 @@ jobs:
             SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
             NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
         steps:
+            - name: Create GitHub App token (Phaseo Bot)
+              id: importer-app-token
+              uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+              with:
+                  client-id: ${{ secrets.PHASEO_APP_CLIENT_ID }}
+                  private-key: ${{ secrets.PHASEO_APP_PRIVATE_KEY }}
+
             - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
               with:
                   fetch-depth: 0
+                  token: ${{ steps.importer-app-token.outputs.token }}
 
             - name: Setup pnpm
               uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
@@ -327,7 +335,7 @@ jobs:
             - name: Open importer state update PR
               if: steps.importer-state-update.outputs.changed == 'true'
               env:
-                  GH_TOKEN: ${{ github.token }}
+                  GH_TOKEN: ${{ steps.importer-app-token.outputs.token }}
               shell: bash
               run: |
                   set -euo pipefail
