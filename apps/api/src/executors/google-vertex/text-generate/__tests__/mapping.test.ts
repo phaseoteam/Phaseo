@@ -56,8 +56,12 @@ describe("google-vertex empty response handling", () => {
 			}),
 		}]);
 
-		const result = await execute(buildExecuteArgs());
-		mock.restore();
+		let result: Awaited<ReturnType<typeof execute>>;
+		try {
+			result = await execute(buildExecuteArgs());
+		} finally {
+			mock.restore();
+		}
 
 		expect(result.kind).toBe("completed");
 		if (result.kind !== "completed") return;

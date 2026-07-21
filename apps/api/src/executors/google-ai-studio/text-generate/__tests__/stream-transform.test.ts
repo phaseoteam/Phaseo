@@ -49,7 +49,7 @@ describe("google-ai-studio stream transform", () => {
 
 		const output = await readStreamText(transformStream(upstream, baseArgs()));
 
-		expect(output).toContain("event: error");
+		expect(output).toContain("event: response.failed");
 		expect(output).toContain("google_empty_response");
 		expect(output).toContain("data: [DONE]");
 	});

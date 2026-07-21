@@ -1615,6 +1615,18 @@ function ChatPlaygroundContent({
 								toolCallId: toolCall.id,
 							});
 						}
+						if (
+							!reply.trim() &&
+							images.length === 0 &&
+							!reasoningText.trim() &&
+							toolCalls.length === 0
+						) {
+							const emptyResponseError = new Error(
+								"The provider returned an empty response. Please retry.",
+							) as Error & { code: string };
+							emptyResponseError.code = "empty_response";
+							throw emptyResponseError;
+						}
 						const totalCostUsd = extractTotalCostUsd(finalUsage);
 						if (totalCostUsd) {
 							mergedMeta.total_cost_usd = totalCostUsd;

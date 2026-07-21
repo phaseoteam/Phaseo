@@ -27,6 +27,7 @@ import { googleUsageMetadataToIRUsage } from "@providers/google-ai-studio/usage"
 import { encodeOpenAIChatResponse } from "@protocols/openai-chat/encode";
 import { createSyntheticResponsesStreamFromIR } from "@executors/_shared/text-generate/synthetic-responses-stream";
 import { buildSyntheticServerToolStream } from "@pipeline/surfaces/server-tools.stream";
+import { sanitizeGeminiSchema } from "@executors/google/shared/schema";
 
 const DEFAULT_LYRIA_RETRY_ATTEMPTS = 3;
 const DEFAULT_LYRIA_RETRY_DELAY_MS = 300;
@@ -64,7 +65,10 @@ function hasUsableIRResponse(response: IRChatResponse | undefined): boolean {
 		return (choice.message?.content ?? []).some((part: any) => {
 			if (!part || typeof part !== "object") return false;
 			if (typeof part.text === "string" && part.text.trim().length > 0) return true;
-			return typeof part.data === "string" && part.data.length > 0;
+			return (
+				(typeof part.data === "string" && part.data.length > 0) ||
+				(typeof part.url === "string" && part.url.length > 0)
+			);
 		});
 	});
 }
@@ -193,7 +197,7 @@ async function irToLegacyGemini(ir: IRChatRequest, modelOverride?: string | null
 		request.tools = [{ functionDeclarations: ir.tools.map((tool) => ({
 			name: tool.name,
 			description: tool.description,
-			parameters: tool.parameters,
+			parameters: sanitizeGeminiSchema(tool.parameters),
 		})) }];
 		if (ir.toolChoice === "auto") request.toolConfig = { functionCallingConfig: { mode: "AUTO" } };
 		if (ir.toolChoice === "none") request.toolConfig = { functionCallingConfig: { mode: "NONE" } };
@@ -1472,7 +1476,10 @@ export function transformStream(
 			return (choice.delta?.contentParts ?? []).some((part: any) => {
 				if (!part || typeof part !== "object") return false;
 				if (typeof part.text === "string" && part.text.trim().length > 0) return true;
-				return typeof part.data === "string" && part.data.length > 0;
+				return (
+					(typeof part.data === "string" && part.data.length > 0) ||
+					(typeof part.url === "string" && part.url.length > 0)
+				);
 			});
 		})) {
 			sawUsableOutput = true;
@@ -1866,7 +1873,10 @@ export function transformStream(
 						},
 					};
 					controller.enqueue(encoder.encode(
-						`event: error\ndata: ${JSON.stringify(errorPayload)}\n\n`,
+						`event: response.failed\ndata: ${JSON.stringify({
+							type: "response.failed",
+								...errorPayload,
+						})}\n\n`,
 					));
 				}
 				controller.enqueue(encoder.encode("data: [DONE]\n\n"));
