@@ -1,0 +1,72 @@
+{
+  "model_id": "poolside/laguna-s-2.1",
+  "organisation_id": "poolside",
+  "name": "Laguna S 2.1",
+  "status": "Available",
+  "previous_model_id": "poolside/laguna-xs-2.1",
+  "description": "Laguna S 2.1 is Poolside's 118B total parameter, 8B active parameter Mixture-of-Experts model for long-horizon agentic coding and reasoning workloads.",
+  "announced_date": "2026-07-21T00:00:00",
+  "release_date": "2026-07-21T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "OpenMDW-1.1",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "poolside/laguna-s-2.1:free",
+  "links": [
+    {
+      "title": "Announcement",
+      "kind": "announcement",
+      "url": "https://poolside.ai/blog/introducing-laguna-s-2-1"
+    },
+    {
+      "title": "Weights",
+      "kind": "weights",
+      "url": "https://huggingface.co/poolside/Laguna-S-2.1"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 1048576
+    },
+    {
+      "name": "output_context_length",
+      "value": 32768
+    },
+    {
+      "name": "parameters",
+      "value": "118B total, 8B active"
+    },
+    {
+      "name": "thinking_modes",
+      "value": "off and max; max is enabled by default"
+    }
+  ],
+  "benchmarks": [
+    {
+      "benchmark_id": "terminal-bench-2.1",
+      "score": 70.2,
+      "is_self_reported": true,
+      "other_info": "mean pass@1 with thinking enabled",
+      "source_link": "https://huggingface.co/poolside/Laguna-S-2.1#benchmark-results",
+      "rank": null
+    },
+    {
+      "benchmark_id": "swe-bench-multilingual",
+      "score": 78.5,
+      "is_self_reported": true,
+      "other_info": "mean pass@1",
+      "source_link": "https://huggingface.co/poolside/Laguna-S-2.1#benchmark-results",
+      "rank": null
+    },
+    {
+      "benchmark_id": "swe-bench-pro",
+      "score": 59.4,
+      "is_self_reported": true,
+      "other_info": "public dataset mean pass@1",
+      "source_link": "https://huggingface.co/poolside/Laguna-S-2.1#benchmark-results",
+      "rank": null
+    }
+  ]
+}
