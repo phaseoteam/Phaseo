@@ -15,6 +15,7 @@ import {
 import { usePathname, useSearchParams } from "next/navigation";
 import { debounce, useQueryState } from "nuqs";
 import { ModelsGrid } from "./ModelsGrid";
+import { ModelsPageSkeleton } from "./ModelsPageSkeleton";
 import { Logo } from "@/components/Logo";
 import { Input } from "@/components/ui/input";
 import {
@@ -917,7 +918,7 @@ export default function ModelsDisplay({
 	showPrimaryHeader = true,
 }: ModelsDisplayProps) {
 	return (
-		<Suspense fallback={null}>
+		<Suspense fallback={<ModelsPageSkeleton />}>
 			<ModelsDisplayData
 				dataPromise={dataPromise}
 				modelsPageData={modelsPageData}

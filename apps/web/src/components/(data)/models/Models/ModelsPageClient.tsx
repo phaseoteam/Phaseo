@@ -1,19 +1,14 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import useSWR from "swr";
 import { ModelsPageSkeleton } from "./ModelsPageSkeleton";
+import ModelsDisplay from "./ModelsDisplay";
 import { publicSWRKeys } from "@/lib/swr/keys";
 import {
 	fetchModelsCatalogue,
 	fetchModelsPricing,
 	toModelsPageData,
 } from "@/lib/swr/models";
-
-const ModelsDisplay = dynamic(() => import("./ModelsDisplay"), {
-	ssr: false,
-	loading: () => <ModelsPageSkeleton />,
-});
 
 const MODELS_SWR_OPTIONS = {
 	dedupingInterval: 5 * 60_000,
