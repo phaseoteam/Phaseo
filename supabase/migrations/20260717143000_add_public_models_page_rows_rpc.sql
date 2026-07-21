@@ -247,8 +247,8 @@ as $$
         'gateway_provider_count', 0,
         'gateway_active_provider_count', 0,
         'gateway_endpoints', array[]::text[],
-        'gateway_input_modalities', coalesce(model.input_types, array[]::text[]),
-        'gateway_output_modalities', coalesce(model.output_types, array[]::text[]),
+        'gateway_input_modalities', coalesce(regexp_split_to_array(nullif(btrim(model.input_types), ''), '\s*,\s*'), array[]::text[]),
+        'gateway_output_modalities', coalesce(regexp_split_to_array(nullif(btrim(model.output_types), ''), '\s*,\s*'), array[]::text[]),
         'gateway_features', array[]::text[],
         'gateway_tiers', array[]::text[],
         'gateway_provider_names', array[]::text[],
@@ -301,60 +301,6 @@ comment on function public.get_public_models_page_rows() is
   'Returns the complete compact /models page projection, including catalogue-only models and provider execution regions, so the Worker does not repeat database joins.';
 
 grant execute on function public.get_public_models_page_rows() to authenticated, service_role;
-
-create or replace function public.get_usage_model_apps(
-  p_model_ids text[],
-  p_limit integer default 24,
-  p_since timestamptz default null
-)
-returns table (
-  app_id uuid,
-  title text,
-  image_url text,
-  url text,
-  last_seen timestamptz,
-  requests bigint,
-  success_requests bigint,
-  total_tokens numeric
-)
-language sql
-stable
-security invoker
-set search_path = public
-as $$
-  select
-    app.id,
-    app.title,
-    app.image_url,
-    app.url,
-    max(coalesce(app.last_seen, request.created_at)) as last_seen,
-    count(*)::bigint as requests,
-    count(*) filter (where request.success)::bigint as success_requests,
-    coalesce(sum(
-      case
-        when jsonb_typeof(request.usage) = 'object' and request.usage->>'total_tokens' ~ '^[0-9]+(?:\.[0-9]+)?$'
-          then (request.usage->>'total_tokens')::numeric
-        else 0
-      end
-    ), 0)::numeric as total_tokens
-  from public.gateway_requests request
-  join public.api_apps app on app.id = request.app_id and app.is_public = true
-  where request.app_id is not null
-    and request.created_at >= coalesce(p_since, now() - interval '30 days')
-    and (
-      request.model_id = any(coalesce(p_model_ids, array[]::text[]))
-      or request.requested_model_id = any(coalesce(p_model_ids, array[]::text[]))
-      or request.routed_model_id = any(coalesce(p_model_ids, array[]::text[]))
-    )
-  group by app.id, app.title, app.image_url, app.url
-  order by total_tokens desc, requests desc, app.id
-  limit greatest(1, least(coalesce(p_limit, 24), 100));
-$$;
-
-comment on function public.get_usage_model_apps(text[], integer, timestamptz) is
-  'Aggregates public app usage directly in PostgreSQL for model aliases after legacy usage rollup tables were removed.';
-
-grant execute on function public.get_usage_model_apps(text[], integer, timestamptz) to authenticated, service_role;
 
 create index if not exists idx_gateway_requests_free_router_recent
   on public.gateway_requests (created_at desc, routed_model_id)
@@ -427,8 +373,8 @@ as $$
         'organisationId', coalesce(model.organisation_id, ''),
         'organisationName', coalesce(nullif(organisation.name, ''), model.organisation_id, 'Unknown'),
         'providerCount', eligible.provider_count,
-        'inputModalities', case when cardinality(eligible.input_modalities) > 0 then eligible.input_modalities else coalesce(model.input_types, array[]::text[]) end,
-        'outputModalities', case when cardinality(eligible.output_modalities) > 0 then eligible.output_modalities else coalesce(model.output_types, array[]::text[]) end,
+        'inputModalities', case when cardinality(eligible.input_modalities) > 0 then eligible.input_modalities else coalesce(regexp_split_to_array(nullif(btrim(model.input_types), ''), '\s*,\s*'), array[]::text[]) end,
+        'outputModalities', case when cardinality(eligible.output_modalities) > 0 then eligible.output_modalities else coalesce(regexp_split_to_array(nullif(btrim(model.output_types), ''), '\s*,\s*'), array[]::text[]) end,
         'usage', jsonb_build_object(
           'requests30d', coalesce(usage.requests_30d, 0),
           'totalCostNanos30d', coalesce(usage.total_cost_nanos_30d, 0),
