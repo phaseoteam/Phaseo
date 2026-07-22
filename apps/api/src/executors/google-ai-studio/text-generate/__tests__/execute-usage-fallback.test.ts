@@ -48,7 +48,7 @@ afterAll(() => {
 });
 
 describe("google-ai-studio execute usage fallback", () => {
-	it("routes current Gemini Flash models through Interactions and rejects empty output", async () => {
+	it("preserves billable usage when current Gemini Flash models return empty output", async () => {
 		const mock = installFetchMock([{
 			match: (url) => url.endsWith("/v1beta/interactions"),
 			response: new Response(JSON.stringify({
@@ -70,8 +70,18 @@ describe("google-ai-studio execute usage fallback", () => {
 
 		expect(result.kind).toBe("completed");
 		if (result.kind !== "completed") return;
-		expect(result.ir).toBeUndefined();
-		expect(result.upstream?.status).toBe(502);
+		expect(result.ir).toBeDefined();
+		expect(result.ir?.choices[0]?.message.content).toEqual([]);
+		expect(result.ir?.choices[0]?.message.toolCalls ?? []).toEqual([]);
+		expect(result.upstream?.status).toBe(200);
+		expect(result.bill.usage).toMatchObject({
+			input_text_tokens: 8,
+			total_tokens: 8,
+		});
+		expect(result.rawResponse).toMatchObject({
+			id: "v1_empty_response",
+			usage: { total_input_tokens: 8, total_tokens: 8 },
+		});
 		expect(mock.calls).toHaveLength(1);
 		expect(mock.calls[0]?.bodyJson?.model).toBe("gemini-3.6-flash");
 		expect(mock.calls[0]?.bodyJson?.generation_config).toBeUndefined();

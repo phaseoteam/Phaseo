@@ -73,20 +73,6 @@ function hasUsableIRResponse(response: IRChatResponse | undefined): boolean {
 	});
 }
 
-function emptyGoogleResponse(model: string, provider: string): Response {
-	return new Response(JSON.stringify({
-		error: {
-			code: "google_empty_response",
-			message: "Google returned a successful response without any output.",
-			model,
-			provider,
-		},
-	}), {
-		status: 502,
-		headers: { "Content-Type": "application/json" },
-	});
-}
-
 function isRetryableGoogleStatus(status: number): boolean {
 	return status === 429 || status >= 500;
 }
@@ -1127,18 +1113,6 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			const data = normalizeGeminiResponsePayload(rawData);
 			const irResponse = providerPayloadToIR(data, requestId, model, providerId);
 			applyGoogleOutputTokenFallback(irResponse);
-			if (!hasUsableIRResponse(irResponse)) {
-				return {
-					kind: "completed",
-					ir: undefined,
-					upstream: emptyGoogleResponse(model, providerId),
-					bill: { cost_cents: 0, currency: "USD" },
-					keySource: keyInfo.source,
-					byokKeyId: keyInfo.byokId,
-					mappedRequest,
-				};
-			}
-
 			const bill: any = {
 				cost_cents: 0,
 				currency: "USD",
@@ -1146,6 +1120,18 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			const usageMeters = normalizeTextUsageForPricing(irResponse.usage ?? data?.usageMetadata);
 			if (usageMeters) {
 				bill.usage = usageMeters;
+			}
+			if (!hasUsableIRResponse(irResponse)) {
+				return {
+					kind: "completed",
+					ir: irResponse,
+					upstream: response,
+					bill,
+					keySource: keyInfo.source,
+					byokKeyId: keyInfo.byokId,
+					mappedRequest,
+					rawResponse: rawData,
+				};
 			}
 
 			const totalMs = Date.now() - upstreamStartMs;
@@ -1235,26 +1221,25 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 					irResponse.usage?.totalTokens ?? 0,
 				);
 			}
-			if (!hasUsableIRResponse(irResponse)) {
-				return {
-					kind: "completed",
-					ir: undefined,
-					upstream: emptyGoogleResponse(model, providerId),
-					bill: { cost_cents: 0, currency: "USD" },
-					keySource: keyInfo.source,
-					byokKeyId: keyInfo.byokId,
-					mappedRequest,
-				};
-			}
-
 			const bill: any = {
 				cost_cents: 0,
 				currency: "USD",
 			};
-
 			const usageMeters = normalizeTextUsageForPricing(irResponse?.usage ?? usage);
 			if (usageMeters) {
 				bill.usage = usageMeters;
+			}
+			if (!hasUsableIRResponse(irResponse)) {
+				return {
+					kind: "completed",
+					ir: irResponse,
+					upstream: response,
+					bill,
+					keySource: keyInfo.source,
+					byokKeyId: keyInfo.byokId,
+					mappedRequest,
+					rawResponse,
+				};
 			}
 
 			return {
@@ -1277,29 +1262,28 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		const data = normalizeGeminiResponsePayload(rawData);
 		const irResponse = providerPayloadToIR(data, requestId, model, providerId);
 		applyGoogleOutputTokenFallback(irResponse);
-		if (!hasUsableIRResponse(irResponse)) {
-			return {
-				kind: "completed",
-				ir: undefined,
-				upstream: emptyGoogleResponse(model, providerId),
-				bill: { cost_cents: 0, currency: "USD" },
-				keySource: keyInfo.source,
-				byokKeyId: keyInfo.byokId,
-				mappedRequest,
-			};
-		}
-
-		// Calculate pricing
 		const bill: any = {
 			cost_cents: 0,
 			currency: "USD",
 		};
-
 		const usageMeters = normalizeTextUsageForPricing(irResponse.usage ?? data?.usageMetadata);
 		if (usageMeters) {
 			bill.usage = usageMeters;
 		}
+		if (!hasUsableIRResponse(irResponse)) {
+			return {
+				kind: "completed",
+				ir: irResponse,
+				upstream: response,
+				bill,
+				keySource: keyInfo.source,
+				byokKeyId: keyInfo.byokId,
+				mappedRequest,
+				rawResponse: rawData,
+			};
+		}
 
+		// Calculate pricing
 		const totalMs = Date.now() - upstreamStartMs;
 
 		return {
