@@ -50,20 +50,18 @@ function hasUsableIRResponse(response: IRChatResponse | undefined): boolean {
 		if ((choice.message?.toolCalls?.length ?? 0) > 0) return true;
 		return (choice.message?.content ?? []).some((part: any) => {
 			if (!part || typeof part !== "object") return false;
-			if (part.type === "reasoning_text") return false;
 			if (typeof part.text === "string" && part.text.trim().length > 0) return true;
 			return typeof part.data === "string" && part.data.length > 0;
 		});
 	});
 }
 
-function emptyVertexResponse(model: string, diagnostic?: Record<string, unknown>): Response {
+function emptyVertexResponse(model: string): Response {
 	return new Response(JSON.stringify({
 		error: {
 			code: "google_empty_response",
 			message: "Google Vertex returned a successful response without any output.",
 			model,
-			...diagnostic,
 		},
 	}), {
 		status: 502,
@@ -235,9 +233,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				kind: "completed",
 				ir: undefined,
 				bill,
-				upstream: emptyVertexResponse(model, {
-					finish_reason: ir?.choices?.[0]?.finishReason,
-				}),
+				upstream: emptyVertexResponse(model),
 				keySource: keyInfo.source,
 				byokKeyId: keyInfo.byokId,
 				mappedRequest,
@@ -398,7 +394,7 @@ export function resolveVertexModelRoute(model: string): VertexModelRoute {
 function resolveVertexApiBase(bindings: Record<string, any>): string {
 	const rawBase = String(bindings.GOOGLE_VERTEX_BASE_URL || "").replace(/\/+$/, "");
 	const project = String(bindings.GOOGLE_VERTEX_PROJECT || "").trim();
-	const location = String(bindings.GOOGLE_VERTEX_LOCATION || "").trim() || "global";
+	const location = String(bindings.GOOGLE_VERTEX_LOCATION || "").trim() || "us-east5";
 
 	if (rawBase) {
 		if (/\/v\d+(?:beta\d+)?\/projects\/[^/]+\/locations\/[^/]+$/i.test(rawBase)) {
@@ -412,10 +408,7 @@ function resolveVertexApiBase(bindings: Record<string, any>): string {
 	}
 
 	if (!project) throw vertexError("google-vertex_project_missing");
-	const host = location.toLowerCase() === "global"
-		? "aiplatform.googleapis.com"
-		: `${encodeURIComponent(location)}-aiplatform.googleapis.com`;
-	return `https://${host}/v1/projects/${encodeURIComponent(project)}/locations/${encodeURIComponent(location)}`;
+	return `https://${encodeURIComponent(location)}-aiplatform.googleapis.com/v1/projects/${encodeURIComponent(project)}/locations/${encodeURIComponent(location)}`;
 }
 
 export async function irToGemini(ir: IRChatRequest, modelOverride?: string | null): Promise<any> {

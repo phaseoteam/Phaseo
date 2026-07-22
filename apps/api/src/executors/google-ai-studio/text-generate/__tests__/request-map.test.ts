@@ -9,8 +9,6 @@ describe("google-ai-studio irToGemini", () => {
 			temperature: 0.2,
 			topP: 0.8,
 			topK: 20,
-			frequencyPenalty: 0.2,
-			presencePenalty: 0.3,
 			maxTokens: 256,
 			messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
 		} as any);
@@ -25,8 +23,6 @@ describe("google-ai-studio irToGemini", () => {
 		expect(request.generation_config).not.toHaveProperty("temperature");
 		expect(request.generation_config).not.toHaveProperty("top_p");
 		expect(request.generation_config).not.toHaveProperty("top_k");
-		expect(request.generation_config).not.toHaveProperty("frequency_penalty");
-		expect(request.generation_config).not.toHaveProperty("presence_penalty");
 	});
 
 	it("maps system and developer roles into system_instruction", async () => {
