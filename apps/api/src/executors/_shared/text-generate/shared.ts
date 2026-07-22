@@ -164,7 +164,7 @@ export async function applyAdapterHooks(
 	if (result.kind === "completed" && result.ir && hooks?.postprocessIR) {
 		result.ir = hooks.postprocessIR(result.ir, args);
 	}
-	if (result.kind === "stream" && result.stream && hooks?.transformStream) {
+	if (result.kind === "stream" && result.stream && !result.streamAlreadyTransformed && hooks?.transformStream) {
 		result.stream = hooks.transformStream(result.stream, args);
 	}
 
@@ -184,7 +184,7 @@ export function buildTextExecutor(args: {
 		if (result.kind === "completed" && result.ir) {
 			result.ir = args.postprocess(result.ir, execArgs);
 		}
-		if (result.kind === "stream" && result.stream) {
+		if (result.kind === "stream" && result.stream && !result.streamAlreadyTransformed) {
 			result.stream = args.transformStream(result.stream, execArgs);
 		}
 		return result;

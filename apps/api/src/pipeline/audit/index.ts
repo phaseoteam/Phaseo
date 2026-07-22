@@ -583,6 +583,9 @@ type AuditFailureExecute = {
     providerRequest?: unknown;
     providerResponse?: unknown;
     detailMetadata?: Record<string, unknown> | null;
+    usage?: Record<string, unknown> | null;
+    currency?: string | null;
+    pricingLines?: unknown[] | null;
 };
 
 export async function auditFailure(args: AuditFailureBefore | AuditFailureExecute) {
@@ -725,11 +728,11 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
             appId: resolvedAppId,
             latencyMs: args.latencyMs ?? null,
             generationMs: args.generationMs ?? null,
-            usage: {},
+            usage: args.usage ?? {},
             requestPayload: args.requestPayload,
             gatewayResponse: args.gatewayResponse,
-            currency: null,
-            pricingLines: [],
+            currency: args.currency ?? null,
+            pricingLines: args.pricingLines ?? [],
             keyId: args.keyId ?? null,
             edgeColo: args.edgeColo ?? null,
             edgeCity: args.edgeCity ?? null,

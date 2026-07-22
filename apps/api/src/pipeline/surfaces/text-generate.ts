@@ -7,8 +7,8 @@ import { handleError } from "@core/error-handler";
 import { detectTextProtocol } from "@protocols/detect";
 import { decodeProtocol, encodeProtocol } from "@protocols/index";
 import { doRequestWithIR } from "../execute";
-import { finalizeRequest } from "../after";
-import { handleSuccessAudit } from "../after/audit";
+import { finalizeRequest, settleBillableFailure } from "../after";
+import { handleFailureAudit, handleSuccessAudit } from "../after/audit";
 import { makeHeaders, createResponse } from "../after/http";
 import { auditFailure } from "../audit";
 import type { PipelineRunnerArgs } from "./types";
@@ -810,6 +810,16 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 			}
 		}
 		if (exec.result.kind === "completed" && !hasUsableIRChatResponse(exec.result.ir as IRChatResponse | undefined)) {
+			await settleBillableFailure(pre.ctx, exec.result);
+			await handleFailureAudit(
+				pre.ctx,
+				exec.result,
+				502,
+				"gateway",
+				"google_empty_response",
+				"The provider returned a successful response without any visible output.",
+				exec.result.rawResponse,
+			);
 			const header = timing.timer.header();
 			pre.ctx.timing = timing.timer.snapshot();
 			return await handleError({
@@ -818,7 +828,7 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 				endpoint,
 				ctx: pre.ctx,
 				timingHeader: header || undefined,
-				auditFailure,
+				auditFailure: async () => {},
 				req,
 			});
 		}
@@ -949,6 +959,17 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 					...nextIrRequest,
 					stream: true,
 					toolChoice: "auto",
+					...(latestIrResponse.provider === "google-ai-studio" && latestIrResponse.nativeId
+						? {
+							vendor: {
+								...(nextIrRequest.vendor ?? {}),
+								google: {
+									...((nextIrRequest.vendor as any)?.google ?? {}),
+									previous_interaction_id: latestIrResponse.nativeId,
+								},
+							},
+						}
+						: {}),
 					messages: [
 						...nextIrRequest.messages,
 						continuation.assistantMessage,
@@ -958,7 +979,6 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 						},
 					],
 				};
-
 				const followUpExec = await doRequestWithIR(pre.ctx, nextIrRequest, timing);
 				if (followUpExec instanceof Response) {
 					const header = timing.timer.header();
@@ -1001,6 +1021,16 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 					}
 				}
 				if (followUpResult.kind === "completed" && !hasUsableIRChatResponse(followUpResult.ir as IRChatResponse | undefined)) {
+					await settleBillableFailure(pre.ctx, followUpResult);
+					await handleFailureAudit(
+						pre.ctx,
+						followUpResult,
+						502,
+						"gateway",
+						"google_empty_response",
+						"The provider returned a successful response without any visible output.",
+						followUpResult.rawResponse,
+					);
 					const header = timing.timer.header();
 					pre.ctx.timing = timing.timer.snapshot();
 					return await handleError({
@@ -1009,7 +1039,7 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 						endpoint,
 						ctx: pre.ctx,
 						timingHeader: header || undefined,
-						auditFailure,
+						auditFailure: async () => {},
 						req,
 					});
 				}

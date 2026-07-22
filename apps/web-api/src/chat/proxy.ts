@@ -23,13 +23,6 @@ function needsCompletedResponseStreamBridge(body: Record<string, unknown> | unde
 	return model === "google/gemini-3.5-flash-lite" || model === "google/gemini-3.6-flash";
 }
 
-function withoutGatewayDatetimeTool(body: Record<string, unknown>): Record<string, unknown> {
-	if (!Array.isArray(body.tools)) return body;
-	const tools = body.tools.filter((tool: any) => tool?.type !== "gateway:datetime");
-	const { tools: _tools, ...rest } = body;
-	return tools.length > 0 ? { ...rest, tools } : rest;
-}
-
 async function bridgeCompletedResponseToSse(upstream: Response): Promise<Response> {
 	if (!upstream.ok) return privateResponse(upstream);
 	const payload = await upstream.json() as Record<string, any>;
@@ -174,7 +167,7 @@ export async function proxyGateway(request: Request, env: Env, waitUntil: (promi
 	try {
 		const bridgeCompletedStream = needsCompletedResponseStreamBridge(args.requestBody, args.stream);
 		const requestBody = bridgeCompletedStream
-			? { ...withoutGatewayDatetimeTool(args.requestBody ?? {}), stream: false }
+			? { ...args.requestBody, stream: false }
 			: args.requestBody;
 		const upstream = await fetch(`${baseUrl}${args.path}`, {
 			method: args.method ?? "POST",
