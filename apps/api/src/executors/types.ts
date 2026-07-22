@@ -111,6 +111,7 @@ export type ExecutorCompletedResult = {
 export type ExecutorStreamingResult = {
 	kind: "stream";
 	stream: ReadableStream<Uint8Array>;
+	streamAlreadyTransformed?: boolean;
 	usageFinalizer: () => Promise<Bill | null>;
 	bill: Bill;
 	upstream: Response;

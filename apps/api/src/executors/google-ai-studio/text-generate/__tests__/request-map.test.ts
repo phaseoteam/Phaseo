@@ -45,6 +45,60 @@ describe("google-ai-studio irToGemini", () => {
 		});
 	});
 
+	it("sanitizes Interactions function schemas and maps function results", async () => {
+		const request = await irToGemini({
+			model: "gemini-3.5-flash-lite",
+			stream: false,
+			vendor: { google: { previous_interaction_id: "v1_interaction_datetime" } },
+			messages: [
+				{ role: "user", content: [{ type: "text", text: "What time is it?" }] },
+				{
+					role: "assistant",
+					content: [],
+					toolCalls: [{ id: "call_datetime", name: "datetime", arguments: "{\"timezone\":\"UTC\"}" }],
+				},
+				{
+					role: "tool",
+					toolResults: [{
+						toolCallId: "call_datetime",
+						content: { datetime: "2026-07-22T08:00:00Z" },
+					}],
+				},
+			],
+			tools: [{
+				name: "datetime",
+				description: "Get the current datetime",
+				parameters: {
+					type: "object",
+					additionalProperties: false,
+					properties: {
+						timezone: { type: "string", additionalProperties: false },
+					},
+				},
+			}],
+		} as any);
+
+		expect(request.tools).toEqual([{
+			type: "function",
+			name: "datetime",
+			description: "Get the current datetime",
+			parameters: {
+				type: "object",
+				properties: { timezone: { type: "string" } },
+			},
+		}]);
+		expect(request.store).toBe(true);
+		expect(request.previous_interaction_id).toBe("v1_interaction_datetime");
+		expect(request.input).toHaveLength(1);
+		expect(request.input.at(-1)).toEqual({
+			type: "function_result",
+			call_id: "call_datetime",
+			name: "datetime",
+			is_error: undefined,
+			result: [{ type: "text", text: "{\"datetime\":\"2026-07-22T08:00:00Z\"}" }],
+		});
+	});
+
 	it("adds schema reinforcement instruction for json_schema mode", async () => {
 		const request = await irToGemini({
 			model: "gemini-2.5-flash",

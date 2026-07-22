@@ -77,6 +77,47 @@ describe("google-ai-studio execute usage fallback", () => {
 		expect(mock.calls[0]?.bodyJson?.generation_config).toBeUndefined();
 	});
 
+	it("does not transform a synthetic Interactions tool-call stream twice", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url.endsWith("/v1beta/interactions"),
+			response: new Response(JSON.stringify({
+				id: "interactions/tool-call",
+				status: "completed",
+				steps: [{
+					type: "function_call",
+					id: "call_datetime",
+					name: "datetime",
+					arguments: { timezone: "Europe/London" },
+				}],
+			}), {
+				status: 200,
+				headers: { "Content-Type": "application/json" },
+			}),
+		}]);
+
+		const result = await executor(buildArgs(
+			{
+				model: "google/gemini-3.5-flash-lite",
+				stream: true,
+				tools: [{
+					name: "datetime",
+					description: "Get the current datetime",
+					parameters: { type: "object", properties: { timezone: { type: "string" } } },
+				}],
+			},
+			{ providerModelSlug: "google/gemini-3.5-flash-lite" },
+		));
+		mock.restore();
+
+		expect(result.kind).toBe("stream");
+		if (result.kind !== "stream") return;
+		const body = await new Response(result.stream).text();
+		expect(body).toContain("response.created");
+		expect(body).toContain("interactions/tool-call");
+		expect(body).toContain("call_datetime");
+		expect(body).not.toContain("google_empty_response");
+	});
+
 	it("keeps legacy GenerateContent routing for older AI Studio models", async () => {
 		const mock = installFetchMock([{
 			match: (url) => url.endsWith("/v1beta/models/gemini-2.5-flash:generateContent"),

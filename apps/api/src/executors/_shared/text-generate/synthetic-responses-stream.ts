@@ -7,7 +7,7 @@ export function createSyntheticResponsesStreamFromIR(
 ): ReadableStream<Uint8Array> {
 	const encoder = new TextEncoder();
 	const response = encodeOpenAIResponsesResponse(ir, requestId ?? ir.id);
-	const nativeId = response.nativeResponseId || ir.nativeId || response.id;
+	const nativeId = ir.nativeId || response.nativeResponseId || response.id;
 	const finalResponse = {
 		...response,
 		id: nativeId,

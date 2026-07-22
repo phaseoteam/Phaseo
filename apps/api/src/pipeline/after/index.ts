@@ -54,6 +54,47 @@ export function shouldReturnBinaryAudio(ctx: PipelineContext): boolean {
 	return true;
 }
 
+export async function settleBillableFailure(
+    ctx: PipelineContext,
+    result: RequestResult,
+): Promise<void> {
+    const usage = {
+        ...((result.bill?.usage && typeof result.bill.usage === "object") ? result.bill.usage : {}),
+        ...((result.ir?.usage && typeof result.ir.usage === "object") ? result.ir.usage : {}),
+        _provider_id: result.provider,
+    };
+    const shapedUsage = shapeUsageForClient(usage, {
+        endpoint: ctx.endpoint,
+        body: ctx.body,
+        includeInternalHints: true,
+    });
+    const card = await loadProviderPricing(ctx, result);
+    const tier = ctx.teamEnrichment?.tier ?? "basic";
+    const priced = await calculatePricing(shapedUsage, card, ctx.body, tier, ctx.meta);
+    const withByok = await applyByokServiceFee({
+        workspaceId: ctx.workspaceId,
+        isByok: (result?.keySource ?? ctx.meta.keySource) === "byok",
+        baseCostNanos: priced.totalNanos,
+        pricedUsage: priced.pricedUsage,
+        currencyHint: priced.currency,
+    });
+    const usageForAudit = shapeUsageForClient(withByok.pricedUsage, {
+        endpoint: ctx.endpoint,
+        body: ctx.body,
+    });
+    if (usageForAudit && typeof usageForAudit === "object") {
+        delete (usageForAudit as any)._provider_id;
+    }
+    result.bill.cost_cents = withByok.totalCents;
+    result.bill.currency = withByok.currency;
+    result.bill.usage = usageForAudit;
+    await recordUsageAndChargeOnce({
+        ctx,
+        costNanos: withByok.totalNanos,
+        endpoint: ctx.endpoint,
+    });
+}
+
 function normalizeWavChunkSizesIfNeeded(bytes: Uint8Array): Uint8Array {
 	if (bytes.length < 44) return bytes;
 	const isRiff =

@@ -223,6 +223,11 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 	const input: any[] = [];
 	const systemInstructionParts: string[] = [];
 	const toolNamesById = new Map<string, string>();
+	const previousInteractionId = resolvePreviousInteractionId(ir);
+
+	const messagesToMap = previousInteractionId && ir.messages.length > 0
+		? [ir.messages[ir.messages.length - 1]]
+		: ir.messages;
 
 	for (const msg of ir.messages) {
 		if (msg.role !== "assistant" || !Array.isArray(msg.toolCalls)) continue;
@@ -232,7 +237,7 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 		}
 	}
 
-	for (const msg of ir.messages) {
+	for (const msg of messagesToMap) {
 		if (msg.role === "system" || msg.role === "developer") {
 			const text = await irPartsToPlainText(msg.content);
 			if (text) systemInstructionParts.push(text);
@@ -271,30 +276,24 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 			}
 		} else if (msg.role === "tool") {
 			for (const toolResult of msg.toolResults) {
-				let responsePayload: any = toolResult.content;
-				if (typeof toolResult.content === "string") {
-					try {
-						responsePayload = JSON.parse(toolResult.content);
-					} catch {
-						responsePayload = { content: toolResult.content };
-					}
-				}
+				const resultText = typeof toolResult.content === "string"
+					? toolResult.content
+					: JSON.stringify(toolResult.content);
 				input.push({
 					type: "function_result",
 					call_id: toolResult.toolCallId,
 					name: toolNamesById.get(toolResult.toolCallId) ?? toolResult.toolCallId,
 					is_error: toolResult.isError,
-					result: responsePayload,
+					result: [{ type: "text", text: resultText }],
 				});
 			}
 		}
 	}
 
-	const previousInteractionId = resolvePreviousInteractionId(ir);
 	const request: any = {
 		model: modelOverride ?? ir.model,
 		input,
-		store: Boolean(ir.store || previousInteractionId || ir.background),
+		store: Boolean(ir.store || previousInteractionId || ir.background || (ir.tools?.length ?? 0) > 0),
 	};
 
 	if (ir.googleCachedContent !== undefined) {
@@ -438,7 +437,7 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 			type: "function",
 			name: tool.name,
 			description: tool.description,
-			parameters: tool.parameters,
+			parameters: sanitizeGeminiSchema(tool.parameters),
 		}));
 
 		if (ir.toolChoice) {
@@ -1171,6 +1170,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			return {
 				kind: "stream",
 				stream,
+				streamAlreadyTransformed: true,
 				upstream: response,
 				bill,
 				keySource: keyInfo.source,
