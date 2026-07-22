@@ -722,6 +722,7 @@ function isInteractionPayload(json: any): boolean {
 		typeof json === "object" &&
 		(
 			Array.isArray(json.steps) ||
+			Array.isArray(json.outputs) ||
 			json.object === "interaction" ||
 			json.interaction && typeof json.interaction === "object" ||
 			typeof json.id === "string" && json.id.startsWith("interactions/")
@@ -762,7 +763,13 @@ function interactionToIR(
 	const contentParts: IRContentPart[] = [];
 	const toolCalls: IRToolCall[] = [];
 
-	for (const step of Array.isArray(json?.steps) ? json.steps : []) {
+	const steps = Array.isArray(json?.steps)
+		? json.steps
+		: Array.isArray(json?.outputs)
+			? [{ type: "model_output", content: json.outputs }]
+			: [];
+
+	for (const step of steps) {
 		if (!step || typeof step !== "object") continue;
 
 		if (step.type === "model_output") {

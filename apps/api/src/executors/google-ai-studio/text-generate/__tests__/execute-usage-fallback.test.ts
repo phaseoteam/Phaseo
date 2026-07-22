@@ -143,6 +143,34 @@ describe("google-ai-studio execute usage fallback", () => {
 		});
 	});
 
+	it("parses legacy Interactions outputs during the API revision transition", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url.endsWith("/v1beta/interactions"),
+			response: new Response(JSON.stringify({
+				id: "v1_legacy_outputs",
+				status: "completed",
+				outputs: [{ type: "text", text: "legacy interaction response" }],
+				usage: { total_input_tokens: 8, total_output_tokens: 4, total_tokens: 12 },
+			}), {
+				status: 200,
+				headers: { "Content-Type": "application/json" },
+			}),
+		}]);
+
+		const result = await executor(buildArgs(
+			{ model: "google/gemini-3.6-flash" },
+			{ providerModelSlug: "google/gemini-3.6-flash" },
+		));
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		if (result.kind !== "completed") return;
+		expect(result.ir?.choices[0]?.message.content).toEqual([
+			{ type: "text", text: "legacy interaction response" },
+		]);
+		expect(result.upstream?.status).toBe(200);
+	});
+
 	it("keeps legacy GenerateContent routing for older AI Studio models", async () => {
 		const mock = installFetchMock([{
 			match: (url) => url.endsWith("/v1beta/models/gemini-2.5-flash:generateContent"),
