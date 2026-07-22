@@ -17,4 +17,11 @@ describe("google-vertex auth helpers", () => {
 			code: "google-vertex_access_token_missing",
 		});
 	});
+
+	it("uses the documented global Vertex endpoint by default", () => {
+		const base = resolveVertexApiBase({ GOOGLE_VERTEX_PROJECT: "project-1" });
+		expect(base).toBe(
+			"https://aiplatform.googleapis.com/v1/projects/project-1/locations/global",
+		);
+	});
 });
