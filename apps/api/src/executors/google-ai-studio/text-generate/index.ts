@@ -95,6 +95,7 @@ function emptyGoogleResponse(
 
 function interactionFailureDiagnostic(json: any): Record<string, unknown> | null {
 	if (!json || typeof json !== "object") return null;
+	json = unwrapInteractionPayload(json);
 
 	const status = typeof json.status === "string" ? json.status.toLowerCase() : "";
 	const stepError = Array.isArray(json.steps)
@@ -722,9 +723,20 @@ function isInteractionPayload(json: any): boolean {
 		(
 			Array.isArray(json.steps) ||
 			json.object === "interaction" ||
+			json.interaction && typeof json.interaction === "object" ||
 			typeof json.id === "string" && json.id.startsWith("interactions/")
 		),
 	);
+}
+
+function unwrapInteractionPayload(json: any): any {
+	if (json?.interaction && typeof json.interaction === "object") {
+		return {
+			...json.interaction,
+			...(json.error && typeof json.error === "object" ? { error: json.error } : {}),
+		};
+	}
+	return json;
 }
 
 function providerPayloadToIR(
@@ -733,6 +745,7 @@ function providerPayloadToIR(
 	model: string,
 	provider: string,
 ): IRChatResponse {
+	json = unwrapInteractionPayload(json);
 	if (isInteractionPayload(json)) {
 		return interactionToIR(json, requestId, model, provider);
 	}
@@ -745,6 +758,7 @@ function interactionToIR(
 	model: string,
 	provider: string,
 ): IRChatResponse {
+	json = unwrapInteractionPayload(json);
 	const contentParts: IRContentPart[] = [];
 	const toolCalls: IRToolCall[] = [];
 
