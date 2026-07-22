@@ -293,7 +293,9 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 	const request: any = {
 		model: modelOverride ?? ir.model,
 		input,
-		store: Boolean(ir.store || previousInteractionId || ir.background || (ir.tools?.length ?? 0) > 0),
+		store: ir.store === false
+			? false
+			: Boolean(ir.store || previousInteractionId || ir.background || (ir.tools?.length ?? 0) > 0),
 	};
 
 	if (ir.googleCachedContent !== undefined) {
@@ -564,9 +566,6 @@ function resolvePreviousInteractionId(ir: IRChatRequest): string | undefined {
 		vendorGoogle?.previousInteractionId,
 		vendorGoogle?.interaction_id,
 		vendorGoogle?.interactionId,
-		typeof ir.previousResponseId === "string" && ir.previousResponseId.startsWith("interactions/")
-			? ir.previousResponseId
-			: undefined,
 	];
 	return candidates.find((value): value is string => typeof value === "string" && value.length > 0);
 }
