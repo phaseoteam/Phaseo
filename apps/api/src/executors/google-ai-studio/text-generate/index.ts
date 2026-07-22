@@ -64,6 +64,7 @@ function hasUsableIRResponse(response: IRChatResponse | undefined): boolean {
 		if ((choice.message?.toolCalls?.length ?? 0) > 0) return true;
 		return (choice.message?.content ?? []).some((part: any) => {
 			if (!part || typeof part !== "object") return false;
+			if (part.type === "reasoning_text") return false;
 			if (typeof part.text === "string" && part.text.trim().length > 0) return true;
 			return (
 				(typeof part.data === "string" && part.data.length > 0) ||
@@ -73,13 +74,72 @@ function hasUsableIRResponse(response: IRChatResponse | undefined): boolean {
 	});
 }
 
-function emptyGoogleResponse(model: string, provider: string): Response {
+function emptyGoogleResponse(
+	model: string,
+	provider: string,
+	diagnostic?: Record<string, unknown>,
+): Response {
 	return new Response(JSON.stringify({
 		error: {
 			code: "google_empty_response",
 			message: "Google returned a successful response without any output.",
 			model,
 			provider,
+			...diagnostic,
+		},
+	}), {
+		status: 502,
+		headers: { "Content-Type": "application/json" },
+	});
+}
+
+function interactionFailureDiagnostic(json: any): Record<string, unknown> | null {
+	if (!json || typeof json !== "object") return null;
+
+	const status = typeof json.status === "string" ? json.status.toLowerCase() : "";
+	const stepError = Array.isArray(json.steps)
+		? json.steps.find((step: any) => step?.error && typeof step.error === "object")?.error
+		: null;
+	const error = json.error && typeof json.error === "object" ? json.error : stepError;
+	const hasFailureStatus = ["failed", "cancelled", "budget_exceeded"].includes(status);
+	if (!hasFailureStatus && !error) return null;
+
+	const diagnostic: Record<string, unknown> = {
+		provider_status: status || undefined,
+	};
+	if (error && (typeof error.code === "number" || typeof error.code === "string")) {
+		diagnostic.provider_error_code = error.code;
+	}
+	if (error && typeof error.message === "string" && error.message.trim()) {
+		diagnostic.provider_error_message = error.message.trim().slice(0, 500);
+	}
+	if (Array.isArray(error?.details) && error.details.length > 0) {
+		diagnostic.provider_error_details = error.details.slice(0, 4);
+	}
+	return diagnostic;
+}
+
+function interactionFailureResponse(
+	model: string,
+	provider: string,
+	diagnostic: Record<string, unknown>,
+): Response {
+	const status = String(diagnostic.provider_status ?? "failed");
+	const code = status === "cancelled"
+		? "google_interaction_cancelled"
+		: status === "incomplete" || status === "budget_exceeded"
+			? "google_interaction_incomplete"
+			: "google_interaction_failed";
+	const providerMessage = typeof diagnostic.provider_error_message === "string"
+		? diagnostic.provider_error_message
+		: `Google interaction ${status}.`;
+	return new Response(JSON.stringify({
+		error: {
+			code,
+			message: providerMessage,
+			model,
+			provider,
+			...diagnostic,
 		},
 	}), {
 		status: 502,
@@ -318,8 +378,8 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 	if (ir.maxTokens !== undefined) generationConfig.max_output_tokens = ir.maxTokens;
 	if (!isCurrentGeminiModel && ir.topP !== undefined) generationConfig.top_p = ir.topP;
 	if (ir.seed !== undefined) generationConfig.seed = ir.seed;
-	if (ir.frequencyPenalty !== undefined) generationConfig.frequency_penalty = ir.frequencyPenalty;
-	if (ir.presencePenalty !== undefined) generationConfig.presence_penalty = ir.presencePenalty;
+	if (!isCurrentGeminiModel && ir.frequencyPenalty !== undefined) generationConfig.frequency_penalty = ir.frequencyPenalty;
+	if (!isCurrentGeminiModel && ir.presencePenalty !== undefined) generationConfig.presence_penalty = ir.presencePenalty;
 	if (ir.stop) {
 		generationConfig.stop_sequences = Array.isArray(ir.stop) ? ir.stop : [ir.stop];
 	}
@@ -1127,17 +1187,34 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		if (forceSyntheticStream) {
 			const rawData = await response.json();
 			const data = normalizeGeminiResponsePayload(rawData);
+			const interactionFailure = interactionFailureDiagnostic(data);
+			if (interactionFailure) {
+				return {
+					kind: "completed",
+					ir: undefined,
+					upstream: interactionFailureResponse(model, providerId, interactionFailure),
+					bill: { cost_cents: 0, currency: "USD" },
+					keySource: keyInfo.source,
+					byokKeyId: keyInfo.byokId,
+					mappedRequest,
+					rawResponse: rawData,
+				};
+			}
 			const irResponse = providerPayloadToIR(data, requestId, model, providerId);
 			applyGoogleOutputTokenFallback(irResponse);
 			if (!hasUsableIRResponse(irResponse)) {
 				return {
 					kind: "completed",
 					ir: undefined,
-					upstream: emptyGoogleResponse(model, providerId),
+					upstream: emptyGoogleResponse(model, providerId, {
+						provider_status: data?.status,
+						finish_reason: irResponse.choices?.[0]?.finishReason,
+					}),
 					bill: { cost_cents: 0, currency: "USD" },
 					keySource: keyInfo.source,
 					byokKeyId: keyInfo.byokId,
 					mappedRequest,
+					rawResponse: rawData,
 				};
 			}
 
@@ -1240,11 +1317,14 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				return {
 					kind: "completed",
 					ir: undefined,
-					upstream: emptyGoogleResponse(model, providerId),
+					upstream: emptyGoogleResponse(model, providerId, {
+						finish_reason: irResponse?.choices?.[0]?.finishReason,
+					}),
 					bill: { cost_cents: 0, currency: "USD" },
 					keySource: keyInfo.source,
 					byokKeyId: keyInfo.byokId,
 					mappedRequest,
+					rawResponse,
 				};
 			}
 
@@ -1276,17 +1356,34 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 		const rawData = await response.json();
 		const data = normalizeGeminiResponsePayload(rawData);
+		const interactionFailure = interactionFailureDiagnostic(data);
+		if (interactionFailure) {
+			return {
+				kind: "completed",
+				ir: undefined,
+				upstream: interactionFailureResponse(model, providerId, interactionFailure),
+				bill: { cost_cents: 0, currency: "USD" },
+				keySource: keyInfo.source,
+				byokKeyId: keyInfo.byokId,
+				mappedRequest,
+				rawResponse: rawData,
+			};
+		}
 		const irResponse = providerPayloadToIR(data, requestId, model, providerId);
 		applyGoogleOutputTokenFallback(irResponse);
 		if (!hasUsableIRResponse(irResponse)) {
 			return {
 				kind: "completed",
 				ir: undefined,
-				upstream: emptyGoogleResponse(model, providerId),
+				upstream: emptyGoogleResponse(model, providerId, {
+					provider_status: data?.status,
+					finish_reason: irResponse.choices?.[0]?.finishReason,
+				}),
 				bill: { cost_cents: 0, currency: "USD" },
 				keySource: keyInfo.source,
 				byokKeyId: keyInfo.byokId,
 				mappedRequest,
+				rawResponse: rawData,
 			};
 		}
 

@@ -67,6 +67,8 @@ describe("google-vertex empty response handling", () => {
 		if (result.kind !== "completed") return;
 		expect(result.ir).toBeUndefined();
 		expect(result.upstream?.status).toBe(502);
+		expect(mock.calls[0]?.url).toContain("https://api.vertex.example/v1/projects/");
+		expect(mock.calls[0]?.url).toContain("/locations/us-east5/");
 	});
 });
 

@@ -77,6 +77,72 @@ describe("google-ai-studio execute usage fallback", () => {
 		expect(mock.calls[0]?.bodyJson?.generation_config).toBeUndefined();
 	});
 
+	it("preserves a failed Interaction error instead of relabeling it as empty", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url.endsWith("/v1beta/interactions"),
+			response: new Response(JSON.stringify({
+				id: "v1_failed_response",
+				status: "failed",
+				steps: [{
+					type: "model_output",
+					error: { code: 13, message: "backend generation failed" },
+				}],
+			}), {
+				status: 200,
+				headers: { "Content-Type": "application/json" },
+			}),
+		}]);
+
+		const result = await executor(buildArgs(
+			{ model: "google/gemini-3.6-flash" },
+			{ providerModelSlug: "google/gemini-3.6-flash" },
+		));
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		if (result.kind !== "completed") return;
+		expect(result.upstream?.status).toBe(502);
+		expect(await result.upstream?.json()).toMatchObject({
+			error: {
+				code: "google_interaction_failed",
+				message: "backend generation failed",
+				provider_error_code: 13,
+				provider_status: "failed",
+			},
+		});
+	});
+
+	it("does not accept a thought-only Interaction as a visible answer", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url.endsWith("/v1beta/interactions"),
+			response: new Response(JSON.stringify({
+				id: "v1_thought_only",
+				status: "completed",
+				steps: [{
+					type: "thought",
+					summary: [{ type: "text", text: "internal summary" }],
+				}],
+			}), {
+				status: 200,
+				headers: { "Content-Type": "application/json" },
+			}),
+		}]);
+
+		const result = await executor(buildArgs(
+			{ model: "google/gemini-3.6-flash" },
+			{ providerModelSlug: "google/gemini-3.6-flash" },
+		));
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		if (result.kind !== "completed") return;
+		expect(result.ir).toBeUndefined();
+		expect(result.upstream?.status).toBe(502);
+		expect(await result.upstream?.json()).toMatchObject({
+			error: { code: "google_empty_response", provider_status: "completed" },
+		});
+	});
+
 	it("keeps legacy GenerateContent routing for older AI Studio models", async () => {
 		const mock = installFetchMock([{
 			match: (url) => url.endsWith("/v1beta/models/gemini-2.5-flash:generateContent"),
