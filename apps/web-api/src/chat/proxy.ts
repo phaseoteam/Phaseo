@@ -17,6 +17,43 @@ const PUBLIC_GATEWAY_BASE_URL = "https://api.phaseo.app/v1";
 const ALLOWED_APP_HEADERS = new Set(["x-title", "http-referer", "x-app-id", "x-app-name"]);
 const CANONICAL_CHAT_APP_HEADERS = { "x-app-id": "phaseo-chat", "x-app-name": "Phaseo Chat", "x-title": "Phaseo Chat", "http-referer": "https://phaseo.app/chat" };
 
+function needsCompletedResponseStreamBridge(body: Record<string, unknown> | undefined, stream: boolean | undefined): boolean {
+	if (!stream) return false;
+	const model = String(body?.model ?? "").toLowerCase();
+	return model === "google/gemini-3.5-flash-lite" || model === "google/gemini-3.6-flash";
+}
+
+function withoutGatewayDatetimeTool(body: Record<string, unknown>): Record<string, unknown> {
+	if (!Array.isArray(body.tools)) return body;
+	const tools = body.tools.filter((tool: any) => tool?.type !== "gateway:datetime");
+	const { tools: _tools, ...rest } = body;
+	return tools.length > 0 ? { ...rest, tools } : rest;
+}
+
+async function bridgeCompletedResponseToSse(upstream: Response): Promise<Response> {
+	if (!upstream.ok) return privateResponse(upstream);
+	const payload = await upstream.json() as Record<string, any>;
+	const text = (Array.isArray(payload.output) ? payload.output : [])
+		.flatMap((item: any) => Array.isArray(item?.content) ? item.content : [])
+		.filter((part: any) => part?.type === "output_text" && typeof part.text === "string")
+		.map((part: any) => part.text)
+		.join("");
+	if (!text.trim()) return privateResponse(new Response(JSON.stringify(payload), { status: upstream.status, headers: upstream.headers }));
+	const id = String(payload.id ?? "response");
+	const events = [
+		{ type: "response.created", response: { ...payload, status: "in_progress", output: [] } },
+		{ type: "response.output_item.added", output_index: 0, item: { type: "message", id: `msg_${id}_0`, status: "in_progress", role: "assistant", content: [] } },
+		{ type: "response.content_part.added", output_index: 0, content_index: 0, part: { type: "output_text", text: "", annotations: [] } },
+		{ type: "response.output_text.delta", output_index: 0, content_index: 0, delta: text },
+		{ type: "response.output_text.done", output_index: 0, content_index: 0, text },
+		{ type: "response.completed", response: payload },
+	];
+	return new Response(events.map((event) => `event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`).join("") + "data: [DONE]\n\n", {
+		status: 200,
+		headers: { "Content-Type": "text/event-stream", ...PRIVATE_NO_STORE_HEADERS },
+	});
+}
+
 function cookieValue(request: Request, name: string): string {
 	for (const segment of (request.headers.get("cookie") ?? "").split(";")) {
 		const separator = segment.indexOf("=");
@@ -135,11 +172,16 @@ export async function proxyGateway(request: Request, env: Env, waitUntil: (promi
 	const baseUrl = resolveGatewayBaseUrlForEnvironment({ configuredBaseUrl: env.AI_STATS_GATEWAY_URL ?? env.PHASEO_GATEWAY_URL, requestedBaseUrl: args.baseUrl, environment: env.ENV });
 	if (!baseUrl) return jsonError(500, "gateway_not_configured", "Missing AI_STATS_GATEWAY_URL for chat gateway proxy.");
 	try {
+		const bridgeCompletedStream = needsCompletedResponseStreamBridge(args.requestBody, args.stream);
+		const requestBody = bridgeCompletedStream
+			? { ...withoutGatewayDatetimeTool(args.requestBody ?? {}), stream: false }
+			: args.requestBody;
 		const upstream = await fetch(`${baseUrl}${args.path}`, {
 			method: args.method ?? "POST",
 			headers: { ...(args.method === "GET" ? {} : { "Content-Type": "application/json" }), ...sanitizeAppHeaders(args.appHeaders), ...CANONICAL_CHAT_APP_HEADERS, Authorization: `Bearer ${auth.apiKey}`, ...(args.debug ? { "x-gateway-debug": "true" } : {}), ...(args.stream ? { Accept: "text/event-stream" } : {}) },
-			...(args.method === "GET" ? {} : { body: JSON.stringify(args.requestBody ?? {}) }),
+			...(args.method === "GET" ? {} : { body: JSON.stringify(requestBody ?? {}) }),
 		});
+		if (bridgeCompletedStream) return bridgeCompletedResponseToSse(upstream);
 		return privateResponse(upstream);
 	} catch {
 		return jsonError(502, "gateway_unreachable", "The gateway is temporarily unavailable. Please try again.");
