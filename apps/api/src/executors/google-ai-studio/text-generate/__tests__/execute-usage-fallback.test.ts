@@ -95,27 +95,30 @@ describe("google-ai-studio execute usage fallback", () => {
 			}),
 		}]);
 
-		const result = await executor(buildArgs(
-			{
-				model: "google/gemini-3.5-flash-lite",
-				stream: true,
-				tools: [{
-					name: "datetime",
-					description: "Get the current datetime",
-					parameters: { type: "object", properties: { timezone: { type: "string" } } },
-				}],
-			},
-			{ providerModelSlug: "google/gemini-3.5-flash-lite" },
-		));
-		mock.restore();
+		try {
+			const result = await executor(buildArgs(
+				{
+					model: "google/gemini-3.5-flash-lite",
+					stream: true,
+					tools: [{
+						name: "datetime",
+						description: "Get the current datetime",
+						parameters: { type: "object", properties: { timezone: { type: "string" } } },
+					}],
+				},
+				{ providerModelSlug: "google/gemini-3.5-flash-lite" },
+			));
 
-		expect(result.kind).toBe("stream");
-		if (result.kind !== "stream") return;
-		const body = await new Response(result.stream).text();
-		expect(body).toContain("response.created");
-		expect(body).toContain("interactions/tool-call");
-		expect(body).toContain("call_datetime");
-		expect(body).not.toContain("google_empty_response");
+			expect(result.kind).toBe("stream");
+			if (result.kind !== "stream") return;
+			const body = await new Response(result.stream).text();
+			expect(body).toContain("response.created");
+			expect(body).toContain("interactions/tool-call");
+			expect(body).toContain("call_datetime");
+			expect(body).not.toContain("google_empty_response");
+		} finally {
+			mock.restore();
+		}
 	});
 
 	it("keeps legacy GenerateContent routing for older AI Studio models", async () => {

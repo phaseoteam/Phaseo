@@ -382,9 +382,9 @@ export async function handleFailureAudit(
                 ? result.bill.usage as Record<string, unknown>
                 : {},
             currency: result.bill?.currency ?? null,
-            pricingLines: Array.isArray((result.bill?.usage as any)?.pricing)
-                ? (result.bill?.usage as any).pricing
-                : [],
+			pricingLines: Array.isArray((result.bill?.usage as any)?.pricing?.lines)
+				? (result.bill?.usage as any).pricing.lines
+				: [],
         });
     } catch (auditErr) {
         console.error("auditFailure failed", auditErr);
