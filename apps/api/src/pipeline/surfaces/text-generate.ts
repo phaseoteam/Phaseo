@@ -959,7 +959,10 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 					...nextIrRequest,
 					stream: true,
 					toolChoice: "auto",
-					...(latestIrResponse.provider === "google-ai-studio" && latestIrResponse.nativeId
+					...(latestIrResponse.provider === "google-ai-studio" &&
+						latestIrResponse.nativeId &&
+						latestIrResponse.nativeId !== pre.ctx.requestId &&
+						nextIrRequest.store !== false
 						? {
 							vendor: {
 								...(nextIrRequest.vendor ?? {}),

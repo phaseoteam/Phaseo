@@ -99,6 +99,28 @@ describe("google-ai-studio irToGemini", () => {
 		});
 	});
 
+	it("honors store=false and ignores client previous response IDs", async () => {
+		const request = await irToGemini({
+			model: "gemini-3.5-flash-lite",
+			stream: false,
+			store: false,
+			previousResponseId: "interactions/another-workspace",
+			messages: [{ role: "user", content: [{ type: "text", text: "What time is it?" }] }],
+			tools: [{
+				name: "datetime",
+				description: "Get the current datetime",
+				parameters: { type: "object", properties: { timezone: { type: "string" } } },
+			}],
+		} as any);
+
+		expect(request.store).toBe(false);
+		expect(request).not.toHaveProperty("previous_interaction_id");
+		expect(request.input).toEqual([{
+			type: "user_input",
+			content: [{ type: "text", text: "What time is it?" }],
+		}]);
+	});
+
 	it("adds schema reinforcement instruction for json_schema mode", async () => {
 		const request = await irToGemini({
 			model: "gemini-2.5-flash",
