@@ -65,5 +65,72 @@
       "value": "Hugging Face (weights distribution)"
     }
   ],
-  "benchmarks": []
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": "2026-04-01T00:00:00",
+  "limits": {
+    "context": 1000000,
+    "input": 1000000,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image/*",
+      "audio/*"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "announcement",
+      "url": "https://thinkingmachines.ai/news/introducing-inkling/",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "documentation",
+      "url": "https://thinkingmachines.ai/model-card/inkling/",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "model",
+      "url": "https://huggingface.co/thinkingmachines/inkling",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "model",
+      "url": "https://www.together.ai/models/inkling",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

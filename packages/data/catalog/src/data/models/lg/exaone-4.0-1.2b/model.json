@@ -219,5 +219,69 @@
       "source_link": "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-1.2B",
       "rank": 35
     }
-  ]
+  ],
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": "2024-11-01T00:00:00",
+  "limits": {
+    "context": 65536,
+    "input": 65536,
+    "output": 65536
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2507.11407",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "announcement",
+      "url": "https://www.lgresearch.ai/blog/view?seq=576",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "repository",
+      "url": "https://github.com/LG-AI-EXAONE/EXAONE-4.0",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "weights",
+      "url": "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-1.2B",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

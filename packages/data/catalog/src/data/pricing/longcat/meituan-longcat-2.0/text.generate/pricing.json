@@ -15,7 +15,11 @@
       "note": "LongCat API docs list limited-time discounted LongCat 2.0 uncached input pricing at $0.30 per 1M tokens; standard pricing is $0.75.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-30T00:00:00Z"
+      "effective_from": "2026-06-30T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -27,7 +31,11 @@
       "note": "LongCat API docs list limited-time discounted LongCat 2.0 cached input pricing at $0.006 per 1M tokens; standard pricing is $0.015.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-30T00:00:00Z"
+      "effective_from": "2026-06-30T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -39,7 +47,21 @@
       "note": "LongCat API docs list limited-time discounted LongCat 2.0 output pricing at $1.20 per 1M tokens; standard pricing is $2.95.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-30T00:00:00Z"
+      "effective_from": "2026-06-30T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

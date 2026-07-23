@@ -1,324 +1,851 @@
 [
-    {
-        "api_model_id":  "z-ai/glm-5.1",
-        "provider_api_model_id":  "ambient:zai-org/GLM-5.1-FP8",
-        "provider_model_slug":  "zai-org/GLM-5.1-FP8",
-        "internal_model_id":  "z-ai/glm-5.1",
-        "is_active_gateway":  false,
-        "quantization_scheme":  "fp8",
-        "input_modalities":  "",
-        "output_modalities":  "text",
-        "context_length":  202752,
-        "max_output_tokens":  131072,
-        "effective_from":  "2026-07-13T00:00:00",
-        "effective_to":  null,
-        "capabilities":  [
-                             {
-                                 "capability_id":  "text.generate",
-                                 "status":  "inactive",
-                                 "params":  [
-
-                                            ]
-                             }
-                         ]
+  {
+    "api_model_id": "deepseek/deepseek-v4-flash",
+    "provider_api_model_id": "ambient:deepseek/deepseek-v4-flash",
+    "provider_model_slug": "deepseek/deepseek-v4-flash",
+    "internal_model_id": "deepseek/deepseek-v4-flash",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": 1048576,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": null,
+        "attachment": false,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
     },
-    {
-        "api_model_id":  "z-ai/glm-5.2",
-        "provider_api_model_id":  "ambient:z-ai/glm-5.2",
-        "provider_model_slug":  "z-ai/glm-5.2",
-        "internal_model_id":  "z-ai/glm-5.2",
-        "is_active_gateway":  true,
-        "quantization_scheme":  "fp8",
-        "input_modalities":  "",
-        "output_modalities":  "text",
-        "context_length":  101376,
-        "max_output_tokens":  101376,
-        "effective_from":  "2026-07-13T00:00:00",
-        "effective_to":  null,
-        "capabilities":  [
-                             {
-                                 "capability_id":  "text.generate",
-                                 "status":  "active",
-                                 "params":  [
-
-                                            ]
-                             }
-                         ]
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
     },
-    {
-        "api_model_id":  "z-ai/glm-4.5-air",
-        "provider_api_model_id":  "ambient:z-ai/glm-4.5-air",
-        "provider_model_slug":  "z-ai/glm-4.5-air",
-        "internal_model_id":  "z-ai/glm-4.5-air",
-        "is_active_gateway":  false,
-        "quantization_scheme":  null,
-        "input_modalities":  "",
-        "output_modalities":  "text",
-        "context_length":  131072,
-        "max_output_tokens":  131072,
-        "effective_from":  "2026-07-13T00:00:00",
-        "effective_to":  null,
-        "capabilities":  [
-                             {
-                                 "capability_id":  "text.generate",
-                                 "status":  "inactive",
-                                 "params":  [
-
-                                            ]
-                             }
-                         ]
+    "sources": [
+      {
+        "kind": "models.dev",
+        "url": "https://models.dev/api.json",
+        "accessed_at": "2026-07-23T09:08:52.190Z",
+        "notes": "Provider model slug: deepseek/deepseek-v4-flash"
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-07-23T09:08:52.190Z",
+      "notes": "Provider support imported from models.dev; routing remains disabled."
     },
-    {
-        "api_model_id":  "openai/gpt-oss-120b",
-        "provider_api_model_id":  "ambient:openai/gpt-oss-120b",
-        "provider_model_slug":  "openai/gpt-oss-120b",
-        "internal_model_id":  "openai/gpt-oss-120b",
-        "is_active_gateway":  false,
-        "quantization_scheme":  null,
-        "input_modalities":  "",
-        "output_modalities":  "text",
-        "context_length":  131072,
-        "max_output_tokens":  131072,
-        "effective_from":  "2026-07-13T00:00:00",
-        "effective_to":  null,
-        "capabilities":  [
-                             {
-                                 "capability_id":  "text.generate",
-                                 "status":  "inactive",
-                                 "params":  [
-
-                                            ]
-                             }
-                         ]
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "moonshotai/kimi-k2.5",
+    "provider_api_model_id": "ambient:moonshotai/kimi-k2.5",
+    "provider_model_slug": "moonshotai/kimi-k2.5",
+    "internal_model_id": "moonshotai/kimi-k2.5",
+    "is_active_gateway": false,
+    "quantization_scheme": "INT4",
+    "input_modalities": "",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
+    "effective_from": "2026-07-13T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "inactive",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
     },
-    {
-        "api_model_id":  "openai/gpt-oss-20b",
-        "provider_api_model_id":  "ambient:openai/gpt-oss-20b",
-        "provider_model_slug":  "openai/gpt-oss-20b",
-        "internal_model_id":  "openai/gpt-oss-20b",
-        "is_active_gateway":  false,
-        "quantization_scheme":  null,
-        "input_modalities":  "",
-        "output_modalities":  "text",
-        "context_length":  131072,
-        "max_output_tokens":  131072,
-        "effective_from":  "2026-07-13T00:00:00",
-        "effective_to":  null,
-        "capabilities":  [
-                             {
-                                 "capability_id":  "text.generate",
-                                 "status":  "inactive",
-                                 "params":  [
-
-                                            ]
-                             }
-                         ]
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
     },
-    {
-        "api_model_id":  "moonshotai/kimi-k2.5",
-        "provider_api_model_id":  "ambient:moonshotai/kimi-k2.5",
-        "provider_model_slug":  "moonshotai/kimi-k2.5",
-        "internal_model_id":  "moonshotai/kimi-k2.5",
-        "is_active_gateway":  false,
-        "quantization_scheme":  "INT4",
-        "input_modalities":  "",
-        "output_modalities":  "text",
-        "context_length":  262144,
-        "max_output_tokens":  262144,
-        "effective_from":  "2026-07-13T00:00:00",
-        "effective_to":  null,
-        "capabilities":  [
-                             {
-                                 "capability_id":  "text.generate",
-                                 "status":  "inactive",
-                                 "params":  [
-
-                                            ]
-                             }
-                         ]
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
     },
-    {
-        "api_model_id":  "moonshotai/kimi-k2.6",
-        "provider_api_model_id":  "ambient:moonshotai/kimi-k2.6",
-        "provider_model_slug":  "moonshotai/kimi-k2.6",
-        "internal_model_id":  "moonshotai/kimi-k2.6",
-        "is_active_gateway":  false,
-        "quantization_scheme":  "int4",
-        "input_modalities":  "",
-        "output_modalities":  "text",
-        "context_length":  262144,
-        "max_output_tokens":  262144,
-        "effective_from":  "2026-07-13T00:00:00",
-        "effective_to":  null,
-        "capabilities":  [
-                             {
-                                 "capability_id":  "text.generate",
-                                 "status":  "inactive",
-                                 "params":  [
-
-                                            ]
-                             }
-                         ]
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "moonshotai/kimi-k2.6",
+    "provider_api_model_id": "ambient:moonshotai/kimi-k2.6",
+    "provider_model_slug": "moonshotai/kimi-k2.6",
+    "internal_model_id": "moonshotai/kimi-k2.6",
+    "is_active_gateway": false,
+    "quantization_scheme": "int4",
+    "input_modalities": "",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
+    "effective_from": "2026-07-13T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "inactive",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
     },
-    {
-        "api_model_id":  "moonshotai/kimi-k2.7-code",
-        "provider_api_model_id":  "ambient:moonshotai/kimi-k2.7-code",
-        "provider_model_slug":  "moonshotai/kimi-k2.7-code",
-        "internal_model_id":  "moonshotai/kimi-k2.7-code",
-        "is_active_gateway":  true,
-        "quantization_scheme":  null,
-        "input_modalities":  "",
-        "output_modalities":  "text",
-        "context_length":  262144,
-        "max_output_tokens":  262144,
-        "effective_from":  "2026-07-13T00:00:00",
-        "effective_to":  null,
-        "capabilities":  [
-                             {
-                                 "capability_id":  "text.generate",
-                                 "status":  "active",
-                                 "params":  [
-
-                                            ]
-                             }
-                         ]
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
     },
-    {
-        "api_model_id":  "nvidia/nemotron-3-nano-30b-a3b",
-        "provider_api_model_id":  "ambient:nvidia/nemotron-3-nano-30b-a3b",
-        "provider_model_slug":  "nvidia/nemotron-3-nano-30b-a3b",
-        "internal_model_id":  "nvidia/nemotron-3-nano-30b-a3b",
-        "is_active_gateway":  false,
-        "quantization_scheme":  "fp4",
-        "input_modalities":  "",
-        "output_modalities":  "text",
-        "context_length":  262144,
-        "max_output_tokens":  228000,
-        "effective_from":  "2026-07-13T00:00:00",
-        "effective_to":  null,
-        "capabilities":  [
-                             {
-                                 "capability_id":  "text.generate",
-                                 "status":  "inactive",
-                                 "params":  [
-
-                                            ]
-                             }
-                         ]
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
     },
-    {
-        "api_model_id":  "qwen/qwen3-next-80b-a3b-instruct",
-        "provider_api_model_id":  "ambient:qwen/qwen3-next-80b-a3b-instruct",
-        "provider_model_slug":  "qwen/qwen3-next-80b-a3b-instruct",
-        "internal_model_id":  "qwen/qwen3-next-80b-a3b-instruct",
-        "is_active_gateway":  false,
-        "quantization_scheme":  null,
-        "input_modalities":  "",
-        "output_modalities":  "text",
-        "context_length":  262144,
-        "max_output_tokens":  262144,
-        "effective_from":  "2026-07-13T00:00:00",
-        "effective_to":  null,
-        "capabilities":  [
-                             {
-                                 "capability_id":  "text.generate",
-                                 "status":  "inactive",
-                                 "params":  [
-
-                                            ]
-                             }
-                         ]
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "moonshotai/kimi-k2.7-code",
+    "provider_api_model_id": "ambient:moonshotai/kimi-k2.7-code",
+    "provider_model_slug": "moonshotai/kimi-k2.7-code",
+    "internal_model_id": "moonshotai/kimi-k2.7-code",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
+    "effective_from": "2026-07-13T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
     },
-    {
-        "api_model_id":  "qwen/qwen3.5-35b-a3b",
-        "provider_api_model_id":  "ambient:qwen/qwen3.5-35b-a3b",
-        "provider_model_slug":  "qwen/qwen3.5-35b-a3b",
-        "internal_model_id":  "qwen/qwen3.5-35b-a3b",
-        "is_active_gateway":  false,
-        "quantization_scheme":  null,
-        "input_modalities":  "",
-        "output_modalities":  "text",
-        "context_length":  262144,
-        "max_output_tokens":  262144,
-        "effective_from":  "2026-07-13T00:00:00",
-        "effective_to":  null,
-        "capabilities":  [
-                             {
-                                 "capability_id":  "text.generate",
-                                 "status":  "inactive",
-                                 "params":  [
-
-                                            ]
-                             }
-                         ]
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
     },
-    {
-        "api_model_id":  "qwen/qwen3.6-27b",
-        "provider_api_model_id":  "ambient:qwen/qwen3.6-27b",
-        "provider_model_slug":  "qwen/qwen3.6-27b",
-        "internal_model_id":  "qwen/qwen3.6-27b",
-        "is_active_gateway":  false,
-        "quantization_scheme":  null,
-        "input_modalities":  "",
-        "output_modalities":  "text",
-        "context_length":  262144,
-        "max_output_tokens":  81920,
-        "effective_from":  "2026-07-13T00:00:00",
-        "effective_to":  null,
-        "capabilities":  [
-                             {
-                                 "capability_id":  "text.generate",
-                                 "status":  "inactive",
-                                 "params":  [
-
-                                            ]
-                             }
-                         ]
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
     },
-    {
-        "api_model_id":  "qwen/qwen3.6-35b-a3b",
-        "provider_api_model_id":  "ambient:qwen/qwen3.6-35b-a3b",
-        "provider_model_slug":  "qwen/qwen3.6-35b-a3b",
-        "internal_model_id":  "qwen/qwen3.6-35b-a3b",
-        "is_active_gateway":  false,
-        "quantization_scheme":  null,
-        "input_modalities":  "",
-        "output_modalities":  "text",
-        "context_length":  262144,
-        "max_output_tokens":  262144,
-        "effective_from":  "2026-07-13T00:00:00",
-        "effective_to":  null,
-        "capabilities":  [
-                             {
-                                 "capability_id":  "text.generate",
-                                 "status":  "inactive",
-                                 "params":  [
-
-                                            ]
-                             }
-                         ]
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "nvidia/nemotron-3-nano-30b-a3b",
+    "provider_api_model_id": "ambient:nvidia/nemotron-3-nano-30b-a3b",
+    "provider_model_slug": "nvidia/nemotron-3-nano-30b-a3b",
+    "internal_model_id": "nvidia/nemotron-3-nano-30b-a3b",
+    "is_active_gateway": false,
+    "quantization_scheme": "fp4",
+    "input_modalities": "",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 228000,
+    "effective_from": "2026-07-13T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "inactive",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
     },
-    {
-        "api_model_id":  "z-ai/glm-5.2",
-        "provider_api_model_id":  "ambient:ambient/large",
-        "provider_model_slug":  "ambient/large",
-        "internal_model_id":  "z-ai/glm-5.2",
-        "is_active_gateway":  true,
-        "quantization_scheme":  "fp8",
-        "input_modalities":  "",
-        "output_modalities":  "text",
-        "context_length":  101376,
-        "max_output_tokens":  101376,
-        "effective_from":  "2026-07-13T00:00:00",
-        "effective_to":  null,
-        "capabilities":  [
-                             {
-                                 "capability_id":  "text.generate",
-                                 "status":  "active",
-                                 "params":  [
-
-                                            ]
-                             }
-                         ]
-    }
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "openai/gpt-oss-120b",
+    "provider_api_model_id": "ambient:openai/gpt-oss-120b",
+    "provider_model_slug": "openai/gpt-oss-120b",
+    "internal_model_id": "openai/gpt-oss-120b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "",
+    "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 131072,
+    "effective_from": "2026-07-13T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "inactive",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "openai/gpt-oss-20b",
+    "provider_api_model_id": "ambient:openai/gpt-oss-20b",
+    "provider_model_slug": "openai/gpt-oss-20b",
+    "internal_model_id": "openai/gpt-oss-20b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "",
+    "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 131072,
+    "effective_from": "2026-07-13T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "inactive",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-next-80b-a3b-instruct",
+    "provider_api_model_id": "ambient:qwen/qwen3-next-80b-a3b-instruct",
+    "provider_model_slug": "qwen/qwen3-next-80b-a3b-instruct",
+    "internal_model_id": "qwen/qwen3-next-80b-a3b-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
+    "effective_from": "2026-07-13T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "inactive",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.5-35b-a3b",
+    "provider_api_model_id": "ambient:qwen/qwen3.5-35b-a3b",
+    "provider_model_slug": "qwen/qwen3.5-35b-a3b",
+    "internal_model_id": "qwen/qwen3.5-35b-a3b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
+    "effective_from": "2026-07-13T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "inactive",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.6-27b",
+    "provider_api_model_id": "ambient:qwen/qwen3.6-27b",
+    "provider_model_slug": "qwen/qwen3.6-27b",
+    "internal_model_id": "qwen/qwen3.6-27b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 81920,
+    "effective_from": "2026-07-13T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "inactive",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.6-35b-a3b",
+    "provider_api_model_id": "ambient:qwen/qwen3.6-35b-a3b",
+    "provider_model_slug": "qwen/qwen3.6-35b-a3b",
+    "internal_model_id": "qwen/qwen3.6-35b-a3b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
+    "effective_from": "2026-07-13T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "inactive",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "stepfun/step-3.7-flash",
+    "provider_api_model_id": "ambient:stepfun/step-3.7-flash",
+    "provider_model_slug": "stepfun/step-3.7-flash",
+    "internal_model_id": "stepfun/step-3.7-flash",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "models.dev",
+        "url": "https://models.dev/api.json",
+        "accessed_at": "2026-07-23T09:08:52.190Z",
+        "notes": "Provider model slug: stepfun/step-3.7-flash"
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-07-23T09:08:52.190Z",
+      "notes": "Provider support imported from models.dev; routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "xiaomi/mimo-v2.5",
+    "provider_api_model_id": "ambient:xiaomi/mimo-v2.5",
+    "provider_model_slug": "xiaomi/mimo-v2.5",
+    "internal_model_id": "xiaomi/mimo-v2.5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,audio,video",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": 131072,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "models.dev",
+        "url": "https://models.dev/api.json",
+        "accessed_at": "2026-07-23T09:08:52.190Z",
+        "notes": "Provider model slug: xiaomi/mimo-v2.5"
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-07-23T09:08:52.190Z",
+      "notes": "Provider support imported from models.dev; routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-4.5-air",
+    "provider_api_model_id": "ambient:z-ai/glm-4.5-air",
+    "provider_model_slug": "z-ai/glm-4.5-air",
+    "internal_model_id": "z-ai/glm-4.5-air",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "",
+    "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 131072,
+    "effective_from": "2026-07-13T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "inactive",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-5.1",
+    "provider_api_model_id": "ambient:zai-org/GLM-5.1-FP8",
+    "provider_model_slug": "zai-org/GLM-5.1-FP8",
+    "internal_model_id": "z-ai/glm-5.1",
+    "is_active_gateway": false,
+    "quantization_scheme": "fp8",
+    "input_modalities": "",
+    "output_modalities": "text",
+    "context_length": 202752,
+    "max_output_tokens": 131072,
+    "effective_from": "2026-07-13T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "inactive",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-5.2",
+    "provider_api_model_id": "ambient:ambient/large",
+    "provider_model_slug": "ambient/large",
+    "internal_model_id": "z-ai/glm-5.2",
+    "is_active_gateway": true,
+    "quantization_scheme": "fp8",
+    "input_modalities": "",
+    "output_modalities": "text",
+    "context_length": 101376,
+    "max_output_tokens": 101376,
+    "effective_from": "2026-07-13T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-5.2",
+    "provider_api_model_id": "ambient:z-ai/glm-5.2",
+    "provider_model_slug": "z-ai/glm-5.2",
+    "internal_model_id": "z-ai/glm-5.2",
+    "is_active_gateway": true,
+    "quantization_scheme": "fp8",
+    "input_modalities": "",
+    "output_modalities": "text",
+    "context_length": 101376,
+    "max_output_tokens": 101376,
+    "effective_from": "2026-07-13T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  }
 ]

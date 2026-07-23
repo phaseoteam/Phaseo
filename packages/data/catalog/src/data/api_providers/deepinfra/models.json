@@ -16,9 +16,36 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "bytedance/seed-1.8",
@@ -37,9 +64,36 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "bytedance/seed-2.0-mini",
@@ -58,9 +112,36 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "bytedance/seed-2.0-pro",
@@ -79,9 +160,36 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "deepseek/deepseek-r1-0528",
@@ -100,9 +208,36 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "deepseek/deepseek-r1-2025-05-28",
@@ -121,9 +256,36 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "deepseek/deepseek-v3",
@@ -142,9 +304,36 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "deepseek/deepseek-v3-0324",
@@ -163,9 +352,36 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "deepseek/deepseek-v3.1",
@@ -184,9 +400,36 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "deepseek/deepseek-v3.1-terminus",
@@ -205,9 +448,36 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "deepseek/deepseek-v3.2",
@@ -226,9 +496,36 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "deepseek/deepseek-v4-flash",
@@ -247,9 +544,36 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "deepseek/deepseek-v4-pro",
@@ -268,9 +592,36 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "meta/llama-3-8b",
@@ -289,9 +640,36 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "meta/llama-3.1-70b",
@@ -310,9 +688,36 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "meta/llama-3.1-8b",
@@ -331,9 +736,36 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "meta/llama-3.2-11b-vision",
@@ -352,9 +784,36 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "meta/llama-3.3-70b",
@@ -373,9 +832,36 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "meta/llama-4-maverick",
@@ -394,9 +880,36 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "meta/llama-4-scout",
@@ -415,9 +928,36 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "meta/llama-guard-4-12b",
@@ -436,9 +976,36 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "microsoft/phi-4",
@@ -457,9 +1024,36 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "minimax/minimax-m2.5",
@@ -478,9 +1072,36 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "minimax/minimax-m2.7",
@@ -499,9 +1120,36 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "minimax/minimax-m2.7",
@@ -520,9 +1168,36 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "mistral/mistral-nemo-2407",
@@ -541,9 +1216,36 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "mistral/mistral-small-24b-2501",
@@ -562,9 +1264,36 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "mistral/mistral-small-3.2",
@@ -583,9 +1312,36 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "mistral/mixtral-8x7b",
@@ -604,9 +1360,36 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "moonshotai/kimi-k2.5",
@@ -625,9 +1408,36 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "moonshotai/kimi-k2.6",
@@ -646,807 +1456,36 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
-  },
-  {
-    "api_model_id": "nous/hermes-3-llama-3.1-405b",
-    "provider_api_model_id": "deepinfra:nous/hermes-3-llama-3.1-405b",
-    "provider_model_slug": "NousResearch/Hermes-3-Llama-3.1-405B",
-    "internal_model_id": "nous/hermes-3-llama-3.1-405b",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 131072,
-    "max_output_tokens": 131072,
-    "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "nousresearch/hermes-3-llama-3.1-70b",
-    "provider_api_model_id": "deepinfra:nousresearch/hermes-3-llama-3.1-70b",
-    "provider_model_slug": "NousResearch/Hermes-3-Llama-3.1-70B",
-    "internal_model_id": "nous/hermes-3-llama-3.1-70b",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 131072,
-    "max_output_tokens": 131072,
-    "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "nvidia/llama-3.1-nemotron-70b-instruct",
-    "provider_api_model_id": "deepinfra:nvidia/llama-3.1-nemotron-70b-instruct",
-    "provider_model_slug": "nvidia/Llama-3.1-Nemotron-70B-Instruct",
-    "internal_model_id": "nvidia/llama-3.1-nemotron-70b-instruct",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 131072,
-    "max_output_tokens": 131072,
-    "effective_from": "2026-04-28T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "nvidia/llama-3.3-nemotron-super-49b-v1.5",
-    "provider_api_model_id": "deepinfra:nvidia/llama-3.3-nemotron-super-49b-v1.5",
-    "provider_model_slug": "nvidia/Llama-3.3-Nemotron-Super-49B-v1.5",
-    "internal_model_id": "nvidia/llama-3.3-nemotron-super-49b-v1.5",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 131072,
-    "max_output_tokens": 131072,
-    "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "nvidia/nemotron-3-nano-30b-a3b",
-    "provider_api_model_id": "deepinfra:nvidia/nemotron-3-nano-30b-a3b",
-    "provider_model_slug": "nvidia/Nemotron-3-Nano-30B-A3B",
-    "internal_model_id": "nvidia/nemotron-3-nano-30b-a3b",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP4",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 262144,
-    "max_output_tokens": 262144,
-    "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "nvidia/nemotron-3-super-120b-a12b",
-    "provider_api_model_id": "deepinfra:nvidia/nemotron-3-super-120b-a12b",
-    "provider_model_slug": "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B",
-    "internal_model_id": "nvidia/nemotron-3-super-120b-a12b",
-    "is_active_gateway": true,
-    "quantization_scheme": "BFLOAT16",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 262144,
-    "max_output_tokens": 262144,
-    "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "nvidia/nemotron-3-ultra-550b-a55b",
-    "provider_api_model_id": "deepinfra:nvidia/nemotron-3-ultra-550b-a55b",
-    "provider_model_slug": "nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B",
-    "internal_model_id": "nvidia/nemotron-3-ultra-550b-a55b",
-    "is_active_gateway": true,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 1000000,
-    "max_output_tokens": 131072,
-    "effective_from": "2026-06-08T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "nvidia/nvidia-nemotron-nano-12b-v2-vl",
-    "provider_api_model_id": "deepinfra:nvidia/nvidia-nemotron-nano-12b-v2-vl",
-    "provider_model_slug": "nvidia/NVIDIA-Nemotron-Nano-12B-v2-VL",
-    "internal_model_id": "nvidia/nvidia-nemotron-nano-12b-v2-vl",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text,image",
-    "output_modalities": "text",
-    "context_length": 131072,
-    "max_output_tokens": 131072,
-    "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
-    "provider_api_model_id": "deepinfra:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
-    "provider_model_slug": "nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning",
-    "internal_model_id": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
-    "is_active_gateway": true,
-    "quantization_scheme": null,
-    "input_modalities": "text,image,video,audio",
-    "output_modalities": "text",
-    "context_length": 262144,
-    "max_output_tokens": 262144,
-    "effective_from": "2026-04-28T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "nvidia/nvidia-nemotron-nano-9b-v2",
-    "provider_api_model_id": "deepinfra:nvidia/nvidia-nemotron-nano-9b-v2",
-    "provider_model_slug": "nvidia/NVIDIA-Nemotron-Nano-9B-v2",
-    "internal_model_id": "nvidia/nvidia-nemotron-nano-9b-v2",
-    "is_active_gateway": true,
-    "quantization_scheme": "BFLOAT16",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 131072,
-    "max_output_tokens": 131072,
-    "effective_from": "2026-03-25T00:00:00",
-    "effective_to": "2026-06-12T00:00:00Z",
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen2.5-72b",
-    "provider_api_model_id": "deepinfra:qwen/qwen2.5-72b",
-    "provider_model_slug": "Qwen/Qwen2.5-72B-Instruct",
-    "internal_model_id": "qwen/qwen2.5-72b",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 32768,
-    "max_output_tokens": 32768,
-    "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-14b",
-    "provider_api_model_id": "deepinfra:qwen/qwen3-14b",
-    "provider_model_slug": "Qwen/Qwen3-14B",
-    "internal_model_id": "qwen/qwen3-14b",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 40960,
-    "max_output_tokens": 40960,
-    "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-235b-a22b-2507",
-    "provider_api_model_id": "deepinfra:qwen/qwen3-235b-a22b-2507",
-    "provider_model_slug": "Qwen/Qwen3-235B-A22B-Instruct-2507",
-    "internal_model_id": "qwen/qwen3-235b-a22b-2507",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 262144,
-    "max_output_tokens": 262144,
-    "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-235b-a22b-thinking-2507",
-    "provider_api_model_id": "deepinfra:qwen/qwen3-235b-a22b-thinking-2507",
-    "provider_model_slug": "Qwen/Qwen3-235B-A22B-Thinking-2507",
-    "internal_model_id": "qwen/qwen3-235b-a22b-thinking-2507",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 262144,
-    "max_output_tokens": 262144,
-    "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-30b-a3b",
-    "provider_api_model_id": "deepinfra:qwen/qwen3-30b-a3b",
-    "provider_model_slug": "Qwen/Qwen3-30B-A3B",
-    "internal_model_id": "qwen/qwen3-30b-a3b",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 40960,
-    "max_output_tokens": 40960,
-    "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-32b",
-    "provider_api_model_id": "deepinfra:qwen/qwen3-32b",
-    "provider_model_slug": "Qwen/Qwen3-32B",
-    "internal_model_id": "qwen/qwen3-32b",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 40960,
-    "max_output_tokens": 40960,
-    "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-coder-480b-a35b",
-    "provider_api_model_id": "deepinfra:qwen/qwen3-coder-480b-a35b",
-    "provider_model_slug": "Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo",
-    "internal_model_id": "qwen/qwen3-coder-480b-a35b",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP4",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 262144,
-    "max_output_tokens": 262144,
-    "effective_from": "2026-04-28T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-max",
-    "provider_api_model_id": "deepinfra:qwen/qwen3-max",
-    "provider_model_slug": "Qwen/Qwen3-Max",
-    "internal_model_id": "qwen/qwen3-max",
-    "is_active_gateway": true,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 256000,
-    "max_output_tokens": 256000,
-    "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-max-thinking",
-    "provider_api_model_id": "deepinfra:qwen/qwen3-max-thinking",
-    "provider_model_slug": "Qwen/Qwen3-Max-Thinking",
-    "internal_model_id": "qwen/qwen3-max-thinking",
-    "is_active_gateway": true,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 256000,
-    "max_output_tokens": 256000,
-    "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-next-80b-a3b-instruct",
-    "provider_api_model_id": "deepinfra:qwen/qwen3-next-80b-a3b-instruct",
-    "provider_model_slug": "Qwen/Qwen3-Next-80B-A3B-Instruct",
-    "internal_model_id": "qwen/qwen3-next-80b-a3b-instruct",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 262144,
-    "max_output_tokens": 262144,
-    "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-vl-235b-a22b-instruct",
-    "provider_api_model_id": "deepinfra:qwen/qwen3-vl-235b-a22b-instruct",
-    "provider_model_slug": "Qwen/Qwen3-VL-235B-A22B-Instruct",
-    "internal_model_id": "qwen/qwen3-vl-235b-a22b-instruct",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text,image",
-    "output_modalities": "text",
-    "context_length": 262144,
-    "max_output_tokens": 262144,
-    "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-vl-30b-a3b-instruct",
-    "provider_api_model_id": "deepinfra:qwen/qwen3-vl-30b-a3b-instruct",
-    "provider_model_slug": "Qwen/Qwen3-VL-30B-A3B-Instruct",
-    "internal_model_id": "qwen/qwen3-vl-30b-a3b-instruct",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text,image",
-    "output_modalities": "text",
-    "context_length": 262144,
-    "max_output_tokens": 262144,
-    "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3.5-0.8b",
-    "provider_api_model_id": "deepinfra:qwen/qwen3.5-0.8b",
-    "provider_model_slug": "Qwen/Qwen3.5-0.8B",
-    "internal_model_id": "qwen/qwen3.5-0.8b",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text,image",
-    "output_modalities": "text",
-    "context_length": 262144,
-    "max_output_tokens": 262144,
-    "effective_from": "2026-04-28T00:00:00",
-    "effective_to": "2026-06-12T00:00:00Z",
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3.5-122b-a10b",
-    "provider_api_model_id": "deepinfra:qwen/qwen3.5-122b-a10b",
-    "provider_model_slug": "Qwen/Qwen3.5-122B-A10B",
-    "internal_model_id": "qwen/qwen3.5-122b-a10b",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text,image",
-    "output_modalities": "text",
-    "context_length": 262144,
-    "max_output_tokens": 262144,
-    "effective_from": "2026-04-28T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3.5-27b",
-    "provider_api_model_id": "deepinfra:qwen/qwen3.5-27b",
-    "provider_model_slug": "Qwen/Qwen3.5-27B",
-    "internal_model_id": "qwen/qwen3.5-27b",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text,image",
-    "output_modalities": "text",
-    "context_length": 262144,
-    "max_output_tokens": 262144,
-    "effective_from": "2026-04-28T00:00:00",
-    "effective_to": "2026-06-12T00:00:00Z",
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3.5-2b",
-    "provider_api_model_id": "deepinfra:qwen/qwen3.5-2b",
-    "provider_model_slug": "Qwen/Qwen3.5-2B",
-    "internal_model_id": "qwen/qwen3.5-2b",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text,image",
-    "output_modalities": "text",
-    "context_length": 262144,
-    "max_output_tokens": 262144,
-    "effective_from": "2026-04-28T00:00:00",
-    "effective_to": "2026-06-08T00:00:00Z",
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3.5-35b-a3b",
-    "provider_api_model_id": "deepinfra:qwen/qwen3.5-35b-a3b",
-    "provider_model_slug": "Qwen/Qwen3.5-35B-A3B",
-    "internal_model_id": "qwen/qwen3.5-35b-a3b",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text,image",
-    "output_modalities": "text",
-    "context_length": 262144,
-    "max_output_tokens": 262144,
-    "effective_from": "2026-04-28T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3.5-397b-a17b",
-    "provider_api_model_id": "deepinfra:qwen/qwen3.5-397b-a17b",
-    "provider_model_slug": "Qwen/Qwen3.5-397B-A17B",
-    "internal_model_id": "qwen/qwen3.5-397b-a17b",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text,image",
-    "output_modalities": "text",
-    "context_length": 262144,
-    "max_output_tokens": 262144,
-    "effective_from": "2026-04-28T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3.5-4b",
-    "provider_api_model_id": "deepinfra:qwen/qwen3.5-4b",
-    "provider_model_slug": "Qwen/Qwen3.5-4B",
-    "internal_model_id": "qwen/qwen3.5-4b",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text,image",
-    "output_modalities": "text",
-    "context_length": 262144,
-    "max_output_tokens": 262144,
-    "effective_from": "2026-04-28T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3.6-35b-a3b",
-    "provider_api_model_id": "deepinfra:qwen/qwen3.6-35b-a3b",
-    "provider_model_slug": "Qwen/Qwen3.6-35B-A3B",
-    "internal_model_id": "qwen/qwen3.6-35b-a3b",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text,image",
-    "output_modalities": "text",
-    "context_length": 262144,
-    "max_output_tokens": 262144,
-    "effective_from": "2026-04-28T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "stepfun/step-3.5-flash",
-    "provider_api_model_id": "deepinfra:stepfun/step-3.5-flash",
-    "provider_model_slug": "stepfun-ai/Step-3.5-Flash",
-    "internal_model_id": "stepfun/step-3.5-flash",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 262144,
-    "max_output_tokens": 262144,
-    "effective_from": "2026-04-28T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "stepfun/step-3.7-flash",
-    "provider_api_model_id": "deepinfra:stepfun/step-3.7-flash",
-    "provider_model_slug": "stepfun-ai/Step-3.7-Flash",
-    "internal_model_id": "stepfun/step-3.7-flash",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text,image,video",
-    "output_modalities": "text",
-    "context_length": 256000,
-    "max_output_tokens": 262144,
-    "effective_from": "2026-06-12T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "z-ai/glm-4.6",
-    "provider_api_model_id": "deepinfra:z-ai/glm-4.6",
-    "provider_model_slug": "zai-org/GLM-4.6",
-    "internal_model_id": "z-ai/glm-4.6",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP4",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 202752,
-    "max_output_tokens": 202752,
-    "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "z-ai/glm-4.7",
-    "provider_api_model_id": "deepinfra:z-ai/glm-4.7",
-    "provider_model_slug": "zai-org/GLM-4.7",
-    "internal_model_id": "z-ai/glm-4.7",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP4",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 202752,
-    "max_output_tokens": 202752,
-    "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "z-ai/glm-4.7-flash",
-    "provider_api_model_id": "deepinfra:z-ai/glm-4.7-flash",
-    "provider_model_slug": "zai-org/GLM-4.7-Flash",
-    "internal_model_id": "z-ai/glm-4.7-flash",
-    "is_active_gateway": true,
-    "quantization_scheme": "BFLOAT16",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 202752,
-    "max_output_tokens": 202752,
-    "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "z-ai/glm-5",
-    "provider_api_model_id": "deepinfra:z-ai/glm-5",
-    "provider_model_slug": "zai-org/GLM-5",
-    "internal_model_id": "z-ai/glm-5",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP4",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 202752,
-    "max_output_tokens": 202752,
-    "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "z-ai/glm-5.1",
-    "provider_api_model_id": "deepinfra:z-ai/glm-5.1",
-    "provider_model_slug": "zai-org/GLM-5.1",
-    "internal_model_id": "z-ai/glm-5.1",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP4",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 202752,
-    "max_output_tokens": 202752,
-    "effective_from": "2026-04-28T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "z-ai/glm-5.2",
-    "provider_api_model_id": "deepinfra:z-ai/glm-5.2",
-    "provider_model_slug": "zai-org/GLM-5.2",
-    "internal_model_id": "z-ai/glm-5.2",
-    "is_active_gateway": true,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 1048576,
-    "max_output_tokens": null,
-    "effective_from": "2026-06-16T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "moonshotai/kimi-k2.7-code",
@@ -1465,8 +1504,2154 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "nous/hermes-3-llama-3.1-405b",
+    "provider_api_model_id": "deepinfra:nous/hermes-3-llama-3.1-405b",
+    "provider_model_slug": "NousResearch/Hermes-3-Llama-3.1-405B",
+    "internal_model_id": "nous/hermes-3-llama-3.1-405b",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 131072,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "nousresearch/hermes-3-llama-3.1-70b",
+    "provider_api_model_id": "deepinfra:nousresearch/hermes-3-llama-3.1-70b",
+    "provider_model_slug": "NousResearch/Hermes-3-Llama-3.1-70B",
+    "internal_model_id": "nous/hermes-3-llama-3.1-70b",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 131072,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "nvidia/llama-3.1-nemotron-70b-instruct",
+    "provider_api_model_id": "deepinfra:nvidia/llama-3.1-nemotron-70b-instruct",
+    "provider_model_slug": "nvidia/Llama-3.1-Nemotron-70B-Instruct",
+    "internal_model_id": "nvidia/llama-3.1-nemotron-70b-instruct",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 131072,
+    "effective_from": "2026-04-28T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "nvidia/llama-3.3-nemotron-super-49b-v1.5",
+    "provider_api_model_id": "deepinfra:nvidia/llama-3.3-nemotron-super-49b-v1.5",
+    "provider_model_slug": "nvidia/Llama-3.3-Nemotron-Super-49B-v1.5",
+    "internal_model_id": "nvidia/llama-3.3-nemotron-super-49b-v1.5",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 131072,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "nvidia/nemotron-3-nano-30b-a3b",
+    "provider_api_model_id": "deepinfra:nvidia/nemotron-3-nano-30b-a3b",
+    "provider_model_slug": "nvidia/Nemotron-3-Nano-30B-A3B",
+    "internal_model_id": "nvidia/nemotron-3-nano-30b-a3b",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP4",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+    "provider_api_model_id": "deepinfra:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+    "provider_model_slug": "nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning",
+    "internal_model_id": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video,audio",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
+    "effective_from": "2026-04-28T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "nvidia/nemotron-3-super-120b-a12b",
+    "provider_api_model_id": "deepinfra:nvidia/nemotron-3-super-120b-a12b",
+    "provider_model_slug": "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B",
+    "internal_model_id": "nvidia/nemotron-3-super-120b-a12b",
+    "is_active_gateway": true,
+    "quantization_scheme": "BFLOAT16",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "nvidia/nemotron-3-ultra-550b-a55b",
+    "provider_api_model_id": "deepinfra:nvidia/nemotron-3-ultra-550b-a55b",
+    "provider_model_slug": "nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B",
+    "internal_model_id": "nvidia/nemotron-3-ultra-550b-a55b",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 131072,
+    "effective_from": "2026-06-08T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "nvidia/nvidia-nemotron-nano-12b-v2-vl",
+    "provider_api_model_id": "deepinfra:nvidia/nvidia-nemotron-nano-12b-v2-vl",
+    "provider_model_slug": "nvidia/NVIDIA-Nemotron-Nano-12B-v2-VL",
+    "internal_model_id": "nvidia/nvidia-nemotron-nano-12b-v2-vl",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 131072,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "nvidia/nvidia-nemotron-nano-9b-v2",
+    "provider_api_model_id": "deepinfra:nvidia/nvidia-nemotron-nano-9b-v2",
+    "provider_model_slug": "nvidia/NVIDIA-Nemotron-Nano-9B-v2",
+    "internal_model_id": "nvidia/nvidia-nemotron-nano-9b-v2",
+    "is_active_gateway": true,
+    "quantization_scheme": "BFLOAT16",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 131072,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": "2026-06-12T00:00:00Z",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "openai/gpt-oss-120b",
+    "provider_api_model_id": "deepinfra:openai/gpt-oss-120b",
+    "provider_model_slug": "openai/gpt-oss-120b",
+    "internal_model_id": "openai/gpt-oss-120b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 16384,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": null,
+        "attachment": false,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "models.dev",
+        "url": "https://models.dev/api.json",
+        "accessed_at": "2026-07-23T09:08:52.190Z",
+        "notes": "Provider model slug: openai/gpt-oss-120b"
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-07-23T09:08:52.190Z",
+      "notes": "Provider support imported from models.dev; routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "openai/gpt-oss-20b",
+    "provider_api_model_id": "deepinfra:openai/gpt-oss-20b",
+    "provider_model_slug": "openai/gpt-oss-20b",
+    "internal_model_id": "openai/gpt-oss-20b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 16384,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": null,
+        "attachment": false,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "models.dev",
+        "url": "https://models.dev/api.json",
+        "accessed_at": "2026-07-23T09:08:52.190Z",
+        "notes": "Provider model slug: openai/gpt-oss-20b"
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-07-23T09:08:52.190Z",
+      "notes": "Provider support imported from models.dev; routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen2.5-72b",
+    "provider_api_model_id": "deepinfra:qwen/qwen2.5-72b",
+    "provider_model_slug": "Qwen/Qwen2.5-72B-Instruct",
+    "internal_model_id": "qwen/qwen2.5-72b",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 32768,
+    "max_output_tokens": 32768,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-14b",
+    "provider_api_model_id": "deepinfra:qwen/qwen3-14b",
+    "provider_model_slug": "Qwen/Qwen3-14B",
+    "internal_model_id": "qwen/qwen3-14b",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 40960,
+    "max_output_tokens": 40960,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-235b-a22b-2507",
+    "provider_api_model_id": "deepinfra:qwen/qwen3-235b-a22b-2507",
+    "provider_model_slug": "Qwen/Qwen3-235B-A22B-Instruct-2507",
+    "internal_model_id": "qwen/qwen3-235b-a22b-2507",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-235b-a22b-thinking-2507",
+    "provider_api_model_id": "deepinfra:qwen/qwen3-235b-a22b-thinking-2507",
+    "provider_model_slug": "Qwen/Qwen3-235B-A22B-Thinking-2507",
+    "internal_model_id": "qwen/qwen3-235b-a22b-thinking-2507",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-30b-a3b",
+    "provider_api_model_id": "deepinfra:qwen/qwen3-30b-a3b",
+    "provider_model_slug": "Qwen/Qwen3-30B-A3B",
+    "internal_model_id": "qwen/qwen3-30b-a3b",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 40960,
+    "max_output_tokens": 40960,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-32b",
+    "provider_api_model_id": "deepinfra:qwen/qwen3-32b",
+    "provider_model_slug": "Qwen/Qwen3-32B",
+    "internal_model_id": "qwen/qwen3-32b",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 40960,
+    "max_output_tokens": 40960,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-coder-480b-a35b",
+    "provider_api_model_id": "deepinfra:qwen/qwen3-coder-480b-a35b",
+    "provider_model_slug": "Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo",
+    "internal_model_id": "qwen/qwen3-coder-480b-a35b",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP4",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
+    "effective_from": "2026-04-28T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-max",
+    "provider_api_model_id": "deepinfra:qwen/qwen3-max",
+    "provider_model_slug": "Qwen/Qwen3-Max",
+    "internal_model_id": "qwen/qwen3-max",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": 256000,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-max-thinking",
+    "provider_api_model_id": "deepinfra:qwen/qwen3-max-thinking",
+    "provider_model_slug": "Qwen/Qwen3-Max-Thinking",
+    "internal_model_id": "qwen/qwen3-max-thinking",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": 256000,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-next-80b-a3b-instruct",
+    "provider_api_model_id": "deepinfra:qwen/qwen3-next-80b-a3b-instruct",
+    "provider_model_slug": "Qwen/Qwen3-Next-80B-A3B-Instruct",
+    "internal_model_id": "qwen/qwen3-next-80b-a3b-instruct",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-vl-235b-a22b-instruct",
+    "provider_api_model_id": "deepinfra:qwen/qwen3-vl-235b-a22b-instruct",
+    "provider_model_slug": "Qwen/Qwen3-VL-235B-A22B-Instruct",
+    "internal_model_id": "qwen/qwen3-vl-235b-a22b-instruct",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-vl-30b-a3b-instruct",
+    "provider_api_model_id": "deepinfra:qwen/qwen3-vl-30b-a3b-instruct",
+    "provider_model_slug": "Qwen/Qwen3-VL-30B-A3B-Instruct",
+    "internal_model_id": "qwen/qwen3-vl-30b-a3b-instruct",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.5-0.8b",
+    "provider_api_model_id": "deepinfra:qwen/qwen3.5-0.8b",
+    "provider_model_slug": "Qwen/Qwen3.5-0.8B",
+    "internal_model_id": "qwen/qwen3.5-0.8b",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
+    "effective_from": "2026-04-28T00:00:00",
+    "effective_to": "2026-06-12T00:00:00Z",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.5-122b-a10b",
+    "provider_api_model_id": "deepinfra:qwen/qwen3.5-122b-a10b",
+    "provider_model_slug": "Qwen/Qwen3.5-122B-A10B",
+    "internal_model_id": "qwen/qwen3.5-122b-a10b",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
+    "effective_from": "2026-04-28T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.5-27b",
+    "provider_api_model_id": "deepinfra:qwen/qwen3.5-27b",
+    "provider_model_slug": "Qwen/Qwen3.5-27B",
+    "internal_model_id": "qwen/qwen3.5-27b",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
+    "effective_from": "2026-04-28T00:00:00",
+    "effective_to": "2026-06-12T00:00:00Z",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.5-2b",
+    "provider_api_model_id": "deepinfra:qwen/qwen3.5-2b",
+    "provider_model_slug": "Qwen/Qwen3.5-2B",
+    "internal_model_id": "qwen/qwen3.5-2b",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
+    "effective_from": "2026-04-28T00:00:00",
+    "effective_to": "2026-06-08T00:00:00Z",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.5-35b-a3b",
+    "provider_api_model_id": "deepinfra:qwen/qwen3.5-35b-a3b",
+    "provider_model_slug": "Qwen/Qwen3.5-35B-A3B",
+    "internal_model_id": "qwen/qwen3.5-35b-a3b",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
+    "effective_from": "2026-04-28T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.5-397b-a17b",
+    "provider_api_model_id": "deepinfra:qwen/qwen3.5-397b-a17b",
+    "provider_model_slug": "Qwen/Qwen3.5-397B-A17B",
+    "internal_model_id": "qwen/qwen3.5-397b-a17b",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
+    "effective_from": "2026-04-28T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.5-4b",
+    "provider_api_model_id": "deepinfra:qwen/qwen3.5-4b",
+    "provider_model_slug": "Qwen/Qwen3.5-4B",
+    "internal_model_id": "qwen/qwen3.5-4b",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
+    "effective_from": "2026-04-28T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.5-9b",
+    "provider_api_model_id": "deepinfra:qwen/qwen3.5-9b",
+    "provider_model_slug": "qwen/qwen3.5-9b",
+    "internal_model_id": "qwen/qwen3.5-9b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 65536,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "models.dev",
+        "url": "https://models.dev/api.json",
+        "accessed_at": "2026-07-23T09:08:52.190Z",
+        "notes": "Provider model slug: qwen/qwen3.5-9b"
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-07-23T09:08:52.190Z",
+      "notes": "Provider support imported from models.dev; routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.6-27b",
+    "provider_api_model_id": "deepinfra:qwen/qwen3.6-27b",
+    "provider_model_slug": "qwen/qwen3.6-27b",
+    "internal_model_id": "qwen/qwen3.6-27b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video,audio",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 65536,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": true,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": null,
+        "attachment": true,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "models.dev",
+        "url": "https://models.dev/api.json",
+        "accessed_at": "2026-07-23T09:08:52.190Z",
+        "notes": "Provider model slug: qwen/qwen3.6-27b"
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-07-23T09:08:52.190Z",
+      "notes": "Provider support imported from models.dev; routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.6-35b-a3b",
+    "provider_api_model_id": "deepinfra:qwen/qwen3.6-35b-a3b",
+    "provider_model_slug": "Qwen/Qwen3.6-35B-A3B",
+    "internal_model_id": "qwen/qwen3.6-35b-a3b",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
+    "effective_from": "2026-04-28T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "qwen/qwen3.7-max",
+    "provider_api_model_id": "deepinfra:qwen/qwen3.7-max",
+    "provider_model_slug": "qwen/qwen3.7-max",
+    "internal_model_id": "qwen/qwen3.7-max",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": 65536,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": false,
+        "tool_call": true,
+        "structured_output": true,
+        "temperature": null,
+        "attachment": false,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": false,
+    "regions": {
+      "execution": [
+        "global"
+      ],
+      "data": [
+        "global"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [
+      {
+        "kind": "models.dev",
+        "url": "https://models.dev/api.json",
+        "accessed_at": "2026-07-23T09:08:52.190Z",
+        "notes": "Provider model slug: qwen/qwen3.7-max"
+      }
+    ],
+    "verification": {
+      "status": "partial",
+      "checked_at": "2026-07-23T09:08:52.190Z",
+      "notes": "Provider support imported from models.dev; routing remains disabled."
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "stepfun/step-3.5-flash",
+    "provider_api_model_id": "deepinfra:stepfun/step-3.5-flash",
+    "provider_model_slug": "stepfun-ai/Step-3.5-Flash",
+    "internal_model_id": "stepfun/step-3.5-flash",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
+    "effective_from": "2026-04-28T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "stepfun/step-3.7-flash",
+    "provider_api_model_id": "deepinfra:stepfun/step-3.7-flash",
+    "provider_model_slug": "stepfun-ai/Step-3.7-Flash",
+    "internal_model_id": "stepfun/step-3.7-flash",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text,image,video",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": 262144,
+    "effective_from": "2026-06-12T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-4.6",
+    "provider_api_model_id": "deepinfra:z-ai/glm-4.6",
+    "provider_model_slug": "zai-org/GLM-4.6",
+    "internal_model_id": "z-ai/glm-4.6",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP4",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 202752,
+    "max_output_tokens": 202752,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-4.7",
+    "provider_api_model_id": "deepinfra:z-ai/glm-4.7",
+    "provider_model_slug": "zai-org/GLM-4.7",
+    "internal_model_id": "z-ai/glm-4.7",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP4",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 202752,
+    "max_output_tokens": 202752,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-4.7-flash",
+    "provider_api_model_id": "deepinfra:z-ai/glm-4.7-flash",
+    "provider_model_slug": "zai-org/GLM-4.7-Flash",
+    "internal_model_id": "z-ai/glm-4.7-flash",
+    "is_active_gateway": true,
+    "quantization_scheme": "BFLOAT16",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 202752,
+    "max_output_tokens": 202752,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-5",
+    "provider_api_model_id": "deepinfra:z-ai/glm-5",
+    "provider_model_slug": "zai-org/GLM-5",
+    "internal_model_id": "z-ai/glm-5",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP4",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 202752,
+    "max_output_tokens": 202752,
+    "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-5.1",
+    "provider_api_model_id": "deepinfra:z-ai/glm-5.1",
+    "provider_model_slug": "zai-org/GLM-5.1",
+    "internal_model_id": "z-ai/glm-5.1",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP4",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 202752,
+    "max_output_tokens": 202752,
+    "effective_from": "2026-04-28T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-5.2",
+    "provider_api_model_id": "deepinfra:z-ai/glm-5.2",
+    "provider_model_slug": "zai-org/GLM-5.2",
+    "internal_model_id": "z-ai/glm-5.2",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-16T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
+      }
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   }
 ]

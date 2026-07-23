@@ -10,5 +10,20 @@
   "terms_of_service_url": "https://sambanova.ai/sambacloud-terms-of-service",
   "prompt_training_policy": "no_train",
   "prompt_training_notes": "SambaCloud says it never sees or collects customer data or user prompts.",
-  "prompt_training_source_url": "https://sambanova.ai/products/sambacloud"
+  "prompt_training_source_url": "https://sambanova.ai/products/sambacloud",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://docs.sambanova.ai/docs/en/get-started/quickstart",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

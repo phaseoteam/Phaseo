@@ -71,5 +71,69 @@
       "source_link": null,
       "rank": 71
     }
-  ]
+  ],
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": "2024-08-22T00:00:00",
+  "limits": {
+    "context": 256000,
+    "input": 256000,
+    "output": 256000
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "api_reference",
+      "url": "https://docs.ai21.com/reference/jamba-1-6-api-ref",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "playground",
+      "url": "https://studio.ai21.com/",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "announcement",
+      "url": "https://docs.ai21.com/changelog",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "weights",
+      "url": "https://huggingface.co/ai21labs/AI21-Jamba-Mini-1.7",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

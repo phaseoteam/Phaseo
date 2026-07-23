@@ -10,5 +10,20 @@
   "terms_of_service_url": "https://www.inceptron.io/termsofservice",
   "prompt_training_policy": "no_train",
   "prompt_training_notes": "Inceptron says customer prompts and outputs are not stored by default and are not used to train its foundation or fine-tuned models unless the customer explicitly opts in or signs a separate agreement.",
-  "prompt_training_source_url": "https://www.inceptron.io/termsofservice"
+  "prompt_training_source_url": "https://www.inceptron.io/termsofservice",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://docs.inceptron.io/",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

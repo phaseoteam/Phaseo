@@ -10,5 +10,20 @@
   "terms_of_service_url": "https://bfl.ai/legal/developer-terms-of-service",
   "prompt_training_policy": "may_train",
   "prompt_training_notes": "Black Forest Labs says it may use inputs and outputs to provide, develop, train, and improve its technologies, products, and services.",
-  "prompt_training_source_url": "https://bfl.ai/legal/terms-of-service"
+  "prompt_training_source_url": "https://bfl.ai/legal/terms-of-service",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://docs.bfl.ai/",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

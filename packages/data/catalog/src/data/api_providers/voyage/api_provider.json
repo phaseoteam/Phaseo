@@ -10,5 +10,20 @@
   "terms_of_service_url": "https://www.voyageai.com/tos",
   "prompt_training_policy": "opt_out_available",
   "prompt_training_notes": "Voyage says hosted API customers can opt out of Voyage storing and using API data for future model training, resulting in zero-day retention.",
-  "prompt_training_source_url": "https://docs.voyageai.com/docs/faq"
+  "prompt_training_source_url": "https://docs.voyageai.com/docs/faq",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://docs.voyageai.com",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

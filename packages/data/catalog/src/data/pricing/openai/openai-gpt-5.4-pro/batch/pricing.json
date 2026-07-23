@@ -23,7 +23,19 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-03-05T00:00:00Z"
+      "effective_from": "2026-03-05T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -43,7 +55,19 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-03-05T00:00:00Z"
+      "effective_from": "2026-03-05T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_text_tokens",
@@ -63,7 +87,19 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-03-05T00:00:00Z"
+      "effective_from": "2026-03-05T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -83,7 +119,29 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-03-05T00:00:00Z"
+      "effective_from": "2026-03-05T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "batch"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

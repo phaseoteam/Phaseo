@@ -16,7 +16,11 @@
       "match": [],
       "priority": 200,
       "effective_from": "2026-04-24T00:00:00Z",
-      "effective_to": "2026-05-31T15:59:00Z"
+      "effective_to": "2026-05-31T15:59:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -29,7 +33,11 @@
       "match": [],
       "priority": 200,
       "effective_from": "2026-04-24T00:00:00Z",
-      "effective_to": "2026-05-31T15:59:00Z"
+      "effective_to": "2026-05-31T15:59:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -42,7 +50,11 @@
       "match": [],
       "priority": 200,
       "effective_from": "2026-04-24T00:00:00Z",
-      "effective_to": "2026-05-31T15:59:00Z"
+      "effective_to": "2026-05-31T15:59:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "input_text_tokens",
@@ -55,7 +67,11 @@
       "match": [],
       "priority": 100,
       "effective_from": "2026-04-24T00:00:00Z",
-      "effective_to": "2026-05-31T15:59:00Z"
+      "effective_to": "2026-05-31T15:59:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -68,7 +84,11 @@
       "match": [],
       "priority": 100,
       "effective_from": "2026-04-24T00:00:00Z",
-      "effective_to": "2026-05-31T15:59:00Z"
+      "effective_to": "2026-05-31T15:59:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -81,7 +101,11 @@
       "match": [],
       "priority": 100,
       "effective_from": "2026-04-24T00:00:00Z",
-      "effective_to": "2026-05-31T15:59:00Z"
+      "effective_to": "2026-05-31T15:59:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "input_text_tokens",
@@ -93,7 +117,11 @@
       "note": "Pending DeepSeek peak pricing announced 2026-06-29: UTC windows 01:00-04:00 and 06:00-10:00 will price this meter at $0.87 per 1M tokens once the provider effective date is known.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-31T15:59:00Z"
+      "effective_from": "2026-05-31T15:59:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -105,7 +133,11 @@
       "note": "Pending DeepSeek peak pricing announced 2026-06-29: UTC windows 01:00-04:00 and 06:00-10:00 will price this meter at $0.00725 per 1M tokens once the provider effective date is known.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-31T15:59:00Z"
+      "effective_from": "2026-05-31T15:59:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -117,7 +149,21 @@
       "note": "Pending DeepSeek peak pricing announced 2026-06-29: UTC windows 01:00-04:00 and 06:00-10:00 will price this meter at $1.74 per 1M tokens once the provider effective date is known.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-31T15:59:00Z"
+      "effective_from": "2026-05-31T15:59:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

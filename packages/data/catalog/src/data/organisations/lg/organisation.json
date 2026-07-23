@@ -29,5 +29,13 @@
       "platform": "x",
       "url": "https://x.com/LG_AI_Research"
     }
-  ]
+  ],
+  "status": "active",
+  "routable": null,
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

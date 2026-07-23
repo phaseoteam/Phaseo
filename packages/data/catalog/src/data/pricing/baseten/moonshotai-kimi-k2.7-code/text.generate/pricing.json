@@ -15,7 +15,11 @@
       "note": "Baseten model page embedded payload reports perfCost 0.95 for Kimi K2.7 Code; observed 2026-06-16.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-12T00:00:00Z"
+      "effective_from": "2026-06-12T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -27,7 +31,11 @@
       "note": "Baseten model page embedded payload reports perfCostCacheInput 0.16 for Kimi K2.7 Code; observed 2026-06-16.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-12T00:00:00Z"
+      "effective_from": "2026-06-12T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -39,7 +47,21 @@
       "note": "Baseten model page embedded payload reports perfCostOutput 4 for Kimi K2.7 Code; observed 2026-06-16.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-12T00:00:00Z"
+      "effective_from": "2026-06-12T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

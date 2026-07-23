@@ -23,7 +23,29 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-01-29T00:00:00Z"
+      "effective_from": "2026-01-29T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "image_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "2k"
+        }
+      ],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

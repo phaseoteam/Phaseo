@@ -14,7 +14,11 @@
       "pricing_plan": "free",
       "note": "SiliconFlow dashboard lists final tencent/Hy3 input tokens at $0 per K tokens.",
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -25,7 +29,21 @@
       "pricing_plan": "free",
       "note": "SiliconFlow dashboard lists final tencent/Hy3 output tokens at $0 per K tokens.",
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "free"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

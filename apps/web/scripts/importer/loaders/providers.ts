@@ -846,6 +846,32 @@ export async function loadProviders(
                 j.terms_of_service_url.trim()
                     ? j.terms_of_service_url.trim()
                     : null,
+            ...(j.stream_cancellation_support !== undefined ? {
+                stream_cancellation_support:
+                    ["supported", "unsupported", "unknown"].includes(j.stream_cancellation_support)
+                        ? j.stream_cancellation_support
+                        : "unknown",
+                stream_cancellation_stops_provider_billing:
+                    typeof j.stream_cancellation_stops_provider_billing === "boolean"
+                        ? j.stream_cancellation_stops_provider_billing
+                        : null,
+                stream_cancellation_usage_recovery:
+                    ["authoritative", "unknown"].includes(j.stream_cancellation_usage_recovery)
+                        ? j.stream_cancellation_usage_recovery
+                        : "unknown",
+                stream_cancellation_evidence_kind:
+                    ["provider", "aggregator", "none"].includes(j.stream_cancellation_evidence_kind)
+                        ? j.stream_cancellation_evidence_kind
+                        : "none",
+                stream_cancellation_source_url:
+                    typeof j.stream_cancellation_source_url === "string" && j.stream_cancellation_source_url.trim()
+                        ? j.stream_cancellation_source_url.trim()
+                        : null,
+                stream_cancellation_verified_at:
+                    typeof j.stream_cancellation_verified_at === "string" && j.stream_cancellation_verified_at.trim()
+                        ? j.stream_cancellation_verified_at.trim()
+                        : null,
+            } : {}),
         };
         providerIds.add(row.api_provider_id);
         if (change.status !== "unchanged") {

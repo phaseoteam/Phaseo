@@ -10,5 +10,20 @@
   "terms_of_service_url": "https://chutes.ai/terms",
   "prompt_training_policy": "no_train",
   "prompt_training_notes": "Chutes says it does not log, store, or persist the content of API requests or responses.",
-  "prompt_training_source_url": "https://chutes.ai/privacy"
+  "prompt_training_source_url": "https://chutes.ai/privacy",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://chutes.ai/",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

@@ -15,7 +15,11 @@
       "note": "Novita model page and model discovery API report $3.00 per 1M input tokens; observed 2026-07-17.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-07-16T02:27:39Z"
+      "effective_from": "2026-07-16T02:27:39Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -27,7 +31,11 @@
       "note": "Novita model page and model discovery API report $0.30 per 1M cache-read tokens; observed 2026-07-17.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-07-16T02:27:39Z"
+      "effective_from": "2026-07-16T02:27:39Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -39,7 +47,21 @@
       "note": "Novita model page and model discovery API report $15.00 per 1M output tokens; observed 2026-07-17.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-07-16T02:27:39Z"
+      "effective_from": "2026-07-16T02:27:39Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

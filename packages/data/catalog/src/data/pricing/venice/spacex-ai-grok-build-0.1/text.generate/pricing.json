@@ -22,7 +22,19 @@
           "value": 200000
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -41,7 +53,19 @@
           "value": 200000
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -60,7 +84,19 @@
           "value": 200000
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_text_tokens",
@@ -79,7 +115,19 @@
           "value": 200000
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -98,7 +146,19 @@
           "value": 200000
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -117,7 +177,29 @@
           "value": 200000
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

@@ -138,5 +138,72 @@
       "source_link": "https://mistral.ai/news/pixtral-12b/",
       "rank": 2
     }
-  ]
+  ],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": null,
+    "output": null
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "api_reference",
+      "url": "https://docs.mistral.ai/platform/endpoints/",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "playground",
+      "url": "https://chat.mistral.ai",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "announcement",
+      "url": "https://mistral.ai/news/pixtral-12b/",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "repository",
+      "url": "https://huggingface.co/mistralai/Pixtral-12B-2409",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "weights",
+      "url": "https://huggingface.co/mistralai/Pixtral-12B-2409",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

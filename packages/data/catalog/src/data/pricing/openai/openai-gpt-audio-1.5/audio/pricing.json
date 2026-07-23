@@ -15,7 +15,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-02-23T00:00:00Z"
+      "effective_from": "2026-02-23T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -27,7 +31,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-02-23T00:00:00Z"
+      "effective_from": "2026-02-23T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "input_audio_tokens",
@@ -39,7 +47,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-02-23T00:00:00Z"
+      "effective_from": "2026-02-23T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_audio_tokens",
@@ -51,7 +63,21 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-02-23T00:00:00Z"
+      "effective_from": "2026-02-23T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

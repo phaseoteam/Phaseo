@@ -23,7 +23,19 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-01-28T00:00:00Z"
+      "effective_from": "2026-01-28T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_video_seconds",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 0
+        }
+      ],
+      "source": null
     },
     {
       "meter": "total_tokens",
@@ -43,7 +55,29 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-01-28T00:00:00Z"
+      "effective_from": "2026-01-28T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_video_seconds",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 0
+        }
+      ],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

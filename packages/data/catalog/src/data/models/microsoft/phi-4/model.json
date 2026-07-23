@@ -195,5 +195,65 @@
       "source_link": "https://github.com/lechmazur/elimination_game",
       "rank": 49
     }
-  ]
+  ],
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": "2024-06-01T00:00:00",
+  "limits": {
+    "context": 16000,
+    "input": 16000,
+    "output": 16000
+  },
+  "modalities": {
+    "input": null,
+    "output": null
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "api_reference",
+      "url": "https://huggingface.co/microsoft/phi-4",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/pdf/2412.08905",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "announcement",
+      "url": "https://techcommunity.microsoft.com/blog/aiplatformblog/introducing-phi-4-microsoft%E2%80%99s-newest-small-language-model-specializing-in-comple/4357090",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "weights",
+      "url": "https://huggingface.co/microsoft/phi-4",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

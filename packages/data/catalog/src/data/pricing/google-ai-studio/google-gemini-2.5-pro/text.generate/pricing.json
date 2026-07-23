@@ -13,9 +13,29 @@
       "currency": "USD",
       "pricing_plan": "standard",
       "note": "Prompts <= 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "lte", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_image_tokens",
@@ -25,9 +45,29 @@
       "currency": "USD",
       "pricing_plan": "standard",
       "note": "Prompts <= 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "lte", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_video_tokens",
@@ -37,9 +77,29 @@
       "currency": "USD",
       "pricing_plan": "standard",
       "note": "Prompts <= 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "lte", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_audio_tokens",
@@ -49,9 +109,29 @@
       "currency": "USD",
       "pricing_plan": "standard",
       "note": "Prompts <= 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "lte", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_text_tokens",
@@ -61,9 +141,29 @@
       "currency": "USD",
       "pricing_plan": "standard",
       "note": "Prompts > 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "gt", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_image_tokens",
@@ -73,9 +173,29 @@
       "currency": "USD",
       "pricing_plan": "standard",
       "note": "Prompts > 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "gt", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_video_tokens",
@@ -85,9 +205,29 @@
       "currency": "USD",
       "pricing_plan": "standard",
       "note": "Prompts > 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "gt", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_audio_tokens",
@@ -97,9 +237,29 @@
       "currency": "USD",
       "pricing_plan": "standard",
       "note": "Prompts > 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "gt", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -109,9 +269,29 @@
       "currency": "USD",
       "pricing_plan": "standard",
       "note": "Includes thinking tokens; prompts <= 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "lte", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -121,9 +301,29 @@
       "currency": "USD",
       "pricing_plan": "standard",
       "note": "Includes thinking tokens; prompts > 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "gt", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -133,9 +333,29 @@
       "currency": "USD",
       "pricing_plan": "standard",
       "note": "Context caching read price; prompts <= 200k tokens. Storage price is not represented in token meters.",
-      "match": [{ "path": "input_tokens", "op": "lte", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -145,9 +365,29 @@
       "currency": "USD",
       "pricing_plan": "standard",
       "note": "Context caching read price; prompts > 200k tokens. Storage price is not represented in token meters.",
-      "match": [{ "path": "input_tokens", "op": "gt", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_text_tokens",
@@ -157,9 +397,29 @@
       "currency": "USD",
       "pricing_plan": "batch",
       "note": "Prompts <= 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "lte", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_image_tokens",
@@ -169,9 +429,29 @@
       "currency": "USD",
       "pricing_plan": "batch",
       "note": "Prompts <= 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "lte", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_video_tokens",
@@ -181,9 +461,29 @@
       "currency": "USD",
       "pricing_plan": "batch",
       "note": "Prompts <= 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "lte", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_audio_tokens",
@@ -193,9 +493,29 @@
       "currency": "USD",
       "pricing_plan": "batch",
       "note": "Prompts <= 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "lte", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_text_tokens",
@@ -205,9 +525,29 @@
       "currency": "USD",
       "pricing_plan": "batch",
       "note": "Prompts > 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "gt", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_image_tokens",
@@ -217,9 +557,29 @@
       "currency": "USD",
       "pricing_plan": "batch",
       "note": "Prompts > 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "gt", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_video_tokens",
@@ -229,9 +589,29 @@
       "currency": "USD",
       "pricing_plan": "batch",
       "note": "Prompts > 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "gt", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_audio_tokens",
@@ -241,9 +621,29 @@
       "currency": "USD",
       "pricing_plan": "batch",
       "note": "Prompts > 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "gt", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -253,9 +653,29 @@
       "currency": "USD",
       "pricing_plan": "batch",
       "note": "Includes thinking tokens; prompts <= 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "lte", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -265,9 +685,29 @@
       "currency": "USD",
       "pricing_plan": "batch",
       "note": "Includes thinking tokens; prompts > 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "gt", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -277,9 +717,29 @@
       "currency": "USD",
       "pricing_plan": "batch",
       "note": "Context caching read price; prompts <= 200k tokens. Storage price is not represented in token meters.",
-      "match": [{ "path": "input_tokens", "op": "lte", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -289,9 +749,29 @@
       "currency": "USD",
       "pricing_plan": "batch",
       "note": "Context caching read price; prompts > 200k tokens. Storage price is not represented in token meters.",
-      "match": [{ "path": "input_tokens", "op": "gt", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_text_tokens",
@@ -301,9 +781,29 @@
       "currency": "USD",
       "pricing_plan": "flex",
       "note": "Prompts <= 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "lte", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_image_tokens",
@@ -313,9 +813,29 @@
       "currency": "USD",
       "pricing_plan": "flex",
       "note": "Prompts <= 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "lte", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_video_tokens",
@@ -325,9 +845,29 @@
       "currency": "USD",
       "pricing_plan": "flex",
       "note": "Prompts <= 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "lte", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_audio_tokens",
@@ -337,9 +877,29 @@
       "currency": "USD",
       "pricing_plan": "flex",
       "note": "Prompts <= 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "lte", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_text_tokens",
@@ -349,9 +909,29 @@
       "currency": "USD",
       "pricing_plan": "flex",
       "note": "Prompts > 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "gt", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_image_tokens",
@@ -361,9 +941,29 @@
       "currency": "USD",
       "pricing_plan": "flex",
       "note": "Prompts > 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "gt", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_video_tokens",
@@ -373,9 +973,29 @@
       "currency": "USD",
       "pricing_plan": "flex",
       "note": "Prompts > 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "gt", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_audio_tokens",
@@ -385,9 +1005,29 @@
       "currency": "USD",
       "pricing_plan": "flex",
       "note": "Prompts > 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "gt", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -397,9 +1037,29 @@
       "currency": "USD",
       "pricing_plan": "flex",
       "note": "Includes thinking tokens; prompts <= 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "lte", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -409,9 +1069,29 @@
       "currency": "USD",
       "pricing_plan": "flex",
       "note": "Includes thinking tokens; prompts > 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "gt", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -421,9 +1101,29 @@
       "currency": "USD",
       "pricing_plan": "flex",
       "note": "Context caching read price; prompts <= 200k tokens. Storage price is not represented in token meters.",
-      "match": [{ "path": "input_tokens", "op": "lte", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -433,9 +1133,29 @@
       "currency": "USD",
       "pricing_plan": "flex",
       "note": "Context caching read price; prompts > 200k tokens. Storage price is not represented in token meters.",
-      "match": [{ "path": "input_tokens", "op": "gt", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_text_tokens",
@@ -445,9 +1165,29 @@
       "currency": "USD",
       "pricing_plan": "priority",
       "note": "Prompts <= 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "lte", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_image_tokens",
@@ -457,9 +1197,29 @@
       "currency": "USD",
       "pricing_plan": "priority",
       "note": "Prompts <= 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "lte", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_video_tokens",
@@ -469,9 +1229,29 @@
       "currency": "USD",
       "pricing_plan": "priority",
       "note": "Prompts <= 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "lte", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_audio_tokens",
@@ -481,9 +1261,29 @@
       "currency": "USD",
       "pricing_plan": "priority",
       "note": "Prompts <= 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "lte", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_text_tokens",
@@ -493,9 +1293,29 @@
       "currency": "USD",
       "pricing_plan": "priority",
       "note": "Prompts > 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "gt", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_image_tokens",
@@ -505,9 +1325,29 @@
       "currency": "USD",
       "pricing_plan": "priority",
       "note": "Prompts > 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "gt", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_video_tokens",
@@ -517,9 +1357,29 @@
       "currency": "USD",
       "pricing_plan": "priority",
       "note": "Prompts > 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "gt", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_audio_tokens",
@@ -529,9 +1389,29 @@
       "currency": "USD",
       "pricing_plan": "priority",
       "note": "Prompts > 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "gt", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -541,9 +1421,29 @@
       "currency": "USD",
       "pricing_plan": "priority",
       "note": "Includes thinking tokens; prompts <= 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "lte", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -553,9 +1453,29 @@
       "currency": "USD",
       "pricing_plan": "priority",
       "note": "Includes thinking tokens; prompts > 200k tokens.",
-      "match": [{ "path": "input_tokens", "op": "gt", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -565,9 +1485,29 @@
       "currency": "USD",
       "pricing_plan": "priority",
       "note": "Context caching read price; prompts <= 200k tokens. Storage price is not represented in token meters.",
-      "match": [{ "path": "input_tokens", "op": "lte", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -577,9 +1517,42 @@
       "currency": "USD",
       "pricing_plan": "priority",
       "note": "Context caching read price; prompts > 200k tokens. Storage price is not represented in token meters.",
-      "match": [{ "path": "input_tokens", "op": "gt", "or_group": 1, "and_index": 1, "value": 200000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2025-06-17T00:00:00Z"
+      "effective_from": "2025-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard",
+    "batch",
+    "flex",
+    "priority"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

@@ -15,7 +15,11 @@
       "note": "Undiscounted list price implied by Thinking Machines' advertised 50% Inkling launch promotion; retained as the comparison and fallback rate.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-07-15T00:00:00Z"
+      "effective_from": "2026-07-15T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -27,7 +31,11 @@
       "note": "Undiscounted list price implied by Thinking Machines' advertised 50% Inkling launch promotion; retained as the comparison and fallback rate.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-07-15T00:00:00Z"
+      "effective_from": "2026-07-15T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -39,7 +47,11 @@
       "note": "Undiscounted list price implied by Thinking Machines' advertised 50% Inkling launch promotion; retained as the comparison and fallback rate.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-07-15T00:00:00Z"
+      "effective_from": "2026-07-15T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "input_text_tokens",
@@ -51,7 +63,11 @@
       "note": "Limited-time 50% Inkling launch promotion; Thinking Machines has not published an end date.",
       "match": [],
       "priority": 200,
-      "effective_from": "2026-07-15T00:00:00Z"
+      "effective_from": "2026-07-15T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -63,7 +79,11 @@
       "note": "Limited-time 50% Inkling launch promotion; Thinking Machines has not published an end date.",
       "match": [],
       "priority": 200,
-      "effective_from": "2026-07-15T00:00:00Z"
+      "effective_from": "2026-07-15T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -75,7 +95,21 @@
       "note": "Limited-time 50% Inkling launch promotion; Thinking Machines has not published an end date.",
       "match": [],
       "priority": 200,
-      "effective_from": "2026-07-15T00:00:00Z"
+      "effective_from": "2026-07-15T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

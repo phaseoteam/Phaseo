@@ -1,177 +1,213 @@
 {
-    "key":  "openai:openai/gpt-5.6-terra-pro:text.generate",
-    "api_provider_id":  "openai",
-    "provider_slug":  "openai",
-    "api_model_id":  "openai/gpt-5.6-terra-pro",
-    "capability_id":  "text.generate",
-    "rules":  [
-                  {
-                      "meter":  "input_text_tokens",
-                      "unit":  "token",
-                      "unit_size":  1000000,
-                      "price_per_unit":  2.5,
-                      "currency":  "USD",
-                      "pricing_plan":  "standard",
-                      "note":  null,
-                      "match":  [
-
-                                ],
-                      "priority":  100,
-                      "effective_from":  "2026-06-26T00:00:00Z"
-                  },
-                  {
-                      "meter":  "cached_read_text_tokens",
-                      "unit":  "token",
-                      "unit_size":  1000000,
-                      "price_per_unit":  0.25,
-                      "currency":  "USD",
-                      "pricing_plan":  "standard",
-                      "note":  "90% cached input discount from the announced uncached input price.",
-                      "match":  [
-
-                                ],
-                      "priority":  100,
-                      "effective_from":  "2026-06-26T00:00:00Z"
-                  },
-                  {
-                      "meter":  "cached_write_text_tokens",
-                      "unit":  "token",
-                      "unit_size":  1000000,
-                      "price_per_unit":  3.125,
-                      "currency":  "USD",
-                      "pricing_plan":  "standard",
-                      "note":  "1.25x the announced uncached input price for cache writes.",
-                      "match":  [
-
-                                ],
-                      "priority":  100,
-                      "effective_from":  "2026-06-26T00:00:00Z"
-                  },
-                  {
-                      "meter":  "output_text_tokens",
-                      "unit":  "token",
-                      "unit_size":  1000000,
-                      "price_per_unit":  15,
-                      "currency":  "USD",
-                      "pricing_plan":  "standard",
-                      "note":  null,
-                      "match":  [
-
-                                ],
-                      "priority":  100,
-                      "effective_from":  "2026-06-26T00:00:00Z"
-                  },
-                  {
-                      "meter":  "input_text_tokens",
-                      "unit":  "token",
-                      "unit_size":  1000000,
-                      "price_per_unit":  1.25,
-                      "currency":  "USD",
-                      "pricing_plan":  "flex",
-                      "note":  "Mirrors GPT-5.6 Terra Flex pricing; pending OpenAI confirmation for Pro.",
-                      "match":  [
-
-                                ],
-                      "priority":  100,
-                      "effective_from":  "2026-07-09T00:00:00Z"
-                  },
-                  {
-                      "meter":  "cached_read_text_tokens",
-                      "unit":  "token",
-                      "unit_size":  1000000,
-                      "price_per_unit":  0.125,
-                      "currency":  "USD",
-                      "pricing_plan":  "flex",
-                      "note":  "Mirrors GPT-5.6 Terra Flex pricing; pending OpenAI confirmation for Pro.",
-                      "match":  [
-
-                                ],
-                      "priority":  100,
-                      "effective_from":  "2026-07-09T00:00:00Z"
-                  },
-                  {
-                      "meter":  "cached_write_text_tokens",
-                      "unit":  "token",
-                      "unit_size":  1000000,
-                      "price_per_unit":  1.5625,
-                      "currency":  "USD",
-                      "pricing_plan":  "flex",
-                      "note":  "Mirrors GPT-5.6 Terra Flex pricing; pending OpenAI confirmation for Pro.",
-                      "match":  [
-
-                                ],
-                      "priority":  100,
-                      "effective_from":  "2026-07-09T00:00:00Z"
-                  },
-                  {
-                      "meter":  "output_text_tokens",
-                      "unit":  "token",
-                      "unit_size":  1000000,
-                      "price_per_unit":  7.5,
-                      "currency":  "USD",
-                      "pricing_plan":  "flex",
-                      "note":  "Mirrors GPT-5.6 Terra Flex pricing; pending OpenAI confirmation for Pro.",
-                      "match":  [
-
-                                ],
-                      "priority":  100,
-                      "effective_from":  "2026-07-09T00:00:00Z"
-                  },
-                  {
-                      "meter":  "input_text_tokens",
-                      "unit":  "token",
-                      "unit_size":  1000000,
-                      "price_per_unit":  6.25,
-                      "currency":  "USD",
-                      "pricing_plan":  "priority",
-                      "note":  "Mirrors GPT-5.6 Terra Priority pricing; pending OpenAI confirmation for Pro.",
-                      "match":  [
-
-                                ],
-                      "priority":  100,
-                      "effective_from":  "2026-07-09T00:00:00Z"
-                  },
-                  {
-                      "meter":  "cached_read_text_tokens",
-                      "unit":  "token",
-                      "unit_size":  1000000,
-                      "price_per_unit":  0.625,
-                      "currency":  "USD",
-                      "pricing_plan":  "priority",
-                      "note":  "Mirrors GPT-5.6 Terra Priority pricing; pending OpenAI confirmation for Pro.",
-                      "match":  [
-
-                                ],
-                      "priority":  100,
-                      "effective_from":  "2026-07-09T00:00:00Z"
-                  },
-                  {
-                      "meter":  "cached_write_text_tokens",
-                      "unit":  "token",
-                      "unit_size":  1000000,
-                      "price_per_unit":  7.8125,
-                      "currency":  "USD",
-                      "pricing_plan":  "priority",
-                      "note":  "Mirrors GPT-5.6 Terra Priority pricing; pending OpenAI confirmation for Pro.",
-                      "match":  [
-
-                                ],
-                      "priority":  100,
-                      "effective_from":  "2026-07-09T00:00:00Z"
-                  },
-                  {
-                      "meter":  "output_text_tokens",
-                      "unit":  "token",
-                      "unit_size":  1000000,
-                      "price_per_unit":  37.5,
-                      "currency":  "USD",
-                      "pricing_plan":  "priority",
-                      "note":  "Mirrors GPT-5.6 Terra Priority pricing; pending OpenAI confirmation for Pro.",
-                      "match":  [
-
-                                ],
-                      "priority":  100,
-                      "effective_from":  "2026-07-09T00:00:00Z"
-                  }
-              ]
+  "key": "openai:openai/gpt-5.6-terra-pro:text.generate",
+  "api_provider_id": "openai",
+  "provider_slug": "openai",
+  "api_model_id": "openai/gpt-5.6-terra-pro",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-26T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.25,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "90% cached input discount from the announced uncached input price.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-26T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "cached_write_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 3.125,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "1.25x the announced uncached input price for cache writes.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-26T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 15,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-26T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.25,
+      "currency": "USD",
+      "pricing_plan": "flex",
+      "note": "Mirrors GPT-5.6 Terra Flex pricing; pending OpenAI confirmation for Pro.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.125,
+      "currency": "USD",
+      "pricing_plan": "flex",
+      "note": "Mirrors GPT-5.6 Terra Flex pricing; pending OpenAI confirmation for Pro.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "cached_write_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.5625,
+      "currency": "USD",
+      "pricing_plan": "flex",
+      "note": "Mirrors GPT-5.6 Terra Flex pricing; pending OpenAI confirmation for Pro.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 7.5,
+      "currency": "USD",
+      "pricing_plan": "flex",
+      "note": "Mirrors GPT-5.6 Terra Flex pricing; pending OpenAI confirmation for Pro.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 6.25,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": "Mirrors GPT-5.6 Terra Priority pricing; pending OpenAI confirmation for Pro.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.625,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": "Mirrors GPT-5.6 Terra Priority pricing; pending OpenAI confirmation for Pro.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "cached_write_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 7.8125,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": "Mirrors GPT-5.6 Terra Priority pricing; pending OpenAI confirmation for Pro.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 37.5,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": "Mirrors GPT-5.6 Terra Priority pricing; pending OpenAI confirmation for Pro.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard",
+    "flex",
+    "priority"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

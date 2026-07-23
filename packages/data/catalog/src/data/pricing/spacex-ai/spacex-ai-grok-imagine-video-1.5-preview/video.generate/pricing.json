@@ -16,7 +16,11 @@
       "match": [],
       "priority": 100,
       "effective_from": "2026-05-30T00:00:00Z",
-      "effective_to": "2026-06-17T00:00:00Z"
+      "effective_to": "2026-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "input_video_seconds",
@@ -29,7 +33,11 @@
       "match": [],
       "priority": 100,
       "effective_from": "2026-05-30T00:00:00Z",
-      "effective_to": "2026-06-17T00:00:00Z"
+      "effective_to": "2026-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_video_seconds",
@@ -50,7 +58,19 @@
       ],
       "priority": 100,
       "effective_from": "2026-05-30T00:00:00Z",
-      "effective_to": "2026-06-17T00:00:00Z"
+      "effective_to": "2026-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "480p"
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_video_seconds",
@@ -71,7 +91,29 @@
       ],
       "priority": 100,
       "effective_from": "2026-05-30T00:00:00Z",
-      "effective_to": "2026-06-17T00:00:00Z"
+      "effective_to": "2026-06-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "720p"
+        }
+      ],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

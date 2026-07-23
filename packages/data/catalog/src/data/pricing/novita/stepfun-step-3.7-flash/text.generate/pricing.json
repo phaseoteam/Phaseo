@@ -6,22 +6,62 @@
   "capability_id": "text.generate",
   "rules": [
     {
-      "meter": "input_text_tokens", "unit": "token", "unit_size": 1000000,
-      "price_per_unit": 0.2, "currency": "USD", "pricing_plan": "standard",
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.2,
+      "currency": "USD",
+      "pricing_plan": "standard",
       "note": "Novita lists Step 3.7 Flash at $0.20 per 1M input tokens.",
-      "match": [], "priority": 100, "effective_from": "2026-07-17T00:00:00Z"
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
-      "meter": "cached_read_text_tokens", "unit": "token", "unit_size": 1000000,
-      "price_per_unit": 0.04, "currency": "USD", "pricing_plan": "standard",
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.04,
+      "currency": "USD",
+      "pricing_plan": "standard",
       "note": "Novita lists Step 3.7 Flash cached input at $0.04 per 1M tokens.",
-      "match": [], "priority": 100, "effective_from": "2026-07-17T00:00:00Z"
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
-      "meter": "output_text_tokens", "unit": "token", "unit_size": 1000000,
-      "price_per_unit": 1.15, "currency": "USD", "pricing_plan": "standard",
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.15,
+      "currency": "USD",
+      "pricing_plan": "standard",
       "note": "Novita lists Step 3.7 Flash at $1.15 per 1M output tokens.",
-      "match": [], "priority": 100, "effective_from": "2026-07-17T00:00:00Z"
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

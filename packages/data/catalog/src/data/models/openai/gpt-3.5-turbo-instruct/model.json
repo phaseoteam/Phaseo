@@ -105,5 +105,57 @@
       "source_link": "https://example.com/benchmark-image",
       "rank": 128
     }
-  ]
+  ],
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": "2021-09-01T00:00:00",
+  "limits": {
+    "context": 4096,
+    "input": 4096,
+    "output": 4096
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "api_reference",
+      "url": "https://platform.openai.com/docs/models/gpt-3-5-turbo",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "playground",
+      "url": "https://platform.openai.com/playground/prompts?models=gpt-3.5-turbo-1106",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

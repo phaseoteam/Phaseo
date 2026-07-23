@@ -942,6 +942,13 @@ function checkApiProviders(state: ValidationState): string[] {
             errors.push(`API provider ${providerId} has invalid offer_scope '${String(data.offer_scope)}'`);
         }
         if (
+            data.data_policy_variant !== undefined &&
+            data.data_policy_variant !== null &&
+            !['standard', 'zdr'].includes(String(data.data_policy_variant))
+        ) {
+            errors.push(`API provider ${providerId} has invalid data_policy_variant '${String(data.data_policy_variant)}'`);
+        }
+        if (
             data.residency_mode !== undefined &&
             data.residency_mode !== null &&
             !['unknown', 'provider_managed', 'customer_selectable', 'account_selected'].includes(String(data.residency_mode))
@@ -956,11 +963,53 @@ function checkApiProviders(state: ValidationState): string[] {
             errors.push(`API provider ${providerId} has invalid zero_data_retention '${String(data.zero_data_retention)}'`);
         }
         if (
+            data.stream_cancellation_support !== undefined &&
+            data.stream_cancellation_support !== null &&
+            !['supported', 'unsupported', 'unknown'].includes(String(data.stream_cancellation_support))
+        ) {
+            errors.push(`API provider ${providerId} has invalid stream_cancellation_support '${String(data.stream_cancellation_support)}'`);
+        }
+        if (
+            data.stream_cancellation_usage_recovery !== undefined &&
+            data.stream_cancellation_usage_recovery !== null &&
+            !['authoritative', 'unknown'].includes(String(data.stream_cancellation_usage_recovery))
+        ) {
+            errors.push(`API provider ${providerId} has invalid stream_cancellation_usage_recovery '${String(data.stream_cancellation_usage_recovery)}'`);
+        }
+        if (
+            data.stream_cancellation_evidence_kind !== undefined &&
+            data.stream_cancellation_evidence_kind !== null &&
+            !['provider', 'aggregator', 'none'].includes(String(data.stream_cancellation_evidence_kind))
+        ) {
+            errors.push(`API provider ${providerId} has invalid stream_cancellation_evidence_kind '${String(data.stream_cancellation_evidence_kind)}'`);
+        }
+        if (data.stream_cancellation_stops_provider_billing === true && data.stream_cancellation_support !== 'supported') {
+            errors.push(`API provider ${providerId} cannot stop billing on cancellation unless cancellation is supported`);
+        }
+        if (
+            data.stream_cancellation_support === 'supported' &&
+            data.stream_cancellation_stops_provider_billing === true &&
+            !(typeof data.stream_cancellation_source_url === 'string' && data.stream_cancellation_source_url.trim())
+        ) {
+            errors.push(`API provider ${providerId} must cite a stream cancellation source when billing is reported to stop`);
+        }
+        if (
             data.data_policy_tier !== undefined &&
             data.data_policy_tier !== null &&
             !['unknown', 'private', 'logs', 'trains'].includes(String(data.data_policy_tier))
         ) {
             errors.push(`API provider ${providerId} has invalid data_policy_tier '${String(data.data_policy_tier)}'`);
+        }
+        if (data.data_policy_variant === 'zdr') {
+            if (data.offer_scope !== 'specialized') {
+                errors.push(`ZDR provider ${providerId} must use offer_scope 'specialized'`);
+            }
+            if (data.zero_data_retention !== 'default') {
+                errors.push(`ZDR provider ${providerId} must set zero_data_retention to 'default'`);
+            }
+            if (data.data_policy_tier !== 'private' || data.data_policy_confidence !== 'confirmed') {
+                errors.push(`ZDR provider ${providerId} must have a confirmed private data policy`);
+            }
         }
         if (
             data.data_policy_confidence !== undefined &&

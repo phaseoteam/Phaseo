@@ -33,5 +33,13 @@
       "platform": "youtube",
       "url": "https://www.youtube.com/@ai21labs"
     }
-  ]
+  ],
+  "status": "active",
+  "routable": null,
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }
