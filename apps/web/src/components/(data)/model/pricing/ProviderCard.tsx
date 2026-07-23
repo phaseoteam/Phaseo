@@ -402,21 +402,20 @@ function renderCompactTierSummary(
 						className="flex items-baseline gap-1.5"
 					>
 						{hasComparison ? (
-							<span className="text-[11px] tabular-nums text-muted-foreground line-through">
+						<span className="text-xs tabular-nums text-muted-foreground line-through">
 								{fmtUSD(tier.basePer1M!)}
 							</span>
 						) : null}
 						<span
 							className={cn(
-								index === 0 ? "text-lg" : "text-xs",
-								"font-semibold tabular-nums text-foreground",
+								"text-xs font-semibold tabular-nums text-foreground",
 								valueClassName,
 							)}
 						>
 							{fmtUSD(tier.per1M)}
 						</span>
 						{condition ? (
-							<span className="truncate text-[10px] text-muted-foreground">
+							<span className="shrink-0 whitespace-nowrap text-[10px] text-muted-foreground">
 								{condition}
 							</span>
 						) : null}
