@@ -244,6 +244,29 @@ describe("public model routes", () => {
 			if (url.includes("/rpc/get_v2_model_provider_health_metrics")) {
 				return new Response(JSON.stringify([]), { status: 200 });
 			}
+			if (url.includes("/rpc/get_v2_model_provider_percentile_series")) {
+				return new Response(JSON.stringify([{
+					usage_day: "2026-07-23",
+					provider_id: "poolside",
+					provider_name: "Poolside",
+					requests: 11,
+					latency_p50: 230,
+					latency_p75: 280,
+					latency_p90: 600,
+					latency_p95: 900,
+					latency_p99: 1300,
+					generation_p50: 500,
+					generation_p75: 650,
+					generation_p90: 900,
+					generation_p95: 1200,
+					generation_p99: 1800,
+					throughput_p50: 8.5,
+					throughput_p75: 9.2,
+					throughput_p90: 11.3,
+					throughput_p95: 13.4,
+					throughput_p99: 14.8,
+				}]), { status: 200 });
+			}
 			return new Response(JSON.stringify([]), { status: 200 });
 		}));
 
@@ -267,6 +290,16 @@ describe("public model routes", () => {
 		expect(payload.metrics.providerDaily7d).toEqual([
 			expect.objectContaining({ provider: "poolside" }),
 		]);
+		expect(payload.metrics.providerPercentileDaily7d).toHaveLength(5);
+		expect(payload.metrics.providerPercentileDaily7d).toContainEqual(
+			expect.objectContaining({
+				provider: "poolside",
+				percentile: 95,
+				avgLatencyMs: 900,
+				avgGenerationMs: 1200,
+				avgThroughput: 13.4,
+			}),
+		);
 		expect(JSON.stringify(payload)).not.toContain('"unknown"');
 	});
 
