@@ -40,7 +40,7 @@ export default function ModelPercentileSelect({
 					className="h-8 gap-2 rounded-md px-3 text-xs"
 					aria-label="Select percentile"
 					title={disabled ? "Coming Soon" : undefined}
-					disabled={disabled}
+					disabled={disabled || isLoading}
 				>
 					{isLoading ? (
 						<Loader2 className="size-3.5 animate-spin" />

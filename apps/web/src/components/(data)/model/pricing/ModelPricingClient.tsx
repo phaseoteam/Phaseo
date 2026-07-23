@@ -468,7 +468,8 @@ export default function ModelPricingClient({
     );
 
     const handlePercentileChange = async (nextPercentile: ModelPercentile) => {
-        setSelectedPercentile(nextPercentile);
+        if (nextPercentile === selectedPercentile || isLoadingPercentile) return;
+        const previousPercentile = selectedPercentile;
         setIsLoadingPercentile(true);
         try {
             const nextStats = await getModelProviderRuntimeStats({
@@ -478,6 +479,9 @@ export default function ModelPricingClient({
                 percentile: nextPercentile,
             });
             setLiveRuntimeStats(nextStats);
+            setSelectedPercentile(nextPercentile);
+        } catch {
+            setSelectedPercentile(previousPercentile);
         } finally {
             setIsLoadingPercentile(false);
         }
@@ -1086,7 +1090,6 @@ export default function ModelPricingClient({
                             value={selectedPercentile}
                             onChange={handlePercentileChange}
                             isLoading={isLoadingPercentile}
-                            disabled
                         />
                     </div>
                 ) : null}

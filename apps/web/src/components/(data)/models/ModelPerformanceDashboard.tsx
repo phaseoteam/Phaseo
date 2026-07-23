@@ -107,10 +107,16 @@ export default function ModelPerformanceDashboard({
 	};
 
 	const handlePercentileChange = async (nextPercentile: ModelPercentile) => {
-		setSelectedPercentile(nextPercentile);
+		if (nextPercentile === selectedPercentile || isLoadingPercentile) return;
+		const previousPercentile = selectedPercentile;
 		setIsLoadingPercentile(true);
 		try {
-			setRegionMetrics(await fetchSelectedMetrics(selectedColo, nextPercentile));
+			const nextMetrics = await fetchSelectedMetrics(selectedColo, nextPercentile);
+			if (!nextMetrics) return;
+			setRegionMetrics(nextMetrics);
+			setSelectedPercentile(nextPercentile);
+		} catch {
+			setSelectedPercentile(previousPercentile);
 		} finally {
 			setIsLoadingPercentile(false);
 		}
@@ -206,7 +212,6 @@ export default function ModelPerformanceDashboard({
 						value={selectedPercentile}
 						onChange={handlePercentileChange}
 						isLoading={isLoadingPercentile}
-						disabled
 					/>
 				) : null}
 				</div>
