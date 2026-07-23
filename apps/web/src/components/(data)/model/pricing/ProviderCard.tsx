@@ -927,7 +927,11 @@ function derivePlanMultiplier(args: {
 					return String(candidate.unit_size ?? 1) === String(rule.unit_size ?? 1);
 				})
 				.sort(sortPricingRuleCandidates)
-				.find((candidate) => ruleMatchCovers(candidate, rule));
+				.find(
+					(candidate) =>
+						normalizeRuleMatchSignature(candidate.match) === "[]" ||
+						ruleMatchCovers(candidate, rule),
+				);
 			basePrice = semanticMatch
 				? normalizeRuleUnitPrice(semanticMatch)
 				: null;
