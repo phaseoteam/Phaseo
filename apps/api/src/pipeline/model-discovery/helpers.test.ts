@@ -110,6 +110,54 @@ describe("fetchProviderModels", () => {
 		}
 	});
 
+	it("accepts a provider success envelope with a nested zero error code", async () => {
+		setupRuntimeFromEnv({
+			POOLSIDE_API_KEY: "test-poolside-key",
+			POOLSIDE_BASE_URL: "https://poolside.example/v1",
+		} as any);
+
+		const fetchMock = installFetchMock([
+			{
+				match: (url) => url === "https://poolside.example/v1/models",
+				response: jsonResponse({
+					error: { code: 0, message: "success" },
+					data: [{ id: "poolside/laguna-m.1" }],
+				}),
+			},
+		]);
+
+		try {
+			const models = await fetchProviderModels(POOLSIDE_DISCOVERY_PROVIDER, "test-poolside-key");
+			expect(models.map((model) => model.id)).toEqual(["poolside/laguna-m.1"]);
+		} finally {
+			fetchMock.restore();
+		}
+	});
+
+	it("still rejects a provider error envelope with a non-zero nested code", async () => {
+		setupRuntimeFromEnv({
+			POOLSIDE_API_KEY: "test-poolside-key",
+			POOLSIDE_BASE_URL: "https://poolside.example/v1",
+		} as any);
+
+		const fetchMock = installFetchMock([
+			{
+				match: (url) => url === "https://poolside.example/v1/models",
+				response: jsonResponse({
+					error: { code: 429, message: "rate limited" },
+				}),
+			},
+		]);
+
+		try {
+			await expect(fetchProviderModels(POOLSIDE_DISCOVERY_PROVIDER, "test-poolside-key")).rejects.toThrow(
+				"rate limited",
+			);
+		} finally {
+			fetchMock.restore();
+		}
+	});
+
 	it("merges google and anthropic publisher models for google-vertex discovery", async () => {
 		setupRuntimeFromEnv({
 			GOOGLE_VERTEX_ACCESS_TOKEN: "test-vertex-token",

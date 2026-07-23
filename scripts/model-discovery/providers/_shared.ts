@@ -89,6 +89,10 @@ function normalizeResponseErrorDetail(value: unknown): string | null {
     }
     const record = asRecord(value);
     if (!record) return null;
+    const errorCode = toNullableInteger(
+        record.code ?? record.status_code ?? record.statusCode
+    );
+    if (errorCode === 0) return null;
 
     for (const key of ["message", "msg", "detail", "error"]) {
         const nested = record[key];
@@ -101,7 +105,7 @@ function normalizeResponseErrorDetail(value: unknown): string | null {
         }
     }
 
-    return null;
+    return errorCode === null ? null : `code ${errorCode}`;
 }
 
 function toNullableInteger(value: unknown): number | null {

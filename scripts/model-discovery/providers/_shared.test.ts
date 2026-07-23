@@ -37,6 +37,36 @@ async function main(): Promise<void> {
 			);
 		}
 	);
+
+	await withMockFetch(
+		new Response(JSON.stringify({
+			error: { code: 0, message: "success" },
+			data: [{ id: "provider/model" }],
+		}), {
+			status: 200,
+			headers: { "Content-Type": "application/json" },
+		}),
+		async () => {
+			const payload = await fetchJson({ url: "https://example.com/models" });
+			assert.deepEqual(payload, {
+				error: { code: 0, message: "success" },
+				data: [{ id: "provider/model" }],
+			});
+		}
+	);
+
+	await withMockFetch(
+		new Response(JSON.stringify({ error: { code: 429, message: "rate limited" } }), {
+			status: 200,
+			headers: { "Content-Type": "application/json" },
+		}),
+		async () => {
+			await assert.rejects(
+				fetchJson({ url: "https://example.com/models" }),
+				/rate limited/i,
+			);
+		}
+	);
 }
 
 main().catch((error) => {

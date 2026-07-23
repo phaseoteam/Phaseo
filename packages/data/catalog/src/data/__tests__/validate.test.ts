@@ -113,6 +113,31 @@ describe('pricing safety checks', () => {
         expect(errs.some(isMajorError)).toBe(true);
     });
 
+    test('top-level pricing windows must be persisted on every rule', () => {
+        const bad = {
+            key: 'p:m:e',
+            api_provider_id: 'p',
+            model_id: 'm',
+            endpoint: 'e',
+            effective_to: '2026-05-23T00:00:00Z',
+            rules: [
+                {
+                    meter: 'input_text_tokens',
+                    unit_size: 1,
+                    price_per_unit: 0.0025,
+                },
+            ],
+        };
+
+        const errs = checkPricingEntrySafety(bad);
+        expect(errs).toEqual(
+            expect.arrayContaining([
+                expect.stringContaining('top-level effective_to must be repeated on every rule'),
+            ])
+        );
+        expect(errs.some(isMajorError)).toBe(true);
+    });
+
     test('mixed aggregate and detailed input meters -> error', () => {
         const bad = {
             key: 'p:m:e',
