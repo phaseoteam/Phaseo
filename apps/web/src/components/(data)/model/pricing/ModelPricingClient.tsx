@@ -1151,10 +1151,10 @@ export default function ModelPricingClient({
 												</TableHead>
 											) : null}
 											<TableHead className="h-8 w-24 min-w-24 pl-2 pr-4 text-right whitespace-nowrap">
-														{renderTableSortHead(`Latency · P${selectedPercentile}`, "latency")}
+												{renderTableSortHead("Latency", "latency")}
 											</TableHead>
 											<TableHead className="h-8 w-28 min-w-28 pl-2 pr-4 text-right whitespace-nowrap">
-														{renderTableSortHead(`Throughput · P${selectedPercentile}`, "throughput")}
+												{renderTableSortHead("Throughput", "throughput")}
 											</TableHead>
 											<TableHead className="h-8 w-32 min-w-32 pl-2 pr-4 text-right whitespace-nowrap">
 												{renderTableSortHead("Uptime", "uptime")}
