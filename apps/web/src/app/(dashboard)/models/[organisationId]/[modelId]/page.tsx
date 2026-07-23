@@ -169,7 +169,6 @@ export default async function Page({
 	const benchmarkPromise = fetchFrontendModelBenchmarkHighlights(modelId).catch(() => []);
 	const subscriptionPromise = fetchFrontendModelSubscriptionPlans(modelId).catch(() => []);
 	const availabilityPromise = fetchFrontendModelAvailability(modelId).catch(() => undefined);
-	const performancePromise = fetchFrontendModelPerformance(modelId, 24).catch(() => null);
 	const [modelOverview, benchmarkHighlights, subscriptionPlans, availability] =
 		await Promise.all([
 			modelPromise,
@@ -182,7 +181,7 @@ export default async function Page({
 	const isGatewayActive =
 		availability?.isGatewayActive ?? true;
 	const resolvedPerformancePromise = isGatewayActive
-		? performancePromise
+		? fetchFrontendModelPerformance(modelId, 24).catch(() => null)
 		: Promise.resolve(null);
 	const isRetired = modelOverview?.status === "Retired";
 	const modelPageTocItems = getModelPageTocItems({

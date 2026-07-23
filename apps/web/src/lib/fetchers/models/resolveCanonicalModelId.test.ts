@@ -9,7 +9,7 @@ jest.mock("@/lib/web-api/client", () => ({
 	fetchPublicWebApi: (...args: unknown[]) => mockFetchPublicWebApi(...args),
 }));
 
-import { resolveCanonicalModelId } from "./resolveCanonicalModelId";
+import { resolveCanonicalModelId } from "@/lib/fetchers/models/resolveCanonicalModelId";
 
 describe("resolveCanonicalModelId", () => {
 	beforeEach(() => {
@@ -17,7 +17,7 @@ describe("resolveCanonicalModelId", () => {
 	});
 
 	it("does not resolve a public API-model route mapped only to a hidden internal model", async () => {
-		mockFetchPublicWebApi.mockResolvedValue({
+		mockFetchPublicWebApi.mockResolvedValueOnce({
 			resolution: {
 				requestedModelId: "provider/public-looking-id",
 				canonicalModelId: null,
@@ -35,5 +35,6 @@ describe("resolveCanonicalModelId", () => {
 		expect(mockFetchPublicWebApi).toHaveBeenCalledWith(
 			"/api/_web/models/provider%2Fpublic-looking-id/canonical",
 		);
+		expect(mockFetchPublicWebApi).toHaveBeenCalledTimes(1);
 	});
 });
