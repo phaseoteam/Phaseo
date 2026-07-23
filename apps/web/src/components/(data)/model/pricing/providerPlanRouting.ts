@@ -123,6 +123,20 @@ export function getProviderAvailablePlans(provider: ProviderPricing): string[] {
     return [...ordered, ...extras];
 }
 
+export function getProviderPlanComparisonBase(
+    availablePlans: string[],
+    fallbackPlan: string,
+): string {
+    return availablePlans.includes("standard") ? "standard" : fallbackPlan;
+}
+
+export function hasSelectedAlternativeServiceTier(
+    selectedPlan: string,
+    comparisonBasePlan: string,
+): boolean {
+    return normalizePlan(selectedPlan) !== normalizePlan(comparisonBasePlan);
+}
+
 export function getProviderModelScopeForPlan(
     provider: ProviderPricing,
     plan: string,

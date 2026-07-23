@@ -72,7 +72,9 @@ import {
 } from "@/lib/parameters/reference";
 import {
 	getProviderModelScopeForPlan,
+	getProviderPlanComparisonBase,
 	getProviderPricingRulesForPlan,
+	hasSelectedAlternativeServiceTier,
 } from "@/components/(data)/model/pricing/providerPlanRouting";
 import {
 	formatProviderOfferDisplayName,
@@ -1430,25 +1432,29 @@ export default function ProviderCard({
 			}),
 		[comparisonProviders, provider, tablePlan],
 	);
+	const planComparisonBase = getProviderPlanComparisonBase(
+		availablePlans,
+		defaultPlan,
+	);
 	const planMultiplierLabels = useMemo(() => {
 		const nowMs = Date.now();
 		const labels: Record<string, string | null> = {};
 		for (const plan of availablePlans) {
-			if (plan === defaultPlan) {
+			if (plan === planComparisonBase) {
 				labels[plan] = null;
 				continue;
 			}
 			labels[plan] = formatPlanMultiplierLabel(
 				derivePlanMultiplier({
 					provider,
-					basePlan: defaultPlan,
+					basePlan: planComparisonBase,
 					targetPlan: plan,
 					nowMs,
 				}),
 			);
 		}
 		return labels;
-	}, [availablePlans, defaultPlan, provider]);
+	}, [availablePlans, planComparisonBase, provider]);
 	const pricingComparisonAccent =
 		selectedPlan === "batch" ||
 		selectedPlan === "flex" ||
@@ -1835,7 +1841,10 @@ export default function ProviderCard({
 				runtimeStats?.latencyMs30m != null
 					? formatLatencySeconds(runtimeStats.latencyMs30m)
 					: "--",
-			valueClassName: uptimeValueClass(uptimePct),
+			valueClassName:
+				hasSelectedAlternativeServiceTier(selectedPlan, planComparisonBase)
+					? selectedPlanTheme.accent
+					: "text-foreground",
 		},
 		{
 			key: "throughput",

@@ -2,7 +2,9 @@ import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import {
     getProviderAvailablePlans,
     getProviderModelScopeForPlan,
+	getProviderPlanComparisonBase,
     getProviderPricingRulesForPlan,
+	hasSelectedAlternativeServiceTier,
 } from "@/components/(data)/model/pricing/providerPlanRouting";
 
 function makeProviderPricing(): ProviderPricing {
@@ -94,6 +96,22 @@ function makeProviderPricing(): ProviderPricing {
 }
 
 describe("providerPlanRouting", () => {
+	it("keeps Standard as the multiplier baseline when Batch is selected globally", () => {
+		expect(
+			getProviderPlanComparisonBase(
+				["standard", "priority", "flex", "batch"],
+				"batch",
+			),
+		).toBe("standard");
+		expect(hasSelectedAlternativeServiceTier("standard", "standard")).toBe(false);
+		expect(hasSelectedAlternativeServiceTier("batch", "standard")).toBe(true);
+	});
+
+	it("falls back to the only available tier without treating it as an accent", () => {
+		expect(getProviderPlanComparisonBase(["batch"], "batch")).toBe("batch");
+		expect(hasSelectedAlternativeServiceTier("batch", "batch")).toBe(false);
+	});
+
     it("prefers explicit priority pricing on the base model over hidden fast sibling rows", () => {
         const provider = makeProviderPricing();
 

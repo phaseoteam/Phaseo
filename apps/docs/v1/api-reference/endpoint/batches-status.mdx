@@ -11,7 +11,7 @@ Common lifecycle states include `queued`, `processing`, `completed`, `failed`, `
 
 Use the gateway-owned `id` from create/list/status responses for `GET /batches/{batch_id}`, `POST /batches/{batch_id}/cancel`, and async websocket URLs. `native_batch_id` is provider-native correlation metadata when it differs from the gateway id.
 
-Phaseo currently performs upstream status refreshes for OpenAI batch jobs. If a persisted batch belongs to another provider, the status route returns a structured `not_implemented_yet` response instead of refreshing against the wrong upstream API.
+Phaseo refreshes the authoritative upstream status for enabled OpenAI, Anthropic, Gemini, and Mistral batch jobs. Provider-specific states are normalized into the common lifecycle while the original provider identifiers remain available for correlation. Scheduled polling remains the recovery path when a provider webhook is delayed or unavailable.
 
 Use `POST /batches/{batch_id}/cancel` when the batch should no longer continue processing.
 
