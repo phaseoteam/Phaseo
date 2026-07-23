@@ -399,12 +399,13 @@ export async function syncV2Catalogue(): Promise<void> {
         if (!parsed) continue;
         const providerModel = providerModelByApiKey.get(`${parsed.providerSlug}:${parsed.apiModelId}`);
         const route = providerModel ? routeByProviderModelId.get(String(providerModel.provider_api_model_id)) : null;
-        if (!route || !modelById.has(String(route.model_id ?? route.internal_model_id ?? route.api_model_id))) {
+        if (!providerModel || !route || !modelById.has(String(route.model_id ?? route.internal_model_id ?? route.api_model_id))) {
             unresolved.push({ source_type: "pricing_rule", source_key: String(rule.rule_id), issue_code: "unresolved_provider_model", details: { model_key: rule.model_key } });
             continue;
         }
+        const providerModelId = String(providerModel.provider_api_model_id);
         pricingRows.push({
-            provider_model_id: providerModel.provider_api_model_id,
+            provider_model_id: providerModelId,
             sku_code: `legacy-${String(rule.rule_id).replaceAll("-", "")}`,
             version: 1,
             service_tier_slug: slug(rule.pricing_plan),

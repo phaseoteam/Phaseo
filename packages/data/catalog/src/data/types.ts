@@ -198,7 +198,6 @@ export interface Model {
     input_types: string[] | string | null; // Changed to allow string since your JSON uses "image,text"
     output_types: string[] | string | null; // Same as above
     web_access: boolean | null;
-    reasoning: boolean | null;
     fine_tunable: boolean | null;
     knowledge_cutoff: string | null;
     api_reference_link: string | null;
@@ -215,7 +214,6 @@ export interface Model {
         markdown: string;
     } | null;
     model_type?: "inference" | "embedding" | "rerank" | "moderation" | "image" | "video" | "audio" | "tts" | "stt" | null;
-    knowledge_cutoff?: string | null;
     last_updated?: string | null;
     removal_date?: string | null;
     replacement_model_id?: string | null;
