@@ -19,6 +19,7 @@ type ModelProviderTrendChartProps = {
 	title: string;
 	data: ModelProviderDailyPoint[];
 	metric: MetricKey;
+	maxSeries?: number;
 	activeDay: string | null;
 	onActiveDayChange: (day: string | null) => void;
 };
@@ -48,9 +49,11 @@ const METRICS: Record<MetricKey, MetricConfig> = {
 };
 
 const FALLBACK_PROVIDER_COLORS = [
-	"#f59e0b",
-	"#f97316",
-	"#84cc16",
+	"var(--chart-1)",
+	"var(--chart-2)",
+	"var(--chart-3)",
+	"var(--chart-4)",
+	"var(--chart-5)",
 ];
 
 function normalizeColor(value: string | null | undefined): string | null {
@@ -79,6 +82,7 @@ export default function ModelProviderTrendChart({
 	title,
 	data,
 	metric,
+	maxSeries = 3,
 	activeDay,
 	onActiveDayChange,
 }: ModelProviderTrendChartProps) {
@@ -109,7 +113,7 @@ export default function ModelProviderTrendChart({
 		).values(),
 	)
 		.sort((a, b) => b.requests - a.requests)
-		.slice(0, 3)
+		.slice(0, maxSeries)
 		.map((provider, index) => ({
 			...provider,
 			seriesKey: toSeriesKey(provider.provider),

@@ -35,6 +35,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { buildSingleProviderPercentileSeries } from "@/components/(data)/models/modelPerformancePercentiles";
 import {
 	Empty,
 	EmptyDescription,
@@ -149,6 +150,10 @@ export default function ModelPerformanceDashboard({
 			.map((point) => point.provider),
 	).size;
 	const showPercentileSelector = providerCount > 1;
+	const singleProviderPercentileSeries = buildSingleProviderPercentileSeries(
+		providerCount,
+		activeMetrics.providerPercentileDaily7d,
+	);
 
 	return (
 		<section className="space-y-10">
@@ -224,6 +229,7 @@ export default function ModelPerformanceDashboard({
 						prevSummary={activeMetrics.prevSummary}
 						hourly={activeMetrics.hourly}
 						providerDaily7d={activeMetrics.providerDaily7d}
+						chartProviderDaily7d={singleProviderPercentileSeries ?? undefined}
 						qualitySeries={activeMetrics.qualitySeries}
 					/>
 					{showDetailedPanels ? (

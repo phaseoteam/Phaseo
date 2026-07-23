@@ -27,6 +27,7 @@ interface ModelPerformanceCardsProps {
 	prevSummary?: ModelPerformanceSummary | null;
 	hourly: ModelPerformancePoint[];
 	providerDaily7d: ModelProviderDailyPoint[];
+	chartProviderDaily7d?: ModelProviderDailyPoint[];
 	qualitySeries?: ModelPerformanceQualityPoint[];
 }
 
@@ -35,6 +36,7 @@ export default function ModelPerformanceCards({
 	prevSummary,
 	hourly,
 	providerDaily7d,
+	chartProviderDaily7d,
 	qualitySeries = [],
 }: ModelPerformanceCardsProps) {
 	const [activeDay, setActiveDay] = useState<string | null>(null);
@@ -44,14 +46,17 @@ export default function ModelPerformanceCards({
 	const hasToolCallQuality = qualitySeries.some((point) => point.toolCallSuccessPct != null);
 	const hasStructuredOutputQuality = qualitySeries.some((point) => point.structuredOutputSuccessPct != null);
 	const hasCacheQuality = qualitySeries.some((point) => point.cacheHitRatePct != null);
+	const chartData = chartProviderDaily7d ?? providerDaily7d;
+	const maxSeries = chartProviderDaily7d ? 5 : 3;
 
 	return (
 		<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
 			<MetricCard>
 				<ModelProviderTrendChart
 					title="Throughput"
-					data={providerDaily7d}
+					data={chartData}
 					metric="throughput"
+					maxSeries={maxSeries}
 					activeDay={activeDay}
 					onActiveDayChange={setActiveDay}
 				/>
@@ -70,8 +75,9 @@ export default function ModelPerformanceCards({
 			<MetricCard>
 				<ModelProviderTrendChart
 					title="Latency"
-					data={providerDaily7d}
+					data={chartData}
 					metric="latency"
+					maxSeries={maxSeries}
 					activeDay={activeDay}
 					onActiveDayChange={setActiveDay}
 				/>
@@ -80,8 +86,9 @@ export default function ModelPerformanceCards({
 			<MetricCard>
 				<ModelProviderTrendChart
 					title="E2E Latency"
-					data={providerDaily7d}
+					data={chartData}
 					metric="generation"
+					maxSeries={maxSeries}
 					activeDay={activeDay}
 					onActiveDayChange={setActiveDay}
 				/>
@@ -89,8 +96,9 @@ export default function ModelPerformanceCards({
 
 			{!hasHourly ? (
 				<p className="text-xs text-muted-foreground md:col-span-2 lg:col-span-3">
-					Low sample volume in the last 24 hours. Trend lines reflect up to 3
-					active providers over the last 7 days.
+					Low sample volume in the last 24 hours. Trend lines reflect {chartProviderDaily7d
+						? "P50, P75, P90, P95, and P99 over the last 7 days."
+						: "up to 3 active providers over the last 7 days."}
 				</p>
 			) : null}
 		</div>
