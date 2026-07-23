@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { resolveWeeklyUsageDisplay } from "./weeklyUsage";
 import type { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
 import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDisplay";
@@ -846,9 +847,8 @@ function ModelCardImpl({
 	};
 	const inputModalityDisplay = formatModalities(inputModalities);
 	const outputModalityDisplay = formatModalities(outputModalities);
-	const weeklyTokens = Number.isFinite(Number(model.popularity_tokens_week))
-		? Math.max(0, Number(model.popularity_tokens_week))
-		: 0;
+	const weeklyUsage = resolveWeeklyUsageDisplay(model);
+	const weeklyUsageValue = `${formatTokenCount(weeklyUsage.quantity)}${weeklyUsage.unitSuffix}`;
 
 	const copyModelId = async () => {
 		if (!apiModelId) return;
@@ -1331,12 +1331,12 @@ function ModelCardImpl({
 									size="sm"
 									variant="ghost"
 									className="hidden h-8 px-2 tabular-nums text-muted-foreground md:inline-flex"
-									aria-label="Weekly tokens"
+									aria-label={weeklyUsage.label}
 								>
-									{formatTokenCount(weeklyTokens)}
+									{weeklyUsageValue}
 								</Button>
 							</TooltipTrigger>
-							<TooltipContent side="top">Weekly tokens</TooltipContent>
+							<TooltipContent side="top">{weeklyUsage.label}</TooltipContent>
 						</Tooltip>
 
 						<Popover>
@@ -1346,9 +1346,9 @@ function ModelCardImpl({
 									size="sm"
 									variant="ghost"
 									className="h-8 px-2 tabular-nums text-muted-foreground md:hidden"
-									aria-label="Weekly tokens"
+									aria-label={weeklyUsage.label}
 								>
-									{formatTokenCount(weeklyTokens)}
+									{weeklyUsageValue}
 								</Button>
 							</PopoverTrigger>
 							<PopoverContent
@@ -1356,7 +1356,7 @@ function ModelCardImpl({
 								align="end"
 								className="w-auto px-2.5 py-1.5 text-xs"
 							>
-								Weekly tokens
+								{weeklyUsage.label}
 							</PopoverContent>
 						</Popover>
 					</div>

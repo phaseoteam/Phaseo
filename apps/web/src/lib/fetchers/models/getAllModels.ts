@@ -63,6 +63,9 @@ export interface ModelCard {
         value: string;
     }>;
     popularity_tokens_week?: number | null;
+    weekly_usage_metric?: string | null;
+    weekly_usage_quantity?: number | null;
+    weekly_usage_unit?: string | null;
     throughput_week?: number | null;
     latency_week?: number | null;
     model_page_notice?: ModelPageNotice | null;

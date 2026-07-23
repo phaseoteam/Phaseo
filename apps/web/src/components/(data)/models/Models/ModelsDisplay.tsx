@@ -1253,9 +1253,12 @@ function ModelsDisplayContent({
 					sortPrice: getSortPrice(model),
 					sortContext: getSortContext(model),
 					popularityWeek:
-						Number.isFinite(Number(model.popularity_tokens_week)) &&
-						Number(model.popularity_tokens_week) > 0
-							? Number(model.popularity_tokens_week)
+						Number.isFinite(Number(model.weekly_usage_quantity)) &&
+						Number(model.weekly_usage_quantity) > 0
+							? Number(model.weekly_usage_quantity)
+							: Number.isFinite(Number(model.popularity_tokens_week)) &&
+									Number(model.popularity_tokens_week) > 0
+								? Number(model.popularity_tokens_week)
 							: null,
 					throughputWeek:
 						Number.isFinite(Number(model.throughput_week)) &&

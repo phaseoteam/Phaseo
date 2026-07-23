@@ -42,6 +42,7 @@ export type GatewayRequestUsageColumns = {
 	usage_ocr_quad_tokens: number;
 	usage_image_megapixels: number;
 	usage_audio_seconds: number;
+	usage_video_seconds: number;
 	usage_video_pixel_seconds: number;
 	usage_input_characters: number;
 	usage_output_characters: number;
@@ -100,6 +101,7 @@ export const GATEWAY_REQUEST_USAGE_COLUMN_NAMES = [
 	"usage_ocr_quad_tokens",
 	"usage_image_megapixels",
 	"usage_audio_seconds",
+	"usage_video_seconds",
 	"usage_video_pixel_seconds",
 	"usage_input_characters",
 	"usage_output_characters",
@@ -452,6 +454,7 @@ export function buildGatewayRequestUsageColumns(args: {
 			gatewayResponse: args.gatewayResponse,
 		}),
 		usage_audio_seconds: estimateAudioSeconds(usageForUnits),
+		usage_video_seconds: firstUnitNumber(shaped, ["output_video_seconds", "video_seconds"]),
 		usage_video_pixel_seconds: estimateVideoPixelSeconds({
 			usage: usageForUnits,
 			requestPayload: args.requestPayload,
@@ -508,6 +511,7 @@ const V2_USAGE_METER_COLUMNS: Array<{
 	{ column: "usage_cached_write_video_tokens", meterKey: "cached_write_video_tokens", modality: "video", unit: "tokens" },
 	{ column: "usage_image_megapixels", meterKey: "image_megapixels", modality: "image", unit: "megapixels" },
 	{ column: "usage_audio_seconds", meterKey: "audio_seconds", modality: "audio", unit: "seconds" },
+	{ column: "usage_video_seconds", meterKey: "output_video_seconds", modality: "video", unit: "seconds" },
 	{ column: "usage_video_pixel_seconds", meterKey: "video_pixel_seconds", modality: "video", unit: "pixel_seconds" },
 	{ column: "usage_input_characters", meterKey: "input_characters", modality: "text", unit: "characters" },
 	{ column: "usage_output_characters", meterKey: "output_characters", modality: "text", unit: "characters" },
