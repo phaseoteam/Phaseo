@@ -109,6 +109,7 @@ describe("providerPlanRouting", () => {
 
 	it("falls back to the only available tier without treating it as an accent", () => {
 		expect(getProviderPlanComparisonBase(["batch"], "batch")).toBe("batch");
+		expect(getProviderPlanComparisonBase(["batch"], "standard")).toBe("batch");
 		expect(hasSelectedAlternativeServiceTier("batch", "batch")).toBe(false);
 	});
 

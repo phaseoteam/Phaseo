@@ -1219,6 +1219,49 @@ describe("batch-finalization", () => {
 		});
 	});
 
+	it("releases Anthropic holds when terminal counts explicitly report zero completions", async () => {
+		state.record = {
+			workspaceId: "ws_batch_test",
+			batchId: "batch_anthropic_failed_zero_completed",
+			status: "failed",
+			meta: {
+				provider: "anthropic",
+				status: "failed",
+				endpoint: "/v1/messages/batches",
+				reservationId: "batch_hold:req_anthropic_zero_completed",
+				reservedNanos: 500_000_000,
+				reservationStatus: "held",
+				requestCounts: {
+					total: 2,
+					completed: 0,
+					failed: 2,
+				},
+			},
+		};
+
+		const { finalizeBatchJob } = await import("./batch-finalization");
+		const result = await finalizeBatchJob({
+			workspaceId: "ws_batch_test",
+			batchId: "batch_anthropic_failed_zero_completed",
+			status: "failed",
+		});
+
+		expect(result).toEqual({
+			status: "failed",
+			charged: false,
+			billed: true,
+			reason: "released_released",
+		});
+		expect(state.fetchCalls).toEqual([]);
+		expect(state.walletCalls).toEqual([{
+			op: "release",
+			workspaceId: "ws_batch_test",
+			reservationId: "batch_hold:req_anthropic_zero_completed",
+			releaseRefId: "batch_anthropic_failed_zero_completed",
+		}]);
+		expect(state.chargeCalls).toEqual([]);
+	});
+
 	it("ignores stale terminal status changes without charging or releasing reservations", async () => {
 		state.record = {
 			workspaceId: "ws_batch_test",

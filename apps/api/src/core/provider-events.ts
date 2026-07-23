@@ -141,6 +141,25 @@ export async function listUnprocessedProviderEvents(args: {
 	return (data ?? []).map((row) => mapRow(row as ProviderEventRow));
 }
 
+export async function claimProviderEvent(args: {
+	provider: string;
+	providerEventId: string;
+	workerId?: string;
+	leaseSeconds?: number;
+}): Promise<boolean> {
+	const provider = normalizeText(args.provider);
+	const providerEventId = normalizeText(args.providerEventId);
+	if (!provider || !providerEventId) return false;
+	const { data, error } = await getSupabaseAdmin().rpc("gateway_claim_provider_event", {
+		p_provider: provider,
+		p_provider_event_id: providerEventId,
+		p_worker_id: normalizeText(args.workerId) ?? "batch-provider-webhook",
+		p_lease_seconds: Math.max(30, Math.min(3_600, Math.trunc(args.leaseSeconds ?? 120))),
+	});
+	if (error) throw error;
+	return data === true;
+}
+
 export async function deferProviderEvent(args: {
 	provider: string;
 	providerEventId: string;

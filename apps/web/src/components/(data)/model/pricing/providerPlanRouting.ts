@@ -127,7 +127,19 @@ export function getProviderPlanComparisonBase(
     availablePlans: string[],
     fallbackPlan: string,
 ): string {
-    return availablePlans.includes("standard") ? "standard" : fallbackPlan;
+    const standardPlan = availablePlans.find(
+        (plan) => normalizePlan(plan) === "standard",
+    );
+    if (standardPlan) return standardPlan;
+
+    const normalizedFallback = normalizePlan(fallbackPlan);
+    return (
+        availablePlans.find(
+            (plan) => normalizePlan(plan) === normalizedFallback,
+        ) ??
+        availablePlans[0] ??
+        normalizedFallback
+    );
 }
 
 export function hasSelectedAlternativeServiceTier(

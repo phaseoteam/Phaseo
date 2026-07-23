@@ -19,7 +19,7 @@ vi.mock("@/runtime/env", () => ({
 	}),
 }));
 
-import { listUnprocessedProviderEvents, markProviderEventProcessed } from "./provider-events";
+import { claimProviderEvent, listUnprocessedProviderEvents, markProviderEventProcessed } from "./provider-events";
 
 describe("provider event replay claims", () => {
 	beforeEach(() => {
@@ -55,6 +55,23 @@ describe("provider event replay claims", () => {
 			p_providers: ["openai", "google-ai-studio"],
 			p_limit: 500,
 			p_worker_id: "worker-1",
+			p_lease_seconds: 30,
+		});
+	});
+
+	it("claims one webhook delivery by provider event id", async () => {
+		rpcMock.mockResolvedValueOnce({ data: true, error: null });
+
+		await expect(claimProviderEvent({
+			provider: "openai",
+			providerEventId: "evt_1",
+			workerId: "webhook-1",
+			leaseSeconds: 5,
+		})).resolves.toBe(true);
+		expect(rpcMock).toHaveBeenCalledWith("gateway_claim_provider_event", {
+			p_provider: "openai",
+			p_provider_event_id: "evt_1",
+			p_worker_id: "webhook-1",
 			p_lease_seconds: 30,
 		});
 	});

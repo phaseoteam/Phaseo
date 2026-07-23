@@ -50,13 +50,12 @@ function readAuthContext(ctx: Env["Variables"]["ctx"] | undefined): WebhookRoute
 async function requireWebhookPermission(
 	auth: WebhookRouteAuth,
 	capability: string,
-	roles: string[],
 ): Promise<Response | null> {
 	if (auth.internal) return null;
 	const scopeError = requireCapability(auth, capability, { requireExplicitNonOAuthScope: true });
 	if (scopeError) return scopeError;
 	if (!auth.workspaceId) return validationError("workspace_id_required");
-	return requireOAuthWorkspaceRole(auth, auth.workspaceId, roles);
+	return null;
 }
 
 function json(payload: unknown, status = 200): Response {
@@ -166,7 +165,7 @@ app.use("*", async (c, next) => {
 
 app.get("/", async (c) => {
 	const auth = readAuthContext(c.get("ctx"));
-	const permissionError = await requireWebhookPermission(auth, CAPABILITIES.SETTINGS_READ, ["owner", "admin", "member"]);
+	const permissionError = await requireWebhookPermission(auth, CAPABILITIES.SETTINGS_READ);
 	if (permissionError) return permissionError;
 	if (!auth.workspaceId) return validationError("workspace_id_required");
 	const url = new URL(c.req.url);
@@ -190,7 +189,7 @@ app.get("/", async (c) => {
 
 app.post("/", async (c) => {
 	const auth = readAuthContext(c.get("ctx"));
-	const permissionError = await requireWebhookPermission(auth, CAPABILITIES.SETTINGS_WRITE, ["owner", "admin"]);
+	const permissionError = await requireWebhookPermission(auth, CAPABILITIES.SETTINGS_WRITE);
 	if (permissionError) return permissionError;
 	if (!auth.workspaceId) return validationError("workspace_id_required");
 	const body = await c.req.json().catch(() => null);
@@ -224,7 +223,7 @@ app.post("/", async (c) => {
 
 app.get("/:id", async (c) => {
 	const auth = readAuthContext(c.get("ctx"));
-	const permissionError = await requireWebhookPermission(auth, CAPABILITIES.SETTINGS_READ, ["owner", "admin", "member"]);
+	const permissionError = await requireWebhookPermission(auth, CAPABILITIES.SETTINGS_READ);
 	if (permissionError) return permissionError;
 	if (!auth.workspaceId) return validationError("workspace_id_required");
 	const id = c.req.param("id");
@@ -241,7 +240,7 @@ app.get("/:id", async (c) => {
 
 app.patch("/:id", async (c) => {
 	const auth = readAuthContext(c.get("ctx"));
-	const permissionError = await requireWebhookPermission(auth, CAPABILITIES.SETTINGS_WRITE, ["owner", "admin"]);
+	const permissionError = await requireWebhookPermission(auth, CAPABILITIES.SETTINGS_WRITE);
 	if (permissionError) return permissionError;
 	if (!auth.workspaceId) return validationError("workspace_id_required");
 	const body = await c.req.json().catch(() => null);
@@ -273,7 +272,7 @@ app.patch("/:id", async (c) => {
 
 app.post("/:id/rotate-secret", async (c) => {
 	const auth = readAuthContext(c.get("ctx"));
-	const permissionError = await requireWebhookPermission(auth, CAPABILITIES.SETTINGS_WRITE, ["owner", "admin"]);
+	const permissionError = await requireWebhookPermission(auth, CAPABILITIES.SETTINGS_WRITE);
 	if (permissionError) return permissionError;
 	if (!auth.workspaceId) return validationError("workspace_id_required");
 	const signingSecret = generateWebhookSigningSecret();
@@ -302,7 +301,7 @@ app.post("/:id/rotate-secret", async (c) => {
 
 app.delete("/:id", async (c) => {
 	const auth = readAuthContext(c.get("ctx"));
-	const permissionError = await requireWebhookPermission(auth, CAPABILITIES.SETTINGS_WRITE, ["owner", "admin"]);
+	const permissionError = await requireWebhookPermission(auth, CAPABILITIES.SETTINGS_WRITE);
 	if (permissionError) return permissionError;
 	if (!auth.workspaceId) return validationError("workspace_id_required");
 	const { data, error } = await getSupabaseAdmin()

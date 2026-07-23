@@ -390,6 +390,12 @@ function isPartialSuccess(meta: BatchJobMeta | null | undefined): boolean {
 function shouldInspectTerminalOutput(meta: BatchJobMeta | null | undefined): boolean {
 	if (meta?.submissionOutcome === "rejected" && !normalizeText(meta.outputFileId)) return false;
 	if (
+		meta?.requestCounts?.completed === 0 &&
+		!normalizeText(meta.outputFileId)
+	) {
+		return false;
+	}
+	if (
 		meta?.reservationStatus === "released" &&
 		!normalizeText(meta.nativeBatchId) &&
 		!normalizeText(meta.outputFileId) &&

@@ -64,14 +64,14 @@ The PR follow-up additionally fixed accepted-job key attribution, pre-dispatch a
 
 ## xAI pricing
 
-The pricing catalog and production pricing table contain active `batch` rows for `spacex-ai/grok-4.3` on `text.generate`, including the documented 20% discount. The pricing UI derives available plans from explicit pricing rows, not from the Batch API execution allowlist. A regression test at `apps/web/src/components/(data)/model/pricing/providerPlanRouting.test.ts:150` now protects that separation.
+The pricing catalog and production pricing table contain active `batch` rows for `spacex-ai/grok-4.3` on `text.generate`, including the documented 20% discount. The pricing UI derives available plans from explicit pricing rows, not from the Batch API execution allowlist. The `shows explicit xAI batch pricing without requiring gateway batch execution support` regression test in `providerPlanRouting.test.ts` protects that separation.
 
 xAI execution remains `blocked` in the Batch API provider-readiness configuration and is absent from the preview provider allowlist. Pricing can therefore be displayed without implying that Phaseo currently accepts xAI batch submissions.
 
 ## Residual release requirements
 
 1. Rebase the branch onto current `origin/main` before committing.
-2. Apply `supabase/migrations/20260718010000_batch_billing_security_invariants.sql` before deploying the worker.
+2. Verify that `supabase/migrations/20260723124000_batch_billing_security_invariants.sql` is applied before deploying the worker.
 3. Confirm production webhook encryption keys and OpenAI/Gemini provider webhook secrets are present after deployment.
 4. Run one controlled live batch through OpenAI, Gemini, Anthropic, and Mistral after the migration and worker deployment.
 5. Keep Groq and Together experimental and xAI blocked until live settlement evidence is captured.

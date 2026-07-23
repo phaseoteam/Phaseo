@@ -4,7 +4,7 @@
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { dispatchBackground, ensureRuntimeForBackground } from "@/runtime/env";
-import { insertProviderEvent } from "@core/provider-events";
+import { claimProviderEvent, insertProviderEvent } from "@core/provider-events";
 import { json, withRuntime } from "@/routes/utils";
 
 import {
@@ -54,6 +54,16 @@ internalBatchWebhookRoutes.post("/openai", withRuntime(async (req) => {
 	});
 	if (!dedupe.inserted && dedupe.record?.processedAt) {
 		return json({ ok: true, deduped: true, processed: Boolean(dedupe.record?.processedAt) }, 200, {
+			"Cache-Control": "no-store",
+		});
+	}
+	const claimed = await claimProviderEvent({
+		provider: OPENAI_PROVIDER_ID,
+		providerEventId: eventId,
+		workerId: `openai-batch-webhook:${eventId}`,
+	});
+	if (!claimed) {
+		return json({ ok: true, deduped: true, accepted: true, processed: false }, 202, {
 			"Cache-Control": "no-store",
 		});
 	}
@@ -113,6 +123,16 @@ async function handleGoogleAiStudioBatchWebhook(req: Request): Promise<Response>
 	});
 	if (!dedupe.inserted && dedupe.record?.processedAt) {
 		return json({ ok: true, deduped: true, processed: Boolean(dedupe.record?.processedAt) }, 200, {
+			"Cache-Control": "no-store",
+		});
+	}
+	const claimed = await claimProviderEvent({
+		provider: GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID,
+		providerEventId: eventId,
+		workerId: `google-ai-studio-batch-webhook:${eventId}`,
+	});
+	if (!claimed) {
+		return json({ ok: true, deduped: true, accepted: true, processed: false }, 202, {
 			"Cache-Control": "no-store",
 		});
 	}

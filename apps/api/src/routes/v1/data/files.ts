@@ -276,6 +276,13 @@ async function handleUpload(req: Request) {
 				uploadId: requestId,
 				status: "failed",
 				providerFileId: fileId,
+			}).catch((finalizeErr) => {
+				console.error("batch_file_upload_claim_finalize_failed_after_store_error", {
+					error: finalizeErr,
+					workspaceId: auth.workspaceId,
+					uploadId: requestId,
+					fileId,
+				});
 			});
 			console.error("file_job_meta_store_failed", {
 				error: storeErr,
