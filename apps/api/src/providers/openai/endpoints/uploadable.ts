@@ -2,10 +2,13 @@
 // Why: OpenAI audio/image edit endpoints require file uploads, while gateway inputs can be URL/base64.
 // How: Converts URL/data URL/base64 strings into Blob + filename for FormData.
 
+import type { ExecutorUpstreamTiming } from "@executors/types";
+
 type ResolveUploadableOptions = {
 	defaultMimeType: string;
 	fallbackFilename: string;
 	maxBytes?: number;
+	upstreamTiming?: ExecutorUpstreamTiming;
 };
 
 export type ResolvedUploadable = {
@@ -100,7 +103,11 @@ export async function resolveUploadableFromString(
 	}
 
 	if (input.startsWith("http://") || input.startsWith("https://")) {
-		const fetched = await fetch(input);
+		const fetched = await (
+			options.upstreamTiming
+				? options.upstreamTiming.fetch(input, undefined, "media")
+				: fetch(input)
+		);
 		if (!fetched.ok) {
 			throw new Error(`uploadable_fetch_failed_${fetched.status}`);
 		}

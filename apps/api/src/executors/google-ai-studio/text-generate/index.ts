@@ -8,6 +8,7 @@
 
 import type { IRChatRequest, IRChatResponse, IRContentPart, IRChoice, IRStreamChunk, IRStreamDelta, IRToolCall, IRUsage } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
+import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import type { ProviderExecutor } from "../../types";
 import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-generate/shared";
 import { getBindings } from "@/runtime/env";
@@ -82,7 +83,11 @@ async function sleep(ms: number): Promise<void> {
 	await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function irToLegacyGemini(ir: IRChatRequest, modelOverride?: string | null): Promise<any> {
+async function irToLegacyGemini(
+	ir: IRChatRequest,
+	modelOverride?: string | null,
+	upstreamTiming?: ExecutorExecuteArgs["upstreamTiming"],
+): Promise<any> {
 	const contents: any[] = [];
 	const systemInstructionParts: any[] = [];
 	const toolNamesById = new Map<string, string>();
@@ -96,14 +101,14 @@ async function irToLegacyGemini(ir: IRChatRequest, modelOverride?: string | null
 
 	for (const message of ir.messages) {
 		if (message.role === "system" || message.role === "developer") {
-			systemInstructionParts.push(...await irPartsToGeminiParts(message.content, { preserveReasoningAsThought: true }));
+			systemInstructionParts.push(...await irPartsToGeminiParts(message.content, { preserveReasoningAsThought: true, upstreamTiming }));
 			continue;
 		}
 
 		if (message.role === "user" || message.role === "assistant") {
 			contents.push({
 				role: message.role === "assistant" ? "model" : "user",
-				parts: await irPartsToGeminiParts(message.content, { preserveReasoningAsThought: true }),
+				parts: await irPartsToGeminiParts(message.content, { preserveReasoningAsThought: true, upstreamTiming }),
 			});
 			continue;
 		}
@@ -205,7 +210,11 @@ async function irToLegacyGemini(ir: IRChatRequest, modelOverride?: string | null
  * - `generation_config` with snake_case parameter names
  * - `model` in the JSON body
  */
-export async function irToGemini(ir: IRChatRequest, modelOverride?: string | null): Promise<any> {
+export async function irToGemini(
+	ir: IRChatRequest,
+	modelOverride?: string | null,
+	upstreamTiming?: ExecutorExecuteArgs["upstreamTiming"],
+): Promise<any> {
 	const input: any[] = [];
 	const systemInstructionParts: string[] = [];
 	const toolNamesById = new Map<string, string>();
@@ -225,16 +234,17 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 
 	for (const msg of messagesToMap) {
 		if (msg.role === "system" || msg.role === "developer") {
-			const text = await irPartsToPlainText(msg.content);
+			const text = await irPartsToPlainText(msg.content, upstreamTiming);
 			if (text) systemInstructionParts.push(text);
 		} else if (msg.role === "user") {
 			input.push({
 				type: "user_input",
-				content: await irPartsToInteractionContent(msg.content),
+				content: await irPartsToInteractionContent(msg.content, upstreamTiming),
 			});
 		} else if (msg.role === "assistant") {
 			const outputContent = await irPartsToInteractionContent(
 				msg.content.filter((part) => part.type !== "reasoning_text"),
+				upstreamTiming,
 			);
 			if (outputContent.length > 0) {
 				input.push({
@@ -448,8 +458,11 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 	return request;
 }
 
-async function irPartsToPlainText(parts: IRContentPart[]): Promise<string> {
-	const mapped = await irPartsToGeminiParts(parts, { preserveReasoningAsThought: true });
+async function irPartsToPlainText(
+	parts: IRContentPart[],
+	upstreamTiming?: ExecutorExecuteArgs["upstreamTiming"],
+): Promise<string> {
+	const mapped = await irPartsToGeminiParts(parts, { preserveReasoningAsThought: true, upstreamTiming });
 	return mapped
 		.map((part) => {
 			if (typeof part?.text === "string") return part.text;
@@ -465,8 +478,11 @@ async function irPartsToPlainText(parts: IRContentPart[]): Promise<string> {
 		.join("\n");
 }
 
-async function irPartsToInteractionContent(parts: IRContentPart[]): Promise<any[]> {
-	const mapped = await irPartsToGeminiParts(parts, { preserveReasoningAsThought: true });
+async function irPartsToInteractionContent(
+	parts: IRContentPart[],
+	upstreamTiming?: ExecutorExecuteArgs["upstreamTiming"],
+): Promise<any[]> {
+	const mapped = await irPartsToGeminiParts(parts, { preserveReasoningAsThought: true, upstreamTiming });
 	const content: any[] = [];
 
 	for (const part of mapped) {
@@ -1021,8 +1037,6 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	).replace(/\/+$/, "");
 	const baseUrl = /\/v1(beta)?$/i.test(baseRoot) ? baseRoot : `${baseRoot}/v1beta`;
 
-	const upstreamStartMs = meta.upstreamStartMs ?? Date.now();
-
 	const makeEndpoint = (candidateModel: string) => {
 		if (isInteractionsRequest) return `${baseUrl}/interactions`;
 		return Boolean(ir.stream) && !forceSyntheticStream
@@ -1043,13 +1057,13 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	try {
 		const doRequest = async (candidateModel: string) => {
 			const requestBody = isInteractionsRequest
-				? await irToGemini(ir, candidateModel)
-				: await irToLegacyGemini(ir, candidateModel);
+				? await irToGemini(ir, candidateModel, args.upstreamTiming)
+				: await irToLegacyGemini(ir, candidateModel, args.upstreamTiming);
 			if (isInteractionsRequest && Boolean(ir.stream) && !forceSyntheticStream) {
 				requestBody.stream = true;
 			}
 			const endpoint = makeEndpoint(candidateModel);
-			const response = await fetch(endpoint, {
+			const response = await fetchUpstream(args, endpoint, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -1089,6 +1103,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		model = attempted.candidateModel;
 		const googleInteractionRequest = attempted.requestBody;
 		const response = attempted.response;
+		const selectedDispatchAtMs =
+			args.upstreamTiming?.timingFor(response)?.dispatchAtMs ?? Date.now();
 		const mappedRequest = (
 			meta.echoUpstreamRequest ||
 			meta.returnUpstreamRequest ||
@@ -1134,7 +1150,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				};
 			}
 
-			const totalMs = Date.now() - upstreamStartMs;
+			const totalMs = Date.now() - selectedDispatchAtMs;
 			const finalPayload = encodeOpenAIChatResponse(irResponse, requestId);
 			const protocol = args.protocol ?? (args.endpoint === "responses" ? "openai.responses" : "openai.chat.completions");
 			const stream =
@@ -1163,8 +1179,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				mappedRequest,
 				usageFinalizer: async () => bill.usage ?? null,
 				timing: {
-					latencyMs: totalMs,
-					generationMs: 0,
+					latencyMs: undefined,
+					generationMs: totalMs,
 				},
 			};
 		}
@@ -1210,7 +1226,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				transformedResponse,
 				bufferingArgs,
 				"chat",
-				upstreamStartMs,
+				selectedDispatchAtMs,
 			);
 			const fallback = applyGoogleOutputTokenFallback(irResponse);
 			if (fallback.applied) {
@@ -1252,8 +1268,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				mappedRequest,
 				rawResponse,
 				timing: {
-					latencyMs: firstByteMs ?? totalMs,
-					generationMs: firstByteMs === null ? 0 : Math.max(0, totalMs - firstByteMs),
+					latencyMs: firstByteMs ?? undefined,
+					generationMs: totalMs,
 				},
 			};
 		}
@@ -1284,7 +1300,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		}
 
 		// Calculate pricing
-		const totalMs = Date.now() - upstreamStartMs;
+		const totalMs = Date.now() - selectedDispatchAtMs;
 
 		return {
 			kind: "completed",
@@ -1296,8 +1312,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			mappedRequest,
 			rawResponse: rawData,
 			timing: {
-				latencyMs: totalMs,
-				generationMs: 0,
+				latencyMs: undefined,
+				generationMs: totalMs,
 			},
 		};
 	} catch (error: any) {

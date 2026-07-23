@@ -2,14 +2,14 @@ import { describe, expect, it } from "vitest";
 import { computeBalanceAwareTtlSeconds } from "./context";
 
 describe("computeBalanceAwareTtlSeconds", () => {
-	it("returns minimum TTL for zero/negative balances", () => {
-		expect(computeBalanceAwareTtlSeconds(0)).toBe(60);
-		expect(computeBalanceAwareTtlSeconds(-10)).toBe(60);
+	it("returns the two-minute minimum TTL for zero/negative balances", () => {
+		expect(computeBalanceAwareTtlSeconds(0)).toBe(120);
+		expect(computeBalanceAwareTtlSeconds(-10)).toBe(120);
 	});
 
-	it("caps TTL at 5 minutes for high balances", () => {
-		expect(computeBalanceAwareTtlSeconds(250)).toBe(300);
-		expect(computeBalanceAwareTtlSeconds(1_000)).toBe(300);
+	it("caps TTL at ten minutes for high balances", () => {
+		expect(computeBalanceAwareTtlSeconds(250)).toBe(600);
+		expect(computeBalanceAwareTtlSeconds(1_000)).toBe(600);
 	});
 
 	it("is monotonic as balance increases", () => {
@@ -25,8 +25,8 @@ describe("computeBalanceAwareTtlSeconds", () => {
 		const ttlAt50 = computeBalanceAwareTtlSeconds(50);
 		const ttlAt200 = computeBalanceAwareTtlSeconds(200);
 
-		expect(ttlAt10).toBeLessThanOrEqual(120);
-		expect(ttlAt50).toBeLessThanOrEqual(210);
-		expect(ttlAt200).toBeGreaterThanOrEqual(260);
+		expect(ttlAt10).toBeLessThanOrEqual(240);
+		expect(ttlAt50).toBeLessThanOrEqual(400);
+		expect(ttlAt200).toBeGreaterThanOrEqual(540);
 	});
 });

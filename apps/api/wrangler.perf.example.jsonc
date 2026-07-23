@@ -1,0 +1,46 @@
+{
+	// Copy to wrangler.perf.jsonc (gitignored), then replace every REPLACE_* value.
+	// This is a separate Worker. It reads production Supabase through one allowlisted
+	// performance workspace, while KV and R2 remain isolated.
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "phaseo-gateway-perf",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-07-22",
+	"compatibility_flags": ["global_fetch_strictly_public"],
+	"workers_dev": true,
+	"preview_urls": true,
+	"placement": { "mode": "smart" },
+	"vars": {
+		"ENV": "perf",
+		"NODE_ENV": "production",
+		"SUPABASE_URL": "https://xansbgjaduxypzsmjwct.supabase.co",
+		"GATEWAY_PERF_WORKSPACE_ID": "6108396e-0e12-425d-91ff-a02d39a346e0",
+		"GATEWAY_PERF_ALLOWED_ENDPOINTS": "chat.completions,responses,messages,completions",
+		"GATEWAY_IO_LOGS_BUCKET_NAME": "phaseo-gateway-perf-io-logs",
+		"MODEL_DISCOVERY_ENABLED": "false",
+		"VIDEO_RECONCILIATION_ENABLED": "false",
+		"BATCH_RECONCILIATION_ENABLED": "false",
+		"VIDEO_API_ENABLED": "false",
+		"BATCH_API_ENABLED": "false",
+		"EMAIL_OUTBOX_DRAIN_ENABLED": "false",
+		"PRICING_MONITOR_ENABLED": "false",
+		"ENTERPRISE_INVOICING_ENABLED": "false",
+
+		// Point each provider at a synthetic scenario while retaining its real adapter.
+		// Replace the host after deploying apps/perf-upstream.
+		"OPENAI_BASE_URL": "https://phaseo-perf-upstream.danielbutler500.workers.dev/scenarios/fast",
+		"GROQ_BASE_URL": "https://phaseo-perf-upstream.danielbutler500.workers.dev/scenarios/rate-limit",
+		"DEEPINFRA_BASE_URL": "https://phaseo-perf-upstream.danielbutler500.workers.dev/scenarios/unavailable",
+		"TOGETHER_BASE_URL": "https://phaseo-perf-upstream.danielbutler500.workers.dev/scenarios/realistic"
+	},
+	"observability": {
+		"enabled": true,
+		"logs": { "enabled": true, "head_sampling_rate": 1, "invocation_logs": true }
+	},
+	"kv_namespaces": [
+		{ "binding": "GATEWAY_CACHE", "id": "44e6e455fada499c8681d0ff4d2525dd" }
+	],
+	"r2_buckets": [
+		{ "binding": "GATEWAY_IO_LOGS_BUCKET", "bucket_name": "phaseo-gateway-perf-io-logs" }
+	]
+}

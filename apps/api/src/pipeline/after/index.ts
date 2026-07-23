@@ -263,6 +263,12 @@ function dispatchNonStreamSuccessSideEffects(args: {
                 });
             }
 
+            await recordUsageAndChargeOnce({
+                ctx,
+                costNanos: totalNanos,
+                endpoint: ctx.endpoint,
+            });
+
             await handleSuccessAudit(
                 ctx,
                 result,
@@ -277,11 +283,6 @@ function dispatchNonStreamSuccessSideEffects(args: {
                 gatewayPayload,
             );
 
-            await recordUsageAndChargeOnce({
-                ctx,
-                costNanos: totalNanos,
-                endpoint: ctx.endpoint,
-            });
         } finally {
             releaseRuntime();
         }
@@ -506,14 +507,14 @@ async function handleNonStreamResponse(
 
     // Update payload with normalized usage
     payload.usage = shapedUsageFinal;
-    const generationMs = ctx.meta.generation_ms ?? 0;
+    const generationMs = ctx.meta.generation_ms ?? null;
     const latencyMs = resolveNonStreamLatencyMs(ctx, generationMs);
     const endToEndMs =
         typeof ctx.meta.end_to_end_ms === "number"
             ? ctx.meta.end_to_end_ms
-            : typeof latencyMs === "number" && typeof generationMs === "number" && generationMs > 0
-                ? latencyMs + generationMs
-                : latencyMs;
+			: typeof ctx.meta.completedAtMs === "number" && typeof ctx.meta.startedAtMs === "number"
+				? Math.max(0, ctx.meta.completedAtMs - ctx.meta.startedAtMs)
+				: null;
     const outputTokens = shapedUsageFinal?.output_tokens ?? shapedUsageFinal?.output_text_tokens ?? 0;
     const throughputTps = generationMs && generationMs > 0
         ? outputTokens / (generationMs / 1000)

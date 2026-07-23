@@ -4,6 +4,7 @@
 
 import type { IRModerationsRequest, IRModerationsResponse, IRModerationsResult } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
+import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "@providers/openai-compatible/config";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import type { ProviderExecutor } from "../../types";
@@ -41,7 +42,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const captureRequest = Boolean(args.meta.returnUpstreamRequest || args.meta.echoUpstreamRequest);
 	const mappedRequest = captureRequest ? JSON.stringify(requestBody) : undefined;
 
-	const res = await fetch(openAICompatUrl(args.providerId, "/moderations"), {
+	const res = await fetchUpstream(args, openAICompatUrl(args.providerId, "/moderations"), {
 		method: "POST",
 		headers: openAICompatHeaders(args.providerId, key, {
 			"Idempotency-Key": args.requestId,

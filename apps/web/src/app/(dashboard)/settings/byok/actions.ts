@@ -75,3 +75,15 @@ export async function updateByokFallbackAction(enabled: boolean) {
 	refresh();
 	return result;
 }
+
+export async function reorderByokKeyAction(id: string, direction: "up" | "down") {
+	if (!id) throw new Error("Missing id");
+	const account = await context();
+	const result = await fetchAccountWebApi<{ success: true }>(
+		`/api/account/settings/byok/${encodeURIComponent(id)}/reorder`,
+		account.accessToken,
+		{ method: "POST", body: JSON.stringify({ direction }) },
+	);
+	refresh();
+	return result;
+}

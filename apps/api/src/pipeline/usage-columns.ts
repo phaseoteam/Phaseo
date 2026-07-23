@@ -49,6 +49,16 @@ export type GatewayRequestUsageColumns = {
 	usage_normalized_at: string;
 };
 
+export type V2RequestUsageMeter = {
+	meter_key: string;
+	modality: "text" | "image" | "audio" | "video" | "request";
+	unit: "tokens" | "images" | "audio" | "video" | "seconds" | "pixel_seconds" | "characters" | "megapixels";
+	quantity: number;
+	source: "gateway";
+	billable: boolean;
+	sequence: number;
+};
+
 export const GATEWAY_REQUEST_USAGE_COLUMN_NAMES = [
 	"usage_total_tokens",
 	"usage_input_tokens",
@@ -459,4 +469,70 @@ export function stripGatewayRequestUsageColumns<T extends Record<string, unknown
 		delete next[column];
 	}
 	return next as T;
+}
+
+const V2_USAGE_METER_COLUMNS: Array<{
+	column: keyof GatewayRequestUsageColumns;
+	meterKey: string;
+	modality: V2RequestUsageMeter["modality"];
+	unit: V2RequestUsageMeter["unit"];
+}> = [
+	{ column: "usage_input_tokens", meterKey: "input_tokens", modality: "text", unit: "tokens" },
+	{ column: "usage_output_tokens", meterKey: "output_tokens", modality: "text", unit: "tokens" },
+	{ column: "usage_reasoning_tokens", meterKey: "reasoning_tokens", modality: "text", unit: "tokens" },
+	{ column: "usage_input_text_tokens", meterKey: "input_text_tokens", modality: "text", unit: "tokens" },
+	{ column: "usage_output_text_tokens", meterKey: "output_text_tokens", modality: "text", unit: "tokens" },
+	{ column: "usage_input_image_tokens", meterKey: "input_image_tokens", modality: "image", unit: "tokens" },
+	{ column: "usage_output_image_tokens", meterKey: "output_image_tokens", modality: "image", unit: "tokens" },
+	{ column: "usage_input_audio_tokens", meterKey: "input_audio_tokens", modality: "audio", unit: "tokens" },
+	{ column: "usage_output_audio_tokens", meterKey: "output_audio_tokens", modality: "audio", unit: "tokens" },
+	{ column: "usage_input_video_tokens", meterKey: "input_video_tokens", modality: "video", unit: "tokens" },
+	{ column: "usage_output_video_tokens", meterKey: "output_video_tokens", modality: "video", unit: "tokens" },
+	{ column: "usage_image_inputs", meterKey: "input_images", modality: "image", unit: "images" },
+	{ column: "usage_image_outputs", meterKey: "output_images", modality: "image", unit: "images" },
+	{ column: "usage_audio_inputs", meterKey: "input_audio", modality: "audio", unit: "audio" },
+	{ column: "usage_audio_outputs", meterKey: "output_audio", modality: "audio", unit: "audio" },
+	{ column: "usage_video_inputs", meterKey: "input_video", modality: "video", unit: "video" },
+	{ column: "usage_video_outputs", meterKey: "output_video", modality: "video", unit: "video" },
+	{ column: "usage_cached_read_tokens", meterKey: "cached_input_tokens", modality: "text", unit: "tokens" },
+	{ column: "usage_cached_write_tokens", meterKey: "cache_write_tokens", modality: "text", unit: "tokens" },
+	{ column: "usage_cached_read_text_tokens", meterKey: "cached_read_text_tokens", modality: "text", unit: "tokens" },
+	{ column: "usage_cached_write_text_tokens", meterKey: "cached_write_text_tokens", modality: "text", unit: "tokens" },
+	{ column: "usage_cached_write_text_tokens_5m", meterKey: "cached_write_text_tokens_5m", modality: "text", unit: "tokens" },
+	{ column: "usage_cached_write_text_tokens_1h", meterKey: "cached_write_text_tokens_1h", modality: "text", unit: "tokens" },
+	{ column: "usage_cached_read_image_tokens", meterKey: "cached_read_image_tokens", modality: "image", unit: "tokens" },
+	{ column: "usage_cached_write_image_tokens", meterKey: "cached_write_image_tokens", modality: "image", unit: "tokens" },
+	{ column: "usage_cached_read_audio_tokens", meterKey: "cached_read_audio_tokens", modality: "audio", unit: "tokens" },
+	{ column: "usage_cached_write_audio_tokens", meterKey: "cached_write_audio_tokens", modality: "audio", unit: "tokens" },
+	{ column: "usage_cached_read_video_tokens", meterKey: "cached_read_video_tokens", modality: "video", unit: "tokens" },
+	{ column: "usage_cached_write_video_tokens", meterKey: "cached_write_video_tokens", modality: "video", unit: "tokens" },
+	{ column: "usage_image_megapixels", meterKey: "image_megapixels", modality: "image", unit: "megapixels" },
+	{ column: "usage_audio_seconds", meterKey: "audio_seconds", modality: "audio", unit: "seconds" },
+	{ column: "usage_video_pixel_seconds", meterKey: "video_pixel_seconds", modality: "video", unit: "pixel_seconds" },
+	{ column: "usage_input_characters", meterKey: "input_characters", modality: "text", unit: "characters" },
+	{ column: "usage_output_characters", meterKey: "output_characters", modality: "text", unit: "characters" },
+];
+
+/** Build the normalized, content-free meter rows used by v2 analytics. */
+export function buildV2RequestUsageMeters(args: {
+	usage: unknown;
+	endpoint?: Endpoint;
+	requestPayload?: unknown;
+	gatewayResponse?: unknown;
+}): V2RequestUsageMeter[] {
+	const columns = buildGatewayRequestUsageColumns(args);
+	return V2_USAGE_METER_COLUMNS.flatMap((definition, sequence) => {
+		const raw = columns[definition.column];
+		const quantity = typeof raw === "number" && Number.isFinite(raw) ? Math.max(0, raw) : 0;
+		if (quantity <= 0) return [];
+		return [{
+			meter_key: definition.meterKey,
+			modality: definition.modality,
+			unit: definition.unit,
+			quantity,
+			source: "gateway" as const,
+			billable: true,
+			sequence,
+		}];
+	});
 }

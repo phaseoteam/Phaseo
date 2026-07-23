@@ -13,17 +13,9 @@
  */
 
 import type { ProviderExecutor } from "./types";
-import { isOpenAICompatProvider } from "@providers/openai-compatible/config";
-import {
-	getProviderCapabilityProfile,
-	supportsAdapterBackedCapability,
-	type AdapterBackedCapability,
-} from "@providers/capabilities";
-import type { Endpoint } from "@core/types";
 
 // Text generation executors (migrated providers only)
 import { executor as openaiText } from "./openai/text-generate";
-import { executor as openAICompatText } from "./openai-compat/text-generate";
 import { executor as anthropicText } from "./anthropic/text-generate";
 import { executor as azureText } from "./azure/text-generate";
 import { executor as googleAiStudioText } from "./google-ai-studio/text-generate";
@@ -48,6 +40,7 @@ import { executor as togetherText } from "./together/text-generate";
 import { executor as crofaiText } from "./crofai/text-generate";
 import { executor as tensorixText } from "./tensorix/text-generate";
 import { executor as basetenText } from "./baseten/text-generate";
+import { executor as baiduText } from "./baidu/text-generate";
 import { executor as cerebrasText } from "./cerebras/text-generate";
 import { executor as cohereText } from "./cohere/text-generate";
 import { executor as fireworksText } from "./fireworks/text-generate";
@@ -76,6 +69,8 @@ import { executor as inflectionText } from "./inflection/text-generate";
 import { executor as ionrouterText } from "./ionrouter/text-generate";
 import { executor as longcatText } from "./longcat/text-generate";
 import { executor as mancerText } from "./mancer/text-generate";
+import { executor as ambientText } from "./ambient/text-generate";
+import { executor as avianText } from "./avian/text-generate";
 import { executor as morphText } from "./morph/text-generate";
 import { executor as morpheusText } from "./morpheus/text-generate";
 import { executor as nebiusTokenFactoryText } from "./nebius-token-factory/text-generate";
@@ -93,6 +88,20 @@ import { executor as stepfunText } from "./stepfun/text-generate";
 import { executor as veniceText } from "./venice/text-generate";
 import { executor as voyageText } from "./voyage/text-generate";
 import { executor as weightsAndBiasesText } from "./weights-and-biases/text-generate";
+import { executor as metaText } from "./meta/text-generate";
+import { executor as nebiusTokenFactoryFastText } from "./nebius-token-factory-fast/text-generate";
+import { executor as ovhcloudText } from "./ovhcloud/text-generate";
+import { executor as sakanaText } from "./sakana/text-generate";
+import { executor as scalewayText } from "./scaleway/text-generate";
+import { executor as thinkingMachinesText } from "./thinking-machines/text-generate";
+import { executor as darkbloomText } from "./darkbloom/text-generate";
+import { executor as inferenceNetText } from "./inference-net/text-generate";
+import { executor as maraText } from "./mara/text-generate";
+import { executor as rekaText } from "./reka/text-generate";
+import { executor as streamlakeText } from "./streamlake/text-generate";
+import { executor as switchpointText } from "./switchpoint/text-generate";
+import { executor as upstageText } from "./upstage/text-generate";
+import { executor as waferText } from "./wafer/text-generate";
 
 // Embeddings executors (migrated providers only)
 import { executor as openaiEmbeddings } from "./openai/embeddings";
@@ -130,17 +139,6 @@ type Capability =
 	| "music.generate";
 type ProviderCapabilityMap = Partial<Record<Capability, ProviderExecutor>>;
 
-const ADAPTER_BACKED_ENDPOINTS: Record<AdapterBackedCapability, Endpoint> = {
-	"image.generate": "images.generations",
-	"image.edit": "images.edits",
-	"audio.speech": "audio.speech",
-	"audio.transcription": "audio.transcription",
-	"audio.translations": "audio.translations",
-	"video.generate": "video.generation",
-	ocr: "ocr",
-	"music.generate": "music.generate",
-};
-
 const CAPABILITY_ALIASES: Record<string, Capability> = {
 	"text.embed": "embeddings",
 	moderation: "moderations",
@@ -162,34 +160,8 @@ const CAPABILITY_ALIASES: Record<string, Capability> = {
 	"video.generations": "video.generate",
 };
 
-const OPENAI_COMPAT_TEXT_EXECUTOR_BLOCKLIST = new Set<string>([
-]);
-const OPENAI_COMPAT_EMBEDDINGS_EXECUTOR_BLOCKLIST = new Set<string>([]);
-const OPENAI_COMPAT_MODERATIONS_EXECUTOR_BLOCKLIST = new Set<string>([]);
-const OPENAI_COMPAT_RERANK_EXECUTOR_BLOCKLIST = new Set<string>([]);
-
-function supportsOpenAICompatEmbeddings(providerId: string): boolean {
-	if (!isOpenAICompatProvider(providerId)) return false;
-	if (OPENAI_COMPAT_EMBEDDINGS_EXECUTOR_BLOCKLIST.has(providerId)) return false;
-	return !getProviderCapabilityProfile(providerId).textOnly;
-}
-
-function supportsOpenAICompatRerank(providerId: string): boolean {
-	if (!isOpenAICompatProvider(providerId)) return false;
-	if (OPENAI_COMPAT_RERANK_EXECUTOR_BLOCKLIST.has(providerId)) return false;
-	return !getProviderCapabilityProfile(providerId).textOnly;
-}
-
 export function normalizeCapability(capability: string): Capability {
 	return CAPABILITY_ALIASES[capability] ?? (capability as Capability);
-}
-
-function resolveAdapterBackedEndpoint(capability: Capability): Endpoint | null {
-	return ADAPTER_BACKED_ENDPOINTS[capability as AdapterBackedCapability] ?? null;
-}
-
-function providerSupportsAdapterCapability(providerId: string, capability: AdapterBackedCapability): boolean {
-	return supportsAdapterBackedCapability(providerId, capability);
 }
 
 export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
@@ -198,6 +170,11 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 		embeddings: openaiEmbeddings,
 		moderations: openaiModerations,
 		rerank: openaiRerank,
+		"image.generate": nonTextAdapterExecutor,
+		"image.edit": nonTextAdapterExecutor,
+		"audio.speech": nonTextAdapterExecutor,
+		"audio.transcription": nonTextAdapterExecutor,
+		"audio.translations": nonTextAdapterExecutor,
 		"video.generate": openaiVideo,
 	},
 	"openai-eu": {
@@ -205,6 +182,11 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 		embeddings: openaiEmbeddings,
 		moderations: openaiModerations,
 		rerank: openaiRerank,
+		"image.generate": nonTextAdapterExecutor,
+		"image.edit": nonTextAdapterExecutor,
+		"audio.speech": nonTextAdapterExecutor,
+		"audio.transcription": nonTextAdapterExecutor,
+		"audio.translations": nonTextAdapterExecutor,
 		"video.generate": openaiVideo,
 	},
 	anthropic: {
@@ -234,6 +216,33 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	azure: {
 		"text.generate": azureText,
 	},
+	baidu: {
+		"text.generate": baiduText,
+	},
+	darkbloom: {
+		"text.generate": darkbloomText,
+	},
+	"inference-net": {
+		"text.generate": inferenceNetText,
+	},
+	mara: {
+		"text.generate": maraText,
+	},
+	reka: {
+		"text.generate": rekaText,
+	},
+	streamlake: {
+		"text.generate": streamlakeText,
+	},
+	switchpoint: {
+		"text.generate": switchpointText,
+	},
+	upstage: {
+		"text.generate": upstageText,
+	},
+	wafer: {
+		"text.generate": waferText,
+	},
 	"alibaba-cloud": {
 		"text.generate": alibabaCloudText,
 		"video.generate": alibabaVideo,
@@ -241,10 +250,20 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	"atlas-cloud": {
 		"text.generate": atlasCloudText,
 		"video.generate": atlasCloudVideo,
+		"image.generate": nonTextAdapterExecutor,
+		"image.edit": nonTextAdapterExecutor,
+		"audio.speech": nonTextAdapterExecutor,
+		"audio.transcription": nonTextAdapterExecutor,
+		"audio.translations": nonTextAdapterExecutor,
 	},
 	atlascloud: {
 		"text.generate": atlasCloudText,
 		"video.generate": atlasCloudVideo,
+		"image.generate": nonTextAdapterExecutor,
+		"image.edit": nonTextAdapterExecutor,
+		"audio.speech": nonTextAdapterExecutor,
+		"audio.transcription": nonTextAdapterExecutor,
+		"audio.translations": nonTextAdapterExecutor,
 	},
 	baseten: {
 		"text.generate": basetenText,
@@ -271,6 +290,8 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	},
 	cohere: {
 		"text.generate": cohereText,
+		embeddings: openaiEmbeddings,
+		rerank: openaiRerank,
 	},
 	crofai: {
 		"text.generate": crofaiText,
@@ -285,12 +306,17 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	"google-ai-studio": {
 		"text.generate": googleAiStudioText,
 		embeddings: googleAiStudioEmbeddings,
+		moderations: openaiModerations,
 		"audio.speech": googleAudioSpeech,
+		"image.generate": nonTextAdapterExecutor,
+		"image.edit": nonTextAdapterExecutor,
+		"audio.transcription": nonTextAdapterExecutor,
+		"audio.translations": nonTextAdapterExecutor,
 		"music.generate": googleMusic,
 	},
-	"spacex-ai": { "text.generate": xAiText, "video.generate": xAiVideo },
-	"x-ai": { "text.generate": xAiText, "video.generate": xAiVideo },
-	xai: { "text.generate": xAiText, "video.generate": xAiVideo },
+	"spacex-ai": { "text.generate": xAiText, "video.generate": xAiVideo, "image.generate": nonTextAdapterExecutor, "image.edit": nonTextAdapterExecutor, "audio.speech": nonTextAdapterExecutor, "audio.transcription": nonTextAdapterExecutor, "audio.translations": nonTextAdapterExecutor },
+	"x-ai": { "text.generate": xAiText, "video.generate": xAiVideo, "image.generate": nonTextAdapterExecutor, "image.edit": nonTextAdapterExecutor, "audio.speech": nonTextAdapterExecutor, "audio.transcription": nonTextAdapterExecutor, "audio.translations": nonTextAdapterExecutor },
+	xai: { "text.generate": xAiText, "video.generate": xAiVideo, "image.generate": nonTextAdapterExecutor, "image.edit": nonTextAdapterExecutor, "audio.speech": nonTextAdapterExecutor, "audio.transcription": nonTextAdapterExecutor, "audio.translations": nonTextAdapterExecutor },
 	featherless: { "text.generate": featherlessText },
 	friendli: { "text.generate": friendliText },
 	deepseek: { "text.generate": deepseekText },
@@ -302,13 +328,16 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	ionrouter: { "text.generate": ionrouterText },
 	longcat: { "text.generate": longcatText },
 	mancer: { "text.generate": mancerText },
-	minimax: { "text.generate": minimaxText, "video.generate": minimaxVideo, "music.generate": minimaxMusic },
-	"minimax-lightning": { "text.generate": minimaxText, "video.generate": minimaxVideo, "music.generate": minimaxMusic },
-	alibaba: { "text.generate": alibabaText, "video.generate": alibabaVideo },
-	qwen: { "text.generate": qwenText, "video.generate": alibabaVideo },
+	ambient: { "text.generate": ambientText },
+	avian: { "text.generate": avianText },
+	minimax: { "text.generate": minimaxText, "video.generate": minimaxVideo, "music.generate": minimaxMusic, "image.generate": nonTextAdapterExecutor, "image.edit": nonTextAdapterExecutor, "audio.speech": nonTextAdapterExecutor, "audio.transcription": nonTextAdapterExecutor, "audio.translations": nonTextAdapterExecutor },
+	"minimax-lightning": { "text.generate": minimaxText, "video.generate": minimaxVideo, "music.generate": minimaxMusic, "image.generate": nonTextAdapterExecutor, "image.edit": nonTextAdapterExecutor, "audio.speech": nonTextAdapterExecutor, "audio.transcription": nonTextAdapterExecutor, "audio.translations": nonTextAdapterExecutor },
+	alibaba: { "text.generate": alibabaText, "video.generate": alibabaVideo, "image.generate": nonTextAdapterExecutor, "image.edit": nonTextAdapterExecutor, "audio.speech": nonTextAdapterExecutor, "audio.transcription": nonTextAdapterExecutor, "audio.translations": nonTextAdapterExecutor },
+	qwen: { "text.generate": qwenText, "video.generate": alibabaVideo, "image.generate": nonTextAdapterExecutor, "image.edit": nonTextAdapterExecutor, "audio.speech": nonTextAdapterExecutor, "audio.transcription": nonTextAdapterExecutor, "audio.translations": nonTextAdapterExecutor },
 	morph: { "text.generate": morphText },
-	morpheus: { "text.generate": morpheusText },
+	morpheus: { "text.generate": morpheusText, "image.generate": nonTextAdapterExecutor, "image.edit": nonTextAdapterExecutor, "audio.speech": nonTextAdapterExecutor, "audio.transcription": nonTextAdapterExecutor, "audio.translations": nonTextAdapterExecutor },
 	"nebius-token-factory": { "text.generate": nebiusTokenFactoryText },
+	"nebius-token-factory-fast": { "text.generate": nebiusTokenFactoryFastText },
 	"nebius-token-factory-eu-north-1": { "text.generate": nebiusTokenFactoryEuText },
 	"nebius-token-factory-us-central-1": { "text.generate": nebiusTokenFactoryUsText },
 	nvidia: { "text.generate": nvidiaText },
@@ -319,8 +348,8 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	runwayml: { "video.generate": runwayVideo },
 	"z-ai": { "text.generate": zAiText },
 	zai: { "text.generate": zaiText },
-	xiaomi: { "text.generate": xiaomiText },
-	mistral: { "text.generate": mistralText },
+	xiaomi: { "text.generate": xiaomiText, "image.generate": nonTextAdapterExecutor, "image.edit": nonTextAdapterExecutor, "audio.speech": nonTextAdapterExecutor, "audio.transcription": nonTextAdapterExecutor, "audio.translations": nonTextAdapterExecutor, "video.generate": nonTextAdapterExecutor },
+	mistral: { "text.generate": mistralText, embeddings: openaiEmbeddings, moderations: openaiModerations, ocr: nonTextAdapterExecutor },
 	"moonshot-ai": { "text.generate": moonshotText },
 	moonshotai: { "text.generate": moonshotText },
 	"moonshot-ai-turbo": { "text.generate": moonshotText },
@@ -328,28 +357,35 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	"aion-labs": { "text.generate": aionLabsText },
 	aionlabs: { "text.generate": aionLabsText },
 	"amazon-bedrock": { "text.generate": amazonBedrockText },
-	"google-vertex": { "text.generate": googleVertexText, "video.generate": googleVertexVideo },
-	"google-vertex-eu": { "text.generate": googleVertexText, "video.generate": googleVertexVideo },
+	"google-vertex": { "text.generate": googleVertexText, "video.generate": googleVertexVideo, "image.generate": nonTextAdapterExecutor, "image.edit": nonTextAdapterExecutor, "audio.speech": nonTextAdapterExecutor, "audio.transcription": nonTextAdapterExecutor, "audio.translations": nonTextAdapterExecutor },
+	"google-vertex-eu": { "text.generate": googleVertexText, "video.generate": googleVertexVideo, "image.generate": nonTextAdapterExecutor, "image.edit": nonTextAdapterExecutor, "audio.speech": nonTextAdapterExecutor, "audio.transcription": nonTextAdapterExecutor, "audio.translations": nonTextAdapterExecutor },
 	deepinfra: { "text.generate": deepinfraText },
-	fireworks: { "text.generate": fireworksText },
+	fireworks: { "text.generate": fireworksText, embeddings: openaiEmbeddings, rerank: openaiRerank, "image.generate": nonTextAdapterExecutor },
 	groq: { "text.generate": groqText },
 	liquid: { "text.generate": liquidAiText },
 	"liquid-ai": { "text.generate": liquidAiText },
-	novitaai: { "text.generate": novitaaiText },
-	novita: { "text.generate": novitaaiText },
+	novitaai: { "text.generate": novitaaiText, "image.generate": nonTextAdapterExecutor, "image.edit": nonTextAdapterExecutor, "audio.speech": nonTextAdapterExecutor, "audio.transcription": nonTextAdapterExecutor, "audio.translations": nonTextAdapterExecutor, "video.generate": nonTextAdapterExecutor },
+	novita: { "text.generate": novitaaiText, "image.generate": nonTextAdapterExecutor, "image.edit": nonTextAdapterExecutor, "audio.speech": nonTextAdapterExecutor, "audio.transcription": nonTextAdapterExecutor, "audio.translations": nonTextAdapterExecutor, "video.generate": nonTextAdapterExecutor },
 	perplexity: { "text.generate": perplexityText },
 	relace: { "text.generate": relaceText },
 	sambanova: { "text.generate": sambanovaText },
 	siliconflow: { "text.generate": siliconflowText },
 	sourceful: { "text.generate": sourcefulText },
 	stepfun: { "text.generate": stepfunText },
-	together: { "text.generate": togetherText },
+	together: { "text.generate": togetherText, embeddings: openaiEmbeddings, moderations: openaiModerations },
 	venice: { "text.generate": veniceText },
 	"venice-e2ee": { "text.generate": veniceText },
-	voyage: { "text.generate": voyageText },
-	voyageai: { "text.generate": voyageText },
+	voyage: { "text.generate": voyageText, embeddings: openaiEmbeddings, rerank: openaiRerank },
+	voyageai: { "text.generate": voyageText, embeddings: openaiEmbeddings, rerank: openaiRerank },
 	"weights-and-biases": { "text.generate": weightsAndBiasesText },
+	meta: { "text.generate": metaText },
+	ovhcloud: { "text.generate": ovhcloudText },
+	sakana: { "text.generate": sakanaText },
+	scaleway: { "text.generate": scalewayText },
+	"thinking-machines": { "text.generate": thinkingMachinesText },
 	"black-forest-labs": { "image.generate": blackForestLabsImage, "image.edit": blackForestLabsImage },
+	elevenlabs: { "audio.speech": nonTextAdapterExecutor, "audio.transcription": nonTextAdapterExecutor, "music.generate": nonTextAdapterExecutor },
+	suno: { "music.generate": nonTextAdapterExecutor },
 };
 
 export function resolveProviderExecutor(providerId: string, capability: string): ProviderExecutor | null {
@@ -359,39 +395,6 @@ export function resolveProviderExecutor(providerId: string, capability: string):
 		const executor = provider[normalizedCapability];
 		if (executor) return executor;
 	}
-	if (
-		normalizedCapability === "text.generate" &&
-		isOpenAICompatProvider(providerId) &&
-		!OPENAI_COMPAT_TEXT_EXECUTOR_BLOCKLIST.has(providerId)
-	) {
-		return openAICompatText;
-	}
-	if (
-		normalizedCapability === "embeddings" &&
-		supportsOpenAICompatEmbeddings(providerId)
-	) {
-		return openaiEmbeddings;
-	}
-	if (
-		normalizedCapability === "moderations" &&
-		isOpenAICompatProvider(providerId) &&
-		!OPENAI_COMPAT_MODERATIONS_EXECUTOR_BLOCKLIST.has(providerId)
-	) {
-		return openaiModerations;
-	}
-	if (
-		normalizedCapability === "rerank" &&
-		supportsOpenAICompatRerank(providerId)
-	) {
-		return openaiRerank;
-	}
-	const adapterEndpoint = resolveAdapterBackedEndpoint(normalizedCapability);
-	if (
-		adapterEndpoint &&
-		providerSupportsAdapterCapability(providerId, normalizedCapability as AdapterBackedCapability)
-	) {
-		return nonTextAdapterExecutor;
-	}
 	return null;
 }
 
@@ -399,37 +402,7 @@ export function isProviderCapabilityEnabled(providerId: string, capability: stri
 	const normalizedCapability = normalizeCapability(capability);
 	const provider = EXECUTORS_BY_PROVIDER[providerId];
 	if (provider?.[normalizedCapability]) return true;
-	if (
-		normalizedCapability === "text.generate" &&
-		isOpenAICompatProvider(providerId) &&
-		!OPENAI_COMPAT_TEXT_EXECUTOR_BLOCKLIST.has(providerId)
-	) {
-		return true;
-	}
-	if (
-		normalizedCapability === "embeddings" &&
-		supportsOpenAICompatEmbeddings(providerId)
-	) {
-		return true;
-	}
-	if (
-		normalizedCapability === "moderations" &&
-		isOpenAICompatProvider(providerId) &&
-		!OPENAI_COMPAT_MODERATIONS_EXECUTOR_BLOCKLIST.has(providerId)
-	) {
-		return true;
-	}
-	if (
-		normalizedCapability === "rerank" &&
-		supportsOpenAICompatRerank(providerId)
-	) {
-		return true;
-	}
-	const adapterEndpoint = resolveAdapterBackedEndpoint(normalizedCapability);
-	return Boolean(
-		adapterEndpoint &&
-		providerSupportsAdapterCapability(providerId, normalizedCapability as AdapterBackedCapability),
-	);
+	return false;
 }
 
 

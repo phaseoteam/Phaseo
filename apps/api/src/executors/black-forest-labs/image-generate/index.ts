@@ -4,6 +4,7 @@
 
 import type { IRImageGenerationRequest, IRImageGenerationResponse } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
+import type { ExecutorUpstreamTiming } from "@executors/types";
 import type { ProviderExecutor } from "../../types";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
@@ -149,8 +150,9 @@ async function submitBflJob(args: {
 	submitUrl: string;
 	payload: Record<string, unknown>;
 	key: string;
+	upstreamTiming?: ExecutorUpstreamTiming;
 }): Promise<{ response: Response; json: any | null }> {
-	const response = await fetch(args.submitUrl, {
+	const response = await (args.upstreamTiming?.fetch ?? fetch)(args.submitUrl, {
 		method: "POST",
 		headers: {
 			accept: "application/json",
@@ -168,18 +170,22 @@ async function pollBflJob(args: {
 	key: string;
 	timeoutMs: number;
 	intervalMs: number;
+	upstreamTiming?: ExecutorUpstreamTiming;
 }): Promise<{ response: Response; json: any | null } | { errorResponse: Response }> {
 	const deadline = Date.now() + args.timeoutMs;
 	let lastStatus = "unknown";
 
 	while (Date.now() <= deadline) {
-		const response = await fetch(args.pollingUrl, {
+		const pollInit: RequestInit = {
 			method: "GET",
 			headers: {
 				accept: "application/json",
 				"x-key": args.key,
 			},
-		});
+		};
+		const response = await (args.upstreamTiming
+			? args.upstreamTiming.fetch(args.pollingUrl, pollInit, "poll")
+			: fetch(args.pollingUrl, pollInit));
 		const json = await response.clone().json().catch(() => null);
 		if (!response.ok) {
 			return { errorResponse: response };
@@ -213,9 +219,11 @@ async function pollBflJob(args: {
 	};
 }
 
-async function imageUrlToBase64(url: string): Promise<{ base64: string; mimeType: string | null } | null> {
+async function imageUrlToBase64(url: string, upstreamTiming?: ExecutorUpstreamTiming): Promise<{ base64: string; mimeType: string | null } | null> {
 	if (!url || typeof url !== "string") return null;
-	const response = await fetch(url);
+	const response = await (upstreamTiming
+		? upstreamTiming.fetch(url, undefined, "media")
+		: fetch(url));
 	if (!response.ok) return null;
 	const mimeType = response.headers.get("content-type");
 	const bytes = new Uint8Array(await response.arrayBuffer());
@@ -299,7 +307,12 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	let totalCredits = 0;
 
 	for (let index = 0; index < requestedCount; index++) {
-		const submitted = await submitBflJob({ submitUrl, payload, key: keyInfo.key });
+		const submitted = await submitBflJob({
+			submitUrl,
+			payload,
+			key: keyInfo.key,
+			upstreamTiming: args.upstreamTiming,
+		});
 		lastUpstream = submitted.response;
 		rawResponses.push({ submit: submitted.json });
 		const submitCredits = extractCreditsCost(submitted.json);
@@ -342,6 +355,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			key: keyInfo.key,
 			timeoutMs: pollTimeoutMs,
 			intervalMs: pollIntervalMs,
+			upstreamTiming: args.upstreamTiming,
 		});
 		if ("errorResponse" in polled) {
 			return {
@@ -378,7 +392,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		}
 
 		if (wantsB64) {
-			const asBase64 = await imageUrlToBase64(sampleUrl);
+			const asBase64 = await imageUrlToBase64(sampleUrl, args.upstreamTiming);
 			if (asBase64?.base64) {
 				data.push({
 					url: null,

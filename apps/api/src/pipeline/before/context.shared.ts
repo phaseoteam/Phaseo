@@ -109,6 +109,18 @@ export function computeCreditSnapshotTtlForContext(context: GatewayContextData):
 	return computeCreditSnapshotTtlSeconds(resolveBalanceUsd(context));
 }
 
+export function hasConfiguredKeyLimits(keyLimit: GatewayContextData["keyLimit"]): boolean {
+	const buckets = keyLimit?.buckets ?? null;
+	return [buckets?.daily, buckets?.weekly, buckets?.monthly].some((bucket) =>
+		Boolean(
+			bucket && (
+				Number(bucket.requestsLimit) > 0 ||
+				Number(bucket.costLimitNanos) > 0
+			),
+		),
+	);
+}
+
 /**
  * Compute adaptive TTL for dynamic data (key limits, buckets)
  * Respects Cloudflare KV 60s minimum TTL
@@ -118,6 +130,13 @@ export function computeAdaptiveTtlForDynamic(context: GatewayContextData): numbe
 
 	// If key, limits, or credit are not OK, revalidate aggressively.
 	if (!context.key.ok || !context.keyLimit.ok || !context.credit.ok) {
+		return clampTtl(60);
+	}
+
+	// Limit usage changes after every completed request. Keep capped keys within
+	// the shortest KV consistency window instead of caching their usage snapshot
+	// for the ordinary 2-10 minute dynamic-context lifetime.
+	if (hasConfiguredKeyLimits(context.keyLimit)) {
 		return clampTtl(60);
 	}
 
@@ -351,7 +370,7 @@ export function normalizeProviderStatus(value: unknown): ProviderRolloutStatus {
 	if (status === "project_limited") return "project_limited";
 	if (status === "paused") return "paused";
 	if (status === "soft_blocked") return "soft_blocked";
-	return "active";
+    return "not_ready";
 }
 
 export function normalizeRoutingStatus(value: unknown): RoutingStatus {
@@ -366,7 +385,7 @@ export function normalizeRoutingStatus(value: unknown): RoutingStatus {
 	if (status === "notready" || status === "not_ready" || status === "not ready") {
 		return "disabled";
 	}
-	return "active";
+    return "disabled";
 }
 
 export function normalizeCapabilityStatus(value: unknown): CapabilityRoutingStatus {

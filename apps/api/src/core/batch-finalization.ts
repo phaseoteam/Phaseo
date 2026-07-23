@@ -854,9 +854,18 @@ export async function finalizeBatchJob(args: FinalizeBatchJobArgs): Promise<Fina
 	status = status === "canceled" ? "cancelled" : status;
 
 	const finalizedAt = new Date().toISOString();
+	const finalizedAtMs = Date.parse(finalizedAt);
+	const providerDispatchedAtMs = Number(record.meta.providerDispatchedAtMs);
+	const generationMs = Number.isFinite(providerDispatchedAtMs)
+		? Math.max(0, Math.round(finalizedAtMs - providerDispatchedAtMs))
+		: null;
+	const completionTimingPatch = generationMs === null
+		? {}
+		: { durationMs: generationMs, generationMs };
 	const alreadyBilled = await isBatchJobBilled(args.workspaceId, args.batchId);
 	if (alreadyBilled) {
 		await setBatchJobStatus(args.workspaceId, args.batchId, status, {
+			...completionTimingPatch,
 			finalizedAt,
 			billingReason: "already_billed",
 		});
@@ -885,6 +894,7 @@ export async function finalizeBatchJob(args: FinalizeBatchJobArgs): Promise<Fina
 				status,
 			});
 			await setBatchJobStatus(args.workspaceId, args.batchId, status, {
+				...completionTimingPatch,
 				finalizedAt,
 				charged: false,
 				costNanos: 0,
@@ -900,6 +910,7 @@ export async function finalizeBatchJob(args: FinalizeBatchJobArgs): Promise<Fina
 			};
 		}
 		await setBatchJobStatus(args.workspaceId, args.batchId, status, {
+			...completionTimingPatch,
 			finalizedAt,
 			charged: false,
 			costNanos: 0,
@@ -919,6 +930,7 @@ export async function finalizeBatchJob(args: FinalizeBatchJobArgs): Promise<Fina
 	const settlement = await computeBatchSettlement(record.meta, status);
 	if (!settlement.ok) {
 		await setBatchJobStatus(args.workspaceId, args.batchId, status, {
+			...completionTimingPatch,
 			finalizedAt,
 			charged: false,
 			billingReason: settlement.reason,
@@ -948,6 +960,7 @@ export async function finalizeBatchJob(args: FinalizeBatchJobArgs): Promise<Fina
 		}
 	} catch (error) {
 		await setBatchJobStatus(args.workspaceId, args.batchId, status, {
+			...completionTimingPatch,
 			finalizedAt,
 			charged: false,
 			billingReason: "settlement_failed",
@@ -974,6 +987,7 @@ export async function finalizeBatchJob(args: FinalizeBatchJobArgs): Promise<Fina
 	}
 
 	await setBatchJobStatus(args.workspaceId, args.batchId, status, {
+		...completionTimingPatch,
 		finalizedAt,
 		charged: settlement.charged && chargeApplied,
 		costNanos: settlement.costNanos,

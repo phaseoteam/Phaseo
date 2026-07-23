@@ -43,6 +43,10 @@ function candidate(providerId: string, providerModelSlug: string, baseWeight: nu
     }
     return {
         providerId,
+        providerStatus: "active",
+        providerRoutingStatus: "active",
+        modelRoutingStatus: "active",
+        capabilityStatus: "active",
         adapter,
         baseWeight,
         byokMeta: [],

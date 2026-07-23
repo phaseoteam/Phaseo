@@ -49,7 +49,7 @@ vi.mock("@/runtime/env", () => ({
 	}),
 }));
 
-const { readHealth, readHealthMany, resetHealthStateForTests } = await import(
+const { readHealth, readHealthMany, readHealthManyOptimistic, resetHealthStateForTests } = await import(
 	"@/pipeline/execute/health"
 );
 
@@ -92,6 +92,32 @@ describe("execute health cache performance", () => {
 		expect(b.inflight).toBe(3);
 		expect(c[provider]?.inflight).toBe(3);
 		expect(runtime.cache.get).toHaveBeenCalledTimes(1);
+	});
+
+	it("does not await KV on an optimistic cold routing read", async () => {
+		const endpoint = "responses";
+		const model = "openai/gpt-5-nano";
+		const provider = "openai";
+		runtime.setGetDelay(25);
+		runtime.store.set(
+			HEALTH_KEYS.health(endpoint, model),
+			JSON.stringify({
+				[`${provider}::lat_ewma_60s`]: "120",
+				[`${provider}::last_updated`]: "1700000000000",
+			}),
+		);
+
+		const started = performance.now();
+		const cold = readHealthManyOptimistic(endpoint, model, [provider]);
+		const elapsed = performance.now() - started;
+
+		expect(cold[provider]?.lat_ewma_60s).toBe(800);
+		expect(elapsed).toBeLessThan(5);
+		expect(runtime.cache.get).toHaveBeenCalledTimes(1);
+
+		await Promise.allSettled(runtime.backgroundTasks.splice(0));
+		const warm = readHealthManyOptimistic(endpoint, model, [provider]);
+		expect(warm[provider]?.lat_ewma_60s).toBe(120);
 	});
 
 	it("reuses warm L1 cache across repeated reads", async () => {

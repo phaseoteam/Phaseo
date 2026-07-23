@@ -4,6 +4,7 @@
 
 import type { IRContentPart, IRMusicGenerateRequest, IRMusicGenerateResponse } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
+import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
 import { googleUsageMetadataToIRUsage } from "@providers/google-ai-studio/usage";
@@ -204,7 +205,10 @@ function resolveResponseModalities(rawRequest: Record<string, any>): string[] {
 	return ["AUDIO", "TEXT"];
 }
 
-async function buildRequestBody(ir: IRMusicGenerateRequest): Promise<Record<string, any> | null> {
+async function buildRequestBody(
+	ir: IRMusicGenerateRequest,
+	upstreamTiming?: ExecutorExecuteArgs["upstreamTiming"],
+): Promise<Record<string, any> | null> {
 	const rawRequest =
 		ir.rawRequest && typeof ir.rawRequest === "object" && !Array.isArray(ir.rawRequest)
 			? (ir.rawRequest as Record<string, any>)
@@ -216,7 +220,7 @@ async function buildRequestBody(ir: IRMusicGenerateRequest): Promise<Record<stri
 
 	if (!parts.length) return null;
 
-	const geminiParts = await irPartsToGeminiParts(parts);
+	const geminiParts = await irPartsToGeminiParts(parts, { upstreamTiming });
 	if (!geminiParts.length) return null;
 
 	const generationConfig =
@@ -330,7 +334,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const requestedModel = args.providerModelSlug || ir.model || "lyria-3-pro-preview";
 	const modelCandidates = resolveGoogleModelCandidates(requestedModel);
 	const models = modelCandidates.length > 0 ? modelCandidates : [requestedModel];
-	const bodyObject = await buildRequestBody(ir);
+	const bodyObject = await buildRequestBody(ir, args.upstreamTiming);
 	if (!bodyObject) {
 		return {
 			kind: "completed",
@@ -367,7 +371,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	for (let index = 0; index < models.length; index += 1) {
 		const model = models[index] || requestedModel;
 		const isLastCandidate = index >= models.length - 1;
-		const upstream = await fetch(
+		const upstream = await fetchUpstream(
+			args,
 			`${baseUrl}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(keyInfo.key)}`,
 			{
 				method: "POST",

@@ -19,8 +19,10 @@ function providerKeyError(code: string): Error & { code: string } {
 
 function orderedMetas(metaList: ByokKeyMeta[]): ByokKeyMeta[] {
     return [...metaList].sort((a, b) => {
-        if (a.alwaysUse === b.alwaysUse) return 0;
-        return a.alwaysUse ? -1 : 1;
+		const aMode = a.routingMode ?? (a.alwaysUse ? "priority" : "fallback");
+		const bMode = b.routingMode ?? (b.alwaysUse ? "priority" : "fallback");
+		if (aMode !== bMode) return aMode === "priority" ? -1 : 1;
+		return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
     });
 }
 

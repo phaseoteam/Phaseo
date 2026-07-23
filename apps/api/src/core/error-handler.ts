@@ -14,6 +14,9 @@ import { readAttributionHeaders } from "@pipeline/after/attribution";
 import { getEdgeMeta } from "./edge";
 import { sanitizeForAxiom, stringifyForAxiom } from "@observability/privacy";
 import { emitGatewayRequestEvent } from "@observability/events";
+import { emitGatewayTelemetryDeliveryFailure } from "@observability/axiom";
+import { runGatewayTelemetryPipelines } from "@observability/gateway-telemetry";
+import { sanitizeUrlForLogging } from "@/lib/security/sanitizeUrl";
 
 const REDACT_ERROR_KEYS = new Set([
     "messages",
@@ -921,7 +924,7 @@ export async function handleError({
                     upstream_response_headers: providerResponseHeaders,
                     upstream_status_code: statusCode,
                     upstream_status_text: res.statusText ?? null,
-                    upstream_url: res.url ?? null,
+					upstream_url: sanitizeUrlForLogging(res.url ?? null),
                     requested_params: sanitizeForAxiom(ctx?.requestedParams ?? null),
                     param_routing_diagnostics: sanitizeForAxiom(ctx?.paramRoutingDiagnostics ?? null),
                     provider_enablement_diagnostics: sanitizeForAxiom(ctx?.providerEnablementDiagnostics ?? null),
@@ -1042,6 +1045,8 @@ export async function handleError({
         providerResponse: body ?? null,
         detailMetadata: {
             stage,
+            routing_snapshot: sanitizeForAxiom((ctx as any)?.routingSnapshot ?? null),
+            routing_diagnostics: sanitizeForAxiom((ctx as any)?.routingDiagnostics ?? null),
             replay_supported: Boolean(
                 replayRequestPayload &&
                     typeof replayRequestPayload === "object"
@@ -1055,13 +1060,11 @@ export async function handleError({
             ? ctx.providerAttempts
             : null;
     }
-    try {
-        await auditFailure(auditArgs);
-    } catch (auditErr) {
-        console.error("[audit] failure audit insert failed", auditErr);
-    }
-    try {
-        await emitGatewayRequestEvent({
+    await runGatewayTelemetryPipelines({
+        requestId: auditArgs.requestId,
+        workspaceId: auditArgs.workspaceId,
+        writeSupabase: () => auditFailure(auditArgs),
+        writeAxiom: () => emitGatewayRequestEvent({
         ctx,
         result: undefined,
         requestId: auditArgs.requestId,
@@ -1102,10 +1105,9 @@ export async function handleError({
         providerResponse: body,
         providerResponseHeaders: headersToRecord(res.headers),
         gatewayResponse: errorPayload,
+        }),
+        onDeliveryFailure: emitGatewayTelemetryDeliveryFailure,
     });
-    } catch (eventErr) {
-        console.error("[observability] emitGatewayRequestEvent failed", eventErr);
-    }
     return new Response(JSON.stringify(errorPayload), { status: statusCode, headers });
 }
 

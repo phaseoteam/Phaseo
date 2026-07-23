@@ -22,6 +22,10 @@ vi.mock("@core/schemas", () => ({
 	schemaFor: vi.fn(() => null),
 }));
 
+vi.mock("@/runtime/env", () => ({
+	getBindings: () => ({ ENV: "test" }),
+}));
+
 vi.mock("./guards", () => ({
 	guardAuth: (...args: any[]) => guardAuthMock(...args),
 	guardJson: (...args: any[]) => guardJsonMock(...args),
@@ -39,6 +43,8 @@ vi.mock("./capabilityValidation", () => ({
 vi.mock("./testingMode", () => ({
 	isTestingModeRequested: (...args: any[]) => isTestingModeRequestedMock(...args),
 	resolveTestingMode: (...args: any[]) => resolveTestingModeMock(...args),
+	resolvePerfGatewayAccess: () => ({ allowed: true, perfEnvironment: false }),
+	isPerfGatewayEndpointAllowed: () => true,
 }));
 
 vi.mock("@/executors", () => ({
@@ -236,6 +242,47 @@ describe("beforeRequest pricing loss-prevention", () => {
 		});
 		const result = await beforeRequest(req, "responses", new Timer(), null);
 		expect(result.ok).toBe(true);
+	});
+
+	it("loads workspace policy concurrently with request context", async () => {
+		const provider = providerWithPricingRules(1);
+		let resolveContext!: (value: any) => void;
+		guardContextMock.mockReturnValue(new Promise((resolve) => {
+			resolveContext = resolve;
+		}));
+		fetchWorkspacePolicyMock.mockResolvedValue(null);
+
+		const req = new Request("https://gateway.local/v1/responses", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ model: "openai/gpt-4.1-mini" }),
+		});
+		const pending = beforeRequest(req, "responses", new Timer(), null);
+
+		await vi.waitFor(() => expect(fetchWorkspacePolicyMock).toHaveBeenCalledTimes(1));
+		resolveContext({
+			ok: true,
+			value: {
+				context: {
+					pricing: { openai: provider.pricingCard },
+					key: { ok: true, reason: null, resetAt: null },
+					keyLimit: { ok: true, reason: null, resetAt: null },
+					credit: { ok: true, reason: null, resetAt: null },
+					teamSettings: { billingMode: "wallet" },
+				},
+				providers: [provider],
+				resolvedModel: "openai/gpt-4.1-mini",
+				candidateDiagnostics: {
+					totalProviders: 1,
+					supportsEndpointCount: 1,
+					droppedUnsupportedEndpoint: [],
+					droppedMissingAdapter: [],
+					candidateCount: 1,
+				},
+			},
+		});
+
+		await expect(pending).resolves.toMatchObject({ ok: true });
 	});
 
 	it("rejects request when pricing card has zero rules", async () => {

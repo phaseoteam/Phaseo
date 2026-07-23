@@ -6,11 +6,11 @@ const readStickyRoutingMock = vi.fn();
 const resolveStickyRoutingContextMock = vi.fn();
 
 vi.mock("./health", () => ({
-	readHealthMany: (...args: any[]) => readHealthManyMock(...args),
+	readHealthManyOptimistic: (...args: any[]) => readHealthManyMock(...args),
 }));
 
 vi.mock("./sticky-routing", () => ({
-	readStickyRouting: (...args: any[]) => readStickyRoutingMock(...args),
+	readStickyRoutingOptimistic: (...args: any[]) => readStickyRoutingMock(...args),
 	resolveStickyRoutingContext: (...args: any[]) => resolveStickyRoutingContextMock(...args),
 	stickyRoutingCacheBoostMultiplier: (cachedReadTokens: number) => {
 		if (!Number.isFinite(cachedReadTokens) || cachedReadTokens <= 0) return 1;
@@ -25,6 +25,12 @@ function health(
 		lat_ewma_60s: number;
 		lat_ewma_300s: number;
 		tp_ewma_60s: number;
+		err_ewma_10s: number;
+		err_ewma_60s: number;
+		err_ewma_300s: number;
+		rate_10s: number;
+		rate_60s: number;
+		current_load: number;
 	}>
 ) {
 	return {
@@ -60,6 +66,7 @@ function candidate(args: {
 	providerFamilyId?: string | null;
 	offerScope?: "global" | "regional" | "specialized" | null;
 	offerLabel?: string | null;
+	dataPolicyVariant?: "standard" | "zdr" | null;
 	apiModelId?: string | null;
 	providerModelSlug?: string | null;
 	providerStatus?: "active" | "beta" | "alpha" | "not_ready";
@@ -77,6 +84,7 @@ function candidate(args: {
 		providerFamilyId: args.providerFamilyId ?? null,
 		offerScope: args.offerScope ?? null,
 		offerLabel: args.offerLabel ?? null,
+		dataPolicyVariant: args.dataPolicyVariant ?? "standard",
 		providerStatus: args.providerStatus ?? "active",
 		providerRoutingStatus: args.providerRoutingStatus ?? "active",
 		modelRoutingStatus: args.modelRoutingStatus ?? "active",
@@ -134,11 +142,11 @@ describe("routeProviders testing mode", () => {
 		readHealthManyMock.mockReset();
 		readStickyRoutingMock.mockReset();
 		resolveStickyRoutingContextMock.mockReset();
-		readHealthManyMock.mockImplementation(async (_endpoint: string, _model: string, providerIds: string[]) =>
+		readHealthManyMock.mockImplementation((_endpoint: string, _model: string, providerIds: string[]) =>
 			Object.fromEntries(providerIds.map((providerId) => [providerId, health(providerId)]))
 		);
 		resolveStickyRoutingContextMock.mockResolvedValue(null);
-		readStickyRoutingMock.mockResolvedValue(null);
+		readStickyRoutingMock.mockReturnValue(null);
 	});
 
 	it("keeps beta providers gated on public traffic", async () => {
@@ -262,13 +270,13 @@ describe("routeProviders testing mode", () => {
 					providerId: "openai",
 					executionRegions: ["us", "eu"],
 					dataRegions: ["us", "eu"],
-					zeroDataRetention: "optional",
+					zeroDataRetention: "default",
 				}),
 				candidate({
 					providerId: "anthropic",
 					executionRegions: null,
 					dataRegions: null,
-					zeroDataRetention: "optional",
+					zeroDataRetention: "default",
 				}),
 			],
 			{
@@ -293,6 +301,53 @@ describe("routeProviders testing mode", () => {
 			(stage) => stage.stage === "residency_gate",
 		);
 		expect(residencyGate?.afterCount).toBe(1);
+	});
+
+	it("uses a distinct ZDR provider variant only when ZDR is required", async () => {
+		const providers = [
+			candidate({
+				providerId: "example",
+				providerFamilyId: "example",
+				offerScope: "global",
+				dataPolicyVariant: "standard",
+				zeroDataRetention: "optional",
+			}),
+			candidate({
+				providerId: "example-zdr",
+				providerFamilyId: "example",
+				offerScope: "specialized",
+				offerLabel: "ZDR",
+				dataPolicyVariant: "zdr",
+				zeroDataRetention: "default",
+			}),
+		];
+
+		const normal = await routeProviders(providers, {
+			endpoint: "responses",
+			model: "example/model",
+			workspaceId: "team_123",
+			testingMode: false,
+		});
+		expect(normal.ranked.map((entry) => entry.candidate.providerId)).toEqual(["example"]);
+
+		const zdr = await routeProviders(providers, {
+			endpoint: "responses",
+			model: "example/model",
+			workspaceId: "team_123",
+			body: { routing: { zdr: true } },
+			testingMode: false,
+		});
+		expect(zdr.ranked.map((entry) => entry.candidate.providerId)).toEqual(["example-zdr"]);
+		expect(
+			zdr.diagnostics.filterStages
+				.find((stage) => stage.stage === "offer_scope_gate")
+				?.droppedProviders,
+		).toEqual([
+			expect.objectContaining({
+				providerId: "example",
+				reason: "standard_offer_replaced_by_zdr_specialized_offer",
+			}),
+		]);
 	});
 
 	it("keeps regional offers out of the default routing pool when a global sibling exists", async () => {
@@ -498,7 +553,7 @@ describe("routeProviders testing mode", () => {
 	});
 
 	it("honors provider.sort=price from the request body", async () => {
-		readHealthManyMock.mockImplementation(async () => ({
+		readHealthManyMock.mockImplementation(() => ({
 			openai: health("openai", {
 				lat_ewma_60s: 250,
 				lat_ewma_300s: 250,
@@ -536,7 +591,7 @@ describe("routeProviders testing mode", () => {
 	});
 
 	it("uses cheapest stable providers first for default balanced routing", async () => {
-		readHealthManyMock.mockImplementation(async () => ({
+		readHealthManyMock.mockImplementation(() => ({
 			openai: health("openai", {
 				lat_ewma_60s: 250,
 				lat_ewma_300s: 250,
@@ -572,10 +627,108 @@ describe("routeProviders testing mode", () => {
 		expect(result.ranked.map((entry) => entry.candidate.providerId)[0]).toBe("anthropic");
 		expect(result.diagnostics.routingMode).toBe("balanced");
 		expect(result.diagnostics.rankedProviders[0]?.scoreFactors.priceScore).toBe(1);
+		expect(result.diagnostics.rankedProviders[0]?.scoreFactors.reliabilitySample).toEqual(expect.any(Number));
+	});
+
+	it("prefers a more reliable provider when the cheapest provider is repeatedly failing", async () => {
+		readHealthManyMock.mockImplementation(() => ({
+			cheap: health("cheap", {
+				err_ewma_10s: 0.95,
+				err_ewma_60s: 0.95,
+				err_ewma_300s: 0.9,
+				rate_10s: 1,
+				rate_60s: 1,
+			}),
+			reliable: health("reliable", {
+				err_ewma_10s: 0.01,
+				err_ewma_60s: 0.01,
+				err_ewma_300s: 0.01,
+				rate_10s: 1,
+				rate_60s: 1,
+			}),
+		}));
+
+		const result = await routeProviders(
+			[
+				candidate({ providerId: "cheap", pricingCard: textPricingCard(0.00001, 0.000005) }),
+				candidate({ providerId: "reliable", pricingCard: textPricingCard(0.00002, 0.00001) }),
+			],
+			{
+				endpoint: "responses",
+				model: "openai/gpt-4o-mini",
+				workspaceId: "team_123",
+				requestId: "reliability-test",
+				testingMode: false,
+			},
+		);
+
+		expect(result.ranked[0]?.candidate.providerId).toBe("reliable");
+		expect(result.ranked).toHaveLength(2);
+	});
+
+	it("continues to explore an uncertain cheap provider without always selecting it", async () => {
+		readHealthManyMock.mockImplementation(() => ({
+			unseen: health("unseen"),
+			stable: health("stable", {
+				err_ewma_10s: 0.02,
+				err_ewma_60s: 0.02,
+				err_ewma_300s: 0.02,
+				rate_10s: 1,
+				rate_60s: 1,
+			}),
+		}));
+
+		const firstProviders = new Set<string>();
+		for (let index = 0; index < 80; index += 1) {
+			const result = await routeProviders(
+				[
+					candidate({ providerId: "unseen", pricingCard: textPricingCard(0.00001, 0.000005) }),
+					candidate({ providerId: "stable", pricingCard: textPricingCard(0.000012, 0.000006) }),
+				],
+				{
+					endpoint: "responses",
+					model: "openai/gpt-4o-mini",
+					workspaceId: "team_123",
+					requestId: `exploration-${index}`,
+					testingMode: false,
+				},
+			);
+			firstProviders.add(result.ranked[0]?.candidate.providerId ?? "");
+		}
+
+		expect(firstProviders).toEqual(new Set(["unseen", "stable"]));
+	});
+
+	it("does not use isolate-local load to change the routing order", async () => {
+		const run = async (firstLoad: number, secondLoad: number) => {
+			readHealthManyMock.mockImplementation(() => ({
+				first: health("first", { current_load: firstLoad }),
+				second: health("second", { current_load: secondLoad }),
+			}));
+			return routeProviders(
+				[
+					candidate({ providerId: "first", pricingCard: textPricingCard(0.00001, 0.000005) }),
+					candidate({ providerId: "second", pricingCard: textPricingCard(0.00001, 0.000005) }),
+				],
+				{
+					endpoint: "responses",
+					model: "openai/gpt-4o-mini",
+					workspaceId: "team_123",
+					requestId: "same-request",
+					testingMode: false,
+				},
+			);
+		};
+
+		const loadedFirst = await run(1, 0);
+		const loadedSecond = await run(0, 1);
+		expect(loadedFirst.ranked.map((entry) => entry.candidate.providerId)).toEqual(
+			loadedSecond.ranked.map((entry) => entry.candidate.providerId),
+		);
 	});
 
 	it("honors provider.sort=latency from the request body", async () => {
-		readHealthManyMock.mockImplementation(async () => ({
+		readHealthManyMock.mockImplementation(() => ({
 			openai: health("openai", {
 				lat_ewma_60s: 220,
 				lat_ewma_300s: 220,
@@ -607,7 +760,7 @@ describe("routeProviders testing mode", () => {
 	});
 
 	it("honors provider.sort=throughput from the request body", async () => {
-		readHealthManyMock.mockImplementation(async () => ({
+		readHealthManyMock.mockImplementation(() => ({
 			openai: health("openai", {
 				lat_ewma_60s: 600,
 				lat_ewma_300s: 600,
@@ -639,7 +792,7 @@ describe("routeProviders testing mode", () => {
 	});
 
 	it("honors the first-class routing.mode object", async () => {
-		readHealthManyMock.mockImplementation(async () => ({
+		readHealthManyMock.mockImplementation(() => ({
 			openai: health("openai", {
 				lat_ewma_60s: 180,
 				lat_ewma_300s: 180,
@@ -669,7 +822,7 @@ describe("routeProviders testing mode", () => {
 	});
 
 	it("treats :cheap as the single price-first alias", async () => {
-		readHealthManyMock.mockImplementation(async () => ({
+		readHealthManyMock.mockImplementation(() => ({
 			openai: health("openai", {
 				lat_ewma_60s: 120,
 				lat_ewma_300s: 120,
@@ -743,11 +896,15 @@ describe("routeProviders testing mode", () => {
 			[
 				candidate({
 					providerId: "openai",
-					zeroDataRetention: "optional",
+					zeroDataRetention: "default",
 				}),
 				candidate({
 					providerId: "anthropic",
 					zeroDataRetention: "unsupported",
+				}),
+				candidate({
+					providerId: "mistral",
+					zeroDataRetention: "optional",
 				}),
 			],
 			{
@@ -772,7 +929,7 @@ describe("routeProviders testing mode", () => {
 			key: "context:abc",
 			source: "context_hash",
 		});
-		readStickyRoutingMock.mockResolvedValue({
+		readStickyRoutingMock.mockReturnValue({
 			providerId: "anthropic",
 			cachedReadTokens: 2000,
 			contextKey: "context:abc",
@@ -804,14 +961,14 @@ describe("routeProviders testing mode", () => {
 			key: "context:priced",
 			source: "context_hash",
 		});
-		readStickyRoutingMock.mockResolvedValue({
+		readStickyRoutingMock.mockReturnValue({
 			providerId: "anthropic",
 			cachedReadTokens: 2000,
 			contextKey: "context:priced",
 			source: "context_hash",
 			createdAt: new Date().toISOString(),
 		});
-		readHealthManyMock.mockImplementation(async () => ({
+		readHealthManyMock.mockImplementation(() => ({
 			openai: health("openai", { lat_ewma_10s: 400, lat_ewma_60s: 400, lat_ewma_300s: 400 }),
 			anthropic: health("anthropic", { lat_ewma_10s: 1200, lat_ewma_60s: 1200, lat_ewma_300s: 1200 }),
 		}));
@@ -846,7 +1003,7 @@ describe("routeProviders testing mode", () => {
 			key: "context:abc",
 			source: "context_hash",
 		});
-		readStickyRoutingMock.mockResolvedValue({
+		readStickyRoutingMock.mockReturnValue({
 			providerId: "anthropic",
 			cachedReadTokens: 2000,
 			contextKey: "context:abc",
@@ -875,7 +1032,7 @@ describe("routeProviders testing mode", () => {
 	});
 
 	it("captures considered providers and ranked score diagnostics", async () => {
-		readHealthManyMock.mockImplementation(async () => ({
+		readHealthManyMock.mockImplementation(() => ({
 			openai: health("openai", {
 				lat_ewma_60s: 300,
 				lat_ewma_300s: 350,
@@ -928,7 +1085,7 @@ describe("routeProviders testing mode", () => {
 	});
 
 	it("keeps multiple free-model variants from the same provider routable", async () => {
-		readHealthManyMock.mockImplementation(async () => ({
+		readHealthManyMock.mockImplementation(() => ({
 			openai: health("openai", {
 				lat_ewma_60s: 320,
 				lat_ewma_300s: 350,
@@ -995,7 +1152,7 @@ describe("routeProviders testing mode", () => {
 	});
 
 	it("keeps open-breaker providers reachable as tail fallbacks", async () => {
-		readHealthManyMock.mockImplementation(async () => ({
+		readHealthManyMock.mockImplementation(() => ({
 			openai: health("openai", {
 				breaker: "open",
 				breaker_until_ms: Date.now() + 60_000,

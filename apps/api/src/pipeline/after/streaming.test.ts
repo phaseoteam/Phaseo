@@ -351,7 +351,39 @@ describe("passthroughWithPricing", () => {
 		await finalUsageDone;
 	});
 
-	it("cancels upstream stream when downstream disconnects and provider supports cancellation", async () => {
+	it("does not start final usage persistence before preparing the terminal frame", async () => {
+		const order: string[] = [];
+		const upstream = makeSseResponse([{
+			event: "response.completed",
+			data: {
+				response: {
+					id: "resp_order",
+					object: "response",
+					status: "completed",
+					usage: { input_tokens: 2, output_tokens: 1, total_tokens: 3 },
+				},
+			},
+		}]);
+
+		const response = await passthroughWithPricing({
+			upstream,
+			ctx: baseCtx(),
+			provider: "openai",
+			priceCard: null,
+			rewriteFrame: (frame) => {
+				order.push("terminal_frame_prepared");
+				return frame;
+			},
+			onFinalUsage: () => {
+				order.push("final_usage_started");
+			},
+		});
+
+		await drain(response);
+		expect(order).toEqual(["terminal_frame_prepared", "final_usage_started"]);
+	});
+
+	it("keeps draining cancellable upstreams after downstream disconnect for authoritative billing", async () => {
 		const usageCalls: Array<{ usage: any; info: any }> = [];
 		let resolveUsage: (() => void) | null = null;
 		const usageSettled = new Promise<void>((resolve) => {
@@ -373,12 +405,13 @@ describe("passthroughWithPricing", () => {
 			},
 		], 15);
 
+		const ctx = baseCtx({
+			endpoint: "chat.completions",
+			protocol: "openai.chat.completions",
+		});
 		const response = await passthroughWithPricing({
 			upstream: upstream.response,
-			ctx: baseCtx({
-				endpoint: "chat.completions",
-				protocol: "openai.chat.completions",
-			}),
+			ctx,
 			provider: "openai",
 			priceCard: null,
 			onFinalUsage: (usage, info) => {
@@ -393,7 +426,11 @@ describe("passthroughWithPricing", () => {
 		await reader?.cancel();
 
 		await usageSettled;
-		expect(upstream.wasCancelled()).toBe(true);
+		expect(upstream.wasCancelled()).toBe(false);
+		expect(ctx.meta.downstreamDisconnected).toBe(true);
+		expect(ctx.meta.streamCancellationSupport).toBe("supported");
+		expect(ctx.meta.streamProviderBillingOnCancel).toBe("stops");
+		expect(ctx.meta.streamDisconnectAction).toBe("drain_upstream");
 		expect(usageCalls).toHaveLength(1);
 		expect(usageCalls[0]?.info?.aborted).toBe(true);
 		expect(usageCalls[0]?.info?.sawFinalUsage).toBe(false);
@@ -451,11 +488,12 @@ describe("passthroughWithPricing", () => {
 		});
 	});
 
-	it("records stream latency, post-first-frame generation, and end-to-end duration separately", async () => {
+	it("records first-frame latency, dispatch-to-terminal generation, and gateway end-to-end separately", async () => {
 		const ctx = baseCtx({
 			endpoint: "chat.completions",
 			protocol: "openai.chat.completions",
 			meta: {
+				startedAtMs: Date.now() - 80,
 				upstreamStartMs: Date.now() - 40,
 			},
 		});
@@ -490,7 +528,7 @@ describe("passthroughWithPricing", () => {
 		expect((ctx.meta.latency_ms as number)!).toBeGreaterThan(0);
 		expect((ctx.meta.generation_ms as number)!).toBeGreaterThanOrEqual(0);
 		expect((ctx.meta.end_to_end_ms as number)!).toBeGreaterThanOrEqual((ctx.meta.latency_ms as number)!);
-		expect((ctx.meta.generation_ms as number)!).toBeLessThan((ctx.meta.latency_ms as number)!);
+		expect((ctx.meta.generation_ms as number)!).toBeGreaterThanOrEqual((ctx.meta.latency_ms as number)!);
 	});
 
 	it("overwrites adapter latency with first downstream frame timing for streamed responses", async () => {
@@ -498,6 +536,7 @@ describe("passthroughWithPricing", () => {
 			endpoint: "chat.completions",
 			protocol: "openai.chat.completions",
 			meta: {
+				startedAtMs: Date.now() - 90,
 				upstreamStartMs: Date.now() - 50,
 				latency_ms: 1,
 			},
@@ -531,7 +570,7 @@ describe("passthroughWithPricing", () => {
 		expect(typeof ctx.meta.end_to_end_ms).toBe("number");
 		expect((ctx.meta.latency_ms as number)!).toBeGreaterThan(1);
 		expect((ctx.meta.end_to_end_ms as number)!).toBeGreaterThanOrEqual((ctx.meta.latency_ms as number)!);
-		expect((ctx.meta.generation_ms as number)!).toBeLessThan((ctx.meta.latency_ms as number)!);
+		expect((ctx.meta.generation_ms as number)!).toBeGreaterThanOrEqual((ctx.meta.latency_ms as number)!);
 	});
 
 });

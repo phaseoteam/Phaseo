@@ -81,7 +81,9 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
             const bytes = Uint8Array.from(atob(dataUrlMatch[2]), (c) => c.charCodeAt(0));
             fileBlob = new Blob([bytes], { type: mimeType });
         } else if (ref.startsWith("http://") || ref.startsWith("https://")) {
-            const fetched = await fetch(ref);
+            const fetched = await (args.upstreamTiming
+                ? args.upstreamTiming.fetch(ref, undefined, "media")
+                : fetch(ref));
             if (!fetched.ok) {
                 return {
                     kind: "completed",
@@ -128,7 +130,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         });
     }
 
-    const res = await fetch(openAICompatUrl(args.providerId, "/videos"), {
+    const res = await (args.upstreamTiming?.fetch ?? fetch)(openAICompatUrl(args.providerId, "/videos"), {
         method: "POST",
         headers,
         body: requestBody,
