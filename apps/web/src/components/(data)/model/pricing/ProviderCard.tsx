@@ -1253,6 +1253,12 @@ const PROVIDER_STATUS_META: Record<
 		iconClass: "text-blue-600",
 		description: "Not active yet.",
 	},
+	external: {
+		label: "External",
+		icon: ArrowUpRight,
+		iconClass: "text-violet-600",
+		description: "Listed from an external catalogue; not routable through Phaseo.",
+	},
 	internal_testing: {
 		label: "Internal Testing",
 		icon: FlaskConical,

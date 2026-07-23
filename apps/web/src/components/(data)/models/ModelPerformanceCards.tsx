@@ -5,8 +5,10 @@ import type {
 	ModelPerformancePoint,
 	ModelPerformanceSummary,
 	ModelProviderDailyPoint,
+	ModelPerformanceQualityPoint,
 } from "@/lib/fetchers/models/getModelPerformance";
 import ModelProviderTrendChart from "./ModelProviderTrendChart";
+import ModelQualityTrendChart from "./ModelQualityTrendChart";
 
 function MetricCard({
 	children,
@@ -25,6 +27,7 @@ interface ModelPerformanceCardsProps {
 	prevSummary?: ModelPerformanceSummary | null;
 	hourly: ModelPerformancePoint[];
 	providerDaily7d: ModelProviderDailyPoint[];
+	qualitySeries?: ModelPerformanceQualityPoint[];
 }
 
 export default function ModelPerformanceCards({
@@ -32,11 +35,15 @@ export default function ModelPerformanceCards({
 	prevSummary,
 	hourly,
 	providerDaily7d,
+	qualitySeries = [],
 }: ModelPerformanceCardsProps) {
 	const [activeDay, setActiveDay] = useState<string | null>(null);
 	void summary;
 	void prevSummary;
 	const hasHourly = hourly.some((point) => point.requests > 0);
+	const hasToolCallQuality = qualitySeries.some((point) => point.toolCallSuccessPct != null);
+	const hasStructuredOutputQuality = qualitySeries.some((point) => point.structuredOutputSuccessPct != null);
+	const hasCacheQuality = qualitySeries.some((point) => point.cacheHitRatePct != null);
 
 	return (
 		<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -49,6 +56,16 @@ export default function ModelPerformanceCards({
 					onActiveDayChange={setActiveDay}
 				/>
 			</MetricCard>
+
+			{hasToolCallQuality ? (
+				<ModelQualityTrendChart title="Tool call success" data={qualitySeries} metric="toolCallSuccessPct" />
+			) : null}
+			{hasStructuredOutputQuality ? (
+				<ModelQualityTrendChart title="Structured output" data={qualitySeries} metric="structuredOutputSuccessPct" />
+			) : null}
+			{hasCacheQuality ? (
+				<ModelQualityTrendChart title="Cache hit rate" data={qualitySeries} metric="cacheHitRatePct" />
+			) : null}
 
 			<MetricCard>
 				<ModelProviderTrendChart
