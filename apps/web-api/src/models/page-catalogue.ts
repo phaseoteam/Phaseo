@@ -182,9 +182,16 @@ async function databasePageRows(env: Env, query: ModelsPageQuery = {}): Promise<
 }
 
 async function weeklyMetrics(env: Env): Promise<WeeklyMetricRow[]> {
-	const result = await getDataClient(env).rpc("get_v2_public_model_weekly_metrics");
-	if (result.error) throw result.error;
-	return (result.data ?? []) as WeeklyMetricRow[];
+	const rows: WeeklyMetricRow[] = [];
+	for (let offset = 0; ; offset += 1_000) {
+		const result = await getDataClient(env)
+			.rpc("get_v2_public_model_weekly_metrics")
+			.range(offset, offset + 999);
+		if (result.error) throw result.error;
+		rows.push(...((result.data ?? []) as WeeklyMetricRow[]));
+		if ((result.data?.length ?? 0) < 1_000) break;
+	}
+	return rows;
 }
 
 export function mergeModelWeeklyMetrics(rows: Row[], metrics: WeeklyMetricRow[]): Row[] {
