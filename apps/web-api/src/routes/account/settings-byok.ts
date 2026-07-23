@@ -149,20 +149,26 @@ accountSettingsByokRouter.put("/byok/:keyId", async (c) => {
 		if (typeof body.name === "string") update.name = body.name;
 		if (typeof body.enabled === "boolean") update.enabled = body.enabled;
 		if (typeof body.always_use === "boolean") {
+			const nextRoutingMode = body.always_use ? "priority" : "fallback";
+			const currentRoutingMode = loaded.key.routing_mode === "priority" || loaded.key.routing_mode === "fallback"
+				? loaded.key.routing_mode
+				: loaded.key.always_use === true ? "priority" : "fallback";
 			update.always_use = body.always_use;
-			update.routing_mode = body.always_use ? "priority" : "fallback";
-			const lastInMode = await loaded.context.client
-				.from("byok_keys")
-				.select("sort_order")
-				.eq("workspace_id", loaded.context.workspaceId)
-				.eq("provider_id", providerId)
-				.eq("routing_mode", update.routing_mode)
-				.neq("id", loaded.key.id)
-				.order("sort_order", { ascending: false })
-				.limit(1)
-				.maybeSingle();
-			if (lastInMode.error) throw lastInMode.error;
-			update.sort_order = Number(lastInMode.data?.sort_order ?? -1) + 1;
+			update.routing_mode = nextRoutingMode;
+			if (nextRoutingMode !== currentRoutingMode) {
+				const lastInMode = await loaded.context.client
+					.from("byok_keys")
+					.select("sort_order")
+					.eq("workspace_id", loaded.context.workspaceId)
+					.eq("provider_id", providerId)
+					.eq("routing_mode", nextRoutingMode)
+					.neq("id", loaded.key.id)
+					.order("sort_order", { ascending: false })
+					.limit(1)
+					.maybeSingle();
+				if (lastInMode.error) throw lastInMode.error;
+				update.sort_order = Number(lastInMode.data?.sort_order ?? -1) + 1;
+			}
 		}
 		if (typeof body.value === "string") {
 			const checked = validateProviderKey(providerId, body.value);
@@ -188,7 +194,7 @@ accountSettingsByokRouter.post("/byok/:keyId/reorder", async (c) => {
 	const body: Record<string, any> = await c.req.json<Record<string, any>>().catch(() => ({}));
 	const direction = body.direction === "up" ? "up" : body.direction === "down" ? "down" : null;
 	if (!direction) return c.json({ error: "invalid_direction" }, 400, PRIVATE_NO_STORE_HEADERS);
-	const result = await loaded.context.client.rpc("reorder_v2_byok_key", {
+	const result = await loaded.context.userClient.rpc("reorder_v2_byok_key", {
 		p_workspace_id: loaded.context.workspaceId,
 		p_key_id: loaded.key.id,
 		p_direction: direction,

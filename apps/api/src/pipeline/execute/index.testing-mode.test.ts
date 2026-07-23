@@ -13,6 +13,13 @@ const maybeOpenOnRecentErrorsMock = vi.fn();
 const reportProbeResultMock = vi.fn();
 const resolveProviderExecutorMock = vi.fn();
 const loadPriceCardMock = vi.fn();
+const releaseBackgroundRuntimeMock = vi.fn();
+const ensureRuntimeForBackgroundMock = vi.fn(() => releaseBackgroundRuntimeMock);
+
+vi.mock("@/runtime/env", () => ({
+	dispatchBackground: (promise: Promise<unknown>) => void promise,
+	ensureRuntimeForBackground: () => ensureRuntimeForBackgroundMock(),
+}));
 
 vi.mock("./guards", () => ({
 	guardCandidates: (...args: any[]) => guardCandidatesMock(...args),
@@ -144,6 +151,8 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 				generation_ms: expect.any(Number),
 			}),
 		);
+		expect(ensureRuntimeForBackgroundMock).toHaveBeenCalledTimes(2);
+		expect(releaseBackgroundRuntimeMock).toHaveBeenCalledTimes(2);
 		expect(ctx.meta.latency_ms).toBeUndefined();
 		expect(ctx.meta.generation_ms).toEqual(expect.any(Number));
 		expect(ctx.providerAttempts).toEqual([

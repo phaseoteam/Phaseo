@@ -6,7 +6,7 @@
 import type { GatewayResponsePayload } from "@core/types";
 import type { ByokKeyMeta, PipelineContext, ProviderAttemptLog } from "../before/types";
 import { Timer } from "../telemetry/timer";
-import { dispatchBackground } from "@/runtime/env";
+import { dispatchBackground, ensureRuntimeForBackground } from "@/runtime/env";
 
 export type PipelineTiming = {
 	timer: Timer;
@@ -14,6 +14,24 @@ export type PipelineTiming = {
 		adapterMarked: boolean;
 	};
 };
+
+function dispatchProviderHealthBackground(task: () => Promise<unknown>): void {
+	let releaseRuntime: () => void = () => {};
+	try {
+		releaseRuntime = ensureRuntimeForBackground();
+	} catch (error) {
+		console.error("[gateway] failed to preserve runtime for provider health", {
+			error: error instanceof Error ? error.message : String(error),
+		});
+	}
+	dispatchBackground((async () => {
+		try {
+			await task();
+		} finally {
+			releaseRuntime();
+		}
+	})());
+}
 
 import { guardCandidates, guardPricingFound, guardAllFailed } from "./guards";
 import { err } from "./http";
@@ -627,7 +645,9 @@ async function attemptProviderWithIR(
 			timing.internal.adapterMarked = true;
 		}
 		// Health accounting is advisory and must not delay the upstream request.
-		dispatchBackground(onCallStart(ctx.endpoint, candidate.providerId, baseModel));
+		dispatchProviderHealthBackground(() =>
+			onCallStart(ctx.endpoint, candidate.providerId, baseModel),
+		);
 		t0 = performance.now();
 
 		delete (ctx.meta as Record<string, unknown>).latency_ms;
@@ -872,7 +892,7 @@ async function attemptProviderWithIR(
 			const healthImpact = classifyProviderHealthImpact({
 				upstreamStatus: executorResult.upstream.status,
 			});
-			dispatchBackground((async () => {
+			dispatchProviderHealthBackground(async () => {
 				await onCallEnd(ctx.endpoint, {
 					provider: candidate.providerId,
 					model: baseModel,
@@ -888,7 +908,7 @@ async function attemptProviderWithIR(
 				} else if (healthImpact === "failure") {
 					await maybeOpenOnRecentErrors(ctx.endpoint, candidate.providerId, baseModel);
 				}
-			})());
+			});
 		}
 		if (!executorResult.upstream.ok) {
 			const upstreamFailure = await readUpstreamFailurePayload(executorResult);
@@ -1077,7 +1097,7 @@ async function attemptProviderWithIR(
 			errorCode: typeof (err as any)?.code === "string" ? (err as any).code : null,
 			errorMessage: message,
 		});
-		dispatchBackground((async () => {
+		dispatchProviderHealthBackground(async () => {
 			await onCallEnd(ctx.endpoint, {
 				provider: candidate.providerId,
 				model: baseModel,
@@ -1091,7 +1111,7 @@ async function attemptProviderWithIR(
 			} else if (errorHealthImpact === "failure") {
 				await maybeOpenOnRecentErrors(ctx.endpoint, candidate.providerId, baseModel);
 			}
-		})());
+		});
 		return { ok: false };
 	}
 }
