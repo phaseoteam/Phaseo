@@ -71,7 +71,7 @@ xAI execution remains `blocked` in the Batch API provider-readiness configuratio
 ## Residual release requirements
 
 1. Rebase the branch onto current `origin/main` before committing.
-2. Verify that `supabase/migrations/20260723124000_batch_billing_security_invariants.sql` is applied before deploying the worker.
+2. Verify that `supabase/migrations/20260723124000_batch_billing_security_invariants.sql` and `20260723125000_claim_single_provider_event.sql` are applied before deploying the worker.
 3. Confirm production webhook encryption keys and OpenAI/Gemini provider webhook secrets are present after deployment.
 4. Run one controlled live batch through OpenAI, Gemini, Anthropic, and Mistral after the migration and worker deployment.
 5. Keep Groq and Together experimental and xAI blocked until live settlement evidence is captured.
