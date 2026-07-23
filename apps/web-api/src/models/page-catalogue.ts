@@ -5,6 +5,16 @@ type Row = Record<string, unknown>;
 
 type OptionCount = { value: string; count: number };
 
+type WeeklyMetricRow = {
+	model_slug: string;
+	popularity_tokens_week: number | null;
+	weekly_usage_metric: string;
+	weekly_usage_quantity: number;
+	weekly_usage_unit: string;
+	throughput_week: number | null;
+	latency_week: number | null;
+};
+
 export type ModelsPageFacets = {
 	statusCounts: { active: number; coming_soon: number; not_active: number };
 	endpointOptions: OptionCount[];
@@ -171,6 +181,45 @@ async function databasePageRows(env: Env, query: ModelsPageQuery = {}): Promise<
 	return rows;
 }
 
+async function weeklyMetrics(env: Env): Promise<WeeklyMetricRow[]> {
+	const rows: WeeklyMetricRow[] = [];
+	for (let offset = 0; ; offset += 1_000) {
+		const result = await getDataClient(env)
+			.rpc("get_v2_public_model_weekly_metrics")
+			.range(offset, offset + 999);
+		if (result.error) {
+			console.error("models_weekly_metrics_failed", {
+				code: result.error.code,
+				message: result.error.message,
+			});
+			return [];
+		}
+		rows.push(...((result.data ?? []) as WeeklyMetricRow[]));
+		if ((result.data?.length ?? 0) < 1_000) break;
+	}
+	return rows;
+}
+
+export function mergeModelWeeklyMetrics(rows: Row[], metrics: WeeklyMetricRow[]): Row[] {
+	const metricsByModel = new Map(
+		metrics.map((metric) => [String(metric.model_slug ?? "").trim(), metric]),
+	);
+	return rows.map((row) => {
+		const metric = metricsByModel.get(String(row.model_id ?? "").trim());
+		return metric
+			? {
+				...row,
+				popularity_tokens_week: metric.popularity_tokens_week,
+				weekly_usage_metric: metric.weekly_usage_metric,
+				weekly_usage_quantity: metric.weekly_usage_quantity,
+				weekly_usage_unit: metric.weekly_usage_unit,
+				throughput_week: metric.throughput_week,
+				latency_week: metric.latency_week,
+			}
+			: row;
+	});
+}
+
 async function baseRows(env: Env): Promise<Row[]> {
 	const rows: Row[] = [];
 	for (let offset = 0; ; offset += 1_000) {
@@ -205,8 +254,16 @@ function gatewayTiers(row: Row): string[] {
 }
 
 export async function fetchModelsPageCatalogue(env: Env, query: ModelsPageQuery = {}): Promise<{ models: Row[]; pricingComplete: boolean }> {
-	const databaseRows = await databasePageRows(env, query);
-	if (databaseRows) return { models: databaseRows, pricingComplete: true };
+	const [databaseRows, modelWeeklyMetrics] = await Promise.all([
+		databasePageRows(env, query),
+		weeklyMetrics(env),
+	]);
+	if (databaseRows) {
+		return {
+			models: mergeModelWeeklyMetrics(databaseRows, modelWeeklyMetrics),
+			pricingComplete: true,
+		};
+	}
 
 	const [gatewayRows, catalogueRows, regions] = await Promise.all([aggregatedRows(env), baseRows(env), providerRegions(env)]);
 	const baseById = new Map(catalogueRows.map((row) => [String(row.model_id), row]));
@@ -280,7 +337,7 @@ export async function fetchModelsPageCatalogue(env: Env, query: ModelsPageQuery 
 	});
 
 	return {
-		models: [...gatewayModels, ...catalogueOnly].sort((left, right) => Number(right.primary_timestamp ?? Number.NEGATIVE_INFINITY) - Number(left.primary_timestamp ?? Number.NEGATIVE_INFINITY) || String(left.organisation_name ?? "").localeCompare(String(right.organisation_name ?? "")) || String(left.name ?? "").localeCompare(String(right.name ?? ""))),
+		models: mergeModelWeeklyMetrics([...gatewayModels, ...catalogueOnly], modelWeeklyMetrics).sort((left, right) => Number(right.primary_timestamp ?? Number.NEGATIVE_INFINITY) - Number(left.primary_timestamp ?? Number.NEGATIVE_INFINITY) || String(left.organisation_name ?? "").localeCompare(String(right.organisation_name ?? "")) || String(left.name ?? "").localeCompare(String(right.name ?? ""))),
 		pricingComplete: false,
 	};
 }

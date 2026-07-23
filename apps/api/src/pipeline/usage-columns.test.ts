@@ -72,6 +72,7 @@ describe("buildGatewayRequestUsageColumns", () => {
 			endpoint: "video.generation",
 			usage: {
 				audio_seconds: 12,
+				output_video_seconds: 4,
 				video_pixel_seconds: 1280 * 720 * 4,
 			},
 			requestPayload: {
@@ -84,6 +85,7 @@ describe("buildGatewayRequestUsageColumns", () => {
 		expect(columns.usage_text_quad_tokens).toBeGreaterThan(0);
 		expect(columns.usage_image_megapixels).toBeCloseTo(2.097152);
 		expect(columns.usage_audio_seconds).toBe(12);
+		expect(columns.usage_video_seconds).toBe(4);
 		expect(columns.usage_video_pixel_seconds).toBe(1280 * 720 * 4);
 	});
 
@@ -138,6 +140,7 @@ describe("buildV2RequestUsageMeters", () => {
 				output_tokens: 20,
 				input_tokens_details: { cached_tokens: 40 },
 				output_image_count: 2,
+				output_video_seconds: 6.5,
 			},
 			requestPayload: { messages: [{ role: "user", content: "private prompt" }] },
 			gatewayResponse: { output_text: "private response" },
@@ -148,6 +151,7 @@ describe("buildV2RequestUsageMeters", () => {
 			expect.objectContaining({ meter_key: "output_tokens", quantity: 20, unit: "tokens" }),
 			expect.objectContaining({ meter_key: "cached_input_tokens", quantity: 40, unit: "tokens" }),
 			expect.objectContaining({ meter_key: "output_images", quantity: 2, unit: "images" }),
+			expect.objectContaining({ meter_key: "output_video_seconds", quantity: 6.5, unit: "seconds" }),
 		]));
 		expect(JSON.stringify(meters)).not.toContain("private prompt");
 		expect(JSON.stringify(meters)).not.toContain("private response");
