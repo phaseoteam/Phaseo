@@ -31,5 +31,61 @@
       "value": 8192
     }
   ],
-  "benchmarks": []
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": "embedding",
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 8192,
+    "input": 8192,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image/*",
+      "audio/*",
+      "video/*"
+    ],
+    "output": [
+      "embeddings"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "announcement",
+      "url": "https://ai.google.dev/gemini-api/docs/changelog",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "api_reference",
+      "url": "https://ai.google.dev/gemini-api/docs/embeddings",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

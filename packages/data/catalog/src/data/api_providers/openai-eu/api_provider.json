@@ -28,5 +28,20 @@
   "regional_pricing_notes": "OpenAI EU regional processing offer. Supported GPT-5.4 and GPT-5.5 family models use explicit EU pricing with a 10% uplift over the global endpoint.",
   "country_code": "US",
   "status": "Active",
-  "colour": "#333333"
+  "colour": "#333333",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://platform.openai.com/docs/overview",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

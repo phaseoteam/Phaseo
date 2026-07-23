@@ -30,7 +30,26 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-03-24T00:00:00Z"
+      "effective_from": "2026-03-24T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "768P"
+        },
+        {
+          "path": "video_params.seconds",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": 6
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_video",
@@ -57,7 +76,26 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-03-24T00:00:00Z"
+      "effective_from": "2026-03-24T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "768P"
+        },
+        {
+          "path": "video_params.seconds",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": 10
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_video",
@@ -84,7 +122,36 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-03-24T00:00:00Z"
+      "effective_from": "2026-03-24T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "1080P"
+        },
+        {
+          "path": "video_params.seconds",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": 6
+        }
+      ],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

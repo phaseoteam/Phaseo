@@ -40,5 +40,65 @@
       "value": "Qwen3.5-397B-A17B"
     }
   ],
-  "benchmarks": []
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image/*"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "weights",
+      "url": "https://huggingface.co/nex-agi/Nex-N2-Pro",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "github",
+      "url": "https://github.com/nex-agi",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "website",
+      "url": "https://nex-agi.com",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

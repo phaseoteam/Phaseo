@@ -107,6 +107,12 @@ function parseBoundedInt(value: string | null, fallback: number, maximum: number
 	return Math.max(0, Math.min(maximum, Math.floor(parsed)));
 }
 
+function parsePercentile(value: string | null, fallback = 50) {
+	const parsed = Number(value);
+	if (!Number.isFinite(parsed)) return fallback;
+	return Math.max(1, Math.min(99, Math.round(parsed)));
+}
+
 function modelTag(modelId: string) {
 	return `web-api-model-${encodeURIComponent(modelId).replace(/%/g, "")}`.slice(0, 128);
 }
@@ -289,15 +295,14 @@ type ModelsCatalogueVersion = "v1" | "v2";
 async function fetchProviderExecutionRegions(env: Env, providerIds: string[]) {
 	const regionsByProvider = new Map<string, string[]>();
 	if (providerIds.length === 0) return regionsByProvider;
-	const { data, error } = await getDataClient(env)
-		.from("data_api_providers")
-		.select("api_provider_id,default_execution_regions")
-		.in("api_provider_id", providerIds);
+	const { data, error } = await getDataClient(env).rpc("get_v2_provider_region_map", {
+		p_provider_slugs: providerIds,
+	});
 	if (error) throw error;
 	for (const row of (data ?? []) as Record<string, unknown>[]) {
-		const providerId = String(row.api_provider_id ?? "").trim();
+		const providerId = String(row.provider_slug ?? "").trim();
 		if (!providerId) continue;
-		const regions = toStringList(row.default_execution_regions)
+		const regions = toStringList(row.regions)
 			.map((region) => region.toLowerCase())
 			.filter(Boolean);
 		regionsByProvider.set(providerId, [...new Set(regions)]);
@@ -438,6 +443,48 @@ function notFound(c: { json: (value: unknown, status: number) => Response }) {
 	return c.json({ error: "model_not_found" }, 404);
 }
 
+function v2ModelStatus(value: unknown): string {
+	const status = String(value ?? "").trim().toLowerCase();
+	if (status === "active") return "Available";
+	if (status === "deprecated") return "Deprecated";
+	if (status === "retired") return "Retired";
+	if (status === "draft") return "Announced";
+	return "Withheld";
+}
+
+function v2ModelPageShape(row: Record<string, unknown>, aliases: string[], identity: Record<string, unknown> = {}) {
+	const inputTypes = Array.isArray(row.gateway_input_modalities) ? row.gateway_input_modalities : [];
+	const outputTypes = Array.isArray(row.gateway_output_modalities) ? row.gateway_output_modalities : [];
+	const contextLengths = Array.isArray(row.context_lengths) ? row.context_lengths : [];
+	const modelDetails = contextLengths.length > 0
+		? [{ detail_name: "input_context_length", detail_value: contextLengths[contextLengths.length - 1] }]
+		: [];
+	if (identity.license ?? row.license) modelDetails.push({ detail_name: "license", detail_value: identity.license ?? row.license });
+	return {
+		model_id: identity.model_slug ?? row.model_id,
+		name: identity.name ?? row.name,
+		organisation_id: identity.lab_slug ?? row.organisation_id,
+		description: row.description ?? null,
+		status: v2ModelStatus(identity.status ?? row.gateway_status),
+		previous_model_id: identity.previous_model_slug ?? null,
+		announcement_date: identity.announced_at ?? null,
+		release_date: identity.released_at ?? row.primary_date ?? null,
+		deprecation_date: identity.deprecated_at ?? null,
+		retirement_date: identity.retired_at ?? null,
+		license: identity.license ?? row.license ?? null,
+		license_url: identity.license_url ?? row.license_url ?? null,
+		input_types: inputTypes.join(","),
+		output_types: outputTypes.join(","),
+		family_id: identity.family_slug ?? null,
+		updated_at: identity.updated_at ?? null,
+		organisation: { name: identity.lab_name ?? row.organisation_name ?? row.organisation_id, country_code: identity.lab_country_code ?? "" },
+		model_links: [],
+		model_family: null,
+		model_details: modelDetails,
+		aliases,
+	};
+}
+
 export const publicModelsRouter = new Hono<{ Bindings: Env }>();
 
 /** Main models API. Deliberately excludes volatile benchmark/performance data. */
@@ -454,11 +501,13 @@ publicModelsRouter.get("/", async (c) => {
 		const limit = Math.max(1, parseBoundedInt(c.req.query("limit"), 100, 2_000));
 		const offset = parseBoundedInt(c.req.query("offset"), 0, 10_000);
 		const search = c.req.query("search")?.trim();
+		const region = c.req.query("region")?.trim().toLowerCase() || null;
+		const serviceTier = c.req.query("service_tier")?.trim().toLowerCase() || null;
 		if (c.req.query("shape") === "page" && catalogueVersion === "v1") {
 			const projection = parseBoundedInt(c.req.query("projection"), 4, 100);
 			const includeVirtual = projection >= 5;
 			const [catalogue, freeRouter] = await Promise.all([
-				fetchModelsPageCatalogue(c.env),
+				fetchModelsPageCatalogue(c.env, { region, serviceTier }),
 				includeVirtual ? fetchFreeRouterOverview(c.env) : Promise.resolve(null),
 			]);
 			const databaseModels = catalogue.models.filter((model) => model.model_id !== "phaseo/free");
@@ -621,6 +670,26 @@ publicModelsRouter.get("/:modelId", async (c) => {
 	const modelId = c.req.param("modelId");
 	try {
 		const client = getDataClient(c.env);
+		const v2Result = await client.rpc("get_v2_model_overview", {
+			p_model_slug: modelId,
+			p_region: c.req.query("region")?.trim().toLowerCase() || null,
+			p_service_tier: c.req.query("service_tier")?.trim().toLowerCase() || null,
+		});
+		if (v2Result.error && !/could not find|does not exist|PGRST202/i.test(v2Result.error.message ?? "")) throw v2Result.error;
+		const v2Overview = v2Result.data as Record<string, unknown> | null;
+		if (v2Overview?.model_id) {
+			const [identityResult, aliasesResult] = await Promise.all([
+				client.rpc("get_v2_model_identity", { p_model_slug: String(v2Overview.model_id) }),
+				client.rpc("get_v2_model_aliases", { p_model_slug: String(v2Overview.model_id) }),
+			]);
+			if (identityResult.error) throw identityResult.error;
+			if (aliasesResult.error) throw aliasesResult.error;
+			const aliases = (aliasesResult.data ?? [])
+				.map((row: Record<string, unknown>) => String(row.alias_slug ?? "").trim())
+				.filter(Boolean);
+			const identity = identityResult.data as Record<string, unknown> | null;
+			return withPublicCache(c.json({ model: v2ModelPageShape(v2Overview, aliases, identity ?? {}) }), sectionPolicy("overview", modelId));
+		}
 		const [modelResult, aliasResult] = await Promise.all([
 			client.from("data_models").select(MODEL_OVERVIEW_SELECT).eq("model_id", modelId).eq("hidden", false).maybeSingle(),
 			client.from("data_api_model_aliases").select("alias_slug").eq("api_model_id", modelId).eq("is_enabled", true).order("alias_slug", { ascending: true }),
@@ -741,6 +810,32 @@ publicModelsRouter.get("/:modelId/header", async (c) => {
 	}
 	try {
 		const client = getDataClient(c.env);
+		const v2Result = await client.rpc("get_v2_model_overview", {
+			p_model_slug: modelId,
+			p_region: c.req.query("region")?.trim().toLowerCase() || null,
+			p_service_tier: c.req.query("service_tier")?.trim().toLowerCase() || null,
+		});
+		if (v2Result.error && !/could not find|does not exist|PGRST202/i.test(v2Result.error.message ?? "")) throw v2Result.error;
+		const v2Overview = v2Result.data as Record<string, unknown> | null;
+		if (v2Overview?.model_id) {
+			const [identityResult, aliasesResult] = await Promise.all([
+				client.rpc("get_v2_model_identity", { p_model_slug: String(v2Overview.model_id) }),
+				client.rpc("get_v2_model_aliases", { p_model_slug: String(v2Overview.model_id) }),
+			]);
+			if (identityResult.error) throw identityResult.error;
+			if (aliasesResult.error) throw aliasesResult.error;
+			const model = v2ModelPageShape(v2Overview, (aliasesResult.data ?? []).map((row: Record<string, unknown>) => String(row.alias_slug ?? "").trim()).filter(Boolean), (identityResult.data as Record<string, unknown> | null) ?? {});
+			return withPublicCache(c.json({ header: {
+				model_id: model.model_id,
+				name: model.name,
+				organisation_id: model.organisation_id,
+				organisation: model.organisation,
+				aliases: model.aliases,
+				family_id: model.family_id ?? undefined,
+				status: model.status,
+				hidden: false,
+			} }), sectionPolicy("overview", modelId));
+		}
 		const { data: model, error } = await client.from("data_models")
 			.select("model_id,name,status,organisation_id,hidden,family_id,organisation:data_organisations!data_models_organisation_id_fkey(name,country_code)")
 			.eq("model_id", modelId).eq("hidden", false).maybeSingle();
@@ -784,6 +879,12 @@ publicModelsRouter.get("/:modelId/canonical", async (c) => {
 	if (!requestedModelId) return withPublicCache(c.json({ resolution: unresolved }), sectionPolicy("overview"));
 	try {
 		const client = getDataClient(c.env);
+		const v2Result = await client.rpc("get_v2_model_resolution", { p_requested_slug: requestedModelId });
+		const v2Resolution = v2Result.data as Record<string, unknown> | null;
+		if (!v2Result.error && v2Resolution && v2Resolution.canonicalModelId) {
+			return withPublicCache(c.json({ resolution: v2Resolution }), sectionPolicy("overview", requestedModelId));
+		}
+		if (v2Result.error && !/could not find|does not exist|PGRST202/i.test(v2Result.error.message ?? "")) throw v2Result.error;
 		const visibleInternal = async (ids: string[]) => {
 			if (ids.length === 0) return null;
 			const result = await client.from("data_models").select("model_id").in("model_id", ids).eq("hidden", false);
@@ -817,6 +918,20 @@ publicModelsRouter.get("/:modelId/availability", async (c) => {
 	const modelId = c.req.param("modelId");
 	try {
 		const client = getDataClient(c.env);
+		const v2Result = await client.rpc("get_v2_model_availability", {
+			p_model_slug: modelId,
+			p_region: c.req.query("region")?.trim().toLowerCase() || null,
+			p_service_tier: c.req.query("service_tier")?.trim().toLowerCase() || "standard",
+		});
+		const v2AvailabilityPayload = v2Result.data as Record<string, unknown> | Array<Record<string, unknown>> | null;
+		const v2Availability = Array.isArray(v2AvailabilityPayload) ? v2AvailabilityPayload[0] : v2AvailabilityPayload;
+		if (!v2Result.error && v2Availability && "is_gateway_active" in v2Availability) {
+			return withPublicCache(c.json({ availability: {
+				isGatewayActive: Boolean(v2Availability.is_gateway_active),
+				activeProviderCount: Number(v2Availability.active_provider_count ?? 0),
+			} }), sectionPolicy("catalogue", modelId));
+		}
+		if (v2Result.error && !/could not find|does not exist|PGRST202/i.test(v2Result.error.message ?? "")) throw v2Result.error;
 		const select = "provider_api_model_id,is_active_gateway,routing_status,effective_from,effective_to,data_api_provider_model_capabilities(status),data_api_providers(status,routing_status)";
 		const [byModel, byApi] = await Promise.all([
 			client.from("data_api_provider_models").select(select).eq("model_id", modelId),
@@ -863,17 +978,20 @@ publicModelsRouter.get("/:modelId/availability", async (c) => {
 publicModelsRouter.get("/:modelId/usage-daily", async (c) => {
 	const modelId = c.req.param("modelId");
 	try {
+		const days = Math.max(1, Math.min(365, parseBoundedInt(c.req.query("days"), 30, 365))); const now = new Date(); const defaultSince = new Date(now); defaultSince.setUTCDate(defaultSince.getUTCDate() - days);
+		const providerIds = [...new Set((c.req.query("provider_ids") ?? "").split(",").map((id) => id.trim()).filter(Boolean))]; const client = getDataClient(c.env);
+		const v2 = await client.rpc("get_v2_model_usage_daily", { p_model_slug: modelId, p_provider_ids: providerIds.length ? providerIds.sort() : null, p_since: c.req.query("since")?.slice(0, 10) || defaultSince.toISOString().slice(0, 10), p_until: c.req.query("until")?.slice(0, 10) || now.toISOString().slice(0, 10) });
+		if (!v2.error && Array.isArray(v2.data) && v2.data.length > 0) return withPublicCache(c.json({ rows: (v2.data as Array<Record<string, unknown>>).map(mapUsageDailyRow), source: "v2" }), sectionPolicy("usageDaily", modelId));
+		if (v2.error && !/could not find|does not exist|PGRST202/i.test(v2.error.message ?? "")) throw v2.error;
 		const aliases = new Set(await modelAliases(c.env, modelId));
 		for (let pass = 0; pass < 2; pass++) {
-			const ids = [...aliases]; const client = getDataClient(c.env);
+			const ids = [...aliases];
 			const [byModel, byApi, bySlug, aliasByApi, aliasBySlug] = await Promise.all([
 				client.from("data_api_provider_models").select("model_id,api_model_id,provider_model_slug").in("model_id", ids), client.from("data_api_provider_models").select("model_id,api_model_id,provider_model_slug").in("api_model_id", ids), client.from("data_api_provider_models").select("model_id,api_model_id,provider_model_slug").in("provider_model_slug", ids), client.from("data_api_model_aliases").select("api_model_id,alias_slug").in("api_model_id", ids), client.from("data_api_model_aliases").select("api_model_id,alias_slug").in("alias_slug", ids),
 			]);
 			for (const result of [byModel, byApi, bySlug, aliasByApi, aliasBySlug]) { if (result.error) continue; for (const item of result.data ?? []) { const row = item as Record<string, unknown>; for (const value of [row.model_id, row.api_model_id, row.provider_model_slug, row.alias_slug]) { const id = normalisedId(value); if (id) aliases.add(id); } } }
 		}
-		const days = Math.max(1, Math.min(365, parseBoundedInt(c.req.query("days"), 30, 365))); const now = new Date(); const defaultSince = new Date(now); defaultSince.setUTCDate(defaultSince.getUTCDate() - days);
-		const providerIds = [...new Set((c.req.query("provider_ids") ?? "").split(",").map((id) => id.trim()).filter(Boolean))];
-		const { data, error } = await getDataClient(c.env).rpc("get_model_usage_daily_breakdown", { p_model_ids: [...aliases].sort(), p_provider_ids: providerIds.length ? providerIds.sort() : null, p_since: c.req.query("since")?.slice(0, 10) || defaultSince.toISOString().slice(0, 10), p_until: c.req.query("until")?.slice(0, 10) || now.toISOString().slice(0, 10) });
+		const { data, error } = await client.rpc("get_model_usage_daily_breakdown", { p_model_ids: [...aliases].sort(), p_provider_ids: providerIds.length ? providerIds.sort() : null, p_since: c.req.query("since")?.slice(0, 10) || defaultSince.toISOString().slice(0, 10), p_until: c.req.query("until")?.slice(0, 10) || now.toISOString().slice(0, 10) });
 		if (error) throw error;
 		return withPublicCache(c.json({ rows: ((data ?? []) as Array<Record<string, unknown>>).map(mapUsageDailyRow) }), sectionPolicy("usageDaily", modelId));
 	} catch (error) { console.error("[web-api/models] usage daily failed", { modelId, error }); return c.json({ error: "model_usage_daily_unavailable" }, 503); }
@@ -881,12 +999,25 @@ publicModelsRouter.get("/:modelId/usage-daily", async (c) => {
 
 publicModelsRouter.get("/:modelId/provider-health", async (c) => {
 	const modelId = c.req.param("modelId");
+	const percentile = parsePercentile(c.req.query("percentile"));
 	const providerIds = [...new Set((c.req.query("provider_ids") ?? "").split(",").map((id) => id.trim()).filter(Boolean))].sort();
 	if (!providerIds.length) return withPublicCache(c.json({ rows: [] }), sectionPolicy("providerHealth", modelId));
 	try {
+		const windowDays = Math.max(1, Math.min(90, parseBoundedInt(c.req.query("window_days"), 3, 90)));
+		const v2 = await getDataClient(c.env).rpc("get_v2_model_provider_health_metrics", { p_model_slug: modelId, p_window_days: windowDays, p_percentile: percentile / 100 });
+		if (!v2.error && Array.isArray(v2.data) && v2.data.length > 0) {
+			const rows = (v2.data as Array<Record<string, unknown>>).filter((row) => providerIds.includes(String(row.provider_id ?? "")));
+			return withPublicCache(c.json({ rows, source: "v2" }), sectionPolicy("providerHealth", modelId));
+		}
+		if (v2.error && !/could not find|does not exist|PGRST202/i.test(v2.error.message ?? "")) throw v2.error;
 		const aliases = new Set([modelId, ...(c.req.query("model_aliases") ?? "").split(",").map((id) => id.trim()).filter(Boolean)]);
 		for (const alias of await modelAliases(c.env, modelId)) aliases.add(alias);
-		const { data, error } = await getDataClient(c.env).rpc("get_model_provider_health_metrics", { p_model_ids: [...aliases].sort(), p_provider_ids: providerIds, p_window_days: Math.max(1, Math.min(90, parseBoundedInt(c.req.query("window_days"), 3, 90))), p_bucket_hours: Math.max(1, Math.min(24 * 7, parseBoundedInt(c.req.query("bucket_hours"), 1, 24 * 7))) });
+		const legacyArgs = { p_model_ids: [...aliases].sort(), p_provider_ids: providerIds, p_window_days: Math.max(1, Math.min(90, parseBoundedInt(c.req.query("window_days"), 3, 90))), p_bucket_hours: Math.max(1, Math.min(24 * 7, parseBoundedInt(c.req.query("bucket_hours"), 1, 24 * 7))) };
+		let legacy = await getDataClient(c.env).rpc("get_model_provider_health_metrics", { ...legacyArgs, p_percentile: percentile / 100 });
+		if (legacy.error && /could not find|does not exist|PGRST202/i.test(legacy.error.message ?? "")) {
+			legacy = await getDataClient(c.env).rpc("get_model_provider_health_metrics", legacyArgs);
+		}
+		const { data, error } = legacy;
 		if (error) throw error;
 		return withPublicCache(c.json({ rows: data ?? [] }), sectionPolicy("providerHealth", modelId));
 	} catch (error) { console.error("[web-api/models] provider health failed", { modelId, error }); return c.json({ error: "model_provider_health_unavailable" }, 503); }
@@ -959,6 +1090,12 @@ publicModelsRouter.get("/:modelId/apps", async (c) => {
 	const modelId = c.req.param("modelId"); const limit = Math.max(1, Math.min(100, parseBoundedInt(c.req.query("limit"), 24, 100)));
 	try {
 		const client = getDataClient(c.env); const aliases = new Set([modelId]);
+		const v2 = await client.rpc("get_v2_model_apps", { p_model_slug: modelId, p_limit: limit });
+		if (!v2.error && Array.isArray(v2.data) && v2.data.length > 0) {
+			const apps = (v2.data as Array<Record<string, unknown>>).map((row) => { const appId = String(row.app_id ?? "").trim(); return appId ? { appId, title: String(row.title ?? appId).trim() || appId, imageUrl: typeof row.image_url === "string" && row.image_url.trim() ? row.image_url.trim() : null, url: typeof row.url === "string" && row.url.trim() ? row.url.trim() : null, lastSeen: typeof row.last_seen === "string" && row.last_seen.trim() ? row.last_seen : null, totalRequests: Math.max(0, Math.round(Number(row.requests ?? 0) || 0)), successfulRequests: Math.max(0, Math.round(Number(row.success_requests ?? 0) || 0)), totalTokens: Math.max(0, Math.round(Number(row.total_tokens ?? 0) || 0)) } : null; }).filter((row): row is NonNullable<typeof row> => Boolean(row));
+			return withPublicCache(c.json({ apps, source: "v2" }), sectionPolicy("apps", modelId));
+		}
+		if (v2.error && !/does not exist|could not find|relation|PGRST202/i.test(v2.error.message ?? "")) throw v2.error;
 		const [byModel, byApi] = await Promise.all([
 			client.from("data_api_provider_models").select("model_id,api_model_id").eq("model_id", modelId),
 			client.from("data_api_provider_models").select("model_id,api_model_id").eq("api_model_id", modelId),
@@ -989,7 +1126,20 @@ publicModelsRouter.get("/:modelId/apps", async (c) => {
 publicModelsRouter.get("/:modelId/benchmarks", async (c) => {
 	const modelId = c.req.param("modelId");
 	try {
-		const { data, error } = await getDataClient(c.env)
+		const client = getDataClient(c.env);
+		const v2 = await client.rpc("get_v2_model_benchmarks", { p_model_slug: modelId });
+		if (!v2.error && Array.isArray(v2.data) && v2.data.length > 0) {
+			const results = (v2.data as Array<Record<string, unknown>>).map((row) => ({
+				id: row.result_id, benchmark_id: row.benchmark_id, score: row.score, score_numeric: row.score_numeric,
+				is_self_reported: row.is_self_reported, other_info: row.other_info, source_link: row.source_link,
+				created_at: row.created_at, updated_at: row.updated_at, rank: row.result_rank, occur_idx: row.occur_idx,
+				variant: row.variant, result_key: row.result_key,
+				benchmark: { id: row.benchmark_id, name: row.benchmark_name, category: row.category, link: row.link, total_models: row.total_models, ascending_order: row.ascending_order, type: row.benchmark_type },
+			}));
+			return withPublicCache(c.json({ modelId, results, highlights: benchmarkHighlights(results), source: "v2" }), sectionPolicy("benchmarks", modelId));
+		}
+		if (v2.error && !/could not find|does not exist|PGRST202/i.test(v2.error.message ?? "")) throw v2.error;
+		const { data, error } = await client
 			.from("data_models")
 			.select(`model_id,benchmark_results:data_benchmark_results(id,benchmark_id,score,is_self_reported,other_info,source_link,created_at,updated_at,rank,benchmark:data_benchmarks(id,name,category,link,total_models,ascending_order,type))`)
 			.eq("model_id", modelId)
@@ -1097,6 +1247,17 @@ publicModelsRouter.get("/:modelId/subscription-plans", async (c) => {
 	const modelId = c.req.param("modelId");
 	try {
 		const client = getDataClient(c.env);
+		const v2 = await client.rpc("get_v2_model_subscription_plans", { p_model_slug: modelId });
+		if (!v2.error && Array.isArray(v2.data) && v2.data.length > 0) {
+			const grouped = new Map<string, Record<string, unknown>>();
+			for (const row of v2.data as Array<Record<string, unknown>>) {
+				const planId = String(row.plan_id ?? "").trim(); if (!planId) continue;
+				const plan = grouped.get(planId) ?? { plan_id: planId, plan_uuid: row.plan_uuid, name: row.name, organisation_id: row.lab_slug, description: row.description, link: row.link, other_info: row.other_info, created_at: row.created_at, updated_at: row.updated_at, organisation: row.lab_slug ? { organisation_id: row.lab_slug, name: row.lab_slug } : null, prices: [], model_info: { model_info: row.model_info, rate_limit: row.rate_limit, other_info: row.model_other_info } };
+				(plan.prices as Array<Record<string, unknown>>).push({ price: row.price, currency: row.currency, frequency: row.frequency }); grouped.set(planId, plan);
+			}
+			return withPublicCache(c.json({ subscription_plans: Array.from(grouped.values()), source: "v2" }), sectionPolicy("subscriptions", modelId));
+		}
+		if (v2.error && !/could not find|does not exist|PGRST202/i.test(v2.error.message ?? "")) throw v2.error;
 		const { data: model, error: modelError } = await client.from("data_models").select("model_id").eq("model_id", modelId).eq("hidden", false).maybeSingle();
 		if (modelError) throw modelError;
 		if (!model) return notFound(c);
@@ -1134,6 +1295,23 @@ publicModelsRouter.get("/:modelId/pricing", async (c) => {
 	const modelId = c.req.param("modelId");
 	try {
 		const client = getDataClient(c.env);
+		const v2Pricing = await client.rpc("get_v2_model_pricing", {
+			p_model_slug: modelId,
+			p_region: c.req.query("region")?.trim().toLowerCase() || null,
+			p_service_tier: c.req.query("service_tier")?.trim().toLowerCase() || null,
+		});
+		if (!v2Pricing.error && Array.isArray(v2Pricing.data)) {
+			const providers = v2Pricing.data as Array<Record<string, unknown>>;
+			if (c.req.query("shape") === "source") {
+				return withPublicCache(c.json({
+					modelId,
+					provider_rows: providers.map((row) => row.provider).filter(Boolean),
+					pricing_rules: providers.flatMap((row) => Array.isArray(row.pricing_rules) ? row.pricing_rules : []),
+				}), sectionPolicy("pricing", modelId));
+			}
+			return withPublicCache(c.json({ modelId, providers }), sectionPolicy("pricing", modelId));
+		}
+		if (v2Pricing.error && !/could not find|does not exist|PGRST202/i.test(v2Pricing.error.message ?? "")) throw v2Pricing.error;
 		const { data: model, error: modelError } = await client.from("data_models").select("model_id").eq("model_id", modelId).eq("hidden", false).maybeSingle();
 		if (modelError) throw modelError;
 		if (!model) return notFound(c);
@@ -1148,15 +1326,59 @@ publicModelsRouter.get("/:modelId/pricing", async (c) => {
 	}
 });
 
+/** Available Cloudflare execution colos for a model, used by the performance filter. */
+publicModelsRouter.get("/:modelId/performance/colos", async (c) => {
+	const modelId = c.req.param("modelId");
+	try {
+		const client = getDataClient(c.env);
+		const result = await client.rpc("get_v2_model_performance_colos", { p_model_slug: modelId });
+		if (result.error && !/could not find|does not exist|PGRST202/i.test(result.error.message ?? "")) throw result.error;
+		const colos = Array.isArray(result.data)
+			? (result.data as Array<Record<string, unknown>>).map((row) => ({
+				colo: String(row.cloudflare_colo ?? "").trim().toUpperCase(),
+				requests: Number(row.request_count ?? 0),
+			})).filter((row) => /^[A-Z0-9]{3}$/.test(row.colo))
+			: [];
+		return withPublicCache(c.json({ modelId, colos }), sectionPolicy("performance", modelId));
+	} catch (error) {
+		console.error("[web-api/models] performance colos failed", { modelId, error });
+		return c.json({ error: "performance_colos_unavailable" }, 503);
+	}
+});
+
 /** 15-minute cache for the live-ish performance rollup; raw RPC payload preserves the source fidelity. */
 publicModelsRouter.get("/:modelId/performance", async (c) => {
 	const modelId = c.req.param("modelId");
+	const cloudflareColo = c.req.query("colo")?.trim().toUpperCase() || null;
+	const percentile = parsePercentile(c.req.query("percentile"));
 	try {
-		const { data, error } = await getDataClient(c.env).rpc("get_model_performance_overview", {
-			p_model_id: modelId,
-		});
-		if (error) throw error;
-		const performance = data?.[0] ?? null;
+		const client = getDataClient(c.env);
+		const [v2, health] = await Promise.all([
+			client.rpc("get_v2_model_performance_overview", { p_model_slug: modelId, p_cloudflare_colo: cloudflareColo, p_percentile: percentile / 100 }),
+			client.rpc("get_v2_model_provider_health_metrics", { p_model_slug: modelId, p_window_days: 3, p_percentile: percentile / 100 }),
+		]);
+		let performance: Record<string, any> | null = null;
+		if (!v2.error && v2.data && !Array.isArray(v2.data) && typeof v2.data === "object") {
+			performance = v2.data as Record<string, any>;
+		} else if (v2.error && !/could not find|does not exist|PGRST202/i.test(v2.error.message ?? "")) {
+			throw v2.error;
+		} else {
+			const { data, error } = await client.rpc("get_model_performance_overview", {
+				p_model_id: modelId,
+			});
+			if (error) throw error;
+			performance = data?.[0] ?? null;
+		}
+		if (!cloudflareColo && !health.error && Array.isArray(health.data) && health.data.length > 0 && performance) {
+			performance = {
+				...performance,
+				provider_uptime_24h: (health.data as Array<Record<string, unknown>>).map((row) => ({
+					provider: row.provider_id, provider_name: row.provider_name ?? row.provider_id, requests: row.health_requests ?? row.requests,
+					uptime_pct: row.uptime_pct, avg_latency_ms: row.percentile_latency_ms ?? row.avg_latency_ms, avg_generation_ms: null, avg_throughput: row.percentile_throughput ?? row.avg_throughput,
+					uptime_buckets: row.buckets ?? [],
+				})),
+			};
+		}
 		if (!performance) return withPublicCache(c.json({ modelId, performance: null, metrics: null, activity: null }), sectionPolicy("performance", modelId));
 		const number = (value: unknown) => { const parsed = Number(value); return value == null || !Number.isFinite(parsed) ? null : parsed; };
 		const summary = (value: Record<string, unknown> | null | undefined) => ({ avgThroughput: number(value?.avg_throughput), avgLatencyMs: number(value?.avg_latency_ms), avgGenerationMs: number(value?.avg_generation_ms), uptimePct: number(value?.uptime_pct), totalRequests: Number(value?.total_requests ?? 0), successfulRequests: Number(value?.successful_requests ?? 0) });
@@ -1165,7 +1387,9 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 		const providerCount = providerPerformance.filter((provider: Record<string, unknown>) => Number(provider.requests ?? 0) > 0 && provider.uptimePct != null).length;
 		const successSeries = (performance.hourly_24h ?? []).map((value: Record<string, unknown>) => ({ bucket: value.bucket ?? "", overallSuccessPct: number(value.success_pct), worstProviderSuccessPct: providerCount > 1 ? number(value.worst_provider_success_pct) : null, providerCount, requests: Number(value.requests ?? 0) }));
 		const timeOfDay = (performance.time_of_day_5d ?? []).map((value: Record<string, unknown>) => ({ hour: Number(value.hour ?? 0), avgThroughput: number(value.avg_throughput), avgLatencyMs: number(value.avg_latency_ms), avgGenerationMs: number(value.avg_generation_ms), sampleCount: Number(value.sample_count ?? 0) }));
-		const metrics = { summary: summary(performance.last_24h), prevSummary: summary(performance.prev_24h), hourly, successSeries, timeOfDay, providerPerformance, providerDaily7d: [], dataRange: hourly.length ? { start: hourly[0]?.bucket ?? "", end: hourly[hourly.length - 1]?.bucket ?? "" } : { start: "", end: "" }, cumulativeTokens: number(performance.cumulative_tokens?.total_tokens), releaseDate: performance.cumulative_tokens?.release_date ?? null };
+		const providerDaily7d = (performance.provider_daily_7d ?? []).map((value: Record<string, unknown>) => ({ day: value.day ?? "", provider: value.provider ?? "", providerName: value.provider_name ?? value.provider ?? "", providerColor: null, avgThroughput: number(value.avg_throughput), avgLatencyMs: number(value.avg_latency_ms), avgGenerationMs: number(value.avg_generation_ms), requests: Number(value.requests ?? 0) }));
+		const qualitySeries = (performance.quality_series ?? []).map((value: Record<string, unknown>) => ({ bucket: value.bucket ?? "", toolCallSuccessPct: number(value.tool_call_success_pct), structuredOutputSuccessPct: number(value.structured_output_success_pct), cacheHitRatePct: number(value.cache_hit_rate_pct), requests: Number(value.requests ?? 0) }));
+		const metrics = { cloudflareColo: performance.cloudflare_colo ?? cloudflareColo, percentile, summary: summary(performance.last_24h), prevSummary: summary(performance.prev_24h), hourly, successSeries, timeOfDay, providerPerformance, providerDaily7d, qualitySeries, dataRange: hourly.length ? { start: hourly[0]?.bucket ?? "", end: hourly[hourly.length - 1]?.bucket ?? "" } : { start: "", end: "" }, cumulativeTokens: number(performance.cumulative_tokens?.total_tokens), releaseDate: performance.cumulative_tokens?.release_date ?? null };
 		const activity = { summary: metrics.summary, providerPerformance, cumulativeTokens: metrics.cumulativeTokens };
 		return withPublicCache(c.json({ modelId, performance, metrics, activity }), sectionPolicy("performance", modelId));
 	} catch (error) {

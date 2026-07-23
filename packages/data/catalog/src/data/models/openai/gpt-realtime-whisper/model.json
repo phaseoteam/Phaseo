@@ -47,5 +47,59 @@
       "value": "Phaseo inferred the date from first public docs availability on 2026-05-07 because the OpenAI model page does not expose an explicit launch date."
     }
   ],
-  "benchmarks": []
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": "2024-09-30T00:00:00",
+  "limits": {
+    "context": 16000,
+    "input": 16000,
+    "output": 2000
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "audio/*"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "api_reference",
+      "url": "https://developers.openai.com/api/docs/models/gpt-realtime-whisper",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "guide",
+      "url": "https://developers.openai.com/api/docs/guides/realtime-transcription",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

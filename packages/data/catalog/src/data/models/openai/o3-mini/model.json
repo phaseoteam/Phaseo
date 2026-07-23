@@ -435,5 +435,69 @@
       "source_link": "https://github.com/lechmazur/elimination_game",
       "rank": 24
     }
-  ]
+  ],
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": "2023-09-30T00:00:00",
+  "limits": {
+    "context": 200000,
+    "input": 200000,
+    "output": 100000
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "api_reference",
+      "url": "https://platform.openai.com/docs/models",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "paper",
+      "url": "https://cdn.openai.com/o3-mini-system-card.pdf",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "announcement",
+      "url": "https://openai.com/index/openai-o3-mini/",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "repository",
+      "url": "https://github.com/openai",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

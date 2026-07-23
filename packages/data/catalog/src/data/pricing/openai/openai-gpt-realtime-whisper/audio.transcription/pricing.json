@@ -15,7 +15,21 @@
       "note": "Aligned to OpenAI GPT Realtime Whisper pricing at $0.017/minute using 40 audio tokens/sec.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-07T00:00:00Z"
+      "effective_from": "2026-05-07T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

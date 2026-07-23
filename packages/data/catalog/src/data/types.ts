@@ -63,6 +63,7 @@ export interface APIProvider {
     provider_family_id?: string | null;
     offer_label?: string | null;
     offer_scope?: "global" | "regional" | "specialized" | null;
+    data_policy_variant?: "standard" | "zdr" | null;
     residency_mode?:
         | "unknown"
         | "provider_managed"
@@ -123,6 +124,36 @@ export interface APIProvider {
     user_identifier_notes?: string | null;
     privacy_policy_url?: string | null;
     terms_of_service_url?: string | null;
+    gateway_kind?: "first_party" | "gateway" | "aggregator" | "self_hosted" | null;
+    routable?: boolean | null;
+    routing_enabled?: boolean | null;
+    sdk_package?: string | null;
+    api_base_url?: string | null;
+    docs_url?: string | null;
+    auth_env?: string[] | null;
+    api_formats?: string[];
+    service_tiers?: string[];
+    sources?: SourceMetadata[];
+    verification?: VerificationMetadata;
+    stream_cancellation_support?: "supported" | "unsupported" | "unknown" | null;
+    stream_cancellation_stops_provider_billing?: boolean | null;
+    stream_cancellation_usage_recovery?: "authoritative" | "unknown" | null;
+    stream_cancellation_evidence_kind?: "provider" | "aggregator" | "none" | null;
+    stream_cancellation_source_url?: string | null;
+    stream_cancellation_verified_at?: string | null;
+}
+
+export interface SourceMetadata {
+    kind?: string;
+    url?: string | null;
+    accessed_at?: string | null;
+    notes?: string | null;
+}
+
+export interface VerificationMetadata {
+    status: "unverified" | "partial" | "verified";
+    checked_at?: string | null;
+    notes?: string | null;
 }
 
 export interface Price {
@@ -162,11 +193,11 @@ export interface Model {
     input_context_length: number | null;
     output_context_length: number | null;
     license: string | null;
+    license_url?: string | null;
     multimodal: boolean | null;
     input_types: string[] | string | null; // Changed to allow string since your JSON uses "image,text"
     output_types: string[] | string | null; // Same as above
     web_access: boolean | null;
-    reasoning: boolean | null;
     fine_tunable: boolean | null;
     knowledge_cutoff: string | null;
     api_reference_link: string | null;
@@ -182,6 +213,24 @@ export interface Model {
         tone: "info" | "warning" | "critical";
         markdown: string;
     } | null;
+    model_type?: "inference" | "embedding" | "rerank" | "moderation" | "image" | "video" | "audio" | "tts" | "stt" | null;
+    last_updated?: string | null;
+    removal_date?: string | null;
+    replacement_model_id?: string | null;
+    limits?: { context: number | null; input: number | null; output: number | null } | null;
+    modalities?: { input: string[] | null; output: string[] | null } | null;
+    reasoning?: { supported: boolean | null; options: string[] } | null;
+    capabilities?: {
+        attachment: boolean | null;
+        tool_call: boolean | null;
+        structured_output: boolean | null;
+        temperature: boolean | null;
+        streaming: boolean | null;
+        web_search: boolean | null;
+    } | null;
+    open_weights?: boolean | null;
+    sources?: SourceMetadata[];
+    verification?: VerificationMetadata;
 }
 
 export interface ExtendedModel {
@@ -198,6 +247,7 @@ export interface ExtendedModel {
     input_context_length: number | null;
     output_context_length: number | null;
     license: string | null;
+    license_url?: string | null;
     multimodal: boolean | null;
     input_types: string[] | string | null;
     output_types: string[] | string | null;

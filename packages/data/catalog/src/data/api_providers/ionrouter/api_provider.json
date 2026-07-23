@@ -10,5 +10,20 @@
   "terms_of_service_url": "https://ionrouter.io/terms-of-service.pdf",
   "prompt_training_policy": "may_train",
   "prompt_training_notes": "IonRouter stores prompts and generated content for limited periods and says request logs and generated content may be reviewed to improve model performance, content safety systems, and the service.",
-  "prompt_training_source_url": "https://ionrouter.io/privacy-policy.pdf"
+  "prompt_training_source_url": "https://ionrouter.io/privacy-policy.pdf",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://ionrouter.io/docs",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

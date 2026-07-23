@@ -15,7 +15,11 @@
       "note": "Pending DeepSeek peak pricing announced 2026-06-29: UTC windows 01:00-04:00 and 06:00-10:00 will price this meter at $0.28 per 1M tokens once the provider effective date is known.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-24T00:00:00Z"
+      "effective_from": "2026-04-24T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -27,7 +31,11 @@
       "note": "Pending DeepSeek peak pricing announced 2026-06-29: UTC windows 01:00-04:00 and 06:00-10:00 will price this meter at $0.0056 per 1M tokens once the provider effective date is known.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-24T00:00:00Z"
+      "effective_from": "2026-04-24T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -39,7 +47,21 @@
       "note": "Pending DeepSeek peak pricing announced 2026-06-29: UTC windows 01:00-04:00 and 06:00-10:00 will price this meter at $0.56 per 1M tokens once the provider effective date is known.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-24T00:00:00Z"
+      "effective_from": "2026-04-24T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

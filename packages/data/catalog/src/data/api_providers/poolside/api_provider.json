@@ -14,5 +14,20 @@
   "data_policy_tier": "logs",
   "data_policy_confidence": "maybe",
   "data_policy_contract_mode": "none",
-  "data_policy_contract_notes": "The public Terms establish an opt-out mechanism but do not provide a general zero-retention guarantee. This route is classified as logs based on the opted-out account configuration; verify the account or upstream platform setting if it changes. Poolside may still use content for safety review or when feedback is provided."
+  "data_policy_contract_notes": "The public Terms establish an opt-out mechanism but do not provide a general zero-retention guarantee. This route is classified as logs based on the opted-out account configuration; verify the account or upstream platform setting if it changes. Poolside may still use content for safety review or when feedback is provided.",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://poolside.ai/models",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

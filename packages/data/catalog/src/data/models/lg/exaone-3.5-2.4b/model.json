@@ -50,5 +50,69 @@
       "value": 2410000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [],
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 32768,
+    "input": 32768,
+    "output": 32768
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/pdf/2412.04862",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "announcement",
+      "url": "https://www.lgresearch.ai/blog/view?seq=507",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "repository",
+      "url": "https://github.com/LG-AI-EXAONE/EXAONE-3.5",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "weights",
+      "url": "https://huggingface.co/LGAI-EXAONE/EXAONE-3.5-2.4B-Instruct",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

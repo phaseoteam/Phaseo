@@ -15,7 +15,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-09T00:00:00Z"
+      "effective_from": "2026-06-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -27,7 +31,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-09T00:00:00Z"
+      "effective_from": "2026-06-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -39,7 +47,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-09T00:00:00Z"
+      "effective_from": "2026-06-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "cached_write_text_tokens",
@@ -59,7 +71,19 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-06-09T00:00:00Z"
+      "effective_from": "2026-06-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "cache_ttl",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "5m"
+        }
+      ],
+      "source": null
     },
     {
       "meter": "cached_write_text_tokens",
@@ -79,7 +103,19 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-06-09T00:00:00Z"
+      "effective_from": "2026-06-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "cache_ttl",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "1h"
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_text_tokens",
@@ -91,7 +127,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-09T00:00:00Z"
+      "effective_from": "2026-06-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -103,7 +143,22 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-09T00:00:00Z"
+      "effective_from": "2026-06-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard",
+    "batch"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

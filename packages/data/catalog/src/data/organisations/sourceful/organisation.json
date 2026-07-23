@@ -21,5 +21,13 @@
       "platform": "instagram",
       "url": "https://www.instagram.com/sourceful/"
     }
-  ]
+  ],
+  "status": "active",
+  "routable": null,
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

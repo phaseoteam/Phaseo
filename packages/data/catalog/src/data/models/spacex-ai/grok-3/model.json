@@ -141,5 +141,64 @@
       "source_link": "https://x.ai/blog/grok-3",
       "rank": 33
     }
-  ]
+  ],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": "2024-11-17T00:00:00",
+  "limits": {
+    "context": 131072,
+    "input": 131072,
+    "output": 8000
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "api_reference",
+      "url": "https://x.ai/api",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "announcement",
+      "url": "https://x.com/xai/status/1913308977477353582",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "deprecation",
+      "url": "https://docs.x.ai/developers/migration/may-15-retirement",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

@@ -15,7 +15,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-06T00:00:00Z"
+      "effective_from": "2026-05-06T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_image",
@@ -35,7 +39,19 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-05-06T00:00:00Z"
+      "effective_from": "2026-05-06T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "image_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "1k"
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_image",
@@ -55,7 +71,29 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-05-06T00:00:00Z"
+      "effective_from": "2026-05-06T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "image_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "2k"
+        }
+      ],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

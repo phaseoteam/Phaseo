@@ -118,5 +118,66 @@
       "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-ultra-253b-v1/modelcard",
       "rank": 6
     }
-  ]
+  ],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": "2023-12-01T00:00:00",
+  "limits": {
+    "context": 131072,
+    "input": 131072,
+    "output": 131072
+  },
+  "modalities": {
+    "input": null,
+    "output": null
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "playground",
+      "url": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-ultra-253b-v1",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2502.00203",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "announcement",
+      "url": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-ultra-253b-v1/modelcard",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "weights",
+      "url": "https://huggingface.co/nvidia/Llama-3_1-Nemotron-Ultra-253B-v1",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

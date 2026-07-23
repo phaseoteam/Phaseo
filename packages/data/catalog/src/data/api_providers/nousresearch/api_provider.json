@@ -10,5 +10,20 @@
   "terms_of_service_url": "https://portal.nousresearch.com/terms",
   "prompt_training_policy": "may_train",
   "prompt_training_notes": "Nous Research's portal privacy policy says conversations hosted on its website may be used to train and fine-tune models and support research and development.",
-  "prompt_training_source_url": "https://portal.nousresearch.com/privacy"
+  "prompt_training_source_url": "https://portal.nousresearch.com/privacy",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": null,
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

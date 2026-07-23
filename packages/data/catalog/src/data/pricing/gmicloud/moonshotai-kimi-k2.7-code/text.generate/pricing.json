@@ -15,7 +15,11 @@
       "note": "GMI Cloud model detail page reports Input $0.95 per 1M tokens for moonshotai/kimi-k2.7-code; observed 2026-06-16.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-12T00:00:00Z"
+      "effective_from": "2026-06-12T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -27,7 +31,11 @@
       "note": "GMI Cloud model detail page reports Cache Read $0.19 per 1M tokens for moonshotai/kimi-k2.7-code; observed 2026-06-16.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-12T00:00:00Z"
+      "effective_from": "2026-06-12T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -39,7 +47,21 @@
       "note": "GMI Cloud model detail page reports Output $4.00 per 1M tokens for moonshotai/kimi-k2.7-code; observed 2026-06-16.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-12T00:00:00Z"
+      "effective_from": "2026-06-12T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

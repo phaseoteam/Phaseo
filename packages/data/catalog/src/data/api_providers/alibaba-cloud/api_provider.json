@@ -10,5 +10,20 @@
   "terms_of_service_url": "https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-terms-of-use-alibaba-cloud-international-website-terms-of-use",
   "prompt_training_policy": "no_train",
   "prompt_training_notes": "Alibaba Cloud Model Studio says it will never use your data for model training. For direct API calls, it says conversation data is not saved and only desensitized call status is recorded.",
-  "prompt_training_source_url": "https://www.alibabacloud.com/help/en/model-studio/compliance-and-privacy"
+  "prompt_training_source_url": "https://www.alibabacloud.com/help/en/model-studio/compliance-and-privacy",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://www.alibabacloud.com/help/en/model-studio/models",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

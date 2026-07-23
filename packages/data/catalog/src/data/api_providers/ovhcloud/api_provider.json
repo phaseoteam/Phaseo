@@ -20,5 +20,20 @@
   "colour": "#123F6D",
   "privacy_policy_url": "https://www.ovhcloud.com/en/personal-data-protection/",
   "terms_of_service_url": "https://www.ovhcloud.com/en/terms-and-conditions/contracts/",
-  "prompt_training_policy": "unknown"
+  "prompt_training_policy": "unknown",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://www.ovhcloud.com/en/public-cloud/ai-endpoints/catalog/",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

@@ -15,7 +15,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-30T00:00:00Z"
+      "effective_from": "2026-06-30T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "input_image_tokens",
@@ -27,7 +31,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-30T00:00:00Z"
+      "effective_from": "2026-06-30T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "input_video_tokens",
@@ -39,7 +47,11 @@
       "note": "Videos are sampled at 1 frame per second, and each video frame accounts for 70 tokens.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-30T00:00:00Z"
+      "effective_from": "2026-06-30T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -51,7 +63,11 @@
       "note": "Includes response and reasoning tokens.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-30T00:00:00Z"
+      "effective_from": "2026-06-30T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_image_tokens",
@@ -63,7 +79,11 @@
       "note": "Equivalent to $0.0336 per 1K output image using 1120 output image tokens.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-30T00:00:00Z"
+      "effective_from": "2026-06-30T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "input_text_tokens",
@@ -75,7 +95,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-30T00:00:00Z"
+      "effective_from": "2026-06-30T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "input_image_tokens",
@@ -87,7 +111,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-30T00:00:00Z"
+      "effective_from": "2026-06-30T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "input_video_tokens",
@@ -99,7 +127,11 @@
       "note": "Videos are sampled at 1 frame per second, and each video frame accounts for 70 tokens.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-30T00:00:00Z"
+      "effective_from": "2026-06-30T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -111,7 +143,11 @@
       "note": "Includes response and reasoning tokens.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-30T00:00:00Z"
+      "effective_from": "2026-06-30T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_image_tokens",
@@ -123,7 +159,22 @@
       "note": "Equivalent to $0.0168 per 1K output image using 1120 output image tokens after the Batch API discount.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-30T00:00:00Z"
+      "effective_from": "2026-06-30T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard",
+    "batch"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

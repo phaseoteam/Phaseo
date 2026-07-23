@@ -16,7 +16,11 @@
       "match": [],
       "priority": 100,
       "effective_from": "2025-12-16T00:00:00Z",
-      "effective_to": "2026-01-24T16:00:00Z"
+      "effective_to": "2026-01-24T16:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -29,7 +33,21 @@
       "match": [],
       "priority": 100,
       "effective_from": "2025-12-16T00:00:00Z",
-      "effective_to": "2026-01-24T16:00:00Z"
+      "effective_to": "2026-01-24T16:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "free"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

@@ -59,5 +59,54 @@
       "source_link": "https://openai.com/index/gpt-5-1-codex-max/",
       "rank": 33
     }
-  ]
+  ],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": "audio",
+  "knowledge_cutoff": "2024-09-30T00:00:00",
+  "limits": {
+    "context": 128000,
+    "input": 128000,
+    "output": 16384
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "audio/*"
+    ],
+    "output": [
+      "text",
+      "audio/*"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "api_reference",
+      "url": "https://developers.openai.com/api/docs/models/gpt-audio-1.5",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

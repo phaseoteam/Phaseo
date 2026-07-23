@@ -63,7 +63,7 @@ describe("public model routes", () => {
 				model_id: "openai/gpt-test", name: "GPT Test", organisation_id: "openai", description: "Compact model",
 				release_date: "2026-01-02", input_types: ["text"], output_types: ["text"], organisation: { name: "OpenAI", colour: "#fff" },
 			}]), { status: 200 });
-			if (url.includes("data_api_providers")) return new Response(JSON.stringify([{ api_provider_id: "openai", default_execution_regions: ["US"] }]), { status: 200 });
+			if (url.includes("get_v2_provider_region_map")) return new Response(JSON.stringify([{ provider_slug: "openai", regions: ["US"] }]), { status: 200 });
 			return new Response(JSON.stringify([]), { status: 200 });
 		});
 		vi.stubGlobal("fetch", fetchMock);
@@ -92,7 +92,7 @@ describe("public model routes", () => {
 			if (url.includes("data_models")) return new Response(JSON.stringify([{
 				model_id: "openai/gpt-test", name: "GPT Test", organisation_id: "openai", input_types: ["text"], output_types: ["text"],
 			}]), { status: 200 });
-			if (url.includes("data_api_providers")) return new Response(JSON.stringify([]), { status: 200 });
+			if (url.includes("get_v2_provider_region_map")) return new Response(JSON.stringify([]), { status: 200 });
 			return new Response(JSON.stringify([]), { status: 200 });
 		});
 		vi.stubGlobal("fetch", fetchMock);
@@ -159,10 +159,10 @@ describe("public model routes", () => {
 					{ status: 200 },
 				);
 			}
-			if (url.includes("data_api_providers")) {
+			if (url.includes("get_v2_provider_region_map")) {
 				return new Response(
 					JSON.stringify([
-						{ api_provider_id: "openai", default_execution_regions: ["US", "eu"] },
+						{ provider_slug: "openai", regions: ["US", "eu"] },
 					]),
 					{ status: 200 },
 				);
@@ -194,6 +194,9 @@ describe("public model routes", () => {
 	it("applies a distinct cache profile to the catalogue, benchmarks, and performance", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
+			if (url.includes("/rpc/get_v2_model_benchmarks")) {
+				return new Response(JSON.stringify([{ result_id: "result-1", benchmark_id: "mmlu", score: "0.85", score_numeric: 0.85, is_self_reported: false, other_info: null, source_link: "https://example.com", result_rank: 2, benchmark_name: "MMLU", total_models: 50, ascending_order: true, benchmark_type: "percentage" }]), { status: 200 });
+			}
 			if (url.includes("/rpc/get_model_performance_overview")) {
 				return new Response(JSON.stringify([{ last_24h: { total_requests: 42 } }]), { status: 200 });
 			}
@@ -242,7 +245,7 @@ describe("public model routes", () => {
 		await expect(response.json()).resolves.toEqual({
 			availability: { isGatewayActive: true, activeProviderCount: 1 },
 		});
-		expect(fetchMock).toHaveBeenCalledTimes(2);
+		expect(fetchMock).toHaveBeenCalledTimes(3);
 		expect(fetchMock.mock.calls.every(([input]) => !String(input).includes("data_api_model_aliases"))).toBe(true);
 	});
 
@@ -293,6 +296,9 @@ describe("public model routes", () => {
 	it("returns parity-shaped timeline and subscription-plan sections", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = decodeURIComponent(String(input));
+			if (url.includes("/rpc/get_v2_model_subscription_plans")) {
+				return new Response(JSON.stringify([{ plan_uuid: "plan-uuid", plan_id: "pro", name: "Pro", lab_slug: "phaseo", price: 20, currency: "USD", frequency: "month", model_info: { note: "included" }, rate_limit: { rpm: 10 }, model_other_info: null }]), { status: 200 });
+			}
 			if (url.includes("data_subscription_plan_models")) {
 				return new Response(JSON.stringify([{
 					plan_uuid: "plan-uuid",

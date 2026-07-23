@@ -10,5 +10,20 @@
   "terms_of_service_url": "https://www.hyperbolic.ai/terms",
   "prompt_training_policy": "no_train",
   "prompt_training_notes": "Hyperbolic markets serverless inference as zero data retention and says request data is never stored or reused.",
-  "prompt_training_source_url": "https://www.hyperbolic.ai/docs/overview/overview"
+  "prompt_training_source_url": "https://www.hyperbolic.ai/docs/overview/overview",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://docs.hyperbolic.xyz/docs/supported-models",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

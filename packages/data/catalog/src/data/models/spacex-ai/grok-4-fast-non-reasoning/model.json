@@ -97,5 +97,65 @@
       "source_link": "https://qwenlm.github.io/Qwen-Agent/en/benchmarks/deepplanning/",
       "rank": 3
     }
-  ]
+  ],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 2000000,
+    "input": 2000000,
+    "output": 2000000
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image/*"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "announcement",
+      "url": "https://x.ai/news/grok-4-fast",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "api_reference",
+      "url": "https://docs.x.ai/docs/models/grok-4-fast-non-reasoning",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "paper",
+      "url": "https://data.x.ai/2025-09-19-grok-4-fast-model-card.pdf",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

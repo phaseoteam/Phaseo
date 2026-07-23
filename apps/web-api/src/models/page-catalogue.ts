@@ -146,10 +146,21 @@ function isMissingPageRpc(error: { code?: string; message?: string } | null): bo
 		&& /could not find|does not exist/i.test(error.message ?? "");
 }
 
-async function databasePageRows(env: Env): Promise<Row[] | null> {
+export type ModelsPageQuery = {
+	region?: string | null;
+	serviceTier?: string | null;
+};
+
+async function databasePageRows(env: Env, query: ModelsPageQuery = {}): Promise<Row[] | null> {
 	const rows: Row[] = [];
+	const useFilteredV2Rpc = Boolean(query.region || query.serviceTier);
 	for (let offset = 0; ; offset += 1_000) {
-		const result = await getDataClient(env).rpc("get_public_models_page_rows", {}).range(offset, offset + 999);
+		const result = await getDataClient(env).rpc(
+			useFilteredV2Rpc ? "get_v2_public_models_page_rows" : "get_public_models_page_rows",
+			useFilteredV2Rpc
+				? { p_region: query.region ?? null, p_service_tier: query.serviceTier ?? null }
+				: {},
+		).range(offset, offset + 999);
 		if (result.error) {
 			if (isMissingPageRpc(result.error)) return null;
 			throw result.error;
@@ -174,9 +185,9 @@ async function baseRows(env: Env): Promise<Row[]> {
 }
 
 async function providerRegions(env: Env): Promise<Map<string, string[]>> {
-	const result = await getDataClient(env).from("data_api_providers").select("api_provider_id,default_execution_regions");
+	const result = await getDataClient(env).rpc("get_v2_provider_region_map", { p_provider_slugs: null });
 	if (result.error) throw result.error;
-	return new Map((result.data ?? []).map((row: Row) => [String(row.api_provider_id), strings(row.default_execution_regions).map((region) => region.toLowerCase())]));
+	return new Map((result.data ?? []).map((row: Row) => [String(row.provider_slug), strings(row.regions).map((region) => region.toLowerCase())]));
 }
 
 function organisation(row: Row | undefined): Row | null {
@@ -193,8 +204,8 @@ function gatewayTiers(row: Row): string[] {
 	return strings(row.gateway_features).includes("free") ? ["free", "standard"] : ["standard"];
 }
 
-export async function fetchModelsPageCatalogue(env: Env): Promise<{ models: Row[]; pricingComplete: boolean }> {
-	const databaseRows = await databasePageRows(env);
+export async function fetchModelsPageCatalogue(env: Env, query: ModelsPageQuery = {}): Promise<{ models: Row[]; pricingComplete: boolean }> {
+	const databaseRows = await databasePageRows(env, query);
 	if (databaseRows) return { models: databaseRows, pricingComplete: true };
 
 	const [gatewayRows, catalogueRows, regions] = await Promise.all([aggregatedRows(env), baseRows(env), providerRegions(env)]);
