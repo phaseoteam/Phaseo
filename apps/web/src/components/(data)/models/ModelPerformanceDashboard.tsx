@@ -35,7 +35,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { buildSingleProviderPercentileSeries } from "./modelPerformancePercentiles";
+import { buildSingleProviderPercentileSeries } from "@/components/(data)/models/modelPerformancePercentiles";
 import {
 	Empty,
 	EmptyDescription,

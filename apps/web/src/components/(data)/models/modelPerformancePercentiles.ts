@@ -5,7 +5,7 @@ import type {
 import {
 	MODEL_PERCENTILES,
 	type ModelPercentile,
-} from "./ModelPercentileSelect";
+} from "@/components/(data)/models/ModelPercentileSelect";
 
 const PERCENTILE_COLORS: Record<ModelPercentile, string> = {
 	50: "var(--chart-1)",
@@ -22,7 +22,7 @@ export function buildSingleProviderPercentileSeries(
 	if (providerCount !== 1 || !points?.length) return null;
 
 	const supported = new Set<number>(MODEL_PERCENTILES);
-	return points
+	const series = points
 		.filter(
 			(point) =>
 				supported.has(point.percentile) &&
@@ -40,4 +40,6 @@ export function buildSingleProviderPercentileSeries(
 				providerColor: PERCENTILE_COLORS[percentile],
 			};
 		});
+
+	return series.length > 0 ? series : null;
 }
