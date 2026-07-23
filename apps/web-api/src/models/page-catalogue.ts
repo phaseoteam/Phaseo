@@ -187,7 +187,13 @@ async function weeklyMetrics(env: Env): Promise<WeeklyMetricRow[]> {
 		const result = await getDataClient(env)
 			.rpc("get_v2_public_model_weekly_metrics")
 			.range(offset, offset + 999);
-		if (result.error) throw result.error;
+		if (result.error) {
+			console.error("models_weekly_metrics_failed", {
+				code: result.error.code,
+				message: result.error.message,
+			});
+			return [];
+		}
 		rows.push(...((result.data ?? []) as WeeklyMetricRow[]));
 		if ((result.data?.length ?? 0) < 1_000) break;
 	}

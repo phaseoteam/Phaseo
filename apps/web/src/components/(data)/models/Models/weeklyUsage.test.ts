@@ -34,4 +34,16 @@ describe("resolveWeeklyUsageDisplay", () => {
 			unitSuffix: "",
 		});
 	});
+
+	it("does not reinterpret legacy tokens as a classified media unit", () => {
+		expect(resolveWeeklyUsageDisplay({
+			weekly_usage_metric: "video_seconds",
+			weekly_usage_quantity: null,
+			popularity_tokens_week: 7_200,
+		})).toEqual({
+			label: "Video hours generated",
+			quantity: 0,
+			unitSuffix: "h",
+		});
+	});
 });

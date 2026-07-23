@@ -16,15 +16,22 @@ export type WeeklyUsageDisplay = {
 };
 
 function finiteQuantity(value: unknown): number | null {
+	if (
+		value === null
+		|| value === undefined
+		|| (typeof value === "string" && !value.trim())
+	) {
+		return null;
+	}
 	const quantity = Number(value);
 	return Number.isFinite(quantity) && quantity >= 0 ? quantity : null;
 }
 
 export function resolveWeeklyUsageDisplay(model: WeeklyUsageSource): WeeklyUsageDisplay {
 	const metric = String(model.weekly_usage_metric ?? "").trim().toLowerCase();
-	const quantity = finiteQuantity(model.weekly_usage_quantity)
-		?? finiteQuantity(model.popularity_tokens_week)
-		?? 0;
+	const weeklyQuantity = finiteQuantity(model.weekly_usage_quantity);
+	const legacyTokenQuantity = finiteQuantity(model.popularity_tokens_week);
+	const quantity = metric ? (weeklyQuantity ?? 0) : (legacyTokenQuantity ?? 0);
 
 	if (metric === "video_seconds") {
 		return {

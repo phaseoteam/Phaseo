@@ -94,7 +94,9 @@ export default function ModelProviderTrendChart({
 	activeDay,
 	onActiveDayChange,
 }: ModelProviderTrendChartProps) {
-	const [activeSeriesKey, setActiveSeriesKey] = useState<string | null>(null);
+	const [hoveredSeriesKey, setHoveredSeriesKey] = useState<string | null>(null);
+	const [focusedSeriesKey, setFocusedSeriesKey] = useState<string | null>(null);
+	const activeSeriesKey = hoveredSeriesKey ?? focusedSeriesKey;
 	const metricConfig = METRICS[metric];
 	const observedData = data.filter(
 		(point) => point.requests > 0 && point[metricConfig.valueKey] != null,
@@ -322,8 +324,8 @@ export default function ModelProviderTrendChart({
 								dot={false}
 								connectNulls
 								isAnimationActive={false}
-								onMouseEnter={() => setActiveSeriesKey(provider.seriesKey)}
-								onMouseLeave={() => setActiveSeriesKey(null)}
+								onMouseEnter={() => setHoveredSeriesKey(provider.seriesKey)}
+								onMouseLeave={() => setHoveredSeriesKey(null)}
 							/>
 							);
 						})}
@@ -345,10 +347,10 @@ export default function ModelProviderTrendChart({
 							transform: isActive ? "translateX(2px)" : "translateX(0)",
 						}}
 						tabIndex={0}
-						onMouseEnter={() => setActiveSeriesKey(provider.seriesKey)}
-						onMouseLeave={() => setActiveSeriesKey(null)}
-						onFocus={() => setActiveSeriesKey(provider.seriesKey)}
-						onBlur={() => setActiveSeriesKey(null)}
+						onMouseEnter={() => setHoveredSeriesKey(provider.seriesKey)}
+						onMouseLeave={() => setHoveredSeriesKey(null)}
+						onFocus={() => setFocusedSeriesKey(provider.seriesKey)}
+						onBlur={() => setFocusedSeriesKey(null)}
 					>
 						<span className="inline-flex min-w-0 items-center gap-2">
 							<span
