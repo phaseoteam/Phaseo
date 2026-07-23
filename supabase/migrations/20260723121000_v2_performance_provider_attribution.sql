@@ -63,13 +63,11 @@ as $$
   base as (
     select date_trunc('hour', fact.occurred_at) as bucket_start,
       fact.occurred_at::date as usage_day,
-      coalesce(route.provider_slug, metadata_provider.provider_slug) as provider_id,
+      route.provider_slug as provider_id,
       fact.success, fact.latency_ms, fact.generation_ms, fact.throughput
     from public.v2_request_facts fact
     left join public.v2_model_provider_routes route
       on route.provider_model_id = fact.provider_model_id
-    left join public.v2_providers metadata_provider
-      on metadata_provider.provider_slug = nullif(lower(trim(fact.safe_metadata->>'provider')), '')
     cross join params
     where coalesce(fact.routed_model_slug, fact.requested_model_slug) = params.model_slug
       and fact.occurred_at >= params.now_ts - interval '7 days'
