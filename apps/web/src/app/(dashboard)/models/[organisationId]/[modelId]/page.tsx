@@ -170,20 +170,19 @@ export default async function Page({
 	const subscriptionPromise = fetchFrontendModelSubscriptionPlans(modelId).catch(() => []);
 	const availabilityPromise = fetchFrontendModelAvailability(modelId).catch(() => undefined);
 	const performancePromise = fetchFrontendModelPerformance(modelId, 24).catch(() => null);
-	const [modelOverview, benchmarkHighlights, subscriptionPlans, availability, performance] =
+	const [modelOverview, benchmarkHighlights, subscriptionPlans, availability] =
 		await Promise.all([
 			modelPromise,
 			benchmarkPromise,
 			subscriptionPromise,
 			availabilityPromise,
-			performancePromise,
 		]);
 	const showBenchmarks = benchmarkHighlights.length > 0;
 	const showSubscriptions = subscriptionPlans.length > 0;
 	const isGatewayActive =
 		availability?.isGatewayActive ?? true;
 	const resolvedPerformancePromise = isGatewayActive
-		? Promise.resolve(performance)
+		? performancePromise
 		: Promise.resolve(null);
 	const isRetired = modelOverview?.status === "Retired";
 	const modelPageTocItems = getModelPageTocItems({
