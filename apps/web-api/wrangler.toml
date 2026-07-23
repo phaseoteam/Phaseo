@@ -29,6 +29,11 @@ routes = []
 ENV = "staging"
 SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
 
+# Preview deployments are request-driven only. Never run production watcher
+# schedules from an isolated staging Worker against the shared data project.
+[env.staging.triggers]
+crons = []
+
 # Cloudflare owns the explicit application API namespaces below. Vercel owns
 # page rendering and normal web assets, but no application API handlers.
 [[routes]]
