@@ -191,7 +191,15 @@ describe("buildProviderSections", () => {
 				priority: 100,
 				effective_from: "2026-01-01T00:00:00.000Z",
 				effective_to: null,
-				match: [{ path: "input_tokens", op: "lt", value: 272000 }],
+				match: [
+					{
+						path: "input_tokens",
+						op: "lt",
+						value: 272000,
+						or_group: 1,
+						and_index: 1,
+					},
+				],
 			},
 			{
 				id: "batch-input-long",
@@ -206,7 +214,15 @@ describe("buildProviderSections", () => {
 				priority: 100,
 				effective_from: "2026-01-01T00:00:00.000Z",
 				effective_to: null,
-				match: [{ path: "input_tokens", op: "gte", value: 272000 }],
+				match: [
+					{
+						path: "input_tokens",
+						op: "gte",
+						value: 272000,
+						or_group: 1,
+						and_index: 1,
+					},
+				],
 			},
 		];
 

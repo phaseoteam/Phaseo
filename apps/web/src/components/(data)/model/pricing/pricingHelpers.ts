@@ -759,8 +759,10 @@ export function ruleMatchCovers(candidateRule: any, targetRule: any): boolean {
 }
 
 export function ruleComparisonMatchSignature(rule: any): string {
+	const conditions = ruleConditions(rule);
+	const hasMultipleConditions = conditions.length > 1;
     return JSON.stringify(
-        ruleConditions(rule)
+        conditions
             .map((condition) => {
                 const op = String(condition.op ?? "").toLowerCase();
                 return {
@@ -771,8 +773,11 @@ export function ruleComparisonMatchSignature(rule: any): string {
                             ? "upper-bound"
                             : op,
                     value: condition.value,
-                    or_group: condition.or_group ?? null,
-                    and_index: condition.and_index ?? null,
+					// Group identifiers only describe boolean structure when a rule
+					// contains multiple conditions. Importers may still populate them
+					// on single-condition rules, where they are semantically inert.
+					or_group: hasMultipleConditions ? condition.or_group ?? null : null,
+					and_index: hasMultipleConditions ? condition.and_index ?? null : null,
                 };
             })
             .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))),
