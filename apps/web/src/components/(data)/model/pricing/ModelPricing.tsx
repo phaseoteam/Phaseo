@@ -50,6 +50,7 @@ export default async function ModelPricing({
 	modelId,
 	includeHidden,
 	showHeader = true,
+	headerDescription,
 	modelStatus,
 	modelName,
 	creatorOrganisationId,
@@ -57,6 +58,7 @@ export default async function ModelPricing({
 	modelId: string;
 	includeHidden: boolean;
 	showHeader?: boolean;
+	headerDescription?: string | null;
 	modelStatus?: string | null;
 	modelName?: string | null;
 	creatorOrganisationId?: string | null;
@@ -201,6 +203,7 @@ export default async function ModelPricing({
 				routingHealth={routingHealth}
 				workspacePrivacySettings={workspacePrivacySettings}
 				showHeader={showHeader}
+				headerDescription={headerDescription}
 			/>
 		</div>
 	);

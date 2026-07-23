@@ -166,19 +166,24 @@ export default async function Page({
 		);
 	}
 	const modelPromise = fetchFrontendModelOverview(modelId);
-	const [modelOverview, benchmarkHighlights, subscriptionPlans, availability] =
+	const benchmarkPromise = fetchFrontendModelBenchmarkHighlights(modelId).catch(() => []);
+	const subscriptionPromise = fetchFrontendModelSubscriptionPlans(modelId).catch(() => []);
+	const availabilityPromise = fetchFrontendModelAvailability(modelId).catch(() => undefined);
+	const performancePromise = fetchFrontendModelPerformance(modelId, 24).catch(() => null);
+	const [modelOverview, benchmarkHighlights, subscriptionPlans, availability, performance] =
 		await Promise.all([
 			modelPromise,
-			fetchFrontendModelBenchmarkHighlights(modelId).catch(() => []),
-			fetchFrontendModelSubscriptionPlans(modelId).catch(() => []),
-			fetchFrontendModelAvailability(modelId).catch(() => undefined),
+			benchmarkPromise,
+			subscriptionPromise,
+			availabilityPromise,
+			performancePromise,
 		]);
 	const showBenchmarks = benchmarkHighlights.length > 0;
 	const showSubscriptions = subscriptionPlans.length > 0;
 	const isGatewayActive =
 		availability?.isGatewayActive ?? true;
-	const performancePromise = isGatewayActive
-		? fetchFrontendModelPerformance(modelId, 24).catch(() => null)
+	const resolvedPerformancePromise = isGatewayActive
+		? Promise.resolve(performance)
 		: Promise.resolve(null);
 	const isRetired = modelOverview?.status === "Retired";
 	const modelPageTocItems = getModelPageTocItems({
@@ -276,7 +281,7 @@ export default async function Page({
 								showSubscriptions={showSubscriptions}
 								status={modelOverview?.status}
 								isGatewayActive={isGatewayActive}
-								performancePromise={performancePromise}
+								performancePromise={resolvedPerformancePromise}
 								quickstartRequestContext={quickstartRequestContext}
 							/>
 						</div>

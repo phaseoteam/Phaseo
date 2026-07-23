@@ -405,9 +405,24 @@ export async function fetchFrontendModelApps(
 export async function fetchFrontendModelPerformance(
 	modelId: string,
 	windowHours = 24,
+	cloudflareColo?: string | null,
+	percentile = 50,
 ): Promise<ModelPerformanceMetrics | null> {
 	void windowHours;
-	return (await fetchOptionalPublicWebApi<{ metrics: ModelPerformanceMetrics | null }>(`/api/_web/models/${encodeURIComponent(modelId)}/performance`))?.metrics ?? null;
+	const params = new URLSearchParams({ percentile: String(percentile) });
+	if (cloudflareColo) params.set("colo", cloudflareColo);
+	const query = `?${params.toString()}`;
+	return (await fetchOptionalPublicWebApi<{ metrics: ModelPerformanceMetrics | null }>(`/api/_web/models/${encodeURIComponent(modelId)}/performance${query}`))?.metrics ?? null;
+}
+
+export type ModelPerformanceColo = { colo: string; requests: number };
+
+export async function fetchFrontendModelPerformanceColos(
+	modelId: string,
+): Promise<ModelPerformanceColo[]> {
+	return (await fetchOptionalPublicWebApi<{ colos: ModelPerformanceColo[] }>(
+		`/api/_web/models/${encodeURIComponent(modelId)}/performance/colos`,
+	))?.colos ?? [];
 }
 
 export async function fetchFrontendModelActivitySnapshot(
@@ -438,6 +453,7 @@ export async function fetchFrontendModelProviderRuntimeStats(args: {
 	modelId: string;
 	providerIds: string[];
 	modelAliases: string[];
+	percentile?: number;
 }): Promise<ProviderRuntimeStatsMap> {
 	return getModelProviderRuntimeStats(args);
 }

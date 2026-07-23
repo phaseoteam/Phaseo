@@ -83,8 +83,11 @@ export default function ModelProviderTrendChart({
 	onActiveDayChange,
 }: ModelProviderTrendChartProps) {
 	const metricConfig = METRICS[metric];
+	const observedData = data.filter(
+		(point) => point.requests > 0 && point[metricConfig.valueKey] != null,
+	);
 	const providers = Array.from(
-		data.reduce(
+		observedData.reduce(
 			(map, point) => {
 				const existing = map.get(point.provider) ?? {
 					provider: point.provider,
@@ -114,7 +117,7 @@ export default function ModelProviderTrendChart({
 		}));
 
 	const providerIdSet = new Set(providers.map((provider) => provider.provider));
-	const filtered = data.filter((point) => providerIdSet.has(point.provider));
+	const filtered = observedData.filter((point) => providerIdSet.has(point.provider));
 	const sortedDays = Array.from(new Set(filtered.map((point) => point.day))).sort(
 		(a, b) => new Date(a).getTime() - new Date(b).getTime(),
 	);
