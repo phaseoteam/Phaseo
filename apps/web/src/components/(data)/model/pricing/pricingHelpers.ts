@@ -758,6 +758,50 @@ export function ruleMatchCovers(candidateRule: any, targetRule: any): boolean {
     );
 }
 
+export function ruleComparisonMatchSignature(rule: any): string {
+    return JSON.stringify(
+        ruleConditions(rule)
+            .map((condition) => {
+                const op = String(condition.op ?? "").toLowerCase();
+                return {
+                    path: String(condition.path ?? "").toLowerCase(),
+                    op: isLowerBoundOp(op)
+                        ? "lower-bound"
+                        : isUpperBoundOp(op)
+                            ? "upper-bound"
+                            : op,
+                    value: condition.value,
+                    or_group: condition.or_group ?? null,
+                    and_index: condition.and_index ?? null,
+                };
+            })
+            .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))),
+    );
+}
+
+function findComparisonRule(
+    candidates: any[],
+    targetRule: any,
+    sortCandidates: (a: any, b: any) => number,
+): any | undefined {
+    const targetSignature = ruleComparisonMatchSignature(targetRule);
+    const sorted = [...candidates].sort(sortCandidates);
+
+    return (
+        sorted.find(
+            (candidate) =>
+                ruleConditions(candidate).length > 0 &&
+                ruleComparisonMatchSignature(candidate) === targetSignature,
+        ) ??
+        sorted.find(
+            (candidate) =>
+                ruleConditions(candidate).length > 0 &&
+                ruleMatchCovers(candidate, targetRule),
+        ) ??
+        sorted.find((candidate) => ruleConditions(candidate).length === 0)
+    );
+}
+
 /* ---------- section builder (uses fixes) ---------- */
 export function buildProviderSections(p: ProviderPricing, plan: string): ProviderSections {
     const now = new Date();
@@ -1049,16 +1093,20 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
             const exactStandard = standardCurrentGroup[0];
             const signatureStandardPool =
                 currentStandardRulesBySignature.get(ruleSignature(r)) ?? [];
-            const coveringStandard = signatureStandardPool
-                .filter((candidate) => ruleMatchCovers(candidate, r))
-                .sort(sortByPriorityAndFromDesc)[0];
+            const coveringStandard = findComparisonRule(
+                signatureStandardPool,
+                r,
+                sortByPriorityAndFromDesc,
+            );
             const endpointAgnosticStandardPool =
                 currentStandardRulesBySignatureIgnoringEndpoint.get(
                     ruleSignatureIgnoringEndpoint(r),
                 ) ?? [];
-            const endpointAgnosticCoveringStandard = endpointAgnosticStandardPool
-                .filter((candidate) => ruleMatchCovers(candidate, r))
-                .sort(sortByPriorityAndFromDesc)[0];
+            const endpointAgnosticCoveringStandard = findComparisonRule(
+                endpointAgnosticStandardPool,
+                r,
+                sortByPriorityAndFromDesc,
+            );
             const standardBaseRule =
                 exactStandard ??
                 coveringStandard ??

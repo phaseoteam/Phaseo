@@ -53,6 +53,7 @@ import {
 	fmtCompact,
 	fmtUSD,
 	ruleMatchCovers,
+	ruleComparisonMatchSignature,
 	type QualityRow,
 	type ResolutionRow,
 	type ProviderTablePriceSummary,
@@ -833,7 +834,7 @@ function buildRuleComparisonKey(
 		rule.meter,
 		rule.unit,
 		String(rule.unit_size ?? 1),
-		normalizeRuleMatchSignature(rule.match),
+		ruleComparisonMatchSignature(rule),
 	].join("::");
 }
 
@@ -844,7 +845,7 @@ function buildRuleComparisonKeyIgnoringEndpoint(
 		rule.meter,
 		rule.unit,
 		String(rule.unit_size ?? 1),
-		normalizeRuleMatchSignature(rule.match),
+		ruleComparisonMatchSignature(rule),
 	].join("::");
 }
 
@@ -920,17 +921,27 @@ function derivePlanMultiplier(args: {
 				buildRuleComparisonKeyIgnoringEndpoint(rule),
 			);
 		if (basePrice == null) {
-			const semanticMatch = [...activeBaseRules]
+			const semanticCandidates = [...activeBaseRules]
 				.filter((candidate) => {
 					if (candidate.meter !== rule.meter) return false;
 					if (candidate.unit !== rule.unit) return false;
 					return String(candidate.unit_size ?? 1) === String(rule.unit_size ?? 1);
 				})
-				.sort(sortPricingRuleCandidates)
-				.find(
+				.sort(sortPricingRuleCandidates);
+			const targetMatchSignature = ruleComparisonMatchSignature(rule);
+			const semanticMatch =
+				semanticCandidates.find(
 					(candidate) =>
-						normalizeRuleMatchSignature(candidate.match) === "[]" ||
+						ruleComparisonMatchSignature(candidate) !== "[]" &&
+						ruleComparisonMatchSignature(candidate) === targetMatchSignature,
+				) ??
+				semanticCandidates.find(
+					(candidate) =>
+						ruleComparisonMatchSignature(candidate) !== "[]" &&
 						ruleMatchCovers(candidate, rule),
+				) ??
+				semanticCandidates.find(
+					(candidate) => ruleComparisonMatchSignature(candidate) === "[]",
 				);
 			basePrice = semanticMatch
 				? normalizeRuleUnitPrice(semanticMatch)
