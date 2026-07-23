@@ -1380,6 +1380,15 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 			};
 		}
 		if (!performance) return withPublicCache(c.json({ modelId, performance: null, metrics: null, activity: null }), sectionPolicy("performance", modelId));
+		const isKnownProvider = (value: Record<string, unknown>) => {
+			const provider = String(value.provider ?? "").trim().toLowerCase();
+			return provider.length > 0 && provider !== "unknown";
+		};
+		performance = {
+			...performance,
+			provider_uptime_24h: (performance.provider_uptime_24h ?? []).filter(isKnownProvider),
+			provider_daily_7d: (performance.provider_daily_7d ?? []).filter(isKnownProvider),
+		};
 		const number = (value: unknown) => { const parsed = Number(value); return value == null || !Number.isFinite(parsed) ? null : parsed; };
 		const summary = (value: Record<string, unknown> | null | undefined) => ({ avgThroughput: number(value?.avg_throughput), avgLatencyMs: number(value?.avg_latency_ms), avgGenerationMs: number(value?.avg_generation_ms), uptimePct: number(value?.uptime_pct), totalRequests: Number(value?.total_requests ?? 0), successfulRequests: Number(value?.successful_requests ?? 0) });
 		const hourly = (performance.hourly_24h ?? []).map((value: Record<string, unknown>) => ({ bucket: value.bucket ?? "", avgThroughput: number(value.avg_throughput), avgLatencyMs: number(value.avg_latency_ms), avgGenerationMs: number(value.avg_generation_ms), requests: Number(value.requests ?? 0), successPct: number(value.success_pct) }));

@@ -224,6 +224,52 @@ describe("public model routes", () => {
 		expect(performance.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900, stale-while-revalidate=900");
 	});
 
+	it("never exposes a synthetic unknown provider in performance data", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("/rpc/get_v2_model_performance_overview")) {
+				return new Response(JSON.stringify({
+					last_24h: { total_requests: 12, successful_requests: 11 },
+					hourly_24h: [],
+					provider_uptime_24h: [
+						{ provider: "poolside", provider_name: "Poolside", requests: 11 },
+						{ provider: "unknown", provider_name: "unknown", requests: 1 },
+					],
+					provider_daily_7d: [
+						{ day: "2026-07-23", provider: "poolside", provider_name: "Poolside", requests: 11 },
+						{ day: "2026-07-23", provider: "unknown", provider_name: "unknown", requests: 1 },
+					],
+				}), { status: 200 });
+			}
+			if (url.includes("/rpc/get_v2_model_provider_health_metrics")) {
+				return new Response(JSON.stringify([]), { status: 200 });
+			}
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models/poolside%2Flaguna-s-2.1/performance",
+			{},
+			env,
+		);
+		const payload = await response.json() as any;
+
+		expect(response.status).toBe(200);
+		expect(payload.performance.provider_uptime_24h).toEqual([
+			expect.objectContaining({ provider: "poolside" }),
+		]);
+		expect(payload.performance.provider_daily_7d).toEqual([
+			expect.objectContaining({ provider: "poolside" }),
+		]);
+		expect(payload.metrics.providerPerformance).toEqual([
+			expect.objectContaining({ provider: "poolside" }),
+		]);
+		expect(payload.metrics.providerDaily7d).toEqual([
+			expect.objectContaining({ provider: "poolside" }),
+		]);
+		expect(JSON.stringify(payload)).not.toContain('"unknown"');
+	});
+
 	it("returns compact gateway availability without loading full metadata", async () => {
 		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
