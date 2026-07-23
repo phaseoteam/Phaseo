@@ -172,6 +172,7 @@ async function upsertV2RequestFact(args: {
     routedModel?: string | null;
     provider?: string | null;
     providerApiModelId?: string | null;
+    providerModelSlug?: string | null;
     stream: boolean;
     byok: boolean;
     statusCode?: number | null;
@@ -208,6 +209,11 @@ async function upsertV2RequestFact(args: {
     routingSnapshot?: Array<Record<string, unknown>> | null;
     routingDiagnostics?: Record<string, unknown> | null;
 }) {
+    const toProviderModelId = (provider: unknown, providerModelSlug: unknown): string | null => {
+        const providerId = typeof provider === "string" ? provider.trim() : "";
+        const modelSlug = typeof providerModelSlug === "string" ? providerModelSlug.trim() : "";
+        return providerId && modelSlug ? `${providerId}:${modelSlug}` : null;
+    };
     const factorKeys = [
         "success_rate",
         "latency_score",
@@ -232,9 +238,10 @@ async function upsertV2RequestFact(args: {
         return {
             attempt_number: Number(attempt.attempt_number ?? index + 1),
             provider: typeof attempt.provider === "string" ? attempt.provider : null,
+            provider_model_id: toProviderModelId(attempt.provider, attempt.provider_model_slug),
             provider_api_model_id:
-                typeof attempt.api_model_id === "string" ? attempt.api_model_id :
-                typeof attempt.provider_model_slug === "string" ? attempt.provider_model_slug : null,
+                typeof attempt.provider_model_slug === "string" ? attempt.provider_model_slug :
+                typeof attempt.api_model_id === "string" ? attempt.api_model_id : null,
             status_code: Number.isFinite(status) && status >= 100 && status <= 599 ? status : null,
             success: attempt.outcome === "success",
             error_code: typeof attempt.type === "string" && attempt.outcome !== "success"
@@ -260,18 +267,26 @@ async function upsertV2RequestFact(args: {
             const provider = typeof entry.provider_id === "string"
                 ? entry.provider_id
                 : typeof entry.provider === "string" ? entry.provider : null;
+            const providerModelSlug = typeof entry.provider_model_slug === "string"
+                ? entry.provider_model_slug
+                : null;
             const providerApiModelId = typeof entry.provider_api_model_id === "string"
-                ? entry.provider_api_model_id
-                : typeof entry.provider_model_slug === "string" ? entry.provider_model_slug : null;
+                ? (providerModelSlug
+                    ? providerModelSlug
+                    : entry.provider_api_model_id)
+                : providerModelSlug;
             return {
                 decision_order: index + 1,
                 decision: "ranked",
                 rank: Number.isFinite(Number(entry.rank)) ? Number(entry.rank) : index + 1,
                 provider,
+                provider_model_id: toProviderModelId(provider, entry.provider_model_slug),
                 provider_api_model_id: providerApiModelId,
                 score: Number.isFinite(Number(entry.score)) ? Number(entry.score) : null,
                 selected: provider === args.provider && (
-                    !args.providerApiModelId || providerApiModelId === args.providerApiModelId
+                    args.providerModelSlug
+                        ? providerModelSlug === args.providerModelSlug
+                        : !args.providerApiModelId || providerApiModelId === args.providerApiModelId
                 ),
                 attempted: attemptedKeys.has(`${provider ?? ""}::${providerApiModelId ?? ""}`) ||
                     normalizedAttempts.some((attempt) => attempt.provider === provider),
@@ -306,6 +321,7 @@ async function upsertV2RequestFact(args: {
             decision: "excluded",
             rank: null,
             provider: typeof entry?.providerId === "string" ? entry.providerId : null,
+            provider_model_id: toProviderModelId(entry?.providerId, entry?.providerModelSlug),
             provider_api_model_id:
                 typeof entry?.apiModelId === "string" ? entry.apiModelId :
                 typeof entry?.providerModelSlug === "string" ? entry.providerModelSlug : null,
@@ -352,7 +368,10 @@ async function upsertV2RequestFact(args: {
             requested_model_input: args.requestedModel,
             routed_model_slug: args.routedModel ?? null,
             provider: args.provider ?? null,
-            provider_api_model_id: args.providerApiModelId ?? null,
+            provider_model_id: toProviderModelId(args.provider, args.providerModelSlug),
+            // The v2 catalogue resolves concrete provider/model routes by the
+            // upstream-facing model slug, not the legacy provider-model row ID.
+            provider_api_model_id: args.providerModelSlug ?? args.providerApiModelId ?? null,
             status_code: args.statusCode ?? null,
             success: args.success,
             error_code: args.errorCode ?? null,
@@ -647,6 +666,7 @@ export async function auditSuccess(args: {
     requestId: string; workspaceId: string;
     provider: string; model: string; requestedModel?: string; endpoint: Endpoint;
     providerApiModelId?: string | null;
+    providerModelSlug?: string | null;
     stream: boolean; byok: boolean;
     nativeResponseId?: string | null;
     appTitle?: string | null; referer?: string | null;
@@ -774,6 +794,7 @@ export async function auditSuccess(args: {
                     routedModel: args.model,
                     provider: args.provider,
                     providerApiModelId: args.providerApiModelId ?? null,
+                    providerModelSlug: args.providerModelSlug ?? null,
                     stream: args.stream,
                     byok: args.byok,
                     statusCode: args.statusCode,
@@ -931,6 +952,7 @@ type AuditFailureExecute = {
     requestedModel?: string;
     provider?: string | null;
     providerApiModelId?: string | null;
+    providerModelSlug?: string | null;
     stream: boolean;
     statusCode: number;
     errorCode: string;
@@ -1193,6 +1215,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                         routedModel: args.model,
                         provider: args.provider ?? null,
                         providerApiModelId: args.providerApiModelId ?? null,
+                        providerModelSlug: args.providerModelSlug ?? null,
                         stream: args.stream,
                         byok: args.byok === true,
                         statusCode: args.statusCode,

@@ -24,6 +24,7 @@ import {
 	computeStaticTtl,
 	isCreditContextLike,
 	isDynamicContextLike,
+	hasConfiguredKeyLimits,
 	isStaticContextLike,
 	isWithinEffectiveWindow,
 	mergeCachedContext,
@@ -864,7 +865,14 @@ export async function fetchGatewayContext(args: {
             if (dynamicCachedRaw && staticCachedRaw) {
                 const dynamicParsed = JSON.parse(dynamicCachedRaw);
                 const staticParsed = JSON.parse(staticCachedRaw);
-                if (isDynamicContextLike(dynamicParsed) && isStaticContextLike(staticParsed)) {
+                if (
+					isDynamicContextLike(dynamicParsed) &&
+					isStaticContextLike(staticParsed) &&
+					!hasConfiguredKeyLimits(dynamicParsed.keyLimit)
+				) {
+					// Request/cost usage changes after every completion. A cached
+					// snapshot can admit subsequent requests past a configured cap,
+					// so only uncapped keys may use the dynamic context snapshot.
                     const creditParsed = creditCachedRaw ? JSON.parse(creditCachedRaw) : null;
                     const creditContext = isCreditContextLike(creditParsed) ? creditParsed : null;
                     const merged = mergeCachedContext({
@@ -1511,7 +1519,9 @@ export async function fetchGatewayContext(args: {
                 const staticTtl = clampTtl(isPreset ? PRESET_TTL : computeStaticTtl());
                 const creditTtl = clampTtl(computeCreditSnapshotTtlForContext(parsed));
                 await Promise.all([
-                    cache.put(dynamicCacheKey, JSON.stringify(split.dynamic), { expirationTtl: dynamicTtl }),
+					...(hasConfiguredKeyLimits(parsed.keyLimit)
+						? []
+						: [cache.put(dynamicCacheKey, JSON.stringify(split.dynamic), { expirationTtl: dynamicTtl })]),
                     cache.put(staticCacheKey, JSON.stringify(split.static), { expirationTtl: staticTtl }),
                     cache.put(creditCacheKey, JSON.stringify(split.credit), { expirationTtl: creditTtl }),
                 ]);
