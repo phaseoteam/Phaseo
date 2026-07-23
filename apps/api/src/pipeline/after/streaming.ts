@@ -15,7 +15,7 @@ import {
 	type StreamProtocol,
 } from "@protocols/stream/encode";
 import { dispatchBackground } from "@/runtime/env";
-import { supportsProviderStreamCancellation } from "./stream-cancellation";
+import { getProviderStreamCancellationPolicy } from "./stream-cancellation";
 
 /** Pure passthrough for non-stream fallbacks (keeps upstream headers where safe). */
 export function passthrough(upstream: Response): Response {
@@ -62,7 +62,17 @@ type PassthroughWithPricingOpts = {
  */
 export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): Promise<Response> {
     const { upstream, rewriteFrame, onFinalUsage, onFinalSnapshot, onStreamEvent, timingHeader, ctx, provider } = opts;
-    const canCancelUpstream = supportsProviderStreamCancellation(provider);
+    const cancellationPolicy = getProviderStreamCancellationPolicy(provider);
+    const providerMetadata = ctx.providers?.find((candidate) => candidate.providerId === provider);
+    ctx.meta.streamCancellationSupport =
+        providerMetadata?.streamCancellationSupport ?? cancellationPolicy.support;
+    ctx.meta.streamProviderBillingOnCancel =
+        providerMetadata?.streamCancellationStopsProviderBilling === true
+            ? "stops"
+            : cancellationPolicy.providerBillingOnCancel;
+    // Exact usage recovery is not wired into an adapter yet. Even if catalogue
+    // metadata says it exists, keep draining until the resolver is executable.
+    ctx.meta.streamDisconnectAction = "drain_upstream";
 
     const reader = upstream.body?.getReader();
     const dec = new TextDecoder();
@@ -76,11 +86,14 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
     let downstreamClosed = false;
     void writer.closed.catch(() => {
         downstreamClosed = true;
+        ctx.meta.downstreamDisconnected = true;
     });
 
-    const resolveRequestStartMs = () => {
+    const resolveSelectedUpstreamStartMs = () => {
+        if (typeof ctx.meta.selectedUpstreamFetchStartMs === "number") {
+            return ctx.meta.selectedUpstreamFetchStartMs;
+        }
         if (typeof ctx.meta.upstreamStartMs === "number") return ctx.meta.upstreamStartMs;
-        if (typeof ctx.meta.startedAtMs === "number") return ctx.meta.startedAtMs;
         return null;
     };
 
@@ -95,14 +108,17 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
         }
         const nowMs = Date.now();
         const nowPerf = performance.now();
-        const requestStartMs = resolveRequestStartMs();
-        ctx.meta.end_to_end_ms = requestStartMs !== null
-            ? Math.max(0, Math.round(nowMs - requestStartMs))
+        const gatewayStartMs = typeof ctx.meta.startedAtMs === "number"
+            ? ctx.meta.startedAtMs
+            : null;
+        const upstreamStartMs = resolveSelectedUpstreamStartMs();
+        ctx.meta.end_to_end_ms = gatewayStartMs !== null
+            ? Math.max(0, Math.round(nowMs - gatewayStartMs))
             : Math.max(0, Math.round(nowPerf - tStart));
-        ctx.meta.generation_ms = firstFrameAtMs !== null
-            ? Math.max(0, Math.round(nowMs - firstFrameAtMs))
+        ctx.meta.generation_ms = upstreamStartMs !== null
+            ? Math.max(0, Math.round(nowMs - upstreamStartMs))
             : firstFrameAt !== null
-                ? Math.max(0, Math.round(nowPerf - firstFrameAt))
+                ? Math.max(0, Math.round(nowPerf - tStart))
                 : 0;
     };
 
@@ -115,6 +131,7 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
             await writer.write(enc.encode(line));
         } catch {
             downstreamClosed = true;
+            ctx.meta.downstreamDisconnected = true;
         }
     };
 
@@ -150,7 +167,7 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
         );
     };
 
-    (async () => {
+    const streamPump = (async () => {
         if (!reader) {
             finalizeUsage(null, "aborted");
             try { await writer.close(); } catch { }
@@ -163,14 +180,6 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
 
         try {
             while (true) {
-                if (downstreamClosed && canCancelUpstream) {
-                    try {
-                        await reader.cancel("downstream_closed");
-                    } catch {
-                        // ignore reader cancellation failures
-                    }
-                    break;
-                }
                 const { value, done } = await reader.read();
                 if (done) break;
 
@@ -214,11 +223,11 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                         // emitted back to the client. Provider adapters may record earlier upstream
                         // timings, so overwrite here with the actual downstream first-frame timing.
                         if (!ctx.meta.preserve_stream_timing) {
-                            const requestStartMs = resolveRequestStartMs();
-                            if (requestStartMs !== null) {
+                            const upstreamStartMs = resolveSelectedUpstreamStartMs();
+                            if (upstreamStartMs !== null) {
                                 ctx.meta.latency_ms = Math.max(
                                     0,
-                                    Math.round(firstFrameAtMs - requestStartMs),
+                                    Math.round(firstFrameAtMs - upstreamStartMs),
                                 );
                             } else {
                                 ctx.meta.latency_ms = Math.max(0, Math.round(firstFrameAt - tStart));
@@ -245,7 +254,10 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                     if (onStreamEvent && events.length > 0) {
                         for (const event of events) {
                             try {
-                                await onStreamEvent(event);
+                                const observed = onStreamEvent(event);
+                                if (observed && typeof (observed as Promise<void>).then === "function") {
+                                    await observed;
+                                }
                             } catch {
                                 // Never let event consumer errors break stream forwarding.
                             }
@@ -305,12 +317,14 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                             .filter((entry): entry is { eventName?: string | null; frame: Record<string, any> } => Boolean(entry))
                         : [{ eventName, frame: json }];
 
-                    // Detect final snapshot to extract usage for billing   
+                    let finalUsageAfterWrite: any = null;
+                    // Capture terminal state before rewriting the frame, but do not
+                    // start persistence until the terminal frame is downstream.
                     if (isFinalSnapshot) {
                         if (onFinalSnapshot) {
                             try { onFinalSnapshot(finalSnapshotFromEvents ?? json); } catch { }
                         }
-                        finalizeUsage(usageCandidate ?? lastSeenUsage, "complete");
+                        finalUsageAfterWrite = usageCandidate ?? lastSeenUsage;
                     }
 
                     for (const outbound of outboundFrames) {
@@ -319,23 +333,12 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                             try { frameOut = rewriteFrame(frameOut) ?? frameOut; } catch { }
                         }
                         await writeJson(frameOut, outbound.eventName ?? null);
-                        if (downstreamClosed && canCancelUpstream) {
-                            try {
-                                await reader.cancel("downstream_closed");
-                            } catch {
-                                // ignore reader cancellation failures
-                            }
-                            break;
-                        }
                     }
 
-                    if (downstreamClosed && canCancelUpstream) {
-                        break;
+                    if (isFinalSnapshot) {
+                        finalizeUsage(finalUsageAfterWrite, "complete");
                     }
-                }
 
-                if (downstreamClosed && canCancelUpstream) {
-                    break;
                 }
             }
         } finally {
@@ -346,12 +349,13 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                 try { await writer.close(); } catch { }
             }
         }
-    })().catch(err => {
+    })();
+    dispatchBackground(streamPump.catch(err => {
         console.error("passthroughWithPricing stream error:", err, {
             requestId: ctx.requestId,
             workspaceId: ctx.workspaceId,
         });
-    });
+    }));
 
     const headers = new Headers();
     headers.set("Content-Type", "text/event-stream");

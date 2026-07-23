@@ -62,7 +62,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         },
     };
 
-    const res = await fetch(openAICompatUrl(args.providerId, "/ocr"), {
+    const res = await (args.upstreamTiming?.fetch ?? fetch)(openAICompatUrl(args.providerId, "/ocr"), {
         method: "POST",
         headers: openAICompatHeaders(args.providerId, keyInfo.key),
         body: JSON.stringify(ocrRequest),

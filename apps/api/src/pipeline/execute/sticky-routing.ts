@@ -4,9 +4,11 @@
 
 import type { Endpoint } from "@core/types";
 import { getJson, putJson } from "@/core/kv";
+import { dispatchBackground } from "@/runtime/env";
 
 const STICKY_PREFIX = "gateway:routing:sticky";
 const STICKY_TTL_SECONDS = 300; // 5 minutes
+const STICKY_L1_MAX_ENTRIES = 1_000;
 const CONTEXT_HASH_VERSION = "v2-opening-anchors";
 const CACHE_AWARE_ROUTING_ENDPOINTS = new Set<Endpoint>([
     "responses",
@@ -26,6 +28,35 @@ export type StickyRoutingContext = {
     key: string;
     source: "prompt_cache_key" | "context_hash";
 };
+
+type StickyL1Entry = {
+    value: StickyRoutingEntry | null;
+    expiresAtMs: number;
+};
+
+const stickyL1 = new Map<string, StickyL1Entry>();
+const stickyL1Inflight = new Map<string, Promise<void>>();
+
+function setStickyL1(key: string, value: StickyRoutingEntry | null): void {
+    if (!stickyL1.has(key) && stickyL1.size >= STICKY_L1_MAX_ENTRIES) {
+        const oldestKey = stickyL1.keys().next().value;
+        if (typeof oldestKey === "string") stickyL1.delete(oldestKey);
+    }
+    stickyL1.set(key, {
+        value,
+        expiresAtMs: Date.now() + STICKY_TTL_SECONDS * 1_000,
+    });
+}
+
+function refreshStickyL1(key: string): void {
+    if (stickyL1Inflight.has(key)) return;
+    const refresh = getJson<StickyRoutingEntry>(key)
+        .then((value) => setStickyL1(key, value))
+        .catch(() => setStickyL1(key, null))
+        .finally(() => stickyL1Inflight.delete(key));
+    stickyL1Inflight.set(key, refresh);
+    dispatchBackground(refresh);
+}
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
     if (!value || typeof value !== "object") return false;
@@ -352,7 +383,24 @@ export async function readStickyRouting(
     contextKey: string
 ): Promise<StickyRoutingEntry | null> {
     const key = buildStickyRoutingKey(workspaceId, endpoint, model, contextKey);
-    return await getJson<StickyRoutingEntry>(key);
+    const value = await getJson<StickyRoutingEntry>(key);
+    setStickyL1(key, value);
+    return value;
+}
+
+/** Serve an isolate-local hint and refresh KV asynchronously on cold/expiry. */
+export function readStickyRoutingOptimistic(
+    workspaceId: string,
+    endpoint: Endpoint,
+    model: string,
+    contextKey: string
+): StickyRoutingEntry | null {
+    const key = buildStickyRoutingKey(workspaceId, endpoint, model, contextKey);
+    const cached = stickyL1.get(key);
+    if (cached && cached.expiresAtMs > Date.now()) return cached.value;
+    if (cached) stickyL1.delete(key);
+    refreshStickyL1(key);
+    return null;
 }
 
 export async function writeStickyRouting(
@@ -371,7 +419,13 @@ export async function writeStickyRouting(
         source: context.source,
         createdAt: new Date().toISOString(),
     };
+    setStickyL1(key, payload);
     await putJson(key, payload, STICKY_TTL_SECONDS);
+}
+
+export function resetStickyRoutingStateForTests(): void {
+    stickyL1.clear();
+    stickyL1Inflight.clear();
 }
 
 export async function maybeWriteStickyRoutingFromUsage(args: {

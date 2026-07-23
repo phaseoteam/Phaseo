@@ -4,6 +4,7 @@
 
 import type { IRChatRequest } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult, ProviderExecutor, Bill } from "@executors/types";
+import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-generate/shared";
 import { irToOpenAIResponses } from "@executors/_shared/text-generate/openai-compat/transform";
 import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate/openai-compat/transform-chat";
@@ -34,7 +35,6 @@ export function shouldUseAzureResponsesRoute(args: Pick<ExecutorExecuteArgs, "pr
 }
 
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
-	const upstreamStartMs = args.meta.upstreamStartMs ?? Date.now();
 	const keyInfo = resolveAzureKey({ providerId: args.providerId, byokMeta: args.byokMeta } as any);
 	const config = resolveAzureConfig();
 	const route = shouldUseAzureResponsesRoute(args) ? "responses" : "chat";
@@ -61,11 +61,12 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const requestBody = JSON.stringify(payload);
 	const mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestBody : undefined;
 
-	const res = await fetch(url, {
+	const res = await fetchUpstream(args, url, {
 		method: "POST",
 		headers: azureHeaders(keyInfo.key),
 		body: requestBody,
 	});
+	const selectedDispatchAtMs = args.upstreamTiming?.timingFor(res)?.dispatchAtMs ?? Date.now();
 
 	const bill: Bill = {
 		cost_cents: 0,
@@ -106,7 +107,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		};
 	}
 
-	const { ir, usage, rawResponse, firstByteMs, totalMs } = await bufferStreamToIR(res, args, route, upstreamStartMs);
+	const { ir, usage, rawResponse, firstByteMs, totalMs } = await bufferStreamToIR(res, args, route, selectedDispatchAtMs);
 	const usageMeters = normalizeTextUsageForPricing(usage);
 	if (usageMeters) {
 		bill.usage = usageMeters;
@@ -122,8 +123,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		mappedRequest,
 		rawResponse,
 		timing: {
-			latencyMs: firstByteMs ?? totalMs,
-			generationMs: firstByteMs === null ? 0 : Math.max(0, totalMs - firstByteMs),
+			latencyMs: firstByteMs ?? undefined,
+			generationMs: totalMs,
 		},
 	};
 }

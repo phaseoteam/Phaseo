@@ -47,6 +47,19 @@ rootRouter.get(
     )
 );
 
+// Path-aware OpenID discovery alias for the /oauth issuer. Some clients use
+// the RFC 8414 insertion form for both OAuth and OpenID metadata discovery.
+rootRouter.get(
+    "/.well-known/openid-configuration/oauth",
+    withRuntime(async () =>
+        json(
+            oauthAuthorizationServerMetadata(),
+            200,
+            { "Cache-Control": "public, max-age=300" },
+        )
+    )
+);
+
 // RFC 8414 inserts the well-known path before an issuer path. With the issuer
 // https://api.phaseo.app/oauth, standards-compliant clients discover this URL.
 rootRouter.get(

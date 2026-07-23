@@ -4,6 +4,7 @@
 
 import type { IRMusicGenerateRequest, IRMusicGenerateResponse } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
+import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import type { ProviderExecutor } from "@executors/types";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
@@ -203,7 +204,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
 	const baseUrl = String(bindings.MINIMAX_BASE_URL || DEFAULT_MINIMAX_BASE_URL).replace(/\/+$/, "");
-	const res = await fetch(`${baseUrl}/v1/music_generation`, {
+	const res = await fetchUpstream(args, `${baseUrl}/v1/music_generation`, {
 		method: "POST",
 		headers: {
 			"Authorization": `Bearer ${keyInfo.key}`,

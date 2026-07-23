@@ -35,7 +35,7 @@ export default function ByokFallbackToggle({
 				onCheckedChange={handleChange}
 			/>
 			<span>
-				Fallback to Phaseo credits if a BYOK request fails
+				Try fallback BYOK keys after managed providers
 			</span>
 		</label>
 	);

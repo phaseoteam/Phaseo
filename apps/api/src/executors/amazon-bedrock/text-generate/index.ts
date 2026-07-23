@@ -4,11 +4,11 @@
 
 import type { IRChatRequest } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult, Bill } from "@executors/types";
+import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-generate/shared";
 import { resolveStreamForProtocol, bufferStreamToIR } from "@executors/_shared/text-generate/openai-compat";
 import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate/openai-compat/transform-chat";
 import { irToOpenAIResponses, openAIResponsesToIR } from "@executors/_shared/text-generate/openai-compat/transform";
-import { shouldFallbackToChatFromError, readErrorPayload } from "@executors/_shared/text-generate/openai-compat/retry-policy";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import type { ProviderExecutor } from "../../types";
@@ -56,15 +56,13 @@ async function executeBedrockOpenAI(
 	preferredRoute: "chat" | "responses",
 ): Promise<ExecutorResult> {
 	const irRequest = args.ir as IRChatRequest;
-	const upstreamStartMs = args.meta.upstreamStartMs ?? Date.now();
-
 	const buildPayload = (route: "chat" | "responses"): Record<string, any> => {
 		const providerId = args.providerId || "amazon-bedrock";
 		const payload = route === "responses"
 			? irToOpenAIResponses(irRequest, model, providerId, args.capabilityParams)
 			: irToOpenAIChat(irRequest, model, providerId, args.capabilityParams);
 
-		payload.stream = Boolean(irRequest.stream);
+		payload.stream = true;
 		if (route === "chat" && payload.stream) {
 			payload.stream_options = {
 				...(payload.stream_options ?? {}),
@@ -79,7 +77,7 @@ async function executeBedrockOpenAI(
 	let requestPayload = buildPayload(route);
 	let requestBody = JSON.stringify(requestPayload);
 	let mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestBody : undefined;
-	let res = await sendBedrockRequest(auth, {
+	let res = await sendBedrockRequest(args, auth, {
 		url: buildBedrockOpenAIUrl(auth.baseUrl, route),
 		body: requestBody,
 		headers: {
@@ -88,25 +86,6 @@ async function executeBedrockOpenAI(
 			...upstreamTestHeaders(args.meta),
 		},
 	});
-
-	if (!res.ok && route === "responses") {
-		const { errorText } = await readErrorPayload(res);
-		if (shouldFallbackToChatFromError({ route: "responses", status: res.status, errorText })) {
-			route = "chat";
-			requestPayload = buildPayload(route);
-			requestBody = JSON.stringify(requestPayload);
-			mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestBody : undefined;
-			res = await sendBedrockRequest(auth, {
-				url: buildBedrockOpenAIUrl(auth.baseUrl, route),
-				body: requestBody,
-				headers: {
-					"Content-Type": "application/json",
-					Accept: requestPayload.stream ? "text/event-stream" : "application/json",
-					...upstreamTestHeaders(args.meta),
-				},
-			});
-		}
-	}
 
 	const bill: Bill = {
 		cost_cents: 0,
@@ -150,11 +129,13 @@ async function executeBedrockOpenAI(
 	}
 
 	if (requestPayload.stream) {
+		const selectedDispatchAtMs =
+			args.upstreamTiming?.timingFor(res)?.dispatchAtMs ?? Date.now();
 		const { ir, usage, rawResponse, firstByteMs, totalMs } = await bufferStreamToIR(
 			res,
 			args,
 			route,
-			upstreamStartMs,
+			selectedDispatchAtMs,
 		);
 		const usageMeters = normalizeTextUsageForPricing(usage ?? ir?.usage);
 		if (usageMeters) {
@@ -173,10 +154,7 @@ async function executeBedrockOpenAI(
 			rawResponse,
 			timing: {
 				latencyMs: firstByteMs ?? undefined,
-				generationMs:
-					typeof firstByteMs === "number" && typeof totalMs === "number"
-						? Math.max(0, totalMs - firstByteMs)
-						: totalMs ?? undefined,
+				generationMs: totalMs,
 			},
 		};
 	}
@@ -202,8 +180,10 @@ async function executeBedrockOpenAI(
 		mappedRequest,
 		rawResponse: json,
 		timing: {
-			latencyMs: Date.now() - upstreamStartMs,
-			generationMs: 0,
+			latencyMs: undefined,
+			generationMs: args.upstreamTiming?.timingFor(res)?.dispatchAtMs
+				? Math.max(0, Date.now() - args.upstreamTiming.timingFor(res)!.dispatchAtMs)
+				: undefined,
 		},
 	};
 }
@@ -248,6 +228,7 @@ function buildBedrockOpenAIUrl(baseUrl: string, route: "chat" | "responses"): st
 }
 
 async function sendBedrockRequest(
+	executorArgs: ExecutorExecuteArgs,
 	auth: BedrockAuth,
 	args: { url: string; body: string; headers: Record<string, string> },
 ): Promise<Response> {
@@ -268,7 +249,7 @@ async function sendBedrockRequest(
 			...args.headers,
 		};
 
-	return fetch(args.url, {
+	return fetchUpstream(executorArgs, args.url, {
 		method: "POST",
 		headers: requestHeaders,
 		body: args.body,

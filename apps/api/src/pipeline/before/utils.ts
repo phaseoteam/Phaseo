@@ -54,6 +54,7 @@ export function buildProviderCandidatesWithDiagnostics(
             providerFamilyId: provider.providerFamilyId ?? null,
             offerScope: provider.offerScope ?? null,
             offerLabel: provider.offerLabel ?? null,
+			dataPolicyVariant: provider.dataPolicyVariant ?? "standard",
             apiModelId: provider.apiModelId ?? null,
             pricingKey: provider.pricingKey ?? provider.providerId,
             providerStatus: provider.providerStatus ?? "active",
@@ -68,6 +69,14 @@ export function buildProviderCandidatesWithDiagnostics(
             dataPolicyTier: provider.dataPolicyTier ?? null,
             dataPolicyConfidence: provider.dataPolicyConfidence ?? null,
             dataPolicyContractMode: provider.dataPolicyContractMode ?? null,
+            streamCancellationSupport: provider.streamCancellationSupport ?? "unknown",
+            streamCancellationStopsProviderBilling:
+                provider.streamCancellationStopsProviderBilling ?? null,
+            streamCancellationUsageRecovery:
+                provider.streamCancellationUsageRecovery ?? "unknown",
+            streamCancellationEvidenceKind:
+                provider.streamCancellationEvidenceKind ?? "none",
+            streamCancellationSourceUrl: provider.streamCancellationSourceUrl ?? null,
             adapter,
             baseWeight: provider.baseWeight > 0 ? provider.baseWeight : 1,
             byokMeta: provider.byokMeta,

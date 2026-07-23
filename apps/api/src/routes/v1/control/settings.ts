@@ -27,6 +27,8 @@ const WRITABLE_FIELDS = new Set([
 	"privacy_enable_free_may_publish_prompts",
 	"privacy_enable_input_output_logging",
 	"privacy_zdr_only",
+	"io_logging_enabled",
+	"io_logging_include_provider_payloads",
 	"provider_restriction_mode",
 	"provider_restriction_provider_ids",
 	"provider_restriction_enforce_allowed",
@@ -45,6 +47,8 @@ const CAMEL_TO_SNAKE: Record<string, string> = {
 	privacyEnableFreeMayPublishPrompts: "privacy_enable_free_may_publish_prompts",
 	privacyEnableInputOutputLogging: "privacy_enable_input_output_logging",
 	privacyZdrOnly: "privacy_zdr_only",
+	ioLoggingEnabled: "io_logging_enabled",
+	ioLoggingIncludeProviderPayloads: "io_logging_include_provider_payloads",
 	providerRestrictionMode: "provider_restriction_mode",
 	providerRestrictionProviderIds: "provider_restriction_provider_ids",
 	providerRestrictionEnforceAllowed: "provider_restriction_enforce_allowed",
@@ -66,6 +70,8 @@ const GATEWAY_CONTEXT_FIELDS = new Set([
 	"privacy_enable_free_may_train",
 	"privacy_enable_input_output_logging",
 	"privacy_zdr_only",
+	"io_logging_enabled",
+	"io_logging_include_provider_payloads",
 ]);
 
 function normalizeSettingsPatch(body: Record<string, unknown>): Record<string, unknown> {

@@ -4,6 +4,7 @@
 
 import type { IRRerankRequest, IRRerankResponse } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
+import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { encodeOpenAIRerankRequest } from "@protocols/openai-rerank/encode";
 import { decodeOpenAIRerankResponse } from "@protocols/openai-rerank/decode";
 import {
@@ -133,7 +134,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	);
 	const mappedRequest = captureRequest ? JSON.stringify(requestBody) : undefined;
 
-	const res = await fetch(openAICompatUrl(args.providerId, "/rerank"), {
+	const res = await fetchUpstream(args, openAICompatUrl(args.providerId, "/rerank"), {
 		method: "POST",
 		headers: openAICompatHeaders(args.providerId, key, {
 			"Idempotency-Key": args.requestId,

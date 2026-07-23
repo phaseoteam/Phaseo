@@ -26,21 +26,10 @@ export function resolveExecuteTotalLatencyMs(ctx: PipelineContext): number | nul
 
 export function resolveNonStreamLatencyMs(
 	ctx: PipelineContext,
-	generationMs: number | null | undefined,
+	_generationMs: number | null | undefined,
 ): number | null {
 	if (typeof ctx.meta.latency_ms === "number" && Number.isFinite(ctx.meta.latency_ms)) {
 		return ctx.meta.latency_ms;
 	}
-
-	const beforeMs = resolveBeforeLatencyMs(ctx);
-	const executeMs = resolveExecuteTotalLatencyMs(ctx);
-	if (typeof executeMs === "number" && Number.isFinite(executeMs)) {
-		return Math.round(beforeMs + executeMs);
-	}
-
-	if (typeof generationMs === "number" && Number.isFinite(generationMs)) {
-		return Math.round(beforeMs + generationMs);
-	}
-
 	return null;
 }

@@ -18,7 +18,7 @@ import {
     normalizeRoutingStatus as normalizeSharedRoutingStatus,
 } from "../before/context.shared";
 import { providerMeetsResidencyRequirement } from "@/lib/config/providerResidency";
-import { readHealthMany, ProviderHealth } from "./health";
+import { readHealthManyOptimistic, ProviderHealth } from "./health";
 import { stripPrioritySuffix } from "./utils";
 import { normalizeProviderList } from "@/lib/config/providerAliases";
 import {
@@ -26,7 +26,7 @@ import {
 	getEffectiveRoutingHints,
 } from "../requestRouting";
 import {
-    readStickyRouting,
+    readStickyRoutingOptimistic,
     resolveStickyRoutingContext,
     stickyRoutingCacheBoostMultiplier,
     type StickyRoutingContext,
@@ -174,6 +174,18 @@ function weightedOrder<T>(items: T[], weight: (x: T) => number, rng: () => numbe
     return out;
 }
 
+function filterStable<T>(items: T[], predicate: (item: T) => boolean): T[] {
+	for (let index = 0; index < items.length; index += 1) {
+		if (predicate(items[index])) continue;
+		const filtered = items.slice(0, index);
+		for (let remaining = index + 1; remaining < items.length; remaining += 1) {
+			if (predicate(items[remaining])) filtered.push(items[remaining]);
+		}
+		return filtered;
+	}
+	return items;
+}
+
 function hashSeed(value: string): number {
     let h = 2166136261;
     for (let i = 0; i < value.length; i++) {
@@ -191,6 +203,58 @@ function seededRandom(seed: number): () => number {
         x = Math.imul(x ^ (x >>> 15), x | 1);
         x ^= x + Math.imul(x ^ (x >>> 7), x | 61);
         return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+    };
+}
+
+function sampleStandardNormal(rng: () => number): number {
+    const u1 = Math.max(Number.EPSILON, rng());
+    const u2 = rng();
+    return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+}
+
+function sampleGamma(shape: number, rng: () => number): number {
+    if (shape < 1) {
+        return sampleGamma(shape + 1, rng) * Math.pow(Math.max(Number.EPSILON, rng()), 1 / shape);
+    }
+    const d = shape - (1 / 3);
+    const c = 1 / Math.sqrt(9 * d);
+    for (let attempt = 0; attempt < 32; attempt += 1) {
+        const normal = sampleStandardNormal(rng);
+        const base = 1 + c * normal;
+        if (base <= 0) continue;
+        const value = base * base * base;
+        const uniform = rng();
+        if (
+            uniform < 1 - 0.0331 * normal ** 4 ||
+            Math.log(Math.max(Number.EPSILON, uniform)) < 0.5 * normal * normal + d * (1 - value + Math.log(value))
+        ) {
+            return d * value;
+        }
+    }
+    return shape;
+}
+
+function sampleBeta(alpha: number, beta: number, rng: () => number): number {
+    const left = sampleGamma(Math.max(alpha, 0.001), rng);
+    const right = sampleGamma(Math.max(beta, 0.001), rng);
+    return left / Math.max(left + right, Number.EPSILON);
+}
+
+function sampleProviderReliability(health: ProviderHealth, rng: () => number): {
+    sample: number;
+    effectiveObservations: number;
+} {
+    // rate_60s * 60 approximates recent observations in the EWMA window. Cap
+    // its confidence so older traffic never prevents renewed exploration.
+    const effectiveObservations = Math.max(0, Math.min(60, health.rate_60s * 60));
+    const successRate = Math.max(0, Math.min(1, 1 - health.err_ewma_60s));
+    const successes = successRate * effectiveObservations;
+    const failures = (1 - successRate) * effectiveObservations;
+    return {
+        // An 80% prior is optimistic enough for unseen providers to be tried,
+        // while sustained failures rapidly reduce their selection probability.
+        sample: sampleBeta(8 + successes, 2 + failures, rng),
+        effectiveObservations,
     };
 }
 
@@ -449,11 +513,56 @@ function shouldApplyStickyRoutingBoost(
     // Keep sticky behavior when explicit cache pricing is unavailable.
     return true;
 }
+export type RoutingScoreFactors = {
+    successRate: number;
+    latencyScore: number;
+    tailLatencyScore: number;
+    throughputScore: number;
+    priceScore: number;
+    reliabilitySample: number;
+    reliabilityObservations: number;
+    tokenAffinity: number;
+    loadPenalty: number;
+    baseWeight: number;
+    rolloutMultiplier: number;
+    routingMultiplier: number;
+    cacheBoostMultiplier: number;
+    latencyPreferenceMultiplier: number;
+    throughputPreferenceMultiplier: number;
+};
+
+export type RoutingScoreFactorValues = readonly [
+    number, number, number, number, number,
+    number, number, number, number, number,
+    number, number, number, number, number,
+];
+
+function scoreFactorsFromValues(values: RoutingScoreFactorValues): RoutingScoreFactors {
+    return {
+        successRate: roundDiagnosticNumber(values[0]),
+        latencyScore: roundDiagnosticNumber(values[1]),
+        tailLatencyScore: roundDiagnosticNumber(values[2]),
+        throughputScore: roundDiagnosticNumber(values[3]),
+        priceScore: roundDiagnosticNumber(values[4]),
+        reliabilitySample: roundDiagnosticNumber(values[5]),
+        reliabilityObservations: roundDiagnosticNumber(values[6]),
+        tokenAffinity: roundDiagnosticNumber(values[7]),
+        loadPenalty: roundDiagnosticNumber(values[8]),
+        baseWeight: roundDiagnosticNumber(values[9]),
+        rolloutMultiplier: roundDiagnosticNumber(values[10]),
+        routingMultiplier: roundDiagnosticNumber(values[11]),
+        cacheBoostMultiplier: roundDiagnosticNumber(values[12]),
+        latencyPreferenceMultiplier: roundDiagnosticNumber(values[13]),
+        throughputPreferenceMultiplier: roundDiagnosticNumber(values[14]),
+    };
+}
+
 export type RoutedCandidate = {
     candidate: ProviderCandidate;
     adapter: ProviderCandidate["adapter"];
     score: number;
     health: ProviderHealth;
+    scoreFactorValues: RoutingScoreFactorValues;
 };
 
 export type RoutingFilterStageDiagnostics = {
@@ -518,21 +627,7 @@ export type RoutingDiagnostics = {
         score: number;
         breaker: ProviderHealth["breaker"];
         breakerUntilMs: number | null;
-        scoreFactors: {
-            successRate: number;
-            latencyScore: number;
-            tailLatencyScore: number;
-            throughputScore: number;
-            priceScore: number;
-            tokenAffinity: number;
-            loadPenalty: number;
-            baseWeight: number;
-            rolloutMultiplier: number;
-            routingMultiplier: number;
-            cacheBoostMultiplier: number;
-            latencyPreferenceMultiplier: number;
-            throughputPreferenceMultiplier: number;
-        };
+        scoreFactors: RoutingScoreFactors;
     }>;
     finalCandidateCount: number;
 };
@@ -568,6 +663,28 @@ function hasGlobalOfferSibling(
             String(candidate.providerId ?? "").trim().toLowerCase() &&
         String(entry.providerFamilyId ?? "").trim().toLowerCase() === familyId &&
         normalizeOfferScope(entry.offerScope) === "global",
+	);
+}
+
+function isZdrSpecializedOffer(candidate: ProviderCandidate): boolean {
+	return (
+		candidate.dataPolicyVariant === "zdr" &&
+		normalizeOfferScope(candidate.offerScope) === "specialized" &&
+		candidate.zeroDataRetention === "default"
+	);
+}
+
+function hasZdrSpecializedSibling(
+	candidates: ProviderCandidate[],
+	candidate: ProviderCandidate,
+): boolean {
+	const familyId = String(candidate.providerFamilyId ?? "").trim().toLowerCase();
+	if (!familyId) return false;
+	return candidates.some((entry) =>
+		String(entry.providerId ?? "").trim().toLowerCase() !==
+			String(candidate.providerId ?? "").trim().toLowerCase() &&
+		String(entry.providerFamilyId ?? "").trim().toLowerCase() === familyId &&
+		isZdrSpecializedOffer(entry),
 	);
 }
 
@@ -679,6 +796,7 @@ export async function routeProviders(
         testingMode?: boolean;
         requestId?: string | null;
         cacheAwareRouting?: boolean;
+		collectDetailedDiagnostics?: boolean;
         meta?: {
             debug?: {
                 enabled?: boolean;
@@ -687,6 +805,7 @@ export async function routeProviders(
     }
 ): Promise<{ ranked: RoutedCandidate[]; diagnostics: RoutingDiagnostics }> {
     const debugEnabled = Boolean(ctx.meta?.debug?.enabled);
+	const collectDetailedDiagnostics = ctx.collectDetailedDiagnostics !== false;
     const { base, priority, strict } = parsePriority(ctx.model);
     const routingHints = getEffectiveRoutingHints(ctx.body);
     const requestedRoutingMode = routingHints.requestedMode;
@@ -765,7 +884,7 @@ export async function routeProviders(
                 body: ctx.body,
             });
             if (stickyContext) {
-                stickyHint = await readStickyRouting(
+                stickyHint = readStickyRoutingOptimistic(
                     ctx.workspaceId,
                     ctx.endpoint,
                     base,
@@ -796,6 +915,7 @@ export async function routeProviders(
     const buildDiagnostics = (
         finalCandidateCount: number,
         rankedProviders: RoutingDiagnostics["rankedProviders"] = [],
+		forceDetailed = false,
     ): RoutingDiagnostics => ({
         model: ctx.model,
         endpoint: ctx.endpoint,
@@ -822,7 +942,7 @@ export async function routeProviders(
         providerCapabilitiesBeta,
         stickyRouting: buildStickyDiagnostics(),
         filterStages,
-        consideredProviders: candidates.map((candidate) => ({
+		consideredProviders: collectDetailedDiagnostics || forceDetailed ? candidates.map((candidate) => ({
             providerId: candidate.providerId,
             apiModelId: candidate.apiModelId ?? null,
             providerModelSlug: candidate.providerModelSlug ?? null,
@@ -831,8 +951,8 @@ export async function routeProviders(
             modelRoutingStatus: normalizeRoutingStatus(candidate.modelRoutingStatus),
             capabilityStatus: normalizeCapabilityStatus(candidate.capabilityStatus),
             baseWeight: roundDiagnosticNumber(candidate.baseWeight > 0 ? candidate.baseWeight : 1),
-        })),
-        rankedProviders,
+		})) : [],
+		rankedProviders: collectDetailedDiagnostics || forceDetailed ? rankedProviders : [],
         finalCandidateCount,
     });
 
@@ -842,6 +962,15 @@ export async function routeProviders(
         after: ProviderCandidate[],
         reasonForDrop: (candidate: ProviderCandidate) => string,
     ) => {
+		if (before.length === after.length) {
+			filterStages.push({
+				stage,
+				beforeCount: before.length,
+				afterCount: after.length,
+				droppedProviders: [],
+			});
+			return;
+		}
         const afterSet = new Set(after.map((candidate) => getRoutingCandidateKey(candidate)));
         const droppedProviders = before
             .filter((candidate) => !afterSet.has(getRoutingCandidateKey(candidate)))
@@ -863,20 +992,20 @@ export async function routeProviders(
     if (onlyHints.length) {
         const before = poolCandidates;
         const allow = new Set(onlyHints);
-        poolCandidates = poolCandidates.filter(c => allow.has(c.adapter.name));
+		poolCandidates = filterStable(poolCandidates, (candidate) => allow.has(candidate.adapter.name));
         pushStage("hints.only", before, poolCandidates, () => "not_in_provider.only");
     }
     if (ignoreHints.length) {
         const before = poolCandidates;
         const deny = new Set(ignoreHints);
-        poolCandidates = poolCandidates.filter(c => !deny.has(c.adapter.name));
+		poolCandidates = filterStable(poolCandidates, (candidate) => !deny.has(candidate.adapter.name));
         pushStage("hints.ignore", before, poolCandidates, () => "listed_in_provider.ignore");
     }
     if (!poolCandidates.length) poolCandidates = candidates;
 
     // Channel/status gating before health scoring.
     const beforeStatusGate = poolCandidates;
-    poolCandidates = poolCandidates.filter((candidate) => {
+	poolCandidates = filterStable(poolCandidates, (candidate) => {
         if (testingMode) return true;
         const status = normalizeProviderStatus(candidate.providerStatus);
         if (status === "active") return true;
@@ -893,7 +1022,7 @@ export async function routeProviders(
     });
 
     const beforeProviderRoutingStatusGate = poolCandidates;
-    poolCandidates = poolCandidates.filter((candidate) => {
+	poolCandidates = filterStable(poolCandidates, (candidate) => {
         const routingStatus = normalizeRoutingStatus(candidate.providerRoutingStatus);
         if (routingStatus === "disabled") return false;
         return true;
@@ -905,7 +1034,7 @@ export async function routeProviders(
     });
 
     const beforeModelRoutingStatusGate = poolCandidates;
-    poolCandidates = poolCandidates.filter((candidate) => {
+	poolCandidates = filterStable(poolCandidates, (candidate) => {
         const routingStatus = normalizeRoutingStatus(candidate.modelRoutingStatus);
         if (routingStatus === "disabled") return false;
         return true;
@@ -917,7 +1046,7 @@ export async function routeProviders(
     });
 
     const beforeCapabilityStatusGate = poolCandidates;
-    poolCandidates = poolCandidates.filter((candidate) => {
+	poolCandidates = filterStable(poolCandidates, (candidate) => {
         const capabilityStatus = normalizeCapabilityStatus(candidate.capabilityStatus);
         if (capabilityStatus === "disabled") return false;
         if (capabilityStatus === "coming_soon") return false;
@@ -933,11 +1062,19 @@ export async function routeProviders(
     });
 
     const beforeOfferScopeGate = poolCandidates;
-    poolCandidates = poolCandidates.filter((candidate) => {
+	poolCandidates = filterStable(poolCandidates, (candidate) => {
         if (testingMode) return true;
         const offerScope = normalizeOfferScope(candidate.offerScope);
+		if (explicitlySelectedProviders.has(candidate.providerId)) return true;
+		if (isZdrSpecializedOffer(candidate)) return requireZeroDataRetention === true;
+		if (
+			requireZeroDataRetention === true &&
+			candidate.dataPolicyVariant !== "zdr" &&
+			hasZdrSpecializedSibling(beforeOfferScopeGate, candidate)
+		) {
+			return false;
+		}
         if (offerScope === null || offerScope === "global") return true;
-        if (explicitlySelectedProviders.has(candidate.providerId)) return true;
         if (hasExplicitRegionPreference) return true;
         if (
             offerScope === "specialized" &&
@@ -950,7 +1087,7 @@ export async function routeProviders(
         return false;
     });
     if (requestedServiceTier === "priority") {
-        poolCandidates = poolCandidates.filter((candidate) => {
+		poolCandidates = filterStable(poolCandidates, (candidate) => {
             const offerScope = normalizeOfferScope(candidate.offerScope);
             if (offerScope !== "global") return true;
             return !hasSpecializedTierSibling({
@@ -962,6 +1099,16 @@ export async function routeProviders(
     }
     pushStage("offer_scope_gate", beforeOfferScopeGate, poolCandidates, (candidate) => {
         const offerScope = normalizeOfferScope(candidate.offerScope);
+		if (isZdrSpecializedOffer(candidate) && requireZeroDataRetention !== true) {
+			return "zdr_offer_requires_zdr_request";
+		}
+		if (
+			requireZeroDataRetention === true &&
+			candidate.dataPolicyVariant !== "zdr" &&
+			hasZdrSpecializedSibling(beforeOfferScopeGate, candidate)
+		) {
+			return "standard_offer_replaced_by_zdr_specialized_offer";
+		}
         if (offerScope === "regional") return "regional_offer_requires_explicit_opt_in";
         if (
             offerScope === "global" &&
@@ -979,7 +1126,7 @@ export async function routeProviders(
     });
 
     const beforeResidencyGate = poolCandidates;
-    poolCandidates = poolCandidates.filter((candidate) => {
+	poolCandidates = filterStable(poolCandidates, (candidate) => {
         const result = providerMeetsResidencyRequirement(
             {
                 residencyMode: candidate.residencyMode ?? null,
@@ -1018,7 +1165,7 @@ export async function routeProviders(
 
     if (maxPrice) {
         const beforePricingCapGate = poolCandidates;
-        poolCandidates = poolCandidates.filter((candidate) =>
+		poolCandidates = filterStable(poolCandidates, (candidate) =>
             candidateMatchesPriceCaps(candidate, maxPrice),
         );
         pushStage("pricing_cap_gate", beforePricingCapGate, poolCandidates, (candidate) => {
@@ -1028,7 +1175,7 @@ export async function routeProviders(
     }
 
     if (!poolCandidates.length) {
-        const diagnostics = buildDiagnostics(0);
+		const diagnostics = buildDiagnostics(0, [], true);
         console.warn("[gateway] provider pool empty", {
             model: ctx.model,
             endpoint: ctx.endpoint,
@@ -1048,7 +1195,7 @@ export async function routeProviders(
     }
 
     const providerIds = poolCandidates.map(c => c.adapter.name);
-    const healthMap = await readHealthMany(ctx.endpoint, base, providerIds);
+    const healthMap = readHealthManyOptimistic(ctx.endpoint, base, providerIds);
     const healths = poolCandidates.map(candidate => ({
         candidate,
         adapter: candidate.adapter,
@@ -1132,11 +1279,14 @@ export async function routeProviders(
             stickyRoutingApplied = true;
         }
         const succ = 1 - h.err_ewma_60s;
+        const reliability = sampleProviderReliability(h, rng);
         const p50Curve = 1 / (1 + (h.lat_ewma_60s / preset.L0));
         const p50Norm = 1 - normalise(h.lat_ewma_60s, minP50, maxP50);
         const tailNorm = 1 - normalise(Math.max(h.lat_ewma_300s, h.lat_ewma_60s * 1.6), minTail, maxTail);
         const tpsNorm = maxTPS > 0 ? normalise(h.tp_ewma_60s, minTPS, maxTPS) : 0;
-        const loadPen = h.current_load;
+        // A 429 drives request-local fallback. Edge-local in-flight counts are
+        // incomplete and must not influence provider selection.
+        const loadPen = 0;
         const candidateKey = getRoutingCandidateKey(v.candidate);
         const priceScore = mode === "balanced"
             ? (defaultPriceWeights.get(candidateKey) ?? 0.5)
@@ -1158,7 +1308,7 @@ export async function routeProviders(
 
         const baseScore = mode === "balanced"
             ? priceScore *
-                Math.max(0.05, succ) *
+                Math.max(0.05, reliability.sample) *
                 Math.max(0.05, 1 - loadPen) *
                 (0.5 + tokenAffinity)
             : preset.wSucc * succ +
@@ -1182,12 +1332,30 @@ export async function routeProviders(
                 throughputPreferenceMultiplier *
                 recentOutageMultiplier
         );
+        const scoreFactorValues: RoutingScoreFactorValues = [
+            succ,
+            0.5 * p50Curve + 0.5 * p50Norm,
+            tailNorm,
+            tpsNorm,
+            priceScore,
+            reliability.sample,
+            reliability.effectiveObservations,
+            tokenAffinity,
+            loadPen,
+            weight,
+            rolloutMultiplier,
+            routingStatusMultiplierCombined,
+            cacheRoutingMultiplier,
+            latencyPreferenceMultiplier,
+            throughputPreferenceMultiplier,
+        ];
         return {
             candidate: v.candidate,
             adapter: v.adapter,
             health: h,
             score,
-            diagnostics: {
+			scoreFactorValues,
+			diagnostics: collectDetailedDiagnostics ? {
                 providerId: v.candidate.providerId,
                 apiModelId: v.candidate.apiModelId ?? null,
                 providerModelSlug: v.candidate.providerModelSlug ?? null,
@@ -1197,34 +1365,15 @@ export async function routeProviders(
                     typeof h.breaker_until_ms === "number" && Number.isFinite(h.breaker_until_ms)
                         ? h.breaker_until_ms
                         : null,
-                scoreFactors: {
-                    successRate: roundDiagnosticNumber(succ),
-                    latencyScore: roundDiagnosticNumber(0.5 * p50Curve + 0.5 * p50Norm),
-                    tailLatencyScore: roundDiagnosticNumber(tailNorm),
-                    throughputScore: roundDiagnosticNumber(tpsNorm),
-                    priceScore: roundDiagnosticNumber(priceScore),
-                    tokenAffinity: roundDiagnosticNumber(tokenAffinity),
-                    loadPenalty: roundDiagnosticNumber(loadPen),
-                    baseWeight: roundDiagnosticNumber(weight),
-                    rolloutMultiplier: roundDiagnosticNumber(rolloutMultiplier),
-                    routingMultiplier: roundDiagnosticNumber(routingStatusMultiplierCombined),
-                    cacheBoostMultiplier: roundDiagnosticNumber(cacheRoutingMultiplier),
-                    latencyPreferenceMultiplier: roundDiagnosticNumber(
-                        latencyPreferenceMultiplier,
-                    ),
-                    throughputPreferenceMultiplier: roundDiagnosticNumber(
-                        throughputPreferenceMultiplier,
-                    ),
-                },
-            },
+                scoreFactors: scoreFactorsFromValues(scoreFactorValues),
+			} : null,
         };
     });
     const routableScored = scored.filter((entry) => entry.score > 0);
-    const rankedProviderDiagnostics = (entries: typeof routableScored) =>
-        entries
-            .slice()
-            .sort((a, b) => b.score - a.score)
-            .map((entry) => entry.diagnostics);
+	const rankedProviderDiagnostics = (entries: typeof routableScored) =>
+		collectDetailedDiagnostics
+			? entries.map((entry) => entry.diagnostics!)
+			: [];
 
     if (orderedHints.length) {
         const order = orderedHints;
@@ -1241,13 +1390,16 @@ export async function routeProviders(
             const ranked = [...ordered, ...remaining.sort((a, b) => b.score - a.score)];
             return {
                 ranked,
-                diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(routableScored)),
+			diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(ranked)),
             };
         }
-        const ranked = [...ordered, ...weightedOrder(remaining, (s) => s.score, rng)];
+        const remainingRanked = mode === "balanced"
+            ? remaining.sort((a, b) => b.score - a.score)
+            : weightedOrder(remaining, (s) => s.score, rng);
+        const ranked = [...ordered, ...remainingRanked];
         return {
             ranked,
-            diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(routableScored)),
+			diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(ranked)),
         };
     }
 
@@ -1255,13 +1407,17 @@ export async function routeProviders(
         const ranked = [...routableScored].sort((a, b) => b.score - a.score);
         return {
             ranked,
-            diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(routableScored)),
+			diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(ranked)),
         };
     }
 
-    const ranked = weightedOrder(routableScored, (s) => s.score, rng);
+    // Balanced/default already contains a Thompson draw. Sorting that sampled
+    // utility avoids layering a second lottery on top of exploration.
+    const ranked = mode === "balanced"
+        ? [...routableScored].sort((a, b) => b.score - a.score)
+        : weightedOrder(routableScored, (s) => s.score, rng);
     return {
         ranked,
-        diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(routableScored)),
+		diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(ranked)),
     };
 }

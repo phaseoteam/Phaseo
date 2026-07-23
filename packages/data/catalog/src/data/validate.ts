@@ -941,6 +941,13 @@ function checkApiProviders(state: ValidationState): string[] {
         ) {
             errors.push(`API provider ${providerId} has invalid offer_scope '${String(data.offer_scope)}'`);
         }
+		if (
+			data.data_policy_variant !== undefined &&
+			data.data_policy_variant !== null &&
+			!['standard', 'zdr'].includes(String(data.data_policy_variant))
+		) {
+			errors.push(`API provider ${providerId} has invalid data_policy_variant '${String(data.data_policy_variant)}'`);
+		}
         if (
             data.data_policy_variant !== undefined &&
             data.data_policy_variant !== null &&
@@ -983,7 +990,10 @@ function checkApiProviders(state: ValidationState): string[] {
         ) {
             errors.push(`API provider ${providerId} has invalid stream_cancellation_evidence_kind '${String(data.stream_cancellation_evidence_kind)}'`);
         }
-        if (data.stream_cancellation_stops_provider_billing === true && data.stream_cancellation_support !== 'supported') {
+        if (
+            data.stream_cancellation_stops_provider_billing === true &&
+            data.stream_cancellation_support !== 'supported'
+        ) {
             errors.push(`API provider ${providerId} cannot stop billing on cancellation unless cancellation is supported`);
         }
         if (
@@ -1025,6 +1035,17 @@ function checkApiProviders(state: ValidationState): string[] {
         ) {
             errors.push(`API provider ${providerId} has invalid data_policy_contract_mode '${String(data.data_policy_contract_mode)}'`);
         }
+		if (data.data_policy_variant === 'zdr') {
+			if (data.offer_scope !== 'specialized') {
+				errors.push(`ZDR provider ${providerId} must use offer_scope 'specialized'`);
+			}
+			if (data.zero_data_retention !== 'default') {
+				errors.push(`ZDR provider ${providerId} must set zero_data_retention to 'default'`);
+			}
+			if (data.data_policy_tier !== 'private' || data.data_policy_confidence !== 'confirmed') {
+				errors.push(`ZDR provider ${providerId} must have a confirmed private data policy`);
+			}
+		}
         if (
             data.regional_pricing_mode !== undefined &&
             data.regional_pricing_mode !== null &&

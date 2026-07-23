@@ -56,6 +56,9 @@ export type BatchJobMeta = {
 	reservedNanos?: number | null;
 	reservationStatus?: string | null;
 	createdAt?: number;
+	providerDispatchedAtMs?: number;
+	durationMs?: number | null;
+	generationMs?: number | null;
 };
 
 export type BatchJobRecord = {
@@ -220,6 +223,12 @@ function parseBatchMeta(value: unknown): BatchJobMeta | null {
 	if (typeof source.reservationStatus === "string") out.reservationStatus = source.reservationStatus;
 	if (typeof source.reservation_status === "string") out.reservationStatus = source.reservation_status;
 	if (typeof source.createdAt === "number") out.createdAt = source.createdAt;
+	if (typeof source.providerDispatchedAtMs === "number") out.providerDispatchedAtMs = source.providerDispatchedAtMs;
+	if (typeof source.provider_dispatched_at_ms === "number") out.providerDispatchedAtMs = source.provider_dispatched_at_ms;
+	if (typeof source.durationMs === "number") out.durationMs = source.durationMs;
+	if (typeof source.duration_ms === "number") out.durationMs = source.duration_ms;
+	if (typeof source.generationMs === "number") out.generationMs = source.generationMs;
+	if (typeof source.generation_ms === "number") out.generationMs = source.generation_ms;
 	return out;
 }
 

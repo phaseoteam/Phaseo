@@ -106,7 +106,21 @@ describe("handleScheduledEvent", () => {
 		expect(configureRuntimeMock).toHaveBeenCalledWith(env);
 		expect(clearRuntimeMock).toHaveBeenCalled();
 		expect(oauthCleanupRpcMock).toHaveBeenCalledWith("cleanup_expired_oauth_artifacts");
+		expect(oauthCleanupRpcMock).toHaveBeenCalledWith("process_v2_analytics_outbox", {
+			p_limit: 250,
+		});
 		expect(runModelDiscoveryJobMock).not.toHaveBeenCalled();
+	});
+
+	it("allows the v2 analytics outbox batch size to be configured", async () => {
+		await handleScheduledEvent(
+			scheduledEventAt("2026-06-10T00:05:00.000Z"),
+			{ V2_ANALYTICS_OUTBOX_LIMIT: "900" } as any,
+		);
+
+		expect(oauthCleanupRpcMock).toHaveBeenCalledWith("process_v2_analytics_outbox", {
+			p_limit: 900,
+		});
 	});
 
 	it("skips async webhook retries when explicitly disabled", async () => {
@@ -130,6 +144,7 @@ describe("handleScheduledEvent", () => {
 
 	it("runs I/O retention billing on the daily billing tick", async () => {
 		const env = {
+			GATEWAY_IO_RETENTION_BILLING_ENABLED: "true",
 			GATEWAY_IO_RETENTION_BILLING_LIMIT: "12",
 			GATEWAY_IO_RETENTION_GRACE_DAYS: "9",
 			GATEWAY_IO_RETENTION_PRICE_PER_MILLION_UNITS_NANOS: "7000000000",

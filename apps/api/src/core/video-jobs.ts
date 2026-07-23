@@ -67,6 +67,7 @@ export type VideoJobMeta = {
 	lastWebhookProgressAt?: string | null;
 	lastWebhookDispatchedAt?: string | null;
 	createdAt?: number;
+	providerDispatchedAtMs?: number;
 };
 
 export type VideoJobRecord = {
@@ -239,6 +240,12 @@ function parseVideoJobMeta(value: unknown): VideoJobMeta | null {
 	if (typeof source.lastWebhookDispatchedAt === "string") out.lastWebhookDispatchedAt = source.lastWebhookDispatchedAt;
 	if (typeof source.last_webhook_dispatched_at === "string") out.lastWebhookDispatchedAt = source.last_webhook_dispatched_at;
 	if (typeof source.createdAt === "number") out.createdAt = source.createdAt;
+	if (typeof source.providerDispatchedAtMs === "number") {
+		out.providerDispatchedAtMs = source.providerDispatchedAtMs;
+	}
+	if (typeof source.provider_dispatched_at_ms === "number") {
+		out.providerDispatchedAtMs = source.provider_dispatched_at_ms;
+	}
 	return out;
 }
 

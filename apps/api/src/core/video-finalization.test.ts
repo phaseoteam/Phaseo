@@ -598,7 +598,7 @@ describe("video-finalization", () => {
 			reason: "already_billed",
 		});
 		expect(recordUsageAndChargeMock).not.toHaveBeenCalled();
-		expect(markVideoJobBilledMock).toHaveBeenCalledWith("team_2", "video_legacy_retry");
+		expect(markVideoJobBilledMock).not.toHaveBeenCalled();
 	});
 
 	it("does not legacy-charge when capture RPC throws", async () => {

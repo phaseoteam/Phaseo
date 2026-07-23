@@ -189,7 +189,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 		requestBody.pronunciation_dictionary_locators = elevenlabsParams.pronunciation_dictionary_locators;
 	}
 
-	const res = await fetch(
+	const res = await (args.upstreamTiming?.fetch ?? fetch)(
 		`${baseUrl}/v1/text-to-speech/${encodeURIComponent(voiceId)}${query ? `?${query}` : ""}`,
 		{
 		method: "POST",
