@@ -25,11 +25,13 @@ export default function ModelPercentileSelect({
 	onChange,
 	isLoading = false,
 	disabled = false,
+	ariaLabel = "Select percentile",
 }: {
 	value: ModelPercentile;
 	onChange: (value: ModelPercentile) => void;
 	isLoading?: boolean;
 	disabled?: boolean;
+	ariaLabel?: string;
 }) {
 	const selector = (
 		<DropdownMenu>
@@ -38,7 +40,7 @@ export default function ModelPercentileSelect({
 					variant="outline"
 					size="sm"
 					className="h-8 gap-2 rounded-md px-3 text-xs"
-					aria-label="Select percentile"
+					aria-label={ariaLabel}
 					title={disabled ? "Coming Soon" : undefined}
 					disabled={disabled || isLoading}
 				>

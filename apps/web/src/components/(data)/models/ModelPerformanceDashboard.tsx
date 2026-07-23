@@ -212,6 +212,7 @@ export default function ModelPerformanceDashboard({
 						value={selectedPercentile}
 						onChange={handlePercentileChange}
 						isLoading={isLoadingPercentile}
+						ariaLabel="Select performance percentile"
 					/>
 				) : null}
 				</div>

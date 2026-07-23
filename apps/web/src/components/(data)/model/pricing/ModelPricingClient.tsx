@@ -1090,6 +1090,7 @@ export default function ModelPricingClient({
                             value={selectedPercentile}
                             onChange={handlePercentileChange}
                             isLoading={isLoadingPercentile}
+                            ariaLabel="Select provider percentile"
                         />
                     </div>
                 ) : null}
