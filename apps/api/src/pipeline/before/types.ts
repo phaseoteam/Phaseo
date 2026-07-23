@@ -64,6 +64,8 @@ export type ByokKeyMeta = {
     fingerprintSha256: string;
     keyVersion: string | null;
     alwaysUse: boolean;
+	routingMode?: "priority" | "fallback";
+	sortOrder?: number;
     /**
      * When gateway context preloads a decrypted BYOK key, we keep it here to
      * avoid re-fetching from the database inside each adapter.
@@ -162,6 +164,7 @@ export type GatewayProviderSnapshot = {
     providerFamilyId?: string | null;
     offerScope?: "global" | "regional" | "specialized" | null;
     offerLabel?: string | null;
+	dataPolicyVariant?: "standard" | "zdr" | null;
     apiModelId?: string | null;
     pricingKey?: string | null;
     providerStatus?: ProviderRolloutStatus | null;
@@ -196,6 +199,11 @@ export type GatewayProviderSnapshot = {
         | "customer_agreement"
         | "enterprise_agreement"
         | null;
+    streamCancellationSupport?: "supported" | "unsupported" | "unknown" | null;
+    streamCancellationStopsProviderBilling?: boolean | null;
+    streamCancellationUsageRecovery?: "authoritative" | "unknown" | null;
+    streamCancellationEvidenceKind?: "provider" | "aggregator" | "none" | null;
+    streamCancellationSourceUrl?: string | null;
     supportsEndpoint: boolean;
     baseWeight: number;
     byokMeta: ByokKeyMeta[];
@@ -241,6 +249,9 @@ export type TeamSettings = {
     privacyEnablePaidMayTrain?: boolean | null;
     privacyEnableFreeMayTrain?: boolean | null;
     privacyEnableInputOutputLogging?: boolean | null;
+    /** Explicit consent to persist gateway request/response payloads. */
+    ioLoggingEnabled?: boolean;
+    ioLoggingIncludeProviderPayloads?: boolean;
     defaultPlugins?: NormalizedGatewayPluginConfig[] | null;
     billingMode: "wallet" | "invoice";
 };
@@ -302,6 +313,7 @@ export type ProviderCandidate = {
     providerFamilyId?: string | null;
     offerScope?: "global" | "regional" | "specialized" | null;
     offerLabel?: string | null;
+	dataPolicyVariant?: "standard" | "zdr" | null;
     apiModelId?: string | null;
     pricingKey?: string | null;
     providerStatus?: ProviderRolloutStatus | null;
@@ -336,6 +348,11 @@ export type ProviderCandidate = {
         | "customer_agreement"
         | "enterprise_agreement"
         | null;
+    streamCancellationSupport?: "supported" | "unsupported" | "unknown" | null;
+    streamCancellationStopsProviderBilling?: boolean | null;
+    streamCancellationUsageRecovery?: "authoritative" | "unknown" | null;
+    streamCancellationEvidenceKind?: "provider" | "aggregator" | "none" | null;
+    streamCancellationSourceUrl?: string | null;
     adapter: ProviderAdapter;
     baseWeight: number;
     byokMeta: ByokKeyMeta[];
@@ -423,6 +440,7 @@ export type ProviderAttemptLog = {
     retryable?: boolean | null;
     key_source?: "gateway" | "byok" | null;
     byok_key_id?: string | null;
+    credential_phase?: "priority_byok" | "gateway" | "fallback_byok";
     upstream_url?: string | null;
     upstream_error_code?: string | null;
     upstream_error_type?: string | null;
@@ -435,6 +453,12 @@ export type ProviderAttemptLog = {
     fallback_attempted?: boolean;
     request_build_ms?: number | null;
     upstream_headers_ms?: number | null;
+	time_to_upstream_request_ms?: number | null;
+	upstream_request_count?: number | null;
+	upstream_poll_count?: number | null;
+	upstream_auth_count?: number | null;
+	upstream_preflight_count?: number | null;
+	upstream_media_count?: number | null;
     retry_delay_ms?: number | null;
 };
 
@@ -628,6 +652,13 @@ export type PipelineContext = {
     responseCache?: ResponseCacheDiagnostics | null;
     attemptErrors?: Array<Record<string, unknown>>;
     providerAttempts?: ProviderAttemptLog[];
+    credentialPlan?: Array<{
+        attempt_number: number;
+        provider: string;
+        credential_phase: "priority_byok" | "gateway" | "fallback_byok";
+        key_source: "gateway" | "byok";
+        byok_key_id: string | null;
+    }>;
     // Enrichment data for observability (wide events)
     teamEnrichment?: TeamEnrichment | null;
     keyEnrichment?: KeyEnrichment | null;

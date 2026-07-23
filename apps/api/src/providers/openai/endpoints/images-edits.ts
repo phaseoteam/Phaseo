@@ -44,7 +44,8 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
             const upload = await resolveUploadableFromString(input, {
                 defaultMimeType: "image/png",
                 fallbackFilename: `image-${i + 1}`,
-                maxBytes: 25 * 1024 * 1024,
+				maxBytes: 25 * 1024 * 1024,
+				upstreamTiming: args.upstreamTiming,
             });
             imageUploads.push(upload);
         } catch {
@@ -76,7 +77,8 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
             maskUpload = await resolveUploadableFromString(body.mask, {
                 defaultMimeType: "image/png",
                 fallbackFilename: "mask",
-                maxBytes: 4 * 1024 * 1024,
+				maxBytes: 4 * 1024 * 1024,
+				upstreamTiming: args.upstreamTiming,
             });
         } catch {
             return {
@@ -121,7 +123,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     const headers = openAICompatHeaders(args.providerId, keyInfo.key);
     delete (headers as any)["Content-Type"];
 
-    const res = await fetch(openAICompatUrl(args.providerId, "/images/edits"), {
+    const res = await (args.upstreamTiming?.fetch ?? fetch)(openAICompatUrl(args.providerId, "/images/edits"), {
         method: "POST",
         headers,
         body: form,

@@ -1565,6 +1565,7 @@ async function handleCreate(req: Request) {
 	}
 
 	let upstream: Response;
+	const providerDispatchedAtMs = Date.now();
 	try {
 		upstream = await fetchProviderBatchApi(providerId, {
 			endpointPath: providerCreate.endpointPath,
@@ -1579,6 +1580,7 @@ async function handleCreate(req: Request) {
 			releaseRefId: requestId,
 		}).catch(() => null);
 		await setBatchJobStatus(auth.workspaceId, batchId, "failed", {
+			providerDispatchedAtMs,
 			reservationStatus: "released",
 			submissionError: "batch_provider_create_failed",
 		}).catch(() => null);
@@ -1592,6 +1594,7 @@ async function handleCreate(req: Request) {
 			releaseRefId: requestId,
 		}).catch(() => null);
 		await setBatchJobStatus(auth.workspaceId, batchId, "failed", {
+			providerDispatchedAtMs,
 			reservationStatus: "released",
 			submissionError: `batch_provider_create_rejected_${upstream.status}`,
 		}).catch(() => null);
@@ -1674,6 +1677,7 @@ async function handleCreate(req: Request) {
 				reservationId: reservation.reservationId,
 				reservedNanos: reservation.reservedNanos,
 				reservationStatus: reservation.status,
+				providerDispatchedAtMs,
 			});
 			try {
 				await saveBatchJobMeta(auth.workspaceId, batchId, persistedMeta);

@@ -8,6 +8,7 @@
 
 import type { IRChatRequest, IRChatResponse, IRContentPart, IRChoice, IRStreamChunk, IRStreamDelta } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
+import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import type { ProviderExecutor } from "../../types";
 import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-generate/shared";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
@@ -35,7 +36,7 @@ import { googleUsageMetadataToIRUsage } from "@providers/google-ai-studio/usage"
  * - `generationConfig` for parameters
  * - Model in URL path, not request body
  */
-async function irToGemini(ir: IRChatRequest, modelOverride?: string | null): Promise<any> {
+async function irToGemini(ir: IRChatRequest, modelOverride?: string | null, upstreamTiming?: ExecutorExecuteArgs["upstreamTiming"]): Promise<any> {
 	const contents: any[] = [];
 	let systemInstruction: any = null;
 	const toolNamesById = new Map<string, string>();
@@ -52,17 +53,17 @@ async function irToGemini(ir: IRChatRequest, modelOverride?: string | null): Pro
 	for (const msg of ir.messages) {
 		if (msg.role === "system") {
 			// System messages go in systemInstruction, not contents
-			const parts = await irPartsToGeminiParts(msg.content);
+			const parts = await irPartsToGeminiParts(msg.content, { upstreamTiming });
 			systemInstruction = { parts };
 		} else if (msg.role === "user") {
 			contents.push({
 				role: "user",
-				parts: await irPartsToGeminiParts(msg.content),
+				parts: await irPartsToGeminiParts(msg.content, { upstreamTiming }),
 			});
 		} else if (msg.role === "assistant") {
 			contents.push({
 				role: "model", // Google uses "model" not "assistant"
-				parts: await irPartsToGeminiParts(msg.content),
+				parts: await irPartsToGeminiParts(msg.content, { upstreamTiming }),
 			});
 		} else if (msg.role === "tool") {
 			// Tool results
@@ -343,15 +344,14 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const baseRoot = String(bindings.GOOGLE_BASE_URL || "https://generativelanguage.googleapis.com").replace(/\/+$/, "");
 	const baseUrl = /\/v1(beta)?$/i.test(baseRoot) ? baseRoot : `${baseRoot}/v1beta`;
 
-	const upstreamStartMs = meta.upstreamStartMs ?? Date.now();
 	const makeEndpoint = (candidateModel: string) =>
 		`${baseUrl}/models/${encodeURIComponent(candidateModel)}:streamGenerateContent?alt=sse`;
 
 	try {
 		const doRequest = async (candidateModel: string) => {
-			const requestBody = await irToGemini(ir, candidateModel);
+			const requestBody = await irToGemini(ir, candidateModel, args.upstreamTiming);
 			const endpoint = makeEndpoint(candidateModel);
-			const response = await fetch(endpoint, {
+			const response = await fetchUpstream(args, endpoint, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -367,6 +367,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		model = attempted.candidateModel;
 		const geminiRequest = attempted.requestBody;
 		const response = attempted.response;
+		const selectedDispatchAtMs = args.upstreamTiming?.timingFor(response)?.dispatchAtMs ?? Date.now();
 		const mappedRequest = (
 			meta.echoUpstreamRequest ||
 			meta.returnUpstreamRequest ||
@@ -420,7 +421,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				transformedResponse,
 				args,
 				"chat",
-				upstreamStartMs,
+				selectedDispatchAtMs,
 			);
 			const fallback = applyGoogleOutputTokenFallback(irResponse);
 			if (fallback.applied) {
@@ -452,8 +453,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				mappedRequest,
 				rawResponse,
 				timing: {
-					latencyMs: firstByteMs ?? totalMs,
-					generationMs: firstByteMs === null ? 0 : Math.max(0, totalMs - firstByteMs),
+			latencyMs: firstByteMs ?? undefined,
+					generationMs: totalMs,
 				},
 			};
 		}
@@ -473,7 +474,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			bill.usage = usageMeters;
 		}
 
-		const totalMs = Date.now() - upstreamStartMs;
+		const totalMs = Date.now() - selectedDispatchAtMs;
 
 		return {
 			kind: "completed",
@@ -484,8 +485,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			byokKeyId: keyInfo.byokId,
 			mappedRequest,
 			timing: {
-				latencyMs: totalMs,
-				generationMs: 0,
+				latencyMs: undefined,
+				generationMs: totalMs,
 			},
 		};
 	} catch (error: any) {

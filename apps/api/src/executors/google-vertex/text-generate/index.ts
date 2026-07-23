@@ -3,7 +3,8 @@
 // How: IR -> provider-specific Vertex payload -> IR, with protocol conversion handled downstream.
 
 import type { IRChatRequest, IRChatResponse, IRContentPart, IRChoice } from "@core/ir";
-import type { ExecutorExecuteArgs, ExecutorResult, Bill } from "@executors/types";
+import type { ExecutorExecuteArgs, ExecutorResult, Bill, ExecutorUpstreamTiming } from "@executors/types";
+import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-generate/shared";
 import { bufferStreamToIR, resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { createSyntheticResponsesStreamFromIR } from "@executors/_shared/text-generate/synthetic-responses-stream";
@@ -76,12 +77,11 @@ export function preprocess(ir: IRChatRequest, args: ExecutorExecuteArgs): IRChat
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	const irRequest = args.ir as IRChatRequest;
 	const model = args.providerModelSlug ?? irRequest.model;
-	const upstreamStartMs = args.meta.upstreamStartMs ?? Date.now();
 	const bindings = getBindings() as any;
 	const keyInfo = resolveProviderKey(args, () =>
 		bindings.GOOGLE_VERTEX_ACCESS_TOKEN || bindings.GOOGLE_VERTEX_API_KEY,
 	);
-	const accessToken = await resolveVertexAccessToken(keyInfo.key);
+	const accessToken = await resolveVertexAccessToken(keyInfo.key, args.upstreamTiming);
 	const apiBase = resolveVertexApiBase(bindings);
 	const route = resolveVertexModelRoute(model);
 
@@ -95,7 +95,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		endpoint = `${apiBase}/publishers/anthropic/models/${encodeURIComponent(route.modelForPath)}:rawPredict`;
 	} else if (route.family === "gemini") {
 		const normalizedIr = withNormalizedReasoning(irRequest, args.capabilityParams, route.modelForPath);
-		payload = await irToGemini(normalizedIr, route.modelForPath);
+		payload = await irToGemini(normalizedIr, route.modelForPath, args.upstreamTiming);
 		endpoint = `${apiBase}/publishers/google/models/${encodeURIComponent(route.modelForPath)}:streamGenerateContent?alt=sse`;
 	} else {
 		payload = irToOpenAIChat(irRequest, route.modelForPayload, args.providerId, args.capabilityParams);
@@ -110,7 +110,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const requestBody = JSON.stringify(payload);
 	const mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestBody : undefined;
 
-	const res = await fetch(endpoint, {
+	const res = await fetchUpstream(args, endpoint, {
 		method: "POST",
 		headers: {
 			Authorization: `Bearer ${accessToken}`,
@@ -119,6 +119,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		},
 		body: requestBody,
 	});
+	const selectedDispatchAtMs = args.upstreamTiming?.timingFor(res)?.dispatchAtMs ?? Date.now();
 
 	const bill: Bill = {
 		cost_cents: 0,
@@ -215,7 +216,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			transformedResponse,
 			args,
 			routeForBuffer,
-			upstreamStartMs,
+			selectedDispatchAtMs,
 		);
 		if (route.family === "gemini") {
 			const fallback = applyGoogleOutputTokenFallback(ir);
@@ -256,8 +257,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			mappedRequest,
 			rawResponse,
 			timing: {
-				latencyMs: firstByteMs ?? totalMs,
-				generationMs: firstByteMs === null ? 0 : Math.max(0, totalMs - firstByteMs),
+			latencyMs: firstByteMs ?? undefined,
+				generationMs: totalMs,
 			},
 		};
 	}
@@ -292,7 +293,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		keyInfo,
 		mappedRequest,
 		rawResponse: json,
-		upstreamStartMs,
+		upstreamStartMs: selectedDispatchAtMs,
 	});
 }
 
@@ -329,8 +330,8 @@ function finalizeResult(input: {
 			byokKeyId: keyInfo.byokId,
 			mappedRequest,
 			timing: {
-				latencyMs: Date.now() - upstreamStartMs,
-				generationMs: 0,
+				latencyMs: undefined,
+				generationMs: Date.now() - upstreamStartMs,
 			},
 		};
 	}
@@ -351,8 +352,8 @@ function finalizeResult(input: {
 		mappedRequest,
 		rawResponse,
 		timing: {
-			latencyMs: Date.now() - upstreamStartMs,
-			generationMs: 0,
+			latencyMs: undefined,
+			generationMs: Date.now() - upstreamStartMs,
 		},
 	};
 }
@@ -411,7 +412,7 @@ function resolveVertexApiBase(bindings: Record<string, any>): string {
 	return `https://${encodeURIComponent(location)}-aiplatform.googleapis.com/v1/projects/${encodeURIComponent(project)}/locations/${encodeURIComponent(location)}`;
 }
 
-export async function irToGemini(ir: IRChatRequest, modelOverride?: string | null): Promise<any> {
+export async function irToGemini(ir: IRChatRequest, modelOverride?: string | null, upstreamTiming?: ExecutorExecuteArgs["upstreamTiming"]): Promise<any> {
 	const contents: any[] = [];
 	const systemInstructionParts: any[] = [];
 	const toolNamesById = new Map<string, string>();
@@ -426,21 +427,21 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 
 	for (const msg of ir.messages) {
 		if (msg.role === "system" || msg.role === "developer") {
-			const parts = await irPartsToGeminiParts(msg.content, { preserveReasoningAsThought: true });
+			const parts = await irPartsToGeminiParts(msg.content, { preserveReasoningAsThought: true, upstreamTiming });
 			systemInstructionParts.push(...parts);
 			continue;
 		}
 		if (msg.role === "user") {
 			contents.push({
 				role: "user",
-				parts: await irPartsToGeminiParts(msg.content, { preserveReasoningAsThought: true }),
+				parts: await irPartsToGeminiParts(msg.content, { preserveReasoningAsThought: true, upstreamTiming }),
 			});
 			continue;
 		}
 		if (msg.role === "assistant") {
 			contents.push({
 				role: "model",
-				parts: await irPartsToGeminiParts(msg.content, { preserveReasoningAsThought: true }),
+				parts: await irPartsToGeminiParts(msg.content, { preserveReasoningAsThought: true, upstreamTiming }),
 			});
 			continue;
 		}
@@ -690,7 +691,7 @@ function normalizeGeminiInlineData(part: any): {
 	return null;
 }
 
-async function resolveVertexAccessToken(rawKey: string): Promise<string> {
+async function resolveVertexAccessToken(rawKey: string, upstreamTiming?: ExecutorUpstreamTiming): Promise<string> {
 	const value = rawKey.trim();
 	if (!value) throw vertexError("google-vertex_access_token_missing");
 
@@ -698,7 +699,7 @@ async function resolveVertexAccessToken(rawKey: string): Promise<string> {
 		try {
 			const parsed = JSON.parse(value) as Record<string, unknown>;
 			if (isVertexServiceAccount(parsed)) {
-				return mintServiceAccountAccessToken(parsed);
+				return mintServiceAccountAccessToken(parsed, upstreamTiming);
 			}
 			const token = typeof parsed.access_token === "string" ? parsed.access_token.trim() : "";
 			if (token) return token;
@@ -720,7 +721,7 @@ function isVertexServiceAccount(payload: Record<string, unknown>): payload is Ve
 	);
 }
 
-async function mintServiceAccountAccessToken(sa: VertexServiceAccount): Promise<string> {
+async function mintServiceAccountAccessToken(sa: VertexServiceAccount, upstreamTiming?: ExecutorUpstreamTiming): Promise<string> {
 	const tokenUri = sa.token_uri || "https://oauth2.googleapis.com/token";
 	const now = Math.floor(Date.now() / 1000);
 	const header = { alg: "RS256", typ: "JWT" };
@@ -744,13 +745,16 @@ async function mintServiceAccountAccessToken(sa: VertexServiceAccount): Promise<
 		assertion,
 	});
 
-	const res = await fetch(tokenUri, {
+	const init: RequestInit = {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/x-www-form-urlencoded",
 		},
 		body,
-	});
+	};
+	const res = await (upstreamTiming
+		? upstreamTiming.fetch(tokenUri, init, "auth")
+		: fetch(tokenUri, init));
 
 	if (!res.ok) {
 		throw vertexError(`google-vertex_oauth_error_${res.status}`);

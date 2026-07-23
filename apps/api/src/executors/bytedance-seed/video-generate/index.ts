@@ -4,6 +4,7 @@
 
 import type { IRVideoGenerationRequest, IRVideoGenerationResponse } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
+import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
 import { saveVideoJobMeta } from "@core/video-jobs";
@@ -384,7 +385,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	let res: Response;
 	try {
-		res = await fetch(`${baseUrl}/api/v3/contents/generations/tasks`, {
+		res = await fetchUpstream(args, `${baseUrl}/api/v3/contents/generations/tasks`, {
 			method: "POST",
 			headers: {
 				Authorization: `Bearer ${keyInfo.key}`,
@@ -466,7 +467,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				reservationStatus,
 				keySource: keyInfo.source,
 				byokKeyId: keyInfo.byokId,
-				createdAt: Date.now(),
+				providerDispatchedAtMs:
+					args.upstreamTiming?.timingFor(res)?.dispatchAtMs ?? Date.now(),
 			}, taskId ?? encodedId, status);
 		} catch (error) {
 			console.error("bytedance_video_job_meta_store_failed", {

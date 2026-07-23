@@ -53,18 +53,21 @@ function toBool(value: string | undefined, fallback = false): boolean {
 }
 
 function toInt(value: string | undefined, fallback: number): number {
+	if (value === undefined || value.trim() === "") return fallback;
 	const parsed = Number(value ?? "");
 	if (!Number.isFinite(parsed)) return fallback;
 	return Math.max(1, Math.floor(parsed));
 }
 
 function toNonNegativeInt(value: string | undefined, fallback: number): number {
+	if (value === undefined || value.trim() === "") return fallback;
 	const parsed = Number(value ?? "");
 	if (!Number.isFinite(parsed)) return fallback;
 	return Math.max(0, Math.floor(parsed));
 }
 
 function toZeroBasedInt(value: string | undefined, fallback: number): number {
+	if (value === undefined || value.trim() === "") return fallback;
 	const parsed = Number(value ?? "");
 	if (!Number.isFinite(parsed)) return fallback;
 	return Math.max(0, Math.floor(parsed));
@@ -282,6 +285,22 @@ async function handleOAuthCleanupScheduledEvent(env: GatewayBindings): Promise<v
 	}
 }
 
+async function handleV2AnalyticsOutboxScheduledEvent(env: GatewayBindings): Promise<void> {
+	if (!toBool(env.V2_ANALYTICS_OUTBOX_ENABLED, true)) return;
+	const limit = toInt(env.V2_ANALYTICS_OUTBOX_LIMIT, 250);
+	configureRuntime(env);
+	try {
+		const { data, error } = await getSupabaseAdmin().rpc("process_v2_analytics_outbox", {
+			p_limit: limit,
+		});
+		if (error) throw new Error(error.message || "Failed to process v2 analytics outbox");
+		const selected = Number((data as any)?.selected ?? 0);
+		if (selected > 0) console.log("v2_analytics_outbox_completed", data);
+	} finally {
+		clearRuntime();
+	}
+}
+
 export async function handleScheduledEvent(event: ScheduledController, env: GatewayBindings): Promise<void> {
 	if (isDailyRetentionBillingTick(event)) {
 		try {
@@ -291,6 +310,11 @@ export async function handleScheduledEvent(event: ScheduledController, env: Gate
 		}
 	}
 	if (isCoreJobsTick(event)) {
+		try {
+			await handleV2AnalyticsOutboxScheduledEvent(env);
+		} catch (error) {
+			console.error("v2_analytics_outbox_scheduled_failed", serializeError(error));
+		}
 		try {
 			await handleOAuthCleanupScheduledEvent(env);
 		} catch (error) {

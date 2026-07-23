@@ -443,6 +443,12 @@ begin
       p.data_policy_tier,
       p.data_policy_confidence,
       p.data_policy_contract_mode,
+	  p.data_policy_variant,
+      p.stream_cancellation_support,
+      p.stream_cancellation_stops_provider_billing,
+      p.stream_cancellation_usage_recovery,
+      p.stream_cancellation_evidence_kind,
+      p.stream_cancellation_source_url,
       c.status as capability_status,
       c.params as capability_params,
       c.max_input_tokens,
@@ -450,8 +456,8 @@ begin
     from public.data_api_provider_models m
     join public.data_models dm
       on dm.model_id = coalesce(m.model_id, m.api_model_id)
-    join public.data_api_providers p
-      on p.api_provider_id = m.provider_id
+    join public.v2_providers p
+      on p.provider_slug = m.provider_id
     join public.data_api_provider_model_capabilities c
       on c.provider_api_model_id = m.provider_api_model_id
     where m.api_model_id = resolved_model
@@ -480,6 +486,12 @@ begin
           'data_policy_tier', coalesce(pr.data_policy_tier, 'unknown'),
           'data_policy_confidence', coalesce(pr.data_policy_confidence, 'unknown'),
           'data_policy_contract_mode', coalesce(pr.data_policy_contract_mode, 'none'),
+		  'data_policy_variant', coalesce(pr.data_policy_variant, 'standard'),
+          'stream_cancellation_support', coalesce(pr.stream_cancellation_support, 'unknown'),
+          'stream_cancellation_stops_provider_billing', pr.stream_cancellation_stops_provider_billing,
+          'stream_cancellation_usage_recovery', coalesce(pr.stream_cancellation_usage_recovery, 'unknown'),
+          'stream_cancellation_evidence_kind', coalesce(pr.stream_cancellation_evidence_kind, 'none'),
+          'stream_cancellation_source_url', pr.stream_cancellation_source_url,
           'capability_status', pr.capability_status,
           'capability_params', coalesce(pr.capability_params, '{}'::jsonb),
           'max_input_tokens', pr.max_input_tokens,

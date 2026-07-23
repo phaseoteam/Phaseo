@@ -28,7 +28,7 @@ vi.mock("./health", () => ({
 	admitThroughBreaker: (...args: any[]) => admitThroughBreakerMock(...args),
 	classifyProviderHealthImpact: ({ upstreamStatus }: { upstreamStatus?: number | null } = {}) => {
 		const status = Number(upstreamStatus ?? 0);
-		return status >= 200 && status < 500 ? "neutral" : "failure";
+		return status >= 200 && status < 300 ? "success" : "failure";
 	},
 	onCallStart: (...args: any[]) => onCallStartMock(...args),
 	onCallEnd: (...args: any[]) => onCallEndMock(...args),
@@ -141,11 +141,11 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 				provider: "openai",
 				ok: true,
 				latency_ms: expect.any(Number),
-				generation_ms: 0,
+				generation_ms: expect.any(Number),
 			}),
 		);
-		expect(ctx.meta.latency_ms).toEqual(expect.any(Number));
-		expect(ctx.meta.generation_ms).toBe(0);
+		expect(ctx.meta.latency_ms).toBeUndefined();
+		expect(ctx.meta.generation_ms).toEqual(expect.any(Number));
 		expect(ctx.providerAttempts).toEqual([
 			expect.objectContaining({
 				attempt_number: 1,

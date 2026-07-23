@@ -151,7 +151,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 	if (typeof sunoParams.weirdnessConstraint === "number") requestBody.weirdnessConstraint = sunoParams.weirdnessConstraint;
 	if (typeof sunoParams.audioWeight === "number") requestBody.audioWeight = sunoParams.audioWeight;
 
-	const res = await fetch(`${baseUrl}/api/v1/generate`, {
+	const res = await (args.upstreamTiming?.fetch ?? fetch)(`${baseUrl}/api/v1/generate`, {
 		method: "POST",
 		headers: {
 			Authorization: `Bearer ${keyInfo.key}`,

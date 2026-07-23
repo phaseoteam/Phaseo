@@ -7,6 +7,7 @@ import type { Endpoint, GatewayResponsePayload, RequestMeta } from "@core/types"
 import type { Bill } from "@pipeline/execute";
 import type { PriceCard } from "@pipeline/pricing";
 import type { ByokKeyMeta } from "@pipeline/before/types";
+import type { ExecutorUpstreamTiming } from "@executors/types";
 
 export type NormalizedUsage = {
     // Core, provider-agnostic
@@ -35,7 +36,8 @@ export type ProviderExecuteArgs = {
     providerModelSlug?: string | null;
 
     // Whether the current invocation expects a streaming response
-    stream: boolean;
+	stream: boolean;
+	upstreamTiming?: ExecutorUpstreamTiming;
 };
 
 export type AdapterCompletedResult = {

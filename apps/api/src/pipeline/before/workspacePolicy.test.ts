@@ -112,7 +112,7 @@ describe("applyWorkspacePolicy", () => {
 					providerId: "logs-provider",
 					apiModelId: "test/model",
 					dataPolicyTier: "logs",
-					dataPolicyConfidence: "maybe",
+					dataPolicyConfidence: "confirmed",
 				}),
 				candidate({
 					providerId: "private-provider",
@@ -146,7 +146,7 @@ describe("applyWorkspacePolicy", () => {
 				providerId: "logs-provider",
 				reason: "input_output_logging_disabled",
 				dataPolicyTier: "logs",
-				dataPolicyConfidence: "maybe",
+				dataPolicyConfidence: "confirmed",
 				routeCostKind: "unknown",
 			},
 		]);
@@ -159,12 +159,14 @@ describe("applyWorkspacePolicy", () => {
 					providerId: "trains-paid",
 					apiModelId: "test/model",
 					dataPolicyTier: "trains",
+					dataPolicyConfidence: "confirmed",
 					pricing: "paid",
 				}),
 				candidate({
 					providerId: "trains-free",
 					apiModelId: "test/model",
 					dataPolicyTier: "trains",
+					dataPolicyConfidence: "confirmed",
 					pricing: "free",
 				}),
 			],
@@ -193,6 +195,40 @@ describe("applyWorkspacePolicy", () => {
 			reason: "paid_training_disabled",
 			routeCostKind: "paid",
 		});
+	});
+
+	it("fails closed for unknown or unverified data policies when privacy controls are restrictive", () => {
+		const result = applyWorkspacePolicy({
+			providers: [
+				candidate({ providerId: "unknown", apiModelId: "test/model" }),
+				candidate({
+					providerId: "unverified",
+					apiModelId: "test/model",
+					dataPolicyTier: "private",
+					dataPolicyConfidence: "maybe",
+				}),
+			],
+			resolvedModel: "test/model",
+			body: {},
+			workspacePolicy: null,
+			teamSettings: {
+				routingMode: null,
+				byokFallbackEnabled: false,
+				betaChannelEnabled: false,
+				privacyEnableInputOutputLogging: false,
+				privacyEnablePaidMayTrain: false,
+				privacyEnableFreeMayTrain: false,
+				privacyZdrOnly: true,
+				billingMode: "wallet",
+			},
+		});
+
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.diagnostics.droppedByPrivacy).toEqual([
+			expect.objectContaining({ providerId: "unknown", reason: "data_policy_unknown" }),
+			expect.objectContaining({ providerId: "unverified", reason: "data_policy_unverified" }),
+		]);
 	});
 
     it("filters phaseo/free providers by concrete allowed model ids", () => {

@@ -1,4 +1,5 @@
 import type { IRContentPart } from "@core/ir";
+import type { ExecutorUpstreamTiming } from "@executors/types";
 
 const DEFAULT_MAX_REMOTE_ASSET_BYTES = 20 * 1024 * 1024;
 const RETRY_FETCH_USER_AGENT =
@@ -31,6 +32,7 @@ type GeminiPart = {
 type GeminiPartOptions = {
 	preserveReasoningAsThought?: boolean;
 	maxRemoteAssetBytes?: number;
+	upstreamTiming?: ExecutorUpstreamTiming;
 };
 
 function parseDataUrl(value: string): { mimeType: string; data: string } | null {
@@ -110,8 +112,13 @@ function audioMimeFromFormat(format?: string): string {
 async function fetchRemoteMediaWithRetry(
 	url: string,
 	fallbackMimeType: string,
+	upstreamTiming?: ExecutorUpstreamTiming,
 ): Promise<Response | null> {
-	const first = await fetch(url).catch(() => null);
+	const first = await (
+		upstreamTiming
+			? upstreamTiming.fetch(url, undefined, "media")
+			: fetch(url)
+	).catch(() => null);
 	const firstMime = normalizeContentType(first?.headers?.get("content-type"), fallbackMimeType);
 	if (first?.ok && looksBinaryMimeType(firstMime)) {
 		return first;
@@ -125,18 +132,24 @@ async function fetchRemoteMediaWithRetry(
 				: fallbackMimeType.startsWith("video/")
 					? "video/*,*/*;q=0.8"
 					: "*/*";
-	return fetch(url, {
+	const retryInit: RequestInit = {
 		headers: {
 			Accept: accept,
 			"User-Agent": RETRY_FETCH_USER_AGENT,
 		},
-	}).catch(() => null);
+	};
+	return (
+		upstreamTiming
+			? upstreamTiming.fetch(url, retryInit, "media")
+			: fetch(url, retryInit)
+	).catch(() => null);
 }
 
 async function mediaUrlToGeminiPart(
 	url: string,
 	fallbackMimeType: string,
 	maxRemoteAssetBytes: number,
+	upstreamTiming?: ExecutorUpstreamTiming,
 ): Promise<GeminiPart> {
 	const parsedData = parseDataUrl(url);
 	if (parsedData) {
@@ -158,7 +171,7 @@ async function mediaUrlToGeminiPart(
 	}
 
 	try {
-		const res = await fetchRemoteMediaWithRetry(url, fallbackMimeType);
+		const res = await fetchRemoteMediaWithRetry(url, fallbackMimeType, upstreamTiming);
 		if (!res || !res.ok) {
 			return {
 				file_data: {
@@ -244,7 +257,7 @@ export async function irPartToGeminiPart(
 				},
 			};
 		}
-		return mediaUrlToGeminiPart(part.data, part.mimeType || "image/jpeg", maxRemoteAssetBytes);
+		return mediaUrlToGeminiPart(part.data, part.mimeType || "image/jpeg", maxRemoteAssetBytes, options.upstreamTiming);
 	}
 
 	if (part.type === "audio") {
@@ -257,11 +270,11 @@ export async function irPartToGeminiPart(
 				},
 			};
 		}
-		return mediaUrlToGeminiPart(part.data, mimeType, maxRemoteAssetBytes);
+		return mediaUrlToGeminiPart(part.data, mimeType, maxRemoteAssetBytes, options.upstreamTiming);
 	}
 
 	if (part.type === "video") {
-		return mediaUrlToGeminiPart(part.url, "video/mp4", maxRemoteAssetBytes);
+		return mediaUrlToGeminiPart(part.url, "video/mp4", maxRemoteAssetBytes, options.upstreamTiming);
 	}
 
 	return { text: String(part) };

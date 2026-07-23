@@ -4,6 +4,7 @@
 
 import type { IREmbeddingsRequest, IREmbeddingsResponse } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
+import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { encodeOpenAIEmbeddingsRequest } from "@protocols/openai-embeddings/encode";
 import { decodeOpenAIEmbeddingsResponse } from "@protocols/openai-embeddings/decode";
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "@providers/openai-compatible/config";
@@ -251,7 +252,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		isVoyageProvider(args.providerId) && isVoyageMultimodalModel(resolveTargetModel(ir, args))
 			? "/multimodalembeddings"
 			: "/embeddings";
-	const res = await fetch(openAICompatUrl(args.providerId, endpointPath), {
+	const res = await fetchUpstream(args, openAICompatUrl(args.providerId, endpointPath), {
 		method: "POST",
 		headers: openAICompatHeaders(args.providerId, key, {
 			"Idempotency-Key": args.requestId,

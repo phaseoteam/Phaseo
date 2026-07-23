@@ -121,7 +121,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     const bindings = getBindings() as any;
     const baseUrl = String(bindings.ELEVENLABS_BASE_URL || "https://api.elevenlabs.io").replace(/\/+$/, "");
 
-    const res = await fetch(`${baseUrl}/v1/music/detailed${query}`, {
+    const res = await (args.upstreamTiming?.fetch ?? fetch)(`${baseUrl}/v1/music/detailed${query}`, {
         method: "POST",
         headers: {
             "xi-api-key": keyInfo.key,

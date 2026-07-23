@@ -4,6 +4,7 @@
 
 import type { IRVideoGenerationRequest, IRVideoGenerationResponse } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
+import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import type { ProviderExecutor } from "@executors/types";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
@@ -315,7 +316,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const baseUrl = String(bindings.MINIMAX_BASE_URL || DEFAULT_MINIMAX_BASE_URL).replace(/\/+$/, "");
 	let res: Response;
 	try {
-		res = await fetch(`${baseUrl}/v1/video_generation`, {
+		res = await fetchUpstream(args, `${baseUrl}/v1/video_generation`, {
 			method: "POST",
 			headers: {
 				"Authorization": `Bearer ${keyInfo.key}`,
@@ -393,7 +394,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				reservationStatus,
 				keySource: keyInfo.source,
 				byokKeyId: keyInfo.byokId,
-				createdAt: Date.now(),
+				providerDispatchedAtMs:
+					args.upstreamTiming?.timingFor(res)?.dispatchAtMs ?? Date.now(),
 			}, taskId ?? encodedId, toVideoStatus(json?.status ?? json?.task_status ?? json?.data?.status));
 		} catch (error) {
 			console.error("minimax_video_job_meta_store_failed", {

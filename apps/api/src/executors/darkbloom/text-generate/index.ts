@@ -1,10 +1,10 @@
-// Purpose: Executor for generic OpenAI-compatible providers / text-generate.
-// Why: Enables rapid provider onboarding without per-provider wrapper files.
-// How: Applies capability allowlist params and runs shared OpenAI-compat execution.
+// Purpose: Executor for Darkbloom text generation.
+// Why: Keeps provider-specific behavior behind an explicit provider-owned boundary.
+// How: Applies provider capability parameters and reuses OpenAI wire-format primitives.
 
 import type { IRChatRequest } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
-import { executeOpenAICompat } from "@executors/_shared/text-generate/openai-compat";
+import { executeOpenAIWire } from "@executors/_shared/text-generate/openai-compat";
 import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-generate/shared";
 import type { ProviderExecutor } from "../../types";
 
@@ -13,10 +13,10 @@ export function preprocess(ir: IRChatRequest, args: ExecutorExecuteArgs): IRChat
 }
 
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
-	return executeOpenAICompat(args);
+	return executeOpenAIWire(args, { transientRetries: 1 });
 }
 
-export function postprocess(ir: any): any {
+export function postprocess(ir: IRChatRequest): IRChatRequest {
 	return ir;
 }
 

@@ -47,6 +47,15 @@ describe("emitGatewayRequestEvent", () => {
 				latency_ms: 120,
 				generation_ms: 95,
 				throughput_tps: 0,
+				adapterRequestBuildMs: 0.75,
+				timeToUpstreamRequestMs: 8.5,
+				timeToLatestUpstreamRequestMs: 12.25,
+				upstreamHeadersMs: 84.5,
+				upstreamRequestCount: 2,
+				upstreamPollCount: 1,
+				upstreamAuthCount: 1,
+				upstreamPreflightCount: 0,
+				upstreamMediaCount: 1,
 			},
 			rawBody: {
 				model: "google/veo-3.1-lite-generate-preview",
@@ -96,7 +105,9 @@ describe("emitGatewayRequestEvent", () => {
 			},
 			timing: {
 				before_start: 5,
+				ir_decode: 0.035,
 				internal_latency_ms: 120,
+				execute_rank_providers: 0.42,
 				execute: {
 					total_ms: 95,
 					adapter_ms: 95,
@@ -157,6 +168,17 @@ describe("emitGatewayRequestEvent", () => {
 			cost_total_nanos: 150000000,
 			cost_currency: "USD",
 			provider_status_code: 200,
+			route_providers_ms: 0.42,
+			ir_decode_ms: 0.035,
+			adapter_request_build_ms: 0.75,
+			time_to_upstream_request_ms: 8.5,
+			time_to_latest_upstream_request_ms: 12.25,
+			upstream_headers_ms: 84.5,
+			upstream_request_count: 2,
+			upstream_poll_count: 1,
+			upstream_auth_count: 1,
+			upstream_preflight_count: 0,
+			upstream_media_count: 1,
 		});
 
 		const attemptedProviders = JSON.parse(String(event.attempted_providers_json ?? "[]"));
@@ -507,7 +529,7 @@ describe("emitGatewayRequestEvent", () => {
 		expect(sendAxiomWideEventMock).toHaveBeenCalledTimes(1);
 		const event = sendAxiomWideEventMock.mock.calls[0]?.[0] as Record<string, unknown>;
 		expect(event).toMatchObject({
-			event_schema_version: "2026-06-04.2",
+			event_schema_version: "2026-07-22.1",
 			event_type: "gateway.request",
 			observability_detail_level: "compact",
 			request_id: "req_compact_obs_123",
@@ -528,6 +550,115 @@ describe("emitGatewayRequestEvent", () => {
 		expect(event.provider_candidates_status_json).toBeUndefined();
 		expect(event.request_payload_redacted_json).toBeUndefined();
 		expect(event.gateway_response_redacted_json).toBeUndefined();
+	});
+
+	it("retains a safe provider snapshot and attempt timeline on compact success events", async () => {
+		clearRuntime();
+		configureRuntime({
+			SUPABASE_URL: "https://example.supabase.co",
+			SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
+			GATEWAY_CACHE: {} as KVNamespace,
+			NODE_ENV: "test",
+			AXIOM_API_KEY: "axiom_test_key",
+			AXIOM_DATASET: "gateway-wide",
+			AXIOM_SUCCESS_SAMPLE_RATE: "1",
+			AXIOM_DETAIL_SAMPLE_RATE: "0",
+			AXIOM_SLOW_REQUEST_MS: "999999",
+		} as any);
+
+		const ctx = {
+			requestId: "req_compact_provider_123",
+			workspaceId: "ws_compact_provider_123",
+			endpoint: "responses",
+			capability: "responses",
+			model: "openai/gpt-5-mini",
+			stream: true,
+			meta: {},
+			providers: [{
+				providerId: "openai-eu",
+				providerFamilyId: "openai",
+				offerScope: "regional",
+				offerLabel: "European Union",
+				dataPolicyVariant: "zdr",
+				providerStatus: "active",
+				providerRoutingStatus: "active",
+				modelRoutingStatus: "active",
+				capabilityStatus: "active",
+				residencyMode: "customer_selectable",
+				executionRegions: ["eu"],
+				dataRegions: ["eu"],
+				zeroDataRetention: "default",
+				promptTrainingPolicy: "no_train",
+				dataPolicyTier: "private",
+				dataPolicyConfidence: "confirmed",
+				dataPolicyContractMode: "customer_agreement",
+				pricingCard: { id: "price_openai_eu" },
+				byokMeta: [{ id: "byok_secret_id" }],
+				providerModelSlug: "gpt-5-mini",
+				inputModalities: ["text", "image"],
+				outputModalities: ["text"],
+				maxInputTokens: 128000,
+				maxOutputTokens: 16384,
+			}],
+			providerAttempts: [{
+				attempt_number: 1,
+				provider: "openai-eu",
+				endpoint: "responses",
+				model: "openai/gpt-5-mini",
+				api_model_id: "openai/gpt-5-mini",
+				provider_model_slug: "gpt-5-mini",
+				outcome: "success",
+				duration_ms: 42,
+				status: 200,
+				key_source: "byok",
+				byok_key_id: "byok_secret_id",
+				credential_phase: "priority_byok",
+				upstream_url: "https://api.openai.com/v1/responses?api_key=secret",
+				response_kind: "stream",
+				was_probe: true,
+				request_build_ms: 0.4,
+				upstream_headers_ms: 41,
+				time_to_upstream_request_ms: 2.1,
+				upstream_request_count: 1,
+			}],
+		} as unknown as PipelineContext;
+
+		await emitGatewayRequestEvent({
+			ctx,
+			provider: "openai-eu",
+			statusCode: 200,
+			success: true,
+		});
+
+		const event = sendAxiomWideEventMock.mock.calls[0]?.[0] as Record<string, unknown>;
+		expect(event).toMatchObject({
+			observability_detail_level: "compact",
+			provider: "openai-eu",
+			provider_family_id: "openai",
+			provider_offer_scope: "regional",
+			provider_data_policy_variant: "zdr",
+			provider_rollout_status: "active",
+			provider_zero_data_retention: "default",
+			provider_prompt_training_policy: "no_train",
+			provider_pricing_available: true,
+			provider_byok_key_count: 1,
+			selected_attempt_number: 1,
+			selected_key_source: "byok",
+			selected_credential_phase: "priority_byok",
+			selected_attempt_was_probe: true,
+		});
+		const timeline = JSON.parse(String(event.provider_attempt_timeline_json));
+		expect(timeline).toEqual([expect.objectContaining({
+			attempt_number: 1,
+			provider: "openai-eu",
+			outcome: "success",
+			credential_phase: "priority_byok",
+			key_source: "byok",
+			was_probe: true,
+		})]);
+		expect(timeline[0].byok_key_id).toBeUndefined();
+		expect(timeline[0].upstream_url).toBeUndefined();
+		expect(event.provider_attempts_json).toBeUndefined();
 	});
 
 	it("emits compact success events by default without raw IP addresses", async () => {

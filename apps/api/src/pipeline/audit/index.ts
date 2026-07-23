@@ -9,9 +9,10 @@ import type { Endpoint } from "@core/types";
 import { syncWorkspaceUsageRollupForRequest } from "@core/workspace-usage-rollups";
 import {
 	buildGatewayRequestUsageColumns,
+	buildV2RequestUsageMeters,
 	stripGatewayRequestUsageColumns,
 } from "../usage-columns";
-import { persistGatewayIoLog } from "./io-logging";
+import { persistGatewayIoLog, resolveGatewayIoLoggingPolicy } from "./io-logging";
 
 function supaAdmin() {
     return getSupabaseAdmin();
@@ -77,6 +78,17 @@ function isMissingTableError(error: unknown, table: string): boolean {
         normalizedMessage.includes(`'${normalizedTable}'`) ||
         normalizedMessage.includes(`"${normalizedTable}"`)
     );
+}
+
+function isMissingRpcError(error: unknown, rpc: string): boolean {
+    const candidate = error && typeof error === "object" ? error as Record<string, unknown> : null;
+    const cause = candidate?.cause && typeof candidate.cause === "object"
+        ? candidate.cause as Record<string, unknown>
+        : null;
+    const code = String(cause?.code ?? candidate?.code ?? "");
+    const message = String(cause?.message ?? candidate?.message ?? "").toLowerCase();
+    if (code !== "PGRST202" && code !== "42883") return false;
+    return message.includes(rpc.toLowerCase());
 }
 
 async function insertGatewayRequest(row: any) {
@@ -148,6 +160,249 @@ async function insertGatewayRequest(row: any) {
         }
         throw error;
     }
+}
+
+async function upsertV2RequestFact(args: {
+    requestId: string;
+    workspaceId: string;
+    appId?: string | null;
+    keyId?: string | null;
+    endpoint: Endpoint;
+    requestedModel: string;
+    routedModel?: string | null;
+    provider?: string | null;
+    providerApiModelId?: string | null;
+    stream: boolean;
+    byok: boolean;
+    statusCode?: number | null;
+    success: boolean;
+    errorCode?: string | null;
+    finishReason?: string | null;
+    latencyMs?: number | null;
+    generationMs?: number | null;
+    internalDispatchMs?: number | null;
+    gatewayTotalMs?: number | null;
+    throughput?: number | null;
+    edgeColo?: string | null;
+    sessionId?: string | null;
+    endUserId?: string | null;
+    authMethod?: "api_key" | "oauth" | null;
+    nativeResponseId?: string | null;
+    userAgent?: string | null;
+    costNanos?: number | null;
+    currency?: string | null;
+    toolCallCount?: number | null;
+    toolCallSucceeded?: boolean | null;
+    structuredOutputAttempted?: boolean;
+    structuredOutputSucceeded?: boolean;
+    structuredOutputSuccessBasis?: "json_parse" | "unobserved" | null;
+    downstreamDisconnected?: boolean;
+    streamCancellationSupport?: "supported" | "unsupported" | "unknown";
+    streamProviderBillingOnCancel?: "stops" | "unknown";
+    streamDisconnectAction?: "cancel_upstream" | "drain_upstream";
+    usage?: unknown;
+    pricingLines?: unknown[] | null;
+    requestPayload?: unknown;
+    gatewayResponse?: unknown;
+    providerAttempts?: Array<Record<string, unknown>> | null;
+    routingSnapshot?: Array<Record<string, unknown>> | null;
+    routingDiagnostics?: Record<string, unknown> | null;
+}) {
+    const factorKeys = [
+        "success_rate",
+        "latency_score",
+        "tail_latency_score",
+        "throughput_score",
+        "price_score",
+        "reliability_sample",
+        "reliability_observations",
+        "token_affinity",
+        "load_penalty",
+        "base_weight",
+        "rollout_multiplier",
+        "routing_multiplier",
+        "cache_boost_multiplier",
+        "latency_preference_multiplier",
+        "throughput_preference_multiplier",
+    ] as const;
+    const attempts = Array.isArray(args.providerAttempts) ? args.providerAttempts : [];
+    const normalizedAttempts = attempts.map((attempt, index) => {
+        const status = Number(attempt.status);
+        const latency = Number(attempt.latency_ms ?? attempt.duration_ms);
+        return {
+            attempt_number: Number(attempt.attempt_number ?? index + 1),
+            provider: typeof attempt.provider === "string" ? attempt.provider : null,
+            provider_api_model_id:
+                typeof attempt.api_model_id === "string" ? attempt.api_model_id :
+                typeof attempt.provider_model_slug === "string" ? attempt.provider_model_slug : null,
+            status_code: Number.isFinite(status) && status >= 100 && status <= 599 ? status : null,
+            success: attempt.outcome === "success",
+            error_code: typeof attempt.type === "string" && attempt.outcome !== "success"
+                ? attempt.type
+                : null,
+            failure_class: typeof attempt.outcome === "string" && attempt.outcome !== "success"
+                ? attempt.outcome
+                : null,
+            latency_ms: Number.isFinite(latency) ? Math.max(0, Math.round(latency)) : null,
+            credential_phase: typeof attempt.credential_phase === "string" ? attempt.credential_phase : null,
+            key_source: typeof attempt.key_source === "string" ? attempt.key_source : null,
+            response_kind: typeof attempt.response_kind === "string" ? attempt.response_kind : null,
+            retryable: attempt.retryable === true,
+            was_probe: attempt.was_probe === true,
+        };
+    });
+    const attemptedKeys = new Set(normalizedAttempts.map((attempt) =>
+        `${attempt.provider ?? ""}::${attempt.provider_api_model_id ?? ""}`
+    ));
+    const rankedDecisions = (Array.isArray(args.routingSnapshot) ? args.routingSnapshot : [])
+        .slice(0, 128)
+        .map((entry, index) => {
+            const provider = typeof entry.provider_id === "string"
+                ? entry.provider_id
+                : typeof entry.provider === "string" ? entry.provider : null;
+            const providerApiModelId = typeof entry.provider_api_model_id === "string"
+                ? entry.provider_api_model_id
+                : typeof entry.provider_model_slug === "string" ? entry.provider_model_slug : null;
+            return {
+                decision_order: index + 1,
+                decision: "ranked",
+                rank: Number.isFinite(Number(entry.rank)) ? Number(entry.rank) : index + 1,
+                provider,
+                provider_api_model_id: providerApiModelId,
+                score: Number.isFinite(Number(entry.score)) ? Number(entry.score) : null,
+                selected: provider === args.provider && (
+                    !args.providerApiModelId || providerApiModelId === args.providerApiModelId
+                ),
+                attempted: attemptedKeys.has(`${provider ?? ""}::${providerApiModelId ?? ""}`) ||
+                    normalizedAttempts.some((attempt) => attempt.provider === provider),
+                breaker: typeof entry.breaker === "string" ? entry.breaker : null,
+                breaker_until_ms: Number.isFinite(Number(entry.breaker_until_ms))
+                    ? Number(entry.breaker_until_ms)
+                    : null,
+                provider_status: typeof entry.provider_status === "string" ? entry.provider_status : null,
+                provider_routing_status: typeof entry.provider_routing_status === "string"
+                    ? entry.provider_routing_status : null,
+                model_routing_status: typeof entry.model_routing_status === "string"
+                    ? entry.model_routing_status : null,
+                capability_status: typeof entry.capability_status === "string"
+                    ? entry.capability_status : null,
+                score_factors: Array.isArray(entry.score_factor_values)
+                    ? Object.fromEntries(factorKeys.flatMap((key, factorIndex) => {
+                        const value = Number(entry.score_factor_values?.[factorIndex]);
+                        return Number.isFinite(value)
+                            ? [[key, Number(value.toFixed(6))]]
+                            : [];
+                    }))
+                    : entry.score_factors && typeof entry.score_factors === "object"
+                        ? entry.score_factors : {},
+            };
+        });
+    const filterStages = Array.isArray((args.routingDiagnostics as any)?.filterStages)
+        ? (args.routingDiagnostics as any).filterStages
+        : [];
+    const excludedDecisions = filterStages.flatMap((stage: any) =>
+        (Array.isArray(stage?.droppedProviders) ? stage.droppedProviders : []).map((entry: any) => ({
+            decision_order: rankedDecisions.length + 1,
+            decision: "excluded",
+            rank: null,
+            provider: typeof entry?.providerId === "string" ? entry.providerId : null,
+            provider_api_model_id:
+                typeof entry?.apiModelId === "string" ? entry.apiModelId :
+                typeof entry?.providerModelSlug === "string" ? entry.providerModelSlug : null,
+            score: null,
+            selected: false,
+            attempted: false,
+            exclusion_stage: typeof stage?.stage === "string" ? stage.stage : null,
+            exclusion_reason: typeof entry?.reason === "string" ? entry.reason : null,
+            score_factors: {},
+        }))
+    ).slice(0, Math.max(0, 128 - rankedDecisions.length))
+        .map((entry: Record<string, unknown>, index: number) => ({
+            ...entry,
+            decision_order: rankedDecisions.length + index + 1,
+        }));
+    const usageMeters = buildV2RequestUsageMeters({
+        usage: args.usage ?? {},
+        endpoint: args.endpoint,
+        requestPayload: args.requestPayload,
+        gatewayResponse: args.gatewayResponse,
+    });
+    const pricingLines = (Array.isArray(args.pricingLines) ? args.pricingLines : []).flatMap((raw) => {
+        if (!raw || typeof raw !== "object") return [];
+        const line = raw as Record<string, unknown>;
+        const meterKey = typeof line.dimension === "string" ? line.dimension.trim().toLowerCase() : "";
+        const quantity = Number(line.quantity ?? 0);
+        const unitPriceUsd = Number(line.unit_price_usd ?? 0);
+        const chargedNanos = Number(line.line_nanos ?? 0);
+        if (!meterKey || !Number.isFinite(quantity) || quantity < 0 || !Number.isFinite(chargedNanos)) return [];
+        return [{
+            meter_key: meterKey,
+            quantity,
+            unit: typeof line.unit === "string" ? line.unit : meterKey,
+            unit_price_nanos: Number.isFinite(unitPriceUsd) ? Math.max(0, unitPriceUsd * 1_000_000_000) : 0,
+            charged_nanos: Math.max(0, Math.round(chargedNanos)),
+        }];
+    });
+    const event = {
+            request_id: args.requestId,
+            workspace_id: args.workspaceId,
+            app_id: args.appId ?? null,
+            key_id: args.keyId ?? null,
+            endpoint: args.endpoint,
+            requested_model_input: args.requestedModel,
+            routed_model_slug: args.routedModel ?? null,
+            provider: args.provider ?? null,
+            provider_api_model_id: args.providerApiModelId ?? null,
+            status_code: args.statusCode ?? null,
+            success: args.success,
+            error_code: args.errorCode ?? null,
+            stop_reason: args.finishReason ?? null,
+            stream: args.stream,
+            byok: args.byok,
+            latency_ms: args.latencyMs == null ? null : Math.max(0, Math.round(args.latencyMs)),
+            generation_ms: args.generationMs == null ? null : Math.max(0, Math.round(args.generationMs)),
+            internal_dispatch_ms: args.internalDispatchMs == null ? null : Math.max(0, args.internalDispatchMs),
+            gateway_total_ms: args.gatewayTotalMs == null ? null : Math.max(0, args.gatewayTotalMs),
+            throughput: args.throughput == null ? null : Math.max(0, args.throughput),
+            cloudflare_colo: args.edgeColo ? args.edgeColo.trim().toUpperCase() : null,
+            session_id: args.sessionId ?? null,
+            end_user_id: args.endUserId ?? null,
+            auth_method: args.authMethod ?? null,
+            native_response_id: args.nativeResponseId ?? null,
+            user_agent: args.userAgent ?? null,
+            cost_nanos: args.costNanos == null ? null : Math.max(0, Math.round(args.costNanos)),
+            currency: args.currency ?? null,
+            tool_call_count: Math.max(0, Math.round(args.toolCallCount ?? 0)),
+            tool_call_succeeded: args.toolCallSucceeded ?? null,
+            structured_output_attempted: args.structuredOutputAttempted === true,
+            structured_output_succeeded: args.structuredOutputSucceeded === true,
+            attempts: normalizedAttempts,
+            usage_meters: usageMeters,
+            pricing_lines: pricingLines,
+            routing_decisions: [...rankedDecisions, ...excludedDecisions],
+            safe_metadata: {
+                provider: args.provider ?? null,
+                routed_model: args.routedModel ?? args.requestedModel,
+                structured_output_success_basis: args.structuredOutputAttempted
+                    ? (args.structuredOutputSuccessBasis ?? "unobserved")
+                    : null,
+                downstream_disconnected: args.downstreamDisconnected === true,
+                stream_cancellation_support: args.streamCancellationSupport ?? "unknown",
+                stream_provider_billing_on_cancel: args.streamProviderBillingOnCancel ?? "unknown",
+                stream_disconnect_action: args.streamDisconnectAction ?? null,
+            },
+    };
+    const client = supaAdmin();
+    const routingRpc = "ingest_v2_gateway_request_with_routing";
+    const { error } = await client.rpc(routingRpc, { p_event: event });
+    if (!error) return;
+    if (!isMissingRpcError(error, routingRpc)) throw error;
+
+    const { routing_decisions: _routingDecisions, ...baseEvent } = event;
+    const { error: baseError } = await client.rpc("ingest_v2_gateway_request", {
+        p_event: baseEvent,
+    });
+    if (baseError) throw baseError;
 }
 
 function normalizeJsonValue(value: unknown): unknown {
@@ -333,9 +588,65 @@ function stripPricingFromUsage(usage: any): any {
     return rest;
 }
 
+function isStructuredOutputRequest(payload: unknown): boolean {
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) return false;
+    const body = payload as Record<string, any>;
+    const format = body.response_format ?? body.text?.format ?? null;
+    if (!format || typeof format !== "object") return false;
+    return format.type === "json_schema" || format.type === "json_object";
+}
+
+function extractStructuredOutput(value: unknown): unknown {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+    const response = value as Record<string, any>;
+    if (response.output_parsed && typeof response.output_parsed === "object") return response.output_parsed;
+    if (response.parsed && typeof response.parsed === "object") return response.parsed;
+    if (typeof response.output_text === "string") return response.output_text;
+    if (typeof response.text === "string") return response.text;
+    const choiceContent = response.choices?.[0]?.message?.content;
+    if (typeof choiceContent === "string") return choiceContent;
+    const outputText = response.output?.flatMap?.((item: any) => item?.content ?? [])
+        ?.find?.((item: any) => typeof item?.text === "string")?.text;
+    if (typeof outputText === "string") return outputText;
+    const anthropicText = response.content?.find?.((item: any) => typeof item?.text === "string")?.text;
+    return typeof anthropicText === "string" ? anthropicText : null;
+}
+
+function structuredOutputResult(requestPayload: unknown, gatewayResponse: unknown): {
+    attempted: boolean;
+    succeeded: boolean;
+    basis: "json_parse" | "unobserved" | null;
+} {
+    const attempted = isStructuredOutputRequest(requestPayload);
+    if (!attempted) return { attempted: false, succeeded: false, basis: null };
+    const output = extractStructuredOutput(gatewayResponse);
+    if (output && typeof output === "object") {
+        return { attempted: true, succeeded: true, basis: "json_parse" };
+    }
+    if (typeof output !== "string" || output.trim().length === 0) {
+        return { attempted: true, succeeded: false, basis: "unobserved" };
+    }
+    try {
+        JSON.parse(output);
+        return { attempted: true, succeeded: true, basis: "json_parse" };
+    } catch {
+        return { attempted: true, succeeded: false, basis: "json_parse" };
+    }
+}
+
+function readToolCallCount(usage: unknown, finishReason?: string | null): number {
+    const record = usage && typeof usage === "object" && !Array.isArray(usage)
+        ? usage as Record<string, unknown>
+        : {};
+    const count = Number(record.output_tool_call_count ?? record.tool_call_count ?? 0);
+    if (Number.isFinite(count) && count > 0) return Math.round(count);
+    return finishReason === "tool_calls" || finishReason === "tool_use" ? 1 : 0;
+}
+
 export async function auditSuccess(args: {
     requestId: string; workspaceId: string;
     provider: string; model: string; requestedModel?: string; endpoint: Endpoint;
+    providerApiModelId?: string | null;
     stream: boolean; byok: boolean;
     nativeResponseId?: string | null;
     appTitle?: string | null; referer?: string | null;
@@ -360,6 +671,7 @@ export async function auditSuccess(args: {
     edgeAsn?: number | null;
     generationMs?: number | null; latencyMs?: number | null;
     internalLatencyMs?: number | null;
+    endToEndMs?: number | null;
     usagePriced: any; totalCents: number; totalNanos?: number | null; currency: "USD" | string;
     finishReason?: string | null;
     statusCode: number; throughput?: number | null; keyId?: string | null;
@@ -375,11 +687,16 @@ export async function auditSuccess(args: {
     keyEnrichment?: any | null;
     requestEnrichment?: any | null;
     routingContext?: any | null;
+    downstreamDisconnected?: boolean;
+    streamCancellationSupport?: "supported" | "unsupported" | "unknown";
+    streamProviderBillingOnCancel?: "stops" | "unknown";
+    streamDisconnectAction?: "cancel_upstream" | "drain_upstream";
 }) {
     const releaseRuntime = ensureRuntimeForBackground();
     try {
         const pricingLines = args.usagePriced?.pricing?.lines ?? [];
         const strippedUsage = stripPricingFromUsage(args.usagePriced);
+        const structuredOutput = structuredOutputResult(args.requestPayload, args.gatewayResponse);
         const appId = await ensureAppId({
             workspaceId: args.workspaceId,
             appTitle: args.appTitle ?? null,
@@ -445,7 +762,73 @@ export async function auditSuccess(args: {
                 "supabase_audit_success_insert",
             );
             await syncInsertedRequestRollup(insertedRow, "audit_success");
-            await persistGatewayIoLog({
+            let v2PersistenceError: Error | null = null;
+            try {
+                await retryWithBackoff(() => upsertV2RequestFact({
+                    requestId: args.requestId,
+                    workspaceId: args.workspaceId,
+                    appId,
+                    keyId: args.keyId ?? null,
+                    endpoint: args.endpoint,
+                    requestedModel: args.requestedModel ?? args.model,
+                    routedModel: args.model,
+                    provider: args.provider,
+                    providerApiModelId: args.providerApiModelId ?? null,
+                    stream: args.stream,
+                    byok: args.byok,
+                    statusCode: args.statusCode,
+                    success: true,
+                    finishReason: args.finishReason ?? null,
+                    latencyMs: args.latencyMs ?? null,
+                    generationMs: args.generationMs ?? null,
+                    internalDispatchMs: args.internalLatencyMs ?? null,
+                    gatewayTotalMs: args.endToEndMs ?? null,
+                    throughput: args.throughput ?? null,
+                    edgeColo: args.edgeColo ?? null,
+                    sessionId: args.sessionId ?? null,
+                    endUserId: args.requestUserId ?? null,
+                    authMethod: args.authMethod ?? null,
+                    nativeResponseId: args.nativeResponseId ?? null,
+                    userAgent: args.userAgent ?? null,
+                    costNanos: args.totalNanos ?? (
+                        Number.isFinite(args.totalCents)
+                            ? Math.round(args.totalCents * 1e7)
+                            : null
+                    ),
+                    currency: args.currency,
+                    toolCallCount: readToolCallCount(strippedUsage, args.finishReason),
+                    toolCallSucceeded: readToolCallCount(strippedUsage, args.finishReason) > 0 ? true : null,
+                    structuredOutputAttempted: structuredOutput.attempted,
+                    structuredOutputSucceeded: structuredOutput.succeeded,
+                    structuredOutputSuccessBasis: structuredOutput.basis,
+                    downstreamDisconnected: args.downstreamDisconnected === true,
+                    streamCancellationSupport: args.streamCancellationSupport ?? "unknown",
+                    streamProviderBillingOnCancel: args.streamProviderBillingOnCancel ?? "unknown",
+                    streamDisconnectAction: args.streamDisconnectAction ?? "drain_upstream",
+                    usage: strippedUsage,
+                    pricingLines,
+                    requestPayload: args.requestPayload,
+                    gatewayResponse: args.gatewayResponse,
+                    providerAttempts: args.providerAttempts ?? null,
+                    routingSnapshot: Array.isArray((args.detailMetadata as any)?.routing_snapshot)
+                        ? (args.detailMetadata as any).routing_snapshot
+                        : null,
+                    routingDiagnostics:
+                        (args.detailMetadata as any)?.routing_diagnostics ?? null,
+                }), "supabase_v2_audit_success_rpc");
+            } catch (v2Error) {
+                v2PersistenceError = v2Error instanceof Error ? v2Error : new Error(String(v2Error));
+                console.error("[audit] v2 request fact persistence failed", {
+                    requestId: args.requestId,
+                    error: v2Error instanceof Error ? v2Error.message : String(v2Error),
+                });
+            }
+            const ioLoggingPolicy = await resolveGatewayIoLoggingPolicy({
+                workspaceId: args.workspaceId,
+                keyId: args.keyId ?? null,
+            });
+            if (ioLoggingPolicy.captureEnabled) {
+                await persistGatewayIoLog({
                 requestId: args.requestId,
                 workspaceId: args.workspaceId,
                 appId,
@@ -460,9 +843,9 @@ export async function auditSuccess(args: {
                 providerRequest: args.providerRequest,
                 providerResponse: args.providerResponse,
                 metadata: args.detailMetadata ?? {},
-            });
-            await insertGatewayRequestDetailsNonBlocking(
-                {
+                }, ioLoggingPolicy);
+                await insertGatewayRequestDetailsNonBlocking(
+                    {
                     gateway_request_id: insertedRow.id,
                     gateway_request_created_at: insertedRow.created_at,
                     request_id: args.requestId,
@@ -481,9 +864,11 @@ export async function auditSuccess(args: {
                     provider_request: normalizeJsonValue(args.providerRequest),
                     provider_response: normalizeJsonValue(args.providerResponse),
                     metadata: normalizeJsonValue(args.detailMetadata) ?? {},
-                },
-                "supabase_audit_success_details_insert",
-            );
+                    },
+                    "supabase_audit_success_details_insert",
+                );
+            }
+            if (v2PersistenceError) throw v2PersistenceError;
         } catch (err) {
             supabaseError = err instanceof Error ? err : new Error(String(err));
         }
@@ -545,6 +930,7 @@ type AuditFailureExecute = {
     model: string;
     requestedModel?: string;
     provider?: string | null;
+    providerApiModelId?: string | null;
     stream: boolean;
     statusCode: number;
     errorCode: string;
@@ -647,7 +1033,51 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                         "supabase_audit_failure_before_insert",
                     );
                     await syncInsertedRequestRollup(insertedRow, "audit_failure_before");
-                    await persistGatewayIoLog({
+                    let v2PersistenceError: Error | null = null;
+                    try {
+                        await retryWithBackoff(() => upsertV2RequestFact({
+                            requestId: args.requestId,
+                            workspaceId: args.workspaceId,
+                            appId: resolvedAppId,
+                            keyId: args.keyId ?? null,
+                            endpoint: args.endpoint,
+                            requestedModel: args.requestedModel ?? args.model ?? "unknown",
+                            stream: false,
+                            byok: false,
+                            statusCode: args.statusCode,
+                            success: false,
+                            errorCode: args.errorCode,
+                            latencyMs: args.latencyMs ?? null,
+                            internalDispatchMs: args.internalLatencyMs ?? null,
+                            edgeColo: args.edgeColo ?? null,
+                            sessionId: args.sessionId ?? null,
+                            endUserId: args.requestUserId ?? null,
+                            authMethod: args.authMethod ?? null,
+                            userAgent: args.userAgent ?? null,
+                            structuredOutputAttempted: isStructuredOutputRequest(args.requestPayload),
+                            structuredOutputSucceeded: false,
+                            requestPayload: args.requestPayload,
+                            gatewayResponse: args.gatewayResponse,
+                            providerAttempts: args.providerAttempts ?? null,
+                            routingSnapshot: Array.isArray((args.detailMetadata as any)?.routing_snapshot)
+                                ? (args.detailMetadata as any).routing_snapshot
+                                : null,
+                            routingDiagnostics:
+                                (args.detailMetadata as any)?.routing_diagnostics ?? null,
+                        }), "supabase_v2_audit_failure_before_rpc");
+                    } catch (v2Error) {
+                        v2PersistenceError = v2Error instanceof Error ? v2Error : new Error(String(v2Error));
+                        console.error("[audit] v2 request fact persistence failed", {
+                            requestId: args.requestId,
+                            error: v2Error instanceof Error ? v2Error.message : String(v2Error),
+                        });
+                    }
+                    const ioLoggingPolicy = await resolveGatewayIoLoggingPolicy({
+                        workspaceId: args.workspaceId,
+                        keyId: args.keyId ?? null,
+                    });
+                    if (ioLoggingPolicy.captureEnabled) {
+                        await persistGatewayIoLog({
                         requestId: args.requestId,
                         workspaceId: args.workspaceId,
                         appId: resolvedAppId ?? null,
@@ -662,9 +1092,9 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                         providerRequest: null,
                         providerResponse: args.providerResponse,
                         metadata: args.detailMetadata ?? {},
-                    });
-                    await insertGatewayRequestDetailsNonBlocking(
-                        {
+                        }, ioLoggingPolicy);
+                        await insertGatewayRequestDetailsNonBlocking(
+                            {
                             gateway_request_id: insertedRow.id,
                             gateway_request_created_at: insertedRow.created_at,
                             request_id: args.requestId,
@@ -683,9 +1113,11 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                             provider_request: null,
                             provider_response: normalizeJsonValue(args.providerResponse),
                             metadata: normalizeJsonValue(args.detailMetadata) ?? {},
-                        },
-                        "supabase_audit_failure_before_details_insert",
-                    );
+                            },
+                            "supabase_audit_failure_before_details_insert",
+                        );
+                    }
+                    if (v2PersistenceError) throw v2PersistenceError;
                 } catch (err) {
                     supabaseError = err instanceof Error ? err : new Error(String(err));
                 }
@@ -749,7 +1181,60 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                     "supabase_audit_failure_execute_insert",
                 );
                 await syncInsertedRequestRollup(insertedRow, "audit_failure_execute");
-                await persistGatewayIoLog({
+                let v2PersistenceError: Error | null = null;
+                try {
+                    await retryWithBackoff(() => upsertV2RequestFact({
+                        requestId: args.requestId,
+                        workspaceId: args.workspaceId,
+                        appId: resolvedAppId,
+                        keyId: args.keyId ?? null,
+                        endpoint: args.endpoint,
+                        requestedModel: args.requestedModel ?? args.model,
+                        routedModel: args.model,
+                        provider: args.provider ?? null,
+                        providerApiModelId: args.providerApiModelId ?? null,
+                        stream: args.stream,
+                        byok: args.byok === true,
+                        statusCode: args.statusCode,
+                        success: false,
+                        errorCode: args.errorCode,
+                        latencyMs: args.latencyMs ?? null,
+                        generationMs: args.generationMs ?? null,
+                        internalDispatchMs: args.internalLatencyMs ?? null,
+                        edgeColo: args.edgeColo ?? null,
+                        sessionId: args.sessionId ?? null,
+                        endUserId: args.requestUserId ?? null,
+                        authMethod: args.authMethod ?? null,
+                        userAgent: args.userAgent ?? null,
+                        currency: args.currency ?? null,
+                        toolCallCount: readToolCallCount(args.usage, null),
+                        toolCallSucceeded: readToolCallCount(args.usage, null) > 0 ? false : null,
+                        structuredOutputAttempted: isStructuredOutputRequest(args.requestPayload),
+                        structuredOutputSucceeded: false,
+                        usage: args.usage ?? {},
+                        pricingLines: args.pricingLines ?? [],
+                        requestPayload: args.requestPayload,
+                        gatewayResponse: args.gatewayResponse,
+                        providerAttempts: args.providerAttempts ?? null,
+                        routingSnapshot: Array.isArray((args.detailMetadata as any)?.routing_snapshot)
+                            ? (args.detailMetadata as any).routing_snapshot
+                            : null,
+                        routingDiagnostics:
+                            (args.detailMetadata as any)?.routing_diagnostics ?? null,
+                    }), "supabase_v2_audit_failure_execute_rpc");
+                } catch (v2Error) {
+                    v2PersistenceError = v2Error instanceof Error ? v2Error : new Error(String(v2Error));
+                    console.error("[audit] v2 request fact persistence failed", {
+                        requestId: args.requestId,
+                        error: v2Error instanceof Error ? v2Error.message : String(v2Error),
+                    });
+                }
+                const ioLoggingPolicy = await resolveGatewayIoLoggingPolicy({
+                    workspaceId: args.workspaceId,
+                    keyId: args.keyId ?? null,
+                });
+                if (ioLoggingPolicy.captureEnabled) {
+                    await persistGatewayIoLog({
                     requestId: args.requestId,
                     workspaceId: args.workspaceId,
                     appId: resolvedAppId ?? null,
@@ -764,9 +1249,9 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                     providerRequest: args.providerRequest,
                     providerResponse: args.providerResponse,
                     metadata: args.detailMetadata ?? {},
-                });
-                await insertGatewayRequestDetailsNonBlocking(
-                    {
+                    }, ioLoggingPolicy);
+                    await insertGatewayRequestDetailsNonBlocking(
+                        {
                         gateway_request_id: insertedRow.id,
                         gateway_request_created_at: insertedRow.created_at,
                         request_id: args.requestId,
@@ -785,9 +1270,11 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                         provider_request: normalizeJsonValue(args.providerRequest),
                         provider_response: normalizeJsonValue(args.providerResponse),
                         metadata: normalizeJsonValue(args.detailMetadata) ?? {},
-                    },
-                    "supabase_audit_failure_execute_details_insert",
-                );
+                        },
+                        "supabase_audit_failure_execute_details_insert",
+                    );
+                }
+                if (v2PersistenceError) throw v2PersistenceError;
             } catch (err) {
                 supabaseError = err instanceof Error ? err : new Error(String(err));
             }

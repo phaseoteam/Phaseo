@@ -124,6 +124,12 @@ export interface APIProvider {
     user_identifier_notes?: string | null;
     privacy_policy_url?: string | null;
     terms_of_service_url?: string | null;
+    stream_cancellation_support?: "supported" | "unsupported" | "unknown" | null;
+    stream_cancellation_stops_provider_billing?: boolean | null;
+    stream_cancellation_usage_recovery?: "authoritative" | "unknown" | null;
+    stream_cancellation_evidence_kind?: "provider" | "aggregator" | "none" | null;
+    stream_cancellation_source_url?: string | null;
+    stream_cancellation_verified_at?: string | null;
     gateway_kind?: "first_party" | "gateway" | "aggregator" | "self_hosted" | null;
     routable?: boolean | null;
     routing_enabled?: boolean | null;
@@ -135,12 +141,6 @@ export interface APIProvider {
     service_tiers?: string[];
     sources?: SourceMetadata[];
     verification?: VerificationMetadata;
-    stream_cancellation_support?: "supported" | "unsupported" | "unknown" | null;
-    stream_cancellation_stops_provider_billing?: boolean | null;
-    stream_cancellation_usage_recovery?: "authoritative" | "unknown" | null;
-    stream_cancellation_evidence_kind?: "provider" | "aggregator" | "none" | null;
-    stream_cancellation_source_url?: string | null;
-    stream_cancellation_verified_at?: string | null;
 }
 
 export interface SourceMetadata {

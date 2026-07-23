@@ -318,9 +318,13 @@ describe("account settings routes", () => {
 			teamsWithKeys: [{ keys: [{ id: "management-key-1" }] }],
 		});
 		await expect(byok.json()).resolves.toMatchObject({
+			fallbackEnabled: false,
 			freeRemaining: 0,
-			keyEntries: [{ id: "byok-new", providerId: "openai", suffix: "1234" }],
-			legacyHiddenTotal: 1,
+			keyEntries: [
+				{ id: "byok-new", providerId: "openai", suffix: "1234" },
+				{ id: "byok-old", providerId: "openai", suffix: "0000" },
+			],
+			legacyHiddenTotal: 0,
 			monthlyRequestCount: 100250,
 			paidTierRequests: 250,
 			workspaceId: "workspace-1",

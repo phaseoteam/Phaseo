@@ -38,13 +38,25 @@ export async function rankProviders(
         testingMode: ctx.testingMode ?? false,
         requestId: ctx.requestId ?? null,
         cacheAwareRouting: resolveCacheAwareRoutingFlag(ctx),
+		collectDetailedDiagnostics: Boolean(
+			ctx.meta?.debug?.enabled || ctx.meta?.returnRoutingDiagnostics,
+		),
     });
     const ranked = routed.ranked;
-    (ctx as any).routingSnapshot = ranked.map((entry) => ({
+    (ctx as any).routingSnapshot = ranked.map((entry, index) => ({
+        rank: index + 1,
         provider: entry.adapter.name,
+        provider_id: entry.candidate.providerId,
+        provider_api_model_id: entry.candidate.apiModelId ?? null,
+        provider_model_slug: entry.candidate.providerModelSlug ?? null,
         breaker: entry.health.breaker,
         breaker_until_ms: entry.health.breaker_until_ms,
         score: Number.isFinite(entry.score) ? Number(entry.score.toFixed(6)) : entry.score,
+        score_factor_values: entry.scoreFactorValues,
+        provider_status: entry.candidate.providerStatus ?? null,
+        provider_routing_status: entry.candidate.providerRoutingStatus ?? null,
+        model_routing_status: entry.candidate.modelRoutingStatus ?? null,
+        capability_status: entry.candidate.capabilityStatus ?? null,
     }));
     (ctx as any).routingDiagnostics = existingRoutingDiagnostics
         ? { ...existingRoutingDiagnostics, ...routed.diagnostics }

@@ -152,6 +152,8 @@ const byokMetaSchema = z
         fingerprint_sha256: z.string(),
         key_version: z.union([z.string(), z.number()]).nullable().optional(),
         always_use: z.boolean().optional().default(false),
+		routing_mode: z.enum(["priority", "fallback"]).optional(),
+		sort_order: z.coerce.number().int().optional().default(0),
         key: z.string().optional().nullable(),
         api_key: z.string().optional().nullable(),
         raw_key: z.string().optional().nullable(),
@@ -165,6 +167,8 @@ const byokMetaSchema = z
                 ? null
                 : String(meta.key_version),
         alwaysUse: Boolean(meta.always_use),
+		routingMode: meta.routing_mode ?? (meta.always_use ? "priority" : "fallback"),
+		sortOrder: meta.sort_order,
         key: meta.key ?? meta.api_key ?? meta.raw_key ?? null,
     }));
 
@@ -191,6 +195,7 @@ const providerSchema = z
         provider_family_id: z.string().nullable().optional(),
         offer_scope: z.enum(["global", "regional", "specialized"]).nullable().optional(),
         offer_label: z.string().nullable().optional(),
+		data_policy_variant: z.enum(["standard", "zdr"]).nullable().optional(),
         api_model_id: z.string().nullable().optional(),
         pricing_key: z.string().nullable().optional(),
         provider_status: z.string().nullable().optional(),
@@ -223,6 +228,11 @@ const providerSchema = z
             .enum(["none", "customer_agreement", "enterprise_agreement"])
             .nullable()
             .optional(),
+        stream_cancellation_support: z.enum(["supported", "unsupported", "unknown"]).nullable().optional(),
+        stream_cancellation_stops_provider_billing: z.boolean().nullable().optional(),
+        stream_cancellation_usage_recovery: z.enum(["authoritative", "unknown"]).nullable().optional(),
+        stream_cancellation_evidence_kind: z.enum(["provider", "aggregator", "none"]).nullable().optional(),
+        stream_cancellation_source_url: z.string().nullable().optional(),
         provider_model_slug: z.string().nullable().optional(),
         input_modalities: z.union([z.array(z.string()), z.string()]).nullable().optional(),
         output_modalities: z.union([z.array(z.string()), z.string()]).nullable().optional(),
@@ -238,6 +248,7 @@ const providerSchema = z
         providerFamilyId: provider.provider_family_id ?? null,
         offerScope: provider.offer_scope ?? null,
         offerLabel: provider.offer_label ?? null,
+		dataPolicyVariant: provider.data_policy_variant ?? "standard",
         apiModelId: provider.api_model_id ?? null,
         pricingKey: provider.pricing_key ?? null,
         providerStatus: (provider.provider_status ?? null) as GatewayProviderSnapshot["providerStatus"],
@@ -257,6 +268,15 @@ const providerSchema = z
             (provider.data_policy_confidence ?? null) as GatewayProviderSnapshot["dataPolicyConfidence"],
         dataPolicyContractMode:
             (provider.data_policy_contract_mode ?? null) as GatewayProviderSnapshot["dataPolicyContractMode"],
+        streamCancellationSupport:
+            (provider.stream_cancellation_support ?? "unknown") as GatewayProviderSnapshot["streamCancellationSupport"],
+        streamCancellationStopsProviderBilling:
+            provider.stream_cancellation_stops_provider_billing ?? null,
+        streamCancellationUsageRecovery:
+            (provider.stream_cancellation_usage_recovery ?? "unknown") as GatewayProviderSnapshot["streamCancellationUsageRecovery"],
+        streamCancellationEvidenceKind:
+            (provider.stream_cancellation_evidence_kind ?? "none") as GatewayProviderSnapshot["streamCancellationEvidenceKind"],
+        streamCancellationSourceUrl: provider.stream_cancellation_source_url ?? null,
         providerModelSlug: provider.provider_model_slug ?? null,
         supportsEndpoint: provider.supports_endpoint ?? true,
         baseWeight: Number.isFinite(provider.base_weight) ? provider.base_weight : 1,
