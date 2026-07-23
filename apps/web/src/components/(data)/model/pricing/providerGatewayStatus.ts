@@ -8,6 +8,7 @@ export const PROVIDER_STATUS_PRIORITY_ORDER = [
 	"inactive",
 	"disabled",
 	"not_listed",
+	"external",
 ] as const;
 
 export type CanonicalGatewayStatus = (typeof PROVIDER_STATUS_PRIORITY_ORDER)[number];
@@ -76,6 +77,10 @@ export function resolveGatewayStatus({
 		normalizeGatewayStatusValue(providerRoutingStatus);
 	const normalizedModelRoutingStatus = normalizeGatewayStatusValue(modelRoutingStatus);
 	const normalizedCapabilityStatus = normalizeGatewayStatusValue(capabilityStatus);
+
+	if (normalizedProviderStatus === "external") {
+		return "external";
+	}
 
 	if (
 		normalizedProviderRoutingStatus === "disabled" ||

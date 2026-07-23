@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
 	AlertTriangle,
+	ArrowUpRight,
 	Ban,
 	CheckCircle2,
 	CircleSlash,
@@ -56,6 +57,12 @@ function getStatusUi(statusKey: ProviderStateKey): {
 				icon: AlertTriangle,
 				badgeClassName:
 					"border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-900/60 dark:bg-orange-950/40 dark:text-orange-300",
+			};
+		case "external":
+			return {
+				icon: ArrowUpRight,
+				badgeClassName:
+					"border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900/60 dark:bg-violet-950/40 dark:text-violet-300",
 			};
 		case "provider_disabled":
 		case "model_disabled":
