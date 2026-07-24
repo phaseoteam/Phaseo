@@ -61,6 +61,11 @@ vi.mock("@pipeline/before/guards", () => ({
 	guardAuth: vi.fn(async () => state.auth),
 }));
 
+vi.mock("@core/feature-flags", () => ({
+	getVideoApiFeatureGateName: () => "gateway_video_api",
+	isVideoApiAccessEnabled: vi.fn(async () => true),
+}));
+
 vi.mock("../../utils", () => ({
 	withRuntime:
 		(handler: (req: Request) => Promise<Response>) =>

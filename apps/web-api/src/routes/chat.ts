@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { requireUser } from "@/auth/requireUser";
 import { proxyGateway, type ChatProxyEnvelope } from "@/chat/proxy";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
@@ -11,8 +12,18 @@ export const chatRouter = new Hono<{ Bindings: Env }>();
 const waitUntil = (c: any) => (promise: Promise<unknown>) => c.executionCtx.waitUntil(promise);
 
 function truthy(value: string | undefined): boolean { return ["1", "true", "yes"].includes(String(value ?? "").trim().toLowerCase()); }
-function videoEnabled(env: Env): boolean { const value = env.VIDEO_CHAT_API_ENABLED ?? env.NEXT_PUBLIC_VIDEO_CHAT_API_ENABLED; return ["1", "true", "yes", "on"].includes(value?.trim().toLowerCase() ?? ""); }
+function videoEnabled(env: Env): boolean { const value = env.VIDEO_CHAT_API_ENABLED ?? env.NEXT_PUBLIC_VIDEO_CHAT_API_ENABLED; return value == null || !["0", "false", "no", "off"].includes(value.trim().toLowerCase()); }
 function unavailable(c: any) { return c.json({ error: "Video generation is coming soon.", code: "not_implemented_yet" }, 501, PRIVATE_NO_STORE_HEADERS); }
+async function requireVideoChatUser(c: any): Promise<Response | null> {
+	const user = await requireUser(c.req.raw, c.env);
+	return user
+		? null
+		: c.json(
+				{ error: "unauthorized", message: "Sign in is required to use chat" },
+				401,
+				PRIVATE_NO_STORE_HEADERS,
+			);
+}
 async function envelope(request: Request): Promise<ChatProxyEnvelope & Record<string, any>> { return request.json().catch(() => ({})); }
 
 for (const [route, path] of Object.entries(POST_PATHS)) {
@@ -37,6 +48,8 @@ chatRouter.get("/audio", async (c) => {
 
 function videoPollPath(resourceId: string, content: boolean) { return `/videos/${encodeURIComponent(resourceId)}${content ? "/content" : ""}`; }
 chatRouter.get("/video", async (c) => {
+	const denied = await requireVideoChatUser(c);
+	if (denied) return denied;
 	if (!videoEnabled(c.env)) return unavailable(c);
 	if (truthy(c.req.query("list"))) {
 		const rawLimit = Number(c.req.query("limit")); const limit = Number.isFinite(rawLimit) ? Math.max(1, Math.min(200, Math.trunc(rawLimit))) : 50;
@@ -50,6 +63,8 @@ chatRouter.get("/video", async (c) => {
 });
 
 chatRouter.post("/video", async (c) => {
+	const denied = await requireVideoChatUser(c);
+	if (denied) return denied;
 	if (!videoEnabled(c.env)) return unavailable(c);
 	const body = await envelope(c.req.raw);
 	if (body.poll) {
