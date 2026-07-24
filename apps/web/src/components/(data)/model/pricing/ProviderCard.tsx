@@ -1691,7 +1691,7 @@ export default function ProviderCard({
 		...createTokenTiles("Image", "image", sec.imageTokens),
 		...createTokenTiles("Video", "video", sec.videoTokens),
 	];
-	const tokenMetricGroups = Array.from(
+	const allTokenMetricGroups = Array.from(
 		tokenMetricTiles.reduce((groups, tile) => {
 			const label = tile.groupTitle ?? "Tokens";
 			const entries = groups.get(label) ?? [];
@@ -1702,8 +1702,15 @@ export default function ProviderCard({
 	).map(([label, tiles]) => ({
 		label,
 		tiles,
-		columns: Math.min(4, tiles.length),
 	}));
+	const tokenMetricGroups = allTokenMetricGroups.map(({ label, tiles }) => ({
+		label,
+		tiles: tiles.slice(0, 3),
+		columns: Math.min(3, tiles.length),
+	}));
+	const additionalTokenMetricTiles = allTokenMetricGroups.flatMap(({ label, tiles }) =>
+		tiles.slice(3).map((tile) => ({ ...tile, groupTitle: label })),
+	);
 	const infoScope = providerModelsInScope;
 	const tableInfoScope = tableProviderModelsInScope;
 	const providerModelSlugs = infoScope.map((pm) => pm.provider_model_slug);
@@ -2323,7 +2330,8 @@ export default function ProviderCard({
 		) : null;
 	const pricingAdditionalContent =
 		!isFreePlan &&
-		((sec.requests?.length ?? 0) > 0 ||
+		(additionalTokenMetricTiles.length > 0 ||
+			(sec.requests?.length ?? 0) > 0 ||
 			upcomingFor("requests").length > 0 ||
 			imageInputs.length > 0 ||
 			upcomingFor("imageInputs").length > 0 ||
@@ -2335,6 +2343,28 @@ export default function ProviderCard({
 				<div>
 					<h4 className="text-xs font-semibold text-foreground">Additional meters</h4>
 				</div>
+				{additionalTokenMetricTiles.length > 0 ? (
+					<div className="divide-y divide-zinc-200/70 dark:divide-zinc-800">
+						{additionalTokenMetricTiles.map((tile) => (
+							<div
+								key={tile.key}
+								className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] gap-4 py-2 first:pt-0"
+							>
+								<div className="text-[11px] text-muted-foreground">
+									{tokenMetricGroups.length > 1
+										? `${tile.groupTitle} ${tile.title}`
+										: tile.title}
+								</div>
+								<div className="min-w-0 text-right">
+									{renderCompactTierSummary(tile.tiers, selectedPlanTheme.accent)}
+									<div className="mt-0.5 text-[10px] text-muted-foreground">
+										{tile.unitLabel}
+									</div>
+								</div>
+							</div>
+						))}
+					</div>
+				) : null}
 					{additionalMeterSummaries.length > 0 ? (
 						<div className="space-y-2">
 							{additionalMeterSummaries.map((summary) => (
