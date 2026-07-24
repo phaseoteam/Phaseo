@@ -1867,6 +1867,59 @@ describe("batch-finalization", () => {
 		});
 	});
 
+	it("finishes bookkeeping after a prior attempt already captured the exact charge", async () => {
+		state.captureResult = {
+			status: "captured",
+			applied: false,
+			alreadyApplied: true,
+			amountNanos: 400_000_000,
+			beforeBalanceNanos: null,
+			afterBalanceNanos: null,
+			beforeReservedNanos: null,
+			afterReservedNanos: null,
+		};
+		state.record = {
+			workspaceId: "ws_batch_test",
+			batchId: "batch_captured_before_mark_123",
+			status: "completed",
+			meta: {
+				provider: "openai",
+				status: "completed",
+				endpoint: "/v1/responses",
+				outputFileId: "file_out_captured_before_mark",
+				reservationId: "batch_hold:req_captured_before_mark",
+				reservedNanos: 500_000_000,
+				reservationStatus: "held",
+				requestCounts: { total: 1, completed: 1, failed: 0 },
+			},
+		};
+		vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+			response: {
+				status_code: 200,
+				body: {
+					model: "openai/gpt-4o-mini",
+					usage: { input_tokens: 2, output_tokens: 1, total_tokens: 3 },
+				},
+			},
+		}), { status: 200, headers: { "Content-Type": "application/jsonl" } })));
+
+		const { finalizeBatchJob } = await import("./batch-finalization");
+		await expect(finalizeBatchJob({
+			workspaceId: "ws_batch_test",
+			batchId: "batch_captured_before_mark_123",
+			status: "completed",
+		})).resolves.toEqual({
+			status: "completed",
+			charged: true,
+			billed: true,
+			reason: "charged:already_captured",
+		});
+		expect(state.chargeCalls).toEqual([]);
+		expect(state.markCalls).toEqual([
+			{ workspaceId: "ws_batch_test", batchId: "batch_captured_before_mark_123" },
+		]);
+	});
+
 	it("keeps exact-cost batches unbilled when the reservation was already released", async () => {
 		state.captureResult = {
 			status: "released",

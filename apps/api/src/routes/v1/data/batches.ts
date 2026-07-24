@@ -55,7 +55,11 @@ import {
 import { toProviderNativeBatchModelId } from "@core/batch-model-aliases";
 import { finalizeBatchJob, type FinalizeBatchJobResult } from "@core/batch-finalization";
 import { reserveBatchCredits } from "@core/batch-reservations";
-import { fetchProviderFileText, parseProviderBatchInputEntries } from "@core/batch-provider-adapters";
+import {
+	fetchProviderFileText,
+	normalizeProviderBatchPayload as normalizeProviderBatchPayloadShared,
+	parseProviderBatchInputEntries,
+} from "@core/batch-provider-adapters";
 import { releaseWalletReservation } from "@core/wallet-reservations";
 import { getBatchApiFeatureGateName, isBatchApiAccessEnabled } from "@core/feature-flags";
 import { getWebhookEndpointSigningConfig } from "@core/webhook-endpoints";
@@ -637,121 +641,6 @@ function toFiniteNumber(value: unknown): number | null {
 	return null;
 }
 
-function providerCount(value: unknown): number {
-	return toFiniteNumber(value) ?? 0;
-}
-
-function normalizeAnthropicEndedStatus(payload: any): string {
-	const counts = payload?.request_counts && typeof payload.request_counts === "object" ? payload.request_counts : {};
-	const succeeded = providerCount((counts as any).succeeded);
-	const errored = providerCount((counts as any).errored);
-	const canceled = providerCount((counts as any).canceled ?? (counts as any).cancelled);
-	const expired = providerCount((counts as any).expired);
-	if (succeeded > 0) return "completed";
-	if (errored > 0) return "failed";
-	if (expired > 0) return "expired";
-	if (canceled > 0) return "cancelled";
-	return "completed";
-}
-
-function normalizeXAiStateStatus(payload: any): string | null {
-	const state = payload?.state && typeof payload.state === "object" ? payload.state : {};
-	const pending = toFiniteNumber((state as any).num_pending);
-	if (pending != null && pending > 0) return "in_progress";
-	const total = toFiniteNumber((state as any).num_requests);
-	const success = providerCount((state as any).num_success);
-	const error = providerCount((state as any).num_error);
-	const cancelled = providerCount((state as any).num_cancelled ?? (state as any).num_canceled);
-	if (pending != null && pending === 0) {
-		if (success > 0) return "completed";
-		if (error > 0) return "failed";
-		if (cancelled > 0) return "cancelled";
-		return total != null && total === 0 ? "pending" : "completed";
-	}
-	if (total != null) {
-		const settled = success + error + cancelled;
-		if (total > 0 && settled >= total) {
-			if (success > 0) return "completed";
-			if (error > 0) return "failed";
-			if (cancelled > 0) return "cancelled";
-		}
-		if (total > settled) return "in_progress";
-	}
-	return null;
-}
-
-function normalizeProviderStatus(providerId: string, raw: unknown, payload?: any): string | null {
-	const status = toText(raw)?.toLowerCase();
-	if (providerId === MISTRAL_PROVIDER_ID) {
-		switch (status) {
-			case "queued":
-				return "validating";
-			case "running":
-				return "in_progress";
-			case "success":
-				return "completed";
-			case "timeout_exceeded":
-				return "expired";
-			case "cancellation_requested":
-				return "cancelling";
-			case "cancelled":
-				return "cancelled";
-			case "failed":
-				return "failed";
-			default:
-				return status;
-		}
-	}
-	if (providerId === ANTHROPIC_PROVIDER_ID) {
-		switch (status) {
-			case "in_progress":
-				return "in_progress";
-			case "canceling":
-				return "cancelling";
-			case "canceled":
-				return "cancelled";
-			case "ended":
-				return normalizeAnthropicEndedStatus(payload);
-			default:
-				return status;
-		}
-	}
-	if (providerId === GOOGLE_AI_STUDIO_PROVIDER_ID) {
-		const state = status ?? toText(payload?.metadata?.state)?.toLowerCase() ?? toText(payload?.response?.state)?.toLowerCase();
-		switch (state) {
-			case "batch_state_pending":
-			case "job_state_pending":
-				return "pending";
-			case "batch_state_running":
-			case "job_state_running":
-				return "in_progress";
-			case "batch_state_succeeded":
-			case "job_state_succeeded":
-				return "completed";
-			case "batch_state_failed":
-			case "job_state_failed":
-				return "failed";
-			case "batch_state_cancelled":
-			case "job_state_cancelled":
-				return "cancelled";
-			case "batch_state_expired":
-			case "job_state_expired":
-				return "expired";
-			default:
-				if (payload?.done === false) return "in_progress";
-				if (payload?.done === true && payload?.error) return "failed";
-				if (payload?.done === true) return "completed";
-				return state;
-		}
-	}
-	if (providerId === X_AI_PROVIDER_ID) {
-		if (status) return status === "canceled" ? "cancelled" : status;
-		return normalizeXAiStateStatus(payload);
-	}
-	if (status === "canceled") return "cancelled";
-	return status;
-}
-
 function extractProviderBatchId(providerId: string, payload: any): { publicId: string | null; nativeId: string | null } {
 	const native =
 		toText(payload?.native_batch_id) ??
@@ -768,64 +657,7 @@ function extractProviderBatchId(providerId: string, payload: any): { publicId: s
 }
 
 function normalizeProviderBatchPayload(providerId: string, payload: any): any {
-	if (!payload || typeof payload !== "object" || Array.isArray(payload)) return payload;
-	const ids = extractProviderBatchId(providerId, payload);
-	const status = normalizeProviderStatus(
-		providerId,
-		payload.status ?? payload.processing_status ?? payload.state ?? payload.metadata?.state,
-		payload,
-	);
-	const out: Record<string, unknown> = {
-		...payload,
-		...(ids.publicId ? { id: ids.publicId } : {}),
-		...(ids.nativeId ? { native_batch_id: ids.nativeId } : {}),
-		...(status ? { status } : {}),
-	};
-	if (providerId === MISTRAL_PROVIDER_ID) {
-		const inputFile = Array.isArray(payload.input_files) ? toText(payload.input_files[0]) : null;
-		out.input_file_id = inputFile ?? toText(payload.input_file_id) ?? null;
-		out.output_file_id = toText(payload.output_file) ?? toText(payload.output_file_id) ?? null;
-		out.error_file_id = toText(payload.error_file) ?? toText(payload.error_file_id) ?? null;
-		out.request_counts = {
-			total: toFiniteNumber(payload.total_requests),
-			completed: toFiniteNumber(payload.succeeded_requests ?? payload.completed_requests),
-			failed: toFiniteNumber(payload.failed_requests),
-		};
-	}
-	if (providerId === ANTHROPIC_PROVIDER_ID) {
-		const counts = payload.request_counts && typeof payload.request_counts === "object" ? payload.request_counts : {};
-		const total =
-			(toFiniteNumber((counts as any).processing) ?? 0) +
-			(toFiniteNumber((counts as any).succeeded) ?? 0) +
-			(toFiniteNumber((counts as any).errored) ?? 0) +
-			(toFiniteNumber((counts as any).canceled) ?? 0) +
-			(toFiniteNumber((counts as any).expired) ?? 0);
-		out.request_counts = {
-			total,
-			completed: toFiniteNumber((counts as any).succeeded),
-			failed:
-				(toFiniteNumber((counts as any).errored) ?? 0) +
-				(toFiniteNumber((counts as any).canceled) ?? 0) +
-				(toFiniteNumber((counts as any).expired) ?? 0),
-		};
-	}
-	if (providerId === GOOGLE_AI_STUDIO_PROVIDER_ID) {
-		const batch = payload.response && typeof payload.response === "object" ? payload.response : payload.metadata ?? payload;
-		const stats = batch?.batchStats ?? payload.metadata?.batchStats;
-		out.request_counts = {
-			total: toFiniteNumber(stats?.requestCount),
-			completed: toFiniteNumber(stats?.successfulRequestCount),
-			failed: toFiniteNumber(stats?.failedRequestCount),
-		};
-	}
-	if (providerId === X_AI_PROVIDER_ID) {
-		out.request_counts = {
-			total: toFiniteNumber(payload.state?.num_requests),
-			completed: toFiniteNumber(payload.state?.num_success),
-			failed: toFiniteNumber(payload.state?.num_error),
-		};
-	}
-	return out;
+	return normalizeProviderBatchPayloadShared(providerId, payload);
 }
 
 function buildProviderBaseUrl(providerId: string, bindings: Record<string, string | undefined>): string {

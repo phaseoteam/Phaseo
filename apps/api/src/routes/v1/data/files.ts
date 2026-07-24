@@ -21,7 +21,10 @@ import {
 } from "@core/batch-capabilities";
 import {
 	batchText,
+	buildProviderFileDeletePath,
+	buildProviderFileMetadataPath,
 	fetchProviderBatchApi,
+	fetchProviderFileContent,
 	OPENAI_BATCH_PROVIDER_ID,
 	parseUpstreamJson,
 } from "@core/batch-provider-adapters";
@@ -268,7 +271,7 @@ async function handleUpload(req: Request) {
 			});
 		} catch (storeErr) {
 			await fetchProviderBatchApi(providerId, {
-				endpointPath: `/files/${encodeURIComponent(fileId)}`,
+				endpointPath: buildProviderFileDeletePath(providerId, fileId),
 				method: "DELETE",
 			}).catch(() => null);
 			await finishUploadClaim({
@@ -344,7 +347,7 @@ async function handleRetrieve(req: Request, id: string) {
 
 	const providerId = owned.provider || OPENAI_BATCH_PROVIDER_ID;
 	const upstream = await fetchProviderBatchApi(providerId, {
-		endpointPath: `/files/${encodeURIComponent(fileId)}`,
+		endpointPath: buildProviderFileMetadataPath(providerId, fileId),
 		method: "GET",
 	});
 	const payload = await parseUpstreamJson(upstream);
@@ -396,10 +399,7 @@ async function handleRetrieveContent(req: Request, id: string) {
 	}
 
 	const providerId = owned.provider || OPENAI_BATCH_PROVIDER_ID;
-	const upstream = await fetchProviderBatchApi(providerId, {
-		endpointPath: `/files/${encodeURIComponent(fileId)}/content`,
-		method: "GET",
-	});
+	const upstream = await fetchProviderFileContent(providerId, fileId);
 	return proxyResponse(upstream);
 }
 

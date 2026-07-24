@@ -784,35 +784,11 @@ export function ruleComparisonMatchSignature(rule: any): string {
     );
 }
 
-function findComparisonRule(
-    candidates: any[],
-    targetRule: any,
-    sortCandidates: (a: any, b: any) => number,
-): any | undefined {
-    const targetSignature = ruleComparisonMatchSignature(targetRule);
-    const sorted = [...candidates].sort(sortCandidates);
-
-    return (
-        sorted.find(
-            (candidate) =>
-                ruleConditions(candidate).length > 0 &&
-                ruleComparisonMatchSignature(candidate) === targetSignature,
-        ) ??
-        sorted.find(
-            (candidate) =>
-                ruleConditions(candidate).length > 0 &&
-                ruleMatchCovers(candidate, targetRule),
-        ) ??
-        sorted.find((candidate) => ruleConditions(candidate).length === 0)
-    );
-}
-
 /* ---------- section builder (uses fixes) ---------- */
 export function buildProviderSections(p: ProviderPricing, plan: string): ProviderSections {
     const now = new Date();
     const nowMs = now.getTime();
     const normalizedPlan = normalizePricingPlan(plan);
-    const standardRules = getProviderPricingRulesForPlan(p, "standard");
     const rules = getProviderPricingRulesForPlan(p, normalizedPlan);
     const endpointByKey = new Map<string, string>();
     for (const pm of p.provider_models) {
@@ -871,8 +847,6 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
         const endpoint = endpointByKey.get(r.model_key) ?? "unknown";
         return `${endpoint}|${r.meter}|${r.unit}|${r.unit_size}`;
     };
-    const ruleSignatureIgnoringEndpoint = (r: any) =>
-        `${r.meter}|${r.unit}|${r.unit_size}`;
     const currentRulesBySignature = new Map<string, any[]>();
     for (const r of rules as any[]) {
         if (!isCurrentRule(r)) continue;
@@ -881,26 +855,6 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
         list.push(r);
         currentRulesBySignature.set(sig, list);
     }
-    const currentStandardRulesBySignature = new Map<string, any[]>();
-    const currentStandardRulesBySignatureIgnoringEndpoint = new Map<string, any[]>();
-    for (const r of standardRules as any[]) {
-        if (!isCurrentRule(r)) continue;
-        const sig = ruleSignature(r);
-        const list = currentStandardRulesBySignature.get(sig) ?? [];
-        list.push(r);
-        currentStandardRulesBySignature.set(sig, list);
-        const endpointAgnosticSig = ruleSignatureIgnoringEndpoint(r);
-        const endpointAgnosticList =
-            currentStandardRulesBySignatureIgnoringEndpoint.get(
-                endpointAgnosticSig,
-            ) ?? [];
-        endpointAgnosticList.push(r);
-        currentStandardRulesBySignatureIgnoringEndpoint.set(
-            endpointAgnosticSig,
-            endpointAgnosticList,
-        );
-    }
-
     for (const r of rules as any[]) {
         const endpoint = endpointByKey.get(r.model_key) ?? null;
         const matchKey = JSON.stringify(r.match ?? []);
@@ -908,15 +862,6 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
         if (!grouped.has(groupKey)) grouped.set(groupKey, []);
         grouped.get(groupKey)!.push(r);
     }
-    const standardGrouped = new Map<string, any[]>();
-    for (const r of standardRules as any[]) {
-        const endpoint = endpointByKey.get(r.model_key) ?? null;
-        const matchKey = JSON.stringify(r.match ?? []);
-        const groupKey = `${endpoint ?? "unknown"}|${r.meter}|${r.unit}|${r.unit_size}|${matchKey}`;
-        if (!standardGrouped.has(groupKey)) standardGrouped.set(groupKey, []);
-        standardGrouped.get(groupKey)!.push(r);
-    }
-
     const entries: RuleEntry[] = [];
     const upcomingChanges: UpcomingPricingChange[] = [];
     for (const [groupKey, group] of grouped) {
@@ -1086,49 +1031,11 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
             basePrice != null &&
             basePrice > price &&
             (hasFutureEnd || hasPriorityOverride);
-        let displayBasePrice = hasActiveDiscount ? basePrice : null;
-        let comparisonBaseUnitSize = base?.unit_size ?? unitSize;
-        let comparisonKind: PriceComparisonKind | null = hasActiveDiscount ? "discount" : null;
-        let comparisonDirection: PriceComparisonDirection =
+        const displayBasePrice = hasActiveDiscount ? basePrice : null;
+        const comparisonBaseUnitSize = base?.unit_size ?? unitSize;
+        const comparisonKind: PriceComparisonKind | null = hasActiveDiscount ? "discount" : null;
+        const comparisonDirection: PriceComparisonDirection =
             hasActiveDiscount ? "cheaper" : null;
-        if (!hasActiveDiscount && normalizedPlan !== "standard") {
-            const standardCurrentGroup = (standardGrouped.get(entry.groupKey) ?? [])
-                .filter(isCurrentRule)
-                .sort(sortByPriorityAndFromDesc);
-            const exactStandard = standardCurrentGroup[0];
-            const signatureStandardPool =
-                currentStandardRulesBySignature.get(ruleSignature(r)) ?? [];
-            const coveringStandard = findComparisonRule(
-                signatureStandardPool,
-                r,
-                sortByPriorityAndFromDesc,
-            );
-            const endpointAgnosticStandardPool =
-                currentStandardRulesBySignatureIgnoringEndpoint.get(
-                    ruleSignatureIgnoringEndpoint(r),
-                ) ?? [];
-            const endpointAgnosticCoveringStandard = findComparisonRule(
-                endpointAgnosticStandardPool,
-                r,
-                sortByPriorityAndFromDesc,
-            );
-            const standardBaseRule =
-                exactStandard ??
-                coveringStandard ??
-                endpointAgnosticCoveringStandard;
-            const standardBasePriceRaw = standardBaseRule
-                ? Number(standardBaseRule.price_per_unit ?? Number.NaN)
-                : Number.NaN;
-            const standardBasePrice = Number.isFinite(standardBasePriceRaw)
-                ? standardBasePriceRaw
-                : null;
-            if (standardBasePrice != null && standardBasePrice !== price) {
-                displayBasePrice = standardBasePrice;
-                comparisonBaseUnitSize = standardBaseRule?.unit_size ?? unitSize;
-                comparisonKind = "vs-standard";
-                comparisonDirection = standardBasePrice > price ? "cheaper" : "pricier";
-            }
-        }
         const basePer1M =
             displayBasePrice != null && unit === "token"
                 ? perMillionIfTokens(

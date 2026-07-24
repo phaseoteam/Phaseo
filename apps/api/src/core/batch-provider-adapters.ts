@@ -97,8 +97,12 @@ function normalizeGoogleSucceededStatus(payload: any): string {
 
 export function extractGoogleInlineResponses(payload: any): any[] | null {
 	const candidates = [
+		payload?.dest?.inlinedResponses,
+		payload?.dest?.inlinedEmbedContentResponses,
 		payload?.response?.inlinedResponses,
+		payload?.response?.inlinedEmbedContentResponses,
 		payload?.metadata?.output?.inlinedResponses,
+		payload?.metadata?.output?.inlinedEmbedContentResponses,
 		payload?.inlinedResponses,
 	];
 	for (const candidate of candidates) {
@@ -106,6 +110,54 @@ export function extractGoogleInlineResponses(payload: any): any[] | null {
 		if (Array.isArray(candidate?.inlinedResponses)) return candidate.inlinedResponses;
 	}
 	return null;
+}
+
+export function extractGoogleResponseFileName(payload: any): string | null {
+	return (
+		batchText(payload?.dest?.fileName) ??
+		batchText(payload?.dest?.file_name) ??
+		batchText(payload?.response?.responsesFile) ??
+		batchText(payload?.response?.responses_file) ??
+		batchText(payload?.metadata?.output?.responsesFile) ??
+		batchText(payload?.metadata?.output?.responses_file)
+	);
+}
+
+function normalizeGoogleFileName(fileIdRaw: string): string {
+	const fileId = batchText(fileIdRaw);
+	if (!fileId) throw new Error("missing_output_file_id");
+	return fileId.startsWith("files/") ? fileId : `files/${fileId}`;
+}
+
+export function buildProviderFileMetadataPath(providerId: string, fileIdRaw: string): string {
+	if (providerId === GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID) {
+		return `/${normalizeGoogleFileName(fileIdRaw).split("/").map(encodeURIComponent).join("/")}`;
+	}
+	return `/files/${encodeURIComponent(fileIdRaw)}`;
+}
+
+export function buildProviderFileDeletePath(providerId: string, fileIdRaw: string): string {
+	return buildProviderFileMetadataPath(providerId, fileIdRaw);
+}
+
+export async function fetchProviderFileContent(providerId: string, fileIdRaw: string): Promise<Response> {
+	if (providerId === GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID) {
+		const bindings = getBindings() as unknown as Record<string, string | undefined>;
+		const key = bindings.GOOGLE_AI_STUDIO_API_KEY || bindings.GEMINI_API_KEY;
+		if (!key) return providerKeyMissingResponse(providerId);
+		const fileName = normalizeGoogleFileName(fileIdRaw)
+			.split("/")
+			.map(encodeURIComponent)
+			.join("/");
+		return fetch(
+			`https://generativelanguage.googleapis.com/download/v1beta/${fileName}:download?alt=media`,
+			{ headers: { "x-goog-api-key": key } },
+		);
+	}
+	return fetchProviderBatchApi(providerId, {
+		endpointPath: `/files/${encodeURIComponent(fileIdRaw)}/content`,
+		method: "GET",
+	});
 }
 
 export async function parseUpstreamJson(response: Response): Promise<any | null> {
@@ -307,6 +359,7 @@ export function normalizeProviderBatchPayload(providerId: string, payload: any):
 	}
 	if (providerId === GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID) {
 		const stats = googleBatchStats(payload);
+		out.output_file_id = extractGoogleResponseFileName(payload);
 		out.request_counts = {
 			total: toBatchFiniteNumber(stats?.requestCount),
 			completed: toBatchFiniteNumber(stats?.successfulRequestCount),
@@ -512,10 +565,7 @@ export async function findProviderBatchByGatewayMetadata(args: {
 export async function fetchProviderFileText(providerId: string, fileIdRaw: string, maxBytes = 20 * 1024 * 1024): Promise<string> {
 	const fileId = batchText(fileIdRaw);
 	if (!fileId) throw new Error("missing_output_file_id");
-	const response = await fetchProviderBatchApi(providerId, {
-		endpointPath: `/files/${encodeURIComponent(fileId)}/content`,
-		method: "GET",
-	});
+	const response = await fetchProviderFileContent(providerId, fileId);
 	if (!response.ok) {
 		const preview = await response.text().catch(() => "");
 		throw new Error(`${providerId}_batch_output_fetch_failed_${response.status}:${preview.slice(0, 200)}`);
@@ -584,6 +634,7 @@ function normalizeOutputEntry(providerId: string, entry: any, index: number): an
 		batchText(entry.customId) ??
 		batchText(entry.batch_request_id) ??
 		batchText(entry.metadata?.custom_id) ??
+		batchText(entry.metadata?.key) ??
 		`response-${index + 1}`;
 
 	if (providerId === ANTHROPIC_BATCH_PROVIDER_ID) {
@@ -664,8 +715,15 @@ export async function fetchProviderBatchOutputEntries(meta: BatchJobMeta): Promi
 	if (providerId === GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID) {
 		const payload = await fetchProviderBatchStatus(providerId, nativeBatchId);
 		const inlineResponses = extractGoogleInlineResponses(payload);
-		if (!Array.isArray(inlineResponses)) throw new Error("missing_output_file_id");
-		return normalizeOutputEntries(providerId, inlineResponses);
+		if (Array.isArray(inlineResponses)) {
+			return normalizeOutputEntries(providerId, inlineResponses);
+		}
+		const responseFileName = extractGoogleResponseFileName(payload);
+		if (!responseFileName) throw new Error("missing_output_file_id");
+		return normalizeOutputEntries(
+			providerId,
+			parseJsonLines(await fetchProviderFileText(providerId, responseFileName)),
+		);
 	}
 
 	const resultsPath = buildProviderResultsPath(providerId, nativeBatchId);
