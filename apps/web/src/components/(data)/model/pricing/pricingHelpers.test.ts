@@ -124,24 +124,120 @@ function makeProviderPricing(): ProviderPricing {
 }
 
 describe("buildProviderSections", () => {
-	test("matches priority context ranges to standard pricing semantically", () => {
+	test("does not compare marked-up priority pricing with standard", () => {
 		const sections = buildProviderSections(makeProviderPricing(), "priority");
 		const inputTiers = sections.textTokens?.in ?? [];
 
 		expect(inputTiers).toHaveLength(2);
 		expect(inputTiers[0]).toMatchObject({
 			per1M: 12.5,
-			basePer1M: 5,
-			comparisonKind: "vs-standard",
-			comparisonDirection: "pricier",
+			basePer1M: null,
+			comparisonKind: null,
+			comparisonDirection: null,
 			label: "< 272k",
 		});
 		expect(inputTiers[1]).toMatchObject({
 			per1M: 25,
-			basePer1M: 10,
-			comparisonKind: "vs-standard",
-			comparisonDirection: "pricier",
+			basePer1M: null,
+			comparisonKind: null,
+			comparisonDirection: null,
 			label: "≥ 272k",
+		});
+	});
+
+	test("does not compare Batch pricing with Standard", () => {
+		const provider = makeProviderPricing();
+		provider.pricing_rules = [
+			{
+				id: "std-input-default",
+				model_key: "openai:openai/gpt-5.5:responses",
+				pricing_plan: "standard",
+				meter: "input_text_tokens",
+				unit: "token",
+				unit_size: 1_000_000,
+				price_per_unit: 5,
+				currency: "USD",
+				note: null,
+				priority: 100,
+				effective_from: "2026-01-01T00:00:00.000Z",
+				effective_to: null,
+				match: [],
+			},
+			{
+				id: "std-input-long",
+				model_key: "openai:openai/gpt-5.5:responses",
+				pricing_plan: "standard",
+				meter: "input_text_tokens",
+				unit: "token",
+				unit_size: 1_000_000,
+				price_per_unit: 10,
+				currency: "USD",
+				note: null,
+				priority: 100,
+				effective_from: "2026-01-01T00:00:00.000Z",
+				effective_to: null,
+				match: [{ path: "input_tokens", op: "gt", value: 272000 }],
+			},
+			{
+				id: "batch-input-short",
+				model_key: "openai:openai/gpt-5.5:batch",
+				pricing_plan: "batch",
+				meter: "input_text_tokens",
+				unit: "token",
+				unit_size: 1_000_000,
+				price_per_unit: 2.5,
+				currency: "USD",
+				note: null,
+				priority: 100,
+				effective_from: "2026-01-01T00:00:00.000Z",
+				effective_to: null,
+				match: [
+					{
+						path: "input_tokens",
+						op: "lt",
+						value: 272000,
+						or_group: 1,
+						and_index: 1,
+					},
+				],
+			},
+			{
+				id: "batch-input-long",
+				model_key: "openai:openai/gpt-5.5:batch",
+				pricing_plan: "batch",
+				meter: "input_text_tokens",
+				unit: "token",
+				unit_size: 1_000_000,
+				price_per_unit: 5,
+				currency: "USD",
+				note: null,
+				priority: 100,
+				effective_from: "2026-01-01T00:00:00.000Z",
+				effective_to: null,
+				match: [
+					{
+						path: "input_tokens",
+						op: "gte",
+						value: 272000,
+						or_group: 1,
+						and_index: 1,
+					},
+				],
+			},
+		];
+
+		const inputTiers = buildProviderSections(provider, "batch").textTokens?.in ?? [];
+
+		expect(inputTiers).toHaveLength(2);
+		expect(inputTiers[0]).toMatchObject({
+			per1M: 2.5,
+			basePer1M: null,
+			comparisonKind: null,
+		});
+		expect(inputTiers[1]).toMatchObject({
+			per1M: 5,
+			basePer1M: null,
+			comparisonKind: null,
 		});
 	});
 
@@ -236,7 +332,8 @@ describe("buildProviderSections", () => {
 		});
 		expect(prioritySections.textTokens?.in?.[0]).toMatchObject({
 			per1M: 12,
-			basePer1M: 6,
+			basePer1M: null,
+			comparisonKind: null,
 		});
 	});
 

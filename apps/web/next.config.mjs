@@ -15,7 +15,12 @@ const configuredAllowedDevOrigins =
     .filter(Boolean) ?? [];
 
 const mintlifyProxyOrigin = "https://aistats.mintlify.site";
-const webApiOrigin = process.env.WEB_API_ORIGIN?.trim().replace(/\/$/, "");
+const configuredWebApiOrigin = process.env.WEB_API_ORIGIN?.trim().replace(/\/$/, "");
+// Cloudflare owns /api/_web on phaseo.app, but Vercel preview deployments need
+// an explicit rewrite so browser-side same-origin fetches reach that API.
+const webApiOrigin =
+  configuredWebApiOrigin ||
+  (process.env.VERCEL_ENV === "preview" ? "https://phaseo.app" : "");
 const docsProxyRewrites = [
   {
     source: "/docs",

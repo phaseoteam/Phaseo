@@ -10,6 +10,8 @@ describe("batch-model-aliases", () => {
 	it("maps public Anthropic batch models to native dated slugs", () => {
 		expect(toProviderNativeBatchModelId("anthropic", "anthropic/claude-haiku-4.5"))
 			.toBe("claude-haiku-4-5-20251001");
+		expect(toProviderNativeBatchModelId("anthropic", "anthropic/claude-opus-4.5"))
+			.toBe("claude-opus-4-5");
 		expect(toProviderNativeBatchModelId("anthropic", "anthropic/claude-3.5-haiku"))
 			.toBe("claude-3-5-haiku-20241022");
 		expect(toProviderNativeBatchModelId("anthropic", "anthropic/claude-sonnet-4.5"))

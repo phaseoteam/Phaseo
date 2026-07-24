@@ -15,8 +15,18 @@ const state = vi.hoisted(() => ({
 	webhookEvents: [] as Array<Record<string, unknown>>,
 	finalizeCalls: [] as Array<Record<string, unknown>>,
 	reconciliationUpdates: [] as Array<Record<string, unknown>>,
+	statusUpdates: [] as Array<Record<string, unknown>>,
+	operationalFailures: [] as Array<Record<string, unknown>>,
+	releaseCalls: [] as Array<Record<string, unknown>>,
 	requestRows: [] as Array<Record<string, unknown>>,
 	saveBatchJobError: null as Error | null,
+	saveBatchJobErrorOnCall: null as number | null,
+	saveBatchJobCalls: 0,
+	previewProviders: "openai,anthropic,google-ai-studio,mistral,x-ai,groq,together",
+	googleApiKey: "test-google-key" as string | null,
+	guardContextFailure: null as Response | null,
+	policyAllowedProviders: null as string[] | null,
+	batchApiEnabled: true,
 	fetchCalls: [] as Array<{
 		url: string;
 		method: string;
@@ -32,8 +42,18 @@ function resetState() {
 	state.webhookEvents = [];
 	state.finalizeCalls = [];
 	state.reconciliationUpdates = [];
+	state.statusUpdates = [];
+	state.operationalFailures = [];
+	state.releaseCalls = [];
 	state.requestRows = [];
 	state.saveBatchJobError = null;
+	state.saveBatchJobErrorOnCall = null;
+	state.saveBatchJobCalls = 0;
+	state.previewProviders = "openai,anthropic,google-ai-studio,mistral,x-ai,groq,together";
+	state.googleApiKey = "test-google-key";
+	state.guardContextFailure = null;
+	state.policyAllowedProviders = null;
+	state.batchApiEnabled = true;
 	state.fetchCalls = [];
 }
 
@@ -59,11 +79,64 @@ vi.mock("@pipeline/before/auth", () => ({
 	authenticate: vi.fn(async () => state.authResult),
 }));
 
+vi.mock("@core/feature-flags", () => ({
+	getBatchApiFeatureGateName: () => "gateway_batch_api",
+	isBatchApiAccessEnabled: vi.fn(async () => state.batchApiEnabled),
+}));
+
+vi.mock("@pipeline/before/guards", () => ({
+	guardContext: vi.fn(async () => state.guardContextFailure
+		? { ok: false, response: state.guardContextFailure }
+		: ({ ok: true, value: {
+			context: { teamSettings: {} },
+			providers: ["openai", "anthropic", "google-ai-studio", "mistral", "x-ai", "groq", "together"].map((providerId) => ({ providerId })),
+			resolvedModel: null,
+			candidateDiagnostics: {},
+		} })),
+}));
+
+vi.mock("@pipeline/before/workspacePolicy", () => ({
+	fetchWorkspacePolicy: vi.fn(async () => ({
+		providerAllowlist: null,
+		providerBlocklist: null,
+		allowedApiModels: null,
+		blockedApiModels: null,
+		promptInjectionAction: null,
+		promptInjectionGuardrailIds: [],
+		sensitiveInfoRules: [],
+		sensitiveInfoGuardrailIds: [],
+		enforceAllowed: false,
+		activeGuardrailIds: [],
+	})),
+	applyWorkspacePolicy: vi.fn((args: any) => ({
+		ok: true,
+		providers: state.policyAllowedProviders
+			? args.providers.filter((provider: any) => state.policyAllowedProviders?.includes(provider.providerId))
+			: args.providers,
+		diagnostics: {},
+	})),
+}));
+
+vi.mock("@pipeline/before/promptInjection", () => ({
+	applyPromptInjectionGuardrails: vi.fn((args: any) => ({ ok: true, body: args.body, rawBody: args.rawBody, enforcement: null })),
+}));
+
+vi.mock("@pipeline/before/sensitiveInfo", () => ({
+	applySensitiveInfoGuardrails: vi.fn((args: any) => ({ ok: true, body: args.body, rawBody: args.rawBody, enforcement: args.existingEnforcement ?? null })),
+}));
+
 vi.mock("@/runtime/env", () => ({
 	getBindings: () => ({
 		OPENAI_API_KEY: "test-openai-key",
 		OPENAI_BASE_URL: "https://api.openai.example/v1",
-		GOOGLE_AI_STUDIO_API_KEY: "test-google-key",
+		...(state.googleApiKey ? { GOOGLE_AI_STUDIO_API_KEY: state.googleApiKey } : {}),
+		BATCH_API_PREVIEW_PROVIDERS: state.previewProviders,
+	}),
+}));
+
+vi.mock("@/observability/axiom", () => ({
+	emitGatewayOperationalFailure: vi.fn(async (args: Record<string, unknown>) => {
+		state.operationalFailures.push(args);
 	}),
 }));
 
@@ -119,7 +192,10 @@ vi.mock("@core/async-notifications", () => ({
 
 vi.mock("@core/batch-jobs", () => ({
 	saveBatchJobMeta: vi.fn(async (workspaceId: string, batchId: string, meta: Record<string, unknown>) => {
-		if (state.saveBatchJobError) throw state.saveBatchJobError;
+		state.saveBatchJobCalls += 1;
+		if (state.saveBatchJobError && (state.saveBatchJobErrorOnCall === null || state.saveBatchJobErrorOnCall === state.saveBatchJobCalls)) {
+			throw state.saveBatchJobError;
+		}
 		state.batchMeta.set(batchKey(workspaceId, batchId), { ...meta });
 	}),
 	getBatchJobMeta: vi.fn(async (workspaceId: string, batchId: string) => {
@@ -163,6 +239,11 @@ vi.mock("@core/batch-jobs", () => ({
 	}),
 	updateBatchJobReconciliation: vi.fn(async (args: Record<string, unknown>) => {
 		state.reconciliationUpdates.push(args);
+	}),
+	setBatchJobStatus: vi.fn(async (workspaceId: string, batchId: string, status: string, metaPatch?: Record<string, unknown>) => {
+		state.statusUpdates.push({ workspaceId, batchId, status, metaPatch });
+		const key = batchKey(workspaceId, batchId);
+		state.batchMeta.set(key, { ...(state.batchMeta.get(key) ?? {}), ...(metaPatch ?? {}), status });
 	}),
 }));
 
@@ -219,12 +300,22 @@ vi.mock("@core/batch-reservations", () => ({
 		reservedNanos: 10_000_000_000,
 		status: "held",
 		held: true,
+		estimate: {
+			strategy: "utf8_input_upper_bound_v1",
+			requestCount: 1,
+			inputTokenUpperBound: 64,
+			outputTokenUpperBound: 16,
+			marginBps: 1_000,
+		},
 	})),
 }));
 
 vi.mock("@core/wallet-reservations", () => ({
 	releaseStaleOrphanBatchReservations: vi.fn(async () => 0),
-	releaseWalletReservation: vi.fn(async () => ({ status: "released", applied: true })),
+	releaseWalletReservation: vi.fn(async (args: Record<string, unknown>) => {
+		state.releaseCalls.push(args);
+		return { status: "released", applied: true };
+	}),
 }));
 
 vi.mock("@core/webhook-endpoints", () => ({
@@ -250,6 +341,66 @@ describe("batchRoutes", () => {
 		resetState();
 		vi.resetModules();
 		vi.unstubAllGlobals();
+	});
+
+	it("rejects batch requests before provider work when the Statsig gate is disabled", async () => {
+		state.batchApiEnabled = false;
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+		const { batchRoutes } = await import("./batches");
+		const response = await batchRoutes.request("https://example.com/", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				provider: "openai",
+				model: "openai/gpt-4.1-mini",
+				requests: [{ body: { model: "openai/gpt-4.1-mini", input: "hello" } }],
+			}),
+		});
+
+		expect(response.status).toBe(403);
+		expect(await response.json()).toMatchObject({
+			reason: "batch_api_feature_flag_disabled",
+			feature_gate: "gateway_batch_api",
+		});
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it("applies originating key limits before uploading or submitting provider work", async () => {
+		state.guardContextFailure = jsonResponse({ error: "key_limit_exceeded", reason: "daily_request_limit_reached" }, 429);
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+		const { batchRoutes } = await import("./batches");
+		const response = await batchRoutes.request("https://example.com/", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				provider: "openai",
+				model: "openai/gpt-4.1-mini",
+				requests: [{ body: { model: "openai/gpt-4.1-mini", input: "hello", max_output_tokens: 8 } }],
+			}),
+		});
+		expect(response.status).toBe(429);
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it("enforces provider restrictions attached to the originating key", async () => {
+		state.policyAllowedProviders = ["anthropic"];
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+		const { batchRoutes } = await import("./batches");
+		const response = await batchRoutes.request("https://example.com/", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				provider: "openai",
+				model: "openai/gpt-4.1-mini",
+				requests: [{ body: { model: "openai/gpt-4.1-mini", input: "hello", max_output_tokens: 8 } }],
+			}),
+		});
+		expect(response.status).toBe(400);
+		expect(await response.json()).toMatchObject({ error: "validation_error", reason: "batch_provider_not_allowed" });
+		expect(fetchMock).not.toHaveBeenCalled();
 	});
 
 	it("proxies create + retrieve completed flow while keeping gateway-only fields local", async () => {
@@ -341,7 +492,7 @@ describe("batchRoutes", () => {
 		expect(createPayload.webhook).not.toHaveProperty("secret");
 
 		expect(state.fetchCalls[1]?.url).toBe("https://api.openai.example/v1/batches");
-		expect(state.fetchCalls[1]?.bodyJson).toEqual({
+		expect(state.fetchCalls[1]?.bodyJson).toMatchObject({
 			input_file_id: "file_input_123",
 			endpoint: "/v1/responses",
 			completion_window: "24h",
@@ -721,12 +872,9 @@ describe("batchRoutes", () => {
 		});
 
 		for (const [provider, model, expectedId] of [
-			["groq", "llama-3.3-70b-versatile", "batch_groq"],
-			["together", "meta-llama/Llama-3.3-70B-Instruct-Turbo", "batch_together"],
 			["mistral", "mistral-large-latest", "batch_mistral"],
 			["anthropic", "claude-4-sonnet", "batch_anthropic"],
 			["gemini", "gemini-2.5-flash", "batch_gemini"],
-			["xai", "grok-4", "batch_xai"],
 		] as const) {
 			const response = await batchRoutes.request("https://example.com/", {
 				method: "POST",
@@ -742,26 +890,11 @@ describe("batchRoutes", () => {
 		}
 
 		expect(state.fetchCalls.map((call) => `${call.method} ${call.url}`)).toEqual([
-			"POST https://api.groq.com/openai/v1/files",
-			"POST https://api.groq.com/openai/v1/batches",
-			"POST https://api.together.xyz/v1/files",
-			"POST https://api.together.xyz/v1/batches",
 			"POST https://api.mistral.ai/v1/batch/jobs",
 			"POST https://api.anthropic.com/v1/messages/batches",
 			"POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:batchGenerateContent",
-			"POST https://api.x.ai/v1/batches",
-			"POST https://api.x.ai/v1/batches/batch_xai/requests",
-			"GET https://api.x.ai/v1/batches/batch_xai",
 		]);
-		expect(state.fetchCalls[1]?.bodyJson).toEqual({
-			endpoint: "/v1/chat/completions",
-			input_file_id: "file_groq_input",
-		});
-		expect(state.fetchCalls[3]?.bodyJson).toEqual({
-			endpoint: "/v1/chat/completions",
-			input_file_id: "file_together_input",
-		});
-		expect(state.fetchCalls[4]?.bodyJson).toMatchObject({
+		expect(state.fetchCalls[0]?.bodyJson).toMatchObject({
 			endpoint: "/v1/chat/completions",
 			model: "mistral-large-latest",
 			requests: [
@@ -773,7 +906,7 @@ describe("batchRoutes", () => {
 				},
 			],
 		});
-		expect(state.fetchCalls[5]?.bodyJson).toMatchObject({
+		expect(state.fetchCalls[1]?.bodyJson).toMatchObject({
 			requests: [
 				{
 					custom_id: "anthropic-request-1",
@@ -783,9 +916,10 @@ describe("batchRoutes", () => {
 				},
 			],
 		});
-		expect(state.fetchCalls[6]?.bodyJson).toMatchObject({
+		expect(state.fetchCalls[2]?.bodyJson).toMatchObject({
 			batch: {
 				model: "models/gemini-2.5-flash",
+				displayName: expect.stringMatching(/^phaseo-batch_/),
 				inputConfig: {
 					requests: {
 						requests: [
@@ -800,26 +934,11 @@ describe("batchRoutes", () => {
 				},
 			},
 		});
-		expect(state.fetchCalls[8]?.bodyJson).toMatchObject({
-			batch_requests: [
-				{
-					batch_request_id: "xai-request-1",
-					batch_request: {
-						responses: {
-							model: "grok-4",
-						},
-					},
-				},
-			],
-		});
 		const savedJobs = Array.from(state.batchMeta.values());
 		expect(savedJobs).toEqual(expect.arrayContaining([
-			expect.objectContaining({ provider: "groq", nativeBatchId: "batch_groq" }),
-			expect.objectContaining({ provider: "together", nativeBatchId: "batch_together" }),
-			expect.objectContaining({ provider: "mistral", nativeBatchId: "batch_mistral", status: "in_progress" }),
-			expect.objectContaining({ provider: "anthropic", nativeBatchId: "batch_anthropic", status: "in_progress" }),
-			expect.objectContaining({ provider: "google-ai-studio", nativeBatchId: "batches/batch_gemini" }),
-			expect.objectContaining({ provider: "x-ai", nativeBatchId: "batch_xai", status: "in_progress" }),
+			expect.objectContaining({ provider: "mistral", nativeBatchId: "batch_mistral", status: "in_progress", apiKeyId: "key_batch_test" }),
+			expect.objectContaining({ provider: "anthropic", nativeBatchId: "batch_anthropic", status: "in_progress", apiKeyId: "key_batch_test" }),
+			expect.objectContaining({ provider: "google-ai-studio", nativeBatchId: "batches/batch_gemini", apiKeyId: "key_batch_test" }),
 		]));
 	});
 
@@ -1009,7 +1128,33 @@ describe("batchRoutes", () => {
 		});
 	});
 
-	it("allows mixed-model xAI batches because native batch requests carry each model", async () => {
+	it("rejects Anthropic custom ids outside the provider contract before submission", async () => {
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+		const { batchRoutes } = await import("./batches");
+		const response = await batchRoutes.request("https://example.com/", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				provider: "anthropic",
+				requests: [{
+					custom_id: "invalid custom id",
+					body: {
+						model: "anthropic/claude-haiku-4.5",
+						max_tokens: 32,
+						messages: [{ role: "user", content: "Reply OK." }],
+					},
+				}],
+			}),
+		});
+
+		expect(response.status).toBe(400);
+		await expect(response.json()).resolves.toMatchObject({ reason: "anthropic_batch_custom_id_invalid" });
+		expect(fetchMock).not.toHaveBeenCalled();
+		expect(state.batchMeta.size).toBe(0);
+	});
+
+	it("keeps blocked xAI batches disabled even when explicitly configured", async () => {
 		vi.stubGlobal(
 			"fetch",
 			vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -1057,30 +1202,16 @@ describe("batchRoutes", () => {
 			}),
 		});
 
-		expect(response.status).toBe(200);
+		expect(response.status).toBe(403);
 		expect(await response.json()).toMatchObject({
-			native_batch_id: "batch_xai_mixed",
-			provider: "x-ai",
+			error: {
+				reason: "batch_provider_preview_disabled",
+			},
 		});
-		expect(state.fetchCalls[1]?.bodyJson).toMatchObject({
-			batch_requests: [
-				{
-					batch_request_id: "xai-row-1",
-					batch_request: {
-						responses: { model: "grok-4" },
-					},
-				},
-				{
-					batch_request_id: "xai-row-2",
-					batch_request: {
-						responses: { model: "grok-4-fast" },
-					},
-				},
-			],
-		});
+		expect(state.fetchCalls).toEqual([]);
 	});
 
-	it("allows mixed-model request batches for file-backed providers that support row-level models", async () => {
+	it("keeps experimental file-backed providers disabled even when explicitly configured", async () => {
 		vi.stubGlobal(
 			"fetch",
 			vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -1111,9 +1242,9 @@ describe("batchRoutes", () => {
 
 		const { batchRoutes } = await import("./batches");
 
-		for (const [provider, firstModel, secondModel, expectedId] of [
-			["groq", "llama-3.1-8b-instant", "llama-3.3-70b-versatile", "batch_groq_mixed"],
-			["together", "meta-llama/Llama-3.3-70B-Instruct-Turbo", "Qwen/Qwen3-235B-A22B-fp8-tput", "batch_together_mixed"],
+		for (const [provider, firstModel, secondModel] of [
+			["groq", "llama-3.1-8b-instant", "llama-3.3-70b-versatile"],
+			["together", "meta-llama/Llama-3.3-70B-Instruct-Turbo", "Qwen/Qwen3-235B-A22B-fp8-tput"],
 		] as const) {
 			const response = await batchRoutes.request("https://example.com/", {
 				method: "POST",
@@ -1134,18 +1265,13 @@ describe("batchRoutes", () => {
 				}),
 			});
 
-			expect(response.status).toBe(200);
+			expect(response.status).toBe(403);
 			expect(await response.json()).toMatchObject({
-				native_batch_id: expectedId,
+				error: { reason: "batch_provider_preview_disabled" },
 			});
 		}
 
-		expect(state.fetchCalls.map((call) => `${call.method} ${call.url}`)).toEqual([
-			"POST https://api.groq.com/openai/v1/files",
-			"POST https://api.groq.com/openai/v1/batches",
-			"POST https://api.together.xyz/v1/files",
-			"POST https://api.together.xyz/v1/batches",
-		]);
+		expect(state.fetchCalls).toEqual([]);
 	});
 
 	it("rejects mixed-provider request batches until provider fan-out is implemented", async () => {
@@ -1246,7 +1372,7 @@ describe("batchRoutes", () => {
 			"POST https://api.anthropic.com/v1/messages/batches",
 			"POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:batchGenerateContent",
 		]);
-		expect(state.fetchCalls[1]?.bodyJson).toEqual({
+		expect(state.fetchCalls[1]?.bodyJson).toMatchObject({
 			endpoint: "/v1/responses",
 			input_file_id: "file_openai_prompt_input",
 		});
@@ -1359,7 +1485,7 @@ describe("batchRoutes", () => {
 			"POST https://api.openai.example/v1/files",
 			"POST https://api.openai.example/v1/batches",
 		]);
-		expect(state.fetchCalls[1]?.bodyJson).toEqual({
+		expect(state.fetchCalls[1]?.bodyJson).toMatchObject({
 			endpoint: "/v1/responses",
 			input_file_id: "file_gpt54nano_input",
 		});
@@ -1724,6 +1850,212 @@ describe("batchRoutes", () => {
 		expect(await response.json()).toMatchObject({ error: { reason: "batch_submission_persistence_failed" } });
 		expect(state.fetchCalls.some((call) => call.url.endsWith("/batches"))).toBe(false);
 		expect(state.batchMeta.size).toBe(0);
+	});
+
+	it("keeps accepted batches reconcilable when the post-submit metadata write fails", async () => {
+		state.saveBatchJobError = new Error("database unavailable after provider acceptance");
+		state.saveBatchJobErrorOnCall = 2;
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const url = String(input);
+			const method = String(init?.method ?? "GET").toUpperCase();
+			if (url.endsWith("/files") && method === "POST") return jsonResponse({ id: "file_post_submit_failure" });
+			if (url.endsWith("/batches") && method === "POST") {
+				return jsonResponse({ id: "batch_native_post_submit_failure", status: "validating", input_file_id: "file_post_submit_failure" });
+			}
+			if (url.endsWith("/batches/batch_native_post_submit_failure/cancel") && method === "POST") {
+				return jsonResponse({ id: "batch_native_post_submit_failure", status: "cancelling" });
+			}
+			throw new Error(`Unexpected fetch ${method} ${url}`);
+		}));
+		const { batchRoutes } = await import("./batches");
+		const response = await batchRoutes.request("https://example.com/", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ provider: "openai", model: "gpt-4.1-mini", max_output_tokens: 16, prompts: ["hello"] }),
+		});
+		const payload = await response.json();
+		expect(response.status).toBe(502);
+		expect(payload).toMatchObject({
+			error: {
+				type: "async_job_persistence_failed",
+				batch_id: expect.stringMatching(/^batch_/),
+				native_batch_id: "batch_native_post_submit_failure",
+				reservation_status: "held",
+			},
+		});
+		expect(state.statusUpdates).toContainEqual(expect.objectContaining({
+			status: "cancelling",
+			metaPatch: expect.objectContaining({
+				nativeBatchId: "batch_native_post_submit_failure",
+				submissionOutcome: "accepted",
+				reservationStatus: "held",
+			}),
+		}));
+		expect(state.finalizeCalls).toEqual([]);
+	});
+
+	it("enforces the provider preview allowlist on discovery and submission", async () => {
+		state.previewProviders = "openai";
+		vi.stubGlobal("fetch", vi.fn(async () => {
+			throw new Error("Preview-disabled providers must not reach upstream APIs");
+		}));
+		const { batchRoutes } = await import("./batches");
+		const capabilities = await batchRoutes.request("https://example.com/capabilities", { method: "GET" });
+		expect(capabilities.status).toBe(200);
+		expect((await capabilities.json()).data).toEqual([
+			expect.objectContaining({ id: "openai", status: "active" }),
+		]);
+
+		const create = await batchRoutes.request("https://example.com/", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				provider: "anthropic",
+				model: "anthropic/claude-haiku-4.5",
+				max_tokens: 16,
+				prompts: ["hello"],
+			}),
+		});
+		expect(create.status).toBe(403);
+		expect(await create.json()).toMatchObject({
+			error: {
+				reason: "batch_provider_preview_disabled",
+				requested_providers: ["anthropic"],
+				enabled_providers: ["openai"],
+			},
+		});
+		expect(state.fetchCalls).toEqual([]);
+	});
+
+	it("retains the hold and quarantines the job when provider acceptance is unknown", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const url = String(input);
+			const method = String(init?.method ?? "GET").toUpperCase();
+			if (url.endsWith("/files") && method === "POST") return jsonResponse({ id: "file_unknown_submission" });
+			if (url.endsWith("/batches") && method === "POST") throw new Error("connection reset after request body was sent");
+			throw new Error(`Unexpected fetch ${method} ${url}`);
+		}));
+		const { batchRoutes } = await import("./batches");
+		const response = await batchRoutes.request("https://example.com/", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ provider: "openai", model: "gpt-4.1-mini", max_output_tokens: 16, prompts: ["hello"] }),
+		});
+		const payload = await response.json();
+		expect(response.status).toBe(502);
+		expect(payload).toMatchObject({
+			error: {
+				type: "upstream_outcome_unknown",
+				reason: "batch_provider_create_outcome_unknown",
+				reservation_status: "held",
+				batch_id: expect.stringMatching(/^batch_/),
+			},
+		});
+		const batchId = String(payload.error.batch_id);
+		expect(state.batchMeta.get(batchKey("ws_batch_test", batchId))).toMatchObject({
+			status: "submission_unknown",
+			reservationStatus: "held",
+			submissionOutcome: "unknown",
+		});
+		expect(state.finalizeCalls).toEqual([]);
+		expect(state.operationalFailures).toContainEqual(expect.objectContaining({
+			workflow: "batch_submission",
+			resourceId: batchId,
+		}));
+	});
+
+	it("finalizes definite provider rejections so they do not re-enter reconciliation", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const url = String(input);
+			const method = String(init?.method ?? "GET").toUpperCase();
+			if (url.endsWith("/files") && method === "POST") return jsonResponse({ id: "file_rejected_submission" });
+			if (url.endsWith("/batches") && method === "POST") return jsonResponse({ error: { message: "invalid model" } }, 400);
+			throw new Error(`Unexpected fetch ${method} ${url}`);
+		}));
+		const { batchRoutes } = await import("./batches");
+		const response = await batchRoutes.request("https://example.com/", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ provider: "openai", model: "gpt-4.1-mini", max_output_tokens: 16, prompts: ["hello"] }),
+		});
+		expect(response.status).toBe(400);
+		const [finalization] = state.finalizeCalls;
+		expect(finalization).toMatchObject({ workspaceId: "ws_batch_test", status: "failed" });
+		const batchId = String(finalization?.batchId);
+		expect(state.batchMeta.get(batchKey("ws_batch_test", batchId))).toMatchObject({
+			status: "failed",
+			submissionOutcome: "rejected",
+			submissionError: "batch_provider_create_rejected_400",
+		});
+	});
+
+	it("treats provider 5xx responses as an unknown outcome and keeps the hold", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const url = String(input);
+			const method = String(init?.method ?? "GET").toUpperCase();
+			if (url.endsWith("/files") && method === "POST") return jsonResponse({ id: "file_503_submission" });
+			if (url.endsWith("/batches") && method === "POST") return jsonResponse({ error: "temporary" }, 503);
+			throw new Error(`Unexpected fetch ${method} ${url}`);
+		}));
+		const { batchRoutes } = await import("./batches");
+		const response = await batchRoutes.request("https://example.com/", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ provider: "openai", model: "gpt-4.1-mini", max_output_tokens: 16, prompts: ["hello"] }),
+		});
+		expect(response.status).toBe(502);
+		expect(await response.json()).toMatchObject({
+			error: {
+				reason: "batch_provider_create_http_503_outcome_unknown",
+				reservation_status: "held",
+			},
+		});
+		expect(state.finalizeCalls).toEqual([]);
+	});
+
+	it("releases the reservation when provider-file upload throws before submission", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			if (String(input).endsWith("/files")) throw new Error("provider upload unavailable");
+			throw new Error(`Unexpected fetch ${String(input)}`);
+		}));
+		const { batchRoutes } = await import("./batches");
+		const response = await batchRoutes.request("https://example.com/", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ provider: "openai", model: "gpt-4.1-mini", max_output_tokens: 16, prompts: ["hello"] }),
+		});
+		expect(response.status).toBe(500);
+		expect(await response.json()).toMatchObject({ reason: "batch_input_file_upload_failed" });
+		expect(state.releaseCalls).toEqual([expect.objectContaining({
+			workspaceId: "ws_batch_test",
+			keyId: "key_batch_test",
+			reservationId: expect.stringMatching(/^batch_hold:/),
+		})]);
+		expect(state.batchMeta.size).toBe(0);
+	});
+
+	it("releases pre-dispatch credential failures instead of quarantining them", async () => {
+		state.googleApiKey = null;
+		vi.stubGlobal("fetch", vi.fn(async () => {
+			throw new Error("missing credentials must not dispatch");
+		}));
+		const { batchRoutes } = await import("./batches");
+		const response = await batchRoutes.request("https://example.com/", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				provider: "gemini",
+				model: "gemini-2.5-flash",
+				requests: [{ custom_id: "gemini-1", body: { model: "gemini-2.5-flash", contents: [{ parts: [{ text: "hello" }] }] } }],
+			}),
+		});
+		expect(response.status).toBe(500);
+		expect(await response.json()).toMatchObject({ reason: "google_ai_studio_key_missing" });
+		expect(state.finalizeCalls).toEqual([expect.objectContaining({ status: "failed" })]);
+		expect(Array.from(state.batchMeta.values())).toEqual(expect.arrayContaining([
+			expect.objectContaining({ submissionOutcome: "rejected", status: "failed" }),
+		]));
+		expect(state.operationalFailures).toEqual([]);
 	});
 
 	it("proxies batch cancellation and dispatches a cancelled webhook phase", async () => {

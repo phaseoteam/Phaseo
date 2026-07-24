@@ -1,12 +1,20 @@
 import { describe, expect, it } from "vitest";
 
 import {
+	buildProviderCancelPath,
+	buildProviderFileMetadataPath,
 	extractGoogleInlineResponses,
+	extractGoogleResponseFileName,
 	normalizeProviderBatchPayload,
 	normalizeProviderBatchStatus,
+	parseProviderBatchListPage,
 } from "./batch-provider-adapters";
 
 describe("batch provider status normalization", () => {
+	it("uses provider-specific cancellation paths", () => {
+		expect(buildProviderCancelPath("x-ai", "batch_123")).toBe("/batches/batch_123:cancel");
+		expect(buildProviderCancelPath("openai", "batch_123")).toBe("/batches/batch_123/cancel");
+	});
 	it("normalizes OpenAI-compatible batch statuses for OpenAI, Groq, and Together", () => {
 		const statuses = [
 			"validating",
@@ -98,10 +106,36 @@ describe("batch provider status normalization", () => {
 
 	it("extracts Gemini inline responses from direct and nested result envelopes", () => {
 		const entries = [{ response: { candidates: [] } }];
+		expect(extractGoogleInlineResponses({ dest: { inlinedResponses: entries } })).toEqual(entries);
+		expect(extractGoogleInlineResponses({ dest: { inlinedEmbedContentResponses: entries } })).toEqual(entries);
 		expect(extractGoogleInlineResponses({ response: { inlinedResponses: entries } })).toEqual(entries);
 		expect(extractGoogleInlineResponses({ response: { inlinedResponses: { inlinedResponses: entries } } })).toEqual(entries);
 		expect(extractGoogleInlineResponses({ metadata: { output: { inlinedResponses: { inlinedResponses: entries } } } })).toEqual(entries);
 		expect(extractGoogleInlineResponses({ response: {} })).toBeNull();
+	});
+
+	it("extracts current and legacy Gemini result-file names", () => {
+		expect(extractGoogleResponseFileName({ dest: { fileName: "files/result-new" } }))
+			.toBe("files/result-new");
+		expect(extractGoogleResponseFileName({ response: { responsesFile: "files/result-legacy" } }))
+			.toBe("files/result-legacy");
+		expect(buildProviderFileMetadataPath("google-ai-studio", "files/result-new"))
+			.toBe("/files/result-new");
+		expect(buildProviderFileMetadataPath("google-ai-studio", "result-new"))
+			.toBe("/files/result-new");
+	});
+
+	it("preserves Gemini file output metadata for reconciliation", () => {
+		expect(normalizeProviderBatchPayload("google-ai-studio", {
+			name: "batches/gemini-file",
+			state: "JOB_STATE_SUCCEEDED",
+			dest: { fileName: "files/result-file" },
+			batchStats: { requestCount: 1, successfulRequestCount: 1, failedRequestCount: 0 },
+		})).toMatchObject({
+			status: "completed",
+			output_file_id: "files/result-file",
+			request_counts: { total: 1, completed: 1, failed: 0 },
+		});
 	});
 
 	it("normalizes Mistral batch job statuses", () => {
@@ -152,5 +186,19 @@ describe("batch provider status normalization", () => {
 			status: "canceled",
 			state: { num_requests: 2, num_success: 0, num_error: 0 },
 		}).status).toBe("cancelled");
+	});
+
+	it("parses Gemini and xAI recovery list schemas and cursors", () => {
+		const xaiBatch = { batch_id: "batch_xai" };
+		expect(parseProviderBatchListPage("x-ai", {
+			batches: [xaiBatch],
+			pagination_token: "xai-next",
+		})).toEqual({ candidates: [xaiBatch], nextCursor: "xai-next" });
+
+		const geminiOperation = { name: "batches/batch_gemini" };
+		expect(parseProviderBatchListPage("google-ai-studio", {
+			operations: [geminiOperation],
+			nextPageToken: "gemini-next",
+		})).toEqual({ candidates: [geminiOperation], nextCursor: "gemini-next" });
 	});
 });

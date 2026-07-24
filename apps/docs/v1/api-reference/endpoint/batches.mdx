@@ -23,6 +23,8 @@ Persist and poll the gateway-owned response `id`. When Phaseo also returns `nati
 
 Batch creation reserves gateway credits before submitting upstream when the input can be priced. If the gateway cannot read the input file or resolve pricing, creation fails before provider submission instead of starting unreserved work.
 
+If a provider submission times out or returns an ambiguous server error, Phaseo retains the reservation and marks the submission for reconciliation. It does not retry blindly or release credit while the provider may still be processing the accepted job. Definitive provider rejections release the reservation idempotently.
+
 Batch responses can also include:
 
 - `request_id`

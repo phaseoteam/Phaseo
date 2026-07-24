@@ -2,7 +2,7 @@
 // Why: Batch routes currently persist status changes but never settle wallet billing.
 // How: Reads output JSONL, prices successful responses, applies one idempotent charge, and marks billed.
 
-import { getBindings } from "@/runtime/env";
+import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { emitGatewayOperationalFailure } from "@/observability/axiom";
 import { resolveCapabilityFromEndpoint } from "@/lib/config/capabilityToEndpoints";
 import { pickFirstFiniteNumber, resolveCanonicalTokenUsage } from "@core/usage-normalization";
@@ -27,11 +27,12 @@ import { computeBill } from "@pipeline/pricing/engine";
 import { loadPriceCard } from "@pipeline/pricing/loader";
 import { recordUsageAndCharge } from "@pipeline/pricing/persist";
 import { resolveProviderKey } from "@providers/keys";
-import { captureWalletReservation, releaseWalletReservation } from "@core/wallet-reservations";
+import { releaseWalletReservation, settleWalletReservation } from "@core/wallet-reservations";
 import { BATCH_RESERVATION_PREFIX } from "@core/batch-reservations";
 import { buildImagePricingRequestOptions } from "@core/image-request-options";
 import { computeVideoPricedUsage } from "@core/video-pricing";
 import { buildVideoPricingRequestOptions, resolveVideoSeconds } from "@core/video-request-options";
+import { setKeyVersion } from "@core/kv";
 
 const OPENAI_PROVIDER_ID = "openai";
 const OPENAI_BASE_URL = "https://api.openai.com";
@@ -82,6 +83,7 @@ type BatchSettlementComputation =
 type BatchChargeSettlement = {
 	status: string;
 	charged: boolean;
+	applied: boolean;
 };
 
 export type FinalizeBatchJobArgs = {
@@ -380,12 +382,31 @@ function isVoidedBatchStatus(status: string): boolean {
 
 function isPartialSuccess(meta: BatchJobMeta | null | undefined): boolean {
 	const counts = meta?.requestCounts;
-	return Boolean(
-		typeof counts?.completed === "number" &&
-		counts.completed > 0 &&
-		typeof counts?.failed === "number" &&
-		counts.failed > 0,
-	);
+	if (typeof counts?.completed !== "number" || counts.completed <= 0) return false;
+	if (typeof counts.failed === "number" && counts.failed > 0) return true;
+	return typeof counts.total === "number" && counts.total > counts.completed;
+}
+
+function shouldInspectTerminalOutput(meta: BatchJobMeta | null | undefined): boolean {
+	if (meta?.submissionOutcome === "rejected" && !normalizeText(meta.outputFileId)) return false;
+	if (
+		meta?.requestCounts?.completed === 0 &&
+		!normalizeText(meta.outputFileId)
+	) {
+		return false;
+	}
+	if (
+		meta?.reservationStatus === "released" &&
+		!normalizeText(meta.nativeBatchId) &&
+		!normalizeText(meta.outputFileId) &&
+		(meta.requestCounts?.completed ?? 0) <= 0
+	) {
+		return false;
+	}
+	if ((meta?.requestCounts?.completed ?? 0) > 0) return true;
+	if (normalizeText(meta?.outputFileId)) return true;
+	const providerId = normalizeText(meta?.provider);
+	return providerId === "anthropic" || providerId === "google-ai-studio" || providerId === "x-ai";
 }
 
 async function resolveBatchPriceCard(args: {
@@ -555,6 +576,7 @@ async function releaseBatchReservation(args: {
 		workspaceId: args.workspaceId,
 		reservationId: resolveReservationId(args.batchId, args.meta),
 		releaseRefId: args.batchId,
+		...(normalizeText(args.meta?.apiKeyId) ? { keyId: normalizeText(args.meta?.apiKeyId) } : {}),
 	});
 	return released.status;
 }
@@ -567,10 +589,12 @@ async function settleBatchCharge(args: {
 }): Promise<BatchChargeSettlement> {
 	const costNanos = Math.max(0, Math.round(args.costNanos));
 	if (costNanos <= 0) {
+		if (!hasReservation(args.meta)) return { status: "zero_cost", charged: false, applied: true };
 		const releaseStatus = await releaseBatchReservation(args);
 		return {
 			status: releaseStatus === "not_found" ? "zero_cost" : `released_${releaseStatus}`,
 			charged: false,
+			applied: releaseStatus === "released" || releaseStatus === "not_found",
 		};
 	}
 	if (!hasReservation(args.meta)) {
@@ -579,42 +603,54 @@ async function settleBatchCharge(args: {
 			workspaceId: args.workspaceId,
 			cost_nanos: costNanos,
 		});
-		return { status: "charged_without_reservation", charged: true };
+		return { status: "charged_without_reservation", charged: true, applied: true };
 	}
 
-	const reservationId = resolveReservationId(args.batchId, args.meta);
-	const reservedNanos = Math.max(0, Number(args.meta?.reservedNanos ?? 0) || 0);
-	if (reservedNanos === costNanos) {
-		const captured = await captureWalletReservation({
-			workspaceId: args.workspaceId,
-			reservationId,
-			captureRefId: args.batchId,
-		});
-		if (captured.status === "captured" && (captured.applied || captured.alreadyApplied)) {
-			return { status: "captured", charged: true };
-		}
-		if (captured.status !== "not_found" && captured.status !== "unknown") {
-			return { status: captured.status, charged: false };
-		}
+	const settled = await settleWalletReservation({
+		workspaceId: args.workspaceId,
+		reservationId: resolveReservationId(args.batchId, args.meta),
+		actualNanos: costNanos,
+		settleRefId: args.batchId,
+		...(normalizeText(args.meta?.apiKeyId) ? { keyId: normalizeText(args.meta?.apiKeyId) } : {}),
+	});
+	if (settled.status === "captured" && (settled.applied || settled.alreadyApplied)) {
+		return { status: settled.alreadyApplied ? "already_captured" : "captured", charged: true, applied: true };
 	}
+	return { status: settled.status, charged: false, applied: false };
+}
 
-	const released = await releaseWalletReservation({
-		workspaceId: args.workspaceId,
-		reservationId,
-		releaseRefId: args.batchId,
+async function recordBatchKeyUsage(args: {
+	workspaceId: string;
+	batchId: string;
+	apiKeyId?: string | null;
+	providerId: string;
+	endpoint?: string | null;
+	entries: any[];
+	rowCostsByIndex: Array<number | null>;
+}): Promise<void> {
+	const apiKeyId = normalizeText(args.apiKeyId);
+	if (!apiKeyId || args.entries.length === 0) return;
+	const rows = args.entries.flatMap((entry, index) => {
+		const body = extractResponseBody(entry);
+		if (!body) return [];
+		return [{
+			custom_id: extractOutputCustomId(entry, index),
+			model: normalizeText(body.model) ?? "batch/unknown",
+			endpoint: normalizeBatchEndpointPath(extractRequestEndpoint(entry, args.endpoint)),
+			cost_nanos: Math.max(0, Math.round(args.rowCostsByIndex[index] ?? 0)),
+			usage: body.usage && typeof body.usage === "object" ? body.usage : {},
+		}];
 	});
-	if (released.status !== "released" && released.status !== "not_found" && released.status !== "captured") {
-		return { status: released.status, charged: false };
-	}
-	await recordUsageAndCharge({
-		requestId: `${BATCH_CAPTURE_REQUEST_ID_PREFIX}:${args.batchId}`,
-		workspaceId: args.workspaceId,
-		cost_nanos: costNanos,
+	if (rows.length === 0) return;
+	const { error } = await getSupabaseAdmin().rpc("gateway_record_batch_key_usage", {
+		p_workspace_id: args.workspaceId,
+		p_key_id: apiKeyId,
+		p_batch_id: args.batchId,
+		p_provider: args.providerId,
+		p_rows: rows,
 	});
-	return {
-		status: released.status === "not_found" ? "charged_reservation_not_found" : "released_and_charged_actual",
-		charged: true,
-	};
+	if (error) throw error;
+	await setKeyVersion("id", apiKeyId, Date.now());
 }
 
 async function computeBatchSettlement(meta: BatchJobMeta, status: string): Promise<BatchSettlementComputation> {
@@ -877,14 +913,16 @@ export async function finalizeBatchJob(args: FinalizeBatchJobArgs): Promise<Fina
 		};
 	}
 
-	if (isVoidedBatchStatus(status) && !isPartialSuccess(record.meta)) {
+	if (isVoidedBatchStatus(status) && !shouldInspectTerminalOutput(record.meta)) {
 		let releaseReason = status;
+		let releaseApplied = !hasReservation(record.meta);
 		try {
 			const releaseStatus = await releaseBatchReservation({
 				workspaceId: args.workspaceId,
 				batchId: args.batchId,
 				meta: record.meta,
 			});
+			releaseApplied = releaseStatus === "released" || releaseStatus === "not_found";
 			releaseReason = releaseStatus === "not_found" ? status : `released_${releaseStatus}`;
 		} catch (error) {
 			console.error("batch_reservation_release_failed", {
@@ -907,6 +945,20 @@ export async function finalizeBatchJob(args: FinalizeBatchJobArgs): Promise<Fina
 				charged: false,
 				billed: false,
 				reason: "release_failed",
+			};
+		}
+		if (!releaseApplied) {
+			await setBatchJobStatus(args.workspaceId, args.batchId, status, {
+				finalizedAt,
+				charged: false,
+				billingReason: `settlement_not_applied:${releaseReason}`,
+				reservationStatus: releaseReason,
+			});
+			return {
+				status,
+				charged: false,
+				billed: false,
+				reason: `settlement_not_applied:${releaseReason}`,
 			};
 		}
 		await setBatchJobStatus(args.workspaceId, args.batchId, status, {
@@ -954,7 +1006,7 @@ export async function finalizeBatchJob(args: FinalizeBatchJobArgs): Promise<Fina
 			costNanos: settlement.costNanos,
 		});
 		reservationStatus = chargeSettlement.status;
-		chargeApplied = settlement.costNanos <= 0 || chargeSettlement.charged;
+		chargeApplied = chargeSettlement.applied;
 		if (hasReservation(record.meta) && reservationStatus && reservationStatus !== "not_found") {
 			settlementReason = `${settlement.reason}:${reservationStatus}`;
 		}
@@ -983,6 +1035,21 @@ export async function finalizeBatchJob(args: FinalizeBatchJobArgs): Promise<Fina
 			charged: false,
 			billed: false,
 			reason: "settlement_failed",
+		};
+	}
+	if (!chargeApplied) {
+		const reason = `settlement_not_applied:${reservationStatus ?? "unknown"}`;
+		await setBatchJobStatus(args.workspaceId, args.batchId, status, {
+			finalizedAt,
+			charged: false,
+			billingReason: reason,
+			...(reservationStatus ? { reservationStatus } : {}),
+		});
+		return {
+			status,
+			charged: false,
+			billed: false,
+			reason,
 		};
 	}
 
@@ -1035,6 +1102,37 @@ export async function finalizeBatchJob(args: FinalizeBatchJobArgs): Promise<Fina
 				batchId: args.batchId,
 			});
 		});
+	}
+	if (chargeApplied) {
+		try {
+			await recordBatchKeyUsage({
+				workspaceId: args.workspaceId,
+				batchId: args.batchId,
+				apiKeyId: record.meta.apiKeyId,
+				providerId: normalizeText(record.meta.provider) ?? OPENAI_BATCH_PROVIDER_ID,
+				endpoint: normalizeText(record.meta.endpoint),
+				entries: settlement.outputEntries,
+				rowCostsByIndex: settlement.rowCostsByIndex,
+			});
+		} catch (error) {
+			await setBatchJobStatus(args.workspaceId, args.batchId, status, {
+				finalizedAt,
+				billingReason: "key_usage_persistence_failed",
+			});
+			await emitGatewayOperationalFailure({
+				workflow: "batch_finalization",
+				workspaceId: args.workspaceId,
+				resourceId: args.batchId,
+				reason: "batch_key_usage_persistence_failed",
+				error,
+			});
+			return {
+				status,
+				charged: settlement.charged,
+				billed: false,
+				reason: "key_usage_persistence_failed",
+			};
+		}
 	}
 	if (chargeApplied) {
 		await markBatchJobBilled(args.workspaceId, args.batchId);
