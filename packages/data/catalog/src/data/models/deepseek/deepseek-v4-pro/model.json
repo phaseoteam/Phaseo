@@ -57,7 +57,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1; DeepSeek-V4-Pro Max",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
-      "rank": 16
+      "rank": 19
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -65,7 +65,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1; DeepSeek-V4-Pro Max",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
-      "rank": 53
+      "rank": 61
     },
     {
       "benchmark_id": "terminal-bench-2.0",
@@ -113,7 +113,7 @@
       "is_self_reported": true,
       "other_info": "Elo; DeepSeek-V4-Pro Max",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
-      "rank": 12
+      "rank": 15
     },
     {
       "benchmark_id": "scale-mcp-atlas",
@@ -121,7 +121,7 @@
       "is_self_reported": true,
       "other_info": "MCPAtlas Public; Pass@1; DeepSeek-V4-Pro Max",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
-      "rank": 7
+      "rank": 9
     },
     {
       "benchmark_id": "toolathlon",
@@ -129,7 +129,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1; DeepSeek-V4-Pro Max",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
-      "rank": 5
+      "rank": 8
     },
     {
       "benchmark_id": "deepswe",
@@ -137,7 +137,7 @@
       "is_self_reported": false,
       "other_info": "mini-swe-agent; 8% +/-3%; avg cost $4.22; avg time 37m; out tok 50k",
       "source_link": "https://deepswe.datacurve.ai/",
-      "rank": 15
+      "rank": 18
     },
     {
       "benchmark_id": "livebench",
@@ -163,5 +163,52 @@
       "source_link": "https://github.com/lechmazur/nyt-connections",
       "rank": 31
     }
-  ]
+  ],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 1000000,
+    "input": 1000000,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "weights",
+      "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

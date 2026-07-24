@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gemini-2.5-flash (score=0.5083; benches=14)",
       "source_link": "https://developers.googleblog.com/en/start-building-with-gemini-25-flash/",
-      "rank": 122
+      "rank": 132
     },
     {
       "benchmark_id": "livecodebench-v5",
@@ -128,5 +128,41 @@
       "source_link": "https://developers.googleblog.com/en/start-building-with-gemini-25-flash/",
       "rank": 14
     }
-  ]
+  ],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": null,
+    "output": null
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

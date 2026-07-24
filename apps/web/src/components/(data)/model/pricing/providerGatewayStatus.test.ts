@@ -17,9 +17,21 @@ describe("providerGatewayStatus", () => {
 			"disabled",
 		];
 
-		expect(
+			expect(
 			statuses.map((status) => getGatewayStatusSortRank(status)),
 		).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+	});
+
+	it("keeps external catalogue providers distinct from inactive providers", () => {
+		expect(
+			resolveGatewayStatus({
+				isActiveGateway: false,
+				providerStatus: "external",
+				providerRoutingStatus: "disabled",
+				modelRoutingStatus: "active",
+				capabilityStatus: "active",
+			}),
+		).toBe("external");
 	});
 
 	it("prefers the best routable status within a provider offer", () => {

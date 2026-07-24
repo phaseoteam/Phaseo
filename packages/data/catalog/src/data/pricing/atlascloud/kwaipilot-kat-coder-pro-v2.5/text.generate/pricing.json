@@ -15,7 +15,11 @@
       "note": "AtlasCloud public LLM listing shows Kat Coder Pro V2.5 input pricing at $0.74 per 1M tokens.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-07-08T00:00:00Z"
+      "effective_from": "2026-07-08T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -27,7 +31,11 @@
       "note": "StreamLake-backed provider payload lists Kat Coder Pro V2.5 input_cache_read pricing at $0.15 per 1M tokens.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-07-08T00:00:00Z"
+      "effective_from": "2026-07-08T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -39,7 +47,21 @@
       "note": "AtlasCloud public LLM listing shows Kat Coder Pro V2.5 output pricing at $2.96 per 1M tokens.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-07-08T00:00:00Z"
+      "effective_from": "2026-07-08T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

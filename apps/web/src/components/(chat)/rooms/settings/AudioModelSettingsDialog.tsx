@@ -22,6 +22,7 @@ import {
 	getAudioModelSchema,
 	type AudioModeSupport,
 	type AudioRoomParams,
+	type CapabilityParamsById,
 } from "@/lib/chat/roomModelSettings";
 
 type AudioModelSettingsDialogProps = {
@@ -38,6 +39,7 @@ type AudioModelSettingsDialogProps = {
 	onModelChange: (modelId: string) => void;
 	providerOptions: Array<{ id: string; name: string }>;
 	supportedProvidersForModel?: string[];
+	capabilityParamsById?: CapabilityParamsById;
 	onUpdateBase: (partial: Partial<RoomBaseModelSettings>) => void;
 	onUpdateParams: (partial: Partial<AudioRoomParams>) => void;
 	onReset: () => void;
@@ -53,12 +55,13 @@ export function AudioModelSettingsDialog({
 	onModelChange,
 	providerOptions,
 	supportedProvidersForModel,
+	capabilityParamsById,
 	onUpdateBase,
 	onUpdateParams,
 	onReset,
 	modeSupport,
 }: AudioModelSettingsDialogProps) {
-	const schema = getAudioModelSchema(selectedModelId ?? "");
+	const schema = getAudioModelSchema(selectedModelId ?? "", capabilityParamsById);
 	const speechVoice = schema.voiceOptions.includes(settings.params.speechVoice)
 		? settings.params.speechVoice
 		: (schema.voiceOptions[0] ?? "");

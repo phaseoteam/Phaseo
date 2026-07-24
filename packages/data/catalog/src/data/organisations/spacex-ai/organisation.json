@@ -17,5 +17,13 @@
       "platform": "x",
       "url": "https://x.com/xai"
     }
-  ]
+  ],
+  "status": "active",
+  "routable": null,
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

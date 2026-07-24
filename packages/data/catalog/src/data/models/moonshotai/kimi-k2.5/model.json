@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://fireworks.ai/models/fireworks/kimi-k2p5",
-      "rank": 19
+      "rank": 23
     },
     {
       "benchmark_id": "charxiv-r",
@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.kimi.com/blog/kimi-k2-5.html",
-      "rank": 5
+      "rank": 6
     },
     {
       "benchmark_id": "finsearchcomp-t2-t3",
@@ -110,7 +110,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://fireworks.ai/models/fireworks/kimi-k2p5",
-      "rank": 19
+      "rank": 23
     },
     {
       "benchmark_id": "imoanswerbench",
@@ -166,7 +166,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://fireworks.ai/models/fireworks/kimi-k2p5",
-      "rank": 7
+      "rank": 8
     },
     {
       "benchmark_id": "mathvista-mini",
@@ -190,7 +190,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://fireworks.ai/models/fireworks/kimi-k2p5",
-      "rank": 15
+      "rank": 16
     },
     {
       "benchmark_id": "mmvu",
@@ -326,7 +326,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.kimi.com/blog/kimi-k2-5.html",
-      "rank": 3
+      "rank": 4
     },
     {
       "benchmark_id": "zerobench",
@@ -368,5 +368,47 @@
       "source_link": "https://github.com/lechmazur/generalization",
       "rank": 22
     }
-  ]
+  ],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image/*",
+      "video/*"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

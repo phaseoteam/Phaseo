@@ -170,7 +170,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
       "source_link": "https://openai.com/index/gpt-5/",
-      "rank": 144
+      "rank": 154
     },
     {
       "benchmark_id": "if-eval",
@@ -234,7 +234,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
       "source_link": "https://openai.com/index/gpt-5/",
-      "rank": 67
+      "rank": 68
     },
     {
       "benchmark_id": "multi-challenge",
@@ -340,5 +340,53 @@
       "source_link": "https://openai.com/index/gpt-5/",
       "rank": 48
     }
-  ]
+  ],
+  "page_notice": null,
+  "model_type": "audio",
+  "knowledge_cutoff": "2023-10-01T00:00:00",
+  "limits": {
+    "context": 128000,
+    "input": 128000,
+    "output": 128000
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "audio/*"
+    ],
+    "output": [
+      "text",
+      "audio/*"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "api_reference",
+      "url": "https://platform.openai.com/docs/models/gpt-4o-audio-preview?snapshot=gpt-4o-audio-preview-2024-12-17",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

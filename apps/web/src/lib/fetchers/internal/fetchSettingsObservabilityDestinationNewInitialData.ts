@@ -1,29 +1,14 @@
-import { headers } from "next/headers";
-import { absoluteUrl } from "@/lib/seo";
-import type { SettingsObservabilityDestinationNewInitialData } from "@/app/api/internal/settings/observability/destinations/new/[provider]/initial/route";
+import type { SettingsObservabilityDestinationNewInitialData } from "@/lib/fetchers/internal/settingsTypes";
+import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
 
 export async function fetchSettingsObservabilityDestinationNewInitialData(
 	provider: string,
 ): Promise<SettingsObservabilityDestinationNewInitialData> {
-	const requestHeaders = await headers();
-	const response = await fetch(
-		absoluteUrl(
-			`/api/internal/settings/observability/destinations/new/${encodeURIComponent(provider)}/initial`,
-		),
-		{
-			cache: "no-store",
-			headers: {
-				accept: "application/json",
-				cookie: requestHeaders.get("cookie") ?? "",
-			},
-		},
+	const context = await getServerAccountContext();
+	const query = context.workspaceId ? `?workspaceId=${encodeURIComponent(context.workspaceId)}` : "";
+	return fetchAccountWebApi<SettingsObservabilityDestinationNewInitialData>(
+		`/api/account/settings/observability/destinations/new/${encodeURIComponent(provider)}${query}`,
+		context.accessToken,
 	);
-
-	if (!response.ok) {
-		throw new Error(
-			`Failed to fetch destination creation data: ${response.status}`,
-		);
-	}
-
-	return (await response.json()) as SettingsObservabilityDestinationNewInitialData;
 }

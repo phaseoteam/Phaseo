@@ -17,25 +17,148 @@
         "capability_id": "text.generate",
         "status": "coming_soon",
         "params": [
-          { "param_id": "max_output_tokens", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Responses API field." },
-          { "param_id": "max_completion_tokens", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Chat Completions API field." },
-          { "param_id": "max_tokens", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Chat Completions compatibility field." },
-          { "param_id": "reasoning", "provider_min": null, "provider_max": null, "provider_default": "xhigh", "notes": "Supports effort values high, xhigh, and max; max maps to xhigh." },
-          { "param_id": "reasoning_effort", "provider_min": null, "provider_max": null, "provider_default": "xhigh", "notes": "Chat Completions compatibility field." },
-          { "param_id": "tools", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "tool_choice", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "response_format", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Supports JSON object/schema structured outputs." },
-          { "param_id": "structured_outputs", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Available through Responses text.format and Chat response_format." },
-          { "param_id": "parallel_tool_calls", "provider_min": null, "provider_max": null, "provider_default": true, "notes": "Accepted but ignored; server-side default is true for supported models." },
-          { "param_id": "temperature", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Accepted but ignored." },
-          { "param_id": "top_p", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Accepted but ignored by Chat Completions." },
-          { "param_id": "stop", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Accepted but ignored by Chat Completions." },
-          { "param_id": "seed", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Accepted but ignored by Chat Completions." },
-          { "param_id": "frequency_penalty", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Accepted but ignored by Chat Completions." },
-          { "param_id": "presence_penalty", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Accepted but ignored by Chat Completions." }
-        ]
+          {
+            "param_id": "max_output_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Responses API field."
+          },
+          {
+            "param_id": "max_completion_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Chat Completions API field."
+          },
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Chat Completions compatibility field."
+          },
+          {
+            "param_id": "reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": "xhigh",
+            "notes": "Supports effort values high, xhigh, and max; max maps to xhigh."
+          },
+          {
+            "param_id": "reasoning_effort",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": "xhigh",
+            "notes": "Chat Completions compatibility field."
+          },
+          {
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Supports JSON object/schema structured outputs."
+          },
+          {
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Available through Responses text.format and Chat response_format."
+          },
+          {
+            "param_id": "parallel_tool_calls",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": true,
+            "notes": "Accepted but ignored; server-side default is true for supported models."
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Accepted but ignored."
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Accepted but ignored by Chat Completions."
+          },
+          {
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Accepted but ignored by Chat Completions."
+          },
+          {
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Accepted but ignored by Chat Completions."
+          },
+          {
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Accepted but ignored by Chat Completions."
+          },
+          {
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Accepted but ignored by Chat Completions."
+          }
+        ],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "sakana/fugu-ultra",
@@ -55,24 +178,147 @@
         "capability_id": "text.generate",
         "status": "coming_soon",
         "params": [
-          { "param_id": "max_output_tokens", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Responses API field; applies only to the final model response for Fugu Ultra." },
-          { "param_id": "max_completion_tokens", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Chat Completions API field." },
-          { "param_id": "max_tokens", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Chat Completions compatibility field." },
-          { "param_id": "reasoning", "provider_min": null, "provider_max": null, "provider_default": "xhigh", "notes": "Supports effort values high, xhigh, and max; max maps to xhigh." },
-          { "param_id": "reasoning_effort", "provider_min": null, "provider_max": null, "provider_default": "xhigh", "notes": "Chat Completions compatibility field." },
-          { "param_id": "tools", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "tool_choice", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "response_format", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Supports JSON object/schema structured outputs." },
-          { "param_id": "structured_outputs", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Available through Responses text.format and Chat response_format." },
-          { "param_id": "parallel_tool_calls", "provider_min": null, "provider_max": null, "provider_default": true, "notes": "Accepted but ignored; server-side default is true for supported models." },
-          { "param_id": "temperature", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Accepted but ignored." },
-          { "param_id": "top_p", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Accepted but ignored by Chat Completions." },
-          { "param_id": "stop", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Accepted but ignored by Chat Completions." },
-          { "param_id": "seed", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Accepted but ignored by Chat Completions." },
-          { "param_id": "frequency_penalty", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Accepted but ignored by Chat Completions." },
-          { "param_id": "presence_penalty", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Accepted but ignored by Chat Completions." }
-        ]
+          {
+            "param_id": "max_output_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Responses API field; applies only to the final model response for Fugu Ultra."
+          },
+          {
+            "param_id": "max_completion_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Chat Completions API field."
+          },
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Chat Completions compatibility field."
+          },
+          {
+            "param_id": "reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": "xhigh",
+            "notes": "Supports effort values high, xhigh, and max; max maps to xhigh."
+          },
+          {
+            "param_id": "reasoning_effort",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": "xhigh",
+            "notes": "Chat Completions compatibility field."
+          },
+          {
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Supports JSON object/schema structured outputs."
+          },
+          {
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Available through Responses text.format and Chat response_format."
+          },
+          {
+            "param_id": "parallel_tool_calls",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": true,
+            "notes": "Accepted but ignored; server-side default is true for supported models."
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Accepted but ignored."
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Accepted but ignored by Chat Completions."
+          },
+          {
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Accepted but ignored by Chat Completions."
+          },
+          {
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Accepted but ignored by Chat Completions."
+          },
+          {
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Accepted but ignored by Chat Completions."
+          },
+          {
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": "Accepted but ignored by Chat Completions."
+          }
+        ],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": null,
+      "data": null
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   }
 ]

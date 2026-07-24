@@ -25,6 +25,15 @@ describe("extractPricingTableText", () => {
 		});
 	});
 
+	it("does not double-unescape nested HTML entities", () => {
+		const result = extractPricingTableText(`
+			<table><tr><th>Price</th></tr><tr><td>&amp;lt; $1 / M</td></tr></table>
+		`);
+
+		expect(result.text).toContain("&lt; $1 / M");
+		expect(result.text).not.toContain("< $1 / M");
+	});
+
 	it("extracts price-bearing content cards without hashing page scripts", () => {
 		const result = extractPriceContentText(`
 			<script>window.dynamic = Date.now()</script>

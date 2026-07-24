@@ -74,7 +74,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwq-32b-preview/",
-      "rank": 112
+      "rank": 116
     },
     {
       "benchmark_id": "gpqa",
@@ -100,5 +100,78 @@
       "source_link": "https://qwenlm.github.io/blog/qwq-32b-preview/",
       "rank": 18
     }
-  ]
+  ],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": "2024-11-28T00:00:00",
+  "limits": {
+    "context": 32768,
+    "input": 32768,
+    "output": 32768
+  },
+  "modalities": {
+    "input": null,
+    "output": null
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "api_reference",
+      "url": "https://huggingface.co/Qwen/QwQ-32B-Preview",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "playground",
+      "url": "https://huggingface.co/spaces/Qwen/QwQ-32B-Preview",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2407.10671",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "announcement",
+      "url": "https://qwenlm.github.io/blog/qwq-32b-preview/",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "repository",
+      "url": "https://github.com/QwenLM/Qwen2",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "weights",
+      "url": "https://huggingface.co/Qwen/QwQ-32B-Preview",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

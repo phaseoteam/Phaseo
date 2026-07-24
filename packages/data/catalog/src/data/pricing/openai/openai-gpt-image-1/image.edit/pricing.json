@@ -1,0 +1,99 @@
+{
+  "key": "openai:openai/gpt-image-1:image.edit",
+  "api_provider_id": "openai",
+  "provider_slug": "openai",
+  "api_model_id": "openai/gpt-image-1",
+  "capability_id": "image.edit",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "OpenAI pricing table lists GPT Image 1 text input at $5 per 1M tokens.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-04-23T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.25,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "OpenAI pricing table lists GPT Image 1 cached text input at $1.25 per 1M tokens.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-04-23T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "input_image_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 10,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "OpenAI pricing table lists GPT Image 1 image input at $10 per 1M tokens.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-04-23T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "cached_read_image_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "OpenAI pricing table lists GPT Image 1 cached image input at $2.50 per 1M tokens.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-04-23T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "output_image_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 40,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "OpenAI pricing table lists GPT Image 1 image output at $40 per 1M tokens.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-04-23T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
+}

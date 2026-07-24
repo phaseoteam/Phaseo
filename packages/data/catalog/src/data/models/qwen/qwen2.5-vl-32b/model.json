@@ -51,7 +51,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-32B-Instruct",
-      "rank": 142
+      "rank": 146
     },
     {
       "benchmark_id": "aitz-em",
@@ -155,7 +155,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-VL",
-      "rank": 35
+      "rank": 37
     },
     {
       "benchmark_id": "mathvista-mini",
@@ -211,7 +211,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-32B-Instruct",
-      "rank": 89
+      "rank": 91
     },
     {
       "benchmark_id": "mmstar",
@@ -277,5 +277,65 @@
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-32B-Instruct",
       "rank": 6
     }
-  ]
+  ],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 32768,
+    "input": 32768,
+    "output": 32768
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image/*"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "announcement",
+      "url": "https://qwenlm.github.io/blog/qwen2.5-vl-32b/",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/abs/2502.13923",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "weights",
+      "url": "https://huggingface.co/Qwen/Qwen2.5-VL-32B-Instruct",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

@@ -1,6 +1,6 @@
 // components/header/AuthControls.tsx  (SERVER COMPONENT)
 import { fetchInternalAuthHeaderData } from "@/lib/fetchers/internal/fetchInternalAuthHeaderData";
-import type { InternalAuthHeaderData } from "@/app/api/internal/auth/header/route";
+import type { InternalAuthHeaderData } from "@/lib/fetchers/internal/authTypes";
 import HeaderClient from "./HeaderClient";
 
 export default async function AuthControls({

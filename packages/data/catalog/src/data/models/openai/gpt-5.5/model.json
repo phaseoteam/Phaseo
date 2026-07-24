@@ -71,7 +71,7 @@
       "is_self_reported": true,
       "other_info": "Wins or ties",
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 27
+      "rank": 30
     },
     {
       "benchmark_id": "financeagent-v1.1",
@@ -111,7 +111,7 @@
       "is_self_reported": true,
       "other_info": "No tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 7
+      "rank": 8
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -127,7 +127,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 6
+      "rank": 10
     },
     {
       "benchmark_id": "scale-mcp-atlas",
@@ -135,7 +135,7 @@
       "is_self_reported": true,
       "other_info": "April 2026 update",
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 4
+      "rank": 6
     },
     {
       "benchmark_id": "toolathlon",
@@ -143,7 +143,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 1
+      "rank": 3
     },
     {
       "benchmark_id": "tau-2-telecom",
@@ -191,7 +191,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 8
+      "rank": 10
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -199,7 +199,7 @@
       "is_self_reported": true,
       "other_info": "No tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 40
+      "rank": 48
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -207,7 +207,7 @@
       "is_self_reported": true,
       "other_info": "With tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
-      "rank": 12
+      "rank": 16
     },
     {
       "benchmark_id": "ctf-challenge-tasks",
@@ -425,5 +425,53 @@
       "source_link": "https://github.com/lechmazur/nyt-connections",
       "rank": 54
     }
-  ]
+  ],
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": "2025-12-01T00:00:00",
+  "limits": {
+    "context": 1050000,
+    "input": 1050000,
+    "output": 128000
+  },
+  "modalities": {
+    "input": null,
+    "output": null
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "announcement",
+      "url": "https://openai.com/index/introducing-gpt-5-5/",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "api_reference",
+      "url": "https://developers.openai.com/api/docs/models/gpt-5.5",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

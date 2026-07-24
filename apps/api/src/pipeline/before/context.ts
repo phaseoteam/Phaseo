@@ -7,6 +7,7 @@ import { getSupabaseAdmin, getCache } from "@/runtime/env";
 import { getProviderResidencyMetadata } from "@/lib/config/providerResidency";
 import { getTextMany, keyVersionToken } from "@/core/kv";
 import { gatewayCreditCacheKey } from "@/core/gateway-credit-cache";
+import { bytesToString, decryptBYOK } from "@pipeline/byok/decrypt";
 import { contextSchema } from "./schemas";
 import { loadPriceCard } from "@pipeline/pricing";
 import { getContextCapabilityCandidates } from "./context.capability-aliases";
@@ -23,6 +24,7 @@ import {
 	computeStaticTtl,
 	isCreditContextLike,
 	isDynamicContextLike,
+	hasConfiguredKeyLimits,
 	isStaticContextLike,
 	isWithinEffectiveWindow,
 	mergeCachedContext,
@@ -68,6 +70,97 @@ const CONTEXT_KEY_VERSION_L1_TTL_MS = 5_000;
 const FREE_ROUTER_MODEL_ID = "phaseo/free";
 
 const contextInflight = new Map<string, Promise<GatewayContextData>>();
+
+async function hydrateByokKeys(
+	context: GatewayContextData,
+	workspaceId: string,
+): Promise<GatewayContextData> {
+	const providerIds = Array.from(new Set(
+		(context.providers ?? []).map((provider) => provider.providerId).filter(Boolean),
+	));
+	if (!providerIds.length) return context;
+	const keyIds = Array.from(new Set(
+		(context.providers ?? []).flatMap((provider) =>
+			(provider.byokMeta ?? []).map((key) => key.id).filter(Boolean),
+		),
+	));
+	// The cached/RPC context contains only metadata. Avoid a Supabase read entirely
+	// for the overwhelmingly common no-BYOK path.
+	if (!keyIds.length) return context;
+
+	const { data, error } = await getSupabaseAdmin()
+		.from("byok_keys")
+		.select("*")
+		.eq("workspace_id", workspaceId)
+		.eq("enabled", true)
+		.in("id", keyIds)
+		.in("provider_id", providerIds);
+	if (error) {
+		throw new Error(`byok_hydration_failed:${error.message ?? "unknown"}`);
+	}
+	if (!data?.length) {
+		return {
+			...context,
+			providers: (context.providers ?? []).map((provider) => ({
+				...provider,
+				byokMeta: [],
+			})),
+		};
+	}
+
+	const decrypted = await Promise.all((data as any[]).map(async (row) => {
+		try {
+			const decryptedBytes = await decryptBYOK(row);
+			let key: string;
+			try {
+				key = bytesToString(decryptedBytes);
+			} finally {
+				decryptedBytes.fill(0);
+			}
+			const legacyPriority = Boolean(row.always_use);
+			return {
+				id: String(row.id),
+				providerId: String(row.provider_id),
+				fingerprintSha256: String(row.fingerprint_sha256 ?? ""),
+				keyVersion: row.key_version == null ? null : String(row.key_version),
+				alwaysUse: legacyPriority,
+				routingMode: row.routing_mode === "priority" || row.routing_mode === "fallback"
+					? row.routing_mode
+					: legacyPriority ? "priority" : "fallback",
+				sortOrder: Number.isFinite(Number(row.sort_order)) ? Number(row.sort_order) : 0,
+				key,
+				value: key,
+			} satisfies ByokKeyMeta;
+		} catch (cause) {
+			console.error("[gateway] Failed to decrypt BYOK key", {
+				workspaceId,
+				providerId: row?.provider_id ?? null,
+				keyId: row?.id ?? null,
+				cause: cause instanceof Error ? cause.message : "unknown",
+			});
+			return null;
+		}
+	}));
+
+	const byProvider = new Map<string, ByokKeyMeta[]>();
+	for (const key of decrypted) {
+		if (!key?.providerId) continue;
+		const keys = byProvider.get(key.providerId) ?? [];
+		keys.push(key);
+		byProvider.set(key.providerId, keys);
+	}
+	for (const keys of byProvider.values()) {
+		keys.sort((a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id));
+	}
+
+	return {
+		...context,
+		providers: (context.providers ?? []).map((provider) => ({
+			...provider,
+			byokMeta: byProvider.get(provider.providerId) ?? [],
+		})),
+	};
+}
 
 type ProviderScopedModelRow = {
     provider_api_model_id: string | null;
@@ -504,6 +597,8 @@ async function fetchTestingProviderSnapshots(args: {
                             ? null
                             : String(row.key_version),
                     alwaysUse: Boolean(row.always_use),
+					routingMode: row.always_use ? "priority" : "fallback",
+					sortOrder: 0,
                 };
                 const list = byokByProvider.get(entry.providerId) ?? [];
                 list.push(entry);
@@ -678,8 +773,8 @@ async function fetchFreeRouterProviderPool(args: {
         const pricingKey = `${providerId}:${apiModelId}`;
         providers.push({
             providerId,
-            providerStatus: providerStatus?.status ?? "active",
-            providerRoutingStatus: providerStatus?.routingStatus ?? "active",
+            providerStatus: providerStatus?.status ?? "not_ready",
+            providerRoutingStatus: providerStatus?.routingStatus ?? "disabled",
             modelRoutingStatus: normalizeRoutingStatus(row.routing_status),
             capabilityStatus: normalizeCapabilityStatus(capability.status),
             residencyMode: residency.residencyMode,
@@ -770,7 +865,14 @@ export async function fetchGatewayContext(args: {
             if (dynamicCachedRaw && staticCachedRaw) {
                 const dynamicParsed = JSON.parse(dynamicCachedRaw);
                 const staticParsed = JSON.parse(staticCachedRaw);
-                if (isDynamicContextLike(dynamicParsed) && isStaticContextLike(staticParsed)) {
+                if (
+					isDynamicContextLike(dynamicParsed) &&
+					isStaticContextLike(staticParsed) &&
+					!hasConfiguredKeyLimits(dynamicParsed.keyLimit)
+				) {
+					// Request/cost usage changes after every completion. A cached
+					// snapshot can admit subsequent requests past a configured cap,
+					// so only uncapped keys may use the dynamic context snapshot.
                     const creditParsed = creditCachedRaw ? JSON.parse(creditCachedRaw) : null;
                     const creditContext = isCreditContextLike(creditParsed) ? creditParsed : null;
                     const merged = mergeCachedContext({
@@ -779,14 +881,14 @@ export async function fetchGatewayContext(args: {
                         credit: creditContext,
                         endpoint: args.endpoint,
                     });
-                    return {
+					return hydrateByokKeys({
                         ...merged,
                         contextTelemetry: {
                             ...telemetry,
                             cacheStatus: "hit",
                             totalMs: round3(performance.now() - fetchStartedAt),
                         },
-                    };
+					}, args.workspaceId);
                 }
             }
         } catch {
@@ -797,9 +899,11 @@ export async function fetchGatewayContext(args: {
 
     const inflightKey = shouldUseCache ? compositionCacheKey : null;
     if (inflightKey) {
-        const inflight = contextInflight.get(inflightKey);
-        if (inflight) {
-            return inflight.then((value) => cloneGatewayContextData(value));
+		const inflight = contextInflight.get(inflightKey);
+		if (inflight) {
+			return inflight.then((value) =>
+				hydrateByokKeys(cloneGatewayContextData(value), args.workspaceId),
+			);
         }
     }
 
@@ -1063,14 +1167,16 @@ export async function fetchGatewayContext(args: {
         // Enrich with team settings + provider rollout statuses.
         parsed.teamSettings = {
             routingMode: null,
-            byokFallbackEnabled: null,
+            byokFallbackEnabled: false,
             betaChannelEnabled: false,
             alphaChannelEnabled: false,
             cacheAwareRoutingEnabled: null,
-            privacyZdrOnly: false,
-            privacyEnablePaidMayTrain: true,
-            privacyEnableFreeMayTrain: true,
-            privacyEnableInputOutputLogging: true,
+            privacyZdrOnly: true,
+            privacyEnablePaidMayTrain: false,
+            privacyEnableFreeMayTrain: false,
+            privacyEnableInputOutputLogging: false,
+            ioLoggingEnabled: false,
+            ioLoggingIncludeProviderPayloads: false,
             billingMode: "wallet",
         };
 
@@ -1085,17 +1191,36 @@ export async function fetchGatewayContext(args: {
 
             const providerStatusQuery = providerIds.length
                 ? supabase
-                      .from("data_api_providers")
-                      .select("api_provider_id,status,routing_status,provider_family_id,offer_scope,offer_label,prompt_training_policy,data_policy_tier,data_policy_confidence,data_policy_contract_mode")
-                      .in("api_provider_id", providerIds)
+                    .from("v2_providers")
+                    .select("provider_slug,status,routing_enabled,provider_family_slug,offer_scope,offer_label,residency_mode,default_execution_regions,default_data_regions,zero_data_retention,prompt_training_policy,data_policy_tier,data_policy_confidence,data_policy_contract_mode,data_policy_variant,stream_cancellation_support,stream_cancellation_stops_provider_billing,stream_cancellation_usage_recovery,stream_cancellation_evidence_kind,stream_cancellation_source_url")
+                    .in("provider_slug", providerIds)
                 : Promise.resolve({ data: [], error: null } as any);
 
-            const [settingsResult, providerStatusResult, teamResult] = await Promise.all([
-                supabase
+            const settingsQuery = (async () => {
+                const columns = "routing_mode,byok_fallback_enabled,beta_channel_enabled,alpha_channel_enabled,privacy_zdr_only,privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_input_output_logging,io_logging_enabled,io_logging_include_provider_payloads";
+                const withCacheAwareRouting = await supabase
                     .from("workspace_settings")
-                    .select("routing_mode,byok_fallback_enabled,beta_channel_enabled,alpha_channel_enabled,cache_aware_routing_enabled,privacy_zdr_only,privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_input_output_logging")
+                    .select(`${columns},cache_aware_routing_enabled`)
                     .eq("workspace_id", args.workspaceId)
-                    .maybeSingle(),
+                    .maybeSingle();
+                if (!withCacheAwareRouting.error) return withCacheAwareRouting;
+
+                const code = String(withCacheAwareRouting.error.code ?? "").trim();
+                const message = String(withCacheAwareRouting.error.message ?? "").toLowerCase();
+                const isMissingCacheAwareRouting =
+                    (code === "PGRST204" || code === "42703") &&
+                    message.includes("cache_aware_routing_enabled");
+                if (!isMissingCacheAwareRouting) return withCacheAwareRouting;
+
+                return supabase
+                    .from("workspace_settings")
+                    .select(columns)
+                    .eq("workspace_id", args.workspaceId)
+                    .maybeSingle();
+            })();
+
+            const [settingsResult, providerStatusResult, teamResult] = await Promise.all([
+                settingsQuery,
                 providerStatusQuery,
                 supabase
                     .from("workspaces")
@@ -1104,87 +1229,174 @@ export async function fetchGatewayContext(args: {
                     .maybeSingle(),
             ]);
 
-            if (!settingsResult?.error) {
-                const rawBillingMode = String(teamResult?.data?.billing_mode ?? "wallet")
-                    .trim()
-                    .toLowerCase();
-                const billingMode =
-                    rawBillingMode === "invoice" ? "invoice" : "wallet";
-                parsed.teamSettings = {
-                    routingMode: settingsResult.data?.routing_mode ?? null,
-                    byokFallbackEnabled:
-                        settingsResult.data?.byok_fallback_enabled ?? null,
-                    betaChannelEnabled:
-                        settingsResult.data?.beta_channel_enabled ?? false,
-                    alphaChannelEnabled:
-                        settingsResult.data?.alpha_channel_enabled ?? false,
-                    cacheAwareRoutingEnabled:
-                        settingsResult.data?.cache_aware_routing_enabled ?? null,
-                    privacyZdrOnly:
-                        settingsResult.data?.privacy_zdr_only ?? false,
-                    privacyEnablePaidMayTrain:
-                        settingsResult.data?.privacy_enable_paid_may_train ?? true,
-                    privacyEnableFreeMayTrain:
-                        settingsResult.data?.privacy_enable_free_may_train ?? true,
-                    privacyEnableInputOutputLogging:
-                        settingsResult.data?.privacy_enable_input_output_logging ?? true,
-                    billingMode,
-                };
+            if (settingsResult?.error) {
+                throw new Error(`workspace_settings_enrichment_failed:${settingsResult.error.message ?? "unknown"}`);
             }
+            if (!settingsResult?.data) {
+                throw new Error("workspace_settings_enrichment_missing");
+            }
+            if (providerStatusResult?.error) {
+                throw new Error(`provider_status_enrichment_failed:${providerStatusResult.error.message ?? "unknown"}`);
+            }
+            if (teamResult?.error || !teamResult?.data) {
+                throw new Error(`workspace_billing_enrichment_failed:${teamResult?.error?.message ?? "missing"}`);
+            }
+
+            const rawBillingMode = String(teamResult.data.billing_mode ?? "").trim().toLowerCase();
+            if (rawBillingMode !== "wallet" && rawBillingMode !== "invoice") {
+                throw new Error("workspace_billing_mode_invalid");
+            }
+            const cacheAwareRoutingEnabled = (
+                settingsResult.data as Record<string, unknown>
+            ).cache_aware_routing_enabled;
+            parsed.teamSettings = {
+                routingMode: settingsResult.data.routing_mode ?? null,
+                byokFallbackEnabled: settingsResult.data.byok_fallback_enabled === true,
+                betaChannelEnabled: settingsResult.data.beta_channel_enabled === true,
+                alphaChannelEnabled: settingsResult.data.alpha_channel_enabled === true,
+                cacheAwareRoutingEnabled:
+                    typeof cacheAwareRoutingEnabled === "boolean"
+                        ? cacheAwareRoutingEnabled
+                        : null,
+                privacyZdrOnly: settingsResult.data.privacy_zdr_only === true,
+                privacyEnablePaidMayTrain:
+                    settingsResult.data.privacy_enable_paid_may_train === true,
+                privacyEnableFreeMayTrain:
+                    settingsResult.data.privacy_enable_free_may_train === true,
+                privacyEnableInputOutputLogging:
+                    settingsResult.data.privacy_enable_input_output_logging === true,
+                ioLoggingEnabled: settingsResult.data.io_logging_enabled === true,
+                ioLoggingIncludeProviderPayloads:
+                    settingsResult.data.io_logging_include_provider_payloads === true,
+                billingMode: rawBillingMode,
+            };
 
             const rolloutStatusByProvider = new Map<string, ProviderRolloutStatus>();
             const routingStatusByProvider = new Map<string, RoutingStatus>();
             const providerFamilyByProvider = new Map<string, string | null>();
             const offerScopeByProvider = new Map<string, GatewayProviderSnapshot["offerScope"]>();
             const offerLabelByProvider = new Map<string, string | null>();
+			const dataPolicyVariantByProvider = new Map<string, GatewayProviderSnapshot["dataPolicyVariant"]>();
+			const residencyModeByProvider = new Map<string, GatewayProviderSnapshot["residencyMode"]>();
+			const executionRegionsByProvider = new Map<string, string[] | null>();
+			const dataRegionsByProvider = new Map<string, string[] | null>();
+			const zeroDataRetentionByProvider = new Map<string, GatewayProviderSnapshot["zeroDataRetention"]>();
             const promptTrainingPolicyByProvider = new Map<string, GatewayProviderSnapshot["promptTrainingPolicy"]>();
             const dataPolicyTierByProvider = new Map<string, GatewayProviderSnapshot["dataPolicyTier"]>();
             const dataPolicyConfidenceByProvider = new Map<string, GatewayProviderSnapshot["dataPolicyConfidence"]>();
             const dataPolicyContractModeByProvider = new Map<string, GatewayProviderSnapshot["dataPolicyContractMode"]>();
+            const streamCancellationSupportByProvider = new Map<string, GatewayProviderSnapshot["streamCancellationSupport"]>();
+            const streamCancellationStopsBillingByProvider = new Map<string, boolean | null>();
+            const streamCancellationUsageRecoveryByProvider = new Map<string, GatewayProviderSnapshot["streamCancellationUsageRecovery"]>();
+            const streamCancellationEvidenceKindByProvider = new Map<string, GatewayProviderSnapshot["streamCancellationEvidenceKind"]>();
+            const streamCancellationSourceUrlByProvider = new Map<string, string | null>();
+			const normalizeRegions = (value: unknown): string[] | null =>
+				Array.isArray(value)
+					? value.map(String).map((region) => region.trim().toLowerCase()).filter(Boolean)
+					: null;
             if (!providerStatusResult?.error) {
                 for (const row of providerStatusResult.data ?? []) {
-                    if (!row?.api_provider_id) continue;
+                    const providerId = typeof row?.provider_slug === "string"
+                        ? row.provider_slug
+                        : null;
+                    if (!providerId) continue;
                     rolloutStatusByProvider.set(
-                        row.api_provider_id,
+                        providerId,
                         normalizeProviderStatus(row.status),
                     );
                     routingStatusByProvider.set(
-                        row.api_provider_id,
-                        normalizeRoutingStatus(row.routing_status),
+                        providerId,
+                        row.routing_enabled === true ? "active" : "disabled",
                     );
                     providerFamilyByProvider.set(
-                        row.api_provider_id,
-                        typeof row.provider_family_id === "string" && row.provider_family_id.trim().length > 0
-                            ? row.provider_family_id
+                        providerId,
+                        typeof row.provider_family_slug === "string" && row.provider_family_slug.trim().length > 0
+                            ? row.provider_family_slug
                             : null,
                     );
                     offerScopeByProvider.set(
-                        row.api_provider_id,
+                        providerId,
                         row.offer_scope === "global" || row.offer_scope === "regional" || row.offer_scope === "specialized"
                             ? row.offer_scope
                             : null,
                     );
                     offerLabelByProvider.set(
-                        row.api_provider_id,
+                        providerId,
                         typeof row.offer_label === "string" && row.offer_label.trim().length > 0
                             ? row.offer_label
                             : null,
                     );
+					dataPolicyVariantByProvider.set(
+						providerId,
+						row.data_policy_variant === "zdr" ? "zdr" : "standard",
+					);
+					residencyModeByProvider.set(
+						providerId,
+						row.residency_mode === "provider_managed" ||
+						row.residency_mode === "customer_selectable" ||
+						row.residency_mode === "account_selected"
+							? row.residency_mode
+							: "unknown",
+					);
+					executionRegionsByProvider.set(
+						providerId,
+						normalizeRegions(row.default_execution_regions),
+					);
+					dataRegionsByProvider.set(
+						providerId,
+						normalizeRegions(row.default_data_regions),
+					);
+					zeroDataRetentionByProvider.set(
+						providerId,
+						row.zero_data_retention === "unsupported" ||
+						row.zero_data_retention === "optional" ||
+						row.zero_data_retention === "default"
+							? row.zero_data_retention
+							: "unknown",
+					);
                     promptTrainingPolicyByProvider.set(
-                        row.api_provider_id,
+                        providerId,
                         normalizePromptTrainingPolicy(row.prompt_training_policy),
                     );
                     dataPolicyTierByProvider.set(
-                        row.api_provider_id,
+                        providerId,
                         normalizeDataPolicyTier(row.data_policy_tier),
                     );
                     dataPolicyConfidenceByProvider.set(
-                        row.api_provider_id,
+                        providerId,
                         normalizeDataPolicyConfidence(row.data_policy_confidence),
                     );
                     dataPolicyContractModeByProvider.set(
-                        row.api_provider_id,
+                        providerId,
                         normalizeDataPolicyContractMode(row.data_policy_contract_mode),
+                    );
+                    streamCancellationSupportByProvider.set(
+                        providerId,
+                        row.stream_cancellation_support === "supported" || row.stream_cancellation_support === "unsupported"
+                            ? row.stream_cancellation_support
+                            : "unknown",
+                    );
+                    streamCancellationStopsBillingByProvider.set(
+                        providerId,
+                        typeof row.stream_cancellation_stops_provider_billing === "boolean"
+                            ? row.stream_cancellation_stops_provider_billing
+                            : null,
+                    );
+                    streamCancellationUsageRecoveryByProvider.set(
+                        providerId,
+                        row.stream_cancellation_usage_recovery === "authoritative" ? "authoritative" : "unknown",
+                    );
+                    streamCancellationEvidenceKindByProvider.set(
+                        providerId,
+                        row.stream_cancellation_evidence_kind === "provider" || row.stream_cancellation_evidence_kind === "aggregator"
+                            ? row.stream_cancellation_evidence_kind
+                            : "none",
+                    );
+                    streamCancellationSourceUrlByProvider.set(
+                        providerId,
+                        typeof row.stream_cancellation_source_url === "string" && row.stream_cancellation_source_url.trim()
+                            ? row.stream_cancellation_source_url
+                            : null,
                     );
                 }
             }
@@ -1208,27 +1420,44 @@ export async function fetchGatewayContext(args: {
                         offerLabelByProvider.get(provider.providerId) ??
                         provider.offerLabel ??
                         null,
+					dataPolicyVariant:
+						dataPolicyVariantByProvider.get(provider.providerId) ??
+						provider.dataPolicyVariant ??
+						"standard",
                     providerStatus:
                         rolloutStatusByProvider.get(provider.providerId) ??
-                        normalizeProviderStatus(provider.providerStatus) ??
-                        "active",
+                        (provider.providerStatus == null
+                            ? "not_ready"
+                            : normalizeProviderStatus(provider.providerStatus)),
                     providerRoutingStatus:
                         routingStatusByProvider.get(provider.providerId) ??
-                        normalizeRoutingStatus(provider.providerRoutingStatus) ??
-                        "active",
+                        (provider.providerRoutingStatus == null
+                            ? "disabled"
+                            : normalizeRoutingStatus(provider.providerRoutingStatus)),
                     modelRoutingStatus:
-                        normalizeRoutingStatus(provider.modelRoutingStatus) ??
-                        "active",
+                        provider.modelRoutingStatus == null
+                            ? "disabled"
+                            : normalizeRoutingStatus(provider.modelRoutingStatus),
                     capabilityStatus:
-                        normalizeCapabilityStatus(provider.capabilityStatus) ??
-                        "active",
+                        provider.capabilityStatus == null
+                            ? "disabled"
+                            : normalizeCapabilityStatus(provider.capabilityStatus),
                     residencyMode:
-                        provider.residencyMode ?? residency.residencyMode,
+						residencyModeByProvider.get(provider.providerId) ??
+						provider.residencyMode ??
+						residency.residencyMode,
                     executionRegions:
-                        provider.executionRegions ?? residency.executionRegions,
-                    dataRegions: provider.dataRegions ?? residency.dataRegions,
+						executionRegionsByProvider.get(provider.providerId) ??
+						provider.executionRegions ??
+						residency.executionRegions,
+					dataRegions:
+						dataRegionsByProvider.get(provider.providerId) ??
+						provider.dataRegions ??
+						residency.dataRegions,
                     zeroDataRetention:
-                        provider.zeroDataRetention ?? residency.zeroDataRetention,
+						zeroDataRetentionByProvider.get(provider.providerId) ??
+						provider.zeroDataRetention ??
+						residency.zeroDataRetention,
                     promptTrainingPolicy:
                         promptTrainingPolicyByProvider.get(provider.providerId) ??
                         provider.promptTrainingPolicy ??
@@ -1245,10 +1474,36 @@ export async function fetchGatewayContext(args: {
                         dataPolicyContractModeByProvider.get(provider.providerId) ??
                         provider.dataPolicyContractMode ??
                         "none",
+                    streamCancellationSupport:
+                        streamCancellationSupportByProvider.get(provider.providerId) ??
+                        provider.streamCancellationSupport ??
+                        "unknown",
+                    streamCancellationStopsProviderBilling:
+                        streamCancellationStopsBillingByProvider.get(provider.providerId) ??
+                        provider.streamCancellationStopsProviderBilling ??
+                        null,
+                    streamCancellationUsageRecovery:
+                        streamCancellationUsageRecoveryByProvider.get(provider.providerId) ??
+                        provider.streamCancellationUsageRecovery ??
+                        "unknown",
+                    streamCancellationEvidenceKind:
+                        streamCancellationEvidenceKindByProvider.get(provider.providerId) ??
+                        provider.streamCancellationEvidenceKind ??
+                        "none",
+                    streamCancellationSourceUrl:
+                        streamCancellationSourceUrlByProvider.get(provider.providerId) ??
+                        provider.streamCancellationSourceUrl ??
+                        null,
                 };
             });
-        } catch {
-            // Keep defaults if enrichment fails, never block request path.
+        } catch (error) {
+            console.error("[context] security enrichment failed", {
+                workspaceId: args.workspaceId,
+                model: args.model,
+                endpoint: args.endpoint,
+                error: error instanceof Error ? error.message : String(error),
+            });
+            throw error;
         }
         parsed.testingMode = Boolean(args.includeTestingMode);
         telemetry.enrichMs = round3(performance.now() - enrichStartedAt);
@@ -1267,7 +1522,9 @@ export async function fetchGatewayContext(args: {
                     : clampTtl(isPreset ? Math.min(PRESET_TTL, pricingAwareStaticTtl) : pricingAwareStaticTtl);
                 const creditTtl = clampTtl(computeCreditSnapshotTtlForContext(parsed));
                 const cacheWrites: Promise<void>[] = [
-                    cache.put(dynamicCacheKey, JSON.stringify(split.dynamic), { expirationTtl: dynamicTtl }),
+					...(hasConfiguredKeyLimits(parsed.keyLimit)
+						? []
+						: [cache.put(dynamicCacheKey, JSON.stringify(split.dynamic), { expirationTtl: dynamicTtl })]),
                     cache.put(creditCacheKey, JSON.stringify(split.credit), { expirationTtl: creditTtl }),
                 ];
                 if (staticTtl !== null) {
@@ -1298,7 +1555,7 @@ export async function fetchGatewayContext(args: {
     }
 
     try {
-        return await dbLoader;
+		return await hydrateByokKeys(await dbLoader, args.workspaceId);
     } finally {
         if (inflightKey && contextInflight.get(inflightKey) === dbLoader) {
             contextInflight.delete(inflightKey);

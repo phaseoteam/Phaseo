@@ -1,25 +1,29 @@
-import { headers } from "next/headers";
-import { absoluteUrl } from "@/lib/seo";
-import type { SettingsPaymentMethodsInitialData } from "@/app/api/internal/settings/payment-methods/initial/route";
+import type { SettingsPaymentMethodsInitialData } from "@/lib/fetchers/internal/settingsTypes";
+import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
+import { getActiveTeamStripeSummary } from "@/lib/server/activeTeamStripe";
 
 export async function fetchSettingsPaymentMethodsInitialData(): Promise<SettingsPaymentMethodsInitialData> {
-	const requestHeaders = await headers();
-	const response = await fetch(
-		absoluteUrl("/api/internal/settings/payment-methods/initial"),
-		{
-			cache: "no-store",
-			headers: {
-				accept: "application/json",
-				cookie: requestHeaders.get("cookie") ?? "",
+	const context = await getServerAccountContext();
+	if (!context.workspaceId) {
+		return {
+			customerId: null,
+			initialData: {
+				customer: { id: "", email: null },
+				defaultPaymentMethodId: null,
+				paymentMethods: [],
 			},
-		},
-	);
-
-	if (!response.ok) {
-		throw new Error(
-			`Failed to fetch payment methods settings data: ${response.status}`,
-		);
+			obfuscateInfo: context.obfuscateInfo ?? false,
+		};
 	}
 
-	return (await response.json()) as SettingsPaymentMethodsInitialData;
+	const stripe = await getActiveTeamStripeSummary();
+	return {
+		customerId: stripe.customer.id,
+		initialData: {
+			customer: stripe.customer,
+			defaultPaymentMethodId: stripe.defaultPaymentMethodId,
+			paymentMethods: stripe.paymentMethods,
+		},
+		obfuscateInfo: context.obfuscateInfo ?? false,
+	};
 }

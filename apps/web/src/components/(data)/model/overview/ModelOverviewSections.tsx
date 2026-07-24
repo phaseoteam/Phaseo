@@ -18,6 +18,7 @@ import ModelPricing from "@/components/(data)/model/pricing/ModelPricing";
 import ModelSubscriptions from "@/components/(data)/model/pricing/ModelSubscriptions";
 import ModelPricingInsightsSection from "@/components/(data)/model/pricing/ModelPricingInsightsSection";
 import ModelPerformanceDashboard from "@/components/(data)/models/ModelPerformanceDashboard";
+import { fetchFrontendModelPerformanceColos } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import ModelSuccessChart from "@/components/(data)/models/ModelSuccessChart";
 import ModelActivityChart from "@/components/(data)/model/overview/ModelActivityChart";
 import Quickstart from "@/components/(data)/model/quickstart/Quickstart";
@@ -28,7 +29,10 @@ import OtherInfo from "@/components/(data)/model/overview/OtherInfo";
 import ModelLinks from "@/components/(data)/model/overview/ModelLinks";
 import { isAdminViewer } from "@/lib/auth/getViewerRole";
 import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
-import { getModelGatewayMetadataCached } from "@/lib/fetchers/models/getModelGatewayMetadata";
+import {
+	getModelGatewayMetadataCached,
+	type ModelGatewayMetadata,
+} from "@/lib/fetchers/models/getModelGatewayMetadata";
 import type { ModelPerformanceMetrics } from "@/lib/fetchers/models/getModelPerformance";
 import {
 	fetchFrontendModelApps,
@@ -69,6 +73,7 @@ type ModelOverviewSectionsProps = {
 	showSubscriptions?: boolean;
 	status?: string | null;
 	isGatewayActive?: boolean;
+	gatewayMetadata?: ModelGatewayMetadata;
 	performancePromise?: Promise<ModelPerformanceMetrics | null>;
 	quickstartRequestContext?: QuickstartRequestContext;
 };
@@ -196,12 +201,20 @@ function formatTypeLabel(value: string): string {
 export async function ModelProvidersSection({
 	modelId,
 	includeHidden,
-}: ModelSectionSharedProps) {
+	modelStatus,
+	modelName,
+	creatorOrganisationId,
+	description = "API providers, route pricing, availability, and recent reliability signals.",
+}: ModelSectionSharedProps & { modelStatus?: string | null; modelName?: string | null; creatorOrganisationId?: string | null; description?: string | null }) {
 	return (
 		<ModelPricing
 			modelId={modelId}
 			includeHidden={includeHidden}
-			showHeader={false}
+			showHeader
+			headerDescription={description}
+			modelStatus={modelStatus}
+			modelName={modelName}
+			creatorOrganisationId={creatorOrganisationId}
 		/>
 	);
 }
@@ -307,12 +320,14 @@ export async function ModelPerformanceSection({
 	modelId,
 	includeHidden,
 	performancePromise,
+	description = "Latency, throughput, and reliability signals from recent traffic.",
 	surface = "overview",
 }: ModelSectionSharedProps &
 	ModelPerformancePromiseProps & {
-		surface?: ModelSectionSurface;
+	description?: string;
+	surface?: ModelSectionSurface;
 }) {
-	const [performanceMetrics, pendingApiRelease, tokenTrajectory] =
+	const [performanceMetrics, pendingApiRelease, tokenTrajectory, performanceColos] =
 		await Promise.all([
 		withOptionalSectionTimeout(
 			performancePromise ?? fetchFrontendModelPerformance(modelId, 24),
@@ -329,6 +344,11 @@ export async function ModelPerformanceSection({
 			null,
 			"token trajectory"
 		),
+		withOptionalSectionTimeout(
+			fetchFrontendModelPerformanceColos(modelId),
+			[],
+			"performance execution regions"
+		),
 	]);
 	const shouldShowPendingApiBanner =
 		!performanceMetrics && pendingApiRelease?.isPendingApiRelease;
@@ -337,12 +357,16 @@ export async function ModelPerformanceSection({
 		<>
 			{performanceMetrics ? (
 				<ModelPerformanceDashboard
+					modelId={modelId}
 					metrics={performanceMetrics}
+					availableColos={performanceColos}
+					headerDescription={description}
 					tokenTrajectory={tokenTrajectory}
 					mode={surface}
 				/>
 			) : (
 				<div className="space-y-3">
+					<SectionHeader title="Performance" description={description} />
 					{shouldShowPendingApiBanner ? (
 						<ModelPendingApiReleaseBanner
 							modelName={pendingApiRelease?.modelName ?? "This model"}
@@ -529,10 +553,12 @@ export async function ModelQuickstartSection({
 	modelId,
 	includeHidden,
 	isGatewayActive = true,
+	gatewayMetadata: prefetchedGatewayMetadata,
 	surface = "page",
 	quickstartRequestContext,
 }: ModelSectionSharedProps & {
 	isGatewayActive?: boolean;
+	gatewayMetadata?: ModelGatewayMetadata;
 	surface?: ModelSectionSurface;
 	quickstartRequestContext?: QuickstartRequestContext;
 }) {
@@ -547,18 +573,20 @@ export async function ModelQuickstartSection({
 		);
 	}
 
-	const includeInternalProviders = await withOptionalSectionTimeout(
-		isAdminViewer(),
-		false,
-		"quickstart admin viewer check"
-	);
-	const gatewayMetadata = await withOptionalSectionTimeout(
-		includeInternalProviders
-			? getModelGatewayMetadataCached(modelId, includeHidden)
-			: fetchFrontendModelGatewayMetadata(modelId),
-		null,
-		"quickstart metadata"
-	);
+	const gatewayMetadata = prefetchedGatewayMetadata ?? await (async () => {
+		const includeInternalProviders = await withOptionalSectionTimeout(
+			isAdminViewer(),
+			false,
+			"quickstart admin viewer check"
+		);
+		return withOptionalSectionTimeout(
+			includeInternalProviders
+				? getModelGatewayMetadataCached(modelId, includeHidden)
+				: fetchFrontendModelGatewayMetadata(modelId),
+			null,
+			"quickstart metadata"
+		);
+	})();
 
 	const quickstartEndpoint =
 		gatewayMetadata?.activeProviders.find((p) => p.endpoint)?.endpoint ??
@@ -1217,6 +1245,7 @@ export default function ModelOverviewSections({
 	showSubscriptions = true,
 	status,
 	isGatewayActive = true,
+	gatewayMetadata,
 	performancePromise,
 	quickstartRequestContext,
 }: ModelOverviewSectionsProps) {
@@ -1274,12 +1303,15 @@ export default function ModelOverviewSections({
 		return (
 			<div className="space-y-10">
 				<Section id="providers" showDivider={false}>
-					<SectionHeader
-						title="Providers"
-						description="Provider listings and known route availability for this model."
-					/>
 					<Suspense fallback={<ProvidersSectionSkeleton />}>
-						<ModelProvidersSection modelId={modelId} includeHidden={includeHidden} />
+						<ModelProvidersSection
+							modelId={modelId}
+							includeHidden={includeHidden}
+							modelStatus={status}
+							modelName={model?.name}
+							creatorOrganisationId={model?.organisation_id}
+							description="Provider listings and known route availability for this model."
+						/>
 					</Suspense>
 				</Section>
 				{showBenchmarks ? (
@@ -1303,6 +1335,7 @@ export default function ModelOverviewSections({
 						modelId={modelId}
 						includeHidden={includeHidden}
 						isGatewayActive={false}
+						gatewayMetadata={gatewayMetadata}
 						surface="overview"
 					/>
 				</Section>
@@ -1341,19 +1374,18 @@ export default function ModelOverviewSections({
 	return (
 		<div className="space-y-10">
 			<Section id="providers" showDivider={false}>
-				<SectionHeader
-					title="Providers"
-					description="API providers, route pricing, availability, and recent reliability signals."
-				/>
 				<Suspense fallback={<ProvidersSectionSkeleton />}>
-					<ModelProvidersSection modelId={modelId} includeHidden={includeHidden} />
+					<ModelProvidersSection
+						modelId={modelId}
+						includeHidden={includeHidden}
+						modelStatus={status}
+						modelName={model?.name}
+						creatorOrganisationId={model?.organisation_id}
+						description="API providers, route pricing, availability, and recent reliability signals."
+					/>
 				</Suspense>
 			</Section>
 			<Section id="performance">
-				<SectionHeader
-					title="Performance"
-					description="Latency, throughput, and reliability signals from recent traffic."
-				/>
 				<Suspense fallback={<PerformanceSectionSkeleton />}>
 					<ModelPerformanceSection
 						modelId={modelId}
@@ -1421,6 +1453,7 @@ export default function ModelOverviewSections({
 					<ModelQuickstartSection
 						modelId={modelId}
 						includeHidden={includeHidden}
+						gatewayMetadata={gatewayMetadata}
 						surface="overview"
 						quickstartRequestContext={quickstartRequestContext}
 					/>

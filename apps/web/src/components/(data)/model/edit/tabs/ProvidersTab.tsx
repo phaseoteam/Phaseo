@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
-import { createClient } from "@/utils/supabase/client"
+import { fetchAdminModelEditorSource, fetchAdminModelFormOptions } from "@/lib/fetchers/internal/adminModelEditorClient"
 import {
   PROVIDER_PROMPT_TRAINING_POLICY_LABELS,
   PROVIDER_PROMPT_TRAINING_POLICY_VALUES,
@@ -250,18 +250,9 @@ export default function ProvidersTab({
 
   useEffect(() => {
     const fetchData = async () => {
-      const supabase = createClient()
-      const [{ data: providerModelData }, { data: modelRows }] = await Promise.all([
-        supabase
-          .from("data_api_provider_models")
-          .select("*")
-          .eq("model_id", modelId),
-        supabase
-          .from("data_models")
-          .select("model_id")
-          .order("model_id", { ascending: true })
-          .limit(2000),
-      ])
+      const [source, options] = await Promise.all([fetchAdminModelEditorSource(modelId), fetchAdminModelFormOptions()])
+      const providerModelData = source.providerRows ?? []
+      const modelRows = options.previousModels ?? []
 
       setAvailableModelIds(
         (modelRows ?? [])
@@ -298,10 +289,9 @@ export default function ProvidersTab({
         return
       }
 
-      const { data: capabilityRows } = await supabase
-        .from("data_api_provider_model_capabilities")
-        .select("id, provider_api_model_id, capability_id, params, status, effective_from, effective_to")
-        .in("provider_api_model_id", providerModelIds)
+      const capabilityRows = providerModelData.flatMap((row: any) =>
+        (row.data_api_provider_model_capabilities ?? []).map((capability: any) => ({ ...capability, provider_api_model_id: row.provider_api_model_id }))
+	  )
 
       const providerById = new Map(mappedProviderModels.map((row) => [row.id, row]))
       const mappedCapabilities: ProviderCapabilityRow[] = (capabilityRows ?? []).flatMap((capability: any) => {

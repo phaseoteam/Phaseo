@@ -2,7 +2,30 @@ import { describe, expect, it } from "vitest";
 import { irToGemini } from "../index";
 
 describe("google-ai-studio irToGemini", () => {
-	it("maps system and developer roles into systemInstruction parts", async () => {
+	it("uses the Interactions request shape for current Gemini Flash models", async () => {
+		const request = await irToGemini({
+			model: "gemini-3.6-flash",
+			stream: true,
+			temperature: 0.2,
+			topP: 0.8,
+			topK: 20,
+			maxTokens: 256,
+			messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
+		} as any);
+
+		expect(request.model).toBe("gemini-3.6-flash");
+		expect(request.input).toEqual([{
+			type: "user_input",
+			content: [{ type: "text", text: "hello" }],
+		}]);
+		expect(request.generation_config).toEqual({ max_output_tokens: 256 });
+		expect(request).not.toHaveProperty("temperature");
+		expect(request.generation_config).not.toHaveProperty("temperature");
+		expect(request.generation_config).not.toHaveProperty("top_p");
+		expect(request.generation_config).not.toHaveProperty("top_k");
+	});
+
+	it("maps system and developer roles into system_instruction", async () => {
 		const request = await irToGemini({
 			model: "gemini-2.5-flash",
 			stream: false,
@@ -13,15 +36,89 @@ describe("google-ai-studio irToGemini", () => {
 			],
 		} as any);
 
-		expect(request.systemInstruction?.parts).toEqual([
-			{ text: "system prompt" },
-			{ text: "developer prompt" },
-		]);
-		expect(request.contents).toHaveLength(1);
-		expect(request.contents[0]).toEqual({
-			role: "user",
-			parts: [{ text: "hello" }],
+		expect(request.system_instruction).toBe("system prompt\n\ndeveloper prompt");
+		expect(request.store).toBe(false);
+		expect(request.input).toHaveLength(1);
+		expect(request.input[0]).toEqual({
+			type: "user_input",
+			content: [{ type: "text", text: "hello" }],
 		});
+	});
+
+	it("sanitizes Interactions function schemas and maps function results", async () => {
+		const request = await irToGemini({
+			model: "gemini-3.5-flash-lite",
+			stream: false,
+			vendor: { google: { previous_interaction_id: "v1_interaction_datetime" } },
+			messages: [
+				{ role: "user", content: [{ type: "text", text: "What time is it?" }] },
+				{
+					role: "assistant",
+					content: [],
+					toolCalls: [{ id: "call_datetime", name: "datetime", arguments: "{\"timezone\":\"UTC\"}" }],
+				},
+				{
+					role: "tool",
+					toolResults: [{
+						toolCallId: "call_datetime",
+						content: { datetime: "2026-07-22T08:00:00Z" },
+					}],
+				},
+			],
+			tools: [{
+				name: "datetime",
+				description: "Get the current datetime",
+				parameters: {
+					type: "object",
+					additionalProperties: false,
+					properties: {
+						timezone: { type: "string", additionalProperties: false },
+					},
+				},
+			}],
+		} as any);
+
+		expect(request.tools).toEqual([{
+			type: "function",
+			name: "datetime",
+			description: "Get the current datetime",
+			parameters: {
+				type: "object",
+				properties: { timezone: { type: "string" } },
+			},
+		}]);
+		expect(request.store).toBe(true);
+		expect(request.previous_interaction_id).toBe("v1_interaction_datetime");
+		expect(request.input).toHaveLength(1);
+		expect(request.input.at(-1)).toEqual({
+			type: "function_result",
+			call_id: "call_datetime",
+			name: "datetime",
+			is_error: undefined,
+			result: [{ type: "text", text: "{\"datetime\":\"2026-07-22T08:00:00Z\"}" }],
+		});
+	});
+
+	it("honors store=false and ignores client previous response IDs", async () => {
+		const request = await irToGemini({
+			model: "gemini-3.5-flash-lite",
+			stream: false,
+			store: false,
+			previousResponseId: "interactions/another-workspace",
+			messages: [{ role: "user", content: [{ type: "text", text: "What time is it?" }] }],
+			tools: [{
+				name: "datetime",
+				description: "Get the current datetime",
+				parameters: { type: "object", properties: { timezone: { type: "string" } } },
+			}],
+		} as any);
+
+		expect(request.store).toBe(false);
+		expect(request).not.toHaveProperty("previous_interaction_id");
+		expect(request.input).toEqual([{
+			type: "user_input",
+			content: [{ type: "text", text: "What time is it?" }],
+		}]);
 	});
 
 	it("adds schema reinforcement instruction for json_schema mode", async () => {
@@ -42,23 +139,24 @@ describe("google-ai-studio irToGemini", () => {
 			},
 		} as any);
 
-		expect(request.generationConfig?.responseMimeType).toBe("application/json");
-		expect(request.generationConfig?.responseSchema).toEqual({
+		expect(request.response_format).toEqual({
+			type: "text",
+			mime_type: "application/json",
+			schema: {
+				type: "object",
+				properties: { answer: { type: "string" } },
+				required: ["answer"],
+			},
+		});
+		expect(request.response_format?.schema).toEqual({
 			type: "object",
 			properties: { answer: { type: "string" } },
 			required: ["answer"],
 		});
-		expect(Array.isArray(request.systemInstruction?.parts)).toBe(true);
-		expect(
-			request.systemInstruction.parts.some(
-				(part: any) =>
-					typeof part?.text === "string" &&
-					part.text.includes("Return only valid JSON that matches this schema exactly:"),
-			),
-		).toBe(true);
+		expect(request.system_instruction).toContain("Return only valid JSON that matches this schema exactly:");
 	});
 
-	it("maps image config passthrough and explicit thought controls", async () => {
+	it("maps image response format and explicit thought controls", async () => {
 		const request = await irToGemini({
 			model: "gemini-3.1-flash-image-preview",
 			stream: false,
@@ -73,13 +171,14 @@ describe("google-ai-studio irToGemini", () => {
 			},
 		} as any);
 
-		expect(request.generationConfig?.responseModalities).toEqual(["IMAGE"]);
-		expect(request.generationConfig?.thinkingConfig?.includeThoughts).toBe(false);
-		expect(request.generationConfig?.imageConfig).toEqual({
-			aspectRatio: "9:16",
-			imageSize: "0.5K",
-			includeRaiReason: true,
-			referenceImages: [{ referenceType: "REFERENCE_TYPE_RAW" }],
+		expect(request.response_modalities).toEqual(["image"]);
+		expect(request.generation_config?.thinking_summaries).toBe("none");
+		expect(request.response_format).toEqual({
+			type: "image",
+			mime_type: "image/jpeg",
+			delivery: "inline",
+			aspect_ratio: "9:16",
+			image_size: "512",
 		});
 	});
 
@@ -90,7 +189,7 @@ describe("google-ai-studio irToGemini", () => {
 			messages: [{ role: "user", content: [{ type: "text", text: "draw a blue square" }] }],
 		} as any);
 
-		expect(request.generationConfig?.responseModalities).toEqual(["TEXT", "IMAGE"]);
+		expect(request.response_modalities).toEqual(["text", "image"]);
 	});
 
 	it("maps audio modality for Gemini responseModalities", async () => {
@@ -101,7 +200,7 @@ describe("google-ai-studio irToGemini", () => {
 			modalities: ["text", "audio"],
 		} as any);
 
-		expect(request.generationConfig?.responseModalities).toEqual(["TEXT", "AUDIO"]);
+		expect(request.response_modalities).toEqual(["text", "audio"]);
 	});
 
 	it("maps reasoning.effort to thinkingLevel for Gemini 3.1 image preview", async () => {
@@ -112,8 +211,8 @@ describe("google-ai-studio irToGemini", () => {
 			reasoning: { effort: "minimal", enabled: true },
 		} as any);
 
-		expect(request.generationConfig?.thinkingConfig?.thinkingLevel).toBe("MINIMAL");
-		expect(request.generationConfig?.thinkingConfig?.thinkingBudget).toBeUndefined();
+		expect(request.generation_config?.thinking_level).toBe("minimal");
+		expect(request.generation_config?.thinking_budget).toBeUndefined();
 	});
 
 	it("passes through supported image sizes and aspect ratios", async () => {
@@ -132,10 +231,9 @@ describe("google-ai-studio irToGemini", () => {
 					},
 				} as any);
 
-				expect(request.generationConfig?.imageConfig?.imageSize).toBe(size);
-				expect(request.generationConfig?.imageConfig?.aspectRatio).toBe(ratio);
+				expect(request.response_format?.image_size).toBe(size === "0.5K" ? "512" : size);
+				expect(request.response_format?.aspect_ratio).toBe(ratio);
 			}
 		}
 	});
 });
-

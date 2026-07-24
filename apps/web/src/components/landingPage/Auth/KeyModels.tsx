@@ -1,6 +1,6 @@
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import type { SignInModel } from "@/lib/fetchers/landing/sign-in/getMainModels";
+import type { SignInModel } from "@/lib/fetchers/landing/sign-in/types";
 import { fetchFrontendSignInMainModels } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 
 export default async function KeyModels() {

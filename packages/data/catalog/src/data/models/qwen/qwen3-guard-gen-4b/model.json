@@ -190,7 +190,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen3-vl-4b-thinking (score=0.3400; benches=48)",
       "source_link": null,
-      "rank": 28
+      "rank": 30
     },
     {
       "benchmark_id": "mathvista-mini",
@@ -262,7 +262,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen3-vl-4b-thinking (score=0.3400; benches=48)",
       "source_link": null,
-      "rank": 78
+      "rank": 79
     },
     {
       "benchmark_id": "mmmu-(val)",
@@ -400,5 +400,41 @@
       "source_link": null,
       "rank": 20
     }
-  ]
+  ],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": null,
+    "output": null
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

@@ -151,7 +151,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
       "source_link": "https://openai.com/index/gpt-5/",
-      "rank": 146
+      "rank": 156
     },
     {
       "benchmark_id": "if-eval",
@@ -215,7 +215,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
       "source_link": "https://openai.com/index/gpt-5/",
-      "rank": 69
+      "rank": 70
     },
     {
       "benchmark_id": "multi-challenge",
@@ -321,5 +321,46 @@
       "source_link": "https://openai.com/index/gpt-5/",
       "rank": 50
     }
-  ]
+  ],
+  "page_notice": null,
+  "model_type": "audio",
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "audio/*"
+    ],
+    "output": [
+      "text",
+      "audio/*"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

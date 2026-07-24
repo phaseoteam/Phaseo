@@ -25,5 +25,13 @@
       "platform": "x",
       "url": "https://x.com/Baidu_Inc"
     }
-  ]
+  ],
+  "status": "active",
+  "routable": null,
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

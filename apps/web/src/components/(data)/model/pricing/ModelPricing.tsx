@@ -10,7 +10,7 @@ import { getModelPricingCached } from "@/lib/fetchers/models/getModelPricing";
 import ModelPricingClient from "@/components/(data)/model/pricing/ModelPricingClient";
 import ModelPendingApiReleaseBanner from "@/components/(data)/model/overview/ModelPendingApiReleaseBanner";
 import { fetchWorkspacePrivacySettings } from "@/lib/fetchers/internal/fetchWorkspacePrivacySettings";
-import type { WorkspacePrivacySettings } from "@/app/api/internal/workspace/privacy-settings/route";
+import type { WorkspacePrivacySettings } from "@/lib/fetchers/internal/settingsTypes";
 import { isAdminViewer } from "@/lib/auth/getViewerRole";
 import {
 	Empty,
@@ -50,21 +50,31 @@ export default async function ModelPricing({
 	modelId,
 	includeHidden,
 	showHeader = true,
+	headerDescription,
+	modelStatus,
+	modelName,
+	creatorOrganisationId,
 }: {
 	modelId: string;
 	includeHidden: boolean;
 	showHeader?: boolean;
+	headerDescription?: string | null;
+	modelStatus?: string | null;
+	modelName?: string | null;
+	creatorOrganisationId?: string | null;
 }) {
 	const includeInternalProviders = await withOptionalTimeout(
 		isAdminViewer(),
 		false,
 		"admin viewer check"
 	);
-	const [providers, header] = await Promise.all([
+	const [providers, identity] = await Promise.all([
 		includeInternalProviders
 			? getModelPricingCached(modelId, includeHidden)
 			: fetchFrontendModelPricing(modelId),
-		fetchFrontendModelHeader(modelId, includeHidden),
+		modelStatus !== undefined
+			? Promise.resolve({ status: modelStatus, name: modelName ?? null, organisationId: creatorOrganisationId ?? null })
+			: fetchFrontendModelHeader(modelId, includeHidden).then((header) => ({ status: header?.status ?? null, name: header?.name ?? null, organisationId: header?.organisation_id ?? null })),
 	]);
 	const workspacePrivacySettings: WorkspacePrivacySettings | null =
 		await withOptionalTimeout(
@@ -95,7 +105,7 @@ export default async function ModelPricing({
 		})
 	);
 	const showPendingApiBanner =
-		header?.status === "Available" && !hasActiveApiProviders;
+		identity.status === "Available" && !hasActiveApiProviders;
 
 	const [runtimeStats, routingHealth] = await Promise.all([
 		withOptionalTimeout(
@@ -142,7 +152,7 @@ export default async function ModelPricing({
 				{showPendingApiBanner ? (
 					<div>
 						<ModelPendingApiReleaseBanner
-							modelName={header?.name ?? "This model"}
+							modelName={identity.name ?? "This model"}
 							surface="providers"
 						/>
 					</div>
@@ -181,19 +191,20 @@ export default async function ModelPricing({
 		<div className="space-y-4">
 			{showPendingApiBanner ? (
 				<ModelPendingApiReleaseBanner
-					modelName={header?.name ?? "This model"}
+					modelName={identity.name ?? "This model"}
 					surface="providers"
 				/>
 			) : null}
 			<ModelPricingClient
 				modelId={modelId}
 				providers={providersForDisplay}
-				creatorOrgId={header?.organisation_id ?? null}
+				creatorOrgId={identity.organisationId}
 				initialPricingTimeMs={now.getTime()}
 				runtimeStats={runtimeStats}
 				routingHealth={routingHealth}
 				workspacePrivacySettings={workspacePrivacySettings}
 				showHeader={showHeader}
+				headerDescription={headerDescription}
 			/>
 		</div>
 	);

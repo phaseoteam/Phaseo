@@ -124,7 +124,7 @@
       "is_self_reported": true,
       "other_info": "Avg@8",
       "source_link": "https://huggingface.co/moonshotai/Kimi-K2-Base",
-      "rank": 136
+      "rank": 140
     },
     {
       "benchmark_id": "gsm8k",
@@ -198,5 +198,118 @@
       "source_link": "https://huggingface.co/moonshotai/Kimi-K2-Base",
       "rank": 1
     }
-  ]
+  ],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": "2025-04-01T00:00:00",
+  "limits": {
+    "context": 128000,
+    "input": 128000,
+    "output": 128000
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "api_reference",
+      "url": "https://platform.moonshot.ai/docs/introduction#",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "playground",
+      "url": "https://www.kimi.com/",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "paper",
+      "url": "https://github.com/MoonshotAI/Kimi-K2/blob/main/tech_report.pdf",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "announcement",
+      "url": "https://x.com/Kimi_Moonshot/status/1943687594560332025",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "repository",
+      "url": "https://github.com/MoonshotAI/Kimi-K2",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "weights",
+      "url": "https://huggingface.co/moonshotai/Kimi-K2-Base",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "api_reference",
+      "url": "https://platform.moonshot.ai/docs/introduction#",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "playground",
+      "url": "https://www.kimi.com/",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "paper",
+      "url": "https://github.com/MoonshotAI/Kimi-K2/blob/main/tech_report.pdf",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "announcement",
+      "url": "https://x.com/Kimi_Moonshot/status/1943687594560332025",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "repository",
+      "url": "https://github.com/MoonshotAI/Kimi-K2",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "weights",
+      "url": "https://huggingface.co/moonshotai/Kimi-K2-Instruct",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

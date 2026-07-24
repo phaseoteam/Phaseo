@@ -80,20 +80,42 @@ describe("execute health state", () => {
         expect(snapshot.last_updated).toBeGreaterThan(0);
     });
 
-    it("treats upstream rate limits as health-neutral", async () => {
+    it("treats upstream rate limits as availability failures", async () => {
         const health = await import("./health");
 
         expect(
             health.classifyProviderHealthImpact({
                 upstreamStatus: 429,
             }),
-        ).toBe("neutral");
+        ).toBe("failure");
 
         expect(
             health.classifyProviderHealthImpact({
                 errorCode: "rate_limit_exceeded",
             }),
-        ).toBe("neutral");
+        ).toBe("failure");
+    });
+
+    it("initializes health EWMAs from the first failure", async () => {
+        const health = await import("./health");
+        const endpoint = "responses";
+        const provider = "openai";
+        const model = "gpt-5.4-nano";
+
+        await health.onCallEnd(endpoint, {
+            provider,
+            model,
+            ok: false,
+            healthImpact: "failure",
+            latency_ms: 250,
+        });
+        await flushBackground();
+
+        const snapshot = await health.readHealth(endpoint, provider, model);
+        expect(snapshot.err_ewma_10s).toBe(1);
+        expect(snapshot.err_ewma_60s).toBe(1);
+        expect(snapshot.err_ewma_300s).toBe(1);
+        expect(snapshot.rate_60s).toBeGreaterThan(0);
     });
 
     it("treats aborted streams as health-neutral", async () => {

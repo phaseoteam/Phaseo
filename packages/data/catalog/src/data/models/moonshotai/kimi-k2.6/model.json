@@ -23,7 +23,7 @@
       "is_self_reported": false,
       "other_info": "mini-swe-agent; 24% +/-2%; avg cost $3.16; avg time 56m; out tok 84k",
       "source_link": "https://deepswe.datacurve.ai/",
-      "rank": 8
+      "rank": 11
     },
     {
       "benchmark_id": "creative-story-writing",
@@ -41,5 +41,46 @@
       "source_link": "https://github.com/lechmazur/nyt-connections",
       "rank": 15
     }
-  ]
+  ],
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image/*",
+      "video/*"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

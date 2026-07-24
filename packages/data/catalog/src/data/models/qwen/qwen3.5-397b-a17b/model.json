@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": "No tools",
       "source_link": "https://huggingface.co/Qwen/Qwen3.5-397B-A17B-FP8",
-      "rank": 66
+      "rank": 74
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": "With tools",
       "source_link": "https://huggingface.co/Qwen/Qwen3.5-397B-A17B-FP8",
-      "rank": 24
+      "rank": 29
     },
     {
       "benchmark_id": "livecodebench-v6",
@@ -150,7 +150,7 @@
       "is_self_reported": true,
       "other_info": "Simple context-folding",
       "source_link": "https://huggingface.co/Qwen/Qwen3.5-397B-A17B-FP8",
-      "rank": 22
+      "rank": 26
     },
     {
       "benchmark_id": "browsecomp",
@@ -158,7 +158,7 @@
       "is_self_reported": true,
       "other_info": "Discard-all context strategy",
       "source_link": "https://huggingface.co/Qwen/Qwen3.5-397B-A17B-FP8",
-      "rank": 14
+      "rank": 18
     },
     {
       "benchmark_id": "mmmlu",
@@ -182,7 +182,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/Qwen/Qwen3.5-397B-A17B-FP8",
-      "rank": 13
+      "rank": 14
     },
     {
       "benchmark_id": "aa-lcr",
@@ -342,7 +342,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3.5/",
-      "rank": 13
+      "rank": 16
     },
     {
       "benchmark_id": "vita-bench",
@@ -384,5 +384,47 @@
       "source_link": "https://github.com/lechmazur/generalization",
       "rank": 19
     }
-  ]
+  ],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image/*",
+      "video/*"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

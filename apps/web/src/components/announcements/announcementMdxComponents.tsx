@@ -254,13 +254,13 @@ export const announcementMdxComponents = {
 	),
 	h2: (props: ComponentPropsWithoutRef<"h2">) => (
 		<h2
-			className="mt-10 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50"
+			className="mt-10 scroll-mt-24 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50"
 			{...props}
 		/>
 	),
 	h3: (props: ComponentPropsWithoutRef<"h3">) => (
 		<h3
-			className="mt-8 text-xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50"
+			className="mt-8 scroll-mt-24 text-xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50"
 			{...props}
 		/>
 	),

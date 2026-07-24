@@ -39,7 +39,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from mimo-v2-pro",
       "source_link": "https://mimo.xiaomi.com/mimo-v2-pro",
-      "rank": 3
+      "rank": 4
     },
     {
       "benchmark_id": "gdpval-aa",
@@ -47,7 +47,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from mimo-v2-pro",
       "source_link": "https://mimo.xiaomi.com/mimo-v2-pro",
-      "rank": 17
+      "rank": 20
     },
     {
       "benchmark_id": "pinchbench",
@@ -89,5 +89,45 @@
       "source_link": "https://mimo.xiaomi.com/mimo-v2-pro",
       "rank": 25
     }
-  ]
+  ],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": "audio",
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 8000,
+    "input": 8000,
+    "output": 8000
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "audio/*"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

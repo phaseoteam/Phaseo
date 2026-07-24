@@ -195,6 +195,37 @@ describe('pricing safety checks', () => {
         );
     });
 
+    test('Venice Kimi K3 pricing matches the live standard route', () => {
+        const pricing = readPricingJson(
+            'pricing/venice/moonshotai-kimi-k3/text.generate/pricing.json'
+        );
+        expect(pricing.rules).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    meter: 'input_text_tokens',
+                    price_per_unit: 3.75,
+                    pricing_plan: 'standard',
+                    unit_size: 1000000,
+                    currency: 'USD',
+                }),
+                expect.objectContaining({
+                    meter: 'cached_read_text_tokens',
+                    price_per_unit: 0.375,
+                    pricing_plan: 'standard',
+                    unit_size: 1000000,
+                    currency: 'USD',
+                }),
+                expect.objectContaining({
+                    meter: 'output_text_tokens',
+                    price_per_unit: 18.75,
+                    pricing_plan: 'standard',
+                    unit_size: 1000000,
+                    currency: 'USD',
+                }),
+            ])
+        );
+    });
+
     test('Google Vertex image model does not advertise flex pricing without executor support', () => {
         const pricing = readPricingJson(
             'pricing/google-vertex/google-gemini-3.1-flash-lite-image/text.generate/pricing.json'
@@ -210,6 +241,9 @@ describe('api provider model safety checks', () => {
         );
         const novita = readProviderModels('novita').find(
             (row: any) => row.provider_api_model_id === 'novita:moonshotai/kimi-k3'
+        );
+        const veniceE2ee = readProviderModels('venice-e2ee').find(
+            (row: any) => row.internal_model_id === 'moonshotai/kimi-k3'
         );
 
         expect(gmi).toMatchObject({
@@ -234,6 +268,26 @@ describe('api provider model safety checks', () => {
                 expect.objectContaining({ param_id: 'include_reasoning' }),
             ])
         );
+        expect(veniceE2ee).toBeUndefined();
+    });
+
+    test('Kimi K3 links include the official API reference and provider pricing', () => {
+        const model = JSON.parse(
+            fs.readFileSync(path.join(DATA_ROOT, 'models', 'moonshotai', 'kimi-k3', 'model.json'), 'utf8')
+        );
+
+        expect(model.links).toEqual([
+            {
+                title: 'API Reference',
+                kind: 'api_reference',
+                url: 'https://platform.kimi.ai/docs/guide/kimi-k3-quickstart',
+            },
+            {
+                title: 'SiliconFlow pricing',
+                kind: 'pricing',
+                url: 'https://siliconflow.cn/pricing',
+            },
+        ]);
     });
 
     test('missing provider_model_slug -> error flagged', () => {

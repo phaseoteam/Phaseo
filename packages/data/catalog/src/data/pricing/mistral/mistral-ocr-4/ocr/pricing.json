@@ -15,7 +15,11 @@
       "note": "Mistral pricing lists OCR 4 at $2 per 1,000 pages.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-30T00:00:00Z"
+      "effective_from": "2026-06-30T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "input_pages",
@@ -27,7 +31,22 @@
       "note": "Mistral batch processing is billed at a 50% discount from standard OCR 4 page pricing.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-30T00:00:00Z"
+      "effective_from": "2026-06-30T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard",
+    "batch"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

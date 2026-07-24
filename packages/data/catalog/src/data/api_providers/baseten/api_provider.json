@@ -3,6 +3,7 @@
   "api_provider_name": "Baseten",
   "description": null,
   "link": "https://docs.baseten.co/",
+  "pricing_source_url": "https://www.baseten.co/pricing",
   "country_code": "US",
   "status": "Active",
   "colour": "#14B8A6",
@@ -10,5 +11,20 @@
   "terms_of_service_url": "https://www.baseten.co/terms-and-conditions",
   "prompt_training_policy": "no_train",
   "prompt_training_notes": "Baseten says model inputs and outputs are not stored by default for inference workloads, and it maintains zero data retention for training data delivery and caching flows.",
-  "prompt_training_source_url": "https://docs.baseten.co/observability/security"
+  "prompt_training_source_url": "https://docs.baseten.co/observability/security",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://docs.baseten.co/",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

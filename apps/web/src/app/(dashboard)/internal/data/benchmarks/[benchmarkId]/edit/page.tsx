@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/utils/supabase/server";
+import { fetchAdminCatalogRecord } from "@/lib/fetchers/internal/fetchAdminCatalog";
 import { deleteBenchmarkAction, updateBenchmarkAction } from "../../../actions";
 
 export default async function EditBenchmarkPage({
@@ -9,12 +9,7 @@ export default async function EditBenchmarkPage({
 	params: Promise<{ benchmarkId: string }>;
 }) {
 	const { benchmarkId } = await params;
-	const supabase = await createClient();
-	const { data: row } = await supabase
-		.from("data_benchmarks")
-		.select("id, name, category, link, ascending_order")
-		.eq("id", benchmarkId)
-		.maybeSingle();
+	const { row } = await fetchAdminCatalogRecord("benchmark", benchmarkId);
 	if (!row) return notFound();
 
 	const updateAction = updateBenchmarkAction.bind(null, benchmarkId);

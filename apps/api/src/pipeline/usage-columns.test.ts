@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildGatewayRequestUsageColumns } from "./usage-columns";
+import { buildGatewayRequestUsageColumns, buildV2RequestUsageMeters } from "./usage-columns";
 
 describe("buildGatewayRequestUsageColumns", () => {
 	it("normalizes provider tokens and derives quadtokens from request and response text", () => {
@@ -72,6 +72,7 @@ describe("buildGatewayRequestUsageColumns", () => {
 			endpoint: "video.generation",
 			usage: {
 				audio_seconds: 12,
+				output_video_seconds: 4,
 				video_pixel_seconds: 1280 * 720 * 4,
 			},
 			requestPayload: {
@@ -84,6 +85,7 @@ describe("buildGatewayRequestUsageColumns", () => {
 		expect(columns.usage_text_quad_tokens).toBeGreaterThan(0);
 		expect(columns.usage_image_megapixels).toBeCloseTo(2.097152);
 		expect(columns.usage_audio_seconds).toBe(12);
+		expect(columns.usage_video_seconds).toBe(4);
 		expect(columns.usage_video_pixel_seconds).toBe(1280 * 720 * 4);
 	});
 
@@ -126,5 +128,32 @@ describe("buildGatewayRequestUsageColumns", () => {
 		expect(columns.usage_cached_write_text_tokens).toBe(12);
 		expect(columns.usage_cached_write_text_tokens_5m).toBe(8);
 		expect(columns.usage_cached_write_text_tokens_1h).toBe(4);
+	});
+});
+
+describe("buildV2RequestUsageMeters", () => {
+	it("projects flexible cache, token, media, and character meters without content", () => {
+		const meters = buildV2RequestUsageMeters({
+			endpoint: "chat.completions",
+			usage: {
+				input_tokens: 100,
+				output_tokens: 20,
+				input_tokens_details: { cached_tokens: 40 },
+				output_image_count: 2,
+				output_video_seconds: 6.5,
+			},
+			requestPayload: { messages: [{ role: "user", content: "private prompt" }] },
+			gatewayResponse: { output_text: "private response" },
+		});
+
+		expect(meters).toEqual(expect.arrayContaining([
+			expect.objectContaining({ meter_key: "input_tokens", quantity: 100, unit: "tokens" }),
+			expect.objectContaining({ meter_key: "output_tokens", quantity: 20, unit: "tokens" }),
+			expect.objectContaining({ meter_key: "cached_input_tokens", quantity: 40, unit: "tokens" }),
+			expect.objectContaining({ meter_key: "output_images", quantity: 2, unit: "images" }),
+			expect.objectContaining({ meter_key: "output_video_seconds", quantity: 6.5, unit: "seconds" }),
+		]));
+		expect(JSON.stringify(meters)).not.toContain("private prompt");
+		expect(JSON.stringify(meters)).not.toContain("private response");
 	});
 });

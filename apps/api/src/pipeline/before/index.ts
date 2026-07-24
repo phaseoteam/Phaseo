@@ -4,6 +4,7 @@
 // How: Orchestrates auth, validation, and context loading to build PipelineContext.
 
 import { z } from "zod";
+import { getBindings } from "@/runtime/env";
 import { schemaFor } from "@core/schemas";
 import type { Endpoint, RequestBetaOptions, RequestMeta } from "@core/types";
 import type { PipelineContext } from "./types";
@@ -16,7 +17,12 @@ import { isDebugAllowed } from "../debug";
 import { isProviderCapabilityEnabled, normalizeCapability } from "@/executors";
 import { adapterFor } from "@/providers/index";
 import type { ProviderEnablementDiagnostics } from "./types";
-import { isTestingModeRequested, resolveTestingMode } from "./testingMode";
+import {
+	isPerfGatewayEndpointAllowed,
+	isTestingModeRequested,
+	resolvePerfGatewayAccess,
+	resolveTestingMode,
+} from "./testingMode";
 import { normalizeGatewayPlugins, resolveGatewayPlugins } from "@/plugins/normalize";
 import { findUnknownGatewayPluginIds } from "@/plugins/registry";
 import { validateSynchronousTextServiceTierRequest } from "./serviceTierValidation";
@@ -25,6 +31,7 @@ import {
 	getEffectiveRoutingHints,
 	normalizeRequestRoutingBody,
 } from "../requestRouting";
+import { fetchWorkspacePolicy, applyWorkspacePolicy } from "./workspacePolicy";
 
 function resolveRequestRoutingModeOverride(
     body: any,
@@ -148,14 +155,48 @@ export async function beforeRequest(
     timer: Timer,
     zodSchema: z.ZodTypeAny | null = schemaFor(endpoint)
 ): Promise<{ ok: true; ctx: PipelineContext } | { ok: false; response: Response }> {
+    const requestStartedAtMs = timer.startedAtMs();
 
     // 1) Auth
     const a = await timer.span("guardAuth", () => guardAuth(req));
     if (!a.ok) return a as { ok: false; response: Response };
     const { requestId, workspaceId, apiKeyId, apiKeyRef, apiKeyKid, userId, internal } = a.value;
+	const bindings = getBindings();
+	const perfGatewayAccess = resolvePerfGatewayAccess({
+		environment: bindings.ENV,
+		allowedWorkspaceId: bindings.GATEWAY_PERF_WORKSPACE_ID,
+		workspaceId,
+	});
+	if (!perfGatewayAccess.allowed) {
+		return {
+			ok: false,
+			response: err("unauthorised", {
+				reason: perfGatewayAccess.reason,
+				request_id: requestId,
+				workspace_id: workspaceId,
+			}),
+		};
+	}
+	if (!isPerfGatewayEndpointAllowed({
+		perfEnvironment: perfGatewayAccess.perfEnvironment,
+		allowedEndpoints: bindings.GATEWAY_PERF_ALLOWED_ENDPOINTS,
+		endpoint,
+	})) {
+		return {
+			ok: false,
+			response: err("not_supported", {
+				reason: "perf_endpoint_not_allowed",
+				endpoint,
+				request_id: requestId,
+				workspace_id: workspaceId,
+			}),
+		};
+	}
 
     // 2) JSON (raw body for tracing + schema guard)
-    const j = await timer.span("guardJson", () => guardJson(req, workspaceId, requestId));
+    const j = await timer.span("guardJson", () =>
+        guardJson(req, workspaceId, requestId, { endpoint }),
+    );
     if (!j.ok) return j as { ok: false; response: Response };
     let rawBody = j.value;
     const betaCapabilities = normalizeReturnFlag(
@@ -170,7 +211,7 @@ export async function beforeRequest(
     ) && isDebugAllowed();
     const debugBodyRaw = rawBody?.debug ?? null;
     const debugEnabled = debugHeaderEnabled || normalizeReturnFlag(debugBodyRaw?.enabled);
-    const testingModeRequested = isTestingModeRequested(req, rawBody);
+    const testingModeRequested = perfGatewayAccess.perfEnvironment || isTestingModeRequested(req, rawBody);
 
     // 3) Zod (route schema: shape depends on request path)
     const v = await timer.span("guardZod", () => guardZod(zodSchema, rawBody, workspaceId, requestId));
@@ -211,6 +252,16 @@ export async function beforeRequest(
         };
     }
     const testingModeEnabled = testingMode.enabled;
+
+    // Policy and request context depend on the authenticated workspace/key but
+    // not on one another. Overlap their cache/source reads while retaining the
+    // same fail-closed enforcement after both have completed.
+    const workspacePolicyPromise = timer.span("fetchWorkspacePolicy", () =>
+        fetchWorkspacePolicy({ workspaceId, apiKeyId })
+    ).then(
+        (value) => ({ ok: true as const, value }),
+        (error: unknown) => ({ ok: false as const, error }),
+    );
 
     // 5) RPC + gating + providers (choose viable providers for this model/endpoint)
     const capability = normalizeCapability(resolveCapabilityFromEndpoint(endpoint));
@@ -358,16 +409,9 @@ export async function beforeRequest(
     }
     mergedBody = normalizeRequestRoutingBody(mergedBody);
 
-    const { fetchWorkspacePolicy, applyWorkspacePolicy } = await import("./workspacePolicy");
-    let workspacePolicy = null;
-    try {
-        workspacePolicy = await timer.span("fetchWorkspacePolicy", () =>
-            fetchWorkspacePolicy({
-                workspaceId,
-                apiKeyId,
-            })
-        );
-    } catch (error) {
+    const workspacePolicyLoad = await workspacePolicyPromise;
+    if ("error" in workspacePolicyLoad) {
+        const error = workspacePolicyLoad.error;
         console.error("[beforeRequest] workspace_policy_fetch_failed", {
             workspaceId,
             requestId,
@@ -382,6 +426,7 @@ export async function beforeRequest(
             }),
         };
     }
+    const workspacePolicy = workspacePolicyLoad.value;
 
     const workspacePolicyResult = applyWorkspacePolicy({
         providers: presetFilteredProviders,
@@ -685,6 +730,7 @@ export async function beforeRequest(
         beforeContextEnrichMs: contextTelemetry?.enrichMs ?? null,
         beforeContextCacheWriteMs: contextTelemetry?.cacheWriteMs ?? null,
         beforeContextFallbackRemap: contextTelemetry?.fallbackRemap ?? null,
+        startedAtMs: requestStartedAtMs,
     });
     const requestPath = meta.requestPath ?? null;
 

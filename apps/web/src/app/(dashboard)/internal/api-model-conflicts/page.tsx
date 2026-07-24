@@ -1,5 +1,4 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/utils/supabase/server";
+import { requireInternalAdmin } from "@/lib/auth/requireInternalAdmin";
 import { buildApiModelConflictsSnapshot } from "@/lib/internal/apiModelConflicts";
 import ApiModelConflictsClient from "./ApiModelConflictsClient";
 
@@ -10,26 +9,7 @@ export const metadata = {
 };
 
 export default async function ApiModelConflictsPage() {
-	const supabase = await createClient();
-
-	const {
-		data: { user },
-		error: authError,
-	} = await supabase.auth.getUser();
-
-	if (authError || !user) {
-		redirect("/sign-in");
-	}
-
-	const { data: userRow, error: userError } = await supabase
-		.from("users")
-		.select("role")
-		.eq("user_id", user.id)
-		.maybeSingle();
-
-	if (userError || (userRow?.role ?? "").toLowerCase() !== "admin") {
-		redirect("/internal");
-	}
+	await requireInternalAdmin("/internal");
 
 	const snapshot = buildApiModelConflictsSnapshot();
 	return <ApiModelConflictsClient snapshot={snapshot} />;

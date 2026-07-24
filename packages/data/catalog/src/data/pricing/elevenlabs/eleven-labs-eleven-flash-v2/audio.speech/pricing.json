@@ -1,0 +1,35 @@
+{
+  "key": "elevenlabs:eleven-labs/eleven-flash-v2:audio.speech",
+  "api_provider_id": "elevenlabs",
+  "provider_slug": "elevenlabs",
+  "api_model_id": "eleven-labs/eleven-flash-v2",
+  "capability_id": "audio.speech",
+  "rules": [
+    {
+      "meter": "input_characters",
+      "unit": "character",
+      "unit_size": 1000,
+      "price_per_unit": 0.05,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "ElevenLabs API pricing lists Flash/Turbo TTS at $0.05 per 1K characters.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
+}

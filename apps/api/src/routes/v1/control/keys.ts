@@ -12,7 +12,7 @@ import { generateGatewayKey, hmacSecret, timingSafeEqual } from "@/routes/auth.h
 import { resolveActiveKeyPepper } from "@/lib/security/keyPepper";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { loadOAuthClient } from "@/lib/oauth/service";
-import { requireCapability, type ManagementRouteAuth } from "./route-helpers";
+import { internalServerError, requireCapability, type ManagementRouteAuth } from "./route-helpers";
 import { CHAT_MANAGED_KEY_NAME, enforceWorkspaceKeyLimit } from "./management-helpers";
 
 type KeyRow = {
@@ -549,11 +549,7 @@ async function handleCreateKey(req: Request) {
 			{ "Cache-Control": "no-store" },
 		);
 	} catch (error: any) {
-		return json(
-			{ error: "failed", message: String(error?.message ?? error) },
-			500,
-			{ "Cache-Control": "no-store" },
-		);
+		return internalServerError("keys.create", error);
 	}
 }
 
@@ -592,11 +588,7 @@ async function handleGetKey(req: Request) {
 
 		return json({ data: formatApiKey(data as KeyRow) }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return json(
-			{ error: "failed", message: String(error?.message ?? error) },
-			500,
-			{ "Cache-Control": "no-store" },
-		);
+		return internalServerError("keys.get", error);
 	}
 }
 
@@ -706,11 +698,7 @@ async function handleUpdateKey(req: Request) {
 
 		return json({ data: formatApiKey(updated as KeyRow) }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return json(
-			{ error: "failed", message: String(error?.message ?? error) },
-			500,
-			{ "Cache-Control": "no-store" },
-		);
+		return internalServerError("keys.update", error);
 	}
 }
 
@@ -773,11 +761,7 @@ async function handleDeleteKey(req: Request) {
 
 		return json({ deleted: true }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return json(
-			{ error: "failed", message: String(error?.message ?? error) },
-			500,
-			{ "Cache-Control": "no-store" },
-		);
+		return internalServerError("keys.delete", error);
 	}
 }
 
@@ -856,11 +840,7 @@ async function handleInvalidateKey(req: Request) {
 			{ "Cache-Control": "no-store" },
 		);
 	} catch (error: any) {
-		return json(
-			{ ok: false, error: "failed", message: String(error?.message ?? error) },
-			500,
-			{ "Cache-Control": "no-store" },
-		);
+		return internalServerError("keys.invalidate_cache", error);
 	}
 }
 

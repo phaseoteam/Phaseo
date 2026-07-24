@@ -63,7 +63,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from gemini-2.5-pro-preview-06-05 (score=0.4243; benches=13)",
       "source_link": "https://blog.google/products/gemini/gemini-2-5-pro-latest-preview/",
-      "rank": 76
+      "rank": 84
     },
     {
       "benchmark_id": "livecodebench",
@@ -121,5 +121,42 @@
       "source_link": "https://blog.google/products/gemini/gemini-2-5-pro-latest-preview/",
       "rank": 14
     }
-  ]
+  ],
+  "page_notice": null,
+  "model_type": "audio",
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": null,
+    "output": [
+      "audio/*"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

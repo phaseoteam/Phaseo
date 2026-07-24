@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.com/deepseek_ai/status/1995452646459858977/photo/1",
-      "rank": 31
+      "rank": 34
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.com/deepseek_ai/status/1995452646459858977/photo/1",
-      "rank": 64
+      "rank": 72
     },
     {
       "benchmark_id": "aime-2025",
@@ -134,7 +134,66 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2/resolve/main/assets/paper.pdf",
-      "rank": 15
+      "rank": 18
     }
-  ]
+  ],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "announcement",
+      "url": "https://x.com/deepseek_ai/status/1995452641430651132?s=20",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "paper",
+      "url": "https://cas-bridge.xethub.hf.co/xet-bridge-us/692cfec93b25b81d09307b94/2d0aa38511b9df084d12a00fe04a96595496af772cb766c516c4e6aee1e21246?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20251204%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20251204T112054Z&X-Amz-Expires=3600&X-Amz-Signature=27d8d80fa94e6f909cec35e9a97ee4c967f7f5c366ec74b7a2efd213fc8c17ef&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=6873b4b7adf5be448eb4cff7&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27paper.pdf%3B+filename%3D%22paper.pdf%22%3B&response-content-type=application%2Fpdf&x-id=GetObject&Expires=1764850854&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc2NDg1MDg1NH19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82OTJjZmVjOTNiMjViODFkMDkzMDdiOTQvMmQwYWEzODUxMWI5ZGYwODRkMTJhMDBmZTA0YTk2NTk1NDk2YWY3NzJjYjc2NmM1MTZjNGU2YWVlMWUyMTI0NioifV19&Signature=XT4uHQzSW0wsj7PR7%7EkPZNBvxORw8Il4UDvNf6ZIU7HyVKnUwZrfUvlmXe9OG9r9pC2nURTrJsoTjWEVR2wGFpDCDV-FP0T%7EGicKVdlzsJAmdEIBnEFDI2z173bG6KFDncjYyOBItEC1KonOSg59PRSDowEGlkmp3J9skSmTFKKVQSueDb7vDNuA6mXjVeRHJqXk3QEvzol7KxOdENplD0F4XLdiB07BsNZaFegLG5%7E5K7FiviJSxGWNW7GZrIxKy23azPb3Z1X7xB--4pCjR8pGwfLjApeMpd-AhljYit-DzJtAi3U8PGhYRjY5WFAZZdIZhcqUKZHU1GIITbddQA__&Key-Pair-Id=K2L8F4GPSG1IFC",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "weights",
+      "url": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Speciale",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

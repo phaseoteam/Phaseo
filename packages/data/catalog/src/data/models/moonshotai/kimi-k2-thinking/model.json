@@ -47,7 +47,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from kimi-k2-thinking-0905",
       "source_link": "https://moonshotai.github.io/Kimi-K2/thinking.html",
-      "rank": 31
+      "rank": 35
     },
     {
       "benchmark_id": "browsecomp-zh",
@@ -103,7 +103,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from kimi-k2-thinking-0905",
       "source_link": "https://moonshotai.github.io/Kimi-K2/thinking.html",
-      "rank": 15
+      "rank": 19
     },
     {
       "benchmark_id": "imoanswerbench",
@@ -209,5 +209,57 @@
       "source_link": "https://github.com/lechmazur/elimination_game",
       "rank": 25
     }
-  ]
+  ],
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": "2024-12-31T00:00:00",
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "weights",
+      "url": "https://huggingface.co/moonshotai/Kimi-K2-Thinking",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "announcement",
+      "url": "https://x.com/kimi_moonshot/status/1986449512538513505?s=46",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

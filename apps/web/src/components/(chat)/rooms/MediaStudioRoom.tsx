@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type SyntheticEvent 
 import { Logo } from "@/components/Logo";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import { filterModelsForRoom } from "@/lib/chat/rooms";
+import { fetchChatWebApi } from "@/lib/web-api/client";
 import { APP_HEADERS } from "@/components/(chat)/playground/chat-playground-core";
 import { extractGenerationUrls } from "@/lib/chat/roomRequestBuilders";
 import {
@@ -51,6 +52,7 @@ import {
 	MediaPlayerVolumeIndicator,
 } from "@/components/ui/media-player";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { RoomModelSelector } from "@/components/(chat)/RoomModelSelector";
 import { useSidebar } from "@/components/ui/sidebar";
@@ -287,12 +289,6 @@ function getResourceId(payload: any): string | null {
 		}
 	}
 	return null;
-}
-
-function buildVideoContentProxyUrl(resourceId: string): string {
-	const trimmed = resourceId.trim();
-	if (!trimmed) return "";
-	return `/api/chat/video?resourceId=${encodeURIComponent(trimmed)}&content=1`;
 }
 
 function getGatewayRequestId(payload: any): string | null {
@@ -683,13 +679,13 @@ function mergeVideoEntriesWithJobs(
 		if (!resourceId) continue;
 		const existingIndex = indexByResourceId.get(resourceId);
 		const nextStatus = normalizeVideoEntryStatusFromJob(job.status);
-		const shouldUseContentProxyUrl = nextStatus === "completed";
 		if (typeof existingIndex === "number") {
 			const existing = nextEntries[existingIndex];
 			if (!existing) continue;
+			const needsContentFetch = nextStatus === "completed" && !existing.url;
 			nextEntries[existingIndex] = {
 				...existing,
-				status: nextStatus,
+				status: needsContentFetch ? "pending" : nextStatus,
 				statusLabel: job.statusLabel ?? existing.statusLabel ?? existing.status,
 				progressPercent:
 					nextStatus === "completed"
@@ -703,10 +699,7 @@ function mergeVideoEntriesWithJobs(
 				costUsd: job.costUsd ?? existing.costUsd,
 				videoSeconds: job.videoSeconds ?? existing.videoSeconds,
 				videoResolution: job.videoResolution ?? existing.videoResolution,
-				url:
-					shouldUseContentProxyUrl
-						? existing.url || buildVideoContentProxyUrl(resourceId)
-						: existing.url,
+				url: existing.url,
 			};
 			continue;
 		}
@@ -717,8 +710,8 @@ function mergeVideoEntriesWithJobs(
 			createdAt: timestamp,
 			modelId: job.modelId ?? "video",
 			prompt: toRecoveredVideoPrompt(),
-			url: shouldUseContentProxyUrl ? buildVideoContentProxyUrl(resourceId) : "",
-			status: nextStatus,
+			url: "",
+			status: nextStatus === "completed" ? "pending" : nextStatus,
 			statusLabel: job.statusLabel ?? job.status,
 			progressPercent:
 				nextStatus === "completed"
@@ -1096,7 +1089,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 
 			if (roomId === "video") {
 				try {
-					const response = await fetch("/api/chat/video?list=1&limit=100", {
+					const response = await fetchChatWebApi("/api/chat/video?list=1&limit=100", {
 						method: "GET",
 						cache: "no-store",
 					});
@@ -1231,28 +1224,24 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 		[persistEntries, roomId],
 	);
 
-	const isVideoContentProxyReady = useCallback(async (resourceId: string) => {
+	const fetchVideoContentObjectUrl = useCallback(async (resourceId: string) => {
 		const trimmed = resourceId.trim();
-		if (!trimmed) return false;
+		if (!trimmed) return null;
 		try {
-			const response = await fetch(
+			const response = await fetchChatWebApi(
 				`/api/chat/video?resourceId=${encodeURIComponent(trimmed)}&content=1`,
 				{
 					method: "GET",
 					cache: "no-store",
 				},
 			);
-			if (!response.ok) return false;
+			if (!response.ok) return null;
 			const contentType = (response.headers.get("content-type") ?? "").toLowerCase();
-			const isJsonPayload = contentType.includes("application/json");
-			try {
-				await response.body?.cancel?.();
-			} catch {
-				// Ignore cancellation errors.
-			}
-			return !isJsonPayload;
+			if (contentType.includes("application/json")) return null;
+			const blob = await response.blob();
+			return blob.size > 0 ? URL.createObjectURL(blob) : null;
 		} catch {
-			return false;
+			return null;
 		}
 	}, []);
 
@@ -1270,7 +1259,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 
 					let pollResponse: Response;
 					try {
-						pollResponse = await fetch(
+						pollResponse = await fetchChatWebApi(
 							`/api/chat/video?resourceId=${encodeURIComponent(currentResourceId)}`,
 							{ method: "GET", cache: "no-store" },
 						);
@@ -1301,13 +1290,18 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 
 					const contentType = pollResponse.headers.get("content-type") ?? "";
 					if (!contentType.includes("application/json")) {
+						const blob = await pollResponse.blob();
+						if (!blob.size) {
+							await wait(VIDEO_POLL_INTERVAL_FAST_MS);
+							continue;
+						}
 						await replaceEntry(entryId, [
 							{
 								...currentEntry,
 								status: "completed",
 								statusLabel: "completed",
 								progressPercent: 100,
-								url: buildVideoContentProxyUrl(currentResourceId),
+								url: URL.createObjectURL(blob),
 							},
 						]);
 						break;
@@ -1323,9 +1317,10 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 					const shouldResolveViaContentProxy =
 						extractedUrls.length === 0 &&
 						(normalizedStatus === "completed" || hasCompletionSignal);
+					let contentObjectUrl: string | null = null;
 					if (shouldResolveViaContentProxy) {
-						const ready = await isVideoContentProxyReady(nextResourceId);
-						if (!ready) {
+						contentObjectUrl = await fetchVideoContentObjectUrl(nextResourceId);
+						if (!contentObjectUrl) {
 							await wait(
 								hasCompletionSignal
 									? VIDEO_POLL_INTERVAL_FAST_MS
@@ -1337,8 +1332,8 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 					const urls =
 						extractedUrls.length > 0
 							? extractedUrls
-							: shouldResolveViaContentProxy
-								? [buildVideoContentProxyUrl(nextResourceId)]
+							: shouldResolveViaContentProxy && contentObjectUrl
+								? [contentObjectUrl]
 								: [];
 					const nextStatus: GenerationEntry["status"] = toMediaEntryStatus({
 						rawStatus,
@@ -1366,7 +1361,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 				pollingEntryIdsRef.current.delete(entryId);
 			}
 		},
-		[isVideoContentProxyReady, replaceEntry, roomId],
+		[fetchVideoContentObjectUrl, replaceEntry, roomId],
 	);
 
 	useEffect(() => {
@@ -1665,7 +1660,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 								);
 							}
 
-							const response = await fetch(`/api/chat/${roomId}`, {
+							const response = await fetchChatWebApi(`/api/chat/${roomId}`, {
 								method: "POST",
 								headers: {
 									"Content-Type": "application/json",
@@ -1711,12 +1706,13 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 								extractedUrls.length === 0 &&
 								(normalizedStatus === "completed" || hasCompletionSignal);
 							if (shouldResolveViaContentProxy && resourceId) {
-								const ready = await isVideoContentProxyReady(resourceId);
-								if (!ready) shouldResolveViaContentProxy = false;
+								const objectUrl = await fetchVideoContentObjectUrl(resourceId);
+								if (objectUrl) extractedUrls.push(objectUrl);
+								else shouldResolveViaContentProxy = false;
 							}
 							const urls =
 								shouldResolveViaContentProxy && resourceId
-									? [buildVideoContentProxyUrl(resourceId)]
+									? extractedUrls.slice(-1)
 									: extractedUrls;
 							const nextStatus: GenerationEntry["status"] =
 								roomId === "video" && resourceId && urls.length === 0
@@ -1780,7 +1776,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 			addEntries,
 			hasPendingEntries,
 			isLoading,
-			isVideoContentProxyReady,
+			fetchVideoContentObjectUrl,
 			modelSettings,
 			prompt,
 			pollVideoEntryUntilSettled,
@@ -2289,7 +2285,8 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 					if (!open) setPreviewEntryId(null);
 				}}
 			>
-				<DialogContent className="max-h-[90vh] max-w-5xl overflow-auto p-0">
+				<DialogContent className="max-h-[90vh] max-w-5xl overflow-hidden p-0">
+					<ScrollArea className="max-h-[90vh]" viewportClassName="p-0">
 					{previewEntry ? (
 						roomId === "image" ? (
 							<div className="flex flex-col">
@@ -2545,6 +2542,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 							</div>
 						)
 					) : null}
+					</ScrollArea>
 				</DialogContent>
 			</Dialog>
 			{roomId === "image" && dialogProfile ? (

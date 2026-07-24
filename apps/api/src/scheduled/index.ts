@@ -16,6 +16,8 @@ import { runBatchReconciliationJob } from "@/pipeline/batch-reconciliation";
 import { drainEmailOutbox } from "@/pipeline/notifications/email-outbox";
 import { runVideoReconciliationJob } from "@/pipeline/video-reconciliation";
 import { runGatewayIoRetentionBillingJob } from "@/pipeline/audit/io-retention-billing";
+import { runBatchProviderWebhookReplayJob } from "@/routes/internal/batch-webhooks.helpers";
+import { runRealtimeSessionReconciliationJob } from "@core/realtime-sessions";
 
 const MODEL_DISCOVERY_TICKS_PER_DAY = Array.from({ length: 24 }, (_value, hour) =>
 	60 / getModelDiscoveryStepMinutesUtc(hour),
@@ -53,18 +55,21 @@ function toBool(value: string | undefined, fallback = false): boolean {
 }
 
 function toInt(value: string | undefined, fallback: number): number {
+	if (value === undefined || value.trim() === "") return fallback;
 	const parsed = Number(value ?? "");
 	if (!Number.isFinite(parsed)) return fallback;
 	return Math.max(1, Math.floor(parsed));
 }
 
 function toNonNegativeInt(value: string | undefined, fallback: number): number {
+	if (value === undefined || value.trim() === "") return fallback;
 	const parsed = Number(value ?? "");
 	if (!Number.isFinite(parsed)) return fallback;
 	return Math.max(0, Math.floor(parsed));
 }
 
 function toZeroBasedInt(value: string | undefined, fallback: number): number {
+	if (value === undefined || value.trim() === "") return fallback;
 	const parsed = Number(value ?? "");
 	if (!Number.isFinite(parsed)) return fallback;
 	return Math.max(0, Math.floor(parsed));
@@ -196,6 +201,28 @@ async function handleBatchReconciliationScheduledEvent(event: ScheduledControlle
 	}
 }
 
+async function handleRealtimeSessionReconciliationScheduledEvent(_event: ScheduledController, env: GatewayBindings): Promise<void> {
+	if (!toBool(env.REALTIME_SESSION_RECONCILIATION_ENABLED, true)) {
+		return;
+	}
+
+	const limit = toInt(env.REALTIME_SESSION_RECONCILIATION_LIMIT, 100);
+	configureRuntime(env);
+	try {
+		const summary = await runRealtimeSessionReconciliationJob({
+			limit,
+			relay: env.REALTIME_RELAY,
+		});
+		if (summary.sessionsBillingUnresolved > 0) {
+			console.error("realtime_billing_unresolved_alert", summary);
+		} else if (summary.sessionsExpired > 0 || summary.sessionsErrored > 0) {
+			console.log("realtime_session_reconciliation_completed", summary);
+		}
+	} finally {
+		clearRuntime();
+	}
+}
+
 async function handleAsyncWebhookRetriesScheduledEvent(_event: ScheduledController, env: GatewayBindings): Promise<void> {
 	if (!toBool(env.ASYNC_WEBHOOK_RETRIES_ENABLED, true)) {
 		return;
@@ -208,6 +235,22 @@ async function handleAsyncWebhookRetriesScheduledEvent(_event: ScheduledControll
 		const summary = await runAsyncWebhookRetriesJob({ limitPerKind, maxDeliveries });
 		if (summary.deliveriesRetried > 0 || summary.deliveriesFailedPermanently > 0) {
 			console.log("async_webhook_retries_completed", summary);
+		}
+	} finally {
+		clearRuntime();
+	}
+}
+
+async function handleBatchProviderWebhookReplayScheduledEvent(_event: ScheduledController, env: GatewayBindings): Promise<void> {
+	if (!toBool(env.BATCH_PROVIDER_WEBHOOK_REPLAY_ENABLED, true)) return;
+	const limit = env.BATCH_PROVIDER_WEBHOOK_REPLAY_LIMIT === undefined
+		? 100
+		: toInt(env.BATCH_PROVIDER_WEBHOOK_REPLAY_LIMIT, 100);
+	configureRuntime(env);
+	try {
+		const summary = await runBatchProviderWebhookReplayJob({ limit });
+		if (summary.eventsProcessed > 0 || summary.eventsFailed > 0) {
+			console.log("batch_provider_webhook_replay_completed", summary);
 		}
 	} finally {
 		clearRuntime();
@@ -282,6 +325,22 @@ async function handleOAuthCleanupScheduledEvent(env: GatewayBindings): Promise<v
 	}
 }
 
+async function handleV2AnalyticsOutboxScheduledEvent(env: GatewayBindings): Promise<void> {
+	if (!toBool(env.V2_ANALYTICS_OUTBOX_ENABLED, true)) return;
+	const limit = toInt(env.V2_ANALYTICS_OUTBOX_LIMIT, 250);
+	configureRuntime(env);
+	try {
+		const { data, error } = await getSupabaseAdmin().rpc("process_v2_analytics_outbox", {
+			p_limit: limit,
+		});
+		if (error) throw new Error(error.message || "Failed to process v2 analytics outbox");
+		const selected = Number((data as any)?.selected ?? 0);
+		if (selected > 0) console.log("v2_analytics_outbox_completed", data);
+	} finally {
+		clearRuntime();
+	}
+}
+
 export async function handleScheduledEvent(event: ScheduledController, env: GatewayBindings): Promise<void> {
 	if (isDailyRetentionBillingTick(event)) {
 		try {
@@ -291,6 +350,11 @@ export async function handleScheduledEvent(event: ScheduledController, env: Gate
 		}
 	}
 	if (isCoreJobsTick(event)) {
+		try {
+			await handleV2AnalyticsOutboxScheduledEvent(env);
+		} catch (error) {
+			console.error("v2_analytics_outbox_scheduled_failed", serializeError(error));
+		}
 		try {
 			await handleOAuthCleanupScheduledEvent(env);
 		} catch (error) {
@@ -307,6 +371,11 @@ export async function handleScheduledEvent(event: ScheduledController, env: Gate
 			console.error("async_webhook_retries_scheduled_failed", serializeError(error));
 		}
 		try {
+			await handleBatchProviderWebhookReplayScheduledEvent(event, env);
+		} catch (error) {
+			console.error("batch_provider_webhook_replay_scheduled_failed", serializeError(error));
+		}
+		try {
 			await handleVideoReconciliationScheduledEvent(event, env);
 		} catch (error) {
 			console.error("video_reconciliation_scheduled_failed", serializeError(error));
@@ -315,6 +384,11 @@ export async function handleScheduledEvent(event: ScheduledController, env: Gate
 			await handleBatchReconciliationScheduledEvent(event, env);
 		} catch (error) {
 			console.error("batch_reconciliation_scheduled_failed", serializeError(error));
+		}
+		try {
+			await handleRealtimeSessionReconciliationScheduledEvent(event, env);
+		} catch (error) {
+			console.error("realtime_session_reconciliation_scheduled_failed", serializeError(error));
 		}
 	}
 	if (isModelDiscoveryTick(event)) {

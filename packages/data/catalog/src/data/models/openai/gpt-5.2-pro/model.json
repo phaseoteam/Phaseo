@@ -29,7 +29,7 @@
       "is_self_reported": true,
       "other_info": "No Tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-2/",
-      "rank": 9
+      "rank": 12
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -37,7 +37,7 @@
       "is_self_reported": true,
       "other_info": "No Tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-2/",
-      "rank": 56
+      "rank": 64
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -45,7 +45,7 @@
       "is_self_reported": true,
       "other_info": "With Search + Python",
       "source_link": "https://openai.com/index/introducing-gpt-5-2/",
-      "rank": 20
+      "rank": 24
     },
     {
       "benchmark_id": "hmmt-2025",
@@ -111,5 +111,52 @@
       "source_link": "https://github.com/lechmazur/nyt-connections",
       "rank": 22
     }
-  ]
+  ],
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image/*"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "announcement",
+      "url": "https://openai.com/index/introducing-gpt-5-2/",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

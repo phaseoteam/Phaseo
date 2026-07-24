@@ -15,7 +15,11 @@
       "note": "Mistral pricing lists Voxtral Small audio input at $0.004 per minute.",
       "match": [],
       "priority": 100,
-      "effective_from": "2025-07-15T00:00:00Z"
+      "effective_from": "2025-07-15T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "input_text_tokens",
@@ -27,7 +31,11 @@
       "note": "Mistral pricing lists Voxtral Small text input at $0.10 per 1M tokens.",
       "match": [],
       "priority": 100,
-      "effective_from": "2025-07-15T00:00:00Z"
+      "effective_from": "2025-07-15T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -39,7 +47,21 @@
       "note": "Mistral pricing lists Voxtral Small output at $0.40 per 1M tokens.",
       "match": [],
       "priority": 100,
-      "effective_from": "2025-07-15T00:00:00Z"
+      "effective_from": "2025-07-15T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

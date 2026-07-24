@@ -57,7 +57,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": null,
-      "rank": 176
+      "rank": 180
     },
     {
       "benchmark_id": "big-bench",
@@ -131,5 +131,69 @@
       "source_link": "https://example.com/benchmark-image",
       "rank": 12
     }
-  ]
+  ],
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": "2024-02-01T00:00:00",
+  "limits": {
+    "context": 32768,
+    "input": 32768,
+    "output": 8192
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "api_reference",
+      "url": "https://ai.google.dev/gemini-api/docs/models/gemini#gemini-1.0-pro",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "playground",
+      "url": "https://gemini.google/advanced/",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "paper",
+      "url": "https://arxiv.org/pdf/2312.11805",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "announcement",
+      "url": "https://blog.google/technology/ai/google-gemini-ai/#scalable-efficient",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

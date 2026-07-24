@@ -24,7 +24,19 @@
       ],
       "priority": 100,
       "effective_from": "2026-04-22T00:00:00Z",
-      "effective_to": "2026-05-27T01:00:00Z"
+      "effective_to": "2026-05-27T01:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 256000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -45,7 +57,19 @@
       ],
       "priority": 100,
       "effective_from": "2026-04-22T00:00:00Z",
-      "effective_to": "2026-05-27T01:00:00Z"
+      "effective_to": "2026-05-27T01:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 256000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -66,7 +90,19 @@
       ],
       "priority": 100,
       "effective_from": "2026-04-22T00:00:00Z",
-      "effective_to": "2026-05-27T01:00:00Z"
+      "effective_to": "2026-05-27T01:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 256000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_text_tokens",
@@ -87,7 +123,19 @@
       ],
       "priority": 100,
       "effective_from": "2026-04-22T00:00:00Z",
-      "effective_to": "2026-05-27T01:00:00Z"
+      "effective_to": "2026-05-27T01:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 256000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -108,7 +156,19 @@
       ],
       "priority": 100,
       "effective_from": "2026-04-22T00:00:00Z",
-      "effective_to": "2026-05-27T01:00:00Z"
+      "effective_to": "2026-05-27T01:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 256000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -129,7 +189,19 @@
       ],
       "priority": 100,
       "effective_from": "2026-04-22T00:00:00Z",
-      "effective_to": "2026-05-27T01:00:00Z"
+      "effective_to": "2026-05-27T01:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 256000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "cached_write_text_tokens",
@@ -142,7 +214,11 @@
       "match": [],
       "priority": 100,
       "effective_from": "2026-04-22T00:00:00Z",
-      "effective_to": "2026-05-27T01:00:00Z"
+      "effective_to": "2026-05-27T01:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -154,7 +230,11 @@
       "note": "Unified pricing across all context lengths",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-27T01:00:00Z"
+      "effective_from": "2026-05-27T01:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "input_text_tokens",
@@ -166,7 +246,11 @@
       "note": "Unified pricing across all context lengths",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-27T01:00:00Z"
+      "effective_from": "2026-05-27T01:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -178,7 +262,11 @@
       "note": "Unified pricing across all context lengths",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-27T01:00:00Z"
+      "effective_from": "2026-05-27T01:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "cached_write_text_tokens",
@@ -190,7 +278,21 @@
       "note": "Cache writes are free for a limited time",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-27T01:00:00Z"
+      "effective_from": "2026-05-27T01:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

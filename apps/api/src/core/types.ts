@@ -11,6 +11,7 @@ export type Endpoint =
     | "audio.speech"
     | "audio.transcription"
     | "audio.translations"
+    | "audio.realtime"
     | "moderations"
     | "rerank"
     | "video.generation"
@@ -67,16 +68,32 @@ export type RequestMeta = {
     returnUpstreamResponse?: boolean;
     startedAtMs?: number;
     upstreamStartMs?: number;
+    upstreamFetchStartMs?: number;
+	selectedUpstreamFetchStartMs?: number;
+    adapterRequestBuildMs?: number;
+    timeToUpstreamRequestMs?: number;
+	timeToLatestUpstreamRequestMs?: number;
+    upstreamHeadersMs?: number;
+	provider_duration_ms?: number;
+	upstreamRequestCount?: number;
+	upstreamPollCount?: number;
+	upstreamAuthCount?: number;
+	upstreamPreflightCount?: number;
+	upstreamMediaCount?: number;
     completedAtMs?: number;
     beta?: RequestBetaOptions;
     keySource?: "gateway" | "byok";
     byokKeyId?: string | null;
     // Performance metrics
     throughput_tps?: number;      // Tokens per second
-    generation_ms?: number;       // Post-first-token generation duration when available
-    latency_ms?: number;          // Time to first token/byte when available; otherwise best-effort total latency
+    generation_ms?: number;       // Selected upstream dispatch to terminal frame/body when available
+    latency_ms?: number;          // Selected upstream dispatch to first complete streamed frame
     end_to_end_ms?: number;       // Request start to completion when available
     preserve_stream_timing?: boolean; // Internal: stream is synthetic and already has authoritative timing
+    downstreamDisconnected?: boolean; // Client closed the response while the gateway continued draining upstream
+    streamCancellationSupport?: "supported" | "unsupported" | "unknown";
+    streamProviderBillingOnCancel?: "stops" | "unknown";
+    streamDisconnectAction?: "cancel_upstream" | "drain_upstream";
     before_ms?: number;           // Gateway preflight ("before" stage) latency
     beforeContextMs?: number;     // Context fetch + enrichment latency inside before
     beforeContextCacheStatus?: "hit" | "miss" | "bypass";

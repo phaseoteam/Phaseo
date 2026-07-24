@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import type {
 	EventType,
 	ModelEvent,
-} from "@/lib/fetchers/updates/getModelUpdates";
+} from "@/lib/fetchers/updates/types";
 import {
 	Tooltip,
 	TooltipContent,

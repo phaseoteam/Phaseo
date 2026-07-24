@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import {
+	Suspense,
+	use,
 	useCallback,
 	useDeferredValue,
 	useEffect,
@@ -33,6 +35,7 @@ import {
 	FileText,
 	Headphones,
 	Music4,
+	Radio,
 	RotateCcw,
 	Route,
 	SearchX,
@@ -92,14 +95,14 @@ import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDisplay";
 import type {
 	GatewayStatusFilter,
-	ModelsFilterFacets,
+	ModelsPageData,
 	ModelsPageModel,
 	OptionCount,
 } from "./modelsDisplay.types";
 
 interface ModelsDisplayProps {
-	models: ModelsPageModel[];
-	facets: ModelsFilterFacets;
+	dataPromise?: Promise<ModelsPageData>;
+	modelsPageData?: ModelsPageData;
 	showPrimaryHeader?: boolean;
 }
 
@@ -172,6 +175,7 @@ const OUTPUT_MODALITY_DISPLAY_ORDER = [
 	"video",
 	"audio",
 	"audio_tts",
+	"realtime",
 	"audio_stt",
 	"embeddings",
 	"moderations",
@@ -196,6 +200,7 @@ const ENDPOINT_DISPLAY_ORDER = [
 	"audio/transcription",
 	"audio/transcriptions",
 	"audio/translations",
+	"audio/realtime",
 	"video/generations",
 ] as const;
 
@@ -216,6 +221,7 @@ const ENDPOINT_LABELS: Record<string, string> = {
 	"audio/transcription": "Transcription",
 	"audio/transcriptions": "Transcription",
 	"audio/translations": "Translation",
+	"audio/realtime": "Real-time",
 	"video/generations": "Video Generation",
 };
 
@@ -265,6 +271,9 @@ function normalizeModalityFilterValue(value: string): string {
 		.toLowerCase()
 		.replace(/[._/-]+/g, " ");
 	if (!normalized) return "";
+	if (normalized.includes("realtime") || normalized.includes("real time")) {
+		return "realtime";
+	}
 	if (normalized.includes("text")) return "text";
 	if (normalized.includes("image")) return "image";
 	if (normalized.includes("video")) return "video";
@@ -445,6 +454,7 @@ function toTitleCase(value: string): string {
 	const normalized = String(value ?? "")
 		.trim()
 		.toLowerCase();
+	if (normalized === "realtime") return "Real-time";
 	if (normalized === "audio_stt") return "Transcription";
 	if (normalized === "audio_tts") return "Speech";
 	if (normalized === "audio_music") return "Music";
@@ -520,6 +530,9 @@ function getEndpointSortRank(value: string): number {
 function getModalityIcon(modality: string): LucideIcon {
 	const normalized = modality.toLowerCase().replace(/[._/-]+/g, " ");
 
+	if (normalized.includes("realtime") || normalized.includes("real time")) {
+		return Radio;
+	}
 	if (normalized.includes("embed")) return Binary;
 	if (normalized.includes("rerank") || normalized.includes("re rank")) {
 		return ArrowUpDown;
@@ -650,6 +663,7 @@ function FilterCheckboxList({
 	collapsedLimit?: number;
 }) {
 	const [expanded, setExpanded] = useState(false);
+
 	const canCollapse =
 		Number.isFinite(collapsedLimit) &&
 		Number(collapsedLimit) > 0 &&
@@ -909,10 +923,47 @@ function OutputModalityButtonRow({
 }
 
 export default function ModelsDisplay({
-	models,
-	facets,
+	dataPromise,
+	modelsPageData,
 	showPrimaryHeader = true,
 }: ModelsDisplayProps) {
+	return (
+		<Suspense fallback={null}>
+			<ModelsDisplayData
+				dataPromise={dataPromise}
+				modelsPageData={modelsPageData}
+				showPrimaryHeader={showPrimaryHeader}
+			/>
+		</Suspense>
+	);
+}
+
+function ModelsDisplayData({
+	dataPromise,
+	modelsPageData,
+	showPrimaryHeader = true,
+}: ModelsDisplayProps) {
+	const serverData = dataPromise ? use(dataPromise) : undefined;
+	const resolvedModelsPageData = serverData ?? modelsPageData;
+
+	if (!resolvedModelsPageData) return null;
+
+	return (
+		<ModelsDisplayContent
+			modelsPageData={resolvedModelsPageData}
+			showPrimaryHeader={showPrimaryHeader}
+		/>
+	);
+}
+
+function ModelsDisplayContent({
+	modelsPageData,
+	showPrimaryHeader = true,
+}: {
+	modelsPageData: ModelsPageData;
+	showPrimaryHeader?: boolean;
+}) {
+	const { models, facets } = modelsPageData;
 	const [search, setSearch] = useQueryState("q", qParser);
 	const deferredSearch = useDeferredValue(search ?? "");
 	const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -1033,7 +1084,15 @@ export default function ModelsDisplay({
 	const [showScrollTopButton, setShowScrollTopButton] = useState(false);
 	const [showMobileFilterFab, setShowMobileFilterFab] = useState(false);
 	const [isMobileViewport, setIsMobileViewport] = useState(false);
+	const [sidebarCountsReady, setSidebarCountsReady] = useState(false);
 	const scrollTopAnimationFrameRef = useRef<number | null>(null);
+
+	useEffect(() => {
+		const frame = window.requestAnimationFrame(() => {
+			setSidebarCountsReady(true);
+		});
+		return () => window.cancelAnimationFrame(frame);
+	}, [models]);
 
 	useEffect(() => {
 		const mediaQuery = window.matchMedia("(max-width: 639px)");
@@ -1402,6 +1461,22 @@ export default function ModelsDisplay({
 	);
 
 	const dynamicSidebarCounts = useMemo(() => {
+		if (!sidebarCountsReady) {
+			return {
+				statusCounts: facets.statusCounts,
+				endpointOptions: baseEndpointOptions,
+				inputModalityOptions: baseInputModalityOptions,
+				outputModalityOptions: baseOutputModalityOptions,
+				featureOptions: baseFeatureOptions,
+				tierOptions: baseTierOptions,
+				supportedParameterOptions: baseSupportedParameterOptions,
+				providerOptions: baseProviderOptions,
+				regionOptions: baseRegionOptions,
+				creatorOptions: baseCreatorOptions,
+				yearOptions: baseYearOptions,
+			};
+		}
+
 		const withAllExcept = (dimension: FilterDimension) =>
 			preparedModels.filter((prepared) =>
 				matchesPreparedModel(prepared, { exclude: dimension }),
@@ -1501,8 +1576,10 @@ export default function ModelsDisplay({
 		baseSupportedParameterOptions,
 		baseTierOptions,
 		baseYearOptions,
+		facets.statusCounts,
 		matchesPreparedModel,
 		preparedModels,
+		sidebarCountsReady,
 		selectedCreators,
 		selectedEndpoints,
 		selectedFeatures,

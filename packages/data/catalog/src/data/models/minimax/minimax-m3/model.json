@@ -57,7 +57,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.minimax.io/models/text/m3",
-      "rank": 4
+      "rank": 10
     },
     {
       "benchmark_id": "browsecomp",
@@ -65,7 +65,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.minimax.io/models/text/m3",
-      "rank": 8
+      "rank": 12
     },
     {
       "benchmark_id": "scale-mcp-atlas",
@@ -73,7 +73,7 @@
       "is_self_reported": true,
       "other_info": "Public Set",
       "source_link": "https://www.minimax.io/models/text/m3",
-      "rank": 5
+      "rank": 7
     },
     {
       "benchmark_id": "os-world",
@@ -89,7 +89,73 @@
       "is_self_reported": false,
       "other_info": "mini-swe-agent; 20% +/-4%; avg cost $5.57; avg time 57m; out tok 98k",
       "source_link": "https://deepswe.datacurve.ai/",
-      "rank": 10
+      "rank": 13
     }
-  ]
+  ],
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 1000000,
+    "input": 1000000,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image/*",
+      "video/*"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "announcement",
+      "url": "https://www.minimax.io/blog/minimax-m3",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "api_reference",
+      "url": "https://platform.minimax.io/docs/guides/text-generation",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "weights",
+      "url": "https://huggingface.co/MiniMaxAI/MiniMax-M3",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "website",
+      "url": "https://www.minimax.io/models/text/m3",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

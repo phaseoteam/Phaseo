@@ -36,7 +36,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://artificialanalysis.ai/models/gemini-1-0-ultra",
-      "rank": 164
+      "rank": 168
     },
     {
       "benchmark_id": "humaneval",
@@ -62,5 +62,44 @@
       "source_link": "https://openai.com/index/hello-gpt-4o/",
       "rank": 69
     }
-  ]
+  ],
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": "2023-11-01T00:00:00",
+  "limits": {
+    "context": 32768,
+    "input": 32768,
+    "output": 8192
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

@@ -93,7 +93,7 @@ function attachStreamTimingMeta(args: {
         ...frame.meta,
         throughput_tps: throughputTps,
         generation_ms: generationMs,
-        latency_ms: ctx.meta.latency_ms ?? 0,
+		latency_ms: ctx.meta.latency_ms ?? null,
         end_to_end_ms: ctx.meta.end_to_end_ms ?? null,
     };
     const responsePayload =
@@ -109,7 +109,7 @@ function attachStreamTimingMeta(args: {
             ...(responsePayload.metadata && typeof responsePayload.metadata === "object"
                 ? responsePayload.metadata
                 : {}),
-            latency_ms: ctx.meta.latency_ms ?? 0,
+			latency_ms: ctx.meta.latency_ms ?? null,
             generation_ms: generationMs,
             end_to_end_ms: ctx.meta.end_to_end_ms ?? null,
             throughput_tps: throughputTps,
@@ -493,7 +493,7 @@ export async function handleStreamResponse(
                 model: baseModel,
                 ok,
                 healthImpact,
-                latency_ms: ctx.meta.latency_ms ?? 0,
+				latency_ms: ctx.meta.latency_ms ?? null,
                 generation_ms: ctx.meta.generation_ms ?? null,
                 tokens_in: Number(
                     shapedUsage?.input_tokens ??
@@ -577,6 +577,12 @@ export async function handleStreamResponse(
                     result.bill.finish_reason = normalizedFinishReason;
                 }
 
+                await recordUsageAndChargeOnce({
+                    ctx,
+                    costNanos: pricedWithByok.totalNanos,
+                    endpoint: ctx.endpoint,
+                });
+
                 await handleSuccessAudit(
                     ctx,
                     result,
@@ -591,11 +597,6 @@ export async function handleStreamResponse(
                     latestGatewaySnapshot,
                 );
 
-                await recordUsageAndChargeOnce({
-                    ctx,
-                    costNanos: pricedWithByok.totalNanos,
-                    endpoint: ctx.endpoint,
-                });
                 return true;
             };
 
@@ -617,6 +618,11 @@ export async function handleStreamResponse(
                     currencyHint: result.bill.currency ?? card?.currency ?? "USD",
                 });
                 await maybeWriteStickyForUsage(pricedWithByok.pricedUsage);
+                await recordUsageAndChargeOnce({
+                    ctx,
+                    costNanos: pricedWithByok.totalNanos,
+                    endpoint: ctx.endpoint,
+                });
                 await handleSuccessAudit(
                     ctx,
                     result,
@@ -630,11 +636,6 @@ export async function handleStreamResponse(
                     result.bill.upstream_id ?? null,
                     latestGatewaySnapshot,
                 );
-                await recordUsageAndChargeOnce({
-                    ctx,
-                    costNanos: pricedWithByok.totalNanos,
-                    endpoint: ctx.endpoint,
-                });
                 return;
             }
 
@@ -675,6 +676,12 @@ export async function handleStreamResponse(
             result.bill.finish_reason = cachedFinishReason ?? result.bill.finish_reason;
             await maybeWriteStickyForUsage(result.bill.usage);
 
+            await recordUsageAndChargeOnce({
+                ctx,
+                costNanos: pricedWithByok.totalNanos,
+                endpoint: ctx.endpoint,
+            });
+
             await handleSuccessAudit(
                 ctx,
                 result,
@@ -689,11 +696,6 @@ export async function handleStreamResponse(
                 latestGatewaySnapshot,
             );
 
-            await recordUsageAndChargeOnce({
-                ctx,
-                costNanos: pricedWithByok.totalNanos,
-                endpoint: ctx.endpoint,
-            });
             } finally {
                 releaseRuntime();
             }

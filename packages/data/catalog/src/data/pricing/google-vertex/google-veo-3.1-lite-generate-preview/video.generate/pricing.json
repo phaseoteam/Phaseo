@@ -30,7 +30,26 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-03-31T00:00:00Z"
+      "effective_from": "2026-03-31T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "720p"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": true
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_video_seconds",
@@ -57,7 +76,26 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-03-31T00:00:00Z"
+      "effective_from": "2026-03-31T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "1080p"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": true
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_video_seconds",
@@ -84,7 +122,26 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-03-31T00:00:00Z"
+      "effective_from": "2026-03-31T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "720p"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": false
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_video_seconds",
@@ -111,7 +168,36 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-03-31T00:00:00Z"
+      "effective_from": "2026-03-31T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "1080p"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": false
+        }
+      ],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

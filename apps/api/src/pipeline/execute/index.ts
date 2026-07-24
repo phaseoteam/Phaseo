@@ -4,8 +4,9 @@
 // How: Ranks candidates, attempts providers with failover, and records timing/usage.
 
 import type { GatewayResponsePayload } from "@core/types";
-import type { PipelineContext, ProviderAttemptLog } from "../before/types";
+import type { ByokKeyMeta, PipelineContext, ProviderAttemptLog } from "../before/types";
 import { Timer } from "../telemetry/timer";
+import { dispatchBackground, ensureRuntimeForBackground } from "@/runtime/env";
 
 export type PipelineTiming = {
 	timer: Timer;
@@ -13,6 +14,24 @@ export type PipelineTiming = {
 		adapterMarked: boolean;
 	};
 };
+
+function dispatchProviderHealthBackground(task: () => Promise<unknown>): void {
+	let releaseRuntime: () => void = () => {};
+	try {
+		releaseRuntime = ensureRuntimeForBackground();
+	} catch (error) {
+		console.error("[gateway] failed to preserve runtime for provider health", {
+			error: error instanceof Error ? error.message : String(error),
+		});
+	}
+	dispatchBackground((async () => {
+		try {
+			await task();
+		} finally {
+			releaseRuntime();
+		}
+	})());
+}
 
 import { guardCandidates, guardPricingFound, guardAllFailed } from "./guards";
 import { err } from "./http";
@@ -68,23 +87,56 @@ import type {
 	IRVideoGenerationResponse,
 } from "@core/ir";
 import type { ExecutorExecuteArgs } from "@executors/types";
+import { createUpstreamTimingTracker } from "@executors/_shared/timing/upstream";
 import { normalizeIRForProvider } from "./normalize";
 import { normalizeCapability } from "@/executors";
 import { filterCandidatesByModalities, filterEmbeddingCandidatesByModalities } from "./modalities";
 import { loadPriceCard } from "../pricing";
 import { stripUsagePricing } from "../usage";
 import { getEffectiveRoutingHints } from "../requestRouting";
-
-function shouldFallbackFromByok(status: number | null | undefined): boolean {
-	const code = Number(status ?? 0);
-	if (!Number.isFinite(code)) return false;
-	if (code === 401 || code === 403 || code === 408 || code === 429) return true;
-	return code >= 500;
-}
+import { sanitizeUrlForLogging } from "@/lib/security/sanitizeUrl";
 
 const ATTEMPT_PREVIEW_LIMIT = 320;
+const MAX_UPSTREAM_ERROR_BODY_BYTES = 32 * 1024;
 const MAX_RETRYABLE_EXECUTOR_RETRIES = 0;
 const SINGLE_PROVIDER_FAILURE_RETRIES = 0;
+
+export type CredentialAttemptPhase = "priority_byok" | "gateway" | "fallback_byok";
+
+export function buildCredentialAttemptPlan(
+	rankedProviders: any[],
+	options: { includeFallbackByok?: boolean } = {},
+): Array<{
+	routed: any;
+	phase: CredentialAttemptPhase;
+	credential: { kind: "gateway" } | { kind: "byok"; key: ByokKeyMeta };
+}> {
+	const modeForKey = (key: ByokKeyMeta): "priority" | "fallback" =>
+		key.routingMode ?? (key.alwaysUse ? "priority" : "fallback");
+	const keysForMode = (routed: any, mode: "priority" | "fallback") =>
+		(routed.candidate.byokMeta ?? [])
+			.filter((key: ByokKeyMeta) => modeForKey(key) === mode)
+			.sort((a: ByokKeyMeta, b: ByokKeyMeta) =>
+				(a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.id.localeCompare(b.id),
+			)
+			.map((key: ByokKeyMeta) => ({
+				routed,
+				phase: mode === "priority" ? "priority_byok" as const : "fallback_byok" as const,
+				credential: { kind: "byok" as const, key },
+			}));
+
+	return [
+		...rankedProviders.flatMap((routed) => keysForMode(routed, "priority")),
+		...rankedProviders.map((routed) => ({
+			routed,
+			phase: "gateway" as const,
+			credential: { kind: "gateway" as const },
+		})),
+		...(options.includeFallbackByok === false
+			? []
+			: rankedProviders.flatMap((routed) => keysForMode(routed, "fallback"))),
+	];
+}
 
 function shouldRetrySingleProviderStatus(status: number | null | undefined): boolean {
 	const code = Number(status ?? 0);
@@ -99,30 +151,6 @@ function truncateAttemptText(value: unknown, limit = ATTEMPT_PREVIEW_LIMIT): str
 	if (!trimmed) return null;
 	if (trimmed.length <= limit) return trimmed;
 	return `${trimmed.slice(0, limit)}...[truncated ${trimmed.length - limit} chars]`;
-}
-
-function redactSensitiveUrl(url: string | null | undefined): string | null {
-	if (!url || typeof url !== "string") return null;
-	try {
-		const parsed = new URL(url);
-		const sensitiveParams = [
-			"key",
-			"api_key",
-			"x-api-key",
-			"access_token",
-			"token",
-			"sig",
-			"signature",
-		];
-		for (const param of sensitiveParams) {
-			if (parsed.searchParams.has(param)) {
-				parsed.searchParams.set(param, "[redacted]");
-			}
-		}
-		return parsed.toString();
-	} catch {
-		return url;
-	}
 }
 
 function normalizeUpstreamErrorCode(value: unknown): string | null {
@@ -247,18 +275,57 @@ async function readUpstreamFailurePayload(result: {
 
 	try {
 		const clone = result.upstream.clone();
-		const text = await clone.text();
+		if (!clone.body) {
+			return { payload: null, payload_preview: null };
+		}
+		const reader = clone.body.getReader();
+		const chunks: Uint8Array[] = [];
+		let totalBytes = 0;
+		let truncated = false;
+		try {
+			while (true) {
+				const { done, value } = await reader.read();
+				if (done) break;
+				if (!value) continue;
+				const remaining = MAX_UPSTREAM_ERROR_BODY_BYTES - totalBytes;
+				if (remaining <= 0) {
+					truncated = true;
+					await reader.cancel("upstream_error_body_limit");
+					break;
+				}
+				chunks.push(value.byteLength <= remaining ? value : value.slice(0, remaining));
+				totalBytes += Math.min(value.byteLength, remaining);
+				if (value.byteLength > remaining) {
+					truncated = true;
+					await reader.cancel("upstream_error_body_limit");
+					break;
+				}
+			}
+		} finally {
+			reader.releaseLock();
+		}
+		const bytes = new Uint8Array(totalBytes);
+		let offset = 0;
+		for (const chunk of chunks) {
+			bytes.set(chunk, offset);
+			offset += chunk.byteLength;
+		}
+		const text = new TextDecoder().decode(bytes);
 		if (!text) {
 			return { payload: null, payload_preview: null };
 		}
+		const previewSuffix = truncated ? "...[upstream error body truncated]" : "";
 		try {
 			const parsed = JSON.parse(text);
 			return {
 				payload: parsed,
-				payload_preview: truncateAttemptText(JSON.stringify(parsed)),
+				payload_preview: `${truncateAttemptText(JSON.stringify(parsed)) ?? ""}${previewSuffix}` || null,
 			};
 		} catch {
-			return { payload: text, payload_preview: truncateAttemptText(text) };
+			return {
+				payload: text,
+				payload_preview: `${truncateAttemptText(text) ?? ""}${previewSuffix}` || null,
+			};
 		}
 	} catch {
 		return { payload: null, payload_preview: null };
@@ -392,20 +459,33 @@ export async function doRequestWithIR(
 	// 3) Try providers in order (failover up to 5)
 	const allowFallbacks = getEffectiveRoutingHints(ctx.body).allowFallbacks;
 	const maxTries = calculateMaxTries(ranked.length, allowFallbacks);
+	const rankedProviders = ranked.slice(0, maxTries);
+	const credentialPlan = buildCredentialAttemptPlan(rankedProviders, {
+		includeFallbackByok: ctx.teamSettings?.byokFallbackEnabled === true,
+	});
+	ctx.credentialPlan = credentialPlan.map((entry, index) => ({
+		attempt_number: index + 1,
+		provider: entry.routed.candidate.providerId,
+		credential_phase: entry.phase,
+		key_source: entry.credential.kind === "byok" ? "byok" : "gateway",
+		byok_key_id: entry.credential.kind === "byok" ? entry.credential.key.id : null,
+	}));
 	let anyPricingFound = anyPricingAvailable;
 
-	for (let attempt = 0; attempt < maxTries; attempt++) {
-		const choice = ranked[attempt];
+	for (let attempt = 0; attempt < credentialPlan.length; attempt++) {
+		const choice = credentialPlan[attempt];
 
 		// Use IR-aware attempt function
 		const result = await attemptProviderWithIR(
-			choice,
+			choice.routed,
 			ctx,
 			ir,
 			timing,
 			baseModel,
-			maxTries === 1,
+			rankedProviders.length === 1,
 			attempt + 1,
+			choice.credential,
+			choice.phase,
 		);
 
 		if (result.ok) {
@@ -459,6 +539,8 @@ async function attemptProviderWithIR(
 	baseModel: string,
 	allowSingleProviderRetry: boolean,
 	attemptNumber: number,
+	credential: { kind: "gateway" } | { kind: "byok"; key: ByokKeyMeta },
+	credentialPhase: CredentialAttemptPhase,
 ): Promise<{ ok: true; result: IRRequestResult } | { ok: false; skip?: string }> {
 	const attemptErrors: Array<Record<string, unknown>> = (ctx.attemptErrors ??= []);
 	const attemptPrefix = `attempt_${attemptNumber}`;
@@ -466,6 +548,11 @@ async function attemptProviderWithIR(
 
 	// Extract candidate from RoutedCandidate
 	const candidate = routed.candidate;
+	const credentialLog = {
+		credential_phase: credentialPhase,
+		key_source: credential.kind === "byok" ? "byok" as const : "gateway" as const,
+		byok_key_id: credential.kind === "byok" ? credential.key.id : null,
+	};
 	const candidateApiModelId =
 		typeof candidate.apiModelId === "string" && candidate.apiModelId.trim().length > 0
 			? candidate.apiModelId.trim()
@@ -483,12 +570,14 @@ async function attemptProviderWithIR(
 	);
 	if (admission === "blocked") {
 		attemptErrors.push({
+			...credentialLog,
 			provider: candidate.providerId,
 			endpoint: ctx.endpoint,
 			attempt_number: attemptNumber,
 			type: "blocked",
 		});
 		recordProviderAttempt(ctx, {
+			...credentialLog,
 			attempt_number: attemptNumber,
 			provider: candidate.providerId,
 			endpoint: ctx.endpoint,
@@ -503,10 +592,6 @@ async function attemptProviderWithIR(
 		return { ok: false, skip: "blocked" };
 	}
 	const isProbe = admission === "probe";
-	const byokAlwaysUse = Array.isArray(candidate.byokMeta)
-		? candidate.byokMeta.some((meta) => meta?.alwaysUse === true)
-		: false;
-	const allowByokFallback = !byokAlwaysUse;
 	const providerModelSlug = typeof candidate.providerModelSlug === "string"
 		? candidate.providerModelSlug.trim()
 		: candidate.providerModelSlug;
@@ -527,6 +612,7 @@ async function attemptProviderWithIR(
 	}
 	if (!pricingCard) {
 		attemptErrors.push({
+			...credentialLog,
 			provider: candidate.providerId,
 			endpoint: ctx.endpoint,
 			attempt_number: attemptNumber,
@@ -535,6 +621,7 @@ async function attemptProviderWithIR(
 			was_probe: isProbe,
 		});
 		recordProviderAttempt(ctx, {
+			...credentialLog,
 			attempt_number: attemptNumber,
 			provider: candidate.providerId,
 			endpoint: ctx.endpoint,
@@ -557,11 +644,17 @@ async function attemptProviderWithIR(
 			timing.timer.between("internal_latency_ms", "request_start", "adapter_start");
 			timing.internal.adapterMarked = true;
 		}
-		await onCallStart(ctx.endpoint, candidate.providerId, baseModel);
+		// Health accounting is advisory and must not delay the upstream request.
+		dispatchProviderHealthBackground(() =>
+			onCallStart(ctx.endpoint, candidate.providerId, baseModel),
+		);
 		t0 = performance.now();
 
-		// Only executor-reported fetch timestamps are authoritative for billing.
+		// Never let a failed provider attempt's timestamp leak into billing for
+		// the next candidate. The upstream tracker below records the selected
+		// response's actual dispatch time for every executor.
 		delete (ctx.meta as Record<string, unknown>).upstreamStartMs;
+		delete (ctx.meta as Record<string, unknown>).selectedUpstreamFetchStartMs;
 		delete (ctx.meta as Record<string, unknown>).latency_ms;
 		delete (ctx.meta as Record<string, unknown>).generation_ms;
 		const executorResolveStart = performance.now();
@@ -572,12 +665,14 @@ async function attemptProviderWithIR(
 		);
 		if (!executor) {
 			attemptErrors.push({
+				...credentialLog,
 				provider: candidate.providerId,
 				endpoint: ctx.endpoint,
 				attempt_number: attemptNumber,
 				type: "unsupported_executor",
 			});
 			recordProviderAttempt(ctx, {
+				...credentialLog,
 				attempt_number: attemptNumber,
 				provider: candidate.providerId,
 				endpoint: ctx.endpoint,
@@ -593,8 +688,12 @@ async function attemptProviderWithIR(
 		}
 
 		const normalizedCapability = normalizeCapability(ctx.capability);
+		const upstreamTracker = createUpstreamTimingTracker();
 		const isTextGenerate = normalizedCapability === "text.generate";
 		const modelForReasoning = providerModelSlug?.trim() || baseModel;
+		const captureProviderPayloads =
+			ctx.teamSettings?.ioLoggingEnabled === true &&
+			ctx.teamSettings?.ioLoggingIncludeProviderPayloads === true;
 
 		const normalizedIr = await timing.timer.span(`${attemptPrefix}_normalize_ir`, () =>
 			isTextGenerate
@@ -610,7 +709,7 @@ async function attemptProviderWithIR(
 				)
 				: ir,
 		);
-		const buildExecutorArgs = (forceGatewayKey: boolean, byokMeta: any[]) =>
+		const buildExecutorArgs = () =>
 			({
 				ir: normalizedIr,
 				requestId: ctx.requestId,
@@ -623,15 +722,17 @@ async function attemptProviderWithIR(
 				capabilityParams: candidate.capabilityParams,
 				maxInputTokens: candidate.maxInputTokens,
 				maxOutputTokens: candidate.maxOutputTokens,
-				byokMeta,
+				byokMeta: credential.kind === "byok" ? [credential.key] : [],
 				pricingCard,
+				upstreamTiming: upstreamTracker.timing,
 				meta: {
 					debug: ctx.meta.debug,
 					returnMeta: ctx.meta.returnMeta,
 					echoUpstreamRequest: Boolean(ctx.meta.debug?.return_upstream_request),
-					// Always capture upstream request/response for audit logging.
-					returnUpstreamRequest: true,
-					returnUpstreamResponse: true,
+					// Provider payload capture is an explicit workspace opt-in.
+					returnUpstreamRequest: captureProviderPayloads,
+					returnUpstreamResponse: captureProviderPayloads,
+					upstreamStartMs: ctx.meta.upstreamStartMs, // Pass timing to executor
 					requestedModel:
 						typeof (ctx.rawBody as any)?.model === "string"
 							? ((ctx.rawBody as any).model as string)
@@ -644,7 +745,7 @@ async function attemptProviderWithIR(
 					authMethod: ctx.meta.authMethod ?? "api_key",
 					oauthClientId: ctx.meta.oauthClientId ?? null,
 					oauthUserId: ctx.meta.oauthUserId ?? null,
-					forceGatewayKey,
+					forceGatewayKey: credential.kind === "gateway",
 				},
 			}) as ExecutorExecuteArgs;
 
@@ -655,16 +756,7 @@ async function attemptProviderWithIR(
 				: MAX_RETRYABLE_EXECUTOR_RETRIES;
 			for (let retryAttempt = 0; retryAttempt <= maxRetries; retryAttempt += 1) {
 				try {
-					let nextResult = await executor(buildExecutorArgs(false, candidate.byokMeta || []));
-					if (
-						allowByokFallback &&
-						nextResult.keySource === "byok" &&
-						!nextResult.upstream.ok &&
-						shouldFallbackFromByok(nextResult.upstream.status)
-					) {
-						(nextResult as any).fallbackAttempted = true;
-						nextResult = await executor(buildExecutorArgs(true, []));
-					}
+					const nextResult = await executor(buildExecutorArgs());
 					const shouldRetryStatus =
 						allowSingleProviderRetry &&
 						!nextResult.upstream.ok &&
@@ -692,11 +784,30 @@ async function attemptProviderWithIR(
 		const executorResult = await timing.timer.span(`${attemptPrefix}_executor_total`, () =>
 			executeWithRetry(),
 		);
+		const upstreamTiming = upstreamTracker.snapshot();
+		const selectedUpstreamTiming = upstreamTracker.timing.timingFor(executorResult.upstream);
+		executorResult.timing = {
+			...(executorResult.timing ?? {}),
+			...(upstreamTiming.requestBuildMs === undefined
+				? {}
+				: { requestBuildMs: upstreamTiming.requestBuildMs }),
+			...(upstreamTiming.upstreamFetchStartMs === undefined
+				? {}
+				: { upstreamFetchStartMs: upstreamTiming.upstreamFetchStartMs }),
+			...(selectedUpstreamTiming?.dispatchAtMs === undefined
+				? {}
+				: { selectedUpstreamFetchStartMs: selectedUpstreamTiming.dispatchAtMs }),
+			...(selectedUpstreamTiming?.headersMs === undefined
+				? {}
+				: { upstreamHeadersMs: selectedUpstreamTiming.headersMs }),
+			upstreamRequestCount: upstreamTiming.upstreamRequestCount,
+			upstreamPollCount: upstreamTiming.upstreamPollCount,
+			upstreamAuthCount: upstreamTiming.upstreamAuthCount,
+			upstreamPreflightCount: upstreamTiming.upstreamPreflightCount,
+			upstreamMediaCount: upstreamTiming.upstreamMediaCount,
+		};
 
 		if (executorResult.timing) {
-			if (typeof executorResult.timing.upstreamStartMs === "number") {
-				ctx.meta.upstreamStartMs = executorResult.timing.upstreamStartMs;
-			}
 			if (typeof executorResult.timing.latencyMs === "number") {
 				ctx.meta.latency_ms = executorResult.timing.latencyMs;
 			}
@@ -705,16 +816,45 @@ async function attemptProviderWithIR(
 			}
 			if (typeof executorResult.timing.requestBuildMs === "number") {
 				timing.timer.record(`${attemptPrefix}_request_build`, executorResult.timing.requestBuildMs);
+				ctx.meta.adapterRequestBuildMs = executorResult.timing.requestBuildMs;
+			}
+			if (typeof executorResult.timing.upstreamFetchStartMs === "number") {
+				ctx.meta.upstreamFetchStartMs ??= executorResult.timing.upstreamFetchStartMs;
+				if (typeof ctx.meta.startedAtMs === "number") {
+					const timeToThisUpstreamRequestMs = Math.max(
+						0,
+						executorResult.timing.upstreamFetchStartMs - ctx.meta.startedAtMs,
+					);
+					ctx.meta.timeToUpstreamRequestMs ??= timeToThisUpstreamRequestMs;
+					ctx.meta.timeToLatestUpstreamRequestMs = timeToThisUpstreamRequestMs;
+				}
+			}
+			if (typeof executorResult.timing.selectedUpstreamFetchStartMs === "number") {
+				ctx.meta.selectedUpstreamFetchStartMs =
+					executorResult.timing.selectedUpstreamFetchStartMs;
+				// Backwards-compatible field: this is now the selected upstream attempt,
+				// never gateway receipt or the first failed/fallback attempt.
+				ctx.meta.upstreamStartMs = executorResult.timing.selectedUpstreamFetchStartMs;
 			}
 			if (typeof executorResult.timing.upstreamHeadersMs === "number") {
 				timing.timer.record(`${attemptPrefix}_upstream_headers`, executorResult.timing.upstreamHeadersMs);
+				ctx.meta.upstreamHeadersMs = executorResult.timing.upstreamHeadersMs;
 			}
+			ctx.meta.upstreamRequestCount = executorResult.timing.upstreamRequestCount;
+			ctx.meta.upstreamPollCount = executorResult.timing.upstreamPollCount;
+			ctx.meta.upstreamAuthCount = executorResult.timing.upstreamAuthCount;
+			ctx.meta.upstreamPreflightCount = executorResult.timing.upstreamPreflightCount;
+			ctx.meta.upstreamMediaCount = executorResult.timing.upstreamMediaCount;
 			if (typeof executorResult.timing.transientRetryDelayMs === "number") {
 				timing.timer.record(`${attemptPrefix}_retry_delay`, executorResult.timing.transientRetryDelayMs);
 			}
 		}
 		timing.timer.end("adapter_start");
 		const generationTimeMs = Math.round(performance.now() - t0);
+		const selectedProviderDurationMs = selectedUpstreamTiming
+			? Math.max(0, Date.now() - selectedUpstreamTiming.dispatchAtMs)
+			: generationTimeMs;
+		ctx.meta.provider_duration_ms = selectedProviderDurationMs;
 		const attemptDurationMs = Math.round(performance.now() - attemptStartedAt);
 
 		const usageForMetrics = executorResult.kind === "completed"
@@ -741,28 +881,39 @@ async function attemptProviderWithIR(
 			: 0;
 
 		if (executorResult.kind === "completed") {
-			const completedLatencyMs = ctx.meta.latency_ms ?? generationTimeMs;
+			const recordsSynchronousGeneration =
+				normalizedCapability === "image.generate" ||
+				normalizedCapability === "audio.speech";
+			if (!isTextGenerate) {
+				delete (ctx.meta as Record<string, unknown>).latency_ms;
+				if (recordsSynchronousGeneration && executorResult.upstream.ok) {
+					ctx.meta.generation_ms ??= selectedProviderDurationMs;
+				} else {
+					delete (ctx.meta as Record<string, unknown>).generation_ms;
+				}
+			}
+			const completedLatencyMs = ctx.meta.latency_ms ?? selectedProviderDurationMs;
 			const completedGenerationMs = ctx.meta.generation_ms ?? 0;
-			ctx.meta.latency_ms = completedLatencyMs;
-			ctx.meta.generation_ms = completedGenerationMs;
 			const healthImpact = classifyProviderHealthImpact({
 				upstreamStatus: executorResult.upstream.status,
 			});
-			await onCallEnd(ctx.endpoint, {
-				provider: candidate.providerId,
-				model: baseModel,
-				ok: executorResult.upstream.ok,
-				healthImpact,
-				latency_ms: completedLatencyMs,
-				generation_ms: completedGenerationMs,
-				tokens_in: tokensIn,
-				tokens_out: tokensOut,
+			dispatchProviderHealthBackground(async () => {
+				await onCallEnd(ctx.endpoint, {
+					provider: candidate.providerId,
+					model: baseModel,
+					ok: executorResult.upstream.ok,
+					healthImpact,
+					latency_ms: completedLatencyMs,
+					generation_ms: completedGenerationMs,
+					tokens_in: tokensIn,
+					tokens_out: tokensOut,
+				});
+				if (isProbe && healthImpact !== "neutral") {
+					await reportProbeResult(ctx.endpoint, candidate.providerId, baseModel, executorResult.upstream.ok);
+				} else if (healthImpact === "failure") {
+					await maybeOpenOnRecentErrors(ctx.endpoint, candidate.providerId, baseModel);
+				}
 			});
-			if (isProbe && healthImpact !== "neutral") {
-				await reportProbeResult(ctx.endpoint, candidate.providerId, baseModel, executorResult.upstream.ok);
-			} else if (healthImpact === "failure") {
-				await maybeOpenOnRecentErrors(ctx.endpoint, candidate.providerId, baseModel);
-			}
 		}
 		if (!executorResult.upstream.ok) {
 			const upstreamFailure = await readUpstreamFailurePayload(executorResult);
@@ -772,6 +923,7 @@ async function attemptProviderWithIR(
 			);
 			const durationMs = Math.round(performance.now() - attemptStartedAt);
 			attemptErrors.push({
+				...credentialLog,
 				provider: candidate.providerId,
 				endpoint: ctx.endpoint,
 				model: baseModel,
@@ -780,13 +932,14 @@ async function attemptProviderWithIR(
 				type: "upstream_non_2xx",
 				status: executorResult.upstream.status,
 				status_text: executorResult.upstream.statusText || null,
-				upstream_url: redactSensitiveUrl(executorResult.upstream.url || null),
-				key_source: executorResult.keySource ?? null,
-				byok_key_id: executorResult.byokKeyId ?? null,
+				upstream_url: sanitizeUrlForLogging(executorResult.upstream.url || null),
+				key_source: executorResult.keySource ?? credentialLog.key_source,
+				byok_key_id: executorResult.byokKeyId ?? credentialLog.byok_key_id,
 				upstream_payload_preview: upstreamFailure.payload_preview,
 				...upstreamSummary,
 			});
 			recordProviderAttempt(ctx, {
+				...credentialLog,
 				attempt_number: attemptNumber,
 				provider: candidate.providerId,
 				endpoint: ctx.endpoint,
@@ -798,9 +951,9 @@ async function attemptProviderWithIR(
 				duration_ms: durationMs,
 				status: executorResult.upstream.status,
 				status_text: executorResult.upstream.statusText || null,
-				key_source: executorResult.keySource ?? null,
-				byok_key_id: executorResult.byokKeyId ?? null,
-				upstream_url: redactSensitiveUrl(executorResult.upstream.url || null),
+				key_source: executorResult.keySource ?? credentialLog.key_source,
+				byok_key_id: executorResult.byokKeyId ?? credentialLog.byok_key_id,
+				upstream_url: sanitizeUrlForLogging(executorResult.upstream.url || null),
 				upstream_error_code: upstreamSummary.upstream_error_code,
 				upstream_error_type: upstreamSummary.upstream_error_type,
 				upstream_error_message: upstreamSummary.upstream_error_message,
@@ -812,6 +965,15 @@ async function attemptProviderWithIR(
 				fallback_attempted: (executorResult as any).fallbackAttempted === true,
 				request_build_ms: executorResult.timing?.requestBuildMs ?? null,
 				upstream_headers_ms: executorResult.timing?.upstreamHeadersMs ?? null,
+				time_to_upstream_request_ms:
+					typeof executorResult.timing?.upstreamFetchStartMs === "number" && typeof ctx.meta.startedAtMs === "number"
+						? Math.max(0, executorResult.timing.upstreamFetchStartMs - ctx.meta.startedAtMs)
+						: null,
+				upstream_request_count: executorResult.timing?.upstreamRequestCount ?? null,
+				upstream_poll_count: executorResult.timing?.upstreamPollCount ?? null,
+				upstream_auth_count: executorResult.timing?.upstreamAuthCount ?? null,
+				upstream_preflight_count: executorResult.timing?.upstreamPreflightCount ?? null,
+				upstream_media_count: executorResult.timing?.upstreamMediaCount ?? null,
 				retry_delay_ms: executorResult.timing?.transientRetryDelayMs ?? null,
 			});
 			return { ok: false };
@@ -837,8 +999,8 @@ async function attemptProviderWithIR(
 				...executorResult.bill,
 				usage: stripUsagePricing(executorResult.bill?.usage),
 			},
-			keySource: executorResult.keySource,
-			byokKeyId: executorResult.byokKeyId,
+			keySource: executorResult.keySource ?? credentialLog.key_source,
+			byokKeyId: executorResult.byokKeyId ?? credentialLog.byok_key_id,
 			mappedRequest: executorResult.mappedRequest,
 			rawResponse: executorResult.rawResponse,
 		};
@@ -855,7 +1017,7 @@ async function attemptProviderWithIR(
 				endpoint: ctx.endpoint,
 				provider: candidate.providerId,
 				upstreamStatus: executorResult.upstream.status,
-				upstreamUrl: executorResult.upstream.url || null,
+				upstreamUrl: sanitizeUrlForLogging(executorResult.upstream.url),
 				mappedRequest: typeof mappedRequestValue === "string"
 					? previewValue(mappedRequestValue)
 					: mappedRequestValue,
@@ -865,6 +1027,7 @@ async function attemptProviderWithIR(
 		}
 
 		recordProviderAttempt(ctx, {
+			...credentialLog,
 			attempt_number: attemptNumber,
 			provider: candidate.providerId,
 			endpoint: ctx.endpoint,
@@ -876,14 +1039,23 @@ async function attemptProviderWithIR(
 			duration_ms: attemptDurationMs,
 			status: executorResult.upstream.status,
 			status_text: executorResult.upstream.statusText || null,
-			key_source: executorResult.keySource ?? null,
-			byok_key_id: executorResult.byokKeyId ?? null,
-			upstream_url: redactSensitiveUrl(executorResult.upstream.url || null),
+			key_source: executorResult.keySource ?? credentialLog.key_source,
+			byok_key_id: executorResult.byokKeyId ?? credentialLog.byok_key_id,
+			upstream_url: sanitizeUrlForLogging(executorResult.upstream.url || null),
 			response_kind: executorResult.kind,
 			was_probe: isProbe,
 			fallback_attempted: (executorResult as any).fallbackAttempted === true,
 			request_build_ms: executorResult.timing?.requestBuildMs ?? null,
 			upstream_headers_ms: executorResult.timing?.upstreamHeadersMs ?? null,
+			time_to_upstream_request_ms:
+				typeof executorResult.timing?.upstreamFetchStartMs === "number" && typeof ctx.meta.startedAtMs === "number"
+					? Math.max(0, executorResult.timing.upstreamFetchStartMs - ctx.meta.startedAtMs)
+					: null,
+			upstream_request_count: executorResult.timing?.upstreamRequestCount ?? null,
+			upstream_poll_count: executorResult.timing?.upstreamPollCount ?? null,
+			upstream_auth_count: executorResult.timing?.upstreamAuthCount ?? null,
+			upstream_preflight_count: executorResult.timing?.upstreamPreflightCount ?? null,
+			upstream_media_count: executorResult.timing?.upstreamMediaCount ?? null,
 			retry_delay_ms: executorResult.timing?.transientRetryDelayMs ?? null,
 		});
 
@@ -896,6 +1068,7 @@ async function attemptProviderWithIR(
 			ATTEMPT_PREVIEW_LIMIT * 3,
 		);
 		attemptErrors.push({
+			...credentialLog,
 			provider: candidate.providerId,
 			endpoint: ctx.endpoint,
 			model: baseModel,
@@ -909,6 +1082,7 @@ async function attemptProviderWithIR(
 			message,
 		});
 		recordProviderAttempt(ctx, {
+			...credentialLog,
 			attempt_number: attemptNumber,
 			provider: candidate.providerId,
 			endpoint: ctx.endpoint,
@@ -924,26 +1098,25 @@ async function attemptProviderWithIR(
 			upstream_error_description: stackPreview,
 			was_probe: isProbe,
 		});
-		await onCallEnd(ctx.endpoint, {
-			provider: candidate.providerId,
-			model: baseModel,
-			ok: false,
-			healthImpact: classifyProviderHealthImpact({
-				errorCode: typeof (err as any)?.code === "string" ? (err as any).code : null,
-				errorMessage: message,
-			}),
-			latency_ms: Math.round(performance.now() - attemptStartedAt),
-			generation_ms: ctx.meta.generation_ms ?? Math.round(performance.now() - t0),
-		});
 		const errorHealthImpact = classifyProviderHealthImpact({
 			errorCode: typeof (err as any)?.code === "string" ? (err as any).code : null,
 			errorMessage: message,
 		});
-		if (isProbe && errorHealthImpact !== "neutral") {
-			await reportProbeResult(ctx.endpoint, candidate.providerId, baseModel, false);
-		} else if (errorHealthImpact === "failure") {
-			await maybeOpenOnRecentErrors(ctx.endpoint, candidate.providerId, baseModel);
-		}
+		dispatchProviderHealthBackground(async () => {
+			await onCallEnd(ctx.endpoint, {
+				provider: candidate.providerId,
+				model: baseModel,
+				ok: false,
+				healthImpact: errorHealthImpact,
+				latency_ms: Math.round(performance.now() - attemptStartedAt),
+				generation_ms: ctx.meta.generation_ms ?? Math.round(performance.now() - t0),
+			});
+			if (isProbe && errorHealthImpact !== "neutral") {
+				await reportProbeResult(ctx.endpoint, candidate.providerId, baseModel, false);
+			} else if (errorHealthImpact === "failure") {
+				await maybeOpenOnRecentErrors(ctx.endpoint, candidate.providerId, baseModel);
+			}
+		});
 		return { ok: false };
 	}
 }

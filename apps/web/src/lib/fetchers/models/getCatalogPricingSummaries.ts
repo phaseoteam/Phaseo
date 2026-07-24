@@ -1,5 +1,4 @@
-import { cacheLife, cacheTag } from "next/cache";
-import { createAdminClient } from "@/utils/supabase/admin";
+import { fetchPublicWebApi } from "@/lib/web-api/client";
 
 type PricingRuleRow = {
     model_key: string | null;
@@ -32,8 +31,6 @@ export type CatalogPricingSummary = {
 };
 
 export type CatalogPricingSummaryByModelId = Record<string, CatalogPricingSummary>;
-
-const PRICING_RULE_PAGE_SIZE = 1000;
 
 function parseModelKey(modelKey: string): {
     providerId: string;
@@ -237,38 +234,14 @@ function buildSummary(apiModelId: string, rows: PricingRuleRow[]): CatalogPricin
 }
 
 async function fetchPricingRuleRows(): Promise<PricingRuleRow[]> {
-    const supabase = createAdminClient();
-    const rows: PricingRuleRow[] = [];
-
-    for (let from = 0; ; from += PRICING_RULE_PAGE_SIZE) {
-        const to = from + PRICING_RULE_PAGE_SIZE - 1;
-        const { data, error } = await supabase
-            .from("data_api_pricing_rules")
-            .select(
-                "model_key, pricing_plan, meter, note, unit, unit_size, price_per_unit, effective_from, effective_to",
-            )
-            .order("rule_id", { ascending: true })
-            .range(from, to);
-        if (error) throw error;
-
-        const page = (data ?? []) as PricingRuleRow[];
-        rows.push(...page);
-        if (page.length < PRICING_RULE_PAGE_SIZE) break;
-    }
-
-    return rows;
+	return (await fetchPublicWebApi<{ rules: PricingRuleRow[] }>(
+		"/api/_web/models/catalog-pricing-rules",
+	)).rules;
 }
 
 export async function getCatalogPricingSummariesCached(): Promise<
     CatalogPricingSummaryByModelId
 > {
-    "use cache";
-
-    cacheLife("hours");
-    cacheTag("public-model-catalogue");
-    cacheTag("data:data_api_pricing_rules");
-    cacheTag("frontend:catalog-pricing-summaries");
-
     let rows: PricingRuleRow[];
     try {
         rows = await fetchPricingRuleRows();

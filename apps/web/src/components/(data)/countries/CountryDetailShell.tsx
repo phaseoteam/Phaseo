@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import Image from "next/image";
 
 import CountryTabs from "@/components/(data)/countries/CountryTabs";
-import type { CountrySummary } from "@/lib/fetchers/countries/getCountrySummaries";
+import type { CountrySummary } from "@/lib/fetchers/countries/types";
 
 interface CountryDetailShellProps {
 	country?: CountrySummary;

@@ -118,7 +118,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen2.5-vl-32b (score=0.4914; benches=28)",
       "source_link": "https://github.com/QwenLM/Qwen2.5-VL",
-      "rank": 36
+      "rank": 38
     },
     {
       "benchmark_id": "mathvista-mini",
@@ -174,7 +174,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen2.5-vl-32b (score=0.4914; benches=28)",
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-32B-Instruct",
-      "rank": 90
+      "rank": 92
     },
     {
       "benchmark_id": "mmstar",
@@ -240,5 +240,41 @@
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-32B-Instruct",
       "rank": 7
     }
-  ]
+  ],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": null,
+    "output": null
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

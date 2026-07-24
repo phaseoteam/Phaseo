@@ -1,23 +1,12 @@
-import { headers } from "next/headers";
-import { absoluteUrl } from "@/lib/seo";
-import type { SettingsOAuthAppsInitialData } from "@/app/api/internal/settings/oauth-apps/initial/route";
+import type { SettingsOAuthAppsInitialData } from "@/lib/fetchers/internal/settingsTypes";
+import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
 
 export async function fetchSettingsOAuthAppsInitialData(): Promise<SettingsOAuthAppsInitialData> {
-	const requestHeaders = await headers();
-	const response = await fetch(
-		absoluteUrl("/api/internal/settings/oauth-apps/initial"),
-		{
-			cache: "no-store",
-			headers: {
-				accept: "application/json",
-				cookie: requestHeaders.get("cookie") ?? "",
-			},
-		},
+	const context = await getServerAccountContext();
+	const query = context.workspaceId ? `?workspaceId=${encodeURIComponent(context.workspaceId)}` : "";
+	return fetchAccountWebApi<SettingsOAuthAppsInitialData>(
+		`/api/account/settings/oauth-apps${query}`,
+		context.accessToken,
 	);
-
-	if (!response.ok) {
-		throw new Error(`Failed to fetch OAuth apps settings data: ${response.status}`);
-	}
-
-	return (await response.json()) as SettingsOAuthAppsInitialData;
 }

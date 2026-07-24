@@ -31,6 +31,7 @@ v1Router.use(
             });
         }
         await next();
+        if (c.res.status === 101) return;
         // Some upstream/proxied responses expose immutable headers.
         // Rebuild the response with a mutable Headers object before applying CORS.
         const headers = new Headers(c.res.headers);

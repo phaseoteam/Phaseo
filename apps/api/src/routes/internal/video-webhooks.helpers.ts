@@ -467,16 +467,20 @@ export async function processAlibabaVideoWebhook(args: {
 }
 
 export function pickHeaders(req: Request): Record<string, string> {
+	const allowedHeaders = new Set([
+		"webhook-id",
+		"webhook-timestamp",
+		"x-openai-event-id",
+		"x-openai-request-id",
+		"x-acs-event-id",
+		"x-acs-request-id",
+		"x-acs-trace-id",
+		"x-eventbridge-event-id",
+		"x-eventbridge-request-id",
+	]);
 	const out: Record<string, string> = {};
 	for (const [key, value] of req.headers.entries()) {
-		if (
-			key.startsWith("webhook-") ||
-			key.startsWith("x-openai") ||
-			key.startsWith("x-acs-") ||
-			key.startsWith("x-eventbridge-")
-		) {
-			out[key] = value;
-		}
+		if (allowedHeaders.has(key)) out[key] = value;
 	}
 	return out;
 }

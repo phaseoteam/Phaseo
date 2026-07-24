@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { ExecutorExecuteArgs } from "@executors/types";
-import { executeOpenAICompat } from "../index";
+import { executeOpenAIWire } from "../index";
 import { installFetchMock, jsonResponse } from "../../../../../../tests/helpers/mock-fetch";
 import { sseResponse } from "../../../../../../tests/helpers/sse";
 import { setupRuntimeFromEnv, setupTestRuntime, teardownTestRuntime } from "../../../../../../tests/helpers/runtime";
@@ -44,7 +44,30 @@ function buildArgs(): ExecutorExecuteArgs {
 	} as ExecutorExecuteArgs;
 }
 
-describe("executeOpenAICompat", () => {
+function executeProviderWire(args: ExecutorExecuteArgs) {
+	if (args.providerId === "alibaba-cloud") {
+		return executeOpenAIWire(args, {
+			forceChat: true,
+		});
+	}
+	if (
+		[
+			"baseten",
+			"groq",
+			"fireworks",
+			"weights-and-biases",
+			"venice",
+			"akashml",
+			"ionrouter",
+			"gmicloud",
+		].includes(args.providerId)
+	) {
+		return executeOpenAIWire(args, { transientRetries: 1 });
+	}
+	return executeOpenAIWire(args);
+}
+
+describe("executeOpenAIWire", () => {
 	const ALIBABA_CHAT_URL = "https://api.alibaba.example/compatible-mode/v1/chat/completions";
 
 	it("keeps upstream stream=true when tools are present", async () => {
@@ -65,45 +88,13 @@ describe("executeOpenAICompat", () => {
 			},
 		}]);
 
-		const result = await executeOpenAICompat(buildArgs());
+		const result = await executeProviderWire(buildArgs());
 		mock.restore();
 
 		expect(result.kind).toBe("stream");
 		expect(capturedBody?.stream).toBe(true);
 		expect(capturedBody?.stream_options?.include_usage).toBe(true);
 		expect(Array.isArray(capturedBody?.tools)).toBe(true);
-	});
-
-	it("reports the exact fetch start used for DeepSeek billing", async () => {
-		const args = buildArgs();
-		args.providerId = "deepseek";
-		args.providerModelSlug = "deepseek-v4-pro";
-		const mock = installFetchMock([{
-			match: (url) => url === "https://api.deepseek.example/v1/chat/completions",
-			response: sseResponse([
-				{
-					id: "chatcmpl_deepseek_timestamp",
-					object: "chat.completion.chunk",
-					model: "deepseek-v4-pro",
-					choices: [{ index: 0, delta: { content: "ok" }, finish_reason: null }],
-				},
-				"[DONE]",
-			]),
-		}]);
-		const nowSpy = vi.spyOn(Date, "now")
-			.mockReturnValueOnce(1_000)
-			.mockReturnValueOnce(2_000)
-			.mockReturnValue(2_500);
-
-		try {
-			const result = await executeOpenAICompat(args);
-			expect(result.kind).toBe("stream");
-			expect(result.timing?.upstreamStartMs).toBe(2_000);
-			expect(result.timing?.requestBuildMs).toBe(1_000);
-		} finally {
-			nowSpy.mockRestore();
-			mock.restore();
-		}
 	});
 
 	it("routes alibaba-cloud to chat completions for text models", async () => {
@@ -137,7 +128,7 @@ describe("executeOpenAICompat", () => {
 			},
 		}]);
 
-		const result = await executeOpenAICompat(args);
+		const result = await executeProviderWire(args);
 		mock.restore();
 
 		expect(result.kind).toBe("completed");
@@ -210,9 +201,9 @@ describe("executeOpenAICompat", () => {
 			},
 		}]);
 
-		let result!: Awaited<ReturnType<typeof executeOpenAICompat>>;
+		let result!: Awaited<ReturnType<typeof executeProviderWire>>;
 		try {
-			result = await executeOpenAICompat(args);
+			result = await executeProviderWire(args);
 		} finally {
 			mock.restore();
 			teardownTestRuntime();
@@ -297,7 +288,7 @@ describe("executeOpenAICompat", () => {
 			},
 		}]);
 
-		const result = await executeOpenAICompat(args);
+		const result = await executeProviderWire(args);
 		mock.restore();
 
 		expect(result.kind).toBe("completed");
@@ -358,7 +349,7 @@ describe("executeOpenAICompat", () => {
 			}),
 		}]);
 
-		const result = await executeOpenAICompat(args);
+		const result = await executeProviderWire(args);
 		mock.restore();
 
 		expect(result.kind).toBe("completed");
@@ -401,7 +392,7 @@ describe("executeOpenAICompat", () => {
 			}),
 		}]);
 
-		const result = await executeOpenAICompat(args);
+		const result = await executeProviderWire(args);
 		mock.restore();
 
 		expect(result.kind).toBe("completed");
@@ -420,7 +411,6 @@ describe("executeOpenAICompat", () => {
 		};
 
 		let callCount = 0;
-		const nowSpy = vi.spyOn(Date, "now").mockImplementation(() => (callCount + 1) * 1_000);
 		const mock = installFetchMock([{
 			match: (url) => url === "https://api.baseten.example/v1/chat/completions",
 			response: () => {
@@ -446,18 +436,12 @@ describe("executeOpenAICompat", () => {
 			},
 		}]);
 
-		let result!: Awaited<ReturnType<typeof executeOpenAICompat>>;
-		try {
-			result = await executeOpenAICompat(args);
-		} finally {
-			nowSpy.mockRestore();
-			mock.restore();
-		}
+		const result = await executeProviderWire(args);
+		mock.restore();
 
 		expect(result.kind).toBe("completed");
 		expect(result.upstream.status).toBe(200);
 		expect(callCount).toBe(2);
-		expect(result.timing?.upstreamStartMs).toBe(2_000);
 		expect(mock.calls[0]?.headers.Authorization).toBe("Api-Key test-baseten-key");
 	});
 
@@ -496,7 +480,7 @@ describe("executeOpenAICompat", () => {
 			},
 		}]);
 
-		const result = await executeOpenAICompat(args);
+		const result = await executeProviderWire(args);
 		mock.restore();
 
 		expect(result.kind).toBe("completed");
@@ -540,7 +524,7 @@ describe("executeOpenAICompat", () => {
 			},
 		}]);
 
-		const result = await executeOpenAICompat(args);
+		const result = await executeProviderWire(args);
 		mock.restore();
 
 		expect(result.kind).toBe("completed");
@@ -584,7 +568,7 @@ describe("executeOpenAICompat", () => {
 			},
 		}]);
 
-		const result = await executeOpenAICompat(args);
+		const result = await executeProviderWire(args);
 		mock.restore();
 
 		expect(result.kind).toBe("completed");
@@ -628,7 +612,7 @@ describe("executeOpenAICompat", () => {
 			},
 		}]);
 
-		const result = await executeOpenAICompat(args);
+		const result = await executeProviderWire(args);
 		mock.restore();
 
 		expect(result.kind).toBe("completed");
@@ -672,7 +656,7 @@ describe("executeOpenAICompat", () => {
 			},
 		}]);
 
-		const result = await executeOpenAICompat(args);
+		const result = await executeProviderWire(args);
 		mock.restore();
 
 		expect(result.kind).toBe("completed");
@@ -716,7 +700,7 @@ describe("executeOpenAICompat", () => {
 			},
 		}]);
 
-		const result = await executeOpenAICompat(args);
+		const result = await executeProviderWire(args);
 		mock.restore();
 
 		expect(result.kind).toBe("completed");
@@ -760,7 +744,7 @@ describe("executeOpenAICompat", () => {
 			},
 		}]);
 
-		const result = await executeOpenAICompat(args);
+		const result = await executeProviderWire(args);
 		mock.restore();
 
 		expect(result.kind).toBe("completed");

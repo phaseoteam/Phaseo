@@ -89,7 +89,7 @@
       "is_self_reported": true,
       "other_info": "Think, Cons@64",
       "source_link": "https://x.ai/news/grok-3",
-      "rank": 40
+      "rank": 43
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -97,7 +97,7 @@
       "is_self_reported": true,
       "other_info": "Reasoning",
       "source_link": "https://x.ai/news/grok-3",
-      "rank": 39
+      "rank": 42
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -105,7 +105,7 @@
       "is_self_reported": true,
       "other_info": "Think",
       "source_link": "https://x.ai/news/grok-3",
-      "rank": 57
+      "rank": 60
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -113,7 +113,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/news/grok-3",
-      "rank": 107
+      "rank": 111
     },
     {
       "benchmark_id": "lmarena-text",
@@ -171,5 +171,52 @@
       "source_link": "https://github.com/lechmazur/elimination_game",
       "rank": 6
     }
-  ]
+  ],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": "2024-11-17T00:00:00",
+  "limits": {
+    "context": 131072,
+    "input": 131072,
+    "output": 8000
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "announcement",
+      "url": "https://x.ai/news/grok-3",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

@@ -4,6 +4,7 @@
 
 import type { IRVideoGenerationRequest, IRVideoGenerationResponse } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
+import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import type { ProviderExecutor } from "@executors/types";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
@@ -247,7 +248,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	let res: Response;
 	try {
-		res = await fetch(openAICompatUrl(args.providerId, "/videos/generations"), {
+		res = await fetchUpstream(args, openAICompatUrl(args.providerId, "/videos/generations"), {
 			method: "POST",
 			headers: openAICompatHeaders(args.providerId, keyInfo.key, {
 				"Idempotency-Key": args.requestId,
@@ -324,7 +325,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				reservationStatus,
 				keySource: keyInfo.source,
 				byokKeyId: keyInfo.byokId,
-				createdAt: Date.now(),
+				providerDispatchedAtMs:
+					args.upstreamTiming?.timingFor(res)?.dispatchAtMs ?? Date.now(),
 			}, nativeId ?? encodedId, toVideoStatus(json?.status));
 		} catch (error) {
 			console.error("xai_video_job_meta_store_failed", {

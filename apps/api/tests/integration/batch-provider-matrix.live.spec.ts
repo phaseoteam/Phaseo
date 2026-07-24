@@ -27,7 +27,8 @@ const LIVE_BATCH_PROVIDER_MATRIX_RUN =
 const describeLive = LIVE_RUN && LIVE_BATCH_PROVIDER_MATRIX_RUN ? describe : describe.skip;
 
 const TERMINAL_STATES = new Set(["completed", "failed", "expired", "cancelled", "canceled"]);
-const DEFAULT_PROVIDERS = ["openai", "google-ai-studio", "anthropic", "x-ai", "mistral"] as const;
+const ALL_PROVIDERS = ["openai", "google-ai-studio", "anthropic", "mistral", "x-ai", "groq", "together"] as const;
+const DEFAULT_PROVIDERS = ["openai", "google-ai-studio", "anthropic", "mistral"] as const;
 const PROVIDERS = (process.env.LIVE_BATCH_PROVIDER_MATRIX_PROVIDERS ?? DEFAULT_PROVIDERS.join(","))
 	.split(",")
 	.map((value) => value.trim())
@@ -37,13 +38,15 @@ const DB_POLL_DELAY_MS = Number(process.env.LIVE_BATCH_PROVIDER_MATRIX_DB_POLL_D
 const REQUEST_COUNT = Number(process.env.LIVE_BATCH_PROVIDER_MATRIX_REQUEST_COUNT ?? "1");
 const WEBHOOK_POLL_ATTEMPTS = Number(process.env.LIVE_BATCH_PROVIDER_MATRIX_WEBHOOK_POLL_ATTEMPTS ?? "30");
 const WEBHOOK_POLL_DELAY_MS = Number(process.env.LIVE_BATCH_PROVIDER_MATRIX_WEBHOOK_POLL_DELAY_MS ?? "5000");
+const VERIFY_WEBHOOK = (process.env.LIVE_BATCH_PROVIDER_MATRIX_VERIFY_WEBHOOK ?? "1").trim() !== "0";
 
-type ProviderId = typeof DEFAULT_PROVIDERS[number];
+type ProviderId = typeof ALL_PROVIDERS[number];
 
 type ProviderCase = {
 	provider: ProviderId;
 	envModel: string;
 	preferredModels: string[];
+	allowCatalogFallback?: boolean;
 };
 
 type AsyncOperationRow = {
@@ -65,6 +68,12 @@ type WalletReservationRow = {
 	settled_amount_nanos?: number | string | null;
 };
 
+type GatewayChargeRow = {
+	request_id?: string;
+	cost_nanos?: number | string;
+	status?: string;
+};
+
 const PROVIDER_CASES: ProviderCase[] = [
 	{
 		provider: "openai",
@@ -79,7 +88,13 @@ const PROVIDER_CASES: ProviderCase[] = [
 	{
 		provider: "anthropic",
 		envModel: "LIVE_BATCH_PROVIDER_MATRIX_ANTHROPIC_MODEL",
-		preferredModels: ["anthropic/claude-haiku-4.5", "anthropic/claude-3.5-haiku"],
+		preferredModels: [
+			"anthropic/claude-haiku-4.5",
+			"anthropic/claude-sonnet-4.6",
+			"anthropic/claude-sonnet-4.5",
+			"anthropic/claude-3.5-haiku",
+		],
+		allowCatalogFallback: false,
 	},
 	{
 		provider: "x-ai",
@@ -89,7 +104,17 @@ const PROVIDER_CASES: ProviderCase[] = [
 	{
 		provider: "mistral",
 		envModel: "LIVE_BATCH_PROVIDER_MATRIX_MISTRAL_MODEL",
-		preferredModels: ["mistral/mistral-small-4"],
+		preferredModels: ["mistral/mistral-small-2603", "mistral/mistral-small-4"],
+	},
+	{
+		provider: "groq",
+		envModel: "LIVE_BATCH_PROVIDER_MATRIX_GROQ_MODEL",
+		preferredModels: ["groq/llama-3.3-70b-versatile", "groq/llama-3.1-8b-instant"],
+	},
+	{
+		provider: "together",
+		envModel: "LIVE_BATCH_PROVIDER_MATRIX_TOGETHER_MODEL",
+		preferredModels: ["together/meta-llama/Llama-3.3-70B-Instruct-Turbo"],
 	},
 ];
 
@@ -111,6 +136,17 @@ async function readWalletReservation(workspaceId: string, reservationId: string)
 			`gateway_wallet_reservations?select=reservation_id,amount_nanos,status,settled_amount_nanos` +
 			`&workspace_id=eq.${encodeURIComponent(workspaceId)}` +
 			`&reservation_id=eq.${encodeURIComponent(reservationId)}` +
+			`&limit=1`,
+	});
+	return rows[0] ?? null;
+}
+
+async function readBatchFallbackCharge(workspaceId: string, batchId: string): Promise<GatewayChargeRow | null> {
+	const rows = await supabaseAdminRest<GatewayChargeRow[]>({
+		pathname:
+			`gateway_request_charges?select=request_id,cost_nanos,status` +
+			`&workspace_id=eq.${encodeURIComponent(workspaceId)}` +
+			`&request_id=eq.${encodeURIComponent(`batch_capture:${batchId}`)}` +
 			`&limit=1`,
 	});
 	return rows[0] ?? null;
@@ -148,10 +184,19 @@ function promptItems(provider: string, model: string): string[] {
 async function resolveLiveModel(testCase: ProviderCase): Promise<string> {
 	const override = normalizeLiveEnv(process.env[testCase.envModel]);
 	if (override) return override;
-	return resolveModelFromCatalog({
+	const resolved = await resolveModelFromCatalog({
 		preferredModelIds: testCase.preferredModels,
 		providerId: testCase.provider,
 	});
+	if (testCase.allowCatalogFallback === false) {
+		const preferred = new Set(testCase.preferredModels.map((model) => model.toLowerCase()));
+		if (!preferred.has(resolved.toLowerCase())) {
+			throw new Error(
+				`No preferred ${testCase.provider} live Batch model is currently routable; refusing catalog fallback to ${resolved}`,
+			);
+		}
+	}
+	return resolved;
 }
 
 describeLive("Batch provider live matrix", () => {
@@ -162,8 +207,10 @@ describeLive("Batch provider live matrix", () => {
 		requireGatewayApiKey();
 		requireLiveEnv("SUPABASE_SERVICE_ROLE_KEY");
 		workspaceId = await resolveLiveWorkspaceId();
-		webhookFixture = await createLiveBatchWebhookFixture(workspaceId);
-		console.log(`[batch-provider-matrix] webhook receiver=${webhookFixture.receiverUrl} endpoint=${webhookFixture.endpointId}`);
+		if (VERIFY_WEBHOOK) {
+			webhookFixture = await createLiveBatchWebhookFixture(workspaceId);
+			console.log(`[batch-provider-matrix] webhook receiver=${webhookFixture.receiverUrl} endpoint=${webhookFixture.endpointId}`);
+		}
 	}, 60_000);
 
 	afterAll(async () => {
@@ -175,7 +222,7 @@ describeLive("Batch provider live matrix", () => {
 		it(
 			"creates, persists, reconciles, settles, exposes rows, and signs the terminal webhook",
 			async () => {
-				if (!webhookFixture) throw new Error("Managed webhook fixture was not created");
+				if (VERIFY_WEBHOOK && !webhookFixture) throw new Error("Managed webhook fixture was not created");
 				const model = await resolveLiveModel(testCase);
 				const create = await postJson("/batches", {
 					model,
@@ -184,7 +231,7 @@ describeLive("Batch provider live matrix", () => {
 					max_tokens: 48,
 					completion_window: "24h",
 					provider: testCase.provider,
-					webhook_endpoint_id: webhookFixture.endpointId,
+					...(webhookFixture ? { webhook_endpoint_id: webhookFixture.endpointId } : {}),
 					session_id: `live_batch_provider_matrix_${testCase.provider.replace(/[^a-z0-9]+/gi, "_")}_${Date.now()}`,
 					metadata: {
 						test: "batch-provider-matrix",
@@ -216,8 +263,16 @@ describeLive("Batch provider live matrix", () => {
 				const costNanos = Number((reconciled.meta as any)?.costNanos ?? 0);
 				expect(costNanos, `${testCase.provider} should persist authoritative cost`).toBeGreaterThan(0);
 				const settledReservation = await readWalletReservation(workspaceId, reservationId);
-				expect(String(settledReservation?.status ?? "")).toBe("captured");
-				expect(Number(settledReservation?.settled_amount_nanos ?? -1)).toBe(costNanos);
+				const reservationStatus = String(settledReservation?.status ?? "");
+				if (reservationStatus === "captured") {
+					expect(Number(settledReservation?.settled_amount_nanos ?? -1)).toBe(costNanos);
+				} else {
+					expect(reservationStatus).toBe("released");
+					const fallbackCharge = await readBatchFallbackCharge(workspaceId, batchId);
+					expect(fallbackCharge, `${testCase.provider} should persist its fallback actual-cost charge`).not.toBeNull();
+					expect(String(fallbackCharge?.status ?? "")).toBe("applied");
+					expect(Number(fallbackCharge?.cost_nanos ?? -1)).toBe(costNanos);
+				}
 
 				const latest = await getGateway(`/batches/${encodeURIComponent(batchId)}`);
 				assertOk(latest, `/batches/${batchId}`);
@@ -234,6 +289,7 @@ describeLive("Batch provider live matrix", () => {
 				expect(rows.json.data.some((row: any) => String(row?.status ?? "").toLowerCase() === "completed"))
 					.toBe(true);
 
+				if (!VERIFY_WEBHOOK || !webhookFixture) return;
 				const delivered = await waitForBatchWebhook({
 					receiverToken: webhookFixture.receiverToken,
 					batchId,

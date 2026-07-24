@@ -30,6 +30,8 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     "google-ai-studio": GoogleAIStudioAdapter,
     anthropic: AnthropicAdapter,
     "anthropic-us": AnthropicAdapter,
+    "anthropic-aws": AnthropicAdapter,
+    "anthropic-aws-us": AnthropicAdapter,
     "spacex-ai": createOpenAICompatibleAdapter("spacex-ai"), // SpaceXAI is OpenAI-compatible, uses openai_compat executor
     "x-ai": createOpenAICompatibleAdapter("x-ai"),
     xai: createOpenAICompatibleAdapter("xai"),

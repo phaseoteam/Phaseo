@@ -10,6 +10,8 @@ export const MISTRAL_BATCH_PROVIDER_ID = "mistral";
 export const X_AI_BATCH_PROVIDER_ID = "x-ai";
 export const JSON_BATCH_CONTENT_TYPE = "application/json";
 export const FILE_BACKED_JSONL_BATCH_PROVIDERS = new Set(["openai", "groq", "together"]);
+const MAX_BATCH_RESULT_ENTRIES = 10_000;
+const X_AI_BATCH_RESULTS_PAGE_SIZE = 1_000;
 
 function providerKeyMissingResponse(providerId: string): Response {
 	return new Response(
@@ -95,8 +97,12 @@ function normalizeGoogleSucceededStatus(payload: any): string {
 
 export function extractGoogleInlineResponses(payload: any): any[] | null {
 	const candidates = [
+		payload?.dest?.inlinedResponses,
+		payload?.dest?.inlinedEmbedContentResponses,
 		payload?.response?.inlinedResponses,
+		payload?.response?.inlinedEmbedContentResponses,
 		payload?.metadata?.output?.inlinedResponses,
+		payload?.metadata?.output?.inlinedEmbedContentResponses,
 		payload?.inlinedResponses,
 	];
 	for (const candidate of candidates) {
@@ -104,6 +110,54 @@ export function extractGoogleInlineResponses(payload: any): any[] | null {
 		if (Array.isArray(candidate?.inlinedResponses)) return candidate.inlinedResponses;
 	}
 	return null;
+}
+
+export function extractGoogleResponseFileName(payload: any): string | null {
+	return (
+		batchText(payload?.dest?.fileName) ??
+		batchText(payload?.dest?.file_name) ??
+		batchText(payload?.response?.responsesFile) ??
+		batchText(payload?.response?.responses_file) ??
+		batchText(payload?.metadata?.output?.responsesFile) ??
+		batchText(payload?.metadata?.output?.responses_file)
+	);
+}
+
+function normalizeGoogleFileName(fileIdRaw: string): string {
+	const fileId = batchText(fileIdRaw);
+	if (!fileId) throw new Error("missing_output_file_id");
+	return fileId.startsWith("files/") ? fileId : `files/${fileId}`;
+}
+
+export function buildProviderFileMetadataPath(providerId: string, fileIdRaw: string): string {
+	if (providerId === GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID) {
+		return `/${normalizeGoogleFileName(fileIdRaw).split("/").map(encodeURIComponent).join("/")}`;
+	}
+	return `/files/${encodeURIComponent(fileIdRaw)}`;
+}
+
+export function buildProviderFileDeletePath(providerId: string, fileIdRaw: string): string {
+	return buildProviderFileMetadataPath(providerId, fileIdRaw);
+}
+
+export async function fetchProviderFileContent(providerId: string, fileIdRaw: string): Promise<Response> {
+	if (providerId === GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID) {
+		const bindings = getBindings() as unknown as Record<string, string | undefined>;
+		const key = bindings.GOOGLE_AI_STUDIO_API_KEY || bindings.GEMINI_API_KEY;
+		if (!key) return providerKeyMissingResponse(providerId);
+		const fileName = normalizeGoogleFileName(fileIdRaw)
+			.split("/")
+			.map(encodeURIComponent)
+			.join("/");
+		return fetch(
+			`https://generativelanguage.googleapis.com/download/v1beta/${fileName}:download?alt=media`,
+			{ headers: { "x-goog-api-key": key } },
+		);
+	}
+	return fetchProviderBatchApi(providerId, {
+		endpointPath: `/files/${encodeURIComponent(fileIdRaw)}/content`,
+		method: "GET",
+	});
 }
 
 export async function parseUpstreamJson(response: Response): Promise<any | null> {
@@ -305,6 +359,7 @@ export function normalizeProviderBatchPayload(providerId: string, payload: any):
 	}
 	if (providerId === GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID) {
 		const stats = googleBatchStats(payload);
+		out.output_file_id = extractGoogleResponseFileName(payload);
 		out.request_counts = {
 			total: toBatchFiniteNumber(stats?.requestCount),
 			completed: toBatchFiniteNumber(stats?.successfulRequestCount),
@@ -375,6 +430,7 @@ export function buildProviderRetrievePath(providerId: string, nativeBatchId: str
 export function buildProviderCancelPath(providerId: string, nativeBatchId: string): string {
 	if (providerId === MISTRAL_BATCH_PROVIDER_ID) return `/batch/jobs/${encodeURIComponent(nativeBatchId)}/cancel`;
 	if (providerId === ANTHROPIC_BATCH_PROVIDER_ID) return `/messages/batches/${encodeURIComponent(nativeBatchId)}/cancel`;
+	if (providerId === X_AI_BATCH_PROVIDER_ID) return `/batches/${encodeURIComponent(nativeBatchId)}:cancel`;
 	if (providerId === GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID) {
 		const name = nativeBatchId.includes("/") ? nativeBatchId : `batches/${nativeBatchId}`;
 		return `/${name.split("/").map(encodeURIComponent).join("/")}:cancel`;
@@ -388,6 +444,22 @@ function buildProviderResultsPath(providerId: string, nativeBatchId: string): st
 	return null;
 }
 
+export class ProviderBatchFetchError extends Error {
+	readonly providerId: string;
+	readonly nativeBatchId: string;
+	readonly status: number;
+	readonly responsePreview: string;
+
+	constructor(args: { providerId: string; nativeBatchId: string; status: number; responsePreview: string }) {
+		super(`${args.providerId}_batch_fetch_failed_${args.status}:${args.responsePreview}`);
+		this.name = "ProviderBatchFetchError";
+		this.providerId = args.providerId;
+		this.nativeBatchId = args.nativeBatchId;
+		this.status = args.status;
+		this.responsePreview = args.responsePreview;
+	}
+}
+
 export async function fetchProviderBatchStatus(providerId: string, nativeBatchId: string): Promise<any | null> {
 	const response = await fetchProviderBatchApi(providerId, {
 		endpointPath: buildProviderRetrievePath(providerId, nativeBatchId),
@@ -395,23 +467,129 @@ export async function fetchProviderBatchStatus(providerId: string, nativeBatchId
 	});
 	if (!response.ok) {
 		const preview = await response.text().catch(() => "");
-		throw new Error(`${providerId}_batch_fetch_failed_${response.status}:${preview.slice(0, 200)}`);
+		throw new ProviderBatchFetchError({
+			providerId,
+			nativeBatchId,
+			status: response.status,
+			responsePreview: preview.slice(0, 200),
+		});
 	}
 	return normalizeProviderBatchPayload(providerId, await parseUpstreamJson(response));
 }
 
-export async function fetchProviderFileText(providerId: string, fileIdRaw: string): Promise<string> {
+export function parseProviderBatchListPage(providerId: string, payload: any): {
+	candidates: any[];
+	nextCursor: string | null;
+} {
+	const candidates = providerId === X_AI_BATCH_PROVIDER_ID && Array.isArray(payload?.batches)
+		? payload.batches
+		: providerId === GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID && Array.isArray(payload?.operations)
+			? payload.operations
+			: Array.isArray(payload?.data)
+				? payload.data
+				: Array.isArray(payload?.jobs)
+					? payload.jobs
+					: Array.isArray(payload)
+						? payload
+						: [];
+	if (providerId === OPENAI_BATCH_PROVIDER_ID) {
+		return {
+			candidates,
+			nextCursor: payload?.has_more === true && candidates.length > 0
+				? batchText(payload?.last_id) ?? batchText(candidates.at(-1)?.id)
+				: null,
+		};
+	}
+	if (providerId === X_AI_BATCH_PROVIDER_ID) {
+		return { candidates, nextCursor: batchText(payload?.pagination_token) };
+	}
+	if (providerId === GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID) {
+		return { candidates, nextCursor: batchText(payload?.nextPageToken) };
+	}
+	return { candidates, nextCursor: candidates.length >= 100 ? String(candidates.length) : null };
+}
+
+export async function findProviderBatchByGatewayMetadata(args: {
+	providerId: string;
+	batchId: string;
+	requestId?: string | null;
+}): Promise<any | null> {
+	if (
+		args.providerId !== OPENAI_BATCH_PROVIDER_ID &&
+		args.providerId !== MISTRAL_BATCH_PROVIDER_ID &&
+		args.providerId !== GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID &&
+		args.providerId !== X_AI_BATCH_PROVIDER_ID
+	) return null;
+	let cursor: string | null = null;
+	for (let page = 0; page < 10; page += 1) {
+		const endpointPath = args.providerId === MISTRAL_BATCH_PROVIDER_ID
+			? `/batch/jobs?page=${page}&page_size=100`
+			: args.providerId === GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID
+				? `/batches?pageSize=100${cursor ? `&pageToken=${encodeURIComponent(cursor)}` : ""}`
+				: args.providerId === X_AI_BATCH_PROVIDER_ID
+					? `/batches?limit=100${cursor ? `&pagination_token=${encodeURIComponent(cursor)}` : ""}`
+					: `/batches?limit=100${cursor ? `&after=${encodeURIComponent(cursor)}` : ""}`;
+		const response = await fetchProviderBatchApi(args.providerId, {
+			endpointPath,
+			method: "GET",
+		});
+		if (!response.ok) {
+			throw new Error(`${args.providerId}_batch_recovery_list_failed_${response.status}`);
+		}
+		const payload = await parseUpstreamJson(response);
+		const { candidates, nextCursor } = parseProviderBatchListPage(args.providerId, payload);
+		for (const candidate of candidates) {
+			const metadata = candidate?.metadata && typeof candidate.metadata === "object"
+				? candidate.metadata
+				: {};
+			if (
+				batchText(metadata.phaseo_batch_id) === args.batchId ||
+				(args.requestId && batchText(metadata.phaseo_request_id) === args.requestId) ||
+				batchText(candidate?.name)?.startsWith(`phaseo-${args.batchId}`) === true ||
+				batchText(
+					candidate?.displayName ??
+					candidate?.display_name ??
+					candidate?.metadata?.displayName ??
+					candidate?.metadata?.batch?.displayName,
+				)?.startsWith(`phaseo-${args.batchId}`) === true
+			) {
+				return normalizeProviderBatchPayload(args.providerId, candidate);
+			}
+		}
+		cursor = nextCursor;
+		if (!cursor) break;
+	}
+	return null;
+}
+
+export async function fetchProviderFileText(providerId: string, fileIdRaw: string, maxBytes = 20 * 1024 * 1024): Promise<string> {
 	const fileId = batchText(fileIdRaw);
 	if (!fileId) throw new Error("missing_output_file_id");
-	const response = await fetchProviderBatchApi(providerId, {
-		endpointPath: `/files/${encodeURIComponent(fileId)}/content`,
-		method: "GET",
-	});
+	const response = await fetchProviderFileContent(providerId, fileId);
 	if (!response.ok) {
 		const preview = await response.text().catch(() => "");
 		throw new Error(`${providerId}_batch_output_fetch_failed_${response.status}:${preview.slice(0, 200)}`);
 	}
-	return response.text();
+	const declaredLength = Number(response.headers.get("content-length") ?? 0);
+	if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
+		throw new Error("batch_file_too_large");
+	}
+	if (!response.body) return "";
+	const reader = response.body.getReader();
+	const decoder = new TextDecoder();
+	let bytesRead = 0;
+	let text = "";
+	while (true) {
+		const { done, value } = await reader.read();
+		if (done) break;
+		bytesRead += value.byteLength;
+		if (bytesRead > maxBytes) {
+			await reader.cancel("batch_file_too_large").catch(() => undefined);
+			throw new Error("batch_file_too_large");
+		}
+		text += decoder.decode(value, { stream: true });
+	}
+	return text + decoder.decode();
 }
 
 export function parseProviderBatchInputEntries(text: string): Array<{ body: unknown; endpoint?: string | null }> {
@@ -456,6 +634,7 @@ function normalizeOutputEntry(providerId: string, entry: any, index: number): an
 		batchText(entry.customId) ??
 		batchText(entry.batch_request_id) ??
 		batchText(entry.metadata?.custom_id) ??
+		batchText(entry.metadata?.key) ??
 		`response-${index + 1}`;
 
 	if (providerId === ANTHROPIC_BATCH_PROVIDER_ID) {
@@ -536,8 +715,15 @@ export async function fetchProviderBatchOutputEntries(meta: BatchJobMeta): Promi
 	if (providerId === GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID) {
 		const payload = await fetchProviderBatchStatus(providerId, nativeBatchId);
 		const inlineResponses = extractGoogleInlineResponses(payload);
-		if (!Array.isArray(inlineResponses)) throw new Error("missing_output_file_id");
-		return normalizeOutputEntries(providerId, inlineResponses);
+		if (Array.isArray(inlineResponses)) {
+			return normalizeOutputEntries(providerId, inlineResponses);
+		}
+		const responseFileName = extractGoogleResponseFileName(payload);
+		if (!responseFileName) throw new Error("missing_output_file_id");
+		return normalizeOutputEntries(
+			providerId,
+			parseJsonLines(await fetchProviderFileText(providerId, responseFileName)),
+		);
 	}
 
 	const resultsPath = buildProviderResultsPath(providerId, nativeBatchId);
@@ -545,8 +731,9 @@ export async function fetchProviderBatchOutputEntries(meta: BatchJobMeta): Promi
 	if (providerId === X_AI_BATCH_PROVIDER_ID) {
 		const entries: any[] = [];
 		let paginationToken: string | null = null;
-		for (let page = 0; page < 10_000; page += 1) {
-			const query = new URLSearchParams({ limit: "1000" });
+		const maxPages = Math.ceil(MAX_BATCH_RESULT_ENTRIES / X_AI_BATCH_RESULTS_PAGE_SIZE);
+		for (let page = 0; page < maxPages; page += 1) {
+			const query = new URLSearchParams({ limit: String(X_AI_BATCH_RESULTS_PAGE_SIZE) });
 			if (paginationToken) query.set("pagination_token", paginationToken);
 			const response = await fetchProviderBatchApi(providerId, {
 				endpointPath: `${resultsPath}?${query.toString()}`,
@@ -559,6 +746,9 @@ export async function fetchProviderBatchOutputEntries(meta: BatchJobMeta): Promi
 			const payload = await parseUpstreamJson(response);
 			if (!payload || !Array.isArray(payload.results)) throw new Error("x-ai_batch_results_invalid");
 			entries.push(...payload.results);
+			if (entries.length > MAX_BATCH_RESULT_ENTRIES) {
+				throw new Error("x-ai_batch_results_limit_exceeded");
+			}
 			paginationToken = batchText(payload.pagination_token);
 			if (!paginationToken) return normalizeOutputEntries(providerId, entries);
 		}

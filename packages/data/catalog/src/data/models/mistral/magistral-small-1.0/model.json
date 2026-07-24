@@ -88,7 +88,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mistral.ai/static/research/magistral.pdf",
-      "rank": 97
+      "rank": 101
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -96,7 +96,7 @@
       "is_self_reported": true,
       "other_info": "Text Only Subset",
       "source_link": "https://mistral.ai/static/research/magistral.pdf",
-      "rank": 138
+      "rank": 148
     },
     {
       "benchmark_id": "mmmu",
@@ -106,5 +106,70 @@
       "source_link": "https://mistral.ai/static/research/magistral.pdf",
       "rank": 79
     }
-  ]
+  ],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 128000,
+    "input": 128000,
+    "output": 128000
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "api_reference",
+      "url": "https://console.mistral.ai/home",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "paper",
+      "url": "https://mistral.ai/static/research/magistral.pdf",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "announcement",
+      "url": "https://mistral.ai/news/magistral",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "weights",
+      "url": "https://huggingface.co/mistralai/Magistral-Small-2506",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

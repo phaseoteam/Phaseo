@@ -13,13 +13,36 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
     ArrowDown,
     ArrowUp,
+    Ban,
+    CheckCircle2,
+    Clock3,
     ChevronsUpDown,
+    CircleDot,
+    Database,
+    Filter,
+    Globe2,
+    GraduationCap,
+    ListFilter,
+    RotateCcw,
     Shield,
     Server,
+    ShieldCheck,
 } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+    DropdownMenu,
+    DropdownMenuCheckboxItem,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuPortal,
+    DropdownMenuSeparator,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
 	HoverCard,
 	HoverCardContent,
@@ -40,7 +63,10 @@ import {
     EmptyTitle,
 } from "@/components/ui/empty";
 import { type ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
-import type { ProviderRuntimeStatsMap } from "@/lib/fetchers/models/getModelProviderRuntimeStats";
+import {
+	getModelProviderRuntimeStats,
+	type ProviderRuntimeStatsMap,
+} from "@/lib/fetchers/models/getModelProviderRuntimeStats";
 import type { ProviderRoutingStatusMap } from "@/lib/fetchers/models/getModelProviderRoutingHealth";
 import ProviderCard from "@/components/(data)/model/pricing/ProviderCard";
 import { cn } from "@/lib/utils";
@@ -61,6 +87,10 @@ import {
     getGatewayStatusSortRank,
     resolveGatewayStatus,
 } from "@/components/(data)/model/pricing/providerGatewayStatus";
+import ModelPercentileSelect, {
+	DEFAULT_MODEL_PERCENTILE,
+	type ModelPercentile,
+} from "@/components/(data)/models/ModelPercentileSelect";
 const SORT_QUERY_KEY = "sort";
 const SORT_DIRECTION_QUERY_KEY = "dir";
 
@@ -74,6 +104,8 @@ type SortOption =
     | "latency"
     | "uptime";
 type SortDirection = "asc" | "desc";
+type ProviderStatusFilter = "routable" | "preview" | "inactive" | "external";
+type PrivacyFilter = "workspace" | "all" | "zdr" | "no_training";
 type WorkspacePrivacySettings = {
     isAuthenticated: boolean;
     privacyEnablePaidMayTrain: boolean;
@@ -110,29 +142,49 @@ function getDisplayedProviderUptime(
 	return stats?.uptimePct3d ?? null;
 }
 
-function usePricingClock(
-    initialPricingTimeMs: number,
-    freezePricingClock: boolean,
-): number {
+function usePricingClock(initialPricingTimeMs: number): number {
     const [pricingTimeMs, setPricingTimeMs] = useState(initialPricingTimeMs);
 
     useEffect(() => {
-        if (freezePricingClock) return;
         let timeoutId: number | null = null;
         const tick = () => {
             const nowMs = Date.now();
             setPricingTimeMs(nowMs);
-            const nextMinuteDelay =
-                60_000 - (nowMs % 60_000) + PRICING_CLOCK_BOUNDARY_BUFFER_MS;
-            timeoutId = window.setTimeout(tick, nextMinuteDelay);
+            timeoutId = window.setTimeout(
+                tick,
+                60_000 - (nowMs % 60_000) + PRICING_CLOCK_BOUNDARY_BUFFER_MS,
+            );
         };
         tick();
         return () => {
             if (timeoutId !== null) window.clearTimeout(timeoutId);
         };
-    }, [freezePricingClock]);
+    }, []);
 
     return pricingTimeMs;
+}
+
+const DEFAULT_PROVIDER_STATUS_FILTERS: ProviderStatusFilter[] = [
+    "routable",
+    "preview",
+    "inactive",
+];
+
+function providerStatusFilterKey(status: CanonicalGatewayStatus): ProviderStatusFilter {
+    if (status === "external") return "external";
+    if (["active", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3"].includes(status)) return "routable";
+    if (["coming_soon", "internal_testing"].includes(status)) return "preview";
+    return "inactive";
+}
+
+function toggleProviderStatusFilter(
+    current: ProviderStatusFilter[],
+    filter: ProviderStatusFilter,
+    checked: boolean,
+): ProviderStatusFilter[] {
+    return checked
+        ? [...new Set([...current, filter])]
+        : current.filter((value) => value !== filter);
 }
 
 const DEFAULT_ROUTING_ERROR_RATE = 0;
@@ -273,6 +325,26 @@ function getProviderPromptTrainingPolicy(provider: ProviderPricing): string {
     );
 }
 
+function resolveProviderGatewayStatus(provider: ProviderPricing): CanonicalGatewayStatus {
+    const modelScope = getProviderModelScopeForPlan(
+        provider,
+        getProviderDefaultPlan(provider),
+    );
+    return chooseGatewayStatus(
+        modelScope.map((providerModel) =>
+            resolveGatewayStatus({
+                isActiveGateway: providerModel.is_active_gateway,
+                capabilityStatus: providerModel.capability_status,
+                providerStatus: provider.provider.status,
+                providerRoutingStatus: provider.provider.routing_status,
+                modelRoutingStatus: providerModel.routing_status,
+                effectiveFrom: providerModel.effective_from,
+                effectiveTo: providerModel.effective_to,
+            }),
+        ),
+    );
+}
+
 function UptimeHeaderHoverContent() {
 	return (
 		<div className="space-y-2">
@@ -332,27 +404,45 @@ function getIgnoredPrivacyReasons(
     return reasons;
 }
 
+function matchesPrivacyFilter(
+    provider: ProviderPricing,
+    filter: PrivacyFilter,
+    workspacePrivacySettings: WorkspacePrivacySettings | null,
+): boolean {
+    if (filter === "all") return true;
+    if (filter === "zdr") {
+        const zdr = provider.provider.zero_data_retention;
+        return zdr === "default" || zdr === "optional";
+    }
+    if (filter === "no_training") {
+        return getProviderPromptTrainingPolicy(provider) !== "may_train";
+    }
+    if (!workspacePrivacySettings?.isAuthenticated) return true;
+    return getIgnoredPrivacyReasons(provider, workspacePrivacySettings).length === 0;
+}
+
 export default function ModelPricingClient({
-    providers,
+	modelId,
+	providers,
     creatorOrgId,
     initialPricingTimeMs,
-    freezePricingClock = false,
     runtimeStats = EMPTY_RUNTIME_STATS,
     routingHealth = EMPTY_ROUTING_HEALTH,
     workspacePrivacySettings = null,
     showHeader = true,
+    headerDescription,
 }: {
     modelId: string;
     providers: ProviderPricing[];
     creatorOrgId?: string | null;
     initialPricingTimeMs: number;
-    freezePricingClock?: boolean;
     runtimeStats?: ProviderRuntimeStatsMap;
     routingHealth?: ProviderRoutingStatusMap;
     workspacePrivacySettings?: WorkspacePrivacySettings | null;
     showHeader?: boolean;
+    headerDescription?: string | null;
 }) {
-    const pricingTimeMs = usePricingClock(initialPricingTimeMs, freezePricingClock);
+    const pricingTimeMs = usePricingClock(initialPricingTimeMs);
     const pathname = usePathname() ?? "/";
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -360,7 +450,13 @@ export default function ModelPricingClient({
         () => searchParams ?? new URLSearchParams(),
         [searchParams]
     );
-    const liveRuntimeStats = runtimeStats;
+    const [selectedPercentile, setSelectedPercentile] = useState<ModelPercentile>(
+        DEFAULT_MODEL_PERCENTILE,
+    );
+    const [liveRuntimeStats, setLiveRuntimeStats] = useState<ProviderRuntimeStatsMap>(
+        runtimeStats,
+    );
+    const [isLoadingPercentile, setIsLoadingPercentile] = useState(false);
     const displayProviders = useMemo(
         () => mergeProviderPricingOffers(providers),
         [providers]
@@ -382,6 +478,40 @@ export default function ModelPricingClient({
         (provider) =>
             provider.provider_models.length > 0 || provider.pricing_rules.length > 0
     );
+    const providerIds = useMemo(
+        () => displayProviders.map((provider) => provider.provider.api_provider_id),
+        [displayProviders],
+    );
+    const modelAliases = useMemo(
+        () =>
+            displayProviders.flatMap((provider) =>
+                provider.provider_models.flatMap((providerModel) => [
+                    providerModel.model_id,
+                    providerModel.provider_model_slug ?? "",
+                ]),
+            ),
+        [displayProviders],
+    );
+
+    const handlePercentileChange = async (nextPercentile: ModelPercentile) => {
+        if (nextPercentile === selectedPercentile || isLoadingPercentile) return;
+        const previousPercentile = selectedPercentile;
+        setIsLoadingPercentile(true);
+        try {
+            const nextStats = await getModelProviderRuntimeStats({
+                modelId,
+                providerIds,
+                modelAliases,
+                percentile: nextPercentile,
+            });
+            setLiveRuntimeStats(nextStats);
+            setSelectedPercentile(nextPercentile);
+        } catch {
+            setSelectedPercentile(previousPercentile);
+        } finally {
+            setIsLoadingPercentile(false);
+        }
+    };
 
     const [sort, setSort] = useState<SortOption>(() => {
         return parseSortOption(effectiveSearchParams.get(SORT_QUERY_KEY));
@@ -390,11 +520,17 @@ export default function ModelPricingClient({
         const fromUrl = effectiveSearchParams.get(SORT_DIRECTION_QUERY_KEY);
         return isSortDirection(fromUrl) ? fromUrl : "desc";
     });
-    const [showIgnoredProviders, setShowIgnoredProviders] = useState(false);
+    const [providerStatusFilters, setProviderStatusFilters] = useState<ProviderStatusFilter[]>(
+        DEFAULT_PROVIDER_STATUS_FILTERS,
+    );
+    const [privacyFilter, setPrivacyFilter] = useState<PrivacyFilter>("workspace");
 
     const sortedProviders = useMemo(() => {
         const list = displayProviders.filter((provider) =>
-            provider.pricing_rules.length > 0 || provider.provider_models.length > 0
+            (provider.pricing_rules.length > 0 || provider.provider_models.length > 0) &&
+            providerStatusFilters.includes(
+                providerStatusFilterKey(resolveProviderGatewayStatus(provider)),
+            )
         );
         const sectionCache = new Map<string, ReturnType<typeof buildProviderSections>>();
         const getCachedSections = (provider: ProviderPricing) => {
@@ -417,28 +553,10 @@ export default function ModelPricingClient({
             return buildProviderTablePriceSummary(sections, direction).sortValue;
         };
 
-        const getProviderGatewayStatus = (provider: ProviderPricing): CanonicalGatewayStatus => {
-            const modelScope = getProviderModelScopeForPlan(
-                provider,
-                getProviderDefaultPlan(provider)
-            );
-            const statuses = modelScope.map((pm) =>
-                resolveGatewayStatus({
-                    isActiveGateway: pm.is_active_gateway,
-                    capabilityStatus: pm.capability_status,
-                    providerStatus: provider.provider.status,
-                    providerRoutingStatus: provider.provider.routing_status,
-                    modelRoutingStatus: pm.routing_status,
-                    effectiveFrom: pm.effective_from,
-                    effectiveTo: pm.effective_to,
-                })
-            );
-            return chooseGatewayStatus(statuses);
-        };
-
         const getProviderStatusRank = (provider: ProviderPricing): number => {
-            return getGatewayStatusSortRank(getProviderGatewayStatus(provider));
+            return getGatewayStatusSortRank(resolveProviderGatewayStatus(provider));
         };
+        const getProviderGatewayStatus = resolveProviderGatewayStatus;
 
         const byGatewayStatus = (a: ProviderPricing, b: ProviderPricing) => {
             const aRank = getProviderStatusRank(a);
@@ -635,42 +753,36 @@ export default function ModelPricingClient({
         }
 
         return list.sort(withCreatorBias);
-    }, [displayProviders, creatorOrgId, liveRuntimeStats, pricingTimeMs, routingHealth, sort, sortDirection]);
+    }, [displayProviders, creatorOrgId, liveRuntimeStats, pricingTimeMs, providerStatusFilters, routingHealth, sort, sortDirection]);
 
     const { filteredProviders, ignoredProviderReasons } = useMemo(() => {
         const ignoredReasonMap = new Map<string, string[]>();
-        if (!workspacePrivacySettings?.isAuthenticated) {
-            return {
-                filteredProviders: sortedProviders,
-                ignoredProviderReasons: ignoredReasonMap,
-            };
-        }
-
-        const eligible: ProviderPricing[] = [];
-        const ignored: ProviderPricing[] = [];
         for (const provider of sortedProviders) {
-            const reasons = getIgnoredPrivacyReasons(provider, workspacePrivacySettings);
+            const reasons = workspacePrivacySettings?.isAuthenticated
+                ? getIgnoredPrivacyReasons(provider, workspacePrivacySettings)
+                : [];
             if (reasons.length) {
                 ignoredReasonMap.set(provider.provider.api_provider_id, reasons);
-                if (showIgnoredProviders) ignored.push(provider);
-            } else {
-                eligible.push(provider);
             }
         }
 
         return {
-            filteredProviders: showIgnoredProviders ? [...eligible, ...ignored] : eligible,
+            filteredProviders: sortedProviders.filter((provider) =>
+                matchesPrivacyFilter(provider, privacyFilter, workspacePrivacySettings),
+            ),
             ignoredProviderReasons: ignoredReasonMap,
         };
-    }, [showIgnoredProviders, sortedProviders, workspacePrivacySettings]);
+    }, [privacyFilter, sortedProviders, workspacePrivacySettings]);
     const ignoredProviderCount = ignoredProviderReasons.size;
-    const canShowIgnoredToggle =
-        Boolean(workspacePrivacySettings?.isAuthenticated) && ignoredProviderCount > 0;
     const allProvidersHiddenByPrivacy =
         sortedProviders.length > 0 &&
         filteredProviders.length === 0 &&
-        ignoredProviderCount > 0 &&
-        !showIgnoredProviders;
+        privacyFilter === "workspace" &&
+        ignoredProviderCount > 0;
+    const activeFilterCount =
+        DEFAULT_PROVIDER_STATUS_FILTERS.filter((filter) => !providerStatusFilters.includes(filter)).length +
+        (providerStatusFilters.includes("external") ? 1 : 0) +
+        (privacyFilter === "workspace" ? 0 : 1);
     const visibleProviders = filteredProviders;
     const showCacheReadColumn = useMemo(() => {
         return visibleProviders.some((provider) => {
@@ -862,33 +974,162 @@ export default function ModelPricingClient({
 
     return (
         <div className="space-y-6">
-            {showHeader ? (
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                    <h2 className="text-2xl font-semibold tracking-tight text-foreground">
-                        Providers
-                    </h2>
-                </div>
-            ) : (
-                <></>
-            )}
-            <section className="space-y-4">
-                {hasApiProviders ? (
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div />
-                        <div className="flex items-center gap-2.5">
-                            {canShowIgnoredToggle ? (
-                                <div className="inline-flex items-center gap-2.5 rounded-md border border-zinc-200 bg-background px-3 py-1.5 text-sm text-foreground dark:border-zinc-800">
-                                    <Switch
-                                        checked={showIgnoredProviders}
-                                        onCheckedChange={setShowIgnoredProviders}
-                                        aria-label="Show ignored providers"
-                                    />
-                                    <span>Show ignored</span>
-                                </div>
-                            ) : null}
-                        </div>
+            <div className={cn(
+                "flex flex-wrap items-center justify-between gap-3",
+                !showHeader && "-mt-3 justify-end",
+            )}>
+                {showHeader ? (
+                    <div className="space-y-1">
+                        <h2 className="text-2xl font-semibold tracking-tight text-foreground">
+                            Providers
+                        </h2>
+                        {headerDescription ? (
+                            <p className="text-sm text-muted-foreground">{headerDescription}</p>
+                        ) : null}
                     </div>
                 ) : null}
+                {hasApiProviders ? (
+                    <div className="flex items-center gap-2">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger
+                                render={
+                                    <Button type="button" variant="outline" size="sm" className="gap-2 rounded-md" />
+                                }
+                            >
+                                <Filter className="size-3.5" />
+                                Filters
+                                {activeFilterCount > 0 ? (
+                                    <span className="rounded-full bg-primary/10 px-1.5 text-[10px] font-semibold text-primary">
+                                        {activeFilterCount}
+                                    </span>
+                                ) : null}
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-72 rounded-md">
+                                <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
+                                    Filter providers
+                                </div>
+                                <DropdownMenuSub>
+                                    <DropdownMenuSubTrigger>
+                                        <ListFilter className="size-4 text-muted-foreground" />
+                                        <span className="whitespace-nowrap">Status</span>
+                                        <span className="ml-auto text-xs text-muted-foreground">
+                                            {providerStatusFilters.length}/4
+                                        </span>
+                                    </DropdownMenuSubTrigger>
+                                    <DropdownMenuPortal>
+                                        <DropdownMenuSubContent className="w-72 rounded-md">
+                                            <DropdownMenuGroup>
+                                                <DropdownMenuCheckboxItem
+                                                    checked={providerStatusFilters.includes("routable")}
+                                                    onCheckedChange={(checked) =>
+                                                        setProviderStatusFilters((current) =>
+                                                            toggleProviderStatusFilter(current, "routable", checked === true),
+                                                        )
+                                                    }
+                                                >
+                                                    <CheckCircle2 className="size-4 text-emerald-600" />
+                                                    <span className="whitespace-nowrap">Routable</span>
+                                                </DropdownMenuCheckboxItem>
+                                                <DropdownMenuCheckboxItem
+                                                    checked={providerStatusFilters.includes("preview")}
+                                                    onCheckedChange={(checked) =>
+                                                        setProviderStatusFilters((current) =>
+                                                            toggleProviderStatusFilter(current, "preview", checked === true),
+                                                        )
+                                                    }
+                                                >
+                                                    <Clock3 className="size-4 text-blue-600" />
+                                                    <span className="whitespace-nowrap">Preview / coming soon</span>
+                                                </DropdownMenuCheckboxItem>
+                                                <DropdownMenuCheckboxItem
+                                                    checked={providerStatusFilters.includes("inactive")}
+                                                    onCheckedChange={(checked) =>
+                                                        setProviderStatusFilters((current) =>
+                                                            toggleProviderStatusFilter(current, "inactive", checked === true),
+                                                        )
+                                                    }
+                                                >
+                                                    <Ban className="size-4 text-zinc-500" />
+                                                    <span className="whitespace-nowrap">Inactive / disabled</span>
+                                                </DropdownMenuCheckboxItem>
+                                                <DropdownMenuCheckboxItem
+                                                    checked={providerStatusFilters.includes("external")}
+                                                    onCheckedChange={(checked) =>
+                                                        setProviderStatusFilters((current) =>
+                                                            toggleProviderStatusFilter(current, "external", checked === true),
+                                                        )
+                                                    }
+                                                >
+                                                    <Globe2 className="size-4 text-violet-600" />
+                                                    <span className="whitespace-nowrap">External providers</span>
+                                                </DropdownMenuCheckboxItem>
+                                            </DropdownMenuGroup>
+                                        </DropdownMenuSubContent>
+                                    </DropdownMenuPortal>
+                                </DropdownMenuSub>
+                                <DropdownMenuSub>
+                                    <DropdownMenuSubTrigger>
+                                        <ShieldCheck className="size-4 text-muted-foreground" />
+                                        <span className="whitespace-nowrap">Data privacy</span>
+                                        <span className="ml-auto text-xs text-muted-foreground">{privacyFilter === "workspace" ? "Workspace" : "Custom"}</span>
+                                    </DropdownMenuSubTrigger>
+                                    <DropdownMenuPortal>
+                                        <DropdownMenuSubContent className="w-80 rounded-md">
+                                            <DropdownMenuGroup>
+                                                <DropdownMenuCheckboxItem
+                                                    checked={privacyFilter === "workspace"}
+                                                    onCheckedChange={(checked) => checked && setPrivacyFilter("workspace")}
+                                                >
+                                                    <ShieldCheck className="size-4 text-emerald-600" />
+                                                    <span className="whitespace-nowrap">Respect workspace settings</span>
+                                                </DropdownMenuCheckboxItem>
+                                                <DropdownMenuCheckboxItem
+                                                    checked={privacyFilter === "zdr"}
+                                                    onCheckedChange={(checked) => checked && setPrivacyFilter("zdr")}
+                                                >
+                                                    <Database className="size-4 text-blue-600" />
+                                                    <span className="whitespace-nowrap">Zero data retention only</span>
+                                                </DropdownMenuCheckboxItem>
+                                                <DropdownMenuCheckboxItem
+                                                    checked={privacyFilter === "no_training"}
+                                                    onCheckedChange={(checked) => checked && setPrivacyFilter("no_training")}
+                                                >
+                                                    <GraduationCap className="size-4 text-amber-600" />
+                                                    <span className="whitespace-nowrap">No training on inputs</span>
+                                                </DropdownMenuCheckboxItem>
+                                                <DropdownMenuCheckboxItem
+                                                    checked={privacyFilter === "all"}
+                                                    onCheckedChange={(checked) => checked && setPrivacyFilter("all")}
+                                                >
+                                                    <CircleDot className="size-4 text-zinc-500" />
+                                                    <span className="whitespace-nowrap">Show all privacy policies</span>
+                                                </DropdownMenuCheckboxItem>
+                                            </DropdownMenuGroup>
+                                        </DropdownMenuSubContent>
+                                    </DropdownMenuPortal>
+                                </DropdownMenuSub>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                    onClick={() => {
+                                        setProviderStatusFilters(DEFAULT_PROVIDER_STATUS_FILTERS);
+                                        setPrivacyFilter("workspace");
+                                    }}
+                                >
+                                    <RotateCcw className="size-4 text-muted-foreground" />
+                                    Reset filters
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        <ModelPercentileSelect
+                            value={selectedPercentile}
+                            onChange={handlePercentileChange}
+                            isLoading={isLoadingPercentile}
+                            ariaLabel="Select provider percentile"
+                        />
+                    </div>
+                ) : null}
+            </div>
+            <section className="space-y-4">
                 {filteredProviders.length > 0 ? (
                     <div className="space-y-2">
                         <div className="overflow-hidden rounded-md border border-zinc-200/80 bg-background dark:border-zinc-800">
@@ -974,12 +1215,12 @@ export default function ModelPricingClient({
                                                 routingStatus={
                                                     routingHealth[prov.provider.api_provider_id] ?? null
                                                 }
+                                                pricingTimeMs={pricingTimeMs}
                                                 variantLabels={
                                                     providerVariantLabelsById.get(
                                                         prov.provider.api_provider_id
                                                     ) ?? null
                                                 }
-                                                pricingTimeMs={pricingTimeMs}
                                                 showCacheReadColumn={showCacheReadColumn}
                                                 isLastVisible={index === visibleProviders.length - 1}
                                             />
@@ -1007,7 +1248,7 @@ export default function ModelPricingClient({
                             <Button
                                 type="button"
                                 variant="ghost"
-                                onClick={() => setShowIgnoredProviders(true)}
+                                onClick={() => setPrivacyFilter("all")}
                             >
                                 Show Hidden Providers
                             </Button>

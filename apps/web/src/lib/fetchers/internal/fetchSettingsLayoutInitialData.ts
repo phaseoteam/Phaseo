@@ -1,19 +1,14 @@
-import type { SettingsLayoutInitialData } from "@/app/api/internal/settings/layout/initial/route";
-import { internalUrl, requestOrigin } from "@/lib/fetchers/internal/requestOrigin";
+import type { SettingsLayoutInitialData } from "@/lib/fetchers/internal/settingsTypes";
+import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
 
 export async function fetchSettingsLayoutInitialData(): Promise<SettingsLayoutInitialData> {
-	const { cookie, origin } = await requestOrigin();
-	const response = await fetch(internalUrl(origin, "/api/internal/settings/layout/initial"), {
-		cache: "no-store",
-		headers: {
-			accept: "application/json",
-			cookie,
-		},
-	});
-
-	if (!response.ok) {
-		throw new Error(`Failed to fetch settings layout data: ${response.status}`);
-	}
-
-	return (await response.json()) as SettingsLayoutInitialData;
+	const context = await getServerAccountContext();
+	const query = context.workspaceId
+		? `?workspaceId=${encodeURIComponent(context.workspaceId)}`
+		: "";
+	return fetchAccountWebApi<SettingsLayoutInitialData>(
+		`/api/account/settings/layout${query}`,
+		context.accessToken,
+	);
 }

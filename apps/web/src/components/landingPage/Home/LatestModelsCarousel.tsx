@@ -10,7 +10,7 @@ import {
 	MarqueeFade,
 	MarqueeItem,
 } from "@/components/ui/marquee";
-import type { UpdateCardProps } from "@/lib/fetchers/updates/getLatestModelUpdates";
+import type { UpdateCardProps } from "@/lib/fetchers/updates/types";
 
 type LatestModelsCarouselProps = {
 	cards: UpdateCardProps[];

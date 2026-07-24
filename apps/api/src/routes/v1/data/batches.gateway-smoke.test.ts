@@ -54,10 +54,53 @@ vi.mock("@pipeline/before/auth", () => ({
 	authenticate: vi.fn(async () => state.authResult),
 }));
 
+vi.mock("@pipeline/before/guards", () => ({
+	guardContext: vi.fn(async () => ({
+		ok: true,
+		value: {
+			context: { teamSettings: {} },
+			providers: [{ providerId: "openai" }],
+			resolvedModel: null,
+			candidateDiagnostics: {},
+		},
+	})),
+}));
+
+vi.mock("@pipeline/before/workspacePolicy", () => ({
+	fetchWorkspacePolicy: vi.fn(async () => ({
+		providerAllowlist: null,
+		providerBlocklist: null,
+		allowedApiModels: null,
+		blockedApiModels: null,
+		promptInjectionAction: null,
+		promptInjectionGuardrailIds: [],
+		sensitiveInfoRules: [],
+		sensitiveInfoGuardrailIds: [],
+		enforceAllowed: false,
+		activeGuardrailIds: [],
+	})),
+	applyWorkspacePolicy: vi.fn((args: any) => ({ ok: true, providers: args.providers, diagnostics: {} })),
+}));
+
+vi.mock("@pipeline/before/promptInjection", () => ({
+	applyPromptInjectionGuardrails: vi.fn((args: any) => ({ ok: true, body: args.body, rawBody: args.rawBody, enforcement: null })),
+}));
+
+vi.mock("@pipeline/before/sensitiveInfo", () => ({
+	applySensitiveInfoGuardrails: vi.fn((args: any) => ({ ok: true, body: args.body, rawBody: args.rawBody, enforcement: null })),
+}));
+
 vi.mock("@/runtime/env", () => ({
 	getBindings: () => ({
 		OPENAI_API_KEY: "test-openai-key",
 		OPENAI_BASE_URL: "https://api.openai.example/v1",
+		BATCH_API_PREVIEW_PROVIDERS: "openai",
+	}),
+	getSupabaseAdmin: () => ({
+		rpc: vi.fn(async (name: string) => ({
+			data: name === "gateway_claim_batch_file_upload" ? [{ ok: true, reason: null }] : null,
+			error: null,
+		})),
 	}),
 }));
 

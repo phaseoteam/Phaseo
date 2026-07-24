@@ -173,7 +173,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         model: args.providerModelSlug || args.model,
     };
     const req = mapGatewayToOpenAIImages(modifiedBody);
-    const res = await fetch(openAICompatUrl(args.providerId, "/images/generations"), {
+    const res = await (args.upstreamTiming?.fetch ?? fetch)(openAICompatUrl(args.providerId, "/images/generations"), {
         method: "POST",
         headers: openAICompatHeaders(args.providerId, key, upstreamTestHeaders(args.meta)),
         body: JSON.stringify(req),

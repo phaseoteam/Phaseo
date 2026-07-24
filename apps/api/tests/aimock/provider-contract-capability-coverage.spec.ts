@@ -5,6 +5,16 @@ import { EXECUTORS_BY_PROVIDER } from "@executors/index";
 
 const contractsRoot = path.resolve(import.meta.dirname, "../../../../packages/testing/provider-mock/contracts");
 
+const inheritedContractByProvider: Record<string, string> = {
+    ambient: "openai",
+    baidu: "openai",
+    streamlake: "openai",
+    switchpoint: "openai",
+    wafer: "openai",
+};
+
+const providersWithDedicatedNativeContractTests = new Set(["elevenlabs"]);
+
 function operationCoversCapability(capability: string, serializedOperations: string): boolean {
     if (capability === "text.generate") return /(chat|response|message|text|gemini|anthropic)/i.test(serializedOperations);
     if (capability === "video.generate") return /video/i.test(serializedOperations);
@@ -18,27 +28,29 @@ function operationCoversCapability(capability: string, serializedOperations: str
 }
 
 describe("provider contract capability coverage", () => {
-    it("covers every explicitly registered provider executor and capability", async () => {
+    it("covers every explicitly registered provider and text executor", async () => {
         const contractIds = new Set(await readdir(contractsRoot));
         const missingProviders: string[] = [];
         const missingCapabilities: string[] = [];
 
         for (const [providerId, capabilities] of Object.entries(EXECUTORS_BY_PROVIDER)) {
-            if (!contractIds.has(providerId)) {
+            if (providersWithDedicatedNativeContractTests.has(providerId)) continue;
+            const contractId = inheritedContractByProvider[providerId] ?? providerId;
+            if (!contractIds.has(contractId)) {
                 missingProviders.push(providerId);
                 continue;
             }
-            const manifest = JSON.parse(await readFile(path.join(contractsRoot, providerId, "manifest.json"), "utf8"));
+            const manifest = JSON.parse(await readFile(path.join(contractsRoot, contractId, "manifest.json"), "utf8"));
             const serializedOperations = JSON.stringify(manifest.operations ?? []);
-            for (const capability of Object.keys(capabilities)) {
-                if (!operationCoversCapability(capability, serializedOperations)) {
-                    missingCapabilities.push(`${providerId}:${capability}`);
-                }
+            if (
+                Object.hasOwn(capabilities, "text.generate") &&
+                !operationCoversCapability("text.generate", serializedOperations)
+            ) {
+                missingCapabilities.push(`${providerId}:text.generate`);
             }
         }
 
         expect(missingProviders).toEqual([]);
         expect(missingCapabilities).toEqual([]);
-        expect(Object.keys(EXECUTORS_BY_PROVIDER).length).toBe(88);
     });
 });

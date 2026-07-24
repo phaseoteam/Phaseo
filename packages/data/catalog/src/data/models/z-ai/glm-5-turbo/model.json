@@ -30,7 +30,7 @@
       "is_self_reported": false,
       "other_info": "Artificial Analysis structured model metrics",
       "source_link": "https://artificialanalysis.ai/models/glm-5-turbo",
-      "rank": 14
+      "rank": 17
     },
     {
       "benchmark_id": "tau-2-telecom",
@@ -94,7 +94,7 @@
       "is_self_reported": false,
       "other_info": "Artificial Analysis structured model metrics",
       "source_link": "https://artificialanalysis.ai/models/glm-5-turbo",
-      "rank": 35
+      "rank": 38
     },
     {
       "benchmark_id": "critpt",
@@ -104,5 +104,45 @@
       "source_link": "https://artificialanalysis.ai/models/glm-5-turbo",
       "rank": 2
     }
-  ]
+  ],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

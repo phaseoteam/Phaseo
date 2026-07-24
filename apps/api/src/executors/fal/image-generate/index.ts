@@ -7,6 +7,7 @@
 // Supports 600+ image generation models including Flux, SDXL, SD3, etc.
 
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
+import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import type { ProviderExecutor } from "../../types";
 
 /**
@@ -63,7 +64,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const modelId = providerModelSlug || ir.model || "fal-ai/flux/schnell";
 
 	try {
-		const response = await fetch(`https://fal.run/${modelId}`, {
+		const response = await fetchUpstream(args, `https://fal.run/${modelId}`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",

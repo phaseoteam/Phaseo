@@ -1,0 +1,52 @@
+{
+  "api_provider_id": "crof",
+  "api_provider_name": "CrofAI",
+  "provider_family_id": null,
+  "offer_label": null,
+  "offer_scope": "specialized",
+  "description": null,
+  "link": "https://crof.ai/docs",
+  "residency_mode": null,
+  "default_execution_regions": null,
+  "default_data_regions": null,
+  "zero_data_retention": null,
+  "residency_source_url": null,
+  "prompt_training_policy": null,
+  "prompt_training_notes": null,
+  "prompt_training_source_url": null,
+  "user_identifier_policy": null,
+  "user_identifier_notes": null,
+  "privacy_policy_url": null,
+  "terms_of_service_url": null,
+  "regional_pricing_mode": null,
+  "regional_pricing_uplift_percent": null,
+  "pricing_source_url": null,
+  "regional_pricing_notes": null,
+  "country_code": null,
+  "status": "Active",
+  "colour": null,
+  "gateway_kind": "catalogue",
+  "routable": false,
+  "routing_enabled": false,
+  "sdk_package": "@ai-sdk/openai-compatible",
+  "api_base_url": "https://crof.ai/v1",
+  "docs_url": "https://crof.ai/docs",
+  "auth_env": [
+    "CROF_API_KEY"
+  ],
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [
+    {
+      "kind": "models.dev",
+      "url": "https://models.dev/api.json",
+      "accessed_at": "2026-07-23T09:08:52.190Z",
+      "notes": "Provider metadata and model support enrichment; not a Phaseo-routable offer."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-07-23T09:08:52.190Z",
+    "notes": "Imported from the public models.dev provider registry."
+  }
+}

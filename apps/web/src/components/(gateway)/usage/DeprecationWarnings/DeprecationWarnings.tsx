@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
-import type { DeprecationWarning } from "@/lib/fetchers/usage/deprecationWarnings";
+import type { DeprecationWarning } from "@/lib/fetchers/usage/types";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
 import RetiresBadge from "./RetiresBadge";
 

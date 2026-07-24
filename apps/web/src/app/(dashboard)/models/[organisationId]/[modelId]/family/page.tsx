@@ -1,6 +1,6 @@
 import Link from "next/link";
 import ModelDetailShell from "@/components/(data)/model/ModelDetailShell";
-import type { FamilyModelItem } from "@/lib/fetchers/models/getFamilyModels";
+import type { FamilyModelItem } from "@/lib/fetchers/families/types";
 import {
 	fetchFrontendFamily,
 	fetchFrontendModelHeader,

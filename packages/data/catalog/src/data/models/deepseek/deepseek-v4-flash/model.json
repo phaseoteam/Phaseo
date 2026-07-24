@@ -49,7 +49,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1; DeepSeek-V4-Flash Max",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash",
-      "rank": 21
+      "rank": 24
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -57,7 +57,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1; DeepSeek-V4-Flash Max",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash",
-      "rank": 58
+      "rank": 66
     },
     {
       "benchmark_id": "terminal-bench-2.0",
@@ -105,7 +105,7 @@
       "is_self_reported": true,
       "other_info": "Elo; DeepSeek-V4-Flash Max",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash",
-      "rank": 19
+      "rank": 22
     },
     {
       "benchmark_id": "scale-mcp-atlas",
@@ -113,7 +113,7 @@
       "is_self_reported": true,
       "other_info": "MCPAtlas; Pass@1; DeepSeek-V4-Flash Max",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash",
-      "rank": 10
+      "rank": 12
     },
     {
       "benchmark_id": "toolathlon",
@@ -121,7 +121,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1; DeepSeek-V4-Flash Max",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash",
-      "rank": 7
+      "rank": 10
     },
     {
       "benchmark_id": "livebench",
@@ -139,5 +139,52 @@
       "source_link": "https://github.com/lechmazur/nyt-connections",
       "rank": 45
     }
-  ]
+  ],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 1000000,
+    "input": 1000000,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "weights",
+      "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

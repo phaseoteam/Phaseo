@@ -4,6 +4,7 @@
 
 import type { IRChatRequest } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult, Bill, ProviderExecutor } from "@executors/types";
+import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { irToOpenAIResponses } from "@executors/_shared/text-generate/openai-compat/transform";
 import { resolveStreamForProtocol, bufferStreamToIR } from "@executors/_shared/text-generate/openai-compat";
@@ -23,7 +24,6 @@ import { cherryPickIRParams, resolveXAiModelForRequest, withNormalizedReasoning 
 const XAI_MAX_ADAPTIVE_RETRIES = 0;
 
 async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
-	const upstreamStartMs = args.meta.upstreamStartMs ?? Date.now();
 	const irRequest = args.ir as IRChatRequest;
 	const quirks = getProviderQuirks(args.providerId);
 	const keyInfo = resolveProviderKey(
@@ -86,7 +86,7 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 			// ignore if readonly
 		}
 		const requestBody = JSON.stringify(sanitized.request);
-			const response = await fetch(openAICompatUrl(args.providerId, "/responses"), {
+			const response = await fetchUpstream(args, openAICompatUrl(args.providerId, "/responses"), {
 				method: "POST",
 				headers: openAICompatHeaders(args.providerId, keyInfo.key, {
 					"x-grok-conv-id": irRequest.xaiConversationId,
@@ -151,6 +151,7 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 		upstream_id: res.headers.get("x-request-id") || undefined,
 		finish_reason: null,
 	};
+	const selectedDispatchAtMs = args.upstreamTiming?.timingFor(res)?.dispatchAtMs ?? Date.now();
 
 	if (!res.ok) {
 		console.error(`Upstream error for provider ${args.providerId}: ${res.status} ${res.statusText}`);
@@ -187,7 +188,7 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 		res,
 		args,
 		"responses",
-		upstreamStartMs,
+		selectedDispatchAtMs,
 	);
 	if (rawResponse && typeof rawResponse === "object") {
 		quirks.normalizeResponse?.({ response: rawResponse, ir: irRequest });
@@ -224,8 +225,8 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 		mappedRequest,
 		rawResponse: rawResponse ?? null,
 		timing: {
-			latencyMs: firstByteMs ?? totalMs,
-			generationMs: firstByteMs === null ? 0 : Math.max(0, totalMs - firstByteMs),
+			latencyMs: firstByteMs ?? undefined,
+			generationMs: totalMs,
 		},
 	};
 }

@@ -8,7 +8,7 @@ import { getSupabaseAdmin } from "@/runtime/env";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { json, withRuntime } from "@/routes/utils";
-import { requireCapability, requireOAuthWorkspaceRole } from "./route-helpers";
+import { internalServerError, requireCapability, requireOAuthWorkspaceRole } from "./route-helpers";
 import { ensureWorkspaceWalletProvisioned, userHasPaidWorkspaceAccess } from "./management-helpers";
 
 type WorkspaceRow = {
@@ -234,7 +234,7 @@ async function handleGetWorkspace(req: Request) {
 		}
 		return json({ data: formatWorkspace(workspace) }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
+		return internalServerError("workspaces.get", error);
 	}
 }
 
@@ -417,7 +417,7 @@ async function handleUpdateWorkspace(req: Request) {
 
 		return json({ data: formatWorkspace(updated) }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
+		return internalServerError("workspaces.update", error);
 	}
 }
 
@@ -481,7 +481,7 @@ async function handleDeleteWorkspace(req: Request) {
 
 		return json({ deleted: true }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
+		return internalServerError("workspaces.delete", error);
 	}
 }
 
@@ -508,7 +508,7 @@ async function handleListWorkspaceMembers(req: Request) {
 		const members = await resolveWorkspaceMembers(workspace.id);
 		return json({ data: members, total_count: members.length }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
+		return internalServerError("workspaces.members.list", error);
 	}
 }
 
@@ -584,7 +584,7 @@ async function handleAddWorkspaceMembers(req: Request) {
 		const added = members.filter((member) => payload.some((entry) => entry.user_id === member.user_id));
 		return json({ added_count: added.length, data: added }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
+		return internalServerError("workspaces.members.add", error);
 	}
 }
 
@@ -657,7 +657,7 @@ async function handleRemoveWorkspaceMembers(req: Request) {
 
 		return json({ removed_count: count ?? 0 }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
+		return internalServerError("workspaces.members.remove", error);
 	}
 }
 

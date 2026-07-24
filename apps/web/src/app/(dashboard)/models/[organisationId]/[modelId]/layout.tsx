@@ -4,8 +4,8 @@ import ShowFooterStyle from "@/components/layout/ShowFooterStyle";
 import type { ModelRouteParams } from "@/components/(data)/model/model-route-helpers";
 import ScrollToTopOnModelChange from "./ScrollToTopOnModelChange";
 
-// Model detail routes remain available for product navigation, but the public
-// models directory is the single search landing page for this content.
+// Model overview pages override this with indexable metadata. Secondary tabs
+// remain noindex to consolidate search signals on the canonical overview URL.
 export const metadata: Metadata = {
 	robots: {
 		index: false,

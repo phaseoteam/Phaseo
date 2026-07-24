@@ -33,7 +33,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/zai-org/GLM-5.1",
-      "rank": 62
+      "rank": 70
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -41,7 +41,7 @@
       "is_self_reported": true,
       "other_info": "With tools",
       "source_link": "https://huggingface.co/zai-org/GLM-5.1",
-      "rank": 11
+      "rank": 15
     },
     {
       "benchmark_id": "aime-2026",
@@ -81,7 +81,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/zai-org/GLM-5.1",
-      "rank": 30
+      "rank": 33
     },
     {
       "benchmark_id": "swe-bench-pro",
@@ -129,7 +129,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/zai-org/GLM-5.1",
-      "rank": 24
+      "rank": 28
     },
     {
       "benchmark_id": "browsecomp",
@@ -137,7 +137,7 @@
       "is_self_reported": true,
       "other_info": "w/ Context Manage",
       "source_link": "https://huggingface.co/zai-org/GLM-5.1",
-      "rank": 13
+      "rank": 17
     },
     {
       "benchmark_id": "tau-2-bench",
@@ -153,7 +153,7 @@
       "is_self_reported": true,
       "other_info": "Public Set",
       "source_link": "https://huggingface.co/zai-org/GLM-5.1",
-      "rank": 8
+      "rank": 10
     },
     {
       "benchmark_id": "tool-decathlon",
@@ -177,7 +177,7 @@
       "is_self_reported": false,
       "other_info": "mini-swe-agent; 18% +/-1%; avg cost $7.46; avg time 35m; out tok 49k",
       "source_link": "https://deepswe.datacurve.ai/",
-      "rank": 12
+      "rank": 15
     },
     {
       "benchmark_id": "creative-story-writing",
@@ -203,5 +203,54 @@
       "source_link": "https://github.com/lechmazur/generalization",
       "rank": 23
     }
-  ]
+  ],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": null,
+    "output": null
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "repository",
+      "url": "https://huggingface.co/zai-org/GLM-5.1",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "weights",
+      "url": "https://huggingface.co/zai-org/GLM-5.1",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

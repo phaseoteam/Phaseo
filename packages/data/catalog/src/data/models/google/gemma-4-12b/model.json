@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/google/gemma-4-12B-it",
-      "rank": 65
+      "rank": 68
     },
     {
       "benchmark_id": "tau-2-bench",
@@ -94,7 +94,7 @@
       "is_self_reported": true,
       "other_info": "No tools",
       "source_link": "https://huggingface.co/google/gemma-4-12B-it",
-      "rank": 150
+      "rank": 160
     },
     {
       "benchmark_id": "big-bench-extra-hard",
@@ -118,7 +118,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/google/gemma-4-12B-it",
-      "rank": 40
+      "rank": 41
     },
     {
       "benchmark_id": "omnidocbench-1.5",
@@ -144,5 +144,61 @@
       "source_link": "https://huggingface.co/google/gemma-4-12B-it",
       "rank": 10
     }
-  ]
+  ],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 262144,
+    "input": 262144,
+    "output": 262144
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image/*",
+      "audio/*",
+      "video/*"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "announcement",
+      "url": "https://developers.googleblog.com/gemma-4-12b-the-developer-guide/",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "weights",
+      "url": "https://huggingface.co/google/gemma-4-12B-it",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

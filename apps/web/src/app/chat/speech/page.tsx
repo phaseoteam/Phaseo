@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { buildMetadata } from "@/lib/seo";
 import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
 import { RoomScaffold } from "@/components/(chat)/RoomScaffold";
@@ -11,7 +12,11 @@ export const metadata: Metadata = buildMetadata({
 	keywords: ["AI speech", "text to speech", "Phaseo chat"],
 });
 
-export default async function ChatSpeechPage() {
+export default function ChatSpeechPage() {
+	return <Suspense fallback={null}><ChatSpeechContent /></Suspense>;
+}
+
+async function ChatSpeechContent() {
 	const models = await fetchFrontendGatewayModels();
 	return (
 		<RoomScaffold>

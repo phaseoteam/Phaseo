@@ -102,7 +102,7 @@
       "is_self_reported": true,
       "other_info": "Image understanding benchmark from official MiMo-V2.5 model card image",
       "source_link": "https://huggingface.co/XiaomiMiMo/MiMo-V2.5/blob/main/assets/mimo-v2.5-multimodal-bench.png",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -110,7 +110,7 @@
       "is_self_reported": true,
       "other_info": "Image understanding benchmark from official MiMo-V2.5 model card image",
       "source_link": "https://huggingface.co/XiaomiMiMo/MiMo-V2.5/blob/main/assets/mimo-v2.5-multimodal-bench.png",
-      "rank": 19
+      "rank": 20
     },
     {
       "benchmark_id": "hr-bench-4k",
@@ -176,5 +176,61 @@
       "source_link": "https://huggingface.co/XiaomiMiMo/MiMo-V2.5/blob/main/assets/mimo-v2.5-graphwalks.jpeg",
       "rank": 1
     }
-  ]
+  ],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 1048576,
+    "input": 1048576,
+    "output": 128000
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image/*",
+      "video/*",
+      "audio/*"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "announcement",
+      "url": "https://platform.xiaomimimo.com/docs/news/v2.5-news",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "weights",
+      "url": "https://huggingface.co/XiaomiMiMo/MiMo-V2.5",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

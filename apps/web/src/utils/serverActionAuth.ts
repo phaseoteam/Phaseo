@@ -2,6 +2,8 @@ import "server-only";
 
 import { createClient } from "@/utils/supabase/server";
 import { evaluateTeamSsoEnforcementNoop } from "@/lib/auth/ssoEnforcement";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
+import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -33,20 +35,13 @@ export async function requireWorkspaceMembership(
 ): Promise<void> {
 	if (!userId || !workspaceId) throw new Error("Unauthorized");
 
-	let q = supabase
-		.from("workspace_members")
-		.select("role")
-		.eq("user_id", userId)
-		.eq("workspace_id", workspaceId)
-		.limit(1)
-		.maybeSingle();
-
-	if (roles?.length) {
-		q = (q as any).in("role", roles);
-	}
-
-	const { data, error } = await q;
-	if (error || !data) throw new Error("Unauthorized");
+	void supabase;
+	const { accessToken } = await getServerAccountContext();
+	if (!accessToken) throw new Error("Unauthorized");
+	const query = new URLSearchParams({ workspaceId });
+	if (roles?.length) query.set("roles", roles.join(","));
+	const access = await fetchAccountWebApi<{ allowed: boolean; userId: string | null }>(`/api/account/auth/workspace-access?${query.toString()}`, accessToken).catch(() => null);
+	if (!access?.allowed || access.userId !== userId) throw new Error("Unauthorized");
 
 	await evaluateTeamSsoEnforcementNoop({
 		workspaceId,

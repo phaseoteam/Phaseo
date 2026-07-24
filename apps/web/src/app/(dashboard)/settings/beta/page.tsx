@@ -1,11 +1,19 @@
 import { Badge } from "@/components/ui/badge";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import BetaSettingsClient from "@/components/(gateway)/settings/beta/BetaSettingsClient";
-import { WEB_BETA_FEATURES } from "@/lib/statsig/shared";
+import {
+	WEB_BETA_FEATURES,
+	type WebBetaFeatureDefinition,
+} from "@/lib/statsig/shared";
 import { fetchSettingsBetaInitialData } from "@/lib/fetchers/internal/fetchSettingsBetaInitialData";
 
 export default async function BetaSettingsPage() {
 	const initialData = await fetchSettingsBetaInitialData();
+	const betaFeatures: readonly WebBetaFeatureDefinition[] = WEB_BETA_FEATURES.filter(
+		(feature) =>
+			(feature as WebBetaFeatureDefinition).selfService !== false &&
+			(!feature.adminOnly || initialData.isAdmin),
+	);
 
 	if (!initialData.signedIn) {
 		return (
@@ -29,14 +37,14 @@ export default async function BetaSettingsPage() {
 				description="Preview and experiment controls for the web UI."
 				meta={<Badge variant="outline">Beta</Badge>}
 			/>
-			{WEB_BETA_FEATURES.length === 0 ? (
+			{betaFeatures.length === 0 ? (
 				<div className="rounded-lg border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
 					There are currently no web beta features to opt into.
 				</div>
 			) : (
 				<BetaSettingsClient
 					initialProfile={initialData.profile}
-					features={WEB_BETA_FEATURES}
+					features={betaFeatures}
 				/>
 			)}
 		</div>

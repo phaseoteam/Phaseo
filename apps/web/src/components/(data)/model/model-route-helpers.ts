@@ -54,6 +54,39 @@ export async function getModelMetadataIdentity(
 		};
 	}
 
+	if (!includeHidden) {
+		const identityFromOverview = async (modelId: string) => {
+			const overview = await fetchFrontendModelOverview(modelId).catch(() => null);
+			return overview ? {
+				modelId,
+				modelName: overview.name?.trim() || fallbackName,
+				organisationName: overview.organisation?.name ?? null,
+				modelDescription: resolveModelDescription(overview),
+			} : null;
+		};
+		const direct = await identityFromOverview(requestedModelId);
+		if (direct) return direct;
+		try {
+			const resolved = await fetchFrontendCanonicalModelId(requestedModelId, false);
+			const canonicalModelId = resolved.canonicalModelId ?? requestedModelId;
+			if (canonicalModelId !== requestedModelId) {
+				const canonical = await identityFromOverview(canonicalModelId);
+				if (canonical) return canonical;
+			}
+		} catch {
+			// Fall through to generated metadata.
+		}
+		return {
+			modelId: requestedModelId,
+			modelName: fallbackName,
+			organisationName: null,
+			modelDescription: buildGeneratedModelDescription({
+				model_id: requestedModelId,
+				name: fallbackName,
+			}),
+		};
+	}
+
 	try {
 		const header = await fetchFrontendModelHeader(
 			requestedModelId,

@@ -14,10 +14,11 @@ import { GATEWAY_ACCESS_SCOPE, parseStoredScopeList } from "@/lib/authz/capabili
 const enc = new TextEncoder();
 const KEY_CACHE_PREFIX = "gateway:key";
 const KEY_CACHE_TTL_SECONDS = 60;
-const KEY_VERSION_L1_TTL_MS = 1_000;
-const KEY_LOOKUP_L1_TTL_MS = 1_000;
+// Key mutations advance the version token. These short isolate-local windows
+// remove repeated KV reads while bounding revocation propagation.
+const KEY_VERSION_L1_TTL_MS = 5_000;
+const KEY_LOOKUP_L1_TTL_MS = 30_000;
 const KEY_LOOKUP_L1_MAX_ENTRIES = 2_000;
-
 /* -------------------- Web Crypto HMAC helpers -------------------- */
 
 /**
@@ -193,11 +194,13 @@ export type AuthSuccess = {
     authMethod?: "api_key" | "oauth";
     oauthClientId?: string | null;
     oauthScopes?: string[];
+    oauthResource?: string | null;
     scopes?: string[];
 };
 
 type AuthenticateOptions = {
     useKvCache?: boolean;
+    allowResourceBoundOAuthKey?: boolean;
 };
 
 type KeyRow = {
@@ -212,6 +215,7 @@ type KeyRow = {
 	oauth_client_id?: string | null;
 	oauth_user_id?: string | null;
 	oauth_scopes?: unknown;
+	oauth_resource?: string | null;
 };
 
 type CachedKeyLookup = KeyRow | "missing" | null;
@@ -366,12 +370,14 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
     }
 
     // 2. Route to OAuth or API key authentication
-    // Check if token is a JWT (3 dot-separated parts, not starting with aistats_)
+    // OAuth inference access uses the opaque delegated key returned by the
+    // authorization-code flow. Session JWTs are control-plane credentials and
+    // do not identify a concrete gateway key for key-scoped policy/billing.
     if (isJWTFormat(token)) {
         if (!isGatewayOAuthJwt(token)) {
             return { ok: false, reason: "invalid_key_format" };
         }
-        return await authenticateOAuth(req, token, options);
+		return { ok: false, reason: "oauth_delegated_key_required" };
     }
 
     const bindings = getBindings();
@@ -523,14 +529,19 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
 			if (!userId || !clientId || oauthScopes.length === 0) {
 				return { ok: false, reason: "oauth_managed_key_invalid" };
 			}
-			const { getActiveOAuthWorkspaceScopes } = await import("@/lib/oauth/service");
+			const { getActiveOAuthWorkspaceScopes, isGatewayOAuthResource } = await import("@/lib/oauth/service");
 			const activeAuthorizationScopes = await getActiveOAuthWorkspaceScopes({ userId, workspaceId, clientId });
 			if (activeAuthorizationScopes === null) {
 				return { ok: false, reason: "oauth_authorization_revoked" };
 			}
 			const effectiveScopes = oauthScopes.filter((scope) => activeAuthorizationScopes.includes(scope));
-			if (!effectiveScopes.includes(GATEWAY_ACCESS_SCOPE)) {
+			const oauthResource = String(keyRow.oauth_resource ?? "").trim() || null;
+			const isGatewayApiResource = isGatewayOAuthResource(oauthResource);
+			if ((!oauthResource || isGatewayApiResource) && !effectiveScopes.includes(GATEWAY_ACCESS_SCOPE)) {
 				return { ok: false, reason: "oauth_gateway_scope_required" };
+			}
+			if (oauthResource && !isGatewayApiResource && !options.allowResourceBoundOAuthKey) {
+				return { ok: false, reason: "oauth_resource_token_not_valid_for_api" };
 			}
 
 			dispatchBackground((async () => {
@@ -561,6 +572,7 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
 				authMethod: "oauth",
 				oauthClientId: clientId,
 				oauthScopes: effectiveScopes,
+				oauthResource,
 				scopes: effectiveScopes,
 			};
 		}

@@ -82,7 +82,7 @@
       "is_self_reported": true,
       "other_info": "Sakana Fugu product page benchmark table.",
       "source_link": "https://sakana.ai/fugu/",
-      "rank": null
+      "rank": 6
     },
     {
       "benchmark_id": "livecodebench",
@@ -106,7 +106,7 @@
       "is_self_reported": true,
       "other_info": "Sakana Fugu product page benchmark table.",
       "source_link": "https://sakana.ai/fugu/",
-      "rank": null
+      "rank": 32
     },
     {
       "benchmark_id": "charxiv-reasoning",
@@ -122,7 +122,7 @@
       "is_self_reported": true,
       "other_info": "Sakana reports this benchmark as GPQA-D.",
       "source_link": "https://sakana.ai/fugu/",
-      "rank": null
+      "rank": 1
     },
     {
       "benchmark_id": "scicode",
@@ -140,5 +140,76 @@
       "source_link": "https://sakana.ai/fugu/",
       "rank": null
     }
-  ]
+  ],
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 1000000,
+    "input": 1000000,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image/*"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "announcement",
+      "url": "https://sakana.ai/fugu-release/",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "docs",
+      "url": "https://sakana.ai/fugu/",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "api_reference",
+      "url": "https://console.sakana.ai/models",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "api_reference",
+      "url": "https://console.sakana.ai/get-started",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "pricing",
+      "url": "https://console.sakana.ai/pricing",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

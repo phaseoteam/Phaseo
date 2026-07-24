@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "frontierswe",
+  "benchmark_name": "FrontierSWE",
+  "category": "code",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": "https://www.frontierswe.com/",
+  "total_models": 1
+}

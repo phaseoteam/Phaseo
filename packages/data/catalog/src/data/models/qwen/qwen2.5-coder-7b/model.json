@@ -151,7 +151,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen2.5-omni-7b (score=0.4700; benches=45)",
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 47
+      "rank": 49
     },
     {
       "benchmark_id": "mathvista",
@@ -263,7 +263,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen2.5-omni-7b (score=0.4700; benches=45)",
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 100
+      "rank": 102
     },
     {
       "benchmark_id": "mmstar",
@@ -393,5 +393,41 @@
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
       "rank": 2
     }
-  ]
+  ],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": "2024-03-01T00:00:00",
+  "limits": {
+    "context": 128000,
+    "input": 128000,
+    "output": 128000
+  },
+  "modalities": {
+    "input": null,
+    "output": null
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

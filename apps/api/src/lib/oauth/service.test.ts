@@ -9,6 +9,7 @@ import {
 	hashOAuthSecret,
 	normalizeScopes,
 	normalizeUserCode,
+	verifyPkce,
 	verifyClientSecret,
 } from "./service";
 
@@ -41,6 +42,18 @@ describe("OAuth service helpers", () => {
 			"keys:write",
 		]);
 		expect(normalizeUserCode("abcd efgh")).toBe("ABCD-EFGH");
+	});
+
+	it("enforces RFC 7636 verifier and challenge syntax", async () => {
+		const verifier = "A".repeat(43);
+		const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)));
+		let binary = "";
+		for (const byte of digest) binary += String.fromCharCode(byte);
+		const challenge = btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+
+		await expect(verifyPkce({ codeVerifier: verifier, codeChallenge: challenge, method: "S256" })).resolves.toBe(true);
+		await expect(verifyPkce({ codeVerifier: "short", codeChallenge: challenge, method: "S256" })).resolves.toBe(false);
+		await expect(verifyPkce({ codeVerifier: verifier, codeChallenge: "short", method: "S256" })).resolves.toBe(false);
 	});
 
 	it("filters requested scopes against client allowlists", () => {

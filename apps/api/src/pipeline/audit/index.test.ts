@@ -5,6 +5,8 @@ const ensureRuntimeForBackgroundMock = vi.fn();
 const isLocalTestingModeEnabledMock = vi.fn();
 const ensureAppIdMock = vi.fn();
 const syncWorkspaceUsageRollupForRequestMock = vi.fn();
+const resolveGatewayIoLoggingPolicyMock = vi.fn();
+const persistGatewayIoLogMock = vi.fn();
 
 vi.mock("@/runtime/env", () => ({
 	getSupabaseAdmin: (...args: any[]) => getSupabaseAdminMock(...args),
@@ -21,6 +23,11 @@ vi.mock("@core/workspace-usage-rollups", () => ({
 		syncWorkspaceUsageRollupForRequestMock(...args),
 }));
 
+vi.mock("./io-logging", () => ({
+	resolveGatewayIoLoggingPolicy: (...args: any[]) => resolveGatewayIoLoggingPolicyMock(...args),
+	persistGatewayIoLog: (...args: any[]) => persistGatewayIoLogMock(...args),
+}));
+
 import { auditFailure, auditSuccess } from "./index";
 
 describe("audit request detail persistence", () => {
@@ -30,10 +37,18 @@ describe("audit request detail persistence", () => {
 		isLocalTestingModeEnabledMock.mockReset();
 		ensureAppIdMock.mockReset();
 		syncWorkspaceUsageRollupForRequestMock.mockReset();
+		resolveGatewayIoLoggingPolicyMock.mockReset();
+		persistGatewayIoLogMock.mockReset();
 		ensureRuntimeForBackgroundMock.mockReturnValue(() => {});
 		isLocalTestingModeEnabledMock.mockReturnValue(false);
 		ensureAppIdMock.mockResolvedValue("app_resolved");
 		syncWorkspaceUsageRollupForRequestMock.mockResolvedValue(undefined);
+		resolveGatewayIoLoggingPolicyMock.mockResolvedValue({
+			featureEnabled: true,
+			captureEnabled: true,
+			settings: { enabled: true, retentionDays: 90, includeProviderPayloads: true },
+		});
+		persistGatewayIoLogMock.mockResolvedValue(undefined);
 	});
 
 	it("stores replay-ready details for successful requests", async () => {
@@ -41,6 +56,7 @@ describe("audit request detail persistence", () => {
 		const detailRows: any[] = [];
 
 		getSupabaseAdminMock.mockReturnValue({
+			rpc: vi.fn(async () => ({ data: "v2_request_event_1", error: null })),
 			from: vi.fn((table: string) => {
 				if (table === "gateway_requests") {
 					return {
@@ -148,6 +164,7 @@ describe("audit request detail persistence", () => {
 		const detailRows: any[] = [];
 
 		getSupabaseAdminMock.mockReturnValue({
+			rpc: vi.fn(async () => ({ data: "v2_request_event_2", error: null })),
 			from: vi.fn((table: string) => {
 				if (table === "gateway_requests") {
 					return {
@@ -246,6 +263,7 @@ describe("audit request detail persistence", () => {
 
 	it("keeps rollup sync independent from detail persistence failures", async () => {
 		getSupabaseAdminMock.mockReturnValue({
+			rpc: vi.fn(async () => ({ data: "v2_request_event_3", error: null })),
 			from: vi.fn((table: string) => {
 				if (table === "gateway_requests") {
 					return {
@@ -309,6 +327,189 @@ describe("audit request detail persistence", () => {
 		});
 	});
 
+	it("keeps payload details out of Supabase and R2 when I/O logging is not explicitly enabled", async () => {
+		resolveGatewayIoLoggingPolicyMock.mockResolvedValue({
+			featureEnabled: true,
+			captureEnabled: false,
+			settings: { enabled: false, retentionDays: 90, includeProviderPayloads: true },
+		});
+		const fromMock = vi.fn((table: string) => {
+			if (table !== "gateway_requests") throw new Error(`unexpected table ${table}`);
+			return {
+				insert: vi.fn(() => ({
+					select: vi.fn(() => ({
+						single: vi.fn(async () => ({
+							data: {
+								id: "row_no_io",
+								created_at: "2026-05-05T12:12:00.000Z",
+								workspace_id: "ws_no_io",
+							},
+							error: null,
+						})),
+					})),
+				})),
+			};
+		});
+		const rpcMock = vi.fn(async () => ({ data: "request-event-id", error: null }));
+		getSupabaseAdminMock.mockReturnValue({ from: fromMock, rpc: rpcMock });
+
+		await auditSuccess({
+			requestId: "req_no_io",
+			workspaceId: "ws_no_io",
+			provider: "openai",
+			model: "openai/gpt-5-nano",
+			endpoint: "chat.completions",
+			stream: false,
+			byok: false,
+			usagePriced: {
+				input_tokens: 10,
+				output_tokens: 4,
+				input_tokens_details: { cached_tokens: 3 },
+				output_tool_call_count: 1,
+				pricing: { lines: [] },
+			},
+			totalCents: 0.001,
+			currency: "USD",
+			statusCode: 200,
+			requestPayload: {
+				messages: [{ role: "user", content: "private prompt" }],
+				response_format: { type: "json_object" },
+			},
+			gatewayResponse: { output_text: '{"result":"private response"}' },
+			providerRequest: { secret: "provider request" },
+			providerResponse: { secret: "provider response" },
+			providerAttempts: [{
+				attempt_number: 1,
+				provider: "openai",
+				api_model_id: "gpt-5-nano",
+				outcome: "success",
+				duration_ms: 25,
+				status: 200,
+			}],
+			detailMetadata: {
+				routing_snapshot: [{
+					rank: 1,
+					provider: "openai",
+					provider_id: "openai",
+					provider_api_model_id: "gpt-5-nano",
+					score: 0.82,
+					breaker: "closed",
+					score_factor_values: [0.99, 0.8, 0.7, 0.6, 1, 0.95, 50, 0.5, 0, 1, 1, 1, 1, 1, 1],
+				}],
+				routing_diagnostics: {
+					filterStages: [{
+						stage: "hints.ignore",
+						droppedProviders: [{
+							providerId: "ignored-provider",
+							reason: "listed_in_provider.ignore",
+						}],
+					}],
+				},
+			},
+		});
+
+		expect(fromMock).toHaveBeenCalledTimes(1);
+		expect(fromMock).toHaveBeenCalledWith("gateway_requests");
+		expect(rpcMock).toHaveBeenCalledOnce();
+		expect(rpcMock.mock.calls[0]?.[0]).toBe("ingest_v2_gateway_request_with_routing");
+		const event = rpcMock.mock.calls[0]?.[1]?.p_event;
+		expect(event).toEqual(expect.objectContaining({
+			request_id: "req_no_io",
+			workspace_id: "ws_no_io",
+			requested_model_input: "openai/gpt-5-nano",
+			cost_nanos: 10_000,
+			usage_meters: expect.any(Array),
+			tool_call_count: 1,
+			tool_call_succeeded: true,
+			structured_output_attempted: true,
+			structured_output_succeeded: true,
+		}));
+		expect(event.usage_meters).toEqual(expect.arrayContaining([
+			expect.objectContaining({ meter_key: "input_tokens", quantity: 10 }),
+			expect.objectContaining({ meter_key: "cached_input_tokens", quantity: 3 }),
+			expect.objectContaining({ meter_key: "output_tokens", quantity: 4 }),
+		]));
+		expect(event.routing_decisions).toEqual([
+			expect.objectContaining({
+				decision: "ranked",
+				provider: "openai",
+				rank: 1,
+				score: 0.82,
+				selected: true,
+				attempted: true,
+				score_factors: expect.objectContaining({
+					price_score: 1,
+					success_rate: 0.99,
+				}),
+			}),
+			expect.objectContaining({
+				decision: "excluded",
+				provider: "ignored-provider",
+				exclusion_stage: "hints.ignore",
+				exclusion_reason: "listed_in_provider.ignore",
+			}),
+		]);
+		expect(JSON.stringify(event)).not.toContain("private prompt");
+		expect(JSON.stringify(event)).not.toContain("private response");
+		expect(persistGatewayIoLogMock).not.toHaveBeenCalled();
+	});
+
+	it("falls back to atomic V2 ingestion while the routing RPC is not yet available", async () => {
+		resolveGatewayIoLoggingPolicyMock.mockResolvedValue({
+			featureEnabled: true,
+			captureEnabled: false,
+			settings: { enabled: false, retentionDays: 90, includeProviderPayloads: true },
+		});
+		const fromMock = vi.fn(() => ({
+			insert: vi.fn(() => ({
+				select: vi.fn(() => ({
+					single: vi.fn(async () => ({
+						data: {
+							id: "row_rpc_fallback",
+							created_at: "2026-05-05T12:13:00.000Z",
+							workspace_id: "ws_rpc_fallback",
+						},
+						error: null,
+					})),
+				})),
+			})),
+		}));
+		const rpcMock = vi.fn(async (rpc: string) => rpc === "ingest_v2_gateway_request_with_routing"
+			? {
+				data: null,
+				error: {
+					code: "PGRST202",
+					message: "Could not find the function public.ingest_v2_gateway_request_with_routing(p_event)",
+				},
+			}
+			: { data: "request-event-id", error: null });
+		getSupabaseAdminMock.mockReturnValue({ from: fromMock, rpc: rpcMock });
+
+		await auditSuccess({
+			requestId: "req_rpc_fallback",
+			workspaceId: "ws_rpc_fallback",
+			provider: "openai",
+			model: "openai/gpt-5-nano",
+			endpoint: "chat.completions",
+			stream: true,
+			byok: false,
+			usagePriced: { input_tokens: 2, output_tokens: 1, pricing: { lines: [] } },
+			totalCents: 0.001,
+			currency: "USD",
+			statusCode: 200,
+		});
+
+		expect(rpcMock).toHaveBeenCalledTimes(2);
+		expect(rpcMock.mock.calls[0]?.[0]).toBe("ingest_v2_gateway_request_with_routing");
+		expect(rpcMock.mock.calls[1]?.[0]).toBe("ingest_v2_gateway_request");
+		expect(rpcMock.mock.calls[1]?.[1]?.p_event).not.toHaveProperty("routing_decisions");
+		expect(rpcMock.mock.calls[1]?.[1]?.p_event).toEqual(expect.objectContaining({
+			request_id: "req_rpc_fallback",
+			workspace_id: "ws_rpc_fallback",
+			usage_meters: expect.any(Array),
+		}));
+	});
+
 	it("disables request detail persistence in local testing mode when the detail table is missing", async () => {
 		isLocalTestingModeEnabledMock.mockReturnValue(true);
 		const detailInsertMock = vi
@@ -323,6 +524,7 @@ describe("audit request detail persistence", () => {
 			.mockResolvedValue({ error: null });
 
 		getSupabaseAdminMock.mockReturnValue({
+			rpc: vi.fn(async () => ({ data: "v2_request_event_4", error: null })),
 			from: vi.fn((table: string) => {
 				if (table === "gateway_requests") {
 					return {

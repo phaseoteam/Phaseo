@@ -17,5 +17,13 @@
       "platform": "website",
       "url": "https://z.ai/blog/glm-4.5"
     }
-  ]
+  ],
+  "status": "active",
+  "routable": null,
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

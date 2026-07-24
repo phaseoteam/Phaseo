@@ -194,7 +194,9 @@ export function providerMeetsResidencyRequirement(
 	}
 	if (requirement.requireZeroDataRetention) {
 		const zdr = metadata.zeroDataRetention ?? "unknown";
-		if (zdr !== "default" && zdr !== "optional") {
+		// "optional" only means the provider can offer ZDR. Without route-specific
+		// evidence that it is enabled for the credential/account, it is not a guarantee.
+		if (zdr !== "default") {
 			return { ok: false, reason: "zero_data_retention_unsupported" };
 		}
 	}

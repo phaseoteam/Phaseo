@@ -57,7 +57,7 @@
       "is_self_reported": true,
       "other_info": "No Tools",
       "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-Pro-Model-Card.pdf",
-      "rank": 55
+      "rank": 63
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -73,7 +73,7 @@
       "is_self_reported": true,
       "other_info": "No Tools",
       "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-Pro-Model-Card.pdf",
-      "rank": 13
+      "rank": 16
     },
     {
       "benchmark_id": "aime-2025",
@@ -97,7 +97,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-Pro-Model-Card.pdf",
-      "rank": 9
+      "rank": 10
     },
     {
       "benchmark_id": "charxiv-reasoning",
@@ -177,7 +177,7 @@
       "is_self_reported": true,
       "other_info": "With Search & Code Execution",
       "source_link": "https://storage.googleapis.com/deepmind-media/gemini/gemini_3_pro_model_evaluation.pdf",
-      "rank": 29
+      "rank": 35
     },
     {
       "benchmark_id": "matharena-apex",
@@ -265,7 +265,7 @@
       "is_self_reported": true,
       "other_info": "Deep Think, Tools Off",
       "source_link": "https://blog.google/products/gemini/gemini-3/",
-      "rank": 42
+      "rank": 50
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -273,7 +273,7 @@
       "is_self_reported": true,
       "other_info": "Deep Think, Tools Off",
       "source_link": "https://blog.google/products/gemini/gemini-3/",
-      "rank": 6
+      "rank": 8
     },
     {
       "benchmark_id": "aime-2025",
@@ -371,5 +371,72 @@
       "source_link": "https://github.com/lechmazur/nyt-connections",
       "rank": 4
     }
-  ]
+  ],
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": "2025-01-01T00:00:00",
+  "limits": {
+    "context": 1048576,
+    "input": 1048576,
+    "output": 65536
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image/*",
+      "video/*",
+      "audio/*"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "paper",
+      "url": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-Pro-Model-Card.pdf",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "announcement",
+      "url": "https://blog.google/products/gemini/gemini-3/",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "api_reference",
+      "url": "https://ai.google.dev/gemini-api/docs/models#gemini-3-pro-preview",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "paper",
+      "url": "https://deepmind.google/models/model-cards/gemini-3-pro/",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

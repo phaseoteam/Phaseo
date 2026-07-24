@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": "Search agent with commercial API + webpage filter + 128K context",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
-      "rank": 45
+      "rank": 49
     },
     {
       "benchmark_id": "browsecomp-zh",
@@ -86,7 +86,7 @@
       "is_self_reported": true,
       "other_info": "Thinking mode only, text-only subset",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
-      "rank": 98
+      "rank": 106
     },
     {
       "benchmark_id": "livecodebench",
@@ -144,5 +144,41 @@
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
       "rank": 16
     }
-  ]
+  ],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": null,
+    "output": null
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

@@ -58,7 +58,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 20
+      "rank": 22
     },
     {
       "benchmark_id": "toolathlon",
@@ -66,7 +66,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 11
+      "rank": 14
     },
     {
       "benchmark_id": "tau-2-telecom",
@@ -82,7 +82,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 22
+      "rank": 25
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -90,7 +90,7 @@
       "is_self_reported": true,
       "other_info": "With tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 39
+      "rank": 47
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -98,7 +98,7 @@
       "is_self_reported": true,
       "other_info": "Without tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 67
+      "rank": 75
     },
     {
       "benchmark_id": "os-world",
@@ -114,7 +114,7 @@
       "is_self_reported": true,
       "other_info": "With Python",
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 18
+      "rank": 19
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -122,7 +122,7 @@
       "is_self_reported": true,
       "other_info": "No tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 27
+      "rank": 28
     },
     {
       "benchmark_id": "omnidocbench-1.5",
@@ -186,7 +186,7 @@
       "is_self_reported": false,
       "other_info": "mini-swe-agent; effort xhigh; 24% +/-3%; avg cost $2.08; avg time 33m; out tok 135k",
       "source_link": "https://deepswe.datacurve.ai/",
-      "rank": 9
+      "rank": 12
     },
     {
       "benchmark_id": "nyt-connections",
@@ -204,5 +204,52 @@
       "source_link": "https://github.com/lechmazur/generalization",
       "rank": 15
     }
-  ]
+  ],
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": "2025-08-31T00:00:00",
+  "limits": {
+    "context": 400000,
+    "input": 400000,
+    "output": 128000
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image/*"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "announcement",
+      "url": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

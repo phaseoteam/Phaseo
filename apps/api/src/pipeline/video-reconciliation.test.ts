@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const fetchVideoProviderStatusMock = vi.fn();
 const finalizeVideoJobMock = vi.fn();
 const listPendingVideoJobsMock = vi.fn();
+const updateVideoJobReconciliationMock = vi.fn();
 const dispatchVideoWebhookEventInBackgroundMock = vi.fn();
 
 vi.mock("@core/video-reconciliation", () => ({
@@ -15,6 +16,7 @@ vi.mock("@core/video-finalization", () => ({
 
 vi.mock("@core/video-jobs", () => ({
 	listPendingVideoJobs: (...args: unknown[]) => listPendingVideoJobsMock(...args),
+	updateVideoJobReconciliation: (...args: unknown[]) => updateVideoJobReconciliationMock(...args),
 }));
 
 vi.mock("@core/video-user-webhooks", () => ({
@@ -56,6 +58,7 @@ describe("runVideoReconciliationJob", () => {
 		fetchVideoProviderStatusMock.mockReset();
 		finalizeVideoJobMock.mockReset();
 		listPendingVideoJobsMock.mockReset();
+		updateVideoJobReconciliationMock.mockReset().mockResolvedValue(undefined);
 		dispatchVideoWebhookEventInBackgroundMock.mockReset();
 	});
 

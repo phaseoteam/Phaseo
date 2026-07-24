@@ -180,7 +180,7 @@
       "is_self_reported": true,
       "other_info": "Seed2 official benchmark table | GPQA Diamond",
       "source_link": "https://seed.bytedance.com/en/seed2",
-      "rank": 63
+      "rank": 66
     },
     {
       "benchmark_id": "superchem-text-only",
@@ -404,7 +404,7 @@
       "is_self_reported": true,
       "other_info": "Seed2 official benchmark table | MathVision",
       "source_link": "https://seed.bytedance.com/en/seed2",
-      "rank": 9
+      "rank": 10
     },
     {
       "benchmark_id": "dynamath",
@@ -444,7 +444,7 @@
       "is_self_reported": true,
       "other_info": "Seed2 official benchmark table | MMMU-Pro",
       "source_link": "https://seed.bytedance.com/en/seed2",
-      "rank": 37
+      "rank": 38
     },
     {
       "benchmark_id": "emma",
@@ -508,7 +508,7 @@
       "is_self_reported": true,
       "other_info": "Seed2 official benchmark table | ZeroBench (main)",
       "source_link": "https://seed.bytedance.com/en/seed2",
-      "rank": 3
+      "rank": 4
     },
     {
       "benchmark_id": "zerobench-sub",
@@ -636,7 +636,7 @@
       "is_self_reported": true,
       "other_info": "Seed2 official benchmark table | WorldVQA",
       "source_link": "https://seed.bytedance.com/en/seed2",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "vibeeval",
@@ -772,7 +772,7 @@
       "is_self_reported": true,
       "other_info": "Seed2 official benchmark table | CharXiv-RQ",
       "source_link": "https://seed.bytedance.com/en/seed2",
-      "rank": 4
+      "rank": 5
     },
     {
       "benchmark_id": "dude",
@@ -1006,5 +1006,53 @@
       "source_link": "https://seed.bytedance.com/en/seed2",
       "rank": 3
     }
-  ]
+  ],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image/*"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "model_card",
+      "url": "https://lf3-static.bytednsdoc.com/obj/eden-cn/lapzild-tss/ljhwZthlaukjlkulzlp/seed2/0214/Seed2.0%20Model%20Card.pdf",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

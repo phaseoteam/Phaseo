@@ -59,7 +59,7 @@
       "is_self_reported": false,
       "other_info": "Adaptive reasoning, max effort; Elo",
       "source_link": "https://artificialanalysis.ai/articles/claude-opus-4-8-analysis-and-benchmarks",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "aa-omniscience",
@@ -91,7 +91,7 @@
       "is_self_reported": true,
       "other_info": "Terminus-2 public harness; max effort",
       "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/c886650a2e96fc0925c805a1a7ca77314ccbf4a6.pdf",
-      "rank": 3
+      "rank": 9
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -99,7 +99,7 @@
       "is_self_reported": true,
       "other_info": "Max effort",
       "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/c886650a2e96fc0925c805a1a7ca77314ccbf4a6.pdf",
-      "rank": 7
+      "rank": 9
     },
     {
       "benchmark_id": "usamo-2026",
@@ -163,7 +163,7 @@
       "is_self_reported": false,
       "other_info": "mini-swe-agent; effort max; 58% +/-2%; avg cost $12.58; avg time 43m; out tok 136k",
       "source_link": "https://deepswe.datacurve.ai/",
-      "rank": 2
+      "rank": 4
     },
     {
       "benchmark_id": "creative-story-writing",
@@ -197,5 +197,65 @@
       "source_link": "https://github.com/lechmazur/nyt-connections",
       "rank": 12
     }
-  ]
+  ],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": "2026-01-01T00:00:00",
+  "limits": {
+    "context": 1000000,
+    "input": 1000000,
+    "output": 128000
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image/*"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "announcement",
+      "url": "https://www.anthropic.com/news/claude-opus-4-8",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "docs",
+      "url": "https://docs.anthropic.com/en/docs/about-claude/models/whats-new-claude-4-8",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "model_card",
+      "url": "https://www.anthropic.com/claude-opus-4-8-system-card",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

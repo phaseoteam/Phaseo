@@ -84,7 +84,7 @@
       "is_self_reported": true,
       "other_info": "Thinking, Single Attempt",
       "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
-      "rank": 68
+      "rank": 71
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -92,7 +92,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 67
+      "rank": 70
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -100,7 +100,7 @@
       "is_self_reported": true,
       "other_info": "Thinking, No Tools",
       "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
-      "rank": 111
+      "rank": 119
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -108,7 +108,7 @@
       "is_self_reported": true,
       "other_info": "No Tools",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 110
+      "rank": 118
     },
     {
       "benchmark_id": "lmarena-text",
@@ -182,5 +182,59 @@
       "source_link": "https://github.com/lechmazur/confabulations",
       "rank": 31
     }
-  ]
+  ],
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": "2025-01-01T00:00:00",
+  "limits": {
+    "context": 1048576,
+    "input": 1048576,
+    "output": 65536
+  },
+  "modalities": {
+    "input": null,
+    "output": null
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "api_reference",
+      "url": "https://ai.google.dev/gemini-api/docs/models?hl=en#gemini-2.5-flash-preview-04-17",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "playground",
+      "url": "https://aistudio.google.com/?model=gemini-2.5-flash-preview-04-17",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "announcement",
+      "url": "https://developers.googleblog.com/en/start-building-with-gemini-25-flash/",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

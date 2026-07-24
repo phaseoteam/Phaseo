@@ -52,7 +52,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-4/",
-      "rank": 29
+      "rank": 32
     },
     {
       "benchmark_id": "financeagent-v1.1",
@@ -100,7 +100,7 @@
       "is_self_reported": true,
       "other_info": "No tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-4/",
-      "rank": 6
+      "rank": 7
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -116,7 +116,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-4/",
-      "rank": 11
+      "rank": 15
     },
     {
       "benchmark_id": "scale-mcp-atlas",
@@ -124,7 +124,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-4/",
-      "rank": 14
+      "rank": 16
     },
     {
       "benchmark_id": "toolathlon",
@@ -132,7 +132,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-4/",
-      "rank": 4
+      "rank": 6
     },
     {
       "benchmark_id": "tau-2-telecom",
@@ -148,7 +148,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-4/",
-      "rank": 10
+      "rank": 13
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -156,7 +156,7 @@
       "is_self_reported": true,
       "other_info": "Without tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-4/",
-      "rank": 47
+      "rank": 55
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -164,7 +164,7 @@
       "is_self_reported": true,
       "other_info": "With tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-4/",
-      "rank": 13
+      "rank": 17
     },
     {
       "benchmark_id": "frontier-math",
@@ -276,7 +276,7 @@
       "is_self_reported": false,
       "other_info": "mini-swe-agent; effort xhigh; 56% +/-2%; avg cost $4.38; avg time 27m; out tok 71k",
       "source_link": "https://deepswe.datacurve.ai/",
-      "rank": 3
+      "rank": 5
     },
     {
       "benchmark_id": "creative-story-writing",
@@ -358,5 +358,64 @@
       "source_link": "https://github.com/lechmazur/generalization",
       "rank": 4
     }
-  ]
+  ],
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": "2025-08-31T00:00:00",
+  "limits": {
+    "context": 1050000,
+    "input": 1050000,
+    "output": 128000
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image/*"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "announcement",
+      "url": "https://openai.com/index/introducing-gpt-5-4/",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "api_reference",
+      "url": "https://developers.openai.com/api/docs/models/gpt-5.4",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "model_card",
+      "url": "https://deploymentsafety.openai.com/gpt-5-4-thinking",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

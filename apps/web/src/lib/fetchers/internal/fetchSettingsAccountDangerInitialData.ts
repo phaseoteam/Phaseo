@@ -1,23 +1,11 @@
-import { headers } from "next/headers";
-import { absoluteUrl } from "@/lib/seo";
-import type { SettingsAccountDangerInitialData } from "@/app/api/internal/settings/account/danger/initial/route";
+import type { SettingsAccountDangerInitialData } from "@/lib/fetchers/internal/settingsTypes";
+import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
 
 export async function fetchSettingsAccountDangerInitialData(): Promise<SettingsAccountDangerInitialData> {
-	const requestHeaders = await headers();
-	const response = await fetch(
-		absoluteUrl("/api/internal/settings/account/danger/initial"),
-		{
-			cache: "no-store",
-			headers: {
-				accept: "application/json",
-				cookie: requestHeaders.get("cookie") ?? "",
-			},
-		},
+	const { accessToken } = await getServerAccountContext();
+	return fetchAccountWebApi<SettingsAccountDangerInitialData>(
+		"/api/account/settings/account/danger",
+		accessToken,
 	);
-
-	if (!response.ok) {
-		throw new Error(`Failed to fetch danger zone settings data: ${response.status}`);
-	}
-
-	return (await response.json()) as SettingsAccountDangerInitialData;
 }

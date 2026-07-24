@@ -31,15 +31,6 @@ export type TokenTier = {
     effTo?: string | null;
     ruleId?: string | null;
     isCurrent: boolean;
-    timeWindowPrices?: TimeWindowTierPrice[];
-};
-
-export type TimeWindowTierPrice = {
-    label: string;
-    price: number;
-    per1M: number;
-    scheduleLabel: string | null;
-    isCurrent: boolean;
 };
 
 export type TokenTriple = {
@@ -144,8 +135,6 @@ export type ProviderTablePriceCandidate = {
     formattedPrice: string;
     unitLabel: string;
     unitShortLabel: string;
-    periodLabel: string | null;
-    periodScheduleLabel: string | null;
 };
 
 export type ProviderTablePriceSummary = {
@@ -769,6 +758,32 @@ export function ruleMatchCovers(candidateRule: any, targetRule: any): boolean {
     );
 }
 
+export function ruleComparisonMatchSignature(rule: any): string {
+	const conditions = ruleConditions(rule);
+	const hasMultipleConditions = conditions.length > 1;
+    return JSON.stringify(
+        conditions
+            .map((condition) => {
+                const op = String(condition.op ?? "").toLowerCase();
+                return {
+                    path: String(condition.path ?? "").toLowerCase(),
+                    op: isLowerBoundOp(op)
+                        ? "lower-bound"
+                        : isUpperBoundOp(op)
+                            ? "upper-bound"
+                            : op,
+                    value: condition.value,
+					// Group identifiers only describe boolean structure when a rule
+					// contains multiple conditions. Importers may still populate them
+					// on single-condition rules, where they are semantically inert.
+					or_group: hasMultipleConditions ? condition.or_group ?? null : null,
+					and_index: hasMultipleConditions ? condition.and_index ?? null : null,
+                };
+            })
+            .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))),
+    );
+}
+
 /* ---------- section builder (uses fixes) ---------- */
 export function buildProviderSections(
     p: ProviderPricing,
@@ -779,7 +794,6 @@ export function buildProviderSections(
     const nowMs = now.getTime();
     const pricingTimeUtc = formatUtcPricingMinute(now);
     const normalizedPlan = normalizePricingPlan(plan);
-    const standardRules = getProviderPricingRulesForPlan(p, "standard");
     const rules = getProviderPricingRulesForPlan(p, normalizedPlan);
     const endpointByKey = new Map<string, string>();
     for (const pm of p.provider_models) {
@@ -838,8 +852,6 @@ export function buildProviderSections(
         const endpoint = endpointByKey.get(r.model_key) ?? "unknown";
         return `${endpoint}|${r.meter}|${r.unit}|${r.unit_size}`;
     };
-    const ruleSignatureIgnoringEndpoint = (r: any) =>
-        `${r.meter}|${r.unit}|${r.unit_size}`;
     const currentRulesBySignature = new Map<string, any[]>();
     for (const r of rules as any[]) {
         if (!isCurrentRule(r)) continue;
@@ -848,26 +860,6 @@ export function buildProviderSections(
         list.push(r);
         currentRulesBySignature.set(sig, list);
     }
-    const currentStandardRulesBySignature = new Map<string, any[]>();
-    const currentStandardRulesBySignatureIgnoringEndpoint = new Map<string, any[]>();
-    for (const r of standardRules as any[]) {
-        if (!isCurrentRule(r)) continue;
-        const sig = ruleSignature(r);
-        const list = currentStandardRulesBySignature.get(sig) ?? [];
-        list.push(r);
-        currentStandardRulesBySignature.set(sig, list);
-        const endpointAgnosticSig = ruleSignatureIgnoringEndpoint(r);
-        const endpointAgnosticList =
-            currentStandardRulesBySignatureIgnoringEndpoint.get(
-                endpointAgnosticSig,
-            ) ?? [];
-        endpointAgnosticList.push(r);
-        currentStandardRulesBySignatureIgnoringEndpoint.set(
-            endpointAgnosticSig,
-            endpointAgnosticList,
-        );
-    }
-
     for (const r of rules as any[]) {
         const endpoint = endpointByKey.get(r.model_key) ?? null;
         const matchKey = JSON.stringify(r.match ?? []);
@@ -875,15 +867,6 @@ export function buildProviderSections(
         if (!grouped.has(groupKey)) grouped.set(groupKey, []);
         grouped.get(groupKey)!.push(r);
     }
-    const standardGrouped = new Map<string, any[]>();
-    for (const r of standardRules as any[]) {
-        const endpoint = endpointByKey.get(r.model_key) ?? null;
-        const matchKey = JSON.stringify(r.match ?? []);
-        const groupKey = `${endpoint ?? "unknown"}|${r.meter}|${r.unit}|${r.unit_size}|${matchKey}`;
-        if (!standardGrouped.has(groupKey)) standardGrouped.set(groupKey, []);
-        standardGrouped.get(groupKey)!.push(r);
-    }
-
     const entries: RuleEntry[] = [];
     const upcomingChanges: UpcomingPricingChange[] = [];
     for (const [groupKey, group] of grouped) {
@@ -907,7 +890,10 @@ export function buildProviderSections(
                 nextUpcoming,
                 endpointByKey.get(nextUpcoming.model_key) ?? null,
             );
-            const nextPriceRaw = Number(nextUpcoming.price_per_unit ?? Number.NaN);
+            const nextPriceRaw = resolvePricingMeterPrice(
+                nextUpcoming,
+                pricingTimeUtc,
+            ).pricePerUnit;
             const nextPrice = Number.isFinite(nextPriceRaw) ? nextPriceRaw : null;
             const exactCurrentCandidate = [...currentRules].sort(sortByPriorityAndFromDesc)[0];
             const signatureCurrentPool =
@@ -917,7 +903,7 @@ export function buildProviderSections(
                 .sort(sortByPriorityAndFromDesc)[0];
             const currentCandidate = exactCurrentCandidate ?? coverageCurrentCandidate;
             const currentPriceRaw = currentCandidate
-                ? resolvePricingMeterSchedule(currentCandidate, pricingTimeUtc).current.pricePerUnit
+                ? resolvePricingMeterPrice(currentCandidate, pricingTimeUtc).pricePerUnit
                 : Number.NaN;
             const currentPrice = Number.isFinite(currentPriceRaw) ? currentPriceRaw : null;
             let trend: UpcomingPricingChange["trend"] = null;
@@ -952,7 +938,10 @@ export function buildProviderSections(
 
         const sorted = [...currentRules].sort(sortByPriorityAndFromDesc);
         const current = sorted[0];
-        const currentPrice = resolvePricingMeterSchedule(current, pricingTimeUtc).current.pricePerUnit;
+        const currentPrice = resolvePricingMeterPrice(
+            current,
+            pricingTimeUtc,
+        ).pricePerUnit;
         const currentFrom = toMs(current.effective_from) ?? -Infinity;
 
         let baseCandidates = currentRules.filter((r) => r.priority < current.priority);
@@ -972,10 +961,10 @@ export function buildProviderSections(
                 return (bFrom ?? -Infinity) - (aFrom ?? -Infinity);
             })
             .find((candidate) => {
-                const candidatePrice = resolvePricingMeterSchedule(
+                const candidatePrice = resolvePricingMeterPrice(
                     candidate,
                     pricingTimeUtc,
-                ).current.pricePerUnit;
+                ).pricePerUnit;
                 if (!Number.isFinite(candidatePrice) || !Number.isFinite(currentPrice)) {
                     return false;
                 }
@@ -984,7 +973,10 @@ export function buildProviderSections(
         const scheduledBase =
             !base && nextUpcoming
                 ? (() => {
-                      const nextPrice = Number(nextUpcoming.price_per_unit ?? Number.NaN);
+                      const nextPrice = resolvePricingMeterPrice(
+                          nextUpcoming,
+                          pricingTimeUtc,
+                      ).pricePerUnit;
                       if (!Number.isFinite(nextPrice) || !Number.isFinite(currentPrice)) {
                           return null;
                       }
@@ -1037,8 +1029,7 @@ export function buildProviderSections(
             entry.endpoint,
         );
         const unitSize = r.unit_size ?? 1;
-        const timeWindowSchedule = resolvePricingMeterSchedule(r, pricingTimeUtc);
-        const price = timeWindowSchedule.current.pricePerUnit;
+        const price = resolvePricingMeterPrice(r, pricingTimeUtc).pricePerUnit;
         const per1M = perMillionIfTokens(unit, price, unitSize);
         const current = isCurrentWindow(r.effective_from, r.effective_to);
         const conds: Condition[] = Array.isArray(r.match)
@@ -1046,7 +1037,7 @@ export function buildProviderSections(
             : [];
 
         const basePriceRaw = base
-            ? resolvePricingMeterSchedule(base, pricingTimeUtc).current.pricePerUnit
+            ? resolvePricingMeterPrice(base, pricingTimeUtc).pricePerUnit
             : Number.NaN;
         const basePrice = Number.isFinite(basePriceRaw) ? basePriceRaw : null;
         const effectiveToMs = toMs(r.effective_to);
@@ -1061,48 +1052,11 @@ export function buildProviderSections(
             basePrice != null &&
             basePrice > price &&
             (hasFutureEnd || hasPriorityOverride);
-        let displayBasePrice = hasActiveDiscount ? basePrice : null;
-        let comparisonBaseUnitSize = base?.unit_size ?? unitSize;
-        let comparisonKind: PriceComparisonKind | null = hasActiveDiscount ? "discount" : null;
-        let comparisonDirection: PriceComparisonDirection =
+        const displayBasePrice = hasActiveDiscount ? basePrice : null;
+        const comparisonBaseUnitSize = base?.unit_size ?? unitSize;
+        const comparisonKind: PriceComparisonKind | null = hasActiveDiscount ? "discount" : null;
+        const comparisonDirection: PriceComparisonDirection =
             hasActiveDiscount ? "cheaper" : null;
-        if (!hasActiveDiscount && normalizedPlan !== "standard") {
-            const standardCurrentGroup = (standardGrouped.get(entry.groupKey) ?? [])
-                .filter(isCurrentRule)
-                .sort(sortByPriorityAndFromDesc);
-            const exactStandard = standardCurrentGroup[0];
-            const signatureStandardPool =
-                currentStandardRulesBySignature.get(ruleSignature(r)) ?? [];
-            const coveringStandard = signatureStandardPool
-                .filter((candidate) => ruleMatchCovers(candidate, r))
-                .sort(sortByPriorityAndFromDesc)[0];
-            const endpointAgnosticStandardPool =
-                currentStandardRulesBySignatureIgnoringEndpoint.get(
-                    ruleSignatureIgnoringEndpoint(r),
-                ) ?? [];
-            const endpointAgnosticCoveringStandard = endpointAgnosticStandardPool
-                .filter((candidate) => ruleMatchCovers(candidate, r))
-                .sort(sortByPriorityAndFromDesc)[0];
-            const standardBaseRule =
-                exactStandard ??
-                coveringStandard ??
-                endpointAgnosticCoveringStandard;
-            const standardBasePriceRaw = standardBaseRule
-                ? resolvePricingMeterSchedule(
-                    standardBaseRule,
-                    pricingTimeUtc,
-                ).current.pricePerUnit
-                : Number.NaN;
-            const standardBasePrice = Number.isFinite(standardBasePriceRaw)
-                ? standardBasePriceRaw
-                : null;
-            if (standardBasePrice != null && standardBasePrice !== price) {
-                displayBasePrice = standardBasePrice;
-                comparisonBaseUnitSize = standardBaseRule?.unit_size ?? unitSize;
-                comparisonKind = "vs-standard";
-                comparisonDirection = standardBasePrice > price ? "cheaper" : "pricier";
-            }
-        }
         const basePer1M =
             displayBasePrice != null && unit === "token"
                 ? perMillionIfTokens(
@@ -1137,21 +1091,6 @@ export function buildProviderSections(
                 effTo: r.effective_to ?? null,
                 ruleId: r.id ?? null,
                 isCurrent: current,
-                timeWindowPrices:
-                    timeWindowSchedule.options.length > 1
-                        ? timeWindowSchedule.options.map((option) => ({
-                            label: option.label,
-                            price: option.pricePerUnit,
-                            per1M:
-                                perMillionIfTokens(
-                                    unit,
-                                    option.pricePerUnit,
-                                    unitSize,
-                                ) ?? 0,
-                            scheduleLabel: option.scheduleLabel,
-                            isCurrent: option.isCurrent,
-                        }))
-                        : undefined,
             };
             const push = (triple: TokenTriple | undefined, which: "in" | "cached" | "write" | "out") => {
                 const t = triple ?? { in: [], cached: [], write: [], out: [] };
@@ -1346,8 +1285,6 @@ function createTablePriceCandidate(args: {
     label: string;
     price: number;
     unitLabel: string;
-    periodLabel?: string | null;
-    periodScheduleLabel?: string | null;
 }): ProviderTablePriceCandidate {
     return {
         key: args.key,
@@ -1356,8 +1293,6 @@ function createTablePriceCandidate(args: {
         formattedPrice: fmtUSD(args.price),
         unitLabel: args.unitLabel,
         unitShortLabel: formatTableUnitShortLabel(args.unitLabel),
-        periodLabel: args.periodLabel ?? null,
-        periodScheduleLabel: args.periodScheduleLabel ?? null,
     };
 }
 
@@ -1374,15 +1309,12 @@ function getTablePriceCandidates(
     ) => {
         const tier = getActiveTokenTier(tiers);
         if (!tier) return;
-        const currentPeriod = tier.timeWindowPrices?.find((price) => price.isCurrent) ?? null;
         candidates.push(
             createTablePriceCandidate({
                 key: `${direction}-${modality}-tokens`,
                 label: modality,
                 price: tier.per1M,
                 unitLabel: "Per 1M tokens",
-                periodLabel: currentPeriod ? `${currentPeriod.label} now` : null,
-                periodScheduleLabel: currentPeriod?.scheduleLabel ?? null,
             }),
         );
     };
@@ -1522,17 +1454,6 @@ export type ResolvedPricingMeterPrice = {
     timeWindow: PricingTimeWindow | null;
 };
 
-export type ResolvedPricingMeterScheduleOption = ResolvedPricingMeterPrice & {
-    label: string;
-    scheduleLabel: string | null;
-    isCurrent: boolean;
-};
-
-export type ResolvedPricingMeterSchedule = {
-    current: ResolvedPricingMeterScheduleOption;
-    options: ResolvedPricingMeterScheduleOption[];
-};
-
 function parseUtcMinute(value: unknown): number | null {
     if (typeof value !== "string") return null;
     const match = value.match(/^([01]\d|2[0-3]):([0-5]\d)$/);
@@ -1552,46 +1473,25 @@ export function formatUtcPricingMinute(value: Date | number): string {
     return `${String(date.getUTCHours()).padStart(2, "0")}:${String(date.getUTCMinutes()).padStart(2, "0")}`;
 }
 
-function formatPricingWindowSchedule(windows: PricingTimeWindow[]): string | null {
-    if (!windows.length) return null;
-    return `${windows
-        .map((window) => `${window.start_time}-${window.end_time}`)
-        .join(", ")} UTC`;
-}
-
-function getBaseTimeWindowLabel(windows: PricingTimeWindow[]): string {
-    return windows.some((window) => /peak/i.test(window.label))
-        ? "Off-peak"
-        : "Base rate";
-}
-
-export function resolvePricingMeterSchedule(
+export function resolvePricingMeterPrice(
     meter: Pick<PricingMeter, "price_per_unit" | "time_windows">,
-    pricingTimeUtc?: string | null,
-): ResolvedPricingMeterSchedule {
-    const basePriceRaw = String(meter.price_per_unit ?? "0");
-    const basePrice = parseFloat(basePriceRaw) || 0;
+    pricingTimeUtc?: string | null
+): ResolvedPricingMeterPrice {
+    const basePrice = String(meter.price_per_unit ?? "0");
     const utcMinute = parseUtcMinute(pricingTimeUtc);
-    const windows = (Array.isArray(meter.time_windows) ? meter.time_windows : [])
-        .filter(
-            (window): window is PricingTimeWindow =>
-                Boolean(
-                    window &&
-                    window.timezone === "UTC" &&
-                    window.price_per_unit !== undefined &&
-                    window.price_per_unit !== null &&
-                    parseUtcMinute(window.start_time) !== null &&
-                    parseUtcMinute(window.end_time) !== null,
-                ),
-        );
+    const windows = Array.isArray(meter.time_windows) ? meter.time_windows : [];
 
-    const matched = utcMinute === null
-        ? null
-        : windows
+    if (utcMinute !== null && windows.length > 0) {
+        const matched = windows
             .map((window, index) => ({ window, index }))
             .filter(({ window }) => {
-                const startMinute = parseUtcMinute(window.start_time)!;
-                const endMinute = parseUtcMinute(window.end_time)!;
+                if (!window || window.timezone !== "UTC") return false;
+                if (window.price_per_unit === undefined || window.price_per_unit === null) {
+                    return false;
+                }
+                const startMinute = parseUtcMinute(window.start_time);
+                const endMinute = parseUtcMinute(window.end_time);
+                if (startMinute === null || endMinute === null) return false;
                 return isMinuteInsideWindow(utcMinute, startMinute, endMinute);
             })
             .sort((a, b) =>
@@ -1599,57 +1499,20 @@ export function resolvePricingMeterSchedule(
                 a.index - b.index
             )[0]?.window ?? null;
 
-    const groupedWindows = Array.from(
-        windows.reduce((groups, window) => {
-            const pricePerUnitRaw = String(window.price_per_unit ?? basePriceRaw);
-            const key = `${window.label}\u0000${pricePerUnitRaw}`;
-            const group = groups.get(key) ?? {
-                label: window.label,
-                pricePerUnitRaw,
-                windows: [] as PricingTimeWindow[],
+        if (matched) {
+            const matchedPrice = String(matched.price_per_unit ?? basePrice);
+            return {
+                pricePerUnit: parseFloat(matchedPrice) || 0,
+                pricePerUnitRaw: matchedPrice,
+                timeWindow: matched,
             };
-            group.windows.push(window);
-            groups.set(key, group);
-            return groups;
-        }, new Map<string, { label: string; pricePerUnitRaw: string; windows: PricingTimeWindow[] }>()).values(),
-    );
+        }
+    }
 
-    const baseOption: ResolvedPricingMeterScheduleOption = {
-        label: getBaseTimeWindowLabel(windows),
-        pricePerUnit: basePrice,
-        pricePerUnitRaw: basePriceRaw,
-        scheduleLabel: null,
+    return {
+        pricePerUnit: parseFloat(basePrice) || 0,
+        pricePerUnitRaw: basePrice,
         timeWindow: null,
-        isCurrent: matched === null,
-    };
-    const windowOptions = groupedWindows.map((group) => ({
-        label: group.label,
-        pricePerUnit: parseFloat(group.pricePerUnitRaw) || 0,
-        pricePerUnitRaw: group.pricePerUnitRaw,
-        scheduleLabel: formatPricingWindowSchedule(group.windows),
-        timeWindow: group.windows.find((window) => window === matched) ?? group.windows[0] ?? null,
-        isCurrent: group.windows.some((window) => window === matched),
-    } satisfies ResolvedPricingMeterScheduleOption));
-    const options = [baseOption, ...windowOptions].sort((a, b) => {
-        if (a.isCurrent !== b.isCurrent) return a.isCurrent ? -1 : 1;
-        return 0;
-    });
-
-    return {
-        current: options.find((option) => option.isCurrent) ?? baseOption,
-        options,
-    };
-}
-
-export function resolvePricingMeterPrice(
-    meter: Pick<PricingMeter, "price_per_unit" | "time_windows">,
-    pricingTimeUtc?: string | null
-): ResolvedPricingMeterPrice {
-    const current = resolvePricingMeterSchedule(meter, pricingTimeUtc).current;
-    return {
-        pricePerUnit: current.pricePerUnit,
-        pricePerUnitRaw: current.pricePerUnitRaw,
-        timeWindow: current.timeWindow,
     };
 }
 

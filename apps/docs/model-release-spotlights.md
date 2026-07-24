@@ -8,6 +8,7 @@ Fable 5 note: Claude Fable 5 remains the 09 June 2026 launch spotlight and has a
 
 | Date | Spotlight model | Releases that day | Other releases |
 | --- | --- | ---: | --- |
+| 21 July 2026 | [Poolside: Laguna S 2.1](https://phaseo.app/models/poolside/laguna-s-2.1) | 1 | - |
 | 02 July 2026 | [Poolside: Laguna XS 2.1](https://phaseo.app/models/poolside/laguna-xs-2.1) | 1 | - |
 | 30 June 2026 | [Anthropic: Claude Sonnet 5](https://phaseo.app/models/anthropic/claude-sonnet-5) | 4 | Google: Gemini Omni Flash Preview; Mistral: Leanstral 1.5; Mistral: OCR 4 |
 | 29 June 2026 | [Meituan: LongCat 2.0](https://phaseo.app/models/meituan/longcat-2.0) | 1 | - |

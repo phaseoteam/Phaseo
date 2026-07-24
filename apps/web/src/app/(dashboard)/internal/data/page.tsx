@@ -1,22 +1,14 @@
 import Link from "next/link";
-import { createClient } from "@/utils/supabase/server";
+import { fetchAdminCatalogCounts } from "@/lib/fetchers/internal/fetchAdminCatalog";
 
 export default async function SettingsInternalPage() {
-	const supabase = await createClient();
-
-	const [{ count: modelsCount }, { count: organisationsCount }, { count: providersCount }, { count: benchmarksCount }] =
-		await Promise.all([
-			supabase.from("data_models").select("*", { count: "exact", head: true }),
-			supabase.from("data_organisations").select("*", { count: "exact", head: true }),
-			supabase.from("data_api_providers").select("*", { count: "exact", head: true }),
-			supabase.from("data_benchmarks").select("*", { count: "exact", head: true }),
-		]);
+	const counts = await fetchAdminCatalogCounts();
 
 	const items = [
-		{ label: "Models", href: "/internal/data/models", count: modelsCount ?? 0 },
-		{ label: "Organisations", href: "/internal/data/organisations", count: organisationsCount ?? 0 },
-		{ label: "API Providers", href: "/internal/data/api-providers", count: providersCount ?? 0 },
-		{ label: "Benchmarks", href: "/internal/data/benchmarks", count: benchmarksCount ?? 0 },
+		{ label: "Models", href: "/internal/data/models", count: counts.models },
+		{ label: "Organisations", href: "/internal/data/organisations", count: counts.organisations },
+		{ label: "API Providers", href: "/internal/data/api-providers", count: counts.providers },
+		{ label: "Benchmarks", href: "/internal/data/benchmarks", count: counts.benchmarks },
 	];
 
 	return (

@@ -15,7 +15,11 @@
       "note": "Derived from the public Weights & Biases DeepSeek V4 Pro model page.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-15T00:00:00Z"
+      "effective_from": "2026-05-15T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -27,7 +31,11 @@
       "note": "Derived from the public Weights & Biases DeepSeek V4 Pro model page.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-15T00:00:00Z"
+      "effective_from": "2026-05-15T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -39,7 +47,21 @@
       "note": "Derived from the public Weights & Biases DeepSeek V4 Pro model page.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-15T00:00:00Z"
+      "effective_from": "2026-05-15T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

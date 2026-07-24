@@ -238,7 +238,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort, With Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 82
+      "rank": 85
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -246,7 +246,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort, No Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 88
+      "rank": 92
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -254,7 +254,7 @@
       "is_self_reported": true,
       "other_info": "Medium Reasoning Effort, With Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 101
+      "rank": 105
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -262,7 +262,7 @@
       "is_self_reported": true,
       "other_info": "Medium Reasoning Effort, No Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 108
+      "rank": 112
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -270,7 +270,7 @@
       "is_self_reported": true,
       "other_info": "Low Reasoning Effort, With Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 120
+      "rank": 124
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -278,7 +278,7 @@
       "is_self_reported": true,
       "other_info": "Low Reasoning Effort, No Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 122
+      "rank": 126
     },
     {
       "benchmark_id": "healthbench",
@@ -358,7 +358,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort, With Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 90
+      "rank": 98
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -366,7 +366,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort, No Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 123
+      "rank": 133
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -374,7 +374,7 @@
       "is_self_reported": true,
       "other_info": "Medium Reasoning Effort, With Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 130
+      "rank": 140
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -382,7 +382,7 @@
       "is_self_reported": true,
       "other_info": "Medium Reasoning Effort, No Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 136
+      "rank": 146
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -390,7 +390,7 @@
       "is_self_reported": true,
       "other_info": "Low Reasoning Effort, With Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 140
+      "rank": 150
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -398,7 +398,7 @@
       "is_self_reported": true,
       "other_info": "Low Reasoning Effort, No Tools",
       "source_link": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
-      "rank": 156
+      "rank": 166
     },
     {
       "benchmark_id": "mmlu",
@@ -536,5 +536,75 @@
       "source_link": "https://openai.com/index/introducing-gpt-oss/",
       "rank": 93
     }
-  ]
+  ],
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": "2024-06-01T00:00:00",
+  "limits": {
+    "context": 131072,
+    "input": 131072,
+    "output": 131072
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "api_reference",
+      "url": "https://platform.openai.com/docs/models/gpt-oss-20b",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "playground",
+      "url": "https://gpt-oss.com/",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "paper",
+      "url": "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "announcement",
+      "url": "https://openai.com/index/introducing-gpt-oss/",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "weights",
+      "url": "http://huggingface.co/openai/gpt-oss-20b",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

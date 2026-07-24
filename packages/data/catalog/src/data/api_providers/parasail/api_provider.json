@@ -10,5 +10,20 @@
   "prompt_training_policy": "no_train",
   "prompt_training_notes": "Parasail says it does not use Input or Output, or personal data contained within them, to train its own models or improve the platform or service.",
   "prompt_training_source_url": "https://docs.parasail.io/parasail-docs/security-and-account-management/data-privacy-retention",
-  "terms_of_service_url": "https://www.parasail.io/legal/terms-of-service"
+  "terms_of_service_url": "https://www.parasail.io/legal/terms-of-service",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://docs.parasail.io/",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

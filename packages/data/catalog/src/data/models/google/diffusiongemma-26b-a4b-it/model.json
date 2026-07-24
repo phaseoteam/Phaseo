@@ -90,7 +90,8 @@
       "score": 73.2,
       "is_self_reported": true,
       "other_info": null,
-      "source_link": "https://huggingface.co/google/diffusiongemma-26B-A4B-it"
+      "source_link": "https://huggingface.co/google/diffusiongemma-26B-A4B-it",
+      "rank": 88
     },
     {
       "benchmark_id": "tau-2-bench",
@@ -104,14 +105,16 @@
       "score": 11,
       "is_self_reported": true,
       "other_info": "No tools",
-      "source_link": "https://huggingface.co/google/diffusiongemma-26B-A4B-it"
+      "source_link": "https://huggingface.co/google/diffusiongemma-26B-A4B-it",
+      "rank": 122
     },
     {
       "benchmark_id": "humanitys-last-exam",
       "score": 11.9,
       "is_self_reported": true,
       "other_info": "With search",
-      "source_link": "https://huggingface.co/google/diffusiongemma-26B-A4B-it"
+      "source_link": "https://huggingface.co/google/diffusiongemma-26B-A4B-it",
+      "rank": 120
     },
     {
       "benchmark_id": "big-bench-extra-hard",
@@ -132,7 +135,8 @@
       "score": 54.3,
       "is_self_reported": true,
       "other_info": null,
-      "source_link": "https://huggingface.co/google/diffusiongemma-26B-A4B-it"
+      "source_link": "https://huggingface.co/google/diffusiongemma-26B-A4B-it",
+      "rank": 84
     },
     {
       "benchmark_id": "omnidocbench-1.5",
@@ -146,7 +150,8 @@
       "score": 70.5,
       "is_self_reported": true,
       "other_info": null,
-      "source_link": "https://huggingface.co/google/diffusiongemma-26B-A4B-it"
+      "source_link": "https://huggingface.co/google/diffusiongemma-26B-A4B-it",
+      "rank": 12
     },
     {
       "benchmark_id": "medxpertqa",
@@ -162,5 +167,66 @@
       "other_info": "Average",
       "source_link": "https://huggingface.co/google/diffusiongemma-26B-A4B-it"
     }
-  ]
+  ],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": "2025-01-01T00:00:00",
+  "limits": {
+    "context": 262144,
+    "input": 262144,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image/*",
+      "video/*"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "announcement",
+      "url": "https://blog.google/innovation-and-ai/technology/developers-tools/diffusion-gemma-faster-text-generation/",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "documentation",
+      "url": "https://ai.google.dev/gemma/docs/diffusiongemma",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "weights",
+      "url": "https://huggingface.co/google/diffusiongemma-26B-A4B-it",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

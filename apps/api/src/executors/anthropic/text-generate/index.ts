@@ -7,6 +7,7 @@
 // CRITICAL FIX: Properly extracts tool_use blocks from responses!
 
 import type { ExecutorExecuteArgs, ExecutorResult, Bill, ProviderExecutor } from "@executors/types";
+import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import type { IRChatRequest, IRChatResponse, IRChoice, IRContentPart, IRToolCall } from "@core/ir";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
@@ -44,10 +45,6 @@ function usesAnthropicNativeAdvisor(requestBody: any): boolean {
  * Executes IR requests using Anthropic Messages API
  */
 export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
-		// Use upstream start time from pipeline (set before executor is called)
-		// Falls back to current time if not provided (backward compatibility)
-		const upstreamStartMs = args.meta.upstreamStartMs ?? Date.now();
-
 		// Resolve API key (gateway or BYOK)
 		const keyInfo = resolveProviderKey(
 			{
@@ -84,7 +81,7 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 	].filter((entry): entry is string => Boolean(entry));
 
 		// Execute upstream call
-		const res = await fetch(`${anthropicBaseUrl()}/v1/messages`, {
+		const res = await fetchUpstream(args, `${anthropicBaseUrl()}/v1/messages`, {
 			method: "POST",
 			headers: {
 				"x-api-key": keyInfo.key,
@@ -147,7 +144,12 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
                         };
                 } else {
                         // Buffer streaming response into a final snapshot
-                        const { message, firstFrameMs, totalMs } = await bufferAnthropicStreamToMessage(res, upstreamStartMs);
+						const selectedDispatchAtMs =
+							args.upstreamTiming?.timingFor(res)?.dispatchAtMs ?? Date.now();
+						const { message, firstFrameMs, totalMs } = await bufferAnthropicStreamToMessage(
+							res,
+							selectedDispatchAtMs,
+						);
 
                         // CRITICAL: Convert to IR with proper tool_use extraction
                         const ir = anthropicMessagesToIR(message, args.requestId, args.ir.model, args.providerId);
@@ -169,10 +171,7 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
                                 rawResponse: message,
                                 timing: {
                                         latencyMs: firstFrameMs ?? undefined,
-                                        generationMs:
-						typeof firstFrameMs === "number" && typeof totalMs === "number"
-							? Math.max(0, totalMs - firstFrameMs)
-							: totalMs ?? undefined,
+										generationMs: totalMs ?? undefined,
                                 },
                         };
                 }
@@ -184,6 +183,7 @@ async function bufferAnthropicStreamToMessage(res: Response, upstreamStartMs: nu
 	const dec = new TextDecoder();
 	let buf = "";
 	let firstFrameMs: number | null = null;
+	let terminalAtMs: number | null = null;
 	let finished = false;
 
 	type AnthropicBlock = {
@@ -227,9 +227,6 @@ async function bufferAnthropicStreamToMessage(res: Response, upstreamStartMs: nu
 	while (true) {
 		const { value, done } = await reader.read();
 		if (done) break;
-		if (firstFrameMs === null) {
-			firstFrameMs = Date.now() - upstreamStartMs;
-		}
 		buf += dec.decode(value, { stream: true });
 		const frames = buf.split(/\n\n/);
 		buf = frames.pop() ?? "";
@@ -248,6 +245,9 @@ async function bufferAnthropicStreamToMessage(res: Response, upstreamStartMs: nu
 				payload = JSON.parse(data);
 			} catch {
 				continue;
+			}
+			if (firstFrameMs === null) {
+				firstFrameMs = Math.max(0, Date.now() - upstreamStartMs);
 			}
 
 			const type = payload?.type;
@@ -331,6 +331,7 @@ async function bufferAnthropicStreamToMessage(res: Response, upstreamStartMs: nu
 					applyUsage(stopped.usage);
 				}
 				finished = true;
+				terminalAtMs = Date.now();
 				continue;
 			}
 
@@ -358,7 +359,7 @@ async function bufferAnthropicStreamToMessage(res: Response, upstreamStartMs: nu
 		}
 	}
 
-	const totalMs = Math.max(0, Date.now() - upstreamStartMs);
+	const totalMs = Math.max(0, (terminalAtMs ?? Date.now()) - upstreamStartMs);
 	return { message, firstFrameMs, totalMs };
 }
 

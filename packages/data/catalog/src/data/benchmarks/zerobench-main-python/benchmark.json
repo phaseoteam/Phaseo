@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "zerobench-main-python",
+  "benchmark_name": "ZeroBench (main) with Python",
+  "category": "multimodal",
+  "ascending_order": null,
+  "type": "numerical",
+  "link": "https://zerobench.github.io/",
+  "total_models": 1
+}

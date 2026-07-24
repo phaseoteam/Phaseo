@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { getSupabaseAdmin } from "@/runtime/env";
-import { bearerToken, claimsScopes, validateLocalAccessToken } from "@/lib/oauth/service";
+import { authenticateManagement } from "@/pipeline/before/auth";
 import { json, withRuntime } from "@/routes/utils";
 
 export const meRoutes = new Hono<Env>();
@@ -10,25 +10,16 @@ export const meRoutes = new Hono<Env>();
 meRoutes.get(
 	"/",
 	withRuntime(async (req) => {
-		const token = bearerToken(req);
-		if (!token) {
+		const auth = await authenticateManagement(req, { useKvCache: false });
+		if (!auth.ok || auth.authMethod !== "oauth" || !auth.userId || !auth.oauthClientId) {
 			return json(
-				{ error: "unauthorised", message: "Bearer access token is required" },
-				401,
-				{ "Cache-Control": "no-store" },
-			);
-		}
-		const validation = await validateLocalAccessToken(token);
-		if (!validation.valid || !validation.claims) {
-			return json(
-				{ error: "unauthorised", message: validation.error ?? "Invalid access token" },
+				{ error: "unauthorised", message: "Bearer OAuth token is invalid or expired" },
 				401,
 				{ "Cache-Control": "no-store" },
 			);
 		}
 
-		const claims = validation.claims;
-		const scopes = claimsScopes(claims);
+		const scopes = auth.oauthScopes ?? auth.scopes ?? [];
 		if (!scopes.includes(CAPABILITIES.ME_READ)) {
 			return json(
 				{ error: "insufficient_scope", message: `Token requires ${CAPABILITIES.ME_READ}` },
@@ -38,11 +29,11 @@ meRoutes.get(
 		}
 		const supabase = getSupabaseAdmin();
 		const [userResult, membershipsResult] = await Promise.all([
-			supabase.auth.admin.getUserById(claims.user_id),
+			supabase.auth.admin.getUserById(auth.userId),
 			supabase
 				.from("workspace_members")
 				.select("role, workspace_id, workspaces:workspaces(id, name, slug)")
-				.eq("user_id", claims.user_id),
+				.eq("user_id", auth.userId),
 		]);
 
 		const user = userResult.data?.user;
@@ -54,7 +45,7 @@ meRoutes.get(
 				name: workspace?.name ?? null,
 				slug: workspace?.slug ?? null,
 				role: row.role ?? null,
-				current: String(row.workspace_id) === claims.workspace_id,
+				current: String(row.workspace_id) === auth.workspaceId,
 			};
 		});
 
@@ -62,20 +53,21 @@ meRoutes.get(
 			{
 				data: {
 					user: {
-						id: claims.user_id,
-						email: user?.email ?? claims.email ?? null,
+						id: auth.userId,
+						email: user?.email ?? null,
 						name:
 							typeof metadata.full_name === "string"
 								? metadata.full_name
 								: typeof metadata.name === "string"
 									? metadata.name
-									: (claims as any).name ?? null,
+									: null,
 					},
 					oauth: {
-						client_id: claims.client_id,
+						client_id: auth.oauthClientId,
 						scopes,
+						resource: auth.oauthResource ?? null,
 					},
-					current_workspace_id: claims.workspace_id,
+					current_workspace_id: auth.workspaceId,
 					workspaces,
 				},
 			},

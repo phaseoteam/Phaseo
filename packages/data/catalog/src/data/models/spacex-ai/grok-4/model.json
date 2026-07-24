@@ -99,7 +99,7 @@
       "is_self_reported": true,
       "other_info": "No Tools",
       "source_link": "https://x.ai/news/grok-4",
-      "rank": 24
+      "rank": 27
     },
     {
       "benchmark_id": "hmmt-2025",
@@ -123,7 +123,7 @@
       "is_self_reported": true,
       "other_info": "Tool Use",
       "source_link": "https://x.ai/news/grok-4",
-      "rank": 52
+      "rank": 60
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -131,7 +131,7 @@
       "is_self_reported": true,
       "other_info": "No Tools",
       "source_link": "https://x.ai/news/grok-4",
-      "rank": 69
+      "rank": 77
     },
     {
       "benchmark_id": "usamo-2025",
@@ -179,7 +179,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.com/xai/status/1943158495588815072",
-      "rank": 44
+      "rank": 52
     },
     {
       "benchmark_id": "livecodebench",
@@ -213,5 +213,64 @@
       "source_link": "https://github.com/lechmazur/elimination_game",
       "rank": 11
     }
-  ]
+  ],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": "2024-11-01T00:00:00",
+  "limits": {
+    "context": 256000,
+    "input": 256000,
+    "output": 256000
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "api_reference",
+      "url": "https://docs.x.ai/docs/models/grok-4-0709",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "announcement",
+      "url": "https://x.ai/news/grok-4",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "deprecation",
+      "url": "https://docs.x.ai/developers/migration/may-15-retirement",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

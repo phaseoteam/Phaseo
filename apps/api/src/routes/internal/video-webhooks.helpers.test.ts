@@ -34,6 +34,7 @@ vi.mock("@core/video-user-webhooks", () => ({
 
 import {
 	encodeDashscopeTaskId,
+	pickHeaders,
 	processAlibabaVideoWebhook,
 	processOpenAiVideoWebhook,
 	verifyAlibabaWebhookAuth,
@@ -57,6 +58,27 @@ describe("video webhook helpers", () => {
 			charged: false,
 			reason: "test",
 		}));
+	});
+
+	it("does not persist provider signature or credential headers", () => {
+		const headers = pickHeaders(new Request("https://example.com", {
+			headers: {
+				"webhook-id": "evt_123",
+				"webhook-timestamp": "1234567890",
+				"webhook-signature": "v1=secret-derived-value",
+				"x-openai-request-id": "req_123",
+				"x-openai-api-key": "provider-secret",
+				"x-openai-api_key": "provider-secret-underscore",
+				"x-openai-credential": "provider-credential",
+				"webhook-auth": "provider-auth",
+			},
+		}));
+
+		expect(headers).toEqual({
+			"webhook-id": "evt_123",
+			"webhook-timestamp": "1234567890",
+			"x-openai-request-id": "req_123",
+		});
 	});
 
 	it("finalizes and dispatches OpenAI terminal video webhooks", async () => {

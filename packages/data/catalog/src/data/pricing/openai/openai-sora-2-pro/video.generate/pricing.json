@@ -26,7 +26,22 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2025-10-03T00:00:00Z"
+      "effective_from": "2025-10-03T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "720x1280",
+            "1280x720"
+          ]
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_video_seconds",
@@ -49,7 +64,22 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2025-10-03T00:00:00Z"
+      "effective_from": "2025-10-03T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "1024x1792",
+            "1792x1024"
+          ]
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_video_seconds",
@@ -72,7 +102,22 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-03-12T00:00:00Z"
+      "effective_from": "2026-03-12T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "1080x1920",
+            "1920x1080"
+          ]
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_video_seconds",
@@ -95,7 +140,22 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-03-12T00:00:00Z"
+      "effective_from": "2026-03-12T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "720x1280",
+            "1280x720"
+          ]
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_video_seconds",
@@ -118,7 +178,22 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-03-12T00:00:00Z"
+      "effective_from": "2026-03-12T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "1024x1792",
+            "1792x1024"
+          ]
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_video_seconds",
@@ -141,7 +216,33 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-03-12T00:00:00Z"
+      "effective_from": "2026-03-12T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "1080x1920",
+            "1920x1080"
+          ]
+        }
+      ],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard",
+    "batch"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

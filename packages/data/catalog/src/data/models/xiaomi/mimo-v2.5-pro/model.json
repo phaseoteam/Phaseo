@@ -42,7 +42,7 @@
       "is_self_reported": false,
       "other_info": "mini-swe-agent; 19% +/-2%; avg cost $1.99; avg time 28m; out tok 49k",
       "source_link": "https://deepswe.datacurve.ai/",
-      "rank": 11
+      "rank": 14
     },
     {
       "benchmark_id": "creative-story-writing",
@@ -60,5 +60,58 @@
       "source_link": "https://github.com/lechmazur/nyt-connections",
       "rank": 48
     }
-  ]
+  ],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 1048576,
+    "input": 1048576,
+    "output": 128000
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "announcement",
+      "url": "https://platform.xiaomimimo.com/docs/news/v2.5-news",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "weights",
+      "url": "https://huggingface.co/XiaomiMiMo/MiMo-V2.5-Pro",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

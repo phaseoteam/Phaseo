@@ -15,7 +15,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-28T00:00:00Z"
+      "effective_from": "2026-05-28T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "input_image_tokens",
@@ -27,7 +31,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-28T00:00:00Z"
+      "effective_from": "2026-05-28T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -39,7 +47,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-28T00:00:00Z"
+      "effective_from": "2026-05-28T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_image_tokens",
@@ -62,7 +74,22 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-05-28T00:00:00Z"
+      "effective_from": "2026-05-28T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "image_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "1K",
+            "2K"
+          ]
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_text_tokens",
@@ -74,7 +101,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-28T00:00:00Z"
+      "effective_from": "2026-05-28T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "input_image_tokens",
@@ -86,7 +117,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-28T00:00:00Z"
+      "effective_from": "2026-05-28T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -98,7 +133,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-28T00:00:00Z"
+      "effective_from": "2026-05-28T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_image_tokens",
@@ -121,7 +160,22 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-05-28T00:00:00Z"
+      "effective_from": "2026-05-28T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "image_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "1K",
+            "2K"
+          ]
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_text_tokens",
@@ -133,7 +187,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-28T00:00:00Z"
+      "effective_from": "2026-05-28T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "input_image_tokens",
@@ -145,7 +203,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-28T00:00:00Z"
+      "effective_from": "2026-05-28T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -157,7 +219,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-28T00:00:00Z"
+      "effective_from": "2026-05-28T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_image_tokens",
@@ -180,7 +246,22 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-05-28T00:00:00Z"
+      "effective_from": "2026-05-28T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "image_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "1K",
+            "2K"
+          ]
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_text_tokens",
@@ -192,7 +273,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-28T00:00:00Z"
+      "effective_from": "2026-05-28T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "input_image_tokens",
@@ -204,7 +289,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-28T00:00:00Z"
+      "effective_from": "2026-05-28T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -216,7 +305,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-28T00:00:00Z"
+      "effective_from": "2026-05-28T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_image_tokens",
@@ -239,7 +332,35 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-05-28T00:00:00Z"
+      "effective_from": "2026-05-28T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "image_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "1K",
+            "2K"
+          ]
+        }
+      ],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard",
+    "batch",
+    "flex",
+    "priority"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

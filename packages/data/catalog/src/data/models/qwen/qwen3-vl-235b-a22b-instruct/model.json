@@ -198,7 +198,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 12
+      "rank": 14
     },
     {
       "benchmark_id": "mathvista-mini",
@@ -270,7 +270,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 41
+      "rank": 42
     },
     {
       "benchmark_id": "mmmuval",
@@ -424,5 +424,41 @@
       "source_link": null,
       "rank": 2
     }
-  ]
+  ],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": null,
+    "output": null
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

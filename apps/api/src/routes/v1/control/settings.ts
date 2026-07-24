@@ -8,6 +8,7 @@ import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { json, withRuntime } from "@/routes/utils";
 import {
 	isResponse,
+	internalServerError,
 	requireJsonBody,
 	requireCapability,
 	requireOAuthWorkspaceRole,
@@ -26,6 +27,8 @@ const WRITABLE_FIELDS = new Set([
 	"privacy_enable_free_may_publish_prompts",
 	"privacy_enable_input_output_logging",
 	"privacy_zdr_only",
+	"io_logging_enabled",
+	"io_logging_include_provider_payloads",
 	"provider_restriction_mode",
 	"provider_restriction_provider_ids",
 	"provider_restriction_enforce_allowed",
@@ -44,6 +47,8 @@ const CAMEL_TO_SNAKE: Record<string, string> = {
 	privacyEnableFreeMayPublishPrompts: "privacy_enable_free_may_publish_prompts",
 	privacyEnableInputOutputLogging: "privacy_enable_input_output_logging",
 	privacyZdrOnly: "privacy_zdr_only",
+	ioLoggingEnabled: "io_logging_enabled",
+	ioLoggingIncludeProviderPayloads: "io_logging_include_provider_payloads",
 	providerRestrictionMode: "provider_restriction_mode",
 	providerRestrictionProviderIds: "provider_restriction_provider_ids",
 	providerRestrictionEnforceAllowed: "provider_restriction_enforce_allowed",
@@ -65,6 +70,8 @@ const GATEWAY_CONTEXT_FIELDS = new Set([
 	"privacy_enable_free_may_train",
 	"privacy_enable_input_output_logging",
 	"privacy_zdr_only",
+	"io_logging_enabled",
+	"io_logging_include_provider_payloads",
 ]);
 
 function normalizeSettingsPatch(body: Record<string, unknown>): Record<string, unknown> {
@@ -112,7 +119,7 @@ async function handleGetSettings(req: Request) {
 		if (error) throw new Error(error.message || "Failed to fetch workspace settings");
 		return json({ data: data ?? { workspace_id: auth.value.workspaceId, routing_mode: "balanced" } }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
+		return internalServerError("settings.get", error);
 	}
 }
 
@@ -151,7 +158,7 @@ async function handleUpdateSettings(req: Request) {
 		}
 		return json({ data }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
+		return internalServerError("settings.update", error);
 	}
 }
 

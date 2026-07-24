@@ -15,7 +15,21 @@
       "note": "Current SpaceXAI docs list $15.00 / 1M characters as of 2026-05-11; initial launch pricing on 2026-04-17 was lower beta pricing.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-11T00:00:00Z"
+      "effective_from": "2026-05-11T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

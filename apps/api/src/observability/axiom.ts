@@ -17,7 +17,7 @@ function shouldAutoDisableWideIngest(bindings: ReturnType<typeof getBindings>): 
     return env !== "prod" && env !== "production";
 }
 
-export async function sendAxiomWideEvent(event: WideEvent) {
+export async function sendAxiomWideEvent(event: WideEvent): Promise<boolean | undefined> {
     if (localTestingAxiomWideIngestDisabled) {
         return;
     }
@@ -64,26 +64,29 @@ export async function sendAxiomWideEvent(event: WideEvent) {
                         { status: res.status }
                     );
                 }
-                return;
+                return undefined;
             }
             console.error("[observability] Axiom wide event ingest failed", {
                 status: res.status,
                 response: body.slice(0, 300),
             });
+            return false;
         }
+        return true;
     } catch (err) {
         if (err instanceof Error && err.name === "AbortError") {
             console.error("[observability] Axiom wide event timeout");
-            return;
+            return false;
         }
         console.error("[observability] Axiom wide event error", err);
+        return false;
     } finally {
         clearTimeout(timeoutId);
     }
 }
 
 export async function emitGatewayOperationalFailure(args: {
-    workflow: "batch_finalization" | "video_finalization";
+    workflow: "batch_finalization" | "batch_submission" | "video_finalization";
     workspaceId: string;
     resourceId: string;
     reason: string;
@@ -97,17 +100,40 @@ export async function emitGatewayOperationalFailure(args: {
             success: false,
             error_type: "system",
             error_origin: "gateway",
-            error_operational_kind: "finalization_failed",
+            error_operational_kind: args.workflow === "batch_submission" ? "submission_failed" : "finalization_failed",
             error_action_owner: "gateway",
             error_requires_investigation: true,
             error_code: args.reason,
             error_message: message.slice(0, 500) || null,
             workspace_id: args.workspaceId,
-            finalization_workflow: args.workflow,
-            finalization_resource_id: args.resourceId,
+            operational_workflow: args.workflow,
+            operational_resource_id: args.resourceId,
         });
     } catch (error) {
-        console.error("[observability] finalization failure event emit failed", error);
+        console.error("[observability] operational failure event emit failed", error);
     }
+}
+
+export async function emitGatewayTelemetryDeliveryFailure(args: {
+    sink: "supabase";
+    requestId: string;
+    workspaceId: string | null;
+    error: string;
+}) {
+    await sendAxiomWideEvent({
+        event_type: "gateway.telemetry_delivery",
+        event_emitted_at: new Date().toISOString(),
+        success: false,
+        error_type: "system",
+        error_origin: "gateway",
+        error_operational_kind: "telemetry_delivery_failed",
+        error_action_owner: "gateway",
+        error_requires_investigation: true,
+        error_code: `${args.sink}_delivery_failed`,
+        error_message: args.error.slice(0, 500),
+        request_id: args.requestId,
+        workspace_id: args.workspaceId,
+        telemetry_sink: args.sink,
+    });
 }
 

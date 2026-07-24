@@ -14,7 +14,7 @@ import { buildMetadata } from "@/lib/seo";
 import { fetchFrontendFamily } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import {
 	type FamilyModelItem,
-} from "@/lib/fetchers/models/getFamilyModels";
+} from "@/lib/fetchers/families/types";
 
 const STATUS_STYLES: Record<string, string> = {
 	Available:

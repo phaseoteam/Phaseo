@@ -2,6 +2,7 @@ import {
 	buildAuthCallbackUrl,
 	configuredAuthOriginsFromEnv,
 	resolveLocalDevAuthOrigin,
+	resolveVercelPreviewAuthOrigin,
 } from "./authOrigin";
 
 describe("auth origin helpers", () => {
@@ -30,6 +31,25 @@ describe("auth origin helpers", () => {
 				hostHeader: "127.0.0.1:3100",
 			}),
 		).toBe("http://127.0.0.1:3100");
+	});
+
+	it("uses the canonical Vercel preview deployment for preview auth callbacks", () => {
+		expect(
+			resolveVercelPreviewAuthOrigin({
+				NODE_ENV: "production",
+				VERCEL_ENV: "preview",
+				VERCEL_URL: "ai-stats-ywe0ybx3k-ai-stats.vercel.app",
+			} as NodeJS.ProcessEnv),
+		).toBe("https://ai-stats-ywe0ybx3k-ai-stats.vercel.app");
+	});
+
+	it("never uses an arbitrary URL for preview auth callbacks", () => {
+		expect(
+			resolveVercelPreviewAuthOrigin({
+				VERCEL_ENV: "preview",
+				VERCEL_URL: "https://example.com",
+			} as NodeJS.ProcessEnv),
+		).toBeNull();
 	});
 
 	it("builds callback URLs and preserves valid returnUrl", () => {

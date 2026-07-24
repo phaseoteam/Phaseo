@@ -10,5 +10,20 @@
   "terms_of_service_url": "https://developers.inflection.ai/tos",
   "prompt_training_policy": "no_train",
   "prompt_training_notes": "Inflection's API terms say customer content is used only to provide output, comply with law, and enforce rights, and is not used to develop, train, or fine-tune AI models.",
-  "prompt_training_source_url": "https://developers.inflection.ai/tos"
+  "prompt_training_source_url": "https://developers.inflection.ai/tos",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://developers.inflection.ai/docs/authentication",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

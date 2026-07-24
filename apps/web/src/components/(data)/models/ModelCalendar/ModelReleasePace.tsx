@@ -3,7 +3,7 @@
 import * as Recharts from "recharts";
 import { useMemo } from "react";
 import type { TooltipProps } from "recharts";
-import type { ModelEvent } from "@/lib/fetchers/updates/getModelUpdates";
+import type { ModelEvent } from "@/lib/fetchers/updates/types";
 import {
 	ChartContainer,
 	ChartLegendContent,

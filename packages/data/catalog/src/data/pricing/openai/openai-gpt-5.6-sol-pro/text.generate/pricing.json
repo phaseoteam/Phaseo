@@ -1,178 +1,202 @@
 {
-    "key":  "openai:openai/gpt-5.6-sol-pro:text.generate",
-    "api_provider_id":  "openai",
-    "provider_slug":  "openai",
-    "api_model_id":  "openai/gpt-5.6-sol-pro",
-    "capability_id":  "text.generate",
-    "rules":  [
-                  {
-                      "meter":  "input_text_tokens",
-                      "unit":  "token",
-                      "unit_size":  1000000,
-                      "price_per_unit":  5,
-                      "currency":  "USD",
-                      "pricing_plan":  "standard",
-                      "note":  null,
-                      "match":  [
-
-                                ],
-                      "priority":  100,
-                      "effective_from":  "2026-06-26T00:00:00Z"
-                  },
-                  {
-                      "meter":  "cached_read_text_tokens",
-                      "unit":  "token",
-                      "unit_size":  1000000,
-                      "price_per_unit":  0.5,
-                      "currency":  "USD",
-                      "pricing_plan":  "standard",
-                      "note":  "90% cached input discount from the announced uncached input price.",
-                      "match":  [
-
-                                ],
-                      "priority":  100,
-                      "effective_from":  "2026-06-26T00:00:00Z"
-                  },
-                  {
-                      "meter":  "cached_write_text_tokens",
-                      "unit":  "token",
-                      "unit_size":  1000000,
-                      "price_per_unit":  6.25,
-                      "currency":  "USD",
-                      "pricing_plan":  "standard",
-                      "note":  "1.25x the announced uncached input price for cache writes.",
-                      "match":  [
-
-                                ],
-                      "priority":  100,
-                      "effective_from":  "2026-06-26T00:00:00Z"
-                  },
-                  {
-                      "meter":  "output_text_tokens",
-                      "unit":  "token",
-                      "unit_size":  1000000,
-                      "price_per_unit":  30,
-                      "currency":  "USD",
-                      "pricing_plan":  "standard",
-                      "note":  null,
-                      "match":  [
-
-                                ],
-                      "priority":  100,
-                      "effective_from":  "2026-06-26T00:00:00Z"
-                  },
-                  {
-                      "meter":  "input_text_tokens",
-                      "unit":  "token",
-                      "unit_size":  1000000,
-                      "price_per_unit":  2.5,
-                      "currency":  "USD",
-                      "pricing_plan":  "flex",
-                      "note":  "Pro reasoning is billed at the selected GPT-5.6 model's standard token rates.",
-                      "match":  [
-
-                                ],
-                      "priority":  100,
-                      "effective_from":  "2026-07-09T00:00:00Z"
-                  },
-                  {
-                      "meter":  "cached_read_text_tokens",
-                      "unit":  "token",
-                      "unit_size":  1000000,
-                      "price_per_unit":  0.25,
-                      "currency":  "USD",
-                      "pricing_plan":  "flex",
-                      "note":  "Pro reasoning is billed at the selected GPT-5.6 model's standard token rates.",
-                      "match":  [
-
-                                ],
-                      "priority":  100,
-                      "effective_from":  "2026-07-09T00:00:00Z"
-                  },
-                  {
-                      "meter":  "cached_write_text_tokens",
-                      "unit":  "token",
-                      "unit_size":  1000000,
-                      "price_per_unit":  3.125,
-                      "currency":  "USD",
-                      "pricing_plan":  "flex",
-                      "note":  "Pro reasoning is billed at the selected GPT-5.6 model's standard token rates.",
-                      "match":  [
-
-                                ],
-                      "priority":  100,
-                      "effective_from":  "2026-07-09T00:00:00Z"
-                  },
-                  {
-                      "meter":  "output_text_tokens",
-                      "unit":  "token",
-                      "unit_size":  1000000,
-                      "price_per_unit":  15,
-                      "currency":  "USD",
-                      "pricing_plan":  "flex",
-                      "note":  "Pro reasoning is billed at the selected GPT-5.6 model's standard token rates.",
-                      "match":  [
-
-                                ],
-                      "priority":  100,
-                      "effective_from":  "2026-07-09T00:00:00Z"
-                  },
-                  {
-                      "meter":  "input_text_tokens",
-                      "unit":  "token",
-                      "unit_size":  1000000,
-                      "price_per_unit":  10,
-                      "currency":  "USD",
-                      "pricing_plan":  "priority",
-                      "note":  "Pro reasoning is billed at the selected GPT-5.6 model's priority token rates.",
-                      "match":  [
-
-                                ],
-                      "priority":  100,
-                      "effective_from":  "2026-07-09T00:00:00Z"
-                  },
-                  {
-                      "meter":  "cached_read_text_tokens",
-                      "unit":  "token",
-                      "unit_size":  1000000,
-                      "price_per_unit":  1,
-                      "currency":  "USD",
-                      "pricing_plan":  "priority",
-                      "note":  "Pro reasoning is billed at the selected GPT-5.6 model's priority token rates.",
-                      "match":  [
-
-                                ],
-                      "priority":  100,
-                      "effective_from":  "2026-07-09T00:00:00Z"
-                  },
-                  {
-                      "meter":  "cached_write_text_tokens",
-                      "unit":  "token",
-                      "unit_size":  1000000,
-                      "price_per_unit":  12.5,
-                      "currency":  "USD",
-                      "pricing_plan":  "priority",
-                      "note":  "Pro reasoning is billed at the selected GPT-5.6 model's priority token rates.",
-                      "match":  [
-
-                                ],
-                      "priority":  100,
-                      "effective_from":  "2026-07-09T00:00:00Z"
-                  },
-                  {
-                      "meter":  "output_text_tokens",
-                      "unit":  "token",
-                      "unit_size":  1000000,
-                      "price_per_unit":  60,
-                      "currency":  "USD",
-                      "pricing_plan":  "priority",
-                      "note":  "Pro reasoning is billed at the selected GPT-5.6 model's priority token rates.",
-                      "match":  [
-
-                                ],
-                      "priority":  100,
-                      "effective_from":  "2026-07-09T00:00:00Z"
-                  },
+  "key": "openai:openai/gpt-5.6-sol-pro:text.generate",
+  "api_provider_id": "openai",
+  "provider_slug": "openai",
+  "api_model_id": "openai/gpt-5.6-sol-pro",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-26T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "90% cached input discount from the announced uncached input price.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-26T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "cached_write_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 6.25,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "1.25x the announced uncached input price for cache writes.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-26T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 30,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-26T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2.5,
+      "currency": "USD",
+      "pricing_plan": "flex",
+      "note": "Pro reasoning is billed at the selected GPT-5.6 model's standard token rates.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.25,
+      "currency": "USD",
+      "pricing_plan": "flex",
+      "note": "Pro reasoning is billed at the selected GPT-5.6 model's standard token rates.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "cached_write_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 3.125,
+      "currency": "USD",
+      "pricing_plan": "flex",
+      "note": "Pro reasoning is billed at the selected GPT-5.6 model's standard token rates.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 15,
+      "currency": "USD",
+      "pricing_plan": "flex",
+      "note": "Pro reasoning is billed at the selected GPT-5.6 model's standard token rates.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 10,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": "Pro reasoning is billed at the selected GPT-5.6 model's priority token rates.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": "Pro reasoning is billed at the selected GPT-5.6 model's priority token rates.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "cached_write_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 12.5,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": "Pro reasoning is billed at the selected GPT-5.6 model's priority token rates.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 60,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": "Pro reasoning is billed at the selected GPT-5.6 model's priority token rates.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    },
     {
       "meter": "input_text_tokens",
       "unit": "token",
@@ -181,9 +205,25 @@
       "currency": "USD",
       "pricing_plan": "standard",
       "note": "High context (>272K input tokens): 2x input rate; Pro reasoning is billed at the selected model rate.",
-      "match": [{ "path": "input_tokens", "op": "gt", "value": 272000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 272000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2026-07-09T00:00:00Z"
+      "effective_from": "2026-07-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 272000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -193,9 +233,25 @@
       "currency": "USD",
       "pricing_plan": "standard",
       "note": "High context (>272K input tokens): 2x cached input rate.",
-      "match": [{ "path": "input_tokens", "op": "gt", "value": 272000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 272000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2026-07-09T00:00:00Z"
+      "effective_from": "2026-07-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 272000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "cached_write_text_tokens",
@@ -205,9 +261,25 @@
       "currency": "USD",
       "pricing_plan": "standard",
       "note": "High context (>272K input tokens): 2x input rate and 1.25x cache-write rate.",
-      "match": [{ "path": "input_tokens", "op": "gt", "value": 272000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 272000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2026-07-09T00:00:00Z"
+      "effective_from": "2026-07-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 272000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -217,9 +289,25 @@
       "currency": "USD",
       "pricing_plan": "standard",
       "note": "High context (>272K input tokens): 1.5x output rate; reasoning tokens remain included in output usage.",
-      "match": [{ "path": "input_tokens", "op": "gt", "value": 272000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 272000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2026-07-09T00:00:00Z"
+      "effective_from": "2026-07-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 272000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_text_tokens",
@@ -229,9 +317,25 @@
       "currency": "USD",
       "pricing_plan": "flex",
       "note": "High context (>272K input tokens): 2x Flex input rate.",
-      "match": [{ "path": "input_tokens", "op": "gt", "value": 272000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 272000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2026-07-09T00:00:00Z"
+      "effective_from": "2026-07-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 272000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -241,9 +345,25 @@
       "currency": "USD",
       "pricing_plan": "flex",
       "note": "High context (>272K input tokens): 2x Flex cached input rate.",
-      "match": [{ "path": "input_tokens", "op": "gt", "value": 272000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 272000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2026-07-09T00:00:00Z"
+      "effective_from": "2026-07-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 272000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "cached_write_text_tokens",
@@ -253,9 +373,25 @@
       "currency": "USD",
       "pricing_plan": "flex",
       "note": "High context (>272K input tokens): 2x Flex input rate and 1.25x cache-write rate.",
-      "match": [{ "path": "input_tokens", "op": "gt", "value": 272000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 272000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2026-07-09T00:00:00Z"
+      "effective_from": "2026-07-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 272000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -265,9 +401,25 @@
       "currency": "USD",
       "pricing_plan": "flex",
       "note": "High context (>272K input tokens): 1.5x Flex output rate.",
-      "match": [{ "path": "input_tokens", "op": "gt", "value": 272000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 272000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2026-07-09T00:00:00Z"
+      "effective_from": "2026-07-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 272000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_text_tokens",
@@ -277,9 +429,25 @@
       "currency": "USD",
       "pricing_plan": "priority",
       "note": "High context (>272K input tokens): 2x Priority input rate.",
-      "match": [{ "path": "input_tokens", "op": "gt", "value": 272000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 272000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2026-07-09T00:00:00Z"
+      "effective_from": "2026-07-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 272000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -289,9 +457,25 @@
       "currency": "USD",
       "pricing_plan": "priority",
       "note": "High context (>272K input tokens): 2x Priority cached input rate.",
-      "match": [{ "path": "input_tokens", "op": "gt", "value": 272000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 272000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2026-07-09T00:00:00Z"
+      "effective_from": "2026-07-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 272000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "cached_write_text_tokens",
@@ -301,9 +485,25 @@
       "currency": "USD",
       "pricing_plan": "priority",
       "note": "High context (>272K input tokens): 2x Priority input rate and 1.25x cache-write rate.",
-      "match": [{ "path": "input_tokens", "op": "gt", "value": 272000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 272000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2026-07-09T00:00:00Z"
+      "effective_from": "2026-07-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 272000
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -313,9 +513,37 @@
       "currency": "USD",
       "pricing_plan": "priority",
       "note": "High context (>272K input tokens): 1.5x Priority output rate.",
-      "match": [{ "path": "input_tokens", "op": "gt", "value": 272000 }],
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 272000
+        }
+      ],
       "priority": 100,
-      "effective_from": "2026-07-09T00:00:00Z"
+      "effective_from": "2026-07-09T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "value": 272000
+        }
+      ],
+      "source": null
     }
-              ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard",
+    "flex",
+    "priority"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

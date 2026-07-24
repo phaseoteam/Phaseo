@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/utils/supabase/server";
+import { fetchAdminCatalogList } from "@/lib/fetchers/internal/fetchAdminCatalog";
 
 const PAGE_SIZE = 100;
 
@@ -8,25 +8,11 @@ export default async function InternalOrganisationsPage({
 }: {
 	searchParams: Promise<{ q?: string; page?: string }>;
 }) {
-	const supabase = await createClient();
 	const params = await searchParams;
 	const queryText = (params.q ?? "").trim().replace(/[(),]/g, " ");
 	const currentPage = Math.max(1, Number.parseInt(params.page ?? "1", 10) || 1);
-	const from = (currentPage - 1) * PAGE_SIZE;
-	const to = from + PAGE_SIZE - 1;
-
-	let query = supabase
-		.from("data_organisations")
-		.select("organisation_id, name, created_at", { count: "exact" })
-		.order("created_at", { ascending: false })
-		.range(from, to);
-
-	if (queryText) {
-		query = query.or(`organisation_id.ilike.%${queryText}%,name.ilike.%${queryText}%`);
-	}
-
-	const { data: rows, count } = await query;
-	const totalRows = count ?? 0;
+	const { rows, count } = await fetchAdminCatalogList("organisations", { q: queryText, page: currentPage, pageSize: PAGE_SIZE });
+	const totalRows = count;
 	const totalPages = Math.max(1, Math.ceil(totalRows / PAGE_SIZE));
 	const hasPrev = currentPage > 1;
 	const hasNext = currentPage < totalPages;
@@ -62,7 +48,7 @@ export default async function InternalOrganisationsPage({
 				</button>
 			</form>
 			<div className="grid gap-2 2xl:grid-cols-2">
-				{(rows ?? []).map((row: any) => (
+				{rows.map((row: any) => (
 					<Link
 						key={row.organisation_id}
 						href={`/internal/data/organisations/${row.organisation_id}/edit`}

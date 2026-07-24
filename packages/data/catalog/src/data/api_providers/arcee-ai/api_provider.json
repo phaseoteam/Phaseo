@@ -7,5 +7,20 @@
   "status": "Active",
   "colour": "#008C8C",
   "privacy_policy_url": "https://www.arcee.ai/privacy-policy",
-  "terms_of_service_url": "https://www.arcee.ai/terms-and-conditions"
+  "terms_of_service_url": "https://www.arcee.ai/terms-and-conditions",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://docs.arcee.ai/",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

@@ -175,7 +175,7 @@
       "is_self_reported": true,
       "other_info": "Avg@5, 64k Thinking",
       "source_link": "https://assets.anthropic.com/m/64823ba7485345a7/Claude-Opus-4-5-System-Card.pdf",
-      "rank": 26
+      "rank": 29
     },
     {
       "benchmark_id": "mmmu",
@@ -279,7 +279,7 @@
       "is_self_reported": true,
       "other_info": "Without Search",
       "source_link": "https://assets.anthropic.com/m/64823ba7485345a7/Claude-Opus-4-5-System-Card.pdf",
-      "rank": 63
+      "rank": 71
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -287,7 +287,7 @@
       "is_self_reported": true,
       "other_info": "With Search",
       "source_link": "https://assets.anthropic.com/m/64823ba7485345a7/Claude-Opus-4-5-System-Card.pdf",
-      "rank": 34
+      "rank": 41
     },
     {
       "benchmark_id": "aime-2025",
@@ -329,5 +329,58 @@
       "source_link": "https://github.com/lechmazur/nyt-connections",
       "rank": 41
     }
-  ]
+  ],
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": "2025-05-01T00:00:00",
+  "limits": {
+    "context": 200000,
+    "input": 200000,
+    "output": 64000
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image/*"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "announcement",
+      "url": "https://www.anthropic.com/news/claude-opus-4-5",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "paper",
+      "url": "https://assets.anthropic.com/m/64823ba7485345a7/Claude-Opus-4-5-System-Card.pdf",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

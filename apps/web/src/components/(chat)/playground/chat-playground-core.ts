@@ -115,6 +115,7 @@ export const getChangedSettings = (
 	settings: ChatSettings,
 	modelId: string,
 	modelDisplayName?: string,
+	providerDisplayName?: string,
 ): SettingChange[] => {
 	const defaults: ChatSettings = {
 		...DEFAULT_SETTINGS,
@@ -170,7 +171,18 @@ export const getChangedSettings = (
 		addChange("Streaming", formatSettingValue(settings.stream, "Off"));
 	}
 	if (settings.providerId !== defaults.providerId) {
-		addChange("Provider", formatSettingValue(settings.providerId, "Auto"));
+		const providerId = settings.providerId?.trim();
+		const providerLabel = providerDisplayName?.trim();
+		addChange(
+			"Provider",
+			providerId && providerId !== "auto"
+				? providerLabel ||
+						providerId
+							.split(/[-_\s]+/)
+							.map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+							.join(" ")
+				: "Auto (Gateway)",
+		);
 	}
 	if (settings.reasoningEnabled !== defaults.reasoningEnabled) {
 		addChange(

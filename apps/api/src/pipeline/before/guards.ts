@@ -26,6 +26,10 @@ const MIN_CREDIT_AMOUNT = 1.0;
 const TRUTHY_VALUES = new Set(["1", "true", "yes"]);
 const FORM_JSON_FIELDS = new Set(["provider", "debug", "include", "timestamp_granularities"]);
 const FORM_FORCE_ARRAY_FIELDS = new Set(["include", "timestamp_granularities"]);
+const DEFAULT_REQUEST_BODY_LIMIT_BYTES = 16 * 1024 * 1024;
+const MULTIPART_REQUEST_BODY_LIMIT_BYTES = 32 * 1024 * 1024;
+
+class RequestBodyTooLargeError extends Error {}
 
 function isFreePriceCard(card: PriceCard | null | undefined): boolean {
     if (!card || !Array.isArray(card.rules) || card.rules.length === 0) return false;
@@ -218,8 +222,49 @@ function appendFormField(output: Record<string, unknown>, key: string, value: Fo
     output[normalizedKey] = current === undefined ? [parsedValue] : [current, parsedValue];
 }
 
-async function parseFormBody(req: Request): Promise<Record<string, unknown>> {
-    const form = await req.formData();
+async function readBoundedRequestBody(req: Request, maxBytes: number): Promise<Uint8Array> {
+    const contentLength = Number(req.headers.get("content-length"));
+    if (Number.isFinite(contentLength) && contentLength > maxBytes) {
+        throw new RequestBodyTooLargeError("request_body_too_large");
+    }
+
+    if (!req.body) return new Uint8Array();
+    const reader = req.body.getReader();
+    const chunks: Uint8Array[] = [];
+    let totalBytes = 0;
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (!value) continue;
+            totalBytes += value.byteLength;
+            if (totalBytes > maxBytes) {
+                try {
+                    await reader.cancel("request_body_too_large");
+                } catch {
+                    // The stream may already be closed. The size guard still applies.
+                }
+                throw new RequestBodyTooLargeError("request_body_too_large");
+            }
+            chunks.push(value);
+        }
+    } finally {
+        reader.releaseLock();
+    }
+
+    const body = new Uint8Array(totalBytes);
+    let offset = 0;
+    for (const chunk of chunks) {
+        body.set(chunk, offset);
+        offset += chunk.byteLength;
+    }
+    return body;
+}
+
+async function parseFormBody(req: Request, bodyBytes: Uint8Array): Promise<Record<string, unknown>> {
+    const form = await new Response(bodyBytes.slice().buffer as ArrayBuffer, {
+        headers: { "content-type": req.headers.get("content-type") ?? "" },
+    }).formData();
     const output: Record<string, unknown> = {};
     for (const [key, value] of form.entries()) {
         appendFormField(output, key, value);
@@ -254,6 +299,7 @@ export async function guardAuth(req: Request, options: GuardAuthOptions = {}): P
     authMethod?: "api_key" | "oauth";
     oauthClientId?: string | null;
     oauthScopes?: string[];
+    oauthResource?: string | null;
     scopes?: string[];
 }>> {
     const requestId = generatePublicId();
@@ -275,6 +321,7 @@ export async function guardAuth(req: Request, options: GuardAuthOptions = {}): P
             authMethod: auth.authMethod ?? "api_key",
             oauthClientId: auth.oauthClientId ?? null,
             oauthScopes: auth.oauthScopes ?? [],
+            oauthResource: auth.oauthResource ?? null,
             scopes: auth.scopes ?? [],
         },
     };
@@ -291,6 +338,7 @@ export async function guardManagementAuth(req: Request, options: GuardAuthOption
     authMethod?: "api_key" | "oauth";
     oauthClientId?: string | null;
     oauthScopes?: string[];
+    oauthResource?: string | null;
     scopes?: string[];
 }>> {
     const requestId = generatePublicId();
@@ -312,21 +360,44 @@ export async function guardManagementAuth(req: Request, options: GuardAuthOption
             authMethod: auth.authMethod ?? "api_key",
             oauthClientId: auth.oauthClientId ?? null,
             oauthScopes: auth.oauthScopes ?? [],
+            oauthResource: auth.oauthResource ?? null,
             scopes: auth.scopes ?? [],
         },
     };
 }
 
-export async function guardJson(req: Request, workspaceId: string, requestId: string): Promise<GuardResult<any>> {
+export async function guardJson(
+    req: Request,
+    workspaceId: string,
+    requestId: string,
+    options: { endpoint?: Endpoint; maxBytes?: number } = {},
+): Promise<GuardResult<any>> {
     const contentType = (req.headers.get("content-type") || "").toLowerCase();
+    const maxBytes = options.maxBytes ?? (
+        contentType.includes("multipart/form-data")
+            ? MULTIPART_REQUEST_BODY_LIMIT_BYTES
+            : DEFAULT_REQUEST_BODY_LIMIT_BYTES
+    );
     try {
+        const bodyBytes = await readBoundedRequestBody(req, maxBytes);
         if (contentType.includes("multipart/form-data") || contentType.includes("application/x-www-form-urlencoded")) {
-            const body = await parseFormBody(req);
+            const body = await parseFormBody(req, bodyBytes);
             return { ok: true, value: body };
         }
-        const body = await req.json();
+        const body = JSON.parse(new TextDecoder().decode(bodyBytes));
         return { ok: true, value: body };
-    } catch {
+    } catch (error) {
+        if (error instanceof RequestBodyTooLargeError) {
+            return {
+                ok: false,
+                response: err("payload_too_large", {
+                    request_id: requestId,
+                    workspace_id: workspaceId,
+                    max_bytes: maxBytes,
+                    endpoint: options.endpoint ?? null,
+                }),
+            };
+        }
         return { ok: false, response: err("invalid_json", { request_id: requestId, workspace_id: workspaceId }) };
     }
 }
@@ -506,6 +577,7 @@ export function makeMeta(input: {
     beforeContextEnrichMs?: number | null;
     beforeContextCacheWriteMs?: number | null;
     beforeContextFallbackRemap?: boolean | null;
+    startedAtMs?: number;
 }): RequestMeta {
     const { referer, appTitle, appId, appName, sessionId: sessionIdHeader, userId: userIdHeader } = readAttributionHeaders(input.req);
     const rawBody = (input.rawBody && typeof input.rawBody === "object")
@@ -569,7 +641,7 @@ export function makeMeta(input: {
         echoUpstreamRequest: Boolean(debug?.return_upstream_request),
         returnUpstreamRequest: Boolean(debug?.return_upstream_request),
         returnUpstreamResponse: Boolean(debug?.return_upstream_response),
-        startedAtMs: Date.now(),
+        startedAtMs: input.startedAtMs ?? Date.now(),
         keySource: "gateway",
         byokKeyId: null,
         beforeContextMs: input.beforeContextMs ?? undefined,

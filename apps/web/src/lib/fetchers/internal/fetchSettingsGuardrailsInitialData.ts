@@ -1,23 +1,12 @@
-import { headers } from "next/headers";
-import { absoluteUrl } from "@/lib/seo";
-import type { SettingsGuardrailsInitialData } from "@/app/api/internal/settings/guardrails/initial/route";
+import type { SettingsGuardrailsInitialData } from "@/lib/fetchers/internal/settingsTypes";
+import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
 
 export async function fetchSettingsGuardrailsInitialData(): Promise<SettingsGuardrailsInitialData> {
-	const requestHeaders = await headers();
-	const response = await fetch(
-		absoluteUrl("/api/internal/settings/guardrails/initial"),
-		{
-			cache: "no-store",
-			headers: {
-				accept: "application/json",
-				cookie: requestHeaders.get("cookie") ?? "",
-			},
-		},
+	const context = await getServerAccountContext();
+	const query = context.workspaceId ? `?workspaceId=${encodeURIComponent(context.workspaceId)}` : "";
+	return fetchAccountWebApi<SettingsGuardrailsInitialData>(
+		`/api/account/settings/guardrails${query}`,
+		context.accessToken,
 	);
-
-	if (!response.ok) {
-		throw new Error(`Failed to fetch guardrails settings data: ${response.status}`);
-	}
-
-	return (await response.json()) as SettingsGuardrailsInitialData;
 }

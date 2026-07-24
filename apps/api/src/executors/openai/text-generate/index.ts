@@ -4,6 +4,7 @@
 
 import type { IRChatRequest, IRReasoning } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult, Bill, ProviderExecutor } from "@executors/types";
+import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { irToOpenAIResponses, openAIResponsesToIR } from "@executors/_shared/text-generate/openai-compat/transform";
 import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate/openai-compat/transform-chat";
@@ -147,7 +148,7 @@ async function createOpenAIResponsesWebSocketStream(args: {
 	}> => {
 		const baseUrl = buildOpenAIResponsesWebSocketUrl(args.providerId);
 		for (let attempt = 0; attempt <= OPENAI_WEBSOCKET_HANDSHAKE_MAX_RETRIES; attempt += 1) {
-			const handshake = await fetch(baseUrl, {
+			const handshake = await fetchUpstream(args.executorArgs, baseUrl, {
 				headers: {
 					Authorization: `Bearer ${args.key}`,
 					Upgrade: "websocket",
@@ -741,7 +742,6 @@ function cherryPickIRParams(
 }
 
 async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
-	const upstreamStartMs = args.meta.upstreamStartMs ?? Date.now();
 	const requestBuildStartMs = Date.now();
 	const keyInfo = resolveOpenAICompatKey({
 		providerId: args.providerId,
@@ -801,7 +801,7 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 	}
 
 	const upstreamHeadersStartMs = Date.now();
-	const res = await fetch(openAICompatUrl(args.providerId, endpoint), {
+	const res = await fetchUpstream(args, openAICompatUrl(args.providerId, endpoint), {
 		method: "POST",
 		headers: openAICompatHeaders(
 			args.providerId,
@@ -811,6 +811,7 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 		body: requestBody,
 	});
 	const upstreamHeadersMs = Math.max(0, Date.now() - upstreamHeadersStartMs);
+	const selectedDispatchAtMs = args.upstreamTiming?.timingFor(res)?.dispatchAtMs ?? upstreamHeadersStartMs;
 
 	const bill: Bill = {
 		cost_cents: 0,
@@ -832,6 +833,7 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 			mappedRequest,
 			timing: {
 				requestBuildMs,
+				upstreamFetchStartMs: upstreamHeadersStartMs,
 				upstreamHeadersMs,
 			},
 		};
@@ -857,6 +859,7 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 				latencyMs: undefined,
 				generationMs: undefined,
 				requestBuildMs,
+				upstreamFetchStartMs: upstreamHeadersStartMs,
 				upstreamHeadersMs,
 			},
 		};
@@ -866,7 +869,7 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 		res,
 		args,
 		route,
-		upstreamStartMs,
+		selectedDispatchAtMs,
 	);
 
 	if (ir) {
@@ -888,9 +891,10 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 		mappedRequest,
 		rawResponse,
 		timing: {
-			latencyMs: firstByteMs ?? totalMs,
-			generationMs: firstByteMs === null ? 0 : Math.max(0, totalMs - firstByteMs),
+			latencyMs: firstByteMs ?? undefined,
+			generationMs: totalMs,
 			requestBuildMs,
+			upstreamFetchStartMs: upstreamHeadersStartMs,
 			upstreamHeadersMs,
 		},
 	};

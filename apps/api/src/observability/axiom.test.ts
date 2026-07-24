@@ -107,10 +107,11 @@ describe("sendAxiomWideEvent", () => {
 			AXIOM_DATASET: "gateway-wide",
 		} as any);
 
-		await sendAxiomWideEvent({ event_type: "gateway.request", request_id: "req_3" });
+		const firstDelivery = await sendAxiomWideEvent({ event_type: "gateway.request", request_id: "req_3" });
 		await sendAxiomWideEvent({ event_type: "gateway.request", request_id: "req_4" });
 
 		expect(fetchMock).toHaveBeenCalledTimes(2);
+		expect(firstDelivery).toBe(false);
 		expect(errorSpy).toHaveBeenCalledWith(
 			"[observability] Axiom wide event ingest failed",
 			{ status: 403, response: '{"code":403,"message":"forbidden"}' }

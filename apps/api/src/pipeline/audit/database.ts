@@ -27,8 +27,8 @@ export type PersistArgs = {
 	isByok: boolean;
 
 	// timings
-	generationMs: number;
-	latencyMs: number;
+	generationMs: number | null;
+	latencyMs: number | null;
 
 	// usage & money
 	usagePriced: any;
@@ -59,8 +59,12 @@ async function upsertGeneration(args: PersistArgs & { appId?: string | null }) {
 		stream: !!args.stream,
 		is_byok: !!args.isByok,
 
-		generation_ms: Math.max(0, Math.round(args.generationMs || 0)),
-		latency_ms: Math.max(0, Math.round(args.latencyMs || 0)),
+		generation_ms: typeof args.generationMs === "number"
+			? Math.max(0, Math.round(args.generationMs))
+			: null,
+		latency_ms: typeof args.latencyMs === "number"
+			? Math.max(0, Math.round(args.latencyMs))
+			: null,
 
 		usage: normalizeUsageTokens(args.usagePriced ?? {}),
 		usage_cents_text: String(args.totalCents ?? 0),
