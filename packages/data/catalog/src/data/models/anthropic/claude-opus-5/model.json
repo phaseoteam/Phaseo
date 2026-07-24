@@ -44,7 +44,204 @@
       "value": "2026-01-01T00:00:00"
     }
   ],
-  "benchmarks": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "swe-bench",
+      "score": 96,
+      "is_self_reported": true,
+      "other_info": "SWE-bench Verified; adaptive thinking at max effort; default sampling settings; average of 5 trials",
+      "source_link": "https://www.anthropic.com/claude-opus-5-system-card"
+    },
+    {
+      "benchmark_id": "swe-bench-pro",
+      "score": 79.2,
+      "is_self_reported": true,
+      "other_info": "Adaptive thinking at max effort; default sampling settings; average of 5 trials",
+      "source_link": "https://www.anthropic.com/claude-opus-5-system-card"
+    },
+    {
+      "benchmark_id": "swe-bench-multilingual",
+      "score": 89.5,
+      "is_self_reported": true,
+      "other_info": "300 problems across 9 programming languages; adaptive thinking at max effort; average of 5 trials",
+      "source_link": "https://www.anthropic.com/claude-opus-5-system-card"
+    },
+    {
+      "benchmark_id": "swe-bench-multimodal",
+      "score": 59.4,
+      "is_self_reported": true,
+      "other_info": "Anthropic internal harness; adaptive thinking at max effort; average of 5 trials",
+      "source_link": "https://www.anthropic.com/claude-opus-5-system-card"
+    },
+    {
+      "benchmark_id": "deepswe",
+      "score": 68.8,
+      "is_self_reported": true,
+      "other_info": "DeepSWE v1.1; 113 long-horizon tasks; adaptive thinking at max effort; average of 5 trials",
+      "source_link": "https://www.anthropic.com/claude-opus-5-system-card"
+    },
+    {
+      "benchmark_id": "frontiercode-1.1-main",
+      "score": 53.4,
+      "is_self_reported": true,
+      "other_info": "FrontierCode v1.1 main set; mean@5; best result at medium effort",
+      "source_link": "https://www.anthropic.com/claude-opus-5-system-card"
+    },
+    {
+      "benchmark_id": "frontierbench-v0.1",
+      "score": 44.4,
+      "is_self_reported": true,
+      "other_info": "mini-SWE-agent on GKE; xhigh effort; mean reward over 5 attempts on each of 74 tasks; production safety fallback enabled",
+      "source_link": "https://www.anthropic.com/claude-opus-5-system-card"
+    },
+    {
+      "benchmark_id": "browsecomp",
+      "score": 90.8,
+      "is_self_reported": true,
+      "other_info": "Web search, web fetch, programmatic tool calling, and code execution; 10M-token budget with context compaction; unreleased effort configuration",
+      "source_link": "https://www.anthropic.com/claude-opus-5-system-card"
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 56.3,
+      "is_self_reported": true,
+      "other_info": "No tools; thinking set to auto; total token use capped at 1M; Claude Opus 4.6 grader",
+      "source_link": "https://www.anthropic.com/claude-opus-5-system-card"
+    },
+    {
+      "benchmark_id": "humanitys-last-exam-tools",
+      "score": 64.7,
+      "is_self_reported": true,
+      "other_info": "Web search, web fetch, programmatic tool calling, and code execution; thinking set to auto; 1M-token cap; contamination controls enabled",
+      "source_link": "https://www.anthropic.com/claude-opus-5-system-card"
+    },
+    {
+      "benchmark_id": "osworld-2.0",
+      "score": 70.57,
+      "is_self_reported": true,
+      "other_info": "First-attempt success rate; default settings at 1080p with up to 500 actions; average of 5 runs; Claude Opus 4.8 grader where required",
+      "source_link": "https://www.anthropic.com/claude-opus-5-system-card"
+    },
+    {
+      "benchmark_id": "healthbench",
+      "score": 67.1,
+      "is_self_reported": true,
+      "other_info": "Raw score; adaptive thinking at max effort; no tools or custom system prompt; Claude Opus 4.8 grader; average of 5 trials",
+      "source_link": "https://www.anthropic.com/claude-opus-5-system-card"
+    },
+    {
+      "benchmark_id": "healthbench",
+      "score": 57.8,
+      "is_self_reported": true,
+      "other_info": "Length-adjusted score; adaptive thinking at max effort; no tools or custom system prompt; Claude Opus 4.8 grader; average of 5 trials",
+      "source_link": "https://www.anthropic.com/claude-opus-5-system-card"
+    },
+    {
+      "benchmark_id": "healthbench-professional",
+      "score": 73.4,
+      "is_self_reported": true,
+      "other_info": "Raw score; adaptive thinking at max effort; no tools or custom system prompt; Claude Opus 4.8 grader; average of 5 trials",
+      "source_link": "https://www.anthropic.com/claude-opus-5-system-card"
+    },
+    {
+      "benchmark_id": "healthbench-professional",
+      "score": 59.8,
+      "is_self_reported": true,
+      "other_info": "Length-adjusted score; adaptive thinking at max effort; no tools or custom system prompt; Claude Opus 4.8 grader; average of 5 trials",
+      "source_link": "https://www.anthropic.com/claude-opus-5-system-card"
+    },
+    {
+      "benchmark_id": "gdpval-aa",
+      "score": 1861,
+      "is_self_reported": false,
+      "other_info": "GDPval-AA v2 Elo; max effort; independently evaluated by Artificial Analysis",
+      "source_link": "https://www.anthropic.com/claude-opus-5-system-card"
+    },
+    {
+      "benchmark_id": "gdpval-aa",
+      "score": 1827,
+      "is_self_reported": false,
+      "other_info": "GDPval-AA v2 Elo; xhigh effort; independently evaluated by Artificial Analysis",
+      "source_link": "https://www.anthropic.com/claude-opus-5-system-card"
+    },
+    {
+      "benchmark_id": "aa-briefcase",
+      "score": 1720,
+      "is_self_reported": false,
+      "other_info": "Elo; max effort; independently evaluated by Artificial Analysis",
+      "source_link": "https://www.anthropic.com/claude-opus-5-system-card"
+    },
+    {
+      "benchmark_id": "aa-briefcase",
+      "score": 1693,
+      "is_self_reported": false,
+      "other_info": "Elo; xhigh effort; independently evaluated by Artificial Analysis",
+      "source_link": "https://www.anthropic.com/claude-opus-5-system-card"
+    },
+    {
+      "benchmark_id": "aa-briefcase",
+      "score": 1606,
+      "is_self_reported": false,
+      "other_info": "Elo; high effort; independently evaluated by Artificial Analysis",
+      "source_link": "https://www.anthropic.com/claude-opus-5-system-card"
+    },
+    {
+      "benchmark_id": "automationbench",
+      "score": 26,
+      "is_self_reported": true,
+      "other_info": "Private held-out evaluation set; max effort",
+      "source_link": "https://www.anthropic.com/claude-opus-5-system-card"
+    },
+    {
+      "benchmark_id": "automationbench",
+      "score": 24,
+      "is_self_reported": true,
+      "other_info": "Private held-out evaluation set; medium effort; $0.89 average cost per task",
+      "source_link": "https://www.anthropic.com/claude-opus-5-system-card"
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 97.5,
+      "is_self_reported": false,
+      "other_info": "ARC Prize Foundation verified semi-private evaluation; max effort",
+      "source_link": "https://www.anthropic.com/claude-opus-5-system-card"
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 90.42,
+      "is_self_reported": false,
+      "other_info": "ARC Prize Foundation verified semi-private evaluation; max effort",
+      "source_link": "https://www.anthropic.com/claude-opus-5-system-card"
+    },
+    {
+      "benchmark_id": "arc-agi-3",
+      "score": 30.16,
+      "is_self_reported": false,
+      "other_info": "Relative Human Action Efficiency; ARC Prize Foundation verified semi-private evaluation; high effort",
+      "source_link": "https://www.anthropic.com/claude-opus-5-system-card"
+    },
+    {
+      "benchmark_id": "legal-agent-benchmark",
+      "score": 11.7,
+      "is_self_reported": false,
+      "other_info": "Held-out all-pass rate reported by Harvey; 94.1% mean criterion-pass rate",
+      "source_link": "https://www.anthropic.com/claude-opus-5-system-card"
+    },
+    {
+      "benchmark_id": "biomysterybench",
+      "score": 49.4,
+      "is_self_reported": true,
+      "other_info": "Human Difficult subset",
+      "source_link": "https://www.anthropic.com/claude-opus-5-system-card"
+    },
+    {
+      "benchmark_id": "biomysterybench",
+      "score": 90.1,
+      "is_self_reported": true,
+      "other_info": "Human Solvable subset",
+      "source_link": "https://www.anthropic.com/claude-opus-5-system-card"
+    }
+  ],
   "family_id": null,
   "page_notice": null,
   "model_type": null,

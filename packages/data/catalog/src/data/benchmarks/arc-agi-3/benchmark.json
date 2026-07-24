@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "arc-agi-3",
+  "benchmark_name": "ARC-AGI-3",
+  "category": "reasoning",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}
