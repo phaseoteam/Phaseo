@@ -148,7 +148,9 @@ export type ProviderModelMapping = {
 	model_id: string | null;
 };
 
-export async function fetchFrontendModels(): Promise<ModelCard[]> {
+export async function fetchFrontendModels(options: {
+	includeMonitorRows?: boolean;
+} = {}): Promise<ModelCard[]> {
 	type ModelsResponse = {
 		models: unknown[];
 		total: number;
@@ -176,6 +178,9 @@ export async function fetchFrontendModels(): Promise<ModelCard[]> {
 			return {
 				...model,
 				...summarizeMonitorRowsForModel(monitorRows),
+				gateway_monitor_rows: options.includeMonitorRows
+					? monitorRows
+					: undefined,
 			};
 		})
 		.filter((model) => Boolean(model.model_id));
@@ -191,7 +196,7 @@ export type FrontendMonitorModelsResult = {
 };
 
 export async function fetchFrontendMonitorModels(): Promise<FrontendMonitorModelsResult> {
-	const models = (await fetchFrontendModels())
+	const models = (await fetchFrontendModels({ includeMonitorRows: true }))
 		.flatMap((model) => model.gateway_monitor_rows ?? []) as MonitorModelData[];
 	const endpoints = new Set<string>();
 	const modalities = new Set<string>();
