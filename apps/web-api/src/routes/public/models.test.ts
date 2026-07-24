@@ -116,9 +116,9 @@ describe("public model routes", () => {
 			return new Response(
 				JSON.stringify([
 					{
-						model_id: "openai/gpt-test",
-						full_name: "GPT Test",
-						organisation_id: "openai",
+						model_slug: "openai/gpt-test",
+						name: "GPT Test",
+						lab_slug: "openai",
 					},
 				]),
 				{ status: 200, headers: { "content-range": "0-0/1" } },
@@ -137,7 +137,7 @@ describe("public model routes", () => {
 			total: 1,
 		});
 		expect(v2.headers.get("cache-tag")).toBe("web-api-models,web-api-models-v2");
-		expect(fetchMock.mock.calls.some(([input]) => String(input).includes("data_models_v2"))).toBe(true);
+		expect(fetchMock.mock.calls.some(([input]) => String(input).includes("v2_models"))).toBe(true);
 		expect(invalid.status).toBe(400);
 	});
 
