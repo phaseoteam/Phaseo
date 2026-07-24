@@ -372,6 +372,36 @@ function UptimeSparkline({
 	);
 }
 
+function hasTokenTierComparison(tier: TokenTier): boolean {
+	return (
+		tier.basePer1M != null &&
+		Number.isFinite(tier.basePer1M) &&
+		Math.abs(tier.basePer1M - tier.per1M) > 1e-9
+	);
+}
+
+function getTokenTierConditions(tiers: TokenTier[]): Array<string | null> {
+	const conditions = tiers.map((tier) =>
+		tier.label && tier.label !== "All usage" ? tier.label : null,
+	);
+	if (conditions[0]) return conditions;
+	const firstExplicitCondition = conditions.find(Boolean) ?? null;
+	if (!firstExplicitCondition) return conditions;
+	const match = firstExplicitCondition.match(/^(>=|<=|>|<|≥|≤)\s*(.+)$/u);
+	if (!match) return conditions;
+	const [, operator, threshold] = match;
+	const complement =
+		operator === ">"
+			? "≤"
+			: operator === ">=" || operator === "≥"
+				? "<"
+				: operator === "<"
+					? "≥"
+					: ">";
+	conditions[0] = `${complement} ${threshold}`;
+	return conditions;
+}
+
 function renderCompactTierSummary(
 	tiers?: TokenTier[] | null,
 	valueClassName?: string,
@@ -387,39 +417,46 @@ function renderCompactTierSummary(
 			</div>
 		);
 	}
+	const hasAnyComparison = orderedTiers.some(hasTokenTierComparison);
+	const conditions = getTokenTierConditions(orderedTiers);
 
 	return (
-		<div className="mt-0.5 space-y-1">
+		<div
+			className={cn(
+				"mt-0.5 inline-grid items-baseline gap-x-1.5 gap-y-1",
+				hasAnyComparison
+					? "grid-cols-[repeat(3,max-content)]"
+					: "grid-cols-[repeat(2,max-content)]",
+			)}
+		>
 			{orderedTiers.map((tier, index) => {
-				const hasComparison =
-					tier.basePer1M != null &&
-					Number.isFinite(tier.basePer1M) &&
-					Math.abs(tier.basePer1M - tier.per1M) > 1e-9;
-				const condition = tier.label && tier.label !== "All usage" ? tier.label : null;
+				const hasComparison = hasTokenTierComparison(tier);
 				return (
-					<div
-						key={`${tier.label}-${tier.per1M}-${index}`}
-						className="flex items-baseline gap-1.5"
-					>
-						{hasComparison ? (
-						<span className="text-xs tabular-nums text-muted-foreground line-through">
-								{fmtUSD(tier.basePer1M!)}
+					<React.Fragment key={`${tier.label}-${tier.per1M}-${index}`}>
+						{hasAnyComparison ? (
+							<span
+								className={cn(
+									"text-left text-xs tabular-nums",
+									hasComparison
+										? "text-muted-foreground line-through"
+										: "text-transparent",
+								)}
+							>
+								{hasComparison ? fmtUSD(tier.basePer1M!) : null}
 							</span>
 						) : null}
 						<span
 							className={cn(
-								"text-xs font-semibold tabular-nums text-foreground",
+								"text-left text-xs font-semibold tabular-nums text-foreground",
 								valueClassName,
 							)}
 						>
 							{fmtUSD(tier.per1M)}
 						</span>
-						{condition ? (
-							<span className="shrink-0 whitespace-nowrap text-[10px] text-muted-foreground">
-								{condition}
-							</span>
-						) : null}
-					</div>
+						<span className="whitespace-nowrap text-left text-[10px] text-muted-foreground">
+							{conditions[index]}
+						</span>
+					</React.Fragment>
 				);
 			})}
 		</div>
@@ -439,56 +476,29 @@ function renderSecondaryTierSummary(
 	if (!orderedTiers.length) {
 		return <div className="text-xs font-semibold tabular-nums text-foreground">--</div>;
 	}
-	const hasAnyComparison = orderedTiers.some(
-		(tier) =>
-			tier.basePer1M != null &&
-			Number.isFinite(tier.basePer1M) &&
-			Math.abs(tier.basePer1M - tier.per1M) > 1e-9,
-	);
-	const explicitConditions = orderedTiers.map((tier) =>
-		tier.label && tier.label !== "All usage" ? tier.label : null,
-	);
-	const firstExplicitCondition = explicitConditions.find(Boolean) ?? null;
-	const inferredFirstCondition = (() => {
-		if (explicitConditions[0] || !firstExplicitCondition) return explicitConditions[0];
-		const match = firstExplicitCondition.match(/^(>=|<=|>|<|≥|≤)\s*(.+)$/u);
-		if (!match) return null;
-		const [, operator, threshold] = match;
-		const complement =
-			operator === ">"
-				? "≤"
-				: operator === ">=" || operator === "≥"
-					? "<"
-					: operator === "<"
-						? "≥"
-						: ">";
-		return `${complement} ${threshold}`;
-	})();
+	const hasAnyComparison = orderedTiers.some(hasTokenTierComparison);
+	const conditions = getTokenTierConditions(orderedTiers);
 
 	return (
 		<div
 			className={cn(
-				"inline-grid items-baseline gap-x-0.5 gap-y-0.5",
+				"inline-grid items-baseline gap-x-1.5 gap-y-0.5",
 				hasAnyComparison
-					? "grid-cols-[7rem_repeat(3,3rem)]"
-					: "grid-cols-[7rem_repeat(2,3rem)]",
+					? "grid-cols-[max-content_repeat(3,max-content)]"
+					: "grid-cols-[max-content_repeat(2,max-content)]",
 			)}
 		>
 			{orderedTiers.map((tier, index) => {
-				const hasComparison =
-					tier.basePer1M != null &&
-					Number.isFinite(tier.basePer1M) &&
-					Math.abs(tier.basePer1M - tier.per1M) > 1e-9;
-				const condition = index === 0 ? inferredFirstCondition : explicitConditions[index];
+				const hasComparison = hasTokenTierComparison(tier);
 				return (
 					<React.Fragment key={`${tier.label}-${tier.per1M}-${index}`}>
-						<span className="whitespace-nowrap text-[11px] text-muted-foreground">
+						<span className="whitespace-nowrap pr-3 text-[11px] text-muted-foreground">
 							{index === 0 ? label : null}
 						</span>
 						{hasAnyComparison ? (
 							<span
 								className={cn(
-									"text-right text-xs tabular-nums",
+									"text-left text-xs tabular-nums",
 									hasComparison
 										? "text-muted-foreground line-through"
 										: "text-transparent",
@@ -499,21 +509,21 @@ function renderSecondaryTierSummary(
 						) : null}
 						<span
 							className={cn(
-								"text-right text-xs font-semibold tabular-nums text-foreground",
+								"text-left text-xs font-semibold tabular-nums text-foreground",
 								valueClassName,
 							)}
 						>
 							{fmtUSD(tier.per1M)}
 						</span>
-						<span className="whitespace-nowrap text-right text-[10px] text-muted-foreground">
-							{condition}
+						<span className="whitespace-nowrap text-left text-[10px] text-muted-foreground">
+							{conditions[index]}
 						</span>
 					</React.Fragment>
 				);
 			})}
 			<div
 				className={cn(
-					"text-left text-[10px] text-muted-foreground",
+					"justify-self-center text-[10px] text-muted-foreground",
 					hasAnyComparison ? "col-span-3 col-start-2" : "col-span-2 col-start-2",
 				)}
 			>
