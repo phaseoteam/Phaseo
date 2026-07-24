@@ -312,14 +312,13 @@ async function fetchProviderExecutionRegions(env: Env, providerIds: string[]) {
 
 export async function fetchGatewayMonitorRows(
 	env: Env,
-	catalogueVersion: ModelsCatalogueVersion = "v1",
+	_catalogueVersion: ModelsCatalogueVersion = "v1",
 ): Promise<Map<string, Record<string, unknown>[]>> {
 	const client = getDataClient(env);
 	const rows: Record<string, unknown>[] = [];
-	const rpcName =
-		catalogueVersion === "v2"
-			? "get_monitor_model_rows_v2"
-			: "get_monitor_model_rows";
+	// The compatibility monitor RPC is already backed by the canonical V2
+	// catalogue and emits the legacy page shape used by both API versions.
+	const rpcName = "get_monitor_model_rows";
 	for (let offset = 0; ; offset += 1000) {
 		const { data, error } = await client
 			.rpc(rpcName, { p_include_hidden: false })

@@ -110,7 +110,7 @@ describe("public model routes", () => {
 	it("supports the parallel V2 catalogue and rejects unknown versions", async () => {
 		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
-			if (url.includes("get_monitor_model_rows_v2")) {
+			if (url.includes("get_monitor_model_rows")) {
 				return new Response(JSON.stringify([]), { status: 200 });
 			}
 			return new Response(
