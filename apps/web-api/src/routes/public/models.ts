@@ -534,6 +534,9 @@ publicModelsRouter.get("/", async (c) => {
 				.order("name", {
 					ascending: true,
 				});
+			if (catalogueVersion === "v2") {
+				query = query.neq("status", "disabled");
+			}
 			if (search) {
 				query = query.ilike(
 					"name",
