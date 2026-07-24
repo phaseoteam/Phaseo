@@ -1,0 +1,8 @@
+{
+  "alias_slug": "ibm-granite/granite-4.0-h-micro",
+  "resolved_api_model_id": "ibm/granite-4.0-h-micro",
+  "resolved_model_id": "ibm/granite-4.0-h-micro",
+  "channel": "legacy",
+  "is_enabled": true,
+  "notes": "Legacy canonical ID retained after aligning the model prefix with its IBM lab slug."
+}

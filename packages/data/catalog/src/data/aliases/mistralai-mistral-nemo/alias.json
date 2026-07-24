@@ -1,0 +1,8 @@
+{
+  "alias_slug": "mistralai/mistral-nemo",
+  "resolved_api_model_id": "mistral/mistral-nemo",
+  "resolved_model_id": "mistral/mistral-nemo",
+  "channel": "legacy",
+  "is_enabled": true,
+  "notes": "Legacy canonical ID retained after aligning the model prefix with its Mistral lab slug."
+}

@@ -1,0 +1,8 @@
+{
+  "alias_slug": "elevenlabs/music",
+  "resolved_api_model_id": "eleven-labs/music",
+  "resolved_model_id": "eleven-labs/music",
+  "channel": "legacy",
+  "is_enabled": true,
+  "notes": "Legacy canonical ID retained after aligning the model prefix with its ElevenLabs lab slug."
+}

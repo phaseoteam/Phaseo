@@ -1,5 +1,5 @@
 {
-  "model_id": "elevenlabs/music",
+  "model_id": "eleven-labs/music",
   "organisation_id": "eleven-labs",
   "name": "Music",
   "status": "Available",
@@ -12,7 +12,7 @@
   "license": null,
   "input_types": "text",
   "output_types": "music",
-  "api_model_id": "elevenlabs/music",
+  "api_model_id": "eleven-labs/music",
   "links": [],
   "details": [],
   "benchmarks": [],

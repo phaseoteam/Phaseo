@@ -192,6 +192,53 @@ describe("public model routes", () => {
 		});
 	});
 
+	it("preserves external provider status in gateway monitor rows", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("get_monitor_model_rows")) {
+				return new Response(JSON.stringify([
+					{
+						model_id: "google/gemini-3.5-flash",
+						api_model_id: "google/gemini-3.5-flash",
+						provider_id: "openrouter",
+						capability_id: "text.generate",
+						capability_status: "active",
+						is_active_gateway: false,
+					},
+				]), { status: 200 });
+			}
+			if (url.includes("v2_providers")) {
+				return new Response(JSON.stringify([
+					{ provider_slug: "openrouter", status: "external" },
+				]), { status: 200 });
+			}
+			if (url.includes("get_v2_provider_region_map")) {
+				return new Response(JSON.stringify([]), { status: 200 });
+			}
+			return new Response(JSON.stringify([
+				{ model_slug: "google/gemini-3.5-flash", name: "Gemini 3.5 Flash" },
+			]), { status: 200, headers: { "content-range": "0-0/1" } });
+		}));
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models?catalogue_version=v2&external-status-check=1",
+			{},
+			env,
+		);
+
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({
+			models: [
+				{
+					model_id: "google/gemini-3.5-flash",
+					gateway_monitor_rows: [
+						{ provider: { id: "openrouter" }, gatewayStatus: "external" },
+					],
+				},
+			],
+		});
+	});
+
 	it("applies a distinct cache profile to the catalogue, benchmarks, and performance", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);

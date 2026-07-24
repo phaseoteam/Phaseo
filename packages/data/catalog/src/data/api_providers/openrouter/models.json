@@ -2891,10 +2891,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "ibm-granite/granite-4.0-h-micro",
+    "api_model_id": "ibm/granite-4.0-h-micro",
     "provider_api_model_id": "openrouter:ibm-granite/granite-4.0-h-micro",
     "provider_model_slug": "ibm-granite/granite-4.0-h-micro",
-    "internal_model_id": "ibm-granite/granite-4.0-h-micro",
+    "internal_model_id": "ibm/granite-4.0-h-micro",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -3894,10 +3894,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "mistralai/mistral-nemo",
+    "api_model_id": "mistral/mistral-nemo",
     "provider_api_model_id": "openrouter:mistralai/mistral-nemo",
     "provider_model_slug": "mistralai/mistral-nemo",
-    "internal_model_id": "mistralai/mistral-nemo",
+    "internal_model_id": "mistral/mistral-nemo",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -4543,10 +4543,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "nousresearch/hermes-3-llama-3.1-405b",
+    "api_model_id": "nous/hermes-3-llama-3.1-405b",
     "provider_api_model_id": "openrouter:nousresearch/hermes-3-llama-3.1-405b",
     "provider_model_slug": "nousresearch/hermes-3-llama-3.1-405b",
-    "internal_model_id": "nousresearch/hermes-3-llama-3.1-405b",
+    "internal_model_id": "nous/hermes-3-llama-3.1-405b",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",

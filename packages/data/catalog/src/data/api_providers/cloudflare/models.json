@@ -1190,10 +1190,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "ibm-granite/granite-4.0-h-micro",
+    "api_model_id": "ibm/granite-4.0-h-micro",
     "provider_api_model_id": "cloudflare:@cf/ibm-granite/granite-4.0-h-micro",
     "provider_model_slug": "@cf/ibm-granite/granite-4.0-h-micro",
-    "internal_model_id": "ibm-granite/granite-4.0-h-micro",
+    "internal_model_id": "ibm/granite-4.0-h-micro",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",

@@ -1475,10 +1475,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "mistralai/mistral-nemo",
+    "api_model_id": "mistral/mistral-nemo",
     "provider_api_model_id": "novita-ai:mistralai/mistral-nemo",
     "provider_model_slug": "mistralai/mistral-nemo",
-    "internal_model_id": "mistralai/mistral-nemo",
+    "internal_model_id": "mistral/mistral-nemo",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
