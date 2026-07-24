@@ -304,7 +304,6 @@ export type GatewayBindings = {
     EMAIL_OUTBOX_DRAIN_LIMIT?: string;
     LEAKED_KEY_REPORT_MODE?: string;
     VIDEO_API_ENABLED?: string;
-    BATCH_API_ENABLED?: string;
     PRICING_MONITOR_ENABLED?: string;
     WORKSPACE_INVOICING_ENABLED?: string;
     ENTERPRISE_INVOICING_ENABLED?: string;

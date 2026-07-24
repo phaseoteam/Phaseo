@@ -8,7 +8,6 @@ const testEnv = {
 	KEY_PEPPER_ACTIVE: "test-pepper",
 	OPENAI_API_KEY: "test-openai-key",
 	VIDEO_API_ENABLED: "true",
-	BATCH_API_ENABLED: "true",
 	GATEWAY_CACHE: {
 		get: async () => null,
 		put: async () => undefined,
