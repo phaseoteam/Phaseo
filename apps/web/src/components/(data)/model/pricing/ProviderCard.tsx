@@ -427,7 +427,9 @@ function renderCompactTierSummary(
 }
 
 function renderSecondaryTierSummary(
+	label: string,
 	tiers?: TokenTier[] | null,
+	unitLabel?: string,
 	valueClassName?: string,
 ) {
 	const orderedTiers = [...(tiers ?? [])].sort((a, b) => {
@@ -439,7 +441,7 @@ function renderSecondaryTierSummary(
 	}
 
 	return (
-		<div className="grid grid-cols-[auto_auto] items-baseline justify-end gap-x-2 gap-y-0.5">
+		<div className="inline-grid grid-cols-[9rem_repeat(3,3.5rem)] items-baseline gap-x-1 gap-y-0.5">
 			{orderedTiers.map((tier, index) => {
 				const hasComparison =
 					tier.basePer1M != null &&
@@ -448,27 +450,37 @@ function renderSecondaryTierSummary(
 				const condition = tier.label && tier.label !== "All usage" ? tier.label : null;
 				return (
 					<React.Fragment key={`${tier.label}-${tier.per1M}-${index}`}>
-						<span className="whitespace-nowrap text-[10px] text-muted-foreground">
+						<span className="whitespace-nowrap text-[11px] text-muted-foreground">
+							{index === 0 ? label : null}
+						</span>
+						<span className="whitespace-nowrap text-right text-[10px] text-muted-foreground">
 							{condition}
 						</span>
-						<span className="flex items-baseline justify-end gap-1.5">
-							{hasComparison ? (
-								<span className="text-xs tabular-nums text-muted-foreground line-through">
-									{fmtUSD(tier.basePer1M!)}
-								</span>
-							) : null}
-							<span
-								className={cn(
-									"text-xs font-semibold tabular-nums text-foreground",
-									valueClassName,
-								)}
-							>
-								{fmtUSD(tier.per1M)}
-							</span>
+						<span
+							className={cn(
+								"text-right text-xs tabular-nums",
+								hasComparison
+									? "text-muted-foreground line-through"
+									: "font-semibold text-foreground",
+								!hasComparison && valueClassName,
+							)}
+						>
+							{fmtUSD(hasComparison ? tier.basePer1M! : tier.per1M)}
+						</span>
+						<span
+							className={cn(
+								"text-right text-xs font-semibold tabular-nums text-foreground",
+								valueClassName,
+							)}
+						>
+							{hasComparison ? fmtUSD(tier.per1M) : null}
 						</span>
 					</React.Fragment>
 				);
 			})}
+			<div className="col-span-3 col-start-2 text-left text-[10px] text-muted-foreground">
+				{unitLabel}
+			</div>
 		</div>
 	);
 }
@@ -2388,24 +2400,18 @@ export default function ProviderCard({
 			upcomingFor("other").length > 0) ? (
 			<div className="space-y-2 pt-2">
 				{additionalTokenMetricTiles.length > 0 ? (
-					<div>
+					<div className="space-y-2">
 						{additionalTokenMetricTiles.map((tile) => (
-							<div
-								key={tile.key}
-								className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] gap-4"
-							>
-								<div className="text-[11px] text-muted-foreground">
-									{tokenMetricGroups.length > 1
+							<React.Fragment key={tile.key}>
+								{renderSecondaryTierSummary(
+									tokenMetricGroups.length > 1
 										? `${tile.groupTitle} ${tile.title}`
-										: tile.title}
-								</div>
-								<div className="min-w-0 text-right">
-									{renderSecondaryTierSummary(tile.tiers, selectedPlanTheme.accent)}
-									<div className="mt-0.5 text-[10px] text-muted-foreground">
-										{tile.unitLabel}
-									</div>
-								</div>
-							</div>
+										: tile.title,
+									tile.tiers,
+									tile.unitLabel,
+									selectedPlanTheme.accent,
+								)}
+							</React.Fragment>
 						))}
 					</div>
 				) : null}
