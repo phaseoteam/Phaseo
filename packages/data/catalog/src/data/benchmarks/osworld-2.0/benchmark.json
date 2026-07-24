@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "osworld-2.0",
+  "benchmark_name": "OSWorld 2.0",
+  "category": "agents",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}

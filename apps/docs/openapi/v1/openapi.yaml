@@ -7029,6 +7029,7 @@ components:
         - arc-agi
         - arc-agi-1
         - arc-agi-2
+        - arc-agi-3
         - arc-c
         - arc-e
         - arcagi1-image
@@ -7191,6 +7192,8 @@ components:
         - flteval-pass-8
         - frames
         - frontier-math
+        - frontierbench-v0.1
+        - frontiercode-1.1-main
         - frontiercode-diamond
         - frontiermath
         - frontiersci-olympiad
@@ -7227,6 +7230,7 @@ components:
         - healthbench
         - healthbench-concensus
         - healthbench-hard
+        - healthbench-professional
         - hellaswag
         - hiddenmath
         - hipho
@@ -7453,6 +7457,7 @@ components:
         - openbookqa
         - openrca
         - os-world
+        - osworld-2.0
         - osworld-g
         - ovbench
         - ovobench
