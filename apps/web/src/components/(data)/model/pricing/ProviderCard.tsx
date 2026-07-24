@@ -3000,7 +3000,7 @@ export default function ProviderCard({
 											</div>
 											<div
 												className={cn(
-													"mt-1 flex items-center gap-2 text-lg font-semibold tabular-nums",
+											"mt-1 flex items-center gap-2 text-xs font-semibold tabular-nums",
 													metric.valueClassName,
 												)}
 											>
