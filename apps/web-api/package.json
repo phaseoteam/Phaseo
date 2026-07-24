@@ -1,6 +1,6 @@
 {
   "name": "@phaseo/web-api",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -13,14 +13,14 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.2",
-	"ajv": "^8.20.0",
-	"ajv-formats": "^3.0.1",
-	"cheerio": "^1.1.2",
-	"fast-xml-parser": "^5.8.0",
-	"js-yaml": "^4.2.0",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "cheerio": "^1.1.2",
+    "fast-xml-parser": "^5.8.0",
+    "js-yaml": "^4.2.0",
     "hono": "^4.12.27",
-	"resend": "^6.12.4",
-	"zod": "^4.4.3"
+    "resend": "^6.12.4",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260523.1",

@@ -1,7 +1,7 @@
 {
 	"name": "@phaseo/sdk",
 	"description": "Phaseo Gateway SDK for TypeScript/JavaScript",
-	"version": "2.0.5",
+	"version": "3.0.0",
 	"type": "module",
 	"private": false,
 	"license": "MIT",

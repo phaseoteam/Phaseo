@@ -1,6 +1,6 @@
 {
 	"name": "@phaseo/csharp-sdk",
-	"version": "2.0.4",
+	"version": "3.0.0",
 	"private": true,
 	"description": "Phaseo C# SDK (preview) - generated client with models wrapper",
 	"license": "MIT",
