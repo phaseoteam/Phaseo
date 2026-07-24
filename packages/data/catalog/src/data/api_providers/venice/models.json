@@ -336,9 +336,9 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-opus-4.8-fast",
-    "provider_api_model_id": "venice:anthropic/claude-opus-4.8-fast",
-    "provider_model_slug": "claude-opus-4-8-fast",
+    "api_model_id": "anthropic/claude-opus-5-fast",
+    "provider_api_model_id": "venice:anthropic/claude-opus-5-fast",
+    "provider_model_slug": "claude-opus-5-fast",
     "internal_model_id": "anthropic/claude-opus-5",
     "is_active_gateway": false,
     "quantization_scheme": null,
