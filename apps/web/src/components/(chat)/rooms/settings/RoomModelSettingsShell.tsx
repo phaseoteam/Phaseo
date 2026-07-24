@@ -41,6 +41,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
 	Popover,
 	PopoverContent,
@@ -201,7 +202,10 @@ export function RoomModelSettingsShell({
 						<DialogTitle>{title}</DialogTitle>
 						<DialogDescription>{description}</DialogDescription>
 					</DialogHeader>
-					<div className="grid max-h-[72vh] gap-3 overflow-y-auto pr-1">
+					<ScrollArea
+						className="max-h-[72vh]"
+						viewportClassName="grid gap-3 pr-1"
+					>
 						<div className="grid gap-3">
 							<div className="grid gap-1.5">
 								<Label>Model</Label>
@@ -438,7 +442,7 @@ export function RoomModelSettingsShell({
 								</AlertDialogContent>
 							</AlertDialog>
 						</div>
-					</div>
+					</ScrollArea>
 				</DialogContent>
 			</Dialog>
 		</>

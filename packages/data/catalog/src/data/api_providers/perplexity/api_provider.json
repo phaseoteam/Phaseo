@@ -10,5 +10,20 @@
   "terms_of_service_url": "https://www.perplexity.ai/hub/legal/perplexity-api-terms-of-service",
   "prompt_training_policy": "no_train",
   "prompt_training_notes": "Perplexity says the Sonar API has strict zero data retention and that customer data is not used to train Perplexity models or for any other purpose beyond processing the request.",
-  "prompt_training_source_url": "https://docs.perplexity.ai/docs/resources/privacy-security"
+  "prompt_training_source_url": "https://docs.perplexity.ai/docs/resources/privacy-security",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://docs.perplexity.ai/",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

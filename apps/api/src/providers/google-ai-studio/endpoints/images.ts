@@ -234,7 +234,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         ? mapGatewayToGeminiGenerateContent(modifiedBody)
         : mapGatewayToGoogleImages(modifiedBody);
     const path = useGeminiContentEndpoint ? "generateContent" : "generateImage";
-    const res = await fetch(`${BASE_URL}/v1beta/models/${encodeURIComponent(modelForUrl)}:${path}?key=${encodeURIComponent(key)}`, {
+    const res = await (args.upstreamTiming?.fetch ?? fetch)(`${BASE_URL}/v1beta/models/${encodeURIComponent(modelForUrl)}:${path}?key=${encodeURIComponent(key)}`, {
         method: "POST",
         headers: baseHeaders(),
         body: JSON.stringify(req),

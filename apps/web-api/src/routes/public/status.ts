@@ -3,46 +3,402 @@ import type { Env } from "@/env";
 import { withPublicCache } from "@/http/cache";
 
 type StatusState = "operational" | "degraded" | "partial_outage" | "major_outage" | "maintenance" | "unknown";
-type InstatusComponent = { name?: unknown; status?: unknown; children?: InstatusComponent[] };
 type ProviderIncident = { id: string; title: string; link: string; status: string; impact?: string; description?: string; updatedAt?: string; publishedAt?: string };
 type ProviderStatus = { name: string; statusPageUrl: string; hasIssues: boolean; incidents: ProviderIncident[]; lastChecked?: string; error?: string };
 
-const STATUS_PAGE_HREF = "https://phaseo.instatus.com/";
-const DEFAULT_SUMMARY_URL = "https://phaseo.instatus.com/api/v2/summary.json";
-const DEFAULT_COMPONENTS_URL = "https://phaseo.instatus.com/api/v2/components.json";
+const STATUS_PAGE_HREF = "https://status.phaseo.app";
+const DEFAULT_STATUS_PAGE_URL = "https://status.phaseo.app";
+const DEFAULT_WIDGET_API_URL = "https://statuspage.incident.io/phaseo/api/v1/summary";
+const VISIBLE_COMPONENT_NAMES = new Set([
+	"API health (/v1/health)",
+	"Models API (/v1/models)",
+	"Generation API demo",
+	"Homepage",
+	"Docs page",
+	"Documentation homepage",
+]);
+
+type ComponentStatus = {
+	name: string;
+	status: string;
+	state: StatusState;
+	label: string;
+	parent: string | null;
+};
+
+type IncidentSummary = {
+	affected_components?: unknown;
+	components?: Array<{
+		id?: unknown;
+		name?: unknown;
+		status?: unknown;
+		component_status?: unknown;
+	}>;
+	in_progress_maintenances?: unknown;
+	ongoing_incidents?: unknown;
+	structure?: {
+		items?: Array<{
+			component?: unknown;
+			group?: unknown;
+		}>;
+	};
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null;
+}
+
+function asArray(value: unknown): unknown[] {
+	return Array.isArray(value) ? value : [];
+}
 
 function normalizeStatus(value: unknown): { state: StatusState; label: string } {
   const raw = String(value ?? "").trim();
   const normalized = raw.toLowerCase().replace(/[\s-]+/g, "_");
   if (!normalized) return { state: "unknown", label: "Status unavailable" };
-  if (["up", "operational", "all_systems_operational"].includes(normalized)) return { state: "operational", label: "All systems operational" };
-  if (normalized === "hasissues" || normalized.includes("degraded")) return { state: "degraded", label: "Service issues reported" };
+  if (["up", "operational", "all_systems_operational", "ok"].includes(normalized)) return { state: "operational", label: "All systems operational" };
+  if (normalized === "hasissues") return { state: "degraded", label: "Service issues reported" };
   if (normalized.includes("maintenance")) return { state: "maintenance", label: "Under maintenance" };
-  if (normalized.includes("major") || normalized === "down") return { state: "major_outage", label: "Major outage" };
+  if (normalized.includes("major") || normalized === "down" || normalized === "full_outage") return { state: "major_outage", label: "Major outage" };
   if (normalized.includes("partial")) return { state: "partial_outage", label: "Partial outage" };
+  if (normalized.includes("degraded")) return { state: "degraded", label: "Degraded performance" };
   return { state: "unknown", label: raw };
 }
 
-function statusFromSummary(payload: unknown) {
-  const data = payload as { page?: { status?: unknown }; status?: { description?: unknown; indicator?: unknown } };
-  return normalizeStatus(data.page?.status ?? data.status?.description ?? data.status?.indicator);
+function displayComponentName(value: unknown) {
+	return String(value ?? "")
+		.trim()
+		.replace(/\bAI\s+Stats\b/g, "Phaseo")
+		.replace(/^Models API \(\/v1\/api\/models\)$/, "API Gateway");
 }
 
-function flattenComponents(components: InstatusComponent[] | undefined, parent: string | null = null): Array<{ name: string; status: string; state: StatusState; label: string; parent: string | null }> {
-  if (!Array.isArray(components)) return [];
-  return components.flatMap((component) => {
-    const name = String(component.name ?? "").trim().replace(/\bAI\s+Stats\b/g, "Phaseo").replace(/^Models API \(\/v1\/api\/models\)$/, "API Gateway");
-    const status = normalizeStatus(component.status);
-    const current = name ? [{ name, status: String(component.status ?? ""), ...status, parent }] : [];
-    const childParent = name ? (parent ? `${parent} / ${name}` : name) : parent;
-    return [...current, ...flattenComponents(component.children, childParent)];
-  });
+function isVisibleComponent(component: ComponentStatus, components: ComponentStatus[]) {
+	if (
+		component.name === "API" &&
+		component.parent === null &&
+		components.some((candidate) => candidate.name.startsWith("API health ("))
+	) {
+		return false;
+	}
+
+	return (
+		VISIBLE_COMPONENT_NAMES.has(component.name) ||
+		component.name.startsWith("Landing page -")
+	);
 }
 
-function withCacheBuster(value: string) {
-  const url = new URL(value);
-  url.searchParams.set("_", Date.now().toString());
-  return url.toString();
+function extractEscapedObjects(source: string, marker: string) {
+	const candidates: string[] = [];
+	let markerStart = source.indexOf(marker);
+
+	while (markerStart >= 0) {
+		const braceStart = source.indexOf("{", markerStart + marker.length);
+		if (braceStart < 0) break;
+
+		let depth = 0;
+		let inString = false;
+		let escaped = false;
+		for (let index = braceStart; index < source.length; index += 1) {
+			const char = source[index];
+			if (inString) {
+				if (escaped) {
+					escaped = false;
+				} else if (char === "\\") {
+					escaped = true;
+				} else if (char === '"') {
+					inString = false;
+				}
+				continue;
+			}
+
+			if (char === '"') {
+				inString = true;
+				continue;
+			}
+			if (char === "{") {
+				depth += 1;
+				continue;
+			}
+			if (char !== "}") continue;
+			depth -= 1;
+			if (depth === 0) {
+				candidates.push(source.slice(braceStart, index + 1));
+				break;
+			}
+		}
+
+		markerStart = source.indexOf(marker, markerStart + marker.length);
+	}
+
+	return candidates;
+}
+
+function parseIncidentSummaryHtml(html: string): IncidentSummary {
+	const normalizedHtml = html.replace(/\\"/g, '"');
+	for (const rawSummary of extractEscapedObjects(normalizedHtml, '"summary":')) {
+		try {
+			const parsed = JSON.parse(rawSummary) as unknown;
+			if (
+				isRecord(parsed) &&
+				("structure" in parsed ||
+					"components" in parsed ||
+					"ongoing_incidents" in parsed ||
+					"in_progress_maintenances" in parsed)
+			) {
+				return parsed as IncidentSummary;
+			}
+		} catch {
+			continue;
+		}
+	}
+
+	throw new Error("incident_summary_not_found");
+}
+
+function affectedComponentKey(value: unknown) {
+	if (!isRecord(value)) return null;
+	const component = isRecord(value.component) ? value.component : value;
+	const id =
+		component.id ??
+		component.component_id ??
+		component.status_page_component_id ??
+		value.component_id ??
+		value.status_page_component_id;
+	const name = component.name ?? value.name;
+
+	return String(id ?? name ?? "").trim() || null;
+}
+
+function affectedComponentStatus(
+	value: unknown,
+	fallback?: { state: StatusState; label: string },
+) {
+	if (!isRecord(value)) return fallback ?? normalizeStatus(null);
+	const status = normalizeStatus(
+		value.current_status ??
+			value.component_status ??
+			value.status ??
+			value.current_worst_impact ??
+			(isRecord(value.component) ? value.component.status : null),
+	);
+	return status.state === "unknown" && fallback ? fallback : status;
+}
+
+const STATUS_SEVERITY: Record<StatusState, number> = {
+	operational: 0,
+	unknown: 1,
+	maintenance: 2,
+	degraded: 3,
+	partial_outage: 4,
+	major_outage: 5,
+};
+
+function setAffectedStatus(
+	affected: Map<string, { state: StatusState; label: string }>,
+	key: string,
+	status: { state: StatusState; label: string },
+) {
+	const existing = affected.get(key);
+	if (!existing || STATUS_SEVERITY[status.state] > STATUS_SEVERITY[existing.state]) {
+		affected.set(key, status);
+	}
+}
+
+function buildAffectedComponentMap(summary: IncidentSummary) {
+	const affected = new Map<string, { state: StatusState; label: string }>();
+
+	const addComponent = (
+		component: unknown,
+		fallback?: { state: StatusState; label: string },
+	) => {
+		const key = affectedComponentKey(component);
+		if (!key) return;
+		const status = affectedComponentStatus(component, fallback);
+		if (status.state === "unknown") return;
+		setAffectedStatus(affected, key, status);
+	};
+
+	for (const component of asArray(summary.affected_components)) {
+		addComponent(component);
+	}
+
+	for (const event of asArray(summary.ongoing_incidents)) {
+		if (!isRecord(event)) continue;
+		const eventStatus = normalizeStatus(
+			event.current_worst_impact ?? event.impact ?? event.status,
+		);
+		const fallback =
+			eventStatus.state === "unknown"
+				? normalizeStatus("degraded")
+				: eventStatus;
+		for (const component of asArray(event.affected_components)) {
+			addComponent(component, fallback);
+		}
+	}
+
+	for (const event of asArray(summary.in_progress_maintenances)) {
+		if (!isRecord(event)) continue;
+		for (const component of asArray(event.affected_components)) {
+			addComponent(component, normalizeStatus("maintenance"));
+		}
+	}
+
+	return affected;
+}
+
+function componentStatus(
+	affected: Map<string, { state: StatusState; label: string }>,
+	componentId: unknown,
+	componentName: unknown,
+) {
+	const id = String(componentId ?? "").trim();
+	const name = displayComponentName(componentName);
+	return affected.get(id) ?? affected.get(name) ?? normalizeStatus("operational");
+}
+
+function flattenIncidentComponents(summary: IncidentSummary): ComponentStatus[] {
+	const affected = buildAffectedComponentMap(summary);
+	const components: ComponentStatus[] = [];
+
+	for (const item of summary.structure?.items ?? []) {
+		const group = isRecord(item.group) ? item.group : null;
+		if (group && group.hidden !== true) {
+			const parent = displayComponentName(group.name);
+			for (const component of asArray(group.components)) {
+				if (!isRecord(component) || component.hidden === true) continue;
+				const name = displayComponentName(component.name);
+				if (!name) continue;
+				const status = componentStatus(
+					affected,
+					component.component_id,
+					component.name,
+				);
+				components.push({ name, status: status.state, ...status, parent: parent || null });
+			}
+			continue;
+		}
+
+		const component = isRecord(item.component) ? item.component : null;
+		if (!component || component.hidden === true) continue;
+		const name = displayComponentName(component.name);
+		if (!name) continue;
+		const status = componentStatus(affected, component.component_id, component.name);
+		components.push({ name, status: status.state, ...status, parent: null });
+	}
+
+	if (components.length > 0) return components.slice(0, 24);
+
+	const fallbackComponents: ComponentStatus[] = [];
+	const seen = new Set<string>();
+	const addFallbackComponent = (
+		value: unknown,
+		fallback?: { state: StatusState; label: string },
+	) => {
+		if (!isRecord(value)) return;
+		const component = isRecord(value.component) ? value.component : value;
+		const name = displayComponentName(component.name);
+		if (!name || seen.has(name)) return;
+		const id = component.id ?? component.component_id ?? component.status_page_component_id;
+		const status =
+			affected.get(String(id ?? "").trim()) ??
+			affected.get(name) ??
+			fallback ??
+			normalizeStatus("operational");
+		seen.add(name);
+		fallbackComponents.push({ name, status: status.state, ...status, parent: null });
+	};
+
+	for (const component of summary.components ?? []) addFallbackComponent(component);
+	for (const component of asArray(summary.affected_components)) addFallbackComponent(component);
+	for (const event of asArray(summary.ongoing_incidents)) {
+		if (!isRecord(event)) continue;
+		const eventStatus = normalizeStatus(event.current_worst_impact ?? event.impact ?? event.status);
+		const fallback = eventStatus.state === "unknown" ? normalizeStatus("degraded") : eventStatus;
+		for (const component of asArray(event.affected_components)) addFallbackComponent(component, fallback);
+	}
+	for (const event of asArray(summary.in_progress_maintenances)) {
+		if (!isRecord(event)) continue;
+		for (const component of asArray(event.affected_components)) {
+			addFallbackComponent(component, normalizeStatus("maintenance"));
+		}
+	}
+
+	return fallbackComponents.slice(0, 24);
+}
+
+function pickIncidentStatus(summary: IncidentSummary) {
+	const affectedStatuses = Array.from(buildAffectedComponentMap(summary).values());
+	if (affectedStatuses.length > 0) {
+		return affectedStatuses.sort(
+			(a, b) => STATUS_SEVERITY[b.state] - STATUS_SEVERITY[a.state],
+		)[0];
+	}
+
+	if (asArray(summary.ongoing_incidents).length > 0) {
+		return { state: "degraded" as const, label: "Service issues reported" };
+	}
+
+	if (asArray(summary.in_progress_maintenances).length > 0) {
+		return normalizeStatus("maintenance");
+	}
+
+	return normalizeStatus("operational");
+}
+
+async function fetchIncidentStatus(signal: AbortSignal, env: Env) {
+	const widgetApiUrl =
+		env.STATUS_PAGE_WIDGET_API_URL?.trim() || DEFAULT_WIDGET_API_URL;
+	const statusPageUrl =
+		env.STATUS_PAGE_URL?.trim() || DEFAULT_STATUS_PAGE_URL;
+	const [widgetResult, pageResult] = await Promise.allSettled([
+		fetch(widgetApiUrl, {
+			headers: { accept: "application/json" },
+			signal,
+		}),
+		fetch(statusPageUrl, {
+			headers: { accept: "text/html" },
+			signal,
+		}),
+	]);
+
+	let widgetSummary: IncidentSummary | null = null;
+	if (widgetResult.status === "fulfilled" && widgetResult.value.ok) {
+		try {
+			widgetSummary = (await widgetResult.value.json()) as IncidentSummary;
+		} catch {
+			widgetSummary = null;
+		}
+	}
+
+	let pageSummary: IncidentSummary | null = null;
+	if (pageResult.status === "fulfilled" && pageResult.value.ok) {
+		try {
+			pageSummary = parseIncidentSummaryHtml(await pageResult.value.text());
+		} catch {
+			pageSummary = null;
+		}
+	}
+
+	const liveSummary = widgetSummary ?? pageSummary;
+	const structureSummary = pageSummary ?? widgetSummary;
+	if (!liveSummary || !structureSummary) throw new Error("status_page_unavailable");
+
+	const summary: IncidentSummary = {
+		...structureSummary,
+		affected_components:
+			widgetSummary?.affected_components ?? structureSummary.affected_components,
+		in_progress_maintenances:
+			widgetSummary?.in_progress_maintenances ??
+			structureSummary.in_progress_maintenances,
+		ongoing_incidents:
+			widgetSummary?.ongoing_incidents ?? structureSummary.ongoing_incidents,
+	};
+
+	return {
+		components: flattenIncidentComponents(summary),
+		href: STATUS_PAGE_HREF,
+		status: pickIncidentStatus(liveSummary),
+	};
 }
 
 export const publicStatusRouter = new Hono<{ Bindings: Env }>();
@@ -51,17 +407,21 @@ publicStatusRouter.get("/status", async (c) => {
 	const controller = new AbortController();
 	const timeout = setTimeout(() => controller.abort(), 3500);
 	try {
-		const [summaryResult, componentsResult] = await Promise.allSettled([
-			fetch(withCacheBuster(c.env.STATUS_PAGE_SUMMARY_URL?.trim() || DEFAULT_SUMMARY_URL), { headers: { accept: "application/json" }, signal: controller.signal }),
-			fetch(withCacheBuster(c.env.STATUS_PAGE_COMPONENTS_URL?.trim() || DEFAULT_COMPONENTS_URL), { headers: { accept: "application/json" }, signal: controller.signal }),
-		]);
-		if (summaryResult.status === "rejected" || !summaryResult.value.ok) throw new Error("status_summary_unavailable");
-		const status = statusFromSummary(await summaryResult.value.json());
-		const components = componentsResult.status === "fulfilled" && componentsResult.value.ok
-			? flattenComponents((await componentsResult.value.json() as { components?: InstatusComponent[] }).components).slice(0, 24)
-			: [];
-		return withPublicCache(c.json({ ok: true, ...status, components, href: STATUS_PAGE_HREF }), { edgeTtlSeconds: 30, staleWhileRevalidateSeconds: 60 });
-	} catch {
+		const { components, href, status } = await fetchIncidentStatus(controller.signal, c.env);
+		const visibleComponents = components.filter((component) => isVisibleComponent(component, components));
+		const componentIssues = visibleComponents.filter((component) => component.state !== "operational" && component.state !== "unknown");
+		const onlyThirdPartyIssues = componentIssues.length > 0 && componentIssues.every((component) => `${component.name} ${component.parent ?? ""}`.includes("Third Party:"));
+		const label = status.state === "operational"
+			? status.label
+			: onlyThirdPartyIssues
+				? "Slightly degraded"
+				: componentIssues.length > 1
+					? `${componentIssues.length} services affected`
+					: status.label;
+
+		return withPublicCache(c.json({ ok: true, ...status, label, components: visibleComponents, href }), { edgeTtlSeconds: 30, staleWhileRevalidateSeconds: 60 });
+	} catch (error) {
+		console.error("[web-api/status] failed to fetch Incident.io status", error);
 		return c.json({ ok: false, state: "unknown" satisfies StatusState, label: "Status unavailable", components: [], href: STATUS_PAGE_HREF });
 	} finally {
 		clearTimeout(timeout);

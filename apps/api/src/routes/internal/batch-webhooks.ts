@@ -4,7 +4,7 @@
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { dispatchBackground, ensureRuntimeForBackground } from "@/runtime/env";
-import { insertProviderEvent } from "@core/provider-events";
+import { claimProviderEvent, insertProviderEvent } from "@core/provider-events";
 import { json, withRuntime } from "@/routes/utils";
 
 import {
@@ -14,14 +14,22 @@ import {
 	processGoogleAiStudioBatchWebhook,
 	pickHeaders,
 	processOpenAiBatchWebhook,
+	readProviderWebhookBody,
 	verifyGoogleAiStudioBatchWebhookSignature,
 	verifyOpenAiBatchWebhookSignature,
 } from "./batch-webhooks.helpers";
 
 export const internalBatchWebhookRoutes = new Hono<Env>();
 
+// Keep duplicate provider deliveries excluded for the longest bounded claim
+// window. Scheduled reconciliation remains the recovery path if webhook
+// background finalization is interrupted.
+const PROVIDER_WEBHOOK_FINALIZATION_LEASE_SECONDS = 3_600;
+
 internalBatchWebhookRoutes.post("/openai", withRuntime(async (req) => {
-	const rawBody = await req.text();
+	const body = await readProviderWebhookBody(req);
+	if (!body.ok) return json({ ok: false, error: "payload_too_large" }, 413, { "Cache-Control": "no-store" });
+	const rawBody = body.rawBody;
 	const signatureOk = await verifyOpenAiBatchWebhookSignature(req, rawBody);
 	if (!signatureOk) {
 		return json({ ok: false, error: "invalid_signature" }, 401, { "Cache-Control": "no-store" });
@@ -49,8 +57,19 @@ internalBatchWebhookRoutes.post("/openai", withRuntime(async (req) => {
 		payload,
 		headers: pickHeaders(req),
 	});
-	if (!dedupe.inserted) {
+	if (!dedupe.inserted && dedupe.record?.processedAt) {
 		return json({ ok: true, deduped: true, processed: Boolean(dedupe.record?.processedAt) }, 200, {
+			"Cache-Control": "no-store",
+		});
+	}
+	const claimed = await claimProviderEvent({
+		provider: OPENAI_PROVIDER_ID,
+		providerEventId: eventId,
+		workerId: `openai-batch-webhook:${eventId}`,
+		leaseSeconds: PROVIDER_WEBHOOK_FINALIZATION_LEASE_SECONDS,
+	});
+	if (!claimed) {
+		return json({ ok: true, deduped: true, accepted: true, processed: false }, 202, {
 			"Cache-Control": "no-store",
 		});
 	}
@@ -74,11 +93,13 @@ internalBatchWebhookRoutes.post("/openai", withRuntime(async (req) => {
 		}
 	})());
 
-	return json({ ok: true, accepted: true }, 202, { "Cache-Control": "no-store" });
+	return json({ ok: true, accepted: true, replayed: !dedupe.inserted }, 202, { "Cache-Control": "no-store" });
 }));
 
 async function handleGoogleAiStudioBatchWebhook(req: Request): Promise<Response> {
-	const rawBody = await req.text();
+	const body = await readProviderWebhookBody(req);
+	if (!body.ok) return json({ ok: false, error: "payload_too_large" }, 413, { "Cache-Control": "no-store" });
+	const rawBody = body.rawBody;
 	const signatureOk = await verifyGoogleAiStudioBatchWebhookSignature(req, rawBody);
 	if (!signatureOk) {
 		return json({ ok: false, error: "invalid_signature" }, 401, { "Cache-Control": "no-store" });
@@ -106,8 +127,19 @@ async function handleGoogleAiStudioBatchWebhook(req: Request): Promise<Response>
 		payload,
 		headers: pickHeaders(req),
 	});
-	if (!dedupe.inserted) {
+	if (!dedupe.inserted && dedupe.record?.processedAt) {
 		return json({ ok: true, deduped: true, processed: Boolean(dedupe.record?.processedAt) }, 200, {
+			"Cache-Control": "no-store",
+		});
+	}
+	const claimed = await claimProviderEvent({
+		provider: GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID,
+		providerEventId: eventId,
+		workerId: `google-ai-studio-batch-webhook:${eventId}`,
+		leaseSeconds: PROVIDER_WEBHOOK_FINALIZATION_LEASE_SECONDS,
+	});
+	if (!claimed) {
+		return json({ ok: true, deduped: true, accepted: true, processed: false }, 202, {
 			"Cache-Control": "no-store",
 		});
 	}
@@ -131,7 +163,7 @@ async function handleGoogleAiStudioBatchWebhook(req: Request): Promise<Response>
 		}
 	})());
 
-	return json({ ok: true, accepted: true }, 202, { "Cache-Control": "no-store" });
+	return json({ ok: true, accepted: true, replayed: !dedupe.inserted }, 202, { "Cache-Control": "no-store" });
 }
 
 internalBatchWebhookRoutes.post("/gemini", withRuntime(handleGoogleAiStudioBatchWebhook));

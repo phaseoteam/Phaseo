@@ -16,7 +16,11 @@
       "match": [],
       "priority": 100,
       "effective_from": "2026-06-30T00:00:00Z",
-      "effective_to": "2026-09-01T00:00:00Z"
+      "effective_to": "2026-09-01T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -29,7 +33,11 @@
       "match": [],
       "priority": 100,
       "effective_from": "2026-06-30T00:00:00Z",
-      "effective_to": "2026-09-01T00:00:00Z"
+      "effective_to": "2026-09-01T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "cached_write_text_tokens_5m",
@@ -42,7 +50,11 @@
       "match": [],
       "priority": 100,
       "effective_from": "2026-06-30T00:00:00Z",
-      "effective_to": "2026-09-01T00:00:00Z"
+      "effective_to": "2026-09-01T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "cached_write_text_tokens_1h",
@@ -55,7 +67,11 @@
       "match": [],
       "priority": 100,
       "effective_from": "2026-06-30T00:00:00Z",
-      "effective_to": "2026-09-01T00:00:00Z"
+      "effective_to": "2026-09-01T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -68,7 +84,11 @@
       "match": [],
       "priority": 100,
       "effective_from": "2026-06-30T00:00:00Z",
-      "effective_to": "2026-09-01T00:00:00Z"
+      "effective_to": "2026-09-01T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "input_text_tokens",
@@ -80,7 +100,11 @@
       "note": "Standard Claude Sonnet 5 global Bedrock rate from official Anthropic launch pricing. Bedrock regional and geographic endpoints for Claude Sonnet 5 carry a 10% premium over global endpoint pricing.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-09-01T00:00:00Z"
+      "effective_from": "2026-09-01T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -92,7 +116,11 @@
       "note": "Standard Claude Sonnet 5 global Bedrock cache-read rate from official Anthropic launch pricing. Bedrock regional and geographic endpoints for Claude Sonnet 5 carry a 10% premium over global endpoint pricing.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-09-01T00:00:00Z"
+      "effective_from": "2026-09-01T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "cached_write_text_tokens_5m",
@@ -104,7 +132,11 @@
       "note": "Standard Claude Sonnet 5 global Bedrock 5-minute cache-write rate from official Anthropic launch pricing. Bedrock regional and geographic endpoints for Claude Sonnet 5 carry a 10% premium over global endpoint pricing.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-09-01T00:00:00Z"
+      "effective_from": "2026-09-01T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "cached_write_text_tokens_1h",
@@ -116,7 +148,11 @@
       "note": "Standard Claude Sonnet 5 global Bedrock 1-hour cache-write rate from official Anthropic launch pricing. Bedrock regional and geographic endpoints for Claude Sonnet 5 carry a 10% premium over global endpoint pricing.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-09-01T00:00:00Z"
+      "effective_from": "2026-09-01T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -128,7 +164,21 @@
       "note": "Standard Claude Sonnet 5 global Bedrock rate from official Anthropic launch pricing. Bedrock regional and geographic endpoints for Claude Sonnet 5 carry a 10% premium over global endpoint pricing.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-09-01T00:00:00Z"
+      "effective_from": "2026-09-01T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

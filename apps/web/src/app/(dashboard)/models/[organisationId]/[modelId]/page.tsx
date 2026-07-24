@@ -166,18 +166,21 @@ export default async function Page({
 		);
 	}
 	const modelPromise = fetchFrontendModelOverview(modelId);
+	const benchmarkPromise = fetchFrontendModelBenchmarkHighlights(modelId).catch(() => []);
+	const subscriptionPromise = fetchFrontendModelSubscriptionPlans(modelId).catch(() => []);
+	const availabilityPromise = fetchFrontendModelAvailability(modelId).catch(() => undefined);
 	const [modelOverview, benchmarkHighlights, subscriptionPlans, availability] =
 		await Promise.all([
 			modelPromise,
-			fetchFrontendModelBenchmarkHighlights(modelId).catch(() => []),
-			fetchFrontendModelSubscriptionPlans(modelId).catch(() => []),
-			fetchFrontendModelAvailability(modelId).catch(() => undefined),
+			benchmarkPromise,
+			subscriptionPromise,
+			availabilityPromise,
 		]);
 	const showBenchmarks = benchmarkHighlights.length > 0;
 	const showSubscriptions = subscriptionPlans.length > 0;
 	const isGatewayActive =
 		availability?.isGatewayActive ?? true;
-	const performancePromise = isGatewayActive
+	const resolvedPerformancePromise = isGatewayActive
 		? fetchFrontendModelPerformance(modelId, 24).catch(() => null)
 		: Promise.resolve(null);
 	const isRetired = modelOverview?.status === "Retired";
@@ -276,7 +279,7 @@ export default async function Page({
 								showSubscriptions={showSubscriptions}
 								status={modelOverview?.status}
 								isGatewayActive={isGatewayActive}
-								performancePromise={performancePromise}
+								performancePromise={resolvedPerformancePromise}
 								quickstartRequestContext={quickstartRequestContext}
 							/>
 						</div>

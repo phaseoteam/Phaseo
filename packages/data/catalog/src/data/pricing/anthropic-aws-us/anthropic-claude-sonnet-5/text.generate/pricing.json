@@ -16,7 +16,11 @@
       "match": [],
       "priority": 100,
       "effective_from": "2026-06-30T00:00:00Z",
-      "effective_to": "2026-09-01T00:00:00Z"
+      "effective_to": "2026-09-01T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -29,7 +33,11 @@
       "match": [],
       "priority": 100,
       "effective_from": "2026-06-30T00:00:00Z",
-      "effective_to": "2026-09-01T00:00:00Z"
+      "effective_to": "2026-09-01T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "cached_write_text_tokens_5m",
@@ -42,7 +50,11 @@
       "match": [],
       "priority": 100,
       "effective_from": "2026-06-30T00:00:00Z",
-      "effective_to": "2026-09-01T00:00:00Z"
+      "effective_to": "2026-09-01T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -55,7 +67,11 @@
       "match": [],
       "priority": 100,
       "effective_from": "2026-06-30T00:00:00Z",
-      "effective_to": "2026-09-01T00:00:00Z"
+      "effective_to": "2026-09-01T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "input_text_tokens",
@@ -67,7 +83,11 @@
       "note": "US-only inference pricing on Claude Platform on AWS prepared at 1.1x the official Anthropic launch rate; aligned to Anthropic-hosted AWS provider routing.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-09-01T00:00:00Z"
+      "effective_from": "2026-09-01T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -79,7 +99,11 @@
       "note": "US-only cache-read pricing on Claude Platform on AWS prepared at 1.1x the official Anthropic launch rate; aligned to Anthropic-hosted AWS provider routing.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-09-01T00:00:00Z"
+      "effective_from": "2026-09-01T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "cached_write_text_tokens_5m",
@@ -91,7 +115,11 @@
       "note": "US-only 5-minute cache-write pricing on Claude Platform on AWS prepared at 1.1x the official Anthropic launch rate; aligned to Anthropic-hosted AWS provider routing.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-09-01T00:00:00Z"
+      "effective_from": "2026-09-01T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -103,7 +131,21 @@
       "note": "US-only inference pricing on Claude Platform on AWS prepared at 1.1x the official Anthropic launch rate; aligned to Anthropic-hosted AWS provider routing.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-09-01T00:00:00Z"
+      "effective_from": "2026-09-01T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

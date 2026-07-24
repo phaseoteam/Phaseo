@@ -139,11 +139,9 @@ export async function attemptProvider(
             const u = (r.normalized as any)?.usage ?? r.bill?.usage ?? {};
             const tokensIn = Number(u.prompt_tokens ?? u.input_tokens ?? u.input_text_tokens ?? 0);
             const tokensOut = Number(u.completion_tokens ?? u.output_tokens ?? u.output_text_tokens ?? 0);
-            const totalTokens = tokensIn + tokensOut;
-
             // Calculate timings
             const generationMs = ctx.meta.generation_ms ?? duration;
-            const throughputTps = generationMs > 0 ? totalTokens / (generationMs / 1000) : 0;
+            const throughputTps = generationMs > 0 ? tokensOut / (generationMs / 1000) : 0;
 
             // Add to meta for downstream use
             ctx.meta.throughput_tps = throughputTps;

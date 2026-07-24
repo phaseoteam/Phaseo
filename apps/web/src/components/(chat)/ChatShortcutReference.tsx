@@ -103,22 +103,20 @@ export function ChatShortcutReference() {
 							return (
 								<div
 									key={item.title}
-									className="grid grid-cols-1 gap-2 rounded-lg px-2 py-2 hover:bg-muted/70 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-3"
+									className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-1 rounded-lg px-2 py-2 hover:bg-muted/70"
 								>
-									<div className="flex min-w-0 items-center gap-3">
-										<div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+									<div className="row-span-2 flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
 											<Icon className="h-4 w-4" />
+									</div>
+									<div className="min-w-0">
+										<div className="text-sm font-medium text-foreground">
+											{item.title}
 										</div>
-										<div className="min-w-0">
-											<div className="text-sm font-medium text-foreground">
-												{item.title}
-											</div>
-											<div className="text-xs leading-4 text-muted-foreground">
-												{item.description}
-											</div>
+										<div className="text-xs leading-4 text-muted-foreground">
+											{item.description}
 										</div>
 									</div>
-									<div className="flex flex-wrap items-center gap-1 pl-11 sm:justify-end sm:pl-0">
+									<div className="hidden flex-wrap items-center gap-1 sm:flex">
 										{item.keys.map((key, keyIndex) => (
 											<Fragment key={`${item.title}-${key}`}>
 												{keyIndex > 0 ? (

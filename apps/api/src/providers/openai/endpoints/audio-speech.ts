@@ -224,7 +224,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         instructions: body.instructions,
     };
 
-    const res = await fetch(openAICompatUrl(args.providerId, "/audio/speech"), {
+    const res = await (args.upstreamTiming?.fetch ?? fetch)(openAICompatUrl(args.providerId, "/audio/speech"), {
         method: "POST",
         headers: openAICompatHeaders(args.providerId, keyInfo.key, upstreamTestHeaders(args.meta)),
         body: JSON.stringify(requestBody),

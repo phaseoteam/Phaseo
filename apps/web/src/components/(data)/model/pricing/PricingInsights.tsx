@@ -45,6 +45,10 @@ import {
 	resolveProviderLogoId,
 } from "@/lib/providers/providerOffers";
 import { cn } from "@/lib/utils";
+import {
+	resolveGatewayStatus,
+	type CanonicalGatewayStatus,
+} from "@/components/(data)/model/pricing/providerGatewayStatus";
 
 type PricingInsightsProps = {
 	providers: ProviderPricing[];
@@ -91,6 +95,29 @@ type ProviderUsageSummary = {
 	cachedReadInputTokens30d: number;
 	usageByDay: Map<string, DailyUsagePoint>;
 };
+
+const ROUTABLE_STATUSES = new Set<CanonicalGatewayStatus>([
+	"active",
+	"deranked_lvl1",
+	"deranked_lvl2",
+	"deranked_lvl3",
+]);
+
+function isRoutableProvider(provider: ProviderPricing): boolean {
+	return provider.provider_models.some((providerModel) =>
+		ROUTABLE_STATUSES.has(
+			resolveGatewayStatus({
+				isActiveGateway: providerModel.is_active_gateway,
+				capabilityStatus: providerModel.capability_status,
+				providerStatus: provider.provider.status,
+				providerRoutingStatus: provider.provider.routing_status,
+				modelRoutingStatus: providerModel.routing_status,
+				effectiveFrom: providerModel.effective_from,
+				effectiveTo: providerModel.effective_to,
+			}),
+		),
+	);
+}
 
 const INPUT_METER_PREFERENCE = ["input_text_tokens", "input_tokens"] as const;
 const OUTPUT_METER_PREFERENCE = ["output_text_tokens", "output_tokens"] as const;
@@ -644,7 +671,11 @@ export default function PricingInsights({
 	const [sortKey, setSortKey] = useState<SortKey | null>(null);
 	const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
-	const providerColours = useMemo(() => assignSeriesColours(providers.map((provider) => provider.provider.api_provider_id)), [providers]);
+	const routableProviders = useMemo(
+		() => providers.filter(isRoutableProvider),
+		[providers],
+	);
+	const providerColours = useMemo(() => assignSeriesColours(routableProviders.map((provider) => provider.provider.api_provider_id)), [routableProviders]);
 
 	const filteredHistoryRules = useMemo(
 		() => historyRules.filter((rule) => rule.pricingPlan === plan),
@@ -700,12 +731,12 @@ export default function PricingInsights({
 	}, [usageRows]);
 
 	const effectiveRows = useMemo(() => {
-		const totalTokensAll = Array.from(usageByProvider.values()).reduce(
-			(sum, item) => sum + item.totalTokens30d,
+		const totalTokensAll = routableProviders.reduce(
+			(sum, provider) => sum + (usageByProvider.get(provider.provider.api_provider_id)?.totalTokens30d ?? 0),
 			0,
 		);
 
-		return providers.map((provider) => {
+		return routableProviders.map((provider) => {
 			const providerId = provider.provider.api_provider_id;
 			const providerName = formatProviderOfferDisplayName({
 				providerId,
@@ -765,7 +796,7 @@ export default function PricingInsights({
 				outputWeightTokens30d: usage?.outputWeightTokens30d ?? 0,
 			} satisfies EffectiveRow;
 		});
-	}, [filteredHistoryRules, plan, providerColours, providers, usageByProvider]);
+	}, [filteredHistoryRules, plan, providerColours, routableProviders, usageByProvider]);
 
 	const effectiveSummary = useMemo(() => {
 		let inputCostUsd = 0;
@@ -893,8 +924,8 @@ export default function PricingInsights({
 				<div className="space-y-1">
 					<h3 className="text-sm font-medium text-foreground">Effective pricing</h3>
 					<p className="text-xs text-muted-foreground">
-						Weighted by routed usage over the last 30 days; provider list prices are shown
-						until usage is available.
+						Weighted by routed usage over the last 30 days; external and non-routable
+						providers are excluded.
 					</p>
 				</div>
 				{!showPlanInEffectiveHeader && availablePlans.length > 1 && onPlanChange ? (

@@ -15,7 +15,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2024-03-13T00:00:00Z"
+      "effective_from": "2024-03-13T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -27,7 +31,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2024-03-13T00:00:00Z"
+      "effective_from": "2024-03-13T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -39,7 +47,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2024-03-13T00:00:00Z"
+      "effective_from": "2024-03-13T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "cached_write_text_tokens_5m",
@@ -51,7 +63,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2024-03-13T00:00:00Z"
+      "effective_from": "2024-03-13T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "cached_write_text_tokens_1h",
@@ -63,7 +79,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2024-03-13T00:00:00Z"
+      "effective_from": "2024-03-13T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "input_text_tokens",
@@ -74,7 +94,11 @@
       "pricing_plan": "batch",
       "note": null,
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -85,7 +109,22 @@
       "pricing_plan": "batch",
       "note": null,
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard",
+    "batch"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

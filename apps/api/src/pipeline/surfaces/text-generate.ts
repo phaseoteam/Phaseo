@@ -7,8 +7,8 @@ import { handleError } from "@core/error-handler";
 import { detectTextProtocol } from "@protocols/detect";
 import { decodeProtocol, encodeProtocol } from "@protocols/index";
 import { doRequestWithIR } from "../execute";
-import { finalizeRequest } from "../after";
-import { handleSuccessAudit } from "../after/audit";
+import { finalizeRequest, settleBillableFailure } from "../after";
+import { handleFailureAudit, handleSuccessAudit } from "../after/audit";
 import { makeHeaders, createResponse } from "../after/http";
 import { auditFailure } from "../audit";
 import type { PipelineRunnerArgs } from "./types";
@@ -92,6 +92,30 @@ function extractAssistantText(response: IRChatResponse): string {
 		.map((part) => part.text)
 		.join("")
 		.trim();
+}
+
+function hasUsableIRChatResponse(response: IRChatResponse | undefined): boolean {
+	if (!response?.choices?.length) return false;
+	return response.choices.some((choice) => {
+		if ((choice.message?.toolCalls?.length ?? 0) > 0) return true;
+		return (choice.message?.content ?? []).some((part) => {
+			if (part.type === "reasoning_text") return false;
+			if (part.type === "text") return part.text.trim().length > 0;
+			return part.type === "image" || part.type === "audio";
+		});
+	});
+}
+
+function emptyProviderResponse(result: { provider?: string; upstream?: Response }): Response {
+	return createJsonErrorResponse(
+		502,
+		"google_empty_response",
+		"The provider returned a successful response without any visible output.",
+		{
+			provider: result.provider ?? null,
+			upstream_status: result.upstream?.status ?? null,
+		},
+	);
 }
 
 function extractAssistantImage(response: IRChatResponse): { imageUrl?: string; b64Json?: string; mimeType?: string } | null {
@@ -785,6 +809,29 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 				});
 			}
 		}
+		if (exec.result.kind === "completed" && !hasUsableIRChatResponse(exec.result.ir as IRChatResponse | undefined)) {
+			await settleBillableFailure(pre.ctx, exec.result);
+			await handleFailureAudit(
+				pre.ctx,
+				exec.result,
+				502,
+				"gateway",
+				"google_empty_response",
+				"The provider returned a successful response without any visible output.",
+				exec.result.rawResponse,
+			);
+			const header = timing.timer.header();
+			pre.ctx.timing = timing.timer.snapshot();
+			return await handleError({
+				stage: "execute",
+				res: emptyProviderResponse(exec.result),
+				endpoint,
+				ctx: pre.ctx,
+				timingHeader: header || undefined,
+				auditFailure: async () => {},
+				req,
+			});
+		}
 
 		const serverToolTrace: Array<{
 			id: string;
@@ -912,6 +959,20 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 					...nextIrRequest,
 					stream: true,
 					toolChoice: "auto",
+					...(latestIrResponse.provider === "google-ai-studio" &&
+						latestIrResponse.nativeId &&
+						latestIrResponse.nativeId !== pre.ctx.requestId &&
+						nextIrRequest.store !== false
+						? {
+							vendor: {
+								...(nextIrRequest.vendor ?? {}),
+								google: {
+									...((nextIrRequest.vendor as any)?.google ?? {}),
+									previous_interaction_id: latestIrResponse.nativeId,
+								},
+							},
+						}
+						: {}),
 					messages: [
 						...nextIrRequest.messages,
 						continuation.assistantMessage,
@@ -921,7 +982,6 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 						},
 					],
 				};
-
 				const followUpExec = await doRequestWithIR(pre.ctx, nextIrRequest, timing);
 				if (followUpExec instanceof Response) {
 					const header = timing.timer.header();
@@ -962,6 +1022,29 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 							req,
 						});
 					}
+				}
+				if (followUpResult.kind === "completed" && !hasUsableIRChatResponse(followUpResult.ir as IRChatResponse | undefined)) {
+					await settleBillableFailure(pre.ctx, followUpResult);
+					await handleFailureAudit(
+						pre.ctx,
+						followUpResult,
+						502,
+						"gateway",
+						"google_empty_response",
+						"The provider returned a successful response without any visible output.",
+						followUpResult.rawResponse,
+					);
+					const header = timing.timer.header();
+					pre.ctx.timing = timing.timer.snapshot();
+					return await handleError({
+						stage: "execute",
+						res: emptyProviderResponse(followUpResult),
+						endpoint,
+						ctx: pre.ctx,
+						timingHeader: header || undefined,
+						auditFailure: async () => {},
+						req,
+					});
 				}
 				if (followUpResult.kind !== "completed" || !followUpResult.ir) {
 					const header = timing.timer.header();

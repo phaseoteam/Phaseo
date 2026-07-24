@@ -133,6 +133,62 @@ function availabilityReason(row: Row, capability: Row, provider: Row | null, now
 
 export async function fetchGatewayMetadataSource(env: Env, modelId: string): Promise<GatewayMetadataSource | null> {
 	const client = getDataClient(env);
+	const v2Pricing = await client.rpc("get_v2_model_pricing", {
+		p_model_slug: modelId,
+		p_region: null,
+		p_service_tier: "standard",
+	});
+	if (!v2Pricing.error && Array.isArray(v2Pricing.data) && v2Pricing.data.length > 0) {
+		const providerModels = new Map<string, Row>();
+		const caps = new Map<string, Row>();
+		const providers: Row[] = [];
+		for (const payload of v2Pricing.data as Row[]) {
+			const provider = asRow(payload.provider);
+			if (provider) providers.push(provider);
+			for (const item of rows(payload.provider_models)) {
+				const providerModelId = id(item.id);
+				const endpoint = id(item.endpoint) ?? "unmapped";
+				if (!providerModelId) continue;
+				const key = `${providerModelId}:${endpoint}`;
+				const normalized = {
+					provider_api_model_id: providerModelId,
+					provider_id: item.api_provider_id,
+					api_model_id: item.model_id,
+					model_id: item.model_id,
+					provider_model_slug: item.provider_model_slug,
+					is_active_gateway: item.is_active_gateway,
+					routing_status: item.routing_status,
+					input_modalities: item.input_modalities,
+					output_modalities: item.output_modalities,
+					context_length: item.context_length,
+					max_output_tokens: item.max_output_tokens,
+					effective_from: null,
+					effective_to: null,
+				};
+				if (!providerModels.has(key) || item.execution_region == null) providerModels.set(key, normalized);
+				caps.set(key, {
+					provider_api_model_id: providerModelId,
+					capability_id: endpoint,
+					params: item.params ?? {},
+					max_input_tokens: item.max_input_tokens ?? null,
+					max_output_tokens: item.max_output_tokens ?? null,
+					status: item.capability_status ?? "active",
+				});
+			}
+		}
+		const uniqueProviders = [...new Map(providers.map((provider, index) => [id(provider.api_provider_id) ?? `provider-${index}`, provider])).values()];
+		const aliasResult = await client.rpc("get_v2_model_aliases", { p_model_slug: modelId });
+		const aliases = !aliasResult.error
+			? rows(aliasResult.data).flatMap((alias) => id(alias.alias_slug) ? [{ api_model_id: modelId, alias_slug: id(alias.alias_slug)! }] : [])
+			: [];
+		return {
+			providerModels: [...providerModels.values()],
+			caps: [...caps.values()],
+			providers: uniqueProviders,
+			aliases,
+		};
+	}
+	if (v2Pricing.error && !/could not find|does not exist|PGRST202/i.test(v2Pricing.error.message ?? "")) throw v2Pricing.error;
 	const visible = await client.from("data_models").select("model_id").eq("model_id", modelId).eq("hidden", false).maybeSingle();
 	if (visible.error) throw visible.error;
 	const providerSelect = "provider_api_model_id,provider_id,api_model_id,model_id,provider_model_slug,is_active_gateway,routing_status,input_modalities,output_modalities,quantization_scheme,context_length,effective_from,effective_to,created_at,updated_at";

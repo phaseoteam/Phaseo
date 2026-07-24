@@ -51,7 +51,7 @@ const runtime = vi.hoisted(() => {
                 }),
             };
         }
-        if (table === "teams") {
+        if (table === "workspaces") {
             return {
                 select: () => ({
                     eq: () => ({
@@ -114,7 +114,9 @@ describe("fetchGatewayContext inflight dedupe", () => {
             fetchGatewayContext(args),
         ]);
 
-        expect(runtime.supabase.rpc).toHaveBeenCalledTimes(1);
+		// One shared loader fetches both text-capability variants. Without inflight
+		// dedupe, the two concurrent callers would issue four RPCs.
+		expect(runtime.supabase.rpc).toHaveBeenCalledTimes(2);
         expect(a.workspaceId).toBe("team_inflight");
         expect(b.workspaceId).toBe("team_inflight");
         expect(c.workspaceId).toBe("team_inflight");

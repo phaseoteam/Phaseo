@@ -41,5 +41,13 @@
       "platform": "youtube",
       "url": "https://www.youtube.com/@anthropic-ai"
     }
-  ]
+  ],
+  "status": "active",
+  "routable": null,
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

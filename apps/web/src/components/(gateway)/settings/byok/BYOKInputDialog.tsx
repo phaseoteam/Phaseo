@@ -261,14 +261,14 @@ export default function BYOKInputDialog({
 				});
 				toast.success(submission.value ? "Key updated and replaced" : "Key updated");
 			} else {
-				const result = await createByokKeyAction(
+				await createByokKeyAction(
 					defaultName,
 					providerId as string,
 					submission.value as string,
 					enabled,
 					alwaysUse,
 				);
-				toast.success(result?.mode === "updated" ? "Provider key replaced" : "Key saved");
+				toast.success("Key saved");
 			}
 			setOpen(false);
 			resetForm();
@@ -545,15 +545,14 @@ export default function BYOKInputDialog({
 
 					<div className="space-y-2 rounded-md border p-3">
 						<div className="flex items-center justify-between gap-4">
-							<div className="text-sm font-medium">Always use this key</div>
+							<div className="text-sm font-medium">Priority key</div>
 							<Switch checked={alwaysUse} onCheckedChange={(checked: any) => setAlwaysUse(Boolean(checked))} />
 						</div>
 						<p className="text-xs text-muted-foreground">
-							By default, if your key encounters a rate limit or failure, Phaseo falls back to shared Phaseo credits.
+							Priority keys are tried in order before Phaseo-managed provider credentials.
 						</p>
 						<p className="text-xs text-muted-foreground">
-							When enabled, Phaseo only uses this key for requests to this provider. This can return rate-limit
-							errors if your key is exhausted, but ensures requests go through your account.
+							When disabled, this key is a fallback and is tried only after the managed provider route is exhausted.
 						</p>
 					</div>
 

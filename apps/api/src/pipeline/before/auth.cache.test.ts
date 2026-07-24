@@ -154,6 +154,16 @@ describe("authenticate hot-path caching", () => {
         vi.useRealTimers();
     });
 
+	it("requires the opaque delegated access token for inference instead of a session JWT", async () => {
+		const jwt = "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoidTEiLCJ3b3Jrc3BhY2VfaWQiOiJ3MSIsImNsaWVudF9pZCI6ImMxIn0.sig";
+		const { authenticate } = await import("./auth");
+		await expect(authenticate(buildRequest(jwt))).resolves.toEqual({
+			ok: false,
+			reason: "oauth_delegated_key_required",
+		});
+		expect(runtime.supabase.from).not.toHaveBeenCalled();
+	});
+
     it("reuses key-version and key-row L1 cache for back-to-back KV-backed auth checks", async () => {
         const kid = "KIDCACHE123";
         const secret = "secret_cache_hit";

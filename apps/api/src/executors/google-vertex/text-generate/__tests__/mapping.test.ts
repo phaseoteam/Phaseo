@@ -1,5 +1,39 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { geminiToIR, irToGemini, resolveVertexModelRoute } from "../index";
+import type { IRChatRequest } from "@core/ir";
+import type { ExecutorExecuteArgs } from "@executors/types";
+import { execute } from "../index";
+import { installFetchMock } from "../../../../../tests/helpers/mock-fetch";
+import { setupTestRuntime, teardownTestRuntime } from "../../../../../tests/helpers/runtime";
+
+vi.mock("@supabase/supabase-js", () => ({
+	createClient: () => ({}),
+}));
+
+beforeAll(() => setupTestRuntime());
+afterAll(() => teardownTestRuntime());
+
+function buildExecuteArgs(): ExecutorExecuteArgs {
+	const ir: IRChatRequest = {
+		model: "google/gemini-3.6-flash",
+		stream: false,
+		messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
+	};
+	return {
+		ir,
+		requestId: "req_google_vertex_empty",
+		workspaceId: "team_test",
+		providerId: "google-vertex",
+		endpoint: "responses",
+		protocol: "openai.responses",
+		capability: "text.generate",
+		providerModelSlug: "gemini-3.6-flash",
+		capabilityParams: null,
+		byokMeta: [],
+		pricingCard: null as any,
+		meta: {},
+	} as ExecutorExecuteArgs;
+}
 
 describe("google-vertex route resolution", () => {
 	it("routes prefixed models by family", () => {
@@ -9,7 +43,58 @@ describe("google-vertex route resolution", () => {
 	});
 });
 
+describe("google-vertex empty response handling", () => {
+	it("turns a zero-output Gemini response into a failoverable error", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url.includes(":streamGenerateContent"),
+			response: new Response(JSON.stringify({
+				candidates: [{ finishReason: "STOP" }],
+				usageMetadata: { promptTokenCount: 8, candidatesTokenCount: 0, totalTokenCount: 8 },
+			}), {
+				status: 200,
+				headers: { "Content-Type": "application/json" },
+			}),
+		}]);
+
+		let result: Awaited<ReturnType<typeof execute>>;
+		try {
+			result = await execute(buildExecuteArgs());
+		} finally {
+			mock.restore();
+		}
+
+		expect(result.kind).toBe("completed");
+		if (result.kind !== "completed") return;
+		expect(result.ir).toBeUndefined();
+		expect(result.upstream?.status).toBe(502);
+	});
+});
+
 describe("google-vertex irToGemini", () => {
+	it("removes JSON Schema additionalProperties from function declarations", async () => {
+		const request = await irToGemini({
+			model: "gemini-3.5-flash-lite",
+			stream: false,
+			messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
+			tools: [{
+				name: "lookup",
+				description: "Look something up",
+				parameters: {
+					type: "object",
+					additionalProperties: false,
+					properties: {
+						query: { type: "string", additionalProperties: false },
+					},
+				},
+			}],
+		} as any);
+
+		expect(request.tools?.[0]?.functionDeclarations?.[0]?.parameters).toEqual({
+			type: "object",
+			properties: { query: { type: "string" } },
+		});
+	});
+
 	it("maps system and developer roles into systemInstruction parts", async () => {
 		const request = await irToGemini({
 			model: "gemini-2.5-flash",

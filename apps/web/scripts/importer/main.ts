@@ -10,6 +10,7 @@ import { loadBenchmarks } from "./loaders/benchmarks";
 import { loadFamilies } from "./loaders/families";
 import { loadOrganisations } from "./loaders/organisations";
 import { loadSubscriptionPlans } from "./loaders/subscription_plans";
+import { syncV2Catalogue } from "./v2";
 import { DATA_ROOT } from "./paths";
 
 const VERBOSE = process.argv.includes("--verbose");
@@ -91,6 +92,11 @@ async function main() {
     if (forceFull) console.log(">> Full import mode enabled; hashes will be ignored.");
     else if (forcePricing) console.log(">> Full pricing import mode enabled.");
     await fn(tracker);
+    if (modelFilter) {
+        console.log(">> Skipping full v2 catalogue sync for a filtered import; run a full import to refresh the v2 mirror.");
+    } else {
+        await timed("v2-catalogue", () => syncV2Catalogue());
+    }
     await tracker.persist({ dryRun: isDryRun() });
     console.log(">> Done.");
 }

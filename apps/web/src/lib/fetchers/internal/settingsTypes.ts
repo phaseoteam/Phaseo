@@ -139,10 +139,13 @@ export type ByokKeyEntry = {
 	name: string;
 	prefix?: string;
 	providerId: string;
+	routingMode: "priority" | "fallback";
+	sortOrder: number;
 	suffix?: string;
 };
 
 export type SettingsByokInitialData = {
+	fallbackEnabled: boolean;
 	freeRemaining: number;
 	keyEntries: ByokKeyEntry[];
 	legacyHiddenTotal: number;

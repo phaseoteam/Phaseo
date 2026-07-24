@@ -105,20 +105,31 @@ accountSettingsByokRouter.post("/byok", async (c) => {
 	try {
 		const checked = validateProviderKey(providerId, body.value);
 		const encrypted = await encrypt(c.env, checked.value);
-		const payload = { workspace_id: context.workspaceId, provider_id: providerId, name, enabled: body.enabled !== false, always_use: body.always_use === true, ...encrypted, verification_status: checked.strict ? "format_valid_strict" : "format_valid", error_message: null, last_verified_at: new Date().toISOString(), created_by: context.user.id };
-		const existing = await context.client.from("byok_keys").select("id,created_at").eq("workspace_id", context.workspaceId).eq("provider_id", providerId).order("created_at", { ascending: false });
-		if (existing.error) throw existing.error;
-		const primary = existing.data?.[0];
-		if (primary) {
-			const duplicateIds = (existing.data ?? []).slice(1).map((row) => row.id);
-			if (duplicateIds.length) {
-				const cleanup = await context.client.from("byok_keys").delete().in("id", duplicateIds).eq("workspace_id", context.workspaceId);
-				if (cleanup.error) throw cleanup.error;
-			}
-			const updated = await context.client.from("byok_keys").update(payload).eq("id", primary.id).eq("workspace_id", context.workspaceId);
-			if (updated.error) throw updated.error;
-			return c.json({ id: primary.id, mode: "updated" }, 200, PRIVATE_NO_STORE_HEADERS);
-		}
+		const routingMode = body.always_use === true ? "priority" : "fallback";
+		const lastInMode = await context.client
+			.from("byok_keys")
+			.select("sort_order")
+			.eq("workspace_id", context.workspaceId)
+			.eq("provider_id", providerId)
+			.eq("routing_mode", routingMode)
+			.order("sort_order", { ascending: false })
+			.limit(1)
+			.maybeSingle();
+		if (lastInMode.error) throw lastInMode.error;
+		const payload = {
+			workspace_id: context.workspaceId,
+			provider_id: providerId,
+			name,
+			enabled: body.enabled !== false,
+			always_use: body.always_use === true,
+			routing_mode: routingMode,
+			sort_order: Number(lastInMode.data?.sort_order ?? -1) + 1,
+			...encrypted,
+			verification_status: checked.strict ? "format_valid_strict" : "format_valid",
+			error_message: null,
+			last_verified_at: new Date().toISOString(),
+			created_by: context.user.id,
+		};
 		const inserted = await context.client.from("byok_keys").insert(payload).select("id").maybeSingle();
 		if (inserted.error) throw inserted.error;
 		return c.json({ id: inserted.data?.id, mode: "created" }, 200, PRIVATE_NO_STORE_HEADERS);
@@ -137,7 +148,28 @@ accountSettingsByokRouter.put("/byok/:keyId", async (c) => {
 		if (providerId !== loaded.key.provider_id) update.provider_id = providerId;
 		if (typeof body.name === "string") update.name = body.name;
 		if (typeof body.enabled === "boolean") update.enabled = body.enabled;
-		if (typeof body.always_use === "boolean") update.always_use = body.always_use;
+		if (typeof body.always_use === "boolean") {
+			const nextRoutingMode = body.always_use ? "priority" : "fallback";
+			const currentRoutingMode = loaded.key.routing_mode === "priority" || loaded.key.routing_mode === "fallback"
+				? loaded.key.routing_mode
+				: loaded.key.always_use === true ? "priority" : "fallback";
+			update.always_use = body.always_use;
+			update.routing_mode = nextRoutingMode;
+			if (nextRoutingMode !== currentRoutingMode) {
+				const lastInMode = await loaded.context.client
+					.from("byok_keys")
+					.select("sort_order")
+					.eq("workspace_id", loaded.context.workspaceId)
+					.eq("provider_id", providerId)
+					.eq("routing_mode", nextRoutingMode)
+					.neq("id", loaded.key.id)
+					.order("sort_order", { ascending: false })
+					.limit(1)
+					.maybeSingle();
+				if (lastInMode.error) throw lastInMode.error;
+				update.sort_order = Number(lastInMode.data?.sort_order ?? -1) + 1;
+			}
+		}
 		if (typeof body.value === "string") {
 			const checked = validateProviderKey(providerId, body.value);
 			Object.assign(update, await encrypt(c.env, checked.value), { verification_status: checked.strict ? "format_valid_strict" : "format_valid", error_message: null, last_verified_at: new Date().toISOString() });
@@ -153,6 +185,21 @@ accountSettingsByokRouter.delete("/byok/:keyId", async (c) => {
 	if (!loaded) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const result = await loaded.context.client.from("byok_keys").delete().eq("id", loaded.key.id).eq("workspace_id", loaded.context.workspaceId);
 	if (result.error) return c.json({ error: "BYOK key delete failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+	return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
+accountSettingsByokRouter.post("/byok/:keyId/reorder", async (c) => {
+	const loaded = await keyContext(c.req.raw, c.env, c.req.param("keyId"));
+	if (!loaded) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const body: Record<string, any> = await c.req.json<Record<string, any>>().catch(() => ({}));
+	const direction = body.direction === "up" ? "up" : body.direction === "down" ? "down" : null;
+	if (!direction) return c.json({ error: "invalid_direction" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const result = await loaded.context.userClient.rpc("reorder_v2_byok_key", {
+		p_workspace_id: loaded.context.workspaceId,
+		p_key_id: loaded.key.id,
+		p_direction: direction,
+	});
+	if (result.error) return c.json({ error: "settings_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
 	return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 

@@ -15,7 +15,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2025-12-16T00:00:00Z"
+      "effective_from": "2025-12-16T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -27,7 +31,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2025-12-16T00:00:00Z"
+      "effective_from": "2025-12-16T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -39,7 +47,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2025-12-16T00:00:00Z"
+      "effective_from": "2025-12-16T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "input_image_tokens",
@@ -51,7 +63,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2025-12-16T00:00:00Z"
+      "effective_from": "2025-12-16T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "cached_read_image_tokens",
@@ -63,7 +79,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2025-12-16T00:00:00Z"
+      "effective_from": "2025-12-16T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_image_tokens",
@@ -75,7 +95,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2025-12-16T00:00:00Z"
+      "effective_from": "2025-12-16T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_image",
@@ -102,7 +126,26 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2025-12-16T00:00:00Z"
+      "effective_from": "2025-12-16T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "image_params.quality",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "low"
+        },
+        {
+          "path": "image_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": "1024x1024"
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_image",
@@ -129,7 +172,26 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2025-12-16T00:00:00Z"
+      "effective_from": "2025-12-16T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "image_params.quality",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "low"
+        },
+        {
+          "path": "image_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": "1024x1536"
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_image",
@@ -156,7 +218,26 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2025-12-16T00:00:00Z"
+      "effective_from": "2025-12-16T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "image_params.quality",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "low"
+        },
+        {
+          "path": "image_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": "1536x1024"
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_image",
@@ -183,7 +264,26 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2025-12-16T00:00:00Z"
+      "effective_from": "2025-12-16T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "image_params.quality",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "medium"
+        },
+        {
+          "path": "image_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": "1024x1024"
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_image",
@@ -210,7 +310,26 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2025-12-16T00:00:00Z"
+      "effective_from": "2025-12-16T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "image_params.quality",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "medium"
+        },
+        {
+          "path": "image_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": "1024x1536"
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_image",
@@ -237,7 +356,26 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2025-12-16T00:00:00Z"
+      "effective_from": "2025-12-16T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "image_params.quality",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "medium"
+        },
+        {
+          "path": "image_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": "1536x1024"
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_image",
@@ -264,7 +402,26 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2025-12-16T00:00:00Z"
+      "effective_from": "2025-12-16T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "image_params.quality",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "high"
+        },
+        {
+          "path": "image_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": "1024x1024"
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_image",
@@ -291,7 +448,26 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2025-12-16T00:00:00Z"
+      "effective_from": "2025-12-16T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "image_params.quality",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "high"
+        },
+        {
+          "path": "image_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": "1024x1536"
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_image",
@@ -318,7 +494,36 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2025-12-16T00:00:00Z"
+      "effective_from": "2025-12-16T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "image_params.quality",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "high"
+        },
+        {
+          "path": "image_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": "1536x1024"
+        }
+      ],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

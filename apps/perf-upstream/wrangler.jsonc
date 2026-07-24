@@ -1,0 +1,22 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "phaseo-perf-upstream",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-07-22",
+	"workers_dev": true,
+	"preview_urls": true,
+	"vars": {
+		"PERF_MAX_REQUEST_BYTES": "65536",
+		"PERF_MAX_FIRST_FRAME_MS": "5000",
+		"PERF_MAX_FRAME_INTERVAL_MS": "1000",
+		"PERF_MAX_FRAMES": "100"
+	},
+	"observability": {
+		"enabled": true,
+		"logs": {
+			"enabled": true,
+			"head_sampling_rate": 0.1,
+			"invocation_logs": true
+		}
+	}
+}

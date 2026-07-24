@@ -53,6 +53,7 @@ import {
 	fmtCompact,
 	fmtUSD,
 	ruleMatchCovers,
+	ruleComparisonMatchSignature,
 	type QualityRow,
 	type ResolutionRow,
 	type ProviderTablePriceSummary,
@@ -72,7 +73,9 @@ import {
 } from "@/lib/parameters/reference";
 import {
 	getProviderModelScopeForPlan,
+	getProviderPlanComparisonBase,
 	getProviderPricingRulesForPlan,
+	hasSelectedAlternativeServiceTier,
 } from "@/components/(data)/model/pricing/providerPlanRouting";
 import {
 	formatProviderOfferDisplayName,
@@ -369,6 +372,36 @@ function UptimeSparkline({
 	);
 }
 
+function hasTokenTierComparison(tier: TokenTier): boolean {
+	return (
+		tier.basePer1M != null &&
+		Number.isFinite(tier.basePer1M) &&
+		Math.abs(tier.basePer1M - tier.per1M) > 1e-9
+	);
+}
+
+function getTokenTierConditions(tiers: TokenTier[]): Array<string | null> {
+	const conditions = tiers.map((tier) =>
+		tier.label && tier.label !== "All usage" ? tier.label : null,
+	);
+	if (conditions[0]) return conditions;
+	const firstExplicitCondition = conditions.find(Boolean) ?? null;
+	if (!firstExplicitCondition) return conditions;
+	const match = firstExplicitCondition.match(/^(>=|<=|>|<|≥|≤)\s*(.+)$/u);
+	if (!match) return conditions;
+	const [, operator, threshold] = match;
+	const complement =
+		operator === ">"
+			? "≤"
+			: operator === ">=" || operator === "≥"
+				? "<"
+				: operator === "<"
+					? "≥"
+					: ">";
+	conditions[0] = `${complement} ${threshold}`;
+	return conditions;
+}
+
 function renderCompactTierSummary(
 	tiers?: TokenTier[] | null,
 	valueClassName?: string,
@@ -384,42 +417,118 @@ function renderCompactTierSummary(
 			</div>
 		);
 	}
+	const hasAnyComparison = orderedTiers.some(hasTokenTierComparison);
+	const conditions = getTokenTierConditions(orderedTiers);
 
 	return (
-		<div className="mt-0.5 space-y-1">
+		<div
+			className={cn(
+				"mt-0.5 inline-grid items-baseline gap-x-1.5 gap-y-1",
+				hasAnyComparison
+					? "grid-cols-[repeat(3,max-content)]"
+					: "grid-cols-[repeat(2,max-content)]",
+			)}
+		>
 			{orderedTiers.map((tier, index) => {
-				const hasComparison =
-					tier.basePer1M != null &&
-					Number.isFinite(tier.basePer1M) &&
-					Math.abs(tier.basePer1M - tier.per1M) > 1e-9;
-				const condition = tier.label && tier.label !== "All usage" ? tier.label : null;
+				const hasComparison = hasTokenTierComparison(tier);
 				return (
-					<div
-						key={`${tier.label}-${tier.per1M}-${index}`}
-						className="flex items-baseline gap-1.5"
-					>
-						{hasComparison ? (
-							<span className="text-[11px] tabular-nums text-muted-foreground line-through">
-								{fmtUSD(tier.basePer1M!)}
+					<React.Fragment key={`${tier.label}-${tier.per1M}-${index}`}>
+						{hasAnyComparison ? (
+							<span
+								className={cn(
+									"text-left text-xs tabular-nums",
+									hasComparison
+										? "text-muted-foreground line-through"
+										: "text-transparent",
+								)}
+							>
+								{hasComparison ? fmtUSD(tier.basePer1M!) : null}
 							</span>
 						) : null}
 						<span
 							className={cn(
-								index === 0 ? "text-lg" : "text-xs",
-								"font-semibold tabular-nums text-foreground",
+								"text-left text-xs font-semibold tabular-nums text-foreground",
 								valueClassName,
 							)}
 						>
 							{fmtUSD(tier.per1M)}
 						</span>
-						{condition ? (
-							<span className="truncate text-[10px] text-muted-foreground">
-								{condition}
-							</span>
-						) : null}
-					</div>
+						<span className="whitespace-nowrap text-left text-[10px] text-muted-foreground">
+							{conditions[index]}
+						</span>
+					</React.Fragment>
 				);
 			})}
+		</div>
+	);
+}
+
+function renderSecondaryTierSummary(
+	label: string,
+	tiers?: TokenTier[] | null,
+	unitLabel?: string,
+	valueClassName?: string,
+) {
+	const orderedTiers = [...(tiers ?? [])].sort((a, b) => {
+		if (a.isCurrent !== b.isCurrent) return a.isCurrent ? -1 : 1;
+		return a.per1M - b.per1M;
+	});
+	if (!orderedTiers.length) {
+		return <div className="text-xs font-semibold tabular-nums text-foreground">--</div>;
+	}
+	const hasAnyComparison = orderedTiers.some(hasTokenTierComparison);
+	const conditions = getTokenTierConditions(orderedTiers);
+
+	return (
+		<div
+			className={cn(
+				"inline-grid items-baseline gap-x-1.5 gap-y-0.5",
+				hasAnyComparison
+					? "grid-cols-[max-content_repeat(3,max-content)]"
+					: "grid-cols-[max-content_repeat(2,max-content)]",
+			)}
+		>
+			{orderedTiers.map((tier, index) => {
+				const hasComparison = hasTokenTierComparison(tier);
+				return (
+					<React.Fragment key={`${tier.label}-${tier.per1M}-${index}`}>
+						<span className="whitespace-nowrap pr-3 text-[11px] text-muted-foreground">
+							{index === 0 ? label : null}
+						</span>
+						{hasAnyComparison ? (
+							<span
+								className={cn(
+									"text-left text-xs tabular-nums",
+									hasComparison
+										? "text-muted-foreground line-through"
+										: "text-transparent",
+								)}
+							>
+								{hasComparison ? fmtUSD(tier.basePer1M!) : null}
+							</span>
+						) : null}
+						<span
+							className={cn(
+								"text-left text-xs font-semibold tabular-nums text-foreground",
+								valueClassName,
+							)}
+						>
+							{fmtUSD(tier.per1M)}
+						</span>
+						<span className="whitespace-nowrap text-left text-[10px] text-muted-foreground">
+							{conditions[index]}
+						</span>
+					</React.Fragment>
+				);
+			})}
+			<div
+				className={cn(
+					"justify-self-center text-[10px] text-muted-foreground",
+					hasAnyComparison ? "col-span-3 col-start-2" : "col-span-2 col-start-2",
+				)}
+			>
+				{unitLabel}
+			</div>
 		</div>
 	);
 }
@@ -831,7 +940,7 @@ function buildRuleComparisonKey(
 		rule.meter,
 		rule.unit,
 		String(rule.unit_size ?? 1),
-		normalizeRuleMatchSignature(rule.match),
+		ruleComparisonMatchSignature(rule),
 	].join("::");
 }
 
@@ -842,7 +951,7 @@ function buildRuleComparisonKeyIgnoringEndpoint(
 		rule.meter,
 		rule.unit,
 		String(rule.unit_size ?? 1),
-		normalizeRuleMatchSignature(rule.match),
+		ruleComparisonMatchSignature(rule),
 	].join("::");
 }
 
@@ -918,14 +1027,28 @@ function derivePlanMultiplier(args: {
 				buildRuleComparisonKeyIgnoringEndpoint(rule),
 			);
 		if (basePrice == null) {
-			const semanticMatch = [...activeBaseRules]
+			const semanticCandidates = [...activeBaseRules]
 				.filter((candidate) => {
 					if (candidate.meter !== rule.meter) return false;
 					if (candidate.unit !== rule.unit) return false;
 					return String(candidate.unit_size ?? 1) === String(rule.unit_size ?? 1);
 				})
-				.sort(sortPricingRuleCandidates)
-				.find((candidate) => ruleMatchCovers(candidate, rule));
+				.sort(sortPricingRuleCandidates);
+			const targetMatchSignature = ruleComparisonMatchSignature(rule);
+			const semanticMatch =
+				semanticCandidates.find(
+					(candidate) =>
+						ruleComparisonMatchSignature(candidate) !== "[]" &&
+						ruleComparisonMatchSignature(candidate) === targetMatchSignature,
+				) ??
+				semanticCandidates.find(
+					(candidate) =>
+						ruleComparisonMatchSignature(candidate) !== "[]" &&
+						ruleMatchCovers(candidate, rule),
+				) ??
+				semanticCandidates.find(
+					(candidate) => ruleComparisonMatchSignature(candidate) === "[]",
+				);
 			basePrice = semanticMatch
 				? normalizeRuleUnitPrice(semanticMatch)
 				: null;
@@ -1253,6 +1376,12 @@ const PROVIDER_STATUS_META: Record<
 		iconClass: "text-blue-600",
 		description: "Not active yet.",
 	},
+	external: {
+		label: "External",
+		icon: ArrowUpRight,
+		iconClass: "text-violet-600",
+		description: "Listed from an external catalogue; not routable through Phaseo.",
+	},
 	internal_testing: {
 		label: "Internal Testing",
 		icon: FlaskConical,
@@ -1424,25 +1553,29 @@ export default function ProviderCard({
 			}),
 		[comparisonProviders, provider, tablePlan],
 	);
+	const planComparisonBase = getProviderPlanComparisonBase(
+		availablePlans,
+		defaultPlan,
+	);
 	const planMultiplierLabels = useMemo(() => {
 		const nowMs = Date.now();
 		const labels: Record<string, string | null> = {};
 		for (const plan of availablePlans) {
-			if (plan === defaultPlan) {
+			if (plan === planComparisonBase) {
 				labels[plan] = null;
 				continue;
 			}
 			labels[plan] = formatPlanMultiplierLabel(
 				derivePlanMultiplier({
 					provider,
-					basePlan: defaultPlan,
+					basePlan: planComparisonBase,
 					targetPlan: plan,
 					nowMs,
 				}),
 			);
 		}
 		return labels;
-	}, [availablePlans, defaultPlan, provider]);
+	}, [availablePlans, planComparisonBase, provider]);
 	const pricingComparisonAccent =
 		selectedPlan === "batch" ||
 		selectedPlan === "flex" ||
@@ -1665,7 +1798,7 @@ export default function ProviderCard({
 		...createTokenTiles("Image", "image", sec.imageTokens),
 		...createTokenTiles("Video", "video", sec.videoTokens),
 	];
-	const tokenMetricGroups = Array.from(
+	const allTokenMetricGroups = Array.from(
 		tokenMetricTiles.reduce((groups, tile) => {
 			const label = tile.groupTitle ?? "Tokens";
 			const entries = groups.get(label) ?? [];
@@ -1676,8 +1809,15 @@ export default function ProviderCard({
 	).map(([label, tiles]) => ({
 		label,
 		tiles,
-		columns: Math.min(4, tiles.length),
 	}));
+	const tokenMetricGroups = allTokenMetricGroups.map(({ label, tiles }) => ({
+		label,
+		tiles: tiles.slice(0, 3),
+		columns: Math.min(3, tiles.length),
+	}));
+	const additionalTokenMetricTiles = allTokenMetricGroups.flatMap(({ label, tiles }) =>
+		tiles.slice(3).map((tile) => ({ ...tile, groupTitle: label })),
+	);
 	const infoScope = providerModelsInScope;
 	const tableInfoScope = tableProviderModelsInScope;
 	const providerModelSlugs = infoScope.map((pm) => pm.provider_model_slug);
@@ -1829,7 +1969,10 @@ export default function ProviderCard({
 				runtimeStats?.latencyMs30m != null
 					? formatLatencySeconds(runtimeStats.latencyMs30m)
 					: "--",
-			valueClassName: uptimeValueClass(uptimePct),
+			valueClassName:
+				hasSelectedAlternativeServiceTier(selectedPlan, planComparisonBase)
+					? selectedPlanTheme.accent
+					: "text-foreground",
 		},
 		{
 			key: "throughput",
@@ -2294,7 +2437,8 @@ export default function ProviderCard({
 		) : null;
 	const pricingAdditionalContent =
 		!isFreePlan &&
-		((sec.requests?.length ?? 0) > 0 ||
+		(additionalTokenMetricTiles.length > 0 ||
+			(sec.requests?.length ?? 0) > 0 ||
 			upcomingFor("requests").length > 0 ||
 			imageInputs.length > 0 ||
 			upcomingFor("imageInputs").length > 0 ||
@@ -2302,10 +2446,23 @@ export default function ProviderCard({
 			upcomingFor("videoInputs").length > 0 ||
 			sec.otherRules.length > 0 ||
 			upcomingFor("other").length > 0) ? (
-			<div className="space-y-2 pt-1">
-				<div>
-					<h4 className="text-xs font-semibold text-foreground">Additional meters</h4>
-				</div>
+			<div className="space-y-2 pt-2">
+				{additionalTokenMetricTiles.length > 0 ? (
+					<div className="space-y-2">
+						{additionalTokenMetricTiles.map((tile) => (
+							<React.Fragment key={tile.key}>
+								{renderSecondaryTierSummary(
+									tokenMetricGroups.length > 1
+										? `${tile.groupTitle} ${tile.title}`
+										: tile.title,
+									tile.tiers,
+									tile.unitLabel,
+									selectedPlanTheme.accent,
+								)}
+							</React.Fragment>
+						))}
+					</div>
+				) : null}
 					{additionalMeterSummaries.length > 0 ? (
 						<div className="space-y-2">
 							{additionalMeterSummaries.map((summary) => (
@@ -2944,7 +3101,7 @@ export default function ProviderCard({
 											</div>
 											<div
 												className={cn(
-													"mt-1 flex items-center gap-2 text-lg font-semibold tabular-nums",
+											"mt-1 flex items-center gap-2 text-xs font-semibold tabular-nums",
 													metric.valueClassName,
 												)}
 											>

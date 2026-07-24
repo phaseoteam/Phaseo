@@ -173,6 +173,21 @@ importers:
         specifier: ^4.110.0
         version: 4.110.0(@cloudflare/workers-types@5.20260713.1)
 
+  apps/perf-upstream:
+    devDependencies:
+      '@cloudflare/workers-types':
+        specifier: ^4.20260523.1
+        version: 4.20260702.1
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ^4.1.7
+        version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@25.9.5)(@vitest/coverage-v8@4.1.10)(vite@8.1.4(@types/node@25.9.5)(esbuild@0.25.12)(jiti@2.7.0)(tsx@4.23.1)(yaml@2.9.0))
+      wrangler:
+        specifier: ^4.94.0
+        version: 4.110.0(@cloudflare/workers-types@4.20260702.1)
+
   apps/web:
     dependencies:
       '@1password/save-button':

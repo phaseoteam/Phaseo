@@ -114,9 +114,13 @@ type RpcProviderHealthMetricsRow = {
 	median_latency_ms_30m?: number | string | null;
 	p50_throughput_30m?: number | string | null;
 	median_throughput_30m?: number | string | null;
+	percentile_latency_ms_30m?: number | string | null;
+	percentile_throughput_30m?: number | string | null;
 	avg_latency_ms: number | string | null;
 	p50_latency_ms: number | string | null;
 	p95_latency_ms: number | string | null;
+	percentile_latency_ms?: number | string | null;
+	percentile_throughput?: number | string | null;
 	avg_generation_ms: number | string | null;
 	avg_throughput: number | string | null;
 	total_tokens: number | string | null;
@@ -481,14 +485,18 @@ function mapRpcRuntimeStatsRows(args: {
 			providerId,
 			...(row?.provider_name ? { providerName: row.provider_name } : {}),
 			latencyMs30m:
+				toFiniteNumber(row?.percentile_latency_ms_30m) ??
 				toFiniteNumber(row?.p50_latency_ms_30m) ??
 				toFiniteNumber(row?.median_latency_ms_30m) ??
 				toFiniteNumber(row?.avg_latency_ms_30m) ??
+				toFiniteNumber(row?.percentile_latency_ms) ??
 				toFiniteNumber(row?.avg_latency_ms),
 			throughput30m:
+				toFiniteNumber(row?.percentile_throughput_30m) ??
 				toFiniteNumber(row?.p50_throughput_30m) ??
 				toFiniteNumber(row?.median_throughput_30m) ??
 				toFiniteNumber(row?.avg_throughput_30m) ??
+				toFiniteNumber(row?.percentile_throughput) ??
 				toFiniteNumber(row?.avg_throughput),
 			uptimePct3d: toFiniteNumber(row?.uptime_pct),
 			requestSuccessPct3d: toFiniteNumber(row?.request_success_pct),
@@ -596,6 +604,7 @@ export async function getModelProviderRuntimeStats(args: {
 	modelId: string;
 	providerIds: string[];
 	modelAliases: string[];
+	percentile?: number;
 }): Promise<ProviderRuntimeStatsMap> {
 	const providerIds = [...new Set(args.providerIds.filter(Boolean))].sort();
 	if (!providerIds.length) return {};
@@ -604,6 +613,7 @@ export async function getModelProviderRuntimeStats(args: {
 		model_aliases: [...new Set(args.modelAliases.filter(Boolean))].sort().join(","),
 		window_days: "3",
 		bucket_hours: "1",
+		percentile: String(args.percentile ?? 50),
 	});
 	const payload = await fetchPublicWebApi<{ rows: RpcProviderHealthMetricsRow[] }>(
 		`/api/_web/models/${encodeURIComponent(args.modelId)}/provider-health?${query.toString()}`,
@@ -615,6 +625,7 @@ export async function getModelProviderRuntimeStatsCached(args: {
 	modelId: string;
 	providerIds: string[];
 	modelAliases: string[];
+	percentile?: number;
 }): Promise<ProviderRuntimeStatsMap> {
 	return getModelProviderRuntimeStats(args);
 }
@@ -625,6 +636,7 @@ export async function getModelProviderHealthMetrics(args: {
 	modelAliases: string[];
 	windowDays?: number;
 	bucketHours?: number;
+	percentile?: number;
 }): Promise<ProviderHealthMetricsMap> {
 	const providerIds = [...new Set(args.providerIds.filter(Boolean))].sort();
 	if (!providerIds.length) return {};
@@ -633,6 +645,7 @@ export async function getModelProviderHealthMetrics(args: {
 		model_aliases: [...new Set(args.modelAliases.filter(Boolean))].sort().join(","),
 		window_days: String(args.windowDays ?? 30),
 		bucket_hours: String(args.bucketHours ?? 24),
+		percentile: String(args.percentile ?? 50),
 	});
 	const payload = await fetchPublicWebApi<{ rows: RpcProviderHealthMetricsRow[] }>(
 		`/api/_web/models/${encodeURIComponent(args.modelId)}/provider-health?${query.toString()}`,

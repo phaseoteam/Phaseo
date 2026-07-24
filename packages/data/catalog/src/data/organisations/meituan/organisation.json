@@ -4,5 +4,13 @@
   "country_code": "CN",
   "description": null,
   "colour": null,
-  "organisation_links": []
+  "organisation_links": [],
+  "status": "active",
+  "routable": null,
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

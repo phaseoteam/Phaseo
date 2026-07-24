@@ -10,5 +10,20 @@
   "terms_of_service_url": "https://www.aionlabs.ai/terms/",
   "prompt_training_policy": "no_train",
   "prompt_training_notes": "Aion Labs says user content is processed solely as necessary to provide the services, including forwarding prompts to upstream providers, and user content remains owned by the user.",
-  "prompt_training_source_url": "https://www.aionlabs.ai/terms/"
+  "prompt_training_source_url": "https://www.aionlabs.ai/terms/",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://www.aionlabs.ai/",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

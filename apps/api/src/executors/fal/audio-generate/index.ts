@@ -7,6 +7,7 @@
 // Supports audio generation and text-to-speech models
 
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
+import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import type { ProviderExecutor } from "../../types";
 
 /**
@@ -59,7 +60,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const modelId = providerModelSlug || ir.model || "fal-ai/audio-tts";
 
 	try {
-		const response = await fetch(`https://fal.run/${modelId}`, {
+		const response = await fetchUpstream(args, `https://fal.run/${modelId}`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",

@@ -5,6 +5,16 @@ type Row = Record<string, unknown>;
 
 type OptionCount = { value: string; count: number };
 
+type WeeklyMetricRow = {
+	model_slug: string;
+	popularity_tokens_week: number | null;
+	weekly_usage_metric: string;
+	weekly_usage_quantity: number;
+	weekly_usage_unit: string;
+	throughput_week: number | null;
+	latency_week: number | null;
+};
+
 export type ModelsPageFacets = {
 	statusCounts: { active: number; coming_soon: number; not_active: number };
 	endpointOptions: OptionCount[];
@@ -146,10 +156,21 @@ function isMissingPageRpc(error: { code?: string; message?: string } | null): bo
 		&& /could not find|does not exist/i.test(error.message ?? "");
 }
 
-async function databasePageRows(env: Env): Promise<Row[] | null> {
+export type ModelsPageQuery = {
+	region?: string | null;
+	serviceTier?: string | null;
+};
+
+async function databasePageRows(env: Env, query: ModelsPageQuery = {}): Promise<Row[] | null> {
 	const rows: Row[] = [];
+	const useFilteredV2Rpc = Boolean(query.region || query.serviceTier);
 	for (let offset = 0; ; offset += 1_000) {
-		const result = await getDataClient(env).rpc("get_public_models_page_rows", {}).range(offset, offset + 999);
+		const result = await getDataClient(env).rpc(
+			useFilteredV2Rpc ? "get_v2_public_models_page_rows" : "get_public_models_page_rows",
+			useFilteredV2Rpc
+				? { p_region: query.region ?? null, p_service_tier: query.serviceTier ?? null }
+				: {},
+		).range(offset, offset + 999);
 		if (result.error) {
 			if (isMissingPageRpc(result.error)) return null;
 			throw result.error;
@@ -158,6 +179,45 @@ async function databasePageRows(env: Env): Promise<Row[] | null> {
 		if ((result.data?.length ?? 0) < 1_000) break;
 	}
 	return rows;
+}
+
+async function weeklyMetrics(env: Env): Promise<WeeklyMetricRow[]> {
+	const rows: WeeklyMetricRow[] = [];
+	for (let offset = 0; ; offset += 1_000) {
+		const result = await getDataClient(env)
+			.rpc("get_v2_public_model_weekly_metrics")
+			.range(offset, offset + 999);
+		if (result.error) {
+			console.error("models_weekly_metrics_failed", {
+				code: result.error.code,
+				message: result.error.message,
+			});
+			return [];
+		}
+		rows.push(...((result.data ?? []) as WeeklyMetricRow[]));
+		if ((result.data?.length ?? 0) < 1_000) break;
+	}
+	return rows;
+}
+
+export function mergeModelWeeklyMetrics(rows: Row[], metrics: WeeklyMetricRow[]): Row[] {
+	const metricsByModel = new Map(
+		metrics.map((metric) => [String(metric.model_slug ?? "").trim(), metric]),
+	);
+	return rows.map((row) => {
+		const metric = metricsByModel.get(String(row.model_id ?? "").trim());
+		return metric
+			? {
+				...row,
+				popularity_tokens_week: metric.popularity_tokens_week,
+				weekly_usage_metric: metric.weekly_usage_metric,
+				weekly_usage_quantity: metric.weekly_usage_quantity,
+				weekly_usage_unit: metric.weekly_usage_unit,
+				throughput_week: metric.throughput_week,
+				latency_week: metric.latency_week,
+			}
+			: row;
+	});
 }
 
 async function baseRows(env: Env): Promise<Row[]> {
@@ -174,9 +234,9 @@ async function baseRows(env: Env): Promise<Row[]> {
 }
 
 async function providerRegions(env: Env): Promise<Map<string, string[]>> {
-	const result = await getDataClient(env).from("data_api_providers").select("api_provider_id,default_execution_regions");
+	const result = await getDataClient(env).rpc("get_v2_provider_region_map", { p_provider_slugs: null });
 	if (result.error) throw result.error;
-	return new Map((result.data ?? []).map((row: Row) => [String(row.api_provider_id), strings(row.default_execution_regions).map((region) => region.toLowerCase())]));
+	return new Map((result.data ?? []).map((row: Row) => [String(row.provider_slug), strings(row.regions).map((region) => region.toLowerCase())]));
 }
 
 function organisation(row: Row | undefined): Row | null {
@@ -193,9 +253,17 @@ function gatewayTiers(row: Row): string[] {
 	return strings(row.gateway_features).includes("free") ? ["free", "standard"] : ["standard"];
 }
 
-export async function fetchModelsPageCatalogue(env: Env): Promise<{ models: Row[]; pricingComplete: boolean }> {
-	const databaseRows = await databasePageRows(env);
-	if (databaseRows) return { models: databaseRows, pricingComplete: true };
+export async function fetchModelsPageCatalogue(env: Env, query: ModelsPageQuery = {}): Promise<{ models: Row[]; pricingComplete: boolean }> {
+	const [databaseRows, modelWeeklyMetrics] = await Promise.all([
+		databasePageRows(env, query),
+		weeklyMetrics(env),
+	]);
+	if (databaseRows) {
+		return {
+			models: mergeModelWeeklyMetrics(databaseRows, modelWeeklyMetrics),
+			pricingComplete: true,
+		};
+	}
 
 	const [gatewayRows, catalogueRows, regions] = await Promise.all([aggregatedRows(env), baseRows(env), providerRegions(env)]);
 	const baseById = new Map(catalogueRows.map((row) => [String(row.model_id), row]));
@@ -269,7 +337,7 @@ export async function fetchModelsPageCatalogue(env: Env): Promise<{ models: Row[
 	});
 
 	return {
-		models: [...gatewayModels, ...catalogueOnly].sort((left, right) => Number(right.primary_timestamp ?? Number.NEGATIVE_INFINITY) - Number(left.primary_timestamp ?? Number.NEGATIVE_INFINITY) || String(left.organisation_name ?? "").localeCompare(String(right.organisation_name ?? "")) || String(left.name ?? "").localeCompare(String(right.name ?? ""))),
+		models: mergeModelWeeklyMetrics([...gatewayModels, ...catalogueOnly], modelWeeklyMetrics).sort((left, right) => Number(right.primary_timestamp ?? Number.NEGATIVE_INFINITY) - Number(left.primary_timestamp ?? Number.NEGATIVE_INFINITY) || String(left.organisation_name ?? "").localeCompare(String(right.organisation_name ?? "")) || String(left.name ?? "").localeCompare(String(right.name ?? ""))),
 		pricingComplete: false,
 	};
 }

@@ -9,7 +9,8 @@ import type {
 	IREmbeddingsRequest,
 	IREmbeddingsResponse,
 } from "@core/ir";
-import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
+import type { ExecutorExecuteArgs, ExecutorResult, ExecutorUpstreamTiming } from "@executors/types";
+import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { getBindings } from "@/runtime/env";
 import { normalizeGoogleUsage } from "@providers/google-ai-studio/usage";
 import { resolveProviderKey } from "@providers/keys";
@@ -196,12 +197,16 @@ function extractEmbeddingUsage(json: any): Record<string, number> | undefined {
 		: usage;
 }
 
-async function fetchTokenCount(key: string, modelForUrl: string, contents: GeminiEmbeddingContent[]) {
-	const res = await fetch(`${BASE_URL}/v1beta/models/${modelForUrl}:countTokens?key=${key}`, {
+async function fetchTokenCount(key: string, modelForUrl: string, contents: GeminiEmbeddingContent[], upstreamTiming?: ExecutorUpstreamTiming) {
+	const url = `${BASE_URL}/v1beta/models/${modelForUrl}:countTokens?key=${key}`;
+	const init: RequestInit = {
 		method: "POST",
 		headers: baseHeaders(),
 		body: JSON.stringify({ contents }),
-	});
+	};
+	const res = await (upstreamTiming
+		? upstreamTiming.fetch(url, init, "preflight")
+		: fetch(url, init));
 	const json = await res.clone().json().catch(() => null);
 	const total =
 		json?.totalTokens ??
@@ -308,7 +313,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const captureRequest = Boolean(args.meta.returnUpstreamRequest || args.meta.echoUpstreamRequest);
 	const mappedRequest = captureRequest ? JSON.stringify(payload) : undefined;
 
-	const res = await fetch(`${BASE_URL}/v1beta/models/${modelForUrl}${endpoint}?key=${key}`, {
+	const res = await fetchUpstream(args, `${BASE_URL}/v1beta/models/${modelForUrl}${endpoint}?key=${key}`, {
 		method: "POST",
 		headers: baseHeaders(),
 		body: JSON.stringify(payload),
@@ -317,7 +322,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	let usage = json ? extractEmbeddingUsage(json) : undefined;
 	if (!usage) {
-		const totalTokens = await fetchTokenCount(key, modelForUrl, contents);
+		const totalTokens = await fetchTokenCount(key, modelForUrl, contents, args.upstreamTiming);
 		if (typeof totalTokens === "number" && totalTokens > 0) {
 			usage = {
 				embedding_tokens: totalTokens,

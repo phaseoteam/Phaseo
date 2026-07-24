@@ -1,5 +1,6 @@
 import { normalizeProviderList } from "@/lib/config/providerAliases";
 import { dispatchBackground, getCache, getSupabaseAdmin } from "@/runtime/env";
+import { keyVersionToken } from "@/core/kv";
 import type { PriceCard } from "../pricing";
 import type {
 	ProviderCandidate,
@@ -66,7 +67,9 @@ export type WorkspacePolicyDiagnostics = {
 		reason:
 			| "input_output_logging_disabled"
 			| "paid_training_disabled"
-			| "free_training_disabled";
+			| "free_training_disabled"
+			| "data_policy_unknown"
+			| "data_policy_unverified";
 		dataPolicyTier: string;
 		dataPolicyConfidence: string;
 		routeCostKind: "free" | "paid" | "unknown";
@@ -412,7 +415,11 @@ export async function fetchWorkspacePolicy(args: {
 	workspaceId: string;
 	apiKeyId: string;
 }): Promise<WorkspacePolicy> {
-	const versionToken = await getWorkspacePolicyVersionToken(args.workspaceId);
+	const [workspaceVersionToken, apiKeyVersionToken] = await Promise.all([
+		getWorkspacePolicyVersionToken(args.workspaceId),
+		keyVersionToken("id", args.apiKeyId, { useL1Cache: true, l1TtlMs: 5_000 }),
+	]);
+	const versionToken = `${workspaceVersionToken}:${apiKeyVersionToken}`;
 	const cached = readWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken);
 	if (cached) return cached;
 
@@ -688,7 +695,11 @@ function applyProviderDataPolicySettings(args: {
 		const costKind = routeCostKind(provider.pricingCard);
 		let reason: WorkspacePolicyDiagnostics["droppedByPrivacy"][number]["reason"] | null = null;
 
-		if (!allowInputOutputLogging && tier === "logs") {
+		if (tier === "unknown") {
+			reason = "data_policy_unknown";
+		} else if (confidence !== "confirmed") {
+			reason = "data_policy_unverified";
+		} else if (!allowInputOutputLogging && tier === "logs") {
 			reason = "input_output_logging_disabled";
 		} else if (tier === "trains") {
 			if (costKind === "free" && !allowFreeMayTrain) {

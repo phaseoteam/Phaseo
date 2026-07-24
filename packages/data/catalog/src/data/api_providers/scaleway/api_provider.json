@@ -20,5 +20,20 @@
   "colour": "#4F46E5",
   "privacy_policy_url": "https://www.scaleway.com/en/privacy-policy/",
   "terms_of_service_url": "https://www.scaleway.com/en/terms-of-service/",
-  "prompt_training_policy": "unknown"
+  "prompt_training_policy": "unknown",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://www.scaleway.com/en/generative-apis/",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

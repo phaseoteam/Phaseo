@@ -3,7 +3,8 @@
 // How: Maps unified IR request fields to /videos and normalizes response and usage.
 
 import type { IRVideoGenerationRequest, IRVideoGenerationResponse } from "@core/ir";
-import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
+import type { ExecutorExecuteArgs, ExecutorResult, ExecutorUpstreamTiming } from "@executors/types";
+import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
 import { openAICompatHeaders, openAICompatUrl } from "@providers/openai-compatible/config";
@@ -147,6 +148,7 @@ function buildOpenAiVideoJsonRequest(args: {
 async function resolveInputReferenceBlob(
 	refValue: string,
 	mimeTypeHint?: string,
+	upstreamTiming?: ExecutorUpstreamTiming,
 ): Promise<{ blob: Blob; name: string } | null> {
 	const ref = refValue?.trim();
 	if (!ref) return null;
@@ -160,7 +162,9 @@ async function resolveInputReferenceBlob(
 		const bytes = Uint8Array.from(atob(dataUrlMatch[2] ?? ""), (c) => c.charCodeAt(0));
 		fileBlob = new Blob([bytes], { type: mimeType });
 	} else if (ref.startsWith("http://") || ref.startsWith("https://")) {
-		const fetched = await fetch(ref);
+		const fetched = await (upstreamTiming
+			? upstreamTiming.fetch(ref, undefined, "media")
+			: fetch(ref));
 		if (!fetched.ok) {
 			throw new Error(`openai_video_input_reference_fetch_failed_${fetched.status}`);
 		}
@@ -380,7 +384,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			if (jsonBody.input_video != null) form.append("input_video", JSON.stringify(jsonBody.input_video));
 			if (jsonBody.last_frame != null) form.append("last_frame", JSON.stringify(jsonBody.last_frame));
 			if (jsonBody.reference_images != null) form.append("reference_images", JSON.stringify(jsonBody.reference_images));
-			const resolved = await resolveInputReferenceBlob(inputReference, ir.inputReferenceMimeType);
+			const resolved = await resolveInputReferenceBlob(inputReference, ir.inputReferenceMimeType, args.upstreamTiming);
 			if (resolved) {
 				form.append("input_reference", resolved.blob, resolved.name);
 			}
@@ -400,7 +404,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	let res: Response;
 	try {
-		res = await fetch(openAICompatUrl("openai", "/videos"), {
+		res = await fetchUpstream(args, openAICompatUrl("openai", "/videos"), {
 			method: "POST",
 			headers,
 			body: requestBody,
@@ -475,7 +479,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				reservationStatus,
 				keySource: keyInfo.source,
 				byokKeyId: keyInfo.byokId,
-				createdAt: Date.now(),
+				providerDispatchedAtMs:
+					args.upstreamTiming?.timingFor(res)?.dispatchAtMs ?? Date.now(),
 			}, String(nativeVideoId), irResponse.status);
 		} catch (err) {
 			console.error("openai_video_job_meta_store_failed", {

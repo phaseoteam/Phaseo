@@ -25,5 +25,13 @@
       "platform": "linkedin",
       "url": "https://www.linkedin.com/company/upstageai"
     }
-  ]
+  ],
+  "status": "active",
+  "routable": null,
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

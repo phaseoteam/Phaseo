@@ -13,5 +13,13 @@
       "platform": "linkedin",
       "url": "https://www.linkedin.com/company/inflection-ai/"
     }
-  ]
+  ],
+  "status": "active",
+  "routable": null,
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

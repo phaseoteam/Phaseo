@@ -17,19 +17,110 @@
         "capability_id": "text.generate",
         "status": "active",
         "params": [
-          { "param_id": "include_reasoning", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "max_tokens", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "reasoning", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "response_format", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "stop", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "structured_outputs", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "temperature", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "tool_choice", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "tools", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "top_p", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null }
-        ]
+          {
+            "param_id": "include_reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": [
+        "us"
+      ],
+      "data": [
+        "us"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "anthropic/claude-sonnet-4.6",
@@ -48,9 +139,40 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": [
+        "us"
+      ],
+      "data": [
+        "us"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "anthropic/claude-sonnet-5",
@@ -69,9 +191,40 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {
+      "execution": [
+        "us"
+      ],
+      "data": [
+        "us"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "anthropic/claude-opus-4.7",
@@ -91,18 +244,103 @@
         "capability_id": "text.generate",
         "status": "active",
         "params": [
-          { "param_id": "include_reasoning", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "max_tokens", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "reasoning", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "response_format", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "stop", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "structured_outputs", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "tool_choice", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "tools", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "top_p", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null }
-        ]
+          {
+            "param_id": "include_reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": [
+        "us"
+      ],
+      "data": [
+        "us"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "anthropic/claude-opus-4.8",
@@ -122,18 +360,103 @@
         "capability_id": "text.generate",
         "status": "active",
         "params": [
-          { "param_id": "include_reasoning", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "max_tokens", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "reasoning", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "response_format", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "stop", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "structured_outputs", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "tool_choice", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "tools", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "top_p", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null }
-        ]
+          {
+            "param_id": "include_reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": [
+        "us"
+      ],
+      "data": [
+        "us"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   },
   {
     "api_model_id": "anthropic/claude-fable-5",
@@ -152,8 +475,39 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [],
+        "reasoning": null,
+        "tool_call": null,
+        "structured_output": null,
+        "temperature": null,
+        "attachment": null,
+        "input_modalities": null,
+        "output_modalities": null,
+        "modes": []
       }
-    ]
+    ],
+    "routing_status": null,
+    "routable": false,
+    "regions": {
+      "execution": [
+        "us"
+      ],
+      "data": [
+        "us"
+      ]
+    },
+    "service_tiers": [],
+    "api": {
+      "formats": [],
+      "endpoint": null,
+      "deployment": null
+    },
+    "sources": [],
+    "verification": {
+      "status": "unverified",
+      "checked_at": null,
+      "notes": null
+    },
+    "rate_limits": []
   }
 ]

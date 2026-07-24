@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import {
 	buildUnsupportedBatchModePayload,
+	getBatchProviderCapability,
 	providerSupportsMultipleModelsPerBatch,
+	resolveBatchPreviewProviderIds,
 	resolveBatchInputMode,
 	resolveBatchProvidersForMode,
 	resolveBatchProvidersFromModel,
@@ -74,6 +76,37 @@ describe("batch capabilities", () => {
 		expect(providerSupportsMultipleModelsPerBatch("openai")).toBe(false);
 		expect(providerSupportsMultipleModelsPerBatch("google-ai-studio")).toBe(false);
 		expect(providerSupportsMultipleModelsPerBatch("mistral")).toBe(false);
+	});
+
+	it("fails closed to validated preview providers even for an explicit allowlist", () => {
+		expect(resolveBatchPreviewProviderIds(undefined)).toEqual(["openai"]);
+		expect(resolveBatchPreviewProviderIds("anthropic, google, unknown")).toEqual([
+			"anthropic",
+			"google-ai-studio",
+		]);
+		expect(resolveBatchPreviewProviderIds("*")).toEqual([
+			"openai",
+			"anthropic",
+			"google-ai-studio",
+			"mistral",
+		]);
+		expect(resolveBatchPreviewProviderIds("xai,groq,together")).toEqual([]);
+		expect(resolveBatchPreviewProviderIds("unknown")).toEqual([]);
+	});
+
+	it("separates validated preview providers from experimental and blocked adapters", () => {
+		expect(getBatchProviderCapability("anthropic")).toMatchObject({
+			previewReadiness: "validated",
+			reconciliationMode: "polling",
+			submissionRecovery: "manual_review",
+		});
+		expect(getBatchProviderCapability("google-ai-studio")).toMatchObject({
+			previewReadiness: "validated",
+			reconciliationMode: "provider_webhook_with_polling",
+		});
+		expect(getBatchProviderCapability("x-ai")?.previewReadiness).toBe("blocked");
+		expect(getBatchProviderCapability("groq")?.previewReadiness).toBe("experimental");
+		expect(getBatchProviderCapability("together")?.previewReadiness).toBe("experimental");
 	});
 
 	it("returns docs-rich unsupported mode payloads", () => {

@@ -285,5 +285,65 @@
       "source_link": "https://github.com/lechmazur/generalization",
       "rank": 11
     }
-  ]
+  ],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": "2025-05-01T00:00:00",
+  "limits": {
+    "context": 1000000,
+    "input": 1000000,
+    "output": 128000
+  },
+  "modalities": {
+    "input": [
+      "text",
+      "image/*"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "announcement",
+      "url": "https://www.anthropic.com/news/claude-opus-4-7",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "docs",
+      "url": "https://docs.anthropic.com/en/docs/about-claude/models/overview",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "model_card",
+      "url": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

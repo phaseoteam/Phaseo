@@ -1,0 +1,306 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://phaseo.app/schemas/catalog.schema.json",
+  "title": "Phaseo catalogue file",
+  "description": "Shared structural contract for the JSON files under packages/data/catalog/src/data.",
+  "oneOf": [
+    { "$ref": "#/$defs/model" },
+    { "$ref": "#/$defs/organisation" },
+    { "$ref": "#/$defs/apiProvider" },
+    { "$ref": "#/$defs/providerModels" },
+    { "$ref": "#/$defs/pricing" },
+    { "$ref": "#/$defs/alias" },
+    { "$ref": "#/$defs/benchmark" },
+    { "$ref": "#/$defs/family" },
+    { "$ref": "#/$defs/subscriptionPlan" }
+  ],
+  "$defs": {
+    "slug": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9][a-z0-9._:/+@-]*$"
+    },
+    "nullableString": { "type": ["string", "null"] },
+    "nullableNumber": { "type": ["number", "null"] },
+    "dateTime": {
+      "type": ["string", "null"],
+      "description": "ISO-like timestamp. Legacy files may omit an explicit timezone; importers normalise timestamps before persistence."
+    },
+    "link": {
+      "type": "object",
+      "required": ["platform", "url"],
+      "properties": {
+        "platform": { "type": "string", "minLength": 1 },
+        "url": { "type": "string", "format": "uri" }
+      },
+      "additionalProperties": true
+    },
+    "source": {
+      "type": "object",
+      "properties": {
+        "kind": { "type": "string" },
+        "url": { "type": ["string", "null"], "format": "uri" },
+        "accessed_at": { "$ref": "#/$defs/dateTime" },
+        "notes": { "type": ["string", "null"] }
+      },
+      "additionalProperties": true
+    },
+    "verification": {
+      "type": "object",
+      "properties": {
+        "status": { "type": "string", "enum": ["unverified", "partial", "verified"] },
+        "checked_at": { "$ref": "#/$defs/dateTime" },
+        "notes": { "type": ["string", "null"] }
+      },
+      "additionalProperties": true
+    },
+    "modalities": {
+      "type": ["object", "null"],
+      "properties": {
+        "input": { "type": ["array", "null"], "items": { "type": "string" } },
+        "output": { "type": ["array", "null"], "items": { "type": "string" } }
+      },
+      "additionalProperties": true
+    },
+    "limits": {
+      "type": ["object", "null"],
+      "properties": {
+        "context": { "type": ["integer", "null"], "minimum": 0 },
+        "input": { "type": ["integer", "null"], "minimum": 0 },
+        "output": { "type": ["integer", "null"], "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "reasoning": {
+      "type": ["object", "null"],
+      "properties": {
+        "supported": { "type": ["boolean", "null"] },
+        "options": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": true
+    },
+    "capabilities": {
+      "type": ["object", "null"],
+      "properties": {
+        "attachment": { "type": ["boolean", "null"] },
+        "tool_call": { "type": ["boolean", "null"] },
+        "structured_output": { "type": ["boolean", "null"] },
+        "temperature": { "type": ["boolean", "null"] },
+        "streaming": { "type": ["boolean", "null"] },
+        "web_search": { "type": ["boolean", "null"] }
+      },
+      "additionalProperties": true
+    },
+    "model": {
+      "type": "object",
+      "required": ["model_id", "organisation_id", "name", "status"],
+      "properties": {
+        "model_id": { "$ref": "#/$defs/slug" },
+        "organisation_id": { "$ref": "#/$defs/slug" },
+        "name": { "type": "string", "minLength": 1 },
+        "status": { "type": ["string", "null"] },
+        "previous_model_id": { "type": ["string", "null"] },
+        "description": { "$ref": "#/$defs/nullableString" },
+        "announced_date": { "$ref": "#/$defs/dateTime" },
+        "release_date": { "$ref": "#/$defs/dateTime" },
+        "deprecation_date": { "$ref": "#/$defs/dateTime" },
+        "retirement_date": { "$ref": "#/$defs/dateTime" },
+        "license": { "$ref": "#/$defs/nullableString" },
+        "license_url": { "type": ["string", "null"], "format": "uri" },
+        "input_types": { "type": ["string", "array", "null"] },
+        "output_types": { "type": ["string", "array", "null"] },
+        "api_model_id": { "type": ["string", "null"] },
+        "family_id": { "type": ["string", "null"] },
+        "links": { "type": "array", "items": { "$ref": "#/$defs/link" } },
+        "details": { "type": "array", "items": { "type": "object" } },
+        "benchmarks": { "type": "array", "items": { "type": "object" } }
+        ,"model_type": { "type": ["string", "null"] },
+        "knowledge_cutoff": { "$ref": "#/$defs/dateTime" },
+        "last_updated": { "$ref": "#/$defs/dateTime" },
+        "removal_date": { "$ref": "#/$defs/dateTime" },
+        "replacement_model_id": { "type": ["string", "null"] },
+        "limits": { "$ref": "#/$defs/limits" },
+        "modalities": { "$ref": "#/$defs/modalities" },
+        "reasoning": { "$ref": "#/$defs/reasoning" },
+        "capabilities": { "$ref": "#/$defs/capabilities" },
+        "open_weights": { "type": ["boolean", "null"] },
+        "sources": { "type": "array", "items": { "$ref": "#/$defs/source" } },
+        "verification": { "$ref": "#/$defs/verification" }
+      },
+      "additionalProperties": true
+    },
+    "organisation": {
+      "type": "object",
+      "required": ["organisation_id", "name", "country_code"],
+      "properties": {
+        "organisation_id": { "$ref": "#/$defs/slug" },
+        "name": { "type": "string", "minLength": 1 },
+        "country_code": { "type": "string", "minLength": 2, "maxLength": 3 },
+        "description": { "$ref": "#/$defs/nullableString" },
+        "colour": { "$ref": "#/$defs/nullableString" },
+        "organisation_links": { "type": "array", "items": { "$ref": "#/$defs/link" } }
+      },
+      "additionalProperties": true
+    },
+    "apiProvider": {
+      "type": "object",
+      "required": ["api_provider_id", "api_provider_name"],
+      "properties": {
+        "api_provider_id": { "$ref": "#/$defs/slug" },
+        "api_provider_name": { "type": "string", "minLength": 1 },
+        "provider_family_id": { "type": ["string", "null"] },
+        "status": { "type": ["string", "null"] },
+        "country_code": { "type": ["string", "null"] },
+        "link": { "type": ["string", "null"], "format": "uri" },
+        "default_execution_regions": { "type": ["array", "null"], "items": { "type": "string" } },
+        "default_data_regions": { "type": ["array", "null"], "items": { "type": "string" } },
+        "regional_pricing_mode": { "type": ["string", "null"] },
+        "pricing_source_url": { "type": ["string", "null"], "format": "uri" },
+        "gateway_kind": { "type": ["string", "null"] },
+        "routable": { "type": ["boolean", "null"] },
+        "routing_enabled": { "type": ["boolean", "null"] },
+        "sdk_package": { "type": ["string", "null"] },
+        "api_base_url": { "type": ["string", "null"], "format": "uri" },
+        "docs_url": { "type": ["string", "null"], "format": "uri" },
+        "auth_env": { "type": ["array", "null"], "items": { "type": "string" } },
+        "api_formats": { "type": "array", "items": { "type": "string" } },
+        "service_tiers": { "type": "array", "items": { "type": "string" } },
+        "sources": { "type": "array", "items": { "$ref": "#/$defs/source" } },
+        "verification": { "$ref": "#/$defs/verification" }
+      },
+      "additionalProperties": true
+    },
+    "capability": {
+      "type": "object",
+      "required": ["capability_id"],
+      "properties": {
+        "capability_id": { "type": "string", "minLength": 1 },
+        "status": { "type": "string" },
+        "params": { "type": "array", "items": { "type": "object" } }
+      },
+      "additionalProperties": true
+    },
+    "providerModel": {
+      "type": "object",
+      "required": ["provider_api_model_id", "api_model_id", "provider_model_slug"],
+      "properties": {
+        "provider_api_model_id": { "type": "string", "minLength": 1 },
+        "api_model_id": { "$ref": "#/$defs/slug" },
+        "provider_model_slug": { "type": "string", "minLength": 1 },
+        "internal_model_id": { "type": ["string", "null"] },
+        "is_active_gateway": { "type": "boolean" },
+        "input_modalities": { "type": ["string", "array", "null"] },
+        "output_modalities": { "type": ["string", "array", "null"] },
+        "capabilities": { "type": "array", "items": { "$ref": "#/$defs/capability" } }
+        ,"routing_status": { "type": ["string", "null"] },
+        "routable": { "type": ["boolean", "null"] },
+        "regions": {
+          "type": ["object", "null"],
+          "properties": {
+            "execution": { "type": ["array", "null"], "items": { "type": "string" } },
+            "data": { "type": ["array", "null"], "items": { "type": "string" } }
+          },
+          "additionalProperties": true
+        },
+        "service_tiers": { "type": "array", "items": { "type": "string" } },
+        "rate_limits": { "type": "array", "items": { "type": "object" } },
+        "api": {
+          "type": ["object", "null"],
+          "properties": {
+            "formats": { "type": "array", "items": { "type": "string" } },
+            "endpoint": { "type": ["string", "null"] },
+            "deployment": { "type": ["string", "null"] }
+          },
+          "additionalProperties": true
+        },
+        "sources": { "type": "array", "items": { "$ref": "#/$defs/source" } },
+        "verification": { "$ref": "#/$defs/verification" }
+      },
+      "additionalProperties": true
+    },
+    "providerModels": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/providerModel" }
+    },
+    "pricingRule": {
+      "type": "object",
+      "required": ["meter", "unit", "unit_size", "price_per_unit", "currency", "pricing_plan"],
+      "properties": {
+        "meter": { "type": "string", "minLength": 1 },
+        "unit": { "type": "string", "minLength": 1 },
+        "unit_size": { "type": "number", "exclusiveMinimum": 0 },
+        "price_per_unit": { "type": "number", "minimum": 0 },
+        "currency": { "type": "string", "minLength": 3, "maxLength": 3 },
+        "pricing_plan": { "type": "string", "minLength": 1 },
+        "match": { "type": "array", "items": { "type": "object" } },
+        "effective_from": { "$ref": "#/$defs/dateTime" },
+        "effective_to": { "$ref": "#/$defs/dateTime" }
+        ,"region": { "type": ["string", "null"] },
+        "cache_duration_seconds": { "type": ["integer", "null"], "minimum": 0 },
+        "conditions": { "type": "array", "items": { "type": "object" } },
+        "source": { "$ref": "#/$defs/source" }
+      },
+      "additionalProperties": true
+    },
+    "pricing": {
+      "type": "object",
+      "required": ["key", "api_provider_id", "api_model_id", "capability_id", "rules"],
+      "properties": {
+        "key": { "type": "string", "minLength": 1 },
+        "api_provider_id": { "$ref": "#/$defs/slug" },
+        "provider_slug": { "$ref": "#/$defs/slug" },
+        "api_model_id": { "$ref": "#/$defs/slug" },
+        "capability_id": { "type": "string", "minLength": 1 },
+        "rules": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/pricingRule" } }
+      },
+      "additionalProperties": true
+    },
+    "alias": {
+      "type": "object",
+      "required": ["alias_slug"],
+      "properties": {
+        "alias_slug": { "$ref": "#/$defs/slug" },
+        "resolved_api_model_id": { "type": "string", "minLength": 1 },
+        "resolved_model_id": { "type": "string", "minLength": 1 },
+        "channel": { "type": "string" },
+        "is_enabled": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    },
+    "benchmark": {
+      "type": "object",
+      "required": ["benchmark_id", "benchmark_name"],
+      "properties": {
+        "benchmark_id": { "$ref": "#/$defs/slug" },
+        "benchmark_name": { "type": "string", "minLength": 1 },
+        "category": { "type": ["string", "null"] },
+        "type": { "type": ["string", "null"] },
+        "link": { "type": ["string", "null"], "format": "uri" }
+      },
+      "additionalProperties": true
+    },
+    "family": {
+      "type": "object",
+      "required": ["family_id", "organisation_id", "family_name"],
+      "properties": {
+        "family_id": { "$ref": "#/$defs/slug" },
+        "organisation_id": { "$ref": "#/$defs/slug" },
+        "family_name": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": true
+    },
+    "subscriptionPlan": {
+      "type": "object",
+      "required": ["plan_id", "name", "organisation_id", "pricing_options"],
+      "properties": {
+        "plan_id": { "$ref": "#/$defs/slug" },
+        "name": { "type": "string", "minLength": 1 },
+        "organisation_id": { "$ref": "#/$defs/slug" },
+        "pricing_options": { "type": "array", "items": { "type": "object" } },
+        "features": { "type": "array", "items": { "type": "object" } },
+        "models": { "type": "array", "items": { "type": "object" } }
+      },
+      "additionalProperties": true
+    }
+  }
+}

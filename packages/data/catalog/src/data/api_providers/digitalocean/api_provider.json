@@ -13,5 +13,20 @@
   "terms_of_service_url": "https://www.digitalocean.com/legal/tos-service-specific-terms#4-ai-model-terms",
   "prompt_training_policy": "no_train",
   "prompt_training_notes": "DigitalOcean says customer data submitted to DigitalOcean-hosted models for inference is not used to train, retrain, or fine-tune models on the platform, and is not shared with third parties for training or fine-tuning.",
-  "prompt_training_source_url": "https://docs.digitalocean.com/products/inference/details/data-privacy/"
+  "prompt_training_source_url": "https://docs.digitalocean.com/products/inference/details/data-privacy/",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://docs.digitalocean.com/products/inference/",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

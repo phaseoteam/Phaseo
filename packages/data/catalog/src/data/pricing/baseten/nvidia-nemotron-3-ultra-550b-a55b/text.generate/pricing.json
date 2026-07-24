@@ -15,7 +15,11 @@
       "note": "Baseten lists NVIDIA Nemotron 3 Ultra at $0.60 per 1M input tokens.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-07-17T00:00:00Z"
+      "effective_from": "2026-07-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -27,7 +31,11 @@
       "note": "Baseten lists NVIDIA Nemotron 3 Ultra cached input at $0.12 per 1M tokens.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-07-17T00:00:00Z"
+      "effective_from": "2026-07-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -39,7 +47,21 @@
       "note": "Baseten lists NVIDIA Nemotron 3 Ultra at $2.40 per 1M output tokens.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-07-17T00:00:00Z"
+      "effective_from": "2026-07-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

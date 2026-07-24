@@ -42,5 +42,53 @@
     "tone": "warning",
     "markdown": "Qwen3.8-Max-Preview is a 2.4T-parameter preview available through Alibaba Token Plan, Qoder, and QoderWork. Qwen says testing in China is ongoing; public API model ID, pricing, context limits, and benchmark results have not been published. [Read Qwen's announcement](https://x.com/Alibaba_Qwen/status/2078754377473601787)."
   },
-  "benchmarks": []
+  "benchmarks": [],
+  "family_id": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": null,
+    "output": null
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "announcement",
+      "url": "https://x.com/Alibaba_Qwen/status/2078754377473601787",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "release",
+      "url": "https://docs.qoder.com/events/qwen-max-preview",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

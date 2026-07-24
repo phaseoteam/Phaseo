@@ -63,7 +63,7 @@ describe("public model routes", () => {
 				model_id: "openai/gpt-test", name: "GPT Test", organisation_id: "openai", description: "Compact model",
 				release_date: "2026-01-02", input_types: ["text"], output_types: ["text"], organisation: { name: "OpenAI", colour: "#fff" },
 			}]), { status: 200 });
-			if (url.includes("data_api_providers")) return new Response(JSON.stringify([{ api_provider_id: "openai", default_execution_regions: ["US"] }]), { status: 200 });
+			if (url.includes("get_v2_provider_region_map")) return new Response(JSON.stringify([{ provider_slug: "openai", regions: ["US"] }]), { status: 200 });
 			return new Response(JSON.stringify([]), { status: 200 });
 		});
 		vi.stubGlobal("fetch", fetchMock);
@@ -92,7 +92,7 @@ describe("public model routes", () => {
 			if (url.includes("data_models")) return new Response(JSON.stringify([{
 				model_id: "openai/gpt-test", name: "GPT Test", organisation_id: "openai", input_types: ["text"], output_types: ["text"],
 			}]), { status: 200 });
-			if (url.includes("data_api_providers")) return new Response(JSON.stringify([]), { status: 200 });
+			if (url.includes("get_v2_provider_region_map")) return new Response(JSON.stringify([]), { status: 200 });
 			return new Response(JSON.stringify([]), { status: 200 });
 		});
 		vi.stubGlobal("fetch", fetchMock);
@@ -159,10 +159,10 @@ describe("public model routes", () => {
 					{ status: 200 },
 				);
 			}
-			if (url.includes("data_api_providers")) {
+			if (url.includes("get_v2_provider_region_map")) {
 				return new Response(
 					JSON.stringify([
-						{ api_provider_id: "openai", default_execution_regions: ["US", "eu"] },
+						{ provider_slug: "openai", regions: ["US", "eu"] },
 					]),
 					{ status: 200 },
 				);
@@ -194,6 +194,9 @@ describe("public model routes", () => {
 	it("applies a distinct cache profile to the catalogue, benchmarks, and performance", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
+			if (url.includes("/rpc/get_v2_model_benchmarks")) {
+				return new Response(JSON.stringify([{ result_id: "result-1", benchmark_id: "mmlu", score: "0.85", score_numeric: 0.85, is_self_reported: false, other_info: null, source_link: "https://example.com", result_rank: 2, benchmark_name: "MMLU", total_models: 50, ascending_order: true, benchmark_type: "percentage" }]), { status: 200 });
+			}
 			if (url.includes("/rpc/get_model_performance_overview")) {
 				return new Response(JSON.stringify([{ last_24h: { total_requests: 42 } }]), { status: 200 });
 			}
@@ -221,6 +224,123 @@ describe("public model routes", () => {
 		expect(performance.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900, stale-while-revalidate=900");
 	});
 
+	it("never exposes a synthetic unknown provider in performance data", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("/rpc/get_v2_model_performance_overview")) {
+				return new Response(JSON.stringify({
+					last_24h: { total_requests: 12, successful_requests: 11 },
+					hourly_24h: [],
+					provider_uptime_24h: [
+						{ provider: "poolside", provider_name: "Poolside", requests: 11 },
+						{ provider: "unknown", provider_name: "unknown", requests: 1 },
+					],
+					provider_daily_7d: [
+						{ day: "2026-07-23", provider: "poolside", provider_name: "Poolside", requests: 11 },
+						{ day: "2026-07-23", provider: "unknown", provider_name: "unknown", requests: 1 },
+					],
+				}), { status: 200 });
+			}
+			if (url.includes("/rpc/get_v2_model_provider_health_metrics")) {
+				return new Response(JSON.stringify([]), { status: 200 });
+			}
+			if (url.includes("/rpc/get_v2_model_provider_percentile_series")) {
+				return new Response(JSON.stringify([{
+					usage_day: "2026-07-23",
+					provider_id: "poolside",
+					provider_name: "Poolside",
+					requests: 11,
+					latency_p50: 230,
+					latency_p75: 280,
+					latency_p90: 600,
+					latency_p95: 900,
+					latency_p99: 1300,
+					generation_p50: 500,
+					generation_p75: 650,
+					generation_p90: 900,
+					generation_p95: 1200,
+					generation_p99: 1800,
+					throughput_p50: 8.5,
+					throughput_p75: 9.2,
+					throughput_p90: 11.3,
+					throughput_p95: 13.4,
+					throughput_p99: 14.8,
+				}]), { status: 200 });
+			}
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models/poolside%2Flaguna-s-2.1/performance",
+			{},
+			env,
+		);
+		const payload = await response.json() as any;
+
+		expect(response.status).toBe(200);
+		expect(payload.performance.provider_uptime_24h).toEqual([
+			expect.objectContaining({ provider: "poolside" }),
+		]);
+		expect(payload.performance.provider_daily_7d).toEqual([
+			expect.objectContaining({ provider: "poolside" }),
+		]);
+		expect(payload.metrics.providerPerformance).toEqual([
+			expect.objectContaining({ provider: "poolside" }),
+		]);
+		expect(payload.metrics.providerDaily7d).toEqual([
+			expect.objectContaining({ provider: "poolside" }),
+		]);
+		expect(payload.metrics.providerPercentileDaily7d).toHaveLength(5);
+		expect(payload.metrics.providerPercentileDaily7d).toContainEqual(
+			expect.objectContaining({
+				provider: "poolside",
+				percentile: 95,
+				avgLatencyMs: 900,
+				avgGenerationMs: 1200,
+				avgThroughput: 13.4,
+			}),
+		);
+		expect(JSON.stringify(payload)).not.toContain('"unknown"');
+	});
+
+	it("does not request single-provider percentiles when seven-day traffic has multiple providers", async () => {
+		let percentileRpcCalls = 0;
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("/rpc/get_v2_model_performance_overview")) {
+				return new Response(JSON.stringify({
+					last_24h: { total_requests: 12, successful_requests: 11 },
+					hourly_24h: [],
+					provider_uptime_24h: [
+						{ provider: "poolside", provider_name: "Poolside", requests: 11 },
+					],
+					provider_daily_7d: [
+						{ day: "2026-07-23", provider: "poolside", provider_name: "Poolside", requests: 11 },
+						{ day: "2026-07-20", provider: "openai", provider_name: "OpenAI", requests: 4 },
+					],
+				}), { status: 200 });
+			}
+			if (url.includes("/rpc/get_v2_model_provider_health_metrics")) {
+				return new Response(JSON.stringify([]), { status: 200 });
+			}
+			if (url.includes("/rpc/get_v2_model_provider_percentile_series")) {
+				percentileRpcCalls += 1;
+			}
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models/test%2Fmodel/performance",
+			{},
+			env,
+		);
+		const payload = await response.json() as any;
+
+		expect(response.status).toBe(200);
+		expect(percentileRpcCalls).toBe(0);
+		expect(payload.metrics.providerPercentileDaily7d).toEqual([]);
+	});
+
 	it("returns compact gateway availability without loading full metadata", async () => {
 		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
@@ -242,7 +362,7 @@ describe("public model routes", () => {
 		await expect(response.json()).resolves.toEqual({
 			availability: { isGatewayActive: true, activeProviderCount: 1 },
 		});
-		expect(fetchMock).toHaveBeenCalledTimes(2);
+		expect(fetchMock).toHaveBeenCalledTimes(3);
 		expect(fetchMock.mock.calls.every(([input]) => !String(input).includes("data_api_model_aliases"))).toBe(true);
 	});
 
@@ -293,6 +413,9 @@ describe("public model routes", () => {
 	it("returns parity-shaped timeline and subscription-plan sections", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = decodeURIComponent(String(input));
+			if (url.includes("/rpc/get_v2_model_subscription_plans")) {
+				return new Response(JSON.stringify([{ plan_uuid: "plan-uuid", plan_id: "pro", name: "Pro", lab_slug: "phaseo", price: 20, currency: "USD", frequency: "month", model_info: { note: "included" }, rate_limit: { rpm: 10 }, model_other_info: null }]), { status: 200 });
+			}
 			if (url.includes("data_subscription_plan_models")) {
 				return new Response(JSON.stringify([{
 					plan_uuid: "plan-uuid",

@@ -15,7 +15,21 @@
       "note": "Aligned to OpenAI Whisper translation pricing at $0.006/minute using 40 audio tokens/sec.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-03-25T00:00:00Z"
+      "effective_from": "2026-03-25T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

@@ -18,6 +18,7 @@
 		"validate:gateway": "tsx ../../packages/data/catalog/src/data/validate-gateway.ts",
 		"audit:missing-pricing": "tsx scripts/audit-missing-pricing.ts",
 		"update-db": "tsx scripts/importer/main.ts",
+		"catalog:enrich:models-dev": "tsx scripts/catalogue/enrich-models-dev.ts",
 		"recompute-benchmark-ranks": "tsx scripts/importer/recompute-benchmark-ranks.ts",
 		"db:recompute-benchmark-ranks": "tsx scripts/importer/recompute-benchmark-ranks-db.ts",
 		"catalog:recompute-benchmark-ranks": "tsx scripts/importer/recompute-benchmark-ranks.ts",

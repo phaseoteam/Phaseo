@@ -626,6 +626,7 @@ accountSettingsRouter.get("/byok", async (c) => {
 	const now = new Date();
 	const nextMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
 	const empty = {
+		fallbackEnabled: false,
 		freeRemaining: 100_000,
 		keyEntries: [],
 		legacyHiddenTotal: 0,
@@ -638,26 +639,26 @@ accountSettingsRouter.get("/byok", async (c) => {
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-	const [keysResult, usageResult] = await Promise.all([
+	const [keysResult, usageResult, settingsResult] = await Promise.all([
 		context.client.from("byok_keys")
-			.select("id,provider_id,name,prefix,suffix,created_at,enabled,always_use")
-			.eq("workspace_id", workspaceId).order("created_at", { ascending: false }),
+			.select("id,provider_id,name,prefix,suffix,created_at,enabled,always_use,routing_mode,sort_order")
+			.eq("workspace_id", workspaceId)
+			.order("routing_mode", { ascending: true })
+			.order("sort_order", { ascending: true })
+			.order("created_at", { ascending: true }),
 		context.client.from("workspace_byok_monthly_usage")
 			.select("month_start,request_count").eq("workspace_id", workspaceId)
 			.gte("month_start", monthStart.toISOString()).lt("month_start", nextMonthStart.toISOString())
 			.order("month_start", { ascending: false }).limit(1),
+		context.client.from("workspace_settings")
+			.select("byok_fallback_enabled")
+			.eq("workspace_id", workspaceId)
+			.maybeSingle(),
 	]);
-	if (keysResult.error || usageResult.error) {
+	if (keysResult.error || usageResult.error || settingsResult.error) {
 		return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	}
-	const keyByProvider = new Map<string, Record<string, unknown>>();
-	let legacyHiddenTotal = 0;
-	for (const row of keysResult.data ?? []) {
-		if (keyByProvider.has(row.provider_id)) {
-			legacyHiddenTotal += 1;
-			continue;
-		}
-		keyByProvider.set(row.provider_id, {
+	const keyEntries = (keysResult.data ?? []).map((row) => ({
 			id: row.id,
 			providerId: row.provider_id,
 			name: row.name,
@@ -666,13 +667,15 @@ accountSettingsRouter.get("/byok", async (c) => {
 			createdAt: row.created_at,
 			enabled: row.enabled,
 			alwaysUse: row.always_use,
-		});
-	}
+			routingMode: row.routing_mode === "priority" ? "priority" : "fallback",
+			sortOrder: Number(row.sort_order ?? 0),
+		}));
 	const monthlyRequestCount = Number(usageResult.data?.[0]?.request_count ?? 0);
 	return c.json({
+		fallbackEnabled: settingsResult.data?.byok_fallback_enabled === true,
 		freeRemaining: Math.max(0, 100_000 - monthlyRequestCount),
-		keyEntries: Array.from(keyByProvider.values()),
-		legacyHiddenTotal,
+		keyEntries,
+		legacyHiddenTotal: 0,
 		monthlyRequestCount,
 		nextMonthStartIso: nextMonthStart.toISOString(),
 		paidTierRequests: Math.max(0, monthlyRequestCount - 100_000),

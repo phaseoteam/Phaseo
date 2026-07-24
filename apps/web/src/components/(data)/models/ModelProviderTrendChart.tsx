@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
 	CartesianGrid,
 	Line,
@@ -19,9 +19,18 @@ type ModelProviderTrendChartProps = {
 	title: string;
 	data: ModelProviderDailyPoint[];
 	metric: MetricKey;
+	maxSeries?: number;
 	activeDay: string | null;
 	onActiveDayChange: (day: string | null) => void;
 };
+
+export function getSeriesEmphasis(activeSeriesKey: string | null, seriesKey: string) {
+	const isActive = activeSeriesKey === seriesKey;
+	return {
+		isActive,
+		isDimmed: activeSeriesKey != null && !isActive,
+	};
+}
 
 type MetricConfig = {
 	label: string;
@@ -48,9 +57,11 @@ const METRICS: Record<MetricKey, MetricConfig> = {
 };
 
 const FALLBACK_PROVIDER_COLORS = [
-	"#f59e0b",
-	"#f97316",
-	"#84cc16",
+	"var(--chart-1)",
+	"var(--chart-2)",
+	"var(--chart-3)",
+	"var(--chart-4)",
+	"var(--chart-5)",
 ];
 
 function normalizeColor(value: string | null | undefined): string | null {
@@ -79,12 +90,19 @@ export default function ModelProviderTrendChart({
 	title,
 	data,
 	metric,
+	maxSeries = 3,
 	activeDay,
 	onActiveDayChange,
 }: ModelProviderTrendChartProps) {
+	const [hoveredSeriesKey, setHoveredSeriesKey] = useState<string | null>(null);
+	const [focusedSeriesKey, setFocusedSeriesKey] = useState<string | null>(null);
+	const activeSeriesKey = hoveredSeriesKey ?? focusedSeriesKey;
 	const metricConfig = METRICS[metric];
+	const observedData = data.filter(
+		(point) => point.requests > 0 && point[metricConfig.valueKey] != null,
+	);
 	const providers = Array.from(
-		data.reduce(
+		observedData.reduce(
 			(map, point) => {
 				const existing = map.get(point.provider) ?? {
 					provider: point.provider,
@@ -106,7 +124,7 @@ export default function ModelProviderTrendChart({
 		).values(),
 	)
 		.sort((a, b) => b.requests - a.requests)
-		.slice(0, 3)
+		.slice(0, maxSeries)
 		.map((provider, index) => ({
 			...provider,
 			seriesKey: toSeriesKey(provider.provider),
@@ -114,7 +132,7 @@ export default function ModelProviderTrendChart({
 		}));
 
 	const providerIdSet = new Set(providers.map((provider) => provider.provider));
-	const filtered = data.filter((point) => providerIdSet.has(point.provider));
+	const filtered = observedData.filter((point) => providerIdSet.has(point.provider));
 	const sortedDays = Array.from(new Set(filtered.map((point) => point.day))).sort(
 		(a, b) => new Date(a).getTime() - new Date(b).getTime(),
 	);
@@ -287,35 +305,59 @@ export default function ModelProviderTrendChart({
 								strokeWidth={1}
 							/>
 						) : null}
-						{providers.map((provider) => (
+						{providers.map((provider) => {
+							const { isActive, isDimmed } = getSeriesEmphasis(
+								activeSeriesKey,
+								provider.seriesKey,
+							);
+							return (
 							<Line
 								key={provider.seriesKey}
 								type="monotone"
 								dataKey={provider.seriesKey}
 								stroke={provider.color}
-								strokeWidth={2}
+								strokeWidth={isActive ? 3.5 : 2}
+								strokeOpacity={isDimmed ? 0.18 : 1}
+								style={{ transition: "stroke-opacity 150ms, stroke-width 150ms" }}
 								strokeLinecap="round"
 								strokeLinejoin="round"
 								dot={false}
 								connectNulls
 								isAnimationActive={false}
+								onMouseEnter={() => setHoveredSeriesKey(provider.seriesKey)}
+								onMouseLeave={() => setHoveredSeriesKey(null)}
 							/>
-						))}
+							);
+						})}
 					</LineChart>
 				</ResponsiveContainer>
 			</div>
 			<div className="space-y-1.5 pt-1">
-				{providerRows.map((provider) => (
+				{providerRows.map((provider) => {
+					const { isActive, isDimmed } = getSeriesEmphasis(
+						activeSeriesKey,
+						provider.seriesKey,
+					);
+					return (
 					<div
 						key={provider.seriesKey}
-						className="flex items-center justify-between gap-3 text-xs"
+						className="flex items-center justify-between gap-3 rounded-sm text-xs outline-none transition-[opacity,transform] duration-150 focus-visible:ring-1 focus-visible:ring-ring"
+						style={{
+							opacity: isDimmed ? 0.35 : 1,
+							transform: isActive ? "translateX(2px)" : "translateX(0)",
+						}}
+						tabIndex={0}
+						onMouseEnter={() => setHoveredSeriesKey(provider.seriesKey)}
+						onMouseLeave={() => setHoveredSeriesKey(null)}
+						onFocus={() => setFocusedSeriesKey(provider.seriesKey)}
+						onBlur={() => setFocusedSeriesKey(null)}
 					>
 						<span className="inline-flex min-w-0 items-center gap-2">
 							<span
 								className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
 								style={{ backgroundColor: provider.color }}
 							/>
-							<span className="truncate text-foreground">{provider.name}</span>
+							<span className={isActive ? "truncate font-medium text-foreground" : "truncate text-foreground"}>{provider.name}</span>
 						</span>
 						<span className="shrink-0 tabular-nums text-foreground">
 							{isHovering ? (
@@ -328,7 +370,8 @@ export default function ModelProviderTrendChart({
 							)}
 						</span>
 					</div>
-				))}
+					);
+				})}
 			</div>
 		</div>
 	);

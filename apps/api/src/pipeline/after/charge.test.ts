@@ -56,5 +56,44 @@ describe("recordUsageAndChargeOnce", () => {
 
 		expect(recordUsageAndChargeMock).not.toHaveBeenCalled();
 	});
+
+	it("never charges an internally-authorized testing-mode request", async () => {
+		const ctx: any = {
+			requestId: "req_charge_synthetic",
+			workspaceId: "team_perf",
+			endpoint: "responses",
+			testingMode: true,
+			meta: {},
+		};
+
+		await recordUsageAndChargeOnce({
+			ctx,
+			costNanos: 999_000_000,
+			endpoint: "responses",
+		});
+
+		expect(recordUsageAndChargeMock).not.toHaveBeenCalled();
+	});
+
+	it("retries an idempotent charge after a transient persistence failure", async () => {
+		recordUsageAndChargeMock
+			.mockRejectedValueOnce(new Error("temporary_supabase_failure"))
+			.mockResolvedValueOnce(undefined);
+		const ctx: any = {
+			requestId: "req_charge_retry",
+			workspaceId: "team_charge",
+			endpoint: "responses",
+			meta: {},
+		};
+
+		await recordUsageAndChargeOnce({
+			ctx,
+			costNanos: 54321,
+			endpoint: "responses",
+		});
+
+		expect(recordUsageAndChargeMock).toHaveBeenCalledTimes(2);
+		expect(ctx.meta.__usageChargeRecorded).toBe(true);
+	});
 });
 

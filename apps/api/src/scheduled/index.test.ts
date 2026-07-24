@@ -4,6 +4,7 @@ const clearRuntimeMock = vi.fn();
 const configureRuntimeMock = vi.fn();
 const runAsyncWebhookRetriesJobMock = vi.fn();
 const runBatchReconciliationJobMock = vi.fn();
+const runBatchProviderWebhookReplayJobMock = vi.fn();
 const runVideoReconciliationJobMock = vi.fn();
 const drainEmailOutboxMock = vi.fn();
 const runModelDiscoveryJobMock = vi.fn();
@@ -22,6 +23,10 @@ vi.mock("@/core/async-notifications", () => ({
 
 vi.mock("@/pipeline/batch-reconciliation", () => ({
 	runBatchReconciliationJob: (...args: unknown[]) => runBatchReconciliationJobMock(...args),
+}));
+
+vi.mock("@/routes/internal/batch-webhooks.helpers", () => ({
+	runBatchProviderWebhookReplayJob: (...args: unknown[]) => runBatchProviderWebhookReplayJobMock(...args),
 }));
 
 vi.mock("@/pipeline/video-reconciliation", () => ({
@@ -60,6 +65,7 @@ describe("handleScheduledEvent", () => {
 		configureRuntimeMock.mockReset();
 		runAsyncWebhookRetriesJobMock.mockReset();
 		runBatchReconciliationJobMock.mockReset();
+		runBatchProviderWebhookReplayJobMock.mockReset();
 		runVideoReconciliationJobMock.mockReset();
 		drainEmailOutboxMock.mockReset();
 		runModelDiscoveryJobMock.mockReset();
@@ -76,6 +82,7 @@ describe("handleScheduledEvent", () => {
 			deliveriesFailedPermanently: 0,
 		});
 		runBatchReconciliationJobMock.mockResolvedValue({});
+		runBatchProviderWebhookReplayJobMock.mockResolvedValue({ eventsScanned: 0, eventsProcessed: 0, eventsFailed: 0 });
 		runVideoReconciliationJobMock.mockResolvedValue({});
 		drainEmailOutboxMock.mockResolvedValue({ processed: 0, failed: 0 });
 		runModelDiscoveryJobMock.mockResolvedValue({});
@@ -103,10 +110,25 @@ describe("handleScheduledEvent", () => {
 			limitPerKind: 37,
 			maxDeliveries: 11,
 		});
+		expect(runBatchProviderWebhookReplayJobMock).toHaveBeenCalledWith({ limit: 100 });
 		expect(configureRuntimeMock).toHaveBeenCalledWith(env);
 		expect(clearRuntimeMock).toHaveBeenCalled();
 		expect(oauthCleanupRpcMock).toHaveBeenCalledWith("cleanup_expired_oauth_artifacts");
+		expect(oauthCleanupRpcMock).toHaveBeenCalledWith("process_v2_analytics_outbox", {
+			p_limit: 250,
+		});
 		expect(runModelDiscoveryJobMock).not.toHaveBeenCalled();
+	});
+
+	it("allows the v2 analytics outbox batch size to be configured", async () => {
+		await handleScheduledEvent(
+			scheduledEventAt("2026-06-10T00:05:00.000Z"),
+			{ V2_ANALYTICS_OUTBOX_LIMIT: "900" } as any,
+		);
+
+		expect(oauthCleanupRpcMock).toHaveBeenCalledWith("process_v2_analytics_outbox", {
+			p_limit: 900,
+		});
 	});
 
 	it("skips async webhook retries when explicitly disabled", async () => {
@@ -114,10 +136,12 @@ describe("handleScheduledEvent", () => {
 			scheduledEventAt("2026-06-10T00:05:00.000Z"),
 			{
 				ASYNC_WEBHOOK_RETRIES_ENABLED: "false",
+				BATCH_PROVIDER_WEBHOOK_REPLAY_ENABLED: "false",
 			} as any,
 		);
 
 		expect(runAsyncWebhookRetriesJobMock).not.toHaveBeenCalled();
+		expect(runBatchProviderWebhookReplayJobMock).not.toHaveBeenCalled();
 	});
 
 	it("does not run core async jobs on non-core ticks", async () => {
@@ -125,11 +149,13 @@ describe("handleScheduledEvent", () => {
 
 		expect(runAsyncWebhookRetriesJobMock).not.toHaveBeenCalled();
 		expect(runBatchReconciliationJobMock).not.toHaveBeenCalled();
+		expect(runBatchProviderWebhookReplayJobMock).not.toHaveBeenCalled();
 		expect(runVideoReconciliationJobMock).not.toHaveBeenCalled();
 	});
 
 	it("runs I/O retention billing on the daily billing tick", async () => {
 		const env = {
+			GATEWAY_IO_RETENTION_BILLING_ENABLED: "true",
 			GATEWAY_IO_RETENTION_BILLING_LIMIT: "12",
 			GATEWAY_IO_RETENTION_GRACE_DAYS: "9",
 			GATEWAY_IO_RETENTION_PRICE_PER_MILLION_UNITS_NANOS: "7000000000",

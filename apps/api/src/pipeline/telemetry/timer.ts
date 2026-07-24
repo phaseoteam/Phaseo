@@ -9,11 +9,18 @@ export class Timer {
     private marks = new Map<string, number>();
     private spans = new Map<string, number>();
     private prefix = "";
+    private readonly requestStartEpochMs: number;
 
     constructor(prefix?: string) {
+        this.requestStartEpochMs = Date.now();
         if (prefix) this.prefix = sanitize(prefix) + ".";
         // Always set a request_start mark for convenience
         this.marks.set(this.k("request_start"), performance.now());
+    }
+
+    /** Epoch timestamp captured when the request pipeline timer was created. */
+    startedAtMs(): number {
+        return this.requestStartEpochMs;
     }
 
     /** Namespacing helper */

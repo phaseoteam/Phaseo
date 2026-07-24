@@ -159,7 +159,7 @@ describe("amazon-bedrock text executor", () => {
 			onRequest: (call) => {
 				expect(call.bodyJson?.model).toBe("openai.gpt-oss-20b-1:0");
 				expect(call.bodyJson?.messages?.[0]?.role).toBe("user");
-				expect(call.bodyJson?.stream).toBe(false);
+				expect(call.bodyJson?.stream).toBe(true);
 			},
 			response: jsonResponse({
 				id: "chatcmpl_bedrock",
@@ -201,7 +201,7 @@ describe("amazon-bedrock text executor", () => {
 			onRequest: (call) => {
 				expect(call.bodyJson?.model).toBe("anthropic.claude-sonnet-5-v1:0");
 				expect(call.bodyJson?.messages?.[0]?.role).toBe("user");
-				expect(call.bodyJson?.stream).toBe(false);
+				expect(call.bodyJson?.stream).toBe(true);
 			},
 			response: jsonResponse({
 				id: "chatcmpl_bedrock_mantle",
@@ -266,7 +266,7 @@ describe("amazon-bedrock text executor", () => {
 		expect(mock.calls[0]?.url.endsWith("/openai/v1/responses")).toBe(true);
 	});
 
-	it("falls back from /responses to /chat/completions when responses is unavailable", async () => {
+	it("does not change endpoints when /responses is unavailable", async () => {
 		const mock = installFetchMock([
 			{
 				match: (url) => url.endsWith("/openai/v1/responses"),
@@ -275,25 +275,6 @@ describe("amazon-bedrock text executor", () => {
 						message: "unknown endpoint /responses",
 					},
 				}, { status: 404 }),
-			},
-			{
-				match: (url) => url.endsWith("/openai/v1/chat/completions"),
-				response: jsonResponse({
-					id: "chatcmpl_bedrock_fallback",
-					object: "chat.completion",
-					created: 1710000001,
-					model: "openai.gpt-oss-20b-1:0",
-					choices: [{
-						index: 0,
-						message: { role: "assistant", content: "fallback ok" },
-						finish_reason: "stop",
-					}],
-					usage: {
-						prompt_tokens: 4,
-						completion_tokens: 2,
-						total_tokens: 6,
-					},
-				}),
 			},
 		]);
 
@@ -309,9 +290,9 @@ describe("amazon-bedrock text executor", () => {
 		mock.restore();
 
 		expect(mock.calls[0]?.url.endsWith("/openai/v1/responses")).toBe(true);
-		expect(mock.calls[1]?.url.endsWith("/openai/v1/chat/completions")).toBe(true);
+		expect(mock.calls).toHaveLength(1);
 		expect(result.kind).toBe("completed");
-		expect(result.ir?.choices?.[0]?.message?.content?.[0]?.type).toBe("text");
+		expect(result.upstream.status).toBe(404);
 	});
 
 });

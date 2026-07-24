@@ -14,8 +14,10 @@ import { GATEWAY_ACCESS_SCOPE, parseStoredScopeList } from "@/lib/authz/capabili
 const enc = new TextEncoder();
 const KEY_CACHE_PREFIX = "gateway:key";
 const KEY_CACHE_TTL_SECONDS = 60;
-const KEY_VERSION_L1_TTL_MS = 1_000;
-const KEY_LOOKUP_L1_TTL_MS = 1_000;
+// Key mutations advance the version token. These short isolate-local windows
+// remove repeated KV reads while bounding revocation propagation.
+const KEY_VERSION_L1_TTL_MS = 5_000;
+const KEY_LOOKUP_L1_TTL_MS = 30_000;
 const KEY_LOOKUP_L1_MAX_ENTRIES = 2_000;
 /* -------------------- Web Crypto HMAC helpers -------------------- */
 
@@ -368,12 +370,14 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
     }
 
     // 2. Route to OAuth or API key authentication
-    // Check if token is a JWT (3 dot-separated parts, not starting with aistats_)
+    // OAuth inference access uses the opaque delegated key returned by the
+    // authorization-code flow. Session JWTs are control-plane credentials and
+    // do not identify a concrete gateway key for key-scoped policy/billing.
     if (isJWTFormat(token)) {
         if (!isGatewayOAuthJwt(token)) {
             return { ok: false, reason: "invalid_key_format" };
         }
-        return await authenticateOAuth(req, token, options);
+		return { ok: false, reason: "oauth_delegated_key_required" };
     }
 
     const bindings = getBindings();

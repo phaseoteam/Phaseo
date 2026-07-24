@@ -28,5 +28,20 @@
   "regional_pricing_notes": "Default Anthropic pricing applies on the global endpoint. US-only inference is modeled as a separate Anthropic US offer with a 1.1x rate on supported 4.6+ models.",
   "country_code": "US",
   "status": "Active",
-  "colour": "#CC785C"
+  "colour": "#CC785C",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://docs.anthropic.com/en/home",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }
