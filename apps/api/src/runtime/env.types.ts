@@ -294,6 +294,7 @@ export type GatewayBindings = {
     STATSIG_SERVER_KEY?: string;
     STATSIG_SERVER_API_KEY?: string;
     STATSIG_BATCH_API_GATE?: string;
+    STATSIG_VIDEO_API_GATE?: string;
     STATSIG_REALTIME_VOICE_GATE?: string;
     STATSIG_GATEWAY_IO_LOGGING_GATE?: string;
     STATSIG_ENVIRONMENT_TIER?: string;

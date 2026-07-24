@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useFeatureGate } from "@statsig/react-bindings";
 import { useEffect, useState, type ComponentType } from "react";
 import {
 	AudioLines,
@@ -34,6 +35,7 @@ import { cn } from "@/lib/utils";
 import {
 	BETA_PROFILE_CHANGED_EVENT,
 	REALTIME_VOICE_BETA_FEATURE,
+	VIDEO_API_GATE,
 	isBetaFeatureEnabled,
 	readStoredBetaProfile,
 	type StatsigProfile,
@@ -52,7 +54,7 @@ const ICONS: Record<ChatRoomId, ComponentType<{ className?: string }>> = {
 	embeddings: Sparkles,
 };
 
-const DISABLED_ROOMS = new Set<ChatRoomId>(["video"]);
+const DISABLED_ROOMS = new Set<ChatRoomId>();
 
 function isRoomActive(pathname: string, route: string): boolean {
 	if (route === "/chat") {
@@ -62,11 +64,16 @@ function isRoomActive(pathname: string, route: string): boolean {
 }
 
 export function ChatRoomSwitcher() {
+	const videoEnabled = useFeatureGate(VIDEO_API_GATE).value;
 	const pathname = usePathname() ?? "/chat";
 	const { state: sidebarState, isMobile } = useSidebar();
 	const [realtimeEnabled, setRealtimeEnabled] = useState(false);
+	const availableRooms = CHAT_ROOMS.filter(
+		(room) => room.id !== "video" || videoEnabled,
+	);
 	const activeRoom =
-		CHAT_ROOMS.find((room) => isRoomActive(pathname, room.route)) ??
+		availableRooms.find((room) => isRoomActive(pathname, room.route)) ??
+		availableRooms[0] ??
 		CHAT_ROOMS[0];
 	const ActiveIcon = ICONS[activeRoom.id];
 	const collapsed = sidebarState === "collapsed" && !isMobile;
@@ -149,7 +156,7 @@ export function ChatRoomSwitcher() {
 					sideOffset={8}
 					className="z-[90] w-56"
 				>
-					{CHAT_ROOMS.map((room) => {
+					{availableRooms.map((room) => {
 						const Icon = ICONS[room.id];
 						const active = isRoomActive(pathname, room.route);
 						const disabled =

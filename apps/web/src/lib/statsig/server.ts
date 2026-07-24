@@ -17,7 +17,6 @@ import {
 	STATSIG_STABLE_ID_COOKIE,
 	buildAnonymousStatsigUser,
 	buildAuthenticatedStatsigUser,
-	normalizeBetaFeatures,
 	type StatsigProfile,
 } from "./shared";
 
@@ -72,7 +71,7 @@ export const getServerStatsigUser = cache(async () => {
 		return buildAnonymousStatsigUser(stableID);
 	}
 
-	return buildAuthenticatedStatsigUser(
+	const user = buildAuthenticatedStatsigUser(
 		{
 			id: auth.user.id,
 			email: auth.user.email,
@@ -80,6 +79,17 @@ export const getServerStatsigUser = cache(async () => {
 		stableID,
 		auth.profile
 	);
+	if (context.workspaceId) {
+		user.customIDs = {
+			...user.customIDs,
+			workspaceID: context.workspaceId,
+		};
+		user.custom = {
+			...user.custom,
+			workspace_id: context.workspaceId,
+		};
+	}
+	return user;
 });
 
 export const getServerStatsigBootstrap = cache(async () => {
