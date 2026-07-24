@@ -11,5 +11,20 @@
   "terms_of_service_url": "https://novita.ai/legal/terms-of-service",
   "prompt_training_policy": "no_train",
   "prompt_training_notes": "Novita says it does not log, store, or retain user content, including inputs and outputs, unless it has prior written consent for specific instances.",
-  "prompt_training_source_url": "https://novita.ai/legal/terms-of-service"
+  "prompt_training_source_url": "https://novita.ai/legal/terms-of-service",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://novita.ai/docs/guides/introduction",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

@@ -15,7 +15,7 @@ import {
 	saveBatchJobMeta,
 	type BatchJobMeta,
 } from "@core/batch-jobs";
-import { markProviderEventProcessed } from "@core/provider-events";
+import { deferProviderEvent, listUnprocessedProviderEvents, markProviderEventProcessed } from "@core/provider-events";
 import {
 	OPENAI_PROVIDER_ID,
 	extractOpenAiEventId,
@@ -33,7 +33,15 @@ type OpenAiBatchTerminal =
 
 type BatchTerminal = OpenAiBatchTerminal;
 
+function customerWebhookPhase(status: string): "completed" | "failed" | "cancelled" {
+	const normalized = status.trim().toLowerCase();
+	if (normalized === "completed") return "completed";
+	if (normalized === "cancelled" || normalized === "canceled") return "cancelled";
+	return "failed";
+}
+
 const OPENAI_WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS = 5 * 60;
+const MAX_PROVIDER_WEBHOOK_BODY_BYTES = 1024 * 1024;
 
 function normalizeText(value: unknown): string | null {
 	if (typeof value !== "string") return null;
@@ -226,7 +234,7 @@ export async function processOpenAiBatchWebhook(args: {
 	eventId: string;
 	eventType: string;
 	payload: any;
-}): Promise<void> {
+}): Promise<boolean> {
 	const { eventId, eventType, payload } = args;
 	const nativeBatchId = extractOpenAiBatchId(payload);
 	if (!nativeBatchId) {
@@ -234,7 +242,7 @@ export async function processOpenAiBatchWebhook(args: {
 			provider: OPENAI_PROVIDER_ID,
 			providerEventId: eventId,
 		});
-		return;
+		return true;
 	}
 
 	const job = await findBatchJobRecordByNativeId(OPENAI_PROVIDER_ID, nativeBatchId);
@@ -243,11 +251,12 @@ export async function processOpenAiBatchWebhook(args: {
 			eventId,
 			nativeBatchId,
 		});
-		await markProviderEventProcessed({
+		await deferProviderEvent({
 			provider: OPENAI_PROVIDER_ID,
 			providerEventId: eventId,
+			reason: "batch_job_not_found",
 		});
-		return;
+		return false;
 	}
 
 	const authoritativePayload = await fetchProviderBatchStatus(OPENAI_PROVIDER_ID, nativeBatchId);
@@ -270,7 +279,7 @@ export async function processOpenAiBatchWebhook(args: {
 			workspaceId: job.workspaceId,
 			internalId: job.batchId,
 		});
-		return;
+		return true;
 	}
 
 	const finalization = await finalizeBatchJob({
@@ -278,14 +287,20 @@ export async function processOpenAiBatchWebhook(args: {
 		batchId: job.batchId,
 		status: terminal.status,
 	});
-	if (finalization.billed) {
-		await dispatchAsyncWebhookEvent({
-			workspaceId: job.workspaceId,
-			kind: "batch",
-			internalId: job.batchId,
-			phase: terminal.phase,
+	if (!finalization.billed) {
+		await deferProviderEvent({
+			provider: OPENAI_PROVIDER_ID,
+			providerEventId: eventId,
+			reason: `batch_finalization_pending:${finalization.reason}`,
 		});
+		return false;
 	}
+	await dispatchAsyncWebhookEvent({
+		workspaceId: job.workspaceId,
+		kind: "batch",
+		internalId: job.batchId,
+		phase: customerWebhookPhase(finalization.status),
+	});
 
 	await markProviderEventProcessed({
 		provider: OPENAI_PROVIDER_ID,
@@ -293,13 +308,41 @@ export async function processOpenAiBatchWebhook(args: {
 		workspaceId: job.workspaceId,
 		internalId: job.batchId,
 	});
+	return true;
+}
+
+export async function readProviderWebhookBody(req: Request): Promise<
+	| { ok: true; rawBody: string }
+	| { ok: false }
+> {
+	const declaredLength = Number(req.headers.get("content-length") ?? 0);
+	if (Number.isFinite(declaredLength) && declaredLength > MAX_PROVIDER_WEBHOOK_BODY_BYTES) {
+		return { ok: false };
+	}
+	if (!req.body) return { ok: true, rawBody: "" };
+
+	const reader = req.body.getReader();
+	const decoder = new TextDecoder();
+	let bytesRead = 0;
+	let rawBody = "";
+	while (true) {
+		const { done, value } = await reader.read();
+		if (done) break;
+		bytesRead += value.byteLength;
+		if (bytesRead > MAX_PROVIDER_WEBHOOK_BODY_BYTES) {
+			await reader.cancel("payload_too_large").catch(() => undefined);
+			return { ok: false };
+		}
+		rawBody += decoder.decode(value, { stream: true });
+	}
+	return { ok: true, rawBody: rawBody + decoder.decode() };
 }
 
 export async function processGoogleAiStudioBatchWebhook(args: {
 	eventId: string;
 	eventType: string;
 	payload: any;
-}): Promise<void> {
+}): Promise<boolean> {
 	const { eventId, eventType, payload } = args;
 	const nativeBatchId = extractGoogleAiStudioBatchId(payload);
 	if (!nativeBatchId) {
@@ -307,7 +350,7 @@ export async function processGoogleAiStudioBatchWebhook(args: {
 			provider: GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID,
 			providerEventId: eventId,
 		});
-		return;
+		return true;
 	}
 
 	const job = await findGoogleAiStudioBatchJob(nativeBatchId);
@@ -316,11 +359,12 @@ export async function processGoogleAiStudioBatchWebhook(args: {
 			eventId,
 			nativeBatchId,
 		});
-		await markProviderEventProcessed({
+		await deferProviderEvent({
 			provider: GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID,
 			providerEventId: eventId,
+			reason: "batch_job_not_found",
 		});
-		return;
+		return false;
 	}
 
 	const authoritativePayload = await fetchProviderBatchStatus(
@@ -360,7 +404,7 @@ export async function processGoogleAiStudioBatchWebhook(args: {
 			workspaceId: job.workspaceId,
 			internalId: job.batchId,
 		});
-		return;
+		return true;
 	}
 
 	const finalization = await finalizeBatchJob({
@@ -368,14 +412,20 @@ export async function processGoogleAiStudioBatchWebhook(args: {
 		batchId: job.batchId,
 		status: terminal.status,
 	});
-	if (finalization.billed) {
-		await dispatchAsyncWebhookEvent({
-			workspaceId: job.workspaceId,
-			kind: "batch",
-			internalId: job.batchId,
-			phase: terminal.phase,
+	if (!finalization.billed) {
+		await deferProviderEvent({
+			provider: GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID,
+			providerEventId: eventId,
+			reason: `batch_finalization_pending:${finalization.reason}`,
 		});
+		return false;
 	}
+	await dispatchAsyncWebhookEvent({
+		workspaceId: job.workspaceId,
+		kind: "batch",
+		internalId: job.batchId,
+		phase: customerWebhookPhase(finalization.status),
+	});
 
 	await markProviderEventProcessed({
 		provider: GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID,
@@ -383,6 +433,75 @@ export async function processGoogleAiStudioBatchWebhook(args: {
 		workspaceId: job.workspaceId,
 		internalId: job.batchId,
 	});
+	return true;
+}
+
+export async function runBatchProviderWebhookReplayJob(args?: { limit?: number }): Promise<{
+	eventsScanned: number;
+	eventsProcessed: number;
+	eventsFailed: number;
+}> {
+	const events = await listUnprocessedProviderEvents({
+		providers: [OPENAI_PROVIDER_ID, GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID],
+		limit: args?.limit ?? 100,
+		workerId: `batch-provider-event-replay:${crypto.randomUUID()}`,
+		leaseSeconds: 120,
+	});
+	let eventsProcessed = 0;
+	let eventsFailed = 0;
+	for (const event of events) {
+		try {
+			const eventType = normalizeText(event.kind) ?? normalizeText(event.payload.type) ?? normalizeText(event.payload.event);
+			if (!eventType) {
+				await markProviderEventProcessed({
+					provider: event.provider,
+					providerEventId: event.providerEventId,
+				});
+				eventsProcessed += 1;
+				continue;
+			}
+			let processed: boolean;
+			if (event.provider === OPENAI_PROVIDER_ID) {
+				processed = await processOpenAiBatchWebhook({
+					eventId: event.providerEventId,
+					eventType,
+					payload: event.payload,
+				});
+			} else {
+				processed = await processGoogleAiStudioBatchWebhook({
+					eventId: event.providerEventId,
+					eventType,
+					payload: event.payload,
+				});
+			}
+			if (processed) eventsProcessed += 1;
+		} catch (error) {
+			eventsFailed += 1;
+			console.error("batch_provider_webhook_replay_failed", {
+				error,
+				provider: event.provider,
+				providerEventId: event.providerEventId,
+			});
+			try {
+				await deferProviderEvent({
+					provider: event.provider,
+					providerEventId: event.providerEventId,
+					reason: error instanceof Error ? error.message : "batch_provider_webhook_replay_failed",
+				});
+			} catch (deferError) {
+				console.error("batch_provider_webhook_replay_defer_failed", {
+					error: deferError,
+					provider: event.provider,
+					providerEventId: event.providerEventId,
+				});
+			}
+		}
+	}
+	return {
+		eventsScanned: events.length,
+		eventsProcessed,
+		eventsFailed,
+	};
 }
 
 export {

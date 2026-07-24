@@ -1,6 +1,6 @@
 import {
 	fetchFrontendModelBenchmarkHighlights,
-	fetchFrontendModelGatewayMetadata,
+	fetchFrontendModelAvailability,
 	fetchFrontendModelOverview,
 	fetchFrontendModelPerformance,
 	fetchFrontendModelSubscriptionPlans,
@@ -166,18 +166,21 @@ export default async function Page({
 		);
 	}
 	const modelPromise = fetchFrontendModelOverview(modelId);
-	const [modelOverview, benchmarkHighlights, subscriptionPlans, gatewayMetadata] =
+	const benchmarkPromise = fetchFrontendModelBenchmarkHighlights(modelId).catch(() => []);
+	const subscriptionPromise = fetchFrontendModelSubscriptionPlans(modelId).catch(() => []);
+	const availabilityPromise = fetchFrontendModelAvailability(modelId).catch(() => undefined);
+	const [modelOverview, benchmarkHighlights, subscriptionPlans, availability] =
 		await Promise.all([
 			modelPromise,
-			fetchFrontendModelBenchmarkHighlights(modelId).catch(() => []),
-			fetchFrontendModelSubscriptionPlans(modelId).catch(() => []),
-			fetchFrontendModelGatewayMetadata(modelId).catch(() => undefined),
+			benchmarkPromise,
+			subscriptionPromise,
+			availabilityPromise,
 		]);
 	const showBenchmarks = benchmarkHighlights.length > 0;
 	const showSubscriptions = subscriptionPlans.length > 0;
 	const isGatewayActive =
-		gatewayMetadata === undefined || gatewayMetadata.activeProviders.length > 0;
-	const performancePromise = isGatewayActive
+		availability?.isGatewayActive ?? true;
+	const resolvedPerformancePromise = isGatewayActive
 		? fetchFrontendModelPerformance(modelId, 24).catch(() => null)
 		: Promise.resolve(null);
 	const isRetired = modelOverview?.status === "Retired";
@@ -190,6 +193,19 @@ export default async function Page({
 	const modelName = modelOverview?.name ?? modelId.split("/").slice(-1)[0] ?? modelId;
 	const organisationName =
 		modelOverview?.organisation?.name ?? routeParams.organisationId;
+	const modelHeader = modelOverview ? {
+		model_id: modelOverview.model_id,
+		name: modelOverview.name,
+		organisation_id: modelOverview.organisation_id,
+		organisation: {
+			name: modelOverview.organisation.name,
+			country_code: modelOverview.organisation.country_code ?? "",
+		},
+		aliases: modelOverview.aliases ?? [],
+		family_id: modelOverview.family_id ?? undefined,
+		status: modelOverview.status,
+		hidden: false,
+	} : undefined;
 	const datasetSchema = {
 		"@context": "https://schema.org",
 		"@type": "Dataset",
@@ -247,7 +263,7 @@ export default async function Page({
 				id="model-breadcrumb-schema"
 				data={breadcrumbSchema}
 			/>
-			<ModelDetailShell modelId={modelId} tab="overview" includeHidden={includeHidden}>
+			<ModelDetailShell modelId={modelId} tab="overview" includeHidden={includeHidden} header={modelHeader} modelOverview={modelOverview}>
 				<div className="space-y-10">
 					<div className="flex flex-col gap-6 lg:flex-row lg:items-start">
 						<ModelPageToc
@@ -263,7 +279,7 @@ export default async function Page({
 								showSubscriptions={showSubscriptions}
 								status={modelOverview?.status}
 								isGatewayActive={isGatewayActive}
-								performancePromise={performancePromise}
+								performancePromise={resolvedPerformancePromise}
 								quickstartRequestContext={quickstartRequestContext}
 							/>
 						</div>

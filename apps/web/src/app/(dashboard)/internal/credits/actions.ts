@@ -1,31 +1,18 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/utils/supabase/server";
 import {
 	isPromoCodeFormatValid,
 	normalizePromoCodeInput,
 } from "@/lib/credits/promoCodes";
 import { parseOptionalExpiryInput } from "@/lib/credits/expiryDateTime";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
+import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 
 async function requireAdmin() {
-	const supabase = await createClient();
-	const {
-		data: { user },
-		error: authError,
-	} = await supabase.auth.getUser();
-	if (authError || !user) throw new Error("Unauthorized");
-
-	const { data: userRow, error: userError } = await supabase
-		.from("users")
-		.select("role")
-		.eq("user_id", user.id)
-		.maybeSingle();
-	if (userError || (userRow?.role ?? "").toLowerCase() !== "admin") {
-		throw new Error("Unauthorized");
-	}
-
-	return { supabase, userId: user.id };
+	const { accessToken } = await getServerAccountContext();
+	if (!accessToken) throw new Error("Unauthorized");
+	return accessToken;
 }
 
 function parsePositiveInt(raw: FormDataEntryValue | null, fallback: number): number {
@@ -52,7 +39,7 @@ function parseNonNegativeInt(raw: FormDataEntryValue | null, fallback: number): 
 }
 
 export async function createCreditGrantAction(formData: FormData) {
-	const { supabase, userId } = await requireAdmin();
+	const accessToken = await requireAdmin();
 
 	const codeRaw = String(formData.get("code") ?? "");
 	const code = normalizePromoCodeInput(codeRaw);
@@ -68,101 +55,38 @@ export async function createCreditGrantAction(formData: FormData) {
 
 	const payload = {
 		code,
-		code_normalized: code,
 		amount_nanos: amountNanos,
 		max_redemptions: maxRedemptions,
 		expires_at: expiresAt,
-		is_active: true,
-		created_by: userId,
 		note,
 	};
-
-	const { error } = await supabase.from("credit_grants").insert(payload);
-	if (error) {
-		const isUniqueViolation = String((error as { code?: unknown } | null)?.code ?? "") === "23505";
-		if (!isUniqueViolation) throw error;
-
-		const { data: existingGrant, error: existingGrantError } = await supabase
-			.from("credit_grants")
-			.select("id, is_active")
-			.eq("code_normalized", code)
-			.maybeSingle();
-		if (existingGrantError) throw existingGrantError;
-		if (!existingGrant) {
-			throw new Error("This promo code already exists.");
-		}
-		if (existingGrant.is_active) {
-			throw new Error("This promo code already exists and is currently active.");
-		}
-
-		const { count: redemptionCount, error: redemptionCountError } = await supabase
-			.from("credit_grant_redemptions")
-			.select("id", { count: "exact", head: true })
-			.eq("grant_id", existingGrant.id);
-		if (redemptionCountError) throw redemptionCountError;
-
-		if ((redemptionCount ?? 0) > 0) {
-			throw new Error(
-				"This promo code has redemption history, so it cannot be reused. Reactivate/edit the existing code or choose a new slug."
-			);
-		}
-
-		const { error: reactivateError } = await supabase
-			.from("credit_grants")
-			.update({
-				...payload,
-				redemptions_count: 0,
-				disabled_at: null,
-			})
-			.eq("id", existingGrant.id);
-		if (reactivateError) throw reactivateError;
-	}
+	await fetchAccountWebApi("/api/account/credits/admin/grants", accessToken, { method: "POST", body: JSON.stringify(payload) });
 
 	revalidatePath("/internal/credits");
 }
 
 export async function disableCreditGrantAction(formData: FormData) {
-	const { supabase } = await requireAdmin();
+	const accessToken = await requireAdmin();
 	const grantId = String(formData.get("grant_id") ?? "").trim();
 	if (!grantId) throw new Error("Missing grant id");
 
-	const { error } = await supabase
-		.from("credit_grants")
-		.update({
-			is_active: false,
-			disabled_at: new Date().toISOString(),
-		})
-		.eq("id", grantId);
-	if (error) throw error;
+	await fetchAccountWebApi(`/api/account/credits/admin/grants/${encodeURIComponent(grantId)}/disable`, accessToken, { method: "POST" });
 
 	revalidatePath("/internal/credits");
 }
 
 export async function deleteCreditGrantAction(formData: FormData) {
-	const { supabase } = await requireAdmin();
+	const accessToken = await requireAdmin();
 	const grantId = String(formData.get("grant_id") ?? "").trim();
 	if (!grantId) throw new Error("Missing grant id");
 
-	const { count: redemptionCount, error: redemptionCountError } = await supabase
-		.from("credit_grant_redemptions")
-		.select("id", { count: "exact", head: true })
-		.eq("grant_id", grantId);
-	if (redemptionCountError) throw redemptionCountError;
-	if ((redemptionCount ?? 0) > 0) {
-		throw new Error("Promo codes with redemption history cannot be deleted.");
-	}
-
-	const { error } = await supabase
-		.from("credit_grants")
-		.delete()
-		.eq("id", grantId);
-	if (error) throw error;
+	await fetchAccountWebApi(`/api/account/credits/admin/grants/${encodeURIComponent(grantId)}`, accessToken, { method: "DELETE" });
 
 	revalidatePath("/internal/credits");
 }
 
 export async function updateCreditGrantAction(formData: FormData) {
-	const { supabase } = await requireAdmin();
+	const accessToken = await requireAdmin();
 	const grantId = String(formData.get("grant_id") ?? "").trim();
 	if (!grantId) throw new Error("Missing grant id");
 
@@ -176,19 +100,7 @@ export async function updateCreditGrantAction(formData: FormData) {
 		.getAll("is_active")
 		.some((value) => String(value).toLowerCase() === "true");
 
-	const nowIso = new Date().toISOString();
-	const { error } = await supabase
-		.from("credit_grants")
-		.update({
-			max_redemptions: maxRedemptions,
-			redemptions_count: redemptionsCount,
-			expires_at: expiresAt,
-			note,
-			is_active: isActive,
-			disabled_at: isActive ? null : nowIso,
-		})
-		.eq("id", grantId);
-	if (error) throw error;
+	await fetchAccountWebApi(`/api/account/credits/admin/grants/${encodeURIComponent(grantId)}`, accessToken, { method: "PUT", body: JSON.stringify({ max_redemptions: maxRedemptions, redemptions_count: redemptionsCount, expires_at: expiresAt, note, is_active: isActive }) });
 
 	revalidatePath("/internal/credits");
 }

@@ -4,10 +4,32 @@
   "provider_slug": "fireworks",
   "api_model_id": "black-forest-labs/flux-1-schnell",
   "capability_id": "image.generate",
-  "rules": [{
-    "meter": "output_image", "unit": "image", "unit_size": 1,
-    "price_per_unit": 0.0014, "currency": "USD", "pricing_plan": "standard",
-    "note": "Fireworks publishes FLUX.1 [schnell] FP8 at $0.00035 per diffusion step, or $0.0014 per default four-step image.",
-    "match": [], "priority": 100, "effective_from": "2026-07-17T00:00:00Z"
-  }]
+  "rules": [
+    {
+      "meter": "output_image",
+      "unit": "image",
+      "unit_size": 1,
+      "price_per_unit": 0.0014,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Fireworks publishes FLUX.1 [schnell] FP8 at $0.00035 per diffusion step, or $0.0014 per default four-step image.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

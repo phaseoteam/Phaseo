@@ -22,7 +22,19 @@
           "value": 32768
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 32768
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_text_tokens",
@@ -48,7 +60,26 @@
           "value": 131072
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 32768
+        },
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 2,
+          "value": 131072
+        }
+      ],
+      "source": null
     },
     {
       "meter": "input_text_tokens",
@@ -67,7 +98,19 @@
           "value": 131072
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 131072
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -86,7 +129,19 @@
           "value": 32768
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 32768
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -112,7 +167,26 @@
           "value": 131072
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 32768
+        },
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 2,
+          "value": 131072
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -131,7 +205,29 @@
           "value": 131072
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 131072
+        }
+      ],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

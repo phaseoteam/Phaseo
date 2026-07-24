@@ -294,6 +294,7 @@ describe("batch-jobs metadata", () => {
 			statuses: [
 				null,
 				"submitting",
+				"submission_unknown",
 				"validating",
 				"pending",
 				"in_progress",

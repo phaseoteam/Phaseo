@@ -12,6 +12,7 @@ import {
 	Captions,
 	Headphones,
 	Music4,
+	Radio,
 	Speech,
 	Video,
 	Binary,
@@ -22,6 +23,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { resolveWeeklyUsageDisplay } from "./weeklyUsage";
 import type { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
 import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDisplay";
@@ -61,6 +63,7 @@ const MODALITY_DISPLAY_ORDER = [
 	"image",
 	"audio",
 	"audio_tts",
+	"realtime",
 	"audio_stt",
 	"audio_music",
 	"video",
@@ -77,6 +80,7 @@ const PROVIDER_STATUS_ORDER = [
 	"inactive",
 	"disabled",
 	"not_listed",
+	"external",
 ] as const;
 
 const PROVIDER_STATUS_META: Record<
@@ -92,6 +96,11 @@ const PROVIDER_STATUS_META: Record<
 		label: "Coming Soon",
 		badgeClassName: "bg-blue-500/10 text-blue-600",
 		dotClassName: "bg-blue-500",
+	},
+	external: {
+		label: "External",
+		badgeClassName: "bg-violet-500/10 text-violet-600",
+		dotClassName: "bg-violet-500",
 	},
 	deranked_lvl1: {
 		label: "Deranked L1",
@@ -130,6 +139,7 @@ const providerStatusOrderIndex = new Map<string, number>(
 
 function toTitleLabel(value: string): string {
 	const normalized = value.trim().toLowerCase();
+	if (normalized === "realtime") return "Real-time";
 	if (normalized === "audio_stt") return "Transcription";
 	if (normalized === "audio_tts") return "Speech";
 	if (normalized === "audio_music") return "Music";
@@ -148,6 +158,9 @@ function toTitleLabel(value: string): string {
 
 function normalizeModalityOrderKey(value: string): string {
 	const normalized = value.toLowerCase().replace(/[._/-]+/g, " ");
+	if (normalized.includes("realtime") || normalized.includes("real time")) {
+		return "realtime";
+	}
 	if (normalized.includes("embed")) return "embedding";
 	if (normalized.includes("rerank") || normalized.includes("re rank")) {
 		return "rerank";
@@ -388,6 +401,9 @@ function summarizeDuplicatePricingItems(
 
 function getModalityIcon(value: string): LucideIcon {
 	const normalized = value.toLowerCase().replace(/[._/-]+/g, " ");
+	if (normalized.includes("realtime") || normalized.includes("real time")) {
+		return Radio;
+	}
 	if (normalized.includes("embed")) return Binary;
 	if (normalized.includes("rerank") || normalized.includes("re rank")) {
 		return ArrowUpDown;
@@ -464,15 +480,13 @@ function ModelCardImpl({
 			: model.name;
 	const safeModelDisplayName = String(modelDisplayName ?? "").trim() || displayModelId;
 	const [copied, setCopied] = useState(false);
-	const providerCount = model.gateway_provider_count ?? 0;
-	const activeProviders = model.gateway_active_provider_count ?? 0;
 	const routerRequests30d =
 		Number.isFinite(Number(model.router_requests_30d)) &&
 		Number(model.router_requests_30d) > 0
 			? Number(model.router_requests_30d)
 			: null;
 	const routerSpend30d = formatCostNanos(model.router_spend_nanos_30d);
-	const providerDetails = (model.gateway_provider_details ?? [])
+	const rawProviderDetails = (model.gateway_provider_details ?? [])
 		.map((provider) => ({
 			id: String(provider.id ?? "").trim(),
 			name: String(provider.name ?? "").trim(),
@@ -482,6 +496,25 @@ function ModelCardImpl({
 			isActive: Boolean(provider.is_active),
 		}))
 		.filter((provider) => provider.name);
+	const providerDetails = Array.from(
+		rawProviderDetails.reduce((providers, provider) => {
+			const key = provider.id || provider.name.toLowerCase();
+			const existing = providers.get(key);
+			if (!existing) {
+				providers.set(key, provider);
+				return providers;
+			}
+			providers.set(key, {
+				...existing,
+				isActive: existing.isActive || provider.isActive,
+				status:
+					providerStatusPriority(provider.status) < providerStatusPriority(existing.status)
+						? provider.status
+						: existing.status,
+			});
+			return providers;
+		}, new Map<string, (typeof rawProviderDetails)[number]>()),
+	).map(([, provider]) => provider);
 	const providerNames = Array.from(
 		new Set(
 			(model.gateway_provider_names ?? [])
@@ -515,6 +548,12 @@ function ModelCardImpl({
 						if (priorityDiff !== 0) return priorityDiff;
 						return a.name.localeCompare(b.name);
 					});
+	const providerCount = providerStatusItems.length > 0
+		? providerStatusItems.length
+		: model.gateway_provider_count ?? 0;
+	const activeProviders = providerStatusItems.length > 0
+		? providerStatusItems.filter((provider) => provider.isActive).length
+		: model.gateway_active_provider_count ?? 0;
 	const PROVIDER_ROW_HEIGHT = 28;
 	const PROVIDER_ROW_GAP = 4;
 	const providerListHeight = Math.min(
@@ -817,9 +856,8 @@ function ModelCardImpl({
 	};
 	const inputModalityDisplay = formatModalities(inputModalities);
 	const outputModalityDisplay = formatModalities(outputModalities);
-	const weeklyTokens = Number.isFinite(Number(model.popularity_tokens_week))
-		? Math.max(0, Number(model.popularity_tokens_week))
-		: 0;
+	const weeklyUsage = resolveWeeklyUsageDisplay(model);
+	const weeklyUsageValue = `${formatTokenCount(weeklyUsage.quantity)}${weeklyUsage.unitSuffix}`;
 
 	const copyModelId = async () => {
 		if (!apiModelId) return;
@@ -1302,12 +1340,12 @@ function ModelCardImpl({
 									size="sm"
 									variant="ghost"
 									className="hidden h-8 px-2 tabular-nums text-muted-foreground md:inline-flex"
-									aria-label="Weekly tokens"
+									aria-label={weeklyUsage.label}
 								>
-									{formatTokenCount(weeklyTokens)}
+									{weeklyUsageValue}
 								</Button>
 							</TooltipTrigger>
-							<TooltipContent side="top">Weekly tokens</TooltipContent>
+							<TooltipContent side="top">{weeklyUsage.label}</TooltipContent>
 						</Tooltip>
 
 						<Popover>
@@ -1317,9 +1355,9 @@ function ModelCardImpl({
 									size="sm"
 									variant="ghost"
 									className="h-8 px-2 tabular-nums text-muted-foreground md:hidden"
-									aria-label="Weekly tokens"
+									aria-label={weeklyUsage.label}
 								>
-									{formatTokenCount(weeklyTokens)}
+									{weeklyUsageValue}
 								</Button>
 							</PopoverTrigger>
 							<PopoverContent
@@ -1327,7 +1365,7 @@ function ModelCardImpl({
 								align="end"
 								className="w-auto px-2.5 py-1.5 text-xs"
 							>
-								Weekly tokens
+								{weeklyUsage.label}
 							</PopoverContent>
 						</Popover>
 					</div>

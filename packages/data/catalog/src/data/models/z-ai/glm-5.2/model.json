@@ -57,5 +57,70 @@
       "value": "Same standard API pricing as GLM-5.1: $1.40 per 1M input tokens, $0.26 per 1M cached input tokens, and $4.40 per 1M output tokens."
     }
   ],
-  "benchmarks": []
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": null,
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": null,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": null,
+    "tool_call": null,
+    "structured_output": null,
+    "temperature": null,
+    "streaming": null,
+    "web_search": null
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "docs",
+      "url": "https://docs.z.ai/guides/llm/glm-5.2",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "docs",
+      "url": "https://docs.z.ai/guides/overview/pricing",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "docs",
+      "url": "https://docs.z.ai/guides/capabilities/thinking-mode",
+      "accessed_at": null,
+      "notes": null
+    },
+    {
+      "kind": "announcement",
+      "url": "https://x.com/Zai_org/status/2066938937344495629",
+      "accessed_at": null,
+      "notes": null
+    }
+  ],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  },
+  "last_updated": null,
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
 }

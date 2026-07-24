@@ -12,6 +12,7 @@ import { oauthRouter } from "@/routes/oauth";
 import { v1Router } from "@/routes/v1";
 import { internalRouter } from "@/routes/internal";
 import { handleScheduledEvent } from "@/scheduled";
+export { RealtimeRelayDurableObject } from "@core/realtime-relay-durable-object";
 
 const app = new Hono<Env>();
 

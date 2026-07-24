@@ -1,18 +1,19 @@
 "use server";
 
-import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
-import {
-    requireAuthenticatedUser,
-    requireWorkspaceMembership,
-} from "@/utils/serverActionAuth";
 import {
 	isPromoCodeFormatValid,
 	normalizePromoCodeInput,
 	resolveRedeemMessage,
 } from "@/lib/credits/promoCodes";
 import "server-only";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
+import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
+import {
+	requireAuthenticatedUser,
+	requireWorkspaceMembership,
+} from "@/utils/serverActionAuth";
 
 export async function RefreshCredits() {
     revalidatePath("/settings/credits");
@@ -36,9 +37,9 @@ interface SetUpAutoTopUpProps {
 }
 
 export async function SetUpAutoTopUp(props: SetUpAutoTopUpProps) {
-    const { supabase, user } = await requireAuthenticatedUser();
-    const workspaceId = await resolveWorkspaceIdFromActiveCookie();
-    await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
+    const context = await getServerAccountContext();
+    const workspaceId = context.workspaceId ?? await resolveWorkspaceIdFromActiveCookie();
+    if (!context.accessToken) throw new Error("Unauthorized");
 
     const {
         balanceThreshold,
@@ -50,46 +51,17 @@ export async function SetUpAutoTopUp(props: SetUpAutoTopUpProps) {
         throw new Error("Minimum auto top-up amount is $1");
     }
 
-    // store amounts as integers (assume nanos passed in already)
-    const payload = {
-        auto_top_up_enabled: true,
-        low_balance_threshold: balanceThreshold ?? 0,
-        auto_top_up_amount: topUpAmount ?? 0,
-        auto_top_up_account_id: paymentMethodId,
-        updated_at: new Date().toISOString(),
-    };
-
-    // upsert ensures wallet row exists for team
-    const { data, error } = await supabase
-        .from("wallets")
-        .update(payload)
-        .eq("workspace_id", workspaceId)
-        .select();
-
-    if (error) throw error;
+	const { data } = await fetchAccountWebApi<{ data: unknown[] }>("/api/account/credits/auto-top-up", context.accessToken, { method: "PUT", body: JSON.stringify({ workspaceId, enabled: true, balanceThreshold, topUpAmount, paymentMethodId }) });
 
     revalidatePath("/settings/credits");
     return data;
 }
 
 export async function DisableAutoTopUpServer() {
-    const { supabase, user } = await requireAuthenticatedUser();
-    const workspaceId = await resolveWorkspaceIdFromActiveCookie();
-    await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
-
-    const { data, error } = await supabase
-        .from("wallets")
-        .update({
-            auto_top_up_enabled: false,
-            low_balance_threshold: 0,
-            auto_top_up_amount: 0,
-            auto_top_up_account_id: null,
-            updated_at: new Date().toISOString()
-        })
-        .eq("workspace_id", workspaceId)
-        .select();
-
-    if (error) throw error;
+	const context = await getServerAccountContext();
+	const workspaceId = context.workspaceId ?? await resolveWorkspaceIdFromActiveCookie();
+	if (!context.accessToken) throw new Error("Unauthorized");
+	const { data } = await fetchAccountWebApi<{ data: unknown[] }>("/api/account/credits/auto-top-up", context.accessToken, { method: "PUT", body: JSON.stringify({ workspaceId, enabled: false }) });
     revalidatePath("/settings/credits");
     return data;
 }
@@ -101,9 +73,9 @@ type SetLowBalanceEmailAlertArgs = {
 
 export async function setLowBalanceEmailAlert(args: SetLowBalanceEmailAlertArgs) {
 	const { enabled, thresholdUsd } = args;
-	const { supabase, user } = await requireAuthenticatedUser();
-	const workspaceId = await resolveWorkspaceIdFromActiveCookie();
-	await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
+	const context = await getServerAccountContext();
+	const workspaceId = context.workspaceId ?? await resolveWorkspaceIdFromActiveCookie();
+	if (!context.accessToken) throw new Error("Unauthorized");
 
 	if (enabled) {
 		if (thresholdUsd == null || !Number.isFinite(thresholdUsd) || thresholdUsd <= 0) {
@@ -111,26 +83,7 @@ export async function setLowBalanceEmailAlert(args: SetLowBalanceEmailAlertArgs)
 		}
 	}
 
-	const thresholdNanos =
-		thresholdUsd == null ? 0 : Math.round(thresholdUsd * 1_000_000_000);
-
-	const payload: any = {
-		workspace_id: workspaceId,
-		low_balance_email_enabled: enabled,
-		low_balance_email_threshold_nanos: thresholdNanos,
-		updated_at: new Date().toISOString(),
-	};
-
-	// If disabled, clear threshold (keeps state easy to reason about).
-	if (!enabled) {
-		payload.low_balance_email_threshold_nanos = 0;
-	}
-
-	const { error } = await supabase
-		.from("workspace_settings")
-		.upsert(payload, { onConflict: "workspace_id" });
-
-	if (error) throw error;
+	await fetchAccountWebApi("/api/account/credits/low-balance-alert", context.accessToken, { method: "PUT", body: JSON.stringify({ workspaceId, enabled, thresholdUsd }) });
 
 	revalidatePath("/settings/credits");
 	return { ok: true };
@@ -147,50 +100,38 @@ type ChargeSavedPaymentArgs = {
 };
 
 function resolveInternalBaseUrl(): string {
-    const envUrl =
-        process.env.INTERNAL_APP_URL ||
-        process.env.APP_URL ||
-        process.env.WEBSITE_URL ||
-        process.env.NEXT_PUBLIC_APP_URL ||
-        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null);
+	const envUrl =
+		process.env.INTERNAL_APP_URL ||
+		process.env.APP_URL ||
+		process.env.WEBSITE_URL ||
+		process.env.NEXT_PUBLIC_APP_URL ||
+		(process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null);
 
-    if (!envUrl) {
-        return "http://localhost:3000";
-    }
-    return envUrl.replace(/\/$/, "");
+	return (envUrl || "http://localhost:3000").replace(/\/$/, "");
 }
 
 const INTERNAL_HEADER = "x-internal-payments-token";
 
 export async function ChargeSavedPayment(args: ChargeSavedPaymentArgs) {
-    const { supabase, user } = await requireAuthenticatedUser();
-    const workspaceId = args.workspace_id ?? (await resolveWorkspaceIdFromActiveCookie());
-    await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
+	const { supabase, user } = await requireAuthenticatedUser();
+	const workspaceId = args.workspace_id ?? (await resolveWorkspaceIdFromActiveCookie());
+	await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 
-    const token = process.env.INTERNAL_PAYMENTS_TOKEN ?? process.env.INTERNAL_API_TOKEN;
-    if (!token) throw new Error("Internal payments token not configured");
+	const token = process.env.INTERNAL_PAYMENTS_TOKEN ?? process.env.INTERNAL_API_TOKEN;
+	if (!token) throw new Error("Internal payments token not configured");
 
-    const baseUrl = resolveInternalBaseUrl();
-    const target = `${baseUrl}/api/payments/charge-saved`;
+	const response = await fetch(`${resolveInternalBaseUrl()}/api/payments/charge-saved`, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			[INTERNAL_HEADER]: token,
+		},
+		body: JSON.stringify({ ...args, workspace_id: workspaceId }),
+		cache: "no-store",
+	});
 
-    const res = await fetch(target, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            [INTERNAL_HEADER]: token,
-        },
-        body: JSON.stringify({ ...args, workspace_id: workspaceId }),
-        cache: "no-store",
-    });
-
-    let data: any = null;
-    try {
-        data = await res.json();
-    } catch {
-        data = { error: "invalid_response" };
-    }
-
-    return { ok: res.ok, status: res.status, data };
+	const data = await response.json().catch(() => ({ error: "invalid_response" }));
+	return { ok: response.ok, status: response.status, data };
 }
 
 type SaveBillingOnboardingArgs = {
@@ -222,8 +163,6 @@ type RedeemCreditCodeRow = {
 
 export async function redeemCreditCodeAction(args: RedeemCreditCodeArgs) {
 	const { code, workspaceId } = args;
-	const { supabase, user } = await requireAuthenticatedUser();
-
 	if (!workspaceId || typeof workspaceId !== "string") {
 		return {
 			ok: false as const,
@@ -231,8 +170,6 @@ export async function redeemCreditCodeAction(args: RedeemCreditCodeArgs) {
 			message: "You do not have access to that workspace.",
 		};
 	}
-
-	await requireWorkspaceMembership(supabase, user.id, workspaceId);
 
 	const normalizedCode = normalizePromoCodeInput(code);
 	if (!isPromoCodeFormatValid(normalizedCode)) {
@@ -243,26 +180,14 @@ export async function redeemCreditCodeAction(args: RedeemCreditCodeArgs) {
 		};
 	}
 
-	const { data, error } = await supabase.rpc("redeem_credit_code", {
-		p_code: normalizedCode,
-		p_workspace_id: workspaceId,
-	});
-
-	if (error) {
-		console.warn("[credits.redeem] redeem_credit_code rpc failed", {
-			code: error.code ?? null,
-			message: error.message ?? null,
-			workspaceId,
-			userId: user.id,
-		});
-		return {
-			ok: false as const,
-			status: "error",
-			message: "We could not redeem that credit code right now.",
-		};
+	const context = await getServerAccountContext();
+	if (!context.accessToken) return { ok: false as const, status: "error", message: "You must sign in to redeem a credit code." };
+	let row: RedeemCreditCodeRow | null = null;
+	try {
+		row = (await fetchAccountWebApi<{ result: RedeemCreditCodeRow | null }>("/api/account/credits/redeem", context.accessToken, { method: "POST", body: JSON.stringify({ code: normalizedCode, workspaceId }) })).result;
+	} catch {
+		return { ok: false as const, status: "error", message: "We could not redeem that credit code right now." };
 	}
-
-	const row = (Array.isArray(data) ? data[0] : data) as RedeemCreditCodeRow | null;
 	const status = String(row?.status ?? "error").toLowerCase();
 	const message = resolveRedeemMessage(status, row?.message);
 

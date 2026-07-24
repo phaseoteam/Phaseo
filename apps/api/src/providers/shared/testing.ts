@@ -9,7 +9,9 @@ function sanitizeTestId(value: unknown): string | undefined {
 
 function isEnabled(): boolean {
     const bindings = getBindings();
-    return String(bindings.NODE_ENV ?? "").trim().toLowerCase() === "test";
+	const environment = String(bindings.ENV ?? "").trim().toLowerCase();
+	const nodeEnvironment = String(bindings.NODE_ENV ?? "").trim().toLowerCase();
+	return environment === "perf" || nodeEnvironment === "test";
 }
 
 export function resolveUpstreamTestId(value: unknown): string | undefined {

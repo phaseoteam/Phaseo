@@ -40,6 +40,41 @@ describe("guardJson", () => {
 		if (result.ok) return;
 		expect(result.response.status).toBe(400);
 	});
+
+	it("rejects a declared request body that exceeds the configured limit", async () => {
+		const req = new Request("https://gateway.local/v1/chat/completions", {
+			method: "POST",
+			headers: {
+				"content-type": "application/json",
+				"content-length": "128",
+			},
+			body: JSON.stringify({ model: "test" }),
+		});
+		const result = await guardJson(req, "team_test", "req_test", { maxBytes: 64 });
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.response.status).toBe(413);
+	});
+
+	it("stops reading a streamed request body once it crosses the limit", async () => {
+		const req = new Request("https://gateway.local/v1/chat/completions", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: new ReadableStream({
+				start(controller) {
+					controller.enqueue(new TextEncoder().encode('{"value":"'));
+					controller.enqueue(new TextEncoder().encode("x".repeat(80)));
+					controller.enqueue(new TextEncoder().encode('"}'));
+					controller.close();
+				},
+			}),
+			duplex: "half",
+		} as RequestInit & { duplex: "half" });
+		const result = await guardJson(req, "team_test", "req_test", { maxBytes: 64 });
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.response.status).toBe(413);
+	});
 });
 
 describe("makeMeta session_id handling", () => {
@@ -122,5 +157,25 @@ describe("makeMeta session_id handling", () => {
 		});
 
 		expect(meta.sessionId).toBe("header-session");
+	});
+
+	it("preserves the request-entry timestamp supplied by the pipeline timer", () => {
+		const req = new Request("https://gateway.local/v1/chat/completions", {
+			method: "POST",
+		});
+		const startedAtMs = 1_784_738_000_123;
+
+		const meta = makeMeta({
+			endpoint: "chat.completions",
+			apiKeyId: "key_123",
+			apiKeyRef: "kid_123",
+			apiKeyKid: "kid_123",
+			requestId: "req_123",
+			stream: true,
+			req,
+			startedAtMs,
+		});
+
+		expect(meta.startedAtMs).toBe(startedAtMs);
 	});
 });

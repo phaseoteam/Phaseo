@@ -10,5 +10,20 @@
   "terms_of_service_url": "https://www.clarifai.com/company/terms",
   "prompt_training_policy": "no_train",
   "prompt_training_notes": "Clarifai says private customer data is not used to train its models or other models on the platform unless the customer explicitly shares data with the Community.",
-  "prompt_training_source_url": "https://docs.clarifai.com/resources/privacy-security/"
+  "prompt_training_source_url": "https://docs.clarifai.com/resources/privacy-security/",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://docs.clarifai.com/getting-started/quickstart/",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

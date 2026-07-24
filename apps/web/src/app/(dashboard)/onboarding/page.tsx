@@ -9,9 +9,10 @@ import {
 	normalizeFavoriteModelId,
 } from "@/components/(chat)/playgroundConfig";
 import { filterModelsForRoom } from "@/lib/chat/rooms";
-import { getGatewaySupportedModels } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
-import { createClient } from "@/utils/supabase/server";
+import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
+import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
 import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
+import { fetchOnboardingInitialData } from "@/lib/fetchers/internal/fetchOnboardingInitialData";
 
 export const metadata = {
 	title: "Developer onboarding - Phaseo",
@@ -35,7 +36,7 @@ const ONBOARDING_MODEL_IDS = [
 	"qwen/qwen3-235b-a22b",
 ];
 
-function pickModels(models: Awaited<ReturnType<typeof getGatewaySupportedModels>>) {
+function pickModels(models: GatewaySupportedModel[]) {
 	const curatedModelIds = ONBOARDING_MODEL_IDS.map((modelId) =>
 		normalizeFavoriteModelId(modelId),
 	);
@@ -93,28 +94,13 @@ function pickModels(models: Awaited<ReturnType<typeof getGatewaySupportedModels>
 }
 
 export default async function OnboardingPage() {
-	const supabase = await createClient();
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
-
-	if (!user?.id) {
+	const onboarding = await fetchOnboardingInitialData();
+	if (!onboarding.signedIn) {
 		redirect("/sign-in?returnUrl=%2Fonboarding");
 	}
-
-	const [{ data: userRow }, { data: workspaceRows }, allModels] = await Promise.all([
-		supabase
-			.from("users")
-			.select("onboarding_state,onboarding_completed_at,default_workspace_id")
-			.eq("user_id", user.id)
-			.maybeSingle(),
-		supabase
-			.from("workspace_members")
-			.select("workspace_id, role, workspaces(id, name)")
-			.eq("user_id", user.id)
-			.in("role", ["owner", "admin"]),
-		getGatewaySupportedModels(false, { availableOnly: true }),
-	]);
+	const userRow = onboarding.user;
+	const workspaceRows = onboarding.workspaces;
+	const allModels = await fetchFrontendGatewayModels();
 
 	const workspaces: OnboardingWorkspace[] = [];
 	const seenWorkspaceIds = new Set<string>();

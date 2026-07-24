@@ -7,6 +7,7 @@
 // Supports TTS models: tts-1, tts-1-hd, gpt-4o-mini-tts
 
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
+import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import type { ProviderExecutor } from "../../types";
 
 /**
@@ -87,7 +88,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	}
 
 	try {
-		const response = await fetch("https://api.openai.com/v1/audio/speech", {
+		const response = await fetchUpstream(args, "https://api.openai.com/v1/audio/speech", {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",

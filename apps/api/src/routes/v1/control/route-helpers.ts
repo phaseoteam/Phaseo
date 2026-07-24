@@ -38,7 +38,7 @@ export function requireCapability(
 ): Response | null {
 	const grantedScopes =
 		auth.authMethod === "oauth"
-			? (auth.scopes ?? auth.oauthScopes ?? [])
+			? [...new Set([...(auth.scopes ?? []), ...(auth.oauthScopes ?? [])])]
 			: (auth.scopes ?? []);
 	if (auth.authMethod !== "oauth" && grantedScopes.length === 0 && !options?.requireExplicitNonOAuthScope) {
 		return null;

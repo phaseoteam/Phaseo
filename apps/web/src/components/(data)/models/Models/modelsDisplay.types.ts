@@ -21,6 +21,11 @@ export type ModelsFilterFacets = {
 	yearOptions: OptionCount[];
 };
 
+export type ModelsPageData = {
+	models: ModelsPageModel[];
+	facets: ModelsFilterFacets;
+};
+
 export type ModelsPageModel = Omit<
 	Pick<
 		ModelCard,
@@ -58,6 +63,9 @@ export type ModelsPageModel = Omit<
 		| "lowest_from_price_unit"
 		| "pricing_detail_rows"
 		| "popularity_tokens_week"
+		| "weekly_usage_metric"
+		| "weekly_usage_quantity"
+		| "weekly_usage_unit"
 		| "throughput_week"
 		| "latency_week"
 	>,

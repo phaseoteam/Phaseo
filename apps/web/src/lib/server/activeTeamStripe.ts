@@ -17,6 +17,20 @@ type RequireActiveTeamStripeCustomerOptions = {
     createIfMissing?: boolean;
 };
 
+export type ActiveTeamStripeSummary = {
+    customer: { id: string; email: string | null };
+    defaultPaymentMethodId: string | null;
+    paymentMethods: Array<{
+        id: string;
+        brand: string | null;
+        last4: string | null;
+        expMonth: number | null;
+        expYear: number | null;
+        funding: string | null;
+        created: number | null;
+    }>;
+};
+
 function deriveCustomerName(user: { email?: string | null; user_metadata?: Record<string, unknown> }): string | undefined {
     const meta = user.user_metadata ?? {};
     const fromMeta =
@@ -226,6 +240,34 @@ export async function requireActiveTeamStripeCustomer(
         userId: user.id,
         userEmail: user.email ?? null,
         userDisplayName: deriveCustomerName(user) ?? null,
+    };
+}
+
+export async function getActiveTeamStripeSummary(): Promise<ActiveTeamStripeSummary> {
+    const { customerId } = await requireActiveTeamStripeCustomer({ createIfMissing: true });
+    const stripe = getStripe();
+    const [customerResponse, methods] = await Promise.all([
+        stripe.customers.retrieve(customerId),
+        stripe.paymentMethods.list({ customer: customerId, type: "card", limit: 100 }),
+    ]);
+    const customer = "deleted" in customerResponse && customerResponse.deleted
+        ? null
+        : customerResponse;
+    const rawDefault = customer?.invoice_settings.default_payment_method ?? null;
+
+    return {
+        customer: { id: customerId, email: customer?.email ?? null },
+        defaultPaymentMethodId:
+            typeof rawDefault === "string" ? rawDefault : rawDefault?.id ?? null,
+        paymentMethods: methods.data.map((method) => ({
+            id: method.id,
+            brand: method.card?.brand ?? null,
+            last4: method.card?.last4 ?? null,
+            expMonth: method.card?.exp_month ?? null,
+            expYear: method.card?.exp_year ?? null,
+            funding: method.card?.funding ?? null,
+            created: method.created ?? null,
+        })),
     };
 }
 

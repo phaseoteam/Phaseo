@@ -83,7 +83,7 @@ export const CHAT_SHORTCUT_GROUPS = [
 
 function ShortcutKey({ children }: { children: string }) {
 	return (
-		<kbd className="inline-flex h-6 min-w-6 items-center justify-center rounded-md border border-border bg-muted px-1.5 font-mono text-[11px] font-medium text-foreground shadow-xs">
+		<kbd className="inline-flex h-7 min-w-7 items-center justify-center rounded-md border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-foreground shadow-xs sm:h-6 sm:min-w-6 sm:text-[11px]">
 			{children}
 		</kbd>
 	);
@@ -91,7 +91,7 @@ function ShortcutKey({ children }: { children: string }) {
 
 export function ChatShortcutReference() {
 	return (
-		<div className="grid gap-5">
+		<div className="grid gap-4 sm:gap-5">
 			{CHAT_SHORTCUT_GROUPS.map((group) => (
 				<div key={group.label} className="grid gap-2.5">
 					<div className="px-2 text-xs font-medium text-muted-foreground">
@@ -103,22 +103,20 @@ export function ChatShortcutReference() {
 							return (
 								<div
 									key={item.title}
-									className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg px-2 py-2 hover:bg-muted/70"
+									className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-1 rounded-lg px-2 py-2 hover:bg-muted/70"
 								>
-									<div className="flex min-w-0 items-center gap-3">
-										<div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+									<div className="row-span-2 flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
 											<Icon className="h-4 w-4" />
+									</div>
+									<div className="min-w-0">
+										<div className="text-sm font-medium text-foreground">
+											{item.title}
 										</div>
-										<div className="min-w-0">
-											<div className="text-sm font-medium text-foreground">
-												{item.title}
-											</div>
-											<div className="truncate text-xs text-muted-foreground">
-												{item.description}
-											</div>
+										<div className="text-xs leading-4 text-muted-foreground">
+											{item.description}
 										</div>
 									</div>
-									<div className="flex shrink-0 items-center gap-1">
+									<div className="hidden flex-wrap items-center gap-1 sm:flex">
 										{item.keys.map((key, keyIndex) => (
 											<Fragment key={`${item.title}-${key}`}>
 												{keyIndex > 0 ? (
@@ -149,7 +147,7 @@ export function ChatShortcutHelpDialog({
 }) {
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="max-w-[min(92vw,30rem)] gap-0 overflow-hidden p-0">
+			<DialogContent className="max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-[min(92vw,30rem)] gap-0 overflow-hidden p-0">
 				<DialogHeader className="px-5 pb-3 pt-5">
 					<div className="flex items-start gap-3">
 						<div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-muted">
@@ -164,8 +162,8 @@ export function ChatShortcutHelpDialog({
 					</div>
 				</DialogHeader>
 				<Separator />
-				<ScrollArea className="max-h-[min(70vh,26rem)]">
-					<div className="p-5">
+				<ScrollArea className="max-h-[calc(100dvh-8rem)] sm:max-h-[min(70vh,26rem)]">
+					<div className="p-3 sm:p-5">
 						<ChatShortcutReference />
 					</div>
 				</ScrollArea>

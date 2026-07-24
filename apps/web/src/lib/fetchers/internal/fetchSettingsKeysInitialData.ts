@@ -1,30 +1,15 @@
-import { headers } from "next/headers";
-import { absoluteUrl } from "@/lib/seo";
-import type { SettingsKeysInitialData } from "@/app/api/internal/settings/keys/initial/route";
+import type { SettingsKeysInitialData } from "@/lib/fetchers/internal/settingsTypes";
+import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
 
 export async function fetchSettingsKeysInitialData(
 	workspaceId?: string,
 ): Promise<SettingsKeysInitialData> {
-	const requestHeaders = await headers();
-	const params = new URLSearchParams();
-	if (workspaceId?.trim()) {
-		params.set("workspace_id", workspaceId.trim());
-	}
-	const query = params.toString();
-	const response = await fetch(
-		absoluteUrl(`/api/internal/settings/keys/initial${query ? `?${query}` : ""}`),
-		{
-			cache: "no-store",
-			headers: {
-				accept: "application/json",
-				cookie: requestHeaders.get("cookie") ?? "",
-			},
-		},
+	const context = await getServerAccountContext();
+	const requestedWorkspaceId = workspaceId?.trim() || context.workspaceId;
+	const query = requestedWorkspaceId ? `?workspaceId=${encodeURIComponent(requestedWorkspaceId)}` : "";
+	return fetchAccountWebApi<SettingsKeysInitialData>(
+		`/api/account/settings/keys${query}`,
+		context.accessToken,
 	);
-
-	if (!response.ok) {
-		throw new Error(`Failed to fetch API keys settings data: ${response.status}`);
-	}
-
-	return (await response.json()) as SettingsKeysInitialData;
 }

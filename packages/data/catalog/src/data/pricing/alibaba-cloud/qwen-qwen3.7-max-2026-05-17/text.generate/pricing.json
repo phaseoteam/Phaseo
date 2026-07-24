@@ -14,7 +14,11 @@
       "pricing_plan": "standard",
       "note": "Alibaba Cloud qwen3.7-max-2026-05-17 pricing as provided on 2026-05-25. Context cache is not listed for this snapshot.",
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -25,7 +29,21 @@
       "pricing_plan": "standard",
       "note": "Alibaba Cloud qwen3.7-max-2026-05-17 pricing as provided on 2026-05-25. Context cache is not listed for this snapshot.",
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

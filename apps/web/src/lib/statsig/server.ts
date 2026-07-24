@@ -8,14 +8,15 @@ import {
 	type StatsigUser as ServerStatsigUser,
 } from "@flags-sdk/statsig";
 
-import { createClient } from "@/utils/supabase/server";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
+import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
+import type { InternalAuthStatsigData } from "@/lib/fetchers/internal/authTypes";
 
 import {
 	EMPTY_STATSIG_PROFILE,
 	STATSIG_STABLE_ID_COOKIE,
 	buildAnonymousStatsigUser,
 	buildAuthenticatedStatsigUser,
-	normalizeBetaFeatures,
 	type StatsigProfile,
 } from "./shared";
 
@@ -53,22 +54,9 @@ export const getServerStatsigProfile = cache(
 			return EMPTY_STATSIG_PROFILE;
 		}
 
-		const supabase = await createClient();
-		const { data: profileRow, error } = await supabase
-			.from("users")
-			.select("beta_opt_in, beta_features")
-			.eq("user_id", userId)
-			.maybeSingle();
-		if (error) {
-			throw new Error(`Failed to load Statsig profile: ${error.message}`);
-		}
-
-		return {
-			betaOptIn: Boolean(profileRow?.beta_opt_in),
-			betaFeatures: normalizeBetaFeatures(
-				profileRow?.beta_features ?? EMPTY_STATSIG_PROFILE.betaFeatures
-			),
-		};
+		const context = await getServerAccountContext();
+		if (!context.accessToken) return EMPTY_STATSIG_PROFILE;
+		return (await fetchAccountWebApi<InternalAuthStatsigData>("/api/account/auth/statsig", context.accessToken)).profile;
 	}
 );
 
@@ -77,25 +65,31 @@ export const getServerStatsigUser = cache(async () => {
 	const stableID =
 		cookieStore.get(STATSIG_STABLE_ID_COOKIE)?.value ?? crypto.randomUUID();
 
-	const supabase = await createClient();
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
-
-	if (!user?.id) {
+	const context = await getServerAccountContext();
+	const auth = await fetchAccountWebApi<InternalAuthStatsigData>("/api/account/auth/statsig", context.accessToken);
+	if (!auth.signedIn || !auth.user?.id) {
 		return buildAnonymousStatsigUser(stableID);
 	}
 
-	const profile = await getServerStatsigProfile(user.id);
-
-	return buildAuthenticatedStatsigUser(
+	const user = buildAuthenticatedStatsigUser(
 		{
-			id: user.id,
-			email: user.email,
+			id: auth.user.id,
+			email: auth.user.email,
 		},
 		stableID,
-		profile
+		auth.profile
 	);
+	if (context.workspaceId) {
+		user.customIDs = {
+			...user.customIDs,
+			workspaceID: context.workspaceId,
+		};
+		user.custom = {
+			...user.custom,
+			workspace_id: context.workspaceId,
+		};
+	}
+	return user;
 });
 
 export const getServerStatsigBootstrap = cache(async () => {

@@ -130,7 +130,16 @@ describe("provider-native tool contract E2E", () => {
         const request = mock.getLastRequest();
         expect(request?.providerId).toBe("google-ai-studio");
         expect(request?.body).toMatchObject({
-            tools: [{ functionDeclarations: [{ name: "lookup_weather", parameters: tool.function.parameters }] }],
+            tools: [{
+                functionDeclarations: [{
+                    name: "lookup_weather",
+                    parameters: {
+                        type: "object",
+                        properties: { city: { type: "string" } },
+                        required: ["city"],
+                    },
+                }],
+            }],
             toolConfig: { functionCallingConfig: { mode: "ANY" } },
         });
         expect(request?.validationIssues).toEqual([]);

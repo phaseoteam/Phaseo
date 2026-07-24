@@ -1,4 +1,4 @@
-import type { ProfileSnapshot } from "./fetchers/profile/getProfileSnapshot"
+import type { ProfileSnapshot } from "./fetchers/profile/types"
 import { absoluteUrl } from "./seo"
 
 export const PROFILE_SHARE_CARD_VERSION = "20260512b"

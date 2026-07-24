@@ -320,7 +320,9 @@
       "google/gemini-3.1-pro-preview",
       "google/gemini-3.1-pro-preview-customtools",
       "google/gemini-3.5-flash",
+      "google/gemini-3.5-flash-lite",
       "google/gemini-3.5-pro",
+      "google/gemini-3.6-flash",
       "google/gemini-omni-flash-preview",
       "google/gemini-diffusion",
       "google/gemini-embedding-001",
@@ -839,6 +841,7 @@
     ],
     "poolside": [
       "poolside/laguna-m.1",
+      "poolside/laguna-s-2.1",
       "poolside/laguna-xs-2.1",
       "poolside/laguna-xs.2"
     ],
@@ -1823,8 +1826,9 @@
   "pricing": [
     "atlascloud:text.generate:meituan-longcat-2.0",
     "atlascloud:text.generate:tencent-hy3",
-    "weights-and-biases:text.generate:moonshotai-kimi-k2.7-code",
+    "poolside:text.generate:poolside-laguna-s-2.1-free",
     "weights-and-biases:text.generate:moonshotai-kimi-k2.6",
+    "weights-and-biases:text.generate:moonshotai-kimi-k2.7-code",
     "weights-and-biases:text.generate:z-ai-glm-5.2"
   ],
   "subscription_plans": [

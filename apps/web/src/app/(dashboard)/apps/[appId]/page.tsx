@@ -10,7 +10,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import type { AppUsageRow } from "@/lib/fetchers/apps/getAppUsageOverTime";
+import type { AppUsageRow } from "@/lib/fetchers/apps/types";
 import {
 	fetchFrontendAppDetails,
 	fetchFrontendAppProviderModelMappings,

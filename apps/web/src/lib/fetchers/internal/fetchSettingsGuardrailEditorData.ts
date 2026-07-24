@@ -1,34 +1,18 @@
-import { headers } from "next/headers";
-import { absoluteUrl } from "@/lib/seo";
-import type { SettingsGuardrailEditorData } from "@/app/api/internal/settings/guardrails/editor/route";
+import type { SettingsGuardrailEditorData } from "@/lib/fetchers/internal/settingsTypes";
+import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
 
 export async function fetchSettingsGuardrailEditorData(
 	mode: "create" | "edit",
 	guardrailId?: string | null,
 ): Promise<SettingsGuardrailEditorData> {
-	const requestHeaders = await headers();
+	const context = await getServerAccountContext();
 	const params = new URLSearchParams({ mode });
+	if (context.workspaceId) params.set("workspaceId", context.workspaceId);
 	const normalizedGuardrailId = String(guardrailId ?? "").trim();
-	if (normalizedGuardrailId) {
-		params.set("guardrailId", normalizedGuardrailId);
-	}
-
-	const response = await fetch(
-		absoluteUrl(`/api/internal/settings/guardrails/editor?${params.toString()}`),
-		{
-			cache: "no-store",
-			headers: {
-				accept: "application/json",
-				cookie: requestHeaders.get("cookie") ?? "",
-			},
-		},
+	if (normalizedGuardrailId) params.set("guardrailId", normalizedGuardrailId);
+	return fetchAccountWebApi<SettingsGuardrailEditorData>(
+		`/api/account/settings/guardrails/editor?${params.toString()}`,
+		context.accessToken,
 	);
-
-	if (!response.ok) {
-		throw new Error(
-			`Failed to fetch guardrail editor data: ${response.status}`,
-		);
-	}
-
-	return (await response.json()) as SettingsGuardrailEditorData;
 }

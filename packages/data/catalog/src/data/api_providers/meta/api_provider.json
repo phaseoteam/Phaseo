@@ -10,5 +10,20 @@
   "terms_of_service_url": "https://llama.developer.meta.com/legal/terms-of-service",
   "prompt_training_policy": "no_train",
   "prompt_training_notes": "Meta says prompts and model responses sent through the Llama API are not used to train Meta's AI models.",
-  "prompt_training_source_url": "https://ai.meta.com/blog/llamacon-llama-news/"
+  "prompt_training_source_url": "https://ai.meta.com/blog/llamacon-llama-news/",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://ai.meta.com",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

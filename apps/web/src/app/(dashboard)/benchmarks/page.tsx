@@ -1,5 +1,5 @@
 import BenchmarksDisplay from "@/components/(data)/benchmarks/BenchmarksDisplay";
-import type { BenchmarkCard } from "@/lib/fetchers/benchmarks/getAllBenchmarks";
+import type { BenchmarkCard } from "@/lib/fetchers/benchmarks/types";
 import { fetchFrontendBenchmarks } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import type { Metadata } from "next";
 import { Suspense } from "react";

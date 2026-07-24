@@ -12,11 +12,11 @@ import {
 import type {
 	ProviderTokenSeriesModel,
 	ProviderTokenSeriesPoint,
-} from "@/lib/fetchers/api-providers/api-provider/providerTokenTimeseries";
+} from "@/lib/fetchers/api-providers/providerDataTypes";
 import type {
 	ProviderAppSeriesApp,
 	ProviderAppSeriesPoint,
-} from "@/lib/fetchers/api-providers/api-provider/providerAppTokenTimeseries";
+} from "@/lib/fetchers/api-providers/providerDataTypes";
 
 type ProviderTokenUsageChartClientProps = {
 	models: ProviderTokenSeriesModel[];

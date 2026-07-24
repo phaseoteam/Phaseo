@@ -10,5 +10,20 @@
   "terms_of_service_url": "https://www.gmicloud.ai/ja/terms-and-conditions",
   "prompt_training_policy": "no_train",
   "prompt_training_notes": "GMI Cloud's public MaaS materials state that request data is ephemeral, is not stored for training, and zero-retention configurations are available for sensitive workloads.",
-  "prompt_training_source_url": "https://www.gmicloud.ai/en/blog/where-to-find-pre-built-llm-inference-models-for-chatbot-development-2026-guide"
+  "prompt_training_source_url": "https://www.gmicloud.ai/en/blog/where-to-find-pre-built-llm-inference-models-for-chatbot-development-2026-guide",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://docs.gmicloud.ai/",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

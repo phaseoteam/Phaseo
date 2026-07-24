@@ -15,7 +15,11 @@
       "note": "LongCat model detail endpoint currently reports prompt pricing as 0 during public beta.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-19T00:00:00Z"
+      "effective_from": "2026-06-19T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -27,7 +31,21 @@
       "note": "LongCat model detail endpoint currently reports completion pricing as 0 during public beta.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-19T00:00:00Z"
+      "effective_from": "2026-06-19T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

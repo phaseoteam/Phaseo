@@ -25,5 +25,20 @@
   "prompt_training_notes": "Google Cloud says Vertex AI customer data is not used to train or fine-tune AI/ML models without prior permission or instruction, though some abuse-monitoring and short-lived caching scenarios can still apply.",
   "prompt_training_source_url": "https://cloud.google.com/vertex-ai/generative-ai/docs/data-governance",
   "privacy_policy_url": "https://policies.google.com/privacy",
-  "terms_of_service_url": "https://cloud.google.com/product-terms"
+  "terms_of_service_url": "https://cloud.google.com/product-terms",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://cloud.google.com/vertex-ai?hl=en",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

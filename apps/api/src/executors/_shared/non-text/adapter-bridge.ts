@@ -687,6 +687,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		pricingCard: args.pricingCard,
 		providerModelSlug: args.providerModelSlug,
 		stream: (args.ir as IRImageGenerationRequest).stream === true,
+		upstreamTiming: args.upstreamTiming,
 	};
 
 	let adapterResult: Awaited<ReturnType<typeof executeProviderEndpoint>>;
@@ -769,7 +770,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				reservationStatus,
 				keySource,
 				byokKeyId,
-				createdAt: Date.now(),
+				providerDispatchedAtMs:
+					args.upstreamTiming?.timingFor(adapterResult.upstream)?.dispatchAtMs ?? Date.now(),
 			}, String(videoResponse.nativeId), videoResponse.status);
 		} catch (error) {
 			console.error("adapter_video_job_meta_store_failed", {
@@ -804,10 +806,6 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		}
 	}
 
-	const generationMs =
-		numberOrUndefined(args.meta.upstreamStartMs != null ? Date.now() - args.meta.upstreamStartMs : undefined) ??
-		undefined;
-
 	return {
 		kind: "completed",
 		ir,
@@ -817,7 +815,6 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		byokKeyId,
 		mappedRequest,
 		rawResponse: normalized,
-		timing: generationMs != null ? { generationMs } : undefined,
 	};
 }
 

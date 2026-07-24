@@ -14,7 +14,11 @@
       "pricing_plan": "standard",
       "note": null,
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -23,11 +27,14 @@
       "price_per_unit": 0.55,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": null,
+      "note": "Superseded Venice rate; retained for historical reference.",
       "match": [],
       "priority": 100,
       "effective_to": "2026-07-17T00:00:00Z",
-      "note": "Superseded Venice rate; retained for historical reference."
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -39,7 +46,21 @@
       "match": [],
       "priority": 100,
       "effective_from": "2026-07-17T00:00:00Z",
-      "note": "Current Venice rate verified against its pricing page on 2026-07-18."
+      "note": "Current Venice rate verified against its pricing page on 2026-07-18.",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

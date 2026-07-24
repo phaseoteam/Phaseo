@@ -11,5 +11,20 @@
   "terms_of_service_url": "https://ai.google.dev/gemini-api/terms",
   "prompt_training_policy": "may_train",
   "prompt_training_notes": "Google says unpaid Google AI Studio and unpaid Gemini API quota may be used to improve Google products, while paid services are not used to improve products once Cloud Billing is activated.",
-  "prompt_training_source_url": "https://ai.google.dev/gemini-api/terms"
+  "prompt_training_source_url": "https://ai.google.dev/gemini-api/terms",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://aistudio.google.com/",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

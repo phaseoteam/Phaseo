@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Logo } from "@/components/Logo";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import { filterModelsForRoom } from "@/lib/chat/rooms";
+import { fetchChatWebApi } from "@/lib/web-api/client";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
 import { APP_HEADERS } from "@/components/(chat)/playground/chat-playground-core";
 import {
@@ -1096,7 +1097,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 				imageUrls: resolvedImageUrls,
 			});
 
-			const response = await fetch("/api/chat/moderation", {
+			const response = await fetchChatWebApi("/api/chat/moderation", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({

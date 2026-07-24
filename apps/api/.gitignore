@@ -1,4 +1,5 @@
 .dev.vars
+wrangler.perf.jsonc
 .wrangler/
 # openapi.anthropic.json
 # openapi.openai.yml

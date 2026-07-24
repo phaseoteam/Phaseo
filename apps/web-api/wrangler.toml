@@ -1,0 +1,59 @@
+name = "phaseo-web-api"
+main = "src/index.ts"
+compatibility_date = "2026-07-20"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = false
+preview_urls = false
+
+# Workers Cache is checked before this Worker executes. Public responses opt in
+# through their Cache-Control headers; account routes remain private/no-store.
+[cache]
+enabled = true
+
+[vars]
+ENV = "production"
+SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
+
+[triggers]
+crons = ["*/30 * * * *"]
+
+# PR previews deploy this separately named Worker to the account's workers.dev
+# subdomain. It deliberately has no phaseo.app route, so it cannot intercept
+# production traffic.
+[env.staging]
+workers_dev = true
+preview_urls = true
+routes = []
+
+[env.staging.vars]
+ENV = "staging"
+SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
+
+# Preview deployments are request-driven only. Never run production watcher
+# schedules from an isolated staging Worker against the shared data project.
+[env.staging.triggers]
+crons = []
+
+# Cloudflare owns the explicit application API namespaces below. Vercel owns
+# page rendering and normal web assets, but no application API handlers.
+[[routes]]
+pattern = "phaseo.app/api/_web/*"
+zone_name = "phaseo.app"
+
+[[routes]]
+pattern = "phaseo.app/api/account/*"
+zone_name = "phaseo.app"
+
+[[routes]]
+pattern = "phaseo.app/api/chat/*"
+zone_name = "phaseo.app"
+
+[[routes]]
+pattern = "phaseo.app/api/internal/*"
+zone_name = "phaseo.app"
+
+[observability]
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = true

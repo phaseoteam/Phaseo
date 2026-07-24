@@ -10,5 +10,20 @@
   "terms_of_service_url": "https://docs.z.ai/legal-agreement/terms-of-use",
   "prompt_training_policy": "enterprise_no_train",
   "prompt_training_notes": "z.AI's developer terms distinguish enterprise and developer API services from individual users, and say API-service user content will not be used to develop or improve the services unless the customer explicitly agrees.",
-  "prompt_training_source_url": "https://docs.z.ai/legal-agreement/terms-of-use"
+  "prompt_training_source_url": "https://docs.z.ai/legal-agreement/terms-of-use",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://docs.z.ai/guides/overview/quick-start",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

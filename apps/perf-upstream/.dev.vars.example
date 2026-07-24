@@ -1,0 +1,2 @@
+# Copy to .dev.vars for local use. Never commit the real token.
+PERF_UPSTREAM_TOKEN=replace-with-a-random-secret

@@ -40,7 +40,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 		: "audio";
 	form.append("file", typedPayload.file, filename);
 
-	const res = await fetch(`${baseUrl}/v1/speech-to-text`, {
+	const res = await (args.upstreamTiming?.fetch ?? fetch)(`${baseUrl}/v1/speech-to-text`, {
 		method: "POST",
 		headers: {
 			"xi-api-key": keyInfo.key,

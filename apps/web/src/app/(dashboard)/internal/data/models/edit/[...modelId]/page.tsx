@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/utils/supabase/server";
+import { fetchAdminCatalogRecord } from "@/lib/fetchers/internal/fetchAdminCatalog";
 import { deleteModelAction } from "../../../actions";
 import ModelLegacyEditor from "./ModelLegacyEditor";
 import ModelRevalidationControls from "./ModelRevalidationControls";
@@ -23,12 +23,7 @@ export default async function EditModelPage({
 		typeof query.provider === "string" && query.provider.trim()
 			? query.provider.trim()
 			: undefined;
-	const supabase = await createClient();
-	const { data: row } = await supabase
-		.from("data_models")
-		.select("model_id, name")
-		.eq("model_id", modelId)
-		.maybeSingle();
+	const { row } = await fetchAdminCatalogRecord("model", modelId);
 	if (!row) return notFound();
 	const deleteAction = deleteModelAction.bind(null, modelId);
 

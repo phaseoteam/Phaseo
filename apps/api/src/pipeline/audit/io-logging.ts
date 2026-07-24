@@ -37,7 +37,7 @@ type GatewayIoLogMetadataRow = GatewayIoLogColumns & {
     request_id: string;
 };
 
-type WorkspaceIoLoggingSettings = {
+export type WorkspaceIoLoggingSettings = {
     enabled: boolean;
     retentionDays: number;
     includeProviderPayloads: boolean;
@@ -100,7 +100,7 @@ async function sha256Hex(bytes: Uint8Array): Promise<string> {
         .join("");
 }
 
-async function getWorkspaceIoLoggingSettings(workspaceId: string): Promise<WorkspaceIoLoggingSettings> {
+export async function getWorkspaceIoLoggingSettings(workspaceId: string): Promise<WorkspaceIoLoggingSettings> {
     const now = Date.now();
     const cached = settingsCache.get(workspaceId);
     if (cached && cached.expiresAt > now) return cached.value;
@@ -158,6 +158,30 @@ async function getWorkspaceIoLoggingSettings(workspaceId: string): Promise<Works
     }
 }
 
+export type GatewayIoLoggingPolicy = WorkspaceIoLoggingSettings & {
+    featureEnabled: boolean;
+    captureEnabled: boolean;
+};
+
+export async function resolveGatewayIoLoggingPolicy(input: {
+    workspaceId: string;
+    keyId?: string | null;
+}): Promise<GatewayIoLoggingPolicy> {
+    const bindings = getBindings();
+    const [featureEnabled, settings] = await Promise.all([
+        isGatewayIoLoggingFeatureEnabled({
+            workspaceId: input.workspaceId,
+            apiKeyId: input.keyId ?? null,
+        }, bindings),
+        getWorkspaceIoLoggingSettings(input.workspaceId),
+    ]);
+    return {
+        ...settings,
+        featureEnabled,
+        captureEnabled: featureEnabled && settings.enabled,
+    };
+}
+
 async function persistGatewayIoLogMetadata(
     input: GatewayIoLogInput,
     columns: GatewayIoLogColumns,
@@ -196,18 +220,16 @@ async function finalizeGatewayIoLog(
     }
 }
 
-export async function persistGatewayIoLog(input: GatewayIoLogInput): Promise<GatewayIoLogColumns> {
+export async function persistGatewayIoLog(
+    input: GatewayIoLogInput,
+    resolvedPolicy?: GatewayIoLoggingPolicy,
+): Promise<GatewayIoLogColumns> {
 	const bindings = getBindings();
-	const enabledForWorkspace = await isGatewayIoLoggingFeatureEnabled({
-		workspaceId: input.workspaceId,
-		apiKeyId: input.keyId ?? null,
-	}, bindings);
-	if (!enabledForWorkspace) {
-		return finalizeGatewayIoLog(input, { io_log_status: "not_enabled" });
-	}
-
-    const settings = await getWorkspaceIoLoggingSettings(input.workspaceId);
-    if (!settings.enabled) {
+    const policy = resolvedPolicy ?? await resolveGatewayIoLoggingPolicy({
+        workspaceId: input.workspaceId,
+        keyId: input.keyId ?? null,
+    });
+    if (!policy.captureEnabled) {
         return finalizeGatewayIoLog(input, { io_log_status: "not_enabled" });
     }
 
@@ -223,7 +245,7 @@ export async function persistGatewayIoLog(input: GatewayIoLogInput): Promise<Gat
     }
 
     const now = new Date();
-    const retentionUntil = addDays(now, settings.retentionDays);
+    const retentionUntil = addDays(now, policy.retentionDays);
     const body = {
         schema_version: 1,
         captured_at: now.toISOString(),
@@ -239,8 +261,8 @@ export async function persistGatewayIoLog(input: GatewayIoLogInput): Promise<Gat
         retention_until: retentionUntil.toISOString(),
         request_payload: sanitizeJsonValue(input.requestPayload),
         gateway_response: sanitizeJsonValue(input.gatewayResponse),
-        provider_request: settings.includeProviderPayloads ? sanitizeJsonValue(input.providerRequest) : null,
-        provider_response: settings.includeProviderPayloads ? sanitizeJsonValue(input.providerResponse) : null,
+        provider_request: policy.includeProviderPayloads ? sanitizeJsonValue(input.providerRequest) : null,
+        provider_response: policy.includeProviderPayloads ? sanitizeJsonValue(input.providerResponse) : null,
         metadata: sanitizeJsonValue(input.metadata),
     };
     const bytes = new TextEncoder().encode(JSON.stringify(body));

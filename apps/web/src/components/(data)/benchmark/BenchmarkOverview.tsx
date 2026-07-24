@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import BenchmarkMetrics from "./BenchmarkMetrics";
 import BenchmarkProgressChart from "./BenchmarkProgressChart";
 import ModelsUsingBenchmark from "./ModelsUsingBenchmark";
-import type { BenchmarkPage } from "@/lib/fetchers/benchmarks/getBenchmark";
+import type { BenchmarkPage } from "@/lib/fetchers/benchmarks/types";
 import {
 	getLowerIsBetter,
 	normalizeBenchmarkScoreValue,

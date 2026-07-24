@@ -3,7 +3,7 @@ import { Rocket } from "lucide-react";
 import { headers } from "next/headers";
 import UpdateCard, { type UpdateBadge } from "@/components/updates/UpdateCard";
 import ModelCalendarRouteSwitch from "@/components/updates/ModelCalendarRouteSwitch";
-import type { ModelEvent } from "@/lib/fetchers/updates/getModelUpdates";
+import type { ModelEvent } from "@/lib/fetchers/updates/types";
 import { fetchFrontendOrganisationReleaseEvents } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { buildMetadata } from "@/lib/seo";
 import type { Metadata } from "next";

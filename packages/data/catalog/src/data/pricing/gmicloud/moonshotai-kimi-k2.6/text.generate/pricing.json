@@ -15,7 +15,11 @@
       "note": "Current 10% promotional discount from $0.95/M list input rate",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-20T00:00:00Z"
+      "effective_from": "2026-04-20T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -27,7 +31,11 @@
       "note": "Current 10% promotional discount from $0.16/M list cache-read rate",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-20T00:00:00Z"
+      "effective_from": "2026-04-20T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -39,7 +47,21 @@
       "note": "Current 10% promotional discount from $4.00/M list output rate",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-20T00:00:00Z"
+      "effective_from": "2026-04-20T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

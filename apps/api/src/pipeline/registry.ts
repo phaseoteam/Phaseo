@@ -26,6 +26,7 @@ const PIPELINES: Record<Endpoint, PipelineRunner> = {
 	"audio.speech": runNonTextPipeline,
 	"audio.transcription": runNonTextPipeline,
 	"audio.translations": runNonTextPipeline,
+	"audio.realtime": runNotImplementedPipeline,
 	"video.generation": runVideoGeneratePipeline,
 	ocr: runNonTextPipeline,
 	"music.generate": runNonTextPipeline,

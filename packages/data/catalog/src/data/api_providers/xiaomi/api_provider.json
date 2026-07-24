@@ -7,5 +7,20 @@
   "status": "Active",
   "colour": "#FF6900",
   "privacy_policy_url": "https://p.www.xiaomi.com/policy/privacyPolicy.html",
-  "terms_of_service_url": "https://static.account.xiaomi.com/html/agreement/user/en_US.html"
+  "terms_of_service_url": "https://static.account.xiaomi.com/html/agreement/user/en_US.html",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://platform.xiaomimimo.com/#/docs/welcome",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

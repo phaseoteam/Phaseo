@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { getBrowserAccessToken } from "@/lib/fetchers/internal/accountAuthClient";
+import { fetchInternalWebApi } from "@/lib/web-api/client";
 
 type Target = "openai.responses" | "openai.chat.completions" | "anthropic.messages";
 
@@ -116,19 +118,16 @@ export default function CompatibilityClient() {
 				return;
 			}
 
-			const response = await fetch("/api/internal/compatibility/validate", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ target, payload: parsed }),
-			});
-			const data = (await response.json()) as ValidationResult;
-			if (!response.ok) {
+			let data: ValidationResult;
+			try {
+				data = await fetchInternalWebApi<ValidationResult>("/api/internal/compatibility/validate", (await getBrowserAccessToken()) ?? "", { method: "POST", body: JSON.stringify({ target, payload: parsed }) });
+			} catch (error) {
 				setResults((prev) => ({
 					...prev,
 					[target]: {
 						valid: false,
 						errors: [],
-						error: data.error ?? "Validation failed",
+						error: error instanceof Error ? error.message : "Validation failed",
 					},
 				}));
 				return;

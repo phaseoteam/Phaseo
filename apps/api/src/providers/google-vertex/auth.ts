@@ -13,7 +13,7 @@ function vertexError(code: string): Error & { code: string } {
 export function resolveVertexApiBase(bindings: Record<string, unknown>): string {
 	const rawBase = String(bindings.GOOGLE_VERTEX_BASE_URL || "").replace(/\/+$/, "");
 	const project = String(bindings.GOOGLE_VERTEX_PROJECT || "").trim();
-	const location = String(bindings.GOOGLE_VERTEX_LOCATION || "").trim() || "us-east5";
+	const location = String(bindings.GOOGLE_VERTEX_LOCATION || "").trim() || "global";
 
 	if (rawBase) {
 		if (/\/v\d+(?:beta\d+)?\/projects\/[^/]+\/locations\/[^/]+$/i.test(rawBase)) {
@@ -27,7 +27,10 @@ export function resolveVertexApiBase(bindings: Record<string, unknown>): string 
 	}
 
 	if (!project) throw vertexError("google-vertex_project_missing");
-	return `https://${encodeURIComponent(location)}-aiplatform.googleapis.com/v1/projects/${encodeURIComponent(project)}/locations/${encodeURIComponent(location)}`;
+	const host = location.toLowerCase() === "global"
+		? "aiplatform.googleapis.com"
+		: `${encodeURIComponent(location)}-aiplatform.googleapis.com`;
+	return `https://${host}/v1/projects/${encodeURIComponent(project)}/locations/${encodeURIComponent(location)}`;
 }
 
 export async function resolveVertexAccessToken(rawKey: string): Promise<string> {

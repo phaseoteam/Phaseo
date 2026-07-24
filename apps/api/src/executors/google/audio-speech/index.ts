@@ -4,6 +4,7 @@
 
 import type { IRAudioSpeechRequest, IRAudioSpeechResponse } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
+import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
 import { googleUsageMetadataToIRUsage } from "@providers/google-ai-studio/usage";
@@ -175,7 +176,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		: undefined;
 	const baseUrl = resolveGeminiBaseUrl(bindings);
 
-	const upstream = await fetch(
+	const upstream = await fetchUpstream(
+		args,
 		`${baseUrl}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(keyInfo.key)}`,
 		{
 			method: "POST",

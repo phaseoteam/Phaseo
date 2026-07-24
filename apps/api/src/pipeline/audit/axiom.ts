@@ -5,6 +5,7 @@
 
 import { getBindings } from "@/runtime/env";
 import type { Endpoint } from "@core/types";
+import { sanitizeUrlForLogging } from "@/lib/security/sanitizeUrl";
 
 export type AxiomArgs = {
     // Required identifiers
@@ -53,6 +54,7 @@ export type AxiomArgs = {
     latencyMs?: number | null;        // end-to-end total you want to show
     throughput?: number | null;       // tokens/sec if you compute it
     internalLatencyMs?: number | null; // request->outbound dispatch time
+    endToEndMs?: number | null;       // gateway entry->final frame/response
 
     // Usage/cost
     usage?: {
@@ -277,7 +279,7 @@ export function buildAxiomEvent(a: AxiomArgs) {
 
     const genMs = a.generationMs ?? 0;
     const genSecs = genMs > 0 ? genMs / 1000 : 0;
-    const derivedThroughputTps = genSecs > 0 ? tokensTot / genSecs : 0;
+    const derivedThroughputTps = genSecs > 0 ? tokensOut / genSecs : 0;
     const throughput_tps = a.throughput ?? derivedThroughputTps;
 
     const totalCents = a.pricing?.total_cents ?? 0;
@@ -320,7 +322,7 @@ export function buildAxiomEvent(a: AxiomArgs) {
             : null;
     const providerUrl =
         typeof extraTransform?.upstream_url === "string"
-            ? extraTransform.upstream_url
+			? sanitizeUrlForLogging(extraTransform.upstream_url)
             : null;
     const attemptErrorsJson = stringifyCompact(extraTransform?.attempt_errors ?? null);
     const requestedParamsJson = stringifyCompact(extraTransform?.requested_params ?? null);
@@ -365,7 +367,7 @@ export function buildAxiomEvent(a: AxiomArgs) {
         error_type: a.errorType ?? null,
         request_method: a.requestMethod ?? null,
         request_path: a.requestPath ?? null,
-        request_url: a.requestUrl ?? null,
+		request_url: sanitizeUrlForLogging(a.requestUrl ?? null),
         user_agent: a.userAgent ?? null,
         client_ip: a.clientIp ?? null,
         cf_ray: a.cfRay ?? null,
@@ -414,6 +416,7 @@ export function buildAxiomEvent(a: AxiomArgs) {
         latency_ms: a.latencyMs ?? null,
         throughput_tps,
         internal_latency_ms: a.internalLatencyMs ?? null,
+        end_to_end_ms: a.endToEndMs ?? null,
 
         // ====================================================================
         // USAGE

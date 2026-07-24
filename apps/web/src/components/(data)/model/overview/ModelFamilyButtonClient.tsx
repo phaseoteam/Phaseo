@@ -20,7 +20,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
-import type { FamilyInfo } from "@/lib/fetchers/models/getFamilyModels";
+import type { FamilyInfo } from "@/lib/fetchers/families/types";
 
 export default function ModelFamilyButtonClient({
 	family,

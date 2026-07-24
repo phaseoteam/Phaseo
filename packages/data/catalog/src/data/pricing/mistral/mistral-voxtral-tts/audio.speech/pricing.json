@@ -15,7 +15,21 @@
       "note": "Mistral pricing lists Voxtral TTS at $0.016 per 1,000 characters.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-03-23T00:00:00Z"
+      "effective_from": "2026-03-23T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

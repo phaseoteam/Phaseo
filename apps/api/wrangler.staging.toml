@@ -7,17 +7,22 @@ preview_urls = false
 
 [vars]
 ENV = "staging"
+NODE_ENV = "production"
+SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
 STATSIG_ENVIRONMENT_TIER = "staging"
 STATSIG_GATEWAY_IO_LOGGING_GATE = "gateway_io_logging"
 GATEWAY_IO_LOGS_BUCKET_NAME = "phaseo-gateway-io-logs-preview"
 GATEWAY_IO_LOGGING_MAX_BYTES = "5242880"
 GATEWAY_IO_RETENTION_BILLING_ENABLED = "false"
+MODEL_DISCOVERY_ENABLED = "false"
+VIDEO_RECONCILIATION_ENABLED = "false"
+BATCH_RECONCILIATION_ENABLED = "false"
+EMAIL_OUTBOX_DRAIN_ENABLED = "false"
+PRICING_MONITOR_ENABLED = "false"
+ENTERPRISE_INVOICING_ENABLED = "false"
 
 [placement]
 mode = "smart"
-
-[triggers]
-crons = ["* * * * *"]
 
 [observability]
 [observability.logs]

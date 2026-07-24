@@ -67,14 +67,12 @@ export function classifyProviderHealthImpact(args: {
     if (args.aborted) return "neutral";
 
     const status = Number(args.upstreamStatus ?? 0);
-    if (Number.isFinite(status) && status >= 200 && status < 400) {
+    if (Number.isFinite(status) && status >= 200 && status < 300) {
         return "success";
     }
-    if (status === 429) {
-        return "neutral";
-    }
+    if (status === 429) return "failure";
     if (isRateLimitSignal(args.errorCode) || isRateLimitSignal(args.errorMessage)) {
-        return "neutral";
+        return "failure";
     }
     return "failure";
 }
@@ -511,6 +509,10 @@ async function loadStateMap(endpoint: Endpoint, model: string): Promise<Record<s
     return loadMapByKey(key);
 }
 
+function refreshStateMapInBackground(key: string): void {
+    dispatchBackground(loadMapByKey(key).then(() => undefined));
+}
+
 async function setHealthFields(endpoint: Endpoint, model: string, updates: Record<string, string | number>) {
     const key = HEALTH_KEYS.health(endpoint, model);
     await updateMap(key, (map) => {
@@ -553,6 +555,32 @@ export async function readHealthMany(
 ): Promise<Record<string, ProviderHealth>> {
     if (!providers.length) return {};
     const map = await loadStateMap(endpoint, model);
+    const out: Record<string, ProviderHealth> = {};
+    for (const provider of providers) {
+        out[provider] = snapshotFromMap(endpoint, provider, model, map);
+    }
+    return out;
+}
+
+/**
+ * Returns the isolate-local health snapshot without putting KV on the routing
+ * critical path. Missing or expired state is refreshed through waitUntil;
+ * safe defaults (or the last snapshot) are used for the current request.
+ */
+export function readHealthManyOptimistic(
+    endpoint: Endpoint,
+    model: string,
+    providers: string[]
+): Record<string, ProviderHealth> {
+    if (!providers.length) return {};
+
+    const key = HEALTH_KEYS.health(endpoint, model);
+    const cached = l1State.get(key);
+    if (!cached || cached.expiresAtMs <= Date.now()) {
+        refreshStateMapInBackground(key);
+    }
+
+    const map = cached?.map ?? {};
     const out: Record<string, ProviderHealth> = {};
     for (const provider of providers) {
         out[provider] = snapshotFromMap(endpoint, provider, model, map);
@@ -829,13 +857,15 @@ export async function onCallEnd(
         const tau60 = HEALTH_CONSTANTS.TAU_60S_MS;
         const tau300 = HEALTH_CONSTANTS.TAU_300S_MS;
 
-        const last10 = readNumber(map, provider, "last_ts_10s") || now;
-        const last60 = readNumber(map, provider, "last_ts_60s") || now;
-        const last300 = readNumber(map, provider, "last_ts_300s") || now;
+        const last10 = readNumber(map, provider, "last_ts_10s");
+        const last60 = readNumber(map, provider, "last_ts_60s");
+        const last300 = readNumber(map, provider, "last_ts_300s");
 
-        const decay10 = Math.exp(-(now - last10) / tau10);
-        const decay60 = Math.exp(-(now - last60) / tau60);
-        const decay300 = Math.exp(-(now - last300) / tau300);
+        // The first observation initializes the EWMA. Treating its elapsed
+        // time as zero would produce a decay of 1 and discard the signal.
+        const decay10 = last10 > 0 ? Math.exp(-(now - last10) / tau10) : 0;
+        const decay60 = last60 > 0 ? Math.exp(-(now - last60) / tau60) : 0;
+        const decay300 = last300 > 0 ? Math.exp(-(now - last300) / tau300) : 0;
 
         const decay = (prev: number, sample: number, d: number) => prev * d + (1 - d) * sample;
 

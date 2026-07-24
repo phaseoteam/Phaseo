@@ -21,6 +21,7 @@ import {
 } from "@/components/ai-elements/model-selector";
 import {
 	Dialog,
+	DialogClose,
 	DialogContent,
 	DialogDescription,
 	DialogTitle,
@@ -163,6 +164,32 @@ const CUSTOM_ACCENT_SELECT_VALUE = "custom";
 const DEFAULT_CUSTOM_ACCENT_COLOR = "#2563eb";
 const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
 const CUSTOM_API_SELECT_VALUE = "custom";
+
+type ChatSettingsTab =
+	| "personalization"
+	| "data-controls"
+	| "shortcuts"
+	| "admin";
+
+const CHAT_SETTINGS_TAB_LABELS: Record<ChatSettingsTab, string> = {
+	personalization: "Personalization",
+	"data-controls": "Data Controls",
+	shortcuts: "Shortcuts",
+	admin: "Admin",
+};
+
+function ChatSettingsTabIcon({ tab }: { tab: ChatSettingsTab }) {
+	const Icon =
+		tab === "personalization"
+			? Paintbrush
+			: tab === "data-controls"
+				? Database
+				: tab === "shortcuts"
+					? Keyboard
+					: Shield;
+
+	return <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />;
+}
 
 function normalizeHexColor(value: string) {
 	const trimmedValue = value.trim();
@@ -341,9 +368,9 @@ export function ChatHeader({
 	requireAudioInput = false,
 }: ChatHeaderProps) {
 	const { toggleSidebar, state: sidebarState } = useSidebar();
-	const [settingsTab, setSettingsTab] = useState<
-		"personalization" | "data-controls" | "shortcuts" | "admin"
-	>("personalization");
+	const [settingsTab, setSettingsTab] = useState<ChatSettingsTab>(
+		"personalization",
+	);
 	const [modelSearchValue, setModelSearchValue] = useState("");
 	const [activeBrowseModelId, setActiveBrowseModelId] = useState<string | null>(
 		null,
@@ -1602,13 +1629,76 @@ export function ChatHeader({
 					<TooltipContent>Settings</TooltipContent>
 				</Tooltip>
 				<Dialog open={settingsOpen} onOpenChange={onSettingsOpenChange}>
-					<DialogContent className="overflow-hidden p-0 md:max-h-[520px] md:max-w-[760px] lg:max-w-[820px]">
+					<DialogContent
+						showCloseButton={false}
+						className="max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] overflow-hidden p-0 md:max-h-[520px] md:w-auto md:max-w-[760px] lg:max-w-[820px]"
+					>
 						<DialogTitle className="sr-only">Settings</DialogTitle>
 						<DialogDescription className="sr-only">
 							Chat settings and diagnostics.
 						</DialogDescription>
-						<div className="flex h-[520px] flex-1 overflow-hidden">
-							<div className="hidden w-52 shrink-0 flex-col border-r border-border p-2 md:flex">
+						<div className="flex h-[calc(100dvh-1rem)] max-h-[520px] flex-1 flex-col overflow-hidden">
+							<div className="flex h-12 shrink-0 items-center justify-between border-b border-border px-3 sm:px-4">
+								<div className="min-w-0 flex-1 lg:hidden">
+									<Select
+										value={settingsTab}
+										onValueChange={(value) => {
+											const nextTab = value as ChatSettingsTab;
+											setSettingsTab(nextTab);
+											if (nextTab === "data-controls") {
+												setImportResult(null);
+											}
+										}}
+									>
+										<SelectTrigger
+											size="sm"
+											className="w-full max-w-xs rounded-lg border-border/70 bg-background/60"
+										>
+											<SelectValue>
+												<span className="flex min-w-0 items-center gap-2">
+													<ChatSettingsTabIcon tab={settingsTab} />
+													<span className="truncate">
+														{CHAT_SETTINGS_TAB_LABELS[settingsTab]}
+													</span>
+												</span>
+											</SelectValue>
+										</SelectTrigger>
+										<SelectContent align="start">
+											<SelectItem value="personalization">
+												<ChatSettingsTabIcon tab="personalization" />
+												<span>Personalization</span>
+											</SelectItem>
+											<SelectItem value="data-controls">
+												<ChatSettingsTabIcon tab="data-controls" />
+												<span>Data Controls</span>
+											</SelectItem>
+											<SelectItem value="shortcuts">
+												<ChatSettingsTabIcon tab="shortcuts" />
+												<span>Shortcuts</span>
+											</SelectItem>
+											{isAdmin ? (
+												<SelectItem value="admin">
+													<ChatSettingsTabIcon tab="admin" />
+													<span>Admin</span>
+												</SelectItem>
+											) : null}
+										</SelectContent>
+									</Select>
+								</div>
+								<p className="hidden text-sm font-semibold lg:block">Settings</p>
+								<DialogClose asChild>
+									<Button
+										variant="ghost"
+										size="icon-sm"
+										aria-label="Close settings"
+										className="shrink-0"
+									>
+										<X className="h-4 w-4" />
+									</Button>
+								</DialogClose>
+							</div>
+							<div className="flex min-h-0 flex-1 overflow-hidden">
+							<div className="hidden w-52 shrink-0 flex-col border-r border-border p-2 lg:flex">
 								<Button
 									variant={
 										settingsTab === "personalization"
@@ -1666,62 +1756,10 @@ export function ChatHeader({
 								)}
 							</div>
 							<div className="flex flex-1 flex-col overflow-hidden">
-								<div className="flex items-center gap-2 border-b border-border px-4 py-3 md:hidden">
-									<Button
-										size="sm"
-										variant={
-											settingsTab === "personalization"
-												? "secondary"
-												: "ghost"
-										}
-										onClick={() =>
-											setSettingsTab("personalization")
-										}
-									>
-										Personalization
-									</Button>
-									<Button
-										size="sm"
-										variant={
-											settingsTab === "data-controls"
-												? "secondary"
-												: "ghost"
-										}
-										onClick={() => {
-											setSettingsTab("data-controls");
-											setImportResult(null);
-										}}
-									>
-										Data Controls
-									</Button>
-									<Button
-										size="sm"
-										variant={
-											settingsTab === "shortcuts"
-												? "secondary"
-												: "ghost"
-										}
-										onClick={() => setSettingsTab("shortcuts")}
-									>
-										Shortcuts
-									</Button>
-									{isAdmin && (
-										<Button
-											size="sm"
-											variant={
-												settingsTab === "admin"
-													? "secondary"
-													: "ghost"
-											}
-											onClick={() =>
-												setSettingsTab("admin")
-											}
-										>
-											Admin
-										</Button>
-									)}
-								</div>
-								<div className="flex-1 overflow-y-auto p-4">
+								<ScrollArea
+									className="min-h-0 flex-1"
+									viewportClassName="p-3 sm:p-4"
+								>
 									{settingsTab === "personalization" && (
 										<div className="grid gap-3">
 											<div className="grid gap-1">
@@ -2298,8 +2336,8 @@ export function ChatHeader({
 											</div>
 										</div>
 									)}
-								</div>
-								<div className="border-t border-border px-4 py-3">
+								</ScrollArea>
+								<div className="border-t border-border px-3 py-3 sm:px-4">
 									<div className="flex justify-end">
 										<Button onClick={onSaveSettings}>
 											Save
@@ -2308,9 +2346,7 @@ export function ChatHeader({
 								</div>
 							</div>
 						</div>
-						<div className="flex justify-end">
-							<Button onClick={onSaveSettings}>Save</Button>
-						</div>
+					</div>
 					</DialogContent>
 				</Dialog>
 			</div>

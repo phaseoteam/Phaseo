@@ -10,5 +10,20 @@
   "terms_of_service_url": "https://www.together.ai/terms-of-service",
   "prompt_training_policy": "opt_out_available",
   "prompt_training_notes": "Together says data sharing for training other models is opt-in and not enabled by default, and Zero Data Retention can be enabled in Privacy & Security settings.",
-  "prompt_training_source_url": "https://docs.together.ai/docs/inference-faqs"
+  "prompt_training_source_url": "https://docs.together.ai/docs/inference-faqs",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://docs.together.ai/",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

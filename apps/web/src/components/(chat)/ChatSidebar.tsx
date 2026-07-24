@@ -59,6 +59,7 @@ import {
 	Trash2,
 	UserRound,
 } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
 
 export type GroupedThreads = {
 	pinned: ChatThread[];
@@ -280,10 +281,18 @@ export function ChatSidebar({
 		const controller = new AbortController();
 		const timeoutId = window.setTimeout(() => controller.abort(), 8000);
 		setCreditsLoading(true);
-		fetch("/api/internal/credits/balance", {
-			headers: { accept: "application/json" },
-			signal: controller.signal,
-		})
+		createClient().auth.getSession()
+			.then(({ data }) => {
+				const accessToken = data.session?.access_token;
+				if (!accessToken) throw new Error("Credits request requires a session");
+				return fetch("/api/account/credits/balance", {
+					headers: {
+						accept: "application/json",
+						authorization: `Bearer ${accessToken}`,
+					},
+					signal: controller.signal,
+				});
+			})
 			.then(async (response) => {
 				if (!response.ok) throw new Error(`Credits request failed: ${response.status}`);
 				return (await response.json()) as CreditsBalanceResponse;

@@ -76,7 +76,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     const headers = openAICompatHeaders(args.providerId, keyInfo.key, upstreamTestHeaders(args.meta));
     delete (headers as any)["Content-Type"];
 
-    const res = await fetch(openAICompatUrl(args.providerId, "/audio/transcriptions"), {
+    const res = await (args.upstreamTiming?.fetch ?? fetch)(openAICompatUrl(args.providerId, "/audio/transcriptions"), {
         method: "POST",
         headers,
         body: form,

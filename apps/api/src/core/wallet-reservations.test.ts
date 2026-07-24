@@ -1,11 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const rpcMock = vi.fn();
+const invalidateGatewayCreditCacheMock = vi.fn();
+const setKeyVersionMock = vi.fn();
 
 vi.mock("@/runtime/env", () => ({
 	getSupabaseAdmin: () => ({
 		rpc: (...args: any[]) => rpcMock(...args),
 	}),
+}));
+
+vi.mock("@core/gateway-credit-cache", () => ({
+	invalidateGatewayCreditCache: (...args: unknown[]) => invalidateGatewayCreditCacheMock(...args),
+}));
+
+vi.mock("@core/kv", () => ({
+	setKeyVersion: (...args: unknown[]) => setKeyVersionMock(...args),
 }));
 
 import {
@@ -19,6 +29,8 @@ import {
 describe("wallet reservation RPC compatibility", () => {
 	beforeEach(() => {
 		rpcMock.mockReset();
+		invalidateGatewayCreditCacheMock.mockReset();
+		setKeyVersionMock.mockReset();
 	});
 
 	it("retries reserve calls against legacy p_team_id signatures", async () => {
@@ -51,6 +63,8 @@ describe("wallet reservation RPC compatibility", () => {
 			reservationId: "video_reservation:req_123",
 			amountNanos: 150000000,
 			holdRefId: "req_123",
+			keyId: "key_123",
+			requestCount: 2,
 		});
 
 		expect(result.status).toBe("held");
@@ -63,6 +77,66 @@ describe("wallet reservation RPC compatibility", () => {
 			p_team_id: "6108396e-0e12-425d-91ff-a02d39a346e0",
 		});
 		expect(rpcMock.mock.calls[1]?.[1]).not.toHaveProperty("p_workspace_id");
+		expect(invalidateGatewayCreditCacheMock).toHaveBeenCalledWith("6108396e-0e12-425d-91ff-a02d39a346e0");
+		expect(setKeyVersionMock).toHaveBeenCalledWith("id", "key_123", expect.any(Number));
+	});
+
+	it("normalizes current wallet reservation RPC ok/reason rows", async () => {
+		rpcMock.mockResolvedValueOnce({
+			data: [
+				{
+					ok: true,
+					applied: true,
+					reason: null,
+					amount_nanos: 5_000_000_000,
+					before_balance_nanos: 10_000_000_000,
+					after_balance_nanos: 10_000_000_000,
+					before_reserved_nanos: 0,
+					after_reserved_nanos: 5_000_000_000,
+				},
+			],
+			error: null,
+		});
+
+		await expect(
+			reserveWalletCredits({
+				workspaceId: "6108396e-0e12-425d-91ff-a02d39a346e0",
+				reservationId: "rt:req_123",
+				amountNanos: 5_000_000_000,
+				holdRefId: "req_123",
+			}),
+		).resolves.toMatchObject({
+			applied: true,
+			status: "held",
+			amountNanos: 5_000_000_000,
+			afterReservedNanos: 5_000_000_000,
+		});
+	});
+
+	it("normalizes current wallet reservation RPC failure reasons", async () => {
+		rpcMock.mockResolvedValueOnce({
+			data: [
+				{
+					ok: false,
+					applied: false,
+					reason: "insufficient_balance",
+					amount_nanos: 5_000_000_000,
+				},
+			],
+			error: null,
+		});
+
+		await expect(
+			reserveWalletCredits({
+				workspaceId: "6108396e-0e12-425d-91ff-a02d39a346e0",
+				reservationId: "rt:req_124",
+				amountNanos: 5_000_000_000,
+				holdRefId: "req_124",
+			}),
+		).resolves.toMatchObject({
+			applied: false,
+			status: "insufficient_balance",
+		});
 	});
 
 	it("retries capture and release calls against legacy p_team_id signatures", async () => {
@@ -133,6 +207,22 @@ describe("wallet reservation RPC compatibility", () => {
 			p_actual_nanos: 320,
 			p_settle_ref_id: "batch_1",
 		}]);
+		expect(invalidateGatewayCreditCacheMock).toHaveBeenCalledTimes(2);
+	});
+
+	it("invalidates caches when an idempotent retry reports an already-applied transition", async () => {
+		rpcMock.mockResolvedValueOnce({
+			data: [{ ok: true, applied: false, already_applied: false, reason: "already_reserved", amount_nanos: 500 }],
+			error: null,
+		});
+		await expect(reserveWalletCredits({
+			workspaceId: "ws_retry",
+			reservationId: "batch_hold:req_retry",
+			amountNanos: 500,
+			keyId: "key_retry",
+		})).resolves.toMatchObject({ status: "held", alreadyApplied: true });
+		expect(invalidateGatewayCreditCacheMock).toHaveBeenCalledWith("ws_retry");
+		expect(setKeyVersionMock).toHaveBeenCalledWith("id", "key_retry", expect.any(Number));
 	});
 
 	it("releases stale orphan batch holds through the bounded reaper RPC", async () => {

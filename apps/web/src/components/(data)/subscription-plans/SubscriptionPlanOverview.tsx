@@ -1,4 +1,4 @@
-import type { SubscriptionPlanDetails } from "@/lib/fetchers/subscription-plans/getSubscriptionPlan";
+import type { SubscriptionPlanDetails } from "@/lib/fetchers/subscription-plans/types";
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

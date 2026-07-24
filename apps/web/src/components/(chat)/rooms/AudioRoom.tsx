@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Logo } from "@/components/Logo";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import { filterModelsForRoom } from "@/lib/chat/rooms";
+import { fetchChatWebApi } from "@/lib/web-api/client";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
 import { APP_HEADERS } from "@/components/(chat)/playground/chat-playground-core";
 import { inferAudioMimeType } from "@/components/(chat)/chatConversationHelpers";
@@ -579,7 +580,7 @@ async function pollMusicGeneration(resourceId: string): Promise<{
 	let latestPayload: unknown = null;
 	let latestStatus: "queued" | "in_progress" | "completed" | "failed" | null = null;
 	for (let attempt = 0; attempt < MUSIC_POLL_MAX_ATTEMPTS; attempt += 1) {
-		const response = await fetch(
+		const response = await fetchChatWebApi(
 			`/api/chat/audio?action=music&resourceId=${encodeURIComponent(resourceId)}`,
 			{ method: "GET" },
 		);
@@ -1136,6 +1137,20 @@ export function AudioRoom({
 			: dialogModelId === modelId
 				? selectedProfile
 				: null;
+	const dialogModel = useMemo(
+		() =>
+			dialogModelId
+				? (allAudioModels.find(
+						(model) =>
+							model.modelId === dialogModelId &&
+							(!dialogProfile?.providerId ||
+								model.providerId === dialogProfile.providerId),
+					) ??
+					allAudioModels.find((model) => model.modelId === dialogModelId) ??
+					null)
+				: null,
+		[allAudioModels, dialogModelId, dialogProfile?.providerId],
+	);
 	const dialogModeSupport = useMemo(() => {
 		const detected = getModelModeSupport(
 			allAudioModels,
@@ -1704,19 +1719,33 @@ export function AudioRoom({
 					requestBody.audio_b64 = await readFileAsBase64(audioFile);
 				}
 			}
+			const targetProviderId =
+				targetModelId === modelId ? selectedProviderId : undefined;
+			const targetModel =
+				allAudioModels.find(
+					(candidate) =>
+						candidate.modelId === targetModelId &&
+						(!targetProviderId || candidate.providerId === targetProviderId),
+				) ??
+				allAudioModels.find((candidate) => candidate.modelId === targetModelId) ??
+				null;
+			const targetCapabilityParamsById = targetModel?.capabilityParamsById;
+			const targetParams =
+				targetModelId === modelId
+					? ((selectedProfile?.params as AudioRoomParams) ??
+						getDefaultAudioRoomParams(targetModelId, targetCapabilityParamsById))
+					: getDefaultAudioRoomParams(targetModelId, targetCapabilityParamsById);
 			Object.assign(
 				requestBody,
 				buildAudioRequestOptions(
 					targetMode,
 					targetModelId,
-					targetModelId === modelId
-						? ((selectedProfile?.params as AudioRoomParams) ??
-							getDefaultAudioRoomParams(targetModelId))
-						: getDefaultAudioRoomParams(targetModelId),
+					targetParams,
+					targetCapabilityParamsById,
 				),
 			);
 
-			const response = await fetch("/api/chat/audio", {
+			const response = await fetchChatWebApi("/api/chat/audio", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
@@ -2591,6 +2620,7 @@ export function AudioRoom({
 					onModelChange={modelSettings.handleModelSettingsModelChange}
 					providerOptions={modelSettings.providerOptions}
 					supportedProvidersForModel={modelSettings.supportedProvidersForModel}
+					capabilityParamsById={dialogModel?.capabilityParamsById}
 					onUpdateBase={(partial) => updateModelBaseSettings(partial)}
 					onUpdateParams={(partial) => updateModelParams(partial)}
 					onReset={resetModelSettings}

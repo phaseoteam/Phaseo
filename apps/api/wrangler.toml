@@ -19,6 +19,9 @@ BATCH_RECONCILIATION_ENABLED = "true"
 BATCH_RECONCILIATION_LIMIT = "500"
 BATCH_RECONCILIATION_CONCURRENCY = "12"
 BATCH_RECONCILIATION_LEASE_SECONDS = "300"
+BATCH_API_PREVIEW_PROVIDERS = "openai,anthropic,google-ai-studio,mistral"
+BATCH_PROVIDER_WEBHOOK_REPLAY_ENABLED = "true"
+BATCH_PROVIDER_WEBHOOK_REPLAY_LIMIT = "100"
 STATSIG_BATCH_API_GATE = "gateway_batch_api"
 STATSIG_GATEWAY_IO_LOGGING_GATE = "gateway_io_logging"
 ASYNC_WEBHOOK_SECRET_ENCRYPTION_KEY_VERSION = "v1"
@@ -81,3 +84,11 @@ namespace_id = "41002"
 [ratelimits.simple]
 limit = 60
 period = 60
+
+[[durable_objects.bindings]]
+name = "REALTIME_RELAY"
+class_name = "RealtimeRelayDurableObject"
+
+[[migrations]]
+tag = "v1-realtime-relay"
+new_sqlite_classes = ["RealtimeRelayDurableObject"]

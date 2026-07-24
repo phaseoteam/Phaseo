@@ -31,6 +31,7 @@ export type ProviderStateKey =
 	| "internal_testing"
 	| "scheduled"
 	| "coming_soon"
+	| "external"
 	| "provider_not_ready"
 	| "provider_disabled"
 	| "model_disabled"
@@ -354,6 +355,14 @@ export function resolveProviderState(
 	}
 
 	if (providerModel.provider_status && providerModel.provider_status !== "active") {
+		if (providerModel.provider_status === "external") {
+			return {
+				key: "external",
+				label: "External",
+				description: "Listed from an external catalogue; not routable through Phaseo.",
+				availability: "inactive",
+			};
+		}
 		if (providerModel.provider_status === "beta" || providerModel.provider_status === "alpha") {
 			return {
 				key: "preview_only",
@@ -490,6 +499,7 @@ function chooseState(states: ProviderState[]): ProviderState {
 	}
 
 	return (
+		states.find((state) => state.key === "external") ??
 		states.find((state) => state.key === "provider_not_ready") ??
 		states.find((state) => state.key === "gated") ??
 		states.find((state) => state.key === "access_limited") ??

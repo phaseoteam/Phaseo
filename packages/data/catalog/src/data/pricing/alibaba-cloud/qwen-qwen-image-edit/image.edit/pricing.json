@@ -15,7 +15,21 @@
       "note": "Alibaba Cloud Model Studio lists qwen-image-edit international output pricing at $0.045 per image.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-01T00:00:00Z"
+      "effective_from": "2026-04-01T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

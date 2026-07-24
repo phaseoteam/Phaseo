@@ -10,5 +10,20 @@
   "terms_of_service_url": "https://docs.byteplus.com/en/docs/legal/docs-terms-of-service",
   "prompt_training_policy": "no_train",
   "prompt_training_notes": "BytePlus ModelArk says it processes customer data solely under customer instructions and will not use Customer Data for its own model training without prior customer authorization.",
-  "prompt_training_source_url": "https://docs.byteplus.com/api/docs/ModelArk/BytePlus_ModelArk_Data_Processing"
+  "prompt_training_source_url": "https://docs.byteplus.com/api/docs/ModelArk/BytePlus_ModelArk_Data_Processing",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": null,
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

@@ -9,5 +9,20 @@
   "status": "Active",
   "colour": "#F13E5A",
   "privacy_policy_url": "https://www.minimax.io/privacy-policy-v2.html",
-  "terms_of_service_url": "https://www.minimax.io/terms-of-service-v2.html"
+  "terms_of_service_url": "https://www.minimax.io/terms-of-service-v2.html",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://www.minimax.io/platform_overview",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

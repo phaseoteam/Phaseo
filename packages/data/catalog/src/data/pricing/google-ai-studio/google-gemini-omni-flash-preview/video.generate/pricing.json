@@ -15,7 +15,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-30T00:00:00Z"
+      "effective_from": "2026-06-30T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "input_image_tokens",
@@ -27,7 +31,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-30T00:00:00Z"
+      "effective_from": "2026-06-30T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "input_video_tokens",
@@ -39,7 +47,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-30T00:00:00Z"
+      "effective_from": "2026-06-30T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "input_audio_tokens",
@@ -51,7 +63,11 @@
       "note": "Google pricing lists audio with the same input rate, although the model page lists text, image, and video inputs.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-30T00:00:00Z"
+      "effective_from": "2026-06-30T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -63,7 +79,11 @@
       "note": "Includes thinking tokens.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-30T00:00:00Z"
+      "effective_from": "2026-06-30T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_video_tokens",
@@ -75,7 +95,21 @@
       "note": "Google bills output video token consumption at 5,792 tokens per second of 720p video, approximately $0.10 per second.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-30T00:00:00Z"
+      "effective_from": "2026-06-30T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

@@ -45,6 +45,7 @@ describe("video reservation ids", () => {
 			openaiVideo,
 			runwayVideo,
 			xAiVideo,
+			nonTextAdapterExecutor,
 		]);
 
 		for (const [providerId, executors] of Object.entries(EXECUTORS_BY_PROVIDER)) {

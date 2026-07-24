@@ -21,6 +21,8 @@ import { ConsoleEasterEgg } from "@/components/ConsoleEasterEgg";
 import SiteNoticeSlot from "@/components/site-notice/SiteNoticeSlot";
 import ThemeAwareFavicon from "@/components/ThemeAwareFavicon";
 import { Suspense } from "react";
+import { PublicSWRProvider } from "@/components/providers/PublicSWRProvider";
+import AdminDeveloperMenuLauncher from "@/components/developer-menu/AdminDeveloperMenuLauncher";
 
 const montserrat = Montserrat({ subsets: ["latin"] });
 
@@ -97,7 +99,12 @@ export default function RootLayout({
 						<Suspense fallback={null}>
 							<SiteNoticeSlot />
 						</Suspense>
-						<NuqsAdapter>{children}</NuqsAdapter>
+						<Suspense fallback={null}>
+							<PublicSWRProvider>
+								<NuqsAdapter>{children}</NuqsAdapter>
+							</PublicSWRProvider>
+						</Suspense>
+						<AdminDeveloperMenuLauncher />
 						<TailwindIndicator />
 						<Toaster richColors />
 					</TooltipProvider>

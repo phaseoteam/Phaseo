@@ -48,7 +48,7 @@ describe("after timing helpers", () => {
 		expect(resolveNonStreamLatencyMs(ctx, 80)).toBe(42);
 	});
 
-	it("falls back to before + execute total latency", () => {
+	it("does not fabricate provider latency from gateway stage timings", () => {
 		const ctx = buildContext({
 			meta: {
 				apiKeyId: "key_test",
@@ -66,10 +66,10 @@ describe("after timing helpers", () => {
 
 		expect(resolveBeforeLatencyMs(ctx)).toBe(12);
 		expect(resolveExecuteTotalLatencyMs(ctx)).toBe(34);
-		expect(resolveNonStreamLatencyMs(ctx, 99)).toBe(46);
+		expect(resolveNonStreamLatencyMs(ctx, 99)).toBeNull();
 	});
 
-	it("falls back to before + generation when execute total is missing", () => {
+	it("does not use generation duration as first-frame latency", () => {
 		const ctx = buildContext({
 			timing: {
 				before: {
@@ -78,6 +78,6 @@ describe("after timing helpers", () => {
 			} as any,
 		});
 
-		expect(resolveNonStreamLatencyMs(ctx, 25)).toBe(33);
+		expect(resolveNonStreamLatencyMs(ctx, 25)).toBeNull();
 	});
 });

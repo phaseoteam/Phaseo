@@ -37,7 +37,33 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-03T00:00:00Z"
+      "effective_from": "2026-04-03T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "720P",
+            "720p",
+            "1280x720",
+            "720x1280",
+            "1280*720",
+            "720*1280"
+          ]
+        },
+        {
+          "path": "input_image_count",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": 0
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_video_seconds",
@@ -71,7 +97,33 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-03T00:00:00Z"
+      "effective_from": "2026-04-03T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "1080P",
+            "1080p",
+            "1920x1080",
+            "1080x1920",
+            "1920*1080",
+            "1080*1920"
+          ]
+        },
+        {
+          "path": "input_image_count",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": 0
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_video_seconds",
@@ -105,7 +157,33 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-03T00:00:00Z"
+      "effective_from": "2026-04-03T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "720P",
+            "720p",
+            "1280x720",
+            "720x1280",
+            "1280*720",
+            "720*1280"
+          ]
+        },
+        {
+          "path": "input_image_count",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 2,
+          "value": 0
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_video_seconds",
@@ -139,7 +217,33 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-03T00:00:00Z"
+      "effective_from": "2026-04-03T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "1080P",
+            "1080p",
+            "1920x1080",
+            "1080x1920",
+            "1920*1080",
+            "1080*1920"
+          ]
+        },
+        {
+          "path": "input_image_count",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 2,
+          "value": 0
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_video_seconds",
@@ -166,7 +270,26 @@
         }
       ],
       "priority": 10,
-      "effective_from": "2026-04-03T00:00:00Z"
+      "effective_from": "2026-04-03T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "720P",
+            "720p",
+            "1280x720",
+            "720x1280",
+            "1280*720",
+            "720*1280"
+          ]
+        }
+      ],
+      "source": null
     },
     {
       "meter": "output_video_seconds",
@@ -193,7 +316,36 @@
         }
       ],
       "priority": 10,
-      "effective_from": "2026-04-03T00:00:00Z"
+      "effective_from": "2026-04-03T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "video_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "1080P",
+            "1080p",
+            "1920x1080",
+            "1080x1920",
+            "1920*1080",
+            "1080*1920"
+          ]
+        }
+      ],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

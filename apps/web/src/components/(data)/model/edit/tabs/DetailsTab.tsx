@@ -4,7 +4,7 @@ import { type ReactNode, useEffect, useRef, useState } from "react"
 import { DatePickerInput } from "@/components/ui/date-picker-input"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { createClient } from "@/utils/supabase/client"
+import { fetchAdminModelEditorSource } from "@/lib/fetchers/internal/adminModelEditorClient"
 import type { ModelData } from "../ModelEditDialog"
 
 interface DetailsTabProps {
@@ -176,16 +176,9 @@ export default function DetailsTab({
 
   useEffect(() => {
     const fetchData = async () => {
-      const supabase = createClient()
-      const { data: detailsData } = await supabase
-        .from("data_model_details")
-        .select("detail_name, detail_value")
-        .eq("model_id", modelId)
-
-      const { data: linksData } = await supabase
-        .from("data_model_links")
-        .select("platform, kind, title, url")
-        .eq("model_id", modelId)
+      const source = await fetchAdminModelEditorSource(modelId)
+      const detailsData = source.model?.model_details ?? []
+      const linksData = source.model?.model_links ?? []
 
       const nextDetails = createEmptyDetailValues()
       for (const row of detailsData ?? []) {

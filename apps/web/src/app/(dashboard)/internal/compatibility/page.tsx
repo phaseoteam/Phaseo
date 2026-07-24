@@ -1,5 +1,4 @@
-import { createClient } from "@/utils/supabase/server";
-import { redirect } from "next/navigation";
+import { requireInternalAdmin } from "@/lib/auth/requireInternalAdmin";
 import CompatibilityClient from "./CompatibilityClient";
 
 export const metadata = {
@@ -9,26 +8,7 @@ export const metadata = {
 };
 
 export default async function CompatibilityPage() {
-	const supabase = await createClient();
-
-	const {
-		data: { user },
-		error: authError,
-	} = await supabase.auth.getUser();
-
-	if (authError || !user) {
-		redirect("/sign-in");
-	}
-
-	const { data: userData, error: userError } = await supabase
-		.from("users")
-		.select("role")
-		.eq("user_id", user.id)
-		.single();
-
-	if (userError || userData?.role !== "admin") {
-		redirect("/");
-	}
+	await requireInternalAdmin();
 
 	return <CompatibilityClient />;
 }

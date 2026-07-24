@@ -25,5 +25,13 @@
       "platform": "discord",
       "url": "https://discord.com/invite/cursor"
     }
-  ]
+  ],
+  "status": "active",
+  "routable": null,
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

@@ -17,5 +17,13 @@
       "platform": "youtube",
       "url": "https://www.youtube.com/channel/UCCspJ6mFfCwOV4qFjZWi2wg"
     }
-  ]
+  ],
+  "status": "active",
+  "routable": null,
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

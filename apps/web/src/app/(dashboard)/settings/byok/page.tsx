@@ -1,7 +1,4 @@
 import { Suspense } from "react";
-import { TriangleAlert } from "lucide-react";
-
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import ByokProviderRow from "@/components/(gateway)/settings/byok/ByokProviderRow";
 import ResetWindowHover from "@/components/(gateway)/settings/byok/ResetWindowHover";
@@ -9,6 +6,7 @@ import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHead
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import { fetchFrontendAPIProviders } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { fetchSettingsByokInitialData } from "@/lib/fetchers/internal/fetchSettingsByokInitialData";
+import ByokFallbackToggle from "@/components/(gateway)/settings/byok/ByokFallbackToggle";
 
 export const metadata = { title: "BYOK - Settings" };
 
@@ -24,6 +22,8 @@ type KeyEntry = {
 	createdAt: string;
 	enabled: boolean;
 	alwaysUse: boolean;
+	routingMode: "priority" | "fallback";
+	sortOrder: number;
 };
 
 type ProviderItem = {
@@ -116,9 +116,12 @@ async function ByokProvidersSection() {
 		);
 	}
 
-	const keyByProvider = new Map<string, KeyEntry>(
-		initialData.keyEntries.map((entry) => [entry.providerId, entry]),
-	);
+	const keysByProvider = new Map<string, KeyEntry[]>();
+	for (const entry of initialData.keyEntries) {
+		const entries = keysByProvider.get(entry.providerId) ?? [];
+		entries.push(entry);
+		keysByProvider.set(entry.providerId, entries);
+	}
 
 	const providerCatalog: ProviderItem[] = providerCatalogData
 		.map((provider) => ({
@@ -132,7 +135,7 @@ async function ByokProvidersSection() {
 	const baseProviders = providerCatalog.length > 0 ? providerCatalog : FALLBACK_PROVIDERS;
 
 	const knownProviderIds = new Set(baseProviders.map((provider) => provider.id));
-	const unknownProviders: ProviderItem[] = Array.from(keyByProvider.keys())
+	const unknownProviders: ProviderItem[] = Array.from(keysByProvider.keys())
 		.filter((providerId) => !knownProviderIds.has(providerId))
 		.sort((a, b) => a.localeCompare(b))
 		.map((providerId) => ({
@@ -144,6 +147,21 @@ async function ByokProvidersSection() {
 
 	return (
 		<div className="space-y-4">
+			<Card className="rounded-2xl">
+				<CardHeader className="pb-2">
+					<CardTitle className="text-base">Fallback credentials</CardTitle>
+					<p className="text-xs text-muted-foreground">
+						Priority BYOK keys are tried first, followed by Phaseo-managed providers. Enable this to try fallback BYOK keys last.
+					</p>
+				</CardHeader>
+				<CardContent className="space-y-2">
+					<ByokFallbackToggle initialEnabled={initialData.fallbackEnabled} />
+					<p className="text-xs text-muted-foreground">
+						Key changes are invalidated immediately, but Cloudflare edge propagation can take up to about 60 seconds.
+					</p>
+				</CardContent>
+			</Card>
+
 			<Card className="rounded-2xl">
 				<CardHeader className="pb-2">
 					<CardTitle className="text-base">BYOK monthly usage</CardTitle>
@@ -180,24 +198,14 @@ async function ByokProvidersSection() {
 					<h2 className="text-base font-semibold">Provider keys</h2>
 				</div>
 
-				{initialData.legacyHiddenTotal > 0 ? (
-					<Alert>
-						<TriangleAlert className="h-4 w-4" />
-						<AlertTitle>Legacy duplicate keys detected</AlertTitle>
-						<AlertDescription>
-							{fmtCompactInt(initialData.legacyHiddenTotal)} legacy key entries are hidden. Only the newest key per provider is editable.
-						</AlertDescription>
-					</Alert>
-				) : null}
-
 				<div className="rounded-md border divide-y">
 					{providerRows.map((provider) => {
-						const entry = keyByProvider.get(provider.id) ?? null;
+						const entries = keysByProvider.get(provider.id) ?? [];
 						return (
 							<ByokProviderRow
 								key={provider.id}
 								provider={provider}
-								entry={entry}
+								entries={entries}
 							/>
 						);
 					})}

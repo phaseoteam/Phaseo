@@ -6,9 +6,28 @@
   "country_code": "US",
   "status": "Active",
   "colour": "#111111",
-  "privacy_policy_url": "https://poolside.ai/legal",
-  "terms_of_service_url": "https://poolside.ai/legal",
-  "prompt_training_policy": "no_train",
-  "prompt_training_notes": "Poolside documents that its platform runs inside the customer environment so code, prompts, and data do not leave the customer control boundary.",
-  "prompt_training_source_url": "https://docs.poolside.ai/legal-and-safety/data-processing-agreement"
+  "privacy_policy_url": "https://poolside.ai/legal/privacy",
+  "terms_of_service_url": "https://poolside.ai/legal/eula",
+  "prompt_training_policy": "opt_out_available",
+  "prompt_training_notes": "Poolside's Terms say it may use Content for training unless the user opts out. The Terms also state that third-party platform opt-out settings may govern. For the opted-out route, classify provider handling as logs rather than private/no-storage; safety-review and feedback exceptions still apply.",
+  "prompt_training_source_url": "https://poolside.ai/legal/eula",
+  "data_policy_tier": "logs",
+  "data_policy_confidence": "maybe",
+  "data_policy_contract_mode": "none",
+  "data_policy_contract_notes": "The public Terms establish an opt-out mechanism but do not provide a general zero-retention guarantee. This route is classified as logs based on the opted-out account configuration; verify the account or upstream platform setting if it changes. Poolside may still use content for safety review or when feedback is provided.",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://poolside.ai/models",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

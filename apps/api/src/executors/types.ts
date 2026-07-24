@@ -31,6 +31,25 @@ import type { Endpoint } from "@core/types";
 import type { DebugOptions, RequestBetaOptions } from "@core/types";
 import type { Protocol } from "@protocols/detect";
 
+export type UpstreamFetchPhase = "provider" | "auth" | "preflight" | "media" | "poll";
+
+export type UpstreamResponseTiming = {
+	phase: UpstreamFetchPhase;
+	sequence: number;
+	dispatchAtMs: number;
+	headersAtMs: number;
+	headersMs: number;
+};
+
+export type ExecutorUpstreamTiming = {
+	fetch: (
+		input: RequestInfo | URL,
+		init?: RequestInit,
+		phase?: UpstreamFetchPhase,
+	) => Promise<Response>;
+	timingFor: (response: Response) => UpstreamResponseTiming | undefined;
+};
+
 export type ExecutorExecuteArgs = {
 	// Keep executor boundary permissive; each executor narrows to its capability-specific IR.
 	ir: any;
@@ -49,6 +68,7 @@ export type ExecutorExecuteArgs = {
 
 	byokMeta: ByokKeyMeta[];
 	pricingCard: any;
+	upstreamTiming?: ExecutorUpstreamTiming;
 
 	meta: {
 		debug?: DebugOptions;
@@ -103,14 +123,22 @@ export type ExecutorCompletedResult = {
 		latencyMs?: number;
 		generationMs?: number;
 		requestBuildMs?: number;
+		upstreamFetchStartMs?: number;
+		selectedUpstreamFetchStartMs?: number;
 		upstreamHeadersMs?: number;
 		transientRetryDelayMs?: number;
+		upstreamRequestCount?: number;
+		upstreamPollCount?: number;
+		upstreamAuthCount?: number;
+		upstreamPreflightCount?: number;
+		upstreamMediaCount?: number;
 	};
 };
 
 export type ExecutorStreamingResult = {
 	kind: "stream";
 	stream: ReadableStream<Uint8Array>;
+	streamAlreadyTransformed?: boolean;
 	usageFinalizer: () => Promise<Bill | null>;
 	bill: Bill;
 	upstream: Response;
@@ -122,8 +150,15 @@ export type ExecutorStreamingResult = {
 		latencyMs?: number;
 		generationMs?: number;
 		requestBuildMs?: number;
+		upstreamFetchStartMs?: number;
+		selectedUpstreamFetchStartMs?: number;
 		upstreamHeadersMs?: number;
 		transientRetryDelayMs?: number;
+		upstreamRequestCount?: number;
+		upstreamPollCount?: number;
+		upstreamAuthCount?: number;
+		upstreamPreflightCount?: number;
+		upstreamMediaCount?: number;
 	};
 };
 

@@ -6,8 +6,9 @@
 // Documentation: https://ai.google.dev/gemini-api/docs/text-generation
 // Uses Google's native Gemini API format (NOT OpenAI-compatible)
 
-import type { IRChatRequest, IRChatResponse, IRContentPart, IRChoice, IRStreamChunk, IRStreamDelta } from "@core/ir";
+import type { IRChatRequest, IRChatResponse, IRContentPart, IRChoice, IRStreamChunk, IRStreamDelta, IRToolCall, IRUsage } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
+import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import type { ProviderExecutor } from "../../types";
 import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-generate/shared";
 import { getBindings } from "@/runtime/env";
@@ -27,6 +28,7 @@ import { googleUsageMetadataToIRUsage } from "@providers/google-ai-studio/usage"
 import { encodeOpenAIChatResponse } from "@protocols/openai-chat/encode";
 import { createSyntheticResponsesStreamFromIR } from "@executors/_shared/text-generate/synthetic-responses-stream";
 import { buildSyntheticServerToolStream } from "@pipeline/surfaces/server-tools.stream";
+import { sanitizeGeminiSchema } from "@executors/google/shared/schema";
 
 const DEFAULT_LYRIA_RETRY_ATTEMPTS = 3;
 const DEFAULT_LYRIA_RETRY_DELAY_MS = 300;
@@ -52,6 +54,26 @@ function isGeminiImageModelName(value: string): boolean {
 	);
 }
 
+function isGeminiInteractionsModelName(value: string): boolean {
+	const normalized = String(value ?? "").toLowerCase();
+	return normalized.includes("gemini-3.6-flash") || normalized.includes("gemini-3.5-flash");
+}
+
+function hasUsableIRResponse(response: IRChatResponse | undefined): boolean {
+	if (!response?.choices?.length) return false;
+	return response.choices.some((choice) => {
+		if ((choice.message?.toolCalls?.length ?? 0) > 0) return true;
+		return (choice.message?.content ?? []).some((part: any) => {
+			if (!part || typeof part !== "object") return false;
+			if (typeof part.text === "string" && part.text.trim().length > 0) return true;
+			return (
+				(typeof part.data === "string" && part.data.length > 0) ||
+				(typeof part.url === "string" && part.url.length > 0)
+			);
+		});
+	});
+}
+
 function isRetryableGoogleStatus(status: number): boolean {
 	return status === 429 || status >= 500;
 }
@@ -61,20 +83,146 @@ async function sleep(ms: number): Promise<void> {
 	await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/**
- * Transform IR request to Google Gemini format
- *
- * Google uses:
- * - `contents` array (not `messages`)
- * - `parts` within each content (can be text, inline_data, etc.)
- * - `systemInstruction` for system messages (not in contents)
- * - `generationConfig` for parameters
- * - Model in URL path, not request body
- */
-export async function irToGemini(ir: IRChatRequest, modelOverride?: string | null): Promise<any> {
+async function irToLegacyGemini(
+	ir: IRChatRequest,
+	modelOverride?: string | null,
+	upstreamTiming?: ExecutorExecuteArgs["upstreamTiming"],
+): Promise<any> {
 	const contents: any[] = [];
 	const systemInstructionParts: any[] = [];
 	const toolNamesById = new Map<string, string>();
+
+	for (const message of ir.messages) {
+		if (message.role !== "assistant") continue;
+		for (const toolCall of message.toolCalls ?? []) {
+			if (toolCall.id && toolCall.name) toolNamesById.set(toolCall.id, toolCall.name);
+		}
+	}
+
+	for (const message of ir.messages) {
+		if (message.role === "system" || message.role === "developer") {
+			systemInstructionParts.push(...await irPartsToGeminiParts(message.content, { preserveReasoningAsThought: true, upstreamTiming }));
+			continue;
+		}
+
+		if (message.role === "user" || message.role === "assistant") {
+			contents.push({
+				role: message.role === "assistant" ? "model" : "user",
+				parts: await irPartsToGeminiParts(message.content, { preserveReasoningAsThought: true, upstreamTiming }),
+			});
+			continue;
+		}
+
+		if (message.role === "tool") {
+			for (const toolResult of message.toolResults) {
+				let response: any = toolResult.content;
+				if (typeof response === "string") {
+					try {
+						response = JSON.parse(response);
+					} catch {
+						response = { content: response };
+					}
+				}
+				contents.push({
+					role: "user",
+					parts: [{
+						functionResponse: {
+							name: toolNamesById.get(toolResult.toolCallId) ?? toolResult.toolCallId,
+							response,
+						},
+					}],
+				});
+			}
+		}
+	}
+
+	const request: any = { contents };
+	if (ir.googleCachedContent !== undefined) request.cachedContent = ir.googleCachedContent;
+	if (systemInstructionParts.length > 0) request.systemInstruction = { parts: systemInstructionParts };
+
+	const generationConfig: any = {};
+	if (ir.temperature !== undefined) generationConfig.temperature = ir.temperature;
+	if (ir.maxTokens !== undefined) generationConfig.maxOutputTokens = ir.maxTokens;
+	if (ir.topP !== undefined) generationConfig.topP = ir.topP;
+	if (ir.topK !== undefined) generationConfig.topK = ir.topK;
+	if (ir.stop) generationConfig.stopSequences = Array.isArray(ir.stop) ? ir.stop : [ir.stop];
+
+	if (ir.reasoning?.enabled || ir.reasoning?.effort || ir.reasoning?.maxTokens !== undefined || ir.reasoning?.includeThoughts !== undefined) {
+		const thinkingConfig: any = { includeThoughts: ir.reasoning?.includeThoughts ?? true };
+		const modelName = modelOverride ?? ir.model;
+		if (ir.reasoning?.effort && modelSupportsGoogleThinkingLevels(modelName ?? "")) {
+			const level = resolveGoogleThinkingLevelForEffort(modelName ?? "", ir.reasoning.effort);
+			if (level) thinkingConfig.thinkingLevel = level;
+		} else if (ir.reasoning?.maxTokens !== undefined) {
+			thinkingConfig.thinkingBudget = ir.reasoning.maxTokens;
+		} else if (ir.reasoning?.enabled) {
+			thinkingConfig.thinkingBudget = -1;
+		}
+		generationConfig.thinkingConfig = thinkingConfig;
+	}
+
+	if (ir.responseFormat?.type === "json_object") {
+		generationConfig.responseMimeType = "application/json";
+	} else if (ir.responseFormat?.type === "json_schema") {
+		generationConfig.responseMimeType = "application/json";
+		generationConfig.responseSchema = ir.responseFormat.schema;
+	}
+
+	const modalities = (ir.modalities ?? [])
+		.map((modality) => String(modality).toUpperCase())
+		.filter((modality) => modality === "TEXT" || modality === "IMAGE" || modality === "AUDIO");
+	if (modalities.length > 0) generationConfig.responseModalities = modalities;
+
+	if (ir.imageConfig) {
+		const imageConfig: any = {};
+		if (ir.imageConfig.aspectRatio) imageConfig.aspectRatio = ir.imageConfig.aspectRatio;
+		if (ir.imageConfig.imageSize) imageConfig.imageSize = ir.imageConfig.imageSize;
+		if (typeof ir.imageConfig.includeRaiReason === "boolean") imageConfig.includeRaiReason = ir.imageConfig.includeRaiReason;
+		if (ir.imageConfig.referenceImages?.length) imageConfig.referenceImages = ir.imageConfig.referenceImages;
+		if (Object.keys(imageConfig).length > 0) generationConfig.imageConfig = imageConfig;
+	}
+
+	if (Object.keys(generationConfig).length > 0) request.generationConfig = generationConfig;
+
+	if (ir.tools?.length) {
+		request.tools = [{ functionDeclarations: ir.tools.map((tool) => ({
+			name: tool.name,
+			description: tool.description,
+			parameters: sanitizeGeminiSchema(tool.parameters),
+		})) }];
+		if (ir.toolChoice === "auto") request.toolConfig = { functionCallingConfig: { mode: "AUTO" } };
+		if (ir.toolChoice === "none") request.toolConfig = { functionCallingConfig: { mode: "NONE" } };
+		if (ir.toolChoice === "required") request.toolConfig = { functionCallingConfig: { mode: "ANY" } };
+		if (typeof ir.toolChoice === "object" && "name" in ir.toolChoice) {
+			request.toolConfig = { functionCallingConfig: { mode: "ANY", allowedFunctionNames: [ir.toolChoice.name] } };
+		}
+	}
+
+	return request;
+}
+
+/**
+ * Transform IR request to Google's Interactions API format.
+ *
+ * Interactions uses:
+ * - `input` as content blocks, steps, turns, or text
+ * - `system_instruction` as a plain string
+ * - `generation_config` with snake_case parameter names
+ * - `model` in the JSON body
+ */
+export async function irToGemini(
+	ir: IRChatRequest,
+	modelOverride?: string | null,
+	upstreamTiming?: ExecutorExecuteArgs["upstreamTiming"],
+): Promise<any> {
+	const input: any[] = [];
+	const systemInstructionParts: string[] = [];
+	const toolNamesById = new Map<string, string>();
+	const previousInteractionId = resolvePreviousInteractionId(ir);
+
+	const messagesToMap = previousInteractionId && ir.messages.length > 0
+		? [ir.messages[ir.messages.length - 1]]
+		: ir.messages;
 
 	for (const msg of ir.messages) {
 		if (msg.role !== "assistant" || !Array.isArray(msg.toolCalls)) continue;
@@ -84,206 +232,344 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 		}
 	}
 
-	// Process messages
-	for (const msg of ir.messages) {
+	for (const msg of messagesToMap) {
 		if (msg.role === "system" || msg.role === "developer") {
-			// System/developer messages go in systemInstruction, not contents.
-			const parts = await irPartsToGeminiParts(msg.content, { preserveReasoningAsThought: true });
-			systemInstructionParts.push(...parts);
+			const text = await irPartsToPlainText(msg.content, upstreamTiming);
+			if (text) systemInstructionParts.push(text);
 		} else if (msg.role === "user") {
-			contents.push({
-				role: "user",
-				parts: await irPartsToGeminiParts(msg.content, { preserveReasoningAsThought: true }),
+			input.push({
+				type: "user_input",
+				content: await irPartsToInteractionContent(msg.content, upstreamTiming),
 			});
 		} else if (msg.role === "assistant") {
-			contents.push({
-				role: "model", // Google uses "model" not "assistant"
-				parts: await irPartsToGeminiParts(msg.content, { preserveReasoningAsThought: true }),
-			});
-		} else if (msg.role === "tool") {
-			// Tool results
-			for (const toolResult of msg.toolResults) {
-				let responsePayload: any = toolResult.content;
-				if (typeof toolResult.content === "string") {
-					try {
-						responsePayload = JSON.parse(toolResult.content);
-					} catch {
-						responsePayload = { content: toolResult.content };
-					}
+			const outputContent = await irPartsToInteractionContent(
+				msg.content.filter((part) => part.type !== "reasoning_text"),
+				upstreamTiming,
+			);
+			if (outputContent.length > 0) {
+				input.push({
+					type: "model_output",
+					content: outputContent,
+				});
+			}
+			for (const part of msg.content) {
+				if (part.type !== "reasoning_text") continue;
+				input.push({
+					type: "thought",
+					...(part.thoughtSignature ? { signature: part.thoughtSignature } : {}),
+					summary: { type: "text", text: part.summary || part.text },
+				});
+			}
+			if (Array.isArray(msg.toolCalls)) {
+				for (const toolCall of msg.toolCalls) {
+					input.push({
+						type: "function_call",
+						id: toolCall.id,
+						name: toolCall.name,
+						arguments: parseToolCallArguments(toolCall.arguments),
+					});
 				}
-				contents.push({
-					role: "user",
-					parts: [{
-						functionResponse: {
-							name: toolNamesById.get(toolResult.toolCallId) ?? toolResult.toolCallId,
-							response: responsePayload,
-						},
-					}],
+			}
+		} else if (msg.role === "tool") {
+			for (const toolResult of msg.toolResults) {
+				const resultText = typeof toolResult.content === "string"
+					? toolResult.content
+					: JSON.stringify(toolResult.content);
+				input.push({
+					type: "function_result",
+					call_id: toolResult.toolCallId,
+					name: toolNamesById.get(toolResult.toolCallId) ?? toolResult.toolCallId,
+					is_error: toolResult.isError,
+					result: [{ type: "text", text: resultText }],
 				});
 			}
 		}
 	}
 
 	const request: any = {
-		contents,
+		model: modelOverride ?? ir.model,
+		input,
+		store: ir.store === false
+			? false
+			: Boolean(ir.store || previousInteractionId || ir.background || (ir.tools?.length ?? 0) > 0),
 	};
 
 	if (ir.googleCachedContent !== undefined) {
-		request.cachedContent = ir.googleCachedContent;
+		request.cached_content = ir.googleCachedContent;
 	}
 
-	// Build generationConfig
+	if (previousInteractionId) {
+		request.previous_interaction_id = previousInteractionId;
+	}
+	if (ir.background !== undefined) {
+		request.background = ir.background;
+	}
+	if (ir.serviceTier) {
+		request.service_tier = ir.serviceTier;
+	}
+
 	const generationConfig: any = {};
 
-	if (ir.temperature !== undefined) generationConfig.temperature = ir.temperature;
-	if (ir.maxTokens !== undefined) generationConfig.maxOutputTokens = ir.maxTokens;
-	if (ir.topP !== undefined) generationConfig.topP = ir.topP;
-	if (ir.topK !== undefined) generationConfig.topK = ir.topK;
+	const isCurrentGeminiModel = isGeminiInteractionsModelName(modelOverride ?? ir.model);
+	if (!isCurrentGeminiModel && ir.temperature !== undefined) generationConfig.temperature = ir.temperature;
+	if (ir.maxTokens !== undefined) generationConfig.max_output_tokens = ir.maxTokens;
+	if (!isCurrentGeminiModel && ir.topP !== undefined) generationConfig.top_p = ir.topP;
+	if (ir.seed !== undefined) generationConfig.seed = ir.seed;
+	if (ir.frequencyPenalty !== undefined) generationConfig.frequency_penalty = ir.frequencyPenalty;
+	if (ir.presencePenalty !== undefined) generationConfig.presence_penalty = ir.presencePenalty;
 	if (ir.stop) {
-		generationConfig.stopSequences = Array.isArray(ir.stop) ? ir.stop : [ir.stop];
+		generationConfig.stop_sequences = Array.isArray(ir.stop) ? ir.stop : [ir.stop];
 	}
 
-	// Thinking mode support (Gemini 2.x and 3.x)
 	if (
 		ir.reasoning?.enabled ||
 		ir.reasoning?.effort ||
 		(ir.reasoning?.maxTokens !== undefined) ||
 		(ir.reasoning?.includeThoughts !== undefined)
 	) {
-		const thinkingConfig: any = {
-			includeThoughts: ir.reasoning?.includeThoughts ?? true
-		};
-
 		const modelName = modelOverride ?? ir.model;
 		const supportsThinkingLevel = modelSupportsGoogleThinkingLevels(modelName ?? "");
-
-		// Gemini 3+ Thinking Level
 		if (ir.reasoning?.effort && supportsThinkingLevel) {
 			const level = resolveGoogleThinkingLevelForEffort(modelName ?? "", ir.reasoning.effort);
-			if (level) thinkingConfig.thinkingLevel = level;
+			if (level) generationConfig.thinking_level = level.toLowerCase();
 		}
-		// Gemini 2.x Thinking Budget (or fallback for Gemini 3 if effort not set)
-		else if (ir.reasoning?.maxTokens !== undefined) {
-			// -1 is dynamic budget for Gemini 2.5
-			thinkingConfig.thinkingBudget = ir.reasoning.maxTokens;
-		} else if (ir.reasoning?.enabled) {
-			// default to dynamic/high
-			if (supportsThinkingLevel) {
-				thinkingConfig.thinkingLevel = "HIGH";
-			} else {
-				thinkingConfig.thinkingBudget = -1;
-			}
+		else if (ir.reasoning?.enabled && supportsThinkingLevel) {
+			generationConfig.thinking_level = "high";
 		}
 
-		generationConfig.thinkingConfig = thinkingConfig;
+		generationConfig.thinking_summaries = ir.reasoning?.includeThoughts === false ? "none" : "auto";
 	}
 
-	// Response format (JSON mode)
+	const responseFormatEntries: any[] = [];
 	if (ir.responseFormat) {
 		if (ir.responseFormat.type === "json_object") {
-			generationConfig.responseMimeType = "application/json";
+			responseFormatEntries.push({ type: "text", mime_type: "application/json" });
 		} else if (ir.responseFormat.type === "json_schema") {
-			generationConfig.responseMimeType = "application/json";
-			generationConfig.responseSchema = ir.responseFormat.schema;
-
-			// Reinforce schema adherence for models that treat responseSchema as soft guidance.
+			responseFormatEntries.push({
+				type: "text",
+				mime_type: "application/json",
+				schema: ir.responseFormat.schema,
+			});
 			const schemaText = (() => {
 				try {
 					return JSON.stringify(ir.responseFormat?.schema ?? {});
 				} catch {
 					return "";
 				}
-			})();
+				})();
 			if (schemaText) {
 				const schemaInstruction =
 					`Return only valid JSON that matches this schema exactly: ${schemaText}. ` +
 					"Do not include markdown or any extra text.";
-				systemInstructionParts.push({ text: schemaInstruction });
+				systemInstructionParts.push(schemaInstruction);
 			}
 		}
 	}
 
-	// Response modalities (text/image/audio)
 	const requestedModalities = Array.isArray(ir.modalities) && ir.modalities.length > 0
 		? ir.modalities
 		: isGeminiImageModelName(modelOverride ?? ir.model)
 			? (["text", "image"] as const)
 			: [];
+	let mappedResponseModalities: string[] = [];
 	if (requestedModalities.length > 0) {
 		const mapped = requestedModalities
-			.map((mode) => (typeof mode === "string" ? mode.toUpperCase() : ""))
-			.filter((mode) => mode === "TEXT" || mode === "IMAGE" || mode === "AUDIO");
+			.map((mode) => (typeof mode === "string" ? mode.toLowerCase() : ""))
+			.filter((mode) => mode === "text" || mode === "image" || mode === "audio");
 		if (mapped.length > 0) {
-			generationConfig.responseModalities = mapped;
+			mappedResponseModalities = mapped;
+			request.response_modalities = mapped;
 		}
 	}
 
-	// Image generation configuration (multimodal text.generate)
 	if (ir.imageConfig) {
-		const imageConfig: any = {};
+		const imageFormat: any = {
+			type: "image",
+			mime_type: "image/jpeg",
+			delivery: "inline",
+		};
 
 		if (ir.imageConfig.aspectRatio) {
-			imageConfig.aspectRatio = ir.imageConfig.aspectRatio;
+			imageFormat.aspect_ratio = ir.imageConfig.aspectRatio;
 		}
 
 		if (ir.imageConfig.imageSize) {
-			imageConfig.imageSize = ir.imageConfig.imageSize;
+			imageFormat.image_size = ir.imageConfig.imageSize === "0.5K"
+				? "512"
+				: ir.imageConfig.imageSize;
 		}
 
-		if (typeof ir.imageConfig.includeRaiReason === "boolean") {
-			imageConfig.includeRaiReason = ir.imageConfig.includeRaiReason;
-		}
+		responseFormatEntries.push(imageFormat);
+	}
 
-		if (
-			Array.isArray(ir.imageConfig.referenceImages) &&
-			ir.imageConfig.referenceImages.length > 0
-		) {
-			imageConfig.referenceImages = ir.imageConfig.referenceImages;
-		}
-
-		if (Object.keys(imageConfig).length > 0) {
-			generationConfig.imageConfig = imageConfig;
-		}
+	if (mappedResponseModalities.includes("image") && !responseFormatEntries.some((entry) => entry?.type === "image")) {
+		responseFormatEntries.push({
+			type: "image",
+			mime_type: "image/jpeg",
+			delivery: "inline",
+		});
+	}
+	if (mappedResponseModalities.includes("audio") && !responseFormatEntries.some((entry) => entry?.type === "audio")) {
+		responseFormatEntries.push({
+			type: "audio",
+			delivery: "inline",
+		});
 	}
 
 	if (Object.keys(generationConfig).length > 0) {
-		request.generationConfig = generationConfig;
+		request.generation_config = generationConfig;
 	}
 
 	if (systemInstructionParts.length > 0) {
-		request.systemInstruction = { parts: systemInstructionParts };
+		request.system_instruction = systemInstructionParts.join("\n\n");
 	}
 
-	// Tools (function calling)
-	if (ir.tools && ir.tools.length > 0) {
-		request.tools = [{
-			functionDeclarations: ir.tools.map(tool => ({
-				name: tool.name,
-				description: tool.description,
-				parameters: tool.parameters,
-			})),
-		}];
+	if (responseFormatEntries.length === 1) {
+		request.response_format = responseFormatEntries[0];
+	} else if (responseFormatEntries.length > 1) {
+		request.response_format = responseFormatEntries;
+	}
 
-		// Tool choice
+	if (ir.tools && ir.tools.length > 0) {
+		request.tools = ir.tools.map(tool => ({
+			type: "function",
+			name: tool.name,
+			description: tool.description,
+			parameters: sanitizeGeminiSchema(tool.parameters),
+		}));
+
 		if (ir.toolChoice) {
 			if (ir.toolChoice === "auto") {
-				request.toolConfig = { functionCallingConfig: { mode: "AUTO" } };
+				generationConfig.tool_choice = "auto";
 			} else if (ir.toolChoice === "none") {
-				request.toolConfig = { functionCallingConfig: { mode: "NONE" } };
+				generationConfig.tool_choice = "none";
 			} else if (ir.toolChoice === "required") {
-				request.toolConfig = { functionCallingConfig: { mode: "ANY" } };
+				generationConfig.tool_choice = "any";
 			} else if (typeof ir.toolChoice === "object" && "name" in ir.toolChoice) {
-				request.toolConfig = {
-					functionCallingConfig: {
-						mode: "ANY",
-						allowedFunctionNames: [ir.toolChoice.name],
-					},
+				generationConfig.tool_choice = {
+					type: "function",
+					name: ir.toolChoice.name,
 				};
 			}
+			request.generation_config = generationConfig;
 		}
 	}
 
 	return request;
+}
+
+async function irPartsToPlainText(
+	parts: IRContentPart[],
+	upstreamTiming?: ExecutorExecuteArgs["upstreamTiming"],
+): Promise<string> {
+	const mapped = await irPartsToGeminiParts(parts, { preserveReasoningAsThought: true, upstreamTiming });
+	return mapped
+		.map((part) => {
+			if (typeof part?.text === "string") return part.text;
+			if (part?.inline_data?.mime_type) return `[${part.inline_data.mime_type} omitted from system instruction]`;
+			if (part?.file_data?.file_uri) return `[file: ${part.file_data.file_uri}]`;
+			try {
+				return JSON.stringify(part);
+			} catch {
+				return "";
+			}
+		})
+		.filter((text) => text.length > 0)
+		.join("\n");
+}
+
+async function irPartsToInteractionContent(
+	parts: IRContentPart[],
+	upstreamTiming?: ExecutorExecuteArgs["upstreamTiming"],
+): Promise<any[]> {
+	const mapped = await irPartsToGeminiParts(parts, { preserveReasoningAsThought: true, upstreamTiming });
+	const content: any[] = [];
+
+	for (const part of mapped) {
+		content.push(...geminiPartToInteractionContent(part));
+	}
+
+	return content;
+}
+
+function geminiPartToInteractionContent(part: any): any[] {
+	if (!part || typeof part !== "object") return [];
+	if (typeof part.text === "string") {
+		return [{ type: "text", text: part.text }];
+	}
+
+	const inlineData = normalizeGeminiInlineData(part);
+	if (inlineData?.data) {
+		const mimeType = inlineData.mime_type || "application/octet-stream";
+		if (mimeType.startsWith("image/")) {
+			return [{
+				type: "image",
+				mime_type: mimeType,
+				data: inlineData.data,
+			}];
+		}
+		if (mimeType.startsWith("audio/")) {
+			return [{
+				type: "audio",
+				mime_type: mimeType,
+				data: inlineData.data,
+			}];
+		}
+		if (mimeType.startsWith("video/")) {
+			return [{
+				type: "video",
+				mime_type: mimeType,
+				data: inlineData.data,
+			}];
+		}
+		return [{
+			type: "document",
+			mime_type: mimeType,
+			data: inlineData.data,
+		}];
+	}
+
+	if (part.file_data?.file_uri) {
+		const mimeType = part.file_data.mime_type || "application/octet-stream";
+		const mediaType =
+			mimeType.startsWith("image/")
+				? "image"
+				: mimeType.startsWith("audio/")
+					? "audio"
+					: mimeType.startsWith("video/")
+						? "video"
+						: "document";
+		return [{
+			type: mediaType,
+			mime_type: mimeType,
+			uri: part.file_data.file_uri,
+		}];
+	}
+
+	return [];
+}
+
+function parseToolCallArguments(value: string): Record<string, any> {
+	if (!value) return {};
+	try {
+		const parsed = JSON.parse(value);
+		return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+			? parsed
+			: { value: parsed };
+	} catch {
+		return { value };
+	}
+}
+
+function resolvePreviousInteractionId(ir: IRChatRequest): string | undefined {
+	const vendorGoogle = (ir.vendor as any)?.google;
+	const candidates = [
+		vendorGoogle?.previous_interaction_id,
+		vendorGoogle?.previousInteractionId,
+		vendorGoogle?.interaction_id,
+		vendorGoogle?.interactionId,
+	];
+	return candidates.find((value): value is string => typeof value === "string" && value.length > 0);
 }
 
 /**
@@ -367,6 +653,267 @@ function geminiToIR(
 		choices,
 		usage,
 	};
+}
+
+function isInteractionPayload(json: any): boolean {
+	return Boolean(
+		json &&
+		typeof json === "object" &&
+		(
+			Array.isArray(json.steps) ||
+			json.object === "interaction" ||
+			typeof json.id === "string" && json.id.startsWith("interactions/")
+		),
+	);
+}
+
+function providerPayloadToIR(
+	json: any,
+	requestId: string,
+	model: string,
+	provider: string,
+): IRChatResponse {
+	if (isInteractionPayload(json)) {
+		return interactionToIR(json, requestId, model, provider);
+	}
+	return geminiToIR(json, requestId, model, provider);
+}
+
+function interactionToIR(
+	json: any,
+	requestId: string,
+	model: string,
+	provider: string,
+): IRChatResponse {
+	const contentParts: IRContentPart[] = [];
+	const toolCalls: IRToolCall[] = [];
+
+	for (const step of Array.isArray(json?.steps) ? json.steps : []) {
+		if (!step || typeof step !== "object") continue;
+
+		if (step.type === "model_output") {
+			for (const block of Array.isArray(step.content) ? step.content : []) {
+				const part = interactionContentToIRPart(block);
+				if (part) contentParts.push(part);
+			}
+		} else if (step.type === "thought") {
+			const text = interactionTextFromContent(step.summary);
+			if (text) {
+				contentParts.push({
+					type: "reasoning_text",
+					text,
+					thoughtSignature: typeof step.signature === "string" ? step.signature : undefined,
+					summary: text,
+				});
+			}
+		} else if (step.type === "function_call") {
+			toolCalls.push({
+				id: typeof step.id === "string" ? step.id : `call_${requestId}_${toolCalls.length}`,
+				name: String(step.name ?? "function"),
+				arguments: stringifyToolArguments(step.arguments),
+			});
+		}
+	}
+
+	const finishReason = toolCalls.length > 0
+		? "tool_calls"
+		: mapInteractionStatusToFinishReason(json?.status);
+
+	return {
+		id: requestId,
+		nativeId: json?.id ?? json?.name,
+		created: Math.floor(Date.now() / 1000),
+		model,
+		provider,
+		choices: [{
+			index: 0,
+			message: {
+				role: "assistant",
+				content: contentParts,
+				toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+			},
+			finishReason,
+		}],
+		usage: interactionUsageToIRUsage(
+			json?.usage ??
+			json?.metadata?.total_usage ??
+			json?.usage_metadata ??
+			json?.usageMetadata,
+		),
+	};
+}
+
+function interactionContentToIRPart(block: any): IRContentPart | null {
+	if (!block || typeof block !== "object") return null;
+
+	if (block.type === "text" && typeof block.text === "string") {
+		return {
+			type: "text",
+			text: block.text,
+		};
+	}
+
+	if (block.type === "image") {
+		const mimeType = typeof block.mime_type === "string" ? block.mime_type : undefined;
+		if (typeof block.data === "string") {
+			return {
+				type: "image",
+				source: "data",
+				data: block.data,
+				mimeType,
+			};
+		}
+		if (typeof block.uri === "string") {
+			return {
+				type: "image",
+				source: "url",
+				data: block.uri,
+				mimeType,
+			};
+		}
+	}
+
+	if (block.type === "audio") {
+		if (typeof block.data === "string") {
+			return {
+				type: "audio",
+				source: "data",
+				data: block.data,
+				format: resolveAudioFormatFromMimeType(block.mime_type),
+			};
+		}
+		if (typeof block.uri === "string") {
+			return {
+				type: "audio",
+				source: "url",
+				data: block.uri,
+				format: resolveAudioFormatFromMimeType(block.mime_type),
+			};
+		}
+	}
+
+	if (block.type === "video" && typeof block.uri === "string") {
+		return {
+			type: "video",
+			source: "url",
+			url: block.uri,
+		};
+	}
+
+	return null;
+}
+
+function interactionTextFromContent(value: any): string {
+	if (!value) return "";
+	if (typeof value === "string") return value;
+	if (Array.isArray(value)) {
+		return value.map(interactionTextFromContent).filter(Boolean).join("");
+	}
+	if (typeof value === "object") {
+		if (typeof value.text === "string") return value.text;
+		if (value.content) return interactionTextFromContent(value.content);
+	}
+	return "";
+}
+
+function stringifyToolArguments(value: any): string {
+	if (typeof value === "string") return value;
+	try {
+		return JSON.stringify(value ?? {});
+	} catch {
+		return "{}";
+	}
+}
+
+function mapInteractionStatusToFinishReason(status: unknown): IRChoice["finishReason"] {
+	switch (status) {
+		case "failed":
+		case "cancelled":
+		case "expired":
+			return "error";
+		case "incomplete":
+			return "length";
+		default:
+			return "stop";
+	}
+}
+
+function pickFiniteUsageNumber(value: unknown): number | undefined {
+	return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function readInteractionModalityCounts(items: unknown): Record<string, number> {
+	const counts: Record<string, number> = {};
+	if (!Array.isArray(items)) return counts;
+
+	for (const item of items) {
+		if (!item || typeof item !== "object") continue;
+		const entry = item as any;
+		const modality = typeof entry.modality === "string" ? entry.modality.toLowerCase() : "text";
+		const tokens = pickFiniteUsageNumber(entry.tokens ?? entry.token_count ?? entry.tokenCount);
+		if (tokens == null) continue;
+		counts[modality] = (counts[modality] ?? 0) + tokens;
+	}
+
+	return counts;
+}
+
+function sumUsageCounts(counts: Record<string, number>): number | undefined {
+	const values = Object.values(counts).filter((value) => Number.isFinite(value));
+	if (values.length === 0) return undefined;
+	return values.reduce((total, value) => total + value, 0);
+}
+
+function interactionUsageToIRUsage(usage: any): IRUsage | undefined {
+	if (!usage || typeof usage !== "object") return undefined;
+
+	const inputByModality = readInteractionModalityCounts(usage.input_tokens_by_modality);
+	const outputByModality = readInteractionModalityCounts(usage.output_tokens_by_modality);
+	const cachedByModality = readInteractionModalityCounts(usage.cached_tokens_by_modality);
+
+	const inputTokens =
+		pickFiniteUsageNumber(usage.total_input_tokens ?? usage.input_tokens) ??
+		sumUsageCounts(inputByModality) ??
+		0;
+	const outputTokens =
+		pickFiniteUsageNumber(usage.total_output_tokens ?? usage.output_tokens) ??
+		sumUsageCounts(outputByModality) ??
+		0;
+	const totalTokens =
+		pickFiniteUsageNumber(usage.total_tokens) ??
+		inputTokens + outputTokens;
+	const cachedInputTokens =
+		pickFiniteUsageNumber(usage.total_cached_tokens ?? usage.cached_tokens) ??
+		sumUsageCounts(cachedByModality);
+	const reasoningTokens =
+		pickFiniteUsageNumber(
+			usage.total_thought_tokens ??
+			usage.thought_tokens ??
+			usage.reasoning_tokens,
+		);
+
+	const ext: IRUsage["_ext"] = {};
+	if (pickFiniteUsageNumber(inputByModality.image) != null) ext.inputImageTokens = inputByModality.image;
+	if (pickFiniteUsageNumber(inputByModality.audio) != null) ext.inputAudioTokens = inputByModality.audio;
+	if (pickFiniteUsageNumber(inputByModality.video) != null) ext.inputVideoTokens = inputByModality.video;
+	if (pickFiniteUsageNumber(outputByModality.image) != null) ext.outputImageTokens = outputByModality.image;
+	if (pickFiniteUsageNumber(outputByModality.audio) != null) ext.outputAudioTokens = outputByModality.audio;
+	if (pickFiniteUsageNumber(outputByModality.video) != null) ext.outputVideoTokens = outputByModality.video;
+
+	const irUsage: IRUsage = {
+		inputTokens,
+		outputTokens,
+		totalTokens,
+	};
+
+	if (cachedInputTokens != null) {
+		irUsage.cachedInputTokens = cachedInputTokens;
+		irUsage.cachedReadTokensAreSubsetOfInput = true;
+	}
+	if (reasoningTokens != null) irUsage.reasoningTokens = reasoningTokens;
+	if (Object.keys(ext).length > 0) irUsage._ext = ext;
+
+	return irUsage;
 }
 
 function mergeGeminiChunkArray(chunks: any[]): any {
@@ -472,7 +1019,13 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	// Determine model candidates (must be in URL, not body)
 	const requestedModel = providerModelSlug || ir.model || "gemini-2.0-flash-exp";
-	const forceSyntheticImageStream = Boolean(ir.stream) && isGeminiImageModelName(requestedModel);
+	const isInteractionsRequest =
+		(args.protocol as string) === "google.interactions" ||
+		isGeminiInteractionsModelName(requestedModel);
+	const forceSyntheticStream = Boolean(ir.stream) && (
+		isGeminiImageModelName(requestedModel) ||
+		isInteractionsRequest
+	);
 	const modelCandidates = resolveGoogleModelCandidates(requestedModel);
 	let model = modelCandidates[0] || "gemini-2.0-flash-exp";
 
@@ -484,12 +1037,12 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	).replace(/\/+$/, "");
 	const baseUrl = /\/v1(beta)?$/i.test(baseRoot) ? baseRoot : `${baseRoot}/v1beta`;
 
-	const upstreamStartMs = meta.upstreamStartMs ?? Date.now();
-
-	const makeEndpoint = (candidateModel: string, stream: boolean) =>
-		stream
+	const makeEndpoint = (candidateModel: string) => {
+		if (isInteractionsRequest) return `${baseUrl}/interactions`;
+		return Boolean(ir.stream) && !forceSyntheticStream
 			? `${baseUrl}/models/${encodeURIComponent(candidateModel)}:streamGenerateContent?alt=sse`
 			: `${baseUrl}/models/${encodeURIComponent(candidateModel)}:generateContent`;
+	};
 
 	const lyriaRetryAttempts = parsePositiveInt(
 		bindings.GOOGLE_AI_STUDIO_LYRIA_RETRY_ATTEMPTS,
@@ -503,12 +1056,14 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	try {
 		const doRequest = async (candidateModel: string) => {
-			const requestBody = await irToGemini(ir, candidateModel);
-			const endpoint = makeEndpoint(
-				candidateModel,
-				Boolean(ir.stream) && !forceSyntheticImageStream,
-			);
-			const response = await fetch(endpoint, {
+			const requestBody = isInteractionsRequest
+				? await irToGemini(ir, candidateModel, args.upstreamTiming)
+				: await irToLegacyGemini(ir, candidateModel, args.upstreamTiming);
+			if (isInteractionsRequest && Boolean(ir.stream) && !forceSyntheticStream) {
+				requestBody.stream = true;
+			}
+			const endpoint = makeEndpoint(candidateModel);
+			const response = await fetchUpstream(args, endpoint, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -546,14 +1101,16 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		}
 
 		model = attempted.candidateModel;
-		const geminiRequest = attempted.requestBody;
+		const googleInteractionRequest = attempted.requestBody;
 		const response = attempted.response;
+		const selectedDispatchAtMs =
+			args.upstreamTiming?.timingFor(response)?.dispatchAtMs ?? Date.now();
 		const mappedRequest = (
 			meta.echoUpstreamRequest ||
 			meta.returnUpstreamRequest ||
 			meta.debug?.return_upstream_request ||
 			meta.debug?.trace
-		) ? JSON.stringify(geminiRequest) : undefined;
+		) ? JSON.stringify(googleInteractionRequest) : undefined;
 
 		if (!response.ok) {
 			return {
@@ -567,12 +1124,11 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			};
 		}
 
-		if (forceSyntheticImageStream) {
+		if (forceSyntheticStream) {
 			const rawData = await response.json();
 			const data = normalizeGeminiResponsePayload(rawData);
-			const irResponse = geminiToIR(data, requestId, model, providerId);
+			const irResponse = providerPayloadToIR(data, requestId, model, providerId);
 			applyGoogleOutputTokenFallback(irResponse);
-
 			const bill: any = {
 				cost_cents: 0,
 				currency: "USD",
@@ -581,8 +1137,20 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			if (usageMeters) {
 				bill.usage = usageMeters;
 			}
+			if (!hasUsableIRResponse(irResponse)) {
+				return {
+					kind: "completed",
+					ir: irResponse,
+					upstream: response,
+					bill,
+					keySource: keyInfo.source,
+					byokKeyId: keyInfo.byokId,
+					mappedRequest,
+					rawResponse: rawData,
+				};
+			}
 
-			const totalMs = Date.now() - upstreamStartMs;
+			const totalMs = Date.now() - selectedDispatchAtMs;
 			const finalPayload = encodeOpenAIChatResponse(irResponse, requestId);
 			const protocol = args.protocol ?? (args.endpoint === "responses" ? "openai.responses" : "openai.chat.completions");
 			const stream =
@@ -603,6 +1171,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			return {
 				kind: "stream",
 				stream,
+				streamAlreadyTransformed: true,
 				upstream: response,
 				bill,
 				keySource: keyInfo.source,
@@ -610,8 +1179,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				mappedRequest,
 				usageFinalizer: async () => bill.usage ?? null,
 				timing: {
-					latencyMs: totalMs,
-					generationMs: 0,
+					latencyMs: undefined,
+					generationMs: totalMs,
 				},
 			};
 		}
@@ -657,7 +1226,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				transformedResponse,
 				bufferingArgs,
 				"chat",
-				upstreamStartMs,
+				selectedDispatchAtMs,
 			);
 			const fallback = applyGoogleOutputTokenFallback(irResponse);
 			if (fallback.applied) {
@@ -668,15 +1237,25 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 					irResponse.usage?.totalTokens ?? 0,
 				);
 			}
-
 			const bill: any = {
 				cost_cents: 0,
 				currency: "USD",
 			};
-
 			const usageMeters = normalizeTextUsageForPricing(irResponse?.usage ?? usage);
 			if (usageMeters) {
 				bill.usage = usageMeters;
+			}
+			if (!hasUsableIRResponse(irResponse)) {
+				return {
+					kind: "completed",
+					ir: irResponse,
+					upstream: response,
+					bill,
+					keySource: keyInfo.source,
+					byokKeyId: keyInfo.byokId,
+					mappedRequest,
+					rawResponse,
+				};
 			}
 
 			return {
@@ -689,29 +1268,39 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				mappedRequest,
 				rawResponse,
 				timing: {
-					latencyMs: firstByteMs ?? totalMs,
-					generationMs: firstByteMs === null ? 0 : Math.max(0, totalMs - firstByteMs),
+					latencyMs: firstByteMs ?? undefined,
+					generationMs: totalMs,
 				},
 			};
 		}
 
 		const rawData = await response.json();
 		const data = normalizeGeminiResponsePayload(rawData);
-		const irResponse = geminiToIR(data, requestId, model, providerId);
+		const irResponse = providerPayloadToIR(data, requestId, model, providerId);
 		applyGoogleOutputTokenFallback(irResponse);
-
-		// Calculate pricing
 		const bill: any = {
 			cost_cents: 0,
 			currency: "USD",
 		};
-
 		const usageMeters = normalizeTextUsageForPricing(irResponse.usage ?? data?.usageMetadata);
 		if (usageMeters) {
 			bill.usage = usageMeters;
 		}
+		if (!hasUsableIRResponse(irResponse)) {
+			return {
+				kind: "completed",
+				ir: irResponse,
+				upstream: response,
+				bill,
+				keySource: keyInfo.source,
+				byokKeyId: keyInfo.byokId,
+				mappedRequest,
+				rawResponse: rawData,
+			};
+		}
 
-		const totalMs = Date.now() - upstreamStartMs;
+		// Calculate pricing
+		const totalMs = Date.now() - selectedDispatchAtMs;
 
 		return {
 			kind: "completed",
@@ -723,8 +1312,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			mappedRequest,
 			rawResponse: rawData,
 			timing: {
-				latencyMs: totalMs,
-				generationMs: 0,
+				latencyMs: undefined,
+				generationMs: totalMs,
 			},
 		};
 	} catch (error: any) {
@@ -847,7 +1436,19 @@ export function transformStream(
 		argumentsSoFar: string;
 		emittedName: boolean;
 	};
+	type InteractionStepState = {
+		type: string;
+		id?: string;
+		name?: string;
+		argumentsSoFar: string;
+		emittedName: boolean;
+		toolIndex: number;
+	};
 	const toolStates = new Map<string, StreamToolState>();
+	const interactionStepStates = new Map<number, InteractionStepState>();
+	let interactionToolCallCount = 0;
+	let interactionSawFunctionCall = false;
+	let sawUsableOutput = false;
 
 	let created = Math.floor(Date.now() / 1000);
 	const model = args.providerModelSlug || args.ir.model || "gemini-2.0-flash-exp";
@@ -864,19 +1465,187 @@ export function transformStream(
 			remainder: blocks[blocks.length - 1] ?? "",
 		};
 	};
+	const enqueueIRChunk = (
+		irChunk: IRStreamChunk,
+		controller: ReadableStreamDefaultController<Uint8Array>,
+	): void => {
+		if (irChunk.choices.some((choice: any) => {
+			if ((choice.delta?.toolCalls?.length ?? 0) > 0) return true;
+			if (typeof choice.delta?.content === "string" && choice.delta.content.trim().length > 0) return true;
+			return (choice.delta?.contentParts ?? []).some((part: any) => {
+				if (!part || typeof part !== "object") return false;
+				if (typeof part.text === "string" && part.text.trim().length > 0) return true;
+				return (
+					(typeof part.data === "string" && part.data.length > 0) ||
+					(typeof part.url === "string" && part.url.length > 0)
+				);
+			});
+		})) {
+			sawUsableOutput = true;
+		}
+		const openAIChunk = encodeIRChunkToOpenAI(irChunk);
+		controller.enqueue(encoder.encode(`data: ${JSON.stringify(openAIChunk)}\n\n`));
+	};
+	const buildBaseIRChunk = (): IRStreamChunk => ({
+		id: args.requestId,
+		created,
+		model,
+		provider,
+		choices: [],
+	});
+	const emitInteractionPayloadEntry = (
+		payloadEntry: any,
+		controller: ReadableStreamDefaultController<Uint8Array>,
+	): number | null => {
+		const eventType = typeof payloadEntry?.event_type === "string" ? payloadEntry.event_type : null;
+		if (!eventType) return null;
+
+		if (eventType === "interaction.created") {
+			const createdAt = Date.parse(payloadEntry?.interaction?.created ?? "");
+			if (Number.isFinite(createdAt)) {
+				created = Math.floor(createdAt / 1000);
+			}
+			return 0;
+		}
+
+		if (eventType === "step.start") {
+			const index = Number.isFinite(payloadEntry.index) ? Number(payloadEntry.index) : 0;
+			const step = payloadEntry.step ?? {};
+			const state: InteractionStepState = {
+				type: String(step.type ?? ""),
+				id: typeof step.id === "string" ? step.id : undefined,
+				name: typeof step.name === "string" ? step.name : undefined,
+				argumentsSoFar: "",
+				emittedName: false,
+				toolIndex: interactionToolCallCount,
+			};
+			if (state.type === "function_call") {
+				interactionSawFunctionCall = true;
+				interactionToolCallCount += 1;
+			}
+			interactionStepStates.set(index, state);
+
+			if (state.type === "function_call") {
+				const irChunk = buildBaseIRChunk();
+				irChunk.choices.push({
+					index: 0,
+					delta: {
+						role: "assistant",
+						toolCalls: [{
+							index: state.toolIndex,
+							...(state.id ? { id: state.id } : {}),
+							...(state.name ? { name: state.name } : {}),
+							arguments: "",
+						}],
+					},
+				} as any);
+				state.emittedName = Boolean(state.name);
+				enqueueIRChunk(irChunk, controller);
+				return 1;
+			}
+
+			return 0;
+		}
+
+		if (eventType === "step.delta") {
+			const index = Number.isFinite(payloadEntry.index) ? Number(payloadEntry.index) : 0;
+			const state = interactionStepStates.get(index);
+			const delta = payloadEntry.delta ?? {};
+			const irChunk = buildBaseIRChunk();
+			const choice: any = {
+				index: 0,
+				delta: {
+					role: "assistant",
+				},
+			};
+
+			if (delta.type === "text" && typeof delta.text === "string") {
+				choice.delta.content = delta.text;
+			} else if (delta.type === "image" || delta.type === "audio") {
+				const part = interactionContentToIRPart(delta);
+				if (part) {
+					choice.delta.contentParts = [part];
+				}
+			} else if (delta.type === "thought_summary") {
+				const text = interactionTextFromContent(delta.content);
+				if (text) {
+					choice.delta.contentParts = [{
+						type: "reasoning_text",
+						text,
+					}];
+				}
+			} else if (delta.type === "arguments_delta") {
+				const argumentsDelta = typeof delta.arguments === "string" ? delta.arguments : "";
+				const toolIndex = state?.toolIndex ?? 0;
+				const toolDelta: {
+					index: number;
+					id?: string;
+					name?: string;
+					arguments?: string;
+				} = {
+					index: toolIndex,
+				};
+				if (state?.id) toolDelta.id = state.id;
+				if (state?.name && !state.emittedName) {
+					toolDelta.name = state.name;
+					state.emittedName = true;
+				}
+				if (argumentsDelta) {
+					toolDelta.arguments = argumentsDelta;
+					if (state) {
+						state.argumentsSoFar += argumentsDelta;
+					}
+				}
+				choice.delta.toolCalls = [toolDelta];
+			}
+
+			const hasDelta = Object.keys(choice.delta).some((key) => key !== "role");
+			if (!hasDelta) return 0;
+			irChunk.choices.push(choice);
+			enqueueIRChunk(irChunk, controller);
+			return 1;
+		}
+
+		if (eventType === "interaction.completed") {
+			const interaction = payloadEntry.interaction ?? {};
+			const usage = interactionUsageToIRUsage(
+				interaction.usage ??
+				payloadEntry.usage ??
+				payloadEntry.metadata?.total_usage,
+			);
+			const irChunk = buildBaseIRChunk();
+			irChunk.choices.push({
+				index: 0,
+				delta: { role: "assistant" },
+				finishReason: interactionSawFunctionCall
+					? "tool_calls"
+					: mapInteractionStatusToFinishReason(interaction.status),
+			});
+			if (usage) irChunk.usage = usage;
+			enqueueIRChunk(irChunk, controller);
+			return 1;
+		}
+
+		if (eventType === "error") {
+			const message = payloadEntry?.error?.message || "google_interaction_stream_error";
+			throw new Error(message);
+		}
+
+		return 0;
+	};
 	const emitPayloadEntries = (
 		payloadEntries: any[],
 		controller: ReadableStreamDefaultController<Uint8Array>,
 	): number => {
 		let emitted = 0;
 		for (const payloadEntry of payloadEntries) {
-			const irChunk: IRStreamChunk = {
-				id: args.requestId,
-				created,
-				model,
-				provider,
-				choices: [],
-			};
+			const interactionEmitted = emitInteractionPayloadEntry(payloadEntry, controller);
+			if (interactionEmitted !== null) {
+				emitted += interactionEmitted;
+				continue;
+			}
+
+			const irChunk = buildBaseIRChunk();
 
 			if (Array.isArray(payloadEntry?.candidates)) {
 				for (const cand of payloadEntry.candidates) {
@@ -1009,8 +1778,7 @@ export function transformStream(
 				continue;
 			}
 
-			const openAIChunk = encodeIRChunkToOpenAI(irChunk);
-			controller.enqueue(encoder.encode(`data: ${JSON.stringify(openAIChunk)}\n\n`));
+			enqueueIRChunk(irChunk, controller);
 			emitted += 1;
 		}
 		return emitted;
@@ -1095,6 +1863,20 @@ export function transformStream(
 						}
 						emittedChunkCount += emitPayloadEntries(toPayloadEntries(payload), controller);
 					}
+				}
+				if (!sawUsableOutput) {
+					const errorPayload = {
+						error: {
+							code: "google_empty_response",
+							message: "Google returned a successful response without any output.",
+						},
+					};
+					controller.enqueue(encoder.encode(
+						`event: response.failed\ndata: ${JSON.stringify({
+							type: "response.failed",
+								...errorPayload,
+						})}\n\n`,
+					));
 				}
 				controller.enqueue(encoder.encode("data: [DONE]\n\n"));
 			} catch (err) {
@@ -1258,7 +2040,3 @@ export const executor: ProviderExecutor = buildTextExecutor({
 	postprocess,
 	transformStream,
 });
-
-
-
-

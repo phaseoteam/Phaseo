@@ -11,7 +11,7 @@ import {
 	SelectItem,
 	SelectTrigger,
 } from "@/components/ui/select";
-import type { APIProviderCard as APIProviderCardType } from "@/lib/fetchers/api-providers/getAllAPIProviders";
+import type { APIProviderCard as APIProviderCardType } from "@/lib/fetchers/api-providers/providerDataTypes";
 
 interface APIProvidersDisplayProps {
 	providers: APIProviderCardType[];

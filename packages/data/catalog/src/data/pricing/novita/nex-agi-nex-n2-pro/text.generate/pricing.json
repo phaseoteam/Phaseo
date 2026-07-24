@@ -15,7 +15,11 @@
       "note": "Listed at $0/M input on Novita's public model page.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-05T00:00:00Z"
+      "effective_from": "2026-06-05T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     },
     {
       "meter": "output_text_tokens",
@@ -27,7 +31,21 @@
       "note": "Listed at $0/M output on Novita's public model page.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-05T00:00:00Z"
+      "effective_from": "2026-06-05T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
     }
-  ]
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

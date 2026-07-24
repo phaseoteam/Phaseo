@@ -10,5 +10,20 @@
   "terms_of_service_url": "https://cdn.venice.ai/legal/tos",
   "prompt_training_policy": "no_train",
   "prompt_training_notes": "Venice says it does not store or log prompt text or model responses on its servers, and local conversation history stays on the user device.",
-  "prompt_training_source_url": "https://docs.venice.ai/welcome/privacy"
+  "prompt_training_source_url": "https://docs.venice.ai/welcome/privacy",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://docs.venice.ai/",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

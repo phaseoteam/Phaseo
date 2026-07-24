@@ -20,5 +20,20 @@
   "regional_pricing_notes": "Thinking Machines publishes a single public USD rate card for Tinker model sampling and training.",
   "country_code": "US",
   "status": "Active",
-  "colour": "#111111"
+  "colour": "#111111",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://thinkingmachines.ai/tinker/",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

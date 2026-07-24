@@ -4,10 +4,32 @@
   "provider_slug": "elevenlabs",
   "api_model_id": "eleven-labs/eleven-multilingual-v2",
   "capability_id": "audio.speech",
-  "rules": [{
-    "meter": "input_characters", "unit": "character", "unit_size": 1000,
-    "price_per_unit": 0.1, "currency": "USD", "pricing_plan": "standard",
-    "note": "ElevenLabs API pricing lists Multilingual v2/v3 TTS at $0.10 per 1K characters.",
-    "match": [], "priority": 100, "effective_from": "2026-07-17T00:00:00Z"
-  }]
+  "rules": [
+    {
+      "meter": "input_characters",
+      "unit": "character",
+      "unit_size": 1000,
+      "price_per_unit": 0.1,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "ElevenLabs API pricing lists Multilingual v2/v3 TTS at $0.10 per 1K characters.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-07-17T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": null
+    }
+  ],
+  "regions": [],
+  "service_tiers": [
+    "standard"
+  ],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }

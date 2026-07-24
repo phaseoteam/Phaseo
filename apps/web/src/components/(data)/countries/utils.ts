@@ -1,4 +1,4 @@
-import type { CountrySummary } from "@/lib/fetchers/countries/getCountrySummaries";
+import type { CountrySummary } from "@/lib/fetchers/countries/types";
 import type { ModelCard } from "@/lib/fetchers/models/getAllModels";
 
 const FLAG_PLACEHOLDER = "\u{1F3F3}\uFE0F";

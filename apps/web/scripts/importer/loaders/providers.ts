@@ -30,6 +30,12 @@ type ProviderZeroDataRetentionMode =
     | "unsupported"
     | "optional"
     | "default";
+type ProviderDataPolicyTier = "unknown" | "private" | "logs" | "trains";
+type ProviderDataPolicyConfidence = "unknown" | "confirmed" | "maybe";
+type ProviderDataPolicyContractMode =
+    | "none"
+    | "customer_agreement"
+    | "enterprise_agreement";
 
 const PROVIDER_ORG_ALIASES: Record<string, string> = {
     "amazon-bedrock": "amazon",
@@ -190,6 +196,44 @@ const parseZeroDataRetentionMode = (value: unknown): ProviderZeroDataRetentionMo
     if (raw === "optional") return "optional";
     if (raw === "default") return "default";
     return "unknown";
+};
+
+const parseProviderDataPolicyTier = (value: unknown): ProviderDataPolicyTier => {
+    const raw = String(value ?? "").trim().toLowerCase();
+    if (raw === "private") return "private";
+    if (raw === "logs" || raw === "logged") return "logs";
+    if (raw === "trains" || raw === "train") return "trains";
+    return "unknown";
+};
+
+const parseProviderDataPolicyConfidence = (
+    value: unknown,
+): ProviderDataPolicyConfidence => {
+    const raw = String(value ?? "").trim().toLowerCase();
+    if (raw === "confirmed" || raw === "certain") return "confirmed";
+    if (raw === "maybe" || raw === "uncertain" || raw === "inferred") return "maybe";
+    return "unknown";
+};
+
+const parseProviderDataPolicyContractMode = (
+    value: unknown,
+): ProviderDataPolicyContractMode => {
+    const raw = String(value ?? "").trim().toLowerCase();
+    if (
+        raw === "customer_agreement" ||
+        raw === "customer-agreement" ||
+        raw === "agreement"
+    ) {
+        return "customer_agreement";
+    }
+    if (
+        raw === "enterprise_agreement" ||
+        raw === "enterprise-agreement" ||
+        raw === "enterprise"
+    ) {
+        return "enterprise_agreement";
+    }
+    return "none";
 };
 
 const parseProviderOfferScope = (value: unknown): ProviderOfferScope => {
@@ -770,6 +814,18 @@ export async function loadProviders(
                 j.prompt_training_source_url.trim()
                     ? j.prompt_training_source_url.trim()
                     : null,
+            data_policy_tier: parseProviderDataPolicyTier(j.data_policy_tier),
+            data_policy_confidence: parseProviderDataPolicyConfidence(
+                j.data_policy_confidence,
+            ),
+            data_policy_contract_mode: parseProviderDataPolicyContractMode(
+                j.data_policy_contract_mode,
+            ),
+            data_policy_contract_notes:
+                typeof j.data_policy_contract_notes === "string" &&
+                j.data_policy_contract_notes.trim()
+                    ? j.data_policy_contract_notes.trim()
+                    : null,
             user_identifier_policy:
                 typeof j.user_identifier_policy === "string" &&
                 j.user_identifier_policy.trim()
@@ -790,6 +846,32 @@ export async function loadProviders(
                 j.terms_of_service_url.trim()
                     ? j.terms_of_service_url.trim()
                     : null,
+            ...(j.stream_cancellation_support !== undefined ? {
+                stream_cancellation_support:
+                    ["supported", "unsupported", "unknown"].includes(j.stream_cancellation_support)
+                        ? j.stream_cancellation_support
+                        : "unknown",
+                stream_cancellation_stops_provider_billing:
+                    typeof j.stream_cancellation_stops_provider_billing === "boolean"
+                        ? j.stream_cancellation_stops_provider_billing
+                        : null,
+                stream_cancellation_usage_recovery:
+                    ["authoritative", "unknown"].includes(j.stream_cancellation_usage_recovery)
+                        ? j.stream_cancellation_usage_recovery
+                        : "unknown",
+                stream_cancellation_evidence_kind:
+                    ["provider", "aggregator", "none"].includes(j.stream_cancellation_evidence_kind)
+                        ? j.stream_cancellation_evidence_kind
+                        : "none",
+                stream_cancellation_source_url:
+                    typeof j.stream_cancellation_source_url === "string" && j.stream_cancellation_source_url.trim()
+                        ? j.stream_cancellation_source_url.trim()
+                        : null,
+                stream_cancellation_verified_at:
+                    typeof j.stream_cancellation_verified_at === "string" && j.stream_cancellation_verified_at.trim()
+                        ? j.stream_cancellation_verified_at.trim()
+                        : null,
+            } : {}),
         };
         providerIds.add(row.api_provider_id);
         if (change.status !== "unchanged") {

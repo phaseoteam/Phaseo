@@ -25,6 +25,8 @@ import {
 	buildEnvFile,
 } from "@/lib/gateway/secretReveal";
 import { OnePasswordSaveButton } from "./OnePasswordSaveButton";
+import { getBrowserAccessToken } from "@/lib/fetchers/internal/accountAuthClient";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
 
 type SecretKind = "api-key" | "management-key";
 
@@ -116,13 +118,11 @@ export function SecretRevealActions({
 	async function testKey() {
 		setTestState("testing");
 		try {
-			const response = await fetch("/api/internal/secret-ux/test-key", {
+			const body = await fetchAccountWebApi<{ ok: boolean; message?: string }>("/api/account/auth/test-key", await getBrowserAccessToken(), {
 				method: "POST",
-				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ apiKey: secret }),
 			});
-			const body = await response.json().catch(() => ({}));
-			if (!response.ok || body?.ok === false) {
+			if (body?.ok === false) {
 				throw new Error(
 					body?.message || "The key could not be verified right now.",
 				);

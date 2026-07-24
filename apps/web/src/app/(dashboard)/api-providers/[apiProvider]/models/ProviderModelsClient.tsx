@@ -36,7 +36,7 @@ import {
 import type {
 	APIProviderModelListItem,
 	APIProviderModelPricingMeter,
-} from "@/lib/fetchers/api-providers/getAPIProvider";
+} from "@/lib/fetchers/api-providers/providerDataTypes";
 
 type ProviderModelsClientProps = {
 	apiProvider: string;

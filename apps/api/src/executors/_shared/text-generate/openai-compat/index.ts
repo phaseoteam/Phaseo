@@ -1,12 +1,13 @@
-// Purpose: Shared OpenAI-compatible text adapter and transformations.
-// Why: Consolidates OpenAI-style quirks across many providers.
-// How: Maps IR to OpenAI formats and normalizes streaming events.
+// Purpose: Shared OpenAI wire-format primitives for provider-owned executors.
+// Why: Keep IR/SSE behavior consistent without using a generic provider adapter.
+// How: Provider executors supply policy; this module maps wire formats and streams.
 
 // OpenAI-Compatible Executor
 // Handles: OpenAI, Groq, DeepSeek, Together, Fireworks, and other OpenAI-compatible providers
 // Uses OpenAI Responses API format upstream for consistency
 
 import type { ExecutorExecuteArgs, ExecutorResult, Bill } from "@executors/types";
+import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import type { IRChatResponse } from "@core/ir";
 import { irToOpenAIResponses, openAIResponsesToIR } from "./transform";
 import { irToOpenAIChat, openAIChatToIR } from "./transform-chat";
@@ -27,25 +28,9 @@ import {
 import {
 	adaptRequestFromUpstreamError,
 	readErrorPayload,
-	shouldFallbackToChatFromError,
 } from "./retry-policy";
 
-const RESPONSES_CHAT_FALLBACK_BLOCKLIST = new Set<string>(["alibaba-cloud"]);
-const ALIBABA_COMPAT_PROVIDER_IDS = new Set<string>(["alibaba-cloud", "alibaba", "qwen"]);
 const OPENAI_COMPAT_MAX_ADAPTIVE_RETRIES = 1;
-const OPENAI_COMPAT_TRANSIENT_RETRY_PROVIDERS = new Set<string>([
-	"baseten",
-	"groq",
-	"fireworks",
-	"weights-and-biases",
-	"venice",
-	"akashml",
-	"ionrouter",
-	"gmicloud",
-	"nebius-token-factory",
-	"nebius-token-factory-eu-north-1",
-	"nebius-token-factory-us-central-1",
-]);
 const OPENAI_COMPAT_MAX_TRANSIENT_RETRIES = 1;
 const OPENAI_COMPAT_TRANSIENT_RETRY_BASE_DELAY_MS = 120;
 const OPENAI_COMPAT_TRANSIENT_RETRY_MAX_DELAY_MS = 600;
@@ -78,10 +63,15 @@ async function sleep(ms: number): Promise<void> {
 	await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
-	// Use upstream start time from pipeline (set before executor is called)
-	// Falls back to current time if not provided (backward compatibility)
-	const upstreamStartMs = args.meta.upstreamStartMs ?? Date.now();
+export type OpenAIWirePolicy = {
+	forceChat?: boolean;
+	transientRetries?: 0 | 1;
+};
+
+export async function executeOpenAIWire(
+	args: ExecutorExecuteArgs,
+	policy: OpenAIWirePolicy = {},
+): Promise<ExecutorResult> {
 	// Resolve API key (gateway or BYOK)
 	const keyInfo = resolveOpenAICompatKey({
 		providerId: args.providerId,
@@ -91,7 +81,7 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 	// Choose endpoint based on provider capabilities
 	const modelForRouting = args.providerModelSlug ?? args.ir.model;
 	const defaultRoute = resolveOpenAICompatRoute(args.providerId, modelForRouting);
-	let route: "responses" | "chat" = resolvePreferredRoute(args, defaultRoute);
+	let route: "responses" | "chat" = policy.forceChat ? "chat" : defaultRoute;
 
 	const endpointForRoute = (targetRoute: "responses" | "chat") =>
 		targetRoute === "responses" ? "/responses" : "/chat/completions";
@@ -140,7 +130,7 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 		}
 
 		const fetchStartMs = Date.now();
-		const response = await fetch(openAICompatUrl(args.providerId, endpointForRoute(targetRoute)), {
+		const response = await fetchUpstream(args, openAICompatUrl(args.providerId, endpointForRoute(targetRoute)), {
 			method: "POST",
 			headers: openAICompatHeaders(args.providerId, keyInfo.key, upstreamTestHeaders(args.meta)),
 			body: requestBody,
@@ -148,6 +138,7 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 
 		return {
 			response,
+			fetchStartMs,
 			requestBody,
 			request: sanitized.request,
 			requestBuildMs: Math.max(0, fetchStartMs - requestBuildStartMs),
@@ -155,9 +146,7 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 		};
 	};
 
-	const maxTransientRetries = OPENAI_COMPAT_TRANSIENT_RETRY_PROVIDERS.has(args.providerId)
-		? OPENAI_COMPAT_MAX_TRANSIENT_RETRIES
-		: 0;
+	const maxTransientRetries = policy.transientRetries ?? 0;
 
 	const sendPayloadWithRetry = async (
 		targetRoute: "responses" | "chat",
@@ -204,31 +193,13 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 	let requestBody = attempt.requestBody;
 	let mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestBody : undefined;
 	let requestBuildMs = attempt.requestBuildMs;
+	const upstreamFetchStartMs = attempt.fetchStartMs;
 	let upstreamHeadersMs = attempt.upstreamHeadersMs;
 	let transientRetryDelayMs = attempt.transientRetryDelayMs;
 
 	let adaptiveRetryCount = 0;
 	while (!res.ok && adaptiveRetryCount < OPENAI_COMPAT_MAX_ADAPTIVE_RETRIES) {
 		const { errorText, errorPayload } = await readErrorPayload(res);
-
-		// Some providers advertise OpenAI compatibility but don't implement /responses yet.
-		// Fallback once to /chat/completions when /responses endpoint is unavailable.
-		if (
-			shouldFallbackToChatFromError({ route, status: res.status, errorText }) &&
-			route === "responses" &&
-			!RESPONSES_CHAT_FALLBACK_BLOCKLIST.has(args.providerId)
-		) {
-			route = "chat";
-			attempt = await sendPayloadWithRetry(route, buildPayloadForRoute(route));
-			res = attempt.response;
-			requestBody = attempt.requestBody;
-			mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestBody : undefined;
-			requestBuildMs = attempt.requestBuildMs;
-			upstreamHeadersMs = attempt.upstreamHeadersMs;
-			transientRetryDelayMs = attempt.transientRetryDelayMs;
-			adaptiveRetryCount += 1;
-			continue;
-		}
 
 		const adapted = adaptRequestFromUpstreamError({
 			providerId: args.providerId,
@@ -279,6 +250,7 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 			mappedRequest,
 			timing: {
 				requestBuildMs,
+				upstreamFetchStartMs,
 				upstreamHeadersMs,
 				transientRetryDelayMs,
 			},
@@ -301,13 +273,21 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 				latencyMs: undefined,
 				generationMs: undefined,
 				requestBuildMs,
+				upstreamFetchStartMs,
 				upstreamHeadersMs,
 				transientRetryDelayMs,
 			},
 		};
 	} else {
 		// Buffer the stream and return complete response
-		const { ir, usage, rawResponse, firstByteMs, totalMs } = await bufferStreamToIR(res, args, route, upstreamStartMs);
+		const selectedDispatchAtMs =
+			args.upstreamTiming?.timingFor(res)?.dispatchAtMs ?? Date.now();
+		const { ir, usage, rawResponse, firstByteMs, totalMs } = await bufferStreamToIR(
+			res,
+			args,
+			route,
+			selectedDispatchAtMs,
+		);
 		if (ir) {
 			(ir as any).rawResponse = rawResponse;
 		}
@@ -328,9 +308,10 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 			mappedRequest,
 			rawResponse,
 			timing: {
-				latencyMs: firstByteMs ?? totalMs,
-				generationMs: firstByteMs === null ? 0 : Math.max(0, totalMs - firstByteMs),
+			latencyMs: firstByteMs ?? undefined,
+				generationMs: totalMs,
 				requestBuildMs,
+				upstreamFetchStartMs,
 				upstreamHeadersMs,
 				transientRetryDelayMs,
 			},
@@ -428,31 +409,6 @@ export function resolveStreamForProtocol(
 
 	// Default: passthrough (responses protocol or unknown)
 	return res.body;
-}
-
-function resolvePreferredRoute(
-	args: ExecutorExecuteArgs,
-	defaultRoute: "responses" | "chat",
-): "responses" | "chat" {
-	// Keep Alibaba/Qwen upstream routing simple and stable: always use chat completions.
-	if (isAlibabaCompatProvider(args.providerId)) return "chat";
-
-	// SpaceXAI compatibility currently has stricter /responses validation for structured output.
-	// Route structured requests via chat/completions for better interoperability.
-	if (
-		(args.providerId === "x-ai" || args.providerId === "xai") &&
-		defaultRoute === "responses" &&
-		args.ir?.responseFormat &&
-		args.ir.responseFormat.type !== "text"
-	) {
-		return "chat";
-	}
-
-	return defaultRoute;
-}
-
-function isAlibabaCompatProvider(providerId: string): boolean {
-	return ALIBABA_COMPAT_PROVIDER_IDS.has(providerId);
 }
 
 function transformResponsesStreamToAnthropic(
@@ -719,13 +675,10 @@ export async function bufferStreamToIR(
 	};
 
 	let firstByteMs: number | null = null;
+	let terminalAtMs: number | null = null;
 	while (true) {
 		const { value, done } = await reader.read();
 		if (done) break;
-		if (firstByteMs === null) {
-			firstByteMs = Date.now() - upstreamStartMs;
-		}
-
 		buf += decoder.decode(value, { stream: true });
 		const frames = buf.split(/\n\n/);
 		buf = frames.pop() ?? "";
@@ -749,7 +702,17 @@ export async function bufferStreamToIR(
 			} catch {
 				continue;
 			}
+			if (firstByteMs === null) {
+				firstByteMs = Math.max(0, Date.now() - upstreamStartMs);
+			}
 			applyStreamPayload(payload);
+			if (
+				payload?.type === "response.completed" ||
+				payload?.response?.status === "completed" ||
+				payload?.choices?.some?.((choice: any) => choice?.finish_reason != null)
+			) {
+				terminalAtMs = Date.now();
+			}
 		}
 	}
 	buf += decoder.decode();
@@ -804,7 +767,7 @@ export async function bufferStreamToIR(
 		? (isChatLikeResponse ? openAIChatToIR(finalResponse, args.requestId, args.ir.model, args.providerId) : openAIResponsesToIR(finalResponse, args.requestId, args.ir.model, args.providerId))
 		: openAIChatToIR(finalResponse, args.requestId, args.ir.model, args.providerId);
 
-	const totalMs = Math.max(0, Date.now() - upstreamStartMs);
+	const totalMs = Math.max(0, (terminalAtMs ?? Date.now()) - upstreamStartMs);
 	return {
 		ir,
 		usage: finalResponse.usage,

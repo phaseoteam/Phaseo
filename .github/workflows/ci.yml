@@ -115,7 +115,7 @@ jobs:
         if: github.event_name == 'push' || !startsWith(github.head_ref, 'chore/auto-model-statuses')
         strategy:
             matrix:
-                app: [api, docs, web]
+                app: [api, docs, web, web-api]
         steps:
             - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
@@ -149,6 +149,13 @@ jobs:
             - name: Web validation
               if: matrix.app == 'web'
               run: pnpm --filter @phaseo/web exec next build --experimental-build-mode compile
+
+            - name: Web API lint, test & build
+              if: matrix.app == 'web-api'
+              run: |
+                  pnpm --filter @phaseo/web-api lint
+                  pnpm --filter @phaseo/web-api test
+                  pnpm --filter @phaseo/web-api build
 
     api-aimock:
         name: API AIMock matrix
@@ -223,7 +230,18 @@ jobs:
             SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
             NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
         steps:
+            - name: Create GitHub App token (Phaseo Bot)
+              id: importer-app-token
+              uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+              with:
+                  client-id: ${{ secrets.PHASEO_APP_CLIENT_ID }}
+                  private-key: ${{ secrets.PHASEO_APP_PRIVATE_KEY }}
+
             - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+              with:
+                  fetch-depth: 0
+                  persist-credentials: false
+                  token: ${{ steps.importer-app-token.outputs.token }}
 
             - name: Setup pnpm
               uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
@@ -288,6 +306,44 @@ jobs:
               with:
                   path: packages/data/catalog/src/data/.import-state.json
                   key: ${{ steps.importer-state-cache.outputs.cache-primary-key }}
+
+            - name: Prepare importer state update
+              id: importer-state-update
+              if: success() && env.SUPABASE_SERVICE_ROLE_KEY != '' && env.NEXT_PUBLIC_SUPABASE_URL != ''
+              env:
+                  GH_TOKEN: ${{ steps.importer-app-token.outputs.token }}
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  state_file="packages/data/catalog/src/data/.import-state.json"
+                  if git diff --quiet -- "${state_file}"; then
+                    echo "changed=false" >> "${GITHUB_OUTPUT}"
+                    echo "Importer state is already committed."
+                    exit 0
+                  fi
+
+                  branch="automation/importer-state-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+                  git config user.name "github-actions[bot]"
+                  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+                  git switch --create "${branch}"
+                  git add "${state_file}"
+                  git commit -m "chore(data): persist importer state"
+                  git push --set-upstream "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "${branch}"
+                  echo "changed=true" >> "${GITHUB_OUTPUT}"
+                  echo "branch=${branch}" >> "${GITHUB_OUTPUT}"
+
+            - name: Open importer state update PR
+              if: steps.importer-state-update.outputs.changed == 'true'
+              env:
+                  GH_TOKEN: ${{ steps.importer-app-token.outputs.token }}
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  gh pr create \
+                    --base main \
+                    --head "${{ steps.importer-state-update.outputs.branch }}" \
+                    --title "chore(data): persist importer state" \
+                    --body "Automated update of the committed importer hash state after a successful main import."
 
     sdk-gen:
         name: Generate SDKs
@@ -556,7 +612,7 @@ jobs:
               run: |
                   git_branch="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
                   vercel pull --yes --environment=preview --git-branch="$git_branch" --token=$VERCEL_TOKEN
-                  preview_url="$(vercel deploy --yes --force --archive=tgz --token=$VERCEL_TOKEN)"
+                  preview_url="$(vercel deploy --yes --force --archive=tgz --build-env WEB_API_ORIGIN=https://phaseo.app --env WEB_API_ORIGIN=https://phaseo.app --token=$VERCEL_TOKEN)"
                   echo "url=$preview_url" >> "$GITHUB_OUTPUT"
 
             - name: Update pull request preview link
@@ -605,6 +661,8 @@ jobs:
                       name: Deploy Web
                     - target: api
                       name: Deploy API
+                    - target: web-api
+                      name: Deploy Web API
                     - target: docs
                       name: Deploy Docs
         steps:
@@ -649,12 +707,12 @@ jobs:
             - name: Restore lockfile (guard setup-node cache mutation)
               run: git checkout -- pnpm-lock.yaml
 
-            - name: Install dependencies (for API)
-              if: matrix.target == 'api'
+            - name: Install dependencies (for Cloudflare Workers)
+              if: matrix.target == 'api' || matrix.target == 'web-api'
               run: corepack pnpm install --frozen-lockfile
 
             - name: Validate Cloudflare API deploy secrets
-              if: matrix.target == 'api'
+              if: matrix.target == 'api' || matrix.target == 'web-api'
               shell: bash
               env:
                   CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -689,6 +747,15 @@ jobs:
                   apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
                   accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
                   workingDirectory: apps/api
+
+            - name: Deploy Web API Worker to Cloudflare
+              if: matrix.target == 'web-api'
+              uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0
+              with:
+                  apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                  accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+                  workingDirectory: apps/web-api
+                  command: deploy
 
             # ---------- DOCS ----------
             - name: Docs (Mintlify deploy is handled by GitHub App)

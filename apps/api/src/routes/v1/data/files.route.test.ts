@@ -11,6 +11,10 @@ const state = vi.hoisted(() => ({
 		internal: false,
 	},
 	fileMeta: new Map<string, Record<string, unknown>>(),
+	uploadClaim: { ok: true, reason: null as string | null },
+	finishClaimError: null as Error | null,
+	fallbackClaimUpdates: [] as Array<Record<string, unknown>>,
+	batchApiEnabled: true,
 	fetchCalls: [] as Array<{
 		url: string;
 		method: string;
@@ -21,6 +25,10 @@ const state = vi.hoisted(() => ({
 function resetState() {
 	state.authResult.workspaceId = "ws_files_test";
 	state.fileMeta.clear();
+	state.uploadClaim = { ok: true, reason: null };
+	state.finishClaimError = null;
+	state.fallbackClaimUpdates = [];
+	state.batchApiEnabled = true;
 	state.fetchCalls = [];
 }
 
@@ -42,10 +50,37 @@ vi.mock("@pipeline/before/auth", () => ({
 	authenticate: vi.fn(async () => state.authResult),
 }));
 
+vi.mock("@core/feature-flags", () => ({
+	getBatchApiFeatureGateName: () => "gateway_batch_api",
+	isBatchApiAccessEnabled: vi.fn(async () => state.batchApiEnabled),
+}));
+
 vi.mock("@/runtime/env", () => ({
 	getBindings: () => ({
 		OPENAI_API_KEY: "test-openai-key",
 		OPENAI_BASE_URL: "https://api.openai.example/v1",
+		BATCH_API_PREVIEW_PROVIDERS: "openai,anthropic,google-ai-studio,mistral,x-ai,groq,together",
+	}),
+	getSupabaseAdmin: () => ({
+		rpc: vi.fn(async (name: string) => {
+			if (name === "gateway_finish_batch_file_upload" && state.finishClaimError) {
+				return { data: null, error: state.finishClaimError };
+			}
+			return {
+				data: name === "gateway_claim_batch_file_upload" ? [state.uploadClaim] : null,
+				error: null,
+			};
+		}),
+		from: vi.fn(() => ({
+			update: (patch: Record<string, unknown>) => ({
+				eq: (workspaceColumn: string, workspaceId: string) => ({
+					eq: async (uploadColumn: string, uploadId: string) => {
+						state.fallbackClaimUpdates.push({ patch, workspaceColumn, workspaceId, uploadColumn, uploadId });
+						return { error: null };
+					},
+				}),
+			}),
+		})),
 	}),
 }));
 
@@ -71,6 +106,92 @@ describe("filesRoutes", () => {
 		resetState();
 		vi.resetModules();
 		vi.unstubAllGlobals();
+	});
+
+	it("rejects provider file uploads before upstream work when the Statsig gate is disabled", async () => {
+		state.batchApiEnabled = false;
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+		const { filesRoutes } = await import("./files");
+		const response = await filesRoutes.request("https://example.com/?provider=openai", {
+			method: "POST",
+			body: "{\"custom_id\":\"one\"}\n",
+		});
+
+		expect(response.status).toBe(403);
+		expect(await response.json()).toMatchObject({
+			reason: "batch_api_feature_flag_disabled",
+			feature_gate: "gateway_batch_api",
+		});
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it("stops reading streamed uploads as soon as the byte limit is crossed", async () => {
+		const { readRequestBodyWithLimit } = await import("./files");
+		const stream = new ReadableStream<Uint8Array>({
+			start(controller) {
+				controller.enqueue(new Uint8Array([1, 2, 3, 4]));
+				controller.enqueue(new Uint8Array([5, 6, 7, 8]));
+				controller.close();
+			},
+		});
+		await expect(readRequestBodyWithLimit(stream, 5)).rejects.toThrow("batch_file_too_large");
+	});
+
+	it("falls back to a scoped update when upload-claim finalization RPC fails", async () => {
+		state.finishClaimError = new Error("rpc unavailable");
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			if (String(input) === "https://api.openai.example/v1/files") {
+				return jsonResponse({ id: "file_fallback_123", purpose: "batch", status: "uploaded" });
+			}
+			throw new Error(`Unexpected fetch ${String(input)}`);
+		}));
+		const { filesRoutes } = await import("./files");
+		const response = await filesRoutes.request("https://example.com/?provider=openai", {
+			method: "POST",
+			body: new Blob(['{"ok":true}\n'], { type: "application/jsonl" }),
+		});
+		expect(response.status).toBe(200);
+		expect(state.fallbackClaimUpdates).toEqual([expect.objectContaining({
+			workspaceColumn: "workspace_id",
+			workspaceId: "ws_files_test",
+			uploadColumn: "upload_id",
+			patch: expect.objectContaining({ status: "completed", provider_file_id: "file_fallback_123" }),
+		})]);
+	});
+
+	it("rejects workspace upload quota exhaustion before shared provider storage is used", async () => {
+		state.uploadClaim = { ok: false, reason: "batch_file_hourly_quota_exceeded" };
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+		const { filesRoutes } = await import("./files");
+		const response = await filesRoutes.request("https://example.com/?provider=openai", {
+			method: "POST",
+			headers: { "Content-Type": "application/jsonl" },
+			body: '{"custom_id":"one"}\n',
+		});
+		expect(response.status).toBe(429);
+		expect(await response.json()).toMatchObject({ error: { reason: "batch_file_hourly_quota_exceeded" } });
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it("rejects a successful provider response that does not identify an uploaded file", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => new Response("not-json", {
+			status: 200,
+			headers: { "Content-Type": "text/plain" },
+		})));
+		const { filesRoutes } = await import("./files");
+		const response = await filesRoutes.request("https://example.com/?provider=openai", {
+			method: "POST",
+			headers: { "Content-Type": "application/jsonl" },
+			body: '{"custom_id":"one"}\n',
+		});
+
+		expect(response.status).toBe(502);
+		await expect(response.json()).resolves.toMatchObject({
+			error: { reason: "batch_file_upload_invalid_response" },
+		});
+		expect(state.fileMeta.size).toBe(0);
 	});
 
 	it("stores ownership on upload, allows owned retrieval and proxies content, while listing stays unsupported", async () => {
@@ -235,17 +356,17 @@ describe("filesRoutes", () => {
 					headers: Object.fromEntries(new Headers(init?.headers).entries()),
 				});
 
-				if (url === "https://api.groq.com/openai/v1/files" && method === "POST") {
+				if (url === "https://api.mistral.ai/v1/files" && method === "POST") {
 					return jsonResponse({
-						id: "file_groq_123",
+						id: "file_mistral_123",
 						object: "file",
 						purpose: "batch",
-						filename: "groq-batch.jsonl",
+						filename: "mistral-batch.jsonl",
 						status: "uploaded",
 					});
 				}
 
-				if (url === "https://api.groq.com/openai/v1/files/file_groq_123/content" && method === "GET") {
+				if (url === "https://api.mistral.ai/v1/files/file_mistral_123/content" && method === "GET") {
 					return new Response('{"ok":true}\n', {
 						status: 200,
 						headers: {
@@ -262,29 +383,29 @@ describe("filesRoutes", () => {
 
 		const uploadBody = new FormData();
 		uploadBody.set("purpose", "batch");
-		uploadBody.set("file", new Blob(['{"ok":true}\n'], { type: "application/jsonl" }), "groq-batch.jsonl");
+		uploadBody.set("file", new Blob(['{"ok":true}\n'], { type: "application/jsonl" }), "mistral-batch.jsonl");
 
-		const uploadResponse = await filesRoutes.request("https://example.com/?model=llama-3.3-70b-versatile", {
+		const uploadResponse = await filesRoutes.request("https://example.com/?model=mistral/mistral-large-latest", {
 			method: "POST",
 			body: uploadBody,
 		});
 
 		expect(uploadResponse.status).toBe(200);
-		expect(state.fileMeta.get(fileKey("ws_files_test", "file_groq_123"))).toMatchObject({
-			provider: "groq",
+		expect(state.fileMeta.get(fileKey("ws_files_test", "file_mistral_123"))).toMatchObject({
+			provider: "mistral",
 			status: "uploaded",
-			filename: "groq-batch.jsonl",
+			filename: "mistral-batch.jsonl",
 		});
 
-		const contentResponse = await filesRoutes.request("https://example.com/file_groq_123/content", {
+		const contentResponse = await filesRoutes.request("https://example.com/file_mistral_123/content", {
 			method: "GET",
 		});
 
 		expect(contentResponse.status).toBe(200);
 		expect(await contentResponse.text()).toBe('{"ok":true}\n');
 		expect(state.fetchCalls.map((call) => `${call.method} ${call.url}`)).toEqual([
-			"POST https://api.groq.com/openai/v1/files",
-			"GET https://api.groq.com/openai/v1/files/file_groq_123/content",
+			"POST https://api.mistral.ai/v1/files",
+			"GET https://api.mistral.ai/v1/files/file_mistral_123/content",
 		]);
 	});
 

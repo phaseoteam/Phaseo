@@ -8,6 +8,7 @@
 // NOTE: DALL-E 3 is scheduled for deprecation on May 12, 2026
 
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
+import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import type { ProviderExecutor } from "../../types";
 
 /**
@@ -97,7 +98,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	}
 
 	try {
-		const response = await fetch("https://api.openai.com/v1/images/generations", {
+		const response = await fetchUpstream(args, "https://api.openai.com/v1/images/generations", {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",

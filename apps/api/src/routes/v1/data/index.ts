@@ -15,13 +15,14 @@ import { rerankRoutes } from "./rerank";
 import { audioSpeechRoutes } from "./audio-speech";
 import { audioTranscriptionRoutes } from "./audio-transcription";
 import { audioTranslationRoutes } from "./audio-translation";
+import { realtimeSessionsRoutes } from "./realtime-sessions";
 import { imagesGenerationsRoutes } from "./images-generations";
 import { imagesEditsRoutes } from "./images-edits";
 import { batchRoutes } from "./batches";
+import { videosRoutes } from "./videos";
 import { filesRoutes } from "./files";
 import {
     disabledMusicRoutes,
-    disabledVideosRoutes,
 } from "./feature-disabled";
 import { ocrRoutes } from "./ocr";
 import { asyncJobsRoutes } from "./async-jobs";
@@ -37,10 +38,12 @@ inferenceRouter.route("/rerank", rerankRoutes);
 inferenceRouter.route("/audio/speech", audioSpeechRoutes);
 inferenceRouter.route("/audio/transcriptions", audioTranscriptionRoutes);
 inferenceRouter.route("/audio/translations", audioTranslationRoutes);
+inferenceRouter.route("/audio/realtime/sessions", realtimeSessionsRoutes);
+inferenceRouter.route("/realtime/sessions", realtimeSessionsRoutes);
 inferenceRouter.route("/images/generations", imagesGenerationsRoutes);
 inferenceRouter.route("/images/edits", imagesEditsRoutes);
-inferenceRouter.route("/videos", disabledVideosRoutes);
-inferenceRouter.route("/video/generations", disabledVideosRoutes);
+inferenceRouter.route("/videos", videosRoutes);
+inferenceRouter.route("/video/generations", videosRoutes);
 inferenceRouter.route("/ocr", ocrRoutes);
 inferenceRouter.route("/music/generate", disabledMusicRoutes);
 inferenceRouter.route("/music/generations", disabledMusicRoutes);

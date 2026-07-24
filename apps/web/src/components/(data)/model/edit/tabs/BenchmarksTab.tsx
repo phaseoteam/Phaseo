@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { createClient } from "@/utils/supabase/client"
+import { createAdminBenchmark, fetchAdminModelEditorSource, fetchAdminModelFormOptions } from "@/lib/fetchers/internal/adminModelEditorClient"
 
 interface BenchmarkResult {
   id: string
@@ -55,17 +55,9 @@ export default function BenchmarksTab({ modelId, onBenchmarksChange }: Benchmark
 
   useEffect(() => {
     const fetchData = async () => {
-      const supabase = createClient()
-
-      const { data: benchmarkData } = await supabase
-        .from("data_benchmark_results")
-        .select("id, benchmark_id, score, is_self_reported, other_info, source_link, variant")
-        .eq("model_id", modelId)
-
-      const { data: allBenchmarks } = await supabase
-        .from("data_benchmarks")
-        .select("id, name")
-        .order("name")
+      const [source, options] = await Promise.all([fetchAdminModelEditorSource(modelId), fetchAdminModelFormOptions()])
+      const benchmarkData = source.model?.benchmark_results ?? []
+      const allBenchmarks = options.benchmarks ?? []
 
       if (allBenchmarks) {
         setAvailableBenchmarks(allBenchmarks.map((b: any) => ({
@@ -109,19 +101,8 @@ export default function BenchmarksTab({ modelId, onBenchmarksChange }: Benchmark
     if (!id || !name) return
 
     setCreatingBenchmark(true)
-    const supabase = createClient()
-    const { error } = await supabase.from("data_benchmarks").upsert(
-      {
-        id,
-        name,
-        category: null,
-        link: null,
-        ascending_order: null,
-      },
-      { onConflict: "id" }
-    )
-
-    if (!error) {
+    try {
+      await createAdminBenchmark({ id, name })
       setAvailableBenchmarks((prev) =>
         [...prev.filter((row) => row.id !== id), { id, name }].sort((a, b) =>
           a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
@@ -141,7 +122,7 @@ export default function BenchmarksTab({ modelId, onBenchmarksChange }: Benchmark
       ])
       setNewBenchmarkId("")
       setNewBenchmarkName("")
-    }
+    } catch { /* The editor keeps the draft in place for retry. */ }
     setCreatingBenchmark(false)
   }
 

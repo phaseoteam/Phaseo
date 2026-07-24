@@ -7,5 +7,20 @@
   "status": "Active",
   "colour": "#FFBE00",
   "privacy_policy_url": "https://site.wandb.ai/privacy/",
-  "terms_of_service_url": "https://wandb.ai/site/website-terms-of-use"
+  "terms_of_service_url": "https://wandb.ai/site/website-terms-of-use",
+  "gateway_kind": null,
+  "routable": null,
+  "routing_enabled": null,
+  "sdk_package": null,
+  "api_base_url": null,
+  "docs_url": "https://docs.wandb.ai/inference",
+  "auth_env": null,
+  "api_formats": [],
+  "service_tiers": [],
+  "sources": [],
+  "verification": {
+    "status": "unverified",
+    "checked_at": null,
+    "notes": null
+  }
 }
