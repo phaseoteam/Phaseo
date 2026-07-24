@@ -522,21 +522,24 @@ publicModelsRouter.get("/", async (c) => {
 			c.env,
 			catalogueVersion,
 		);
-		const table = catalogueVersion === "v2" ? "data_models_v2" : "data_models";
+		const table = catalogueVersion === "v2" ? "v2_models" : "data_models";
 		const select = catalogueVersion === "v2"
-			? "model_id,full_name,organisation_id,description,status,release_date,announcement_date,updated_at,input_modalities,output_modalities,organisation:data_organisations!data_models_v2_organisation_id_fkey(name,colour)"
+			? "model_slug,lab_slug,name,description,status,released_at,announced_at,updated_at,input_modalities,output_modalities,organisation:v2_labs!v2_models_lab_slug_fkey(name,metadata)"
 			: "model_id,name,organisation_id,description,status,release_date,announcement_date,updated_at,input_types,output_types,organisation:data_organisations(name,colour)";
 		const createQuery = () => {
 			let query = getDataClient(c.env)
 				.from(table)
 				.select(select, { count: "exact" })
 				.eq("hidden", false)
-				.order(catalogueVersion === "v2" ? "full_name" : "name", {
+				.order("name", {
 					ascending: true,
 				});
+			if (catalogueVersion === "v2") {
+				query = query.neq("status", "disabled");
+			}
 			if (search) {
 				query = query.ilike(
-					catalogueVersion === "v2" ? "full_name" : "name",
+					"name",
 					`%${search.replace(/[\\%_]/g, "\\$&")}%`,
 				);
 			}
@@ -564,13 +567,24 @@ publicModelsRouter.get("/", async (c) => {
 			...model,
 			...(catalogueVersion === "v2"
 				? {
-					name: model.full_name,
+					model_id: model.model_slug,
+					full_name: model.name,
+					organisation_id: model.lab_slug,
+					status: v2ModelStatus(model.status),
+					release_date: model.released_at,
+					announcement_date: model.announced_at,
 					input_types: model.input_modalities,
 					output_types: model.output_modalities,
+					organisation: model.organisation && typeof model.organisation === "object"
+						? {
+							name: (model.organisation as Record<string, unknown>).name,
+							colour: ((model.organisation as Record<string, unknown>).metadata as Record<string, unknown> | null)?.colour ?? null,
+						}
+						: null,
 				}
 				: {}),
 			gateway_monitor_rows:
-				gatewayRowsByModelId.get(String(model.model_id ?? "")) ?? [],
+				gatewayRowsByModelId.get(String(model.model_slug ?? model.model_id ?? "")) ?? [],
 		}));
 		const response = withPublicCache(
 			c.json({ models, total: count, limit, offset, catalogue_version: catalogueVersion }),
