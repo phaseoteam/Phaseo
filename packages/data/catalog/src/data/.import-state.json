@@ -272,8 +272,7 @@
         "api_provider_id": "anthropic"
       }
     },
-    "../../packages/data/catalog/src/data/api_providers/anthropic/models.json": {
-      "hash": "cb4ea886dfe262f3836eed6eb8c39359",
+    $1300f8a3de44102a4a2d07a8920e83f7b",
       "meta": {
         "api_provider_id": "anthropic",
         "kind": "provider_models",
@@ -27652,7 +27651,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/anthropic/claude-opus-5/model.json": {
-      "hash": "9ffa6c9aab4099893fd7b71b5d8e2959",
+      "hash": "a2972d493d5c378b369a9d1668f603c2",
       "meta": {
         "model_id": "anthropic/claude-opus-5",
         "organisation_id": "anthropic",
