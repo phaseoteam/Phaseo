@@ -1,5 +1,13 @@
 # @phaseo/devtools-viewer
 
+## 0.2.2
+
+### Patch Changes
+
+- [#728](https://github.com/phaseoteam/Phaseo/pull/728) [`f37856b`](https://github.com/phaseoteam/Phaseo/commit/f37856b1792e9d9b821e3e7cdb50a4712a14dce3) Thanks [@dependabot](https://github.com/apps/dependabot)! - Align React and React DOM package versions in the devtools viewer dependency set.
+
+- [#1042](https://github.com/phaseoteam/Phaseo/pull/1042) [`9e3749b`](https://github.com/phaseoteam/Phaseo/commit/9e3749bfdd06b2d10278787f7c0cfa67cfa4a56a) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Harden OAuth and gateway-adjacent data access, webhook SSRF validation, error serialization, local credential handling, dependency security, and database RPC permissions following a repository-wide security audit.
+
 ## 0.2.1
 
 ### Patch Changes

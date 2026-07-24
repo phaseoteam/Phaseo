@@ -90,7 +90,7 @@ class Phaseo
         $this->warningsAsErrors = $warningsAsErrors;
         $this->logger = $logger;
         $this->lifecycleResolver = $lifecycleResolver;
-        $this->telemetryRecorder = new TelemetryRecorder($devtools, "2.0.4");
+        $this->telemetryRecorder = new TelemetryRecorder($devtools, "3.0.0");
         $this->asyncJobs = new AsyncJobsResource($this);
     }
 

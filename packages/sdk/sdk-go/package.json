@@ -1,6 +1,6 @@
 {
   "name": "@phaseo/go-sdk",
-  "version": "2.0.4",
+  "version": "3.0.0",
   "private": true,
   "description": "Phaseo Go SDK (preview) - generated client with models wrapper",
   "license": "MIT",

@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any, Dict, Mapping, MutableMapping, Optional
 
 
-SDK_VERSION = "2.0.5"
+SDK_VERSION = "3.0.0"
 
 SDK_NAME = "python"
 

@@ -5,7 +5,7 @@
 
   <groupId>app.phaseo</groupId>
   <artifactId>phaseo-sdk</artifactId>
-  <version>2.0.4</version>
+  <version>3.0.0</version>
   <packaging>jar</packaging>
   <name>Phaseo Java SDK</name>
   <description>Official Phaseo Gateway SDK for Java.</description>
