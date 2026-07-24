@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ComponentType } from "react";
+import { useEffect, useState, type ComponentType } from "react";
 import {
 	AudioLines,
 	BadgeCheck,
@@ -31,6 +31,13 @@ import {
 } from "@/components/ui/tooltip";
 import { useSidebar } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
+import {
+	BETA_PROFILE_CHANGED_EVENT,
+	REALTIME_VOICE_BETA_FEATURE,
+	isBetaFeatureEnabled,
+	readStoredBetaProfile,
+	type StatsigProfile,
+} from "@/lib/statsig/shared";
 
 const ICONS: Record<ChatRoomId, ComponentType<{ className?: string }>> = {
 	text: MessageSquareText,
@@ -45,7 +52,7 @@ const ICONS: Record<ChatRoomId, ComponentType<{ className?: string }>> = {
 	embeddings: Sparkles,
 };
 
-const DISABLED_ROOMS = new Set<ChatRoomId>(["realtime"]);
+const DISABLED_ROOMS = new Set<ChatRoomId>(["video"]);
 
 function isRoomActive(pathname: string, route: string): boolean {
 	if (route === "/chat") {
@@ -57,11 +64,33 @@ function isRoomActive(pathname: string, route: string): boolean {
 export function ChatRoomSwitcher() {
 	const pathname = usePathname() ?? "/chat";
 	const { state: sidebarState, isMobile } = useSidebar();
+	const [realtimeEnabled, setRealtimeEnabled] = useState(false);
 	const activeRoom =
 		CHAT_ROOMS.find((room) => isRoomActive(pathname, room.route)) ??
 		CHAT_ROOMS[0];
 	const ActiveIcon = ICONS[activeRoom.id];
 	const collapsed = sidebarState === "collapsed" && !isMobile;
+
+	useEffect(() => {
+		const syncRealtimeFlag = (profile = readStoredBetaProfile()) => {
+			setRealtimeEnabled(
+				isBetaFeatureEnabled(profile, REALTIME_VOICE_BETA_FEATURE),
+			);
+		};
+
+		syncRealtimeFlag();
+		const onProfileChanged = (event: Event) => {
+			syncRealtimeFlag((event as CustomEvent<StatsigProfile>).detail);
+		};
+		const onStorage = () => syncRealtimeFlag();
+
+		window.addEventListener(BETA_PROFILE_CHANGED_EVENT, onProfileChanged);
+		window.addEventListener("storage", onStorage);
+		return () => {
+			window.removeEventListener(BETA_PROFILE_CHANGED_EVENT, onProfileChanged);
+			window.removeEventListener("storage", onStorage);
+		};
+	}, []);
 
 	return (
 		<div className="px-2 py-1.5">
@@ -123,7 +152,9 @@ export function ChatRoomSwitcher() {
 					{CHAT_ROOMS.map((room) => {
 						const Icon = ICONS[room.id];
 						const active = isRoomActive(pathname, room.route);
-						const disabled = DISABLED_ROOMS.has(room.id);
+						const disabled =
+							DISABLED_ROOMS.has(room.id) ||
+							(room.id === "realtime" && !realtimeEnabled);
 						if (disabled) {
 							return (
 								<Tooltip key={room.id}>
@@ -139,7 +170,9 @@ export function ChatRoomSwitcher() {
 										</div>
 									</TooltipTrigger>
 									<TooltipContent side="right" align="center">
-										Coming Soon
+										{room.id === "realtime"
+											? "Enable in beta settings"
+											: "Coming Soon"}
 									</TooltipContent>
 								</Tooltip>
 							);
@@ -148,7 +181,8 @@ export function ChatRoomSwitcher() {
 							<DropdownMenuItem
 								key={room.id}
 								className={cn(active ? "bg-muted" : "")}
-							 render={<Link href={room.route} className="flex items-center gap-2" />}>
+								render={<Link href={room.route} className="flex items-center gap-2" />}
+							>
 
 									<Icon className="h-4 w-4" />
 									<span>{room.label}</span>

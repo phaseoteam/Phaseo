@@ -9,6 +9,7 @@ export type SettingsLayoutInitialData = {
 };
 
 export type SettingsBetaInitialData = {
+	isAdmin: boolean;
 	profile: StatsigProfile;
 	signedIn: boolean;
 };

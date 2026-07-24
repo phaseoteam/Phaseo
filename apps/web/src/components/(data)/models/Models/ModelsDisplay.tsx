@@ -35,6 +35,7 @@ import {
 	FileText,
 	Headphones,
 	Music4,
+	Radio,
 	RotateCcw,
 	Route,
 	SearchX,
@@ -174,6 +175,7 @@ const OUTPUT_MODALITY_DISPLAY_ORDER = [
 	"video",
 	"audio",
 	"audio_tts",
+	"realtime",
 	"audio_stt",
 	"embeddings",
 	"moderations",
@@ -198,6 +200,7 @@ const ENDPOINT_DISPLAY_ORDER = [
 	"audio/transcription",
 	"audio/transcriptions",
 	"audio/translations",
+	"audio/realtime",
 	"video/generations",
 ] as const;
 
@@ -218,6 +221,7 @@ const ENDPOINT_LABELS: Record<string, string> = {
 	"audio/transcription": "Transcription",
 	"audio/transcriptions": "Transcription",
 	"audio/translations": "Translation",
+	"audio/realtime": "Real-time",
 	"video/generations": "Video Generation",
 };
 
@@ -267,6 +271,9 @@ function normalizeModalityFilterValue(value: string): string {
 		.toLowerCase()
 		.replace(/[._/-]+/g, " ");
 	if (!normalized) return "";
+	if (normalized.includes("realtime") || normalized.includes("real time")) {
+		return "realtime";
+	}
 	if (normalized.includes("text")) return "text";
 	if (normalized.includes("image")) return "image";
 	if (normalized.includes("video")) return "video";
@@ -447,6 +454,7 @@ function toTitleCase(value: string): string {
 	const normalized = String(value ?? "")
 		.trim()
 		.toLowerCase();
+	if (normalized === "realtime") return "Real-time";
 	if (normalized === "audio_stt") return "Transcription";
 	if (normalized === "audio_tts") return "Speech";
 	if (normalized === "audio_music") return "Music";
@@ -522,6 +530,9 @@ function getEndpointSortRank(value: string): number {
 function getModalityIcon(modality: string): LucideIcon {
 	const normalized = modality.toLowerCase().replace(/[._/-]+/g, " ");
 
+	if (normalized.includes("realtime") || normalized.includes("real time")) {
+		return Radio;
+	}
 	if (normalized.includes("embed")) return Binary;
 	if (normalized.includes("rerank") || normalized.includes("re rank")) {
 		return ArrowUpDown;

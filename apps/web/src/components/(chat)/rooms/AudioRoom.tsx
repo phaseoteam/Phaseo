@@ -1137,6 +1137,20 @@ export function AudioRoom({
 			: dialogModelId === modelId
 				? selectedProfile
 				: null;
+	const dialogModel = useMemo(
+		() =>
+			dialogModelId
+				? (allAudioModels.find(
+						(model) =>
+							model.modelId === dialogModelId &&
+							(!dialogProfile?.providerId ||
+								model.providerId === dialogProfile.providerId),
+					) ??
+					allAudioModels.find((model) => model.modelId === dialogModelId) ??
+					null)
+				: null,
+		[allAudioModels, dialogModelId, dialogProfile?.providerId],
+	);
 	const dialogModeSupport = useMemo(() => {
 		const detected = getModelModeSupport(
 			allAudioModels,
@@ -1705,15 +1719,29 @@ export function AudioRoom({
 					requestBody.audio_b64 = await readFileAsBase64(audioFile);
 				}
 			}
+			const targetProviderId =
+				targetModelId === modelId ? selectedProviderId : undefined;
+			const targetModel =
+				allAudioModels.find(
+					(candidate) =>
+						candidate.modelId === targetModelId &&
+						(!targetProviderId || candidate.providerId === targetProviderId),
+				) ??
+				allAudioModels.find((candidate) => candidate.modelId === targetModelId) ??
+				null;
+			const targetCapabilityParamsById = targetModel?.capabilityParamsById;
+			const targetParams =
+				targetModelId === modelId
+					? ((selectedProfile?.params as AudioRoomParams) ??
+						getDefaultAudioRoomParams(targetModelId, targetCapabilityParamsById))
+					: getDefaultAudioRoomParams(targetModelId, targetCapabilityParamsById);
 			Object.assign(
 				requestBody,
 				buildAudioRequestOptions(
 					targetMode,
 					targetModelId,
-					targetModelId === modelId
-						? ((selectedProfile?.params as AudioRoomParams) ??
-							getDefaultAudioRoomParams(targetModelId))
-						: getDefaultAudioRoomParams(targetModelId),
+					targetParams,
+					targetCapabilityParamsById,
 				),
 			);
 
@@ -2592,6 +2620,7 @@ export function AudioRoom({
 					onModelChange={modelSettings.handleModelSettingsModelChange}
 					providerOptions={modelSettings.providerOptions}
 					supportedProvidersForModel={modelSettings.supportedProvidersForModel}
+					capabilityParamsById={dialogModel?.capabilityParamsById}
 					onUpdateBase={(partial) => updateModelBaseSettings(partial)}
 					onUpdateParams={(partial) => updateModelParams(partial)}
 					onReset={resetModelSettings}

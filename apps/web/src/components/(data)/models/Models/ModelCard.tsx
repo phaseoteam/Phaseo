@@ -12,6 +12,7 @@ import {
 	Captions,
 	Headphones,
 	Music4,
+	Radio,
 	Speech,
 	Video,
 	Binary,
@@ -62,6 +63,7 @@ const MODALITY_DISPLAY_ORDER = [
 	"image",
 	"audio",
 	"audio_tts",
+	"realtime",
 	"audio_stt",
 	"audio_music",
 	"video",
@@ -137,6 +139,7 @@ const providerStatusOrderIndex = new Map<string, number>(
 
 function toTitleLabel(value: string): string {
 	const normalized = value.trim().toLowerCase();
+	if (normalized === "realtime") return "Real-time";
 	if (normalized === "audio_stt") return "Transcription";
 	if (normalized === "audio_tts") return "Speech";
 	if (normalized === "audio_music") return "Music";
@@ -155,6 +158,9 @@ function toTitleLabel(value: string): string {
 
 function normalizeModalityOrderKey(value: string): string {
 	const normalized = value.toLowerCase().replace(/[._/-]+/g, " ");
+	if (normalized.includes("realtime") || normalized.includes("real time")) {
+		return "realtime";
+	}
 	if (normalized.includes("embed")) return "embedding";
 	if (normalized.includes("rerank") || normalized.includes("re rank")) {
 		return "rerank";
@@ -395,6 +401,9 @@ function summarizeDuplicatePricingItems(
 
 function getModalityIcon(value: string): LucideIcon {
 	const normalized = value.toLowerCase().replace(/[._/-]+/g, " ");
+	if (normalized.includes("realtime") || normalized.includes("real time")) {
+		return Radio;
+	}
 	if (normalized.includes("embed")) return Binary;
 	if (normalized.includes("rerank") || normalized.includes("re rank")) {
 		return ArrowUpDown;

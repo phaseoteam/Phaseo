@@ -31,6 +31,7 @@ import {
 	Globe2,
 	Headphones,
 	Music4,
+	Radio,
 	Route,
 	Sparkles,
 	Speech,
@@ -132,6 +133,7 @@ const MODALITY_FILTER_DISPLAY_ORDER = [
 	"video",
 	"audio",
 	"audio_tts",
+	"realtime",
 	"audio_stt",
 	"audio_music",
 	"file",
@@ -235,6 +237,9 @@ function normalizeModalityFilterValue(value: string): string {
 		.toLowerCase()
 		.replace(/[._/-]+/g, " ");
 	if (!normalized) return "";
+	if (normalized.includes("realtime") || normalized.includes("real time")) {
+		return "realtime";
+	}
 	if (normalized.includes("text")) return "text";
 	if (normalized.includes("image")) return "image";
 	if (normalized.includes("video")) return "video";
@@ -325,6 +330,7 @@ function toTitleCase(value: string): string {
 	const normalized = String(value ?? "")
 		.trim()
 		.toLowerCase();
+	if (normalized === "realtime") return "Real-time";
 	if (normalized === "audio_stt") return "Transcription";
 	if (normalized === "audio_tts") return "Speech";
 	if (normalized === "audio_music") return "Music";
@@ -355,6 +361,9 @@ function formatStatusLabel(value: string): string {
 
 function getModalityIcon(modality: string): LucideIcon {
 	const normalized = modality.toLowerCase().replace(/[._/-]+/g, " ");
+	if (normalized.includes("realtime") || normalized.includes("real time")) {
+		return Radio;
+	}
 	if (normalized.includes("rerank") || normalized.includes("re rank")) {
 		return ArrowUpDown;
 	}

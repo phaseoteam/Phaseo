@@ -17,6 +17,7 @@ import { drainEmailOutbox } from "@/pipeline/notifications/email-outbox";
 import { runVideoReconciliationJob } from "@/pipeline/video-reconciliation";
 import { runGatewayIoRetentionBillingJob } from "@/pipeline/audit/io-retention-billing";
 import { runBatchProviderWebhookReplayJob } from "@/routes/internal/batch-webhooks.helpers";
+import { runRealtimeSessionReconciliationJob } from "@core/realtime-sessions";
 
 const MODEL_DISCOVERY_TICKS_PER_DAY = Array.from({ length: 24 }, (_value, hour) =>
 	60 / getModelDiscoveryStepMinutesUtc(hour),
@@ -200,6 +201,28 @@ async function handleBatchReconciliationScheduledEvent(event: ScheduledControlle
 	}
 }
 
+async function handleRealtimeSessionReconciliationScheduledEvent(_event: ScheduledController, env: GatewayBindings): Promise<void> {
+	if (!toBool(env.REALTIME_SESSION_RECONCILIATION_ENABLED, true)) {
+		return;
+	}
+
+	const limit = toInt(env.REALTIME_SESSION_RECONCILIATION_LIMIT, 100);
+	configureRuntime(env);
+	try {
+		const summary = await runRealtimeSessionReconciliationJob({
+			limit,
+			relay: env.REALTIME_RELAY,
+		});
+		if (summary.sessionsBillingUnresolved > 0) {
+			console.error("realtime_billing_unresolved_alert", summary);
+		} else if (summary.sessionsExpired > 0 || summary.sessionsErrored > 0) {
+			console.log("realtime_session_reconciliation_completed", summary);
+		}
+	} finally {
+		clearRuntime();
+	}
+}
+
 async function handleAsyncWebhookRetriesScheduledEvent(_event: ScheduledController, env: GatewayBindings): Promise<void> {
 	if (!toBool(env.ASYNC_WEBHOOK_RETRIES_ENABLED, true)) {
 		return;
@@ -361,6 +384,11 @@ export async function handleScheduledEvent(event: ScheduledController, env: Gate
 			await handleBatchReconciliationScheduledEvent(event, env);
 		} catch (error) {
 			console.error("batch_reconciliation_scheduled_failed", serializeError(error));
+		}
+		try {
+			await handleRealtimeSessionReconciliationScheduledEvent(event, env);
+		} catch (error) {
+			console.error("realtime_session_reconciliation_scheduled_failed", serializeError(error));
 		}
 	}
 	if (isModelDiscoveryTick(event)) {
