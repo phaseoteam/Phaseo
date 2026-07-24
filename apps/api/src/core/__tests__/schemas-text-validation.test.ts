@@ -94,7 +94,7 @@ describe("text request schema validation", () => {
 				type: "phaseo:advisor",
 				parameters: {
 					name: "reviewer",
-					model: "claude-opus-4-8",
+					model: "claude-opus-5",
 					instructions: "Review for correctness and missing edge cases.",
 					forward_transcript: true,
 					max_uses: 2,
@@ -452,7 +452,7 @@ describe("text request schema validation", () => {
 			tools: [{
 				type: "phaseo:advisor",
 				parameters: {
-					model: "claude-opus-4-8",
+					model: "claude-opus-5",
 					max_uses: 2,
 					max_tokens: 1400,
 				},
@@ -489,7 +489,7 @@ describe("text request schema validation", () => {
 				type: "phaseo:advisor",
 				parameters: {
 					name: "reviewer",
-					model: "claude-opus-4-8",
+					model: "claude-opus-5",
 					instructions: "Review for correctness and missing edge cases.",
 					forward_transcript: true,
 					max_uses: 2,
@@ -509,7 +509,7 @@ describe("text request schema validation", () => {
 			tools: [{
 				type: "advisor_20260301",
 				name: "advisor",
-				model: "claude-opus-4-8",
+				model: "claude-opus-5",
 				max_uses: 2,
 				max_tokens: 1400,
 			}],

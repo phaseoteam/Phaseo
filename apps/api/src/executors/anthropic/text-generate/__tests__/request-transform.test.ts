@@ -70,7 +70,7 @@ describe("irToAnthropicMessages service controls", () => {
 				raw: {
 					type: "advisor_20260301",
 					name: "advisor",
-					model: "claude-opus-4-8",
+					model: "claude-opus-5",
 					max_tokens: 1400,
 					caching: { type: "ephemeral", ttl: "5m" },
 				},
@@ -83,7 +83,7 @@ describe("irToAnthropicMessages service controls", () => {
 			{
 				type: "advisor_20260301",
 				name: "advisor",
-				model: "claude-opus-4-8",
+				model: "claude-opus-5",
 				max_tokens: 1400,
 				caching: { type: "ephemeral", ttl: "5m" },
 			},

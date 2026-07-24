@@ -16,7 +16,7 @@ function makeProviderPricing(
 			{
 				id: "pm-1",
 				api_provider_id: "anthropic",
-				model_id: "anthropic/claude-opus-4.8",
+				model_id: "anthropic/claude-opus-5",
 				endpoint: "text.generate",
 				is_active_gateway: true,
 				input_modalities: "text",
@@ -26,7 +26,7 @@ function makeProviderPricing(
 		pricing_rules: [
 			{
 				id: "rule-1",
-				model_key: "anthropic:anthropic/claude-opus-4.8:text.generate",
+				model_key: "anthropic:anthropic/claude-opus-5:text.generate",
 				pricing_plan: "standard",
 				meter: "input_text_tokens",
 				unit: "token",
@@ -70,7 +70,7 @@ describe("getPricingProviderVariantLabels", () => {
 				{
 					id: "pm-2",
 					api_provider_id: "anthropic-us",
-					model_id: "anthropic/claude-opus-4.8",
+					model_id: "anthropic/claude-opus-5",
 					endpoint: "text.generate",
 					is_active_gateway: true,
 					input_modalities: "text",
@@ -80,7 +80,7 @@ describe("getPricingProviderVariantLabels", () => {
 			pricing_rules: [
 				{
 					id: "rule-2",
-					model_key: "anthropic-us:anthropic/claude-opus-4.8:text.generate",
+					model_key: "anthropic-us:anthropic/claude-opus-5:text.generate",
 					pricing_plan: "standard",
 					meter: "input_text_tokens",
 					unit: "token",
@@ -107,7 +107,7 @@ describe("getPricingProviderVariantLabels", () => {
 				{
 					id: "pm-3",
 					api_provider_id: "anthropic-aws",
-					model_id: "anthropic/claude-opus-4.8",
+					model_id: "anthropic/claude-opus-5",
 					endpoint: "text.generate",
 					is_active_gateway: true,
 					input_modalities: "text",
@@ -117,7 +117,7 @@ describe("getPricingProviderVariantLabels", () => {
 			pricing_rules: [
 				{
 					id: "rule-3",
-					model_key: "anthropic-aws:anthropic/claude-opus-4.8:text.generate",
+					model_key: "anthropic-aws:anthropic/claude-opus-5:text.generate",
 					pricing_plan: "standard",
 					meter: "input_text_tokens",
 					unit: "token",
@@ -167,7 +167,7 @@ describe("getPricingProviderVariantLabels", () => {
 				{
 					id: "pm-2",
 					api_provider_id: "anthropic-us",
-					model_id: "anthropic/claude-opus-4.8",
+					model_id: "anthropic/claude-opus-5",
 					endpoint: "text.generate",
 					is_active_gateway: true,
 					input_modalities: "text",
@@ -177,7 +177,7 @@ describe("getPricingProviderVariantLabels", () => {
 			pricing_rules: [
 				{
 					id: "rule-2",
-					model_key: "anthropic-us:anthropic/claude-opus-4.8:text.generate",
+					model_key: "anthropic-us:anthropic/claude-opus-5:text.generate",
 					pricing_plan: "standard",
 					meter: "input_text_tokens",
 					unit: "token",

@@ -395,7 +395,7 @@ describe("prepareServerToolsForTextRequest", () => {
 						type: "phaseo:advisor",
 						parameters: {
 							name: "reviewer",
-							model: "claude-opus-4-8",
+							model: "claude-opus-5",
 							instructions: "Review for migration risk.",
 							forward_transcript: true,
 							max_uses: 2,
@@ -425,7 +425,7 @@ describe("prepareServerToolsForTextRequest", () => {
 		expect(result.config.defaultAdvisorFunctionName).toBe("phaseo_advisor_reviewer");
 		expect(result.config.advisors?.phaseo_advisor_reviewer).toMatchObject({
 			name: "reviewer",
-			model: "claude-opus-4-8",
+			model: "claude-opus-5",
 			instructions: "Review for migration risk.",
 			forwardTranscript: true,
 			maxUses: 2,
@@ -469,7 +469,7 @@ describe("prepareServerToolsForTextRequest", () => {
 				tools: [
 					{
 						type: "phaseo:advisor",
-						parameters: { model: "anthropic/claude-opus-4-8" },
+						parameters: { model: "anthropic/claude-opus-5" },
 					},
 				],
 				tool_choice: "phaseo:advisor",
@@ -1012,7 +1012,7 @@ describe("buildServerToolContinuation", () => {
 									name: "phaseo_advisor_reviewer",
 									arguments: JSON.stringify({
 										prompt: "Review this migration plan.",
-										model: "anthropic/claude-opus-4-8",
+										model: "anthropic/claude-opus-5",
 									}),
 								},
 							],
@@ -1050,7 +1050,7 @@ describe("buildServerToolContinuation", () => {
 		);
 
 		expect(executeAdvisor).toHaveBeenCalledWith({
-			model: "anthropic/claude-opus-4-8",
+			model: "anthropic/claude-opus-5",
 			prompt: "Review this migration plan.",
 			maxTokens: 1400,
 			instructions: "Review for migration risk.",
@@ -1067,7 +1067,7 @@ describe("buildServerToolContinuation", () => {
 		expect(JSON.parse(String(continuation?.toolResults[0]?.content))).toEqual({
 			status: "ok",
 			name: "reviewer",
-			model: "anthropic/claude-opus-4-8",
+			model: "anthropic/claude-opus-5",
 			advice: "Use a smaller migration with explicit rollback steps.",
 		});
 	});

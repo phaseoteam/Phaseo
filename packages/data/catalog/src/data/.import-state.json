@@ -211,7 +211,7 @@
           "anthropic/claude-opus-4.5",
           "anthropic/claude-opus-4.6",
           "anthropic/claude-opus-4.7",
-          "anthropic/claude-opus-4.8",
+          "anthropic/claude-opus-5",
           "anthropic/claude-sonnet-4",
           "anthropic/claude-sonnet-4.5",
           "anthropic/claude-sonnet-4.6",
@@ -291,7 +291,7 @@
           "anthropic/claude-sonnet-4.5",
           "anthropic/claude-sonnet-4.6",
           "anthropic/claude-opus-4.7",
-          "anthropic/claude-opus-4.8",
+          "anthropic/claude-opus-5",
           "anthropic/claude-mythos-preview",
           "anthropic/claude-mythos-5",
           "anthropic/claude-fable-5",
@@ -1064,7 +1064,7 @@
           "anthropic/claude-opus-4.5",
           "anthropic/claude-opus-4.6",
           "anthropic/claude-opus-4.7",
-          "anthropic/claude-opus-4.8",
+          "anthropic/claude-opus-5",
           "anthropic/claude-sonnet-4",
           "anthropic/claude-sonnet-4.5",
           "anthropic/claude-sonnet-4.6",
@@ -2045,7 +2045,7 @@
           "anthropic/claude-opus-4.5",
           "anthropic/claude-opus-4.6",
           "anthropic/claude-opus-4.7",
-          "anthropic/claude-opus-4.8",
+          "anthropic/claude-opus-5",
           "anthropic/claude-sonnet-4.5",
           "anthropic/claude-sonnet-4.6",
           "anthropic/claude-sonnet-5",
@@ -26555,7 +26555,7 @@
           "anthropic/claude-sonnet-4.6",
           "anthropic/claude-sonnet-5",
           "anthropic/claude-opus-4.7",
-          "anthropic/claude-opus-4.8",
+          "anthropic/claude-opus-5",
           "anthropic/claude-fable-5"
         ]
       }
@@ -27396,7 +27396,7 @@
           "anthropic/claude-sonnet-4.6",
           "anthropic/claude-sonnet-5",
           "anthropic/claude-opus-4.7",
-          "anthropic/claude-opus-4.8",
+          "anthropic/claude-opus-5",
           "anthropic/claude-mythos-preview",
           "anthropic/claude-fable-5"
         ]
@@ -27544,7 +27544,7 @@
           "anthropic/claude-sonnet-4.6",
           "anthropic/claude-sonnet-5",
           "anthropic/claude-opus-4.7",
-          "anthropic/claude-opus-4.8",
+          "anthropic/claude-opus-5",
           "anthropic/claude-fable-5"
         ]
       }
@@ -27651,13 +27651,13 @@
         "family_id": "minimax/minimax-m3"
       }
     },
-    "../../packages/data/catalog/src/data/models/anthropic/claude-opus-4.8/model.json": {
+    "../../packages/data/catalog/src/data/models/anthropic/claude-opus-5/model.json": {
       "hash": "9ffa6c9aab4099893fd7b71b5d8e2959",
       "meta": {
-        "model_id": "anthropic/claude-opus-4.8",
+        "model_id": "anthropic/claude-opus-5",
         "organisation_id": "anthropic",
         "previous_model_id": "anthropic/claude-opus-4.7",
-        "api_model_id": "anthropic/claude-opus-4.8",
+        "api_model_id": "anthropic/claude-opus-5",
         "has_page_notice": false
       }
     },
@@ -28053,40 +28053,40 @@
         "model_key": "alibaba-cloud:qwen/text-embedding-v4:text.embed"
       }
     },
-    "../../packages/data/catalog/src/data/pricing/anthropic/anthropic-claude-opus-4.8/text.generate/pricing.json": {
+    "../../packages/data/catalog/src/data/pricing/anthropic/anthropic-claude-opus-5/text.generate/pricing.json": {
       "hash": "110d87159a6a30b06dc000472fe9d930",
       "meta": {
         "api_provider_id": "anthropic",
         "capability_id": "text.generate",
-        "model_id": "anthropic/claude-opus-4.8",
-        "model_key": "anthropic:anthropic/claude-opus-4.8:text.generate"
+        "model_id": "anthropic/claude-opus-5",
+        "model_key": "anthropic:anthropic/claude-opus-5:text.generate"
       }
     },
-    "../../packages/data/catalog/src/data/pricing/anthropic-aws/anthropic-claude-opus-4.8/text.generate/pricing.json": {
+    "../../packages/data/catalog/src/data/pricing/anthropic-aws/anthropic-claude-opus-5/text.generate/pricing.json": {
       "hash": "72986ce77f71fa167b70725570eed8f5",
       "meta": {
         "api_provider_id": "anthropic-aws",
         "capability_id": "text.generate",
-        "model_id": "anthropic/claude-opus-4.8",
-        "model_key": "anthropic-aws:anthropic/claude-opus-4.8:text.generate"
+        "model_id": "anthropic/claude-opus-5",
+        "model_key": "anthropic-aws:anthropic/claude-opus-5:text.generate"
       }
     },
-    "../../packages/data/catalog/src/data/pricing/anthropic-aws-us/anthropic-claude-opus-4.8/text.generate/pricing.json": {
+    "../../packages/data/catalog/src/data/pricing/anthropic-aws-us/anthropic-claude-opus-5/text.generate/pricing.json": {
       "hash": "47271532de5cc47ed0e57ca35b14bf49",
       "meta": {
         "api_provider_id": "anthropic-aws-us",
         "capability_id": "text.generate",
-        "model_id": "anthropic/claude-opus-4.8",
-        "model_key": "anthropic-aws-us:anthropic/claude-opus-4.8:text.generate"
+        "model_id": "anthropic/claude-opus-5",
+        "model_key": "anthropic-aws-us:anthropic/claude-opus-5:text.generate"
       }
     },
-    "../../packages/data/catalog/src/data/pricing/anthropic-us/anthropic-claude-opus-4.8/text.generate/pricing.json": {
+    "../../packages/data/catalog/src/data/pricing/anthropic-us/anthropic-claude-opus-5/text.generate/pricing.json": {
       "hash": "fbf81ceb4da19478219daa308a68c331",
       "meta": {
         "api_provider_id": "anthropic-us",
         "capability_id": "text.generate",
-        "model_id": "anthropic/claude-opus-4.8",
-        "model_key": "anthropic-us:anthropic/claude-opus-4.8:text.generate"
+        "model_id": "anthropic/claude-opus-5",
+        "model_key": "anthropic-us:anthropic/claude-opus-5:text.generate"
       }
     },
     "../../packages/data/catalog/src/data/pricing/atlascloud/deepseek-deepseek-ocr/ocr/pricing.json": {
@@ -28287,13 +28287,13 @@
         "model_key": "google-ai-studio:google/gemini-3.5-flash:text.generate"
       }
     },
-    "../../packages/data/catalog/src/data/pricing/google-vertex/anthropic-claude-opus-4.8/text.generate/pricing.json": {
+    "../../packages/data/catalog/src/data/pricing/google-vertex/anthropic-claude-opus-5/text.generate/pricing.json": {
       "hash": "4c5c13673abf9e28eef65cf6654aab2a",
       "meta": {
         "api_provider_id": "google-vertex",
         "capability_id": "text.generate",
-        "model_id": "anthropic/claude-opus-4.8",
-        "model_key": "google-vertex:anthropic/claude-opus-4.8:text.generate"
+        "model_id": "anthropic/claude-opus-5",
+        "model_key": "google-vertex:anthropic/claude-opus-5:text.generate"
       }
     },
     "../../packages/data/catalog/src/data/pricing/google-vertex/google-gemini-3.5-flash/text.generate/pricing.json": {
@@ -28593,13 +28593,13 @@
         "model_key": "venice:anthropic/claude-opus-4.7-fast:text.generate"
       }
     },
-    "../../packages/data/catalog/src/data/pricing/venice/anthropic-claude-opus-4.8/text.generate/pricing.json": {
+    "../../packages/data/catalog/src/data/pricing/venice/anthropic-claude-opus-5/text.generate/pricing.json": {
       "hash": "046d80d8578f11cddf162d3f8be74970",
       "meta": {
         "api_provider_id": "venice",
         "capability_id": "text.generate",
-        "model_id": "anthropic/claude-opus-4.8",
-        "model_key": "venice:anthropic/claude-opus-4.8:text.generate"
+        "model_id": "anthropic/claude-opus-5",
+        "model_key": "venice:anthropic/claude-opus-5:text.generate"
       }
     },
     "../../packages/data/catalog/src/data/pricing/venice/anthropic-claude-opus-5-fast/text.generate/pricing.json": {
@@ -28679,7 +28679,7 @@
       "meta": {
         "model_id": "anthropic/claude-fable-5",
         "organisation_id": "anthropic",
-        "previous_model_id": "anthropic/claude-opus-4.8",
+        "previous_model_id": "anthropic/claude-opus-5",
         "api_model_id": "anthropic/claude-fable-5",
         "has_page_notice": false
       }
@@ -32299,7 +32299,7 @@
           "openai/gpt-5.5",
           "anthropic/claude-sonnet-4.6",
           "anthropic/claude-opus-4.7",
-          "anthropic/claude-opus-4.8",
+          "anthropic/claude-opus-5",
           "google/gemini-2.5-pro",
           "google/gemini-3.5-flash",
           "spacex-ai/grok-code-fast-1"
@@ -32352,7 +32352,7 @@
           "anthropic/claude-opus-4.5",
           "anthropic/claude-opus-4.6",
           "anthropic/claude-opus-4.7",
-          "anthropic/claude-opus-4.8",
+          "anthropic/claude-opus-5",
           "google/gemini-2.5-pro",
           "google/gemini-3-flash-preview",
           "google/gemini-3.1-pro-preview",
@@ -32380,7 +32380,7 @@
           "anthropic/claude-opus-4.5",
           "anthropic/claude-opus-4.6",
           "anthropic/claude-opus-4.7",
-          "anthropic/claude-opus-4.8",
+          "anthropic/claude-opus-5",
           "google/gemini-2.5-pro",
           "google/gemini-3-flash-preview",
           "google/gemini-3.1-pro-preview",
@@ -32408,7 +32408,7 @@
           "anthropic/claude-opus-4.5",
           "anthropic/claude-opus-4.6",
           "anthropic/claude-opus-4.7",
-          "anthropic/claude-opus-4.8",
+          "anthropic/claude-opus-5",
           "google/gemini-2.5-pro",
           "google/gemini-3-flash-preview",
           "google/gemini-3.1-pro-preview",

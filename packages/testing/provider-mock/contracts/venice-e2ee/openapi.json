@@ -2503,7 +2503,7 @@
             "description": "Anthropic beta parameter for Claude Fable 5 server-side refusal fallback. Forwarded only for direct Anthropic routes; ignored for other providers.",
             "example": [
               {
-                "model": "claude-opus-4-8"
+                "model": "claude-opus-5"
               }
             ]
           },
@@ -3819,7 +3819,7 @@
             "description": "Anthropic beta parameter for Claude Fable 5 server-side refusal fallback. Forwarded only for direct Anthropic routes; ignored for other providers.",
             "example": [
               {
-                "model": "claude-opus-4-8"
+                "model": "claude-opus-5"
               }
             ]
           },

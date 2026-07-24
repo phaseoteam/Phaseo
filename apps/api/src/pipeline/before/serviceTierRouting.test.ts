@@ -132,21 +132,21 @@ describe("applyServiceTierRouting", () => {
             candidates: [
                 makeCandidate({
                     providerId: "anthropic",
-                    apiModelId: "anthropic/claude-opus-4.8",
-                    providerModelSlug: "claude-opus-4-8",
+                    apiModelId: "anthropic/claude-opus-5",
+                    providerModelSlug: "claude-opus-5",
                     pricingCard: makeCard({
                         provider: "anthropic",
-                        model: "anthropic/claude-opus-4.8",
+                        model: "anthropic/claude-opus-5",
                         plans: ["standard", "priority"],
                     }),
                 }),
                 makeCandidate({
                     providerId: "anthropic-aws",
-                    apiModelId: "anthropic/claude-opus-4.8",
-                    providerModelSlug: "claude-opus-4-8",
+                    apiModelId: "anthropic/claude-opus-5",
+                    providerModelSlug: "claude-opus-5",
                     pricingCard: makeCard({
                         provider: "anthropic-aws",
-                        model: "anthropic/claude-opus-4.8",
+                        model: "anthropic/claude-opus-5",
                         plans: ["standard"],
                     }),
                 }),
@@ -170,19 +170,19 @@ describe("applyServiceTierRouting", () => {
             candidates: [
                 makeCandidate({
                     providerId: "anthropic",
-                    apiModelId: "anthropic/claude-opus-4.8",
+                    apiModelId: "anthropic/claude-opus-5",
                     pricingCard: makeCard({
                         provider: "anthropic",
-                        model: "anthropic/claude-opus-4.8",
+                        model: "anthropic/claude-opus-5",
                         plans: ["standard", "priority"],
                     }),
                 }),
                 makeCandidate({
                     providerId: "anthropic-aws",
-                    apiModelId: "anthropic/claude-opus-4.8",
+                    apiModelId: "anthropic/claude-opus-5",
                     pricingCard: makeCard({
                         provider: "anthropic-aws",
-                        model: "anthropic/claude-opus-4.8",
+                        model: "anthropic/claude-opus-5",
                         plans: ["standard"],
                     }),
                 }),
@@ -203,11 +203,11 @@ describe("applyServiceTierRouting", () => {
             candidates: [
                 makeCandidate({
                     providerId: "anthropic-priority",
-                    apiModelId: "anthropic/claude-opus-4.8",
-                    providerModelSlug: "claude-opus-4-8",
+                    apiModelId: "anthropic/claude-opus-5",
+                    providerModelSlug: "claude-opus-5",
                     pricingCard: makeCard({
                         provider: "anthropic-priority",
-                        model: "anthropic/claude-opus-4.8",
+                        model: "anthropic/claude-opus-5",
                         plans: ["standard"],
                     }),
                     offerScope: "specialized",
@@ -228,9 +228,9 @@ describe("applyServiceTierRouting", () => {
         queryState.providerRows = [
             {
                 provider_id: "venice",
-                api_model_id: "anthropic/claude-opus-5-fast",
+                api_model_id: "anthropic/claude-opus-4.8-fast",
                 provider_api_model_id: "venice-fast-pam",
-                provider_model_slug: "claude-opus-5-fast",
+                provider_model_slug: "claude-opus-4-8-fast",
                 is_active_gateway: false,
                 effective_from: "2026-05-29T00:00:00Z",
                 effective_to: null,
@@ -251,11 +251,11 @@ describe("applyServiceTierRouting", () => {
             candidates: [
                 makeCandidate({
                     providerId: "venice",
-                    apiModelId: "anthropic/claude-opus-4.8",
-                    providerModelSlug: "claude-opus-4-8",
+                    apiModelId: "anthropic/claude-opus-5",
+                    providerModelSlug: "claude-opus-5",
                     pricingCard: makeCard({
                         provider: "venice",
-                        model: "anthropic/claude-opus-4.8",
+                        model: "anthropic/claude-opus-5",
                         plans: ["standard", "priority"],
                     }),
                 }),
@@ -270,7 +270,7 @@ describe("applyServiceTierRouting", () => {
             providerId: "venice",
             apiModelId: "anthropic/claude-opus-5",
             pricingKey: "venice:anthropic/claude-opus-5",
-            providerModelSlug: "claude-opus-5-fast",
+            providerModelSlug: "claude-opus-4-8-fast",
             maxInputTokens: 1_000_000,
             maxOutputTokens: 128_000,
             capabilityParams: { reasoning: true },
@@ -279,7 +279,7 @@ describe("applyServiceTierRouting", () => {
             {
                 providerId: "venice",
                 fromApiModelId: "anthropic/claude-opus-5",
-                toApiModelId: "anthropic/claude-opus-5-fast",
+                toApiModelId: "anthropic/claude-opus-4.8-fast",
                 reason: "priority_fast_sibling",
             },
         ]);
@@ -514,8 +514,8 @@ describe("applyServiceTierRouting", () => {
             candidates: [
                 makeCandidate({
                     providerId: "venice",
-                    apiModelId: "anthropic/claude-opus-4.8",
-                    providerModelSlug: "claude-opus-4-8",
+                    apiModelId: "anthropic/claude-opus-5",
+                    providerModelSlug: "claude-opus-5",
                     pricingCard: null,
                 }),
             ],

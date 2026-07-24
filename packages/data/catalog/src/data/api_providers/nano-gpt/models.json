@@ -531,10 +531,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-opus-4.8",
-    "provider_api_model_id": "nano-gpt:anthropic/claude-opus-4.8",
-    "provider_model_slug": "anthropic/claude-opus-4.8",
-    "internal_model_id": "anthropic/claude-opus-4.8",
+    "api_model_id": "anthropic/claude-opus-5",
+    "provider_api_model_id": "nano-gpt:anthropic/claude-opus-5",
+    "provider_model_slug": "anthropic/claude-opus-5",
+    "internal_model_id": "anthropic/claude-opus-5",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image,pdf",
@@ -579,7 +579,7 @@
         "kind": "models.dev",
         "url": "https://models.dev/api.json",
         "accessed_at": "2026-07-23T09:08:52.190Z",
-        "notes": "Provider model slug: anthropic/claude-opus-4.8"
+        "notes": "Provider model slug: anthropic/claude-opus-5"
       }
     ],
     "verification": {

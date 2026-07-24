@@ -498,7 +498,7 @@ describe("decodeAnthropicMessagesRequest", () => {
 				{
 					type: "advisor_20260301",
 					name: "advisor",
-					model: "claude-opus-4-8",
+					model: "claude-opus-5",
 					max_tokens: 1400,
 				},
 			],
@@ -516,7 +516,7 @@ describe("decodeAnthropicMessagesRequest", () => {
 				raw: {
 					type: "advisor_20260301",
 					name: "advisor",
-					model: "claude-opus-4-8",
+					model: "claude-opus-5",
 					max_tokens: 1400,
 				},
 			},

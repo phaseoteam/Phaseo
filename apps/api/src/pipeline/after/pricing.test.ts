@@ -347,7 +347,7 @@ describe("after/pricing calculatePricing", () => {
 		const priorityCard: PriceCard = {
 			...TTS_CARD,
 			provider: "venice",
-			model: "anthropic/claude-opus-4.8",
+			model: "anthropic/claude-opus-5",
 			endpoint: "text.generate",
 			rules: [
 				{
@@ -388,7 +388,7 @@ describe("after/pricing calculatePricing", () => {
 		const priorityCard: PriceCard = {
 			...TTS_CARD,
 			provider: "venice",
-			model: "anthropic/claude-opus-4.8",
+			model: "anthropic/claude-opus-5",
 			endpoint: "text.generate",
 			rules: [
 				{
@@ -430,7 +430,7 @@ describe("after/pricing calculatePricing", () => {
 		const priorityCard: PriceCard = {
 			...TTS_CARD,
 			provider: "venice",
-			model: "anthropic/claude-opus-4.8",
+			model: "anthropic/claude-opus-5",
 			endpoint: "text.generate",
 			rules: [
 				{
@@ -471,7 +471,7 @@ describe("after/pricing calculatePricing", () => {
 		const priorityCard: PriceCard = {
 			...TTS_CARD,
 			provider: "venice",
-			model: "anthropic/claude-opus-4.8",
+			model: "anthropic/claude-opus-5",
 			endpoint: "text.generate",
 			rules: [
 				{
@@ -511,7 +511,7 @@ describe("after/pricing calculatePricing", () => {
 
 	it("prefers the remapped provider-model pricing card when present in context", async () => {
 		const ctx = {
-			model: "anthropic/claude-opus-4.8",
+			model: "anthropic/claude-opus-5",
 			capability: "text.generate",
 			pricing: {
 				"venice:anthropic/claude-opus-5-fast": {
@@ -582,7 +582,7 @@ describe("after/pricing calculatePricing", () => {
 					venice: {
 						...TTS_CARD,
 						provider: "venice",
-						model: "anthropic/claude-opus-4.8",
+						model: "anthropic/claude-opus-5",
 					},
 				},
 			} as any,

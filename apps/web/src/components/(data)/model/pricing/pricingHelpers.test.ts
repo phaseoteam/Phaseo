@@ -251,10 +251,10 @@ describe("buildProviderSections", () => {
 		provider.provider.provider_family_id = "venice";
 		provider.provider_models = [
 			{
-				id: "venice:anthropic/claude-opus-4.8:text.generate",
+				id: "venice:anthropic/claude-opus-5:text.generate",
 				api_provider_id: "venice",
-				model_id: "anthropic/claude-opus-4.8",
-				provider_model_slug: "claude-opus-4-8",
+				model_id: "anthropic/claude-opus-5",
+				provider_model_slug: "claude-opus-5",
 				endpoint: "text.generate",
 				capability_status: "active",
 				is_active_gateway: true,
@@ -282,7 +282,7 @@ describe("buildProviderSections", () => {
 		provider.pricing_rules = [
 			{
 				id: "venice-std-input",
-				model_key: "venice:anthropic/claude-opus-4.8:text.generate",
+				model_key: "venice:anthropic/claude-opus-5:text.generate",
 				pricing_plan: "standard",
 				meter: "input_text_tokens",
 				unit: "token",
@@ -297,7 +297,7 @@ describe("buildProviderSections", () => {
 			},
 			{
 				id: "venice-priority-input",
-				model_key: "venice:anthropic/claude-opus-4.8:text.generate",
+				model_key: "venice:anthropic/claude-opus-5:text.generate",
 				pricing_plan: "priority",
 				meter: "input_text_tokens",
 				unit: "token",
