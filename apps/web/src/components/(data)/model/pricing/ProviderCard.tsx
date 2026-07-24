@@ -468,10 +468,10 @@ function renderSecondaryTierSummary(
 	return (
 		<div
 			className={cn(
-				"inline-grid items-baseline gap-x-1 gap-y-0.5",
+				"inline-grid items-baseline gap-x-0.5 gap-y-0.5",
 				hasAnyComparison
-					? "grid-cols-[9rem_repeat(3,3.5rem)]"
-					: "grid-cols-[9rem_repeat(2,3.5rem)]",
+					? "grid-cols-[7rem_repeat(3,3rem)]"
+					: "grid-cols-[7rem_repeat(2,3rem)]",
 			)}
 		>
 			{orderedTiers.map((tier, index) => {
