@@ -2339,10 +2339,7 @@ export default function ProviderCard({
 			upcomingFor("videoInputs").length > 0 ||
 			sec.otherRules.length > 0 ||
 			upcomingFor("other").length > 0) ? (
-			<div className="space-y-2 pt-1">
-				<div>
-					<h4 className="text-xs font-semibold text-foreground">Additional meters</h4>
-				</div>
+			<div className="space-y-2 border-t border-zinc-200/80 pt-2 dark:border-zinc-800">
 				{additionalTokenMetricTiles.length > 0 ? (
 					<div className="divide-y divide-zinc-200/70 dark:divide-zinc-800">
 						{additionalTokenMetricTiles.map((tile) => (
