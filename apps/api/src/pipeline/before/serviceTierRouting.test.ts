@@ -228,9 +228,9 @@ describe("applyServiceTierRouting", () => {
         queryState.providerRows = [
             {
                 provider_id: "venice",
-                api_model_id: "anthropic/claude-opus-4.8-fast",
+                api_model_id: "anthropic/claude-opus-5-fast",
                 provider_api_model_id: "venice-fast-pam",
-                provider_model_slug: "claude-opus-4-8-fast",
+                provider_model_slug: "claude-opus-5-fast",
                 is_active_gateway: false,
                 effective_from: "2026-05-29T00:00:00Z",
                 effective_to: null,
@@ -268,9 +268,9 @@ describe("applyServiceTierRouting", () => {
         expect(result.candidates).toHaveLength(1);
         expect(result.candidates[0]).toMatchObject({
             providerId: "venice",
-            apiModelId: "anthropic/claude-opus-4.8",
-            pricingKey: "venice:anthropic/claude-opus-4.8",
-            providerModelSlug: "claude-opus-4-8-fast",
+            apiModelId: "anthropic/claude-opus-5",
+            pricingKey: "venice:anthropic/claude-opus-5",
+            providerModelSlug: "claude-opus-5-fast",
             maxInputTokens: 1_000_000,
             maxOutputTokens: 128_000,
             capabilityParams: { reasoning: true },
@@ -278,8 +278,8 @@ describe("applyServiceTierRouting", () => {
         expect(result.diagnostics.remappedProviders).toMatchObject([
             {
                 providerId: "venice",
-                fromApiModelId: "anthropic/claude-opus-4.8",
-                toApiModelId: "anthropic/claude-opus-4.8-fast",
+                fromApiModelId: "anthropic/claude-opus-5",
+                toApiModelId: "anthropic/claude-opus-5-fast",
                 reason: "priority_fast_sibling",
             },
         ]);

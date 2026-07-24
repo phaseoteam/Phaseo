@@ -265,10 +265,10 @@ describe("buildProviderSections", () => {
 				max_output_tokens: 128_000,
 			},
 			{
-				id: "venice:anthropic/claude-opus-4.8-fast:text.generate",
+				id: "venice:anthropic/claude-opus-5-fast:text.generate",
 				api_provider_id: "venice",
-				model_id: "anthropic/claude-opus-4.8-fast",
-				provider_model_slug: "claude-opus-4-8-fast",
+				model_id: "anthropic/claude-opus-5-fast",
+				provider_model_slug: "claude-opus-5-fast",
 				endpoint: "text.generate",
 				capability_status: "deranked_lvl2",
 				is_active_gateway: false,
@@ -312,7 +312,7 @@ describe("buildProviderSections", () => {
 			},
 			{
 				id: "venice-hidden-fast-std-input",
-				model_key: "venice:anthropic/claude-opus-4.8-fast:text.generate",
+				model_key: "venice:anthropic/claude-opus-5-fast:text.generate",
 				pricing_plan: "standard",
 				meter: "input_text_tokens",
 				unit: "token",

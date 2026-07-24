@@ -51,8 +51,8 @@ function makeProviderPricing(): ProviderPricing {
             {
                 id: "venice:opus48fast",
                 api_provider_id: "venice",
-                provider_model_slug: "claude-opus-4-8-fast",
-                model_id: "anthropic/claude-opus-4.8-fast",
+                provider_model_slug: "claude-opus-5-fast",
+                model_id: "anthropic/claude-opus-5-fast",
                 endpoint: "text.generate",
                 capability_status: "active",
                 is_active_gateway: false,

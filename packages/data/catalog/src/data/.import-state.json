@@ -2118,7 +2118,7 @@
           "inception/mercury-2",
           "qwen/qwen3.7-max",
           "anthropic/claude-opus-4.7-fast",
-          "anthropic/claude-opus-4.8-fast",
+          "anthropic/claude-opus-5-fast",
           "anthropic/claude-fable-5"
         ]
       }
@@ -28602,13 +28602,13 @@
         "model_key": "venice:anthropic/claude-opus-4.8:text.generate"
       }
     },
-    "../../packages/data/catalog/src/data/pricing/venice/anthropic-claude-opus-4.8-fast/text.generate/pricing.json": {
+    "../../packages/data/catalog/src/data/pricing/venice/anthropic-claude-opus-5-fast/text.generate/pricing.json": {
       "hash": "0fccf585ef514137e86f61ee9592f2fa",
       "meta": {
         "api_provider_id": "venice",
         "capability_id": "text.generate",
-        "model_id": "anthropic/claude-opus-4.8-fast",
-        "model_key": "venice:anthropic/claude-opus-4.8-fast:text.generate"
+        "model_id": "anthropic/claude-opus-5-fast",
+        "model_key": "venice:anthropic/claude-opus-5-fast:text.generate"
       }
     },
     "../../packages/data/catalog/src/data/pricing/venice/google-gemini-3.5-flash/text.generate/pricing.json": {
