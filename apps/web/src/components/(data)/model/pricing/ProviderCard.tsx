@@ -466,7 +466,14 @@ function renderSecondaryTierSummary(
 	})();
 
 	return (
-		<div className="inline-grid grid-cols-[9rem_repeat(3,3.5rem)] items-baseline gap-x-1 gap-y-0.5">
+		<div
+			className={cn(
+				"inline-grid items-baseline gap-x-1 gap-y-0.5",
+				hasAnyComparison
+					? "grid-cols-[9rem_repeat(3,3.5rem)]"
+					: "grid-cols-[9rem_repeat(2,3.5rem)]",
+			)}
+		>
 			{orderedTiers.map((tier, index) => {
 				const hasComparison =
 					tier.basePer1M != null &&
@@ -478,16 +485,18 @@ function renderSecondaryTierSummary(
 						<span className="whitespace-nowrap text-[11px] text-muted-foreground">
 							{index === 0 ? label : null}
 						</span>
-						<span
-							className={cn(
-								"text-right text-xs tabular-nums",
-								hasComparison
-									? "text-muted-foreground line-through"
-									: "text-transparent",
-							)}
-						>
-							{hasComparison ? fmtUSD(tier.basePer1M!) : null}
-						</span>
+						{hasAnyComparison ? (
+							<span
+								className={cn(
+									"text-right text-xs tabular-nums",
+									hasComparison
+										? "text-muted-foreground line-through"
+										: "text-transparent",
+								)}
+							>
+								{hasComparison ? fmtUSD(tier.basePer1M!) : null}
+							</span>
+						) : null}
 						<span
 							className={cn(
 								"text-right text-xs font-semibold tabular-nums text-foreground",
@@ -505,7 +514,7 @@ function renderSecondaryTierSummary(
 			<div
 				className={cn(
 					"text-left text-[10px] text-muted-foreground",
-					hasAnyComparison ? "col-span-3 col-start-2" : "col-span-2 col-start-3",
+					hasAnyComparison ? "col-span-3 col-start-2" : "col-span-2 col-start-2",
 				)}
 			>
 				{unitLabel}
