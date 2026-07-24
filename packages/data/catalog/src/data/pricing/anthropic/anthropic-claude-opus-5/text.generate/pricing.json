@@ -1,8 +1,8 @@
 {
-  "key": "anthropic:anthropic/claude-opus-4.8:text.generate",
+  "key": "anthropic:anthropic/claude-opus-5:text.generate",
   "api_provider_id": "anthropic",
   "provider_slug": "anthropic",
-  "api_model_id": "anthropic/claude-opus-4.8",
+  "api_model_id": "anthropic/claude-opus-5",
   "capability_id": "text.generate",
   "rules": [
     {

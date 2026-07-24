@@ -288,10 +288,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-opus-4.8",
-    "provider_api_model_id": "venice:anthropic/claude-opus-4.8",
-    "provider_model_slug": "claude-opus-4-8",
-    "internal_model_id": "anthropic/claude-opus-4.8",
+    "api_model_id": "anthropic/claude-opus-5",
+    "provider_api_model_id": "venice:anthropic/claude-opus-5",
+    "provider_model_slug": "claude-opus-5",
+    "internal_model_id": "anthropic/claude-opus-5",
     "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
@@ -336,10 +336,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "anthropic/claude-opus-4.8-fast",
-    "provider_api_model_id": "venice:anthropic/claude-opus-4.8-fast",
-    "provider_model_slug": "claude-opus-4-8-fast",
-    "internal_model_id": "anthropic/claude-opus-4.8",
+    "api_model_id": "anthropic/claude-opus-5-fast",
+    "provider_api_model_id": "venice:anthropic/claude-opus-5-fast",
+    "provider_model_slug": "claude-opus-5-fast",
+    "internal_model_id": "anthropic/claude-opus-5",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",

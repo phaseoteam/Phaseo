@@ -100,11 +100,11 @@ function buildStarterCollections(models: ModelOption[]) {
 			],
 		},
 		{
-			id: "anthropic-claude-opus-4.8",
+			id: "anthropic-claude-opus-5",
 			matches: [
-				(model) => model.modelId === "anthropic/claude-opus-4.8",
-				(model) => getSearchText(model).includes("claude opus 4.8"),
-				(model) => getSearchText(model).includes("claude-opus-4.8"),
+				(model) => model.modelId === "anthropic/claude-opus-5",
+				(model) => getSearchText(model).includes("claude opus 5"),
+				(model) => getSearchText(model).includes("claude-opus-5"),
 			],
 		},
 		{

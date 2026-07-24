@@ -26,7 +26,7 @@ curl https://api.phaseo.app/v1/chat/completions \
       {
         "type": "phaseo:advisor",
         "parameters": {
-          "model": "anthropic/claude-opus-4-8",
+          "model": "anthropic/claude-opus-5",
           "max_uses": 1,
           "max_completion_tokens": 1400
         }
@@ -43,7 +43,7 @@ You can pin the Advisor model in the tool definition:
 {
   "type": "phaseo:advisor",
   "parameters": {
-    "model": "anthropic/claude-opus-4-8"
+    "model": "anthropic/claude-opus-5"
   }
 }
 ```
@@ -57,7 +57,7 @@ If `parameters.model` is omitted, the tool call may provide `model`. If neither 
   "type": "phaseo:advisor",
   "parameters": {
     "name": "reviewer",
-    "model": "anthropic/claude-opus-4-8",
+    "model": "anthropic/claude-opus-5",
     "instructions": "Review plans for correctness, missing edge cases, and implementation risk.",
     "forward_transcript": true,
     "max_uses": 2,
@@ -94,7 +94,7 @@ If the Advisor definition does not pin a model, the tool call may also include `
 
 ```json
 {
-  "model": "anthropic/claude-opus-4-8",
+  "model": "anthropic/claude-opus-5",
   "prompt": "Check this security design for missing controls."
 }
 ```
@@ -112,7 +112,7 @@ Add one `phaseo:advisor` entry per advisor. Each named advisor becomes a distinc
       "type": "phaseo:advisor",
       "parameters": {
         "name": "security-reviewer",
-        "model": "anthropic/claude-opus-4-8",
+        "model": "anthropic/claude-opus-5",
         "instructions": "Review for vulnerabilities, abuse cases, and missing mitigations."
       }
     },
@@ -138,7 +138,7 @@ Advisor returns JSON as the tool result:
 {
   "status": "ok",
   "name": "reviewer",
-  "model": "anthropic/claude-opus-4-8",
+  "model": "anthropic/claude-opus-5",
   "advice": "Start with a smaller migration slice and define rollback criteria before changing traffic routing."
 }
 ```

@@ -168,7 +168,7 @@ describe("buildServerToolDefinitions", () => {
 				fusion: {
 					models: [
 						"openai/gpt-5.5",
-						"anthropic/claude-opus-4.8",
+						"anthropic/claude-opus-5",
 						"openai/gpt-5.5",
 						"",
 					],
@@ -201,7 +201,7 @@ describe("buildServerToolDefinitions", () => {
 				type: "phaseo:advisor",
 				parameters: {
 					name: "fusion_2",
-					model: "anthropic/claude-opus-4.8",
+					model: "anthropic/claude-opus-5",
 					instructions:
 						"Analyze the user's request independently. Return concise findings, assumptions, caveats, and the answer direction you recommend for synthesis.",
 					max_uses: 2,
@@ -242,7 +242,7 @@ describe("buildServerToolDefinitions", () => {
 				},
 				{
 					name: "critic",
-					model: "anthropic/claude-opus-4.8",
+					model: "anthropic/claude-opus-5",
 					reasoningEffort: "high",
 				},
 			],
@@ -262,7 +262,7 @@ describe("buildServerToolDefinitions", () => {
 				type: "phaseo:advisor",
 				parameters: {
 					name: "critic",
-					model: "anthropic/claude-opus-4.8",
+					model: "anthropic/claude-opus-5",
 					reasoning: { effort: "high" },
 				},
 			},

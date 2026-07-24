@@ -11,8 +11,7 @@ export function usesClaudeAdaptiveThinkingControls(model: string | null | undefi
 		normalized.includes("claude-mythos-5") ||
 		normalized.includes("claude-opus-4-7") ||
 		normalized.includes("claude-opus-4.7") ||
-		normalized.includes("claude-opus-4-8") ||
-		normalized.includes("claude-opus-4.8")
+		normalized.includes("claude-opus-5")
 	);
 }
 
