@@ -2,7 +2,7 @@
   "model_id": "openai/gpt-4o-mini-tts-2025-03-20",
   "organisation_id": "openai",
   "name": "GPT 4o Mini TTS (2025-03-20)",
-  "status": "Deprecated",
+  "status": "Retired",
   "previous_model_id": null,
   "description": "GPT 4o Mini TTS (2025-03-20) is OpenAI's cost-efficient text-to-speech model. It converts text input into natural-sounding audio output, supporting a variety of voices and tones.",
   "announced_date": "2025-03-20T00:00:00",

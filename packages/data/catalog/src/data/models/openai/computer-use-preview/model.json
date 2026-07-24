@@ -2,7 +2,7 @@
   "model_id": "openai/computer-use-preview",
   "organisation_id": "openai",
   "name": "Computer Use Preview",
-  "status": "Deprecated",
+  "status": "Retired",
   "previous_model_id": null,
   "description": "Computer Use Preview is a multimodal model from OpenAI that can work across text and visual inputs. This entry tracks a preview release and capabilities may change before general availability.",
   "announced_date": "2025-03-11T00:00:00",
