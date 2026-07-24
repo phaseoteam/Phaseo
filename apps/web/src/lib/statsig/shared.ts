@@ -21,7 +21,7 @@ export const NEW_LANDING_PAGE_EXPERIMENT =
 export const BATCH_API_GATE =
 	process.env.NEXT_PUBLIC_STATSIG_BATCH_API_GATE ?? "gateway_batch_api";
 export const VIDEO_API_GATE =
-	process.env.NEXT_PUBLIC_STATSIG_VIDEO_API_GATE ?? "gateway_video_api";
+	process.env.NEXT_PUBLIC_STATSIG_VIDEO_API_GATE?.trim() || "gateway_video_api";
 export const REALTIME_VOICE_GATE =
 	process.env.NEXT_PUBLIC_STATSIG_REALTIME_VOICE_GATE ?? "gateway_realtime_voice";
 export const GATEWAY_IO_LOGGING_GATE =

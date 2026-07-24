@@ -68,8 +68,12 @@ export function ChatRoomSwitcher() {
 	const pathname = usePathname() ?? "/chat";
 	const { state: sidebarState, isMobile } = useSidebar();
 	const [realtimeEnabled, setRealtimeEnabled] = useState(false);
+	const availableRooms = CHAT_ROOMS.filter(
+		(room) => room.id !== "video" || videoEnabled,
+	);
 	const activeRoom =
-		CHAT_ROOMS.find((room) => isRoomActive(pathname, room.route)) ??
+		availableRooms.find((room) => isRoomActive(pathname, room.route)) ??
+		availableRooms[0] ??
 		CHAT_ROOMS[0];
 	const ActiveIcon = ICONS[activeRoom.id];
 	const collapsed = sidebarState === "collapsed" && !isMobile;
@@ -152,7 +156,7 @@ export function ChatRoomSwitcher() {
 					sideOffset={8}
 					className="z-[90] w-56"
 				>
-					{CHAT_ROOMS.filter((room) => room.id !== "video" || videoEnabled).map((room) => {
+					{availableRooms.map((room) => {
 						const Icon = ICONS[room.id];
 						const active = isRoomActive(pathname, room.route);
 						const disabled =
