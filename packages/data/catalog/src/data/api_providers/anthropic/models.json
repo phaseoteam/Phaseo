@@ -1806,7 +1806,7 @@
     "effective_to": null,
     "capabilities": [{
       "capability_id": "text.generate",
-      "status": "coming_soon",
+      "status": "active",
       "params": [],
       "reasoning": null,
       "tool_call": null,
