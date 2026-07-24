@@ -439,6 +439,31 @@ function renderSecondaryTierSummary(
 	if (!orderedTiers.length) {
 		return <div className="text-xs font-semibold tabular-nums text-foreground">--</div>;
 	}
+	const hasAnyComparison = orderedTiers.some(
+		(tier) =>
+			tier.basePer1M != null &&
+			Number.isFinite(tier.basePer1M) &&
+			Math.abs(tier.basePer1M - tier.per1M) > 1e-9,
+	);
+	const explicitConditions = orderedTiers.map((tier) =>
+		tier.label && tier.label !== "All usage" ? tier.label : null,
+	);
+	const firstExplicitCondition = explicitConditions.find(Boolean) ?? null;
+	const inferredFirstCondition = (() => {
+		if (explicitConditions[0] || !firstExplicitCondition) return explicitConditions[0];
+		const match = firstExplicitCondition.match(/^(>=|<=|>|<|≥|≤)\s*(.+)$/u);
+		if (!match) return null;
+		const [, operator, threshold] = match;
+		const complement =
+			operator === ">"
+				? "≤"
+				: operator === ">=" || operator === "≥"
+					? "<"
+					: operator === "<"
+						? "≥"
+						: ">";
+		return `${complement} ${threshold}`;
+	})();
 
 	return (
 		<div className="inline-grid grid-cols-[9rem_repeat(3,3.5rem)] items-baseline gap-x-1 gap-y-0.5">
@@ -447,25 +472,21 @@ function renderSecondaryTierSummary(
 					tier.basePer1M != null &&
 					Number.isFinite(tier.basePer1M) &&
 					Math.abs(tier.basePer1M - tier.per1M) > 1e-9;
-				const condition = tier.label && tier.label !== "All usage" ? tier.label : null;
+				const condition = index === 0 ? inferredFirstCondition : explicitConditions[index];
 				return (
 					<React.Fragment key={`${tier.label}-${tier.per1M}-${index}`}>
 						<span className="whitespace-nowrap text-[11px] text-muted-foreground">
 							{index === 0 ? label : null}
-						</span>
-						<span className="whitespace-nowrap text-right text-[10px] text-muted-foreground">
-							{condition}
 						</span>
 						<span
 							className={cn(
 								"text-right text-xs tabular-nums",
 								hasComparison
 									? "text-muted-foreground line-through"
-									: "font-semibold text-foreground",
-								!hasComparison && valueClassName,
+									: "text-transparent",
 							)}
 						>
-							{fmtUSD(hasComparison ? tier.basePer1M! : tier.per1M)}
+							{hasComparison ? fmtUSD(tier.basePer1M!) : null}
 						</span>
 						<span
 							className={cn(
@@ -473,12 +494,20 @@ function renderSecondaryTierSummary(
 								valueClassName,
 							)}
 						>
-							{hasComparison ? fmtUSD(tier.per1M) : null}
+							{fmtUSD(tier.per1M)}
+						</span>
+						<span className="whitespace-nowrap text-right text-[10px] text-muted-foreground">
+							{condition}
 						</span>
 					</React.Fragment>
 				);
 			})}
-			<div className="col-span-3 col-start-2 text-left text-[10px] text-muted-foreground">
+			<div
+				className={cn(
+					"text-left text-[10px] text-muted-foreground",
+					hasAnyComparison ? "col-span-3 col-start-2" : "col-span-2 col-start-3",
+				)}
+			>
 				{unitLabel}
 			</div>
 		</div>
