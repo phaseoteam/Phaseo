@@ -2,7 +2,7 @@
   "model_id": "openai/gpt-audio-mini-2025-10-06",
   "organisation_id": "openai",
   "name": "GPT Audio Mini (2025-10-06)",
-  "status": "Deprecated",
+  "status": "Retired",
   "previous_model_id": null,
   "description": "A cost-efficient version of GPT Audio. The new snapshot features an upgraded decoder for more natural sounding voices and maintains better voice consistency.",
   "announced_date": "2025-10-06T00:00:00",
