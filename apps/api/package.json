@@ -60,7 +60,7 @@
 		"@cloudflare/workers-types": "^4.20260523.1",
 		"@copilotkit/aimock": "1.15.1",
 		"dotenv": "^17.4.2",
-		"eslint": "^10.4.0",
+		"eslint": "^10.7.0",
 		"openai": "^6.39.0",
 		"tsx": "^4.20.6",
 		"typescript": "^6.0.3",

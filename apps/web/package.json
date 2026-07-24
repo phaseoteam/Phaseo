@@ -3,7 +3,7 @@
 	"version": "1.0.0",
 	"private": true,
 	"engines": {
-		"node": ">=22.12.0"
+		"node": "^22.13.0 || >=24.0.0"
 	},
 	"packageManager": "pnpm@10.33.0",
 	"scripts": {
@@ -45,9 +45,9 @@
 		"@rive-app/react-webgl2": "^4.29.3",
 		"@shadcn/react": "0.1.0",
 		"@statsig/js-client": "^3.33.3",
-		"@statsig/react-bindings": "^3.33.2",
-		"@statsig/session-replay": "^3.33.2",
-		"@statsig/web-analytics": "^3.33.2",
+		"@statsig/react-bindings": "^3.33.3",
+		"@statsig/session-replay": "^3.33.3",
+		"@statsig/web-analytics": "^3.33.3",
 		"@streamdown/math": "^1.0.2",
 		"@stripe/react-stripe-js": "^6.3.0",
 		"@stripe/stripe-js": "^9.7.0",
@@ -134,7 +134,7 @@
 		"@types/three": "^0.184.0",
 		"baseline-browser-mapping": "^2.9.0",
 		"dotenv": "^17.4.2",
-		"eslint": "^10.4.0",
+		"eslint": "^10.7.0",
 		"eslint-config-next": "16.2.11",
 		"jest": "^30.4.2",
 		"postcss": "^8",
