@@ -78,6 +78,7 @@ describe("realtime voice billing simulation", () => {
 		expect(realtimeMaxDurationSeconds("google-ai-studio")).toBe(15 * 60);
 		expect(realtimeMaxDurationSeconds("openai")).toBe(25 * 60);
 		expect(realtimeMaxDurationSeconds("x-ai")).toBe(25 * 60);
+		expect(realtimeMaxDurationSeconds("spacex-ai")).toBe(25 * 60);
 	});
 
 	it("calculates PCM16 audio duration from payload bytes, not client metadata", () => {

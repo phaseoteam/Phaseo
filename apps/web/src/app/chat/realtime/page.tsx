@@ -5,14 +5,7 @@ import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFronten
 import { RoomScaffold } from "@/components/(chat)/RoomScaffold";
 import { RealtimeRoom } from "@/components/(chat)/rooms/RealtimeRoom";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import {
-	REALTIME_VOICE_BETA_FEATURE,
-	isBetaFeatureEnabled,
-} from "@/lib/statsig/shared";
-import { getServerStatsigProfile } from "@/lib/statsig/server";
-import { createClient } from "@/utils/supabase/server";
+import { realtimeVoiceFlag } from "@/lib/flags";
 
 export const metadata: Metadata = buildMetadata({
 	title: "Realtime Room - Phaseo Chat",
@@ -20,17 +13,6 @@ export const metadata: Metadata = buildMetadata({
 	path: "/chat/realtime",
 	keywords: ["AI realtime", "voice chat", "Phaseo chat"],
 });
-
-async function isRealtimeVoiceEnabled() {
-	const supabase = await createClient();
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
-
-	if (!user?.id) return false;
-	const profile = await getServerStatsigProfile(user.id);
-	return isBetaFeatureEnabled(profile, REALTIME_VOICE_BETA_FEATURE);
-}
 
 function RealtimeFlagDisabled() {
 	return (
@@ -47,12 +29,8 @@ function RealtimeFlagDisabled() {
 				<div className="w-full max-w-lg rounded-lg border border-border bg-background px-5 py-6 text-center shadow-sm">
 					<h2 className="text-base font-semibold">Realtime voice is gated</h2>
 					<p className="mt-2 text-sm leading-6 text-muted-foreground">
-						Enable the realtime voice room from beta settings before starting a
-						live provider session.
+						Realtime voice is not enabled for this account yet.
 					</p>
-					<Button asChild className="mt-5">
-						<Link href="/settings/beta">Open beta settings</Link>
-					</Button>
 				</div>
 			</section>
 		</main>
@@ -78,7 +56,7 @@ function RealtimeRoomLoading() {
 }
 
 async function RealtimeRoomGate() {
-	const enabled = await isRealtimeVoiceEnabled();
+	const enabled = await realtimeVoiceFlag();
 	if (!enabled) return <RealtimeFlagDisabled />;
 	const models = await fetchFrontendGatewayModels();
 	return <RealtimeRoom models={models} />;

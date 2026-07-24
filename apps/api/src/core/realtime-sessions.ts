@@ -30,7 +30,7 @@ const GOOGLE_AUTH_TOKENS_URL = "https://generativelanguage.googleapis.com/v1alph
 const GOOGLE_LIVE_CONSTRAINED_URL =
 	"wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained";
 
-export type RealtimeProvider = "openai" | "x-ai" | "google-ai-studio";
+export type RealtimeProvider = "openai" | "x-ai" | "spacex-ai" | "google-ai-studio";
 export type RealtimeSource = "api" | "chat";
 export type RealtimeTerminalStatus = "completed" | "failed" | "cancelled" | "expired";
 
@@ -181,7 +181,7 @@ function secondsFromDuration(source: any, kind: "input" | "output" | "total"): n
 function providerFromModel(model: string, explicitProvider?: string | null): RealtimeProvider | null {
 	const provider = String(explicitProvider ?? "").trim().toLowerCase();
 	if (provider === "openai") return "openai";
-	if (provider === "xai" || provider === "x-ai") return "x-ai";
+	if (provider === "xai" || provider === "x-ai" || provider === "spacex-ai") return "x-ai";
 	if (provider === "google" || provider === "google-ai-studio") return "google-ai-studio";
 	const normalized = model.trim().toLowerCase();
 	if (normalized.startsWith("openai/")) return "openai";

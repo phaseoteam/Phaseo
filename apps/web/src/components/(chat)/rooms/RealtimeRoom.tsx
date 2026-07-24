@@ -1897,6 +1897,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 
 	useEffect(() => {
 		if (status !== "connected" || !sessionBilling) return;
+		if (relaySessionRef.current) return;
 		const reservedNanos = sessionBilling.reservationNanos;
 		if (budgetRatio < sessionBilling.extendThreshold) return;
 		if (reservedNanos <= lastExtendedReservedNanosRef.current) return;

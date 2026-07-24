@@ -20,6 +20,8 @@ export const NEW_LANDING_PAGE_EXPERIMENT =
 	"gateway_hero_experiment";
 export const BATCH_API_GATE =
 	process.env.NEXT_PUBLIC_STATSIG_BATCH_API_GATE ?? "gateway_batch_api";
+export const REALTIME_VOICE_GATE =
+	process.env.NEXT_PUBLIC_STATSIG_REALTIME_VOICE_GATE ?? "gateway_realtime_voice";
 export const GATEWAY_IO_LOGGING_GATE =
 	process.env.NEXT_PUBLIC_STATSIG_GATEWAY_IO_LOGGING_GATE ?? "gateway_io_logging";
 export const NEW_GATEWAY_HERO_GATE = NEW_LANDING_PAGE_GATE;

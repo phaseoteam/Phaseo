@@ -5,7 +5,6 @@ import {
 	resolveGatewayKeys,
 	type ChatProxyEnvelope,
 } from "@/chat/proxy";
-import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 
@@ -65,16 +64,6 @@ chatRouter.post("/audio", async (c) => {
 chatRouter.post("/realtime/session", async (c) => {
 	const auth = await resolveGatewayKeys(c.req.raw, c.env, waitUntil(c));
 	if (!("apiKey" in auth)) return realtimeError(auth.status, auth.code, auth.message);
-
-	const roleResult = await getDataClient(c.env)
-		.from("users")
-		.select("role")
-		.eq("user_id", auth.userId)
-		.maybeSingle();
-	if (roleResult.error) return realtimeError(503, "realtime_entitlement_unavailable", "Unable to verify realtime access.");
-	if (String(roleResult.data?.role ?? "").toLowerCase() !== "admin") {
-		return realtimeError(403, "realtime_voice_disabled", "Realtime voice is disabled for this account.");
-	}
 
 	const body = await envelope(c.req.raw);
 	const provider = normalizeRealtimeProvider(String(body.provider ?? "").trim().toLowerCase());

@@ -4,11 +4,12 @@
 
 import { Hono } from "hono";
 import { z } from "zod";
-import { getBindings, getSupabaseAdmin } from "@/runtime/env";
+import { getBindings } from "@/runtime/env";
 import type { Env } from "@/runtime/types";
 import { guardAuth, guardContext, guardJson } from "@pipeline/before/guards";
 import { err, json } from "@pipeline/before/http";
 import { applyWorkspacePolicy, fetchWorkspacePolicy } from "@pipeline/before/workspacePolicy";
+import { getRealtimeVoiceFeatureGateName, isRealtimeVoiceAccessEnabled } from "@core/feature-flags";
 import { withRuntime } from "../../utils";
 import {
 	createRealtimeSession,
@@ -24,11 +25,29 @@ type RouteAuthValue = {
 	requestId: string;
 	workspaceId: string;
 	apiKeyId: string;
+	apiKeyRef?: string | null;
+	apiKeyKid?: string | null;
 	userId?: string | null;
 	internal?: boolean;
+	authMethod?: "api_key" | "oauth";
 };
 
-const CHAT_MANAGED_KEY_NAME = "__chat_route_managed_key__";
+const BASE62 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+async function deterministicBase62(seed: string, length: number): Promise<string> {
+	let output = "";
+	for (let counter = 0; output.length < length; counter += 1) {
+		const digest = new Uint8Array(await crypto.subtle.digest(
+			"SHA-256",
+			new TextEncoder().encode(`${seed}:${counter}`),
+		));
+		for (const byte of digest) {
+			output += BASE62[byte % BASE62.length];
+			if (output.length >= length) break;
+		}
+	}
+	return output.slice(0, length);
+}
 
 const createSessionSchema = z.object({
 	model: z.string().trim().min(1).max(160),
@@ -208,22 +227,18 @@ function responseForError(error: unknown, requestId?: string, workspaceId?: stri
 	});
 }
 
-function isEnabled(value: unknown): boolean {
-	return ["1", "true", "yes", "on"].includes(String(value ?? "").trim().toLowerCase());
-}
-
 function normalizedProvider(value: string): string {
 	const provider = value.trim().toLowerCase();
-	if (provider === "xai") return "x-ai";
+	if (provider === "xai" || provider === "x-ai") return "spacex-ai";
 	if (provider === "google") return "google-ai-studio";
 	return provider;
 }
 
 function providerFromModel(model: string): string | null {
 	const prefix = model.trim().toLowerCase().split("/", 1)[0];
-	if (prefix === "xai") return "x-ai";
+	if (prefix === "xai" || prefix === "x-ai") return "spacex-ai";
 	if (prefix === "google") return "google-ai-studio";
-	return ["openai", "x-ai", "google-ai-studio"].includes(prefix) ? prefix : null;
+	return ["openai", "spacex-ai", "google-ai-studio"].includes(prefix) ? prefix : null;
 }
 
 async function authorizeRealtimeSource(args: {
@@ -232,20 +247,16 @@ async function authorizeRealtimeSource(args: {
 	metadata?: Record<string, unknown>;
 }): Promise<string | null> {
 	if (args.source === "api") {
-		if (!args.auth.internal && !isEnabled(getBindings().REALTIME_PUBLIC_API_ENABLED)) {
-			throw new Error("realtime_public_api_disabled");
-		}
 		return args.auth.userId ?? null;
 	}
 
-	const { data, error } = await getSupabaseAdmin()
-		.from("keys")
-		.select("name,status")
-		.eq("id", args.auth.apiKeyId)
-		.eq("workspace_id", args.auth.workspaceId)
-		.maybeSingle();
-	if (error) throw error;
-	if (!data || data.name !== CHAT_MANAGED_KEY_NAME || data.status !== "active") {
+	const bindings = getBindings();
+	const seed = String(bindings.CHAT_ROUTE_KEY_SEED ?? bindings.KEY_PEPPER_ACTIVE ?? "").trim();
+	if (!seed || args.auth.authMethod !== "api_key") {
+		throw new Error("realtime_chat_source_forbidden");
+	}
+	const expectedKid = await deterministicBase62(`${seed}:kid:${args.auth.workspaceId}`, 12);
+	if (args.auth.apiKeyKid !== expectedKid) {
 		throw new Error("realtime_chat_source_forbidden");
 	}
 	const metadataUserId = typeof args.metadata?.userId === "string" ? args.metadata.userId.trim() : "";
@@ -302,6 +313,18 @@ realtimeSessionsRoutes.post("/", withRuntime(async (req) => {
 		});
 	} catch (error) {
 		return responseForError(error, auth.value.requestId, auth.value.workspaceId);
+	}
+	if (!await isRealtimeVoiceAccessEnabled({
+		ok: true,
+		...auth.value,
+		userId: trustedUserId,
+	})) {
+		return err("unauthorised", {
+			reason: "realtime_voice_feature_flag_disabled",
+			feature_gate: getRealtimeVoiceFeatureGateName(),
+			request_id: auth.value.requestId,
+			workspace_id: auth.value.workspaceId,
+		});
 	}
 
 	let workspacePolicy;

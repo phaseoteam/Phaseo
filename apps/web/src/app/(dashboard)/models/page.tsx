@@ -223,7 +223,7 @@ function hasRealtimeModelHint(model: ModelCard | undefined): boolean {
 		model.api_model_id,
 		model.name,
 		(model as { description?: unknown }).description,
-	].map((value) => String(value ?? "").toLowerCase());
+	].map((value) => String(value ?? "").toLowerCase().replace(/[._/-]+/g, " "));
 	const hasBidirectionalAudio =
 		normalizeStringList(model.input_types ?? model.input_modalities).some(
 			(value) => normalizeModalityKey(value) === "audio",
