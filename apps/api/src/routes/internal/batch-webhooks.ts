@@ -21,6 +21,11 @@ import {
 
 export const internalBatchWebhookRoutes = new Hono<Env>();
 
+// Keep duplicate provider deliveries excluded for the longest bounded claim
+// window. Scheduled reconciliation remains the recovery path if webhook
+// background finalization is interrupted.
+const PROVIDER_WEBHOOK_FINALIZATION_LEASE_SECONDS = 3_600;
+
 internalBatchWebhookRoutes.post("/openai", withRuntime(async (req) => {
 	const body = await readProviderWebhookBody(req);
 	if (!body.ok) return json({ ok: false, error: "payload_too_large" }, 413, { "Cache-Control": "no-store" });
@@ -61,6 +66,7 @@ internalBatchWebhookRoutes.post("/openai", withRuntime(async (req) => {
 		provider: OPENAI_PROVIDER_ID,
 		providerEventId: eventId,
 		workerId: `openai-batch-webhook:${eventId}`,
+		leaseSeconds: PROVIDER_WEBHOOK_FINALIZATION_LEASE_SECONDS,
 	});
 	if (!claimed) {
 		return json({ ok: true, deduped: true, accepted: true, processed: false }, 202, {
@@ -130,6 +136,7 @@ async function handleGoogleAiStudioBatchWebhook(req: Request): Promise<Response>
 		provider: GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID,
 		providerEventId: eventId,
 		workerId: `google-ai-studio-batch-webhook:${eventId}`,
+		leaseSeconds: PROVIDER_WEBHOOK_FINALIZATION_LEASE_SECONDS,
 	});
 	if (!claimed) {
 		return json({ ok: true, deduped: true, accepted: true, processed: false }, 202, {
