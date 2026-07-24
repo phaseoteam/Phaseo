@@ -177,7 +177,8 @@
       "bytedance/seed-translation",
       "bytedance/seedance-2.0-mini-260615",
       "bytedance/seedream-2.0-mini",
-      "bytedance/seedream-4.5"
+      "bytedance/seedream-4.5",
+      "bytedance/seedream-5.0-pro"
     ],
     "cohere": [
       "cohere/c4ai-aya-expanse-32b",
@@ -2185,6 +2186,8 @@
     "byteplus:text.generate:bytedance-seed-2.0-mini",
     "byteplus:text.generate:bytedance-seed-2.0-pro",
     "byteplus:text.generate:bytedance-seed-translation",
+    "byteplus:images.edits:bytedance-seedream-5.0-pro",
+    "byteplus:images.generations:bytedance-seedream-5.0-pro",
     "byteplus:video.generate:bytedance-seedance-2.0-mini-260615",
     "cerebras:text.generate:google-gemma-4-31b",
     "cerebras:text.generate:meta-llama-3.1-8b",

@@ -43,6 +43,7 @@ import * as elevenLabsAudioSpeech from "@providers/elevenlabs/endpoints/audio-sp
 import * as elevenLabsAudioTranscription from "@providers/elevenlabs/endpoints/audio-transcription";
 import * as elevenLabsMusic from "@providers/elevenlabs/endpoints/music-generate";
 import * as googleAiStudioImages from "@providers/google-ai-studio/endpoints/images";
+import * as byteplusImages from "@providers/byteplus/endpoints/images";
 import * as xiaomiAudioSpeech from "@providers/xiaomi/endpoints/audio-speech";
 import * as xAiAudioSpeech from "@providers/x-ai/endpoints/audio-speech";
 import * as sunoMusic from "@providers/suno/endpoints/music-generate";
@@ -480,6 +481,9 @@ async function executeProviderEndpoint(
 ) {
 	switch (endpoint) {
 		case "images.generations":
+			if (providerId === "byteplus" || providerId === "bytedance-seed") {
+				return byteplusImages.exec(providerArgs);
+			}
 			if (providerId === "google-ai-studio") {
 				return googleAiStudioImages.exec(providerArgs);
 			}
@@ -488,6 +492,9 @@ async function executeProviderEndpoint(
 			}
 			return openaiImages.exec(providerArgs);
 		case "images.edits":
+			if (providerId === "byteplus" || providerId === "bytedance-seed") {
+				return byteplusImages.exec(providerArgs);
+			}
 			if (!isOpenAICompatProvider(providerId)) {
 				throw new Error(`non_text_provider_not_supported_${providerId}_${endpoint}`);
 			}

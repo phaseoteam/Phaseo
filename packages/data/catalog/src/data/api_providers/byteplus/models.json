@@ -993,6 +993,68 @@
     "rate_limits": []
   },
   {
+    "api_model_id": "bytedance/seedream-5.0-pro",
+    "provider_api_model_id": "byteplus:bytedance/seedream-5.0-pro",
+    "provider_model_slug": "seedream-5-0-pro-260628",
+    "internal_model_id": "bytedance/seedream-5.0-pro",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "image",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-07-08T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "images.generations",
+        "status": "active",
+        "params": {
+          "prompt": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string_or_array"
+          },
+          "size": {
+            "type": "string"
+          },
+          "n": {
+            "type": "integer",
+            "min": 1,
+            "max": 10
+          },
+          "response_format": {
+            "type": "string"
+          }
+        }
+      },
+      {
+        "capability_id": "images.edits",
+        "status": "active",
+        "params": {
+          "prompt": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string_or_array"
+          },
+          "size": {
+            "type": "string"
+          },
+          "n": {
+            "type": "integer",
+            "min": 1,
+            "max": 10
+          },
+          "response_format": {
+            "type": "string"
+          }
+        }
+      }
+    ]
+  },
+  {
     "api_model_id": "bytedance/seed-translation",
     "provider_api_model_id": "byteplus:bytedance/seed-translation",
     "provider_model_slug": "seed-translation-250915",

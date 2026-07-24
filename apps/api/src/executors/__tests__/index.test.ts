@@ -261,6 +261,10 @@ describe("resolveProviderExecutor", () => {
 	it("resolves adapter-backed non-text executors only for supported providers", () => {
 		expect(resolveProviderExecutor("openai", "images.generations")).toBeTruthy();
 		expect(resolveProviderExecutor("openai", "images.edits")).toBeTruthy();
+		expect(resolveProviderExecutor("byteplus", "images.generations")).toBeTruthy();
+		expect(resolveProviderExecutor("byteplus", "images.edits")).toBeTruthy();
+		expect(resolveProviderExecutor("bytedance-seed", "images.generations")).toBeTruthy();
+		expect(resolveProviderExecutor("bytedance-seed", "images.edits")).toBeTruthy();
 		expect(resolveProviderExecutor("openai", "audio.speech")).toBeTruthy();
 		expect(resolveProviderExecutor("openai", "audio.transcription")).toBeTruthy();
 		expect(resolveProviderExecutor("openai", "audio.translations")).toBeTruthy();
@@ -392,6 +396,16 @@ describe("resolveProviderExecutor", () => {
 		expectEnabled("qwen", "audio.transcription");
 		expectEnabled("qwen", "audio.translations");
 		expectDisabled("qwen", "music.generate");
+
+		// BytePlus: OpenAI-compatible text/image/audio plus direct Seedance video wrapper.
+		expectEnabled("byteplus", "text.generate");
+		expectEnabled("byteplus", "images.generations");
+		expectEnabled("byteplus", "images.edits");
+		expectEnabled("byteplus", "audio.speech");
+		expectEnabled("byteplus", "audio.transcription");
+		expectEnabled("byteplus", "audio.translations");
+		expectEnabled("byteplus", "video.generation");
+		expectDisabled("byteplus", "music.generate");
 
 		// MiniMax: direct video/music + OpenAI-compatible image/audio.
 		for (const minimaxProvider of ["minimax", "minimax-lightning"]) {
