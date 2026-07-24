@@ -1,0 +1,8 @@
+{
+  "alias_slug": "nousresearch/hermes-3-llama-3.1-405b",
+  "resolved_api_model_id": "nous/hermes-3-llama-3.1-405b",
+  "resolved_model_id": "nous/hermes-3-llama-3.1-405b",
+  "channel": "legacy",
+  "is_enabled": true,
+  "notes": "Legacy duplicate ID retained after consolidating the model under the Nous lab slug."
+}

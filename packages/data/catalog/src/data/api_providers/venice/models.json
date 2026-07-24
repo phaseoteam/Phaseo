@@ -2080,10 +2080,10 @@
     "rate_limits": []
   },
   {
-    "api_model_id": "nousresearch/hermes-3-llama-3.1-405b",
+    "api_model_id": "nous/hermes-3-llama-3.1-405b",
     "provider_api_model_id": "venice:nousresearch/hermes-3-llama-3.1-405b",
     "provider_model_slug": "hermes-3-llama-3.1-405b",
-    "internal_model_id": "",
+    "internal_model_id": "nous/hermes-3-llama-3.1-405b",
     "is_active_gateway": true,
     "quantization_scheme": "fp8",
     "input_modalities": "text",

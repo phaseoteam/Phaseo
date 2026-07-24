@@ -348,6 +348,9 @@ export function mapRawToModelCard(
         primary_date: null,
         primary_timestamp: null,
         primary_group_key: null,
+        gateway_monitor_rows: Array.isArray(raw.gateway_monitor_rows)
+            ? raw.gateway_monitor_rows
+            : undefined,
     };
 
     return {

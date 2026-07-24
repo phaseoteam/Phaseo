@@ -395,6 +395,10 @@ export const logoManifest = {
 		light: "/logos/wafer_light.svg",
 		dark: "/logos/wafer_dark.svg",
 	},
+	windsurf: {
+		light: "/logos/windsurf_light.svg",
+		dark: "/logos/windsurf_dark.svg",
+	},
 	"spacex-ai": {
 		light: "/logos/spacexai_light.svg",
 		dark: "/logos/spacexai_dark.svg",

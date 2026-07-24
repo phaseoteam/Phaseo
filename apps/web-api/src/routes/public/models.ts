@@ -310,6 +310,22 @@ async function fetchProviderExecutionRegions(env: Env, providerIds: string[]) {
 	return regionsByProvider;
 }
 
+async function fetchProviderStatuses(env: Env, providerIds: string[]) {
+	const statusesByProvider = new Map<string, string>();
+	if (providerIds.length === 0) return statusesByProvider;
+	const { data, error } = await getDataClient(env)
+		.from("v2_providers")
+		.select("provider_slug,status")
+		.in("provider_slug", providerIds);
+	if (error) throw error;
+	for (const row of data ?? []) {
+		const providerId = String(row.provider_slug ?? "").trim();
+		const status = String(row.status ?? "").trim().toLowerCase();
+		if (providerId && status) statusesByProvider.set(providerId, status);
+	}
+	return statusesByProvider;
+}
+
 export async function fetchGatewayMonitorRows(
 	env: Env,
 	_catalogueVersion: ModelsCatalogueVersion = "v1",
@@ -328,16 +344,17 @@ export async function fetchGatewayMonitorRows(
 		rows.push(...page.filter((row) => String(row.capability_status ?? "").toLowerCase() !== "internal_testing"));
 		if (page.length < 1000) break;
 	}
-	const providerRegionsById = await fetchProviderExecutionRegions(
-		env,
-		Array.from(
-			new Set(
-				rows
-					.map((row) => String(row.provider_id ?? "").trim())
-					.filter(Boolean),
-			),
+	const providerIds = Array.from(
+		new Set(
+			rows
+				.map((row) => String(row.provider_id ?? "").trim())
+				.filter(Boolean),
 		),
 	);
+	const [providerRegionsById, providerStatusesById] = await Promise.all([
+		fetchProviderExecutionRegions(env, providerIds),
+		fetchProviderStatuses(env, providerIds),
+	]);
 
 	const byModelId = new Map<string, Record<string, unknown>[]>();
 	for (const row of rows) {
@@ -372,7 +389,9 @@ export async function fetchGatewayMonitorRows(
 				executionRegions: providerRegionsById.get(providerId) ?? [],
 			},
 			endpoint: capabilityId,
-			gatewayStatus: normaliseGatewayStatus(row.capability_status, row.is_active_gateway),
+			gatewayStatus: providerStatusesById.get(providerId) === "external"
+				? "external"
+				: normaliseGatewayStatus(row.capability_status, row.is_active_gateway),
 			inputModalities: toStringList(row.input_modalities).length ? toStringList(row.input_modalities) : toStringList(row.model_input_types),
 			outputModalities: toStringList(row.output_modalities).length ? toStringList(row.output_modalities) : toStringList(row.model_output_types),
 			context: numberOrNull(row.context_length) ?? numberOrNull(row.capability_max_input_tokens) ?? 0,

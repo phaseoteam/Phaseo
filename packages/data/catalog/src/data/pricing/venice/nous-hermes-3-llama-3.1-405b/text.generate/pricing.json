@@ -1,8 +1,8 @@
 {
-  "key": "venice:nousresearch/hermes-3-llama-3.1-405b:text.generate",
+  "key": "venice:nous/hermes-3-llama-3.1-405b:text.generate",
   "api_provider_id": "venice",
   "provider_slug": "venice",
-  "api_model_id": "nousresearch/hermes-3-llama-3.1-405b",
+  "api_model_id": "nous/hermes-3-llama-3.1-405b",
   "capability_id": "text.generate",
   "rules": [
     {

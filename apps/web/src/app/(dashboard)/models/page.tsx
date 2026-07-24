@@ -102,7 +102,7 @@ type ModelsCatalogueVersion = "v1" | "v2";
 async function fetchModelsFromWebApi(
 	apiOrigin: string,
 	catalogueVersion: ModelsCatalogueVersion,
-	projectionVersion: 5,
+	projectionVersion: 6,
 ): Promise<{ models: ModelCard[]; facets: ModelsFilterFacets | null; pricingComplete: boolean }> {
 	"use cache";
 	cacheLife("hours");
@@ -1449,7 +1449,7 @@ async function loadModelsPageData(
 ): Promise<ModelsPageData> {
 	const apiOrigin =
 		process.env.WEB_API_ORIGIN?.replace(/\/$/, "") ?? "https://phaseo.app";
-	const allModelsPromise = fetchModelsFromWebApi(apiOrigin, catalogueVersion, 5);
+	const allModelsPromise = fetchModelsFromWebApi(apiOrigin, catalogueVersion, 6);
 	const catalogPricingSummariesPromise = allModelsPromise.then((result) =>
 		result.pricingComplete ? Promise.resolve({}) : getCatalogPricingSummariesCached(),
 	);

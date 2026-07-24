@@ -77,10 +77,10 @@ const PROVIDER_STATUS_ORDER = [
 	"deranked_lvl1",
 	"deranked_lvl2",
 	"deranked_lvl3",
+	"external",
 	"inactive",
 	"disabled",
 	"not_listed",
-	"external",
 ] as const;
 
 const PROVIDER_STATUS_META: Record<
@@ -464,8 +464,10 @@ function ModelCardImpl({
 				if (aIsFree !== bIsFree) return aIsFree ? -1 : 1;
 				return a.localeCompare(b);
 			})[0] ?? null;
-	const displayModelId = apiModelId ?? "No API Model ID";
-	const isDisplayedApiModelFree = apiModelId?.toLowerCase().endsWith(":free") ?? false;
+	const displayModelId = modelSlug;
+	const isDisplayedApiModelFree =
+		apiModelId?.toLowerCase().endsWith(":free") ??
+		displayModelId.toLowerCase().endsWith(":free");
 	const organisationLabel = String(
 		normalizeOrganisationDisplayName(
 			model.organisation_name,
@@ -860,9 +862,8 @@ function ModelCardImpl({
 	const weeklyUsageValue = `${formatTokenCount(weeklyUsage.quantity)}${weeklyUsage.unitSuffix}`;
 
 	const copyModelId = async () => {
-		if (!apiModelId) return;
 		try {
-			await navigator.clipboard.writeText(apiModelId);
+			await navigator.clipboard.writeText(displayModelId);
 			setCopied(true);
 			setTimeout(() => setCopied(false), 1400);
 		} catch {
@@ -926,7 +927,7 @@ function ModelCardImpl({
 							>
 								{safeModelDisplayName}
 							</Link>
-							{apiModelId ? (
+							{displayModelId ? (
 								<Tooltip>
 									<TooltipTrigger asChild>
 										<Button

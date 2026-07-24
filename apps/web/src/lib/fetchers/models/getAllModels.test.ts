@@ -1,5 +1,45 @@
 import type { MonitorModelData } from "@/lib/fetchers/models/table-view/getMonitorModels";
-import { summarizeMonitorRowsForModel } from "./getAllModels";
+import { mapRawToModelCard, summarizeMonitorRowsForModel } from "./getAllModels";
+
+describe("mapRawToModelCard", () => {
+    it("preserves V2 gateway monitor rows for page-level status aggregation", () => {
+        const gatewayMonitorRows = [
+            {
+                id: "openai:gpt-5.6-sol:text.generate",
+                model: "GPT-5.6 Sol",
+                modelId: "openai/gpt-5.6-sol",
+                apiModelId: "openai/gpt-5.6-sol",
+                provider: { id: "openai", name: "OpenAI" },
+                endpoint: "text.generate",
+                gatewayStatus: "active",
+            },
+        ] as MonitorModelData[];
+
+        const model = mapRawToModelCard({
+            model_id: "openai/gpt-5.6-sol",
+            name: "GPT-5.6 Sol",
+            organisation_id: "openai",
+            gateway_monitor_rows: gatewayMonitorRows,
+        });
+
+        expect(model.gateway_monitor_rows).toBe(gatewayMonitorRows);
+        expect(
+            summarizeMonitorRowsForModel(model.gateway_monitor_rows ?? [])
+                .gateway_status,
+        ).toBe("active");
+    });
+
+    it("rejects malformed gateway monitor rows", () => {
+        const model = mapRawToModelCard({
+            model_id: "openai/gpt-5.6-sol",
+            name: "GPT-5.6 Sol",
+            organisation_id: "openai",
+            gateway_monitor_rows: null,
+        });
+
+        expect(model.gateway_monitor_rows).toBeUndefined();
+    });
+});
 
 describe("summarizeMonitorRowsForModel", () => {
 	it("builds card-ready provider, pricing, capability, and usage metadata", () => {

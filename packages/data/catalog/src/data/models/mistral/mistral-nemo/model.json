@@ -1,5 +1,5 @@
 {
-  "model_id": "mistralai/mistral-nemo",
+  "model_id": "mistral/mistral-nemo",
   "organisation_id": "mistral",
   "name": "Mistral Nemo",
   "status": "Available",
@@ -12,7 +12,7 @@
   "license": null,
   "input_types": "text",
   "output_types": "text",
-  "api_model_id": "mistralai/mistral-nemo",
+  "api_model_id": "mistral/mistral-nemo",
   "links": [],
   "details": [],
   "benchmarks": [],
