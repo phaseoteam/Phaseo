@@ -426,6 +426,53 @@ function renderCompactTierSummary(
 	);
 }
 
+function renderSecondaryTierSummary(
+	tiers?: TokenTier[] | null,
+	valueClassName?: string,
+) {
+	const orderedTiers = [...(tiers ?? [])].sort((a, b) => {
+		if (a.isCurrent !== b.isCurrent) return a.isCurrent ? -1 : 1;
+		return a.per1M - b.per1M;
+	});
+	if (!orderedTiers.length) {
+		return <div className="text-xs font-semibold tabular-nums text-foreground">--</div>;
+	}
+
+	return (
+		<div className="grid grid-cols-[auto_auto] items-baseline justify-end gap-x-2 gap-y-0.5">
+			{orderedTiers.map((tier, index) => {
+				const hasComparison =
+					tier.basePer1M != null &&
+					Number.isFinite(tier.basePer1M) &&
+					Math.abs(tier.basePer1M - tier.per1M) > 1e-9;
+				const condition = tier.label && tier.label !== "All usage" ? tier.label : null;
+				return (
+					<React.Fragment key={`${tier.label}-${tier.per1M}-${index}`}>
+						<span className="whitespace-nowrap text-[10px] text-muted-foreground">
+							{condition}
+						</span>
+						<span className="flex items-baseline justify-end gap-1.5">
+							{hasComparison ? (
+								<span className="text-xs tabular-nums text-muted-foreground line-through">
+									{fmtUSD(tier.basePer1M!)}
+								</span>
+							) : null}
+							<span
+								className={cn(
+									"text-xs font-semibold tabular-nums text-foreground",
+									valueClassName,
+								)}
+							>
+								{fmtUSD(tier.per1M)}
+							</span>
+						</span>
+					</React.Fragment>
+				);
+			})}
+		</div>
+	);
+}
+
 function formatPriceRange(values: number[]): string {
 	const finiteValues = values.filter((value) => Number.isFinite(value));
 	if (!finiteValues.length) return "--";
@@ -2341,11 +2388,11 @@ export default function ProviderCard({
 			upcomingFor("other").length > 0) ? (
 			<div className="space-y-2 pt-2">
 				{additionalTokenMetricTiles.length > 0 ? (
-					<div className="divide-y divide-zinc-200/70 dark:divide-zinc-800">
+					<div>
 						{additionalTokenMetricTiles.map((tile) => (
 							<div
 								key={tile.key}
-								className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] gap-4 py-2 first:pt-0"
+								className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] gap-4"
 							>
 								<div className="text-[11px] text-muted-foreground">
 									{tokenMetricGroups.length > 1
@@ -2353,7 +2400,7 @@ export default function ProviderCard({
 										: tile.title}
 								</div>
 								<div className="min-w-0 text-right">
-									{renderCompactTierSummary(tile.tiers, selectedPlanTheme.accent)}
+									{renderSecondaryTierSummary(tile.tiers, selectedPlanTheme.accent)}
 									<div className="mt-0.5 text-[10px] text-muted-foreground">
 										{tile.unitLabel}
 									</div>
