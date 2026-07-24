@@ -10,8 +10,8 @@ export type ChatProxyEnvelope = {
 	debug?: boolean;
 };
 
-type GatewayKeys = { apiKey: string; userId: string; workspaceId: string };
-type GatewayKeyError = { status: number; code: string; message: string };
+export type GatewayKeys = { apiKey: string; userId: string; workspaceId: string };
+export type GatewayKeyError = { status: number; code: string; message: string };
 const BASE62 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 const PUBLIC_GATEWAY_BASE_URL = "https://api.phaseo.app/v1";
 const ALLOWED_APP_HEADERS = new Set(["x-title", "http-referer", "x-app-id", "x-app-name"]);
@@ -50,7 +50,7 @@ async function invalidateGatewayKey(env: Env, keyId: string) {
 	await fetch(`${(env.GATEWAY_API_ORIGIN ?? "http://localhost:8787").replace(/\/+$/, "")}/v1/keys/${encodeURIComponent(keyId)}/invalidate`, { method: "POST", headers: { Authorization: `Bearer ${key}`, "x-control-secret": env.PHASEO_CONTROL_SECRET } });
 }
 
-async function resolveGatewayKeys(request: Request, env: Env, waitUntil: (promise: Promise<unknown>) => void): Promise<GatewayKeys | GatewayKeyError> {
+export async function resolveGatewayKeys(request: Request, env: Env, waitUntil: (promise: Promise<unknown>) => void): Promise<GatewayKeys | GatewayKeyError> {
 	const user = await requireUser(request, env);
 	if (!user) return { status: 401, code: "unauthorized", message: "Sign in is required to use chat" };
 	const client = getDataClient(env);
@@ -79,8 +79,8 @@ async function resolveGatewayKeys(request: Request, env: Env, waitUntil: (promis
 		if (inserted.error && String(inserted.error.code ?? "") !== "23505") return { status: 503, code: "chat_key_create_failed", message: "Unable to prepare chat authentication" };
 	} else {
 		if (String(existing.data.workspace_id) !== workspaceId) return { status: 500, code: "chat_key_collision", message: "Unable to prepare chat authentication" };
+		if (String(existing.data.status) !== "active") return { status: 403, code: "chat_key_inactive", message: "Chat authentication has been disabled" };
 		const update: Record<string, unknown> = {};
-		if (String(existing.data.status) !== "active") update.status = "active";
 		if (truthy(env.CHAT_ROUTE_FORCE_HASH_SYNC) && String(existing.data.hash ?? "").toLowerCase().trim() !== expectedHash) update.hash = expectedHash;
 		if (Object.keys(update).length) {
 			const updated = await client.from("keys").update(update).eq("id", existing.data.id).eq("workspace_id", workspaceId);

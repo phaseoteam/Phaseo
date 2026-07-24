@@ -7,6 +7,7 @@ import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 
 const DEFAULT_BATCH_API_GATE = "gateway_batch_api";
 const DEFAULT_VIDEO_API_GATE = "gateway_video_api";
+const DEFAULT_REALTIME_VOICE_GATE = "gateway_realtime_voice";
 const DEFAULT_GATEWAY_IO_LOGGING_GATE = "gateway_io_logging";
 const WORKSPACE_OWNER_CACHE_TTL_MS = 5 * 60 * 1000;
 
@@ -62,6 +63,10 @@ export function getBatchApiFeatureGateName(bindings: Partial<GatewayBindings> = 
 
 export function getVideoApiFeatureGateName(bindings: Partial<GatewayBindings> = getBindings()): string {
 	return normalizeText(bindings.STATSIG_VIDEO_API_GATE) ?? DEFAULT_VIDEO_API_GATE;
+}
+
+export function getRealtimeVoiceFeatureGateName(bindings: Partial<GatewayBindings> = getBindings()): string {
+	return normalizeText(bindings.STATSIG_REALTIME_VOICE_GATE) ?? DEFAULT_REALTIME_VOICE_GATE;
 }
 
 export function getGatewayIoLoggingFeatureGateName(bindings: Partial<GatewayBindings> = getBindings()): string {
@@ -182,6 +187,21 @@ export async function isVideoApiAccessEnabled(
 		userId: auth.userId,
 		internal: auth.internal,
 		surface: "gateway_video_api",
+	}, bindings);
+}
+
+export async function isRealtimeVoiceAccessEnabled(
+	auth: AuthSuccess,
+	bindings: Partial<GatewayBindings> = getBindings(),
+): Promise<boolean> {
+	return isStatsigGateEnabled(getRealtimeVoiceFeatureGateName(bindings), {
+		workspaceId: auth.workspaceId,
+		apiKeyId: auth.apiKeyId,
+		apiKeyRef: auth.apiKeyRef,
+		apiKeyKid: auth.apiKeyKid,
+		userId: auth.userId,
+		internal: auth.internal,
+		surface: "gateway_realtime_voice",
 	}, bindings);
 }
 

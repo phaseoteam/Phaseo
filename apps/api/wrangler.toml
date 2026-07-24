@@ -84,3 +84,11 @@ namespace_id = "41002"
 [ratelimits.simple]
 limit = 60
 period = 60
+
+[[durable_objects.bindings]]
+name = "REALTIME_RELAY"
+class_name = "RealtimeRelayDurableObject"
+
+[[migrations]]
+tag = "v1-realtime-relay"
+new_sqlite_classes = ["RealtimeRelayDurableObject"]

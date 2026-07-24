@@ -200,19 +200,23 @@ accountAuthRouter.get("/statsig", async (c) => {
 	}
 	const { data, error } = await getDataClient(c.env)
 		.from("users")
-		.select("beta_opt_in,beta_features")
+		.select("beta_opt_in,beta_features,role")
 		.eq("user_id", user.id)
 		.maybeSingle();
 	if (error) {
 		console.error("[web-api/account/auth] statsig failed", { userId: user.id, error });
 		return c.json({ error: "auth_statsig_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	}
+	const isAdmin = String(data?.role ?? "").toLowerCase() === "admin";
+	const betaFeatures = normalizeBetaFeatures(data?.beta_features);
+	if (isAdmin) betaFeatures.chat_realtime_voice = true;
+	else delete betaFeatures.chat_realtime_voice;
 	return c.json({
 		signedIn: true,
 		user: { id: user.id, email: user.email },
 		profile: {
-			betaOptIn: Boolean(data?.beta_opt_in),
-			betaFeatures: normalizeBetaFeatures(data?.beta_features),
+			betaOptIn: Boolean(data?.beta_opt_in) || isAdmin,
+			betaFeatures,
 		},
 	}, 200, PRIVATE_NO_STORE_HEADERS);
 });

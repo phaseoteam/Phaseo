@@ -9,6 +9,8 @@ describe("chat room capability mapping", () => {
 		expect(capabilityIdToRoomId("moderations.create")).toBe("moderation");
 		expect(capabilityIdToRoomId("text.moderate")).toBe("moderation");
 		expect(capabilityIdToRoomId("text.embed")).toBe("embeddings");
+		expect(capabilityIdToRoomId("audio.realtime")).toBe("realtime");
+		expect(capabilityIdToRoomId("realtime")).toBe("realtime");
 	});
 
 	it("returns all distinct room ids from capabilities", () => {
@@ -36,9 +38,14 @@ describe("chat room capability mapping", () => {
 				modelId: "openai/omni-embed",
 				capabilities: ["text.embed"],
 			},
+			{
+				modelId: "openai/gpt-realtime-2",
+				capabilities: ["audio.realtime"],
+			},
 		];
 		expect(filterModelsForRoom(models, "text")).toHaveLength(1);
 		expect(filterModelsForRoom(models, "image")).toHaveLength(1);
 		expect(filterModelsForRoom(models, "embeddings")).toHaveLength(1);
+		expect(filterModelsForRoom(models, "realtime")).toHaveLength(1);
 	});
 });

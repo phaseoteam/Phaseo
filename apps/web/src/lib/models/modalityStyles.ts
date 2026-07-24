@@ -4,6 +4,9 @@ function normalizeModalityStyleKey(value: string): string {
 		.toLowerCase()
 		.replace(/[._/-]+/g, " ");
 	if (!normalized) return "";
+	if (normalized.includes("realtime") || normalized.includes("real time")) {
+		return "realtime";
+	}
 	if (normalized.includes("embed")) return "embeddings";
 	if (normalized.includes("rerank") || normalized.includes("re rank")) {
 		return "rerank";
@@ -97,6 +100,17 @@ const MODALITY_TONES: Record<string, ModalityTone> = {
 			"group-hover:border-[#8FD9E7] group-hover:bg-[#ECFAFD] group-hover:text-[#2A99B4] dark:group-hover:border-[#2F7E8F] dark:group-hover:bg-[#0B2730] dark:group-hover:text-[#8CE6F7]",
 		sidebarIconSelectedClassName:
 			"border-[#8FD9E7] bg-[#ECFAFD] text-[#2A99B4] dark:border-[#2F7E8F] dark:bg-[#0B2730] dark:text-[#8CE6F7]",
+	},
+	realtime: {
+		badgeClassName:
+			"border-[#9AD7C6] bg-[#EDFBF6] text-[#187664] dark:border-[#2B7A6B] dark:bg-[#0D2A24] dark:text-[#9DEBD7]",
+		iconClassName: "text-[#20907B] dark:text-[#91E8D2]",
+		ghostIconHoverClassName:
+			"group-hover:text-[#20907B] dark:group-hover:text-[#91E8D2]",
+		sidebarIconHoverClassName:
+			"group-hover:border-[#9AD7C6] group-hover:bg-[#EDFBF6] group-hover:text-[#20907B] dark:group-hover:border-[#2B7A6B] dark:group-hover:bg-[#0D2A24] dark:group-hover:text-[#91E8D2]",
+		sidebarIconSelectedClassName:
+			"border-[#9AD7C6] bg-[#EDFBF6] text-[#20907B] dark:border-[#2B7A6B] dark:bg-[#0D2A24] dark:text-[#91E8D2]",
 	},
 	audio_tts: {
 		badgeClassName:

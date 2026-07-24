@@ -1,9 +1,9 @@
 {
-  "key": "openai:openai/gpt-realtime-1.5:realtime",
+  "key": "openai:openai/gpt-realtime-1.5:audio.realtime",
   "api_provider_id": "openai",
   "provider_slug": "openai",
   "api_model_id": "openai/gpt-realtime-1.5",
-  "capability_id": "realtime",
+  "capability_id": "audio.realtime",
   "rules": [
     {
       "meter": "input_text_tokens",

@@ -7,6 +7,7 @@ import { getServerStatsigUser, getStatsigFlagsAdapter } from "@/lib/statsig/serv
 import {
 	BATCH_API_GATE,
 	VIDEO_API_GATE,
+	REALTIME_VOICE_GATE,
 	GATEWAY_IO_LOGGING_GATE,
 	MODELS_CATALOGUE_V2_BETA_KEY,
 	NEW_LANDING_PAGE_EXPERIMENT,
@@ -91,5 +92,16 @@ export const videoApiFlag = statsigAdapter
 		})
 	: flag<boolean>({
 			key: VIDEO_API_GATE,
+			decide: () => false,
+		});
+
+export const realtimeVoiceFlag = statsigAdapter
+	? flag<boolean, StatsigUser>({
+			key: REALTIME_VOICE_GATE,
+			identify,
+			adapter: statsigAdapter.featureGate((gate) => gate.value),
+		})
+	: flag<boolean>({
+			key: REALTIME_VOICE_GATE,
 			decide: () => false,
 		});

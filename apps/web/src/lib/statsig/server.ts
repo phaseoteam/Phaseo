@@ -17,7 +17,6 @@ import {
 	STATSIG_STABLE_ID_COOKIE,
 	buildAnonymousStatsigUser,
 	buildAuthenticatedStatsigUser,
-	normalizeBetaFeatures,
 	type StatsigProfile,
 } from "./shared";
 

@@ -22,10 +22,13 @@ export const BATCH_API_GATE =
 	process.env.NEXT_PUBLIC_STATSIG_BATCH_API_GATE ?? "gateway_batch_api";
 export const VIDEO_API_GATE =
 	process.env.NEXT_PUBLIC_STATSIG_VIDEO_API_GATE ?? "gateway_video_api";
+export const REALTIME_VOICE_GATE =
+	process.env.NEXT_PUBLIC_STATSIG_REALTIME_VOICE_GATE ?? "gateway_realtime_voice";
 export const GATEWAY_IO_LOGGING_GATE =
 	process.env.NEXT_PUBLIC_STATSIG_GATEWAY_IO_LOGGING_GATE ?? "gateway_io_logging";
 export const NEW_GATEWAY_HERO_GATE = NEW_LANDING_PAGE_GATE;
 export const NEW_GATEWAY_HERO_EXPERIMENT = NEW_LANDING_PAGE_EXPERIMENT;
+export const REALTIME_VOICE_BETA_FEATURE = "chat_realtime_voice";
 
 export const MODELS_CATALOGUE_V2_BETA_KEY = "models_catalogue_v2";
 
@@ -35,6 +38,7 @@ export type WebBetaFeatureDefinition = {
 	title: string;
 	description: string;
 	adminOnly?: boolean;
+	selfService?: boolean;
 };
 
 export const WEB_BETA_FEATURES = [
@@ -44,6 +48,15 @@ export const WEB_BETA_FEATURES = [
 		title: "Models catalogue V2",
 		description:
 			"Load the Models page from the parallel V2 model, provider, capability, SKU, and rate tables.",
+		adminOnly: true,
+	},
+	{
+		key: REALTIME_VOICE_BETA_FEATURE,
+		kind: "toggle",
+		title: "Realtime voice room",
+		description:
+			"Enable the experimental voice-to-voice realtime room with live duration and cost tracking.",
+		selfService: false,
 		adminOnly: true,
 	},
 ] as const satisfies readonly WebBetaFeatureDefinition[];
@@ -88,6 +101,34 @@ export function isBetaFeatureEnabled(
 	featureKey: string
 ): boolean {
 	return profile.betaFeatures[featureKey] === true;
+}
+
+export function withAdminBetaFeatures(
+	profile: StatsigProfile,
+	isAdmin: boolean
+): StatsigProfile {
+	if (!isAdmin) return profile;
+
+	return {
+		betaOptIn: true,
+		betaFeatures: {
+			...profile.betaFeatures,
+			[REALTIME_VOICE_BETA_FEATURE]: true,
+		},
+	};
+}
+
+export function withRealtimeVoiceEntitlement(
+	profile: StatsigProfile,
+	entitled: boolean,
+): StatsigProfile {
+	const betaFeatures = { ...profile.betaFeatures };
+	if (entitled) betaFeatures[REALTIME_VOICE_BETA_FEATURE] = true;
+	else delete betaFeatures[REALTIME_VOICE_BETA_FEATURE];
+	return {
+		betaOptIn: Object.keys(betaFeatures).length > 0,
+		betaFeatures,
+	};
 }
 
 export function buildAnonymousStatsigUser(
