@@ -1435,6 +1435,7 @@ export default function ProviderCard({
 	privacyIgnoredReasons,
 	runtimeStats,
 	routingStatus,
+	pricingTimeMs,
 	displayNameOverride,
 	variantLabels,
 	showCacheReadColumn = false,
@@ -1448,6 +1449,7 @@ export default function ProviderCard({
 	privacyIgnoredReasons?: string[] | null;
 	runtimeStats: ProviderRuntimeStats | null;
 	routingStatus: ProviderRoutingStatus | null;
+	pricingTimeMs: number;
 	displayNameOverride?: string | null;
 	variantLabels?: string[] | null;
 	showCacheReadColumn?: boolean;
@@ -1535,13 +1537,13 @@ export default function ProviderCard({
 	}, [inspectorProviderId]);
 
 	const sec = useMemo(
-		() => buildProviderSections(provider, selectedPlan),
-		[provider, selectedPlan]
+		() => buildProviderSections(provider, selectedPlan, pricingTimeMs),
+		[pricingTimeMs, provider, selectedPlan]
 	);
 	const tablePlan = defaultPlan;
 	const tableSec = useMemo(
-		() => buildProviderSections(provider, tablePlan),
-		[provider, tablePlan],
+		() => buildProviderSections(provider, tablePlan, pricingTimeMs),
+		[pricingTimeMs, provider, tablePlan],
 	);
 	const tableDerivedPricingMultiplier = useMemo(
 		() =>
@@ -1549,16 +1551,16 @@ export default function ProviderCard({
 				provider,
 				comparisonProviders,
 				selectedPlan: tablePlan,
-				nowMs: Date.now(),
+				nowMs: pricingTimeMs,
 			}),
-		[comparisonProviders, provider, tablePlan],
+		[comparisonProviders, pricingTimeMs, provider, tablePlan],
 	);
 	const planComparisonBase = getProviderPlanComparisonBase(
 		availablePlans,
 		defaultPlan,
 	);
 	const planMultiplierLabels = useMemo(() => {
-		const nowMs = Date.now();
+		const nowMs = pricingTimeMs;
 		const labels: Record<string, string | null> = {};
 		for (const plan of availablePlans) {
 			if (plan === planComparisonBase) {
@@ -1575,7 +1577,7 @@ export default function ProviderCard({
 			);
 		}
 		return labels;
-	}, [availablePlans, planComparisonBase, provider]);
+	}, [availablePlans, planComparisonBase, pricingTimeMs, provider]);
 	const pricingComparisonAccent =
 		selectedPlan === "batch" ||
 		selectedPlan === "flex" ||
@@ -1584,7 +1586,7 @@ export default function ProviderCard({
 			? selectedPlan
 			: null;
 
-	const now = new Date();
+	const now = new Date(pricingTimeMs);
 
 	const planRules = getProviderPricingRulesForPlan(provider, selectedPlan);
 	const hasPlanPricing = planRules.length > 0;

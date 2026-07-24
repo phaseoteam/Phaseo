@@ -271,6 +271,8 @@ describe("after/pricing calculatePricing", () => {
 			unit_price_usd: "3.000000000",
 			billing_timestamp_basis: "provider_accept",
 			billing_timestamp_basis_configured: "provider_accept",
+			billing_timestamp_ms: Date.parse("2026-07-20T06:30:00Z"),
+			billing_timestamp_iso: "2026-07-20T06:30:00.000Z",
 			pricing_time_window: {
 				label: "upstream-peak",
 				timezone: "UTC",

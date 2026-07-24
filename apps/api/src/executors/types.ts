@@ -122,6 +122,7 @@ export type ExecutorCompletedResult = {
 	timing?: {
 		latencyMs?: number;
 		generationMs?: number;
+		upstreamStartMs?: number;
 		requestBuildMs?: number;
 		upstreamFetchStartMs?: number;
 		selectedUpstreamFetchStartMs?: number;
@@ -149,6 +150,7 @@ export type ExecutorStreamingResult = {
 	timing?: {
 		latencyMs?: number;
 		generationMs?: number;
+		upstreamStartMs?: number;
 		requestBuildMs?: number;
 		upstreamFetchStartMs?: number;
 		selectedUpstreamFetchStartMs?: number;

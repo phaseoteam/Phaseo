@@ -416,7 +416,15 @@ export async function syncV2Catalogue(): Promise<void> {
             currency: rule.currency ?? "USD",
             effective_from: rule.effective_from ?? "1970-01-01T00:00:00Z",
             effective_to: rule.effective_to && rule.effective_from && new Date(rule.effective_to) <= new Date(rule.effective_from) ? null : rule.effective_to ?? null,
-            metadata: { source: "json", legacy_rule_id: rule.rule_id, legacy_model_key: rule.model_key, legacy_sku_id: rule.sku_id ?? null, match: rule.match ?? [] },
+            metadata: {
+                source: "json",
+                legacy_rule_id: rule.rule_id,
+                legacy_model_key: rule.model_key,
+                legacy_sku_id: rule.sku_id ?? null,
+                match: rule.match ?? [],
+                billing_timestamp_basis: rule.billing_timestamp_basis ?? "request_start",
+                time_windows: rule.time_windows ?? [],
+            },
         });
     }
     const tierSlugs = [...new Set(pricingRules.map(rule => slug(rule.pricing_plan)))];
@@ -502,7 +510,13 @@ export async function syncV2Catalogue(): Promise<void> {
             price_nanos: Number(rule.price_per_unit ?? 0) * 1_000_000_000,
             display_label: meter,
             display_unit: `${rule.unit_size ?? 1} ${rule.unit ?? "unit"}`,
-            metadata: { source: "json", legacy_rule_id: rule.rule_id, priority: rule.priority ?? 100 },
+            metadata: {
+                source: "json",
+                legacy_rule_id: rule.rule_id,
+                priority: rule.priority ?? 100,
+                billing_timestamp_basis: rule.billing_timestamp_basis ?? "request_start",
+                time_windows: rule.time_windows ?? [],
+            },
         }];
     });
     await upsertChunks(supa, "v2_pricing_sku_meters", meterRows, "sku_id,meter_key");

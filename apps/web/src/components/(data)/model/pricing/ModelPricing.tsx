@@ -199,6 +199,7 @@ export default async function ModelPricing({
 				modelId={modelId}
 				providers={providersForDisplay}
 				creatorOrgId={identity.organisationId}
+				initialPricingTimeMs={now.getTime()}
 				runtimeStats={runtimeStats}
 				routingHealth={routingHealth}
 				workspacePrivacySettings={workspacePrivacySettings}

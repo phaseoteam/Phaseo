@@ -785,9 +785,14 @@ export function ruleComparisonMatchSignature(rule: any): string {
 }
 
 /* ---------- section builder (uses fixes) ---------- */
-export function buildProviderSections(p: ProviderPricing, plan: string): ProviderSections {
-    const now = new Date();
+export function buildProviderSections(
+    p: ProviderPricing,
+    plan: string,
+    pricingTime: Date | number = new Date(),
+): ProviderSections {
+    const now = pricingTime instanceof Date ? pricingTime : new Date(pricingTime);
     const nowMs = now.getTime();
+    const pricingTimeUtc = formatUtcPricingMinute(now);
     const normalizedPlan = normalizePricingPlan(plan);
     const rules = getProviderPricingRulesForPlan(p, normalizedPlan);
     const endpointByKey = new Map<string, string>();
@@ -885,7 +890,10 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
                 nextUpcoming,
                 endpointByKey.get(nextUpcoming.model_key) ?? null,
             );
-            const nextPriceRaw = Number(nextUpcoming.price_per_unit ?? Number.NaN);
+            const nextPriceRaw = resolvePricingMeterPrice(
+                nextUpcoming,
+                pricingTimeUtc,
+            ).pricePerUnit;
             const nextPrice = Number.isFinite(nextPriceRaw) ? nextPriceRaw : null;
             const exactCurrentCandidate = [...currentRules].sort(sortByPriorityAndFromDesc)[0];
             const signatureCurrentPool =
@@ -894,7 +902,9 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
                 .filter((candidate) => ruleMatchCovers(candidate, nextUpcoming))
                 .sort(sortByPriorityAndFromDesc)[0];
             const currentCandidate = exactCurrentCandidate ?? coverageCurrentCandidate;
-            const currentPriceRaw = currentCandidate ? Number(currentCandidate.price_per_unit ?? Number.NaN) : Number.NaN;
+            const currentPriceRaw = currentCandidate
+                ? resolvePricingMeterPrice(currentCandidate, pricingTimeUtc).pricePerUnit
+                : Number.NaN;
             const currentPrice = Number.isFinite(currentPriceRaw) ? currentPriceRaw : null;
             let trend: UpcomingPricingChange["trend"] = null;
             if (nextPrice != null && currentPrice != null) {
@@ -928,7 +938,10 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
 
         const sorted = [...currentRules].sort(sortByPriorityAndFromDesc);
         const current = sorted[0];
-        const currentPrice = Number(current.price_per_unit ?? Number.NaN);
+        const currentPrice = resolvePricingMeterPrice(
+            current,
+            pricingTimeUtc,
+        ).pricePerUnit;
         const currentFrom = toMs(current.effective_from) ?? -Infinity;
 
         let baseCandidates = currentRules.filter((r) => r.priority < current.priority);
@@ -948,7 +961,10 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
                 return (bFrom ?? -Infinity) - (aFrom ?? -Infinity);
             })
             .find((candidate) => {
-                const candidatePrice = Number(candidate.price_per_unit ?? Number.NaN);
+                const candidatePrice = resolvePricingMeterPrice(
+                    candidate,
+                    pricingTimeUtc,
+                ).pricePerUnit;
                 if (!Number.isFinite(candidatePrice) || !Number.isFinite(currentPrice)) {
                     return false;
                 }
@@ -957,7 +973,10 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
         const scheduledBase =
             !base && nextUpcoming
                 ? (() => {
-                      const nextPrice = Number(nextUpcoming.price_per_unit ?? Number.NaN);
+                      const nextPrice = resolvePricingMeterPrice(
+                          nextUpcoming,
+                          pricingTimeUtc,
+                      ).pricePerUnit;
                       if (!Number.isFinite(nextPrice) || !Number.isFinite(currentPrice)) {
                           return null;
                       }
@@ -1010,14 +1029,16 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
             entry.endpoint,
         );
         const unitSize = r.unit_size ?? 1;
-        const price = Number(r.price_per_unit ?? 0);
+        const price = resolvePricingMeterPrice(r, pricingTimeUtc).pricePerUnit;
         const per1M = perMillionIfTokens(unit, price, unitSize);
         const current = isCurrentWindow(r.effective_from, r.effective_to);
         const conds: Condition[] = Array.isArray(r.match)
             ? r.match.map((m: any) => ({ op: String(m.op ?? ""), path: String(m.path ?? ""), value: m.value, or_group: m.or_group, and_index: m.and_index }))
             : [];
 
-        const basePriceRaw = base ? Number(base.price_per_unit ?? Number.NaN) : Number.NaN;
+        const basePriceRaw = base
+            ? resolvePricingMeterPrice(base, pricingTimeUtc).pricePerUnit
+            : Number.NaN;
         const basePrice = Number.isFinite(basePriceRaw) ? basePriceRaw : null;
         const effectiveToMs = toMs(r.effective_to);
         const currentPriority = Number(r.priority ?? Number.NaN);
@@ -1444,6 +1465,12 @@ function isMinuteInsideWindow(minute: number, startMinute: number, endMinute: nu
     if (startMinute === endMinute) return false;
     if (startMinute < endMinute) return minute >= startMinute && minute < endMinute;
     return minute >= startMinute || minute < endMinute;
+}
+
+export function formatUtcPricingMinute(value: Date | number): string {
+    const date = value instanceof Date ? value : new Date(value);
+    if (!Number.isFinite(date.getTime())) return "00:00";
+    return `${String(date.getUTCHours()).padStart(2, "0")}:${String(date.getUTCMinutes()).padStart(2, "0")}`;
 }
 
 export function resolvePricingMeterPrice(

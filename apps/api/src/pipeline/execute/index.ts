@@ -650,6 +650,11 @@ async function attemptProviderWithIR(
 		);
 		t0 = performance.now();
 
+		// Never let a failed provider attempt's timestamp leak into billing for
+		// the next candidate. The upstream tracker below records the selected
+		// response's actual dispatch time for every executor.
+		delete (ctx.meta as Record<string, unknown>).upstreamStartMs;
+		delete (ctx.meta as Record<string, unknown>).selectedUpstreamFetchStartMs;
 		delete (ctx.meta as Record<string, unknown>).latency_ms;
 		delete (ctx.meta as Record<string, unknown>).generation_ms;
 		const executorResolveStart = performance.now();

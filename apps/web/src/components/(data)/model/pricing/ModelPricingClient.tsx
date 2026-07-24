@@ -126,6 +126,7 @@ const DEFAULT_SORT_DIRECTIONS: Record<Exclude<SortOption, "default">, SortDirect
 
 const EMPTY_RUNTIME_STATS: ProviderRuntimeStatsMap = {};
 const EMPTY_ROUTING_HEALTH: ProviderRoutingStatusMap = {};
+const PRICING_CLOCK_BOUNDARY_BUFFER_MS = 25;
 const ESTIMATED_ROUTING_WEIGHTS = {
     price: 0.32,
     uptime: 0.28,
@@ -139,6 +140,28 @@ function getDisplayedProviderUptime(
 ): number | null {
 	if (!hasProviderUptimeObservation(stats)) return null;
 	return stats?.uptimePct3d ?? null;
+}
+
+function usePricingClock(initialPricingTimeMs: number): number {
+    const [pricingTimeMs, setPricingTimeMs] = useState(initialPricingTimeMs);
+
+    useEffect(() => {
+        let timeoutId: number | null = null;
+        const tick = () => {
+            const nowMs = Date.now();
+            setPricingTimeMs(nowMs);
+            timeoutId = window.setTimeout(
+                tick,
+                60_000 - (nowMs % 60_000) + PRICING_CLOCK_BOUNDARY_BUFFER_MS,
+            );
+        };
+        tick();
+        return () => {
+            if (timeoutId !== null) window.clearTimeout(timeoutId);
+        };
+    }, []);
+
+    return pricingTimeMs;
 }
 
 const DEFAULT_PROVIDER_STATUS_FILTERS: ProviderStatusFilter[] = [
@@ -402,6 +425,7 @@ export default function ModelPricingClient({
 	modelId,
 	providers,
     creatorOrgId,
+    initialPricingTimeMs,
     runtimeStats = EMPTY_RUNTIME_STATS,
     routingHealth = EMPTY_ROUTING_HEALTH,
     workspacePrivacySettings = null,
@@ -411,12 +435,14 @@ export default function ModelPricingClient({
     modelId: string;
     providers: ProviderPricing[];
     creatorOrgId?: string | null;
+    initialPricingTimeMs: number;
     runtimeStats?: ProviderRuntimeStatsMap;
     routingHealth?: ProviderRoutingStatusMap;
     workspacePrivacySettings?: WorkspacePrivacySettings | null;
     showHeader?: boolean;
     headerDescription?: string | null;
 }) {
+    const pricingTimeMs = usePricingClock(initialPricingTimeMs);
     const pathname = usePathname() ?? "/";
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -511,7 +537,11 @@ export default function ModelPricingClient({
             const providerId = provider.provider.api_provider_id;
             const cached = sectionCache.get(providerId);
             if (cached) return cached;
-            const built = buildProviderSections(provider, getProviderDefaultPlan(provider));
+            const built = buildProviderSections(
+                provider,
+                getProviderDefaultPlan(provider),
+                pricingTimeMs,
+            );
             sectionCache.set(providerId, built);
             return built;
         };
@@ -723,7 +753,7 @@ export default function ModelPricingClient({
         }
 
         return list.sort(withCreatorBias);
-    }, [displayProviders, creatorOrgId, liveRuntimeStats, providerStatusFilters, routingHealth, sort, sortDirection]);
+    }, [displayProviders, creatorOrgId, liveRuntimeStats, pricingTimeMs, providerStatusFilters, routingHealth, sort, sortDirection]);
 
     const { filteredProviders, ignoredProviderReasons } = useMemo(() => {
         const ignoredReasonMap = new Map<string, string[]>();
@@ -756,10 +786,14 @@ export default function ModelPricingClient({
     const visibleProviders = filteredProviders;
     const showCacheReadColumn = useMemo(() => {
         return visibleProviders.some((provider) => {
-            const sections = buildProviderSections(provider, getProviderDefaultPlan(provider));
+            const sections = buildProviderSections(
+                provider,
+                getProviderDefaultPlan(provider),
+                pricingTimeMs,
+            );
             return buildProviderTablePriceSummary(sections, "cached").primary !== null;
         });
-    }, [visibleProviders]);
+    }, [pricingTimeMs, visibleProviders]);
     const providerTableViewportRef = useRef<HTMLDivElement>(null);
     const [providerTableOverflows, setProviderTableOverflows] = useState<boolean | null>(null);
     const [providerTableThumbWidth, setProviderTableThumbWidth] = useState<number | null>(null);
@@ -1181,6 +1215,7 @@ export default function ModelPricingClient({
                                                 routingStatus={
                                                     routingHealth[prov.provider.api_provider_id] ?? null
                                                 }
+                                                pricingTimeMs={pricingTimeMs}
                                                 variantLabels={
                                                     providerVariantLabelsById.get(
                                                         prov.provider.api_provider_id
