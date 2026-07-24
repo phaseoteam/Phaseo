@@ -276,19 +276,13 @@
   "sources": [
     {
       "kind": "announcement",
-      "url": "https://www.anthropic.com/news/claude-opus-4-8",
-      "accessed_at": null,
-      "notes": null
-    },
-    {
-      "kind": "docs",
-      "url": "https://docs.anthropic.com/en/docs/about-claude/models/whats-new-claude-4-8",
+      "url": "https://www.anthropic.com/news/claude-opus-5",
       "accessed_at": null,
       "notes": null
     },
     {
       "kind": "model_card",
-      "url": "https://www.anthropic.com/claude-opus-4-8-system-card",
+      "url": "https://www.anthropic.com/claude-opus-5-system-card",
       "accessed_at": null,
       "notes": null
     }
